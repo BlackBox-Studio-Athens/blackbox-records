@@ -42,7 +42,7 @@ The system SHALL maintain a single mapping from Product Environments to static h
 #### Scenario: UAT mapping is evaluated
 
 - **WHEN** UAT is described or validated
-- **THEN** it maps to GitHub Pages static hosting, the `uat` Worker runtime target, UAT D1, app-owned Stripe target `uat`, Stripe test mode, UAT-scoped GitHub Actions credentials, UAT sink-routing policy, and UAT Promotion Evidence.
+- **THEN** it maps to a dedicated Cloudflare Pages UAT project for static hosting, the `uat` Worker runtime target, UAT D1, app-owned Stripe target `uat`, Stripe test mode, UAT-scoped GitHub Actions credentials, UAT sink-routing policy, and UAT Promotion Evidence.
 
 #### Scenario: PRD mapping is evaluated
 
@@ -79,7 +79,7 @@ The system SHALL classify the PRD Holding Page as a temporary public deployment 
 
 - **WHEN** environment documentation describes prelaunch public hosting
 - **THEN** the PRD Holding Page maps to the `holding` branch of the existing Cloudflare Pages project
-- **AND** GitHub Pages remains UAT
+- **AND** the dedicated Cloudflare Pages UAT project remains UAT
 - **AND** the Pages production `main` deployment remains the full disabled PRD readiness surface.
 
 #### Scenario: Colleagues review the final visible site

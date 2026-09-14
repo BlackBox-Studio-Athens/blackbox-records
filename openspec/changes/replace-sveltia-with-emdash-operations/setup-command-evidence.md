@@ -1,0 +1,29 @@
+# Item Setup command integration
+
+`setupCatalogItem` coordinates the operation journal, CMS source gateway, runtime identity creation, deterministic Product recovery, scoped initial Price selection, binding persistence, opening stock, and completion. It derives the variant identity on the server from the operation identity. Strict input rejects provider/actor fields and invalid money, defaults opening stock to zero, and requires explicit confirmation before beginning a PRD setup.
+
+Runtime identity creation also saves the prepared CMS presentation. Later retries use this retained snapshot instead of rereading mutable editorial content. The concrete `prepareCmsSetupPresentation` adapter validates CMS title/summary, derives the initial Product copy, and omits artwork as explicitly allowed by design section 8. It ignores arbitrary image URLs and provider/tax fields in source data. Publication must approve and apply artwork before first item publication.
+
+Local tests exercise the command with actual D1 repositories and CMS/provider doubles. They interrupt after source, Product, Price, binding, stock, and completion acknowledgements, then resume after claim expiry. They verify retained completion, a single presentation preparation, unchanged opening inventory on replay, later stock movement preservation, changed-input conflicts, missing live confirmation, and invalid prices. Provider object deduplication itself remains covered by the separate gateway tests, rather than claimed from these doubles.
+
+Physical-type validation now reuses `DISTRO_GROUP_VALUES` through the public content-model entrypoint. Unsupported types and mismatched newly created Distro types are rejected before source writes. Existing Distro selection also checks its returned physical type before provider work. Merch continues using the existing Clothes type. The module manifest and ownership spec document this shared vocabulary dependency.
+
+The protected `POST /api/internal/items/setup` API now composes the command with the bound CMS runtime, presentation adapter, provider gateway, and D1 repositories. It requires verified operator identity, exact Origin, and the existing CSRF marker. Missing CMS binding returns 503. The generated internal document/client include setup; the public document does not. The local HTTP test covers an initial Distro setup, completed replay, private presentation, stock, missing binding, cross-origin rejection, and injected actor/provider fields. Provider calls use doubles in this HTTP test. The existing hosted-auth test includes the new route.
+
+Task 7.2 is complete with the combined source-adapter, atomic identity, command, and HTTP recovery evidence. Task 7.3 remains open for explicit republish acceptance through the future publication flow. Private CMS URLs are not used as provider images. Public media approval belongs to the planned publication flow, not draft setup. No hosted calls or persistent Local database mutations occurred.
+
+Verification passes: `pnpm test:unit`, `pnpm check`, `pnpm build`, and strict OpenSpec validation. Logs: `.codex-artifacts/emdash-m1/setup-command-{unit,check,build,openspec}.log`.
+
+The physical-type follow-up passes the same four gates; logs are `.codex-artifacts/emdash-m1/setup-type-{unit,check,build,openspec}.log`.
+
+The draft presentation adapter passes all four gates; logs are `.codex-artifacts/emdash-m1/setup-presentation-{unit,check,build,openspec}.log`. Its tests cover private images/provider fields being excluded, optional summaries, and invalid title/summary rejection.
+
+The protected API passes all four gates; logs are `.codex-artifacts/emdash-m1/setup-api-{unit,check,build,openspec}.log`. API generation also passes. JSON source data retains runtime validation while using a nonrecursive OpenAPI representation to avoid the generator's recursive-schema overflow.
+
+`setup-provider-recovery.test.ts` now uses the actual Stripe SDK/gateway with a local HTTP simulator that retains writes without an idempotency-response cache. Four scenarios cover Release, Distro, Merch/Clothes, selected existing sources, both price kinds, and lost source/Product/Price/default-selection acknowledgements. Every resumed HTTP command completes with exactly one Product, Price, default selection, and opening ledger entry. New sources are created once; selected existing sources are never written. Items remain withheld. This verifies application/provider integration locally, not hosted CMS/provider service acceptance (task 7.5).
+
+The full unit suite and builds pass. Final checks and the focused recovery test pass after correcting a test-only template-literal type lint issue. Logs: `.codex-artifacts/emdash-m1/setup-recovery-{unit,check,build,targeted}.log`.
+
+Paid-sale acceptance extends all four HTTP recovery scenarios through the actual `D1PaidCheckoutFinalizationRepository`. A two-unit order transitions to paid, reduces physical/online stock from ten to eight, and creates its sale ledger entry; paid finalization replay has no second effect. Replaying the completed setup leaves eight units and the exact paid order/line snapshots unchanged. Attempting a fresh setup for the already-linked CMS source returns needs-review without another source, Product, Price, default selection, or opening-stock entry. This checks the real paid-order persistence path with a synthetic validated finalization command, not a hosted payment or public checkout launch.
+
+The test-only sale extension passes `pnpm test:unit`, `pnpm check`, and strict OpenSpec validation. Logs: `.codex-artifacts/emdash-m1/setup-sale-{unit,check,targeted,openspec}.log`. Production code is unchanged from the preceding passing build.

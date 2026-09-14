@@ -1,36 +1,8 @@
 ## Purpose
 
-Specify the static Astro frontend, GitHub Pages UAT deployment, disabled Cloudflare Pages PRD deployment, and separate Worker backend deployment boundaries.
+Specify the static Astro frontend, isolated Cloudflare Pages UAT and disabled PRD deployments, and separate Worker backend deployment boundaries.
 
 ## Requirements
-
-### Requirement: Static frontend hosting
-
-The system SHALL serve Astro frontend artifacts with GitHub Pages as the only UAT static host and Cloudflare Pages as the only PRD static host.
-
-#### Scenario: Shared workflow deploys the UAT frontend to GitHub Pages
-
-- **GIVEN** the shared static frontend workflow runs the UAT target
-- **WHEN** CI builds the site
-- **THEN** it runs `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build:web`
-- **AND** it uploads only the prebuilt `apps/web/dist` artifact with browser-safe UAT build variables
-- **AND** the deployed static site calls the UAT Worker/API.
-
-#### Scenario: Shared workflow deploys the PRD frontend to Cloudflare Pages
-
-- **GIVEN** the shared static frontend workflow runs the PRD target
-- **WHEN** CI builds the site
-- **THEN** it runs `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build`
-- **AND** it uploads only the full prebuilt `apps/web/dist` artifact with browser-safe PRD build variables for the Pages production `main` target
-- **AND** the static PRD storefront may deploy as a readiness surface
-- **AND** PRD checkout and live provider mutation remain disabled until an explicit production-readiness gate opens them.
-
-#### Scenario: Manual workflow deploys the PRD Holding Page
-
-- **GIVEN** the separate holding workflow is started manually with its deploy input enabled
-- **WHEN** its repository gates and PRD-shaped static build succeed
-- **THEN** it derives and uploads only `apps/web/dist-holding` for the protected Pages `holding` branch deploy job
-- **AND** it does not invoke the shared UAT/PRD deploy workflow or mutate either existing deployment.
 
 ### Requirement: Staff frontend artifact is independent
 
@@ -90,7 +62,7 @@ The system SHALL keep frontend site/base URL behavior explicit and stable across
 
 #### Scenario: Deployment target changes
 
-- **GIVEN** a workflow builds for GitHub Pages UAT or Cloudflare Pages PRD
+- **GIVEN** a workflow builds for Cloudflare Pages UAT or Cloudflare Pages PRD
 - **WHEN** `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, or `PUBLIC_BACKEND_BASE_URL` is supplied
 - **THEN** only non-secret static build target values and browser-safe public variables are exposed to the frontend
 - **AND** the values map to the canonical Product Environment matrix
@@ -99,16 +71,16 @@ The system SHALL keep frontend site/base URL behavior explicit and stable across
 
 #### Scenario: Backend base URL variable is scoped
 
-- **WHEN** GitHub Pages UAT and Cloudflare Pages PRD workflows resolve `PUBLIC_BACKEND_BASE_URL`
+- **WHEN** Cloudflare Pages UAT and Cloudflare Pages PRD workflows resolve `PUBLIC_BACKEND_BASE_URL`
 - **THEN** the value comes from a target-specific variable or explicit workflow value
 - **AND** one shared repository variable cannot make UAT and PRD static builds call the same Worker by accident.
 
 #### Scenario: Static host ownership is checked
 
 - **WHEN** deployment docs, workflows, or validation output describe frontend hosting
-- **THEN** GitHub Pages is identified as UAT
-- **AND** Cloudflare Pages is identified as PRD
-- **AND** GitHub Pages is not described as PRD rollback or legacy production hosting.
+- **THEN** the dedicated UAT Cloudflare Pages project is identified as UAT
+- **AND** the distinct PRD Pages project is identified as PRD
+- **AND** retired GitHub Pages hosting is not an active UAT or PRD rollback target.
 
 #### Scenario: PRD deploy disabled-state is checked
 
@@ -123,28 +95,12 @@ The system SHALL keep frontend site/base URL behavior explicit and stable across
 - **AND** the `holding` exception serves only the PRD Holding Page within PRD
 - **AND** every branch, preview, and diagnostic deployment remains excluded from Catalog Promotion Evidence, full-site launch readiness evidence, and shopper-facing commerce acceptance.
 
-### Requirement: UAT build owns Review Site Marker visibility
+#### Scenario: Hosted and local base paths are resolved
 
-The system MUST compile the Review Site Marker through an explicit UAT-only static build flag with absence as the safe default.
-
-#### Scenario: GitHub Pages UAT artifact is built
-
-- **WHEN** the shared workflow runs the `Build UAT static frontend` step
-- **THEN** that step sets `SHOW_REVIEW_SITE_MARKER=true`
-- **AND** generated shopper-facing documents contain the exact header words `TEST SITE` and `Test payments only` plus the `[TEST] ` HTML-title prefix
-- **AND** generated checkout documents contain `Test checkout. No real payment will be taken.` beside the final payment action.
-
-#### Scenario: Local or PRD artifact is built
-
-- **WHEN** Local, the full Cloudflare Pages PRD target, the PRD Holding Page, or a diagnostic target builds without the exact UAT flag
-- **THEN** all three cues are absent
-- **AND** missing, blank, `false`, or any value other than the exact string `true` cannot enable it.
-
-#### Scenario: Build configuration drifts
-
-- **WHEN** repository environment-model verification runs
-- **THEN** it verifies that the flag and exact value are scoped to the UAT build step
-- **AND** it rejects a marker that is unconditional, public at runtime, hostname-derived, or enabled in a PRD build scope.
+- **WHEN** frontend target configuration is validated
+- **THEN** UAT and PRD use their own origins with base `/`
+- **AND** canonical Local remains `http://127.0.0.1:4321/blackbox-records/`
+- **AND** CMS authentication, checkout return origins, assets, sitemap, and smoke defaults resolve from the matching target profile.
 
 ### Requirement: Hosted UAT verifies Review Site Marker presence
 
@@ -172,7 +128,7 @@ The system MUST preserve the static frontend and separate Worker backend archite
 - **GIVEN** an Astro upgrade changes dependencies
 - **WHEN** the frontend build configuration is reviewed
 - **THEN** `apps/web/astro.config.mjs` keeps static output
-- **AND** GitHub Pages remains the UAT static host
+- **AND** Cloudflare Pages remains the UAT static host
 - **AND** Cloudflare Pages remains the PRD static host
 - **AND** dynamic commerce behavior remains owned by the separate Worker backend.
 
@@ -191,7 +147,7 @@ The system MUST preserve the static frontend and separate Worker backend archite
 
 ### Requirement: Cloudflare Pages cache headers
 
-The system SHALL emit repo-owned cache headers for PRD static assets served by Cloudflare Pages when explicit headers are safer than dashboard-only configuration.
+The system SHALL emit repo-owned cache headers for UAT and PRD static assets served by Cloudflare Pages when explicit headers are safer than dashboard-only configuration.
 
 #### Scenario: PRD static artifact is built
 
@@ -223,30 +179,14 @@ The system MUST avoid long-lived immutable caching for static route documents th
 - **THEN** broad Cloudflare "cache everything" rules are not required for HTML or app routes
 - **AND** any dashboard Cache Rule use is documented as optional provider configuration, not the repo source of truth.
 
-### Requirement: UAT and PRD cache parity boundaries
-
-The system SHALL distinguish what can be validated on GitHub Pages UAT from what must be validated on Cloudflare Pages PRD.
-
-#### Scenario: UAT is deployed to GitHub Pages
-
-- **WHEN** UAT static deployment runs
-- **THEN** it remains functionally compatible with the cache policy
-- **AND** it is not required to prove Cloudflare-specific response headers.
-
-#### Scenario: PRD header behavior is accepted
-
-- **WHEN** cache header behavior is accepted for Cloudflare Pages
-- **THEN** validation includes Cloudflare Pages PRD or a Cloudflare Pages-equivalent local/static artifact check
-- **AND** UAT success alone is not treated as proof of Cloudflare CDN behavior.
-
 ### Requirement: UAT static smoke stays read-only
 
-The system SHALL provide a manual UAT static smoke path that verifies GitHub Pages static routes, the Sveltia admin document and assets, public pages, sitemap/robots, and the checkout shell without mutating provider state or becoming a default deploy gate.
+The system SHALL provide a manual UAT static smoke path that verifies Cloudflare Pages static routes, the Sveltia admin document and assets, public pages, sitemap/robots, and the checkout shell without mutating provider state or becoming a default deploy gate.
 
 #### Scenario: UAT static smoke runs
 
-- **WHEN** a maintainer or workflow runs `pnpm smoke:uat-static -- --site-url https://blackbox-studio-athens.github.io/blackbox-records`
-- **THEN** it inspects the deployed GitHub Pages UAT frontend
+- **WHEN** a maintainer or workflow runs `pnpm smoke:uat-static -- --site-url <configured-cloudflare-uat-origin>`
+- **THEN** it inspects the deployed Cloudflare Pages UAT frontend
 - **AND** it writes evidence under `.codex-artifacts/smoke/uat/uat-static/<run-id>/`
 - **AND** it does not authenticate to Sveltia, publish content, create Stripe Checkout Sessions, modify D1, or touch webhooks
 - **AND** its evidence remains separate from provider smoke evidence.
@@ -257,9 +197,9 @@ The system SHALL keep UAT and PRD static deploy automation split into measurable
 
 #### Scenario: UAT Pages workflow reports verification and deploy timing separately
 
-- **WHEN** the shared static deployment workflow runs the GitHub Pages UAT target
-- **THEN** unit tests, workspace checks, unused audit, UAT static build, artifact upload, and GitHub Pages deploy appear as separately timed workflow jobs or steps
-- **AND** the deployed target remains GitHub Pages UAT.
+- **WHEN** the shared static deployment workflow runs the Cloudflare Pages UAT target
+- **THEN** unit tests, workspace checks, unused audit, UAT static build, artifact upload, and Cloudflare Pages deploy appear as separately timed workflow jobs or steps
+- **AND** the deployed target remains Cloudflare Pages UAT.
 
 #### Scenario: PRD Pages workflow reports verification and deploy timing separately
 
@@ -291,8 +231,8 @@ The system SHALL hand static build output from build jobs to deploy jobs through
 
 #### Scenario: UAT build artifact is handed to deploy
 
-- **WHEN** the GitHub Pages UAT workflow builds the static frontend
-- **THEN** it uploads only the deployable static artifact needed by GitHub Pages
+- **WHEN** the Cloudflare Pages UAT workflow builds the static frontend
+- **THEN** it uploads only the deployable static artifact needed by Cloudflare Pages
 - **AND** the deploy job consumes that artifact for the same commit
 - **AND** artifact retention is bounded to the shortest practical period for deployment diagnostics.
 
@@ -317,9 +257,9 @@ The system SHALL deploy the PRD Holding Page as a named branch artifact in the e
 
 #### Scenario: Shared static workflow runs on main
 
-- **WHEN** repository gates and the normal PRD build succeed
-- **THEN** the workflow continues deploying the full UAT artifact to GitHub Pages
-- **AND** it continues deploying the full disabled PRD readiness artifact to the Pages production `main` target
+- **WHEN** repository gates and the target builds succeed for a main push
+- **THEN** the workflow deploys the full UAT artifact to its Cloudflare Pages project
+- **AND** the existing PRD readiness artifact remains unchanged until explicit Software Release promotion
 - **AND** it does not prepare or deploy the PRD Holding Page artifact.
 
 #### Scenario: Operator requests a holding deployment
@@ -416,7 +356,7 @@ The system MUST keep edited deploy workflows least-privilege, stale-run-safe, an
 #### Scenario: Stale deploy work is superseded
 
 - **WHEN** a newer commit starts a static deploy workflow for the same target
-- **THEN** concurrency cancels stale in-progress work where deploying the older commit would not be useful
+- **THEN** verification may cancel stale read-only work, but state-changing deployment stages use a non-cancelling target lock and recheck staleness before mutation
 - **AND** environment or promotion jobs that must not overlap remain serialized.
 
 #### Scenario: Workflow jobs are bounded
@@ -430,7 +370,7 @@ The system SHALL report static deployment speed in separate build-verification a
 
 #### Scenario: UAT Pages deploy tail remains slow
 
-- **WHEN** GitHub Pages deploy latency has high p75 or p90 duration
+- **WHEN** Cloudflare Pages deploy latency has high p75 or p90 duration
 - **THEN** the workflow report identifies it separately from repository verification and Astro build time
 - **AND** repository build/check optimization is not credited with fixing provider deploy latency unless post-change data proves it.
 
@@ -512,3 +452,69 @@ All normal deployments SHALL follow the same source SHA and release readiness ga
 
 - **WHEN** the disabled PRD frontend is published
 - **THEN** existing checkout launch controls remain unchanged.
+
+### Requirement: Public frontend hosting uses separate Cloudflare Pages projects
+
+The system SHALL serve Astro frontend artifacts with separate Cloudflare Pages projects as the UAT and PRD static hosts.
+
+#### Scenario: Shared workflow deploys the UAT frontend to Cloudflare Pages
+
+- **GIVEN** the shared static frontend workflow runs the UAT target
+- **WHEN** CI builds the site
+- **THEN** it runs `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build:web`
+- **AND** it uploads only the prebuilt `apps/web/dist` artifact with browser-safe UAT build variables
+- **AND** the deployed static site calls the UAT Worker/API.
+
+#### Scenario: Shared workflow deploys the PRD frontend to Cloudflare Pages
+
+- **GIVEN** an explicit Software Release promotion selects a verified PRD-targeted artifact
+- **WHEN** CI builds the site
+- **THEN** it runs `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build`
+- **AND** it uploads only the full prebuilt `apps/web/dist` artifact with browser-safe PRD build variables for the Pages production `main` target
+- **AND** the static PRD storefront may deploy as a readiness surface
+- **AND** PRD checkout and live provider mutation remain disabled until an explicit production-readiness gate opens them.
+
+#### Scenario: Manual workflow deploys the PRD Holding Page
+
+- **GIVEN** the separate holding workflow is started manually with its deploy input enabled
+- **WHEN** its repository gates and PRD-shaped static build succeed
+- **THEN** it derives and uploads only `apps/web/dist-holding` for the protected Pages `holding` branch deploy job
+- **AND** it does not invoke the shared UAT/PRD deploy workflow or mutate either existing deployment.
+
+### Requirement: UAT-only builds own Review Site Marker visibility
+
+The system MUST compile the Review Site Marker through an explicit UAT-only static build flag with absence as the safe default.
+
+#### Scenario: Cloudflare Pages UAT artifact is built
+
+- **WHEN** the shared workflow runs the `Build UAT static frontend` step
+- **THEN** that step sets `SHOW_REVIEW_SITE_MARKER=true`
+- **AND** generated shopper-facing documents contain the exact header words `TEST SITE` and `Test payments only` plus the `[TEST] ` HTML-title prefix
+- **AND** generated checkout documents contain `Test checkout. No real payment will be taken.` beside the final payment action.
+
+#### Scenario: Local or PRD artifact is built
+
+- **WHEN** Local, the full Cloudflare Pages PRD target, the PRD Holding Page, or a diagnostic target builds without the exact UAT flag
+- **THEN** all three cues are absent
+- **AND** missing, blank, `false`, or any value other than the exact string `true` cannot enable it.
+
+#### Scenario: Build configuration drifts
+
+- **WHEN** repository environment-model verification runs
+- **THEN** it verifies that the flag and exact value are scoped to the UAT build step
+- **AND** it rejects a marker that is unconditional, public at runtime, hostname-derived, or enabled in a PRD build scope.
+
+### Requirement: Hosted cache policy is consistent across UAT and PRD
+
+The system SHALL apply the same static cache policy on the separate Cloudflare Pages UAT and PRD projects and verify target-specific headers.
+
+#### Scenario: UAT cache behavior is reviewed
+
+- **WHEN** hosted UAT static smoke probes HTML, fingerprinted assets, redirects, and policy files
+- **THEN** it validates the same cache rules intended for PRD, including document revalidation.
+
+#### Scenario: PRD cache behavior is accepted
+
+- **WHEN** the reviewed candidate is promoted
+- **THEN** bounded PRD checks confirm actual target headers
+- **AND** UAT evidence does not imply that separately configured PRD settings were verified.

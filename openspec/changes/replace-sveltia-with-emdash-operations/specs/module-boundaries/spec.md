@@ -1,0 +1,226 @@
+## MODIFIED Requirements
+
+### Requirement: Boundary manifest authority
+
+The system MUST keep module ownership, entrypoints, allowed dependencies, statuses, and exceptions in the OpenSpec module-boundary manifest.
+
+#### Scenario: Module ownership changes
+
+- **GIVEN** a change updates module roots, entrypoints, allowed dependencies, or exception policy
+- **WHEN** the change is made
+- **THEN** `openspec/specs/module-boundaries/module-boundaries.manifest.json` and this spec are updated together when behavior changes.
+
+#### Scenario: Shared UI primitive is added
+
+- **GIVEN** a reusable UI foundation primitive must be consumed across closed application modules
+- **WHEN** the primitive is added under `apps/web/src/components/ui/`
+- **THEN** the primitive is listed as a provided `ui-foundation` entrypoint in `module-boundaries.manifest.json`
+- **AND** feature modules import that entrypoint directly instead of deep-importing private UI foundation implementation.
+
+#### Scenario: Route-local HTTP helper is added
+
+- **GIVEN** public commerce HTTP route code needs a helper that is not a cross-module interface
+- **WHEN** the helper is added under `apps/backend/src/interfaces/http/routes/`
+- **THEN** the helper is listed under the owning `public-commerce-http` roots in `module-boundaries.manifest.json`
+- **AND** it is not listed as a provided entrypoint unless another module is allowed to import it.
+
+#### Scenario: Public Services inquiry HTTP files are added
+
+- **GIVEN** the public Services inquiry route and route-local service are implemented under `apps/backend/src/interfaces/http/routes/`
+- **WHEN** boundary validation runs
+- **THEN** both files are listed under the closed `public-commerce-http` roots
+- **AND** the shared public contract remains exposed through the existing `public-contracts` named interface
+- **AND** the route-local service depends on the provided `email-application` entrypoint rather than provider implementation.
+
+#### Scenario: Scheduled catalog verification is retired
+
+- **GIVEN** Store Listing Price recovery no longer uses a scheduled Worker handler
+- **WHEN** boundary validation runs
+- **THEN** `public-commerce-http` does not own a scheduled interface root
+- **AND** the retired catalog verification handler is not a provided entrypoint.
+
+#### Scenario: Paid-order deliveries run on one owned schedule
+
+- **GIVEN** pending PaidOrderDelivery rows require bounded retry processing
+- **WHEN** the Worker scheduled handler is composed
+- **THEN** the `orders` module owns and provides `apps/backend/src/interfaces/scheduled/run-paid-order-delivery-schedule.ts`
+- **AND** that entrypoint drains only paid-order deliveries through the existing email application and Resend integration
+- **AND** `public-commerce-http` owns no scheduled root or scheduled entrypoint.
+
+#### Scenario: Cart-scoped checkout route is added
+
+- **GIVEN** cart-scoped checkout pages are added under `apps/web/src/pages/store/checkout/`
+- **WHEN** boundary validation runs
+- **THEN** those route files are owned by the closed `checkout-web` module
+- **AND** item-scoped checkout compatibility pages stay owned by `checkout-web` until removed.
+
+#### Scenario: VAT and delivery summaries are shared with the cart
+
+- **GIVEN** cart and checkout display a Worker-validated delivery quote
+- **WHEN** the app shell composes the cart drawer
+- **THEN** it supplies the `checkout-web` provided `DeliverySummary.tsx` component through the cart drawer's presentation slot
+- **AND** `store-cart` does not depend on checkout HTTP clients or payment authority
+- **AND** `checkout-web` owns `DeliveryRates.tsx` and `/terms/` delivery information
+- **AND** `commerce-domain` owns the accepted policy and order monetary types in `monetary.ts`, exposed through its existing root entrypoint.
+
+#### Scenario: Purchase information crosses public presentation boundaries
+
+- **GIVEN** public purchase and privacy information is shared by Store Item, checkout, footer and personal-data forms
+- **WHEN** those surfaces render policy copy or links
+- **THEN** `platform-shared` owns and provides `components/PurchaseInformation.tsx`, `components/PurchaseDocument.tsx`, `lib/purchase-information.ts` and `lib/purchase-information-schema.ts` under `apps/web/src/`, with the purchase-information content entry owned by the same module
+- **AND** `checkout-web` owns the static `/terms/` and `/privacy/` routes and retains all runtime monetary presentation
+- **AND** shared editorial information does not import checkout clients or become price, tax or order authority.
+
+#### Scenario: Store category routes are added
+
+- **GIVEN** Store collection pages exist at `/store/`, `/store/blackbox-releases/`, `/store/distro/`, and `/store/merch/`
+- **WHEN** boundary validation runs
+- **THEN** their route files, shared category page, category classifier, Distro grouping, and listing cards are owned by the closed `storefront-catalog` module
+- **AND** the `/distro/` redirect route remains in the documented static storefront route root.
+
+#### Scenario: Shared Distro groups cross the CMS boundary
+
+- **GIVEN** Astro content validation and CMS collection builders require the same Distro group values and intro-key definitions
+- **WHEN** CMS configuration imports those closed values
+- **THEN** shared closed values are provided by the pure content-model workspace entrypoint
+- **AND** frontend and CMS consumers import it without cross-app source imports or duplicated group lists.
+
+#### Scenario: Shared editorial validation crosses the CMS boundary
+
+- **GIVEN** Astro content schemas and CMS fields require the same path, URL, email, image, and provider constraints
+- **WHEN** CMS configuration imports those validation primitives
+- **THEN** shared portable editorial constraints are provided by the pure content-model workspace entrypoint
+- **AND** Astro-specific image/render handling remains in the public web application.
+
+#### Scenario: Route-lazy Store Distro search crosses the app-shell boundary
+
+- **GIVEN** Store Distro search presentation is owned by `storefront-catalog`
+- **WHEN** the app shell lazily mounts that control on `/store/distro/`
+- **THEN** `apps/web/src/components/store/StoreDistroSearch.tsx` is a provided `storefront-catalog` entrypoint
+- **AND** the app shell imports that entrypoint instead of a private storefront implementation.
+
+#### Scenario: Services inquiry presentation crosses the app-shell boundary
+
+- **GIVEN** Services inquiry presentation is owned by `storefront-catalog`
+- **WHEN** the app shell lazily mounts the inquiry form
+- **THEN** `apps/web/src/components/services/**` is an owned `storefront-catalog` root
+- **AND** `ServicesInquiryForm.tsx` remains a provided entrypoint
+- **AND** reusable controls are imported through `ui-foundation` entrypoints.
+
+#### Scenario: Shared Store Coverflow controller crosses the app-shell boundary
+
+- **GIVEN** Store Coverflow interaction behavior is owned by `storefront-catalog`
+- **WHEN** the app shell mounts that behavior after activating `/store/`
+- **THEN** `apps/web/src/components/store/StoreCoverflowController.ts` is a provided `storefront-catalog` entrypoint
+- **AND** Distro and app-shell callers import the same controller instead of duplicating interaction logic or using an ownership exception.
+
+#### Scenario: StoreCart event contract is shared
+
+- **GIVEN** app-shell and checkout-web code coordinate browser-only StoreCart events
+- **WHEN** event names are imported across closed module boundaries
+- **THEN** they use the dependency-free `store-cart-events.ts` provided entrypoint
+- **AND** the app shell does not import checkout presentation to register the event bridge.
+
+#### Scenario: Backend shared observability helper is added
+
+- **GIVEN** backend modules need shared Worker-safe logging, tracing, or HTTP response helpers
+- **WHEN** the helper is added
+- **THEN** the helper is listed as a provided `platform-shared` entrypoint in `module-boundaries.manifest.json`
+- **AND** feature modules import that entrypoint directly instead of deep-importing HTTP route internals.
+
+#### Scenario: Internal routes use the operator authentication boundary
+
+- **GIVEN** the complete `/api/internal/*` router requires one shared authentication middleware
+- **WHEN** public HTTP composition mounts the operator-auth entrypoint
+- **THEN** `public-commerce-http` declares `operator-auth` as an allowed dependency
+- **AND** `operator-auth` may use only provided `platform-shared` environment, observability, and response entrypoints.
+
+#### Scenario: Staff frontend is isolated from the public web app
+
+- **GIVEN** stock operations are built by the `@blackbox/staff` workspace
+- **WHEN** boundary validation runs
+- **THEN** the closed `staff-frontend` module owns `apps/staff/src/**`
+- **AND** its workspace dependencies are limited to documented internal API and pure content-model entrypoints
+- **AND** `operator-stock` retains backend ownership without public or staff frontend roots.
+
+### Requirement: Staff frontend is an independent workspace boundary
+
+The system SHALL treat the public web application and staff application as separate workspace packages with no source-level imports between them.
+
+#### Scenario: Staff code needs an API contract
+
+- **WHEN** the staff application consumes internal stock request or response types
+- **THEN** it imports the documented `@blackbox/api-client/internal` workspace-package export
+- **AND** it does not import source from `apps/web` or `apps/backend`.
+
+#### Scenario: Frontend application ownership is audited
+
+- **WHEN** module-boundary validation runs
+- **THEN** `apps/web` and `apps/staff` are registered as distinct workspace boundaries
+- **AND** staff-owned routes, components, API helpers, styles, and tests resolve to the staff boundary without an ownership exception.
+
+#### Scenario: Public application is inspected after the move
+
+- **WHEN** repository boundary and unused-code audits inspect `apps/web`
+- **THEN** no compatibility facade or forwarding import preserves the former stock route ownership
+- **AND** remaining public code does not depend on the staff application.
+
+### Requirement: Public commerce HTTP uses the commerce reader entrypoint
+
+The system MUST expose application-owned Store readers through the documented commerce reader entrypoint rather than private reader files.
+
+#### Scenario: Public HTTP composes Store listing prices
+
+- **WHEN** public commerce HTTP wires the Store listing-price reader
+- **THEN** it imports the documented commerce reader entrypoint provided by `checkout-core`
+- **AND** boundary validation passes without an ownership exception.
+
+#### Scenario: Public HTTP composes atomic checkout holds
+
+- **WHEN** public commerce and Stripe webhook composition require the native D1 checkout-hold adapter
+- **THEN** they import `apps/backend/src/infrastructure/persistence/d1-checkout-stock-hold-repository.ts` as a provided `commerce-persistence` entrypoint
+- **AND** HTTP route modules do not own or deep-import that persistence implementation.
+
+#### Scenario: Static CMS and catalog image entrypoints remain separate
+
+- **WHEN** boundary validation checks the EmDash migration
+- **THEN** backend CMS integration owns CMS runtime routes and public image generation remains owned by storefront presentation
+- **AND** public image output consumes the approved content snapshot without a Sveltia route or privileged runtime dependency.
+
+## ADDED Requirements
+
+### Requirement: CMS and commerce retain separate data ownership in one Worker
+
+CMS integration SHALL use supported CMS interfaces for editorial records, while commerce SHALL retain its existing application and repository entrypoints for catalog, price, stock, checkout, and orders.
+
+#### Scenario: CMS presents an operational control
+
+- **WHEN** a staff form invokes a price, inventory, or order action
+- **THEN** it crosses the documented protected application API
+- **AND** no generic CMS table editor or plugin writes commerce tables directly.
+
+#### Scenario: Public code consumes CMS data
+
+- **WHEN** the public static build reads editorial content
+- **THEN** it uses a validated published-content contract
+- **AND** browser and public application modules do not import CMS server or private commerce internals.
+
+#### Scenario: Scheduler ownership changes
+
+- **WHEN** the combined Worker composes CMS maintenance/publication and paid-order retries
+- **THEN** each handler retains a named owner and bounded failure reporting
+- **AND** a CMS failure cannot silently disable order delivery processing.
+
+#### Scenario: Module roots move
+
+- **WHEN** CMS integration and the content-model package are introduced
+- **THEN** the module-boundaries spec and manifest change together
+- **AND** deleted Sveltia roots and compiled catalog entrypoints are removed without compatibility facades.
+
+#### Scenario: Current combined-runtime boundaries are verified
+
+- **WHEN** task 2.5 is validated before runtime cutover
+- **THEN** the manifest names the combined Worker, Access auth provider, commerce Worker, and existing paid-order schedule interfaces
+- **AND** runtime catalog contracts stay in `commerce-domain`, persistence in `commerce-persistence`, projection validation in `catalog-sync`, and staff source in `staff-frontend`
+- **AND** the audits reject CMS-to-commerce-persistence imports, public-web-to-CMS imports, and cross-app staff source imports
+- **AND** still-used legacy roots remain owned until their later cutover deletion tasks pass.

@@ -1,0 +1,107 @@
+Use Astra medium with the apply-change workflow. Work through sections in order, one bounded section per implementation session; do not launch parallel rewrites. The Cloudflare hosting/promotion change is a prerequisite for hosted acceptance. Stay in the main worktree on `main` and run `pnpm openspec:guard` before prepared work. Every finished behavior-changing section requires `pnpm test:unit`, `pnpm check`, and `pnpm build` against its final tree. Handoffs must identify completed checkboxes, changed interfaces/migrations, exact verification, and outstanding approvals. Never fabricate hosted or live evidence.
+
+## 1. M1 — Prove the supported integration and free-tier budget
+
+Current checkpoint: M1 tasks 1.1–1.5 are complete. Workers Free remains required. CMS and commerce now run in separate free SQLite-backed Durable Objects in the same deployment, preserving D1/R2, Hono, and Access. HTTP and scheduled entrypoints forward work into the objects. Final UAT browser checks and two Stripe test checkout creations pass: entry Worker CPU is 0–1 ms, CMS peaks at 43 ms and commerce at 93 ms within the objects' 30-second allowance. All six account D1 databases, R2 storage, account Worker/Object usage, existing CI usage, and a conservative seven-day media backup estimate fit the measured free-tier budget. The supported CMS migration check passes. See [m1-integration-evidence.md](m1-integration-evidence.md). Tasks 2.1, 2.2, 2.4, 3.1, 3.2, and 3.3 are also complete: combined UAT staff hosting, isolated CMS resources, shared editorial constraints, the deterministic source inventory, and verified collection contracts. See [combined-runtime-evidence.md](combined-runtime-evidence.md). Overall progress is 19/60; 41 tasks, including catalog backfill/runtime adoption, publication, and production cutover, remain open. Task 4.1 adds the verified catalog fields through an additive Local migration; hosted apply and backfill remain pending. No paid-plan decision is pending. The [Local editorial migration checkpoint](local-editorial-migration-evidence.md) now verifies all 13 collection APIs and a duplicate-free repeat import of 129 records and 152 raster image paths; task 3.2 now includes confirmed revision-safe News/social soft deletion. Section 3 now passes Local/UAT import, media privacy, record/body parity, and all 104 known UAT catalog image URL checks. See the UAT editorial import evidence for exact coverage; public snapshot loading remains a later task.
+
+- [x] 1.1 Reconcile completed catalog/staff-order changes with baseline specs and inspect active order, VAT/shipping, purchase-information, distro enrichment, and go-live work; deliver an overlap inventory preserving their behavior and unfinished approvals. See [overlap-inventory.md](overlap-inventory.md).
+- [x] 1.2 Pin a compatible EmDash/Astro/Cloudflare dependency set in a minimal backend integration slice using official documentation; verify install/build, supported external CMS CRUD/revision APIs, and that generated configuration contains no sandbox loader, AI, paid cache, or runtime image-transform requirement.
+- [x] 1.3 Compose the supported CMS handler with existing Hono fetch and paid-order scheduled entrypoints; verify public store/checkout/webhook routes and a failed CMS maintenance invocation do not suppress existing order-delivery processing.
+- [x] 1.4 Prove supported Access authentication and a Local-loopback-only CMS identity mapping; verify valid user access plus expired/foreign/forged identity, alternate hostname, registration, and local-bypass rejection tests before importing real content.
+- [x] 1.5 On authorized isolated UAT resources, measure representative CMS reads/saves/uploads, public commerce, cold/warm execution, generated bundle size, D1/R2 usage, and current account free-tier limits; deliver redacted measured evidence and stop before migration if required behavior cannot fit without paid capacity or an upstream fork.
+
+## 2. Establish the combined runtime and ownership boundaries
+
+- [x] 2.1 Add explicit isolated `CMS_DB` and private R2 configuration beside the unchanged `COMMERCE_DB` bindings, with separate CMS/application migration ownership; verify environment tests reject shared UAT/PRD resource identities and hosted first-request reseeding.
+- [x] 2.2 Package the existing `apps/staff` build with the backend Worker and route protected assets through host/auth checks before asset serving; verify one backend artifact contains staff and CMS while `apps/web/dist` contains no private routes or staff entrypoints.
+- [ ] 2.3 Configure member/owner permissions through supported EmDash primitives and the target Access allowlist; verify one sign-in spans content/items/stock/orders, owner-only administration stays restricted, revocation is effective, and no server credential reaches a browser artifact.
+- [x] 2.4 Create the minimal pure `packages/content-model` entrypoint by moving genuinely shared editorial constraints/closed values; verify consumers use package exports, Astro-specific image/render code stays in web, and no cross-app source imports or duplicated validation are introduced.
+- [x] 2.5 Update `module-boundaries.manifest.json` and corresponding spec ownership for CMS, staff assets, runtime catalog, content-model, and scheduler composition; verify the existing boundary audit passes without a compatibility facade or new blanket exception.
+
+## 3. Migrate content and media without changing public meaning
+
+- [x] 3.1 Inventory every actual collection in `apps/web/src/content.config.ts`, source IDs/slugs, relations, Markdown constructs, images, fixed-page objects, and optional fields; deliver a deterministic migration manifest with counts, media checksums, and unresolved anomalies.
+- [x] 3.2 Define the equivalent EmDash collections, references, validation, fixed-page shapes, and deletion restrictions; verify representative valid/invalid direct API inputs and parity fixtures for all current collections, including purchase information and distro-page copy.
+- [x] 3.3 Implement dry-run-first idempotent import with stable source-to-CMS identity mapping and semantic Markdown conversion; verify a second Local/UAT import creates no duplicates and unsupported rich text fails explicitly rather than losing content.
+- [x] 3.4 Import media to private R2 with byte/type/size/path validation and stable reference mapping; verify checksums, alt text, dimensions, unsafe-upload rejection, and denial of draft/snapshot/backup requests through every public route. See [UAT media privacy evidence](uat-editorial-import-evidence.md#media-privacy-verification).
+- [x] 3.5 Compare imported Local/UAT records and rendered fixtures with the source inventory; verify counts, slugs, Artist/Release references, ordering, dates, fixed content, embeds, and known public image URLs are preserved before proceeding. See [final migration parity evidence](uat-editorial-import-evidence.md#final-migration-parity-acceptance).
+
+## 4. Replace the compiled catalog with runtime persistence
+
+- [x] 4.1 Add only the missing runtime catalog/source-linkage fields and constraints through additive Prisma/D1 migrations, reusing mappings, availability, and snapshots; verify uniqueness and repository tests for source, Store Item, variant, and slug identity. See [runtime catalog evidence](runtime-catalog-evidence.md).
+- [ ] 4.2 Implement dry-run-first backfill from current generated input plus trusted D1/Stripe bindings; verify exact before/after identities, prices, stock, online allocation, reservations, pauses, and order references, with conflicts stopping import and no automatic provider writes.
+- [ ] 4.3 Replace the generated desired-catalog reader and all runtime callers with existing-seam repository reads; verify a newly inserted valid runtime item is resolved by the already-built backend without a new bundle or CMS runtime fetch.
+- [ ] 4.4 Preserve bound Product/default-Price reconciliation, listing snapshots, signed webhook deduplication, and read/checkout repair; verify old active Prices remain harmless and missing/foreign/default-Price failures stay closed for both fixed and custom pricing.
+- [ ] 4.5 Adapt targeted catalog diagnostics to runtime records while keeping dry-run default, app identities, redacted evidence, and no account-wide runtime scan; verify ordinary diagnosis does not mutate Products, Prices, stock, or orders.
+
+## 5. Add protected price commands and durable operation recovery
+
+Local preparation: the D1 operation journal, migration, exclusive claims, replay/conflict checks, atomic price completion/snapshot persistence, and retained result identities pass isolated D1 and repository gates. See [operation-journal-evidence.md](operation-journal-evidence.md). Task 5.1 now includes signed-Access actor integration through the protected price command; no persistent or hosted migration has been applied.
+
+The protected price command now passes fixed/custom SDK-to-D1 acceptance, authoritative Store Offer reads, historical-data preservation, interrupted-write recovery, and concurrent/external conflict checks. Tasks 5.1-5.4 are complete locally; see [price-command-evidence.md](price-command-evidence.md). Task 5.5 remains open for the remaining Item Setup operations and their generated contract.
+
+- [x] 5.1 Add the small typed item/price operation journal with input fingerprint, verified actor, expected revision, conditional claim, step/result state, and uniqueness constraints; verify duplicate submission and changed-input reuse cannot create a second logical operation.
+- [x] 5.2 Implement the protected price-change application command using the existing Stripe gateway and approved EUR/fixed/custom/tax policy; verify replacement Price/default selection and snapshot refresh preserve previous Prices and historical order totals.
+- [x] 5.3 Cover interruption after each provider write and after D1 acknowledgement loss, including retry beyond Stripe idempotency retention; verify persisted identity and scoped retrieval recover without duplicate Price/Product creation or blind resubmission.
+- [x] 5.4 Add concurrent-price and external-Dashboard conflict handling plus strict boundary validation; verify stale staff requests, wrong environment, unsupported money input, missing permission, and generic CMS attempts fail without hidden writes.
+- [ ] 5.5 Extend internal OpenAPI and generated client exports for the new operations without exposing provider IDs or internal fields through public contracts; verify generated-contract and commerce-boundary checks pass.
+
+## 6. Build the unified member workspace
+
+- [ ] 6.1 Extend `apps/staff` navigation with Content and Items alongside existing Stock and Orders, reusing staff layout/components; verify one identity and navigation context survive all sections without another member login.
+- [ ] 6.2 Add focused Artist/Release/Distro/News and fixed-page editing using supported CMS APIs and editor facilities; verify relation selection, validation, stable slugs, drafts, stale-save conflict recovery, and server-side field rejection.
+- [ ] 6.3 Add media selection and the seven required protected draft-preview outcomes by reusing existing preview behavior where applicable; verify draft labels, safe media resolution, and no public publication or private-token leakage.
+- [ ] 6.4 Add item price controls and embed/link existing stock movement/count/allocation and order controls without duplicating their logic; verify the member can change price and stock on one item and observe authoritative results without a build.
+- [ ] 6.5 Browser-check representative content/item/stock/order flows at desktop and 320 CSS pixels with keyboard use; verify labels, focus, errors, contrast, touch targets, and absence of page-level overflow before considering the UI slice complete.
+
+## 7. Implement the single item-creation workflow
+
+The protected Item Setup API now integrates CMS linkage, runtime identity, Product/Price binding, opening stock, and completion. Local HTTP/SDK/D1 recovery and paid-sale evidence is in [setup-command-evidence.md](setup-command-evidence.md). Task 7.3 retains explicit republish acceptance through the publication flow; guided UI/publication and hosted outcome checks remain separate tasks.
+
+- [ ] 7.1 Add guided Release/Distro/Merch setup with existing-record selection, generated stable identities, one variant, EUR, explicit initial price, and zero-by-default physical stock with matching online default; verify form/API fixtures do not fabricate prices or persist presentation category as commerce authority.
+- [x] 7.2 Implement resumable CMS source linkage and runtime identity setup through the operation journal; verify duplicate submissions and partial CMS success cannot create extra Releases, Distro sources, Store Items, or variants. See [setup-command-evidence.md](setup-command-evidence.md).
+- [ ] 7.3 Implement initial Product/Price binding and one-time opening stock through existing stock/application seams; verify retry, republish, and subsequent sales never reapply opening quantities and that ambiguous bindings remain non-buyable.
+- [ ] 7.4 Complete the guided Publish item action with approved immutable media and targeted Product Projection only when checkout presentation changed; verify it needs no second member task, leaves Price Authority unchanged, and safely resumes a failed projection before static publication.
+- [ ] 7.5 Verify all required creation outcomes in Local and authorized UAT: label Release with ten vinyl, Distro with ten vinyl, Merch using its existing type policy, and editorial-only Release; prove exact counts, no duplicate identities, no Git/SQL editing, and no backend redeploy for the new items.
+
+## 8. Separate Content Publication from Software Release
+
+- [ ] 8.1 Add the small durable publication record and fixed, authorized dispatch/status/completion endpoints; verify origin/CSRF/role checks, idempotent requests, browser closure, failed dispatch, forged completion, and wrong-environment rejection.
+- [ ] 8.2 Implement bounded published-content export with complete ID/revision-vector validation and private immutable snapshots; verify edits/deletions during pagination cause retry rather than mixed revisions and drafts never enter the export.
+- [ ] 8.3 Replace public content inputs with a validated snapshot loader while retaining `site-data`, route, category/search, metadata, overlay, and image behavior; verify missing/invalid snapshots fail builds and no hosted fallback reads old production content files.
+- [ ] 8.4 Add the dedicated content workflow using deployed approved code SHA, target-scoped read/export credentials, content/render checks, and static Pages deployment only; verify PRD publication while a UI candidate is in UAT does not release that candidate or deploy the Worker.
+- [ ] 8.5 Share target mutation concurrency and code/content preconditions with software promotion; verify publication-behind-code and code-behind-publication race tests cannot downgrade either revision, and stale PRD artifacts refresh using the same reviewed code SHA before explicit promotion.
+- [ ] 8.6 Implement authenticated deployment acknowledgement and bounded scheduled retry/reconciliation using existing scheduler composition; verify lost acknowledgements, superseded requests, and expired CI runs produce honest pending/live/failed status without duplicate or older publication.
+- [ ] 8.7 Gate first checkout on completed setup plus confirmed publication, and pause new checkout before unpublish/archive; verify guessed IDs cannot buy drafts and existing reservations/orders/return pages still work after removal.
+- [ ] 8.8 Verify fresh public loads reflect published pages, metadata, sitemap, search data, and overlay fragments while an already-playing tab is not forcibly reloaded; record the existing same-session cache limitation in staff guidance.
+
+## 9. Make the canonical local stack the normal command
+
+- [ ] 9.1 Make root `pnpm dev` invoke the existing `dev:stack:stripe-mock` flow and extend its launcher/process helpers for CMS D1/R2 and Worker-hosted staff; verify required ports 4321/8787/12110, canonical public base path, clear port failure, and coordinated shutdown.
+- [ ] 9.2 Bootstrap local stores only when empty and make Local publish refresh the local snapshot/public loader without GitHub; verify content edits, stock, and prices survive a restart and no hosted network/provider mutation occurs.
+- [ ] 9.3 Preserve official stripe-mock proxy behavior and keep mock compatibility fixes in development tooling; verify default checkout/catalog fixtures, local signed webhooks, and mock emails work without Docker, real keys, hosted login, or `.dev.vars`.
+- [ ] 9.4 Update normal/diagnostic command documentation and keep both existing WebStorm launcher targets working; verify default IDE startup and Stripe Sandbox Smoke still invoke their canonical commands, with no added run configurations or copied UAT secrets.
+
+## 10. Prove recovery and rehearse the cutover
+
+- [ ] 10.1 Configure private daily CMS database/media backups with seven daily points and pre-upgrade capture using existing/native tools; verify backup objects cannot be retrieved through public media paths and retention fits the measured free storage budget.
+- [ ] 10.2 Restore a full CMS backup and media into isolated recovery resources; verify users, content, references, revisions, media checksums, and public rendering, while `COMMERCE_DB` and provider state remain untouched.
+- [ ] 10.3 Rehearse final import after an editorial-write freeze in UAT and record precise before/after reconciliation; verify one writable CMS at cutover and no lost edits, reset stock, changed selling prices, or broken historical order links.
+- [ ] 10.4 Exercise code rollback and publication failure after post-cutover content/items exist; verify recovery uses compatible runtime-catalog code or roll-forward, never an obsolete compiled catalog or commerce database restore.
+- [ ] 10.5 Run integrated UAT acceptance for the four routine operations, fixed/custom paid checkout, signed webhook replay, reservations, orders, manual fulfillment, and paid-email retry; verify target isolation and actual free-tier behavior on the final combined artifact.
+
+## 11. Authorized PRD cutover and deletion of obsolete paths
+
+- [ ] 11.1 Prepare a dry-run PRD migration report, exact target/resource list, backup references, write-freeze steps, and recovery decision tree; verify no live provider/D1 mutation has occurred and obtain required one-run authorization before any live apply.
+- [ ] 11.2 Perform the authorized final PRD import and read/publication-source switch, then validate protected staff and public behavior; verify exact identities, balances, prices, and order history reconcile and shopper launch gates remain unchanged.
+- [ ] 11.3 Remove Sveltia runtime, config/bootstrap/previews, Git OAuth integration, old writable admin routes, and obsolete CMS scripts/tests only after replacement acceptance; verify public `/admin/` cannot write and supported old entry links reach a protected workspace or clear retired state.
+- [ ] 11.4 Remove the compiled catalog import/artifact, root install/check/build generation hooks, routine inventory/price seed generation, and coupled full-catalog deployment apply; verify ordinary build/runtime/publication succeeds without them and only explicit import/recovery fixtures remain outside production runtime.
+- [ ] 11.5 Retire the separate staff Pages deployment workflow/route after Worker-hosted staff passes PRD acceptance; verify staff HTML/assets/APIs share one protected backend deployment and preserve recoverable provider history rather than deleting projects indiscriminately.
+
+## 12. Final validation and operator handoff
+
+Quota prevention applies to all remaining hosted tasks: follow [the Free-tier operating rule](../../../docs/cloudflare-free-tier.md). Task 12.2 must also run the canonical CMS build and KV rejection regression against the exact final artifact; task 12.3 must retain measured operation budgets and justified resource changes. A reset does not authorize repeating unbudgeted work.
+
+- [ ] 12.1 Update README, affected runbooks, environment/ownership guidance, and overlapping active OpenSpec plans through the correct workflows; verify the four routine tasks, one normal local command, code promotion, content publish, backup/restore, and failure recovery instructions match the shipped system.
+- [ ] 12.2 Run `pnpm test:unit`, `pnpm check`, `pnpm build`, generated-client checks, commerce/module/environment audits, and targeted browser/provider suites on the exact final tree; verify all required evidence is revision-bound and outstanding live approvals remain explicitly open.
+- [ ] 12.3 Run `pnpm openspec -- validate replace-sveltia-with-emdash-operations --strict`, reconcile the final delta/manifest, and deliver a deletion/retention inventory plus supported package versions and measured budget; verify no Sveltia writer, compiled-catalog fallback, duplicate staff deployment, or hidden paid dependency remains.

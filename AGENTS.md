@@ -7,6 +7,8 @@ If this file conflicts with the global file, follow the global file.
 
 Build and maintain the BlackBox Records Astro site.
 
+Cloudflare must stay on Free. Follow [the Free-tier operating rule](docs/cloudflare-free-tier.md) before hosted bulk work or quota-consuming resource changes; authenticated GET requests can write sessions. CMS builds must reject KV bindings in both source and generated configuration.
+
 Current product environments are Local, UAT, and PRD. UAT is Cloudflare Pages plus the UAT Worker; PRD is Cloudflare Pages plus the PRD Worker. Live catalog/D1 preparation requires one-run confirmation, while shopper checkout separately requires `PRD_LAUNCH_APPROVED=true` and `native_checkout_enabled`. The live commerce handoff still has external Fourthwall history, but the repo now carries native commerce migration work; follow the active planning docs when working in that area.
 
 ## Current stack
@@ -126,7 +128,7 @@ Read these first before editing:
 - `pnpm stripe:webhook:simulate:local` posts a signed local checkout-session fixture to `/api/stripe/webhooks` using the fake local `whsec_local_mock` secret. Set `STRIPE_WEBHOOK_CHECKOUT_SESSION_ID` when it must target a Browser-created local checkout session. Use it only for local webhook contract checks.
 - `pnpm --filter @blackbox/backend d1:check:stripe-mock:local` verifies the generated local mock checkout rows for all current store items and should be run when store content, mock seeds, D1 migrations, or checkout readiness assumptions change.
 - Runtime backend secrets belong in Worker secrets or `apps/backend/.dev.vars`, not in Astro public env vars or GitHub deploy credentials.
-- The backend runtime binding contract now includes `COMMERCE_DB`.
+- The backend runtime binding contract includes `COMMERCE_DB` and `COMMERCE_RUNTIME`. The SQLite-backed `CommerceRuntime` Durable Object runs existing Hono requests and paid-order scheduled work within Workers Free limits; business data remains in D1. Preserve the binding in each Wrangler environment and the `commerce-runtime-v1` class migration.
 - The backend persistence runtime now uses Prisma + `@prisma/adapter-d1` behind repository seams in:
   - `apps/backend/src/domain/commerce/repositories/`
   - `apps/backend/src/infrastructure/persistence/prisma/`

@@ -103,7 +103,7 @@ pnpm install
 - Keep local and CI Node on `24.20.0`; update `.node-version`, the root package engine, and every workflow together.
 - Keep TypeScript on `5.9.3` until `openapi-typescript` publishes a compatible TypeScript 6 peer range.
 - Keep Prisma on the latest compatible v7 line, currently `7.10.0`; datasource URL configuration lives in `apps/backend/prisma.config.ts`.
-- Keep repo Wrangler on the workspace dependency, currently `wrangler@4.127.1`; if a global Wrangler is installed, keep it aligned for ad hoc terminal use.
+- Keep backend Wrangler pinned to `4.131.1` with Workers types `5.20260911.1`. The existing Workers test-pool overrides remain separate. Astro 7.3.2 builds use Vite 8.3.0 and Rolldown 1.2.8; earlier locked versions generated invalid EmDash chunks.
 - Keep GitHub CLI and Serena MCP updated locally, but do not commit machine-local tool shims, caches, credentials, or MCP memories.
 
 ## shadcn MCP registries
@@ -130,6 +130,20 @@ Notes:
 - Shared policy and new-project checklist: `../SHADCN-MCP-REGISTRY-PLAYBOOK.md`.
 
 ## Local development
+
+The EmDash migration currently has an isolated backend integration checkpoint:
+
+```sh
+pnpm --filter @blackbox/backend test:emdash
+```
+
+It builds and runs the real CMS locally on port 8799 with a temporary test callback on 8800, synthetic D1/R2 data, and fake provider configuration. It checks the exported REST contract, concurrent revisions, lifecycle conflicts, rejected writes, and existing Hono routes. Identity and scheduler isolation tests run with `pnpm test:unit`. Its fixture does not replace the working editor or staff app; the authorized isolated UAT deployment is diagnostic only. See [M1 evidence](openspec/changes/replace-sveltia-with-emdash-operations/m1-integration-evidence.md) before continuing the migration.
+
+The backend uses the free SQLite-backed `COMMERCE_RUNTIME` Durable Object binding for existing Hono requests and scheduled paid-order work. Its data still lives in `COMMERCE_DB`. Keep the binding in every Wrangler environment and retain the `commerce-runtime-v1` class migration; Wrangler provisions it during deploy and emulates it locally. CMS diagnostics use a separate `CMS_RUNTIME` object. This keeps expensive execution inside the objects' CPU allowance while the entry Worker forwards requests. Workers Free remains required; no paid upgrade is needed for the measured checkpoint workload.
+
+The combined backend artifact is prepared with `pnpm --filter @blackbox/backend build:cms`; it builds the staff workspace and packages its assets with the owned CMS handler. `BLACKBOX_BUILD_ENV` selects `mock` (default), `local`, `uat`, or `prd`. Commerce configuration comes from the existing Wrangler file; separate CMS database/media identities come from `apps/backend/cms-resources.json`. Generated configuration and migration manifests stay under ignored `.emdash/`. Build preparation does not deploy or switch production traffic.
+
+After a target-specific build, `pnpm --filter @blackbox/backend cms:migrations --env uat` checks the supported CMS migration manifest using an existing Cloudflare session. It defaults to read-only. Applying requires `--apply --fingerprint <reviewed-target-fingerprint>`; PRD apply remains subject to the migration report and one-run cutover approval. Commerce migrations remain owned by the existing Prisma/D1 commands. Hosted CMS requests reject empty/uninitialized schemas and never bootstrap them. `pnpm --filter @blackbox/backend test:staff-hosting` checks a compiled Local artifact for private staff HTML/modules, alternate-host denial, and public commerce routing.
 
 ```sh
 pnpm dev
@@ -712,6 +726,10 @@ Content is managed in the repo through Astro content collections, and Sveltia CM
 - Home, About, and Services use named fixed-layout objects; editors cannot delete or reorder their sections.
 
 Collection schemas are defined in `apps/web/src/content.config.ts`.
+
+The replacement CMS has a Local-only migration check. After `pnpm --filter @blackbox/backend build:cms --env mock`, run `pnpm --filter @blackbox/backend test:cms-content` and `pnpm --filter @blackbox/backend test:cms-import`. These use ephemeral Local storage; the import check reconciles all 129 records and 152 raster image paths twice. `pnpm cms:import:local` is a no-write source validation command; `--apply` requires an already-running compiled Local CMS. News/social soft deletion requires confirmation and a current revision; other and permanent deletion remain blocked. Hosted import and public snapshot acceptance remain unfinished. See [Local migration evidence](openspec/changes/replace-sveltia-with-emdash-operations/local-editorial-migration-evidence.md).
+
+Runtime catalog backfill is an explicit migration command, `pnpm catalog:backfill`, with dry-run and reviewed-plan requirements. It does not seed prices or stock. Prepare Local CMS inputs with `pnpm cms:import:local -- --prepareLocal <directory>` and capture a fresh `--verifyOnly` report against the same running CMS. See [catalog backfill commands and evidence](openspec/changes/replace-sveltia-with-emdash-operations/runtime-catalog-evidence.md#backfill-command-checkpoint-task-42-remains-open) for target isolation, apply arguments, and current unresolved Local bindings.
 
 ## Sveltia CMS
 
