@@ -274,12 +274,24 @@ importers:
       '@blackbox/content-model':
         specifier: workspace:*
         version: link:../../packages/content-model
+      '@emdash-cms/admin':
+        specifier: 0.37.0
+        version: 0.37.0(@atcute/cbor@2.3.7(@atcute/cid@2.4.2))(@atcute/cid@2.4.2)(@atcute/identity@2.0.2(typescript@5.9.3))(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.31.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(date-fns@4.4.0)(echarts@6.1.0)(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.5.4)
+      '@lingui/core':
+        specifier: 5.9.5
+        version: 5.9.5
+      '@lingui/react':
+        specifier: 5.9.5
+        version: 5.9.5(react@19.2.8)
       '@radix-ui/react-slot':
         specifier: ^1.3.3
         version: 1.3.3(@types/react@19.2.18)(react@19.2.8)
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.0(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(sass@1.97.3)(tsx@4.23.13)(yaml@2.9.0))
+      '@tanstack/react-query':
+        specifier: 5.90.21
+        version: 5.90.21(react@19.2.8)
       astro:
         specifier: 7.3.2
         version: 7.3.2(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@24.13.3)(jiti@2.7.0)(sass@1.97.3)(tsx@4.23.13)(yaml@2.9.0)
@@ -7752,7 +7764,7 @@ snapshots:
       '@atcute/uint8array': 1.1.5
       '@noble/secp256k1': 3.2.0
 
-  '@atcute/identity-resolver@2.0.1(@atcute/identity@2.0.2(@atcute/lexicons@2.1.0)(typescript@5.9.3))(@atcute/lexicons@2.1.0)(typescript@5.9.3)':
+  '@atcute/identity-resolver@2.0.1(@atcute/identity@2.0.2(typescript@5.9.3))(@atcute/lexicons@2.1.0)(typescript@5.9.3)':
     dependencies:
       '@atcute/identity': 2.0.2(@atcute/lexicons@2.1.0)(typescript@5.9.3)
       '@atcute/lexicons': 2.1.0
@@ -8281,15 +8293,15 @@ snapshots:
 
   '@electric-sql/pglite@0.4.3': {}
 
-  '@emdash-cms/admin@0.37.0(@atcute/cbor@2.3.7(@atcute/cid@2.4.2))(@atcute/cid@2.4.2)(@atcute/identity@2.0.2(@atcute/lexicons@2.1.0)(typescript@5.9.3))(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(date-fns@4.4.0)(echarts@6.1.0)(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.5.4)':
+  '@emdash-cms/admin@0.37.0(@atcute/cbor@2.3.7(@atcute/cid@2.4.2))(@atcute/cid@2.4.2)(@atcute/identity@2.0.2(@atcute/lexicons@2.1.0)(typescript@5.9.3))(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.5.4)':
     dependencies:
-      '@atcute/identity-resolver': 2.0.1(@atcute/identity@2.0.2(@atcute/lexicons@2.1.0)(typescript@5.9.3))(@atcute/lexicons@2.1.0)(typescript@5.9.3)
+      '@atcute/identity-resolver': 2.0.1(@atcute/identity@2.0.2(typescript@5.9.3))(@atcute/lexicons@2.1.0)(typescript@5.9.3)
       '@atcute/lexicons': 2.1.0
-      '@cloudflare/kumo': 2.6.0(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react@19.2.18)(date-fns@4.4.0)(echarts@6.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.5.4)
+      '@cloudflare/kumo': 2.6.0(@phosphor-icons/react@2.1.10(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react@19.2.18)(echarts@6.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.5.4)
       '@dnd-kit/core': 6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       '@dnd-kit/utilities': 3.2.2(react@19.2.8)
-      '@emdash-cms/blocks': 0.37.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.5.4)
+      '@emdash-cms/blocks': 0.37.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.5.4)
       '@emdash-cms/plugin-types': 0.3.1
       '@emdash-cms/registry-client': 0.5.0(@atcute/cbor@2.3.7(@atcute/cid@2.4.2))(@atcute/cid@2.4.2)(typescript@5.9.3)
       '@emdash-cms/registry-lexicons': 0.4.0
@@ -8300,19 +8312,19 @@ snapshots:
       '@tanstack/react-query': 5.90.21(react@19.2.8)
       '@tanstack/react-router': 1.163.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tiptap/core': 3.31.3(@tiptap/pm@3.31.3)
-      '@tiptap/extension-character-count': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
+      '@tiptap/extension-character-count': 3.31.3(@tiptap/extensions@3.31.3)
       '@tiptap/extension-code': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-code-block': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-code-block-lowlight': 3.20.0(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/extension-code-block@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(highlight.js@11.11.2)(lowlight@3.3.0)
       '@tiptap/extension-collaboration': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32))(yjs@13.6.32)
       '@tiptap/extension-drag-handle': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/extension-collaboration@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32))(yjs@13.6.32))(@tiptap/extension-node-range@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32))
       '@tiptap/extension-drag-handle-react': 3.31.3(@tiptap/extension-drag-handle@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/extension-collaboration@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32))(yjs@13.6.32))(@tiptap/extension-node-range@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32)))(@tiptap/pm@3.31.3)(@tiptap/react@3.31.3(@floating-ui/dom@1.8.0)(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tiptap/extension-dropcursor': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
-      '@tiptap/extension-focus': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
+      '@tiptap/extension-dropcursor': 3.31.3(@tiptap/extensions@3.31.3)
+      '@tiptap/extension-focus': 3.31.3(@tiptap/extensions@3.31.3)
       '@tiptap/extension-link': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-list': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-node-range': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
-      '@tiptap/extension-placeholder': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
+      '@tiptap/extension-placeholder': 3.31.3(@tiptap/extensions@3.31.3)
       '@tiptap/extension-subscript': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-superscript': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-table': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
@@ -8360,15 +8372,15 @@ snapshots:
       - typescript
       - zod
 
-  '@emdash-cms/admin@0.37.0(@atcute/cbor@2.3.7(@atcute/cid@2.4.2))(@atcute/cid@2.4.2)(@atcute/identity@2.0.2(@atcute/lexicons@2.1.0)(typescript@5.9.3))(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.5.4)':
+  '@emdash-cms/admin@0.37.0(@atcute/cbor@2.3.7(@atcute/cid@2.4.2))(@atcute/cid@2.4.2)(@atcute/identity@2.0.2(typescript@5.9.3))(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.31.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(date-fns@4.4.0)(echarts@6.1.0)(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.5.4)':
     dependencies:
-      '@atcute/identity-resolver': 2.0.1(@atcute/identity@2.0.2(@atcute/lexicons@2.1.0)(typescript@5.9.3))(@atcute/lexicons@2.1.0)(typescript@5.9.3)
+      '@atcute/identity-resolver': 2.0.1(@atcute/identity@2.0.2(typescript@5.9.3))(@atcute/lexicons@2.1.0)(typescript@5.9.3)
       '@atcute/lexicons': 2.1.0
-      '@cloudflare/kumo': 2.6.0(@phosphor-icons/react@2.1.10(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react@19.2.18)(echarts@6.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.5.4)
+      '@cloudflare/kumo': 2.6.0(@date-fns/tz@1.5.0)(@phosphor-icons/react@2.1.10(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(@types/react@19.2.18)(date-fns@4.4.0)(echarts@6.1.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.5.4)
       '@dnd-kit/core': 6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@dnd-kit/sortable': 10.0.0(@dnd-kit/core@6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react@19.2.8)
       '@dnd-kit/utilities': 3.2.2(react@19.2.8)
-      '@emdash-cms/blocks': 0.37.0(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.5.4)
+      '@emdash-cms/blocks': 0.37.0(@date-fns/tz@1.5.0)(@types/react@19.2.18)(date-fns@4.4.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(zod@4.5.4)
       '@emdash-cms/plugin-types': 0.3.1
       '@emdash-cms/registry-client': 0.5.0(@atcute/cbor@2.3.7(@atcute/cid@2.4.2))(@atcute/cid@2.4.2)(typescript@5.9.3)
       '@emdash-cms/registry-lexicons': 0.4.0
@@ -8379,19 +8391,19 @@ snapshots:
       '@tanstack/react-query': 5.90.21(react@19.2.8)
       '@tanstack/react-router': 1.163.2(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tiptap/core': 3.31.3(@tiptap/pm@3.31.3)
-      '@tiptap/extension-character-count': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
+      '@tiptap/extension-character-count': 3.31.3(@tiptap/extensions@3.31.3)
       '@tiptap/extension-code': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-code-block': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-code-block-lowlight': 3.20.0(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/extension-code-block@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(highlight.js@11.11.2)(lowlight@3.3.0)
       '@tiptap/extension-collaboration': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32))(yjs@13.6.32)
       '@tiptap/extension-drag-handle': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/extension-collaboration@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32))(yjs@13.6.32))(@tiptap/extension-node-range@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32))
       '@tiptap/extension-drag-handle-react': 3.31.3(@tiptap/extension-drag-handle@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/extension-collaboration@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32))(yjs@13.6.32))(@tiptap/extension-node-range@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@tiptap/y-tiptap@3.0.9(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32)))(@tiptap/pm@3.31.3)(@tiptap/react@3.31.3(@floating-ui/dom@1.8.0)(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
-      '@tiptap/extension-dropcursor': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
-      '@tiptap/extension-focus': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
+      '@tiptap/extension-dropcursor': 3.31.3(@tiptap/extensions@3.31.3)
+      '@tiptap/extension-focus': 3.31.3(@tiptap/extensions@3.31.3)
       '@tiptap/extension-link': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-list': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-node-range': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
-      '@tiptap/extension-placeholder': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
+      '@tiptap/extension-placeholder': 3.31.3(@tiptap/extensions@3.31.3)
       '@tiptap/extension-subscript': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-superscript': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-table': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
@@ -8540,7 +8552,7 @@ snapshots:
       '@atcute/client': 5.1.2(@atcute/lexicons@2.1.0)(typescript@5.9.3)
       '@atcute/crypto': 2.4.4
       '@atcute/identity': 2.0.2(@atcute/lexicons@2.1.0)(typescript@5.9.3)
-      '@atcute/identity-resolver': 2.0.1(@atcute/identity@2.0.2(@atcute/lexicons@2.1.0)(typescript@5.9.3))(@atcute/lexicons@2.1.0)(typescript@5.9.3)
+      '@atcute/identity-resolver': 2.0.1(@atcute/identity@2.0.2(typescript@5.9.3))(@atcute/lexicons@2.1.0)(typescript@5.9.3)
       '@atcute/lexicons': 2.1.0
       '@atcute/multibase': 1.2.5
       '@atcute/repo': 1.0.2(@atcute/cbor@2.3.7(@atcute/cid@2.4.2))(@atcute/cid@2.4.2)(@atcute/lexicons@2.1.0)
@@ -10235,7 +10247,7 @@ snapshots:
     dependencies:
       '@tiptap/extension-list': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
 
-  '@tiptap/extension-character-count@3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))':
+  '@tiptap/extension-character-count@3.31.3(@tiptap/extensions@3.31.3)':
     dependencies:
       '@tiptap/extensions': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
 
@@ -10284,7 +10296,7 @@ snapshots:
       '@tiptap/pm': 3.31.3
       '@tiptap/y-tiptap': 3.0.9(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(y-protocols@1.0.7(yjs@13.6.32))(yjs@13.6.32)
 
-  '@tiptap/extension-dropcursor@3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))':
+  '@tiptap/extension-dropcursor@3.31.3(@tiptap/extensions@3.31.3)':
     dependencies:
       '@tiptap/extensions': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
 
@@ -10295,7 +10307,7 @@ snapshots:
       '@tiptap/pm': 3.31.3
     optional: true
 
-  '@tiptap/extension-focus@3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))':
+  '@tiptap/extension-focus@3.31.3(@tiptap/extensions@3.31.3)':
     dependencies:
       '@tiptap/extensions': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
 
@@ -10356,7 +10368,7 @@ snapshots:
     dependencies:
       '@tiptap/core': 3.31.3(@tiptap/pm@3.31.3)
 
-  '@tiptap/extension-placeholder@3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))':
+  '@tiptap/extension-placeholder@3.31.3(@tiptap/extensions@3.31.3)':
     dependencies:
       '@tiptap/extensions': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
 
@@ -10454,7 +10466,7 @@ snapshots:
       '@tiptap/extension-code': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-code-block': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-document': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
-      '@tiptap/extension-dropcursor': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
+      '@tiptap/extension-dropcursor': 3.31.3(@tiptap/extensions@3.31.3)
       '@tiptap/extension-gapcursor': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
       '@tiptap/extension-hard-break': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-heading': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
@@ -11657,7 +11669,7 @@ snapshots:
       '@atcute/client': 5.1.2(@atcute/lexicons@2.1.0)(typescript@5.9.3)
       '@atcute/lexicons': 2.1.0
       '@atcute/multibase': 1.2.5
-      '@emdash-cms/admin': 0.37.0(@atcute/cbor@2.3.7(@atcute/cid@2.4.2))(@atcute/cid@2.4.2)(@atcute/identity@2.0.2(@atcute/lexicons@2.1.0)(typescript@5.9.3))(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(date-fns@4.4.0)(echarts@6.1.0)(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.5.4)
+      '@emdash-cms/admin': 0.37.0(@atcute/cbor@2.3.7(@atcute/cid@2.4.2))(@atcute/cid@2.4.2)(@atcute/identity@2.0.2(typescript@5.9.3))(@date-fns/tz@1.5.0)(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.31.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(date-fns@4.4.0)(echarts@6.1.0)(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(zod@4.5.4)
       '@emdash-cms/auth': 0.37.0(astro@7.3.2(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@24.13.3)(jiti@2.7.0)(sass@1.97.3)(tsx@4.23.13)(yaml@2.9.0))(kysely@0.29.5)
       '@emdash-cms/gutenberg-to-portable-text': 0.37.0
       '@emdash-cms/plugin-types': 0.3.1
@@ -11673,11 +11685,11 @@ snapshots:
       '@tiptap/extension-code': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-code-block': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-code-block-lowlight': 3.20.0(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/extension-code-block@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(highlight.js@11.11.2)(lowlight@3.3.0)
-      '@tiptap/extension-focus': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
+      '@tiptap/extension-focus': 3.31.3(@tiptap/extensions@3.31.3)
       '@tiptap/extension-image': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-link': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-list': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
-      '@tiptap/extension-placeholder': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
+      '@tiptap/extension-placeholder': 3.31.3(@tiptap/extensions@3.31.3)
       '@tiptap/extension-text-align': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-typography': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-underline': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
@@ -11759,11 +11771,11 @@ snapshots:
       '@tiptap/extension-code': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-code-block': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-code-block-lowlight': 3.20.0(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/extension-code-block@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)(highlight.js@11.11.2)(lowlight@3.3.0)
-      '@tiptap/extension-focus': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
+      '@tiptap/extension-focus': 3.31.3(@tiptap/extensions@3.31.3)
       '@tiptap/extension-image': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-link': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
       '@tiptap/extension-list': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3)
-      '@tiptap/extension-placeholder': 3.31.3(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))
+      '@tiptap/extension-placeholder': 3.31.3(@tiptap/extensions@3.31.3)
       '@tiptap/extension-text-align': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-typography': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))
       '@tiptap/extension-underline': 3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))

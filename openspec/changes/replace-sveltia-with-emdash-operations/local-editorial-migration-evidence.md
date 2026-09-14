@@ -31,4 +31,14 @@ The compiled race check delays deletion while a competing save wins, for both dr
 
 ## Remaining acceptance
 
+### Local staff content editor — 2026-09-14
+
+The protected `/content/` workspace now has explicit forms for all 13 collections, native EmDash rich-text editing, media selection/upload, revision-backed draft saves, confirmed News/social trash, and draft preview components. The editor reuses EmDash 0.37.0 and its shared Lingui context rather than introducing a separate rich-text format. Public content inputs have not switched yet.
+
+Chrome's Blackbox profile saved `Local Artist Renamed` with the paragraph `Music made together in Athens.` against isolated local CMS storage. A subsequent API read confirmed both values and the unchanged `local-artist` slug. Native image-read metadata is reduced to the original media identity when saving, preserving the strict write contract. Individual media reads omit the URL supplied by list responses; the shared media URL resolver handles their storage key and rejects foreign or non-media URLs.
+
+Focused staff tests cover image normalization, media URL resolution, stale-save errors without write retries, and lost-create-reply recovery. Browser acceptance remains open for all seven previews, 320px/keyboard operation, and concurrent edits. Native editor commands outside the supported rich-text schema also need alignment before task 6.2 can close. No task checkbox is advanced by this checkpoint, and no hosted requests, KV operations, persistent Local resets, or deployment occurred.
+
+The final source passes `pnpm test:unit`, `pnpm check`, `pnpm build`, the canonical backend `build:cms`, `test:staff-hosting`, and strict OpenSpec validation. Logs are under `.codex-artifacts/emdash-m1/content-*`; the final unit log is `content-all-unit-final.log`. The protected media file request returns HTTP 200, `image/png`, and the expected 169 bytes. This is API evidence, not a substitute for the remaining browser checks.
+
 The importer now shares its native write/identity-check implementation with the UAT browser transport. Local and UAT repeat imports, read-only record/media reconciliation, current public-route privacy, rendered-body parity, and all 104 known UAT catalog image URLs pass; see [UAT evidence](uat-editorial-import-evidence.md). Shared request and content validation are implemented; focused staff editors and public snapshot loading are later tasks. Sveltia and existing public content inputs remain in place until replacement acceptance. No new hosted CPU measurement is claimed by the Local upload checks.

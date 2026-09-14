@@ -3,6 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import {
   editorialRequest,
+  editorialMediaUrl,
   uploadArtwork,
   type EditorialList,
   type EditorialMedia,
@@ -60,10 +61,9 @@ export default function EditorialPicker({
   function select(item: Choice) {
     setSelectedName(name(item));
     onSelect(item);
-    if ('url' in item) {
+    if ('filename' in item) {
       const origin = new URL(base || window.location.origin).origin;
-      const url = new URL(item.url, origin);
-      setPreview(url.origin === origin && url.pathname.startsWith('/_emdash/api/media/file/') ? url.href : '');
+      setPreview(editorialMediaUrl(item, origin));
     }
   }
   async function upload(file?: File) {
