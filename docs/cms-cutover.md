@@ -46,3 +46,10 @@ Only after replacement acceptance remove Sveltia writers, Git OAuth and old admi
 Tasks 10.3–10.5 and 11.1–11.5 remain open until their actual target evidence and required authorization exist.
 
 Local preparation on 2026-09-15 produced 129 records and 152 media objects, plan SHA-256 e7aa6f8a50e916a3557fd6fe7f09f1b40abf2aff5d280446d2de6b550fd70000. Evidence: .codex-artifacts/emdash-m1/prd-import-preparation-final.json. This is a source plan, not proof of deployed PRD reconciliation. Synthetic approval-boundary tests passed through WebStorm without network access; no live approval was supplied or consumed.
+
+## Hosted readiness observation — 2026-09-15 local time
+
+Read-only Cloudflare dashboard inspection in Chrome Blackbox confirmed the configured PRD CMS and UAT CMS database IDs, the combined UAT staff route, and the retained separate staff Pages application. PRD still displays the internal API staff route. Seven D1 databases now exist (dashboard limit ten), totaling 7.67 MB; the older six-database budget must not be reused. D1 displayed 86.14k rows read and 268 rows written for September 14, with zero billable usage. R2 billing displayed 208 Class A operations, 768 Class B operations and 0.01 GB-month storage for September 2–14, all included. Worker billing displayed 9.88k requests and zero billable usage for the current cycle; this is not a daily remaining-request measurement.
+
+No resource, route, binding, plan or data was changed. Dashboard counters can lag. Before hosted recovery, finish the current operation estimate and verify Durable Object/current request headroom; budget recovery databases within the three remaining slots. The dashboard table-count column displayed zero even for populated databases, so it is not accepted as schema evidence.
+
