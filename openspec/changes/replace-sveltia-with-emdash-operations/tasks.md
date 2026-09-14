@@ -2,7 +2,7 @@ Use the apply-change workflow. Finish one usable workflow at a time in the deliv
 
 ## Delivery order — revised 2026-09-14
 
-The 60 acceptance tasks remain intact: 29 are complete and 31 remain open. This is not a percentage of effort or usable product completion. Local editorial publication and draft preview work; item publication and retained legacy catalog reconciliation remain unfinished. Price editing requires a reconciled item. Do not add checkboxes merely to make the count rise.
+The 60 acceptance tasks remain intact: 32 are complete and 28 remain open. This is not a percentage of effort or usable product completion. Local editorial publication, draft preview and new-item publication work; retained legacy catalog reconciliation remains unfinished. Price editing requires a reconciled item. Do not add checkboxes merely to make the count rise.
 
 | Order    | Usable outcome                                                                                                         | Existing tasks to finish together                                                                               |
 | -------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -83,12 +83,12 @@ The protected Item Setup API now integrates CMS linkage, runtime identity, Produ
 
 ## 8. Separate Content Publication from Software Release
 
-- [ ] 8.1 Add the small durable publication record and fixed, authorized dispatch/status/completion endpoints; verify origin/CSRF/role checks, idempotent requests, browser closure, failed dispatch, forged completion, and wrong-environment rejection.
-- [ ] 8.2 Implement bounded published-content export with complete ID/revision-vector validation and private immutable snapshots; verify edits/deletions during pagination cause retry rather than mixed revisions and drafts never enter the export.
+- [x] 8.1 Add the small durable publication record and fixed, authorized dispatch/status/completion endpoints; verify origin/CSRF/role checks, idempotent requests, browser closure, failed dispatch, forged completion, and wrong-environment rejection.
+- [x] 8.2 Implement bounded published-content export with complete ID/revision-vector validation and private immutable snapshots; verify edits/deletions during pagination cause retry rather than mixed revisions and drafts never enter the export.
 - [ ] 8.3 Replace public content inputs with a validated snapshot loader while retaining `site-data`, route, category/search, metadata, overlay, and image behavior; verify missing/invalid snapshots fail builds and no hosted fallback reads old production content files.
 - [ ] 8.4 Add the dedicated content workflow using deployed approved code SHA, target-scoped read/export credentials, content/render checks, and static Pages deployment only; verify PRD publication while a UI candidate is in UAT does not release that candidate or deploy the Worker.
 - [ ] 8.5 Share target mutation concurrency and code/content preconditions with software promotion; verify publication-behind-code and code-behind-publication race tests cannot downgrade either revision, and stale PRD artifacts refresh using the same reviewed code SHA before explicit promotion.
-- [ ] 8.6 Implement authenticated deployment acknowledgement and bounded scheduled retry/reconciliation using existing scheduler composition; verify lost acknowledgements, superseded requests, and expired CI runs produce honest pending/live/failed status without duplicate or older publication.
+- [x] 8.6 Implement authenticated deployment acknowledgement and bounded scheduled retry/reconciliation using existing scheduler composition; verify lost acknowledgements, superseded requests, and expired CI runs produce honest pending/live/failed status without duplicate or older publication.
 - [ ] 8.7 Gate first checkout on completed setup plus confirmed publication, and pause new checkout before unpublish/archive; verify guessed IDs cannot buy drafts and existing reservations/orders/return pages still work after removal.
 - [ ] 8.8 Verify fresh public loads reflect published pages, metadata, sitemap, search data, and overlay fragments while an already-playing tab is not forcibly reloaded; record the existing same-session cache limitation in staff guidance.
 
