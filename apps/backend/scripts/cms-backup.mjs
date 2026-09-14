@@ -1,0 +1,321 @@
+import assert from 'node:assert/strict';
+import { createHash, randomUUID } from 'node:crypto';
+import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { parseArgs } from 'node:util';
+import { DatabaseSync } from 'node:sqlite';
+import { getPlatformProxy } from 'wrangler';
+import ts from 'typescript';
+
+const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const backend = fileURLToPath(new URL('../', import.meta.url));
+const resources = JSON.parse(await readFile(new URL('../cms-resources.json', import.meta.url), 'utf8'));
+
+async function list(bucket, prefix = '') {
+  const objects = [];
+  let cursor;
+  do {
+    const page = await bucket.list({ prefix, cursor, limit: 1000, include: ['httpMetadata', 'customMetadata'] });
+    objects.push(...page.objects);
+    assert.ok(objects.length <= 10000, 'Backup exceeds the object budget.');
+    cursor = page.truncated ? page.cursor : undefined;
+  } while (cursor);
+  return objects.sort((a, b) => a.key.localeCompare(b.key));
+}
+
+export async function backupCms({
+  source,
+  backups,
+  exportSql,
+  environment,
+  kind = 'daily',
+  maxBytes = 256 * 1024 * 1024,
+  now = new Date(),
+}) {
+  assert.ok(['local', 'uat', 'prd'].includes(environment));
+  assert.ok(['daily', 'pre-upgrade'].includes(kind));
+  const prefix = `cms/${environment}/`;
+  const objects = await list(source);
+  const sql = await exportSql();
+  let bytes = sql.byteLength;
+  assert.ok(bytes + objects.reduce((sum, item) => sum + item.size, 0) <= maxBytes, 'Backup exceeds the byte budget.');
+  async function store(body) {
+    const sha256 = hash(body);
+    const key = `${prefix}blobs/${sha256}`;
+    if (!(await backups.head(key))) await backups.put(key, body);
+    return { sha256, bytes: body.byteLength };
+  }
+  const database = await store(sql);
+  const media = [];
+  for (const item of objects) {
+    const object = await source.get(item.key);
+    assert.ok(object && object.etag === item.etag, 'Media changed during backup.');
+    const body = new Uint8Array(await object.arrayBuffer());
+    bytes += body.byteLength;
+    assert.ok(bytes <= maxBytes, 'Backup exceeds the byte budget.');
+    media.push({
+      key: item.key,
+      ...(await store(body)),
+      httpMetadata: object.httpMetadata,
+      customMetadata: object.customMetadata,
+    });
+  }
+  const identity = (items) => items.map(({ key, etag, size }) => ({ key, etag, size }));
+  assert.deepEqual(identity(await list(source)), identity(objects), 'Media changed during backup.');
+  assert.equal(hash(await exportSql()), database.sha256, 'CMS changed during backup; capture again.');
+  const point = `${now.toISOString().slice(0, 10)}-${kind}`;
+  const manifest = { version: 2, environment, kind, createdAt: now.toISOString(), database, media };
+  await backups.put(`${prefix}points/${point}.json`, JSON.stringify(manifest));
+  // Seven daily points plus the last pre-upgrade point; shared immutable bytes are stored once.
+  const points = (await list(backups, `${prefix}points/`)).reverse();
+  const keep = new Set();
+  for (const selectedKind of ['daily', 'pre-upgrade']) {
+    for (const item of points
+      .filter((item) => item.key.endsWith(`-${selectedKind}.json`))
+      .slice(0, selectedKind === 'daily' ? 7 : 1))
+      keep.add(item.key);
+  }
+  const retained = new Set();
+  for (const item of points) {
+    if (!keep.has(item.key)) {
+      await backups.delete(item.key);
+      continue;
+    }
+    const saved = await (await backups.get(item.key)).json();
+    for (const blob of [saved.database, ...saved.media]) retained.add(`${prefix}blobs/${blob.sha256}`);
+  }
+  for (const blob of await list(backups, `${prefix}blobs/`))
+    if (!retained.has(blob.key)) await backups.delete(blob.key);
+  return { point, objects: media.length, bytes };
+}
+
+export async function restoreCms({ backups, destination, importSql, environment, point }) {
+  assert.match(point, /^\d{4}-\d{2}-\d{2}-(daily|pre-upgrade)$/);
+  assert.ok(['local', 'uat', 'prd'].includes(environment));
+  const prefix = `cms/${environment}/`;
+  const object = await backups.get(`${prefix}points/${point}.json`);
+  assert.ok(object, 'Backup point is missing.');
+  const manifest = await object.json();
+  assert.equal(manifest.version, 2);
+  assert.equal(manifest.environment, environment);
+  async function read(blob) {
+    assert.match(blob.sha256, /^[a-f0-9]{64}$/);
+    const object = await backups.get(`${prefix}blobs/${blob.sha256}`);
+    assert.ok(object, 'Backup bytes are missing.');
+    const bytes = new Uint8Array(await object.arrayBuffer());
+    assert.equal(bytes.byteLength, blob.bytes);
+    assert.equal(hash(bytes), blob.sha256, 'Backup checksum mismatch.');
+    return bytes;
+  }
+  // Verify every blob before touching the isolated destination.
+  for (const blob of [manifest.database, ...manifest.media]) await read(blob);
+  for (const item of manifest.media)
+    await destination.put(item.key, await read(item), {
+      httpMetadata: item.httpMetadata?.cacheExpiry
+        ? { ...item.httpMetadata, cacheExpiry: new Date(item.httpMetadata.cacheExpiry) }
+        : item.httpMetadata,
+      customMetadata: item.customMetadata,
+    });
+  await importSql(await read(manifest.database));
+  return { point, objects: manifest.media.length };
+}
+
+export async function importCmsSql(bytes, destination) {
+  const sqlite = new DatabaseSync(':memory:', { enableForeignKeyConstraints: false });
+  const quote = (name) => '"' + name.replaceAll('"', '""') + '"';
+  try {
+    const dump = JSON.parse(Buffer.from(bytes).toString('utf8'));
+    assert.equal(typeof dump.schema, 'string');
+    assert.equal(typeof dump.data, 'string');
+    sqlite.exec(dump.schema);
+    const triggers = sqlite.prepare("SELECT name, sql FROM sqlite_master WHERE type = 'trigger'").all();
+    for (const trigger of triggers) sqlite.exec(`DROP TRIGGER ${quote(trigger.name)}`);
+    sqlite.exec(dump.data);
+    for (const trigger of triggers) sqlite.exec(trigger.sql);
+    const schema = sqlite
+      .prepare("SELECT name, type, sql FROM sqlite_master WHERE sql IS NOT NULL AND name NOT LIKE '_cf_%'")
+      .all();
+    const tables = sqlite
+      .prepare('PRAGMA table_list')
+      .all()
+      .filter(
+        (table) =>
+          table.schema === 'main' &&
+          ['table', 'virtual'].includes(table.type) &&
+          !table.name.startsWith('sqlite_') &&
+          !table.name.startsWith('_cf_'),
+      );
+    const statements = [destination.prepare('PRAGMA defer_foreign_keys=ON')];
+    for (const table of tables)
+      statements.push(destination.prepare(schema.find((item) => item.name === table.name).sql));
+    for (const item of schema.filter((item) => item.type === 'index')) statements.push(destination.prepare(item.sql));
+    for (const table of tables) {
+      const columns = sqlite
+        .prepare(`PRAGMA table_xinfo(${quote(table.name)})`)
+        .all()
+        .filter((column) => column.hidden === 0)
+        .map((column) => column.name);
+      const rows = sqlite.prepare(`SELECT ${columns.map(quote).join(',')} FROM ${quote(table.name)}`).all();
+      for (const row of rows)
+        statements.push(
+          destination
+            .prepare(
+              `INSERT INTO ${quote(table.name)} (${columns.map(quote).join(',')}) VALUES (${columns.map(() => '?').join(',')})`,
+            )
+            .bind(
+              ...columns.map((column) => (row[column] instanceof Uint8Array ? Array.from(row[column]) : row[column])),
+            ),
+        );
+    }
+    if (schema.some((item) => item.name === 'sqlite_sequence')) {
+      statements.push(destination.prepare('DELETE FROM sqlite_sequence'));
+      for (const row of sqlite.prepare('SELECT name, seq FROM sqlite_sequence').all())
+        statements.push(
+          destination.prepare('INSERT INTO sqlite_sequence (name, seq) VALUES (?, ?)').bind(row.name, row.seq),
+        );
+    }
+    for (const item of schema.filter((item) => ['trigger', 'view'].includes(item.type)))
+      statements.push(destination.prepare(item.sql));
+    statements.push(destination.prepare('PRAGMA defer_foreign_keys=OFF'));
+    // ponytail: one transaction for this small CMS; dependency-aware batches if it grows beyond 10,000 statements.
+    assert.ok(statements.length <= 10000, 'Recovery exceeds the transaction budget.');
+    await destination.batch(statements);
+  } finally {
+    sqlite.close();
+  }
+}
+
+async function main() {
+  const { values } = parseArgs({
+    options: {
+      env: { type: 'string' },
+      mode: { type: 'string', default: 'backup' },
+      kind: { type: 'string', default: 'daily' },
+      'backup-bucket': { type: 'string' },
+      point: { type: 'string' },
+      'recovery-database': { type: 'string' },
+      'recovery-id': { type: 'string' },
+      'recovery-bucket': { type: 'string' },
+      'max-bytes': { type: 'string', default: String(256 * 1024 * 1024) },
+      'hosted-budget-reviewed': { type: 'boolean', default: false },
+    },
+  });
+  const environment = values.env;
+  assert.ok(['local', 'uat', 'prd'].includes(environment), 'Select Local, UAT or PRD explicitly.');
+  assert.ok(['backup', 'restore'].includes(values.mode));
+  const remote = environment !== 'local';
+  assert.ok(
+    !remote || values['hosted-budget-reviewed'],
+    'Review account-wide Free-tier budget before hosted backup/restore.',
+  );
+  assert.match(values['backup-bucket'] ?? '', /^blackbox-cms-backups-[a-z0-9-]+$/);
+  const source = resources[environment];
+  const restoring = values.mode === 'restore';
+  if (restoring) {
+    assert.match(values['recovery-database'] ?? '', /^blackbox-cms-recovery-[a-z0-9-]+$/);
+    assert.match(values['recovery-bucket'] ?? '', /^blackbox-cms-recovery-[a-z0-9-]+$/);
+    assert.match(values['recovery-id'] ?? '', /^[a-f0-9-]{36}$/);
+    assert.ok(!Object.values(resources).some((item) => item.database_id === values['recovery-id']));
+    const configured = ts.parseConfigFileTextToJson(
+      'wrangler.jsonc',
+      await readFile(join(backend, 'wrangler.jsonc'), 'utf8'),
+    );
+    assert.ok(!configured.error);
+    const targets = [configured.config, ...Object.values(configured.config.env ?? {})];
+    assert.ok(
+      !targets.some((target) =>
+        target.d1_databases?.some((database) => database.database_id === values['recovery-id']),
+      ),
+      'Recovery cannot target an application database.',
+    );
+  }
+  const directory = await mkdtemp(join(tmpdir(), 'blackbox-cms-backup-'));
+  // Local D1 export resolves persistence relative to the config and has no --persist-to option.
+  const configPath = join(backend, `.cms-backup-${randomUUID()}.json`);
+  await writeFile(
+    configPath,
+    JSON.stringify({
+      name: 'blackbox-cms-backup-tool',
+      compatibility_date: '2026-08-31',
+      d1_databases: [
+        {
+          binding: 'CMS_DB',
+          database_name: restoring ? values['recovery-database'] : source.database_name,
+          database_id: restoring ? values['recovery-id'] : source.database_id,
+          remote,
+        },
+      ],
+      r2_buckets: [
+        { binding: 'MEDIA', bucket_name: restoring ? values['recovery-bucket'] : source.bucket_name, remote },
+        { binding: 'BACKUPS', bucket_name: values['backup-bucket'], remote },
+      ],
+    }),
+  );
+  const maxBytes = Number(values['max-bytes']);
+  assert.ok(Number.isSafeInteger(maxBytes) && maxBytes > 0);
+  const sqlPath = join(directory, 'cms.sql');
+  function wrangler(args) {
+    const result = spawnSync(
+      process.execPath,
+      [
+        join(backend, 'node_modules/wrangler/bin/wrangler.js'),
+        'd1',
+        ...args,
+        '--config',
+        configPath,
+        remote ? '--remote' : '--local',
+        ...(!remote && args[0] === 'execute' ? ['--persist-to', join(backend, '.wrangler/state')] : []),
+      ],
+      { cwd: backend, stdio: 'inherit', windowsHide: true },
+    );
+    assert.equal(result.status, 0, 'CMS database command failed.');
+  }
+  const proxy = await getPlatformProxy({
+    configPath,
+    remoteBindings: remote,
+    persist: { path: join(backend, '.wrangler/state/v3') },
+    envFiles: [],
+  });
+  try {
+    if (restoring) {
+      const tables = await proxy.env.CMS_DB.prepare(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%'",
+      ).all();
+      assert.equal(tables.results.length, 0, 'Recovery database must be empty.');
+      assert.equal((await list(proxy.env.MEDIA)).length, 0, 'Recovery media bucket must be empty.');
+    }
+    const result = restoring
+      ? await restoreCms({
+          backups: proxy.env.BACKUPS,
+          destination: proxy.env.MEDIA,
+          environment,
+          point: values.point,
+          importSql: (bytes) => importCmsSql(bytes, proxy.env.CMS_DB),
+        })
+      : await backupCms({
+          source: proxy.env.MEDIA,
+          backups: proxy.env.BACKUPS,
+          environment,
+          kind: values.kind,
+          maxBytes,
+          exportSql: async () => {
+            wrangler(['export', 'CMS_DB', '--output', sqlPath, '--no-data', '--skip-confirmation']);
+            const schema = await readFile(sqlPath);
+            wrangler(['export', 'CMS_DB', '--output', sqlPath, '--no-schema', '--skip-confirmation']);
+            return Buffer.from(
+              JSON.stringify({ schema: schema.toString('utf8'), data: await readFile(sqlPath, 'utf8') }),
+            );
+          },
+        });
+    console.log(JSON.stringify({ environment, mode: values.mode, ...result }));
+  } finally {
+    await proxy.dispose();
+    await rm(configPath, { force: true });
+    await rm(directory, { recursive: true, force: true });
+  }
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) await main();

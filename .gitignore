@@ -59,6 +59,9 @@ logs/
 /tools/artwork-fetcher/.cache/
 /tools/artwork-fetcher/mockups/
 
+# Temporary CMS backup configuration
+/apps/backend/.cms-backup-*.json
+
 # Operating system files
 .DS_Store
 Thumbs.db

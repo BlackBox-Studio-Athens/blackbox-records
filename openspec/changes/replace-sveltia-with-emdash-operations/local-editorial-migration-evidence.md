@@ -130,3 +130,11 @@ Tasks 8.1, 8.2 and 8.6 are complete at implementation/contract scope. This recon
 - 8.6: publication-run tests verify authenticated code/snapshot/deployment acknowledgement, recovery after a lost acknowledgement, active-run throttling and timed-out CI failure without redeployment. Journal tests reject an older completion and prevent superseded requests reviving. `CmsRuntime.dispatchPublication` invokes reconciliation before dispatch through the existing scheduled composition. These implementation tests use simulated hosted responses; integrated hosted acceptance remains task 10.5.
 
 Public loader cutover, hosted workflow/promotion acceptance, the full browser matrix, backups/restore and PRD retirement gates remain open. The three checked tasks do not establish those outcomes.
+
+### Local database and media recovery — 2026-09-15
+
+Implemented private checksum-addressed CMS backups, seven daily points plus the latest pre-upgrade point, isolated restoration, and a disabled hosted daily workflow. The Local capture contains 150 media objects and 153,056,531 bytes. Restore into newly created `blackbox-cms-recovery-4f9a62d6` succeeded; every application table matched the captured point by sorted row hashes, including users, revisions and publication records. Original Local CMS and commerce storage remained untouched.
+
+All executions used WebStorm MCP. Evidence pointers are `.codex-artifacts/emdash-m1/backup-native-trigger-capture.json`, `backup-local-restore-verified.json`, and `backup-local-compare-verified.json`. The focused executable contract passed retention, checksum rejection, metadata restoration, large bound values, foreign keys and trigger preservation. Native export ordering and SQL literal limits required separate schema/data capture and bound restoration; triggers are installed after rows so restore preserves captured maintenance state.
+
+Full-suite reruns were skipped at the user's request. Hosted buckets, quota pilot, schedule activation and restored application/public rendering remain unverified; tasks 10.1/10.2 remain open. No hosted mutation or PRD cutover occurred.
