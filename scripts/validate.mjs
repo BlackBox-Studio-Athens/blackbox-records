@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
+import { createReadStream, watch } from 'node:fs';
 import { mkdir, readFile, writeFile, lstat, readlink, open, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -63,11 +63,36 @@ export function diagnosticExcerpt(text) {
     .slice(0, 6000);
 }
 
+export function monitorSourceChanges(cwd) {
+  const touched = new Set();
+  let failure;
+  const watcher = watch(cwd, { recursive: true }, (_event, filename) => {
+    const name = filename?.toString().replaceAll('\\', '/');
+    if (name && !/(^|\/)(?:\.git|node_modules|\.codex-artifacts)(\/|$)/.test(name)) touched.add(name);
+  });
+  watcher.on('error', (error) => {
+    failure = error;
+  });
+  return async () => {
+    watcher.close();
+    if (failure) throw failure;
+    if (!touched.size) return [];
+    const result = await execa('git', ['check-ignore', '-z', '--stdin'], {
+      cwd,
+      input: [...touched].join('\0') + '\0',
+      reject: false,
+    });
+    if (![0, 1].includes(result.exitCode)) throw new Error('Cannot classify changed source paths.');
+    const ignored = new Set(result.stdout.split('\0'));
+    return [...touched].filter((name) => !ignored.has(name)).sort();
+  };
+}
+
 export async function runValidation({
   cwd = process.cwd(),
   fast = false,
   scope = 'all',
-  jobs = 2,
+  jobs = 1,
   signal,
   phases = validationPlan({ fast, scope }),
   identify = sourceIdentity,
@@ -78,6 +103,7 @@ export async function runValidation({
   const root = path.join(cwd, '.codex-artifacts', 'validation');
   await mkdir(root, { recursive: true });
   const lockPath = path.join(root, 'active.lock');
+  // ponytail: one invocation per worktree; isolate worktrees for concurrent validation.
   const lock = await open(lockPath, 'wx');
   const runId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}`;
   const evidenceDir = path.join(root, runId);
@@ -102,9 +128,11 @@ export async function runValidation({
     sourceBefore: null,
     sourceAfter: null,
   };
+  let stopMonitoring;
   try {
     await lock.writeFile(String(process.pid));
     await mkdir(evidenceDir);
+    if (identify === sourceIdentity) stopMonitoring = monitorSourceChanges(cwd);
     summary.sourceBefore = await identify(cwd);
     summary.pnpm = await readPnpmVersion();
     if (fast) log('PARTIAL validation: this does not establish implementation completion.');
@@ -145,7 +173,7 @@ export async function runValidation({
         .filter((line) => /(?:Test Files|Tests)\s+\d|^[#ℹ] (?:tests|pass|fail) \d/.test(line));
       log(`${entry.status.toUpperCase()} ${phase.name} ${(entry.durationMs / 1000).toFixed(1)}s`);
       if (entry.status !== 'passed') {
-        log(`${diagnosticExcerpt(content)}\nLog: ${logPath}`);
+        log(`Exit code: ${entry.exitCode}\n${diagnosticExcerpt(content)}\nLog: ${logPath}`);
       }
       return entry.status === 'passed';
     }
@@ -163,7 +191,10 @@ export async function runValidation({
       }
     }
     summary.sourceAfter = await identify(cwd);
-    const unchanged = JSON.stringify(summary.sourceBefore) === JSON.stringify(summary.sourceAfter);
+    summary.sourceChanges = stopMonitoring ? await stopMonitoring() : [];
+    stopMonitoring = null;
+    const unchanged =
+      !summary.sourceChanges.length && JSON.stringify(summary.sourceBefore) === JSON.stringify(summary.sourceAfter);
     summary.status = controller.signal.aborted
       ? 'cancelled'
       : !unchanged
@@ -181,6 +212,7 @@ export async function runValidation({
     summary.error = error.message;
     log(`INCOMPLETE: ${error.message}`);
   } finally {
+    if (stopMonitoring) await stopMonitoring().catch(() => {});
     summary.durationMs = Math.round(performance.now() - started);
     await mkdir(evidenceDir, { recursive: true });
     await writeFile(path.join(evidenceDir, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
@@ -208,7 +240,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     const summary = await runValidation({
       fast: values.fast,
       scope: values.scope,
-      jobs: Number(values.jobs || 2),
+      jobs: Number(values.jobs || 1),
       signal: controller.signal,
     });
     process.exitCode = summary.exitCode;

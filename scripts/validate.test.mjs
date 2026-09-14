@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { execa } from 'execa';
-import { validationPlan, runValidation, sourceIdentity, diagnosticExcerpt } from './validate.mjs';
+import { validationPlan, runValidation, sourceIdentity, diagnosticExcerpt, monitorSourceChanges } from './validate.mjs';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const identity = async () => ({ sha: 'fixture', fingerprint: 'same' });
@@ -120,6 +120,13 @@ test('source fingerprint detects tracked, untracked and deleted source but ignor
     { cwd },
   );
   const original = await sourceIdentity(cwd);
+  const stopMonitoring = monitorSourceChanges(cwd);
+  await writeFile(path.join(cwd, 'source.txt'), 'transient');
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  await writeFile(path.join(cwd, 'source.txt'), 'before');
+  await new Promise((resolve) => setTimeout(resolve, 30));
+  assert.ok((await stopMonitoring()).includes('source.txt'));
+  assert.deepEqual(await sourceIdentity(cwd), original);
   await mkdir(path.join(cwd, '.codex-artifacts'));
   await writeFile(path.join(cwd, '.codex-artifacts', 'log'), 'ignored');
   assert.deepEqual(await sourceIdentity(cwd), original);

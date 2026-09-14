@@ -47,6 +47,8 @@ access hosted services. Local generated build outputs are allowed.”
 The existing package-level parallel test/type scheduling remains unchanged.
 The runner's optional two-group experiment overlaps tests and checks only;
 catalog preparation precedes both, and builds start after both have passed.
+Sequential execution remains the default: initial two-group trials encountered
+timeouts and do not establish safe concurrency or an accepted improvement.
 
 Run `pnpm benchmark:validation --baseline <baseline-worktree> --candidate
 <candidate-worktree> --mode commands` for command trials, and substitute
@@ -54,6 +56,9 @@ Run `pnpm benchmark:validation --baseline <baseline-worktree> --candidate
 retains it, and requires diagnosis before restarting; a restarted campaign has
 a new evidence directory. Neither harness validity nor computed statistics
 constitutes acceptance without transcript review and the stated thresholds.
+Passing agent scenarios now stop the campaign unless all required gate commands
+exited successfully. Usage capture alone is not successful validation. Statistics
+retain failures; incomplete or failed groups must not be compared as savings.
 
 ## Measurements
 
@@ -78,6 +83,16 @@ input, output and separately exposed reasoning tokens. Cached input and
 reasoning are subcategories, not additional total tokens. Preserve missing
 values as unavailable. Do not equate RTK estimates or account quota percentages
 with actual model usage or monetary savings.
+The CLI exposes completed command/MCP events, not every polling operation.
+Report observed calls and explicit log-read commands as lower bounds. Whole-turn
+usage and elapsed time include polling, even when its call count is unavailable.
+
+Runner acceptance checks: `node --import tsx --test scripts/validate.test.mjs
+scripts/validate-acceptance.test.mjs`. The second file invokes real failing test,
+Prettier, TypeScript, dependency-cruiser, and Astro commands in isolated temporary
+fixtures. The first checks cancellation, missing input, worktree opt-in, partial
+results, and persistent and reverted source edits. Do not run these diagnostics
+concurrently with timed benchmarks.
 
 Accept only with all checks preserved, no false success, at least 10% lower
 median full command time and 20% lower median total agent tokens across equally

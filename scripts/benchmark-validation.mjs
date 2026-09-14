@@ -2,8 +2,30 @@ import { mkdir, readFile, writeFile, rm, access, open, realpath } from 'node:fs/
 import os from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
+import assert from 'node:assert/strict';
 import { execa } from 'execa';
 import { sourceIdentity } from './validate.mjs';
+
+function completedGates(commands, arm) {
+  const gates = arm === 'baseline' ? ['test:unit', 'check', 'build'] : ['validate(?::full)?'];
+  return gates.every((gate) =>
+    commands.some(
+      ({ command, exit_code }) =>
+        exit_code === 0 && new RegExp(`\\bpnpm(?:\\.cmd)?\\s+${gate}(?=[\\s'"]|$)`).test(command),
+    ),
+  );
+}
+// Runnable parser checks: a successful CLI exit or a partial command is not a full gate.
+assert.equal(completedGates([{ command: 'pnpm validate:fast --scope web', exit_code: 0 }], 'candidate'), false);
+assert.equal(completedGates([{ command: 'pnpm validate', exit_code: 1 }], 'candidate'), false);
+assert.equal(completedGates([{ command: "pwsh -Command 'pnpm validate'", exit_code: 0 }], 'candidate'), true);
+assert.equal(
+  completedGates(
+    ['test:unit', 'check', 'build'].map((gate) => ({ command: `pnpm ${gate}`, exit_code: 0 })),
+    'baseline',
+  ),
+  true,
+);
 
 const { values } = parseArgs({
   options: {
@@ -43,6 +65,7 @@ const metadata = {
   repetitions,
   mode: values.mode,
   rtk: (await execa(values.rtk, ['--version'])).stdout,
+  codex: (await execa('codex', ['--version'])).stdout,
 };
 if (metadata.pnpm !== '12.0.0') throw new Error('Benchmark requires pnpm 12.0.0.');
 await writeFile(path.join(output, 'metadata.json'), JSON.stringify(metadata, null, 2));
@@ -72,11 +95,13 @@ async function save() {
         Object.entries(groups).map(([key, runs]) => [
           key,
           {
-            elapsedMs: stats(runs.map((run) => run.durationMs)),
+            elapsedMs: stats(runs.map((run) => run.durationMs).filter(Number.isFinite)),
             totalTokens: stats(
               runs.filter((run) => run.usage).map((run) => run.usage.input_tokens + run.usage.output_tokens),
             ),
             failures: runs.filter((run) => !run.valid).length,
+            comparisonEligible: runs.length === repetitions && runs.every((run) => run.valid),
+            note: 'All observed trials, including failures. Do not compare groups unless every trial is eligible and transcripts are verified.',
           },
         ]),
       ),
@@ -141,6 +166,9 @@ async function commandRun(arm, scenario, index, priming = false) {
         killDescendants: true,
         timeout: 20 * 60_000,
       });
+    } catch (error) {
+      result = { exitCode: error.exitCode ?? 1 };
+      record.error = error.message;
     } finally {
       await file.close();
     }
@@ -254,16 +282,24 @@ async function agentRun(arm, scenario, index) {
     const items = events.filter((event) => event.type === 'item.completed').map((event) => event.item);
     const commands = items.filter((item) => item.type === 'command_execution');
     record.commands = commands.map(({ command, exit_code }) => ({ command, exit_code }));
-    record.toolCalls = items.filter((item) => ['command_execution', 'mcp_tool_call'].includes(item.type)).length;
-    record.logReads = commands.filter((item) =>
+    record.observedCommandAndMcpCalls = items.filter((item) =>
+      ['command_execution', 'mcp_tool_call'].includes(item.type),
+    ).length;
+    record.explicitLogReadCommands = commands.filter((item) =>
       /(?:Get-Content|read|tail|rg|Select-String).*\.log/i.test(item.command),
     ).length;
     record.final = items.filter((item) => item.type === 'agent_message').at(-1)?.text ?? '';
     record.sourceAfter = await sourceIdentity(cwd);
     record.usageAvailable = Number.isFinite(record.usage?.input_tokens) && Number.isFinite(record.usage?.output_tokens);
     record.sourceUnchanged = JSON.stringify(record.sourceBefore) === JSON.stringify(record.sourceAfter);
-    // Discovery only: a human/independent verifier must inspect full transcripts before acceptance.
-    record.valid = result.exitCode === 0 && record.usageAvailable && record.sourceUnchanged;
+    record.captureValid = result.exitCode === 0 && record.usageAvailable && record.sourceUnchanged;
+    record.completionGatesPassed = completedGates(record.commands, arm);
+    record.fixtureDiagnosed =
+      record.final.includes('validation-benchmark-fixture.test.ts') && record.final.includes('/api/wrong');
+    record.valid =
+      record.captureValid && (scenario === 'failure' ? record.fixtureDiagnosed : record.completionGatesPassed);
+    record.measurementLimits =
+      'Completed command/MCP events are observable; polling calls and implicit log reads are not separately exposed. Their token/time costs remain included in the whole turn.';
     record.acceptance = 'requires transcript verification of executed gates and reported outcome';
   } catch (error) {
     record.durationMs = Math.round(performance.now() - started);
