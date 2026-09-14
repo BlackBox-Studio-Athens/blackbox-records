@@ -150,3 +150,6 @@ Chrome Blackbox at 320x800 verified navigation through Content, Items, Stock and
 
 This does not close the full keyboard/touch/contrast acceptance matrix. The narrow Orders lookup button appears compressed beside its input and needs wrapping before final mobile acceptance; hosted identity and stale-revision recovery remain separately scoped.
 
+
+The Orders lookup wrapping fix in 010b2c10 passes Chrome Blackbox layout verification against the built staff preview at 320x800: Find order measures approximately 126x44 CSS pixels, wraps below the input, and is fully visible; document width remains 305 CSS pixels. WebStorm built and served the static preview (order-lookup-final-build.json and order-lookup-preview.json). This preview has no backend API and is layout evidence only. The viewport override was reset; the canonical connected Local stack was not stopped.
+
