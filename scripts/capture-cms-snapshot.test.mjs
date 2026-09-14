@@ -2,6 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createHash } from 'node:crypto';
 import { captureCmsSnapshot } from './capture-cms-snapshot.mjs';
+import { writeCmsSnapshot } from './export-cms-snapshot.mjs';
+import { mkdtemp, readFile, rm, access } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const imageBytes = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=',
@@ -63,6 +69,42 @@ test('captures only pinned live data with a deterministic digest, omitting draft
   assert.equal(first.json.includes('draft-two'), false);
   assert.equal(first.sha256, (await captureCmsSnapshot(readers())).sha256);
   assert.equal(first.requests, 27);
+});
+
+test('exports captured bytes into a fresh build directory and rejects invalid input before writes', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'blackbox-snapshot-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const capture = await captureCmsSnapshot(readers());
+  const output = join(root, 'capture');
+  const input = await writeCmsSnapshot(capture, output, 'uat');
+  assert.equal(await readFile(input.path, 'utf8'), capture.json);
+  assert.equal(input.sha256, capture.sha256);
+  const repeated = spawnSync(
+    process.execPath,
+    [
+      '--import',
+      'tsx',
+      fileURLToPath(new URL('./export-cms-snapshot.mjs', import.meta.url)),
+      '--env',
+      'local',
+      '--target',
+      'http://127.0.0.1:8799/',
+      '--out',
+      output,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(repeated.status, 1);
+  assert.match(repeated.stderr, /no CMS reads were made/);
+  await assert.rejects(writeCmsSnapshot(capture, output, 'uat'), { code: 'EEXIST' });
+  for (const invalid of [
+    { ...capture, sha256: '0'.repeat(64) },
+    { ...capture, files: new Map([['extra', imageBytes]]) },
+  ]) {
+    await assert.rejects(writeCmsSnapshot(invalid, join(root, 'invalid'), 'uat'));
+    await assert.rejects(access(join(root, 'invalid')), { code: 'ENOENT' });
+  }
+  await assert.rejects(writeCmsSnapshot(capture, join(root, 'wrong-target'), 'prd'));
 });
 test('rejects edits, revision mismatches, incomplete pages, and exhausted budgets without returning a snapshot', async () => {
   await assert.rejects(captureCmsSnapshot(readers((item) => item.version++)), /changed/);

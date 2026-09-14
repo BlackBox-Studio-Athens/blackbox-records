@@ -11,6 +11,8 @@ import { sourceCollectionNames } from '@blackbox/content-model';
 import { createCmsSnapshotReaders } from '../../../../scripts/cms-snapshot-readers.mjs';
 import { captureCmsSnapshot } from '../../../../scripts/capture-cms-snapshot.mjs';
 import { stageCmsSnapshot } from '../../../../scripts/stage-cms-snapshot.mjs';
+import { writeCmsSnapshot } from '../../../../scripts/export-cms-snapshot.mjs';
+import { readContentSnapshot } from '../../../web/src/lib/content-snapshot.ts';
 import { claimPublicationDispatch } from '../../src/cms/publication-journal.ts';
 
 const root = new URL('../../', import.meta.url);
@@ -154,6 +156,11 @@ try {
   assert.deepEqual(Buffer.from(snapshot.files.get(snapshot.snapshot.media[0].sha256)), pixels);
   assert.equal(snapshot.snapshot.records.length, 13);
   assert.equal(snapshot.json.includes('UNPUBLISHED-SNAPSHOT-MARKER'), false);
+  const buildInput = await writeCmsSnapshot(snapshot, join(localState, 'public-snapshot'), 'local');
+  const loaded = await readContentSnapshot(buildInput);
+  assert.deepEqual(loaded.snapshot, snapshot.snapshot);
+  assert.equal(loaded.media.size, 1);
+  await assert.rejects(writeCmsSnapshot(snapshot, join(localState, 'public-snapshot'), 'local'), { code: 'EEXIST' });
   const publicationResponse = await fetch('http://127.0.0.1:8799/_emdash/api/blackbox/publications', {
     method: 'POST',
     headers: { Origin: 'http://127.0.0.1:8799', 'X-EmDash-Request': '1', 'Content-Type': 'application/json' },

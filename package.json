@@ -61,6 +61,7 @@
     "build": "pnpm stripe:catalog:artifacts:generate && pnpm build:web && pnpm build:staff",
     "build:web": "pnpm --filter @blackbox/web build && tsx scripts/check-frontend-route-isolation.ts web",
     "build:content-snapshot": "node scripts/build-content-snapshot.mjs",
+    "cms:snapshot:export": "node --import tsx scripts/export-cms-snapshot.mjs",
     "build:staff": "pnpm --filter @blackbox/staff build && tsx scripts/check-frontend-route-isolation.ts staff",
     "cache:policy:check": "pnpm --filter @blackbox/web cache:policy:check",
     "cache:policy:hosted-audit": "pnpm --filter @blackbox/web cache:policy:hosted-audit",
