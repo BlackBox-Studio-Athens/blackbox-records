@@ -15,9 +15,13 @@ export function cmsSnapshotTarget(environment, target) {
   return origin;
 }
 
-export function createCmsSnapshotReaders({ environment, target, headers = {}, fetchImpl = fetch }) {
+export function createCmsSnapshotReaders({ environment, target, token, headers = {}, fetchImpl = fetch }) {
   const origin = cmsSnapshotTarget(environment, target);
   const requestHeaders = new Headers({ Accept: 'application/json' });
+  if (token !== undefined) {
+    if (!/^ec_pat_[A-Za-z0-9_-]{32,128}$/.test(token)) throw new Error('Invalid CMS export token.');
+    requestHeaders.set('Authorization', `Bearer ${token}`);
+  }
   const supplied = new Headers(headers);
   for (const key of ['cf-access-client-id', 'cf-access-client-secret', 'cf-access-jwt-assertion']) {
     const value = supplied.get(key);

@@ -41,13 +41,17 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
       'max-requests': { type: 'string' },
     },
   });
-  if (!values.out) throw new Error('Use --env local|uat|prd --target <CMS origin> --out <new directory>.');
+  if (!values.out || !values.target || !['local', 'uat', 'prd'].includes(values.env))
+    throw new Error('Use --env local|uat|prd --target <CMS origin> --out <new directory>.');
   if (existsSync(values.out) || !statSync(dirname(resolve(values.out))).isDirectory())
     throw new Error('Export requires a new directory inside an existing parent; no CMS reads were made.');
+  if (values.env !== 'local' && !process.env.CMS_EXPORT_TOKEN)
+    throw new Error('Hosted export requires CMS_EXPORT_TOKEN.');
   const capture = await captureCmsSnapshot({
     ...createCmsSnapshotReaders({
       environment: values.env,
       target: values.target,
+      token: process.env.CMS_EXPORT_TOKEN,
       headers: {
         'cf-access-client-id': process.env.CMS_EXPORT_ACCESS_CLIENT_ID ?? '',
         'cf-access-client-secret': process.env.CMS_EXPORT_ACCESS_CLIENT_SECRET ?? '',

@@ -3,6 +3,25 @@ import { test } from 'node:test';
 import { createCmsSnapshotReaders } from './cms-snapshot-readers.mjs';
 import { captureCmsSnapshot } from './capture-cms-snapshot.mjs';
 
+test('uses an explicit native read token only for the fixed target', async () => {
+  const token = 'ec_pat_' + 'a'.repeat(43);
+  const readers = createCmsSnapshotReaders({
+    environment: 'local',
+    target: 'http://127.0.0.1:8799/',
+    token,
+    fetchImpl: async (url, init) => {
+      assert.equal(url.origin, 'http://127.0.0.1:8799');
+      assert.equal(init.headers.get('Authorization'), `Bearer ${token}`);
+      return Response.json({ data: { item: { id: 'one' } } });
+    },
+  });
+  assert.deepEqual(await readers.readRevision('one'), { id: 'one' });
+  assert.throws(
+    () => createCmsSnapshotReaders({ environment: 'local', target: 'http://127.0.0.1:8799/', token: 'not-a-token' }),
+    /export token/,
+  );
+});
+
 test('captures through fixed GET routes without forwarding unrelated credentials', async () => {
   const requests = [];
   const readers = createCmsSnapshotReaders({

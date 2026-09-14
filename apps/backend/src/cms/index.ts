@@ -4,7 +4,7 @@ import type { AppBindings } from '../env';
 import { authenticate } from './auth';
 import { DurableObject } from 'cloudflare:workers';
 import { CommerceRuntime } from '../index';
-import { isSupportedCmsApiRequest } from '../middleware';
+import { isSupportedCmsApiRequest, isCmsTokenExportRead } from '../middleware';
 import { handlePublicationRequest, handlePublicationWorkflow, publicationWorkflowPaths } from './publication-routes';
 import { dispatchPendingPublication } from './publication-dispatch';
 
@@ -43,13 +43,15 @@ export default {
   },
   async fetch(request: Request, bindings: CmsBindings, _context: ExecutionContext) {
     const url = new URL(request.url);
+    if (request.headers.get('Authorization')?.startsWith('Bearer ec_pat_') && !isCmsTokenExportRead(request))
+      return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
     if (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/internal/')) {
       return bindings.COMMERCE_RUNTIME.getByName('store').fetch(request);
     }
     try {
       // Staff and workflow credentials are verified inside the CMS object before private responses.
       if (bindings.PRODUCT_ENVIRONMENT === 'LOCAL') {
-        if (!publicationWorkflowPaths.has(url.pathname)) await authenticate(request);
+        if (!publicationWorkflowPaths.has(url.pathname) && !isCmsTokenExportRead(request)) await authenticate(request);
       } else if (url.hostname !== bindings.CMS_HOSTNAME) throw new Error('Unauthorized hostname');
     } catch {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
@@ -89,13 +91,24 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         hostname: bindings.CMS_HOSTNAME,
         token: bindings.CMS_PUBLICATION_EXPORT_TOKEN,
       });
-    let identity: Awaited<ReturnType<typeof authenticate>>;
+    const exportRead = isCmsTokenExportRead(request);
+    if (
+      exportRead &&
+      (bindings.PRODUCT_ENVIRONMENT === 'LOCAL'
+        ? !['127.0.0.1', 'localhost'].includes(url.hostname)
+        : url.protocol !== 'https:' || url.hostname !== bindings.CMS_HOSTNAME)
+    )
+      return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
+    if (request.headers.get('Authorization')?.startsWith('Bearer ec_pat_') && !exportRead)
+      return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
+    let identity: Awaited<ReturnType<typeof authenticate>> | undefined;
     try {
-      identity = await authenticate(request);
+      if (!exportRead) identity = await authenticate(request);
     } catch {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
     }
     if (url.pathname.startsWith('/_emdash/api/blackbox/publications')) {
+      if (!identity) return new Response('Forbidden', { status: 403 });
       const environment = bindings.PRODUCT_ENVIRONMENT?.toLowerCase();
       if (environment !== 'local' && environment !== 'uat' && environment !== 'prd')
         return new Response('Unavailable', { status: 503 });
@@ -121,6 +134,23 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     if (!isSupportedCmsApiRequest(request)) {
       await request.body?.pipeTo(new WritableStream());
       return new Response('Not found', { status: 404, headers: { 'Cache-Control': 'private, no-store' } });
+    }
+    if (url.pathname.startsWith('/_emdash/api/admin/api-tokens')) {
+      if (identity?.role !== 50) return new Response('Forbidden', { status: 403 });
+      if (request.method === 'POST') {
+        const body = (await request
+          .clone()
+          .json()
+          .catch(() => null)) as { scopes?: unknown } | null;
+        if (
+          !body ||
+          !Array.isArray(body.scopes) ||
+          body.scopes.length !== 2 ||
+          !body.scopes.includes('content:read') ||
+          !body.scopes.includes('media:read')
+        )
+          return Response.json({ error: { code: 'EXPORT_READ_SCOPES_REQUIRED' } }, { status: 400 });
+      }
     }
     if (!(await this.isInitialized())) {
       return Response.json({ error: { code: 'CMS_NOT_INITIALIZED' } }, { status: 503 });

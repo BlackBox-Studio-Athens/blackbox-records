@@ -4,6 +4,35 @@ import { isCmsCollection } from '@blackbox/content-model';
 
 const slugPattern = new RegExp(slugPatternSource);
 
+// This only selects a forwarding path. EmDash must authenticate the token and enforce its scopes.
+export function isCmsTokenExportRead(request: Request): boolean {
+  if (
+    request.method !== 'GET' ||
+    !/^Bearer ec_pat_[A-Za-z0-9_-]{32,128}$/.test(request.headers.get('Authorization') ?? '')
+  )
+    return false;
+  const url = new URL(request.url);
+  const collection = /^\/_emdash\/api\/content\/([a-z_]+)$/.exec(url.pathname)?.[1];
+  if (collection && isCmsCollection(collection)) {
+    const keys = [...url.searchParams.keys()];
+    return (
+      new Set(keys).size === keys.length &&
+      keys.every((key) => ['limit', 'orderBy', 'order', 'cursor'].includes(key)) &&
+      url.searchParams.get('limit') === '100' &&
+      url.searchParams.get('orderBy') === 'createdAt' &&
+      url.searchParams.get('order') === 'asc' &&
+      (!url.searchParams.has('cursor') ||
+        (url.searchParams.get('cursor')!.length > 0 && url.searchParams.get('cursor')!.length <= 4096))
+    );
+  }
+  if (url.search) return false;
+  return (
+    /^\/_emdash\/api\/(?:revisions|media)\/[A-Za-z0-9_-]{1,128}$/.test(url.pathname) ||
+    (/^\/_emdash\/api\/media\/file\/[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*\.(?:png|jpe?g|webp)$/i.test(url.pathname) &&
+      isSupportedCmsApiRequest(request))
+  );
+}
+
 export function isSupportedCmsApiRequest(request: Request): boolean {
   const pathname = new URL(request.url).pathname;
   if (pathname.startsWith('/_emdash/api/media/file/')) {
@@ -15,6 +44,8 @@ export function isSupportedCmsApiRequest(request: Request): boolean {
     }
   }
   return (
+    (pathname === '/_emdash/api/admin/api-tokens' && ['GET', 'POST'].includes(request.method)) ||
+    (request.method === 'DELETE' && /^\/_emdash\/api\/admin\/api-tokens\/[A-Za-z0-9_-]{1,128}$/.test(pathname)) ||
     /^\/_emdash\/api\/(?:openapi\.json$|content\/|schema\/|media(?:\/|$))/.test(pathname) ||
     (request.method === 'GET' && /^\/_emdash\/api\/revisions\/[A-Za-z0-9_-]+$/.test(pathname))
   );

@@ -149,9 +149,33 @@ try {
       assert.equal(edited.status, 200, JSON.stringify(edited));
     }
   }
-  const snapshot = await captureCmsSnapshot(
-    createCmsSnapshotReaders({ environment: 'local', target: 'http://127.0.0.1:8799/' }),
-  );
+  assert.equal((await request('/admin/api-tokens', 'POST', { name: 'Too broad', scopes: ['admin'] })).status, 400);
+  const exportCredential = await request('/admin/api-tokens', 'POST', {
+    name: 'Local export smoke',
+    scopes: ['content:read', 'media:read'],
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  });
+  assert.equal(exportCredential.status, 201);
+  const exportReaders = createCmsSnapshotReaders({
+    environment: 'local',
+    target: 'http://127.0.0.1:8799/',
+    token: exportCredential.body.data.token,
+  });
+  const snapshot = await captureCmsSnapshot(exportReaders);
+  for (const [path, method] of [
+    ['/_emdash/api/content/artists', 'POST'],
+    ['/_emdash/api/admin/api-tokens', 'GET'],
+    ['/api/internal/orders', 'GET'],
+  ]) {
+    const rejected = await fetch('http://127.0.0.1:8799' + path, {
+      method,
+      headers: { Authorization: `Bearer ${exportCredential.body.data.token}` },
+    });
+    assert.equal(rejected.status, 403);
+    await rejected.body?.cancel();
+  }
+  assert.equal((await request('/admin/api-tokens/' + exportCredential.body.data.info.id, 'DELETE')).status, 200);
+  await assert.rejects(exportReaders.readRevision(snapshot.snapshot.records[0].revisionId), /401/);
   assert.equal(snapshot.snapshot.media.length, 1, 'Shared published media is captured once');
   assert.deepEqual(Buffer.from(snapshot.files.get(snapshot.snapshot.media[0].sha256)), pixels);
   assert.equal(snapshot.snapshot.records.length, 13);
