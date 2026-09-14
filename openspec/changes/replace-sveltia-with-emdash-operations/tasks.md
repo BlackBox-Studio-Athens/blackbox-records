@@ -2,7 +2,7 @@ Use the apply-change workflow. Finish one usable workflow at a time in the deliv
 
 ## Delivery order — revised 2026-09-14
 
-The 60 acceptance tasks remain intact: 23 are complete and 37 remain open. This is not a percentage of effort or usable product completion. The local item price, stock, and creation workflows are usable; content editing and public publication are not finished. Do not add checkboxes merely to make the count rise.
+The 60 acceptance tasks remain intact: 24 are complete and 36 remain open. This is not a percentage of effort or usable product completion. The local item price, stock, creation, and draft-preview workflows are usable; content editing acceptance and public publication are not finished. Do not add checkboxes merely to make the count rise.
 
 | Order    | Usable outcome                                                                                                         | Existing tasks to finish together                                                                               |
 | -------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -67,7 +67,7 @@ The protected price command now passes fixed/custom SDK-to-D1 acceptance, author
 
 - [ ] 6.1 Extend `apps/staff` navigation with Content and Items alongside existing Stock and Orders, reusing staff layout/components; verify one identity and navigation context survive all sections without another member login.
 - [ ] 6.2 Add focused Artist/Release/Distro/News and fixed-page editing using supported CMS APIs and editor facilities; verify relation selection, validation, stable slugs, drafts, stale-save conflict recovery, and server-side field rejection.
-- [ ] 6.3 Add media selection and the seven required protected draft-preview outcomes by reusing existing preview behavior where applicable; verify draft labels, safe media resolution, and no public publication or private-token leakage.
+- [x] 6.3 Add media selection and the seven required protected draft-preview outcomes by reusing existing preview behavior where applicable; verify draft labels, safe media resolution, and no public publication or private-token leakage. See [Local preview acceptance](local-editorial-migration-evidence.md#protected-preview-acceptance-and-editor-accessibility--2026-09-14).
 - [x] 6.4 Add item price controls and embed/link existing stock movement/count/allocation and order controls without duplicating their logic; verify the member can change price and stock on one item and observe authoritative results without a build.
 - [ ] 6.5 Browser-check representative content/item/stock/order flows at desktop and 320 CSS pixels with keyboard use; verify labels, focus, errors, contrast, touch targets, and absence of page-level overflow before considering the UI slice complete.
 

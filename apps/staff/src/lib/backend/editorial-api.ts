@@ -98,8 +98,8 @@ export function editorialSlug(title: string, identity: string): string {
 }
 
 export async function uploadArtwork(base: string, file: File): Promise<EditorialMedia> {
-  if (!['image/jpeg', 'image/png', 'image/webp', 'image/avif'].includes(file.type) || file.size > 20 * 1024 * 1024)
-    throw new Error('Choose a JPG, PNG, WebP or AVIF image smaller than 20 MB.');
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 20 * 1024 * 1024)
+    throw new Error('Choose a JPG, PNG or WebP image smaller than 20 MB.');
   const bitmap = await createImageBitmap(file);
   try {
     const canvas = document.createElement('canvas');

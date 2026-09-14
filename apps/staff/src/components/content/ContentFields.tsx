@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { DISTRO_GROUP_VALUES } from '@blackbox/content-model';
+import { cmsBodySchema, DISTRO_GROUP_VALUES } from '@blackbox/content-model';
 import EditorialPicker from '../items/EditorialPicker';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -160,12 +160,16 @@ export default function ContentFields({
       </section>
     );
   }
+  const bodyValidation = cmsBodySchema.safeParse(data.body ?? []);
   const body = (
     <section className="grid min-w-0 gap-3">
       <h2 id="content-body-label" className="text-xl font-semibold">
         Full text
       </h2>
-      <p className="text-sm text-muted-foreground">Use paragraphs, headings, lists, links and images.</p>
+      <p className="text-sm text-muted-foreground">
+        Use paragraphs, headings, lists, quotes, links, images with descriptions, or code. HTML, tables, galleries and
+        text alignment are not supported.
+      </p>
       <Suspense fallback={<p>Loading text editor…</p>}>
         <ContentBodyEditor
           aria-labelledby="content-body-label"
@@ -174,6 +178,11 @@ export default function ContentFields({
           onChange={(body) => set('body', body)}
         />
       </Suspense>
+      {!bodyValidation.success && (
+        <p role="alert" className="border border-border p-3">
+          {bodyValidation.error.issues[0]?.message} Your text is still here and has not been saved.
+        </p>
+      )}
     </section>
   );
   if (collection === 'artists')

@@ -28,26 +28,33 @@ export const cmsLinkSchema = z.string().refine((value) => {
   }
 }, 'Use a safe web, email, or relative link.');
 const key = z.string().min(1).max(128);
+const bodyError =
+  'Unsupported full-text formatting. Undo or remove the last block or formatting change. Use paragraphs, headings, lists, quotes, links, images with descriptions, or code; HTML, tables, galleries and text alignment are not supported.';
 const textBlock = z
-  .object({
-    _type: z.literal('block'),
-    _key: key,
-    style: z.enum(['normal', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote']).optional(),
-    children: z.array(
-      z
-        .object({ _type: z.literal('span'), _key: key, text: z.string(), marks: z.array(z.string()).optional() })
-        .strict(),
-    ),
-    markDefs: z
-      .array(
-        z.object({ _type: z.literal('link'), _key: key, href: cmsLinkSchema, blank: z.boolean().optional() }).strict(),
-      )
-      .optional(),
-    listItem: z.enum(['bullet', 'number']).optional(),
-    level: z.number().int().min(1).max(10).optional(),
-    listId: key.optional(),
-    listStart: z.number().int().min(1).optional(),
-  })
+  .object(
+    {
+      _type: z.literal('block'),
+      _key: key,
+      style: z.enum(['normal', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote']).optional(),
+      children: z.array(
+        z
+          .object({ _type: z.literal('span'), _key: key, text: z.string(), marks: z.array(z.string()).optional() })
+          .strict(),
+      ),
+      markDefs: z
+        .array(
+          z
+            .object({ _type: z.literal('link'), _key: key, href: cmsLinkSchema, blank: z.boolean().optional() })
+            .strict(),
+        )
+        .optional(),
+      listItem: z.enum(['bullet', 'number']).optional(),
+      level: z.number().int().min(1).max(10).optional(),
+      listId: key.optional(),
+      listStart: z.number().int().min(1).optional(),
+    },
+    { error: bodyError },
+  )
   .strict()
   .superRefine((block, ctx) => {
     const marks = new Set([
@@ -64,26 +71,31 @@ const textBlock = z
     }
   });
 export const cmsBodySchema = z.array(
-  z.union([
-    textBlock,
-    z
-      .object({
-        _type: z.literal('image'),
-        _key: key,
-        asset: z.object({ _ref: mediaId }).strict(),
-        alt: z.string().trim().min(1),
-      })
-      .strict(),
-    z
-      .object({
-        _type: z.literal('code'),
-        _key: key,
-        code: z.string(),
-        language: z.string().optional(),
-        filename: z.string().optional(),
-      })
-      .strict(),
-  ]),
+  z.union(
+    [
+      textBlock,
+      z
+        .object({
+          _type: z.literal('image'),
+          _key: key,
+          asset: z.object({ _ref: mediaId }).strict(),
+          alt: z.string().trim().min(1),
+        })
+        .strict(),
+      z
+        .object({
+          _type: z.literal('code'),
+          _key: key,
+          code: z.string(),
+          language: z.string().optional(),
+          filename: z.string().optional(),
+        })
+        .strict(),
+    ],
+    {
+      error: bodyError,
+    },
+  ),
 );
 
 export const cmsContentSchemas = {

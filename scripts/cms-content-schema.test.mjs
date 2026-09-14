@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { inventory, parseMarkdown } from './inventory-cms-content.mjs';
 import { markdownTreeToPortableText } from './cms-markdown.mjs';
-import { sourceCollectionNames, validateCmsContent, contentMediaIds } from '@blackbox/content-model';
+import { sourceCollectionNames, validateCmsContent, contentMediaIds, cmsBodySchema } from '@blackbox/content-model';
 import { isSupportedCmsApiRequest } from '../apps/backend/src/middleware.ts';
 
 test('snapshot revision reads do not enable revision restore or alternate writers', () => {
@@ -70,4 +70,18 @@ test('direct editorial payloads reject nested extras, unsafe content, invalid da
     'one',
     'two',
   ]);
+});
+
+test('unsupported native editor blocks give a recoverable error without rejecting ordinary text', () => {
+  const paragraph = { _type: 'block', _key: 'text', children: [{ _type: 'span', _key: 'span', text: 'Music' }] };
+  for (const unsupported of [
+    { _type: 'htmlBlock', _key: 'html', html: '<b>Music</b>' },
+    { _type: 'table', _key: 'table', rows: [] },
+    { ...paragraph, textAlign: 'center' },
+  ]) {
+    const result = cmsBodySchema.safeParse([paragraph, unsupported]);
+    assert.equal(result.success, false);
+    assert.match(result.error.issues[0].message, /Undo or remove/);
+  }
+  assert.equal(cmsBodySchema.safeParse([paragraph]).success, true);
 });

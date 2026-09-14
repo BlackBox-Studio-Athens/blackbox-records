@@ -5,9 +5,19 @@ import {
   editorialRequest,
   editorialSlug,
   editorialWriteData,
+  uploadArtwork,
 } from './editorial-api';
 
 afterEach(() => vi.unstubAllGlobals());
+
+it('rejects unsupported artwork before decoding or uploading it', async () => {
+  const fetch = vi.fn();
+  vi.stubGlobal('fetch', fetch);
+  await expect(uploadArtwork('', new File(['image'], 'cover.avif', { type: 'image/avif' }))).rejects.toThrow(
+    'Choose a JPG, PNG or WebP',
+  );
+  expect(fetch).not.toHaveBeenCalled();
+});
 
 it('resolves native media detail and list responses without loading foreign or private paths', () => {
   const media = { id: 'image', filename: 'cover.png', alt: null, storageKey: 'stored.png' };

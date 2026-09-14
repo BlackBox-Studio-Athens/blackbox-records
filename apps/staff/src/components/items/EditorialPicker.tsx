@@ -41,7 +41,7 @@ export default function EditorialPicker({
       const params = new URLSearchParams({ limit: '25' });
       if (query.trim()) params.set('q', query.trim());
       if (next) params.set('cursor', next);
-      if (collection === 'media') params.set('mimeType', 'image/jpeg,image/png,image/webp,image/avif');
+      if (collection === 'media') params.set('mimeType', 'image/jpeg,image/png,image/webp');
       const page = await editorialRequest<EditorialList<Choice>>(
         base,
         `${collection === 'media' ? 'media' : `content/${collection}`}?${params}`,
@@ -134,11 +134,11 @@ export default function EditorialPicker({
           Or upload an image
           <Input
             type="file"
-            accept="image/jpeg,image/png,image/webp,image/avif"
+            accept="image/jpeg,image/png,image/webp"
             disabled={busy}
             onChange={(event) => void upload(event.target.files?.[0])}
           />
-          <span className="text-sm text-muted-foreground">JPG, PNG, WebP or AVIF, up to 20 MB.</span>
+          <span className="text-sm text-muted-foreground">JPG, PNG or WebP, up to 20 MB.</span>
         </label>
       )}
       {(busy || message) && (
