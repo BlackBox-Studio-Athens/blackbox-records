@@ -1,11 +1,8 @@
 ---
 import { cmsLinkSchema } from '@blackbox/content-model';
-
 interface Props {
   node: { markDef: { href: string; blank?: boolean } };
 }
-
-// The shared write/read constraint allows the source's route-relative links.
 const href = cmsLinkSchema.parse(Astro.props.node.markDef.href);
 const blank = !href.startsWith('#') && Astro.props.node.markDef.blank;
 ---

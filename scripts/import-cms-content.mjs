@@ -8,7 +8,7 @@ import sharp from 'sharp';
 import { applyCmsImport } from './apply-cms-import.mjs';
 import { inventory } from './inventory-cms-content.mjs';
 import { markdownToPortableText } from './cms-markdown.mjs';
-import { sourceCollectionNames, validateCmsContent } from '../apps/backend/src/cms/content-schema.ts';
+import { sourceCollectionNames, validateCmsContent } from '@blackbox/content-model';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');

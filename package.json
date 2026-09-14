@@ -60,6 +60,7 @@
     "worker:dev:sandbox": "pnpm worker:dev:uat",
     "build": "pnpm stripe:catalog:artifacts:generate && pnpm build:web && pnpm build:staff",
     "build:web": "pnpm --filter @blackbox/web build && tsx scripts/check-frontend-route-isolation.ts web",
+    "build:content-snapshot": "node scripts/build-content-snapshot.mjs",
     "build:staff": "pnpm --filter @blackbox/staff build && tsx scripts/check-frontend-route-isolation.ts staff",
     "cache:policy:check": "pnpm --filter @blackbox/web cache:policy:check",
     "cache:policy:hosted-audit": "pnpm --filter @blackbox/web cache:policy:hosted-audit",
@@ -102,6 +103,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
+    "@blackbox/content-model": "workspace:*",
     "@eslint/js": "^10.0.1",
     "@t3-oss/env-core": "^0.13.11",
     "dependency-cruiser": "^18.2.0",

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { inventory, parseMarkdown } from './inventory-cms-content.mjs';
 import { markdownTreeToPortableText } from './cms-markdown.mjs';
-import { sourceCollectionNames, validateCmsContent, contentMediaIds } from '../apps/backend/src/cms/content-schema.ts';
+import { sourceCollectionNames, validateCmsContent, contentMediaIds } from '@blackbox/content-model';
 import { isSupportedCmsApiRequest } from '../apps/backend/src/middleware.ts';
 
 test('snapshot revision reads do not enable revision restore or alternate writers', () => {

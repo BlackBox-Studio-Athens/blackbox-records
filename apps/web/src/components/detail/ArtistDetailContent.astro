@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
-import { render } from 'astro:content';
+import EditorialContent from './EditorialContent.astro';
 
 import SocialIcon from '@/components/icons/SocialIcon.astro';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
@@ -20,9 +20,8 @@ interface Props {
 const { artist, showRouteNavigation = true } = Astro.props;
 const artistName = artist.data.title || 'Artist';
 const isOverlayPresentation = !showRouteNavigation;
-const { Content } = await render(artist);
 const artistBody = 'body' in artist ? artist.body?.trim() || '' : '';
-const hasArtistBody = artistBody.length > 0;
+const hasArtistBody = artist.data.editorial_body ? artist.data.editorial_body.length > 0 : artistBody.length > 0;
 const profileLinks = artist.data.profile_links || [];
 const artistVideos = artist.data.videos || [];
 
@@ -87,7 +86,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
       {
         hasArtistBody ? (
           <div class="artist-detail-prose artist-detail-prose--story">
-            <Content />
+            <EditorialContent entry={artist} />
           </div>
         ) : (
           artist.data.bio && (

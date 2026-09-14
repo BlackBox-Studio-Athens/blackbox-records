@@ -3,7 +3,6 @@ import {
   createArtistsContentSchema,
   createReleasesContentSchema,
   createNewsContentSchema,
-  createDistroContentSchema,
   createHomeContentSchema,
   createAboutContentSchema,
   createServicesContentSchema,
@@ -12,8 +11,9 @@ import {
   socialsContentSchema,
   settingsContentSchema,
   newsletterContentSchema,
-  purchaseInformationSchema,
-} from '@blackbox/content-model';
+} from './schemas';
+import { createDistroContentSchema } from './distro-content-schema';
+import { purchaseInformationSchema } from './purchase-information-schema';
 
 const mediaId = z.string().min(1).max(128);
 const image = () => z.object({ id: mediaId }).strict();

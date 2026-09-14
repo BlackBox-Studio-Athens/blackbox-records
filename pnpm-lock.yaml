@@ -123,6 +123,9 @@ importers:
       '@astrojs/check':
         specifier: 0.9.10
         version: 0.9.10(prettier-plugin-astro@0.14.1)(prettier@3.9.6)(typescript@5.9.3)
+      '@blackbox/content-model':
+        specifier: workspace:*
+        version: link:packages/content-model
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.9.1(jiti@2.7.0)(supports-color@10.2.2))
@@ -368,6 +371,9 @@ importers:
       astro:
         specifier: 7.3.2
         version: 7.3.2(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@24.13.3)(jiti@2.7.0)(sass@1.97.3)(tsx@4.23.13)(yaml@2.9.0)
+      astro-portabletext:
+        specifier: 0.11.4
+        version: 0.11.4(astro@7.3.2(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@24.13.3)(jiti@2.7.0)(sass@1.97.3)(tsx@4.23.13)(yaml@2.9.0))
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

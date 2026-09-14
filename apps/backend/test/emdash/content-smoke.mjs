@@ -7,7 +7,7 @@ import { getPlatformProxy, unstable_dev } from 'wrangler';
 import sharp from 'sharp';
 import { inventory, parseMarkdown } from '../../../../scripts/inventory-cms-content.mjs';
 import { markdownTreeToPortableText } from '../../../../scripts/cms-markdown.mjs';
-import { sourceCollectionNames } from '../../src/cms/content-schema.ts';
+import { sourceCollectionNames } from '@blackbox/content-model';
 import { createCmsSnapshotReaders } from '../../../../scripts/cms-snapshot-readers.mjs';
 import { captureCmsSnapshot } from '../../../../scripts/capture-cms-snapshot.mjs';
 import { stageCmsSnapshot } from '../../../../scripts/stage-cms-snapshot.mjs';

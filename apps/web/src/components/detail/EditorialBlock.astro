@@ -1,0 +1,29 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+interface Props {
+  node: {
+    _type: string;
+    asset?: { image?: ImageMetadata };
+    alt?: string;
+    code?: string;
+    language?: string;
+    filename?: string;
+  };
+}
+const { node } = Astro.props;
+if (node._type === 'image' && !node.asset?.image) throw new Error('Missing snapshot body image.');
+---
+
+{
+  node._type === 'image' && node.asset?.image ? (
+    <Image src={node.asset.image} alt={node.alt!} widths={[720, 1080, 1440]} sizes="(min-width: 1024px) 72rem, 100vw" />
+  ) : (
+    <div>
+      {node.filename && <p>{node.filename}</p>}
+      <pre>
+        <code class={node.language ? `language-${node.language}` : undefined}>{node.code}</code>
+      </pre>
+    </div>
+  )
+}

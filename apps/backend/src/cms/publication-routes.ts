@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { completeSnapshot, storeSnapshotMedia } from './snapshot-storage';
-import { isCmsCollection } from './content-schema';
+import { isCmsCollection } from '@blackbox/content-model';
 import {
   bindPublicationRun,
   bindPublicationSnapshot,

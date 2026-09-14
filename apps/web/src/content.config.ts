@@ -1,6 +1,8 @@
 import { defineCollection, reference } from 'astro:content';
-import { glob } from 'astro/loaders';
+import { z } from 'zod';
+import { publicContentLoader } from './lib/content-loader';
 import {
+  cmsBodySchema,
   createArtistsContentSchema,
   createReleasesContentSchema,
   createNewsContentSchema,
@@ -17,67 +19,79 @@ import {
 } from '@blackbox/content-model';
 
 const artists = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/artists' }),
-  schema: ({ image }) => createArtistsContentSchema(image),
+  loader: publicContentLoader('artists', '**/*.{md,mdx}', './src/content/artists'),
+  schema: ({ image }) =>
+    createArtistsContentSchema(image).extend({
+      editorial_body: cmsBodySchema.optional(),
+      content_media: z.record(z.string(), image()).optional(),
+    }),
 });
 
 const releases = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/releases' }),
-  schema: ({ image }) => createReleasesContentSchema(image, { artist: reference('artists') }),
+  loader: publicContentLoader('releases', '**/*.{md,mdx}', './src/content/releases'),
+  schema: ({ image }) =>
+    createReleasesContentSchema(image, { artist: reference('artists') }).extend({
+      editorial_body: cmsBodySchema.optional(),
+      content_media: z.record(z.string(), image()).optional(),
+    }),
 });
 
 const news = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/news' }),
-  schema: ({ image }) => createNewsContentSchema(image),
+  loader: publicContentLoader('news', '**/*.{md,mdx}', './src/content/news'),
+  schema: ({ image }) =>
+    createNewsContentSchema(image).extend({
+      editorial_body: cmsBodySchema.optional(),
+      content_media: z.record(z.string(), image()).optional(),
+    }),
 });
 
 const distro = defineCollection({
-  loader: glob({ pattern: '**/*.json', base: './src/content/distro' }),
+  loader: publicContentLoader('distro', '**/*.json', './src/content/distro'),
   schema: ({ image }) => createDistroContentSchema(image),
 });
 
 const distroPage = defineCollection({
-  loader: glob({ pattern: '**/*.json', base: './src/content/distro-page' }),
+  loader: publicContentLoader('distroPage', '**/*.json', './src/content/distro-page'),
   schema: distroPageContentSchema,
 });
 
 const navigation = defineCollection({
-  loader: glob({ pattern: '**/*.json', base: './src/content/navigation' }),
+  loader: publicContentLoader('navigation', '**/*.json', './src/content/navigation'),
   schema: navigationContentSchema,
 });
 
 const socials = defineCollection({
-  loader: glob({ pattern: '**/*.json', base: './src/content/socials' }),
+  loader: publicContentLoader('socials', '**/*.json', './src/content/socials'),
   schema: socialsContentSchema,
 });
 
 const settings = defineCollection({
-  loader: glob({ pattern: '**/*.json', base: './src/content/settings' }),
+  loader: publicContentLoader('settings', '**/*.json', './src/content/settings'),
   schema: settingsContentSchema,
 });
 
 const newsletter = defineCollection({
-  loader: glob({ pattern: '**/*.json', base: './src/content/newsletter' }),
+  loader: publicContentLoader('newsletter', '**/*.json', './src/content/newsletter'),
   schema: newsletterContentSchema,
 });
 
 const home = defineCollection({
-  loader: glob({ pattern: '**/*.json', base: './src/content/home' }),
+  loader: publicContentLoader('home', '**/*.json', './src/content/home'),
   schema: ({ image }) => createHomeContentSchema(image),
 });
 
 const about = defineCollection({
-  loader: glob({ pattern: '**/*.json', base: './src/content/about' }),
+  loader: publicContentLoader('about', '**/*.json', './src/content/about'),
   schema: ({ image }) => createAboutContentSchema(image),
 });
 
 const services = defineCollection({
-  loader: glob({ pattern: '**/*.json', base: './src/content/services' }),
+  loader: publicContentLoader('services', '**/*.json', './src/content/services'),
   schema: ({ image }) => createServicesContentSchema(image),
 });
 
 const purchaseInformation = defineCollection({
-  loader: glob({ pattern: '**/*.json', base: './src/content/purchase-information' }),
+  loader: publicContentLoader('purchaseInformation', '**/*.json', './src/content/purchase-information'),
   schema: purchaseInformationSchema,
 });
 

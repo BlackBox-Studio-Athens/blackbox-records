@@ -69,6 +69,7 @@
     },
     "@blackbox/content-model": {
       "packageRoot": "packages/content-model",
+      "description": "Pure editorial, rich-text, native revision and immutable snapshot validation shared by CMS and static builds.",
       "level": "workspace-package",
       "exports": {
         ".": "packages/content-model/src/index.ts"
@@ -144,6 +145,8 @@
       "status": "closed",
       "roots": [
         "apps/web/src/lib/site-data.ts",
+        "apps/web/src/lib/content-loader.ts",
+        "apps/web/src/lib/content-snapshot.ts",
         "apps/web/src/lib/catalog-data.ts",
         "apps/web/src/lib/store-categories.ts",
         "apps/web/src/lib/store-item-ownership.ts",
@@ -179,6 +182,7 @@
       ],
       "providedEntrypoints": [
         "apps/web/src/lib/catalog-data.ts",
+        "apps/web/src/lib/content-loader.ts",
         "apps/web/src/lib/distro-data.ts",
         "apps/web/src/lib/slugs.ts",
         "apps/web/src/lib/site-data.ts",

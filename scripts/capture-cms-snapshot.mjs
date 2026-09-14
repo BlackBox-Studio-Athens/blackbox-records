@@ -1,10 +1,6 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import {
-  contentMediaIds,
-  sourceCollectionNames,
-  validateCmsRevisionContent,
-} from '../apps/backend/src/cms/content-schema.ts';
+import { contentMediaIds, sourceCollectionNames, validateCmsRevisionContent } from '@blackbox/content-model';
 import { validateImage } from '../apps/backend/src/cms/media-upload.ts';
 
 const identifier = z.string().min(1).max(128);
