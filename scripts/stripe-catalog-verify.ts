@@ -55,7 +55,7 @@ type CatalogPromotionContext = {
   runId: string;
 };
 
-type D1CatalogRow = {
+export type D1CatalogRow = {
   amountMinor: number | null;
   currencyCode: string | null;
   freshUntil: string | null;
@@ -527,7 +527,7 @@ function createExpectedProductProjectionMap(
   );
 }
 
-function createD1CatalogRepositories(environment: StripeCatalogEnvironment, rows: D1CatalogRow[]) {
+export function createD1CatalogRepositories(environment: StripeCatalogEnvironment, rows: D1CatalogRow[]) {
   const storeItemRecords = rows.map(toStoreItemOptionRecord);
   const mappingRecords = new Map(
     rows.flatMap((row): Array<[string, VariantStripeMappingRecord]> =>
@@ -623,33 +623,32 @@ function readD1CatalogRows(
   environment: StripeCatalogEnvironment,
   contracts: StripeCatalogStoreItemContract[],
 ): D1CatalogRow[] {
-  return parseD1Rows<D1CatalogRow>(
-    runD1ReadSql(
-      environment,
-      [
-        'SELECT',
-        '  o.storeItemSlug AS storeItemSlug,',
-        '  o.sourceKind AS sourceKind,',
-        '  o.sourceId AS sourceId,',
-        '  o.variantId AS variantId,',
-        '  m.stripePriceId AS mappingStripePriceId,',
-        '  m.stripeProductId AS mappingStripeProductId,',
-        '  s.stripePriceId AS snapshotStripePriceId,',
-        '  s.stripeLookupKey AS stripeLookupKey,',
-        '  s.amountMinor AS amountMinor,',
-        '  s.currencyCode AS currencyCode,',
-        '  s.priceActive AS priceActive,',
-        '  s.productActive AS productActive,',
-        '  s.syncedAt AS syncedAt,',
-        '  s.freshUntil AS freshUntil',
-        'FROM StoreItemOption o',
-        'LEFT JOIN VariantStripeMapping m ON m.variantId = o.variantId',
-        'LEFT JOIN StoreOfferSnapshot s ON s.variantId = o.variantId',
-        `WHERE o.variantId IN (${contracts.map((contract) => sqlString(contract.variantId)).join(', ')})`,
-        'ORDER BY o.storeItemSlug;',
-      ].join('\n'),
-    ),
-  );
+  return parseD1Rows<D1CatalogRow>(runD1ReadSql(environment, createD1CatalogReadSql(contracts)));
+}
+
+export function createD1CatalogReadSql(contracts: Pick<StripeCatalogStoreItemContract, 'variantId'>[]): string {
+  return [
+    'SELECT',
+    '  o.storeItemSlug AS storeItemSlug,',
+    '  o.sourceKind AS sourceKind,',
+    '  o.sourceId AS sourceId,',
+    '  o.variantId AS variantId,',
+    '  m.stripePriceId AS mappingStripePriceId,',
+    '  m.stripeProductId AS mappingStripeProductId,',
+    '  s.stripePriceId AS snapshotStripePriceId,',
+    '  s.stripeLookupKey AS stripeLookupKey,',
+    '  s.amountMinor AS amountMinor,',
+    '  s.currencyCode AS currencyCode,',
+    '  s.priceActive AS priceActive,',
+    '  s.productActive AS productActive,',
+    '  s.syncedAt AS syncedAt,',
+    '  s.freshUntil AS freshUntil',
+    'FROM StoreItemOption o',
+    'LEFT JOIN VariantStripeMapping m ON m.variantId = o.variantId',
+    'LEFT JOIN StoreOfferSnapshot s ON s.variantId = o.variantId',
+    `WHERE o.variantId IN (${contracts.map((contract) => sqlString(contract.variantId)).join(', ')})`,
+    'ORDER BY o.storeItemSlug;',
+  ].join('\n');
 }
 
 function runD1ReadSql(environment: StripeCatalogEnvironment, sql: string): string {

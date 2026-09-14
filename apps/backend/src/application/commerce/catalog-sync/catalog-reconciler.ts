@@ -26,7 +26,7 @@ import type {
 } from './types';
 import { createStoreOfferPriceFromCatalogPrice } from './money';
 
-const STORE_OFFER_FRESHNESS_MS = 24 * 60 * 60 * 1_000;
+import { STORE_OFFER_FRESHNESS_MS } from './types';
 const MAX_CATALOG_ITEMS = 500;
 const PRICE_AUTHORITY_CURRENCY_CODE = 'EUR';
 

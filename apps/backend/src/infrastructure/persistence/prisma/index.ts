@@ -1,3 +1,4 @@
+export { D1CatalogOperationRepository } from './d1-catalog-operation-repository';
 export { createPrismaClient } from './create-prisma-client';
 export { D1OperatorStockRepository } from './d1-operator-stock-repository';
 export { PrismaItemAvailabilityRepository } from './prisma-item-availability-repository';

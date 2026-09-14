@@ -9,6 +9,7 @@ import {
   VariantMismatchError,
 } from '../../src/application/commerce/checkout';
 import { createHttpApp } from '../../src/interfaces/http/app';
+import { createPublicCommerceServices } from '../../src/interfaces/http/routes/public-commerce-services';
 
 const mockDisconnect = vi.fn(async () => {});
 const mockReadStoreOffer = vi.fn();
@@ -22,7 +23,8 @@ const mockRegisterNewsletterSignup = vi.fn();
 const mockSubmitServicesInquiry = vi.fn();
 
 vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
-  createPublicCommerceServices: () => ({
+  readPublicStoreCapabilities: (...args: unknown[]) => mockReadStoreCapabilities(...args),
+  createPublicCommerceServices: vi.fn(() => ({
     disconnect: mockDisconnect,
     errors: {
       CatalogDriftError,
@@ -34,12 +36,11 @@ vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
     },
     listVariantOffersForStoreItem: mockListVariantOffersForStoreItem,
     readCheckoutState: mockReadCheckoutState,
-    readStoreCapabilities: mockReadStoreCapabilities,
     readStoreListingPrices: mockReadStoreListingPrices,
     readStoreOffer: mockReadStoreOffer,
     startCheckout: mockStartCheckout,
     quoteDelivery: mockQuoteDelivery,
-  }),
+  })),
 }));
 
 vi.mock('../../src/interfaces/http/routes/public-newsletter-services', () => ({
@@ -171,6 +172,8 @@ describe('public commerce routes', () => {
     const response = await app.request('http://backend.test/api/store/capabilities', {}, testBindings);
 
     expect(mockReadStoreCapabilities).toHaveBeenCalledOnce();
+    expect(createPublicCommerceServices).not.toHaveBeenCalled();
+    expect(mockDisconnect).not.toHaveBeenCalled();
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({

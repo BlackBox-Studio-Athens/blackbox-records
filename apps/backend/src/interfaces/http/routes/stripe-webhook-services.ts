@@ -114,11 +114,11 @@ export function createStripeWebhookServices(bindings: AppBindings, logger: AppLo
         checkoutExpiresAt,
       ),
     recordCatalogWebhookEvent: catalogWebhookEvents.recordCatalogEvent.bind(catalogWebhookEvents),
-    reconcileCatalogVariant: (storeItem: StoreItemOptionRecord) =>
+    reconcileCatalogVariant: async (storeItem: StoreItemOptionRecord) =>
       catalogReconciler.reconcileVariant(storeItem, {
         apply: true,
         applyProductProjection: false,
-        productProjection: productProjections.findByStoreItem(storeItem),
+        productProjection: await productProjections.findByStoreItem(storeItem),
       }),
   };
 }

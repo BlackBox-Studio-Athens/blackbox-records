@@ -148,7 +148,7 @@ describe('commerce stock use cases', () => {
   let stock: InMemoryStockRepository;
   let stockChanges: InMemoryStockChangeRepository;
   let stockCounts: InMemoryStockCountRepository;
-  let operatorStock: OperatorStockRepository;
+  let operatorStock: Pick<OperatorStockRepository, 'recordChange' | 'recordCount'>;
 
   beforeEach(() => {
     storeItems = new InMemoryStoreItemOptionRepository([storeItem]);

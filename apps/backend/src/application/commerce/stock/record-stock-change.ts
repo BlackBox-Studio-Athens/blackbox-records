@@ -13,7 +13,7 @@ export type RecordStockChangeCommand = {
 
 export async function recordStockChange(
   storeItemOptions: StoreItemOptionRepository,
-  stock: OperatorStockRepository,
+  stock: Pick<OperatorStockRepository, 'recordChange'>,
   command: RecordStockChangeCommand,
 ): Promise<RecordedStockChange> {
   const variantId = parseVariantId(command.variantId);

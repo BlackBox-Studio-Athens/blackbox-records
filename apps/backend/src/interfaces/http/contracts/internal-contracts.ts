@@ -13,6 +13,7 @@ const internalContractModules = [
       '/api/internal/variants/{variantId}/stock/counts',
     ],
   },
+  { name: 'internal-catalog', paths: ['/api/internal/variants/{variantId}/price', '/api/internal/items/setup'] },
 ] as const;
 
 export const internalContractPaths = internalContractModules.flatMap((contractModule) => contractModule.paths);

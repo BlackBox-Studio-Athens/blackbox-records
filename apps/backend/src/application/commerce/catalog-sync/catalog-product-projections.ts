@@ -15,7 +15,9 @@ export type CatalogProductProjectionEntry = {
 };
 
 export type CatalogProductProjectionReader = {
-  findByStoreItem(storeItem: StoreItemOptionRecord): StripeCatalogProductProjection | null;
+  findByStoreItem(
+    storeItem: StoreItemOptionRecord,
+  ): StripeCatalogProductProjection | null | Promise<StripeCatalogProductProjection | null>;
 };
 
 export const currentCatalogProductProjectionEntries: CatalogProductProjectionEntry[] = catalogManifest.entries.map(

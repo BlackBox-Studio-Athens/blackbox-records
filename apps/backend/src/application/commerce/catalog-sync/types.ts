@@ -169,6 +169,37 @@ export type StripeCatalogIdentityMetadata = {
   variantId: string;
 };
 
+export type StripeCatalogPriceChangeInput = StripeCatalogPriceCreateInput & {
+  productId: string;
+  expectedDefaultPriceId: string | null;
+  operationId: string;
+};
+
+export type StripeCatalogSetupProductInput = {
+  operationId: string;
+  metadata: StripeCatalogIdentityMetadata;
+  projection: StripeCatalogProductProjection;
+  confirmLiveSetup: boolean;
+};
+export type StripeCatalogSetupGateway = {
+  ensureSetupProduct(
+    input: StripeCatalogSetupProductInput,
+    context: StripeCatalogMutationContext,
+  ): Promise<StripeCatalogProduct>;
+};
+
+export type StripeCatalogPriceChangeGateway = {
+  createReplacementPrice(
+    input: StripeCatalogPriceChangeInput,
+    context: StripeCatalogMutationContext,
+  ): Promise<StripeCatalogPrice>;
+  selectReplacementPrice(
+    input: StripeCatalogPriceChangeInput,
+    priceId: StripePriceId,
+    context: StripeCatalogMutationContext,
+  ): Promise<StripeCatalogPrice>;
+};
+
 export type StripeCatalogPriceCreateInput = {
   currencyCode: string;
   lookupKey: string;
@@ -301,4 +332,15 @@ export type CatalogSyncRunResult = {
   environment: StripeCatalogEnvironment;
   issues: CatalogSyncIssue[];
   results: CatalogSyncVariantResult[];
+};
+
+export class CatalogPriceConflictError extends Error {}
+export const STORE_OFFER_FRESHNESS_MS = 24 * 60 * 60 * 1_000;
+
+export type CmsItemSourceSelection = { sourceKind: 'release' | 'distro' } & (
+  { mode: 'existing'; id: string } | { mode: 'create'; slug: string; data: Record<string, unknown> }
+);
+export type CmsItemSource = { id: string; slug: string; data: Record<string, unknown> };
+export type CmsItemSourceGateway = {
+  ensureSource(selection: CmsItemSourceSelection): Promise<CmsItemSource>;
 };

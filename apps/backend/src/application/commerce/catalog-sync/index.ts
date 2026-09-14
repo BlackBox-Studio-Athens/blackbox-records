@@ -19,6 +19,7 @@ export {
   currentCatalogProductProjectionEntries,
 } from './catalog-product-projections';
 export type { CatalogProductProjectionEntry, CatalogProductProjectionReader } from './catalog-product-projections';
+export { createRuntimeCatalogProductProjectionReader } from './runtime-catalog-product-projections';
 export type {
   CatalogDriftCategory,
   CatalogFieldGroup,
@@ -36,6 +37,9 @@ export {
 } from './catalog-reconciler';
 export { createStoreOfferPrice, createStoreOfferPriceFromCatalogPrice } from './money';
 export type {
+  CmsItemSourceSelection,
+  CmsItemSource,
+  CmsItemSourceGateway,
   CatalogSyncAction,
   CatalogSyncIssue,
   CatalogSyncRunResult,
@@ -54,9 +58,17 @@ export type {
   StripeCatalogIdentityMetadata,
   StripeCatalogMutationContext,
   StripeCatalogPrice,
+  StripeCatalogPriceChangeInput,
+  StripeCatalogSetupProductInput,
+  StripeCatalogSetupGateway,
+  StripeCatalogPriceChangeGateway,
   StripeCatalogPriceCreateInput,
   StripeCatalogProduct,
   StripeCatalogProductProjection,
   StripeCatalogProductProjectionUpdateInput,
 } from './types';
 export { catalogManifest } from './catalog-manifest.generated';
+
+export { CatalogPriceConflictError } from './types';
+export { changeCatalogPrice, catalogPriceChangeSchema } from './change-catalog-price';
+export { setupCatalogItem, catalogItemSetupSchema } from './setup-catalog-item';

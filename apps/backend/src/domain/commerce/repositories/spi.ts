@@ -1,3 +1,15 @@
+export {
+  CatalogOperationConflictError,
+  catalogOperationInputSchema,
+  catalogOperationResultsSchema,
+} from './catalog-operation-repository';
+export type {
+  CatalogOperation,
+  CatalogOperationRepository,
+  CatalogOperationInput,
+  CatalogOperationResults,
+  CatalogOperationStep,
+} from './catalog-operation-repository';
 export type {
   CheckoutStockHoldLineInput,
   CheckoutStockHoldRepository,
@@ -9,6 +21,8 @@ export type {
   SessionlessPendingCheckoutOrder,
 } from './checkout-stock-hold-repository';
 export type {
+  RuntimeCatalogRecord,
+  RuntimeCatalogRepository,
   StoreItemOptionRecord,
   StoreItemOptionRepository,
   StoreItemSourceKind,

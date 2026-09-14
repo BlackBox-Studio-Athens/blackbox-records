@@ -1,4 +1,6 @@
 import type {
+  RuntimeCatalogRecord,
+  RuntimeCatalogRepository,
   StoreItemOptionRecord,
   StoreItemOptionRepository,
   StoreItemSourceRef,
@@ -20,8 +22,23 @@ function mapStoreItemOption(record: {
   };
 }
 
-export class PrismaStoreItemOptionRepository implements StoreItemOptionRepository {
+export class PrismaStoreItemOptionRepository implements StoreItemOptionRepository, RuntimeCatalogRepository {
   public constructor(private readonly prisma: PrismaClient) {}
+
+  public async findByStoreItem(storeItem: StoreItemOptionRecord): Promise<RuntimeCatalogRecord | null> {
+    const record = await this.prisma.storeItemOption.findFirst({ where: storeItem });
+    return record
+      ? {
+          ...mapStoreItemOption(record),
+          cmsSourceId: record.cmsSourceId,
+          itemType: record.itemType,
+          priceKind: record.priceKind,
+          productProjection: record.productProjection,
+          catalogAvailability: record.catalogAvailability,
+          catalogRevision: record.catalogRevision,
+        }
+      : null;
+  }
 
   public async findByStoreItemSlug(storeItemSlug: string): Promise<StoreItemOptionRecord | null> {
     const record = await this.prisma.storeItemOption.findUnique({

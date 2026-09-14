@@ -1,4 +1,24 @@
 export type paths = {
+    "/api/internal/items/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set up an item using a replayable operator command.
+         * @description Requires verified operator Access, an Origin matching this API origin, and X-Blackbox-Request: 1. Reuse the same operationId and body when retrying.
+         */
+        post: operations["setupCatalogItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/orders": {
         parameters: {
             query?: never;
@@ -169,6 +189,26 @@ export type paths = {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/internal/variants/{variantId}/price": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change an item price using a replayable operator command.
+         * @description Requires verified operator Access, an Origin matching this API origin, and X-Blackbox-Request: 1. Reuse the same operationId and body when retrying.
+         */
+        post: operations["changeCatalogPrice"];
         delete?: never;
         options?: never;
         head?: never;
@@ -495,6 +535,18 @@ export type components = {
             error: string;
             requestId?: string;
         };
+        CatalogItemSetupResult: {
+            operationId: string;
+            /** @enum {string} */
+            status: "pending" | "completed" | "needs_review";
+            variantId: string;
+        };
+        CatalogPriceChangeResult: {
+            operationId: string;
+            /** @enum {string} */
+            status: "pending" | "completed" | "needs_review";
+            variantId: string;
+        };
         InternalCheckoutOrder: {
             acceptedDeliveryAmountMinor: number | null;
             /** @enum {string|null} */
@@ -680,5 +732,212 @@ export type components = {
     pathItems: never;
 };
 export type $defs = Record<string, never>;
-export type operations = Record<string, never>;
+export interface operations {
+    setupCatalogItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                origin?: string;
+                "x-blackbox-request"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @default false */
+                    confirmLiveSetup?: boolean;
+                    /** @enum {string} */
+                    itemType: "Vinyl 12-inch" | "Vinyl 10-inch" | "Vinyl 7-inch" | "CDs" | "Clothes" | "Tapes" | "Other";
+                    /** @default 0 */
+                    openingQuantity?: number;
+                    operationId: string;
+                    price: {
+                        amountMinor: number;
+                        /** @enum {string} */
+                        currencyCode: "EUR";
+                        /** @enum {string} */
+                        kind: "fixed";
+                    } | {
+                        /** @enum {string} */
+                        currencyCode: "EUR";
+                        /** @enum {string} */
+                        kind: "pay_what_you_want";
+                        maximumAmountMinor: number;
+                        minimumAmountMinor: number;
+                        presetAmountMinor: number;
+                    };
+                    source: {
+                        id: string;
+                        /** @enum {string} */
+                        mode: "existing";
+                        /** @enum {string} */
+                        sourceKind: "release" | "distro";
+                    } | {
+                        data: {
+                            [key: string]: unknown;
+                        };
+                        /** @enum {string} */
+                        mode: "create";
+                        slug: string;
+                        /** @enum {string} */
+                        sourceKind: "release" | "distro";
+                    };
+                    storeItemSlug: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Retained operation status. Retry pending operations with identical input and operation identity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItemSetupResult"];
+                };
+            };
+            /** @description Invalid request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Same-origin operator request required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operation input or catalog revision conflicts, or live confirmation is missing. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication or item setup is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    changeCatalogPrice: {
+        parameters: {
+            query?: never;
+            header?: {
+                origin?: string;
+                "x-blackbox-request"?: string;
+            };
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @default false */
+                    confirmLivePriceChange?: boolean;
+                    expectedRevision: number;
+                    operationId: string;
+                    price: {
+                        amountMinor: number;
+                        /** @enum {string} */
+                        currencyCode: "EUR";
+                        /** @enum {string} */
+                        kind: "fixed";
+                    } | {
+                        /** @enum {string} */
+                        currencyCode: "EUR";
+                        /** @enum {string} */
+                        kind: "pay_what_you_want";
+                        maximumAmountMinor: number;
+                        minimumAmountMinor: number;
+                        presetAmountMinor: number;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Retained operation status. Retry pending operations with identical input and operation identity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogPriceChangeResult"];
+                };
+            };
+            /** @description Invalid request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Same-origin operator request required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operation input or catalog revision conflicts, or live confirmation is missing. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication or price processing is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+}
 

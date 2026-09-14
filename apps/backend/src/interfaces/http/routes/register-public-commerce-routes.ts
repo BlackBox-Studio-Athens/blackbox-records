@@ -12,7 +12,7 @@ import { createStartCheckoutLineCommand } from '../../../application/commerce/ch
 import { requestLogger, safeCheckoutSessionId, traceContextFromHono, runWithTraceSpan } from '../../../observability';
 import { jsonError, jsonNoStore } from '../responses';
 import { createPublicCheckoutCancelUrl, createPublicCheckoutReturnUrl } from './public-checkout-return-url';
-import { createPublicCommerceServices } from './public-commerce-services';
+import { createPublicCommerceServices, readPublicStoreCapabilities } from './public-commerce-services';
 
 export function registerPublicCommerceRoutes(app: AppOpenApi): void {
   app.openapi(postDeliveryQuoteRoute, async (context) => {
@@ -25,22 +25,16 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
   });
   app.openapi(getStoreCapabilitiesRoute, async (context) => {
     const logger = requestLogger(context);
-    const services = createPublicCommerceServices(context.env, logger);
+    const capabilities = await readPublicStoreCapabilities(context.env, logger);
+    const nativeCheckoutEnabled = capabilities.nativeCheckout.enabled;
 
-    try {
-      const capabilities = await services.readStoreCapabilities();
-      const nativeCheckoutEnabled = capabilities.nativeCheckout.enabled;
+    logger.info({
+      event: 'checkout_capability_evaluated',
+      outcome: nativeCheckoutEnabled ? 'allowed' : 'disabled',
+      safeReason: nativeCheckoutEnabled ? undefined : 'native_checkout_disabled',
+    });
 
-      logger.info({
-        event: 'checkout_capability_evaluated',
-        outcome: nativeCheckoutEnabled ? 'allowed' : 'disabled',
-        safeReason: nativeCheckoutEnabled ? undefined : 'native_checkout_disabled',
-      });
-
-      return jsonNoStore(context.json(capabilities, 200));
-    } finally {
-      await services.disconnect();
-    }
+    return jsonNoStore(context.json(capabilities, 200));
   });
 
   app.openapi(getStoreListingPricesRoute, async (context) => {

@@ -38,6 +38,13 @@ import { readStoreListingPrices } from '../../../application/commerce/readers';
 import type { VariantId } from '../../../domain/commerce';
 import { D1CheckoutStockHoldRepository } from '../../../infrastructure/persistence/d1-checkout-stock-hold-repository';
 
+export async function readPublicStoreCapabilities(bindings: AppBindings, logger?: Pick<AppLogger, 'warn'>) {
+  return {
+    ...(await readStoreCapabilities(createFeatureFlagReader(bindings, logger))),
+    pricing: { vatDisclosure, deliveryCharges, currencyCode: 'EUR' as const },
+  };
+}
+
 export function createPublicCommerceServices(bindings: AppBindings, logger?: Pick<AppLogger, 'warn'>) {
   const productEnvironmentProfile = productEnvironmentProfileFromBindings(bindings);
   const target = productEnvironmentProfile.workerDeploymentTarget;
@@ -93,10 +100,6 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
       ),
     readCheckoutState: async (checkoutSessionId: string) =>
       readCheckoutState(createStripeCheckoutGateway(bindings), orders, checkoutSessionId),
-    readStoreCapabilities: async () => ({
-      ...(await readStoreCapabilities(createFeatureFlagReader(bindings, logger))),
-      pricing: { vatDisclosure, deliveryCharges, currencyCode: 'EUR' as const },
-    }),
     quoteDelivery: async (lines: { storeItemSlug: string; variantId: string; quantity: number }[]) => {
       const merged = new Map<string, { storeItemSlug: string; variantId: string; quantity: number }>();
       for (const line of lines) {

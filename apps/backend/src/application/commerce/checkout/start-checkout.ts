@@ -162,7 +162,7 @@ export async function startCheckout(
       throw new CheckoutUnavailableError();
     }
 
-    const productProjection = productProjections.findByStoreItem(storeItem);
+    const productProjection = await productProjections.findByStoreItem(storeItem);
 
     if (!productProjection) {
       throw new CatalogDriftError();

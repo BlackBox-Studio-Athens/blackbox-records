@@ -20,3 +20,16 @@ export interface StoreItemOptionRepository {
   findBySource(source: StoreItemSourceRef): Promise<StoreItemOptionRecord | null>;
   search(query: string | null, limit: number): Promise<StoreItemOptionRecord[]>;
 }
+
+export type RuntimeCatalogRecord = StoreItemOptionRecord & {
+  cmsSourceId: string | null;
+  itemType: string | null;
+  priceKind: string | null;
+  productProjection: unknown;
+  catalogAvailability: string;
+  catalogRevision: number;
+};
+
+export interface RuntimeCatalogRepository {
+  findByStoreItem(storeItem: StoreItemOptionRecord): Promise<RuntimeCatalogRecord | null>;
+}

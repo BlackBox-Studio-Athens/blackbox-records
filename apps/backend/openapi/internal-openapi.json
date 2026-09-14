@@ -821,6 +821,56 @@
           "countedQuantity",
           "onlineQuantity"
         ]
+      },
+      "CatalogPriceChangeResult": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "variantId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "completed",
+              "needs_review"
+            ]
+          }
+        },
+        "required": [
+          "operationId",
+          "variantId",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "CatalogItemSetupResult": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "variantId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "completed",
+              "needs_review"
+            ]
+          }
+        },
+        "required": [
+          "operationId",
+          "variantId",
+          "status"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -1318,6 +1368,493 @@
           },
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/variants/{variantId}/price": {
+      "post": {
+        "operationId": "changeCatalogPrice",
+        "tags": [
+          "Internal catalog"
+        ],
+        "summary": "Change an item price using a replayable operator command.",
+        "description": "Requires verified operator Access, an Origin matching this API origin, and X-Blackbox-Request: 1. Reuse the same operationId and body when retrying.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^variant_[A-Za-z0-9_-]+$"
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "origin",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "x-blackbox-request",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "operationId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "confirmLivePriceChange": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "price": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "fixed"
+                            ]
+                          },
+                          "currencyCode": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "currencyCode",
+                          "amountMinor"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "pay_what_you_want"
+                            ]
+                          },
+                          "currencyCode": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "minimumAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          },
+                          "presetAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          },
+                          "maximumAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "currencyCode",
+                          "minimumAmountMinor",
+                          "presetAmountMinor",
+                          "maximumAmountMinor"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "operationId",
+                  "expectedRevision",
+                  "price"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Retained operation status. Retry pending operations with identical input and operation identity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPriceChangeResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Same-origin operator request required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Operation input or catalog revision conflicts, or live confirmation is missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication or price processing is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/items/setup": {
+      "post": {
+        "operationId": "setupCatalogItem",
+        "tags": [
+          "Internal catalog"
+        ],
+        "summary": "Set up an item using a replayable operator command.",
+        "description": "Requires verified operator Access, an Origin matching this API origin, and X-Blackbox-Request: 1. Reuse the same operationId and body when retrying.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "origin",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "x-blackbox-request",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "operationId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "storeItemSlug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                  },
+                  "source": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "existing"
+                            ]
+                          },
+                          "sourceKind": {
+                            "type": "string",
+                            "enum": [
+                              "release",
+                              "distro"
+                            ]
+                          },
+                          "id": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128
+                          }
+                        },
+                        "required": [
+                          "mode",
+                          "sourceKind",
+                          "id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "mode": {
+                            "type": "string",
+                            "enum": [
+                              "create"
+                            ]
+                          },
+                          "sourceKind": {
+                            "type": "string",
+                            "enum": [
+                              "release",
+                              "distro"
+                            ]
+                          },
+                          "slug": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 128,
+                            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+                          },
+                          "data": {
+                            "type": "object",
+                            "additionalProperties": {}
+                          }
+                        },
+                        "required": [
+                          "mode",
+                          "sourceKind",
+                          "slug",
+                          "data"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "itemType": {
+                    "type": "string",
+                    "enum": [
+                      "Vinyl 12-inch",
+                      "Vinyl 10-inch",
+                      "Vinyl 7-inch",
+                      "CDs",
+                      "Clothes",
+                      "Tapes",
+                      "Other"
+                    ]
+                  },
+                  "price": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "fixed"
+                            ]
+                          },
+                          "currencyCode": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "currencyCode",
+                          "amountMinor"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "pay_what_you_want"
+                            ]
+                          },
+                          "currencyCode": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "minimumAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          },
+                          "presetAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          },
+                          "maximumAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "currencyCode",
+                          "minimumAmountMinor",
+                          "presetAmountMinor",
+                          "maximumAmountMinor"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "openingQuantity": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 2147483647,
+                    "default": 0
+                  },
+                  "confirmLiveSetup": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "operationId",
+                  "storeItemSlug",
+                  "source",
+                  "itemType",
+                  "price"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Retained operation status. Retry pending operations with identical input and operation identity.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemSetupResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Same-origin operator request required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Operation input or catalog revision conflicts, or live confirmation is missing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication or item setup is temporarily unavailable.",
             "content": {
               "application/json": {
                 "schema": {

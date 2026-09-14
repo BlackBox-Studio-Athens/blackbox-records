@@ -21,6 +21,8 @@ describe('operator access middleware', () => {
     ['GET', '/api/internal/variants/variant_1/stock/history'],
     ['POST', '/api/internal/variants/variant_1/stock/changes'],
     ['POST', '/api/internal/variants/variant_1/stock/counts'],
+    ['POST', '/api/internal/variants/variant_1/price'],
+    ['POST', '/api/internal/items/setup'],
     ['GET', '/api/internal/orders'],
     ['GET', '/api/internal/orders/checkout-sessions/cs_test_1'],
   ])('protects %s %s before route work', async (method, path) => {

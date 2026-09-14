@@ -96,7 +96,7 @@ export async function readStoreOffer(
     return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Sold Out');
   }
 
-  const productProjection = productProjections.findByStoreItem(storeItem);
+  const productProjection = await productProjections.findByStoreItem(storeItem);
 
   if (!productProjection) {
     return catalogDriftOffer(storeItem.storeItemSlug, storeItem.variantId);

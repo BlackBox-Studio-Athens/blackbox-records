@@ -14,7 +14,7 @@ export type RecordStockCountCommand = {
 
 export async function recordStockCount(
   storeItemOptions: StoreItemOptionRepository,
-  stock: OperatorStockRepository,
+  stock: Pick<OperatorStockRepository, 'recordCount'>,
   command: RecordStockCountCommand,
 ): Promise<RecordedStockCount> {
   const variantId = parseVariantId(command.variantId);
