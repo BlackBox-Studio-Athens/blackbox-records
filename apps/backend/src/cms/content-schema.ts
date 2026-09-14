@@ -1,0 +1,202 @@
+import { z } from 'zod';
+import {
+  createArtistsContentSchema,
+  createReleasesContentSchema,
+  createNewsContentSchema,
+  createDistroContentSchema,
+  createHomeContentSchema,
+  createAboutContentSchema,
+  createServicesContentSchema,
+  distroPageContentSchema,
+  navigationContentSchema,
+  socialsContentSchema,
+  settingsContentSchema,
+  newsletterContentSchema,
+  purchaseInformationSchema,
+} from '@blackbox/content-model';
+
+const mediaId = z.string().min(1).max(128);
+const image = () => z.object({ id: mediaId }).strict();
+export const cmsLinkSchema = z.string().refine((value) => {
+  try {
+    return (
+      ![...value].some((character) => character <= ' ' || character === '\\') &&
+      ['https:', 'http:', 'mailto:'].includes(new URL(value, 'https://content.invalid/').protocol)
+    );
+  } catch {
+    return false;
+  }
+}, 'Use a safe web, email, or relative link.');
+const key = z.string().min(1).max(128);
+const textBlock = z
+  .object({
+    _type: z.literal('block'),
+    _key: key,
+    style: z.enum(['normal', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote']).optional(),
+    children: z.array(
+      z
+        .object({ _type: z.literal('span'), _key: key, text: z.string(), marks: z.array(z.string()).optional() })
+        .strict(),
+    ),
+    markDefs: z
+      .array(
+        z.object({ _type: z.literal('link'), _key: key, href: cmsLinkSchema, blank: z.boolean().optional() }).strict(),
+      )
+      .optional(),
+    listItem: z.enum(['bullet', 'number']).optional(),
+    level: z.number().int().min(1).max(10).optional(),
+    listId: key.optional(),
+    listStart: z.number().int().min(1).optional(),
+  })
+  .strict()
+  .superRefine((block, ctx) => {
+    const marks = new Set([
+      'em',
+      'strong',
+      'code',
+      'underline',
+      'strike-through',
+      ...(block.markDefs ?? []).map((mark) => mark._key),
+    ]);
+    for (const [index, span] of block.children.entries()) {
+      if (span.marks?.some((mark) => !marks.has(mark)))
+        ctx.addIssue({ code: 'custom', path: ['children', index, 'marks'], message: 'Unknown text mark.' });
+    }
+  });
+export const cmsBodySchema = z.array(
+  z.union([
+    textBlock,
+    z
+      .object({
+        _type: z.literal('image'),
+        _key: key,
+        asset: z.object({ _ref: mediaId }).strict(),
+        alt: z.string().trim().min(1),
+      })
+      .strict(),
+    z
+      .object({
+        _type: z.literal('code'),
+        _key: key,
+        code: z.string(),
+        language: z.string().optional(),
+        filename: z.string().optional(),
+      })
+      .strict(),
+  ]),
+);
+
+export const cmsContentSchemas = {
+  artists: createArtistsContentSchema(image).omit({ slug: true }).extend({ body: cmsBodySchema.optional() }),
+  releases: createReleasesContentSchema(image, { artist: mediaId }).extend({
+    body: cmsBodySchema.optional(),
+    release_date: z.iso.date(),
+  }),
+  news: createNewsContentSchema(image).extend({ body: cmsBodySchema.optional(), date: z.iso.date() }),
+  distro: createDistroContentSchema(image).extend({ release_date: z.iso.date().optional() }),
+  distro_page: distroPageContentSchema,
+  navigation: navigationContentSchema,
+  socials: socialsContentSchema,
+  settings: settingsContentSchema,
+  newsletter: newsletterContentSchema,
+  home: createHomeContentSchema(image),
+  about: createAboutContentSchema(image),
+  services: createServicesContentSchema(image),
+  purchase_information: purchaseInformationSchema,
+} satisfies Record<string, z.ZodType>;
+
+export type CmsCollection = keyof typeof cmsContentSchemas;
+export const sourceCollectionNames: Record<CmsCollection, string> = {
+  artists: 'artists',
+  releases: 'releases',
+  news: 'news',
+  distro: 'distro',
+  distro_page: 'distroPage',
+  navigation: 'navigation',
+  socials: 'socials',
+  settings: 'settings',
+  newsletter: 'newsletter',
+  home: 'home',
+  about: 'about',
+  services: 'services',
+  purchase_information: 'purchaseInformation',
+};
+
+export function isCmsCollection(value: string): value is CmsCollection {
+  return Object.hasOwn(cmsContentSchemas, value);
+}
+
+// EmDash stores absent optional columns as null. Validate that representation as
+// absent, while still rejecting unknown keys and null required fields.
+export function validateCmsContent(collection: CmsCollection, data: Record<string, unknown>) {
+  const schema = cmsContentSchemas[collection];
+  const known =
+    collection === 'purchase_information' ? ['publication', 'content'] : Object.keys((schema as z.ZodObject).shape);
+  const normalized = Object.fromEntries(
+    Object.entries(data).filter(([field, value]) => value !== null || !known.includes(field)),
+  );
+  const result = schema.safeParse(normalized);
+  if (!result.success) return result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`);
+  const issues: string[] = [];
+  function unknownFields(input: unknown, parsed: unknown, field = '') {
+    if (!input || typeof input !== 'object' || !parsed || typeof parsed !== 'object') return;
+    for (const [name, value] of Object.entries(input)) {
+      const next = field ? `${field}.${name}` : name;
+      if (!Object.hasOwn(parsed, name)) issues.push(`${next}: Unsupported field.`);
+      else unknownFields(value, (parsed as Record<string, unknown>)[name], next);
+    }
+  }
+  unknownFields(normalized, result.data);
+  return issues;
+}
+
+export function contentMediaIds(data: unknown): string[] {
+  const ids = new Set<string>();
+  function visit(value: unknown) {
+    if (!value || typeof value !== 'object') return;
+    const record = value as Record<string, unknown>;
+    // Native revisions enrich local image references with dimensions/provider metadata.
+    if (typeof record.id === 'string' && (Object.keys(record).length === 1 || record.provider === 'local'))
+      ids.add(record.id);
+    if (typeof record._ref === 'string') ids.add(record._ref);
+    for (const child of Object.values(record)) visit(child);
+  }
+  visit(data);
+  return [...ids];
+}
+
+// Validate native revision enrichment without weakening the editorial write contract.
+export function validateCmsRevisionContent(collection: CmsCollection, data: Record<string, unknown>) {
+  const revisionImage = z
+    .object({
+      id: mediaId,
+      provider: z.literal('local'),
+      width: z.number().int().positive().optional(),
+      height: z.number().int().positive().optional(),
+      filename: z.string().min(1).max(200).optional(),
+      mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']).optional(),
+      blurhash: z.string().optional(),
+      dominantColor: z.string().optional(),
+      alt: z.string().optional(),
+      focalX: z.number().min(0).max(1).optional(),
+      focalY: z.number().min(0).max(1).optional(),
+      meta: z
+        .object({
+          storageKey: z.string().min(1),
+          caption: z.string().nullable().optional(),
+          blurhash: z.string().nullable().optional(),
+          dominantColor: z.string().nullable().optional(),
+        })
+        .strict()
+        .optional(),
+    })
+    .strict();
+  function editorialValue(value: unknown): unknown {
+    if (Array.isArray(value)) return value.map(editorialValue);
+    if (!value || typeof value !== 'object') return value;
+    const record = value as Record<string, unknown>;
+    if (record.provider === 'local' && revisionImage.safeParse(record).success) return { id: record.id };
+    return Object.fromEntries(Object.entries(record).map(([key, child]) => [key, editorialValue(child)]));
+  }
+  return validateCmsContent(collection, editorialValue(data) as Record<string, unknown>);
+}

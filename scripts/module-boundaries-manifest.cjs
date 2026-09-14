@@ -286,17 +286,17 @@ function buildDependencyCruiserConfig(manifest = loadModuleBoundariesManifest())
     });
   }
 
-  const apiClientBoundary = manifest.workspaceBoundaries['@blackbox/api-client'];
-  if (apiClientBoundary) {
+  for (const [workspaceName, boundary] of getWorkspaceEntries(manifest)) {
+    if (!boundary.exports || !boundary.ownedRoots) continue;
     forbidden.push({
-      name: 'api-client-export-only-access',
+      name: `${workspaceName.replace('@blackbox/', '')}-export-only-access`,
       severity: 'error',
       from: {
-        pathNot: buildUnionRegex(apiClientBoundary.ownedRoots ?? []),
+        pathNot: buildUnionRegex(boundary.ownedRoots),
       },
       to: {
-        path: '^packages/api-client/src/',
-        pathNot: buildUnionRegex(getWorkspaceExportFiles(apiClientBoundary)),
+        path: buildUnionRegex(boundary.ownedRoots),
+        pathNot: buildUnionRegex(getWorkspaceExportFiles(boundary)),
       },
     });
   }
@@ -311,7 +311,8 @@ function buildDependencyCruiserConfig(manifest = loadModuleBoundariesManifest())
       enhancedResolveOptions: {
         extensions: ['.ts', '.tsx', '.mts', '.cts', '.js', '.mjs', '.cjs'],
       },
-      includeOnly: '^(?:apps/web/src|apps/staff/src|apps/backend/src|packages/api-client/src)/.*\\.(?:ts|tsx)$',
+      includeOnly:
+        '^(?:apps/web/src|apps/staff/src|apps/backend/src|packages/api-client/src|packages/content-model/src)/.*\\.(?:ts|tsx)$',
       exclude: '^(?:apps/backend/src/generated|packages/api-client/src/generated)/',
     },
   };
@@ -422,7 +423,9 @@ function validateManifest(manifest = loadModuleBoundariesManifest()) {
       const packageJson = readJson(path.resolve(repoRoot, workspaceBoundary.packageJson));
 
       for (const [exportName, exportFile] of Object.entries(workspaceBoundary.exports)) {
-        if (packageJson.exports?.[exportName] !== `./${exportFile.replace(/^packages\/api-client\//, '')}`) {
+        if (
+          packageJson.exports?.[exportName] !== `./${path.posix.relative(workspaceBoundary.packageRoot, exportFile)}`
+        ) {
           errors.push(
             `Workspace boundary ${workspaceName} export ${exportName} does not match ${workspaceBoundary.packageJson}`,
           );

@@ -66,6 +66,16 @@
         "./internal": "packages/api-client/src/internal-client.ts"
       },
       "deepImportBypassPatterns": ["@blackbox/api-client/src/**", "@blackbox/api-client/src/generated/**"]
+    },
+    "@blackbox/content-model": {
+      "packageRoot": "packages/content-model",
+      "level": "workspace-package",
+      "exports": {
+        ".": "packages/content-model/src/index.ts"
+      },
+      "ownedRoots": ["packages/content-model/src/**"],
+      "packageJson": "packages/content-model/package.json",
+      "deepImportBypassPatterns": ["@blackbox/content-model/src/**"]
     }
   },
   "modules": {
@@ -82,7 +92,9 @@
         "ui-foundation",
         "platform-shared"
       ],
-      "allowedWorkspaceInterfaces": {},
+      "allowedWorkspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      },
       "ownershipExceptions": ["apps/web/src/components/app-shell/player-*.ts"]
     },
     "player": {
@@ -103,7 +115,9 @@
       ],
       "namedInterfaces": {},
       "allowedDependencies": ["ui-foundation", "platform-shared"],
-      "allowedWorkspaceInterfaces": {},
+      "allowedWorkspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      },
       "ownershipExceptions": []
     },
     "ui-foundation": {
@@ -178,7 +192,9 @@
       ],
       "namedInterfaces": {},
       "allowedDependencies": ["player", "store-cart", "checkout-web", "ui-foundation", "platform-shared"],
-      "allowedWorkspaceInterfaces": {},
+      "allowedWorkspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      },
       "ownershipExceptions": []
     },
     "store-cart": {
@@ -248,7 +264,9 @@
       ],
       "namedInterfaces": {},
       "allowedDependencies": ["storefront-catalog", "platform-shared"],
-      "allowedWorkspaceInterfaces": {},
+      "allowedWorkspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      },
       "ownershipExceptions": []
     },
     "public-commerce-http": {
@@ -257,6 +275,9 @@
         "apps/backend/src/interfaces/http/app.ts",
         "apps/backend/src/interfaces/http/openapi/api-documents.ts",
         "apps/backend/src/interfaces/http/routes/register-internal-routes.ts",
+        "apps/backend/src/interfaces/http/routes/register-internal-price-routes.ts",
+        "apps/backend/src/interfaces/http/routes/register-internal-setup-routes.ts",
+        "apps/backend/src/interfaces/http/routes/cms-item-source-gateway.ts",
         "apps/backend/src/interfaces/http/routes/register-public-routes.ts",
         "apps/backend/src/interfaces/http/routes/register-public-commerce-routes.ts",
         "apps/backend/src/interfaces/http/routes/register-public-newsletter-routes.ts",
@@ -274,7 +295,8 @@
       "providedEntrypoints": [
         "apps/backend/src/interfaces/http/contracts/public-contracts.ts",
         "apps/backend/src/interfaces/http/routes/register-public-routes.ts",
-        "apps/backend/src/interfaces/http/routes/register-internal-routes.ts"
+        "apps/backend/src/interfaces/http/routes/register-internal-routes.ts",
+        "apps/backend/src/interfaces/http/app.ts"
       ],
       "namedInterfaces": {
         "public-contracts": "apps/backend/src/interfaces/http/contracts/public-contracts.ts"
@@ -365,7 +387,7 @@
       "providedEntrypoints": ["apps/backend/src/application/commerce/catalog-sync/index.ts"],
       "namedInterfaces": {},
       "allowedDependencies": ["commerce-domain"],
-      "allowedWorkspaceInterfaces": {},
+      "allowedWorkspaceInterfaces": { "@blackbox/content-model": ["."] },
       "ownershipExceptions": []
     },
     "checkout-core": {
@@ -471,10 +493,8 @@
         "apps/web/src/components/PurchaseInformation.tsx",
         "apps/web/src/components/PurchaseDocument.tsx",
         "apps/web/src/lib/purchase-information.ts",
-        "apps/web/src/lib/purchase-information-schema.ts",
         "apps/web/src/content/purchase-information/**",
         "apps/web/src/config/site.ts",
-        "apps/web/src/lib/editorial-validation.ts",
         "apps/web/src/utils/urls.ts",
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
@@ -489,8 +509,6 @@
         "apps/web/src/components/PurchaseInformation.tsx",
         "apps/web/src/components/PurchaseDocument.tsx",
         "apps/web/src/lib/purchase-information.ts",
-        "apps/web/src/lib/purchase-information-schema.ts",
-        "apps/web/src/lib/editorial-validation.ts",
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
         "apps/web/src/utils/urls.ts",
@@ -503,8 +521,32 @@
       "namedInterfaces": {},
       "allowedDependencies": [],
       "allowedWorkspaceInterfaces": {
-        "@blackbox/api-client": ["./public"]
+        "@blackbox/api-client": ["./public"],
+        "@blackbox/content-model": ["."]
       },
+      "ownershipExceptions": []
+    },
+    "backend-runtime": {
+      "providedEntrypoints": ["apps/backend/src/index.ts"],
+      "allowedDependencies": ["public-commerce-http", "orders", "platform-shared"],
+      "namedInterfaces": { "commerce-worker": "apps/backend/src/index.ts" },
+      "roots": ["apps/backend/src/index.ts"],
+      "allowedWorkspaceInterfaces": {},
+      "status": "closed",
+      "ownershipExceptions": []
+    },
+    "cms-runtime": {
+      "providedEntrypoints": ["apps/backend/src/cms/index.ts", "apps/backend/src/cms/auth.ts"],
+      "allowedDependencies": ["backend-runtime", "operator-auth", "platform-shared"],
+      "namedInterfaces": {
+        "combined-worker": "apps/backend/src/cms/index.ts",
+        "access-auth-provider": "apps/backend/src/cms/auth.ts"
+      },
+      "roots": ["apps/backend/src/cms/**", "apps/backend/src/middleware.ts"],
+      "allowedWorkspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      },
+      "status": "closed",
       "ownershipExceptions": []
     }
   }

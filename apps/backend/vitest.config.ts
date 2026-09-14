@@ -13,6 +13,7 @@ installBackendWorkerPoolSourcemapStderrFilter();
 
 const backendRoot = dirname(fileURLToPath(import.meta.url));
 const migrations = await readD1Migrations(join(backendRoot, 'prisma/migrations'));
+const cmsMigrations = await readD1Migrations(join(backendRoot, 'cms-migrations'));
 
 export default defineConfig({
   customLogger: filteredViteLogger,
@@ -37,12 +38,15 @@ export default defineConfig({
           RESEND_OPS_TO_EMAIL: 'blackboxrecordsathens@gmail.com',
           RESEND_REPLY_TO_EMAIL: 'support@blackboxrecordsathens.com',
           TEST_MIGRATIONS: migrations,
+          TEST_CMS_MIGRATIONS: cmsMigrations,
         },
         compatibilityDate: '2026-08-31',
         compatibilityFlags: ['nodejs_compat'],
         d1Databases: {
           COMMERCE_DB: 'blackbox-records-workers-pool-test',
+          TEST_CMS_DB: 'blackbox-records-cms-workers-pool-test',
         },
+        r2Buckets: ['TEST_SNAPSHOTS'],
       },
     }),
   ],

@@ -18,6 +18,7 @@
     "site:dev:stop": "pnpm --filter @blackbox/web dev:stop",
     "dev:clean": "pnpm --filter @blackbox/web dev:clean",
     "cms:dev": "pnpm --filter @blackbox/web cms:dev",
+    "cms:inventory": "node scripts/inventory-cms-content.mjs",
     "dev:backend": "pnpm --filter @blackbox/backend dev",
     "dev:backend:mock": "pnpm --filter @blackbox/backend dev:mock",
     "dev:backend:uat": "pnpm --filter @blackbox/backend dev:uat",
@@ -87,7 +88,7 @@
     "check:backend": "pnpm --filter @blackbox/backend check",
     "check:api-client": "pnpm --filter @blackbox/api-client check",
     "test:unit": "pnpm stripe:catalog:artifacts:generate && pnpm --parallel --filter @blackbox/web --filter @blackbox/staff --filter @blackbox/backend --filter @blackbox/api-client test && pnpm test:contracts",
-    "test:contracts": "pnpm --filter @blackbox/web exec vitest --root ../.. run scripts/check-frontend-route-isolation.test.ts scripts/pages-workflow-contract.test.ts && node --test scripts/release-candidate.test.mjs",
+    "test:contracts": "pnpm --filter @blackbox/web exec vitest --root ../.. run scripts/check-frontend-route-isolation.test.ts scripts/pages-workflow-contract.test.ts && node --import tsx --test scripts/release-candidate.test.mjs scripts/inventory-cms-content.test.mjs scripts/cms-markdown.test.mjs scripts/capture-cms-snapshot.test.mjs scripts/cms-snapshot-readers.test.mjs && node --import tsx --test scripts/cms-content-schema.test.mjs",
     "test:app-shell": "pnpm --filter @blackbox/web exec vitest run src/components/app-shell",
     "test:cms-admin": "pnpm --filter @blackbox/web exec vitest run src/lib/admin",
     "test:web": "pnpm --filter @blackbox/web test:unit",
@@ -95,7 +96,9 @@
     "test:backend": "pnpm --filter @blackbox/backend test",
     "test:api-client": "pnpm --filter @blackbox/api-client test",
     "depcruise:boundaries": "depcruise --config .dependency-cruiser.cjs apps/web/src apps/staff/src apps/backend/src packages/api-client/src",
-    "catalog:bindings:migrate": "pnpm --filter @blackbox/backend exec tsx scripts/migrate-catalog-product-bindings.ts"
+    "catalog:bindings:migrate": "pnpm --filter @blackbox/backend exec tsx scripts/migrate-catalog-product-bindings.ts",
+    "cms:import:local": "node --import tsx scripts/import-cms-content.mjs",
+    "catalog:backfill": "tsx apps/backend/scripts/backfill-runtime-catalog.ts"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",

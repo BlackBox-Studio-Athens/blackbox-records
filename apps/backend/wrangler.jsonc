@@ -5,6 +5,8 @@
   "compatibility_date": "2026-08-31",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "durable_objects": { "bindings": [{ "name": "COMMERCE_RUNTIME", "class_name": "CommerceRuntime" }] },
+  "migrations": [{ "tag": "commerce-runtime-v1", "new_sqlite_classes": ["CommerceRuntime"] }],
   "observability": {
     "enabled": true,
     "logs": {
@@ -39,6 +41,7 @@
   "env": {
     "mock": {
       "name": "blackbox-records-backend-local-mock",
+      "durable_objects": { "bindings": [{ "name": "COMMERCE_RUNTIME", "class_name": "CommerceRuntime" }] },
       "workers_dev": true,
       "observability": {
         "enabled": true,
@@ -78,6 +81,7 @@
     },
     "mock-api": {
       "name": "blackbox-records-backend-local-mock-api",
+      "durable_objects": { "bindings": [{ "name": "COMMERCE_RUNTIME", "class_name": "CommerceRuntime" }] },
       "workers_dev": true,
       "observability": {
         "enabled": true,
@@ -117,6 +121,7 @@
     },
     "uat": {
       "name": "blackbox-records-backend-uat",
+      "durable_objects": { "bindings": [{ "name": "COMMERCE_RUNTIME", "class_name": "CommerceRuntime" }] },
       "workers_dev": true,
       "observability": {
         "enabled": true,
@@ -155,6 +160,7 @@
     },
     "prd": {
       "name": "blackbox-records-backend-prd",
+      "durable_objects": { "bindings": [{ "name": "COMMERCE_RUNTIME", "class_name": "CommerceRuntime" }] },
       "routes": [
         {
           "pattern": "staff.blackboxrecordsathens.com/api/internal/*",

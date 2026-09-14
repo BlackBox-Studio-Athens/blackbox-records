@@ -1,0 +1,40 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "blackbox-emdash-local-checkpoint",
+  "main": "../../src/cms/index.ts",
+  "compatibility_date": "2026-08-31",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "durable_objects": {
+    "bindings": [
+      { "name": "CMS_RUNTIME", "class_name": "CmsRuntime" },
+      { "name": "COMMERCE_RUNTIME", "class_name": "CommerceRuntime" },
+    ],
+  },
+  "migrations": [
+    { "tag": "cms-runtime-v1", "new_sqlite_classes": ["CmsRuntime"] },
+    { "tag": "commerce-runtime-v1", "new_sqlite_classes": ["CommerceRuntime"] },
+  ],
+  "assets": { "binding": "ASSETS", "run_worker_first": true, "html_handling": "none" },
+  "vars": {
+    "PRODUCT_ENVIRONMENT": "LOCAL",
+    "EMDASH_MIGRATIONS_MODE": "auto",
+    "LOCAL_OPERATOR_EMAIL": "probe@example.invalid",
+    "STRIPE_WEBHOOK_SECRET": "whsec_local_checkpoint",
+    "STRIPE_SECRET_KEY": "sk_test_local_checkpoint",
+    "STRIPE_PAYMENT_METHOD_CONFIGURATION_ID": "pmc_local_checkpoint",
+  },
+  "d1_databases": [
+    {
+      "binding": "CMS_DB",
+      "database_name": "blackbox-emdash-local-checkpoint",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+    },
+    {
+      "binding": "COMMERCE_DB",
+      "database_name": "blackbox-commerce-local-checkpoint",
+      "database_id": "00000000-0000-0000-0000-000000000002",
+    },
+  ],
+  "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "blackbox-emdash-local-checkpoint" }],
+}

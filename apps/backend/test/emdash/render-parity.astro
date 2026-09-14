@@ -1,0 +1,8 @@
+---
+import EditorialBody from '../../src/cms/EditorialBody.astro';
+
+// Local test fixture only; never included in the production CMS root.
+const value = await Astro.request.json();
+---
+
+<EditorialBody value={value} />

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EmDash integration checkpoint</title>
+  <h1>EmDash integration checkpoint</h1>
+  <p>
+    Tests disposable posts and a generated image. Keeps the post and image to verify persistence after redeployment.
+  </p>
+  <button id="run">Run CMS checks</button>
+  <pre id="results" aria-live="polite"></pre>
+  <script type="module">
+    const output = document.querySelector('#results');
+    const button = document.querySelector('#run');
+    const assert = (condition, message) => {
+      if (!condition) throw new Error(message);
+    };
+    async function request(path, method = 'GET', body, expected = 200) {
+      const headers = { 'X-EmDash-Request': '1' };
+      if (body && !(body instanceof FormData)) headers['Content-Type'] = 'application/json';
+      const response = await fetch(path, {
+        method,
+        headers,
+        body: body instanceof FormData ? body : JSON.stringify(body),
+      });
+      output.textContent += `${method} ${path}: ${response.status}\n`;
+      assert(
+        response.status === expected,
+        `Expected ${expected}, got ${response.status}: ${await response.clone().text()}`,
+      );
+      return response.json();
+    }
+    button.addEventListener('click', async () => {
+      button.disabled = true;
+      output.textContent = '';
+      try {
+        for (let index = 0; index < 5; index++) await request('/_emdash/api/content/posts');
+        const created = await request(
+          '/_emdash/api/content/posts',
+          'POST',
+          { slug: `checkpoint-${Date.now()}`, data: { title: 'Checkpoint initial' } },
+          201,
+        );
+        const path = `/_emdash/api/content/posts/${created.data.item.id}`;
+        const current = await request(path);
+        const saved = await request(path, 'PUT', { _rev: current.data._rev, data: { title: 'Checkpoint saved' } });
+        await request(path, 'PUT', { _rev: current.data._rev, data: { title: 'Stale' } }, 409);
+        await request(path + '/publish', 'POST', { _rev: saved.data._rev });
+        const live = await request(path);
+        await request(path + '/unpublish', 'POST', { _rev: live.data._rev });
+        const canvas = document.createElement('canvas');
+        canvas.width = 1200;
+        canvas.height = 1600;
+        const context = canvas.getContext('2d');
+        context.fillStyle = '#333';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+        assert(blob, 'Image generation failed');
+        const form = new FormData();
+        form.set('file', blob, 'checkpoint.png');
+        form.set('deduplicate', 'false');
+        const thumbnail = document.createElement('canvas');
+        thumbnail.width = 24;
+        thumbnail.height = 32;
+        thumbnail.getContext('2d').drawImage(canvas, 0, 0, 24, 32);
+        const preview = await new Promise((resolve) => thumbnail.toBlob(resolve, 'image/png'));
+        assert(preview, 'Thumbnail generation failed');
+        form.set('thumbnail', preview, 'thumbnail.png');
+        const media = await request('/_emdash/api/media', 'POST', form, 201);
+        assert(media.data.item.width === 1200 && media.data.item.height === 1600, 'Original dimensions changed');
+        await request('/_emdash/api/media');
+        const download = await fetch(media.data.item.url);
+        assert(download.ok, 'Media read failed');
+        assert((await download.blob()).size === blob.size, 'Media byte count changed');
+        for (let index = 0; index < 5; index++) await request('/api/store/capabilities');
+        output.textContent += `PASS\nPost: ${path}\nMedia: ${media.data.item.url}\nImage bytes: ${blob.size}\n`;
+      } catch (error) {
+        output.textContent += `FAIL: ${error.message}\n`;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</html>

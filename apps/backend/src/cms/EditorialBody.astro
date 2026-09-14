@@ -1,0 +1,13 @@
+---
+import { PortableText } from 'emdash/ui';
+import { cmsBodySchema } from './content-schema';
+import EditorialLink from './EditorialLink.astro';
+
+interface Props {
+  value: unknown;
+}
+
+const value = cmsBodySchema.parse(Astro.props.value);
+---
+
+<PortableText value={value} components={{ mark: { link: EditorialLink } }} />

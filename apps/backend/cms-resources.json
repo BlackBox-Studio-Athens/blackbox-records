@@ -1,0 +1,23 @@
+{
+  "local": {
+    "database_name": "blackbox-records-cms-local",
+    "database_id": "00000000-0000-0000-0000-000000000001",
+    "bucket_name": "blackbox-records-cms-local"
+  },
+  "prd": {
+    "database_name": "blackbox-records-cms-prd",
+    "database_id": "e466f52b-46aa-4a76-9a09-0e304a3800b4",
+    "bucket_name": "blackbox-records-cms-prd",
+    "hostname": "staff.blackboxrecordsathens.com",
+    "owner_email": "blackboxrecordsathens@gmail.com"
+  },
+  "uat": {
+    "database_name": "blackbox-emdash-m1-uat",
+    "database_id": "1e308981-165d-4ce3-bd43-9c2e2ece2868",
+    "bucket_name": "blackbox-emdash-m1-uat",
+    "hostname": "staff-uat.blackboxrecordsathens.com",
+    "owner_email": "blackboxrecordsathens@gmail.com",
+    "access_team_domain": "https://blackboxrecords.cloudflareaccess.com",
+    "access_policy_aud": "fdb43a80812cec4c151e8bff2d9a0245b3fda2437ff23a51b68f6d1256dba92d"
+  }
+}

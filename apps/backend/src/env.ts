@@ -181,6 +181,7 @@ export function isCheckoutLaunchApprovedFromBindings(
 }
 
 export type AppBindings = {
+  CMS_RUNTIME?: Pick<DurableObjectNamespace, 'getByName'>;
   PRODUCT_ENVIRONMENT: ProductEnvironment;
   COMMERCE_DB: D1Database;
   CF_ACCESS_POLICY_AUD?: string;

@@ -1,8 +1,35 @@
 ## Purpose
 
+The combined backend composition is owned by `cms-runtime` under `apps/backend/src/cms/` plus the editorial request policy at `apps/backend/src/middleware.ts`; it consumes the `backend-runtime` entrypoint at `apps/backend/src/index.ts` and the existing operator verifier. Staff assets are build inputs, never cross-app source imports. The pure `@blackbox/content-model` workspace root owns portable collection schemas, purchase-information validation, music provider URL construction, and Distro closed values formerly provided from the web app. Web and legacy CMS callers use that package export directly; Astro image and grouping presentation remain in web.
+
+The protected catalog price and Item Setup HTTP adapters are owned by `public-commerce-http`; they compose the `catalog-sync` root and repository SPI/persistence roots behind the existing operator verifier. No editorial or public browser interface gains provider write access. The CMS Item Setup source adapter is also owned by `public-commerce-http`; it calls the bound CMS service through supported authenticated REST and never imports CMS persistence. `catalog-sync` may use the public `@blackbox/content-model` root to reuse the existing physical-type vocabulary for Item Setup validation; CMS persistence remains outside that boundary.
+
 Specify the TypeScript-native application module boundary model and the machine-readable manifest used by audits.
 
 ## Requirements
+
+### Requirement: Combined CMS runtime preserves application ownership
+
+The combined Worker SHALL retain closed module ownership and existing application interfaces rather than exposing commerce persistence to editorial plugins.
+
+#### Scenario: Staff and CMS share a deployment
+
+- **WHEN** the combined Worker is built
+- **THEN** `cms-runtime` owns the `combined-worker` and `access-auth-provider` named interfaces and editorial middleware
+- **AND** it may depend only on `backend-runtime`, `operator-auth`, `platform-shared`, and the pure content-model workspace export
+- **AND** `staff-frontend` owns its source and consumes the internal API client; its built assets are packaged without cross-app source imports.
+
+#### Scenario: Runtime catalog data is read
+
+- **WHEN** catalog projections are loaded from D1
+- **THEN** `commerce-domain` provides the runtime catalog contract through `repository-spi`, `commerce-persistence` implements it, and `catalog-sync` validates and reads it through its existing root entrypoint
+- **AND** CMS plugins cannot import commerce repositories and public web cannot import CMS server code.
+
+#### Scenario: Combined scheduled work runs
+
+- **WHEN** `cms-runtime` composes maintenance with the `backend-runtime` `commerce-worker` interface
+- **THEN** CMS owns its maintenance and `orders` retains `scheduled-paid-order-delivery`
+- **AND** failures remain independently reported so CMS failure cannot suppress paid-order processing.
 
 ### Requirement: Closed module boundaries
 
@@ -97,14 +124,14 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 
 - **GIVEN** Astro content validation and CMS collection builders require the same Distro group values and intro-key definitions
 - **WHEN** CMS configuration imports those closed values
-- **THEN** `apps/web/src/lib/distro-data.ts` is a provided `storefront-catalog` entrypoint
-- **AND** CMS code imports that entrypoint instead of duplicating the group list.
+- **THEN** the Distro closed values and intro keys are provided by the `@blackbox/content-model` workspace root export
+- **AND** CMS and web code import that export instead of duplicating the group list; grouping presentation remains in web.
 
 #### Scenario: Shared editorial validation crosses the CMS boundary
 
 - **GIVEN** Astro content schemas and CMS fields require the same path, URL, email, image, and provider constraints
 - **WHEN** CMS configuration imports those validation primitives
-- **THEN** `apps/web/src/lib/editorial-validation.ts` is a provided `platform-shared` entrypoint
+- **THEN** portable editorial validation is provided by the `@blackbox/content-model` workspace root export
 - **AND** CMS code imports that entrypoint instead of duplicating validation patterns.
 
 #### Scenario: Route-lazy Store Distro search crosses the app-shell boundary

@@ -5,6 +5,7 @@ dist-holding/
 build/
 out/
 .astro/
+.emdash/
 .wrangler/
 .vite/
 coverage/
