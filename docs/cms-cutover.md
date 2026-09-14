@@ -27,6 +27,8 @@ Prepare a PRD plan locally with `node --import tsx scripts/import-cms-content.mj
 
 ## Authorized execution order
 
+List application-owned CMS migrations with `pnpm --filter @blackbox/backend cms:application-migrations --env uat` (or `prd`). Add `--apply` only for the reviewed target; PRD also requires `--confirm-live-cms-changes` for that run. These migrations use `_blackbox_app_migrations` in `CMS_DB`, separate from native EmDash history and commerce migrations. Local remains the default and supports the existing `--persist-to` option.
+
 After the exact report receives one-run approval: apply the reviewed schema/import/backfill, reconcile the recorded identities and balances, deploy compatible combined runtime code, verify protected staff, then switch public builds to the accepted target snapshot through the existing release/publication workflows. Preserve the reviewed code SHA and target mutation lock described in [catalog promotion](catalog-promotion.md).
 
 Verify fresh pages, metadata, sitemap, search and overlays, plus existing checkout returns and order links. Leave both shopper launch gates unchanged: code/content cutover does not grant `PRD_LAUNCH_APPROVED=true` or enable `native_checkout_enabled`.
@@ -52,6 +54,8 @@ The September 15 read-only lookup found all 101 retained Local Prices in test ac
 That Local conflict was subsequently resolved with `catalog:bindings:migrate --env local --set-local-inclusive-tax --apply`, after a successful 101-item dry run. This Local-test-only option sets unspecified tax behavior to inclusive on the same Price IDs and attaches the existing defaults; it rejects hosted targets and never changes amounts. All 101 runtime catalog rows were then backfilled, with the three previously migrated entries unchanged. Transactional preservation hashes match for stock, allocation, snapshots, reservations, all 41 orders and their lines. Evidence: `local-binding-reviewed-dry-run.json`, `local-binding-apply.json`, and `runtime-all-backfill.json` under `.codex-artifacts/emdash-m1`.
 
 The verified provider objects were copied into the existing ignored Local mock catalog, preserving its existing objects. The mock proxy now recognizes explicitly retained object IDs from that file, so ordinary Local operation still uses official stripe-mock without real keys. No UAT or PRD apply occurred. Task 4.2 still needs UAT acceptance.
+
+UAT reconciliation subsequently completed for all 104 items, retaining exact protected-table hashes for prices, stock, allocation, 502 orders and 505 order lines. Both sets of additive UAT migrations are applied. See [runtime catalog evidence](../openspec/changes/replace-sveltia-with-emdash-operations/runtime-catalog-evidence.md#localuat-reconciliation-completion--2026-09-15). No UAT provider mutation or PRD apply occurred; UAT CMS drafts have not been published.
 
 Local preparation on 2026-09-15 produced 129 records and 152 media objects, plan SHA-256 e7aa6f8a50e916a3557fd6fe7f09f1b40abf2aff5d280446d2de6b550fd70000. Evidence: .codex-artifacts/emdash-m1/prd-import-preparation-final.json. This is a source plan, not proof of deployed PRD reconciliation. Synthetic approval-boundary tests passed through WebStorm without network access; no live approval was supplied or consumed.
 
