@@ -1,4 +1,9 @@
-export type EditorialRecord = { id: string; slug: string; data: Record<string, unknown> };
+export type EditorialRecord = {
+  id: string;
+  slug: string;
+  data: Record<string, unknown>;
+  liveRevisionId?: string | null;
+};
 export type EditorialMedia = { id: string; filename: string; url?: string; storageKey?: string; alt: string | null };
 export type EditorialList<T> = { items: T[]; nextCursor?: string };
 

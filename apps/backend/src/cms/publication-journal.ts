@@ -45,6 +45,18 @@ export async function readPublication(db: D1Database, environment: 'local' | 'ua
   return row ? publicationSchema.parse(row) : null;
 }
 
+export async function readRecentPublications(db: D1Database, environment: 'local' | 'uat' | 'prd') {
+  environmentSchema.parse(environment);
+  const { results } = await db
+    .prepare(
+      'SELECT id, status, requested_at AS requestedAt FROM _blackbox_publications WHERE environment = ? ORDER BY rowid DESC LIMIT 10',
+    )
+    .bind(environment)
+    .all();
+  const summary = publicationSchema.pick({ id: true, status: true, requestedAt: true });
+  return results.map((item) => summary.parse(item));
+}
+
 // Callers supply verified actor/target/revision identities, never an unchecked browser payload.
 export async function requestPublication(db: D1Database, input: z.input<typeof requestSchema>) {
   const request = requestSchema.parse(input);

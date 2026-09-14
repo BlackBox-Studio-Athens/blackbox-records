@@ -9,6 +9,7 @@ import {
   publicationCompletionSchema,
   PublicationRequestConflictError,
   readPublication,
+  readRecentPublications,
   recordPublicationDeployment,
   requestPublication,
 } from './publication-journal';
@@ -283,6 +284,10 @@ export async function handlePublicationRequest(
   if (context.identity.role < 30) return reply(403, { error: 'FORBIDDEN' });
   if (url.search) return reply(400, { error: 'INVALID_REQUEST' });
   try {
+    if (request.method === 'GET' && path === root) {
+      const items = await readRecentPublications(context.db, context.environment);
+      return reply(200, { items });
+    }
     if (request.method === 'GET' && path.startsWith(root + '/')) {
       const parsed = z.uuid().safeParse(path.slice(root.length + 1));
       if (!parsed.success) return reply(404, { error: 'NOT_FOUND' });

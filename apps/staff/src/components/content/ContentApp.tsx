@@ -4,6 +4,12 @@ import { Input } from '../ui/input';
 import ContentFields, { contentSections, type ContentSection, type ContentData } from './ContentFields';
 import ContentPreview from './ContentPreview';
 import {
+  readContentPublications,
+  requestContentPublication,
+  type ContentPublication,
+  type PublicationRequest,
+} from '../../lib/backend/content-publication-api';
+import {
   EditorialApiError,
   editorialRequest,
   editorialSlug,
@@ -33,7 +39,62 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [ready, setReady] = useState(false);
   const [preview, setPreview] = useState(false);
   const [pendingNew, setPendingNew] = useState<ContentData | null>(null);
+  const [publications, setPublications] = useState<ContentPublication[]>([]);
+  const [publicationMessage, setPublicationMessage] = useState('');
+  const [pendingPublication, setPendingPublication] = useState<PublicationRequest | null>(null);
   const pendingKey = `blackbox-content-create:${base}`;
+  const publicationKey = `blackbox-content-publication:${base}`;
+
+  async function publicationStatus() {
+    try {
+      const result = await readContentPublications(base);
+      setPublications(result.items);
+      setPublicationMessage(result.items.length ? '' : 'No publication requests yet.');
+    } catch {
+      setPublicationMessage('Publication status is unavailable. Check again before assuming a change is live.');
+    }
+  }
+  async function publish() {
+    if (busy || dirty || conflict || !document?.item.id) return;
+    setBusy(true);
+    setPublicationMessage('Requesting publication…');
+    try {
+      let input = pendingPublication;
+      if (!input) {
+        const published = await editorialRequest<Document>(
+          base,
+          `content/${collection}/${encodeURIComponent(document.item.id)}/publish`,
+          { _rev: document._rev },
+        );
+        setDocument(published);
+        setData(published.item.data);
+        if (!published.item.liveRevisionId) throw new Error('Load the saved version before publishing again.');
+        input = { id: crypto.randomUUID(), requestedRevision: published.item.liveRevisionId };
+        localStorage.setItem(publicationKey, JSON.stringify(input));
+        setPendingPublication(input);
+      }
+      const accepted = await requestContentPublication(base, input);
+      localStorage.removeItem(publicationKey);
+      setPendingPublication(null);
+      setPublications((items) => [accepted, ...items.filter((item) => item.id !== accepted.id)].slice(0, 10));
+      setPublicationMessage(
+        accepted.status === 'live'
+          ? 'Publication is live on fresh public page loads.'
+          : accepted.status === 'failed'
+            ? 'Publication failed. Publish saved content to try again.'
+            : 'Publication requested. Wait for Live before checking a fresh public page.',
+      );
+    } catch (error) {
+      if (error instanceof EditorialApiError && [400, 409].includes(error.status)) {
+        localStorage.removeItem(publicationKey);
+        setPendingPublication(null);
+        setConflict(error.status === 409);
+      }
+      setPublicationMessage(error instanceof Error ? error.message : 'Publication could not be confirmed.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function list(section = collection, next?: string, search = query) {
     setBusy(true);
@@ -52,6 +113,17 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
   useEffect(() => {
     setReady(true);
+    const publication = localStorage.getItem(publicationKey);
+    if (publication) {
+      try {
+        const input = JSON.parse(publication) as PublicationRequest;
+        if (typeof input.id !== 'string' || typeof input.requestedRevision !== 'string') throw new Error();
+        setPendingPublication(input);
+      } catch {
+        setPublicationMessage('The last publication request could not be read. Ask a label administrator for help.');
+      }
+    }
+    void publicationStatus();
     const pending = sessionStorage.getItem(pendingKey);
     if (pending) {
       try {
@@ -194,7 +266,9 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     <div className="mx-auto grid max-w-5xl gap-8 px-4 py-8 sm:px-8">
       <header>
         <h1 className="text-3xl font-semibold">Content</h1>
-        <p className="mt-3 text-muted-foreground">Edit the label’s pages and save a draft.</p>
+        <p className="mt-3 text-muted-foreground">
+          Edit the label’s pages, preview a draft, and publish saved content.
+        </p>
       </header>
       <fieldset disabled={!ready || busy || !!pendingNew} className="grid min-w-0 gap-4">
         <label className="grid gap-2">
@@ -309,9 +383,38 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
             )}
           </div>
           <p className="text-sm text-muted-foreground">{dirty ? 'You have unsaved changes.' : 'No unsaved changes.'}</p>
+          {!['releases', 'distro'].includes(collection) && (
+            <Button
+              type="button"
+              disabled={busy || dirty || conflict || !document.item.id}
+              onClick={() => void publish()}
+            >
+              {pendingPublication ? 'Retry publication request' : 'Publish saved content'}
+            </Button>
+          )}
           {preview && <ContentPreview collection={collection} data={data} base={base} />}
         </form>
       )}
+      <section aria-label="Recent publications" className="grid gap-3 border-t border-border pt-6">
+        <h2 className="text-xl font-semibold">Recent publications</h2>
+        <p className="text-sm text-muted-foreground">
+          Saved drafts are private. Accepted requests remain saved after you close this page. Live applies to fresh
+          public page loads; an already-open music player is not reloaded.
+        </p>
+        <Button type="button" variant="outline" disabled={!ready || busy} onClick={() => void publicationStatus()}>
+          Check publication status
+        </Button>
+        {publicationMessage && <p role="status">{publicationMessage}</p>}
+        <ul className="divide-y divide-border">
+          {publications.map((item) => (
+            <li key={item.id} className="py-3">
+              <strong>{item.status === 'live' ? 'Live' : item.status === 'failed' ? 'Failed' : 'Pending'}</strong>
+              {' · '}
+              {new Date(item.requestedAt).toLocaleString()}
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }
