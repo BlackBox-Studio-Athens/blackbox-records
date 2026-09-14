@@ -8,6 +8,7 @@ import {
   catalogManifest,
   catalogFieldOwnershipMatrix,
   redactStripeObjectId,
+  readRuntimeCatalogPresentation,
   type CatalogDriftCategory,
   type CatalogSyncAction,
   type CatalogSyncIssue,
@@ -204,6 +205,8 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 }
 
 export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promise<CatalogSyncRunResult> {
+  if (options.storeItemSlug && !options.apply && !options.planApply)
+    return verifyRuntimeCatalogItem(options.environment, options.storeItemSlug);
   const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(options.environment);
   if (options.apply && productEnvironmentProfile.productEnvironment === 'PRD') {
     assertPrdCatalogApplyConfirmed(options.confirmLiveCatalogChanges);
@@ -279,6 +282,40 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   }
 
   return result;
+}
+
+async function verifyRuntimeCatalogItem(environment: StripeCatalogEnvironment, slug: StoreItemSlug) {
+  const records = parseD1Rows<Record<string, unknown>>(
+    runD1ReadSql(environment, `SELECT * FROM StoreItemOption WHERE storeItemSlug = ${sqlString(slug)} LIMIT 1;`),
+  );
+  const record = records[0];
+  if (!record) throw new Error(`Unknown Store Item slug: ${slug}.`);
+  const projection = readRuntimeCatalogPresentation(
+    {
+      ...record,
+      productProjection:
+        typeof record.productProjection === 'string' ? JSON.parse(record.productProjection) : record.productProjection,
+    },
+    environment,
+  );
+  if (!projection) throw new Error(`Runtime catalog setup is incomplete for ${slug}.`);
+  const variantId = parseVariantId(String(record.variantId));
+  const rows = parseD1Rows<D1CatalogRow>(runD1ReadSql(environment, createD1CatalogReadSql([{ variantId }])));
+  const repositories = createD1CatalogRepositories(environment, rows);
+  const secret = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!secret) throw new Error('Missing STRIPE_SECRET_KEY for Stripe catalog verification.');
+  const reconciler = new CatalogReconciler({
+    environment,
+    ...repositories,
+    stripeCatalog: createStripeCatalogGateway({
+      STRIPE_SECRET_KEY: secret,
+      STRIPE_API_BASE_URL: process.env.STRIPE_API_BASE_URL,
+    }),
+  });
+  return reconciler.verifyBuyableCatalog({
+    apply: false,
+    expectedProductProjections: new Map([[variantId, projection]]),
+  });
 }
 
 export function selectStripeCatalogContracts(

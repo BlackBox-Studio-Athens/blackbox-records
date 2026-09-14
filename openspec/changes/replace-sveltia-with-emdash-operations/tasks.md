@@ -2,7 +2,7 @@ Use the apply-change workflow. Finish one usable workflow at a time in the deliv
 
 ## Delivery order — revised 2026-09-14
 
-The 60 acceptance tasks remain intact: 28 are complete and 32 remain open. This is not a percentage of effort or usable product completion. Local editorial publication and draft preview work; item publication and retained legacy catalog reconciliation remain unfinished. Price editing requires a reconciled item. Do not add checkboxes merely to make the count rise.
+The 60 acceptance tasks remain intact: 29 are complete and 31 remain open. This is not a percentage of effort or usable product completion. Local editorial publication and draft preview work; item publication and retained legacy catalog reconciliation remain unfinished. Price editing requires a reconciled item. Do not add checkboxes merely to make the count rise.
 
 | Order    | Usable outcome                                                                                                         | Existing tasks to finish together                                                                               |
 | -------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -49,7 +49,7 @@ Current checkpoint: M1 tasks 1.1–1.5 are complete. Workers Free remains requir
 - [ ] 4.2 Implement dry-run-first backfill from current generated input plus trusted D1/Stripe bindings; verify exact before/after identities, prices, stock, online allocation, reservations, pauses, and order references, with conflicts stopping import and no automatic provider writes.
 - [x] 4.3 Replace the generated desired-catalog reader and all runtime callers with existing-seam repository reads; verify a newly inserted valid runtime item is resolved by the already-built backend without a new bundle or CMS runtime fetch.
 - [ ] 4.4 Preserve bound Product/default-Price reconciliation, listing snapshots, signed webhook deduplication, and read/checkout repair; verify old active Prices remain harmless and missing/foreign/default-Price failures stay closed for both fixed and custom pricing.
-- [ ] 4.5 Adapt targeted catalog diagnostics to runtime records while keeping dry-run default, app identities, redacted evidence, and no account-wide runtime scan; verify ordinary diagnosis does not mutate Products, Prices, stock, or orders.
+- [x] 4.5 Adapt targeted catalog diagnostics to runtime records while keeping dry-run default, app identities, redacted evidence, and no account-wide runtime scan; verify ordinary diagnosis does not mutate Products, Prices, stock, or orders.
 
 ## 5. Add protected price commands and durable operation recovery
 

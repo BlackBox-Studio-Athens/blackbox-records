@@ -1,9 +1,12 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { unstable_dev } from 'wrangler';
+import { sourceCollectionNames } from '@blackbox/content-model';
+import { importCmsContent } from '../../../scripts/import-cms-content.mjs';
+import { backfillRuntimeCatalog } from './backfill-runtime-catalog.ts';
 
 process.chdir(fileURLToPath(new URL('../', import.meta.url)));
 const { values } = parseArgs({
@@ -41,6 +44,32 @@ const stop = async () => {
 process.once('SIGINT', stop);
 process.once('SIGTERM', stop);
 try {
+  // Populate only a brand-new default Local store. Existing editorial/commerce data is retained.
+  if (!values['persist-to']) {
+    let empty = true;
+    for (const collection of Object.keys(sourceCollectionNames)) {
+      const response = await fetch(`http://127.0.0.1:8787/_emdash/api/content/${collection}?limit=1`);
+      if (!response.ok) throw new Error(`Cannot inspect Local CMS collection ${collection}.`);
+      const body = await response.json();
+      if (body.data.items.length) {
+        empty = false;
+        break;
+      }
+    }
+    if (empty) {
+      const directory = resolve('.emdash/local-bootstrap');
+      mkdirSync(directory, { recursive: true });
+      await importCmsContent({ prepareLocal: directory });
+      await importCmsContent({ apply: true });
+      const verified = await importCmsContent({ verifyOnly: true });
+      const reportPath = resolve(directory, 'verified.json');
+      writeFileSync(reportPath, JSON.stringify(verified));
+      const args = ['--env', 'local', '--cms-plan', resolve(directory, 'plan.json'), '--cms-report', reportPath];
+      const plan = await backfillRuntimeCatalog(args);
+      await backfillRuntimeCatalog([...args, '--apply', '--plan-sha256', plan.planSha256]);
+      console.log('[Local CMS] Initial content and runtime catalog are ready.');
+    }
+  }
   console.log('[Local CMS] Staff: http://127.0.0.1:8787/content/');
   await worker.waitUntilExit();
 } finally {

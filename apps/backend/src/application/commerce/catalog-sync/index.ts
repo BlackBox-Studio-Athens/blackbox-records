@@ -73,4 +73,5 @@ export { CatalogPriceConflictError } from './types';
 export { changeCatalogPrice, readCatalogPrice, catalogPriceChangeSchema } from './change-catalog-price';
 export { setupCatalogItem, catalogItemSetupSchema } from './setup-catalog-item';
 export { publishCatalogItem, catalogItemPublishSchema } from './publish-catalog-item';
+export { readRuntimeCatalogPresentation } from './runtime-catalog-product-projections';
 export type { CmsItemPublicationGateway } from './publish-catalog-item';

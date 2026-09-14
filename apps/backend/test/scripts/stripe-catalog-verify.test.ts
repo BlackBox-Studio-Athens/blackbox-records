@@ -145,11 +145,16 @@ describe('stripe catalog verify script helpers', () => {
     createStripeCatalogGatewayMock.mockClear();
     spawnSyncMock.mockClear();
 
+    spawnSyncMock.mockReturnValueOnce({
+      status: 0,
+      stderr: '',
+      stdout: JSON.stringify([{ success: true, results: [] }]),
+    } as ReturnType<typeof spawnSync>);
     await expect(
       verifyStripeCatalog(parseStripeCatalogVerifyArgs(['--env', 'uat', '--store-item', 'unknown-store-item'])),
     ).rejects.toThrow('Unknown Store Item slug: unknown-store-item.');
     expect(createStripeCatalogGatewayMock).not.toHaveBeenCalled();
-    expect(spawnSyncMock).not.toHaveBeenCalled();
+    expect(spawnSyncMock).toHaveBeenCalledTimes(1);
   });
 
   it('blocks unconfirmed PRD apply before provider access', async () => {
@@ -237,6 +242,18 @@ describe('stripe catalog verify script helpers', () => {
               stripeLookupKey: null,
               syncedAt: null,
               variantId: storeItem.variantId,
+              cmsSourceId: 'native-release',
+              itemType: 'vinyl',
+              priceKind: 'fixed',
+              catalogAvailability: 'published',
+              catalogRevision: 1,
+              productProjection: JSON.stringify({
+                name: 'Current title',
+                description: '',
+                imageUrls: [],
+                metadata: {},
+                taxCode: 'txcd_99999999',
+              }),
             },
           ],
           success: true,
@@ -263,6 +280,9 @@ describe('stripe catalog verify script helpers', () => {
       expect(stripeCatalog.updateProductProjection).not.toHaveBeenCalled();
       expect(stripeCatalog.listOwnedPrices).not.toHaveBeenCalled();
       expect(stripeCatalog.listOwnedProducts).not.toHaveBeenCalled();
+      expect(spawnSyncMock.mock.calls.every(([, args]) => args?.some((arg) => String(arg).startsWith('SELECT')))).toBe(
+        true,
+      );
 
       const applyPlan = await verifyStripeCatalog({
         apply: false,
