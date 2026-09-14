@@ -49,4 +49,6 @@ it('rejects accidental apply before opening files, provider connections, or a da
     ]),
   ).rejects.toThrow('one-run');
   await expect(backfillRuntimeCatalog(['--env', 'wrong'])).rejects.toThrow();
+  await expect(backfillRuntimeCatalog(['--env', 'uat', '--local-stripe-test'])).rejects.toThrow('only supported');
+  await expect(backfillRuntimeCatalog(['--env', 'prd', '--local-stripe-test'])).rejects.toThrow('only supported');
 });

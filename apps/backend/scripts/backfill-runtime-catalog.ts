@@ -104,12 +104,15 @@ export async function backfillRuntimeCatalog(args: string[]) {
       'cms-plan': { type: 'string' },
       'cms-report': { type: 'string' },
       'store-item-slug': { type: 'string', multiple: true },
+      'local-stripe-test': { type: 'boolean', default: false },
       apply: { type: 'boolean', default: false },
       'plan-sha256': { type: 'string' },
       'confirm-live-catalog-changes': { type: 'boolean', default: false },
     },
   });
   const environment = z.enum(['local', 'uat', 'prd']).parse(values.env);
+  if (values['local-stripe-test'] && environment !== 'local')
+    throw new Error('--local-stripe-test is only supported for the Local database.');
   if (!values['cms-plan'] || !values['cms-report'])
     throw new Error('Provide the CMS import plan and its read-only verification report.');
   if (values.apply && !/^[a-f0-9]{64}$/.test(values['plan-sha256'] ?? ''))
@@ -131,8 +134,12 @@ export async function backfillRuntimeCatalog(args: string[]) {
     JSON.parse(readFileSync(values['cms-plan'], 'utf8')),
     JSON.parse(readFileSync(values['cms-report'], 'utf8')),
   );
-  const secret = environment === 'local' ? 'sk_test_mock' : process.env.STRIPE_SECRET_KEY;
-  if (!secret || (environment !== 'local' && !secret.startsWith(environment === 'uat' ? 'sk_test_' : 'sk_live_'))) {
+  const useMock = environment === 'local' && !values['local-stripe-test'];
+  const secret = useMock ? 'sk_test_mock' : process.env.STRIPE_SECRET_KEY;
+  if (
+    !secret ||
+    (!useMock && (!secret.startsWith(environment === 'prd' ? 'sk_live_' : 'sk_test_') || secret === 'sk_test_mock'))
+  ) {
     throw new Error(
       'Provide the target Stripe key through the authorized command environment; do not copy hosted secrets into local files.',
     );
@@ -196,7 +203,7 @@ export async function backfillRuntimeCatalog(args: string[]) {
       environment === 'local'
         ? catalogRows.filter((row) => row.mappingStripePriceId && !row.mappingStripePriceId.startsWith('price_mock_'))
         : [];
-    if (nonMock.length) {
+    if (nonMock.length && useMock) {
       writeFileSync(
         path.join(output, 'blocked.json'),
         JSON.stringify(
@@ -215,7 +222,7 @@ export async function backfillRuntimeCatalog(args: string[]) {
         ),
       );
       throw new Error(
-        `${nonMock.length} Local items have non-mock bindings. Review blocked.json; no bindings were changed or sent to stripe-mock.`,
+        `${nonMock.length} Local items have non-mock bindings. Use --local-stripe-test with the matching test account key to reconcile them; no bindings were changed or sent to stripe-mock.`,
       );
     }
     const repositories = createD1CatalogRepositories(environment, catalogRows);
@@ -229,10 +236,11 @@ export async function backfillRuntimeCatalog(args: string[]) {
       variantStripeMappings: { ...repositories.variantStripeMappings, save: noWrite },
       stripeCatalog: createStripeCatalogGateway({
         STRIPE_SECRET_KEY: secret,
-        ...(environment === 'local' ? { STRIPE_API_BASE_URL: 'http://127.0.0.1:12110' } : {}),
+        ...(useMock ? { STRIPE_API_BASE_URL: 'http://127.0.0.1:12110' } : {}),
       }),
     });
     const reconciliation = await reconciler.verifyBuyableCatalog({ apply: false });
+    writeFileSync(path.join(output, 'reconciliation.json'), JSON.stringify(reconciliation, null, 2));
     const plan = planRuntimeCatalogBackfill({ environment, sources, rows, reconciliation });
     const planSha256 = createHash('sha256')
       .update(

@@ -45,6 +45,14 @@ Only after replacement acceptance remove Sveltia writers, Git OAuth and old admi
 
 Tasks 10.3–10.5 and 11.1–11.5 remain open until their actual target evidence and required authorization exist.
 
+For retained Local Stripe test bindings, supply the matching test account key through `STRIPE_SECRET_KEY` and run `pnpm catalog:bindings:migrate --env local` in dry-run mode. It skips mock bindings and preserves the existing Price IDs and amounts. After resolving the reported provider policy conflicts, use the existing explicit `--apply`, then `pnpm catalog:backfill --env local --local-stripe-test --cms-plan <plan> --cms-report <verification>` and its reviewed apply fingerprint. The normal Local launcher continues to use stripe-mock and needs no real key.
+
+The September 15 read-only lookup found all 101 retained Local Prices in test account `acct_1TX53wV05bAFb7Ub`, with Local identity metadata and no Product default Price. The binding migration dry-run then stopped at the first Price because its tax behavior is `unspecified`; the application requires `inclusive`. This is a provider policy conflict, not a missing account or missing Price. No provider or database apply occurred. Evidence is `.codex-artifacts/emdash-m1/retained-test-price-report.json`, `local-binding-dry-run.json`, and `local-price-policy.json`. Two focused command tests passed through WebStorm; full suites were skipped at the user's request.
+
+That Local conflict was subsequently resolved with `catalog:bindings:migrate --env local --set-local-inclusive-tax --apply`, after a successful 101-item dry run. This Local-test-only option sets unspecified tax behavior to inclusive on the same Price IDs and attaches the existing defaults; it rejects hosted targets and never changes amounts. All 101 runtime catalog rows were then backfilled, with the three previously migrated entries unchanged. Transactional preservation hashes match for stock, allocation, snapshots, reservations, all 41 orders and their lines. Evidence: `local-binding-reviewed-dry-run.json`, `local-binding-apply.json`, and `runtime-all-backfill.json` under `.codex-artifacts/emdash-m1`.
+
+The verified provider objects were copied into the existing ignored Local mock catalog, preserving its existing objects. The mock proxy now recognizes explicitly retained object IDs from that file, so ordinary Local operation still uses official stripe-mock without real keys. No UAT or PRD apply occurred. Task 4.2 still needs UAT acceptance.
+
 Local preparation on 2026-09-15 produced 129 records and 152 media objects, plan SHA-256 e7aa6f8a50e916a3557fd6fe7f09f1b40abf2aff5d280446d2de6b550fd70000. Evidence: .codex-artifacts/emdash-m1/prd-import-preparation-final.json. This is a source plan, not proof of deployed PRD reconciliation. Synthetic approval-boundary tests passed through WebStorm without network access; no live approval was supplied or consumed.
 
 ## Hosted readiness observation — 2026-09-15 local time

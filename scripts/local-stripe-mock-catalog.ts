@@ -31,9 +31,11 @@ export function createLocalStripeMockCatalog(file?: string) {
     const params = new URLSearchParams(input.body);
     const product = params.get('product') ?? url.searchParams.get('product');
     const owned =
-      kind === 'products'
+      (id && Boolean(state[kind][id])) ||
+      (product && Boolean(state.products[product])) ||
+      (kind === 'products'
         ? !id || id.startsWith('prod_blackbox_')
-        : id?.startsWith('price_local_') || product?.startsWith('prod_blackbox_');
+        : id?.startsWith('price_local_') || product?.startsWith('prod_blackbox_'));
     if (!owned) return null;
     const reply = (status: number, value: unknown) => ({ status, body: JSON.stringify(value) });
     const missing = () =>
@@ -81,7 +83,7 @@ export function createLocalStripeMockCatalog(file?: string) {
             .update(input.idempotencyKey ?? randomUUID())
             .digest('hex')
             .slice(0, 32));
-    if (!key || (kind === 'products' && !key.startsWith('prod_blackbox_'))) return null;
+    if (!key || (kind === 'products' && !state.products[key] && !key.startsWith('prod_blackbox_'))) return null;
     if (!id && state[kind][key]) return reply(200, expand(state[kind][key]));
     const value: ObjectData = {
       ...(state[kind][key] ?? {
