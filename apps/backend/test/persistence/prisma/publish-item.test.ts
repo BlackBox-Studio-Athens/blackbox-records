@@ -2,7 +2,7 @@ import { env } from 'cloudflare:workers';
 import { applyD1Migrations } from 'cloudflare:test';
 import { beforeAll, expect, it, vi } from 'vitest';
 import { requestPublication } from '../../../src/cms/publication-journal';
-import { reconcileItemPublications } from '../../../src/cms/item-publication-recovery';
+import { guardItemLifecycle, reconcileItemPublications } from '../../../src/cms/item-publication-recovery';
 import {
   publishCatalogItem,
   createStripeCatalogMetadata,
@@ -21,7 +21,7 @@ beforeAll(async () => {
   await applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS);
 });
 
-it.each(['none', 'product', 'content', 'request', 'complete'] as const)(
+it.each(['none', 'product', 'content', 'request', 'complete', 'unpublish'] as const)(
   'publishes with unchanged Price and stock after %s acknowledgement loss',
   async (failure) => {
     const db = createPrismaClient(env);
@@ -155,6 +155,42 @@ it.each(['none', 'product', 'content', 'request', 'complete'] as const)(
           inputFingerprint: createStripeCatalogRequestShapeFingerprint('other'),
         }),
       ).rejects.toThrow('conflicts');
+      if (failure === 'unpublish') {
+        await db.itemAvailability.create({ data: { variantId: item.variantId, status: 'available', canBuy: false } });
+        await guardItemLifecycle(
+          new Request('http://127.0.0.1:8787/_emdash/api/content/releases/cms_unpublish/unpublish', {
+            method: 'POST',
+            body: JSON.stringify({ _rev: 'current' }),
+          }),
+          env.COMMERCE_DB,
+          async () => Response.json({ data: { _rev: 'current' } }),
+        );
+        await requestPublication(env.TEST_CMS_DB, {
+          id: pending.publicationId!,
+          environment: 'local',
+          actorEmail: 'operator@example.com',
+          requestedRevision: 'revision_published',
+        });
+        await env.TEST_CMS_DB.prepare(
+          "UPDATE _blackbox_publications SET status = 'live', snapshot_sha256 = ? WHERE id = ?",
+        )
+          .bind('a'.repeat(64), pending.publicationId)
+          .run();
+        await reconcileItemPublications(env.COMMERCE_DB, env.TEST_CMS_DB, 'local');
+        expect((await journal.find(command.operationId))?.status).toBe('needs_review');
+        expect(await db.storeItemOption.findUnique({ where: { variantId: item.variantId } })).toMatchObject({
+          catalogAvailability: 'withheld',
+          catalogRevision: 2,
+        });
+        expect(await db.itemAvailability.findUnique({ where: { variantId: item.variantId } })).toMatchObject({
+          canBuy: false,
+        });
+        expect(await db.stock.findUnique({ where: { variantId: item.variantId } })).toEqual(beforeStock);
+        expect(await db.variantStripeMapping.findUnique({ where: { variantId: item.variantId } })).toEqual(
+          beforeMapping,
+        );
+        return;
+      }
       if (failure === 'none') {
         publicationState = 'failed';
         const failed = await publishCatalogItem(deps, item.variantId, 'operator@example.com', command);
