@@ -33,6 +33,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [document, setDocument] = useState<Document | null>(null);
   const [data, setData] = useState<ContentData>({});
   const [dirty, setDirty] = useState(false);
+  const [confirmReload, setConfirmReload] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const [conflict, setConflict] = useState(false);
@@ -163,7 +164,9 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
   function mayLeave() {
-    return !dirty || window.confirm('Discard your unsaved changes?');
+    if (!dirty) return true;
+    setMessage('Save your draft or load the saved version before switching content.');
+    return false;
   }
   async function open(item: EditorialRecord, replace = false) {
     if (!replace && !mayLeave()) return;
@@ -389,13 +392,34 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 variant="outline"
                 disabled={busy}
                 onClick={() => {
-                  if (mayLeave()) void open(document.item, true);
+                  if (dirty) setConfirmReload(true);
+                  else void open(document.item, true);
                 }}
               >
                 Load saved version
               </Button>
             )}
           </div>
+          {confirmReload && (
+            <div role="alert" className="grid gap-3 border border-border p-4">
+              <p>Discard your unsaved changes and load the saved version?</p>
+              <div className="flex flex-wrap gap-3">
+                <Button type="button" variant="outline" onClick={() => setConfirmReload(false)}>
+                  Keep editing
+                </Button>
+                <Button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => {
+                    setConfirmReload(false);
+                    void open(document.item, true);
+                  }}
+                >
+                  Discard changes and reload
+                </Button>
+              </div>
+            </div>
+          )}
           <p className="text-sm text-muted-foreground">{dirty ? 'You have unsaved changes.' : 'No unsaved changes.'}</p>
           {!['releases', 'distro'].includes(collection) && (
             <Button
