@@ -1,0 +1,9 @@
+---
+import StockOperationsApp from '../../components/stock/StockOperationsApp';
+import StockOpsLayout from '../../layouts/StockOpsLayout.astro';
+import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api';
+---
+
+<StockOpsLayout pageTitle="Items" pageDescription="Manage label items, prices and stock.">
+  <StockOperationsApp backendBaseUrl={getInternalStockApiBaseUrl()} showPrice client:load />
+</StockOpsLayout>

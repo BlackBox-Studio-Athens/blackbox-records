@@ -3,6 +3,7 @@ import {
   CatalogPriceConflictError,
   catalogPriceChangeSchema,
   changeCatalogPrice,
+  readCatalogPrice,
 } from '../../../application/commerce/catalog-sync';
 import { CatalogOperationConflictError } from '../../../domain/commerce/repositories/spi';
 import { productEnvironmentProfileFromBindings, type AppOpenApi } from '../../../env';
@@ -29,6 +30,60 @@ const errorResponse = (description: string) => ({
 });
 
 export function registerInternalPriceRoutes(app: AppOpenApi): void {
+  const detailSchema = z
+    .object({
+      variantId: z.string(),
+      expectedRevision: z.number().int().positive(),
+      requiresLiveConfirmation: z.boolean(),
+      price: catalogPriceChangeSchema.shape.price,
+    })
+    .strict()
+    .openapi('CatalogPriceDetail');
+  app.openapi(
+    createRoute({
+      method: 'get',
+      path: '/api/internal/variants/{variantId}/price',
+      operationId: 'readCatalogPrice',
+      tags: ['Internal catalog'],
+      summary: 'Read the current item price and edit revision without provider writes.',
+      request: { params: z.object({ variantId: z.string().regex(/^variant_[A-Za-z0-9_-]+$/) }) },
+      responses: {
+        200: { description: 'Current price.', content: { 'application/json': { schema: detailSchema } } },
+        409: errorResponse('Item setup or price requires reconciliation.'),
+        ...operatorAccessErrorResponses,
+        503: errorResponse('Price is temporarily unavailable.'),
+      },
+    }),
+    async (context) => {
+      const prisma = createPrismaClient(context.env);
+      try {
+        const result = await readCatalogPrice(
+          {
+            environment: productEnvironmentProfileFromBindings(context.env).workerDeploymentTarget,
+            catalog: new PrismaStoreItemOptionRepository(prisma),
+            mappings: new PrismaVariantStripeMappingRepository(prisma),
+            gateway: createStripeCatalogGateway(context.env),
+          },
+          context.req.valid('param').variantId,
+        );
+        return jsonNoStore(context.json(detailSchema.parse(result), 200));
+      } catch (error) {
+        return error instanceof CatalogPriceConflictError
+          ? jsonError(context, {
+              code: 'catalog_conflict',
+              message: 'Item setup or price needs review before editing.',
+              status: 409,
+            })
+          : jsonError(context, {
+              code: 'catalog_temporarily_unavailable',
+              message: 'Price is temporarily unavailable.',
+              status: 503,
+            });
+      } finally {
+        await prisma.$disconnect();
+      }
+    },
+  );
   app.openapi(
     createRoute({
       method: 'post',

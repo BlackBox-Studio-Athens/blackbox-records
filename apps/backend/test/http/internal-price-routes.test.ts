@@ -250,6 +250,15 @@ it.each(
           return result;
         });
     }
+    const beforeRead = await createHttpApp().request(caseUrl, { headers: hostedHeaders }, hostedEnv);
+    expect(beforeRead.status).toBe(200);
+    expect(await beforeRead.json()).toMatchObject({
+      expectedRevision: 1,
+      requiresLiveConfirmation: false,
+      price: { kind: 'fixed', amountMinor: 1000 },
+    });
+    expect(creates).toBe(0);
+    expect(selections).toBe(0);
     if (loss !== 'none') {
       const interrupted = await createHttpApp().request(
         caseUrl,
@@ -288,6 +297,11 @@ it.each(
         status: 'completed',
       });
     }
+    const afterRead = await createHttpApp().request(caseUrl, { headers: hostedHeaders }, hostedEnv);
+    expect(afterRead.status).toBe(200);
+    const currentPrice = await afterRead.json();
+    expect(currentPrice).toMatchObject({ expectedRevision: 2, price });
+    expect(JSON.stringify(currentPrice)).not.toMatch(/price_http|prod_http/);
     expect(creates).toBe(1);
     expect(selections).toBe(1);
     expect(old).toEqual(historicalPrice);

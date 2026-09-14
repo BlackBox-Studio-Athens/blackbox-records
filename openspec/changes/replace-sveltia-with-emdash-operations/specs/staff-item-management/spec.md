@@ -4,6 +4,22 @@ Let label members create sellable items and change their prices through one reli
 
 ## ADDED Requirements
 
+### Requirement: Member language and input are accessible to nontechnical musicians
+
+The member workspace SHALL use short, familiar English for label members who are non-native English speakers. Normal screens SHALL use item names and action labels rather than backend identifiers, provider terminology, or developer vocabulary. Stock movement SHALL accept a positive quantity with a separate Add or Remove choice. EUR price entry SHALL accept either a comma or a decimal point with at most two decimal places. Feedback SHALL distinguish a confirmed result from an uncertain result and offer a clear next action without asking the member to understand retry identities.
+
+#### Scenario: A member records a show sale
+
+- **WHEN** a member selects Remove stock, enters 2, and saves a show sale
+- **THEN** the existing stock command records a decrease of two without requiring negative-number input
+- **AND** the screen displays the resulting stock and a short confirmation
+
+#### Scenario: A member changes a price with a decimal comma
+
+- **WHEN** a member enters 27,05 EUR and confirms the price change where required
+- **THEN** the command uses exactly 2705 minor units
+- **AND** a lost reply offers a safe status check using the same retained command, without claiming that the change failed
+
 ### Requirement: Item creation combines editorial and commerce setup
 
 The workspace SHALL provide one guided Item Setup for a label Release, Distro item, or Merch item. It SHALL reuse existing source records when selected and create stable application identities without asking members to copy provider or database identifiers.

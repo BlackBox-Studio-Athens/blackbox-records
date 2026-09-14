@@ -36,6 +36,7 @@ const htmlTitle = pageTitle + ' | BlackBox Records';
         ><img src="/logo-horizontal.png" alt="BlackBox Records" width="1024" height="253" /></a
       >
       <nav aria-label="Staff workspace">
+        <a href="/items/" aria-current={Astro.url.pathname.startsWith('/items/') ? 'page' : undefined}>Items</a>
         <a href="/stock/" aria-current={Astro.url.pathname.startsWith('/stock/') ? 'page' : undefined}
           ><Boxes size={19} aria-hidden="true" />Stock</a
         >

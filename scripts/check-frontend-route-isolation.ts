@@ -10,6 +10,7 @@ const staffFiles = new Set([
   'favicon.ico',
   'favicon.svg',
   'index.html',
+  'items/index.html',
   'logo-horizontal.png',
   'orders/index.html',
   'robots.txt',
@@ -21,7 +22,7 @@ export function assertFrontendRouteIsolation(mode: FrontendRouteIsolationMode, d
 
   if (mode === 'web') {
     const stockFiles = files.filter((file) =>
-      ['stock', 'orders'].some((route) => file === route || file.startsWith(`${route}/`)),
+      ['stock', 'orders', 'items'].some((route) => file === route || file.startsWith(`${route}/`)),
     );
     if (stockFiles.length > 0) {
       throw new Error(`Public web artifact contains staff files: ${stockFiles.join(', ')}`);

@@ -822,6 +822,100 @@
           "onlineQuantity"
         ]
       },
+      "CatalogPriceDetail": {
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "requiresLiveConfirmation": {
+            "type": "boolean"
+          },
+          "price": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "fixed"
+                    ]
+                  },
+                  "currencyCode": {
+                    "type": "string",
+                    "enum": [
+                      "EUR"
+                    ]
+                  },
+                  "amountMinor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999999
+                  }
+                },
+                "required": [
+                  "kind",
+                  "currencyCode",
+                  "amountMinor"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "pay_what_you_want"
+                    ]
+                  },
+                  "currencyCode": {
+                    "type": "string",
+                    "enum": [
+                      "EUR"
+                    ]
+                  },
+                  "minimumAmountMinor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999999
+                  },
+                  "presetAmountMinor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999999
+                  },
+                  "maximumAmountMinor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999999
+                  }
+                },
+                "required": [
+                  "kind",
+                  "currencyCode",
+                  "minimumAmountMinor",
+                  "presetAmountMinor",
+                  "maximumAmountMinor"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "variantId",
+          "expectedRevision",
+          "requiresLiveConfirmation",
+          "price"
+        ],
+        "additionalProperties": false
+      },
       "CatalogPriceChangeResult": {
         "type": "object",
         "properties": {
@@ -1380,6 +1474,66 @@
       }
     },
     "/api/internal/variants/{variantId}/price": {
+      "get": {
+        "operationId": "readCatalogPrice",
+        "tags": [
+          "Internal catalog"
+        ],
+        "summary": "Read the current item price and edit revision without provider writes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^variant_[A-Za-z0-9_-]+$"
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current price.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPriceDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Item setup or price requires reconciliation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Price is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "operationId": "changeCatalogPrice",
         "tags": [

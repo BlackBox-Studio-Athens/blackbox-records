@@ -16,13 +16,13 @@ describe('Stock operations loading feedback', () => {
     expect(html).toContain('Loading stock workspace');
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-busy="true"');
-    expect(html).toContain('aria-label="Searching variants"');
+    expect(html).toContain('aria-label="Searching items"');
     expect(html).toContain('animate-spin');
   });
 
   it('uses canonical operator labels for stock read intents', () => {
     expect(readStockLoadingLabel('workspace')).toBe('Loading stock workspace');
-    expect(readStockLoadingLabel('search')).toBe('Searching variants');
+    expect(readStockLoadingLabel('search')).toBe('Searching items');
     expect(readStockLoadingLabel('variant')).toBe('Loading selected stock');
     expect(readStockLoadingLabel('refresh')).toBe('Refreshing stock');
   });

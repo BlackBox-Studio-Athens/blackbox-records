@@ -57,6 +57,38 @@ type Dependencies = {
   now?: () => Date;
 };
 
+export async function readCatalogPrice(deps: Omit<Dependencies, 'journal'>, variant: string) {
+  const variantId = parseVariantId(variant);
+  const item = await deps.catalog.findByVariantId(variantId);
+  const record = item && (await deps.catalog.findByStoreItem(item));
+  const mapping = await deps.mappings.findByVariantId(variantId);
+  if (!item || !record || record.catalogRevision < 1 || !mapping?.stripeProductId)
+    throw new CatalogPriceConflictError('Item setup is incomplete.');
+  const current = await deps.gateway.retrieveDefaultPrice(mapping.stripeProductId);
+  const price = current && createStoreOfferPriceFromCatalogPrice(current);
+  const metadata = createStripeCatalogMetadata(deps.environment, item);
+  if (
+    !current ||
+    !price ||
+    current.priceId !== mapping.stripePriceId ||
+    current.productId !== mapping.stripeProductId ||
+    !current.active ||
+    !current.productActive ||
+    current.productTaxCode !== 'txcd_99999999' ||
+    Object.entries(metadata).some(
+      ([key, value]) => current.metadata[key] !== value || current.productMetadata[key] !== value,
+    )
+  )
+    throw new CatalogPriceConflictError('Current price requires reconciliation.');
+  const { display: _display, ...commandPrice } = price;
+  return {
+    variantId,
+    expectedRevision: record.catalogRevision,
+    requiresLiveConfirmation: deps.environment === 'prd',
+    price: commandPrice,
+  };
+}
+
 // actorEmail comes from the verified operator context, separately from the strict browser command.
 export async function changeCatalogPrice(deps: Dependencies, variant: string, actorEmail: string, input: unknown) {
   const command = catalogPriceChangeSchema.parse(input);

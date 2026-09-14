@@ -51,6 +51,7 @@ export default defineConfig({
     }),
   ],
   test: {
+    maxWorkers: 2,
     exclude: [
       'test/architecture/**/*.test.ts',
       'test/http/internal-order-routes.test.ts',

@@ -5,6 +5,7 @@ import { filteredViteLogger, filterBackendTestConsoleLog } from './test/setup/fi
 export default defineConfig({
   customLogger: filteredViteLogger,
   test: {
+    maxWorkers: 2,
     environment: 'node',
     include: [
       'test/architecture/**/*.test.ts',

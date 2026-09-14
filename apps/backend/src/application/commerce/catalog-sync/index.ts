@@ -70,5 +70,5 @@ export type {
 export { catalogManifest } from './catalog-manifest.generated';
 
 export { CatalogPriceConflictError } from './types';
-export { changeCatalogPrice, catalogPriceChangeSchema } from './change-catalog-price';
+export { changeCatalogPrice, readCatalogPrice, catalogPriceChangeSchema } from './change-catalog-price';
 export { setupCatalogItem, catalogItemSetupSchema } from './setup-catalog-item';

@@ -202,7 +202,8 @@ export type paths = {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Read the current item price and edit revision without provider writes. */
+        get: operations["readCatalogPrice"];
         put?: never;
         /**
          * Change an item price using a replayable operator command.
@@ -547,6 +548,26 @@ export type components = {
             status: "pending" | "completed" | "needs_review";
             variantId: string;
         };
+        CatalogPriceDetail: {
+            expectedRevision: number;
+            price: {
+                amountMinor: number;
+                /** @enum {string} */
+                currencyCode: "EUR";
+                /** @enum {string} */
+                kind: "fixed";
+            } | {
+                /** @enum {string} */
+                currencyCode: "EUR";
+                /** @enum {string} */
+                kind: "pay_what_you_want";
+                maximumAmountMinor: number;
+                minimumAmountMinor: number;
+                presetAmountMinor: number;
+            };
+            requiresLiveConfirmation: boolean;
+            variantId: string;
+        };
         InternalCheckoutOrder: {
             acceptedDeliveryAmountMinor: number | null;
             /** @enum {string|null} */
@@ -835,6 +856,55 @@ export interface operations {
                 };
             };
             /** @description Operator authentication or item setup is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    readCatalogPrice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current price. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogPriceDetail"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Item setup or price requires reconciliation. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Price is temporarily unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
