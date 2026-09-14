@@ -161,3 +161,8 @@ Chrome Blackbox opened Ouranopithecus in two canonical Local editor tabs. Saving
 
 Task 6.1 is complete: Content, Items, Stock and Orders reuse StockOpsLayout with active navigation state and the same-origin API context. The narrow workspace navigation evidence above verifies the Local transition between all four sections without another login. This does not close hosted allowlist, role/revocation or artifact credential acceptance in task 2.3, nor the broader accessibility matrix in 6.5.
 
+
+### Canonical launcher acceptance — 2026-09-15
+
+Task 9.1 is complete. Root pnpm dev invokes the canonical mock stack; the earlier WebStorm startup and browser acceptance prove the combined CMS/staff on 8787, public snapshot service on 4321 with /blackbox-records/, and official mock on 12110. A second real pnpm dev invocation rejected occupied ports 12110, 8787 and 4321 clearly without launching replacement services (launcher-port-collision.json). The existing seven stack-plan tests and five process tests pass using vitest.node.config.ts through WebStorm (launcher-final-node.json), including sibling shutdown and reverse-order termination. The initial attempt used the Worker test config, which excludes script tests; it was not counted as a pass. First-empty-store import and remaining mock webhook/email acceptance remain open.
+
