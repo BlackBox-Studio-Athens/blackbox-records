@@ -106,6 +106,7 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
           ...localCmsEnvironment,
           PUBLIC_BACKEND_BASE_URL: `http://127.0.0.1:${BACKEND_PORT}`,
           PUBLIC_CHECKOUT_CLIENT_MODE: 'mock',
+          CMS_LOCAL_PUBLICATION: '1',
         },
         name: 'Static site',
         waitForPort: STATIC_PORT,
@@ -137,6 +138,7 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
           ...localCmsEnvironment,
           PUBLIC_BACKEND_BASE_URL: `http://127.0.0.1:${BACKEND_PORT}`,
           PUBLIC_CHECKOUT_CLIENT_MODE: 'mock',
+          CMS_LOCAL_PUBLICATION: '1',
         },
         name: 'Static site',
         waitForPort: STATIC_PORT,
@@ -300,7 +302,7 @@ async function assertPortsAvailable(ports: number[]) {
 }
 
 async function waitForPort(port: number, label: string) {
-  for (let attempt = 0; attempt < 120; attempt += 1) {
+  for (let attempt = 0; attempt < 600; attempt += 1) {
     if (!(await isPortAvailable(port))) {
       return;
     }

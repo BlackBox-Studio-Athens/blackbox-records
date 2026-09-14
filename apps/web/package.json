@@ -8,7 +8,7 @@
     "cms:dev": "node scripts/start-cms-dev.mjs",
     "cms:build-mode:check": "tsx scripts/check-sveltia-build-mode.ts",
     "dev": "astro dev --root .",
-    "dev:static": "node scripts/start-static-site-dev.mjs",
+    "dev:static": "node --import tsx scripts/start-static-site-dev.mjs",
     "dev:bg": "astro dev --root . --host 127.0.0.1 --port 4321 --background",
     "dev:status": "astro dev status",
     "dev:logs": "astro dev logs",

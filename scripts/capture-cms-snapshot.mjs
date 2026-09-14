@@ -90,6 +90,12 @@ export async function captureCmsSnapshot({
     if (revision.id !== item.liveRevisionId || revision.collection !== item.collection || revision.entryId !== item.id)
       throw new Error('CMS revision identity mismatch.');
     const { _slug, ...data } = revision.data;
+    // Native SQLite-backed revisions encode these declared booleans as 0/1.
+    // Keep numeric values invalid everywhere else, including editorial writes.
+    if (item.collection === 'navigation') {
+      for (const field of ['show_in_header', 'show_in_footer'])
+        if (data[field] === 0 || data[field] === 1) data[field] = data[field] === 1;
+    }
     const issues = validateCmsRevisionContent(item.collection, data);
     if (issues.length)
       throw new Error(`Invalid published CMS content (${item.collection}/${item.id}): ${issues.join('; ')}`);

@@ -6,7 +6,8 @@ import { writeCmsSnapshot } from './export-cms-snapshot.mjs';
 import { prepareContentPublication } from './prepare-content-publication.mjs';
 import { acknowledgeContentPublication } from './acknowledge-content-publication.mjs';
 import { restorePublishedContent } from './restore-published-content.mjs';
-import { mkdtemp, readFile, rm, access } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, access, writeFile } from 'node:fs/promises';
+import { activateLocalBuild } from '../apps/web/scripts/start-local-publication.mjs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -16,6 +17,23 @@ const imageBytes = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=',
   'base64',
 );
+
+test('activates a prepared Local build and restores the served build when replacement fails', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'blackbox-publication-'));
+  try {
+    for (const name of ['public', 'next']) {
+      await mkdir(join(directory, name));
+      await writeFile(join(directory, name, 'index.html'), name);
+    }
+    await activateLocalBuild(directory);
+    assert.equal(await readFile(join(directory, 'public/index.html'), 'utf8'), 'next');
+    assert.equal(await readFile(join(directory, 'previous/index.html'), 'utf8'), 'public');
+    await assert.rejects(activateLocalBuild(directory));
+    assert.equal(await readFile(join(directory, 'public/index.html'), 'utf8'), 'next');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
 
 test('publication acknowledges only matching canonical deployment and public content without forwarding credentials', async () => {
   const env = {
@@ -247,6 +265,30 @@ function readers(change = () => {}) {
     },
   };
 }
+test('normalizes only native navigation boolean columns before validating published content', async () => {
+  const original = readers();
+  const input = {
+    ...original,
+    readPage: (collection) => (collection === 'navigation' ? original.readPage('socials') : { items: [], total: 0 }),
+    readRevision: async () => ({
+      ...revision,
+      collection: 'navigation',
+      data: { title: 'Home', url: '/', order: 0, show_in_header: 1, show_in_footer: 0 },
+    }),
+  };
+  const result = await captureCmsSnapshot(input);
+  assert.equal(result.snapshot.records[0].data.show_in_header, true);
+  assert.equal(result.snapshot.records[0].data.show_in_footer, false);
+  const record = await input.readRevision();
+  await assert.rejects(
+    captureCmsSnapshot({
+      ...input,
+      readRevision: async () => ({ ...record, data: { ...record.data, show_in_header: 2 } }),
+    }),
+    /Invalid published CMS content/,
+  );
+});
+
 test('captures only pinned live data with a deterministic digest, omitting draft data and pointers', async () => {
   const first = await captureCmsSnapshot(readers());
   assert.equal(first.snapshot.records.length, 1);

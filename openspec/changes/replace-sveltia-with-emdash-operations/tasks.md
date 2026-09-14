@@ -95,7 +95,7 @@ The protected Item Setup API now integrates CMS linkage, runtime identity, Produ
 ## 9. Make the canonical local stack the normal command
 
 - [ ] 9.1 Make root `pnpm dev` invoke the existing `dev:stack:stripe-mock` flow and extend its launcher/process helpers for CMS D1/R2 and Worker-hosted staff; verify required ports 4321/8787/12110, canonical public base path, clear port failure, and coordinated shutdown.
-- [ ] 9.2 Bootstrap local stores only when empty and make Local publish refresh the local snapshot/public loader without GitHub; verify content edits, stock, and prices survive a restart and no hosted network/provider mutation occurs.
+- [x] 9.2 Bootstrap local stores only when empty and make Local publish refresh the local snapshot/public loader without GitHub; verify content edits, stock, and prices survive a restart and no hosted network/provider mutation occurs. See [Local publication acceptance](local-editorial-migration-evidence.md#local-publication-and-restart-acceptance--2026-09-14).
 - [ ] 9.3 Preserve official stripe-mock proxy behavior and keep mock compatibility fixes in development tooling; verify default checkout/catalog fixtures, local signed webhooks, and mock emails work without Docker, real keys, hosted login, or `.dev.vars`.
 - [ ] 9.4 Update normal/diagnostic command documentation and keep both existing WebStorm launcher targets working; verify default IDE startup and Stripe Sandbox Smoke still invoke their canonical commands, with no added run configurations or copied UAT secrets.
 

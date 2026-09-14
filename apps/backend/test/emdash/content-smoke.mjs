@@ -221,7 +221,11 @@ try {
     assert.equal(result.status, 0, result.stdout + result.stderr);
     return result.stdout;
   };
-  assert.deepEqual(JSON.parse(migrate()).pending, ['0001_publications.sql', '0002_publication_dispatch.sql']);
+  assert.deepEqual(JSON.parse(migrate()).pending, [
+    '0001_publications.sql',
+    '0002_publication_dispatch.sql',
+    '0003_local_publication_receipt.sql',
+  ]);
   migrate('--apply');
   assert.deepEqual(JSON.parse(migrate()).pending, []);
   const publicationInput = { id: crypto.randomUUID(), requestedRevision: snapshot.snapshot.records[0].revisionId };

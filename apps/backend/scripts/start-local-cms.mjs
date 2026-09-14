@@ -4,8 +4,6 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { unstable_dev } from 'wrangler';
-import { sourceCollectionNames } from '@blackbox/content-model';
-import { importCmsContent } from '../../../scripts/import-cms-content.mjs';
 
 process.chdir(fileURLToPath(new URL('../', import.meta.url)));
 const { values } = parseArgs({
@@ -43,19 +41,7 @@ const stop = async () => {
 process.once('SIGINT', stop);
 process.once('SIGTERM', stop);
 try {
-  let empty = true;
-  for (const collection of Object.keys(sourceCollectionNames)) {
-    const response = await fetch(`http://127.0.0.1:8787/_emdash/api/content/${collection}?limit=1`);
-    if (!response.ok) throw new Error(`Local CMS initialization failed: ${response.status}`);
-    if ((await response.json()).data.items.length) {
-      empty = false;
-      break;
-    }
-  }
-  if (empty) await importCmsContent({ apply: true });
-  console.log(
-    `[Local CMS] ${empty ? 'Imported initial content.' : 'Keeping existing content.'} Staff: http://127.0.0.1:8787/content/`,
-  );
+  console.log('[Local CMS] Staff: http://127.0.0.1:8787/content/');
   await worker.waitUntilExit();
 } finally {
   await worker.stop();
