@@ -1,12 +1,13 @@
 import { astro, FetchState } from 'astro/fetch';
 import { cf, finalize } from '@astrojs/cloudflare/fetch';
-import type { AppBindings } from '../env';
+import { productEnvironmentProfileFromBindings, type AppBindings } from '../env';
 import { authenticate } from './auth';
 import { DurableObject } from 'cloudflare:workers';
 import { CommerceRuntime } from '../index';
 import { isSupportedCmsApiRequest, isCmsTokenExportRead } from '../middleware';
 import { handlePublicationRequest, handlePublicationWorkflow, publicationWorkflowPaths } from './publication-routes';
 import { dispatchPendingPublication, reconcilePendingPublication } from './publication-dispatch';
+import { handleItemArtwork, itemArtworkPath, publishedMediaPath, servePublishedMedia } from './item-artwork';
 
 export { CommerceRuntime };
 
@@ -43,6 +44,8 @@ export default {
   },
   async fetch(request: Request, bindings: CmsBindings, _context: ExecutionContext) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith(publishedMediaPath))
+      return servePublishedMedia(request, bindings.MEDIA, productEnvironmentProfileFromBindings(bindings));
     if (request.headers.get('Authorization')?.startsWith('Bearer ec_pat_') && !isCmsTokenExportRead(request))
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
     if (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/internal/')) {
@@ -115,22 +118,29 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     } catch {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
     }
-    if (url.pathname.startsWith('/_emdash/api/blackbox/publications')) {
+    if (url.pathname.startsWith('/_emdash/api/blackbox/publications') || url.pathname === itemArtworkPath) {
       if (!identity) return new Response('Forbidden', { status: 403 });
       const environment = bindings.PRODUCT_ENVIRONMENT?.toLowerCase();
       if (environment !== 'local' && environment !== 'uat' && environment !== 'prd')
         return new Response('Unavailable', { status: 503 });
-      return handlePublicationRequest(request, {
+      const context: Parameters<typeof handlePublicationRequest>[1] = {
         db: bindings.CMS_DB,
         environment,
         identity,
-        fetchCms: (path): Promise<Response> => {
+        fetchCms: (path: string): Promise<Response> => {
           const headers = new Headers(request.headers);
           headers.delete('Content-Length');
           headers.delete('Content-Type');
           return this.fetch(new Request(new URL(path, url), { headers }));
         },
-      });
+      };
+      return url.pathname === itemArtworkPath
+        ? handleItemArtwork(request, {
+            ...context,
+            bucket: bindings.MEDIA,
+            profile: productEnvironmentProfileFromBindings(bindings),
+          })
+        : handlePublicationRequest(request, context);
     }
     if (!url.pathname.startsWith('/_emdash/') && ['GET', 'HEAD'].includes(request.method)) {
       const response = await bindings.ASSETS.fetch(request);

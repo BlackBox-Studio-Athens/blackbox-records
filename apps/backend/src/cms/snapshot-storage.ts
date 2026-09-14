@@ -6,11 +6,12 @@ import { validateImage } from './media-upload';
 async function storeSnapshotObject(
   bucket: R2Bucket,
   environment: 'local' | 'uat' | 'prd',
-  kind: 'manifest' | 'media',
+  kind: 'manifest' | 'media' | 'approved-media',
   bytes: Uint8Array,
+  contentType = 'application/octet-stream',
 ) {
   z.enum(['local', 'uat', 'prd']).parse(environment);
-  z.enum(['manifest', 'media']).parse(kind);
+  z.enum(['manifest', 'media', 'approved-media']).parse(kind);
   if (
     !(bytes instanceof Uint8Array) ||
     !bytes.byteLength ||
@@ -22,13 +23,16 @@ async function storeSnapshotObject(
   const sha256 = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', body)), (byte) =>
     byte.toString(16).padStart(2, '0'),
   ).join('');
-  const key = `snapshots/${environment}/${kind}/${sha256}`;
+  const key =
+    kind === 'approved-media'
+      ? `approved-media/${environment}/${sha256}`
+      : `snapshots/${environment}/${kind}/${sha256}`;
   let object = await bucket.head(key);
   if (!object) {
     object = await bucket.put(key, body, {
       onlyIf: new Headers({ 'If-None-Match': '*' }),
       sha256,
-      httpMetadata: { contentType: 'application/octet-stream', cacheControl: 'private, no-store' },
+      httpMetadata: { contentType, cacheControl: 'private, no-store' },
     });
     // Another writer may have won the conditional put. Never overwrite its object.
     object ??= await bucket.head(key);
@@ -40,6 +44,18 @@ async function storeSnapshotObject(
 
 export function storeSnapshotMedia(bucket: R2Bucket, environment: 'local' | 'uat' | 'prd', bytes: Uint8Array) {
   return storeSnapshotObject(bucket, environment, 'media', bytes);
+}
+
+/** Only the selected item artwork is approved; the CMS original remains private. */
+export async function approvePublicationImage(bucket: R2Bucket, environment: 'local' | 'uat' | 'prd', file: File) {
+  await validateImage(file);
+  return storeSnapshotObject(
+    bucket,
+    environment,
+    'approved-media',
+    new Uint8Array(await file.arrayBuffer()),
+    file.type,
+  );
 }
 
 /** A manifest is the completion marker. Validate all references and bytes before writing it. */

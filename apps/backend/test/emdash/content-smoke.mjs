@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
@@ -121,6 +122,30 @@ try {
     if (collection === 'artists') artistId = created.body.data.item.id;
     const idPath = path + '/' + created.body.data.item.id;
     const current = await request(idPath);
+    if (collection === 'releases' || collection === 'distro') {
+      assert.equal(current.body.data.item.draftRevisionId, null, 'A fresh native draft has no draft revision yet');
+      const artworkUrl = 'http://127.0.0.1:8799/media/published/' + createHash('sha256').update(pixels).digest('hex');
+      if (collection === 'releases') assert.equal((await fetch(artworkUrl)).status, 404, 'Draft artwork stays private');
+      const approve = () =>
+        fetch('http://127.0.0.1:8799/_emdash/api/blackbox/item-artwork', {
+          method: 'POST',
+          headers: { Origin: 'http://127.0.0.1:8799', 'X-EmDash-Request': '1', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collection, entryId: current.body.data.item.id, _rev: current.body.data._rev }),
+        });
+      const approved = await approve();
+      assert.equal(approved.status, 200, await approved.clone().text());
+      assert.equal((await approved.json()).imageUrl, artworkUrl.replace(':8799/', ':8787/'));
+      assert.equal((await approve()).status, 200, 'Approval safely replays');
+      const image = await fetch(artworkUrl);
+      assert.equal(image.status, 200);
+      assert.equal(image.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+      assert.deepEqual(Buffer.from(await image.arrayBuffer()), pixels);
+      assert.equal(
+        (await request(idPath)).body.data.item.status,
+        'draft',
+        'Artwork approval does not publish the item',
+      );
+    }
     assert.equal((await request(idPath, 'PUT', { _rev: current.body.data._rev, data, slug: 'renamed' })).status, 400);
     assert.equal((await request(path, 'POST', { slug: '../unsafe', data })).status, 400);
     assert.equal((await request(path, 'POST', { slug: 'metadata-check', data, status: 'published' })).status, 400);

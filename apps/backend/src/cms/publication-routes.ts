@@ -231,7 +231,7 @@ export async function handlePublicationWorkflow(
   }
 }
 
-async function readBytes(body: ReadableStream<Uint8Array> | null, limit: number) {
+export async function readBytes(body: ReadableStream<Uint8Array> | null, limit: number) {
   if (!body) throw new Error('Missing body');
   const reader = body.getReader();
   const chunks: Uint8Array[] = [];
@@ -257,7 +257,7 @@ async function readBytes(body: ReadableStream<Uint8Array> | null, limit: number)
   return bytes;
 }
 
-async function readJson(body: ReadableStream<Uint8Array> | null, limit: number) {
+export async function readJson(body: ReadableStream<Uint8Array> | null, limit: number) {
   return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(await readBytes(body, limit))) as unknown;
 }
 
