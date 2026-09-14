@@ -968,6 +968,125 @@
           "status"
         ],
         "additionalProperties": false
+      },
+      "CatalogItemPublishDetail": {
+        "type": "object",
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "cmsRevision": {
+            "type": "string"
+          },
+          "requiresLiveConfirmation": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string",
+            "enum": [
+              "releases",
+              "distro"
+            ]
+          },
+          "cmsSourceId": {
+            "type": "string"
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "published",
+              "withheld",
+              "retired"
+            ]
+          },
+          "pending": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "operationId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "expectedRevision": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "cmsRevision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "confirmLivePublication": {
+                "type": "boolean",
+                "default": false
+              },
+              "retryPublication": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "operationId",
+              "expectedRevision",
+              "cmsRevision"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "cmsRevision",
+          "requiresLiveConfirmation",
+          "title",
+          "collection",
+          "cmsSourceId",
+          "availability",
+          "pending"
+        ],
+        "additionalProperties": false
+      },
+      "CatalogItemPublishResult": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "variantId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "completed",
+              "needs_review"
+            ]
+          },
+          "publicationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "publicationStatus": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "live",
+              "failed"
+            ]
+          }
+        },
+        "required": [
+          "operationId",
+          "variantId",
+          "status"
+        ],
+        "additionalProperties": false
       }
     },
     "parameters": {}
@@ -2012,6 +2131,223 @@
           },
           "503": {
             "description": "Operator authentication or item setup is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/variants/{variantId}/publication": {
+      "get": {
+        "operationId": "readCatalogItemPublication",
+        "tags": [
+          "Internal catalog"
+        ],
+        "summary": "Read linked content and any retained item publication.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^variant_[A-Za-z0-9_-]+$"
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Publication detail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemPublishDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Same-origin operator request required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Item or content requires review.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Publication unavailable. Retry the retained operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "publishCatalogItem",
+        "tags": [
+          "Internal catalog"
+        ],
+        "summary": "Publish an item without changing its Price or opening stock.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^variant_[A-Za-z0-9_-]+$"
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "origin",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "x-blackbox-request",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "operationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "cmsRevision": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "confirmLivePublication": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "retryPublication": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "operationId",
+                  "expectedRevision",
+                  "cmsRevision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Retained publication status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemPublishResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Same-origin operator request required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Item or content requires review.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Publication unavailable. Retry the retained operation.",
             "content": {
               "application/json": {
                 "schema": {

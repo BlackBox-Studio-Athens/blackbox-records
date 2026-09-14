@@ -57,7 +57,12 @@ type Dependencies = {
   now?: () => Date;
 };
 
-export async function readCatalogPrice(deps: Omit<Dependencies, 'journal'>, variant: string) {
+export async function readCatalogPriceState(
+  deps: Pick<Dependencies, 'environment' | 'catalog' | 'mappings'> & {
+    gateway: Pick<StripeCatalogGateway, 'retrieveDefaultPrice'>;
+  },
+  variant: string,
+) {
   const variantId = parseVariantId(variant);
   const item = await deps.catalog.findByVariantId(variantId);
   const record = item && (await deps.catalog.findByStoreItem(item));
@@ -80,6 +85,11 @@ export async function readCatalogPrice(deps: Omit<Dependencies, 'journal'>, vari
     )
   )
     throw new CatalogPriceConflictError('Current price requires reconciliation.');
+  return { variantId, item, record, mapping, current, price };
+}
+
+export async function readCatalogPrice(deps: Omit<Dependencies, 'journal'>, variant: string) {
+  const { variantId, record, price } = await readCatalogPriceState(deps, variant);
   const { display: _display, ...commandPrice } = price;
   return {
     variantId,
@@ -122,7 +132,7 @@ export async function changeCatalogPrice(deps: Dependencies, variant: string, ac
   try {
     const item = await deps.catalog.findByVariantId(variantId);
     const record = item && (await deps.catalog.findByStoreItem(item));
-    const projection = readRuntimeCatalogPresentation(record);
+    const projection = readRuntimeCatalogPresentation(record, deps.environment);
     const mapping = await deps.mappings.findByVariantId(variantId);
     if (
       !item ||

@@ -4,7 +4,7 @@ The `storefront-catalog` module owns `content-loader.ts` and `content-snapshot.t
 
 The combined backend composition is owned by `cms-runtime` under `apps/backend/src/cms/` plus the editorial request policy at `apps/backend/src/middleware.ts`; it consumes the `backend-runtime` entrypoint at `apps/backend/src/index.ts` and the existing operator verifier. Staff assets are build inputs, never cross-app source imports. The pure `@blackbox/content-model` workspace root owns portable collection schemas, rich-text and native revision validation, immutable snapshot validation, purchase-information validation, music provider URL construction, and Distro closed values formerly provided from the web app. Web and CMS callers use that package export directly; Astro image and grouping presentation remain in web.
 
-The protected catalog price and Item Setup HTTP adapters are owned by `public-commerce-http`; they compose the `catalog-sync` root and repository SPI/persistence roots behind the existing operator verifier. No editorial or public browser interface gains provider write access. The CMS Item Setup source adapter is also owned by `public-commerce-http`; it calls the bound CMS service through supported authenticated REST and never imports CMS persistence. `catalog-sync` may use the public `@blackbox/content-model` root to reuse the existing physical-type vocabulary for Item Setup validation; CMS persistence remains outside that boundary.
+The protected catalog price, Item Setup and Publish item HTTP adapters are owned by `public-commerce-http`; they compose the `catalog-sync` root and repository SPI/persistence roots behind the existing operator verifier. No editorial or public browser interface gains provider write access. Their CMS adapters call the bound CMS service through supported authenticated REST and never import CMS persistence. `catalog-sync` may use the public `@blackbox/content-model` root to reuse the existing physical-type vocabulary for Item Setup validation; CMS persistence remains outside that boundary. The private `cms-runtime` publication coordinator consumes the commerce persistence root to finish retained operations from verified CMS Live receipts and pause linked item eligibility before native unpublish. It never changes Price, stock quantities or order history, and does not expose repositories to editorial plugins.
 
 Specify the TypeScript-native application module boundary model and the machine-readable manifest used by audits.
 
@@ -18,7 +18,7 @@ The combined Worker SHALL retain closed module ownership and existing applicatio
 
 - **WHEN** the combined Worker is built
 - **THEN** `cms-runtime` owns the `combined-worker` and `access-auth-provider` named interfaces and editorial middleware
-- **AND** it may depend only on `backend-runtime`, `operator-auth`, `platform-shared`, and the pure content-model workspace export
+- **AND** it may depend only on `backend-runtime`, `operator-auth`, `platform-shared`, the commerce persistence root for publication coordination, and the pure content-model workspace export
 - **AND** `staff-frontend` owns its source and consumes the internal API client; its built assets are packaged without cross-app source imports.
 
 #### Scenario: Runtime catalog data is read

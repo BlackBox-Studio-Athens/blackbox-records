@@ -321,7 +321,7 @@ it.each(
       new PrismaItemAvailabilityRepository(db),
       new PrismaStockRepository(db),
       reconciler,
-      createRuntimeCatalogProductProjectionReader(storeItems),
+      createRuntimeCatalogProductProjectionReader(storeItems, 'local'),
       item.storeItemSlug,
     );
     expect(offer).toMatchObject({ catalogStatus: 'ready', canCheckout: true, price });

@@ -37,7 +37,11 @@ export default function ContentBodyEditor(props: PortableTextEditorProps) {
     <I18nProvider i18n={i18n}>
       <LocaleDirectionProvider>
         <QueryClientProvider client={queries}>
-          <PortableTextEditor {...props} onEditorReady={onEditorReady} />
+          <PortableTextEditor
+            {...props}
+            className={`${props.className ?? ''} [&_button]:min-h-11 [&_button]:min-w-11`}
+            onEditorReady={onEditorReady}
+          />
         </QueryClientProvider>
       </LocaleDirectionProvider>
     </I18nProvider>

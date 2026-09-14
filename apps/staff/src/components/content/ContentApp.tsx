@@ -138,7 +138,21 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       } catch {
         setMessage('The last save could not be read. Ask a label administrator for help.');
       }
-    } else void list();
+    } else {
+      const selected = new URLSearchParams(window.location.search);
+      const section = selected.get('collection');
+      const id = selected.get('id');
+      if (section && Object.hasOwn(contentSections, section) && id) {
+        setCollection(section as ContentSection);
+        void list(section as ContentSection);
+        void editorialRequest<Document>(base, `content/${section}/${encodeURIComponent(id)}`)
+          .then((loaded) => {
+            setDocument(loaded);
+            setData(loaded.item.data);
+          })
+          .catch(() => setMessage('The selected content could not be loaded. Search to try again.'));
+      } else void list();
+    }
   }, []);
   useEffect(() => {
     if (!dirty) return;

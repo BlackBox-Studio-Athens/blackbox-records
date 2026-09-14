@@ -8,6 +8,9 @@ export type InternalStockCountBody = InternalApiComponents['schemas']['InternalS
 export type RecordedStockChangeResponse = InternalApiComponents['schemas']['RecordedStockChangeResponse'];
 export type RecordedStockCountResponse = InternalApiComponents['schemas']['RecordedStockCountResponse'];
 export type CatalogPriceDetail = InternalApiComponents['schemas']['CatalogPriceDetail'];
+export type CatalogItemPublishDetail = InternalApiComponents['schemas']['CatalogItemPublishDetail'];
+export type CatalogItemPublishCommand =
+  InternalApiOperations['publishCatalogItem']['requestBody']['content']['application/json'];
 export type CatalogSetupCommand =
   InternalApiOperations['setupCatalogItem']['requestBody']['content']['application/json'];
 export type CatalogPriceCommand = Pick<CatalogPriceDetail, 'expectedRevision' | 'price'> & {
@@ -87,6 +90,19 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
   }
 
   return {
+    readPublication(variantId: string) {
+      return fetchJson<CatalogItemPublishDetail>(`/api/internal/variants/${encodeURIComponent(variantId)}/publication`);
+    },
+    publishItem(variantId: string, body: CatalogItemPublishCommand) {
+      return fetchJson<InternalApiComponents['schemas']['CatalogItemPublishResult']>(
+        `/api/internal/variants/${encodeURIComponent(variantId)}/publication`,
+        {
+          method: 'POST',
+          body: JSON.stringify(body),
+          headers: { 'X-Blackbox-Request': '1' },
+        },
+      );
+    },
     setupItem(body: CatalogSetupCommand) {
       return fetchJson<InternalApiComponents['schemas']['CatalogItemSetupResult']>('/api/internal/items/setup', {
         method: 'POST',

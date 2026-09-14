@@ -216,6 +216,24 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/internal/variants/{variantId}/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read linked content and any retained item publication. */
+        get: operations["readCatalogItemPublication"];
+        put?: never;
+        /** Publish an item without changing its Price or opening stock. */
+        post: operations["publishCatalogItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/variants/{variantId}/stock": {
         parameters: {
             query?: never;
@@ -535,6 +553,37 @@ export type components = {
             code: string;
             error: string;
             requestId?: string;
+        };
+        CatalogItemPublishDetail: {
+            /** @enum {string} */
+            availability: "published" | "withheld" | "retired";
+            cmsRevision: string;
+            cmsSourceId: string;
+            /** @enum {string} */
+            collection: "releases" | "distro";
+            expectedRevision: number;
+            pending: {
+                cmsRevision: string;
+                /** @default false */
+                confirmLivePublication: boolean;
+                expectedRevision: number;
+                /** Format: uuid */
+                operationId: string;
+                /** @default false */
+                retryPublication: boolean;
+            } | null;
+            requiresLiveConfirmation: boolean;
+            title: string;
+        };
+        CatalogItemPublishResult: {
+            operationId: string;
+            /** Format: uuid */
+            publicationId?: string;
+            /** @enum {string} */
+            publicationStatus?: "pending" | "live" | "failed";
+            /** @enum {string} */
+            status: "pending" | "completed" | "needs_review";
+            variantId: string;
         };
         CatalogItemSetupResult: {
             operationId: string;
@@ -1000,6 +1049,156 @@ export interface operations {
                 };
             };
             /** @description Operator authentication or price processing is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    readCatalogItemPublication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Publication detail. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItemPublishDetail"];
+                };
+            };
+            /** @description Invalid request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Same-origin operator request required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Item or content requires review. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Publication unavailable. Retry the retained operation. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    publishCatalogItem: {
+        parameters: {
+            query?: never;
+            header?: {
+                origin?: string;
+                "x-blackbox-request"?: string;
+            };
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    cmsRevision: string;
+                    /** @default false */
+                    confirmLivePublication?: boolean;
+                    expectedRevision: number;
+                    /** Format: uuid */
+                    operationId: string;
+                    /** @default false */
+                    retryPublication?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Retained publication status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItemPublishResult"];
+                };
+            };
+            /** @description Invalid request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Same-origin operator request required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Item or content requires review. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Publication unavailable. Retry the retained operation. */
             503: {
                 headers: {
                     [name: string]: unknown;

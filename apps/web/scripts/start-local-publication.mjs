@@ -161,6 +161,12 @@ export async function startLocalPublication() {
     });
     // ponytail: one runner is enforced by the public port; a hosted queue is unnecessary for Local.
     while (!stopping) {
+      // The persisted CMS receipt also completes item operations after their browser tab closes.
+      const reconciled = await fetch('http://127.0.0.1:8787/_emdash/api/blackbox/item-publications/reconcile', {
+        method: 'POST',
+        headers: { Origin: 'http://127.0.0.1:8787', 'X-EmDash-Request': '1' },
+      }).catch(() => null);
+      await reconciled?.body?.cancel();
       const request = await db
         .prepare(
           "SELECT id, requested_revision AS revision FROM _blackbox_publications WHERE environment = 'local' AND status = 'pending' ORDER BY rowid DESC LIMIT 1",

@@ -284,6 +284,8 @@
         "apps/backend/src/interfaces/http/routes/cms-item-source-gateway.ts",
         "apps/backend/src/interfaces/http/routes/register-public-routes.ts",
         "apps/backend/src/interfaces/http/routes/register-public-commerce-routes.ts",
+        "apps/backend/src/interfaces/http/routes/register-internal-publication-routes.ts",
+        "apps/backend/src/interfaces/http/routes/cms-item-publication-gateway.ts",
         "apps/backend/src/interfaces/http/routes/register-public-newsletter-routes.ts",
         "apps/backend/src/interfaces/http/routes/register-public-services-inquiry-routes.ts",
         "apps/backend/src/interfaces/http/routes/public-checkout-return-url.ts",
@@ -542,7 +544,7 @@
     },
     "cms-runtime": {
       "providedEntrypoints": ["apps/backend/src/cms/index.ts", "apps/backend/src/cms/auth.ts"],
-      "allowedDependencies": ["backend-runtime", "operator-auth", "platform-shared"],
+      "allowedDependencies": ["backend-runtime", "operator-auth", "platform-shared", "commerce-persistence"],
       "namedInterfaces": {
         "combined-worker": "apps/backend/src/cms/index.ts",
         "access-auth-provider": "apps/backend/src/cms/auth.ts"

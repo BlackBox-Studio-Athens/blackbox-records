@@ -17,6 +17,7 @@ import {
 } from '../../lib/backend/internal-stock-api';
 import { cn } from '../../lib/utils';
 import ItemPriceEditor from './ItemPriceEditor';
+import ItemPublication from './ItemPublication';
 
 interface StockOperationsAppProps {
   backendBaseUrl: string;
@@ -343,6 +344,13 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
         <div className="grid content-start gap-5">
           {showPrice && selectedVariantId && (
             <ItemPriceEditor key={selectedVariantId} variantId={selectedVariantId} backendBaseUrl={backendBaseUrl} />
+          )}
+          {showPrice && selectedVariantId && (
+            <ItemPublication
+              key={`publication-${selectedVariantId}`}
+              variantId={selectedVariantId}
+              backendBaseUrl={backendBaseUrl}
+            />
           )}
           {errorMessage && (
             <div className="border border-white/25 bg-white/10 p-4 text-sm text-white" role="alert">

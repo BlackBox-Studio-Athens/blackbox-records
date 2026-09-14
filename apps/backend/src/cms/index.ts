@@ -8,6 +8,7 @@ import { isSupportedCmsApiRequest, isCmsTokenExportRead } from '../middleware';
 import { handlePublicationRequest, handlePublicationWorkflow, publicationWorkflowPaths } from './publication-routes';
 import { dispatchPendingPublication, reconcilePendingPublication } from './publication-dispatch';
 import { handleItemArtwork, itemArtworkPath, publishedMediaPath, servePublishedMedia } from './item-artwork';
+import { reconcileItemPublications, guardItemLifecycle } from './item-publication-recovery';
 
 export { CommerceRuntime };
 
@@ -89,6 +90,11 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     if (!(await this.isInitialized())) throw new Error('CMS requires explicit initialization');
     const { runScheduledTasks } = await import('emdash/middleware');
     await runScheduledTasks();
+    await reconcileItemPublications(
+      this.env.COMMERCE_DB,
+      this.env.CMS_DB,
+      productEnvironmentProfileFromBindings(this.env).workerDeploymentTarget,
+    );
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -117,6 +123,23 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       if (!exportRead) identity = await authenticate(request);
     } catch {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
+    }
+    if (url.pathname === '/_emdash/api/blackbox/item-publications/reconcile') {
+      if (
+        !identity ||
+        identity.role < 30 ||
+        request.method !== 'POST' ||
+        url.search ||
+        request.headers.get('Origin') !== url.origin ||
+        request.headers.get('X-EmDash-Request') !== '1'
+      )
+        return new Response('Forbidden', { status: 403 });
+      await reconcileItemPublications(
+        bindings.COMMERCE_DB,
+        bindings.CMS_DB,
+        productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
+      );
+      return Response.json({ status: 'checked' }, { headers: { 'Cache-Control': 'private, no-store' } });
     }
     if (url.pathname.startsWith('/_emdash/api/blackbox/publications') || url.pathname === itemArtworkPath) {
       if (!identity) return new Response('Forbidden', { status: 403 });
@@ -177,6 +200,15 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       const origin = request.headers.get('Origin');
       if ((origin && origin !== url.origin) || request.headers.get('X-EmDash-Request') !== '1') {
         return new Response('Forbidden', { status: 403 });
+      }
+      if (identity && identity.role >= 30) {
+        const lifecycle = await guardItemLifecycle(request, bindings.COMMERCE_DB, (path) => {
+          const headers = new Headers(request.headers);
+          headers.delete('Content-Length');
+          headers.delete('Content-Type');
+          return this.fetch(new Request(new URL(path, url), { headers }));
+        });
+        if (lifecycle) return lifecycle;
       }
       if (url.pathname.startsWith('/_emdash/api/media')) {
         if (url.pathname.replace(/\/+$/, '') !== '/_emdash/api/media' || request.method !== 'POST') {

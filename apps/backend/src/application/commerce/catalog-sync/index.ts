@@ -72,3 +72,5 @@ export { catalogManifest } from './catalog-manifest.generated';
 export { CatalogPriceConflictError } from './types';
 export { changeCatalogPrice, readCatalogPrice, catalogPriceChangeSchema } from './change-catalog-price';
 export { setupCatalogItem, catalogItemSetupSchema } from './setup-catalog-item';
+export { publishCatalogItem, catalogItemPublishSchema } from './publish-catalog-item';
+export type { CmsItemPublicationGateway } from './publish-catalog-item';

@@ -1,5 +1,13 @@
 # Item Setup command integration
 
+## Publish item — persistent Local acceptance, 2026-09-14
+
+The Items workspace now publishes saved CMS content through the retained catalog operation, approves immutable artwork, updates Product presentation only when changed, and waits for the static publication receipt before enabling catalog availability. Retries retain the operation and approved presentation. Failed static publication requires an explicit retry; Local background reconciliation completes an accepted publication after the member closes the page. Native unpublish pauses new checkout eligibility before changing content status, preserving stock and Price bindings.
+
+Chrome's Blackbox profile published and then republished the persistent `Local mock catalog verification` Release through the canonical WebStorm Local stack and official stripe-mock proxy. The second browser operation reached “Item published. Price and stock are unchanged.” The Items workspace retained EUR 24.00 and physical/online quantities of 10/10. The Content review link opened the correct native record. At a 320 CSS-pixel viewport, Content had a 305-pixel document width; native editor buttons and the logo link now use 44-pixel minimum targets (browser geometry rounded to 43.997 pixels). The viewport override was reset afterward.
+
+This verifies Local publication and republish, not new-item shopper checkout: public catalog identity generation and compiled runtime catalog adoption still require integration. Hosted acceptance, the remaining keyboard/stale-save browser checks, and PRD authorization remain open. No hosted calls or persistent Local reset occurred. The final combined WebStorm verification passed: `pnpm test:unit`, `pnpm check`, `pnpm build`, mock CMS build, all 13 compiled CMS collection checks, staff hosting checks, and strict OpenSpec validation. Evidence: `.codex-artifacts/emdash-m1/item-publish-verification-batch-3.json`. Together with the existing setup retry and paid-sale tests, this closes tasks 7.3 and 7.4; all-environment creation and shopper acceptance remain separate.
+
 ## Guided member setup — Local browser evidence, 2026-09-14
 
 The protected `/items/new/` form now supports new or existing Release/Distro/Merch records, artist selection or creation, image selection/upload, explicit EUR prices, and zero-by-default opening stock. It reuses the existing setup command and shared physical types. A pending command survives reload and Check again reuses it. An editorial-only Release saves a CMS draft without a commerce command.

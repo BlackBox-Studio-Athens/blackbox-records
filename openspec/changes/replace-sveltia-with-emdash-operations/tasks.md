@@ -2,7 +2,7 @@ Use the apply-change workflow. Finish one usable workflow at a time in the deliv
 
 ## Delivery order — revised 2026-09-14
 
-The 60 acceptance tasks remain intact: 25 are complete and 35 remain open. This is not a percentage of effort or usable product completion. Local editorial publication and draft preview work; item publication and retained legacy catalog reconciliation remain unfinished. Price editing requires a reconciled item. Do not add checkboxes merely to make the count rise.
+The 60 acceptance tasks remain intact: 27 are complete and 33 remain open. This is not a percentage of effort or usable product completion. Local editorial publication and draft preview work; item publication and retained legacy catalog reconciliation remain unfinished. Price editing requires a reconciled item. Do not add checkboxes merely to make the count rise.
 
 | Order    | Usable outcome                                                                                                         | Existing tasks to finish together                                                                               |
 | -------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -77,8 +77,8 @@ The protected Item Setup API now integrates CMS linkage, runtime identity, Produ
 
 - [x] 7.1 Add guided Release/Distro/Merch setup with existing-record selection, generated stable identities, one variant, EUR, explicit initial price, and zero-by-default physical stock with matching online default; verify form/API fixtures do not fabricate prices or persist presentation category as commerce authority. See the guided member setup evidence in [setup-command-evidence.md](setup-command-evidence.md).
 - [x] 7.2 Implement resumable CMS source linkage and runtime identity setup through the operation journal; verify duplicate submissions and partial CMS success cannot create extra Releases, Distro sources, Store Items, or variants. See [setup-command-evidence.md](setup-command-evidence.md).
-- [ ] 7.3 Implement initial Product/Price binding and one-time opening stock through existing stock/application seams; verify retry, republish, and subsequent sales never reapply opening quantities and that ambiguous bindings remain non-buyable.
-- [ ] 7.4 Complete the guided Publish item action with approved immutable media and targeted Product Projection only when checkout presentation changed; verify it needs no second member task, leaves Price Authority unchanged, and safely resumes a failed projection before static publication.
+- [x] 7.3 Implement initial Product/Price binding and one-time opening stock through existing stock/application seams; verify retry, republish, and subsequent sales never reapply opening quantities and that ambiguous bindings remain non-buyable.
+- [x] 7.4 Complete the guided Publish item action with approved immutable media and targeted Product Projection only when checkout presentation changed; verify it needs no second member task, leaves Price Authority unchanged, and safely resumes a failed projection before static publication.
 - [ ] 7.5 Verify all required creation outcomes in Local and authorized UAT: label Release with ten vinyl, Distro with ten vinyl, Merch using its existing type policy, and editorial-only Release; prove exact counts, no duplicate identities, no Git/SQL editing, and no backend redeploy for the new items.
 
 ## 8. Separate Content Publication from Software Release
