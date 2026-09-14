@@ -149,7 +149,7 @@ After a target-specific build, `pnpm --filter @blackbox/backend cms:migrations -
 pnpm dev
 ```
 
-For Codex/browser smoke checks, prefer Astro's background dev server:
+For frontend-only diagnostics, use Astro's background dev server. CMS and item-publication acceptance must use the full Local stack above:
 
 ```sh
 pnpm site:dev:bg
@@ -745,7 +745,7 @@ Export an existing local CMS with `pnpm cms:snapshot:export --env local --target
 
 The CMS owner can create and list export tokens through the native `/_emdash/api/admin/api-tokens` endpoint and revoke one with `DELETE /_emdash/api/admin/api-tokens/<id>`. Creation accepts only the scopes `content:read` and `media:read`; native expiry and revocation remain authoritative. Staff authentication and normal mutation/CSRF checks protect token management. The raw token is returned only at creation and belongs in the target's CI secret store. Token-bearing requests can reach only the fixed export GET routes, never editorial writes, token management, or commerce APIs. Each authenticated native token read also attempts a D1 `last_used_at` update: include that write attempt and token/user lookups in the account-wide export budget. No Astro session or KV binding is added.
 
-Build that export with `pnpm build:content-snapshot --snapshot <snapshot.json> --sha256 <digest> --env local|uat|prd`. Referenced image bytes live beside the manifest at `media/<sha256>.png`, `.jpg`, or `.webp`, matching its MIME type. This command builds only the static web artifact; it does not deploy, contact the CMS, or change commerce. Snapshot mode rejects missing/invalid content and media without falling back to repository content. Normal commands retain their existing file input until the planned source cutover and Local launcher integration. Do not run Astro checks or a second web build concurrently with a snapshot build because they share the local content cache.
+Build that export with `pnpm build:content-snapshot --snapshot <snapshot.json> --sha256 <digest> --env local|uat|prd`. Referenced image bytes live beside the manifest at `media/<sha256>.png`, `.jpg`, or `.webp`, matching its MIME type. This command builds only the static web artifact; it does not deploy, contact the CMS, or change commerce. Snapshot mode rejects missing/invalid content and media without falling back to repository content. The normal Local stack already builds from CMS snapshots and refreshes them through Content publication. Standalone Astro diagnostics and ordinary hosted builds retain repository inputs until the explicit hosted source cutover; they are not substitutes for Local publication acceptance. Do not run Astro checks or a second web build concurrently with a snapshot build because they share the local content cache.
 
 Publication builds additionally pass `--release-identity <release.json> --publication-id <UUID> --ci-run-id <run ID>` together. The code identity file supplies `sha`, `runId`, and `runNumber`; its SHA must match the checked-out commit. The successful build writes `apps/web/dist/release.json`, preserving that code identity and adding the publication ID, CI run ID, and snapshot digest. Its authenticated `/publications/run` claim requires `codeSha`; `/publications/complete` accepts only the bound run/code/snapshot, verifies matching public metadata at the fixed target origin, and records the workflow-supplied deployment ID.
 
