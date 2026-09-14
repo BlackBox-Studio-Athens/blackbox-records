@@ -10,6 +10,7 @@ import { markdownTreeToPortableText } from '../../../../scripts/cms-markdown.mjs
 import { sourceCollectionNames } from '../../src/cms/content-schema.ts';
 import { createCmsSnapshotReaders } from '../../../../scripts/cms-snapshot-readers.mjs';
 import { captureCmsSnapshot } from '../../../../scripts/capture-cms-snapshot.mjs';
+import { stageCmsSnapshot } from '../../../../scripts/stage-cms-snapshot.mjs';
 import { claimPublicationDispatch } from '../../src/cms/publication-journal.ts';
 
 const root = new URL('../../', import.meta.url);
@@ -232,11 +233,17 @@ try {
   const incomplete = await uploadSnapshot('snapshot', snapshot.json);
   assert.equal(incomplete.status, 503, 'A snapshot with missing media cannot complete');
   await incomplete.body?.cancel();
-  for (const [sha256, bytes] of snapshot.files) {
-    const media = await uploadSnapshot('media', bytes);
-    assert.equal(media.status, 200, await media.clone().text());
-    assert.deepEqual(await media.json(), { sha256 });
-  }
+  assert.deepEqual(
+    await stageCmsSnapshot({
+      environment: 'local',
+      target: 'http://127.0.0.1:8799/',
+      publicationId: publication.id,
+      ciRunId: '12345',
+      token: workflowToken,
+      capture: snapshot,
+    }),
+    { id: publication.id, snapshotSha256: snapshot.sha256 },
+  );
   for (let attempt = 0; attempt < 2; attempt++) {
     const completed = await uploadSnapshot('snapshot', snapshot.json);
     assert.equal(completed.status, 200, await completed.clone().text());

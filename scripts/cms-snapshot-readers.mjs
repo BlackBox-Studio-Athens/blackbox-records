@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 
 const resources = JSON.parse(readFileSync(new URL('../apps/backend/cms-resources.json', import.meta.url), 'utf8'));
 
-export function createCmsSnapshotReaders({ environment, target, headers = {}, fetchImpl = fetch }) {
+export function cmsSnapshotTarget(environment, target) {
   const origin = new URL(target);
   const allowed =
     environment === 'local'
@@ -12,6 +12,11 @@ export function createCmsSnapshotReaders({ environment, target, headers = {}, fe
         : [];
   if (!allowed.includes(origin.origin) || origin.href !== origin.origin + '/')
     throw new Error('Invalid CMS snapshot target.');
+  return origin;
+}
+
+export function createCmsSnapshotReaders({ environment, target, headers = {}, fetchImpl = fetch }) {
+  const origin = cmsSnapshotTarget(environment, target);
   const requestHeaders = new Headers({ Accept: 'application/json' });
   const supplied = new Headers(headers);
   for (const key of ['cf-access-client-id', 'cf-access-client-secret', 'cf-access-jwt-assertion']) {
