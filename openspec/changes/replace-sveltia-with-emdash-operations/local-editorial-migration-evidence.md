@@ -143,3 +143,10 @@ Full-suite reruns were skipped at the user's request. Hosted buckets, quota pilo
 
 Chrome Blackbox profile on the rebuilt canonical Local stack verified that Keep editing preserves an unsaved Genre change and Discard changes and reload restores Experimental Weird Rock with No unsaved changes. No save, publication, provider write or persistent content change occurred. Staff checks passed via WebStorm (inline-reload-check.json). The first combined build failed because the running Worker locked dist/client on Windows; stopping and restarting BlackBox Local Stack through WebStorm rebuilt the artifact successfully (inline-reload-stack.json), preserving existing stock and prices. Full stale-revision and narrow-viewport acceptance remain open.
 
+
+### Narrow workspace navigation — 2026-09-15
+
+Chrome Blackbox at 320x800 verified navigation through Content, Items, Stock and Orders on the canonical Local Worker without a second login. Loaded artist editing, stock selection and the 41-order retained list each stayed within the viewport (document width 305 CSS pixels including the reserved scrollbar). Keyboard Enter opened a retained paid order and focused its Order detail heading; Genre followed by Tab focused Country in the artist editor. The temporary viewport override was reset. No mutations were submitted.
+
+This does not close the full keyboard/touch/contrast acceptance matrix. The narrow Orders lookup button appears compressed beside its input and needs wrapping before final mobile acceptance; hosted identity and stale-revision recovery remain separately scoped.
+
