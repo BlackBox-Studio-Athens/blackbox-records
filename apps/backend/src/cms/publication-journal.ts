@@ -81,6 +81,15 @@ export async function claimPublicationDispatch(db: D1Database, environment: 'loc
     )
     .bind(crypto.randomUUID(), now + 300_000, environment, environment, now, environment, now)
     .first();
+  if (row)
+    await db
+      .prepare(
+        `UPDATE _blackbox_publications SET status = 'failed'
+    WHERE environment = ? AND status = 'pending' AND ci_run_id IS NULL
+    AND rowid < (SELECT rowid FROM _blackbox_publications WHERE id = ? AND environment = ?)`,
+      )
+      .bind(environment, (row as { id: string }).id, environment)
+      .run();
   return row ? requestSchema.omit({ actorEmail: true }).extend({ dispatchToken: z.uuid() }).parse(row) : null;
 }
 
@@ -174,6 +183,69 @@ export const publicationCompletionSchema = requestSchema.pick({ id: true, enviro
   snapshotSha256: z.string().regex(/^[a-f0-9]{64}$/),
   deploymentId: z.uuid(),
 });
+
+// Preserve the authenticated workflow receipt before checking edge propagation so the scheduler can retry.
+export async function recordPublicationDeployment(db: D1Database, input: z.input<typeof publicationCompletionSchema>) {
+  const value = publicationCompletionSchema.parse(input);
+  const result = await db
+    .prepare(
+      `UPDATE _blackbox_publications SET deployment_id = ?
+    WHERE id = ? AND environment = ? AND status = 'pending' AND ci_run_id = ? AND code_sha = ?
+    AND snapshot_sha256 = ? AND (deployment_id IS NULL OR deployment_id = ?)`,
+    )
+    .bind(
+      value.deploymentId,
+      value.id,
+      value.environment,
+      value.ciRunId,
+      value.codeSha,
+      value.snapshotSha256,
+      value.deploymentId,
+    )
+    .run();
+  return result.meta.changes === 1;
+}
+
+export async function claimPublicationReconciliation(
+  db: D1Database,
+  environment: 'local' | 'uat' | 'prd',
+  now = Date.now(),
+) {
+  environmentSchema.parse(environment);
+  z.number()
+    .int()
+    .nonnegative()
+    .max(Number.MAX_SAFE_INTEGER - 300_000)
+    .parse(now);
+  const row = await db
+    .prepare(
+      `UPDATE _blackbox_publications SET dispatch_after = ?
+    WHERE id = (SELECT id FROM _blackbox_publications WHERE environment = ? AND status = 'pending'
+      AND ci_run_id IS NOT NULL AND dispatch_after <= ? ORDER BY rowid LIMIT 1)
+    AND environment = ? AND status = 'pending' AND dispatch_after <= ? RETURNING id`,
+    )
+    .bind(now + 300_000, environment, now, environment, now)
+    .first<{ id: string }>();
+  return row ? readPublication(db, environment, row.id) : null;
+}
+
+export async function failPublicationRun(
+  db: D1Database,
+  environment: 'local' | 'uat' | 'prd',
+  id: string,
+  ciRunId: string,
+) {
+  const value = publicationCompletionSchema
+    .pick({ environment: true, id: true, ciRunId: true })
+    .parse({ environment, id, ciRunId });
+  await db
+    .prepare(
+      `UPDATE _blackbox_publications SET status = 'failed'
+    WHERE id = ? AND environment = ? AND ci_run_id = ? AND status = 'pending'`,
+    )
+    .bind(value.id, value.environment, value.ciRunId)
+    .run();
+}
 
 // The caller verifies the public deployment first. Older acknowledgements cannot replace a newer Live record.
 export async function completePublication(db: D1Database, input: z.input<typeof publicationCompletionSchema>) {

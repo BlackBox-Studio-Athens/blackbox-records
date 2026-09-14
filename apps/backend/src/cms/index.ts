@@ -6,7 +6,7 @@ import { DurableObject } from 'cloudflare:workers';
 import { CommerceRuntime } from '../index';
 import { isSupportedCmsApiRequest, isCmsTokenExportRead } from '../middleware';
 import { handlePublicationRequest, handlePublicationWorkflow, publicationWorkflowPaths } from './publication-routes';
-import { dispatchPendingPublication } from './publication-dispatch';
+import { dispatchPendingPublication, reconcilePendingPublication } from './publication-dispatch';
 
 export { CommerceRuntime };
 
@@ -67,6 +67,14 @@ export default {
 export class CmsRuntime extends DurableObject<CmsBindings> {
   async dispatchPublication() {
     if (!/^[a-f0-9]{64}$/.test(this.env.CMS_PUBLICATION_EXPORT_TOKEN ?? '')) return { status: 'disabled' as const };
+    await reconcilePendingPublication({
+      db: this.env.CMS_DB,
+      bucket: this.env.MEDIA,
+      environment: this.env.PRODUCT_ENVIRONMENT?.toLowerCase(),
+      hostname: this.env.CMS_HOSTNAME,
+      token: this.env.CMS_PUBLICATION_EXPORT_TOKEN,
+      githubToken: this.env.CMS_PUBLICATION_GITHUB_TOKEN,
+    });
     return dispatchPendingPublication(
       this.env.CMS_DB,
       this.env.PRODUCT_ENVIRONMENT?.toLowerCase(),

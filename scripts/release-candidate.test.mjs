@@ -5,11 +5,13 @@ import path from 'node:path';
 import { test } from 'node:test';
 import {
   contentPublicationIdentity,
+  publicationCodeIdentity,
   inventory,
   observe,
   validateArtifacts,
   validateIdentity,
   validateOrder,
+  validatePublicationFreshness,
   validateRun,
   validateWorker,
   verifyFiles,
@@ -18,6 +20,17 @@ import {
 
 const sha = 'a'.repeat(40);
 const repository = 'example/repository';
+
+test('code promotion cannot replace newer target content with an old artifact', () => {
+  const content = { publicationId: 'one', ciRunId: '123', snapshotSha256: 'a'.repeat(64) };
+  validatePublicationFreshness({}, null);
+  validatePublicationFreshness({ content }, { content });
+  assert.throws(() => validatePublicationFreshness({}, { content }), /refresh the artifact/);
+  assert.throws(
+    () => validatePublicationFreshness({ content: { ...content, publicationId: 'old' } }, { content }),
+    /refresh the artifact/,
+  );
+});
 
 test('publication metadata preserves deployed code identity while replacing only content identity', () => {
   const code = { sha, runId: '123', runNumber: 10, content: { old: true }, private: 'omit' };
@@ -47,6 +60,35 @@ const run = {
   repository: { full_name: repository },
   head_repository: { full_name: repository },
 };
+
+test('publication selects canonical deployed code independently of a newer UAT candidate', () => {
+  const current = { sha, runId: '123', runNumber: 10 };
+  const releaseRun = { ...run, id: 123, run_number: 10 };
+  const project = {
+    name: 'blackbox-records-web',
+    canonical_deployment: {
+      environment: 'production',
+      latest_stage: { name: 'deploy', status: 'success' },
+      deployment_trigger: { metadata: { commit_hash: sha, branch: 'main' } },
+    },
+  };
+  assert.deepEqual(publicationCodeIdentity(project, current, releaseRun, 'prd', repository), current);
+  const invalid = [
+    { name: 'blackbox-records-web-uat' },
+    { canonical_deployment: { ...project.canonical_deployment, environment: 'preview' } },
+    { canonical_deployment: { ...project.canonical_deployment, latest_stage: { name: 'deploy', status: 'failure' } } },
+    {
+      canonical_deployment: {
+        ...project.canonical_deployment,
+        deployment_trigger: { metadata: { commit_hash: 'b'.repeat(40), branch: 'main' } },
+      },
+    },
+  ];
+  for (const patch of invalid)
+    assert.throws(() => publicationCodeIdentity({ ...project, ...patch }, current, releaseRun, 'prd', repository));
+  for (const patch of [{ id: 124 }, { run_number: 11 }, { conclusion: 'failure' }, { event: 'pull_request' }])
+    assert.throws(() => publicationCodeIdentity(project, current, { ...releaseRun, ...patch }, 'prd', repository));
+});
 
 test('post-deployment propagation checks retry within a fixed attempt budget', async () => {
   let attempts = 0;

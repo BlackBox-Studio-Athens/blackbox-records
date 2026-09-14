@@ -3,6 +3,8 @@ import { test } from 'node:test';
 import { createHash } from 'node:crypto';
 import { captureCmsSnapshot } from './capture-cms-snapshot.mjs';
 import { writeCmsSnapshot } from './export-cms-snapshot.mjs';
+import { prepareContentPublication } from './prepare-content-publication.mjs';
+import { acknowledgeContentPublication } from './acknowledge-content-publication.mjs';
 import { mkdtemp, readFile, rm, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -13,6 +15,115 @@ const imageBytes = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=',
   'base64',
 );
+
+test('publication acknowledges only matching canonical deployment and public content without forwarding credentials', async () => {
+  const env = {
+    PUBLICATION_TARGET: 'prd',
+    CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32),
+    CLOUDFLARE_API_TOKEN: 'provider-secret',
+    CMS_PUBLICATION_EXPORT_TOKEN: 'b'.repeat(64),
+    PUBLICATION_ID: '12345678-1234-4234-8234-123456789012',
+    GITHUB_RUN_ID: '123',
+    CMS_EXPORT_ACCESS_CLIENT_ID: 'access-id',
+    CMS_EXPORT_ACCESS_CLIENT_SECRET: 'access-secret',
+  };
+  const expected = {
+    sha: 'c'.repeat(40),
+    runId: '100',
+    runNumber: 1,
+    content: { publicationId: env.PUBLICATION_ID, ciRunId: '123', snapshotSha256: 'd'.repeat(64) },
+  };
+  let calls = 0;
+  let wrongContent = false;
+  const send = async (url, init) => {
+    calls++;
+    const target = new URL(url);
+    if (target.hostname === 'api.cloudflare.com')
+      return Response.json({
+        success: true,
+        result: {
+          name: 'blackbox-records-web',
+          canonical_deployment: {
+            id: env.PUBLICATION_ID,
+            url: 'https://abc123.blackbox-records-web.pages.dev',
+            environment: 'production',
+            latest_stage: { name: 'deploy', status: 'success' },
+            deployment_trigger: { metadata: { commit_hash: expected.sha } },
+          },
+        },
+      });
+    if (
+      target.hostname === 'blackbox-records-web.pages.dev' ||
+      target.hostname === 'abc123.blackbox-records-web.pages.dev'
+    ) {
+      assert.deepEqual(init.headers, {});
+      return Response.json(wrongContent ? { ...expected, content: {} } : expected);
+    }
+    assert.equal(target.hostname, 'staff.blackboxrecordsathens.com');
+    assert.equal(JSON.parse(init.body).deploymentId, env.PUBLICATION_ID);
+    assert.equal(init.headers.Authorization, `Bearer ${env.CMS_PUBLICATION_EXPORT_TOKEN}`);
+    return Response.json({ id: env.PUBLICATION_ID, status: 'live' });
+  };
+  await acknowledgeContentPublication({ env, expected }, send);
+  assert.equal(calls, 4);
+  calls = 0;
+  wrongContent = true;
+  await assert.rejects(acknowledgeContentPublication({ env, expected }, send), /Deployment content identity differs/);
+  assert.equal(calls, 2);
+});
+
+test('publication preparation claims before bounded export and stops immediately on a rejected claim', async () => {
+  const parent = await mkdtemp(join(tmpdir(), 'publication-prepare-'));
+  const input = {
+    environment: 'local',
+    target: 'http://127.0.0.1:8799/',
+    directory: join(parent, 'snapshot'),
+    publicationId: '12345678-1234-4234-8234-123456789012',
+    dispatchToken: '12345678-1234-4234-8234-123456789013',
+    ciRunId: '123',
+    codeSha: 'a'.repeat(40),
+    token: 'b'.repeat(64),
+    exportToken: 'ec_pat_' + 'c'.repeat(43),
+    maxRequests: 30,
+    accessClientId: '',
+    accessClientSecret: '',
+  };
+  try {
+    let calls = 0;
+    await assert.rejects(
+      prepareContentPublication(input, async () => {
+        calls++;
+        return new Response('', { status: 409 });
+      }),
+      /claim failed/,
+    );
+    assert.equal(calls, 1);
+    calls = 0;
+    const result = await prepareContentPublication(input, async (url, init) => {
+      calls++;
+      if (calls === 1) {
+        assert.ok(url.pathname.endsWith('/run'));
+        assert.equal(JSON.parse(init.body).codeSha, input.codeSha);
+        return Response.json({ id: input.publicationId, status: 'pending' });
+      }
+      if (init.method === 'GET') {
+        assert.equal(init.headers.get('Authorization'), `Bearer ${input.exportToken}`);
+        return Response.json({ data: { items: [], total: 0, nextCursor: null } });
+      }
+      assert.ok(url.pathname.endsWith('/snapshot'));
+      assert.equal(init.headers.get('Authorization'), `Bearer ${input.token}`);
+      return Response.json({
+        id: input.publicationId,
+        snapshotSha256: createHash('sha256').update(init.body).digest('hex'),
+      });
+    });
+    assert.equal(result.requests, 26);
+    assert.equal(calls, 28);
+    assert.equal(JSON.parse(await readFile(result.path, 'utf8')).environment, 'local');
+  } finally {
+    await rm(parent, { recursive: true, force: true });
+  }
+});
 const imageMetadata = {
   id: 'image',
   filename: 'image.png',

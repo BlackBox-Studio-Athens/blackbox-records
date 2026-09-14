@@ -136,8 +136,8 @@ test('dispatches the latest waiting request without reviving an older request af
     .bind(newer.id)
     .run();
   expect(await claimPublicationDispatch(env.TEST_CMS_DB, 'uat', now + 600_000)).toBeNull();
-  expect((await readPublication(env.TEST_CMS_DB, 'uat', older.id))?.status).toBe('pending');
-  expect((await readPublication(env.TEST_CMS_DB, 'uat', latest.id))?.status).toBe('pending');
+  expect((await readPublication(env.TEST_CMS_DB, 'uat', older.id))?.status).toBe('failed');
+  expect((await readPublication(env.TEST_CMS_DB, 'uat', latest.id))?.status).toBe('failed');
   expect(await claimPublicationDispatch(env.TEST_CMS_DB, 'prd', now)).toBeNull();
   await expect(claimPublicationDispatch(env.TEST_CMS_DB, 'uat', Number.NaN)).rejects.toThrow();
 });

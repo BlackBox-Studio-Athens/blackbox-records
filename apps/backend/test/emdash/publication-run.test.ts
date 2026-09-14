@@ -7,6 +7,7 @@ import {
   requestPublication,
 } from '../../src/cms/publication-journal';
 import { handlePublicationWorkflow, publicationRunPath } from '../../src/cms/publication-routes';
+import { reconcilePendingPublication } from '../../src/cms/publication-dispatch';
 
 beforeAll(async () => {
   await applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS);
@@ -19,6 +20,45 @@ const context = {
   hostname: 'staff.example',
   token,
 };
+
+test('reconciliation leaves active CI alone, throttles checks, and finishes a failed run without redeploying', async () => {
+  const item = await requestPublication(env.TEST_CMS_DB, {
+    id: crypto.randomUUID(),
+    environment: 'uat',
+    actorEmail: 'owner@example.com',
+    requestedRevision: 'retry-revision',
+  });
+  const claim = await claimPublicationDispatch(env.TEST_CMS_DB, 'uat');
+  expect(
+    (
+      await handlePublicationWorkflow(
+        post({ id: item.id, dispatchToken: claim!.dispatchToken, ciRunId: '111222', codeSha: 'a'.repeat(40) }),
+        context,
+      )
+    ).status,
+  ).toBe(200);
+  let ended = false;
+  let calls = 0;
+  const send: typeof fetch = async (url) => {
+    calls++;
+    expect(String(url)).toContain('/actions/runs/111222');
+    return Response.json({
+      id: 111222,
+      path: '.github/workflows/content-publication.yml',
+      head_branch: 'main',
+      status: ended ? 'completed' : 'in_progress',
+      conclusion: ended ? 'timed_out' : null,
+    });
+  };
+  const now = Date.now() + 3_600_001;
+  const recovery = { ...context, githubToken: 'github-token' };
+  expect((await reconcilePendingPublication(recovery, send, now)).status).toBe('pending');
+  expect((await reconcilePendingPublication(recovery, send, now + 1)).status).toBe('idle');
+  expect(calls).toBe(1);
+  ended = true;
+  expect((await reconcilePendingPublication(recovery, send, now + 300_001)).status).toBe('failed');
+  expect((await readPublication(env.TEST_CMS_DB, 'uat', item.id))?.status).toBe('failed');
+});
 const post = (body: unknown, credential = token, origin = 'https://staff.example') =>
   new Request(origin + publicationRunPath, {
     method: 'POST',
@@ -160,8 +200,11 @@ test('marks only a matching deployed code and snapshot Live and replays acknowle
   expect(calls).toBe(0);
   expect((await handlePublicationWorkflow(complete(), target, send)).status).toBe(503);
   expect((await readPublication(env.TEST_CMS_DB, 'prd', item.id))?.status).toBe('pending');
+  expect((await readPublication(env.TEST_CMS_DB, 'prd', item.id))?.deploymentId).toBe(input.deploymentId);
   valid = true;
-  expect(await (await handlePublicationWorkflow(complete(), target, send)).json()).toEqual({
+  expect(
+    await reconcilePendingPublication({ ...target, githubToken: 'github-token' }, send, Date.now() + 3_600_001),
+  ).toEqual({
     id: item.id,
     status: 'live',
   });

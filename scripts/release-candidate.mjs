@@ -70,6 +70,14 @@ export function validateOrder(candidate, current) {
   if (current) assert.ok(candidate.runNumber >= current.runNumber, 'A newer candidate already mutated this target.');
 }
 
+export function validatePublicationFreshness(candidate, current) {
+  assert.deepEqual(
+    candidate.content ?? null,
+    current?.content ?? null,
+    'Target content changed; refresh the artifact at the reviewed code SHA before explicit promotion.',
+  );
+}
+
 export function validateWorker(candidate, response) {
   assert.ok(response.ok, 'Worker is unavailable.');
   assert.equal(response.headers.get('X-Release-SHA'), candidate.sha, 'Worker source differs from selected artifact.');
@@ -172,6 +180,25 @@ export function contentPublicationIdentity(code, content, checkedOutSha) {
   };
 }
 
+export function publicationCodeIdentity(project, current, run, target, repository) {
+  assert.ok(['uat', 'prd'].includes(target));
+  const name = target === 'uat' ? 'blackbox-records-web-uat' : 'blackbox-records-web';
+  assert.equal(project.name, name, 'Wrong publication project.');
+  const deployment = project.canonical_deployment;
+  assert.equal(deployment?.environment, 'production', 'Publication requires the canonical production deployment.');
+  assert.equal(deployment.latest_stage?.name, 'deploy');
+  assert.equal(deployment.latest_stage?.status, 'success', 'Canonical deployment did not succeed.');
+  assert.match(current.sha ?? '', /^[a-f0-9]{40}$/);
+  assert.match(String(current.runId ?? ''), /^[1-9][0-9]{0,19}$/);
+  assert.equal(deployment.deployment_trigger?.metadata?.commit_hash, current.sha, 'Public code differs from Pages.');
+  assert.equal(deployment.deployment_trigger.metadata.branch, 'main');
+  validateRun(run, run.head_sha, repository);
+  assert.equal(String(run.id), String(current.runId), 'Public release run mismatch.');
+  assert.equal(run.run_number, current.runNumber, 'Public release sequence mismatch.');
+  validateOrder(current, null);
+  return identity({ ...current, runId: String(current.runId) });
+}
+
 export function verifyFiles(candidate, directory = bundle) {
   for (const target of ['uat/public', 'prd/public', 'prd/staff', 'uat/worker', 'prd/worker', 'migrations']) {
     assert.ok(existsSync(`${directory}/${target}`), `Missing artifact: ${target}`);
@@ -184,6 +211,31 @@ export function verifyFiles(candidate, directory = bundle) {
 }
 
 async function main(command, target) {
+  if (command === 'resolve-publication-code') {
+    assert.ok(['uat', 'prd'].includes(target));
+    const account = process.env.CLOUDFLARE_ACCOUNT_ID;
+    assert.match(account ?? '', /^[a-f0-9]{32}$/);
+    assert.ok(process.env.CLOUDFLARE_API_TOKEN, 'Pages read credential required.');
+    const name = target === 'uat' ? 'blackbox-records-web-uat' : 'blackbox-records-web';
+    const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/pages/projects/${name}`, {
+      headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}` },
+      redirect: 'error',
+      signal: AbortSignal.timeout(30_000),
+    });
+    assert.ok(response.ok, `Pages deployment lookup failed (${response.status}).`);
+    const project = await response.json();
+    assert.equal(project.success, true, 'Pages deployment lookup failed.');
+    const current = await publicJson(`https://${name}.pages.dev/release.json`);
+    assert.match(String(current.runId ?? ''), /^[1-9][0-9]{0,19}$/);
+    const repository = process.env.GITHUB_REPOSITORY;
+    assert.equal(repository, 'BlackBox-Studio-Athens/blackbox-records');
+    const run = gh(`repos/${repository}/actions/runs/${current.runId}`);
+    const selected = publicationCodeIdentity(project.result, current, run, target, repository);
+    const comparison = gh(`repos/${repository}/compare/${selected.sha}...${run.head_sha}`);
+    assert.ok(['ahead', 'identical'].includes(comparison.status), 'Published source is outside release main history.');
+    console.log(JSON.stringify(selected));
+    return;
+  }
   if (command === 'pack') {
     const sha = process.env.SOURCE_SHA;
     assert.match(sha ?? '', /^[0-9a-f]{40}$/);
@@ -275,8 +327,9 @@ async function main(command, target) {
   }
   const site = target === 'uat' ? config.uatSite : config.prdSite;
   // Pages access is verified by the preceding job using the separate Pages credential.
-  const backendOnly = command === 'verify-backend' || command === 'verify-worker';
-  const current = backendOnly ? null : await publicJson(`${site}/release.json`, true);
+  const current = await publicJson(`${site}/release.json`, true);
+  if (command === 'verify' || command === 'verify-backend')
+    validatePublicationFreshness(readJson(`${bundle}/${target}/public/release.json`), current);
   validateOrder(candidate, current);
   const workerResponse = await fetch(`${backend}/api/store/capabilities`, { signal: AbortSignal.timeout(30_000) });
   assert.ok(workerResponse.ok);

@@ -7,6 +7,34 @@ const workflow = parse(readFileSync(fileURLToPath(new URL('../.github/workflows/
 const build = workflow.jobs['build-candidate'];
 const promotion = workflow.jobs['deploy-prd'];
 const staticPromotion = workflow.jobs['deploy-prd-static'];
+const publication = parse(
+  readFileSync(fileURLToPath(new URL('../.github/workflows/content-publication.yml', import.meta.url)), 'utf8'),
+);
+
+describe('Content publication workflow', () => {
+  it('shares the release lock and builds selected deployed code without build credentials', () => {
+    expect(publication.concurrency).toEqual(workflow.concurrency);
+    const steps = publication.jobs.publish.steps;
+    const checkout = steps.find((step: { name: string }) => step.name === 'Checkout deployed source');
+    expect(checkout.with.ref).toBe('${{ steps.code.outputs.sha }}');
+    const buildContent = steps.find(
+      (step: { name: string }) => step.name === 'Build public content with deployed code',
+    );
+    expect(JSON.stringify(buildContent)).not.toContain('secrets.');
+    expect(buildContent.run).toContain('check-frontend-route-isolation.ts web');
+    expect(JSON.stringify(publication.jobs.publish.env)).not.toContain('secrets.');
+    const deploy = steps.find(
+      (step: { name: string }) => step.name === 'Recheck code and deploy only the public artifact',
+    );
+    expect(deploy.run).toContain('cmp .codex-artifacts/publication-code.json');
+    expect(deploy.run).toContain('wrangler pages deploy ../../.codex-artifacts/publication-source/apps/web/dist');
+    expect(JSON.stringify(publication)).not.toContain('wrangler deploy');
+    expect(JSON.stringify(publication)).not.toContain('d1:migrations');
+    const capture = steps.find((step: { name: string }) => step.name === 'Claim request and capture published content');
+    expect(capture.env.CMS_EXPORT_TOKEN).toContain("secrets[format('{0}_CMS_EXPORT_TOKEN'");
+    expect(capture.env.CMS_PUBLICATION_MAX_REQUESTS).toContain("vars[format('{0}_CMS_PUBLICATION_MAX_REQUESTS'");
+  });
+});
 
 describe('Pages artifact promotion contract', () => {
   it('builds paired targets after the repository gates without provider credentials', () => {

@@ -9,6 +9,7 @@ import {
   publicationCompletionSchema,
   PublicationRequestConflictError,
   readPublication,
+  recordPublicationDeployment,
   requestPublication,
 } from './publication-journal';
 
@@ -79,6 +80,8 @@ export async function handlePublicationWorkflow(
           ? reply(200, { id: item.id, status: 'live' })
           : reply(409, { error: 'PUBLICATION_CONFLICT' });
       if (item.status !== 'pending') return reply(409, { error: 'PUBLICATION_CONFLICT' });
+      if (!(await recordPublicationDeployment(context.db, { ...input, environment: environment.data })))
+        return reply(409, { error: 'PUBLICATION_CONFLICT' });
       const site = {
         local: 'http://127.0.0.1:4321/blackbox-records',
         uat: 'https://blackbox-records-web-uat.pages.dev',
