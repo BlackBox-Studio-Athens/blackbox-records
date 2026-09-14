@@ -54,6 +54,22 @@ describe('Pages artifact promotion contract', () => {
     expect(uat.env.PUBLIC_BACKEND_BASE_URL).not.toBe(prd.env.PUBLIC_BACKEND_BASE_URL);
     expect(uat.env.SHOW_REVIEW_SITE_MARKER).toBe('true');
     expect(prd.env.SHOW_REVIEW_SITE_MARKER).toBeUndefined();
+    for (const [target, step] of [
+      ['uat', uat],
+      ['prd', prd],
+    ] as const) {
+      expect(step.env.CMS_CONTENT_ENVIRONMENT).toBe(target);
+      expect(step.env.CMS_CONTENT_SOURCE).toBe(`\${{ steps.${target}-content.outputs.source }}`);
+      expect(step.env.CMS_CONTENT_SNAPSHOT).toContain(`/release-content/${target}/snapshot.json`);
+      expect(JSON.stringify(step.env)).not.toContain('secrets.');
+      const restore = build.steps.find(
+        (entry: { name: string }) => entry.name === `Restore current ${target.toUpperCase()} publication`,
+      );
+      expect(restore.env.CMS_PUBLICATION_EXPORT_TOKEN).toBe(
+        `\${{ secrets.${target.toUpperCase()}_CMS_PUBLICATION_EXPORT_TOKEN }}`,
+      );
+      expect(restore.run).toContain(`restore-published-content.mjs ${target}`);
+    }
     const staff = build.steps.find((step: { name: string }) => step.name === 'Build hosted staff frontend');
     expect(staff.env.PUBLIC_BACKEND_BASE_URL).toBe('');
   });

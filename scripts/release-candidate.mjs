@@ -159,6 +159,11 @@ function identity(candidate) {
   return { sha: candidate.sha, runId: candidate.runId, runNumber: candidate.runNumber };
 }
 
+export function refreshedReleaseIdentity(candidate, content) {
+  if (content === null) return identity(candidate);
+  return contentPublicationIdentity(candidate, content, candidate.sha);
+}
+
 export function contentPublicationIdentity(code, content, checkedOutSha) {
   assert.match(code.sha ?? '', /^[a-f0-9]{40}$/);
   assert.equal(code.sha, checkedOutSha, 'Publication must build the selected deployed code.');
@@ -274,7 +279,10 @@ async function main(command, target) {
           );
         }
       }
-      writeFileSync(`${bundle}/${surface}/release.json`, JSON.stringify(identity(candidate)));
+      const content = surface.endsWith('public')
+        ? readJson(`.codex-artifacts/release-content/${surface.split('/')[0]}/identity.json`)
+        : null;
+      writeFileSync(`${bundle}/${surface}/release.json`, JSON.stringify(refreshedReleaseIdentity(candidate, content)));
     }
     for (const directory of ['uat/public', 'prd/public', 'prd/staff', 'uat/worker', 'prd/worker', 'migrations']) {
       assert.ok(statSync(`${bundle}/${directory}`).isDirectory());
@@ -336,7 +344,11 @@ async function main(command, target) {
   const workerRunNumber = workerResponse.headers.get('X-Release-Run-Number');
   if (workerRunNumber !== null) validateOrder(candidate, { runNumber: Number(workerRunNumber) });
   if (command === 'verify-hosted') {
-    assert.deepEqual(current, identity(candidate), 'Deployed artifact identity mismatch.');
+    assert.deepEqual(
+      current,
+      readJson(`${bundle}/${target}/public/release.json`),
+      'Deployed artifact identity mismatch.',
+    );
   }
   if (command === 'verify-hosted' || command === 'verify-worker') {
     validateWorker(candidate, workerResponse);

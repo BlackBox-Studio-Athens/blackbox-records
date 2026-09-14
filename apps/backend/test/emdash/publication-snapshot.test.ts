@@ -2,6 +2,7 @@ import { applyD1Migrations, env } from 'cloudflare:test';
 import { beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import {
   bindPublicationRun,
+  completePublication,
   claimPublicationDispatch,
   readPublication,
   requestPublication,
@@ -70,6 +71,40 @@ const manifest = (sha256: string) => ({
   media: [
     { id: 'image', sha256, filename: 'cover.png', mimeType: 'image/png', size: pixels.byteLength, width: 1, height: 1 },
   ],
+});
+
+test('exports only a live snapshot and its referenced media through authenticated workflow reads', async () => {
+  const { item, upload } = await prepare();
+  const { sha256 } = (await (await handlePublicationWorkflow(upload('media', pixels), context)).json()) as {
+    sha256: string;
+  };
+  const json = JSON.stringify(manifest(sha256));
+  const { snapshotSha256 } = (await (await handlePublicationWorkflow(upload('snapshot', json), context)).json()) as {
+    snapshotSha256: string;
+  };
+  const read = (kind: string, media = sha256, credential = token) =>
+    new Request(`https://staff.example/_emdash/api/blackbox/publications/${kind}`, {
+      headers: {
+        Authorization: `Bearer ${credential}`,
+        'X-Publication-ID': item.id,
+        'X-CI-Run-ID': '12345',
+        'X-Snapshot-Media-SHA256': media,
+      },
+    });
+  expect((await handlePublicationWorkflow(read('snapshot'), context)).status).toBe(409);
+  await completePublication(env.TEST_CMS_DB, {
+    id: item.id,
+    environment: 'uat',
+    ciRunId: '12345',
+    codeSha: 'c'.repeat(40),
+    snapshotSha256,
+    deploymentId: crypto.randomUUID(),
+  });
+  expect((await handlePublicationWorkflow(read('snapshot', sha256, 'b'.repeat(64)), context)).status).toBe(403);
+  expect(await (await handlePublicationWorkflow(read('snapshot'), context)).text()).toBe(json);
+  expect(new Uint8Array(await (await handlePublicationWorkflow(read('media'), context)).arrayBuffer())).toEqual(pixels);
+  expect((await handlePublicationWorkflow(read('media', 'e'.repeat(64)), context)).status).toBe(404);
+  expect((await handlePublicationWorkflow(read('snapshot'), { ...context, environment: 'prd' })).status).toBe(409);
 });
 
 test('uploads private media and binds one complete snapshot, with write-free replay and no Live transition', async () => {

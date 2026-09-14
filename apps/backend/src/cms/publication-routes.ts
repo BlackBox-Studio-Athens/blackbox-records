@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { completeSnapshot, storeSnapshotMedia } from './snapshot-storage';
-import { isCmsCollection } from '@blackbox/content-model';
+import { isCmsCollection, parseContentSnapshot } from '@blackbox/content-model';
 import {
   bindPublicationRun,
   bindPublicationSnapshot,
@@ -53,6 +53,43 @@ export async function handlePublicationWorkflow(
   )
     return reply(403, { error: 'FORBIDDEN' });
   if (!publicationWorkflowPaths.has(url.pathname) || url.search) return reply(404, { error: 'NOT_FOUND' });
+  if (request.method === 'GET' && [root + '/snapshot', root + '/media'].includes(url.pathname)) {
+    const selected = z.object({ id: z.uuid(), ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/) }).safeParse({
+      id: request.headers.get('X-Publication-ID'),
+      ciRunId: request.headers.get('X-CI-Run-ID'),
+    });
+    if (!selected.success) return reply(400, { error: 'INVALID_REQUEST' });
+    try {
+      const item = await readPublication(context.db, environment.data, selected.data.id);
+      if (!item || item.status !== 'live' || item.ciRunId !== selected.data.ciRunId || !item.snapshotSha256)
+        return reply(409, { error: 'PUBLICATION_NOT_LIVE' });
+      const object = await context.bucket.get(`snapshots/${environment.data}/manifest/${item.snapshotSha256}`);
+      if (!object || object.size > 4 * 1024 * 1024 || object.checksums.toJSON().sha256 !== item.snapshotSha256) {
+        await object?.body.cancel();
+        throw new Error('Snapshot unavailable');
+      }
+      const json = await object.text();
+      if (createHash('sha256').update(json).digest('hex') !== item.snapshotSha256) throw new Error('Invalid snapshot');
+      const manifest = parseContentSnapshot(json, environment.data);
+      if (url.pathname === root + '/snapshot')
+        return new Response(json, {
+          headers: { 'Content-Type': 'application/json', 'Cache-Control': 'private, no-store' },
+        });
+      const sha256 = request.headers.get('X-Snapshot-Media-SHA256');
+      const media = manifest.media.find((entry) => entry.sha256 === sha256);
+      if (!media) return reply(404, { error: 'NOT_FOUND' });
+      const bytes = await context.bucket.get(`snapshots/${environment.data}/media/${media.sha256}`);
+      if (!bytes || bytes.size !== media.size || bytes.checksums.toJSON().sha256 !== media.sha256) {
+        await bytes?.body.cancel();
+        throw new Error('Snapshot media unavailable');
+      }
+      return new Response(bytes.body, {
+        headers: { 'Content-Type': media.mimeType, 'Cache-Control': 'private, no-store' },
+      });
+    } catch {
+      return reply(503, { error: 'SNAPSHOT_UNAVAILABLE' });
+    }
+  }
   if (url.pathname === root + '/complete') {
     if (request.method !== 'POST') return reply(405, { error: 'METHOD_NOT_ALLOWED' });
     let input;

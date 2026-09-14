@@ -75,7 +75,9 @@ jobs:
         with:
           ref: ${{ github.sha }}
           path: .codex-artifacts/release-tools
-          sparse-checkout: scripts/release-candidate.mjs
+          sparse-checkout: |
+            scripts/
+            apps/backend/cms-resources.json
           sparse-checkout-cone-mode: false
       - name: Run unit tests
         run: pnpm test:unit
@@ -83,9 +85,21 @@ jobs:
         run: pnpm check
       - name: Run unused code audit
         run: pnpm audit:unused
+      - name: Restore current UAT publication
+        id: uat-content
+        env:
+          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets.UAT_CMS_PUBLICATION_EXPORT_TOKEN }}
+          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets.UAT_CMS_EXPORT_ACCESS_CLIENT_ID }}
+          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets.UAT_CMS_EXPORT_ACCESS_CLIENT_SECRET }}
+          CMS_PUBLICATION_MAX_REQUESTS: ${{ vars.UAT_CMS_PUBLICATION_MAX_REQUESTS }}
+        run: node --import tsx .codex-artifacts/release-tools/scripts/restore-published-content.mjs uat
       - name: Build hosted UAT static frontend
         env:
-          SVELTIA_BACKEND_MODE: hosted
+          CMS_CONTENT_SOURCE: ${{ steps.uat-content.outputs.source }}
+          CMS_CONTENT_SNAPSHOT: ${{ github.workspace }}/.codex-artifacts/release-content/uat/snapshot.json
+          CMS_CONTENT_SHA256: ${{ steps.uat-content.outputs.sha256 }}
+          CMS_CONTENT_ENVIRONMENT: uat
+          SVELTIA_BACKEND_MODE: ${{ steps.uat-content.outputs.source == 'snapshot' && 'disabled' || 'hosted' }}
           ASTRO_SITE_URL: https://blackbox-records-web-uat.pages.dev
           ASTRO_BASE_PATH: /
           PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
@@ -95,9 +109,21 @@ jobs:
         run: |
           mkdir -p .codex-artifacts/release/uat .codex-artifacts/release/prd
           cp -R apps/web/dist .codex-artifacts/release/uat/public
+      - name: Restore current PRD publication
+        id: prd-content
+        env:
+          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets.PRD_CMS_PUBLICATION_EXPORT_TOKEN }}
+          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets.PRD_CMS_EXPORT_ACCESS_CLIENT_ID }}
+          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets.PRD_CMS_EXPORT_ACCESS_CLIENT_SECRET }}
+          CMS_PUBLICATION_MAX_REQUESTS: ${{ vars.PRD_CMS_PUBLICATION_MAX_REQUESTS }}
+        run: node --import tsx .codex-artifacts/release-tools/scripts/restore-published-content.mjs prd
       - name: Build hosted PRD static frontend
         env:
-          SVELTIA_BACKEND_MODE: hosted
+          CMS_CONTENT_SOURCE: ${{ steps.prd-content.outputs.source }}
+          CMS_CONTENT_SNAPSHOT: ${{ github.workspace }}/.codex-artifacts/release-content/prd/snapshot.json
+          CMS_CONTENT_SHA256: ${{ steps.prd-content.outputs.sha256 }}
+          CMS_CONTENT_ENVIRONMENT: prd
+          SVELTIA_BACKEND_MODE: ${{ steps.prd-content.outputs.source == 'snapshot' && 'disabled' || 'hosted' }}
           ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
           ASTRO_BASE_PATH: /
           PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}

@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import {
   contentPublicationIdentity,
   publicationCodeIdentity,
+  refreshedReleaseIdentity,
   inventory,
   observe,
   validateArtifacts,
@@ -20,6 +21,18 @@ import {
 
 const sha = 'a'.repeat(40);
 const repository = 'example/repository';
+
+test('refreshes an artifact at the same reviewed code SHA while retaining target publication identity', () => {
+  const code = { sha, runId: '456', runNumber: 11 };
+  const content = {
+    publicationId: '12345678-1234-4234-8234-123456789012',
+    ciRunId: '123',
+    snapshotSha256: 'b'.repeat(64),
+  };
+  assert.deepEqual(refreshedReleaseIdentity(code, content), { ...code, content });
+  assert.deepEqual(refreshedReleaseIdentity(code, null), code);
+  assert.throws(() => refreshedReleaseIdentity(code, { ...content, snapshotSha256: '' }));
+});
 
 test('code promotion cannot replace newer target content with an old artifact', () => {
   const content = { publicationId: 'one', ciRunId: '123', snapshotSha256: 'a'.repeat(64) };

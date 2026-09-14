@@ -5,8 +5,6 @@ import { resolve, join, dirname } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { parseContentSnapshot } from '@blackbox/content-model';
-import { captureCmsSnapshot } from './capture-cms-snapshot.mjs';
-import { createCmsSnapshotReaders } from './cms-snapshot-readers.mjs';
 
 export async function writeCmsSnapshot(capture, directory, environment) {
   const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -33,6 +31,8 @@ export async function writeCmsSnapshot(capture, directory, environment) {
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  const { captureCmsSnapshot } = await import('./capture-cms-snapshot.mjs');
+  const { createCmsSnapshotReaders } = await import('./cms-snapshot-readers.mjs');
   const { values } = parseArgs({
     options: {
       env: { type: 'string' },

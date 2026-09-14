@@ -5,6 +5,7 @@ import { captureCmsSnapshot } from './capture-cms-snapshot.mjs';
 import { writeCmsSnapshot } from './export-cms-snapshot.mjs';
 import { prepareContentPublication } from './prepare-content-publication.mjs';
 import { acknowledgeContentPublication } from './acknowledge-content-publication.mjs';
+import { restorePublishedContent } from './restore-published-content.mjs';
 import { mkdtemp, readFile, rm, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -135,6 +136,80 @@ const imageMetadata = {
   status: 'ready',
   contentHash: `sha1:${createHash('sha1').update(imageBytes).digest('hex')}`,
 };
+
+test('restores the pinned public snapshot without reading editable CMS content or forwarding public credentials', async () => {
+  const parent = await mkdtemp(join(tmpdir(), 'published-restore-'));
+  const sha256 = createHash('sha256').update(imageBytes).digest('hex');
+  const json = JSON.stringify({
+    schemaVersion: 1,
+    environment: 'uat',
+    records: [
+      {
+        collection: 'news',
+        id: 'one',
+        slug: 'news',
+        revisionId: 'live-one',
+        data: { title: 'Published', date: '2026-09-14', summary: 'Copy', image: { id: 'image' }, image_alt: 'Cover' },
+      },
+    ],
+    media: [
+      {
+        id: 'image',
+        filename: 'cover.png',
+        mimeType: 'image/png',
+        size: imageBytes.length,
+        width: 1,
+        height: 1,
+        sha256,
+      },
+    ],
+  });
+  const content = {
+    publicationId: '12345678-1234-4234-8234-123456789012',
+    ciRunId: '123',
+    snapshotSha256: createHash('sha256').update(json).digest('hex'),
+  };
+  const input = {
+    environment: 'uat',
+    target: 'https://staff-uat.blackboxrecordsathens.com/',
+    directory: join(parent, 'snapshot'),
+    token: 'a'.repeat(64),
+    accessClientId: 'id',
+    accessClientSecret: 'secret',
+    maxRequests: 2,
+  };
+  let calls = 0;
+  const send = async (url, init) => {
+    calls++;
+    const address = new URL(url);
+    if (address.hostname === 'blackbox-records-web-uat.pages.dev') {
+      assert.deepEqual(init.headers, {});
+      return Response.json({ sha: 'b'.repeat(40), content });
+    }
+    assert.equal(address.hostname, 'staff-uat.blackboxrecordsathens.com');
+    assert.equal(init.headers['X-Publication-ID'], content.publicationId);
+    assert.equal(init.headers.Authorization, `Bearer ${input.token}`);
+    assert.ok(!address.pathname.includes('/content/'));
+    return new Response(address.pathname.endsWith('/snapshot') ? json : imageBytes);
+  };
+  try {
+    assert.deepEqual(await restorePublishedContent(input, send), {
+      source: 'snapshot',
+      sha256: content.snapshotSha256,
+    });
+    assert.equal(calls, 3);
+    assert.equal(await readFile(join(input.directory, 'snapshot.json'), 'utf8'), json);
+    calls = 0;
+    await assert.rejects(
+      restorePublishedContent({ ...input, directory: join(parent, 'limited'), maxRequests: 1 }, send),
+      /request budget/,
+    );
+    assert.equal(calls, 2);
+    await assert.rejects(access(join(parent, 'limited')));
+  } finally {
+    await rm(parent, { recursive: true, force: true });
+  }
+});
 const mediaReaders = { readMedia: async () => imageMetadata, readMediaFile: async () => imageBytes };
 
 const published = {
