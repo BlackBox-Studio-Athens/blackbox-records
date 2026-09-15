@@ -45,8 +45,14 @@ describe('Pages artifact promotion contract', () => {
     }
     expect(plan.environment).toBe('catalog-promotion-prd');
     const commands = plan.steps.map((step: { run?: string }) => step.run ?? '').join('\n');
-    expect(commands).toContain('--plan-apply --store-item disintegration-black-vinyl-lp');
+    expect(commands).toContain('prepare-prd-initial-price.ts');
     expect(commands).not.toMatch(/--apply\b|d1:migrations|d1:seed|wrangler deploy|pages deploy/);
+    const apply = workflow.jobs['catalog-prd'].steps.find(
+      (step: { name: string }) => step.name === 'Prepare reviewed CMS cutover initial Price',
+    );
+    expect(workflow.jobs['catalog-prd'].if).toContain('inputs.confirm_live_catalog_changes');
+    expect(apply.if).toBe('${{ inputs.confirm_cms_cutover }}');
+    expect(apply.run).toContain('--apply --confirm-live-catalog-changes --plan-sha256 "$REVIEWED_CATALOG_PLAN_SHA256"');
   });
 
   it('requires cutover approval or accepted CMS state before switching the PRD runtime', () => {

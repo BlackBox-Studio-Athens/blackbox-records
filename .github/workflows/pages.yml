@@ -28,6 +28,9 @@ on:
         description: One-run approval to deploy the reviewed combined PRD CMS artifact and staff route; no catalog or shopper launch authorization.
         type: boolean
         default: false
+      catalog_plan_sha256:
+        description: Reviewed initial-price plan SHA-256; required with both CMS cutover and live catalog confirmation.
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -360,7 +363,7 @@ jobs:
       - name: Plan PRD catalog without mutation
         run: |
           set -euo pipefail
-          pnpm stripe:catalog:verify --env prd --plan-apply --store-item disintegration-black-vinyl-lp | tee "$GITHUB_STEP_SUMMARY"
+          pnpm exec tsx apps/backend/scripts/prepare-prd-initial-price.ts | tee "$GITHUB_STEP_SUMMARY"
   catalog-prd:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}
     runs-on: ubuntu-latest
@@ -380,6 +383,7 @@ jobs:
       - name: Verify catalog source
         run: pnpm test:unit && pnpm check && pnpm build
       - name: Prepare explicitly authorized PRD catalog
+        if: ${{ !inputs.confirm_cms_cutover }}
         run: |
           pnpm runtime:config:verify --env prd --require-live-secrets
           pnpm stripe:webhooks:verify --env prd
@@ -387,3 +391,8 @@ jobs:
           pnpm --filter @blackbox/backend d1:migrations:apply:prd
           pnpm --filter @blackbox/backend d1:seed:prd:catalog-readiness
           pnpm stripe:catalog:verify --env prd --apply --confirm-live-catalog-changes --ci-promotion --artifact-commit-sha "$SOURCE_SHA" --promotion-run-id "$GITHUB_RUN_ID"
+      - name: Prepare reviewed CMS cutover initial Price
+        if: ${{ inputs.confirm_cms_cutover }}
+        env:
+          REVIEWED_CATALOG_PLAN_SHA256: ${{ inputs.catalog_plan_sha256 }}
+        run: pnpm exec tsx apps/backend/scripts/prepare-prd-initial-price.ts --apply --confirm-live-catalog-changes --plan-sha256 "$REVIEWED_CATALOG_PLAN_SHA256"
