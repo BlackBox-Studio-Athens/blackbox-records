@@ -2,13 +2,13 @@
 
 The operating model is:
 
-- Sveltia/repository: titles, descriptions, artwork, and Store Item identities.
-- Stripe Dashboard: selling prices. Each variant has one Product; its **default Price** is the selling price.
+- Local/UAT EmDash workspace: titles, descriptions, artwork, and guided Store Item creation. PRD still uses its pre-cutover source until the [approved migration](cms-cutover.md) completes.
+- Items workspace: selling-price commands backed by Stripe. Each variant has one Product; its **default Price** is the selling price.
 - BlackBox stock operations: stock and intentional checkout pauses. D1 owns orders and reservations.
 
 ## Publishing
 
-Commit → review UAT → explicitly promote this candidate. Push content or code to main. **Release BlackBox** in `.github/workflows/pages.yml` runs repository gates, builds paired UAT/PRD public and Worker artifacts plus PRD staff, synchronizes UAT release items, deploys UAT, and runs the canonical paid/newsletter/static smoke. Review `https://blackbox-records-web-uat.pages.dev/`. Every artifact records one full source SHA; generated catalogs and SQL remain build inputs.
+For routine Local/UAT content changes, save and publish through the workspace; no Git commit or Worker deployment is required. For Software Release: commit code → review UAT → explicitly promote the candidate. **Release BlackBox** in `.github/workflows/pages.yml` runs repository gates, builds paired UAT/PRD public and Worker artifacts plus PRD staff, synchronizes UAT release items, deploys UAT, and runs the canonical paid/newsletter/static smoke. Review `https://blackbox-records-web-uat.pages.dev/`. Every artifact records one full source SHA. Generated catalogs and SQL remain transitional build inputs until their cutover retirement; they are not member edit points.
 
 To promote, dispatch that workflow on `main` with `target=prd`, the reviewed full `artifact_commit_sha`, the successful UAT `candidate_run_id`, and `confirm_code_promotion=true`. Leave `confirm_live_catalog_changes=false`. PRD consumes the retained bundle without rebuilding, checks every file digest and the configuration fingerprint, applies compatible migrations, uploads a Worker version tagged with the promotion run and attempt, deploys that exact tag to 100% without reconciling routes, verifies readiness, then deploys public and staff artifacts. It never changes DNS or the holding branch.
 
@@ -26,7 +26,7 @@ One shared release lock prevents overlapping stateful runs. An invalid release i
 
 ## Changing a price
 
-Open the existing Stripe Product, add an EUR Price with inclusive tax, and choose **Set as default price**. Older Prices can remain active. Leave app identifiers and Product presentation alone.
+In the Local/UAT Items workspace, open the item and use **Change price**. Check the retained operation after an interruption instead of creating another item. This creates/selects the replacement default Price through the backend; older Prices can remain active. Direct Stripe Dashboard changes remain a provider diagnostic path: use the existing Product and an EUR Price with inclusive tax, leaving app identifiers and Product presentation alone. PRD member price operations begin after cutover acceptance.
 
 Signed Product/Price events refresh only the bound item. Detail and checkout reads fetch the current default and repair the D1 projection if a webhook was missed. Checkout still uses the validated concrete Price ID.
 

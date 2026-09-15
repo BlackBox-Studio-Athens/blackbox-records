@@ -84,7 +84,20 @@ Backend Worker observability uses source-controlled Workers Logs/Traces config a
 
 ## Catalog Promotion
 
-Sveltia remains editorial-only. Content publication and buyable status are separate: generated catalog artifacts derive from current Store Item content, UAT provider state is applied through Stripe test-mode catalog tooling, and runtime checkout safety stays with D1, Worker gates, and operator controls. PRD catalog/D1 apply needs one-run `confirm_live_catalog_changes=true` plus CLI confirmation; this never deploys shopper runtime or enables checkout. Cloudflare Pages UAT is validated by the canonical provider smoke inside `pages.yml` after deployment. See [docs/catalog-promotion.md](docs/catalog-promotion.md) for catalog artifact, rollback, and Promotion Evidence expectations.
+Local and UAT use the protected EmDash workspace for content, item creation, prices and stock. Content Publication is separate from Software Release: publishing saved content builds the website with the target's deployed code, while code promotion uses a reviewed UAT candidate. D1 and Worker controls own checkout safety. PRD deployment/import is still awaiting the separate approval recorded in [the cutover worksheet](docs/cms-cutover.md); its initial Disintegration price preparation is complete at EUR 28.00 with stock 15 physical / 12 online. Live catalog confirmation never enables shopper checkout. See [catalog promotion](docs/catalog-promotion.md) for migration, release and recovery commands.
+
+## Member workspace
+
+Use [UAT staff](https://staff-uat.blackboxrecordsathens.com/content/) or the Local workspace at `http://127.0.0.1:8787/content/`. PRD staff remains under cutover; do not resume editorial writes there before acceptance.
+
+| Task                   | Member action                                                                                                                                                                                              |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Edit content           | In **Content**, choose the section and record, edit and save the draft. Use **Publish saved content** for editorial content; linked Release/Distro records use **Publish item** in Items.                  |
+| Create an item         | In **Items**, complete the guided Release, Distro or Merch form, choose the price and opening stock, then **Create item** and **Publish item**. An editorial-only Release needs no selling price or stock. |
+| Change a selling price | Open the item and use **Change price**. Retry/check the retained operation if interrupted; do not create a second item. Stripe remains Price Authority.                                                    |
+| Update stock           | In **Stock**, record a known stock change or use **Count stock** for a recount. Set online quantity conservatively; it may be lower than physical stock.                                                   |
+
+**Check publication status** reports when the website is Live. **Retry publication** retries a failed website attempt. Existing open shopper tabs are not forcibly reloaded. **Orders** contains paid-order details and the Greek delivery/contact information for manual BOX NOW fulfillment. Recovery procedures are in [CMS backup and restore](docs/cms-backup.md); CMS restoration never restores commerce balances or orders.
 
 ## Prerequisites
 
@@ -131,13 +144,13 @@ Notes:
 
 ## Local development
 
-The EmDash migration currently has an isolated backend integration checkpoint:
+The normal command is `pnpm dev`, or **BlackBox Local Stack** in WebStorm. Both start the same Local stack described below. The isolated CMS integration diagnostic is:
 
 ```sh
 pnpm --filter @blackbox/backend test:emdash
 ```
 
-It builds and runs the real CMS locally on port 8799 with a temporary test callback on 8800, synthetic D1/R2 data, and fake provider configuration. It checks the exported REST contract, concurrent revisions, lifecycle conflicts, rejected writes, and existing Hono routes. Identity and scheduler isolation tests run with `pnpm test:unit`. Its fixture does not replace the working editor or staff app; the authorized isolated UAT deployment is diagnostic only. See [M1 evidence](openspec/changes/replace-sveltia-with-emdash-operations/m1-integration-evidence.md) before continuing the migration.
+It runs the real CMS on port 8799 with a temporary callback on 8800, synthetic D1/R2 data, and fake providers. It checks the REST contract, concurrent revisions, lifecycle conflicts, rejected writes, and Hono routes. This isolated fixture is diagnostic; the normal Local and UAT workspaces use the combined backend.
 
 The backend uses the free SQLite-backed `COMMERCE_RUNTIME` Durable Object binding for existing Hono requests and scheduled paid-order work. Its data still lives in `COMMERCE_DB`. Keep the binding in every Wrangler environment and retain the `commerce-runtime-v1` class migration; Wrangler provisions it during deploy and emulates it locally. CMS diagnostics use a separate `CMS_RUNTIME` object. This keeps expensive execution inside the objects' CPU allowance while the entry Worker forwards requests. Workers Free remains required; no paid upgrade is needed for the measured checkpoint workload.
 
@@ -184,7 +197,7 @@ Local mock checkout smoke path:
 http://127.0.0.1:4321/blackbox-records/store/checkout/
 ```
 
-Local Sveltia editor:
+Retained pre-cutover Sveltia entry (not the normal member workspace):
 
 ```text
 http://127.0.0.1:4321/blackbox-records/admin/
