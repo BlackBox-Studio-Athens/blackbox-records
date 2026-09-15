@@ -77,11 +77,13 @@ test('unsupported native editor blocks give a recoverable error without rejectin
   for (const unsupported of [
     { _type: 'htmlBlock', _key: 'html', html: '<b>Music</b>' },
     { _type: 'table', _key: 'table', rows: [] },
-    { ...paragraph, textAlign: 'center' },
+    { ...paragraph, textAlign: 'unsafe' },
   ]) {
     const result = cmsBodySchema.safeParse([paragraph, unsupported]);
     assert.equal(result.success, false);
     assert.match(result.error.issues[0].message, /Undo or remove/);
   }
   assert.equal(cmsBodySchema.safeParse([paragraph]).success, true);
+  for (const textAlign of ['left', 'center', 'right', 'justify'])
+    assert.equal(cmsBodySchema.safeParse([{ ...paragraph, textAlign }]).success, true);
 });

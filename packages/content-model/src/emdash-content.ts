@@ -29,13 +29,14 @@ export const cmsLinkSchema = z.string().refine((value) => {
 }, 'Use a safe web, email, or relative link.');
 const key = z.string().min(1).max(128);
 const bodyError =
-  'Unsupported full-text formatting. Undo or remove the last block or formatting change. Use paragraphs, headings, lists, quotes, links, images with descriptions, or code; HTML, tables, galleries and text alignment are not supported.';
+  'Unsupported full-text formatting. Undo or remove the last block or formatting change. Use paragraphs, headings, lists, quotes, links, images with descriptions, or code; HTML, tables and galleries are not supported.';
 const textBlock = z
   .object(
     {
       _type: z.literal('block'),
       _key: key,
       style: z.enum(['normal', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote']).optional(),
+      textAlign: z.enum(['left', 'center', 'right', 'justify']).optional(),
       children: z.array(
         z
           .object({ _type: z.literal('span'), _key: key, text: z.string(), marks: z.array(z.string()).optional() })

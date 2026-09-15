@@ -4,6 +4,7 @@ import { PortableText } from 'astro-portabletext';
 import EditorialLink from './EditorialLink.astro';
 import EditorialBlock from './EditorialBlock.astro';
 import EditorialList from './EditorialList.astro';
+import EditorialText from './EditorialText.astro';
 
 interface Props {
   entry: CollectionEntry<'artists'> | CollectionEntry<'news'>;
@@ -24,6 +25,8 @@ for (const block of body ?? []) {
   if (topLevel) listId = nextListId;
 }
 const components = {
+  block: EditorialText,
+  listItem: EditorialText,
   mark: { link: EditorialLink },
   type: { image: EditorialBlock, code: EditorialBlock },
   list: { number: EditorialList },
