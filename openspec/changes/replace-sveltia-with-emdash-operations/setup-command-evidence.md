@@ -45,3 +45,14 @@ The full unit suite and builds pass. Final checks and the focused recovery test 
 Paid-sale acceptance extends all four HTTP recovery scenarios through the actual `D1PaidCheckoutFinalizationRepository`. A two-unit order transitions to paid, reduces physical/online stock from ten to eight, and creates its sale ledger entry; paid finalization replay has no second effect. Replaying the completed setup leaves eight units and the exact paid order/line snapshots unchanged. Attempting a fresh setup for the already-linked CMS source returns needs-review without another source, Product, Price, default selection, or opening-stock entry. This checks the real paid-order persistence path with a synthetic validated finalization command, not a hosted payment or public checkout launch.
 
 The test-only sale extension passes `pnpm test:unit`, `pnpm check`, and strict OpenSpec validation. Logs: `.codex-artifacts/emdash-m1/setup-sale-{unit,check,targeted,openspec}.log`. Production code is unchanged from the preceding passing build.
+
+## Four UAT creation paths — 2026-09-15
+
+Chrome Blackbox completed all four guided creation forms against deployed code `2e2b166b`. The unpublished acceptance fixtures are:
+
+- Label Release: `variant_vb7b0757ef78dd9552207664e8c537a0c`, CMS `01M2HD9ZX6D4GHXRXFAS7X0CW2`, Vinyl 12-inch, EUR 25, physical/online 10/10 and one visible +10 opening event.
+- Distro: `variant_vcbc54b0cb71193ada297c4bfc3012dc2`, CMS `01M2HD627C418BXVPY5NVGXFRH`, Vinyl 12-inch, EUR 25, physical/online 10/10 and one visible +10 opening event.
+- Merch: `variant_v38c8fc9a323a5afffb35deb80521ebde`, CMS `01M2HD0C3A29NQ0ZAZX3B994VC`, Clothes, EUR 25, physical/online 0/0.
+- Editorial-only Release: `UAT editorial acceptance 2026-09-15`; the form confirms a saved private draft without price or stock creation.
+
+Each sellable item was opened through the returned Items link, which loaded its retained price and stock without a backend redeploy. Existing media was selected; no image upload, Git/SQL editing, PRD mutation or publication was performed. Required title/date validation prevented incomplete submissions. Evidence is `.codex-artifacts/emdash-m1/uat-{release,distro,merch,editorial}-creation-browser.json`. These browser outcomes do not yet independently reconcile duplicate identities and full Local/UAT counts; task 7.5 remains open for that reconciliation and Local parity.
