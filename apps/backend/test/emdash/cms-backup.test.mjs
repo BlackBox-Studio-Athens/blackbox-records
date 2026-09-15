@@ -21,6 +21,7 @@ test('binding export restores FTS5 row identities, triggers, blobs and embedded 
       };
     },
     async batch(statements) {
+      assert.ok(statements.length, 'D1 rejects empty batches.');
       db.exec('BEGIN');
       try {
         const result = statements.map((s) => ({ results: db.prepare(s.sql).all(...s.values) }));
@@ -33,6 +34,7 @@ test('binding export restores FTS5 row identities, triggers, blobs and embedded 
     },
   });
   try {
+    assert.deepEqual(JSON.parse((await exportCmsSql(binding(source))).toString()), { schema: '', data: '' });
     source.exec(
       'CREATE TABLE content (id INTEGER PRIMARY KEY AUTOINCREMENT, body TEXT, image BLOB); CREATE INDEX body_index ON content(body); CREATE VIRTUAL TABLE search USING fts5(body); CREATE TRIGGER searchable AFTER INSERT ON content BEGIN INSERT INTO search(rowid, body) VALUES (new.id,new.body); END;',
     );
@@ -109,6 +111,12 @@ test('retains seven daily points, restores exact SQL/media, and rejects corrupt 
   assert.equal([...backups.files.keys()].filter((key) => key.includes('/points/')).length, 7);
   assert.equal([...backups.files.keys()].filter((key) => key.includes('/blobs/')).length, 2);
   let restored;
+  let blobReads = 0;
+  const getBackup = backups.get.bind(backups);
+  backups.get = async (key) => {
+    if (key.includes('/blobs/')) blobReads++;
+    return getBackup(key);
+  };
   await restoreCms({
     backups,
     destination,
@@ -119,6 +127,7 @@ test('retains seven daily points, restores exact SQL/media, and rejects corrupt 
     point: '2026-09-08-daily',
   });
   assert.deepEqual(Buffer.from(restored), sql);
+  assert.equal(blobReads, 2, 'Download each verified blob only once during recovery.');
   assert.equal(destination.files.get('original/image.png').bytes.toString(), 'image bytes');
   assert.equal(
     destination.files.get('original/image.png').httpMetadata.cacheExpiry.toISOString(),

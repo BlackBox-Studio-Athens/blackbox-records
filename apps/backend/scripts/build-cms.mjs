@@ -6,7 +6,10 @@ import { validateCmsFreeTier } from './cms-resources.ts';
 
 process.chdir(fileURLToPath(new URL('../', import.meta.url)));
 const { values } = parseArgs({
-  options: { env: { type: 'string', default: process.env.BLACKBOX_BUILD_ENV || 'mock' } },
+  options: {
+    env: { type: 'string', default: process.env.BLACKBOX_BUILD_ENV || 'mock' },
+    'out-dir': { type: 'string', default: 'dist' },
+  },
 });
 if (!['local', 'mock', 'mock-api', 'uat', 'prd'].includes(values.env)) throw new Error('Unknown backend build target');
 const seed = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/generate-cms-seed.ts'], { stdio: 'inherit' });
@@ -21,10 +24,14 @@ const staff = spawnSync('pnpm', ['--filter', '@blackbox/staff', 'build'], {
 if (staff.status !== 0) process.exit(staff.status ?? 1);
 const backendEnv = { ...process.env, BLACKBOX_BUILD_ENV: values.env };
 delete backendEnv.CLOUDFLARE_ENV;
-const backend = spawnSync(process.execPath, ['node_modules/astro/bin/astro.mjs', 'build'], {
-  env: backendEnv,
-  stdio: 'inherit',
-});
+const backend = spawnSync(
+  process.execPath,
+  ['node_modules/astro/bin/astro.mjs', 'build', '--outDir', values['out-dir']],
+  {
+    env: backendEnv,
+    stdio: 'inherit',
+  },
+);
 if (backend.status !== 0) process.exit(backend.status ?? 1);
 // Check adapter output too: dependencies can inject bindings absent from source configuration.
-validateCmsFreeTier(JSON.parse(readFileSync('dist/server/wrangler.json', 'utf8')));
+validateCmsFreeTier(JSON.parse(readFileSync(`${values['out-dir']}/server/wrangler.json`, 'utf8')));

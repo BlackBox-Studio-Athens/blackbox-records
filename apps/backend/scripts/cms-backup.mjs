@@ -32,7 +32,9 @@ export async function exportCmsSql(database) {
   const definitions = schema
     .filter((s) => s.name !== 'sqlite_sequence' && (names.has(s.tbl_name) || s.type === 'view'))
     .sort((a, b) => Number(b.type === 'table') - Number(a.type === 'table'));
-  const columns = await database.batch(tables.map((t) => database.prepare(`PRAGMA table_xinfo(${quote(t.name)})`)));
+  const columns = tables.length
+    ? await database.batch(tables.map((t) => database.prepare(`PRAGMA table_xinfo(${quote(t.name)})`)))
+    : [];
   const queries = tables.map((table, index) => {
     const fields = columns[index].results.filter((c) => c.hidden === 0).map((c) => c.name);
     if (table.type === 'virtual') fields.unshift('rowid');
@@ -49,7 +51,7 @@ export async function exportCmsSql(database) {
     };
   });
   // ponytail: one bounded batch for this small CMS; stream a frozen export if it outgrows 10,000 rows.
-  const results = await database.batch(queries.map((q) => q.statement));
+  const results = queries.length ? await database.batch(queries.map((q) => q.statement)) : [];
   let count = 0;
   const data = results
     .flatMap((result, index) => {
@@ -157,13 +159,19 @@ export async function restoreCms({ backups, destination, importSql, environment,
   const manifest = await object.json();
   assert.equal(manifest.version, 2);
   assert.equal(manifest.environment, environment);
+  // ponytail: retain this small site's verified blobs in memory; use a disk cache for larger recovery points.
+  const verified = new Map();
   async function read(blob) {
     assert.match(blob.sha256, /^[a-f0-9]{64}$/);
-    const object = await backups.get(`${prefix}blobs/${blob.sha256}`);
-    assert.ok(object, 'Backup bytes are missing.');
-    const bytes = new Uint8Array(await object.arrayBuffer());
+    let bytes = verified.get(blob.sha256);
+    if (!bytes) {
+      const object = await backups.get(`${prefix}blobs/${blob.sha256}`);
+      assert.ok(object, 'Backup bytes are missing.');
+      bytes = new Uint8Array(await object.arrayBuffer());
+      assert.equal(hash(bytes), blob.sha256, 'Backup checksum mismatch.');
+      verified.set(blob.sha256, bytes);
+    }
     assert.equal(bytes.byteLength, blob.bytes);
-    assert.equal(hash(bytes), blob.sha256, 'Backup checksum mismatch.');
     return bytes;
   }
   // Verify every blob before touching the isolated destination.
