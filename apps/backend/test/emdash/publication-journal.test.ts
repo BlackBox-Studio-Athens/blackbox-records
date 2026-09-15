@@ -96,6 +96,11 @@ test('serializes dispatch, recovers an expired attempt, and binds only one verif
     bindPublicationRun(env.TEST_CMS_DB, { ...recovered, ciRunId: '5678' }, now + 300_001),
   ]);
   expect(competing.filter(Boolean)).toHaveLength(1);
+  expect(
+    await env.TEST_CMS_DB.prepare('SELECT dispatch_after FROM _blackbox_publications WHERE id = ?')
+      .bind(input.id)
+      .first('dispatch_after'),
+  ).toBe(now + 300_001);
   const retainedRun = competing[0] ? '1234' : '5678';
   expect(await bindPublicationRun(env.TEST_CMS_DB, { ...recovered, ciRunId: retainedRun }, now + 900_000)).toBe(true);
   expect(await claimPublicationDispatch(env.TEST_CMS_DB, 'local', now + 900_000)).toBeNull();

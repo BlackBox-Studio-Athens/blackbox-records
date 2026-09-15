@@ -148,13 +148,14 @@ export async function bindPublicationRun(
   z.number().int().nonnegative().safe().parse(now);
   const result = await db
     .prepare(
-      `UPDATE _blackbox_publications SET ci_run_id = ?, code_sha = ?
+      `UPDATE _blackbox_publications SET ci_run_id = ?, code_sha = ?, dispatch_after = ?
       WHERE id = ? AND environment = ? AND dispatch_token = ? AND status = 'pending'
       AND ((ci_run_id = ? AND code_sha = ?) OR (ci_run_id IS NULL AND code_sha IS NULL AND dispatch_after > ?))`,
     )
     .bind(
       value.ciRunId,
       value.codeSha,
+      now,
       value.id,
       value.environment,
       value.dispatchToken,
