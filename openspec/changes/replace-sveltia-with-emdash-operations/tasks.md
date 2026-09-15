@@ -2,7 +2,7 @@ Use the apply-change workflow. Finish one usable workflow at a time in the deliv
 
 ## Delivery order — revised 2026-09-14
 
-The 60 acceptance tasks remain intact: 38 are complete and 22 remain open. This is not a percentage of effort or usable product completion. Local editorial publication, draft preview and new-item publication work; the existing Local and UAT catalog identities are now reconciled. Hosted publication and PRD cutover remain unfinished. Do not add checkboxes merely to make the count rise.
+The 60 acceptance tasks remain intact: 39 are complete and 21 remain open. This is not a percentage of effort or usable product completion. Local editorial publication, draft preview and new-item publication work; the existing Local and UAT catalog identities are now reconciled. Hosted publication and PRD cutover remain unfinished. Do not add checkboxes merely to make the count rise.
 
 | Order    | Usable outcome                                                                                                         | Existing tasks to finish together                                                                               |
 | -------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -79,7 +79,7 @@ The protected Item Setup API now integrates CMS linkage, runtime identity, Produ
 - [x] 7.2 Implement resumable CMS source linkage and runtime identity setup through the operation journal; verify duplicate submissions and partial CMS success cannot create extra Releases, Distro sources, Store Items, or variants. See [setup-command-evidence.md](setup-command-evidence.md).
 - [x] 7.3 Implement initial Product/Price binding and one-time opening stock through existing stock/application seams; verify retry, republish, and subsequent sales never reapply opening quantities and that ambiguous bindings remain non-buyable.
 - [x] 7.4 Complete the guided Publish item action with approved immutable media and targeted Product Projection only when checkout presentation changed; verify it needs no second member task, leaves Price Authority unchanged, and safely resumes a failed projection before static publication.
-- [ ] 7.5 Verify all required creation outcomes in Local and authorized UAT: label Release with ten vinyl, Distro with ten vinyl, Merch using its existing type policy, and editorial-only Release; prove exact counts, no duplicate identities, no Git/SQL editing, and no backend redeploy for the new items.
+- [x] 7.5 Verify all required creation outcomes in Local and authorized UAT: label Release with ten vinyl, Distro with ten vinyl, Merch using its existing type policy, and editorial-only Release; prove exact counts, no duplicate identities, no Git/SQL editing, and no backend redeploy for the new items.
 
 ## 8. Separate Content Publication from Software Release
 
