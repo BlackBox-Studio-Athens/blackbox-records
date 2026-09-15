@@ -90,7 +90,7 @@ The protected Item Setup API now integrates CMS linkage, runtime identity, Produ
 - [ ] 8.5 Share target mutation concurrency and code/content preconditions with software promotion; verify publication-behind-code and code-behind-publication race tests cannot downgrade either revision, and stale PRD artifacts refresh using the same reviewed code SHA before explicit promotion.
 - [x] 8.6 Implement authenticated deployment acknowledgement and bounded scheduled retry/reconciliation using existing scheduler composition; verify lost acknowledgements, superseded requests, and expired CI runs produce honest pending/live/failed status without duplicate or older publication.
 - [x] 8.7 Gate first checkout on completed setup plus confirmed publication, and pause new checkout before unpublish/archive; verify guessed IDs cannot buy drafts and existing reservations/orders/return pages still work after removal.
-- [ ] 8.8 Verify fresh public loads reflect published pages, metadata, sitemap, search data, and overlay fragments while an already-playing tab is not forcibly reloaded; record the existing same-session cache limitation in staff guidance.
+- [x] 8.8 Verify fresh public loads reflect published pages, metadata, sitemap, search data, and overlay fragments while an already-playing tab is not forcibly reloaded; record the existing same-session cache limitation in staff guidance. See the publication playback continuity evidence in [local-editorial-migration-evidence.md](local-editorial-migration-evidence.md).
 
 ## 9. Make the canonical local stack the normal command
 
