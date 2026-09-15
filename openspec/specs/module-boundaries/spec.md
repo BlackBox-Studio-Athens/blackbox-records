@@ -126,15 +126,17 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 
 - **GIVEN** Astro content validation and CMS collection builders require the same Distro group values and intro-key definitions
 - **WHEN** CMS configuration imports those closed values
-- **THEN** the Distro closed values and intro keys are provided by the `@blackbox/content-model` workspace root export
-- **AND** CMS and web code import that export instead of duplicating the group list; grouping presentation remains in web.
+- **THEN** shared closed values are provided by the pure content-model workspace entrypoint
+- **AND** frontend and CMS consumers import it without cross-app source imports or duplicated group lists.
 
 #### Scenario: Shared editorial validation crosses the CMS boundary
 
 - **GIVEN** Astro content schemas and CMS fields require the same path, URL, email, image, and provider constraints
 - **WHEN** CMS configuration imports those validation primitives
-- **THEN** portable editorial validation is provided by the `@blackbox/content-model` workspace root export
-- **AND** CMS code imports that entrypoint instead of duplicating validation patterns.
+- **THEN** shared portable editorial constraints are provided by the pure content-model workspace entrypoint
+- **AND** native revision, rich-text and immutable snapshot validation use that same pure entrypoint without importing backend source into the public build
+- **AND** `storefront-catalog` owns the public snapshot loader and media reader, with `content-loader.ts` provided to Astro collection configuration
+- **AND** Astro-specific image/render handling remains in the public web application.
 
 #### Scenario: Route-lazy Store Distro search crosses the app-shell boundary
 
@@ -184,7 +186,7 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **GIVEN** stock operations are built by the `@blackbox/staff` workspace
 - **WHEN** boundary validation runs
 - **THEN** the closed `staff-frontend` module owns `apps/staff/src/**`
-- **AND** it may import the `@blackbox/api-client/internal` workspace interface and the pure `@blackbox/content-model` root for shared editorial constraints and physical formats
+- **AND** its workspace dependencies are limited to documented internal API and pure content-model entrypoints
 - **AND** `operator-stock` retains backend ownership without public or staff frontend roots.
 
 ### Requirement: Staff frontend is an independent workspace boundary
@@ -264,10 +266,9 @@ The system MUST expose application-owned Store readers through the documented co
 
 #### Scenario: Static CMS and catalog image entrypoints remain separate
 
-- **WHEN** boundary validation checks the Sveltia migration
-- **THEN** `cms-admin` owns `apps/web/public/admin/**`, `apps/web/src/pages/admin/**`, and `apps/web/src/lib/admin/**`, with the static admin document, generated config, and generated bootstrap as entrypoints
-- **AND** `storefront-catalog` owns `apps/web/src/pages/assets/catalog/**` and exposes its static image endpoint
-- **AND** catalog image output has no CMS dependency or retired `/admin/media/**` route.
+- **WHEN** boundary validation checks the EmDash migration
+- **THEN** backend CMS integration owns CMS runtime routes and public image generation remains owned by storefront presentation
+- **AND** public image output consumes the approved content snapshot without a Sveltia route or privileged runtime dependency.
 
 ### Requirement: Services inquiry ownership uses existing closed modules
 
@@ -299,3 +300,39 @@ The system MUST place Services inquiry presentation, public HTTP composition, em
 - **WHEN** implementation changes roots or entrypoints
 - **THEN** `module-boundaries.manifest.json` and the module-boundaries spec are updated together
 - **AND** the architecture manifest audit passes without a temporary ownership exception.
+
+### Requirement: CMS and commerce retain separate data ownership in one Worker
+
+CMS integration SHALL use supported CMS interfaces for editorial records, while commerce SHALL retain its existing application and repository entrypoints for catalog, price, stock, checkout, and orders.
+
+#### Scenario: CMS presents an operational control
+
+- **WHEN** a staff form invokes a price, inventory, or order action
+- **THEN** it crosses the documented protected application API
+- **AND** no generic CMS table editor or plugin writes commerce tables directly.
+
+#### Scenario: Public code consumes CMS data
+
+- **WHEN** the public static build reads editorial content
+- **THEN** it uses a validated published-content contract
+- **AND** browser and public application modules do not import CMS server or private commerce internals.
+
+#### Scenario: Scheduler ownership changes
+
+- **WHEN** the combined Worker composes CMS maintenance/publication and paid-order retries
+- **THEN** each handler retains a named owner and bounded failure reporting
+- **AND** a CMS failure cannot silently disable order delivery processing.
+
+#### Scenario: Module roots move
+
+- **WHEN** CMS integration and the content-model package are introduced
+- **THEN** the module-boundaries spec and manifest change together
+- **AND** retired Sveltia roots and compiled catalog entrypoints are absent without compatibility facades; explicit recovery tooling remains separate from runtime ownership.
+
+#### Scenario: Current combined-runtime boundaries are verified
+
+- **WHEN** task 2.5 is validated before runtime cutover
+- **THEN** the manifest names the combined Worker, Access auth provider, commerce Worker, and existing paid-order schedule interfaces
+- **AND** runtime catalog contracts stay in `commerce-domain`, persistence in `commerce-persistence`, projection validation in `catalog-sync`, and staff source in `staff-frontend`
+- **AND** the audits reject CMS-to-commerce-persistence imports, public-web-to-CMS imports, and cross-app staff source imports
+- **AND** the manifest contains no retired `cms-admin` module or compiled catalog dependency.

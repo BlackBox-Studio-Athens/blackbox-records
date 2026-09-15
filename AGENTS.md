@@ -59,7 +59,7 @@ Read these first before editing:
 - Backend production deploy: `pnpm deploy:backend:production`
 - Static frontend deploy workflow: `.github/workflows/pages.yml`
 - Staff static build: `pnpm build:staff`
-- Catalog generation: `pnpm stripe:catalog:artifacts:generate` (ignored build inputs)
+- Explicit repository migration/recovery SQL: `pnpm catalog:readiness:generate` (ignored output; never routine catalog authority)
 - Gated catalog and site release workflow: `.github/workflows/pages.yml`
 - Full local stack with real Stripe test mode: `pnpm dev:stack:stripe-test`
 - Local frontend connected to deployed UAT Worker/API: `pnpm dev:stack:uat-connected`
@@ -218,7 +218,7 @@ Read these first before editing:
 - Cloudflare Pages PRD builds override those defaults through non-secret `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/` so the artifact serves from the Pages domain root.
 - Do not change `site` or `base` behavior unless the task explicitly requires deployment URL changes.
 - Cloudflare Pages hosting must keep the PRD frontend static and deploy only the prebuilt `apps/web/dist` artifact.
-- The independent staff frontend builds to `apps/staff/dist` and deploys only to the `blackbox-records-staff` Pages project.
+- The independent staff frontend builds to `apps/staff/dist`; its assets ship only inside the combined CMS Worker. No detached staff Pages upload runs.
 - The static frontend workflow must run `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and PRD `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
 - The PRD static build job may pass only non-secret PRD build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset. Snapshot refresh additionally supplies the non-secret `CMS_CONTENT_SOURCE`, `CMS_CONTENT_SNAPSHOT`, `CMS_CONTENT_SHA256`, and `CMS_CONTENT_ENVIRONMENT` build inputs. Restore credentials belong only to the preceding trusted restore step, never the build step.
 - Cloudflare Pages PRD deploys must run through `.github/workflows/pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not acceptance evidence.

@@ -25,7 +25,7 @@ const repository = 'example/repository';
 
 test('rejects promotion when combined CMS configuration differs from the candidate', () => {
   const config = configuration();
-  const candidate = { schema: 1, sha, runId: '123', runNumber: 10, configuration: config };
+  const candidate = { schema: 2, sha, runId: '123', runNumber: 10, configuration: config };
   const current = { sha, runId: '123', runNumber: 10 };
   for (const field of ['cmsResources', 'cmsBuild']) {
     assert.match(config[field], /^[0-9a-f]{64}$/);
@@ -169,7 +169,7 @@ test('only a successful trusted main candidate with the selected SHA is accepted
 
 test('superseded UAT, mixed revisions and changed config cannot authorize promotion', () => {
   const configuration = { site: 'https://uat.example.com' };
-  const candidate = { schema: 1, sha, runId: '123', runNumber: 10, configuration };
+  const candidate = { schema: 2, sha, runId: '123', runNumber: 10, configuration };
   const current = { sha, runId: '123', runNumber: 10 };
   validateIdentity(candidate, current, configuration);
   for (const patch of [{ sha: 'b'.repeat(40) }, { runId: '124' }, { runNumber: 11 }]) {
@@ -201,15 +201,28 @@ test('retained artifact verification rejects missing and modified files', (conte
     rmSync(directory, { recursive: true });
   });
   const files = {};
-  for (const target of ['uat/public', 'prd/public', 'prd/staff', 'uat/worker', 'prd/worker', 'migrations']) {
+  for (const target of ['uat/public', 'prd/public', 'uat/worker', 'prd/cms', 'migrations']) {
     mkdirSync(`${directory}/${target}`, { recursive: true });
     writeFileSync(`${directory}/${target}/artifact`, sha);
+    if (target === 'uat/worker' || target === 'prd/cms') {
+      for (const file of [
+        'server/wrangler.json',
+        'server/entry.mjs',
+        'client/content/index.html',
+        'client/items/index.html',
+        'client/stock/index.html',
+      ]) {
+        mkdirSync(path.dirname(`${directory}/${target}/${file}`), { recursive: true });
+        writeFileSync(`${directory}/${target}/${file}`, sha);
+      }
+    }
     files[target] = inventory(`${directory}/${target}`);
   }
-  verifyFiles({ files }, directory);
+  assert.throws(() => verifyFiles({ schema: 1, files }, directory), /fresh candidate/);
+  verifyFiles({ schema: 2, files }, directory);
   writeFileSync(`${directory}/prd/public/artifact`, 'tampered');
-  assert.throws(() => verifyFiles({ files }, directory), /digest mismatch/);
+  assert.throws(() => verifyFiles({ schema: 2, files }, directory), /digest mismatch/);
   writeFileSync(`${directory}/prd/public/artifact`, sha);
-  rmSync(`${directory}/prd/worker`, { recursive: true });
-  assert.throws(() => verifyFiles({ files }, directory), /Missing artifact/);
+  rmSync(`${directory}/prd/cms`, { recursive: true });
+  assert.throws(() => verifyFiles({ schema: 2, files }, directory), /Missing combined CMS artifact/);
 });

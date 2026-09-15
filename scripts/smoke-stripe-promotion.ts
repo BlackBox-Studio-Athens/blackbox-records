@@ -3,10 +3,10 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
 import {
-  currentDesiredCatalogEntries,
   type DesiredCatalogEnvironment,
   type DesiredCatalogEntry,
-} from '../apps/backend/src/application/commerce/catalog-sync/desired-catalog-state';
+} from '../apps/backend/src/application/commerce/catalog-sync';
+import { loadStripeCatalogStoreItemContracts } from './stripe-catalog-contract';
 import { parseProductEnvironmentCliTarget, type ProductEnvironment } from '../apps/backend/src/env';
 import {
   createRunId as createSmokeRunId,
@@ -175,6 +175,11 @@ export function selectPromotionSmokeEntry(
 }
 
 export async function runPromotionSmoke(options: PromotionSmokeOptions): Promise<PromotionSmokeEvidence[]> {
+  const currentDesiredCatalogEntries = (
+    await loadStripeCatalogStoreItemContracts({
+      productEnvironment: options.environment,
+    })
+  ).map((contract) => contract.desiredCatalogEntry);
   const entry = selectPromotionSmokeEntry(currentDesiredCatalogEntries, options.environment);
   const scenarios = options.scenario === 'all' ? (['checkout_surface', 'paid'] as const) : [options.scenario];
   const evidence: PromotionSmokeEvidence[] = [];

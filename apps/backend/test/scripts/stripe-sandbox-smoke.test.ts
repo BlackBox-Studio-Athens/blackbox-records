@@ -1,3 +1,4 @@
+import { loadStripeCatalogStoreItemContracts } from '../../../../scripts/stripe-catalog-contract';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -12,7 +13,6 @@ import {
   createCheckoutOrderBySessionSql,
   createCheckoutPageUrl,
   createRemoteD1ReadinessSql,
-  createSandboxSmokeStockTopUpSql,
   createScenarioEmail,
   createSmokeStoreCartStorageEntry,
   createStripeSandboxWebhookDeliveryDiagnostics,
@@ -35,7 +35,7 @@ import {
   scrubSensitiveStripeSmokeText,
   selectFirstVisibleSelector,
   StripeSandboxSmokeScenarioGroupError,
-  STRIPE_SANDBOX_SMOKE_SCENARIOS,
+  createStripeSandboxSmokeScenarios,
   STRIPE_TEST_CARD_DOCS_URL,
   toLocalCheckoutOrderRow,
   type LocalCheckoutOrderRow,
@@ -92,6 +92,10 @@ const passingSessionProjection = createStripeCheckoutSessionProjectionObservatio
     productName: sessionProjectionExpectation.expectedProductName,
   },
   sessionProjectionExpectation,
+);
+
+const STRIPE_SANDBOX_SMOKE_SCENARIOS = createStripeSandboxSmokeScenarios(
+  await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' }),
 );
 
 describe('Stripe sandbox Playwright smoke runner', () => {
@@ -332,7 +336,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
   });
 
   it('resolves all supported Stripe sandbox scenarios including 3DS', () => {
-    const scenarios = resolveSelectedStripeSandboxScenarios('all');
+    const scenarios = resolveSelectedStripeSandboxScenarios('all', STRIPE_SANDBOX_SMOKE_SCENARIOS);
 
     expect(scenarios.map((scenario) => scenario.name)).toEqual([
       'checkout_surface',
@@ -397,7 +401,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
   });
 
   it('creates a browser cart seed for the smoke checkout route', () => {
-    const storageEntry = createSmokeStoreCartStorageEntry();
+    const storageEntry = createSmokeStoreCartStorageEntry(STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid);
     const storage = createMemoryStorage();
 
     storage.setItem(storageEntry.key, storageEntry.value);
@@ -564,12 +568,7 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(createRemoteD1ReadinessSql()).toContain('VariantStripeMapping');
     expect(createRemoteD1ReadinessSql()).toContain('realStripeMappingCount');
     expect(createRemoteD1ReadinessSql()).toContain('smokeVariantOnlineQuantity');
-    expect(createSandboxSmokeStockTopUpSql(2)).toContain('"onlineQuantity" < 2');
-    expect(createSandboxSmokeStockTopUpSql(2)).toContain('variant_disintegration-black-vinyl-lp_standard');
-    expect(createSandboxSmokeStockTopUpSql(2, "variant_'quoted")).toContain("variant_''quoted");
-    expect(() => createSandboxSmokeStockTopUpSql(0)).toThrow(
-      'Sandbox smoke stock top-up quantity must be a positive integer.',
-    );
+    expect(createRemoteD1ReadinessSql()).not.toMatch(/UPDATE|INSERT|DELETE/);
     expect(createCheckoutOrderBySessionSql("cs_test_'quoted")).toContain("cs_test_''quoted");
   });
 

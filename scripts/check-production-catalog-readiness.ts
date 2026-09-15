@@ -3,10 +3,8 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
-import {
-  currentDesiredCatalogEntries,
-  type DesiredCatalogEntry,
-} from '../apps/backend/src/application/commerce/catalog-sync/desired-catalog-state';
+import type { DesiredCatalogEntry } from '../apps/backend/src/application/commerce/catalog-sync';
+import { loadStripeCatalogStoreItemContracts } from './stripe-catalog-contract';
 
 export type ProductionCatalogReadinessPhase = 'post-apply' | 'pre-apply';
 
@@ -372,6 +370,9 @@ function parsePhase(value: string | undefined): ProductionCatalogReadinessPhase 
 
 async function main(): Promise<void> {
   const options = parseProductionCatalogReadinessArgs(process.argv.slice(2));
+  const currentDesiredCatalogEntries = (await loadStripeCatalogStoreItemContracts({ productEnvironment: 'PRD' })).map(
+    (contract) => contract.desiredCatalogEntry,
+  );
   const rows = readProductionCatalogReadinessRows(currentDesiredCatalogEntries);
   const result = evaluateProductionCatalogReadiness({
     entries: currentDesiredCatalogEntries,

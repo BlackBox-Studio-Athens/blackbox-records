@@ -12,13 +12,7 @@ export {
   catalogProjectionFieldGroups,
   findCatalogFieldOwnership,
 } from './field-ownership';
-export {
-  createCurrentCatalogExpectedProductProjectionMap,
-  createCurrentCatalogExpectedSandboxPriceMap,
-  createCurrentCatalogProductProjectionReader,
-  currentCatalogProductProjectionEntries,
-} from './catalog-product-projections';
-export type { CatalogProductProjectionEntry, CatalogProductProjectionReader } from './catalog-product-projections';
+export type { CatalogProductProjectionReader } from './catalog-product-projections';
 export { createRuntimeCatalogProductProjectionReader } from './runtime-catalog-product-projections';
 export type {
   CatalogDriftCategory,
@@ -67,7 +61,6 @@ export type {
   StripeCatalogProductProjection,
   StripeCatalogProductProjectionUpdateInput,
 } from './types';
-export { catalogManifest } from './catalog-manifest.generated';
 
 export { CatalogPriceConflictError } from './types';
 export { changeCatalogPrice, readCatalogPrice, catalogPriceChangeSchema } from './change-catalog-price';

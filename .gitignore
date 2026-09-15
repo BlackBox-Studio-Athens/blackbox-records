@@ -29,7 +29,6 @@ node_modules/.vite/
 .codex-artifacts/
 apps/backend/test/emdash/.emdash/
 apps/backend/.emdash/
-apps/backend/src/application/commerce/catalog-sync/catalog-manifest.generated.ts
 apps/backend/prisma/seeds/uat-commerce-state.sql
 apps/backend/prisma/seeds/prd-commerce-readiness.sql
 .env.local

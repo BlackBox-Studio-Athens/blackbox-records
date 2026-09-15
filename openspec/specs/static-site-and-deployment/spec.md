@@ -4,6 +4,36 @@ Specify the static Astro frontend, isolated Cloudflare Pages UAT and disabled PR
 
 ## Requirements
 
+### Requirement: Retired CMS entrypoints are absent
+
+Public artifacts SHALL exclude Sveltia assets and return 404 for former `/admin/`, `/admin/config.yml` and `/admin/init.js` routes. Staff SHALL remain served by the combined Worker.
+
+#### Scenario: Legacy editor URL is requested
+
+- **WHEN** a visitor requests a former public admin route
+- **THEN** the response is 404 and no writable CMS is served.
+
+#### Scenario: Staff Pages is retired
+
+- **WHEN** the detached staff Pages project is deleted after replacement acceptance
+- **THEN** the live staff hostname, Access protection and combined Worker assets remain functional.
+
+### Requirement: One backend deployment includes staff and CMS
+
+Each hosted Product Environment SHALL deploy one backend Worker containing CMS runtime, protected staff assets, existing application APIs, Stripe webhooks, and required scheduled handlers. The public storefront SHALL remain a separate static Pages deployment.
+
+#### Scenario: Combined backend is deployed
+
+- **WHEN** its verified artifact is promoted
+- **THEN** CMS and commerce code and staff assets share that backend deployment revision
+- **AND** the deployment preserves paid-order retries and public shopper/webhook access.
+
+#### Scenario: Private assets are requested
+
+- **WHEN** a request uses either the staff hostname or a public Worker alias
+- **THEN** authentication and host policy run before private assets or CMS responses can be returned
+- **AND** static asset routing cannot bypass the protection.
+
 ### Requirement: Staff frontend artifact is independent
 
 The system SHALL build the protected staff portal as an independent static frontend artifact and SHALL exclude operator route documents from public frontend artifacts.
@@ -17,34 +47,18 @@ The system SHALL build the protected staff portal as an independent static front
 #### Scenario: Staff frontend artifact is built
 
 - **WHEN** the staff Astro application builds
-- **THEN** its artifact contains `/stock/`, the staff root redirect, required assets, and deployment policy files
-- **AND** it contains no shopper, checkout, editorial `/admin/`, or public app-shell route document.
-
-### Requirement: Staff frontend uses a dedicated PRD Pages project
-
-The system SHALL deploy the staff static artifact only to the `blackbox-records-staff` Cloudflare Pages project as a PRD staff surface.
-
-#### Scenario: Staff deployment runs
-
-- **WHEN** repository gates and the staff static build succeed for a commit
-- **THEN** deployment uploads only `apps/staff/dist` to the `blackbox-records-staff` production target
-- **AND** it does not replace or mutate the `blackbox-records-web` artifact or GitHub Pages UAT deployment.
-
-#### Scenario: Staff deployment artifact is handed off
-
-- **WHEN** CI prepares a staff deployment
-- **THEN** the deploy job consumes the verified staff artifact produced for the same commit
-- **AND** Cloudflare deployment credentials remain unavailable to build and test jobs.
+- **THEN** its artifact contains `/stock/`, the staff root redirect, required assets, and staff content/item/order routes
+- **AND** it contains no shopper, checkout, public app-shell route document or public CMS credentials.
 
 ### Requirement: Staff frontend remains static and Worker-backed
 
-The staff frontend SHALL remain a static Astro application and SHALL use the existing Worker boundary for internal stock operations.
+The staff frontend SHALL remain a static Astro/React build served by the combined backend Worker. All operational reads and writes SHALL use protected same-origin backend routes.
 
 #### Scenario: Staff browser requests stock data
 
-- **WHEN** the protected `/stock/` page reads or mutates stock
-- **THEN** it calls same-origin `/api/internal/*`
-- **AND** no Pages Function, Astro server runtime, browser secret, or duplicate stock implementation handles the operation.
+- **WHEN** the workspace reads or mutates editorial or operational records
+- **THEN** it calls the appropriate authenticated CMS or internal application API
+- **AND** no public Pages Function, browser secret, or duplicate stock implementation performs the work.
 
 ### Requirement: Worker backend separation
 
@@ -181,15 +195,14 @@ The system MUST avoid long-lived immutable caching for static route documents th
 
 ### Requirement: UAT static smoke stays read-only
 
-The system SHALL provide a manual UAT static smoke path that verifies Cloudflare Pages static routes, the Sveltia admin document and assets, public pages, sitemap/robots, and the checkout shell without mutating provider state or becoming a default deploy gate.
+UAT Static Smoke SHALL verify the Cloudflare public site's routes, public assets, metadata, redirects, Review Site Marker, and checkout shell without modifying content or provider state.
 
 #### Scenario: UAT static smoke runs
 
-- **WHEN** a maintainer or workflow runs `pnpm smoke:uat-static -- --site-url <configured-cloudflare-uat-origin>`
-- **THEN** it inspects the deployed Cloudflare Pages UAT frontend
-- **AND** it writes evidence under `.codex-artifacts/smoke/uat/uat-static/<run-id>/`
-- **AND** it does not authenticate to Sveltia, publish content, create Stripe Checkout Sessions, modify D1, or touch webhooks
-- **AND** its evidence remains separate from provider smoke evidence.
+- **WHEN** the suite targets configured UAT
+- **THEN** public artifacts contain no Sveltia runtime, writable CMS configuration, or staff page documents
+- **AND** old admin links lead to the protected workspace or a clear retired state
+- **AND** authenticated staff tests remain a separate explicitly scoped suite.
 
 ### Requirement: Static deploy automation exposes measurable stages
 
@@ -440,18 +453,23 @@ The system MUST omit the shared UAT/PRD static deployment workflow for a `main` 
 
 ### Requirement: Catalog deployments use the gated source revision
 
-All normal deployments SHALL follow the same source SHA and release readiness gate in pages.yml. No catalog-only bypass, artifact bot commit, or cross-workflow deployment dispatch SHALL exist.
+Software deployment SHALL use the reviewed code revision and explicit target content snapshot. Content Publication SHALL use the already-deployed approved code revision without deploying the backend or performing general provider synchronization.
 
 #### Scenario: Source affects catalog or code
 
-- **WHEN** repository gates and catalog preparation pass
-- **THEN** UAT Worker deployment and hosted listing checks precede static publication
-- **AND** smoke tests use that same source SHA.
+- **WHEN** repository and compatibility gates pass
+- **THEN** UAT backend and public artifacts deploy with revision-bound evidence before explicit PRD promotion.
+
+#### Scenario: Editorial content changes
+
+- **WHEN** content publication validates a complete target snapshot
+- **THEN** only the static public artifact is rebuilt and published
+- **AND** its backend and Stripe catalog are not redeployed or synchronized as a prerequisite.
 
 #### Scenario: PRD launch is disabled
 
-- **WHEN** the disabled PRD frontend is published
-- **THEN** existing checkout launch controls remain unchanged.
+- **WHEN** software or content is published
+- **THEN** existing shopper launch controls remain unchanged.
 
 ### Requirement: Public frontend hosting uses separate Cloudflare Pages projects
 

@@ -82,12 +82,13 @@ describe('one gated release', () => {
 
   it('promotes the uploaded PRD version without changing existing routes', () => {
     const worker = release.jobs['deploy-prd'].steps.find(
-      (step: { name: string }) => step.name === 'Deploy candidate PRD Worker',
+      (step: { name: string }) => step.name === 'Deploy candidate combined PRD CMS Worker',
     ).run;
     expect(worker).toContain('wrangler versions upload');
-    expect(worker).toContain('--no-bundle --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"');
+    expect(worker).toContain('prd/cms/server/wrangler.json --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"');
     expect(worker).toContain('--version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes');
     expect(worker).not.toMatch(/wrangler deploy|triggers deploy|--routes/);
-    expect(worker.match(/release-candidate\.mjs verify prd/g)).toHaveLength(2);
+    expect(worker.match(/release-candidate\.mjs verify prd/g)).toHaveLength(1);
+    expect(worker).toContain('release-candidate.mjs verify-worker prd');
   });
 });

@@ -14,8 +14,7 @@ on:
         type: choice
         options:
           - all
-          - cms_admin
-          - cms_assets
+          - public_assets
           - checkout_shell
           - public_routes
       timeout_ms:

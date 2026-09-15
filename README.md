@@ -39,7 +39,7 @@ The protected staff frontend is a separate static Astro app:
 - package: `@blackbox/staff`
 - source: `apps/staff`
 - artifact: `apps/staff/dist`
-- Pages project: `blackbox-records-staff`
+- hosting: assets packaged into the combined CMS Worker; live PRD workspace `https://staff.blackboxrecordsathens.com/content/`
 - hosted API target: same-origin `/api/internal/*`
 
 Local keeps the base-path defaults in `apps/web/astro.config.mjs`; hosted builds override both values:
@@ -49,7 +49,7 @@ Local keeps the base-path defaults in `apps/web/astro.config.mjs`; hosted builds
 
 For label-member UAT, the Cloudflare Pages URL is intentionally wired to the UAT Worker on deploy-relevant `main` pushes. Repository-only documentation pushes are skipped by the shared static workflow, while `workflow_dispatch` remains available for a forced redeploy. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
 
-Commit → review UAT → explicitly promote this candidate. Main pushes deploy UAT only. In **Release BlackBox**, select `target=prd`, the reviewed full `artifact_commit_sha`, its successful `candidate_run_id`, and `confirm_code_promotion=true`. Promotion consumes the retained PRD public/staff and Worker artifacts without rebuilding. UAT must still serve that candidate, configuration must match, and no newer release may have mutated PRD. Artifacts expire after seven days: dispatch `target=uat` with the same full SHA, wait for fresh acceptance, then use its new run ID. See [the release runbook](docs/catalog-promotion.md). Code confirmation does not authorize live catalog changes, apex activation, or shopper launch.
+Commit → review UAT → explicitly promote this candidate. Main pushes deploy UAT only. In **Release BlackBox**, select `target=prd`, the reviewed full `artifact_commit_sha`, its successful `candidate_run_id`, and `confirm_code_promotion=true`. Promotion consumes the retained PRD public and combined CMS Worker artifacts (release contract v2) without rebuilding. UAT must still serve that candidate, configuration must match, and no newer release may have mutated PRD. Artifacts expire after seven days: dispatch `target=uat` with the same full SHA, wait for fresh acceptance, then use its new run ID. See [the release runbook](docs/catalog-promotion.md). Code confirmation does not authorize live catalog changes, apex activation, or shopper launch.
 
 The UAT build alone shows the layered Review Site Marker: a solid `TEST SITE` label with `Test payments only` beneath the header wordmark, a `[TEST]` browser-title prefix, and `Test checkout. No real payment will be taken.` beside the final checkout action. These presentational cues identify a review URL; they do not enable checkout or own payment authority, which remain controlled by the Worker and Stripe configuration. Local, full PRD, and PRD Holding Page builds leave all three cues unset.
 
@@ -189,18 +189,12 @@ In Items, review the linked saved content, then select Publish item. The command
 
 Only the approved immutable artwork copy is served at `/media/published/<sha256>` on the public Worker. CMS originals, drafts, snapshots and backups remain private.
 
-The Local public service imports only an empty CMS and verifies the source library before its first baseline publication. If existing drafts differ, it stops rather than publishing those drafts implicitly. Later restarts build from the last published snapshot and preserve newer drafts. If an initial import is interrupted, use the explicit idempotent CMS import diagnostic to finish it; ordinary startup never overwrites existing editorial records. Sveltia source remains as a deferred diagnostic cleanup item; hosted editing uses EmDash. `pnpm dev:web` and `pnpm site:dev` remain frontend-only Astro development diagnostics. Running `d1:seed:stripe-mock:local` explicitly without `--if-empty` is a reseed diagnostic that replaces mock stock/price fixtures, not the normal restart path.
+The Local public service imports only an empty CMS and verifies the source library before its first baseline publication. If existing drafts differ, it stops rather than publishing those drafts implicitly. Later restarts build from the last published snapshot and preserve newer drafts. If an initial import is interrupted, use the explicit idempotent CMS import diagnostic to finish it; ordinary startup never overwrites existing editorial records. Retired public `/admin/*` routes return 404; editing uses EmDash. `pnpm dev:web` and `pnpm site:dev` remain frontend-only Astro development diagnostics. Running `d1:seed:stripe-mock:local` explicitly without `--if-empty` is a reseed diagnostic that replaces mock stock/price fixtures, not the normal restart path.
 
 Local mock checkout smoke path:
 
 ```text
 http://127.0.0.1:4321/blackbox-records/store/checkout/
-```
-
-Retained pre-cutover Sveltia entry (not the normal member workspace):
-
-```text
-http://127.0.0.1:4321/blackbox-records/admin/
 ```
 
 That canonical path remains the fastest cart checkout smoke path. `/store/barren-point/` is the separate Barren Point distro item and is not a Disintegration alias. In stripe-mock mode, the local seed generator now creates fake development `Stock`, `ItemAvailability`, and `price_mock_*` mappings for every current store item so each item can exercise the local no-network checkout path. Those values are not real inventory counts or Stripe test evidence.
@@ -250,13 +244,13 @@ pnpm email:previews
 
 This writes ignored HTML files under `.codex-artifacts/email-previews/` for Browser Use or the documented DevTools fallback. The previews use repo-owned template builders and do not create provider state.
 
-Run the UAT static smoke when you need to verify deployed Cloudflare Pages static routes, Sveltia admin boot/config, representative public pages, checkout shell visibility, sitemap, robots, console errors, and high-risk public-secret exposure:
+Run the UAT static smoke when you need to verify deployed Cloudflare Pages static routes, retired admin-route 404 responses, representative public pages, checkout shell visibility, sitemap, robots, console errors, and high-risk public-secret exposure:
 
 ```sh
 pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all
 ```
 
-The UAT static smoke runner is manual by design and writes ignored evidence to `.codex-artifacts/smoke/uat/uat-static/<run-id>/`. The supported scenarios are `cms_admin`, `cms_assets`, `checkout_shell`, `public_routes`, and `all`. It never creates provider state.
+The UAT static smoke runner is manual by design and writes ignored evidence to `.codex-artifacts/smoke/uat/uat-static/<run-id>/`. The supported scenarios are `public_assets`, `checkout_shell`, `public_routes`, and `all`. It never creates provider state.
 
 The PRD no-payment promotion smoke runner writes ignored evidence to `.codex-artifacts/smoke/prd/stripe-promotion/<run-id>/`. The `not_configured` paid-policy status means live payment was not attempted, not that PRD commerce is open.
 
@@ -267,9 +261,9 @@ pnpm stripe:webhooks:verify --env uat
 pnpm stripe:catalog:verify --env uat
 ```
 
-Catalog ownership is simple: Sveltia/repo content owns Product presentation; Stripe Product default Price selects the selling amount; D1 owns stock, pauses, reservations, and orders. Add a replacement Price in Stripe Dashboard and set it as default. Older Prices can remain active. Signed webhooks and authoritative detail/checkout reads refresh the bound D1 mapping and listing snapshot.
+Catalog ownership is simple: EmDash content and its approved runtime projection own Product presentation; Stripe Product default Price selects the selling amount; D1 owns stock, pauses, reservations, and orders. Add a replacement Price in Stripe Dashboard and set it as default. Older Prices can remain active. Signed webhooks and authoritative detail/checkout reads refresh the bound D1 mapping and listing snapshot.
 
-Catalog build inputs are generated by installation, checks, tests, and builds. They are not committed. One gated release synchronizes current items without resetting stock or catalog objects. See [Catalog release](docs/catalog-promotion.md).
+Routine installation, checks, tests, builds, and software deployment do not generate or apply repository catalog data. Read-only catalog verification inspects persisted published runtime items and their provider bindings. `pnpm catalog:readiness:generate` explicitly generates ignored SQL from repository migration data for reviewed migration/recovery only; it is not the current EmDash catalog. See [Catalog release](docs/catalog-promotion.md).
 
 The webhook verifier is read-only. It proves the persistent endpoint URL, test-mode status, required catalog event subscriptions, UAT Worker `STRIPE_WEBHOOK_SECRET` presence, and the six-hour scheduled catalog-verification backstop when Cloudflare schedule credentials are available. It does not prove the existing endpoint signing secret equals the Worker secret because Stripe does not return an existing endpoint secret through list/retrieve APIs. After endpoint creation, endpoint recreation, or secret rotation, update the UAT Worker from `apps/backend` with `pnpm exec wrangler secret put STRIPE_WEBHOOK_SECRET --env uat` without logging the value, then rerun the verifier and paid smoke.
 
@@ -517,7 +511,7 @@ pnpm audit:commerce-boundaries
 - Hosted UAT and PRD internal requests require a valid `Cf-Access-Jwt-Assertion`. The Worker verifies its RS256 signature, exact `CF_ACCESS_TEAM_DOMAIN` issuer, `CF_ACCESS_POLICY_AUD` audience, lifetime, and email claim before any route service or D1 work.
 - The forwarded `cf-access-authenticated-user-email` header is ignored. Stock-write `actor_email` comes only from the verified assertion claim.
 - JWT-free operator identity exists only for Product Environment Local on `localhost` or `127.0.0.1`, using the committed local-only `LOCAL_OPERATOR_EMAIL` binding.
-- Sveltia login remains a separate editorial authentication boundary; its token, cookie, callbacks, and helpers never enter the Worker operator runtime.
+- EmDash and staff operations use the existing verified Access identity; retired GitHub CMS authentication is not a runtime dependency.
 - The internal Worker API now exposes operator-only stock lookup and stock-write routes under `/api/internal/variants/*`.
 - The internal Worker API now exposes read-only checkout order inspection under `/api/internal/orders*` for low-volume reconciliation. It is Access-protected, not a shopper API, and does not mutate order or stock state.
 - The protected stock operations UI is built from `apps/staff` at `/stock/`; it calls same-origin `/api/internal/*` on the protected operator hostname.
@@ -703,7 +697,7 @@ CI/deploy credentials and public build variables:
 
 - Cloudflare Pages is the PRD static frontend host and remains a disabled commerce readiness surface until launch approval and runtime checkout enablement both pass.
 - The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
-- The staff artifact is built separately at `apps/staff/dist` and deploys only to `blackbox-records-staff`.
+- The staff artifact is built separately at `apps/staff/dist` and packaged into the combined Worker; no standalone staff Pages upload runs.
 - Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/pages.yml`, not by local manual `wrangler pages deploy`.
 - The shared static workflow runs `pnpm test:unit`, `pnpm check`, and `pnpm audit:unused` before separate `pnpm build:web` and `pnpm build:staff` steps.
 - The workflow sets Cloudflare-root static build values with `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/`.
@@ -718,7 +712,7 @@ CI/deploy credentials and public build variables:
 Cloudflare cache policy is explicit and versioned in repo-owned artifacts and route headers.
 
 - Static Asset Cache: fingerprinted Astro build assets under `/_astro/*` use the repo-owned `apps/web/public/_headers` artifact with `Cache-Control: public, max-age=31536000, immutable`.
-- Document Revalidation: public route HTML, overlay partial HTML, `sitemap.xml`, `robots.txt`, `/store/*`, and `/admin/*` stay revalidation-friendly; the separate staff artifact applies `no-store` to `/stock/*`.
+- Document Revalidation: public route HTML, overlay partial HTML, `sitemap.xml`, `robots.txt`, and `/store/*` stay revalidation-friendly; the separate staff artifact applies `no-store` to `/stock/*`.
 - Route Document Headers: no explicit document revalidation headers were added in this change; Cloudflare Pages defaults remain in effect for route HTML and overlay partials.
 - Worker API Freshness: checkout, Store Offer, Store listing-price presentation, stock, order, webhook, operator, and error responses use `Cache-Control: no-store`.
 - TTL Policy: no route class in this change receives a future TTL; store capabilities, Store Offer, and listing-price presentation routes remain `no-store`.
@@ -729,7 +723,7 @@ Cloudflare cache policy is explicit and versioned in repo-owned artifacts and ro
 
 ## Content model
 
-Content is managed in the repo through Astro content collections, and Sveltia CMS now provides an editing layer on top of the same `apps/web/src/content/**` files.
+EmDash owns hosted editorial content. Public builds consume an immutable published snapshot; the following repository collections are retained for migration/recovery and Local/UAT fixtures, not as the current hosted catalog.
 
 - Artists: `apps/web/src/content/artists/*.md`
 - Releases: `apps/web/src/content/releases/*.md`
@@ -750,7 +744,7 @@ Content is managed in the repo through Astro content collections, and Sveltia CM
 
 Collection schemas are defined in `apps/web/src/content.config.ts`.
 
-Full CMS database/media backup, seven-day retention, pre-upgrade capture and isolated recovery commands are documented in [CMS backup and recovery](docs/cms-backup.md). The daily hosted workflow stays disabled until private storage, credentials and the Free-tier budget are configured and verified. Commerce restoration is never part of CMS recovery.
+Full CMS database/media backup, seven-day retention, pre-upgrade capture and isolated recovery commands are documented in [CMS backup and recovery](docs/cms-backup.md). The daily hosted workflow is enabled with private storage and a reviewed Free-tier budget; changes must preserve those gates. Commerce restoration is never part of CMS recovery.
 
 The replacement CMS has a Local-only migration check. After `pnpm --filter @blackbox/backend build:cms --env mock`, run `pnpm --filter @blackbox/backend test:cms-content` and `pnpm --filter @blackbox/backend test:cms-import`. These use ephemeral Local storage; the import check reconciles all 129 records and 152 raster image paths twice. `pnpm cms:import:local` is a no-write source validation command; `--apply` requires an already-running compiled Local CMS. News/social soft deletion requires confirmation and a current revision; other and permanent deletion remain blocked. Local/UAT acceptance and the PRD import are complete; the cutover worksheet records the current PRD publication receipt. See [Local migration evidence](openspec/changes/replace-sveltia-with-emdash-operations/local-editorial-migration-evidence.md).
 
@@ -764,71 +758,9 @@ Publication builds additionally pass `--release-identity <release.json> --public
 
 The prepared `.github/workflows/content-publication.yml` shares the software release lock. Trusted main tooling resolves the target's canonical successful Pages deployment and release run, claims the pending CMS request, captures and privately stages published content, then builds a separate checkout of that deployed SHA. Credentials are scoped to export/deployment steps, not the source build. Only the static public artifact is deployed. The final step checks the canonical deployment and its immutable content identity, submits the deployment receipt, and verifies public content. The CMS retains the receipt before checking public propagation. The existing scheduler retries retained receipts at most once per five minutes; active CI stays pending, ended CI without a receipt becomes failed, and superseded waiting requests are closed. Immediate acknowledgement uses the existing maximum of 12 propagation checks; capture and staging are not automatically retried.
 
-Hosted setup remains unverified. Before enabling dispatch, finish the Free-tier pilot/budget and hosted publication/recovery acceptance. The deployed code must already support snapshot builds. Configure separate `UAT_` and `PRD_` secrets for `CMS_EXPORT_TOKEN`, `CMS_PUBLICATION_EXPORT_TOKEN`, `CMS_EXPORT_ACCESS_CLIENT_ID`, and `CMS_EXPORT_ACCESS_CLIENT_SECRET`; the completion credential must match the target Worker binding. Set the corresponding `UAT_CMS_PUBLICATION_MAX_REQUESTS` or `PRD_CMS_PUBLICATION_MAX_REQUESTS` variable only from the measured budget (1–1000; no fallback). Missing UAT credentials never fall back to PRD. Account for native token D1 reads/write attempts, media staging, journal operations, and existing release API reads. The existing Pages credential handles only the static deploy in this workflow. Software promotion now rejects an artifact whose content identity differs from current target content; refresh it by dispatching the existing release workflow with target=uat and the same reviewed artifact_commit_sha, then explicitly promote the new successful candidate_run_id. Candidate preparation restores the immutable published snapshot for each target; it never imports UAT content into PRD or substitutes a newer editable CMS state. See docs/catalog-promotion.md for the pre-cutover behavior and restore budget.
+Hosted EmDash publication and recovery were accepted at cutover; see `docs/cms-cutover.md`. New hosted bulk work still requires a current Free-tier budget. The deployed code must already support snapshot builds. Configure separate `UAT_` and `PRD_` secrets for `CMS_EXPORT_TOKEN`, `CMS_PUBLICATION_EXPORT_TOKEN`, `CMS_EXPORT_ACCESS_CLIENT_ID`, and `CMS_EXPORT_ACCESS_CLIENT_SECRET`; the completion credential must match the target Worker binding. Set the corresponding `UAT_CMS_PUBLICATION_MAX_REQUESTS` or `PRD_CMS_PUBLICATION_MAX_REQUESTS` variable only from the measured budget (1–1000; no fallback). Missing UAT credentials never fall back to PRD. Account for native token D1 reads/write attempts, media staging, journal operations, and existing release API reads. The existing Pages credential handles only the static deploy in this workflow. Software promotion now rejects an artifact whose content identity differs from current target content; refresh it by dispatching the existing release workflow with target=uat and the same reviewed artifact_commit_sha, then explicitly promote the new successful candidate_run_id. Candidate preparation restores the immutable published snapshot for each target; it never imports UAT content into PRD or substitutes a newer editable CMS state. See docs/catalog-promotion.md for the pre-cutover behavior and restore budget.
 
 Runtime catalog backfill is an explicit migration command, `pnpm catalog:backfill`, with dry-run and reviewed-plan requirements. It does not seed prices or stock. Prepare Local CMS inputs with `pnpm cms:import:local -- --prepareLocal <directory>` and capture a fresh `--verifyOnly` report against the same running CMS. Existing Local and UAT catalogs are now reconciled; see [catalog migration evidence](openspec/changes/replace-sveltia-with-emdash-operations/runtime-catalog-evidence.md#localuat-reconciliation-completion--2026-09-15) and the [cutover worksheet](docs/cms-cutover.md) for commands and remaining hosted setup.
-
-## Sveltia CMS
-
-BlackBox uses Sveltia CMS `0.205.2` at `/admin/`.
-
-- Static document: `apps/web/public/admin/index.html`
-- Generated configuration and bootstrap: `apps/web/src/pages/admin/config.yml.ts`, `apps/web/src/pages/admin/init.js.ts`
-- Extensions: `apps/web/src/lib/admin/bootstrap.js`, `apps/web/src/lib/admin/previews.js`
-
-### Local editing
-
-Run `pnpm cms:dev`, then open `http://127.0.0.1:4322/blackbox-records/admin/index.html` in Chrome or Edge. Choose **Work with Local Repository** and select the repository root, `blackbox-records`, not `apps/web`. Allow directory access in the browser prompt.
-
-The command starts only Astro and fails if port 4322 is occupied. Stop the full local stack before starting the standalone editor. The full stack also serves the editor at `http://127.0.0.1:4321/blackbox-records/admin/index.html`.
-
-Local saves write files in your working tree. Review the diff and use Git to commit and push when ready; Sveltia does not commit or push local changes.
-
-### Build modes
-
-| Setting                         | Behavior                                                                |
-| ------------------------------- | ----------------------------------------------------------------------- |
-| `SVELTIA_BACKEND_MODE=local`    | Native directory editing; development default.                          |
-| `SVELTIA_BACKEND_MODE=hosted`   | GitHub OAuth; requires `SVELTIA_AUTH_BASE_URL`.                         |
-| `SVELTIA_BACKEND_MODE=disabled` | Unavailable admin without a loaded CMS; secret-free production default. |
-
-Hosted configuration fixes the repository to `BlackBox-Studio-Athens/blackbox-records`, branch `main`, with `publish_mode: simple`. Astro site/base settings determine public URLs. Invalid hosted settings stop the build without printing their values. The build validates its final admin artifact.
-
-### Hosted setup and login
-
-Deploy the official `sveltia/sveltia-cms-auth` project as a separate Cloudflare Worker. Register a GitHub OAuth app with callback `<authenticator-origin>/callback`. Configure the Worker's `GITHUB_CLIENT_ID`, encrypted `GITHUB_CLIENT_SECRET`, and exact domain list:
-
-```text
-ALLOWED_DOMAINS=blackbox-records-web-uat.pages.dev,blackbox-records-web.pages.dev
-```
-
-Keep credentials outside this repository and static artifacts. Set the GitHub Actions repository variable `SVELTIA_AUTH_BASE_URL` to the HTTPS authenticator origin, without a path or trailing slash. Static builds receive only this non-secret URL.
-
-Use the designated GitHub CMS account with repository write access. Open hosted `/admin/`, select **Sign In with GitHub**, and authorize that account. Keep Sveltia's native sign-in controls intact. If login succeeds but entries remain inaccessible, check the account's repository access.
-
-Hosted publication commits directly to `main` and can trigger catalog and deployment workflows. Avoid concurrent edits to the same entry. Use the protected stock UI for operational changes; the CMS does not own prices, stock, checkout, orders, or fulfillment.
-
-### Media and previews
-
-Use the native Asset Library and collection image controls. Collection images stay beside their content entries with relative stored paths. Shared assets use `/apps/web/public/assets`; public URLs use `/blackbox-records/assets` for Local/UAT and `/assets` for PRD.
-
-The seven previews use Sveltia's supplied asset resolver. Astro emits public catalog images at `/assets/catalog/<collection>/<filename>`, beneath the deployment base, for Store and Stripe image consumers. Source files stay in their existing content directories. The retired `/admin/media/` URLs have no redirect or fallback.
-
-Collections appear in this order: Store Items, Releases, Artists, News, Site Pages, Advanced Navigation, Advanced Social Links, Advanced Site Settings. Site Pages includes Home, About, Services, Newsletter, and Distro. Artist, Release, Distro, fixed-page, and Navigation deletion remain disabled.
-
-### Verification and one-off cutover
-
-Run `pnpm test:cms-admin`, `pnpm smoke:cms-local -- --screenshots never`, `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build`. Browser Use checks representative editor fields and previews at desktop and 320 CSS pixels without saving. Automated local smoke checks native configuration acceptance and leaves content and Git status unchanged.
-
-For the Sveltia cutover:
-
-1. Complete authenticator setup and arrange a pause on editorial saves and unrelated pushes to `main`.
-2. Keep data and consumers together. Add `[skip ci]` to cutover commits, then manually dispatch `.github/workflows/pages.yml` with `target=uat` and the exact `artifact_commit_sha`. Manual runs retain full validation.
-3. Run `cms_admin` and `cms_assets` UAT Static Smoke. The owner reloads admin, signs in with the designated account, and checks Home, Store Item, Release, images, and migrated Distro fields without publishing. Fix failures forward using the same staged sequence.
-4. Dispatch `target=prd` for the accepted SHA. Build for PRD's own Astro site/base; do not reuse the UAT artifact. Stop before PRD if a gate or owner acceptance is incomplete.
-5. After the PRD no-publish check, remove obsolete external CMS authentication access and resume editing. Subsequent automatic deployments remain unchanged.
-
-The site is pre-launch: replace obsolete catalog image URLs in source and generated artifacts; do not preserve them through a compatibility route. These repository edits do not authorize live Stripe or D1 changes.
 
 ## Artist image standard
 

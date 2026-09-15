@@ -4,8 +4,6 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
 import { chromium, type Browser, type BrowserContext, type Page, type Request } from 'playwright';
-import { parse } from 'yaml';
-import { resolveSveltiaRuntimeConfig } from '../apps/web/src/lib/admin/sveltia-runtime-config';
 
 import {
   createRouteUrl,
@@ -25,7 +23,7 @@ import {
 } from './smoke-core';
 import { attachSmokePageDiagnostics, captureSmokePageScreenshot, probeSmokeRoute } from './smoke-browser';
 
-export type UatStaticSmokeScenarioName = 'cms_admin' | 'cms_assets' | 'checkout_shell' | 'public_routes';
+export type UatStaticSmokeScenarioName = 'public_assets' | 'checkout_shell' | 'public_routes';
 export type UatStaticSmokeScenarioSelection = UatStaticSmokeScenarioName | 'all';
 
 export type UatStaticSmokeOptions = {
@@ -46,6 +44,7 @@ type UatStaticSmokeCheck = {
   kind: UatStaticSmokeCheckKind;
   path: string;
   status: number | null;
+  expectedStatus?: number;
   title: string | null;
   url: string;
 };
@@ -71,15 +70,6 @@ type UatStaticSmokeScenarioDefinition = {
   name: UatStaticSmokeScenarioName;
 };
 
-export const CMS_BOOT_ASSET_CONTRACTS = {
-  css: { path: '/admin/admin.css', snippets: ['#cms-status'] },
-  html: { path: '/admin/index.html', snippets: ['id="cms-status"', 'src="./init.js"', 'href="./config.yml"'] },
-  runtime: {
-    path: '/admin/init.js',
-    snippets: ['https://unpkg.com/@sveltia/cms@0.205.2/dist/sveltia-cms.js', 'CMS_MANUAL_INIT', 'home-site', 'preSave'],
-  },
-} as const;
-
 type UatStaticSmokeSummary = {
   environment: 'uat';
   failedScenarioCount: number;
@@ -90,16 +80,6 @@ type UatStaticSmokeSummary = {
   siteUrl: string;
   status: 'failed' | 'passed';
   suite: 'uat-static';
-};
-
-export type CmsAdminRenderedState = {
-  bodyText: string;
-  hasGitHubSignIn: boolean;
-  hasConfigLink: boolean;
-  hasCmsRoot: boolean;
-  hasExactPinnedRuntime: boolean;
-  hasRuntimeApi: boolean;
-  runtimeScriptUrls: string[];
 };
 
 export type UatStaticSmokeEvidenceInput = {
@@ -122,21 +102,12 @@ const reviewSiteMarkerTexts = ['TEST SITE', 'Test payments only'] as const;
 const reviewSiteTitlePrefix = '[TEST] ';
 const reviewSiteCheckoutWarning = 'Test checkout. No real payment will be taken.';
 
-const allScenarioNames: readonly UatStaticSmokeScenarioName[] = [
-  'cms_admin',
-  'cms_assets',
-  'checkout_shell',
-  'public_routes',
-];
+const allScenarioNames: readonly UatStaticSmokeScenarioName[] = ['public_assets', 'checkout_shell', 'public_routes'];
 
 const UAT_STATIC_SMOKE_SCENARIOS: Record<UatStaticSmokeScenarioName, UatStaticSmokeScenarioDefinition> = {
-  cms_admin: {
-    description: 'Verify the retired public CMS cannot sign in or expose writable configuration.',
-    name: 'cms_admin',
-  },
-  cms_assets: {
-    description: 'Verify CMS assets, representative media, and public secret exposure scanning.',
-    name: 'cms_assets',
+  public_assets: {
+    description: 'Verify public media and secret exposure scanning.',
+    name: 'public_assets',
   },
   checkout_shell: {
     description: 'Verify the native checkout shell route without creating provider state.',
@@ -167,7 +138,7 @@ export function parseUatStaticSmokeArgs(args: string[]): UatStaticSmokeOptions {
 
     if (arg === '--help' || arg === '-h') {
       console.log(
-        'Usage: pnpm smoke:uat-static -- --site-url <url> --scenario cms_admin|cms_assets|checkout_shell|public_routes|all [--timeout-ms <ms>] [--evidence-dir <dir>] [--screenshots on-failure|always|never] [--headed]',
+        'Usage: pnpm smoke:uat-static -- --site-url <url> --scenario public_assets|checkout_shell|public_routes|all [--timeout-ms <ms>] [--evidence-dir <dir>] [--screenshots on-failure|always|never] [--headed]',
       );
       process.exit(0);
     }
@@ -327,28 +298,20 @@ async function runUatStaticSmokeScenario(input: {
     diagnostics = attachSmokePageDiagnostics(page);
 
     const checks =
-      input.scenario.name === 'cms_admin'
-        ? [
-            await checkCmsAdminPage(page, input.options),
-            await checkTextAsset(input.options, '/admin/config.yml', [
-              '# blackbox-sveltia-mode: disabled',
-              '# BlackBox CMS unavailable for this build.',
-            ]),
-          ]
-        : input.scenario.name === 'cms_assets'
-          ? await checkCmsAssets(input.options)
-          : input.scenario.name === 'checkout_shell'
-            ? [await checkCheckoutShellPage(page, input.options)]
-            : await checkPublicRoutes(page, input.options);
+      input.scenario.name === 'public_assets'
+        ? await checkPublicAssets(input.options)
+        : input.scenario.name === 'checkout_shell'
+          ? [await checkCheckoutShellPage(page, input.options)]
+          : await checkPublicRoutes(page, input.options);
 
     const consoleErrors = diagnostics.consoleErrors.slice();
     const pageErrors = diagnostics.pageErrors.slice();
     const hasIssuesBeforeScreenshot =
-      checks.some((check) => check.issues.length || check.status !== 200) ||
+      checks.some((check) => check.issues.length || check.status !== (check.expectedStatus ?? 200)) ||
       consoleErrors.length > 0 ||
       pageErrors.length > 0;
     const screenshotPath =
-      input.scenario.name === 'cms_assets'
+      input.scenario.name === 'public_assets'
         ? null
         : await maybeCaptureStaticSmokeScreenshot(
             page,
@@ -362,7 +325,7 @@ async function runUatStaticSmokeScenario(input: {
             return null;
           });
     const hasIssues =
-      checks.some((check) => check.issues.length || check.status !== 200) ||
+      checks.some((check) => check.issues.length || check.status !== (check.expectedStatus ?? 200)) ||
       consoleErrors.length > 0 ||
       pageErrors.length > 0;
     const status = hasIssues ? 'failed' : 'passed';
@@ -413,89 +376,6 @@ async function runUatStaticSmokeScenario(input: {
   }
 }
 
-async function checkCmsAdminPage(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck> {
-  const url = createRouteUrl(options.siteUrl, '/admin/index.html');
-  const probe = await probeSmokeRoute(page, url, options.timeoutMs);
-  const issues = [...probe.issues];
-
-  await waitForCmsAdminTerminalState(page, options.timeoutMs).catch((error: unknown) => {
-    issues.push(
-      `Expected /admin/index.html to show the disabled CMS notice: ${redactSensitiveSmokeText(
-        truncateForConsole(String(error)),
-      )}.`,
-    );
-  });
-
-  const renderedState = await readCmsAdminRenderedState(page, options.timeoutMs).catch((error: unknown) => {
-    issues.push(
-      `Expected /admin/index.html rendered state to be readable: ${redactSensitiveSmokeText(String(error))}.`,
-    );
-    return null;
-  });
-
-  if (!probe.status || probe.status >= 400) {
-    issues.push(`Expected /admin/index.html to return HTTP 200; received ${probe.status ?? 'no response'}.`);
-  }
-
-  if (renderedState) {
-    if (!renderedState.bodyText.includes('CMS unavailable for this build.'))
-      issues.push('Expected the disabled CMS notice.');
-    if (renderedState.hasGitHubSignIn || renderedState.hasRuntimeApi || renderedState.hasExactPinnedRuntime)
-      issues.push('The retired public CMS must not load a writable runtime or sign-in.');
-  }
-
-  for (const exposure of scanHighRiskSmokeExposure(renderedState?.bodyText ?? probe.bodyText)) {
-    issues.push(`Admin page exposed ${exposure}.`);
-  }
-
-  return {
-    bodyTextSnippet: truncateForConsole(redactSensitiveSmokeText(renderedState?.bodyText ?? probe.bodyText), 500),
-    contentType: null,
-    issues,
-    kind: 'page',
-    path: '/admin/index.html',
-    status: probe.status,
-    title: probe.title,
-    url,
-  };
-}
-
-async function waitForCmsAdminTerminalState(page: Page, timeoutMs: number): Promise<void> {
-  await page.waitForFunction(
-    () =>
-      [...document.querySelectorAll('button')].some((button) =>
-        /Sign In with.*GitHub/i.test(button.textContent ?? ''),
-      ) ||
-      /CMS unavailable for this build\.|configuration errors?|invalid configuration/i.test(document.body.innerText),
-    undefined,
-    { timeout: Math.min(timeoutMs, 20_000) },
-  );
-}
-
-export async function readCmsAdminRenderedState(page: Page, timeoutMs: number): Promise<CmsAdminRenderedState> {
-  return page.locator('body').evaluate(
-    () => {
-      const runtimeScriptUrls = Array.from(document.scripts)
-        .map((script) => script.src)
-        .filter(Boolean);
-      const configLink = document.querySelector<HTMLLinkElement>('link[rel="cms-config-url"]');
-      return {
-        bodyText: document.body.innerText,
-        hasGitHubSignIn: [...document.querySelectorAll('button')].some((button) =>
-          /Sign In with.*GitHub/i.test(button.textContent ?? ''),
-        ),
-        hasConfigLink: configLink?.href === new URL('./config.yml', window.location.href).href,
-        hasCmsRoot: Boolean(document.getElementById('nc-root')),
-        hasExactPinnedRuntime: runtimeScriptUrls.includes('https://unpkg.com/@sveltia/cms@0.205.2/dist/sveltia-cms.js'),
-        hasRuntimeApi: Boolean((window as typeof window & { CMS?: unknown }).CMS),
-        runtimeScriptUrls,
-      };
-    },
-    undefined,
-    { timeout: Math.min(timeoutMs, 20_000) },
-  );
-}
-
 async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck> {
   const url = createRouteUrl(options.siteUrl, '/store/checkout/');
   const probe = await probeSmokeRoute(page, url, options.timeoutMs);
@@ -537,17 +417,8 @@ async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions
   };
 }
 
-async function checkCmsAssets(options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
-  const checks = [
-    await checkTextAsset(options, '/admin/config.yml', [
-      '# blackbox-sveltia-mode: disabled',
-      '# BlackBox CMS unavailable for this build.',
-    ]),
-  ];
-  for (const contract of Object.values(CMS_BOOT_ASSET_CONTRACTS)) {
-    checks.push(await checkTextAsset(options, contract.path, contract.snippets));
-  }
-  checks.push(await checkTextAsset(options, '/admin/preview.css', ['body']));
+async function checkPublicAssets(options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
+  const checks: UatStaticSmokeCheck[] = [];
   checks.push(await checkBinaryAsset(options, '/favicon.svg', 'image/'));
   for (const route of [
     '/',
@@ -557,28 +428,48 @@ async function checkCmsAssets(options: UatStaticSmokeOptions): Promise<UatStatic
     '/news/' + representativeNewsSlug + '/',
   ]) {
     const response = await fetchSmokeResponse(createRouteUrl(options.siteUrl, route), options.timeoutMs);
-    if (!response.ok) throw new Error('CMS media source page did not return HTTP 200: ' + route);
-    checks.push(
-      await checkBinaryAsset(options, findCmsPublicMediaPath(await response.text(), options.siteUrl), 'image/'),
-    );
+    if (!response.ok) throw new Error('Public media source page did not return HTTP 200: ' + route);
+    checks.push(await checkBinaryAsset(options, findPublicMediaPath(await response.text(), options.siteUrl), 'image/'));
   }
   return checks;
 }
 
-export function findCmsPublicMediaPath(html: string, siteUrl: string): string {
+export function findPublicMediaPath(html: string, siteUrl: string): string {
   // ponytail: inspect generated Astro img markup only; use an HTML parser if that output format changes.
   const source = /<main\b[\s\S]*?<img\b[^>]*\ssrc=(["'])(.*?)\1/i.exec(html)?.[2];
-  if (!source) throw new Error('CMS media source page has no rendered content image.');
+  if (!source) throw new Error('Public media source page has no rendered content image.');
   const root = new URL(createRouteUrl(siteUrl));
   const asset = new URL(source, root);
   if (asset.origin !== root.origin || !asset.pathname.startsWith(root.pathname)) {
-    throw new Error('CMS collection media must be served under the site base.');
+    throw new Error('Public media must be served under the site base.');
   }
   return '/' + asset.pathname.slice(root.pathname.length) + asset.search;
 }
 
 async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
   const routeChecks: UatStaticSmokeCheck[] = [];
+  for (const route of [
+    '/admin/',
+    '/admin/index.html',
+    '/admin/config.yml',
+    '/admin/init.js',
+    '/admin/admin.css',
+    '/admin/preview.css',
+  ]) {
+    const url = createRouteUrl(options.siteUrl, route);
+    const response = await fetchSmokeResponse(url, options.timeoutMs);
+    routeChecks.push({
+      bodyTextSnippet: null,
+      contentType: response.headers.get('content-type'),
+      issues: response.status === 404 ? [] : [`Retired route ${route} must return 404; received ${response.status}.`],
+      kind: 'page',
+      path: route,
+      status: response.status,
+      expectedStatus: 404,
+      title: null,
+      url,
+    });
+  }
   const routes = [
     ['/', ['BlackBox Records']],
     ['/releases/', ['Releases']],
@@ -742,14 +633,6 @@ async function checkTextAsset(
     }
   }
 
-  if (routePath === '/admin/config.yml' && expectedSnippets.includes('# blackbox-sveltia-mode: disabled')) {
-    if (parse(text) !== null) issues.push('Disabled public CMS must contain no writable configuration.');
-  } else if (routePath === '/admin/config.yml') {
-    issues.push(...checkCmsConfigPlaceholders(text));
-    issues.push(...checkCmsSingletonJsonDeclarations(text));
-    issues.push(...checkCmsHostedConfigDeclarations(text, options.siteUrl));
-  }
-
   for (const exposure of scanHighRiskSmokeExposure(text)) {
     issues.push(`${routePath} exposed ${exposure}.`);
   }
@@ -882,151 +765,6 @@ export function buildUatStaticSmokeEvidence(input: UatStaticSmokeEvidenceInput):
     summary,
     suite: 'uat-static',
   };
-}
-
-export function checkCmsConfigPlaceholders(text: string): string[] {
-  let config;
-  try {
-    config = parse(text);
-  } catch {
-    return [];
-  }
-  if (!config || typeof config !== 'object') return [];
-  const values = [
-    config.backend?.repo,
-    config.backend?.base_url,
-    config.site_url,
-    config.display_url,
-    config.logo?.src,
-  ].filter((value): value is string => typeof value === 'string');
-  const issues: string[] = [];
-  if (values.some((value) => /https?:\/\/(?:127\.|localhost\b)/i.test(value)))
-    issues.push('CMS config still points at a local backend or loopback URL.');
-  if (values.some((value) => /__SET_|CHANGE_ME|REPLACE_ME|example\.com|\.invalid\b|\bTODO\b/i.test(value)))
-    issues.push('CMS config still contains an unsafe hosted placeholder.');
-  return issues;
-}
-
-export function checkCmsHostedConfigDeclarations(text: string, expectedSiteUrl = defaultSiteUrl): string[] {
-  let config;
-  try {
-    config = parse(text);
-    if (!config || typeof config !== 'object' || Array.isArray(config)) throw new Error();
-  } catch {
-    return ['CMS config is not valid YAML.'];
-  }
-  const issues: string[] = [];
-  const backend = config.backend ?? {};
-  for (const [field, expected] of Object.entries({
-    name: 'github',
-    repo: 'BlackBox-Studio-Athens/blackbox-records',
-    branch: 'main',
-  })) {
-    if (backend[field] !== expected) issues.push('CMS hosted backend.' + field + ' must equal "' + expected + '".');
-  }
-  try {
-    resolveSveltiaRuntimeConfig({
-      environment: { SVELTIA_BACKEND_MODE: 'hosted', SVELTIA_AUTH_BASE_URL: backend.base_url ?? '' },
-      isDevelopment: false,
-    });
-  } catch {
-    issues.push('CMS hosted backend.base_url must be a valid HTTPS authenticator origin.');
-  }
-  if (
-    ['proxy_url', 'auth_type', 'auth_endpoint', 'auth_token_endpoint', 'gateway_url'].some(
-      (field) => field in Object(backend),
-    ) ||
-    'local_backend' in config
-  ) {
-    issues.push('CMS hosted config must not expose retired authentication or proxy settings.');
-  }
-  if (config.publish_mode !== 'simple') issues.push('CMS hosted publish_mode must equal "simple".');
-  const siteRoot = createRouteUrl(expectedSiteUrl);
-  if (!siteRoot.startsWith('https://') || config.site_url !== siteRoot || config.display_url !== siteRoot) {
-    issues.push('CMS hosted site_url and display_url must match the HTTPS deployment site root.');
-  }
-  if (
-    config.media_folder !== '/apps/web/public/assets' ||
-    config.public_folder !== new URL('assets', siteRoot).pathname
-  ) {
-    issues.push('CMS hosted global media must use shared public assets under the deployment base.');
-  }
-  if (typeof config.logo?.src !== 'string' || !config.logo.src.startsWith(siteRoot)) {
-    issues.push('CMS hosted logo must use an asset under the deployment site root.');
-  }
-  const collections = Array.isArray(config.collections) ? config.collections : [];
-  for (const name of ['distro', 'releases', 'artists', 'news', 'site-pages', 'navigation', 'socials', 'settings']) {
-    if (!collections.some((collection: { name?: string } | null) => collection?.name === name)) {
-      issues.push('CMS hosted config is missing the ' + name + ' collection.');
-    }
-  }
-  if (/allow_multiple:|options_length:|\/admin\/media\/|decap-cms|decapbridge|git-gateway/i.test(text)) {
-    issues.push('CMS hosted config contains a retired provider, media route, or unsupported option.');
-  }
-  return issues;
-}
-
-export function checkCmsSingletonJsonDeclarations(text: string): string[] {
-  const issues: string[] = [];
-  const singletonPaths = [
-    'apps/web/src/content/home/site.json',
-    'apps/web/src/content/about/site.json',
-    'apps/web/src/content/services/site.json',
-    'apps/web/src/content/newsletter/site.json',
-    'apps/web/src/content/distro-page/site.json',
-    'apps/web/src/content/settings/site.json',
-  ];
-  const folderPaths = [
-    'apps/web/src/content/artists',
-    'apps/web/src/content/releases',
-    'apps/web/src/content/distro',
-    'apps/web/src/content/news',
-    'apps/web/src/content/navigation',
-    'apps/web/src/content/socials',
-  ];
-  const jsonExtensionCount = (text.match(/^\s+extension:\s+json\s*$/gm) || []).length;
-  const jsonFormatCount = (text.match(/^\s+format:\s+json\s*$/gm) || []).length;
-
-  for (const singletonPath of singletonPaths) {
-    if (!text.includes(`file: "${singletonPath}"`)) {
-      issues.push(`CMS config does not include singleton file path "${singletonPath}".`);
-    }
-  }
-
-  for (const folderPath of folderPaths) {
-    if (!text.includes(`folder: "${folderPath}"`)) {
-      issues.push(`CMS config does not include collection folder path "${folderPath}".`);
-    }
-  }
-
-  if (/file: "src\/content\/|folder: "src\/content\/|media_folder: src\/content\//.test(text)) {
-    issues.push('CMS config still uses app-root src/content paths; Sveltia needs repo-root apps/web paths.');
-  }
-
-  if (jsonExtensionCount < 2) {
-    issues.push(`CMS config includes ${jsonExtensionCount} JSON extension declarations; expected at least 2.`);
-  }
-
-  if (jsonFormatCount < 2) {
-    issues.push(`CMS config includes ${jsonFormatCount} JSON format declarations; expected at least 2.`);
-  }
-
-  return issues;
-}
-
-export function checkCmsAdminRenderedState(state: CmsAdminRenderedState): string[] {
-  const issues: string[] = [];
-  if (!state.hasConfigLink) issues.push('Expected the admin page to link its adjacent config.yml.');
-  if (!state.hasCmsRoot) issues.push('Expected Sveltia CMS to mount #nc-root.');
-  if (!state.hasExactPinnedRuntime) issues.push('Expected the exact Sveltia 0.205.2 runtime.');
-  if (!state.hasRuntimeApi) issues.push('Expected the Sveltia CMS registration API.');
-  if (!state.bodyText.trim()) issues.push('Expected visible Sveltia CMS text.');
-  if (!state.hasGitHubSignIn) issues.push('Expected native GitHub sign-in without authenticating.');
-  if (/configuration errors?|invalid configuration/i.test(state.bodyText))
-    issues.push('Sveltia rejected the generated configuration.');
-  if (/DecapBridge|Google|username|password/i.test(state.bodyText))
-    issues.push('Expected native GitHub OAuth without retired login copy.');
-  return issues;
 }
 
 function containsTextIgnoreCase(text: string, expected: string): boolean {

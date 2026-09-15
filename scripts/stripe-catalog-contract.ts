@@ -1,3 +1,4 @@
+// Repository migration data and Local/UAT fixtures only, never the current EmDash catalog.
 import { existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';

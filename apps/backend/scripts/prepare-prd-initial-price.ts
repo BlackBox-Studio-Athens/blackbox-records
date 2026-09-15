@@ -6,7 +6,6 @@ import { parseArgs } from 'node:util';
 import Stripe from 'stripe';
 import { parseStoreItemSlug, parseVariantId } from '../src/domain/commerce';
 import {
-  catalogManifest,
   createStripeCatalogLookupKey,
   createStripeCatalogMetadata,
   createStripeCatalogMutationContext,
@@ -14,6 +13,7 @@ import {
   type StripeCatalogPriceChangeInput,
 } from '../src/application/commerce/catalog-sync';
 import { createStripeCatalogGateway } from '../src/infrastructure/stripe';
+import { loadStripeCatalogStoreItemContracts } from '../../../scripts/stripe-catalog-contract';
 import {
   createD1CatalogReadSql,
   createD1CatalogRepositories,
@@ -45,7 +45,9 @@ export async function preparePrdInitialPrice() {
       'plan-sha256': { type: 'string' },
     },
   });
-  const source = catalogManifest.entries.find((item) => item.storeItemSlug === slug);
+  const source = (await loadStripeCatalogStoreItemContracts({ productEnvironment: 'PRD' })).find(
+    (item) => item.storeItemSlug === slug,
+  )?.desiredCatalogEntry;
   assert.ok(source && source.targetEnvironments.includes('prd'));
   const entry = {
     ...source,

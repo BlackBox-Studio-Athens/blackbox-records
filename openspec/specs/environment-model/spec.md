@@ -172,11 +172,11 @@ The system MUST scope newsletter registration effects to the active Product Envi
 
 ### Requirement: Operator Access trust is Product Environment scoped
 
-The system SHALL require configured Cloudflare Access issuer and audience for the PRD operator surface, SHALL keep UAT operator access disabled when no UAT operator surface exists, and SHALL keep JWT-free identity Local and loopback-only.
+The system SHALL require configured Cloudflare Access issuer and audience for both hosted staff/CMS surfaces, SHALL fail closed when either surface is not configured, and SHALL keep JWT-free identity Local and loopback-only.
 
 #### Scenario: PRD evaluates an internal request
 
-- **WHEN** PRD operator authentication starts
+- **WHEN** UAT or PRD staff/CMS authentication starts
 - **THEN** configured issuer and operator-application audience are required
 - **AND** missing or malformed configuration fails closed before route work.
 
@@ -261,3 +261,18 @@ The system MUST route UAT application email and UAT newsletter Contact effects t
 - **WHEN** Local or PRD email behavior runs
 - **THEN** Local continues using mocks or fake provider identifiers
 - **AND** PRD ignores the UAT sink override and retains direct PRD routing policy.
+
+### Requirement: Editorial resources follow Product Environment isolation
+
+UAT and PRD SHALL have separate CMS data, media, publication state, commerce data, credentials, and staff Access audiences, using the same deployment topology.
+
+#### Scenario: UAT content is edited
+
+- **WHEN** a member saves, uploads, publishes, changes a price, or adjusts stock in UAT
+- **THEN** no PRD record, provider object, media object, or deployment is changed.
+
+#### Scenario: Code is promoted
+
+- **WHEN** a Software Release moves from UAT to PRD
+- **THEN** environment-specific bindings select existing PRD resources
+- **AND** no UAT database or media bucket is copied as part of deployment.

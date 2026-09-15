@@ -4,8 +4,6 @@ import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
-import { currentDesiredCatalogEntries } from '../apps/backend/src/application/commerce/catalog-sync/desired-catalog-state';
-
 type CheckResult = {
   detail: string;
   ok: boolean;
@@ -162,15 +160,17 @@ export function verifyEnvironmentModel(): CheckResult[] {
       ok:
         catalogVerifyScript.includes('parseProductEnvironmentCliTarget') &&
         catalogVerifyScript.includes('productEnvironmentProfileFromWorkerRuntimeTarget') &&
-        catalogVerifyScript.includes('catalogManifest.entries'),
+        catalogVerifyScript.includes('loadStripeCatalogStoreItemContracts'),
     },
     {
       detail: 'Raw platform/provider aliases stay out of product-policy modules outside approved boundaries.',
       ok: findRawPlatformAliasPolicyLeaks().length === 0,
     },
     {
-      detail: 'Generated Desired Catalog State does not combine production targets with UAT-hosted Product image URLs.',
-      ok: !hasProductionTargetWithUatAssetUrl(),
+      detail: 'Routine deployment does not seed or reconcile repository catalog state.',
+      ok: !parse(staticDeployWorkflow).jobs['deploy-uat'].steps.some((step: { run?: string }) =>
+        /d1:seed:.*catalog|stripe:catalog:verify/.test(step.run ?? ''),
+      ),
     },
     {
       detail: 'UAT and PRD deploy to distinct Cloudflare Pages projects.',
@@ -288,14 +288,6 @@ function extractNamedBlock(text: string, marker: string): string {
 function extractCheckoutOrigins(block: string): string[] {
   const match = /"CHECKOUT_RETURN_ORIGINS"\s*:\s*"(?<origins>[^"]*)"/.exec(block);
   return match?.groups?.origins.split(',').map((origin) => origin.trim()) ?? [];
-}
-
-function hasProductionTargetWithUatAssetUrl(): boolean {
-  return currentDesiredCatalogEntries.some(
-    (entry) =>
-      entry.targetEnvironments.includes('prd') &&
-      entry.productProjection.imageUrls.some((url) => url.startsWith('https://blackbox-records-web-uat.pages.dev')),
-  );
 }
 
 function main(): void {

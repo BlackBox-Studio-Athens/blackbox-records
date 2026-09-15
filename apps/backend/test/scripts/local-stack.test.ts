@@ -39,7 +39,6 @@ describe('local stack launcher plan', () => {
         args: ['site:dev'],
         command: 'pnpm',
         env: expect.objectContaining({
-          SVELTIA_BACKEND_MODE: 'local',
           PUBLIC_BACKEND_BASE_URL: 'http://127.0.0.1:8787',
           PUBLIC_CHECKOUT_CLIENT_MODE: 'stripe',
         }),
@@ -70,7 +69,6 @@ describe('local stack launcher plan', () => {
       expect.objectContaining({
         args: ['site:dev'],
         env: expect.objectContaining({
-          SVELTIA_BACKEND_MODE: 'local',
           PUBLIC_BACKEND_BASE_URL: 'http://127.0.0.1:8787',
           PUBLIC_CHECKOUT_CLIENT_MODE: 'mock',
         }),
@@ -100,7 +98,6 @@ describe('local stack launcher plan', () => {
       expect.objectContaining({
         args: ['site:dev'],
         env: expect.objectContaining({
-          SVELTIA_BACKEND_MODE: 'local',
           PUBLIC_BACKEND_BASE_URL: 'http://127.0.0.1:8787',
           PUBLIC_CHECKOUT_CLIENT_MODE: 'mock',
         }),

@@ -258,21 +258,6 @@
       },
       "ownershipExceptions": []
     },
-    "cms-admin": {
-      "status": "closed",
-      "roots": ["apps/web/src/pages/admin/**", "apps/web/src/lib/admin/**", "apps/web/public/admin/**"],
-      "providedEntrypoints": [
-        "apps/web/public/admin/index.html",
-        "apps/web/src/pages/admin/config.yml.ts",
-        "apps/web/src/pages/admin/init.js.ts"
-      ],
-      "namedInterfaces": {},
-      "allowedDependencies": ["storefront-catalog", "platform-shared"],
-      "allowedWorkspaceInterfaces": {
-        "@blackbox/content-model": ["."]
-      },
-      "ownershipExceptions": []
-    },
     "public-commerce-http": {
       "status": "closed",
       "roots": [

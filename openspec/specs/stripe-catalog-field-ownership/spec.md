@@ -2,13 +2,151 @@
 
 ## Purpose
 
-TBD - created by archiving change implement-stripe-catalog-field-ownership. Update Purpose after archive.
+Define editorial, runtime, provider, and operational catalog ownership so publication and recovery cannot overwrite selling prices or commerce history.
 
 ## Requirements
 
+### Requirement: CMS product projection updates Stripe Products
+
+The system SHALL derive provider presentation from the CMS-owned content snapshot and apply it only through a bounded backend Product Projection command.
+
+#### Scenario: Item presentation is prepared
+
+- **WHEN** a new item is set up or changed checkout presentation is explicitly applied
+- **THEN** only the selected item's validated title, description, safe public image, and app identity are projected
+- **AND** no unrelated catalog item, existing Price, inventory, or order changes.
+
+#### Scenario: Editorial text is published without provider synchronization
+
+- **WHEN** ordinary post/page publication or an item change outside checkout presentation updates public pages
+- **THEN** it does not require a Stripe write
+- **AND** it does not synchronize unrelated provider catalog objects.
+
+#### Scenario: Member publishes changed item presentation
+
+- **WHEN** the guided item publication includes changed checkout title, description, or approved artwork
+- **THEN** the same operation applies only that item's Product Projection before requesting static publication
+- **AND** existing Price Authority is unchanged and a failed projection is safely resumable without another setup or opening-stock entry.
+
+#### Scenario: Provider image is unsafe
+
+- **WHEN** an image is private, draft-only, invalid, or from an unapproved origin
+- **THEN** it is not sent as a public Stripe image and an actionable projection error is reported.
+
+### Requirement: Editorial and provider edits do not form sync loops
+
+The system MUST prevent Stripe Dashboard edits and CMS editorial content edits from forming bidirectional sync loops.
+
+#### Scenario: Dashboard edits a CMS-owned Product field
+
+- **GIVEN** a Stripe Dashboard user changes a Product field that is owned by the CMS projection
+- **WHEN** catalog verification runs
+- **THEN** the system reports the Product field as drift from CMS projection
+- **AND** does not import the Dashboard value into CMS editorial content.
+
+#### Scenario: CMS edits a Stripe-owned Price field
+
+- **GIVEN** CMS editorial content or catalog projection attempts to change the buyable amount or currency for an existing Stripe Price
+- **WHEN** catalog verification or apply planning runs
+- **THEN** the system rejects that as a field-ownership violation
+- **AND** requires a replacement Stripe Price alignment path instead.
+
+### Requirement: CMS Product Projection stays separate from Price Authority
+
+The system SHALL keep CMS-owned Product Projection updates and Stripe-owned Price Authority updates separate during Dashboard price changes.
+
+#### Scenario: Dashboard user changes only Price
+
+- **GIVEN** a Stripe Dashboard user creates a replacement Price for a Store Item variant
+- **WHEN** catalog reconciliation runs
+- **THEN** the system updates D1 mapping and Store Offer snapshot for Price Authority
+- **AND** it does not import Stripe Dashboard Product name, description, image, or tax-code edits back into CMS editorial content.
+
+#### Scenario: Dashboard user edits CMS-owned Product field
+
+- **GIVEN** a Stripe Dashboard user changes a CMS-owned Product name, description, image, or application-owned metadata field
+- **WHEN** catalog verification runs
+- **THEN** the system reports Product Projection drift
+- **AND** it does not overwrite CMS-authored Product Projection data from Stripe Dashboard state.
+
+#### Scenario: CMS content changes product presentation
+
+- **GIVEN** CMS editorial content changes title, description, image, or format presentation
+- **WHEN** Product Projection apply runs
+- **THEN** Stripe Product presentation fields may be updated according to Product Projection rules
+- **AND** Stripe Price amount and currency are unchanged unless a separate approved Price Authority path creates a replacement Price.
+
+### Requirement: Bound Product default is the selling Price Authority
+
+The system MUST use the bound Stripe Product's valid default Price as selling Price Authority. CMS fields, browser state, and database projections SHALL NOT override its amount, currency, active state, or identity.
+
+#### Scenario: Default Price changes
+
+- **WHEN** a staff command or authorized Dashboard action selects a valid replacement default Price
+- **THEN** signed webhook or authoritative-read reconciliation updates the D1 mapping and Store Offer without a static deploy
+- **AND** older active Prices do not create ambiguity or get archived automatically.
+
+#### Scenario: Editorial presentation changes
+
+- **WHEN** Product Projection applies approved CMS title, description, or artwork
+- **THEN** it does not change selling amount, currency, Price kind, or historical order values.
+
+#### Scenario: Product default is invalid
+
+- **WHEN** the bound Product's default is missing, inactive, foreign, or violates approved currency/tax/amount policy
+- **THEN** checkout fails closed instead of choosing an arbitrary active Price or inventing a fallback.
+
+### Requirement: Staff and Dashboard commands change Stripe Price Authority
+
+Selling-price changes SHALL use an explicit authorized staff command or deliberate Stripe Dashboard operation. Generic editorial saves and software/content publication SHALL NOT create or replace Price Authority.
+
+#### Scenario: Member changes price in the workspace
+
+- **WHEN** the member confirms a valid price operation
+- **THEN** the backend creates or reuses the intended Price and selects it as the bound Product's default
+- **AND** the amount displayed as authoritative comes from Stripe reconciliation, not the form draft.
+
+#### Scenario: Member edits editorial content
+
+- **WHEN** an entry is saved or published
+- **THEN** editorial fields can change but price, stock, provider identifiers, checkout gates, and order state cannot be changed through CMS CRUD.
+
+#### Scenario: Existing price differs from migration input
+
+- **WHEN** an import, setup retry, code deploy, or content publication encounters valid current Price Authority
+- **THEN** the current Stripe price is preserved
+- **AND** stale desired-price inputs cannot restore an older amount.
+
+#### Scenario: Explicit first publication is requested
+
+- **WHEN** Item Setup has no existing trusted Price and the member confirms its reviewed initial price
+- **THEN** the setup command can initialize Price Authority once in that Product Environment
+- **AND** a live batch migration remains separately confirmed and fixtures remain Local/UAT only.
+
+### Requirement: Unified workspace routes actions to their authority
+
+The unified workspace SHALL expose editorial and commerce actions together while visibly distinguishing their consequences and enforcing their separate backend ownership.
+
+#### Scenario: Member needs price or stock work
+
+- **WHEN** the member opens a Store Item
+- **THEN** price changes use the protected price command and stock changes use the existing stock adjustment/count controls
+- **AND** the member does not copy Stripe IDs, lookup keys, metadata, or D1 identities between tools.
+
+#### Scenario: Member needs to stop selling
+
+- **WHEN** the member pauses an item or changes online allocation
+- **THEN** the operation affects runtime checkout eligibility without requiring editorial deletion.
+
+#### Scenario: Member needs order or fulfillment work
+
+- **WHEN** the member opens Orders
+- **THEN** the workspace uses existing Worker-owned paid orders and manual fulfillment
+- **AND** CMS records cannot override payment, order totals, provider secrets, or fulfillment authority.
+
 ### Requirement: Catalog fields have explicit owners
 
-The system MUST define a field-level ownership contract for catalog fields that cross repo content, D1, Stripe Products, Stripe Prices, Worker Store Offers, browser state, and order reconciliation.
+The system MUST define a field-level ownership contract for catalog fields that cross CMS editorial content, D1, Stripe Products, Stripe Prices, Worker Store Offers, browser state, and order reconciliation.
 
 #### Scenario: Ownership matrix is evaluated
 
@@ -22,74 +160,6 @@ The system MUST define a field-level ownership contract for catalog fields that 
 - **GIVEN** a new catalog field is added to the projection or reconciliation path
 - **WHEN** no source of truth is declared for that field
 - **THEN** tests or catalog verification fail before that field is synced to Stripe, D1, browser state, or committed evidence.
-
-### Requirement: Repo product projection updates Stripe Products
-
-The system SHALL project repo-owned product presentation fields to Stripe Products for checkout-eligible Store Item variants.
-
-#### Scenario: Product projection is applied to sandbox
-
-- **GIVEN** a checkout-eligible Store Item variant has repo-owned title, description, image, and app identity fields
-- **WHEN** sandbox catalog sync runs with explicit apply mode
-- **THEN** the matching Stripe Product is updated with allowed repo-owned Product fields
-- **AND** the command does not alter Stripe Price amount, currency, active status, or historical Price records from Astro content.
-
-#### Scenario: Product projection drift is detected
-
-- **GIVEN** a Stripe Product name, description, image, or metadata differs from the repo-owned projection
-- **WHEN** catalog verification runs without apply mode
-- **THEN** the report identifies Product projection drift for the affected Store Item variant
-- **AND** no Stripe or D1 state is mutated.
-
-#### Scenario: Product image is not safe for Stripe
-
-- **GIVEN** a Store Item image cannot be converted to a stable absolute public URL
-- **WHEN** catalog projection is verified
-- **THEN** the system reports an actionable Product projection issue
-- **AND** does not write a broken image URL to Stripe.
-
-### Requirement: Stripe Prices remain payment authority
-
-The system MUST treat Stripe Price amount, currency, active status, Price ID, and lookup key as Stripe-owned payment authority.
-
-#### Scenario: Price changes in Stripe
-
-- **GIVEN** an operator creates or activates a replacement Stripe Price that identifies an existing Store Item variant through metadata or lookup key
-- **WHEN** catalog reconciliation runs from webhook, Store Offer read, checkout start, targeted manual verification, or a deliberate read-only audit
-- **THEN** D1 `VariantStripeMapping` and `StoreOfferSnapshot` are updated to the resolved active Stripe Price
-- **AND** browser-visible Store Offer price reflects the Stripe Price without requiring an Astro deploy.
-
-#### Scenario: Repo content changes a display field
-
-- **GIVEN** repo-owned Store Item title, description, or image changes
-- **WHEN** Product projection apply runs
-- **THEN** Stripe Product presentation fields may be updated
-- **AND** Stripe Price amount and currency remain unchanged unless a sandbox-only Price alignment operation is explicitly requested and reported.
-
-#### Scenario: Multiple active Prices match one variant
-
-- **GIVEN** more than one active Stripe Price matches a Store Item variant for the selected environment
-- **WHEN** catalog reconciliation runs
-- **THEN** the system reports catalog drift and refuses to enable checkout for that variant
-- **AND** it does not pick one Price arbitrarily.
-
-### Requirement: Sync loops are prohibited
-
-The system MUST prevent Stripe Dashboard edits and repo content edits from forming bidirectional sync loops.
-
-#### Scenario: Dashboard edits a repo-owned Product field
-
-- **GIVEN** a Stripe Dashboard user changes a Product field that is owned by the repo projection
-- **WHEN** catalog verification runs
-- **THEN** the system reports the Product field as drift from repo projection
-- **AND** does not import the Dashboard value into repo content.
-
-#### Scenario: Repo edits a Stripe-owned Price field
-
-- **GIVEN** repo content or catalog projection attempts to change the buyable amount or currency for an existing Stripe Price
-- **WHEN** catalog verification or apply planning runs
-- **THEN** the system rejects that as a field-ownership violation
-- **AND** requires a replacement Stripe Price alignment path instead.
 
 ### Requirement: Catalog webhooks are replay-safe
 
@@ -114,7 +184,7 @@ The system MUST verify sandbox catalog alignment for every checkout-eligible Sto
 
 #### Scenario: UAT catalog verification runs
 
-- **GIVEN** the repo has current Store Items and UAT D1 has checkout eligibility state
+- **GIVEN** the runtime catalog has current Store Items and UAT D1 has checkout eligibility state
 - **WHEN** `pnpm stripe:catalog:verify --env uat` runs
 - **THEN** the report covers every checkout-eligible Store Item variant
 - **AND** classifies identity, Product projection, Price authority, D1 readiness, and Store Offer snapshot status.
@@ -169,101 +239,24 @@ The system MUST prevent UAT, PRD, and Local catalog identities from being accept
 - **THEN** the object is treated as foreign-environment drift
 - **AND** UAT D1 mappings and Store Offer snapshots are not updated from that object.
 
-### Requirement: Price Authority edits happen only through Stripe-owned paths
-
-The system MUST keep buyable amount, currency, active Price identity, lookup key, and Stripe Price active status under Stripe Price Authority, while using generated Desired Price only to bootstrap missing Price Authority during first publication or explicit UAT reset.
-
-#### Scenario: Operator changes price in Stripe Dashboard
-
-- **GIVEN** an authorized Stripe Dashboard operator needs to change the buyable amount for a Store Item variant
-- **AND** they open the existing Stripe Product that already carries complete app identity for that variant
-- **WHEN** they create or activate a replacement Price under that Product and archive the stale active Price
-- **THEN** the system treats the replacement Price as the candidate Price Authority
-- **AND** the operator does not copy app metadata, lookup keys, Stripe IDs, or D1 IDs into the replacement Price
-- **AND** repository-authored editorial content, browser state, and static build artifacts remain non-authoritative for the amount and currency.
-
-#### Scenario: Sveltia content includes an editorial item
-
-- **GIVEN** a Sveltia editor updates a release or distro entry
-- **WHEN** the entry is saved
-- **THEN** Sveltia can change editorial fields such as title, summary, image, group, format, order, and page copy
-- **AND** Sveltia does not expose or commit Stripe Price IDs, buyable amounts, currency, active Price state, D1 identifiers, or provider mutation controls.
-
-#### Scenario: Generated DesiredPrice exists
-
-- **GIVEN** generated Desired Catalog State contains a Desired Price for a new Store Item variant
-- **AND** no unambiguous valid active Stripe Price exists for that variant in the target Product Environment
-- **WHEN** normal catalog promotion runs with explicit apply
-- **THEN** the Desired Price may create the variant's initial Stripe Price and corresponding D1 mapping/snapshot
-- **AND** the creation remains idempotent, environment-scoped, and subject to current identity and readiness validation.
-
-#### Scenario: Existing Store Item has valid Price Authority
-
-- **GIVEN** one unambiguous valid active Stripe Price already exists for a Store Item variant
-- **AND** generated Desired Price differs or another Store Item is added
-- **WHEN** normal catalog promotion or verification runs
-- **THEN** the existing Stripe Price remains Price Authority
-- **AND** promotion does not archive, create, reactivate, replace, or move lookup identity for that Price because of the Desired Price difference
-- **AND** unrelated item publication does not mutate that Price.
-
-#### Scenario: Dashboard price intentionally differs from Desired Price
-
-- **GIVEN** an authorized Stripe Dashboard operator creates a valid replacement Price for a Store Item variant
-- **AND** generated Desired Price data still contains the previous amount or currency
-- **WHEN** webhook reconciliation, Store Offer reads, checkout start, normal catalog verification, or normal catalog promotion runs
-- **THEN** the valid Stripe replacement Price is accepted as Price Authority
-- **AND** generated Desired Price drift does not repair the Price back to the previous amount.
-
-#### Scenario: Explicit UAT whole-catalog reset is requested
-
-- **GIVEN** an operator explicitly runs the separate UAT-only whole-catalog reset
-- **WHEN** reset leaves a Store Item variant without valid Price Authority and catalog bootstrap runs
-- **THEN** generated Desired Price may recreate the missing UAT Price
-- **AND** this reset behavior is not available to normal promotion or PRD.
-
-### Requirement: Product Projection remains separate from Price Authority
-
-The system SHALL keep repo-owned Product Projection updates and Stripe-owned Price Authority updates separate during Dashboard price changes.
-
-#### Scenario: Dashboard user changes only Price
-
-- **GIVEN** a Stripe Dashboard user creates a replacement Price for a Store Item variant
-- **WHEN** catalog reconciliation runs
-- **THEN** the system updates D1 mapping and Store Offer snapshot for Price Authority
-- **AND** it does not import Stripe Dashboard Product name, description, image, or tax-code edits back into repo content.
-
-#### Scenario: Dashboard user edits repo-owned Product field
-
-- **GIVEN** a Stripe Dashboard user changes a Product name, description, image, or repo-owned metadata field
-- **WHEN** catalog verification runs
-- **THEN** the system reports Product Projection drift
-- **AND** it does not overwrite repo-authored Product Projection data from Stripe Dashboard state.
-
-#### Scenario: Repo content changes product presentation
-
-- **GIVEN** Sveltia-managed or other repo content changes title, description, image, or format presentation
-- **WHEN** Product Projection apply runs
-- **THEN** Stripe Product presentation fields may be updated according to Product Projection rules
-- **AND** Stripe Price amount and currency are unchanged unless a separate approved Price Authority path creates a replacement Price.
-
 ### Requirement: Field ownership diagnostics stay explicit
 
-The system MUST classify Stripe Dashboard price changes separately from repo Product Projection drift and D1 Store Offer snapshot drift.
+The system MUST classify Stripe Dashboard price changes separately from CMS Product Projection drift and D1 Store Offer snapshot drift.
 
 #### Scenario: Price changed cleanly in Stripe
 
-- **GIVEN** a replacement Price is the only active Price for a variant
+- **GIVEN** a replacement Price is the valid default Price of the bound Product
 - **AND** D1 has not yet been updated
 - **WHEN** verification runs
 - **THEN** diagnostics identify Store Offer snapshot or mapping drift
-- **AND** they do not report the replacement amount as a repo-content violation.
+- **AND** they do not report the replacement amount as an editorial-content violation.
 
 #### Scenario: Dashboard creates wrong-currency Price
 
 - **GIVEN** a Stripe Price uses a currency that violates current Store Item policy or environment expectations
 - **WHEN** catalog verification runs
 - **THEN** diagnostics classify the issue as Price Authority drift
-- **AND** checkout remains unavailable for that variant until a valid active Price exists.
+- **AND** checkout remains unavailable for that variant until its bound Product has a valid default Price.
 
 #### Scenario: Diagnostics mention Stripe objects
 
@@ -271,31 +264,3 @@ The system MUST classify Stripe Dashboard price changes separately from repo Pro
 - **WHEN** output is printed, logged, or written as evidence
 - **THEN** object identifiers are redacted
 - **AND** secrets, raw webhook payloads, and full provider IDs are not committed.
-
-### Requirement: Editorial CMS identifies authoritative commerce operations
-
-The system MUST explain inside the Sveltia editor where common non-editorial Store Item operations happen and MUST preserve existing authority boundaries.
-
-#### Scenario: Editor needs to change a Store Item price
-
-- **WHEN** an editor looks for price controls while editing a Release or Distro Store Item
-- **THEN** the CMS states that price changes happen in Stripe Dashboard by creating a replacement Price under the existing Product and following existing verification
-- **AND** it does not expose or ask the editor to copy Stripe IDs, lookup keys, metadata identities, D1 IDs, amounts, or currency into Sveltia.
-
-#### Scenario: Editor needs to change available stock
-
-- **WHEN** an editor needs to record stock movement or change online quantity
-- **THEN** the CMS identifies the protected `/stock/` operations surface as the stock authority
-- **AND** it does not represent a Sveltia field, content order, or content deletion as stock state.
-
-#### Scenario: Editor needs to stop an item selling
-
-- **WHEN** an editor needs to stop checkout for an editorially visible Store Item
-- **THEN** the CMS directs them to online-stock or commerce-operator checkout controls
-- **AND** it states that deleting the Release or Distro content entry is not the supported stop-selling action.
-
-#### Scenario: Editor needs order or fulfillment work
-
-- **WHEN** an editor needs to inspect payment, order, or fulfillment state
-- **THEN** the CMS states that Worker/Stripe paid-order state and the existing manual fulfillment process own that work
-- **AND** it does not expose order mutation, BOX NOW credentials, voucher state, tracking state, or provider payloads.

@@ -29,8 +29,6 @@ const BACKEND_PORT = 8787;
 const STATIC_PORT = 4321;
 const UAT_WORKER_URL = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev';
 
-const localCmsEnvironment = { SVELTIA_BACKEND_MODE: 'local' };
-
 export function buildStackPlan(mode: LocalStackMode): StackPlan {
   const prepare: StackCommand[] =
     mode === 'uat-connected'
@@ -72,7 +70,6 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         args: ['site:dev'],
         command: 'pnpm',
         env: {
-          ...localCmsEnvironment,
           PUBLIC_BACKEND_BASE_URL: `http://127.0.0.1:${BACKEND_PORT}`,
           PUBLIC_CHECKOUT_CLIENT_MODE: 'stripe',
         },
@@ -103,7 +100,6 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         args: ['site:dev'],
         command: 'pnpm',
         env: {
-          ...localCmsEnvironment,
           PUBLIC_BACKEND_BASE_URL: `http://127.0.0.1:${BACKEND_PORT}`,
           PUBLIC_CHECKOUT_CLIENT_MODE: 'mock',
           CMS_LOCAL_PUBLICATION: '1',
@@ -135,7 +131,6 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         args: ['site:dev'],
         command: 'pnpm',
         env: {
-          ...localCmsEnvironment,
           PUBLIC_BACKEND_BASE_URL: `http://127.0.0.1:${BACKEND_PORT}`,
           PUBLIC_CHECKOUT_CLIENT_MODE: 'mock',
           CMS_LOCAL_PUBLICATION: '1',

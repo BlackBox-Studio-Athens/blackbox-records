@@ -19,7 +19,6 @@ export function configuration(env = process.env) {
     prdSite: 'https://blackbox-records-web.pages.dev',
     uatBackend: env.UAT_PUBLIC_BACKEND_BASE_URL,
     prdBackend: env.PRD_PUBLIC_BACKEND_BASE_URL,
-    cmsAuth: env.SVELTIA_AUTH_BASE_URL,
     worker: sha256(readFileSync('apps/backend/wrangler.jsonc')),
     cmsResources: sha256(readFileSync('apps/backend/cms-resources.json')),
     cmsBuild: sha256(readFileSync('apps/backend/astro.config.mjs')),
@@ -61,7 +60,7 @@ export function validateArtifacts(artifacts, sha) {
 }
 
 export function validateIdentity(candidate, current, config) {
-  assert.equal(candidate.schema, 1);
+  assert.equal(candidate.schema, 2, 'Legacy candidate contract; build and accept a fresh candidate.');
   assert.deepEqual(candidate.configuration, config, 'Target configuration changed; revalidate the candidate.');
   assert.equal(current.sha, candidate.sha, 'UAT no longer serves the selected source.');
   assert.equal(String(current.runId), String(candidate.runId), 'UAT candidate was superseded.');
@@ -208,7 +207,18 @@ export function publicationCodeIdentity(project, current, run, target, repositor
 }
 
 export function verifyFiles(candidate, directory = bundle) {
-  for (const target of ['uat/public', 'prd/public', 'prd/staff', 'uat/worker', 'prd/worker', 'migrations']) {
+  assert.equal(candidate.schema, 2, 'Legacy candidate contract; build and accept a fresh candidate.');
+  for (const target of ['uat/worker', 'prd/cms']) {
+    for (const file of [
+      'server/wrangler.json',
+      'server/entry.mjs',
+      'client/content/index.html',
+      'client/items/index.html',
+      'client/stock/index.html',
+    ])
+      assert.ok(existsSync(`${directory}/${target}/${file}`), `Missing combined CMS artifact: ${target}/${file}`);
+  }
+  for (const target of ['uat/public', 'prd/public', 'uat/worker', 'prd/cms', 'migrations']) {
     assert.ok(existsSync(`${directory}/${target}`), `Missing artifact: ${target}`);
     assert.deepEqual(
       inventory(`${directory}/${target}`),
@@ -255,7 +265,7 @@ async function main(command, target) {
     assert.equal(config.prdBackend, 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev');
     cpSync('apps/backend/prisma/migrations', `${bundle}/migrations`, { recursive: true });
     const candidate = {
-      schema: 1,
+      schema: 2,
       sha,
       workflowSha: process.env.GITHUB_SHA,
       runId: process.env.GITHUB_RUN_ID,
@@ -265,14 +275,14 @@ async function main(command, target) {
     };
     validateOrder(candidate, null);
     for (const target of ['uat', 'prd']) {
-      const directory = `${bundle}/${target}/worker`;
+      const directory = `${bundle}/${target === 'uat' ? 'uat/worker' : 'prd/cms'}`;
       const worker = Object.keys(inventory(directory))
         .filter((name) => /\.(?:js|mjs)$/.test(name))
         .map((name) => readFileSync(`${directory}/${name}`, 'utf8'))
         .join('\n');
       assert.ok(worker.includes(sha) && worker.includes('X-Release-SHA'), 'Worker has no compiled release identity.');
     }
-    for (const surface of ['uat/public', 'prd/public', 'prd/staff']) {
+    for (const surface of ['uat/public', 'prd/public']) {
       const html = readFileSync(`${bundle}/${surface}/index.html`, 'utf8');
       if (surface === 'uat/public') assert.ok(html.includes('[TEST] ') && html.includes('TEST SITE'));
       else assert.ok(!html.includes('[TEST] ') && !html.includes('TEST SITE'));
@@ -291,7 +301,7 @@ async function main(command, target) {
         : null;
       writeFileSync(`${bundle}/${surface}/release.json`, JSON.stringify(refreshedReleaseIdentity(candidate, content)));
     }
-    for (const directory of ['uat/public', 'prd/public', 'prd/staff', 'uat/worker', 'prd/worker', 'migrations']) {
+    for (const directory of ['uat/public', 'prd/public', 'uat/worker', 'prd/cms', 'migrations']) {
       assert.ok(statSync(`${bundle}/${directory}`).isDirectory());
       candidate.files[directory] = inventory(`${bundle}/${directory}`);
     }

@@ -1,9 +1,11 @@
 import { expect, it } from 'vitest';
 import { readBackfillSources, backfillRuntimeCatalog } from '../../scripts/backfill-runtime-catalog';
-import { catalogManifest } from '../../src/application/commerce/catalog-sync';
+import { loadStripeCatalogStoreItemContracts } from '../../../../scripts/stripe-catalog-contract';
 
-it('links reviewed CMS source identities and existing physical type policy', () => {
-  const catalog = catalogManifest.entries.find((entry) => entry.sourceKind === 'distro')!;
+it('links reviewed CMS source identities and existing physical type policy', async () => {
+  const catalog = (await loadStripeCatalogStoreItemContracts()).find(
+    (entry) => entry.sourceKind === 'distro',
+  )!.desiredCatalogEntry;
   const identity = `distro/${catalog.sourceId}`;
   const plan = {
     target: 'http://127.0.0.1:8787',

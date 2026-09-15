@@ -8,7 +8,6 @@ import { getPlatformProxy } from 'wrangler';
 import { z } from 'zod';
 import {
   CatalogReconciler,
-  catalogManifest,
   type DesiredCatalogEntry,
   type StripeCatalogEnvironment,
 } from '../src/application/commerce/catalog-sync';
@@ -22,7 +21,10 @@ import {
   redactStripeCatalogDiagnostic,
   type D1CatalogRow,
 } from '../../../scripts/stripe-catalog-verify';
-import { getPrimaryReleaseStoreFormat } from '../../../scripts/stripe-catalog-contract';
+import {
+  getPrimaryReleaseStoreFormat,
+  loadStripeCatalogStoreItemContracts,
+} from '../../../scripts/stripe-catalog-contract';
 import { normalizeDistroContentItemType } from '../../../scripts/distro-inventory-source';
 
 const backend = fileURLToPath(new URL('../', import.meta.url));
@@ -119,9 +121,11 @@ export async function backfillRuntimeCatalog(args: string[]) {
     throw new Error('Run dry-run first, then pass its --plan-sha256 to apply.');
   if (values.apply && environment === 'prd' && !values['confirm-live-catalog-changes'])
     throw new Error('PRD requires one-run live catalog confirmation.');
-  let entries = catalogManifest.entries.filter((entry) =>
-    entry.targetEnvironments.includes(environment === 'prd' ? 'prd' : 'uat'),
-  );
+  let entries = (
+    await loadStripeCatalogStoreItemContracts({
+      productEnvironment: environment === 'prd' ? 'PRD' : 'UAT',
+    })
+  ).map((contract) => contract.desiredCatalogEntry);
   if (values['store-item-slug']?.length) {
     const selected = new Set(values['store-item-slug']);
     if ([...selected].some((slug) => !entries.some((entry) => entry.storeItemSlug === slug)))

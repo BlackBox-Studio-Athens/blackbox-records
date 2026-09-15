@@ -81,9 +81,6 @@ describe('Pages artifact promotion contract', () => {
 
   it('requires cutover approval or accepted CMS state before switching the PRD runtime', () => {
     expect(workflow.on.workflow_dispatch.inputs.confirm_cms_cutover.default).toBe(false);
-    expect(promotion.env.PRD_CMS_RUNTIME).toBe(
-      "${{ vars.PRD_CMS_ENABLED == 'true' || inputs.confirm_cms_cutover == true }}",
-    );
     const combined = promotion.steps.find(
       (step: { name: string }) => step.name === 'Deploy candidate combined PRD CMS Worker',
     );
@@ -91,10 +88,9 @@ describe('Pages artifact promotion contract', () => {
     const staff = staticPromotion.steps.find(
       (step: { name: string }) => step.name === 'Deploy staff frontend to Cloudflare Pages',
     );
-    expect(combined.if).toBe("env.PRD_CMS_RUNTIME == 'true'");
-    expect(legacy.if).toBe("env.PRD_CMS_RUNTIME != 'true'");
-    expect(staff.if).toBe(legacy.if);
-    expect(staticPromotion.env.PRD_CMS_RUNTIME).toBe(promotion.env.PRD_CMS_RUNTIME);
+    expect(combined.if).toBeUndefined();
+    expect(legacy).toBeUndefined();
+    expect(staff).toBeUndefined();
     expect(combined.run).toContain('release-candidate.mjs verify prd');
     expect(combined.run).toContain('/prd/cms/server/wrangler.json --keep-vars');
     expect(combined.run).toContain('release-candidate.mjs verify-worker prd');
@@ -135,7 +131,7 @@ describe('Pages artifact promotion contract', () => {
       expect(restore.run).toContain(`restore-published-content.mjs ${target}`);
     }
     const staff = build.steps.find((step: { name: string }) => step.name === 'Build hosted staff frontend');
-    expect(staff.env.PUBLIC_BACKEND_BASE_URL).toBe('');
+    expect(staff).toBeUndefined();
   });
 
   it('promotes only the selected retained artifact without rebuilding it', () => {
@@ -149,8 +145,9 @@ describe('Pages artifact promotion contract', () => {
       expect(job.env.SOURCE_SHA).toBe('${{ inputs.artifact_commit_sha }}');
       expect(job.steps[0].with.ref).toBe('${{ github.sha }}');
     }
-    expect(JSON.stringify(promotion)).toContain('--no-bundle');
+    expect(JSON.stringify(promotion)).toContain('/prd/cms/server/wrangler.json');
     expect(JSON.stringify(staticPromotion)).toContain('/prd/public --project-name=blackbox-records-web --branch=main');
-    expect(JSON.stringify(staticPromotion)).toContain('/prd/staff --project-name=blackbox-records-staff --branch=main');
+    expect(JSON.stringify(staticPromotion)).not.toContain('blackbox-records-staff');
+    expect(JSON.stringify(workflow.jobs['deploy-uat'])).not.toMatch(/d1:seed:.*catalog|stripe:catalog:verify/);
   });
 });
