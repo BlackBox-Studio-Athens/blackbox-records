@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import ContentFields, { contentSections, type ContentSection, type ContentData } from './ContentFields';
@@ -34,7 +34,19 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [data, setData] = useState<ContentData>({});
   const [dirty, setDirty] = useState(false);
   const [confirmReload, setConfirmReload] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setIsBusy] = useState(false);
+  const busyFocus = useRef<HTMLElement | null>(null);
+  function setBusy(value: boolean) {
+    if (value) busyFocus.current = window.document.activeElement as HTMLElement | null;
+    setIsBusy(value);
+  }
+  useEffect(() => {
+    if (busy) return;
+    if (busyFocus.current?.isConnected && window.document.activeElement === window.document.body) {
+      busyFocus.current.focus();
+    }
+    busyFocus.current = null;
+  }, [busy]);
   const [message, setMessage] = useState('');
   const [conflict, setConflict] = useState(false);
   const [ready, setReady] = useState(false);
