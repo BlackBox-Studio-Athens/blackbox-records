@@ -84,3 +84,11 @@ The prepared source import contains 129 records and 152 media sources, from sour
 Before requesting one-run PRD apply approval, finish integrated UAT acceptance and the editorial-write freeze rehearsal, record current account headroom, and prepare the exact final import/backfill reconciliation report. No PRD schema/import/backfill, route switch, public-source switch or shopper launch is authorized by this worksheet. Keep the original execution order and failure decisions above.
 
 Historical setup attempts and superseded readiness observations remain in Git history and the OpenSpec evidence files; they are not instructions to repeat completed provisioning.
+
+## Reviewed combined-runtime promotion path
+
+The release workflow now accepts a false-by-default `confirm_cms_cutover` input alongside the existing exact-SHA code-promotion approval. For that approved run it deploys the already retained `prd/cms/server/wrangler.json` artifact under the existing release lock and skips the separate staff Pages upload. It does not apply native CMS migrations, import content, change catalog prices, or enable shopper checkout.
+
+After successful PRD replacement acceptance, set repository variable `PRD_CMS_ENABLED=true` before subsequent promotions. This preserves the combined Worker on later software releases. Until that acceptance the default remains the existing PRD runtime; the old staff deployment path is retained only for the unfinished cutover. The workflow contract checks the approval default, mutually exclusive runtime branches, retained artifact path, shared staff decision and existing code-promotion gate. The final deletion remains task 11.5.
+
+The frozen UAT import rehearsal now passes; see the final section of the UAT editorial import evidence. All 142 native editorial rows and 518 order rows were unchanged, including the four newer drafts. The existing price approval remains EUR 28.00 for Disintegration with stock 15/12. PRD apply still awaits the exact one-run report and approval.

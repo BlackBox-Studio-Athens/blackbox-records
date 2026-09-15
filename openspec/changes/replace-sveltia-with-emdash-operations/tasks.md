@@ -31,7 +31,7 @@ Current checkpoint: M1 tasks 1.1–1.5 are complete. Workers Free remains requir
 
 - [x] 2.1 Add explicit isolated `CMS_DB` and private R2 configuration beside the unchanged `COMMERCE_DB` bindings, with separate CMS/application migration ownership; verify environment tests reject shared UAT/PRD resource identities and hosted first-request reseeding.
 - [x] 2.2 Package the existing `apps/staff` build with the backend Worker and route protected assets through host/auth checks before asset serving; verify one backend artifact contains staff and CMS while `apps/web/dist` contains no private routes or staff entrypoints.
-- [ ] 2.3 Configure member/owner permissions through supported EmDash primitives and the target Access allowlist; verify one sign-in spans content/items/stock/orders, owner-only administration stays restricted, revocation is effective, and no server credential reaches a browser artifact.
+- [x] 2.3 Configure member/owner permissions through supported EmDash primitives and the target Access allowlist; verify one sign-in spans content/items/stock/orders, owner-only administration stays restricted, revocation is effective, and no server credential reaches a browser artifact.
 - [x] 2.4 Create the minimal pure `packages/content-model` entrypoint by moving genuinely shared editorial constraints/closed values; verify consumers use package exports, Astro-specific image/render code stays in web, and no cross-app source imports or duplicated validation are introduced.
 - [x] 2.5 Update `module-boundaries.manifest.json` and corresponding spec ownership for CMS, staff assets, runtime catalog, content-model, and scheduler composition; verify the existing boundary audit passes without a compatibility facade or new blanket exception.
 
@@ -103,7 +103,7 @@ The protected Item Setup API now integrates CMS linkage, runtime identity, Produ
 
 - [x] 10.1 Configure private daily CMS database/media backups with seven daily points and pre-upgrade capture using existing/native tools; verify backup objects cannot be retrieved through public media paths and retention fits the measured free storage budget. See the successful scheduled-path capture in [the backup runbook](../../../docs/cms-backup.md).
 - [x] 10.2 Restore a full CMS backup and media into isolated recovery resources; verify users, content, references, revisions, media checksums, and public rendering, while `COMMERCE_DB` and provider state remain untouched.
-- [ ] 10.3 Rehearse final import after an editorial-write freeze in UAT and record precise before/after reconciliation; verify one writable CMS at cutover and no lost edits, reset stock, changed selling prices, or broken historical order links.
+- [x] 10.3 Rehearse final import after an editorial-write freeze in UAT and record precise before/after reconciliation; verify one writable CMS at cutover and no lost edits, reset stock, changed selling prices, or broken historical order links.
 - [ ] 10.4 Exercise code rollback and publication failure after post-cutover content/items exist; verify recovery uses compatible runtime-catalog code or roll-forward, never an obsolete compiled catalog or commerce database restore.
 - [ ] 10.5 Run integrated UAT acceptance for the four routine operations, fixed/custom paid checkout, signed webhook replay, reservations, orders, manual fulfillment, and paid-email retry; verify target isolation and actual free-tier behavior on the final combined artifact.
 

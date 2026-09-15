@@ -24,6 +24,10 @@ on:
         description: Separate one-run live catalog authorization; never enables checkout.
         type: boolean
         default: false
+      confirm_cms_cutover:
+        description: One-run approval to deploy the reviewed combined PRD CMS artifact and staff route; no catalog or shopper launch authorization.
+        type: boolean
+        default: false
 permissions:
   contents: read
 concurrency:
@@ -268,6 +272,7 @@ jobs:
       SOURCE_SHA: ${{ inputs.artifact_commit_sha }}
       CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
       CONFIRM_CODE_PROMOTION: ${{ inputs.confirm_code_promotion }}
+      PRD_CMS_RUNTIME: ${{ vars.PRD_CMS_ENABLED == 'true' || inputs.confirm_cms_cutover == true }}
       GH_TOKEN: ${{ github.token }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
@@ -296,11 +301,18 @@ jobs:
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend d1:migrations:apply:prd
       - name: Deploy candidate PRD Worker
+        if: env.PRD_CMS_RUNTIME != 'true'
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend exec wrangler versions upload ../../.codex-artifacts/release/prd/worker/index.js --env prd --config wrangler.jsonc --no-bundle --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend exec wrangler versions deploy --env prd --config wrangler.jsonc --version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker prd
+      - name: Deploy candidate combined PRD CMS Worker
+        if: env.PRD_CMS_RUNTIME == 'true'
+        run: |
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
+          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --keep-vars
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker prd
       - &observe-prd
         name: Record actual deployed revisions
@@ -326,6 +338,7 @@ jobs:
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/public --project-name=blackbox-records-web --branch=main --commit-hash="$SOURCE_SHA"
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-hosted prd
       - name: Deploy staff frontend to Cloudflare Pages
+        if: env.PRD_CMS_RUNTIME != 'true'
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/staff --project-name=blackbox-records-staff --branch=main --commit-hash="$SOURCE_SHA"

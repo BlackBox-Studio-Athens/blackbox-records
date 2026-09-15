@@ -23,6 +23,28 @@ import worker, { CmsRuntime } from '../../src/cms';
 import { authenticate } from '../../src/cms/auth';
 
 describe('EmDash checkpoint composition', () => {
+  it('rejects member token administration before storage and restricts owner tokens to export reads', async () => {
+    const prepare = vi.fn();
+    const runtime = new CmsRuntime(
+      {} as DurableObjectState,
+      {
+        PRODUCT_ENVIRONMENT: 'UAT',
+        CMS_DB: { prepare },
+      } as unknown as ConstructorParameters<typeof CmsRuntime>[1],
+    );
+    for (const role of [30, 50]) {
+      vi.mocked(authenticate).mockResolvedValueOnce({ email: 'operator@example.com', name: 'Operator', role });
+      const response = await runtime.fetch(
+        new Request('https://staff.example/_emdash/api/admin/api-tokens', {
+          method: 'POST',
+          body: JSON.stringify({ name: 'Overbroad', scopes: ['admin'] }),
+        }),
+      );
+      expect(response.status).toBe(role === 30 ? 403 : 400);
+    }
+    expect(prepare).not.toHaveBeenCalled();
+  });
+
   it('serves staff assets only after authentication and never initializes an empty hosted CMS', async () => {
     const assets = vi.fn().mockResolvedValue(new Response('staff'));
     const first = vi.fn().mockResolvedValue(null);

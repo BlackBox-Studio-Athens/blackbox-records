@@ -37,6 +37,28 @@ describe('Content publication workflow', () => {
 });
 
 describe('Pages artifact promotion contract', () => {
+  it('requires cutover approval or accepted CMS state before switching the PRD runtime', () => {
+    expect(workflow.on.workflow_dispatch.inputs.confirm_cms_cutover.default).toBe(false);
+    expect(promotion.env.PRD_CMS_RUNTIME).toBe(
+      "${{ vars.PRD_CMS_ENABLED == 'true' || inputs.confirm_cms_cutover == true }}",
+    );
+    const combined = promotion.steps.find(
+      (step: { name: string }) => step.name === 'Deploy candidate combined PRD CMS Worker',
+    );
+    const legacy = promotion.steps.find((step: { name: string }) => step.name === 'Deploy candidate PRD Worker');
+    const staff = staticPromotion.steps.find(
+      (step: { name: string }) => step.name === 'Deploy staff frontend to Cloudflare Pages',
+    );
+    expect(combined.if).toBe("env.PRD_CMS_RUNTIME == 'true'");
+    expect(legacy.if).toBe("env.PRD_CMS_RUNTIME != 'true'");
+    expect(staff.if).toBe(legacy.if);
+    expect(staticPromotion.env.PRD_CMS_RUNTIME).toBe(promotion.env.PRD_CMS_RUNTIME);
+    expect(combined.run).toContain('release-candidate.mjs verify prd');
+    expect(combined.run).toContain('/prd/cms/server/wrangler.json --keep-vars');
+    expect(combined.run).toContain('release-candidate.mjs verify-worker prd');
+    expect(promotion.if).toContain('inputs.confirm_code_promotion');
+  });
+
   it('builds paired targets after the repository gates without provider credentials', () => {
     expect(build.env).toBeUndefined();
     const tooling = build.steps.find((step: { name: string }) => step.name === 'Checkout trusted release tooling');
