@@ -89,14 +89,14 @@ The protected Item Setup API now integrates CMS linkage, runtime identity, Produ
 - [ ] 8.4 Add the dedicated content workflow using deployed approved code SHA, target-scoped read/export credentials, content/render checks, and static Pages deployment only; verify PRD publication while a UI candidate is in UAT does not release that candidate or deploy the Worker.
 - [ ] 8.5 Share target mutation concurrency and code/content preconditions with software promotion; verify publication-behind-code and code-behind-publication race tests cannot downgrade either revision, and stale PRD artifacts refresh using the same reviewed code SHA before explicit promotion.
 - [x] 8.6 Implement authenticated deployment acknowledgement and bounded scheduled retry/reconciliation using existing scheduler composition; verify lost acknowledgements, superseded requests, and expired CI runs produce honest pending/live/failed status without duplicate or older publication.
-- [ ] 8.7 Gate first checkout on completed setup plus confirmed publication, and pause new checkout before unpublish/archive; verify guessed IDs cannot buy drafts and existing reservations/orders/return pages still work after removal.
+- [x] 8.7 Gate first checkout on completed setup plus confirmed publication, and pause new checkout before unpublish/archive; verify guessed IDs cannot buy drafts and existing reservations/orders/return pages still work after removal.
 - [ ] 8.8 Verify fresh public loads reflect published pages, metadata, sitemap, search data, and overlay fragments while an already-playing tab is not forcibly reloaded; record the existing same-session cache limitation in staff guidance.
 
 ## 9. Make the canonical local stack the normal command
 
 - [x] 9.1 Make root `pnpm dev` invoke the existing `dev:stack:stripe-mock` flow and extend its launcher/process helpers for CMS D1/R2 and Worker-hosted staff; verify required ports 4321/8787/12110, canonical public base path, clear port failure, and coordinated shutdown.
 - [x] 9.2 Bootstrap local stores only when empty and make Local publish refresh the local snapshot/public loader without GitHub; verify content edits, stock, and prices survive a restart and no hosted network/provider mutation occurs. See [Local publication acceptance](local-editorial-migration-evidence.md#local-publication-and-restart-acceptance--2026-09-14).
-- [ ] 9.3 Preserve official stripe-mock proxy behavior and keep mock compatibility fixes in development tooling; verify default checkout/catalog fixtures, local signed webhooks, and mock emails work without Docker, real keys, hosted login, or `.dev.vars`.
+- [x] 9.3 Preserve official stripe-mock proxy behavior and keep mock compatibility fixes in development tooling; verify default checkout/catalog fixtures, local signed webhooks, and mock emails work without Docker, real keys, hosted login, or `.dev.vars`.
 - [x] 9.4 Update normal/diagnostic command documentation and keep both existing WebStorm launcher targets working; verify default IDE startup and Stripe Sandbox Smoke still invoke their canonical commands, with no added run configurations or copied UAT secrets. See the launcher contract evidence in [local-editorial-migration-evidence.md](local-editorial-migration-evidence.md).
 
 ## 10. Prove recovery and rehearse the cutover
