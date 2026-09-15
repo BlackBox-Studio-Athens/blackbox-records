@@ -2,7 +2,54 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { backupCms, restoreCms, importCmsSql } from '../../scripts/cms-backup.mjs';
+import { backupCms, restoreCms, importCmsSql, exportCmsSql } from '../../scripts/cms-backup.mjs';
+
+test('binding export restores FTS5 row identities, triggers, blobs and embedded NUL text', async () => {
+  const source = new DatabaseSync(':memory:');
+  const destination = new DatabaseSync(':memory:');
+  const binding = (db) => ({
+    prepare(sql) {
+      return {
+        sql,
+        values: [],
+        bind(...values) {
+          return { sql, values: values.map((v) => (Array.isArray(v) ? Buffer.from(v) : v)) };
+        },
+        async all() {
+          return { results: db.prepare(sql).all() };
+        },
+      };
+    },
+    async batch(statements) {
+      db.exec('BEGIN');
+      try {
+        const result = statements.map((s) => ({ results: db.prepare(s.sql).all(...s.values) }));
+        db.exec('COMMIT');
+        return result;
+      } catch (error) {
+        db.exec('ROLLBACK');
+        throw error;
+      }
+    },
+  });
+  try {
+    source.exec(
+      'CREATE TABLE content (id INTEGER PRIMARY KEY AUTOINCREMENT, body TEXT, image BLOB); CREATE INDEX body_index ON content(body); CREATE VIRTUAL TABLE search USING fts5(body); CREATE TRIGGER searchable AFTER INSERT ON content BEGIN INSERT INTO search(rowid, body) VALUES (new.id,new.body); END;',
+    );
+    source
+      .prepare('INSERT INTO content(id,body,image) VALUES (?,?,?)')
+      .run(17, 'music\0record', Buffer.from([0, 255, 2]));
+    const dump = await exportCmsSql(binding(source));
+    await importCmsSql(dump, binding(destination));
+    assert.deepEqual(destination.prepare('SELECT * FROM content').all(), source.prepare('SELECT * FROM content').all());
+    assert.equal(destination.prepare("SELECT rowid FROM search WHERE search MATCH 'music'").get().rowid, 17);
+    destination.prepare('INSERT INTO content(body) VALUES (?)').run('later');
+    assert.equal(destination.prepare("SELECT rowid FROM search WHERE search MATCH 'later'").get().rowid, 18);
+  } finally {
+    source.close();
+    destination.close();
+  }
+});
 
 function bucket() {
   const files = new Map();

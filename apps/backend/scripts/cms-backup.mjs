@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { readFile, writeFile, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { spawnSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
 import { DatabaseSync } from 'node:sqlite';
 import { getPlatformProxy } from 'wrangler';
@@ -13,6 +11,64 @@ import ts from 'typescript';
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
 const backend = fileURLToPath(new URL('../', import.meta.url));
 const resources = JSON.parse(await readFile(new URL('../cms-resources.json', import.meta.url), 'utf8'));
+
+// Native hosted D1 export rejects FTS5. Capture through the existing binding without modifying search tables.
+export async function exportCmsSql(database) {
+  const quote = (name) => '"' + name.replaceAll('"', '""') + '"';
+  const { results: listed } = await database.prepare('PRAGMA table_list').all();
+  const tables = listed
+    .filter(
+      (t) =>
+        t.schema === 'main' &&
+        ['table', 'virtual'].includes(t.type) &&
+        !t.name.startsWith('_cf_') &&
+        (!t.name.startsWith('sqlite_') || t.name === 'sqlite_sequence'),
+    )
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const { results: schema } = await database
+    .prepare('SELECT name, tbl_name, type, sql FROM sqlite_master WHERE sql IS NOT NULL ORDER BY type, name')
+    .all();
+  const names = new Set(tables.map((t) => t.name));
+  const definitions = schema
+    .filter((s) => s.name !== 'sqlite_sequence' && (names.has(s.tbl_name) || s.type === 'view'))
+    .sort((a, b) => Number(b.type === 'table') - Number(a.type === 'table'));
+  const columns = await database.batch(tables.map((t) => database.prepare(`PRAGMA table_xinfo(${quote(t.name)})`)));
+  const queries = tables.map((table, index) => {
+    const fields = columns[index].results.filter((c) => c.hidden === 0).map((c) => c.name);
+    if (table.type === 'virtual') fields.unshift('rowid');
+    const expressions = fields.map((name) => {
+      const col = quote(name);
+      return `CASE WHEN typeof(${col})='text' THEN 'CAST(X''' || hex(${col}) || ''' AS TEXT)' ELSE quote(${col}) END`;
+    });
+    return {
+      table,
+      fields,
+      statement: database.prepare(
+        `SELECT ${expressions.map((e, i) => `${e} AS ${quote(String(i))}`).join(',')} FROM ${quote(table.name)} LIMIT 10001`,
+      ),
+    };
+  });
+  // ponytail: one bounded batch for this small CMS; stream a frozen export if it outgrows 10,000 rows.
+  const results = await database.batch(queries.map((q) => q.statement));
+  let count = 0;
+  const data = results
+    .flatMap((result, index) => {
+      count += result.results.length;
+      assert.ok(count <= 10000, 'CMS export exceeds the row budget.');
+      const { table, fields } = queries[index];
+      return [
+        ...(table.name === 'sqlite_sequence' ? ['DELETE FROM sqlite_sequence;'] : []),
+        ...result.results
+          .map(
+            (row) =>
+              `INSERT INTO ${quote(table.name)} (${fields.map(quote).join(',')}) VALUES (${fields.map((_, i) => row[String(i)]).join(',')});`,
+          )
+          .sort(),
+      ];
+    })
+    .join('\n');
+  return Buffer.from(JSON.stringify({ schema: definitions.map((s) => s.sql + ';').join('\n'), data }));
+}
 
 async function list(bucket, prefix = '') {
   const objects = [];
@@ -158,6 +214,7 @@ export async function importCmsSql(bytes, destination) {
         .all()
         .filter((column) => column.hidden === 0)
         .map((column) => column.name);
+      if (table.type === 'virtual') columns.unshift('rowid');
       const rows = sqlite.prepare(`SELECT ${columns.map(quote).join(',')} FROM ${quote(table.name)}`).all();
       for (const row of rows)
         statements.push(
@@ -232,7 +289,6 @@ async function main() {
       'Recovery cannot target an application database.',
     );
   }
-  const directory = await mkdtemp(join(tmpdir(), 'blackbox-cms-backup-'));
   // Local D1 export resolves persistence relative to the config and has no --persist-to option.
   const configPath = join(backend, `.cms-backup-${randomUUID()}.json`);
   await writeFile(
@@ -256,23 +312,6 @@ async function main() {
   );
   const maxBytes = Number(values['max-bytes']);
   assert.ok(Number.isSafeInteger(maxBytes) && maxBytes > 0);
-  const sqlPath = join(directory, 'cms.sql');
-  function wrangler(args) {
-    const result = spawnSync(
-      process.execPath,
-      [
-        join(backend, 'node_modules/wrangler/bin/wrangler.js'),
-        'd1',
-        ...args,
-        '--config',
-        configPath,
-        remote ? '--remote' : '--local',
-        ...(!remote && args[0] === 'execute' ? ['--persist-to', join(backend, '.wrangler/state')] : []),
-      ],
-      { cwd: backend, stdio: 'inherit', windowsHide: true },
-    );
-    assert.equal(result.status, 0, 'CMS database command failed.');
-  }
   const proxy = await getPlatformProxy({
     configPath,
     remoteBindings: remote,
@@ -301,20 +340,12 @@ async function main() {
           environment,
           kind: values.kind,
           maxBytes,
-          exportSql: async () => {
-            wrangler(['export', 'CMS_DB', '--output', sqlPath, '--no-data', '--skip-confirmation']);
-            const schema = await readFile(sqlPath);
-            wrangler(['export', 'CMS_DB', '--output', sqlPath, '--no-schema', '--skip-confirmation']);
-            return Buffer.from(
-              JSON.stringify({ schema: schema.toString('utf8'), data: await readFile(sqlPath, 'utf8') }),
-            );
-          },
+          exportSql: () => exportCmsSql(proxy.env.CMS_DB),
         });
     console.log(JSON.stringify({ environment, mode: values.mode, ...result }));
   } finally {
     await proxy.dispose();
     await rm(configPath, { force: true });
-    await rm(directory, { recursive: true, force: true });
   }
 }
 
