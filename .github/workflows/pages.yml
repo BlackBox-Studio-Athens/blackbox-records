@@ -318,7 +318,8 @@ jobs:
         if: env.PRD_CMS_RUNTIME == 'true'
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
-          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --keep-vars
+          pnpm --filter @blackbox/backend exec wrangler versions upload --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          pnpm --filter @blackbox/backend exec wrangler versions deploy --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker prd
       - &observe-prd
         name: Record actual deployed revisions
