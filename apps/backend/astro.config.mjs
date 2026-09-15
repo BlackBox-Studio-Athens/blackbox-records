@@ -33,7 +33,9 @@ const runtime = {
   ...base,
   ...selected,
   main: localPath('src/cms/index.ts'),
-  ...(target === 'uat' ? { routes: [...(selected.routes ?? []), { pattern: cms.hostname, custom_domain: true }] } : {}),
+  ...(['uat', 'prd'].includes(target)
+    ? { routes: [...(selected.routes ?? []), { pattern: cms.hostname, custom_domain: true }] }
+    : {}),
   assets: { binding: 'ASSETS', run_worker_first: true, html_handling: 'auto-trailing-slash' },
   vars: {
     ...selected.vars,
