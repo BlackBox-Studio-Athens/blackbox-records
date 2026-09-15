@@ -28,4 +28,4 @@
 - [x] 5.2 Add authenticated bounded, redacted diagnostics with request/release correlation and error-only disclosure.
 - [x] 5.3 Add default-closed remembered desktop preview, narrow Edit/Preview tabs, no hidden requests, and preserved editing/focus/scroll.
 - [x] 5.4 Make Content the staff landing page, clarify navigation icons, remove redundant backoffice copy, and retain essential operational guidance.
-- [ ] 5.5 Add both browsers to release gates, pass required builds/tests and responsive review, update evidence, deploy and verify UAT.
+- [x] 5.5 Add both browsers to release gates, pass required builds/tests and responsive review, update evidence, deploy and verify UAT.

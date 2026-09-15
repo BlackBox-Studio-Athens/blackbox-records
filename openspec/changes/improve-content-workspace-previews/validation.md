@@ -66,3 +66,13 @@ Workspace regression coverage includes default-closed preview, zero hidden previ
 The diagnostic endpoint stores no reports. Existing Cloudflare structured logs receive request/release correlation and sanitized stages; draft content, cookies, HTML, and private media paths are excluded. CSP directives are included only when observed. The separate auth/me 404 is unchanged.
 
 Final source checks passed: pnpm test:unit, pnpm check, pnpm build, canonical CMS build with no-KV guards, unused-code audit (existing advisory findings), strict OpenSpec validation, and git diff --check. Final built workspace regressions passed in Firefox and Chromium; the final Local 17-context real-template smoke also passed in both browsers. One browser run overlapped a staff rebuild and timed out; the rerun against the completed artifact passed.
+
+### UAT cross-browser verification
+
+Release commit `01566042827d01f1c4967c5439f6ee2691a9ced9` passed the new Firefox/Chromium gates and deployed through [run 35027445399](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35027445399). Native Chrome verified staff root redirects to Content, the logo targets Content, the Test environment badge appears, and preview starts closed with zero preview responses before opening.
+
+Two bounded preview requests for Ouranopithecus returned 200 and reached Preview up to date, including unchanged-content refresh. CSS returned 200 and the screenshot showed the fully styled public layout with artist/release images and typography. Response and embedded policy both named the UAT staff origin explicitly. Request references were `ffefb1a7-9f0b-458e-bbae-69efbeb5e443` and `f9561ca7-e63d-44fb-90bd-8f2b39f810e9`; both carried the expected release revision. No draft was saved and no content publication was requested.
+
+The user independently refreshed UAT in their Firefox and confirmed: “Yes, preview loads correctly.” Automated local and CI Firefox coverage complements this hosted confirmation. PRD code was prepared through the retained shared artifact; PRD was not promoted.
+
+The workflow's final provider smoke failed only its five retired public `/admin/*` URL checks (expected 404, received 200). Stripe scenarios, Resend checks, public assets, checkout shell, current public routes, and both deployment jobs passed. A bounded read of `/admin/config.yml` confirmed `CF-Cache-Status: HIT`, age 74056 seconds, and `public, s-maxage=604800`; this is the previously tracked public Pages retirement-cache issue. The source/artifact checks and preview gates passed. The one-commit retirement exception was not reused, no broad cache purge was performed, and the failed workflow must not be represented as a green PRD promotion candidate.
