@@ -51,8 +51,26 @@ describe('Pages artifact promotion contract', () => {
       (step: { name: string }) => step.name === 'Prepare reviewed CMS cutover initial Price',
     );
     expect(workflow.jobs['catalog-prd'].if).toContain('inputs.confirm_live_catalog_changes');
-    expect(apply.if).toBe('${{ inputs.confirm_cms_cutover }}');
+    expect(apply.if).toBe('${{ inputs.confirm_cms_cutover && !inputs.cms_import_report }}');
     expect(apply.run).toContain('--apply --confirm-live-catalog-changes --plan-sha256 "$REVIEWED_CATALOG_PLAN_SHA256"');
+  });
+
+  it('keeps CMS linkage separate from initial Price creation and requires a reviewed apply hash', () => {
+    for (const jobName of ['catalog-prd-plan', 'catalog-prd']) {
+      const job = workflow.jobs[jobName];
+      const linkage = job.steps.find((step: { run?: string }) => step.run?.includes('backfill-runtime-catalog.ts'));
+      expect(linkage.if).toBe("${{ inputs.cms_import_report != '' }}");
+      expect(linkage.run).toContain('--env prd --cms-plan');
+      expect(linkage.run).toContain('--cms-report');
+      const initial = job.steps.find((step: { run?: string }) => step.run?.includes('prepare-prd-initial-price.ts'));
+      expect(initial.if).toContain('!inputs.cms_import_report');
+      if (jobName === 'catalog-prd') {
+        expect(job.if).toContain('inputs.confirm_live_catalog_changes');
+        expect(linkage.run).toContain(
+          '--apply --confirm-live-catalog-changes --plan-sha256 "$REVIEWED_CATALOG_PLAN_SHA256"',
+        );
+      } else expect(linkage.run).not.toContain('--apply');
+    }
   });
 
   it('requires cutover approval or accepted CMS state before switching the PRD runtime', () => {

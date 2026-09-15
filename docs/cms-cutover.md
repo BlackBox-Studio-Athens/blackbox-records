@@ -1,5 +1,20 @@
 # EmDash cutover worksheet
 
+## Next production batch — prepared September 15, 2026
+
+The initial live Price preparation is complete: Disintegration is EUR 28.00 inclusive, stock remains 15 physical / 12 online, and PRD has zero orders. Do not repeat that apply. The remaining deployment/import batch is separate and still needs approval.
+
+- Promote accepted candidate `34937507986`, source `af93b371e4eaca0b1b418b62c59da86ad8e36f8c`, through `pages.yml` with code promotion and CMS cutover confirmed. Deploy its retained combined Worker to `blackbox-records-backend-prd`, including protected `staff.blackboxrecordsathens.com`, and its retained public artifact to `blackbox-records-web`. Checkout remains disabled.
+- Apply the 73 native CMS migrations to `e466f52b-46aa-4a76-9a09-0e304a3800b4`, fingerprint `4bd8ef389b3816f78b3d3d614a025a972156c0de908707a2bae8b31a51809108`, plus application migrations 0001–0003. Code promotion applies commerce migrations 0020–0022 to `de66a606-908d-446c-8415-39504e653f49`.
+- Import the frozen 129 records and 152 media sources using plan `f0b4d7024639be728b01c5d363cf46434e59ce0aa4ac668e86185555d97f9e4c`. Target CMS D1 and media bucket are both `blackbox-records-cms-prd`. Verify the imported identities before any catalog linkage or first public CMS publication.
+- Retain private pre-upgrade recovery point `cms/prd/points/2026-09-15-pre-upgrade.json` in `blackbox-cms-backups-prd`; preserve existing commerce balances, provider bindings, orders and reservations. Leave the old staff Pages project and public content source available until replacement acceptance.
+
+Native migration preflight was refreshed against the existing PRD build without rebuilding or changing the running Local configuration. It reports the same fingerprint, 73 pending, no unknown or executed migrations. `migrate-cms.mjs --wrangler-config .emdash/prd-build/server/wrangler.json --env prd` selects that already built configuration; the exact environment/database guard still applies. Native check exit code 2 means pending migrations, not a failed API request. Evidence: `.codex-artifacts/emdash-m1/prd-native-migration-final.json`.
+
+Chrome Blackbox account usage at approximately 07:27 UTC: Workers 8,015/100,000 requests today; D1 172,050 reads, 15,700 writes, 8/10 databases, 11.69 MB storage; R2 995.38 MB, 1,080 Class A and 6,500 Class B operations, no billable usage. Reserve for this batch at most 5,000 Worker requests, 100,000 D1 reads, 20,000 D1 writes, 1,000 R2 Class A and 2,000 Class B operations, and 500 MB additional media. This leaves over 86,000 daily Worker requests and 64,000 daily D1 writes for ordinary traffic. Reuse the successful UAT import/recovery pilot; inspect actual use after the initial media batch and stop on quota warnings or estimate overrun.
+
+The actual PRD CMS IDs do not exist before import. Consequently the final catalog-linkage hash must be produced afterward from the read-only import report; it is not fabricated from UAT IDs. The workflow now accepts that report through `cms_import_report`, performs the existing read-only backfill, and requires its exact hash and live confirmation for apply. Six focused workflow checks passed through WebStorm; repeated full suites were skipped at the user's request. This preparation does not mark the remaining acceptance tasks complete.
+
 Prepared from repository configuration on 2026-09-15. This is a planning worksheet, not a successful PRD dry-run or authorization to apply. No hosted request or mutation was made to prepare it. Verify deployed resource identities before execution.
 
 ## Exact targets

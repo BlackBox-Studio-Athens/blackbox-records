@@ -29,7 +29,10 @@ on:
         type: boolean
         default: false
       catalog_plan_sha256:
-        description: Reviewed initial-price plan SHA-256; required with both CMS cutover and live catalog confirmation.
+        description: Reviewed initial-price or CMS catalog backfill plan SHA-256.
+        type: string
+      cms_import_report:
+        description: PRD import read-only verification JSON; selects catalog linkage backfill instead of initial Price preparation.
         type: string
 permissions:
   contents: read
@@ -361,9 +364,24 @@ jobs:
       - *node
       - *install
       - name: Plan PRD catalog without mutation
+        if: ${{ !inputs.cms_import_report }}
         run: |
           set -euo pipefail
           pnpm exec tsx apps/backend/scripts/prepare-prd-initial-price.ts | tee "$GITHUB_STEP_SUMMARY"
+      - &prepare-backfill
+        name: Prepare verified PRD CMS linkage inputs
+        if: ${{ inputs.cms_import_report != '' }}
+        env:
+          CMS_IMPORT_REPORT: ${{ inputs.cms_import_report }}
+        run: |
+          set -euo pipefail
+          node --import tsx scripts/import-cms-content.mjs --preparePrd .codex-artifacts/emdash-m1/prd-import-preparation
+          printf '%s' "$CMS_IMPORT_REPORT" > .codex-artifacts/emdash-m1/prd-import-verified.json
+      - name: Plan PRD CMS catalog linkage without mutation
+        if: ${{ inputs.cms_import_report != '' }}
+        run: |
+          set -euo pipefail
+          pnpm exec tsx apps/backend/scripts/backfill-runtime-catalog.ts --env prd --cms-plan .codex-artifacts/emdash-m1/prd-import-preparation/plan.json --cms-report .codex-artifacts/emdash-m1/prd-import-verified.json | tee "$GITHUB_STEP_SUMMARY"
   catalog-prd:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}
     runs-on: ubuntu-latest
@@ -383,7 +401,7 @@ jobs:
       - name: Verify catalog source
         run: pnpm test:unit && pnpm check && pnpm build
       - name: Prepare explicitly authorized PRD catalog
-        if: ${{ !inputs.confirm_cms_cutover }}
+        if: ${{ !inputs.confirm_cms_cutover && !inputs.cms_import_report }}
         run: |
           pnpm runtime:config:verify --env prd --require-live-secrets
           pnpm stripe:webhooks:verify --env prd
@@ -392,7 +410,15 @@ jobs:
           pnpm --filter @blackbox/backend d1:seed:prd:catalog-readiness
           pnpm stripe:catalog:verify --env prd --apply --confirm-live-catalog-changes --ci-promotion --artifact-commit-sha "$SOURCE_SHA" --promotion-run-id "$GITHUB_RUN_ID"
       - name: Prepare reviewed CMS cutover initial Price
-        if: ${{ inputs.confirm_cms_cutover }}
+        if: ${{ inputs.confirm_cms_cutover && !inputs.cms_import_report }}
         env:
           REVIEWED_CATALOG_PLAN_SHA256: ${{ inputs.catalog_plan_sha256 }}
         run: pnpm exec tsx apps/backend/scripts/prepare-prd-initial-price.ts --apply --confirm-live-catalog-changes --plan-sha256 "$REVIEWED_CATALOG_PLAN_SHA256"
+      - *prepare-backfill
+      - name: Apply reviewed PRD CMS catalog linkage
+        if: ${{ inputs.cms_import_report != '' }}
+        env:
+          REVIEWED_CATALOG_PLAN_SHA256: ${{ inputs.catalog_plan_sha256 }}
+        run: |
+          set -euo pipefail
+          pnpm exec tsx apps/backend/scripts/backfill-runtime-catalog.ts --env prd --cms-plan .codex-artifacts/emdash-m1/prd-import-preparation/plan.json --cms-report .codex-artifacts/emdash-m1/prd-import-verified.json --apply --confirm-live-catalog-changes --plan-sha256 "$REVIEWED_CATALOG_PLAN_SHA256" | tee "$GITHUB_STEP_SUMMARY"
