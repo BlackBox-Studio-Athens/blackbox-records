@@ -17,7 +17,9 @@ Local commands use existing `apps/backend/.wrangler/state` persistence. They do 
 
 ## Hosted daily capture
 
-The committed `cms-backup.yml` workflow schedules daily capture at 02:30 UTC and supports manual pre-upgrade capture. It is disabled until repository variables `CMS_BACKUPS_ENABLED` and `CMS_BACKUP_BUDGET_REVIEWED` are both `true`.
+The committed `cms-backup.yml` workflow schedules daily capture at 02:30 UTC and supports manual pre-upgrade capture. Both repository variables `CMS_BACKUPS_ENABLED` and `CMS_BACKUP_BUDGET_REVIEWED` were enabled on September 15 after the user approved the dedicated credential. Manual daily capture `34935186823` passed for both environments through this workflow: UAT captured 386 objects and 423,157,810 database/media bytes; PRD captured zero objects and its 23-byte empty database. Both wrote recovery point `2026-09-15-daily`, retaining the existing pre-upgrade points. The credential has no expiration and is stored only as `CMS_BACKUP_API_TOKEN`; no credential was committed.
+
+The current account dashboard review recorded 995.38 MB R2 storage, 1.07k Class A and 5.28k Class B operations in the billing period, 120.92k D1 rows read and 15.17k written today, and 6,383/100,000 Worker requests today. The initial run budget is 10,000 D1 reads, no source D1 writes, 400 R2 Class A, 1,200 Class B and 1,500 Worker requests, using existing private buckets and a 512 MiB per-environment capture ceiling. The prior full capture/restore is the bounded pilot. On failure, disable `CMS_BACKUPS_ENABLED` before retrying. Evidence is `.codex-artifacts/emdash-m1/backup-schedule-budget.json`.
 
 Before enabling it:
 

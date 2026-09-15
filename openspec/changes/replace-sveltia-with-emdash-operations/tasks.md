@@ -101,7 +101,7 @@ The protected Item Setup API now integrates CMS linkage, runtime identity, Produ
 
 ## 10. Prove recovery and rehearse the cutover
 
-- [ ] 10.1 Configure private daily CMS database/media backups with seven daily points and pre-upgrade capture using existing/native tools; verify backup objects cannot be retrieved through public media paths and retention fits the measured free storage budget.
+- [x] 10.1 Configure private daily CMS database/media backups with seven daily points and pre-upgrade capture using existing/native tools; verify backup objects cannot be retrieved through public media paths and retention fits the measured free storage budget. See the successful scheduled-path capture in [the backup runbook](../../../docs/cms-backup.md).
 - [x] 10.2 Restore a full CMS backup and media into isolated recovery resources; verify users, content, references, revisions, media checksums, and public rendering, while `COMMERCE_DB` and provider state remain untouched.
 - [ ] 10.3 Rehearse final import after an editorial-write freeze in UAT and record precise before/after reconciliation; verify one writable CMS at cutover and no lost edits, reset stock, changed selling prices, or broken historical order links.
 - [ ] 10.4 Exercise code rollback and publication failure after post-cutover content/items exist; verify recovery uses compatible runtime-catalog code or roll-forward, never an obsolete compiled catalog or commerce database restore.
