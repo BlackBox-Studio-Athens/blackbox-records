@@ -133,11 +133,11 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   const [completed, setCompleted] = useState('');
   const [sellRelease, setSellRelease] = useState(true);
   const [draftPending, setDraftPending] = useState<Parameters<typeof createEditorialDraft>[2] | null>(null);
-  const [draftSaved, setDraftSaved] = useState(false);
+  const [draftSaved, setDraftSaved] = useState('');
   const storageKey = `blackbox-item-setup:${backendBaseUrl}`;
   const draftKey = `blackbox-release-draft:${backendBaseUrl}`;
   const sell = kind !== 'release' || mode === 'existing' || sellRelease;
-  const locked = !ready || busy || !!pending || !!draftPending || needsReview || !!completed || draftSaved;
+  const locked = !ready || busy || !!pending || !!draftPending || needsReview || !!completed || !!draftSaved;
   useEffect(() => {
     setReady(true);
     const saved = sessionStorage.getItem(storageKey);
@@ -175,9 +175,9 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
         };
         sessionStorage.setItem(draftKey, JSON.stringify(command));
         setDraftPending(command);
-        await createEditorialDraft(backendBaseUrl, 'releases', command);
+        const saved = await createEditorialDraft(backendBaseUrl, 'releases', command);
         sessionStorage.removeItem(draftKey);
-        setDraftSaved(true);
+        setDraftSaved(saved.item.id);
         setMessage('Release draft saved. No price or stock was created. It is not published yet.');
         return;
       }
@@ -433,6 +433,11 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           </Button>
         )}
         {message && <p role="status">{message}</p>}
+        {draftSaved && (
+          <a className="min-h-11 underline" href={`/content/?collection=releases&id=${encodeURIComponent(draftSaved)}`}>
+            Open release draft
+          </a>
+        )}
         {completed && (
           <a className="min-h-11 underline" href={`/items/?variantId=${encodeURIComponent(completed)}`}>
             Open item price and stock
