@@ -2,7 +2,7 @@ Use the apply-change workflow. Finish one usable workflow at a time in the deliv
 
 ## Delivery order — revised 2026-09-14
 
-The 60 acceptance tasks remain intact: 36 are complete and 24 remain open. This is not a percentage of effort or usable product completion. Local editorial publication, draft preview and new-item publication work; the existing Local and UAT catalog identities are now reconciled. Hosted publication and PRD cutover remain unfinished. Do not add checkboxes merely to make the count rise.
+The 60 acceptance tasks remain intact: 37 are complete and 23 remain open. This is not a percentage of effort or usable product completion. Local editorial publication, draft preview and new-item publication work; the existing Local and UAT catalog identities are now reconciled. Hosted publication and PRD cutover remain unfinished. Do not add checkboxes merely to make the count rise.
 
 | Order    | Usable outcome                                                                                                         | Existing tasks to finish together                                                                               |
 | -------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
@@ -102,7 +102,7 @@ The protected Item Setup API now integrates CMS linkage, runtime identity, Produ
 ## 10. Prove recovery and rehearse the cutover
 
 - [ ] 10.1 Configure private daily CMS database/media backups with seven daily points and pre-upgrade capture using existing/native tools; verify backup objects cannot be retrieved through public media paths and retention fits the measured free storage budget.
-- [ ] 10.2 Restore a full CMS backup and media into isolated recovery resources; verify users, content, references, revisions, media checksums, and public rendering, while `COMMERCE_DB` and provider state remain untouched.
+- [x] 10.2 Restore a full CMS backup and media into isolated recovery resources; verify users, content, references, revisions, media checksums, and public rendering, while `COMMERCE_DB` and provider state remain untouched.
 - [ ] 10.3 Rehearse final import after an editorial-write freeze in UAT and record precise before/after reconciliation; verify one writable CMS at cutover and no lost edits, reset stock, changed selling prices, or broken historical order links.
 - [ ] 10.4 Exercise code rollback and publication failure after post-cutover content/items exist; verify recovery uses compatible runtime-catalog code or roll-forward, never an obsolete compiled catalog or commerce database restore.
 - [ ] 10.5 Run integrated UAT acceptance for the four routine operations, fixed/custom paid checkout, signed webhook replay, reservations, orders, manual fulfillment, and paid-email retry; verify target isolation and actual free-tier behavior on the final combined artifact.
