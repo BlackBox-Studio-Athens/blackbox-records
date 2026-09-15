@@ -13,6 +13,8 @@
 
 ## 3. Release and external retirement
 
+Candidate `34958898685` deployed cleanup SHA `c521b1250a5fb3ec287e8aa2c4976dde4ac10f33` to UAT but failed retired-route acceptance because Cloudflare still serves five cached admin resources as HTTP 200. See `docs/cms-retirement.md`. PRD promotion and all external deletion remain gated; do not bypass the failure with cache-busting assertions.
+
 - [ ] 3.1 Inventory exact external resources and recovery artifacts; record IDs, consumers and retirement eligibility without exposing secrets.
 - [ ] 3.2 Accept a fresh UAT candidate, promote that exact combined release and verify public/staff behavior with checkout disabled.
 - [ ] 3.3 Retire confirmed Sveltia resources and detached staff Pages project; verify live Worker hostname/Access and record actual deletion receipts.

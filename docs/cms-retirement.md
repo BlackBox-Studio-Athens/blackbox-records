@@ -34,4 +34,22 @@ The canonical Local mock stack started without a compiled manifest and reported 
 
 At approximately 10:34 UTC, account dashboards showed Workers 11,689/100,000 requests today; D1 approximately 422,560 reads and 29,830 writes today; R2 approximately 1,350 Class A and 8,320 Class B operations this billing period, 1.29 GB stored and no billable usage. Reserve at most 3,000 Worker requests, 100,000 D1 reads, 5,000 D1 writes, 100 R2 Class A and 2,000 Class B operations for one candidate/promotion and bounded acceptance, leaving over 85,000 daily Worker requests and 65,000 D1 writes for ordinary traffic. No import, recovery restore, KV operation or catalog seed is planned. Each target snapshot restore is already capped at 600 requests with no retries. Reuse the accepted cutover snapshot/read pilot; stop on quota warnings or budget overrun.
 
-Fresh UAT/PRD release evidence and external retirement are still required. Repository deletion alone is not completion.
+## Hosted candidate — blocked on retired-route cache
+
+Cleanup commit `c521b1250a5fb3ec287e8aa2c4976dde4ac10f33` was pushed to `main`. [Candidate 34958898685](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/34958898685) passed unit/check/unused, both target snapshot restores and public/combined CMS builds, digest verification, UAT Worker deployment, persisted listing readiness and UAT Pages deployment. UAT Pages deployment is `6c3f1058-ffe6-44d5-9832-7ac7c885a841`. The canonical UAT `release.json` reports the exact cleanup SHA and run number 384.
+
+Both paid Stripe scenarios, Resend/newsletter, public assets and checkout-shell smoke passed. Other public routes, metadata, sitemap and robots checks passed. **The candidate failed acceptance on five retired admin URLs returning cached HTTP 200 rather than 404.** Do not promote this failed candidate or weaken those assertions.
+
+At approximately 10:54 UTC, direct UAT `/admin/`, `/admin/config.yml`, `/admin/init.js`, `/admin/admin.css` and `/admin/preview.css` reads returned `CF-Cache-Status: HIT`, `Age` approximately 33,709 seconds and `Cache-Control: public, s-maxage=604800`. `/admin/` still contained the old `BlackBox CMS` HTML. A single diagnostic request to `/admin/?legacy-cleanup=c521b125` returned the new HTTP 404 with `Cache-Control: no-store`; an unrelated missing path also returned 404. Requesting `Cache-Control: no-cache` did not invalidate the stale entries. Cache-busted results are diagnostic only, not acceptance.
+
+[Cloudflare documents per-data-center asset retention up to one week and zone-based cache purging](https://developers.cloudflare.com/pages/configuration/serving-pages/). No CDN purge control was available in this direct-upload Pages project's settings; the documented build-cache purge is not a CDN purge. The UAT hostname is under Cloudflare-owned `pages.dev`, not the managed custom-domain zone. Provider invalidation or cache expiry is required before rerunning failed acceptance. No public hosting, URL model, cache policy or test contract was changed to bypass this failure.
+
+The authenticated UAT Content workspace loaded its artist records and existing publication receipts after deployment. Anonymous staff HTML and CMS API requests redirected to Access (302); alternate Worker-host staff HTML and internal API requests were denied (403). No hosted editorial record was edited for this check.
+
+The retained schema-2 bundle is `release-c521b1250a5fb3ec287e8aa2c4976dde4ac10f33` in the candidate run. It is **not yet an accepted recovery release**. A local download was stopped after acceptance failed; no verified local recovery copy is claimed. Retain and verify a usable combined artifact before external retirement.
+
+PRD was not promoted and no external resources were deleted. Its prior publication remains `af0bc3fa-b62b-4030-baae-bcd29faeda46`, snapshot SHA-256 `6289a67eb4aed84f5de0b0b85a0db0966040650a2d0e7b842a422841e218cb96`; shopper checkout was verified disabled. Read-only PRD baseline fingerprints were captured for catalog identities, provider mapping, price snapshot, stock, availability and stock ledgers. All application data, public Pages projects, staff routing, Access and backups remain preserved.
+
+All 48 main specifications pass normal validation. Repository-wide strict mode still rejects 20 pre-existing placeholder Purpose sections; those unrelated specifications were not rewritten. The cleanup change and accepted EmDash change pass strict validation.
+
+Completion remains blocked on successful unmodified UAT acceptance, exact-candidate PRD promotion and verified external retirement. Repository deletion alone is not completion.
