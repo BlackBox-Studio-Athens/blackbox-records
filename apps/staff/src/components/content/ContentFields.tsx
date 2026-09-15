@@ -3,6 +3,12 @@ import { cmsBodySchema, DISTRO_GROUP_VALUES } from '@blackbox/content-model';
 import EditorialPicker from '../items/EditorialPicker';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { Textarea } from '../ui/textarea';
+import { Field, FieldLabel, FieldDescription } from '../ui/field';
+import { Checkbox } from '../ui/checkbox';
+import { NativeSelect } from '../ui/native-select';
+import { Alert, AlertDescription } from '../ui/alert';
+import { ContentImagePicker } from './MediaLibrary';
 
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
 export type ContentData = Record<string, unknown>;
@@ -55,7 +61,7 @@ export default function ContentFields({
     parent[parts.at(-1)!] = next;
     onChange(updated);
   }
-  const fieldClass = 'min-h-11 w-full min-w-0 border border-border bg-background p-2';
+  const fieldClass = 'min-h-11 w-full min-w-0';
   function field(
     path: string,
     label: string,
@@ -78,39 +84,43 @@ export default function ContentFields({
       },
     };
     return (
-      <label className="grid min-w-0 gap-2" key={path}>
-        {label}
-        {options.required === false ? ' (optional)' : ''}
+      <Field className={options.multiline ? 'col-span-full' : 'min-w-0'} key={path}>
+        <FieldLabel htmlFor={props.id}>{label}</FieldLabel>
         {options.multiline ? (
-          <textarea {...props} className={fieldClass} rows={4} />
+          <Textarea {...props} className={fieldClass} rows={4} />
         ) : (
           <Input {...props} type={options.type ?? 'text'} />
         )}
-      </label>
+        {options.required === false && <FieldDescription>Optional</FieldDescription>}
+      </Field>
     );
   }
   function check(path: string, label: string) {
     return (
-      <label className="flex min-h-11 items-center gap-3">
-        <input type="checkbox" checked={value(path) === true} onChange={(event) => set(path, event.target.checked)} />
-        {label}
-      </label>
+      <Field orientation="horizontal" className="min-h-11">
+        <Checkbox
+          id={`content-${path}`}
+          checked={value(path) === true}
+          disabled={disabled}
+          onCheckedChange={(checked) => set(path, checked === true)}
+        />
+        <FieldLabel htmlFor={`content-${path}`}>{label}</FieldLabel>
+      </Field>
     );
   }
   function image(path: string, alt: string, label: string) {
     const reference = value(path) as { id?: string } | undefined;
     return (
-      <div className="grid gap-4">
-        <EditorialPicker
+      <section className="col-span-full grid gap-4 border-y border-border py-6">
+        <ContentImagePicker
           base={base}
-          collection="media"
           label={label}
           value={reference?.id ?? ''}
-          selectedLabel="Current image"
+          disabled={disabled}
           onSelect={(item) => set(path, { id: item.id })}
         />
         {field(alt, 'Describe the image')}
-      </div>
+      </section>
     );
   }
   function rows(
@@ -121,8 +131,8 @@ export default function ContentFields({
   ) {
     const items = Array.isArray(value(path)) ? (value(path) as unknown[]) : [];
     return (
-      <section className="grid min-w-0 gap-4">
-        <h2 className="text-xl font-semibold">{label}</h2>
+      <section className="col-span-full grid min-w-0 gap-4">
+        <h2 className="text-base font-semibold">{label}</h2>
         {items.map((_, index) => (
           <div className="grid min-w-0 gap-4 border-t border-border pt-4" key={`${path}-${index}`}>
             {render(`${path}.${index}`, index)}
@@ -162,8 +172,8 @@ export default function ContentFields({
   }
   const bodyValidation = cmsBodySchema.safeParse(data.body ?? []);
   const body = (
-    <section className="grid min-w-0 gap-3">
-      <h2 id="content-body-label" className="text-xl font-semibold">
+    <section className="col-span-full grid min-w-0 gap-3">
+      <h2 id="content-body-label" className="text-base font-semibold">
         Full text
       </h2>
       <p id="content-body-help" className="text-sm text-muted-foreground">
@@ -181,9 +191,11 @@ export default function ContentFields({
         />
       </Suspense>
       {!bodyValidation.success && (
-        <p id="content-body-error" role="alert" className="border border-border p-3">
-          {bodyValidation.error.issues[0]?.message} Your text is still here and has not been saved.
-        </p>
+        <Alert id="content-body-error" variant="destructive">
+          <AlertDescription>
+            {bodyValidation.error.issues[0]?.message} Your text is still here and has not been saved.
+          </AlertDescription>
+        </Alert>
       )}
     </section>
   );
@@ -258,7 +270,7 @@ export default function ContentFields({
         {field('artist_or_label', 'Artist or label')}
         <label className="grid gap-2">
           Physical format
-          <select
+          <NativeSelect
             className={fieldClass}
             value={String(data.group)}
             onChange={(event) => set('group', event.target.value)}
@@ -266,7 +278,7 @@ export default function ContentFields({
             {DISTRO_GROUP_VALUES.map((group) => (
               <option key={group}>{group}</option>
             ))}
-          </select>
+          </NativeSelect>
         </label>
         {image('image', 'image_alt', 'Item image')}
         {field('summary', 'Short description', { multiline: true })}
@@ -422,21 +434,21 @@ export default function ContentFields({
     <>
       <label className="grid gap-2">
         Public wording approval
-        <select
+        <NativeSelect
           className={fieldClass}
           value={String(data.publication)}
           onChange={(event) => set('publication', event.target.value)}
         >
           <option value="pending">Awaiting review</option>
           <option value="approved">Approved by the label</option>
-        </select>
+        </NativeSelect>
       </label>
       {field('content.revision', 'Date of wording', { type: 'date' })}
       {field('content.seller.name', 'Seller name')}
       {field('content.seller.address', 'Seller address', { multiline: true })}
       {field('content.seller.support_email', 'Support email', { type: 'email' })}
       {(['terms', 'privacy'] as const).map((group) => (
-        <section className="grid gap-6" key={group}>
+        <section className="col-span-full grid gap-6" key={group}>
           <h2 className="text-2xl font-semibold">{group === 'terms' ? 'Purchase terms' : 'Privacy'}</h2>
           {(group === 'terms'
             ? ['dispatch', 'delivery', 'returns', 'damaged_items', 'uncollected_parcels']

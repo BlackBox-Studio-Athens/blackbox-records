@@ -2,6 +2,7 @@ import { astro, FetchState } from 'astro/fetch';
 import { cf, finalize } from '@astrojs/cloudflare/fetch';
 import { productEnvironmentProfileFromBindings, type AppBindings } from '../env';
 import { authenticate } from './auth';
+import { handleLocalPublicationRequest, localPublicationRoot } from './local-publication-routes';
 import { DurableObject } from 'cloudflare:workers';
 import { CommerceRuntime } from '../index';
 import { isSupportedCmsApiRequest, isCmsTokenExportRead } from '../middleware';
@@ -132,6 +133,14 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       if (!exportRead) identity = await authenticate(request);
     } catch {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
+    }
+    if (url.pathname.startsWith(localPublicationRoot)) {
+      if (!identity) return new Response('Forbidden', { status: 403 });
+      return handleLocalPublicationRequest(request, {
+        db: bindings.CMS_DB,
+        environment: bindings.PRODUCT_ENVIRONMENT?.toLowerCase(),
+        identity,
+      });
     }
     if (url.pathname === publicationCatalogPath) {
       if (!identity || identity.role < 30 || request.method !== 'GET' || url.search)

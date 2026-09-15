@@ -57,6 +57,55 @@ export async function readRecentPublications(db: D1Database, environment: 'local
   return results.map((item) => summary.parse(item));
 }
 
+export async function readNextLocalPublication(db: D1Database) {
+  const row = await db
+    .prepare(
+      "SELECT id, requested_revision AS revision FROM _blackbox_publications WHERE environment = 'local' AND status = 'pending' ORDER BY rowid DESC LIMIT 1",
+    )
+    .first();
+  return row
+    ? requestSchema.pick({ id: true }).extend({ revision: requestSchema.shape.requestedRevision }).parse(row)
+    : null;
+}
+
+export async function acknowledgeLocalPublication(db: D1Database, id: string, snapshotSha256?: string) {
+  z.uuid().parse(id);
+  if (snapshotSha256 !== undefined) {
+    z.string()
+      .regex(/^[a-f0-9]{64}$/)
+      .parse(snapshotSha256);
+    await db.batch([
+      db
+        .prepare(
+          `UPDATE _blackbox_publications SET status = 'live', snapshot_sha256 = ?
+        WHERE id = ? AND environment = 'local' AND status = 'pending'
+        AND NOT EXISTS (SELECT 1 FROM _blackbox_publications newer WHERE newer.environment = 'local'
+          AND newer.status = 'live' AND newer.rowid > (SELECT rowid FROM _blackbox_publications WHERE id = ?))`,
+        )
+        .bind(snapshotSha256, id, id),
+      db
+        .prepare(
+          `UPDATE _blackbox_publications SET status = 'failed'
+        WHERE environment = 'local' AND status = 'pending' AND rowid <
+          (SELECT rowid FROM _blackbox_publications WHERE id = ? AND environment = 'local'
+            AND status = 'live' AND snapshot_sha256 = ?)`,
+        )
+        .bind(id, snapshotSha256),
+    ]);
+  } else {
+    await db
+      .prepare(
+        "UPDATE _blackbox_publications SET status = 'failed' WHERE id = ? AND environment = 'local' AND status = 'pending'",
+      )
+      .bind(id)
+      .run();
+  }
+  const item = await readPublication(db, 'local', id);
+  return snapshotSha256 === undefined
+    ? item?.status === 'failed'
+    : item?.status === 'live' && item.snapshotSha256 === snapshotSha256;
+}
+
 // Callers supply verified actor/target/revision identities, never an unchecked browser payload.
 export async function requestPublication(db: D1Database, input: z.input<typeof requestSchema>) {
   const request = requestSchema.parse(input);

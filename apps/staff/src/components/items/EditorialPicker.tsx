@@ -1,17 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { ContentImagePicker } from '../content/MediaLibrary';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Command, CommandInput, CommandList, CommandItem, CommandEmpty } from '../ui/command';
+import { Field, FieldLabel, FieldError } from '../ui/field';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import {
   editorialRequest,
-  editorialMediaUrl,
-  uploadArtwork,
   type EditorialList,
   type EditorialMedia,
   type EditorialRecord,
 } from '../../lib/backend/editorial-api';
 
 type Choice = EditorialRecord | EditorialMedia;
-export default function EditorialPicker({
+function RecordPicker({
   base,
   collection,
   label,
@@ -31,8 +33,11 @@ export default function EditorialPicker({
   const [cursor, setCursor] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
-  const [selectedName, setSelectedName] = useState('');
-  const [preview, setPreview] = useState('');
+  const [selectedItem, setSelectedItem] = useState<Choice | null>(null);
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  const trigger = useRef<HTMLButtonElement>(null);
+  const [requiredError, setRequiredError] = useState(false);
   const name = (item: Choice) => ('filename' in item ? item.filename : String(item.data.title ?? item.slug));
   async function search(next?: string) {
     setBusy(true);
@@ -41,11 +46,7 @@ export default function EditorialPicker({
       const params = new URLSearchParams({ limit: '25' });
       if (query.trim()) params.set('q', query.trim());
       if (next) params.set('cursor', next);
-      if (collection === 'media') params.set('mimeType', 'image/jpeg,image/png,image/webp');
-      const page = await editorialRequest<EditorialList<Choice>>(
-        base,
-        `${collection === 'media' ? 'media' : `content/${collection}`}?${params}`,
-      );
+      const page = await editorialRequest<EditorialList<Choice>>(base, `content/${collection}?${params}`);
       setItems((previous) => (next ? [...previous, ...page.items] : page.items));
       setCursor(page.nextCursor);
       if (!page.items.length) setMessage('No matching records.');
@@ -59,93 +60,114 @@ export default function EditorialPicker({
     void search();
   }, []);
   function select(item: Choice) {
-    setSelectedName(name(item));
+    setSelectedItem(item);
     onSelect(item);
-    if ('filename' in item) {
-      const origin = new URL(base || window.location.origin).origin;
-      setPreview(editorialMediaUrl(item, origin));
-    }
+    setOpen(false);
   }
-  async function upload(file?: File) {
-    if (!file) return;
-    setBusy(true);
-    setMessage('');
-    try {
-      const item = await uploadArtwork(base, file);
-      setItems((previous) => [item, ...previous.filter((row) => row.id !== item.id)]);
-      select(item);
-      setMessage('Image uploaded.');
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not upload the image.');
-    } finally {
-      setBusy(false);
-    }
-  }
+  const selected = selectedItem?.id === value ? selectedItem : items.find((item) => item.id === value);
   return (
-    <div className="grid min-w-0 gap-3">
-      <label className="grid gap-2">
-        Search {label.toLowerCase()}
-        <Input
-          value={query}
-          maxLength={200}
-          onChange={(event) => setQuery(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              if (!busy) void search();
-            }
-          }}
-        />
-      </label>
-      <Button type="button" disabled={busy} onClick={() => void search()}>
-        Search {label.toLowerCase()}
-      </Button>
-      <label className="grid gap-2">
-        {label}
-        <select
-          className="min-h-11 w-full min-w-0 border border-border bg-background p-2"
-          value={value}
-          disabled={busy}
-          onChange={(event) => {
-            const item = items.find((row) => row.id === event.target.value);
-            if (item) select(item);
-          }}
-          required
-        >
-          <option value="">Choose {label.toLowerCase()}</option>
-          {value && !items.some((row) => row.id === value) && (
-            <option value={value}>{selectedLabel || selectedName}</option>
-          )}
-          {items.map((item) => (
-            <option key={item.id} value={item.id}>
-              {name(item)}
-            </option>
-          ))}
-        </select>
-      </label>
-      {preview && <img src={preview} alt="Selected artwork" className="max-h-48 max-w-full object-contain" />}
-      {cursor && (
-        <Button type="button" disabled={busy} onClick={() => void search(cursor)}>
-          Show more
-        </Button>
-      )}
-      {collection === 'media' && (
-        <label className="grid gap-2">
-          Or upload an image
-          <Input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            disabled={busy}
-            onChange={(event) => void upload(event.target.files?.[0])}
-          />
-          <span className="text-sm text-muted-foreground">JPG, PNG or WebP, up to 20 MB.</span>
-        </label>
-      )}
+    <Field>
+      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <input
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+        required
+        value={value}
+        onChange={() => {}}
+        onInvalid={(event) => {
+          event.preventDefault();
+          setRequiredError(true);
+          trigger.current?.focus();
+        }}
+      />
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            ref={trigger}
+            aria-invalid={requiredError && !value}
+            id={id}
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+          >
+            <span className="truncate">
+              {selected
+                ? name(selected)
+                : value
+                  ? selectedLabel || 'Current selection'
+                  : `Choose ${label.toLowerCase()}`}
+            </span>
+            <ChevronsUpDown className="size-4 shrink-0" aria-hidden="true" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="cms-surface w-[var(--radix-popover-trigger-width)] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput
+              aria-label={`Search ${label.toLowerCase()}`}
+              value={query}
+              disabled={busy}
+              onValueChange={(query) => {
+                setQuery(query);
+                setItems([]);
+                setCursor(undefined);
+              }}
+              placeholder={`Search ${label.toLowerCase()}`}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && !event.currentTarget.getAttribute('aria-activedescendant')) {
+                  event.preventDefault();
+                  if (!busy) void search();
+                }
+              }}
+            />
+            <div className="border-b p-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full"
+                disabled={busy}
+                onClick={() => void search()}
+              >
+                Search {label.toLowerCase()}
+              </Button>
+            </div>
+            <CommandList aria-label={label}>
+              <CommandEmpty>{busy ? 'Loading' : 'No matching records.'}</CommandEmpty>
+              {items.map((item) => (
+                <CommandItem
+                  key={item.id}
+                  value={item.id}
+                  disabled={busy}
+                  onSelect={() => select(item)}
+                  className="min-h-11"
+                >
+                  <Check className={`size-4 ${value === item.id ? '' : 'invisible'}`} aria-hidden="true" />
+                  {name(item)}
+                </CommandItem>
+              ))}
+            </CommandList>
+            {cursor && (
+              <Button type="button" variant="ghost" disabled={busy} onClick={() => void search(cursor)}>
+                Show more
+              </Button>
+            )}
+          </Command>
+        </PopoverContent>
+      </Popover>
+      {requiredError && !value && <FieldError>Choose {label.toLowerCase()} before saving.</FieldError>}
       {(busy || message) && (
-        <p role="status" className="text-sm">
-          {busy ? 'Loading…' : message}
+        <p role="status" className="text-sm text-muted-foreground">
+          {busy ? 'Loading' : message}
         </p>
       )}
-    </div>
+    </Field>
   );
+}
+
+export default function EditorialPicker(props: Parameters<typeof RecordPicker>[0]) {
+  if (props.collection === 'media')
+    return <ContentImagePicker base={props.base} value={props.value} label={props.label} onSelect={props.onSelect} />;
+  return <RecordPicker {...props} />;
 }

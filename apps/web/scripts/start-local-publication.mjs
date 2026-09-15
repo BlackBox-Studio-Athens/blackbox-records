@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { setTimeout } from 'node:timers/promises';
+import { createLocalPublicationClient, runLocalPublicationPoll } from './local-publication-poll.mjs';
 import { captureCmsSnapshot } from '../../../scripts/capture-cms-snapshot.mjs';
 import { createCmsSnapshotReaders } from '../../../scripts/cms-snapshot-readers.mjs';
 import { writeCmsSnapshot } from '../../../scripts/export-cms-snapshot.mjs';
@@ -29,44 +29,32 @@ export async function activateLocalBuild(directory) {
   }
 }
 
-export async function startLocalPublication() {
+export async function startLocalPublication({
+  directory = fileURLToPath(new URL('../../backend/.wrangler/state/local-publication/', import.meta.url)),
+  signal,
+} = {}) {
   const { preview } = await import('astro');
-  const { getPlatformProxy } = await import('../../backend/node_modules/wrangler/wrangler-dist/cli.js');
   const web = fileURLToPath(new URL('../', import.meta.url));
-  const backend = fileURLToPath(new URL('../../backend/', import.meta.url));
-  const directory = resolve(backend, '.wrangler/state/local-publication');
   const current = resolve(directory, 'public');
   await mkdir(directory, { recursive: true });
-  const resource = JSON.parse(await readFile(resolve(backend, 'cms-resources.json'), 'utf8')).local;
-  const configPath = resolve(directory, 'wrangler.json');
-  await writeFile(
-    configPath,
-    JSON.stringify({
-      name: 'blackbox-local-publication',
-      compatibility_date: '2026-08-31',
-      d1_databases: [{ binding: 'CMS_DB', database_name: resource.database_name, database_id: resource.database_id }],
-    }),
-  );
-  const proxy = await getPlatformProxy({
-    configPath,
-    persist: { path: resolve(backend, '.wrangler/state/v3') },
-    remoteBindings: false,
-    envFiles: [],
-  });
-  const db = proxy.env.CMS_DB;
+  const controller = new AbortController();
+  const client = createLocalPublicationClient(controller.signal);
   let server;
   let stopping = false;
   let child;
   const stop = () => {
     stopping = true;
+    controller.abort();
     child?.kill();
   };
   process.once('SIGINT', stop);
   process.once('SIGTERM', stop);
+  signal?.addEventListener('abort', stop, { once: true });
+  if (signal?.aborted) stop();
 
   async function capture() {
     const snapshot = await captureCmsSnapshot({
-      ...createCmsSnapshotReaders({ environment: 'local', target: 'http://127.0.0.1:8787' }),
+      ...createCmsSnapshotReaders({ environment: 'local', target: 'http://127.0.0.1:8787', fetchImpl: client.send }),
       maxRequests: 1000,
     });
     return { snapshot, input: await writeCmsSnapshot(snapshot, resolve(directory, randomUUID()), 'local') };
@@ -108,7 +96,7 @@ export async function startLocalPublication() {
   try {
     let empty = true;
     for (const collection of Object.keys(sourceCollectionNames)) {
-      const response = await fetch(`http://127.0.0.1:8787/_emdash/api/content/${collection}?limit=1`);
+      const response = await client.send(`http://127.0.0.1:8787/_emdash/api/content/${collection}?limit=1`);
       if (!response.ok) throw new Error('Local CMS is not ready.');
       if ((await response.json()).data.items.length) {
         empty = false;
@@ -130,17 +118,17 @@ export async function startLocalPublication() {
         do {
           const query = new URLSearchParams({ limit: '100', orderBy: 'createdAt', order: 'asc' });
           if (cursor) query.set('cursor', cursor);
-          const list = await fetch(`http://127.0.0.1:8787/_emdash/api/content/${collection}?${query}`);
+          const list = await client.send(`http://127.0.0.1:8787/_emdash/api/content/${collection}?${query}`);
           if (!list.ok) throw new Error('Local CMS is not ready.');
           const { data } = await list.json();
           cursor = data.nextCursor;
           for (const item of data.items) {
             if (item.status === 'published') continue;
             const url = `http://127.0.0.1:8787/_emdash/api/content/${collection}/${item.id}`;
-            const saved = await fetch(url);
+            const saved = await client.send(url);
             if (!saved.ok) throw new Error('Initial Local record is unavailable.');
             const record = (await saved.json()).data;
-            const published = await fetch(url + '/publish', {
+            const published = await client.send(url + '/publish', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1' },
               body: JSON.stringify({ _rev: record._rev }),
@@ -159,65 +147,18 @@ export async function startLocalPublication() {
       server: { host: '127.0.0.1', port: 4321 },
       vite: { preview: { strictPort: true } },
     });
-    // ponytail: one runner is enforced by the public port; a hosted queue is unnecessary for Local.
-    while (!stopping) {
-      // The persisted CMS receipt also completes item operations after their browser tab closes.
-      const reconciled = await fetch('http://127.0.0.1:8787/_emdash/api/blackbox/item-publications/reconcile', {
-        method: 'POST',
-        headers: { Origin: 'http://127.0.0.1:8787', 'X-EmDash-Request': '1' },
-      }).catch(() => null);
-      await reconciled?.body?.cancel();
-      const request = await db
-        .prepare(
-          "SELECT id, requested_revision AS revision FROM _blackbox_publications WHERE environment = 'local' AND status = 'pending' ORDER BY rowid DESC LIMIT 1",
-        )
-        .first();
-      if (request) {
-        try {
-          const active = JSON.parse(await readFile(resolve(directory, 'input.json'), 'utf8'));
-          let sha256 = active.sha256;
-          if (active.publicationId !== request.id) {
-            const { snapshot, input } = await capture();
-            if (!snapshot.snapshot.records.some((record) => record.revisionId === request.revision))
-              throw new Error('Requested revision is no longer published.');
-            await build({ ...input, publicationId: request.id });
-            sha256 = input.sha256;
-          }
-          const receipt = await fetch('http://127.0.0.1:4321/blackbox-records/local-publication.json', {
-            cache: 'no-store',
-          });
-          if (!receipt.ok) throw new Error('Local publication could not be verified.');
-          const deployed = await receipt.json();
-          if (deployed.publicationId !== request.id || deployed.sha256 !== sha256)
-            throw new Error('Local publication could not be verified.');
-          await db
-            .prepare(
-              "UPDATE _blackbox_publications SET status = 'live', snapshot_sha256 = ? WHERE id = ? AND environment = 'local' AND status = 'pending'",
-            )
-            .bind(sha256, request.id)
-            .run();
-          await db
-            .prepare(
-              "UPDATE _blackbox_publications SET status = 'failed' WHERE environment = 'local' AND status = 'pending' AND rowid < (SELECT rowid FROM _blackbox_publications WHERE id = ?)",
-            )
-            .bind(request.id)
-            .run();
-          console.log('[Local publication] Live on fresh public page loads.');
-        } catch (error) {
-          if (stopping) break;
-          await db
-            .prepare(
-              "UPDATE _blackbox_publications SET status = 'failed' WHERE id = ? AND environment = 'local' AND status = 'pending'",
-            )
-            .bind(request.id)
-            .run();
-          console.error('[Local publication]', error.message);
-        }
-      }
-      await setTimeout(2000);
-    }
+    await runLocalPublicationPoll({
+      client,
+      signal: controller.signal,
+      readActive: async () => JSON.parse(await readFile(resolve(directory, 'input.json'), 'utf8')),
+      capture,
+      build,
+    });
   } finally {
     await server?.stop();
-    await proxy.dispose();
+    controller.abort();
+    process.removeListener('SIGINT', stop);
+    process.removeListener('SIGTERM', stop);
+    signal?.removeEventListener('abort', stop);
   }
 }

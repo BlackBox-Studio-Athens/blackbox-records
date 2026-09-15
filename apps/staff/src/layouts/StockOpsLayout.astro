@@ -29,7 +29,10 @@ const htmlTitle = pageTitle + ' | BlackBox Records';
       rel="stylesheet"
     />
   </head>
-  <body class="min-h-screen overflow-x-clip bg-background text-foreground">
+  <body
+    data-workspace={Astro.url.pathname.startsWith('/content/') ? 'content' : undefined}
+    class="min-h-screen overflow-x-clip bg-background text-foreground"
+  >
     <a class="accessibility-skip-to-content-link" href="#main">Skip to workspace</a>
     <header class="staff-header">
       <a href="/stock/" class="staff-brand" aria-label="BlackBox Records staff, stock workspace"

@@ -1,6 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
+import { ArrowLeft, Eye, FileText, MoreHorizontal, Plus, RefreshCw, Save, Search, Send } from 'lucide-react';
+import { Badge } from '../ui/badge';
+import { ButtonGroup } from '../ui/button-group';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
+import { Table, TableBody, TableRow, TableCell } from '../ui/table';
+import { SidebarProvider, SidebarTrigger } from '../ui/sidebar';
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbPage, BreadcrumbSeparator } from '../ui/breadcrumb';
+import { Separator } from '../ui/separator';
+import { Skeleton } from '../ui/skeleton';
+import { Spinner } from '../ui/spinner';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../ui/sheet';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '../ui/alert-dialog';
+import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
+import ContentNavigation from './ContentNavigation';
+import MediaLibrary from './MediaLibrary';
 import ContentFields, { contentSections, type ContentSection, type ContentData } from './ContentFields';
 import ContentPreview from './ContentPreview';
 import {
@@ -30,6 +55,21 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [items, setItems] = useState<EditorialRecord[]>([]);
   const [cursor, setCursor] = useState<string>();
   const [query, setQuery] = useState('');
+  const [media, setMedia] = useState(false);
+  const [mobileEditor, setMobileEditor] = useState(false);
+  const [confirmTrash, setConfirmTrash] = useState(false);
+  const editorHeading = useRef<HTMLHeadingElement>(null);
+  const previewTrigger = useRef<HTMLButtonElement>(null);
+  const listHeading = useRef<HTMLHeadingElement>(null);
+  function updateUrl(section: ContentSection, id?: string, mediaView = false) {
+    const params = new URLSearchParams({ collection: section });
+    if (id) params.set('id', id);
+    if (mediaView) params.set('view', 'media');
+    window.history.replaceState(null, '', `${window.location.pathname}?${params}`);
+  }
+  useEffect(() => {
+    if (mobileEditor && !media) editorHeading.current?.focus();
+  }, [mobileEditor, media]);
   const [document, setDocument] = useState<Document | null>(null);
   const [data, setData] = useState<ContentData>({});
   const [dirty, setDirty] = useState(false);
@@ -146,6 +186,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         setDocument({ item: { id: '', slug: saved.slug, data: saved.data }, _rev: '' });
         setData(saved.data);
         setPendingNew(saved.data);
+        setMobileEditor(true);
         setMessage('Check the last save before creating another record.');
         void list(saved.collection);
       } catch {
@@ -153,17 +194,20 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       }
     } else {
       const selected = new URLSearchParams(window.location.search);
+      setMedia(selected.get('view') === 'media');
       const section = selected.get('collection');
       const id = selected.get('id');
-      if (section && Object.hasOwn(contentSections, section) && id) {
+      if (section && Object.hasOwn(contentSections, section)) {
         setCollection(section as ContentSection);
         void list(section as ContentSection);
-        void editorialRequest<Document>(base, `content/${section}/${encodeURIComponent(id)}`)
-          .then((loaded) => {
-            setDocument(loaded);
-            setData(loaded.item.data);
-          })
-          .catch(() => setMessage('The selected content could not be loaded. Search to try again.'));
+        if (id)
+          void editorialRequest<Document>(base, `content/${section}/${encodeURIComponent(id)}`)
+            .then((loaded) => {
+              setDocument(loaded);
+              setData(loaded.item.data);
+              setMobileEditor(true);
+            })
+            .catch(() => setMessage('The selected content could not be loaded. Search to try again.'));
       } else void list();
     }
   }, []);
@@ -190,6 +234,9 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setData(loaded.item.data);
       setDirty(false);
       setConflict(false);
+      setMobileEditor(true);
+      updateUrl(collection, loaded.item.id);
+      editorHeading.current?.focus();
     } catch {
       setMessage('We could not load this record. Try again.');
     } finally {
@@ -232,6 +279,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     setDirty(false);
     setConflict(false);
     setMessage('');
+    setMobileEditor(true);
+    updateUrl(collection);
   }
   async function saveNew(event: React.FormEvent) {
     if (document?.item.id) return save(event);
@@ -260,6 +309,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setItems((items) => [saved.item, ...items.filter((item) => item.id !== saved.item.id)]);
       setDirty(false);
       setMessage('Draft created. The public site has not changed.');
+      updateUrl(collection, saved.item.id);
     } catch (error) {
       if (error instanceof EditorialApiError && [400, 422].includes(error.status)) {
         sessionStorage.removeItem(pendingKey);
@@ -272,7 +322,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
   async function remove() {
     if (!document?.item.id || busy || !['news', 'socials'].includes(collection)) return;
-    if (!window.confirm(`Move ${String(document.item.data.title)} to trash?`)) return;
+    setConfirmTrash(false);
     setBusy(true);
     try {
       await editorialRequest(
@@ -285,187 +335,436 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setDocument(null);
       setDirty(false);
       setMessage('Moved to trash. The public site has not changed.');
+      setMobileEditor(false);
+      updateUrl(collection);
+      listHeading.current?.focus();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : 'We could not confirm the change.');
     } finally {
       setBusy(false);
     }
   }
+  function selectCollection(section: ContentSection) {
+    if (section === collection) {
+      setMedia(false);
+      updateUrl(collection, document?.item.id);
+      return;
+    }
+    if (!mayLeave()) {
+      setMedia(false);
+      return;
+    }
+    setCollection(section);
+    setMedia(false);
+    setQuery('');
+    setDocument(null);
+    setItems([]);
+    setCursor(undefined);
+    setDirty(false);
+    setMobileEditor(false);
+    setMessage('');
+    updateUrl(section);
+    void list(section, undefined, '');
+  }
+  const canCreate = ['news', 'socials'].includes(collection);
+  const canPreview = ['home', 'about', 'services', 'artists', 'releases', 'distro', 'news'].includes(collection);
+  const canPublish = !['releases', 'distro'].includes(collection);
+  const title = String(data.title || data.label_name || contentSections[collection]);
   return (
-    <div className="mx-auto grid max-w-5xl gap-8 px-4 py-8 sm:px-8">
-      <header>
-        <h1 className="text-3xl font-semibold">Content</h1>
-        <p className="mt-3 text-muted-foreground">
-          Edit the label’s pages, preview a draft, and publish saved content.
-        </p>
-      </header>
-      <fieldset disabled={!ready || busy || !!pendingNew} className="grid min-w-0 gap-4">
-        <label className="grid gap-2">
-          Section
-          <select
-            className="min-h-11 w-full border border-border bg-background p-2"
-            value={collection}
-            onChange={(event) => {
-              if (!mayLeave()) return;
-              const section = event.target.value as ContentSection;
-              setCollection(section);
-              setQuery('');
-              setDocument(null);
-              setDirty(false);
-              setMessage('');
-              void list(section, undefined, '');
-            }}
-          >
-            {Object.entries(contentSections).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <form
-          className="flex flex-wrap items-end gap-3"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void list();
-          }}
-        >
-          <label className="grid min-w-0 flex-1 gap-2">
-            Search content
-            <Input value={query} onChange={(event) => setQuery(event.target.value)} />
-          </label>
-          <Button type="submit">Search</Button>
-        </form>
-        {['news', 'socials'].includes(collection) && (
-          <Button type="button" variant="outline" onClick={() => void create()}>
-            Add {collection === 'news' ? 'news' : 'social link'}
-          </Button>
-        )}
-        <ul className="divide-y divide-border">
-          {items.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className="min-h-11 w-full p-3 text-left underline underline-offset-4"
-                onClick={() => void open(item)}
-              >
-                {String(item.data.title ?? contentSections[collection])}
-              </button>
-            </li>
-          ))}
-        </ul>
-        {!items.length && <p>{busy ? 'Loading content…' : 'No matching content.'}</p>}
-        {cursor && (
-          <Button type="button" variant="outline" onClick={() => void list(collection, cursor)}>
-            Show more
-          </Button>
-        )}
-      </fieldset>
-      {message && (
-        <p role={conflict ? 'alert' : 'status'} className="whitespace-pre-wrap border border-border p-4">
-          {message}
-        </p>
-      )}
-      {document && (
-        <form onSubmit={saveNew} className="grid min-w-0 gap-6">
-          <h2 className="break-words text-2xl font-semibold">
-            {String(document.item.data.title ?? contentSections[collection])}
-          </h2>
-          <fieldset disabled={busy || !!pendingNew} className="grid min-w-0 gap-6">
-            <ContentFields
-              key={`${document.item.id || document.item.slug}:${document._rev}`}
-              collection={collection}
-              data={data}
-              base={base}
-              disabled={busy || !!pendingNew}
-              onChange={(next) => {
-                setData(next);
-                setDirty(true);
-              }}
-            />
-          </fieldset>
-          <div className="flex flex-wrap gap-3">
-            {document.item.id && ['news', 'socials'].includes(collection) && (
-              <Button type="button" variant="outline" disabled={busy || dirty} onClick={() => void remove()}>
-                Move to trash
-              </Button>
-            )}
-            {['home', 'about', 'services', 'artists', 'releases', 'distro', 'news'].includes(collection) && (
-              <Button type="button" variant="outline" onClick={() => setPreview(!preview)}>
-                {preview ? 'Hide preview' : 'Preview draft'}
-              </Button>
-            )}
-            <Button type="submit" disabled={busy || conflict}>
-              {busy ? 'Saving…' : pendingNew ? 'Check last save' : 'Save draft'}
-            </Button>
-            {document.item.id && (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={busy}
-                onClick={() => {
-                  if (dirty) setConfirmReload(true);
-                  else void open(document.item, true);
-                }}
-              >
-                Load saved version
-              </Button>
-            )}
-          </div>
-          {confirmReload && (
-            <div role="alert" className="grid gap-3 border border-border p-4">
-              <p>Discard your unsaved changes and load the saved version?</p>
-              <div className="flex flex-wrap gap-3">
-                <Button type="button" variant="outline" onClick={() => setConfirmReload(false)}>
-                  Keep editing
-                </Button>
-                <Button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => {
-                    setConfirmReload(false);
-                    void open(document.item, true);
-                  }}
-                >
-                  Discard changes and reload
-                </Button>
-              </div>
-            </div>
-          )}
-          <p className="text-sm text-muted-foreground">{dirty ? 'You have unsaved changes.' : 'No unsaved changes.'}</p>
-          {!['releases', 'distro'].includes(collection) && (
+    <SidebarProvider
+      className="cms-surface cms-workspace"
+      style={{ '--sidebar-width': '220px' } as React.CSSProperties}
+    >
+      <ContentNavigation
+        collection={collection}
+        media={media}
+        disabled={!ready || busy || !!pendingNew}
+        onCollection={selectCollection}
+        onMedia={() => {
+          setMedia(true);
+          updateUrl(collection, document?.item.id, true);
+        }}
+      />
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="cms-workspace-bar flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
+          <SidebarTrigger className="size-11 shrink-0" />
+          <Separator orientation="vertical" className="h-5" />
+          <Breadcrumb>
+            <BreadcrumbList>
+              <BreadcrumbItem>Content</BreadcrumbItem>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbPage>{media ? 'Media library' : contentSections[collection]}</BreadcrumbPage>
+              </BreadcrumbItem>
+            </BreadcrumbList>
+          </Breadcrumb>
+          {media && document && (
             <Button
               type="button"
-              disabled={busy || dirty || conflict || !document.item.id}
-              onClick={() => void publish()}
+              variant="ghost"
+              className="ml-auto"
+              aria-label="Back to draft"
+              onClick={() => {
+                setMedia(false);
+                updateUrl(collection, document.item.id);
+              }}
             >
-              {pendingPublication ? 'Retry publication request' : 'Publish saved content'}
+              <ArrowLeft className="size-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Back to draft</span>
             </Button>
           )}
-          {preview && <ContentPreview collection={collection} data={data} base={base} />}
-        </form>
-      )}
-      <section aria-label="Recent publications" className="grid gap-3 border-t border-border pt-6">
-        <h2 className="text-xl font-semibold">Recent publications</h2>
-        <p className="text-sm text-muted-foreground">
-          Saved drafts are private. Accepted requests remain saved after you close this page. Live applies to fresh
-          public page loads; an already-open music player is not reloaded. An open tab may keep cached pages when you
-          navigate. Reload it to see the latest content; reloading stops playback.
-        </p>
-        <Button type="button" variant="outline" disabled={!ready || busy} onClick={() => void publicationStatus()}>
-          Check publication status
-        </Button>
-        {publicationMessage && <p role="status">{publicationMessage}</p>}
-        <ul className="divide-y divide-border">
-          {publications.map((item) => (
-            <li key={item.id} className="py-3">
-              <strong>{item.status === 'live' ? 'Live' : item.status === 'failed' ? 'Failed' : 'Pending'}</strong>
-              {' · '}
-              {new Date(item.requestedAt).toLocaleString()}
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
+        </div>
+        {media && (
+          <section className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
+            <div className="mx-auto max-w-6xl">
+              <h1 className="text-2xl font-semibold">Media library</h1>
+              <p className="mt-2 mb-8 text-sm text-muted-foreground">Images for your artists, releases and pages.</p>
+              <MediaLibrary base={base} />
+            </div>
+          </section>
+        )}
+        <div className="cms-content-panes" hidden={media}>
+          <section
+            aria-label="Content records"
+            className={`cms-records ${mobileEditor ? 'cms-records-mobile-hidden' : ''}`}
+          >
+            <div className="grid gap-4 border-b border-border p-4">
+              <div className="flex items-center justify-between gap-2">
+                <h1 ref={listHeading} tabIndex={-1} className="text-base font-semibold outline-none">
+                  {contentSections[collection]}
+                </h1>
+                <Badge variant="secondary">
+                  {items.length}
+                  {cursor ? '+' : ''}
+                </Badge>
+              </div>
+              <form
+                className="grid gap-2"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  if (!busy) void list();
+                }}
+              >
+                <InputGroup className="h-11">
+                  <InputGroupAddon>
+                    <Search aria-hidden="true" />
+                  </InputGroupAddon>
+                  <InputGroupInput
+                    aria-label="Search content"
+                    placeholder="Search content"
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                  />
+                </InputGroup>
+                <Button type="submit" variant="outline" disabled={!ready || busy}>
+                  Search
+                </Button>
+              </form>
+              {canCreate && (
+                <Button type="button" disabled={!ready || busy || !!pendingNew} onClick={() => void create()}>
+                  <Plus className="size-4" aria-hidden="true" />
+                  Add {collection === 'news' ? 'news' : 'social link'}
+                </Button>
+              )}
+              {!mobileEditor && document && (
+                <Button type="button" variant="secondary" className="md:hidden" onClick={() => setMobileEditor(true)}>
+                  Return to draft
+                </Button>
+              )}
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {!mobileEditor && message && (
+                <Alert role={conflict ? 'alert' : 'status'} className="m-4 w-auto md:hidden">
+                  <AlertDescription>{message}</AlertDescription>
+                </Alert>
+              )}
+              {busy && !items.length ? (
+                <div className="grid gap-3 p-4" role="status" aria-label="Loading content">
+                  <Skeleton className="h-14" />
+                  <Skeleton className="h-14" />
+                  <Skeleton className="h-14" />
+                </div>
+              ) : (
+                <Table>
+                  <TableBody>
+                    {items.map((item) => (
+                      <TableRow key={item.id} data-state={document?.item.id === item.id ? 'selected' : undefined}>
+                        <TableCell className="p-0">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="h-auto min-h-16 w-full justify-start rounded-none px-4 py-3 text-left whitespace-normal"
+                            disabled={!ready || busy || !!pendingNew}
+                            aria-current={document?.item.id === item.id ? 'true' : undefined}
+                            onClick={() => void open(item)}
+                          >
+                            <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                            <span className="min-w-0 break-words">
+                              {String(item.data.title ?? item.data.label_name ?? contentSections[collection])}
+                            </span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+              {!busy && !items.length && (
+                <p className="p-6 text-sm text-muted-foreground">No matching content. Try another search.</p>
+              )}
+              {cursor && (
+                <div className="p-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={busy}
+                    onClick={() => void list(collection, cursor)}
+                  >
+                    Show more
+                  </Button>
+                </div>
+              )}
+            </div>
+          </section>
+          <section
+            aria-label="Content editor"
+            className={`cms-editor ${!mobileEditor ? 'cms-editor-mobile-hidden' : ''}`}
+          >
+            {document ? (
+              <>
+                <header className="cms-editor-toolbar">
+                  <div className="flex min-w-0 items-start gap-3">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="shrink-0 md:hidden"
+                      aria-label="Back to records"
+                      onClick={() => {
+                        setMobileEditor(false);
+                        requestAnimationFrame(() => listHeading.current?.focus());
+                      }}
+                    >
+                      <ArrowLeft className="size-4" />
+                    </Button>
+                    <div className="min-w-0">
+                      <h2 ref={editorHeading} tabIndex={-1} className="truncate text-xl font-semibold outline-none">
+                        {title}
+                      </h2>
+                      <p role="status" className="mt-1 text-xs text-muted-foreground">
+                        {dirty ? 'Unsaved changes' : 'No unsaved changes'} · Private draft
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ButtonGroup aria-label="Draft actions">
+                      {canPreview && (
+                        <Button
+                          ref={previewTrigger}
+                          type="button"
+                          variant="outline"
+                          disabled={busy}
+                          onClick={() => setPreview(true)}
+                        >
+                          <Eye className="size-4" aria-hidden="true" />
+                          Preview
+                        </Button>
+                      )}
+                      <Button type="submit" form="content-editor-form" disabled={busy || conflict}>
+                        {busy ? <Spinner className="size-4" /> : <Save className="size-4" aria-hidden="true" />}
+                        {pendingNew ? 'Check last save' : 'Save draft'}
+                      </Button>
+                    </ButtonGroup>
+                    {canPublish && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span tabIndex={0}>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              disabled={busy || dirty || conflict || !document.item.id}
+                              onClick={() => void publish()}
+                            >
+                              <Send className="size-4" aria-hidden="true" />
+                              {pendingPublication ? 'Retry publication request' : 'Publish saved content'}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Save your draft before requesting publication.</TooltipContent>
+                      </Tooltip>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="More draft actions"
+                          disabled={busy || !!pendingNew}
+                        >
+                          <MoreHorizontal className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="cms-surface" align="end">
+                        <DropdownMenuItem
+                          disabled={!document.item.id}
+                          onSelect={() => {
+                            if (dirty) setConfirmReload(true);
+                            else void open(document.item, true);
+                          }}
+                        >
+                          Load saved version
+                        </DropdownMenuItem>
+                        {canCreate && (
+                          <DropdownMenuItem
+                            disabled={!document.item.id || dirty}
+                            onSelect={() => setConfirmTrash(true)}
+                          >
+                            Move to trash
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </header>
+                <div className="cms-editor-body">
+                  {message && (
+                    <Alert
+                      variant={conflict ? 'destructive' : 'default'}
+                      role={conflict ? 'alert' : 'status'}
+                      className="mb-6"
+                    >
+                      <AlertDescription className="whitespace-pre-wrap">{message}</AlertDescription>
+                    </Alert>
+                  )}
+                  {!canPublish && (
+                    <p className="mb-6 text-sm text-muted-foreground">
+                      Save editorial changes here. Publish linked items from{' '}
+                      <a href="/items/" className="underline underline-offset-4">
+                        Items
+                      </a>
+                      .
+                    </p>
+                  )}
+                  <form id="content-editor-form" onSubmit={saveNew}>
+                    <fieldset
+                      disabled={busy || !!pendingNew}
+                      className="cms-fields grid min-w-0 gap-6 @2xl:grid-cols-2"
+                    >
+                      <legend className="mb-6 text-sm font-semibold">Content details</legend>
+                      <ContentFields
+                        key={`${document.item.id || document.item.slug}:${document._rev}`}
+                        collection={collection}
+                        data={data}
+                        base={base}
+                        disabled={busy || !!pendingNew}
+                        onChange={(next) => {
+                          setData(next);
+                          setDirty(true);
+                        }}
+                      />
+                    </fieldset>
+                  </form>
+                </div>
+              </>
+            ) : (
+              <div className="grid flex-1 place-content-center gap-3 p-8 text-center">
+                <FileText className="mx-auto size-8 text-muted-foreground" aria-hidden="true" />
+                <h2 className="text-xl font-semibold">Select content to edit</h2>
+                <p className="max-w-sm text-sm text-muted-foreground">
+                  Choose a record from {contentSections[collection].toLowerCase()} to edit its draft.
+                </p>
+                {message && (
+                  <Alert role="status">
+                    <AlertDescription>{message}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            )}
+            <section aria-label="Recent publications" className="cms-publications border-t border-border p-4 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="text-sm font-semibold">Recent publications</h2>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={!ready || busy}
+                  onClick={() => void publicationStatus()}
+                >
+                  <RefreshCw className="size-4" aria-hidden="true" />
+                  Check publication status
+                </Button>
+              </div>
+              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+                Saved drafts are private. Wait for Live, then reload the public page to see changes. Reloading stops an
+                active music player.
+              </p>
+              {publicationMessage && (
+                <p role="status" className="mt-3 text-sm">
+                  {publicationMessage}
+                </p>
+              )}
+              <ul className="mt-3 divide-y divide-border">
+                {publications.map((item) => (
+                  <li key={item.id} className="flex flex-wrap items-center gap-3 py-2 text-xs text-muted-foreground">
+                    <Badge variant="secondary" className={item.status === 'failed' ? 'text-destructive' : ''}>
+                      {item.status === 'live' ? 'Live' : item.status === 'failed' ? 'Failed' : 'Pending'}
+                    </Badge>
+                    <time dateTime={new Date(item.requestedAt).toISOString()}>
+                      {new Date(item.requestedAt).toLocaleString()}
+                    </time>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </section>
+        </div>
+      </div>
+      <Sheet open={preview} onOpenChange={setPreview}>
+        <SheetContent
+          className="cms-surface w-full overflow-y-auto sm:max-w-3xl"
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            previewTrigger.current?.focus();
+          }}
+        >
+          <SheetHeader>
+            <SheetTitle>Draft preview</SheetTitle>
+            <SheetDescription>Only signed-in label members can see this draft.</SheetDescription>
+          </SheetHeader>
+          <div className="p-4">{document && <ContentPreview collection={collection} data={data} base={base} />}</div>
+        </SheetContent>
+      </Sheet>
+      <AlertDialog open={confirmReload} onOpenChange={setConfirmReload}>
+        <AlertDialogContent className="cms-surface">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
+            <AlertDialogDescription>Your unsaved edits will be replaced with the saved version.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (document) void open(document.item, true);
+              }}
+            >
+              Discard changes and reload
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={confirmTrash} onOpenChange={setConfirmTrash}>
+        <AlertDialogContent className="cms-surface">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Move {title} to trash?</AlertDialogTitle>
+            <AlertDialogDescription>The public site will not change until publication.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep content</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void remove()}>Move to trash</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </SidebarProvider>
   );
 }

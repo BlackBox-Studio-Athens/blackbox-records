@@ -4,7 +4,7 @@ import { loadMessages, LocaleDirectionProvider } from '@emdash-cms/admin/locales
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import '@emdash-cms/admin/styles.css';
+import '../../styles/content-editor.css';
 
 export default function ContentBodyEditor(
   props: PortableTextEditorProps & { 'aria-describedby'?: string; 'aria-invalid'?: boolean },
