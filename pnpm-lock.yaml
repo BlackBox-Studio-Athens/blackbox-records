@@ -223,8 +223,8 @@ importers:
         specifier: 4.13.5
         version: 4.13.5
       jose:
-        specifier: 6.2.3
-        version: 6.2.3
+        specifier: 6.2.12
+        version: 6.2.12
       react:
         specifier: 19.2.8
         version: 19.2.8
@@ -5910,8 +5910,8 @@ packages:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
 
-  jose@6.2.3:
-    resolution: {integrity: sha512-YYVDInQKFJfR/xa3ojUTl8c2KoTwiL1R5Wg9YCydwH0x0B9grbzlg5HC7mMjCtUJjbQ/YnGEZIhI5tCgfTb4Hw==}
+  jose@6.2.12:
+    resolution: {integrity: sha512-9NiFmJEex0sy2Dk58j2UGBSHgUs2ypF9eZSu4L6vjOX3Dp96Sw1F3uL+H+D1sx02jZZdzUT0HgvCy59CuvXcWw==}
 
   jpeg-js@0.4.4:
     resolution: {integrity: sha512-WZzeDOEtTOBK4Mdsar0IqEU5sMr3vSV2RqkAIzUEV2BHnUfKGyswWFPFwK5EeDo93K3FohSHbLAjj0s1Wzd+dg==}
@@ -9058,7 +9058,7 @@ snapshots:
       '@cloudflare/workers-types': 5.20260911.1
       astro: 7.3.2(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@24.13.3)(jiti@2.7.0)(sass@1.97.3)(tsx@4.23.13)(yaml@2.9.0)
       emdash: 0.38.0(patch_hash=df8667efa21f542c69ce05fc868c2b381bec72946117b43ba8fc78516d54c069)(@astrojs/react@6.0.4(@types/node@24.13.3)(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(sass@1.97.3)(supports-color@10.2.2)(tsx@4.23.13)(yaml@2.9.0))(@atcute/cbor@2.3.7(@atcute/cid@2.4.2))(@atcute/cid@2.4.2)(@atcute/identity@2.0.2(@atcute/lexicons@2.1.0)(typescript@5.9.3))(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.31.3(@tiptap/core@3.31.3(@tiptap/pm@3.31.3))(@tiptap/pm@3.31.3))(@types/react-dom@19.2.5(@types/react@19.2.18))(@types/react@19.2.18)(astro@7.3.2(@emnapi/core@1.11.2)(@emnapi/runtime@1.11.3)(@types/node@24.13.3)(jiti@2.7.0)(sass@1.97.3)(tsx@4.23.13)(yaml@2.9.0))(prosemirror-model@1.25.11)(prosemirror-state@1.4.4)(prosemirror-view@1.42.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
-      jose: 6.2.3
+      jose: 6.2.12
       kysely: 0.29.5
       kysely-d1: 0.4.0(kysely@0.29.5)
       ulidx: 2.4.1
@@ -9806,7 +9806,7 @@ snapshots:
       express: 5.2.1(supports-color@10.2.2)
       express-rate-limit: 8.5.2(express@5.2.1)
       hono: 4.13.5
-      jose: 6.2.3
+      jose: 6.2.12
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
@@ -9828,7 +9828,7 @@ snapshots:
       express: 5.2.1(supports-color@10.2.2)
       express-rate-limit: 8.5.2(express@5.2.1)
       hono: 4.13.5
-      jose: 6.2.3
+      jose: 6.2.12
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
@@ -9850,7 +9850,7 @@ snapshots:
       express: 5.2.1(supports-color@10.2.2)
       express-rate-limit: 8.5.2(express@5.2.1)
       hono: 4.13.5
-      jose: 6.2.3
+      jose: 6.2.12
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
       raw-body: 3.0.2
@@ -12886,7 +12886,7 @@ snapshots:
       consola: 3.4.2
       croner: 10.0.1
       highlight.js: 11.11.2
-      jose: 6.2.3
+      jose: 6.2.12
       jpeg-js: 0.4.4
       jsonc-parser: 3.3.1
       kysely: 0.29.5
@@ -12972,7 +12972,7 @@ snapshots:
       consola: 3.4.2
       croner: 10.0.1
       highlight.js: 11.11.2
-      jose: 6.2.3
+      jose: 6.2.12
       jpeg-js: 0.4.4
       jsonc-parser: 3.3.1
       kysely: 0.29.5
@@ -13828,7 +13828,7 @@ snapshots:
 
   jiti@2.7.0: {}
 
-  jose@6.2.3: {}
+  jose@6.2.12: {}
 
   jpeg-js@0.4.4: {}
 
