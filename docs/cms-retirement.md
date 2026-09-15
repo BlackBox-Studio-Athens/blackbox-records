@@ -53,3 +53,15 @@ PRD was not promoted and no external resources were deleted. Its prior publicati
 All 48 main specifications pass normal validation. Repository-wide strict mode still rejects 20 pre-existing placeholder Purpose sections; those unrelated specifications were not rewritten. The cleanup change and accepted EmDash change pass strict validation.
 
 Completion remains blocked on successful unmodified UAT acceptance, exact-candidate PRD promotion and verified external retirement. Repository deletion alone is not completion.
+
+## Email-free continuation
+
+After the Resend daily-quota warning, the user requested continuation without using Resend. No provider settings or normal delivery were changed. Do not rerun the bundled `smoke-uat` CI job: it invokes paid checkouts and the Resend/newsletter smoke. Their earlier passing results remain historical evidence, not permission to bypass candidate acceptance.
+
+### Subsequently approved stale-cache-only exception
+
+The operator explicitly approved a documented stale-cache-only acceptance exception on September 15. The false-by-default workflow input `confirm_retired_admin_cache_exception` now selects an email-free candidate path restricted to source `c521b1250a5fb3ec287e8aa2c4976dde4ac10f33` and the unchanged UAT snapshot. It reuses the three digest-pinned passing paid-checkout/Resend evidence files from run `34958898685`, reruns canonical static checks, and accepts only the five known cached legacy bodies. Any other failure stops acceptance. It expires September 22 at 10:46:49 UTC. The raw 404 failures remain in evidence alongside a separate exception receipt; the original failed candidate is never relabeled successful. A new successful candidate is required for normal exact-SHA promotion.
+
+The original schema-2 artifact was retained locally as `.codex-artifacts/legacy-retirement/release-c521b125.zip` (785,884,253 bytes). SHA-256 `278a0db2cf4a9716b513b4ea9262813833c4ebaf2d6ef0745f86db7530d6fea0` matches GitHub artifact `10391879520`. Extraction to the sibling `release-c521b125/` directory passed the existing complete manifest digest and combined asset verification for all five targets. This is an integrity-verified but unaccepted candidate; retain the new accepted release before deleting external resources. Its local retention does not override the promotion expiry rule.
+
+At 11:05 UTC on September 15, the existing standalone `pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure` completed without sending email or creating checkout state. Public assets (six checks) and the checkout shell passed. Public routes had exactly five failures, all the same cached retired admin resources; the other 18 checks passed, with no console or page errors. Evidence is retained locally under `.codex-artifacts/smoke/uat/uat-static/20260915110521/`. The six direct admin GET probes also reproduced five cache hits with ages approximately 34,327 seconds and one 404. No retry loop, promotion or external deletion was started. Cache invalidation or expiry remains necessary independently of the email quota.

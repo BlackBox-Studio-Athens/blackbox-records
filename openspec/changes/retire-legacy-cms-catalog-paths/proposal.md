@@ -8,6 +8,7 @@ EmDash is live at cutover commit `7134654b`, but dormant Sveltia, compiled catal
 - Remove compiled catalog inputs and routine repository catalog mutation; retain explicit migration/recovery and fixture tooling.
 - **BREAKING**: Require combined CMS release artifacts and retire standalone staff Pages deployment and its detached project.
 - Reconcile current specifications and document verified external retirement.
+- Apply the operator-approved September 15 stale-cache-only acceptance exception to the reviewed source, with pinned prior provider evidence and fresh email-free static verification. Natural cache expiry remains separately outstanding; do not report cached 200 responses as passing 404 checks.
 
 ## Capabilities
 

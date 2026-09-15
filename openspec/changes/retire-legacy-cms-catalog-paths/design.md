@@ -14,6 +14,7 @@ Remove legacy execution paths while preserving runtime identities, publication o
 - Require a new release manifest version with combined CMS digests. Reject older candidates and remove staff Pages and commerce-only deployment selection.
 - Delete Sveltia routes entirely, verifying HTTP 404. Keep staff assets built into the combined Worker.
 - Inventory external identities and consumers before retirement. Preserve the live staff Worker hostname and retain combined release recovery evidence before deleting the detached Pages project.
+- The operator explicitly approved a stale-cache-only exception on September 15. An opt-in UAT dispatch may rebuild source `c521b1250a5fb3ec287e8aa2c4976dde4ac10f33`, reuse digest-pinned passing paid-checkout and Resend evidence from run `34958898685`, and run fresh static checks without sending email. The exception expires September 22 at 10:46:49 UTC, requires the same UAT publication snapshot, and permits only known cached legacy bodies at the five inventoried admin URLs. All original failures remain in evidence. The new candidate must finish successfully before normal exact-SHA promotion; no generic failed-run bypass is added.
 
 ## Risks / Trade-offs
 

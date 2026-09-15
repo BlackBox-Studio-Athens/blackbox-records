@@ -4,6 +4,13 @@ import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import {
+  cachedFiles,
+  validateExceptionContext,
+  validateStaticEvidence,
+  verifyCachedResponse,
+  verifyProviderEvidence,
+} from './accept-legacy-retirement.mjs';
+import {
   contentPublicationIdentity,
   configuration,
   publicationCodeIdentity,
@@ -22,6 +29,95 @@ import {
 
 const sha = 'a'.repeat(40);
 const repository = 'example/repository';
+
+test('retirement exception requires explicit dispatch, pinned source, publication and unexpired evidence', () => {
+  const source = 'c521b1250a5fb3ec287e8aa2c4976dde4ac10f33';
+  const env = {
+    CONFIRM_RETIRED_ADMIN_CACHE_EXCEPTION: 'true',
+    GITHUB_EVENT_NAME: 'workflow_dispatch',
+    SOURCE_SHA: source,
+    GITHUB_RUN_ID: '123',
+  };
+  const release = {
+    sha: source,
+    runId: '123',
+    content: { snapshotSha256: 'a6ad24d148046c1aef2c1e3d2a8206168bf26a707da867207adb8bc87bfc3cef' },
+  };
+  const now = Date.parse('2026-09-15T12:00:00Z');
+  validateExceptionContext(env, release, now);
+  for (const key of Object.keys(env))
+    assert.throws(() => validateExceptionContext({ ...env, [key]: '' }, release, now));
+  assert.throws(() => validateExceptionContext(env, { ...release, content: {} }, now));
+  assert.throws(() => validateExceptionContext(env, release, Date.parse('2026-09-23T00:00:00Z')));
+});
+
+test('retirement exception allows only exact retired-route failures and retains other static gates', () => {
+  const evidence = Object.entries({ public_assets: 6, checkout_shell: 1, public_routes: 23 }).map(
+    ([scenario, count]) => ({
+      scenario,
+      siteUrl: 'https://blackbox-records-web-uat.pages.dev',
+      environment: 'uat',
+      readOnly: true,
+      consoleErrors: [],
+      pageErrors: [],
+      checks: Array.from({ length: count }, (_, index) => ({ path: `/page-${index}/`, status: 200, issues: [] })),
+    }),
+  );
+  const routes = evidence[2].checks;
+  for (const [index, route] of Object.keys(cachedFiles).entries()) {
+    routes[index] = {
+      path: route,
+      status: 200,
+      expectedStatus: 404,
+      issues: [`Retired route ${route} must return 404; received 200.`],
+    };
+  }
+  assert.deepEqual(validateStaticEvidence(evidence), Object.keys(cachedFiles));
+  for (const mutate of [
+    (copy) => {
+      copy[0].checks[0].status = 500;
+    },
+    (copy) => {
+      copy[2].checks[0].issues.push('Unexpected error');
+    },
+    (copy) => {
+      copy[2].checks[0].status = 403;
+    },
+    (copy) => {
+      copy[1].pageErrors.push('Runtime failure');
+    },
+    (copy) => {
+      copy[2].checks.pop();
+    },
+  ]) {
+    const copy = structuredClone(evidence);
+    mutate(copy);
+    assert.throws(() => validateStaticEvidence(copy));
+  }
+  for (const check of routes.slice(0, 5)) {
+    check.status = 404;
+    check.issues = [];
+  }
+  assert.deepEqual(validateStaticEvidence(evidence), []);
+});
+
+test('retirement exception rejects missing provider evidence and changed or uncached legacy bodies', async () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'retirement-evidence-'));
+  try {
+    assert.throws(() => verifyProviderEvidence(directory));
+    mkdirSync(path.join(directory, 'resend-uat/20260915105500'), { recursive: true });
+    writeFileSync(path.join(directory, 'resend-uat/20260915105500/evidence.json'), '{"status":"passed"}');
+    assert.throws(() => verifyProviderEvidence(directory), /evidence changed/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+  await verifyCachedResponse('/admin/', new Response(null, { status: 404 }));
+  await assert.rejects(
+    verifyCachedResponse('/admin/', new Response('changed', { headers: { 'cf-cache-status': 'HIT' } })),
+  );
+  await assert.rejects(verifyCachedResponse('/admin/', new Response('legacy')));
+  await assert.rejects(verifyCachedResponse('/unexpected/', new Response(null, { status: 404 })));
+});
 
 test('rejects promotion when combined CMS configuration differs from the candidate', () => {
   const config = configuration();

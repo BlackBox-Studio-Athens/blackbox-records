@@ -37,6 +37,18 @@ describe('Content publication workflow', () => {
 });
 
 describe('Pages artifact promotion contract', () => {
+  it('isolates the approved email-free retirement exception from normal provider acceptance', () => {
+    expect(workflow.on.workflow_dispatch.inputs.confirm_retired_admin_cache_exception.default).toBe(false);
+    const steps = workflow.jobs['smoke-uat'].steps;
+    const normal = steps.find((step: { name: string }) => step.name === 'Run UAT provider smoke');
+    expect(normal.if).toBe('${{ !inputs.confirm_retired_admin_cache_exception }}');
+    const exception = steps.find((step: { run?: string }) => step.run?.includes('accept-legacy-retirement.mjs'));
+    expect(exception.if).toBe('${{ inputs.confirm_retired_admin_cache_exception }}');
+    expect(exception.run).not.toMatch(/smoke:resend|smoke:stripe-uat/);
+    const evidence = steps.find((step: { with?: Record<string, string> }) => step.with?.['run-id'] === '34958898685');
+    expect(evidence.with.name).toBe('uat-smoke-34958898685-1');
+    expect(evidence.if).toBe(exception.if);
+  });
   it('keeps unconfirmed PRD dispatches on the read-only catalog plan', () => {
     const plan = workflow.jobs['catalog-prd-plan'];
     expect(plan.if).toContain("inputs.target == 'prd'");
