@@ -13,7 +13,7 @@ Prepared from repository configuration on 2026-09-15. This is a planning workshe
 | Commerce D1 ID       | a1459267-096e-4b8c-8826-f3e5d4131cfd | de66a606-908d-446c-8415-39504e653f49 |
 | Public Pages project | blackbox-records-web-uat             | blackbox-records-web                 |
 
-PRD Worker name is `blackbox-records-backend-prd`. CMS identities come from `apps/backend/cms-resources.json`; commerce identities come from `apps/backend/wrangler.jsonc`. The source PRD route currently covers only `/api/internal/*` on the staff hostname. Combined staff routing and its exact Access issuer/audience must be verified before any route switch; the PRD CMS resource entry does not yet contain those Access settings.
+PRD Worker name is `blackbox-records-backend-prd`. CMS identities come from `apps/backend/cms-resources.json`; commerce identities come from `apps/backend/wrangler.jsonc`. The source PRD route currently covers only `/api/internal/*` on the staff hostname. Combined staff routing and its exact Access issuer/audience must be verified before any route switch; the PRD CMS resource entry now contains the existing Access issuer and audience, read from application b1390ecf-4ad4-4cdf-8650-b9dcc240b63d on September 15. This records existing protection and does not change the hosted application.
 
 ## Before requesting PRD approval
 

@@ -30,6 +30,10 @@ Each run captures schema and data before and after media capture (two bounded da
 
 ## Isolated recovery
 
+UAT recovery point `2026-09-15-pre-upgrade` is stored in `blackbox-cms-backups-uat` at `cms/uat/points/2026-09-15-pre-upgrade.json`. Its manifest SHA-256 is `39ba0003594ed142d008daa0750df9f98804a756d32af448e77309fbd64fc659`; capture started at `2026-09-15T00:46:44.751Z` using backup implementation `97399b6e`. Both database captures matched, and all 386 media objects were captured with unchanged inventories. The schema/data pair is 1,531,823 bytes, SHA-256 `76c71c9818bff1095adfdff74be879a2ad273b3f6fb30dfbea3474630b81a4c8`. Total captured bytes are 423,154,840; immutable deduplication retains only 152,084,437 bytes including the manifest. Evidence: `.codex-artifacts/emdash-m1/hosted-backup-point.json`.
+
+The isolated restore target is `blackbox-cms-recovery-uat-20260915`, D1 ID `9157f31f-05d0-47fd-b206-35638c0fcd17`, with an equally named private R2 bucket. This uses the eighth of ten database slots. Its bounded restore budget is 386 R2 writes, fewer than 800 R2 reads and fewer than 10,000 D1 statements, with about 422 MB additional media storage. The restore is in progress; creation alone is not recovery acceptance. Application bindings, commerce data and PRD remain unchanged. Daily scheduling still requires the pending backup credential approval.
+
 ### Hosted budget checkpoint — 2026-09-15
 
 At 00:39 UTC, bounded inventories found 386 UAT objects totaling 421,623,017 bytes and an empty PRD media bucket. Account D1 usage showed 20.58k rows read, 2.5k written, 8.38 MB stored and seven of ten database slots used. R2 billing remained at 208 Class A and 768 Class B operations, with no billable usage; those delayed billing counters do not include every recent publication operation. The account has only the two CMS media buckets.

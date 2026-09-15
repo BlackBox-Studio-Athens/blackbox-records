@@ -9,7 +9,9 @@
     "database_id": "e466f52b-46aa-4a76-9a09-0e304a3800b4",
     "bucket_name": "blackbox-records-cms-prd",
     "hostname": "staff.blackboxrecordsathens.com",
-    "owner_email": "blackboxrecordsathens@gmail.com"
+    "owner_email": "blackboxrecordsathens@gmail.com",
+    "access_team_domain": "https://blackboxrecords.cloudflareaccess.com",
+    "access_policy_aud": "5a22cda7495280a630a8c14c3ef4fc37168edb776b3bab83a74c9d064a1db202"
   },
   "uat": {
     "database_name": "blackbox-emdash-m1-uat",

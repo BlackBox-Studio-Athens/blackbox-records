@@ -289,7 +289,6 @@ async function main() {
       'Recovery cannot target an application database.',
     );
   }
-  // Local D1 export resolves persistence relative to the config and has no --persist-to option.
   const configPath = join(backend, `.cms-backup-${randomUUID()}.json`);
   await writeFile(
     configPath,
