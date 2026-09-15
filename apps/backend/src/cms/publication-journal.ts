@@ -290,7 +290,7 @@ export async function completePublication(
     .prepare(
       `UPDATE _blackbox_publications
     SET status = 'live', deployment_id = ?, ci_run_id = ?, code_sha = ?, snapshot_sha256 = ?
-    WHERE environment = ? AND status IN ('pending', 'failed') AND ci_run_id IS NULL
+    WHERE environment = ? AND status IN ('pending', 'failed') AND (ci_run_id IS NULL OR status = 'failed')
     AND requested_revision IN (SELECT value FROM json_each(?))
     AND rowid < (SELECT rowid FROM _blackbox_publications AS selected WHERE id = ? AND environment = ?
       AND status = 'live' AND deployment_id = ?

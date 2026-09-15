@@ -185,6 +185,9 @@ test('completes superseded requests only for revisions covered by the accepted s
     });
   const claim = await claimPublicationDispatch(env.TEST_CMS_DB, 'uat', Date.now() + 3_600_000);
   expect(claim?.id).toBe(ids[2]);
+  await env.TEST_CMS_DB.prepare('UPDATE _blackbox_publications SET ci_run_id = ? WHERE id = ?')
+    .bind('123', ids[0])
+    .run();
   const completion = {
     id: ids[2]!,
     environment: 'uat' as const,
