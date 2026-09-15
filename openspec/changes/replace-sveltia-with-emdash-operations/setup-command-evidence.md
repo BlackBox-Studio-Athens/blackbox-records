@@ -101,3 +101,9 @@ The installed EmDash 0.37.0 public editor props provide minimal chrome but no pe
 The final bounded compiled-API check rejected slug mutation (400), a commerce field (422), a nonexistent Artist relation (422) and unsupported HTML (422). The record revision, slug and all saved data remained identical after all four requests. Evidence: `.codex-artifacts/emdash-m1/editor-final-validation.json` and `editor-final-validation-mcp.json`.
 
 Together with the earlier Artist/Release/Distro/News and fixed-page save/preview evidence, native media/relation selection, all-collection compiled validation, and now-complete browser stale-save recovery, task 6.2 is complete. Unsupported native formats have explicit guidance and recoverable server rejection; supporting HTML/tables/galleries or replacing the native editor is not required by this task. The broader keyboard/contrast/responsive acceptance remains tracked separately in 6.5. No hosted content or publication changed.
+
+## Narrow workspace acceptance — 2026-09-15
+
+Chrome Blackbox at 320 x 800 CSS pixels measured document scroll width 305 for loaded Content, Items, Stock and Orders. Orders list/detail, Items and the full Content editor had no visible button/input/select/link below 43.5 CSS pixels high (allowing fractional rendering of 44px). Enter on the paid order row opened its detail and focused the Order detail heading. The screenshot showed readable wrapped status cards and navigation. Empty stock-change submission focused the required quantity input and displayed its native missing-value error without a stock write. The full-text input exposed textbox role, content-body-label and content-body-help associations.
+
+The viewport was reset; desktop Content measured scroll width 2119 within viewport 2134. No data mutation occurred. This extends task 6.5 evidence but does not claim a complete contrast audit or every keyboard interaction.
