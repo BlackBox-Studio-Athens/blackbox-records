@@ -1,8 +1,26 @@
 # EmDash cutover worksheet
 
-## Next production batch — prepared September 15, 2026
+## Production deployment/import — completed September 15, 2026
 
-The initial live Price preparation is complete: Disintegration is EUR 28.00 inclusive, stock remains 15 physical / 12 online, and PRD has zero orders. Do not repeat that apply. The remaining deployment/import batch is separate and still needs approval.
+The user approved the deployment/import batch below. Release `34944541258` succeeded with accepted code `af93b371e4eaca0b1b418b62c59da86ad8e36f8c`; all 129 records and 152 media sources were imported and independently verified at `2026-09-15T08:06:48Z` in 858 requests. There were 149 new media objects; identical sources deduplicated. Commerce snapshots matched exactly before/after import. Disintegration remains EUR 28.00 inclusive, stock 15 physical / 12 online, and zero orders. The public artifact still uses its pre-publication content source; the first PRD CMS publication is separate work.
+
+All 73 native, three application and three commerce migrations applied. The supported EmDash seed API registered the 13 generated collections and 76 fields in the empty PRD CMS without content or commerce seeds. Chrome Blackbox confirmed the protected staff workspace and imported artists. `PRD_CMS_ENABLED=true` now preserves this deployed runtime on future code promotions.
+
+The first release attempt `34943643219` uploaded the combined Worker but could not replace the existing staff Pages domain. The approved route switch detached that custom domain from Pages, removed only its old proxied CNAME (`staff` → `blackbox-records-staff.pages.dev`, TTL Auto), and attached the exact hostname to `blackbox-records-backend-prd`. The Pages project and deployment history remain available. Subsequent combined PRD releases now use version upload/promotion and do not reconcile DNS. No Access application or policy was weakened.
+
+Evidence is under `.codex-artifacts/emdash-m1/`: `prd-native-migration-apply.json`, `prd-application-migration-apply.json`, `prd-schema-initialized.json`, `prd-staff-pages-domain-recovery.json`, `prd-staff-domain-switched.json`, `prd-import-applied.json`, `prd-import-verified.json`, `prd-import-commerce-before.json`, `prd-import-commerce-after.json` and `prd-import-run.log`. `prd-publication-readiness.json` confirms the deployed source and disabled checkout.
+
+### Prepared next batch: catalog linkage and first CMS publication
+
+Read-only plan `34945254229` succeeded against source `03ff308f060ac123baa4995719d6dd3a9cd4371e`. Its catalog plan hash is `5a832e90880032e1ed41d5f4de27cf2df1fb1ff95d6e65a56e790b8c2ee038e1`: one update, zero applied. It links retained Disintegration to imported CMS ID `01M2J1HS3EKT7PXS24JDEWJ7WB`, initializing only the six runtime catalog fields. Existing Product/default Price and all stock/order tables are preserved by the existing transactional backfill. The exact 129-identity verification input is `prd-catalog-cms-report.json`.
+
+The remaining setup requires separate approval for that live linkage and these PRD credentials: copy the already supplied GitHub live Stripe key directly into the PRD Worker for member price commands; create a PRD native read-only content/media export token and a PRD Access service token expiring September 15, 2027; create a repository-scoped GitHub Actions dispatch token with the maximum allowed expiry, and a matching random publication completion secret in GitHub and the PRD Worker. Limit the Access service policy to the existing PRD staff application, preserving member Google login. Store all values in GitHub/Worker secrets, never in chat, public build variables, or committed files.
+
+After approved setup, publish the imported revisions and first immutable PRD snapshot with the already deployed source SHA. Use the existing 600-request capture ceiling proven by UAT, preserve the existing price/stock, and keep both shopper launch gates disabled. Only switch public content source after identity reconciliation; remove old writers and generation hooks after replacement acceptance. This is not authorization to promote a future unreviewed code artifact.
+
+The workflow accepts the verified report and exact plan hash for linkage. Adding `confirm_cms_cutover=true` to that explicitly approved linkage run additionally installs the Stripe runtime secret; a read-only plan cannot do so. The narrow migration path skips repeated full build/test gates at the user's request, while retaining the existing provider reconciliation, hash, target and transaction checks. Six focused workflow checks passed through WebStorm.
+
+### Approved batch scope and preflight
 
 - Promote accepted candidate `34937507986`, source `af93b371e4eaca0b1b418b62c59da86ad8e36f8c`, through `pages.yml` with code promotion and CMS cutover confirmed. Deploy its retained combined Worker to `blackbox-records-backend-prd`, including protected `staff.blackboxrecordsathens.com`, and its retained public artifact to `blackbox-records-web`. Checkout remains disabled.
 - Apply the 73 native CMS migrations to `e466f52b-46aa-4a76-9a09-0e304a3800b4`, fingerprint `4bd8ef389b3816f78b3d3d614a025a972156c0de908707a2bae8b31a51809108`, plus application migrations 0001–0003. Code promotion applies commerce migrations 0020–0022 to `de66a606-908d-446c-8415-39504e653f49`.

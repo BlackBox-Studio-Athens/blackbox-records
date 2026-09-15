@@ -84,11 +84,11 @@ Backend Worker observability uses source-controlled Workers Logs/Traces config a
 
 ## Catalog Promotion
 
-Local and UAT use the protected EmDash workspace for content, item creation, prices and stock. Content Publication is separate from Software Release: publishing saved content builds the website with the target's deployed code, while code promotion uses a reviewed UAT candidate. D1 and Worker controls own checkout safety. PRD deployment/import is still awaiting the separate approval recorded in [the cutover worksheet](docs/cms-cutover.md); its initial Disintegration price preparation is complete at EUR 28.00 with stock 15 physical / 12 online. Live catalog confirmation never enables shopper checkout. See [catalog promotion](docs/catalog-promotion.md) for migration, release and recovery commands.
+Local and UAT use the protected EmDash workspace for content, item creation, prices and stock. Content Publication is separate from Software Release: publishing saved content builds the website with the target's deployed code, while code promotion uses a reviewed UAT candidate. D1 and Worker controls own checkout safety. PRD deployment/import is complete; catalog linkage, member price credentials and the first CMS publication remain pending in [the cutover worksheet](docs/cms-cutover.md). Disintegration remains EUR 28.00 with stock 15 physical / 12 online. Live catalog confirmation never enables shopper checkout. See [catalog promotion](docs/catalog-promotion.md) for migration, release and recovery commands.
 
 ## Member workspace
 
-Use [UAT staff](https://staff-uat.blackboxrecordsathens.com/content/) or the Local workspace at `http://127.0.0.1:8787/content/`. PRD staff remains under cutover; do not resume editorial writes there before acceptance.
+Use [UAT staff](https://staff-uat.blackboxrecordsathens.com/content/) or the Local workspace at `http://127.0.0.1:8787/content/`. [PRD staff](https://staff.blackboxrecordsathens.com/content/) now serves the imported content through the combined Worker. Keep editorial writes frozen until its publication setup and replacement acceptance finish.
 
 | Task                   | Member action                                                                                                                                                                                              |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

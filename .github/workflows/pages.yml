@@ -400,6 +400,7 @@ jobs:
       - *install
       - *release-tools
       - name: Verify catalog source
+        if: ${{ !inputs.cms_import_report }}
         run: pnpm test:unit && pnpm check && pnpm build
       - name: Prepare explicitly authorized PRD catalog
         if: ${{ !inputs.confirm_cms_cutover && !inputs.cms_import_report }}
@@ -423,3 +424,8 @@ jobs:
         run: |
           set -euo pipefail
           pnpm exec tsx apps/backend/scripts/backfill-runtime-catalog.ts --env prd --cms-plan .codex-artifacts/emdash-m1/prd-import-preparation/plan.json --cms-report .codex-artifacts/emdash-m1/prd-import-verified.json --apply --confirm-live-catalog-changes --plan-sha256 "$REVIEWED_CATALOG_PLAN_SHA256" | tee "$GITHUB_STEP_SUMMARY"
+      - name: Configure approved PRD member price commands
+        if: ${{ inputs.cms_import_report != '' && inputs.confirm_cms_cutover }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$STRIPE_SECRET_KEY" | pnpm --filter @blackbox/backend exec wrangler secret put STRIPE_SECRET_KEY --env prd

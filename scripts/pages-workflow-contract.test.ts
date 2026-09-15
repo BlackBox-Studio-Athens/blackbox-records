@@ -71,6 +71,12 @@ describe('Pages artifact promotion contract', () => {
         );
       } else expect(linkage.run).not.toContain('--apply');
     }
+    const runtimeKey = workflow.jobs['catalog-prd'].steps.find(
+      (step: { name: string }) => step.name === 'Configure approved PRD member price commands',
+    );
+    expect(runtimeKey.if).toBe("${{ inputs.cms_import_report != '' && inputs.confirm_cms_cutover }}");
+    expect(runtimeKey.run).toContain('secret put STRIPE_SECRET_KEY --env prd');
+    expect(JSON.stringify(workflow.jobs['catalog-prd-plan'])).not.toContain('secret put');
   });
 
   it('requires cutover approval or accepted CMS state before switching the PRD runtime', () => {
