@@ -437,7 +437,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         <h2 className="text-xl font-semibold">Recent publications</h2>
         <p className="text-sm text-muted-foreground">
           Saved drafts are private. Accepted requests remain saved after you close this page. Live applies to fresh
-          public page loads; an already-open music player is not reloaded.
+          public page loads; an already-open music player is not reloaded. An open tab may keep cached pages when you
+          navigate. Reload it to see the latest content; reloading stops playback.
         </p>
         <Button type="button" variant="outline" disabled={!ready || busy} onClick={() => void publicationStatus()}>
           Check publication status
