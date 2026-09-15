@@ -51,7 +51,7 @@ Tasks 10.3–10.5 and 11.1–11.5 remain open until their actual target evidence
 
 ## Verified state — September 15, 2026
 
-UAT release `34919819814`, code `64fb0e44b6159d48a4e99bb27cdbe7bdbbc589e9`, completed candidate build, Worker deployment, Pages deployment and provider smoke successfully. This is the latest verified hosted code, not a claim that later Local commits are deployed.
+UAT release `34924049996`, code `9e87c5e97a1edff0eb890a9f848893b2491a9482`, completed candidate build, Worker deployment, Pages deployment and provider smoke successfully. The candidate passed unit tests and workspace checks, restored the existing publication and built both target artifacts. This is the latest verified hosted code, not a claim that later Local commits are deployed.
 
 UAT content publication `34912760066` completed using approved deployed code. Public release identity and the protected receipt agree on request `3043fd73-b2e7-4c20-8509-1be2747b69c0` and snapshot `a6ad24d148046c1aef2c1e3d2a8206168bf26a707da867207adb8bc87bfc3cef`. All 129 original CMS records have published revisions; 104 Release/Distro item operations completed. The four subsequent UAT creation fixtures remain private drafts. Fresh public pages, metadata, sitemap, search and overlays have been checked. Active-playback publication acceptance remains open.
 
@@ -64,6 +64,10 @@ The complete isolated UAT recovery drill matched 76 tables, 1,079 rows and all 3
 ## Prepared PRD state — no live apply authorized
 
 The combined PRD artifact builds with its full staff custom domain, existing Access issuer/audience, isolated CMS bindings and no KV. Ordinary PRD promotion still uses the existing commerce artifact until cutover is explicitly approved.
+
+The read-only commerce baseline at `2026-09-15T03:34:38.361Z` found one Store Item, `disintegration-black-vinyl-lp`, variant `variant_disintegration-black-vinyl-lp_standard`, with physical stock 15 and online stock 12. It has no bound Stripe Product/Price or offer snapshot; there are zero checkout orders. The query read three rows and wrote zero. Evidence: `.codex-artifacts/emdash-m1/prd-commerce-before-cutover.json`; deployed column inventory: `prd-commerce-schema-before-cutover.json` in the same directory. PRD has not yet received the runtime CMS-linkage columns.
+
+This baseline cannot pass `planRuntimeCatalogBackfill`: that planner requires existing runtime identities and a reconciled active bound default Price. Prepare the missing live catalog identities/provider bindings as an explicit part of the reviewed plan before backfill. Do not copy UAT Price IDs, assume all source items already exist in PRD, or replace the retained 15/12 stock with generated opening quantities. The snapshot is preparation evidence; re-read it during the final write freeze.
 
 The native CMS migration report targets `e466f52b-46aa-4a76-9a09-0e304a3800b4`: fingerprint `4bd8ef389b3816f78b3d3d614a025a972156c0de908707a2bae8b31a51809108`, no applied migrations, 73 pending. Application migrations `0001_publications.sql`, `0002_publication_dispatch.sql` and `0003_local_publication_receipt.sql` are also pending. Revalidate these reports before applying.
 
