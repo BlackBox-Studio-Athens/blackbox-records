@@ -45,6 +45,14 @@ Native Chrome Performance metrics through hydration on Local list/creation surfa
 
 These snapshots identify no comparable multi-second browser execution bottleneck on those surfaces. Content/Orders already overlap their startup reads; existing rich-text code splitting remains. No speculative new cache, dependency, prefetching or authentication bypass was added.
 
-Final required checks, canonical CMS build and bounded UAT verification are recorded below when complete.
+Final release-source checks passed: `pnpm test:unit`, `pnpm check`, `pnpm build`, canonical `pnpm --filter @blackbox/backend build:cms` (source/generated no-KV guards), `pnpm audit:unused`, strict OpenSpec validation, and `git diff --check`. The browser regression passed on the final frontend build. Existing unused-code advisory output remains unchanged. UAT release run 35018552284 deploys code commit `5c8755d8be7e6dd80e05ef77610597a004f6f87d`; hosted results are recorded below after completion.
 
 The final selected-entry optimization reduced the Local distro detail fixture from 237 reads to 23 (1,597 ms baseline; 54 ms final sample). Release detail fell from 41 to 31 reads and news detail from 28 to 23. Listings still read full collections; their cache warming now happens when a listing is requested, rather than during a detail preview. The final 17-context smoke and full browser regression both passed. Final native Chrome inspection of the real Ouranopithecus preview confirmed all four images and stylesheet/font readiness.
+
+## UAT deployment verification
+
+The candidate, artifact inspection, UAT Worker deployment, and UAT static deployment jobs succeeded in [run 35018552284](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35018552284). Native Chrome verification used two preview requests for the affected Ouranopithecus record, without saving or publishing content. First opening returned preview HTML in 2,148 ms with 37 logical reads and 16 cache misses; the stylesheet returned 200, both stylesheets were attached, fonts were loaded, and all four images decoded. The screenshot showed the styled public artist layout.
+
+Refreshing unchanged content returned HTML in 3,999 ms, navigated a new `about:srcdoc` frame, fetched preview CSS successfully, and reached “Preview up to date” with all images and fonts loaded. This confirms deployed iframe replacement rather than reusing a failed identical document. Hosted timing variability remains substantial; the controlled Local benchmark isolates the sequencing improvement. No original intermittent transport failure recurred during this bounded pilot.
+
+The full release workflow completed successfully, including UAT provider smoke. Earlier runs' retired `/admin/*` route failures did not recur. PRD was not promoted.
