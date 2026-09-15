@@ -131,7 +131,7 @@ const allScenarioNames: readonly UatStaticSmokeScenarioName[] = [
 
 const UAT_STATIC_SMOKE_SCENARIOS: Record<UatStaticSmokeScenarioName, UatStaticSmokeScenarioDefinition> = {
   cms_admin: {
-    description: 'Verify native Sveltia GitHub sign-in and hosted configuration.',
+    description: 'Verify the retired public CMS cannot sign in or expose writable configuration.',
     name: 'cms_admin',
   },
   cms_assets: {
@@ -331,8 +331,8 @@ async function runUatStaticSmokeScenario(input: {
         ? [
             await checkCmsAdminPage(page, input.options),
             await checkTextAsset(input.options, '/admin/config.yml', [
-              '# blackbox-sveltia-mode: hosted',
-              'collections:',
+              '# blackbox-sveltia-mode: disabled',
+              '# BlackBox CMS unavailable for this build.',
             ]),
           ]
         : input.scenario.name === 'cms_assets'
@@ -420,7 +420,7 @@ async function checkCmsAdminPage(page: Page, options: UatStaticSmokeOptions): Pr
 
   await waitForCmsAdminTerminalState(page, options.timeoutMs).catch((error: unknown) => {
     issues.push(
-      `Expected /admin/index.html to reach a native Sveltia GitHub sign-in: ${redactSensitiveSmokeText(
+      `Expected /admin/index.html to show the disabled CMS notice: ${redactSensitiveSmokeText(
         truncateForConsole(String(error)),
       )}.`,
     );
@@ -438,7 +438,10 @@ async function checkCmsAdminPage(page: Page, options: UatStaticSmokeOptions): Pr
   }
 
   if (renderedState) {
-    issues.push(...checkCmsAdminRenderedState(renderedState));
+    if (!renderedState.bodyText.includes('CMS unavailable for this build.'))
+      issues.push('Expected the disabled CMS notice.');
+    if (renderedState.hasGitHubSignIn || renderedState.hasRuntimeApi || renderedState.hasExactPinnedRuntime)
+      issues.push('The retired public CMS must not load a writable runtime or sign-in.');
   }
 
   for (const exposure of scanHighRiskSmokeExposure(renderedState?.bodyText ?? probe.bodyText)) {
@@ -462,7 +465,8 @@ async function waitForCmsAdminTerminalState(page: Page, timeoutMs: number): Prom
     () =>
       [...document.querySelectorAll('button')].some((button) =>
         /Sign In with.*GitHub/i.test(button.textContent ?? ''),
-      ) || /configuration errors?|invalid configuration/i.test(document.body.innerText),
+      ) ||
+      /CMS unavailable for this build\.|configuration errors?|invalid configuration/i.test(document.body.innerText),
     undefined,
     { timeout: Math.min(timeoutMs, 20_000) },
   );
@@ -535,7 +539,10 @@ async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions
 
 async function checkCmsAssets(options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
   const checks = [
-    await checkTextAsset(options, '/admin/config.yml', ['# blackbox-sveltia-mode: hosted', 'collections:']),
+    await checkTextAsset(options, '/admin/config.yml', [
+      '# blackbox-sveltia-mode: disabled',
+      '# BlackBox CMS unavailable for this build.',
+    ]),
   ];
   for (const contract of Object.values(CMS_BOOT_ASSET_CONTRACTS)) {
     checks.push(await checkTextAsset(options, contract.path, contract.snippets));
@@ -735,7 +742,9 @@ async function checkTextAsset(
     }
   }
 
-  if (routePath === '/admin/config.yml') {
+  if (routePath === '/admin/config.yml' && expectedSnippets.includes('# blackbox-sveltia-mode: disabled')) {
+    if (parse(text) !== null) issues.push('Disabled public CMS must contain no writable configuration.');
+  } else if (routePath === '/admin/config.yml') {
     issues.push(...checkCmsConfigPlaceholders(text));
     issues.push(...checkCmsSingletonJsonDeclarations(text));
     issues.push(...checkCmsHostedConfigDeclarations(text, options.siteUrl));
