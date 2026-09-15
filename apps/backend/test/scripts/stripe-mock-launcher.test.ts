@@ -30,7 +30,7 @@ describe('stripe-mock local launcher proxy', () => {
       expect((await update('cs_test_fixture')).status).toBe(200);
       const saved = await fetch(origin + '/v1/checkout/sessions/cs_test_fixture').then((r) => r.json());
       expect(saved).toMatchObject({ status: 'complete', payment_status: 'paid' });
-      expect(saved.amount_total).toBeUndefined();
+      expect(saved).not.toHaveProperty('amount_total');
     } finally {
       proxy.closeAllConnections();
       upstream.closeAllConnections();
