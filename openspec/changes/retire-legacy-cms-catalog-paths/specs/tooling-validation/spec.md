@@ -1,4 +1,4 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Cleanup validates EmDash continuity without compiled catalog
 
