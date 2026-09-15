@@ -27,6 +27,8 @@ Prepare a PRD plan locally with `node --import tsx scripts/import-cms-content.mj
 
 ## Authorized execution order
 
+Release candidates retain the combined PRD CMS build under `prd/cms`, including its generated configuration and protected staff assets. The manifest hashes that directory and pins both CMS resource configuration and Astro build configuration. The ordinary PRD promotion still deploys the existing commerce artifact until the separately approved CMS cutover; retaining the CMS build does not switch routes or apply migrations. Use the retained combined artifact from the accepted candidate for that cutover, not a fresh local rebuild.
+
 List application-owned CMS migrations with `pnpm --filter @blackbox/backend cms:application-migrations --env uat` (or `prd`). Add `--apply` only for the reviewed target; PRD also requires `--confirm-live-cms-changes` for that run. These migrations use `_blackbox_app_migrations` in `CMS_DB`, separate from native EmDash history and commerce migrations. Local remains the default and supports the existing `--persist-to` option.
 
 After the exact report receives one-run approval: apply the reviewed schema/import/backfill, reconcile the recorded identities and balances, deploy compatible combined runtime code, verify protected staff, then switch public builds to the accepted target snapshot through the existing release/publication workflows. Preserve the reviewed code SHA and target mutation lock described in [catalog promotion](catalog-promotion.md).

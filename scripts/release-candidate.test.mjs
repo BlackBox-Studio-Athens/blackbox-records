@@ -5,6 +5,7 @@ import path from 'node:path';
 import { test } from 'node:test';
 import {
   contentPublicationIdentity,
+  configuration,
   publicationCodeIdentity,
   refreshedReleaseIdentity,
   inventory,
@@ -21,6 +22,16 @@ import {
 
 const sha = 'a'.repeat(40);
 const repository = 'example/repository';
+
+test('rejects promotion when combined CMS configuration differs from the candidate', () => {
+  const config = configuration();
+  const candidate = { schema: 1, sha, runId: '123', runNumber: 10, configuration: config };
+  const current = { sha, runId: '123', runNumber: 10 };
+  for (const field of ['cmsResources', 'cmsBuild']) {
+    assert.match(config[field], /^[0-9a-f]{64}$/);
+    assert.throws(() => validateIdentity(candidate, current, { ...config, [field]: 'changed' }));
+  }
+});
 
 test('refreshes an artifact at the same reviewed code SHA while retaining target publication identity', () => {
   const code = { sha, runId: '456', runNumber: 11 };

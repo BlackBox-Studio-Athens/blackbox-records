@@ -21,6 +21,8 @@ export function configuration(env = process.env) {
     prdBackend: env.PRD_PUBLIC_BACKEND_BASE_URL,
     cmsAuth: env.SVELTIA_AUTH_BASE_URL,
     worker: sha256(readFileSync('apps/backend/wrangler.jsonc')),
+    cmsResources: sha256(readFileSync('apps/backend/cms-resources.json')),
+    cmsBuild: sha256(readFileSync('apps/backend/astro.config.mjs')),
     lockfile: sha256(readFileSync('pnpm-lock.yaml')),
     migrations: inventory('apps/backend/prisma/migrations'),
   };

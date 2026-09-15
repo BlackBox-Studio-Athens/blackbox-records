@@ -138,6 +138,7 @@ jobs:
           cp -R apps/staff/dist .codex-artifacts/release/prd/staff
           pnpm --filter @blackbox/backend build:cms --env uat
           cp -R apps/backend/dist .codex-artifacts/release/uat/worker
+          pnpm --filter @blackbox/backend build:cms --env prd --out-dir ../../.codex-artifacts/release/prd/cms
           pnpm --filter @blackbox/backend exec wrangler deploy --config wrangler.jsonc --env prd --dry-run --outdir ../../.codex-artifacts/release/prd/worker --define "RELEASE_SOURCE_SHA:\"$SOURCE_SHA\"" --define "RELEASE_RUN_NUMBER:\"$GITHUB_RUN_NUMBER\""
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs pack
       - name: Upload verified release bundle

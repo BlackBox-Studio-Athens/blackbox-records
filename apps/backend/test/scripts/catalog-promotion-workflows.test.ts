@@ -14,6 +14,7 @@ describe('one gated release', () => {
     ).run;
     expect(build).toContain('build:cms --env uat');
     expect(build).toContain('cp -R apps/backend/dist .codex-artifacts/release/uat/worker');
+    expect(build).toContain('build:cms --env prd --out-dir ../../.codex-artifacts/release/prd/cms');
     const upload = release.jobs['build-candidate'].steps.find(
       (step: { name: string }) => step.name === 'Upload verified release bundle',
     ).with;
