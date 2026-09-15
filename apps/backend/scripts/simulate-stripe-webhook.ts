@@ -30,9 +30,11 @@ export function createStripeWebhookFixturePayload({
   checkoutSessionId = defaultCheckoutSessionId,
   created = 1_777_132_800,
   eventId,
-  paymentStatus = 'paid',
-  status = 'complete',
   type,
+  paymentStatus = type === 'checkout.session.expired' || type === 'checkout.session.async_payment_failed'
+    ? 'unpaid'
+    : 'paid',
+  status = type === 'checkout.session.expired' ? 'expired' : 'complete',
   monetarySource,
 }: StripeWebhookFixtureOptions): string {
   return JSON.stringify({
