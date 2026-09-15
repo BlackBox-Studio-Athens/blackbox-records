@@ -38,7 +38,7 @@ export async function guardItemLifecycle(
     .first<{ variantId: string }>();
   if (!item) return null;
   const body = z
-    .object({ _rev: z.string().min(1) })
+    .object({ _rev: z.string().min(1), overrideLock: z.boolean().optional() })
     .strict()
     .safeParse(
       await request

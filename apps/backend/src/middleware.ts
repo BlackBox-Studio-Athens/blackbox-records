@@ -64,10 +64,12 @@ export const onRequest: MiddlewareHandler = async ({ request, url }, next) => {
     return Response.json({ error: { code } }, { status });
   };
   if (!isCmsCollection(collection)) return reject('UNSUPPORTED_COLLECTION');
+  const lock = id && action === 'lock' && ['POST', 'DELETE'].includes(request.method);
   const remove = id && !action && request.method === 'DELETE' && ['news', 'socials'].includes(collection);
   const create = !id && request.method === 'POST';
   const save = id && !action && request.method === 'PUT';
   const lifecycle = id && ['publish', 'unpublish'].includes(action ?? '') && request.method === 'POST';
+  if (lock) return next();
   if (!create && !save && !lifecycle && !remove) return reject('UNSUPPORTED_EDITORIAL_ACTION', 405);
   const body: unknown = await request
     .clone()
@@ -75,7 +77,13 @@ export const onRequest: MiddlewareHandler = async ({ request, url }, next) => {
     .catch(() => null);
   if (!body || typeof body !== 'object' || Array.isArray(body)) return reject('INVALID_EDITORIAL_REQUEST');
   const fields = body as Record<string, unknown>;
-  const allowed = create ? ['slug', 'data'] : save ? ['_rev', 'data'] : remove ? ['_rev', 'confirm'] : ['_rev'];
+  const allowed = create
+    ? ['slug', 'data']
+    : save
+      ? ['_rev', 'data', 'overrideLock']
+      : remove
+        ? ['_rev', 'confirm']
+        : ['_rev', 'overrideLock'];
   if (Object.keys(fields).some((field) => !allowed.includes(field))) return reject('INVALID_EDITORIAL_REQUEST');
   if (create && (typeof fields.slug !== 'string' || !slugPattern.test(fields.slug))) return reject('INVALID_SLUG');
   if (!create && (typeof fields._rev !== 'string' || !fields._rev.trim())) return reject('REVISION_REQUIRED');

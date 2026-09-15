@@ -8,7 +8,7 @@ Draft state stays mounted when opening Media. Returning to the draft preserves u
 
 - Official [shadcn New York registry](https://ui.shadcn.com/docs/components): Sidebar, Table, InputGroup, Breadcrumb, ButtonGroup, Field, NativeSelect, Checkbox, Command/Popover combobox, DropdownMenu, AlertDialog, Alert, Sheet, AspectRatio, Tooltip, Skeleton and supporting components.
 - [blocks.so File Upload Simple](https://blocks.so/file-upload/file-upload-02): adapted native file input, label and help presentation. Uploads call the existing `uploadArtwork` helper.
-- EmDash 0.37's existing Portable Text editor remains the rich-text engine.
+- EmDash 0.38's existing Portable Text editor remains the rich-text engine.
 
 MIT notices are retained alongside the copied components. Staff registry configuration lives in `apps/staff/components.json`. Generated imports use relative paths to avoid the repository-wide lint resolver confusing the staff and public `@/` aliases.
 
