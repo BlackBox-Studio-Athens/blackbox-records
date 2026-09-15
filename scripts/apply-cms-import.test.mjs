@@ -2,6 +2,45 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { applyCmsImport } from './apply-cms-import.mjs';
 
+test('final import refuses newer editorial data without overwriting or deleting it', async () => {
+  const originalFetch = globalThis.fetch;
+  const requests = [];
+  const saved = { item: { id: 'retained_id', slug: 'retained', data: { title: 'Newer CMS edit' } } };
+  globalThis.fetch = async (url, options) => {
+    requests.push({ url, method: options.method });
+    return Response.json({ success: true, data: saved });
+  };
+  try {
+    await assert.rejects(
+      applyCmsImport(
+        {
+          target: 'http://127.0.0.1:8787/',
+          media: [],
+          retainedAssets: [],
+          records: [
+            {
+              collection: 'news',
+              identity: 'news/retained',
+              slug: 'retained',
+              source: 'retained.md',
+              data: { title: 'Old source copy' },
+            },
+          ],
+        },
+        () => {
+          throw new Error('No media read expected');
+        },
+        { apply: true },
+      ),
+      /Existing editorial content differs.*No overwrite was attempted/,
+    );
+    assert.deepEqual(requests, [{ url: 'http://127.0.0.1:8787/_emdash/api/content/news/retained', method: 'GET' }]);
+    assert.equal(saved.item.data.title, 'Newer CMS edit');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('PRD import binds explicit approval to the reviewed plan before any IO', async () => {
   const plan = { target: 'https://staff.blackboxrecordsathens.com', records: [], media: [], retainedAssets: [] };
   const originalFetch = globalThis.fetch;
