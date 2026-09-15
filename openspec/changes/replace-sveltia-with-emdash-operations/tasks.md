@@ -69,7 +69,7 @@ The protected price command now passes fixed/custom SDK-to-D1 acceptance, author
 - [x] 6.2 Add focused Artist/Release/Distro/News and fixed-page editing using supported CMS APIs and editor facilities; verify relation selection, validation, stable slugs, drafts, stale-save conflict recovery, and server-side field rejection.
 - [x] 6.3 Add media selection and the seven required protected draft-preview outcomes by reusing existing preview behavior where applicable; verify draft labels, safe media resolution, and no public publication or private-token leakage. See [Local preview acceptance](local-editorial-migration-evidence.md#protected-preview-acceptance-and-editor-accessibility--2026-09-14).
 - [x] 6.4 Add item price controls and embed/link existing stock movement/count/allocation and order controls without duplicating their logic; verify the member can change price and stock on one item and observe authoritative results without a build.
-- [ ] 6.5 Browser-check representative content/item/stock/order flows at desktop and 320 CSS pixels with keyboard use; verify labels, focus, errors, contrast, touch targets, and absence of page-level overflow before considering the UI slice complete.
+- [x] 6.5 Browser-check representative content/item/stock/order flows at desktop and 320 CSS pixels with keyboard use; verify labels, focus, errors, contrast, touch targets, and absence of page-level overflow before considering the UI slice complete. See [representative workspace acceptance](setup-command-evidence.md#representative-workspace-acceptance-complete--2026-09-15).
 
 ## 7. Implement the single item-creation workflow
 
