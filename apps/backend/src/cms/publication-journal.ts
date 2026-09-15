@@ -54,7 +54,21 @@ export async function readRecentPublications(db: D1Database, environment: 'local
     .bind(environment)
     .all();
   const summary = publicationSchema.pick({ id: true, status: true, requestedAt: true });
-  return results.map((item) => summary.parse(item));
+  return results.map((item) => publicationSummary(summary.parse(item)));
+}
+
+export function publicationSummary(item: { id: string; status: 'pending' | 'live' | 'failed'; requestedAt: number }) {
+  return {
+    id: item.id,
+    status: item.status,
+    requestedAt: item.requestedAt,
+    ...(item.status === 'failed'
+      ? {
+          failureReason:
+            'Publication did not finish. Ask a label administrator to check the publication before trying again.',
+        }
+      : {}),
+  };
 }
 
 export async function readNextLocalPublication(db: D1Database) {
@@ -183,7 +197,7 @@ export async function acknowledgePublicationDispatch(
 // Only a verified workflow identity may call this; a dispatch token is not authentication.
 export async function bindPublicationRun(
   db: D1Database,
-  input: { id: string; environment: 'local' | 'uat' | 'prd'; dispatchToken: string; ciRunId: string; codeSha: string },
+  input: { id: string; environment: 'local' | 'uat' | 'prd'; dispatchToken: string; ciRunId: string; codeSha?: string },
   now = Date.now(),
 ) {
   const value = requestSchema
@@ -191,25 +205,30 @@ export async function bindPublicationRun(
     .extend({
       dispatchToken: z.uuid(),
       ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/),
-      codeSha: z.string().regex(/^[a-f0-9]{40}$/),
+      codeSha: z
+        .string()
+        .regex(/^[a-f0-9]{40}$/)
+        .optional(),
     })
     .parse(input);
   z.number().int().nonnegative().safe().parse(now);
   const result = await db
     .prepare(
-      `UPDATE _blackbox_publications SET ci_run_id = ?, code_sha = ?, dispatch_after = ?
+      `UPDATE _blackbox_publications SET ci_run_id = ?, code_sha = COALESCE(code_sha, ?), dispatch_after = ?
       WHERE id = ? AND environment = ? AND dispatch_token = ? AND status = 'pending'
-      AND ((ci_run_id = ? AND code_sha = ?) OR (ci_run_id IS NULL AND code_sha IS NULL AND dispatch_after > ?))`,
+      AND ((ci_run_id = ? AND (code_sha IS NULL OR code_sha = ? OR ? IS NULL))
+        OR (ci_run_id IS NULL AND code_sha IS NULL AND dispatch_after > ?))`,
     )
     .bind(
       value.ciRunId,
-      value.codeSha,
+      value.codeSha ?? null,
       now,
       value.id,
       value.environment,
       value.dispatchToken,
       value.ciRunId,
-      value.codeSha,
+      value.codeSha ?? null,
+      value.codeSha ?? null,
       now,
     )
     .run();
@@ -296,17 +315,20 @@ export async function failPublicationRun(
   environment: 'local' | 'uat' | 'prd',
   id: string,
   ciRunId: string,
+  deploymentMismatch = false,
 ) {
   const value = publicationCompletionSchema
     .pick({ environment: true, id: true, ciRunId: true })
     .parse({ environment, id, ciRunId });
-  await db
+  const result = await db
     .prepare(
       `UPDATE _blackbox_publications SET status = 'failed'
-    WHERE id = ? AND environment = ? AND ci_run_id = ? AND status = 'pending'`,
+    WHERE id = ? AND environment = ? AND ci_run_id = ? AND status = 'pending'
+    AND (deployment_id IS NULL OR ? = 1)`,
     )
-    .bind(value.id, value.environment, value.ciRunId)
+    .bind(value.id, value.environment, value.ciRunId, deploymentMismatch ? 1 : 0)
     .run();
+  return result.meta.changes === 1;
 }
 
 // The caller verifies the public deployment first. Older acknowledgements cannot replace a newer Live record.

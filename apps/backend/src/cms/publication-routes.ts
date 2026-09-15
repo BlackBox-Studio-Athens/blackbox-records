@@ -7,6 +7,8 @@ import {
   bindPublicationRun,
   bindPublicationSnapshot,
   completePublication,
+  failPublicationRun,
+  publicationSummary,
   publicationCompletionSchema,
   PublicationRequestConflictError,
   readPublication,
@@ -26,6 +28,7 @@ export const publicationWorkflowPaths = new Set([
   root + '/media',
   root + '/snapshot',
   root + '/complete',
+  root + '/failed',
 ]);
 
 export async function handlePublicationWorkflow(
@@ -58,6 +61,31 @@ export async function handlePublicationWorkflow(
   )
     return reply(403, { error: 'FORBIDDEN' });
   if (!publicationWorkflowPaths.has(url.pathname) || url.search) return reply(404, { error: 'NOT_FOUND' });
+  if (url.pathname === root + '/failed') {
+    if (request.method !== 'POST') return reply(405, { error: 'METHOD_NOT_ALLOWED' });
+    let input;
+    try {
+      if (request.headers.get('Content-Type')?.split(';')[0].trim() !== 'application/json')
+        throw new Error('JSON required');
+      input = z
+        .object({ id: z.uuid(), ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/) })
+        .strict()
+        .parse(await readJson(request.body, 4096));
+    } catch {
+      return reply(400, { error: 'INVALID_REQUEST' });
+    }
+    try {
+      const item = await readPublication(context.db, environment.data, input.id);
+      if (!item || item.ciRunId !== input.ciRunId) return reply(409, { error: 'PUBLICATION_CONFLICT' });
+      // Deployment may have succeeded before verification failed. Reconcile its receipt instead of declaring failure.
+      if (item.status === 'pending' && !item.deploymentId)
+        await failPublicationRun(context.db, environment.data, input.id, input.ciRunId);
+      const current = await readPublication(context.db, environment.data, input.id);
+      return reply(200, publicationSummary(current!));
+    } catch {
+      return reply(503, { error: 'PUBLICATION_UNAVAILABLE' });
+    }
+  }
   if (url.pathname === publicationCatalogPath) {
     if (request.method !== 'GET') return reply(405, { error: 'METHOD_NOT_ALLOWED' });
     if (!context.commerce) return reply(503, { error: 'CATALOG_UNAVAILABLE' });
@@ -182,7 +210,7 @@ export async function handlePublicationWorkflow(
     if (!identity.success) return reply(400, { error: 'INVALID_REQUEST' });
     try {
       const item = await readPublication(context.db, environment.data, identity.data.id);
-      if (!item || item.status !== 'pending' || item.ciRunId !== identity.data.ciRunId)
+      if (!item || item.status !== 'pending' || !item.codeSha || item.ciRunId !== identity.data.ciRunId)
         return reply(409, { error: 'PUBLICATION_CONFLICT' });
       const media = url.pathname === root + '/media';
       let bytes;
@@ -235,7 +263,10 @@ export async function handlePublicationWorkflow(
         id: z.uuid(),
         dispatchToken: z.uuid(),
         ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/),
-        codeSha: z.string().regex(/^[a-f0-9]{40}$/),
+        codeSha: z
+          .string()
+          .regex(/^[a-f0-9]{40}$/)
+          .optional(),
       })
       .strict()
       .parse(await readJson(request.body, 4096));
@@ -287,6 +318,7 @@ export async function handlePublicationRequest(
     environment: 'local' | 'uat' | 'prd';
     identity: { email: string; role: number };
     fetchCms: (path: string) => Promise<Response>;
+    onAccepted?: () => void;
   },
 ) {
   const url = new URL(request.url);
@@ -295,11 +327,7 @@ export async function handlePublicationRequest(
     await request.body?.pipeTo(new WritableStream());
     return Response.json(value, { status, headers: { 'Cache-Control': 'private, no-store' } });
   };
-  const summary = (item: NonNullable<Awaited<ReturnType<typeof readPublication>>>) => ({
-    id: item.id,
-    status: item.status,
-    requestedAt: item.requestedAt,
-  });
+  const summary = publicationSummary;
   if (context.identity.role < 30) return reply(403, { error: 'FORBIDDEN' });
   if (url.search) return reply(400, { error: 'INVALID_REQUEST' });
   try {
@@ -329,6 +357,7 @@ export async function handlePublicationRequest(
     if (existing) {
       if (existing.actorEmail !== context.identity.email || existing.requestedRevision !== input.requestedRevision)
         throw new PublicationRequestConflictError();
+      if (existing.status === 'pending') context.onAccepted?.();
       return reply(202, summary(existing));
     }
     const revisionResponse = await context.fetchCms('/_emdash/api/revisions/' + input.requestedRevision);
@@ -373,6 +402,7 @@ export async function handlePublicationRequest(
       environment: context.environment,
       actorEmail: context.identity.email,
     });
+    context.onAccepted?.();
     return reply(202, summary(item));
   } catch (error) {
     return error instanceof PublicationRequestConflictError

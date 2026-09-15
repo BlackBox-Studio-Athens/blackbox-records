@@ -12,4 +12,5 @@ it('distinguishes pending, unresolved failure, confirmed live and unavailable hi
   expect(render([{ id: 'live', status: 'live', requestedAt: 2 }, failed])).toContain('Latest publication live');
   expect(render([], 'Publication status is unavailable.')).toContain('Publication status unavailable');
   expect(render([])).not.toContain('Latest publication live');
+  expect(render([failed])).toContain('aria-label="Refresh publication status"');
 });

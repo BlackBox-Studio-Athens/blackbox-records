@@ -63,6 +63,21 @@ describe('private preview diagnostics', () => {
     expect((await send({ ...body, directive: 'anything' })).status).toBe(400);
     expect(logger.warn).not.toHaveBeenCalled();
   });
+  it('accepts bounded generation evidence without editorial data', async () => {
+    const { send, logger } = setup();
+    expect(
+      (await send({ ...body, stage: 'freshness', requestedGeneration: 4, displayedGeneration: 2, readiness: 'failed' }))
+        .status,
+    ).toBe(204);
+    expect(logger.warn.mock.calls[0][0]).toMatchObject({
+      stage: 'freshness',
+      requestedGeneration: 4,
+      displayedGeneration: 2,
+      readiness: 'failed',
+    });
+    expect((await send({ ...body, requestedGeneration: 'private text' })).status).toBe(400);
+    expect((await send({ ...body, requestedGeneration: -1 })).status).toBe(400);
+  });
   it('caps reports and bounds the in-memory identity map', async () => {
     const { send, logger, limits } = setup();
     for (let i = 0; i < 10; i++) expect((await send()).status).toBe(204);

@@ -76,3 +76,35 @@ Two bounded preview requests for Ouranopithecus returned 200 and reached Preview
 The user independently refreshed UAT in their Firefox and confirmed: “Yes, preview loads correctly.” Automated local and CI Firefox coverage complements this hosted confirmation. PRD code was prepared through the retained shared artifact; PRD was not promoted.
 
 The workflow's final provider smoke failed only its five retired public `/admin/*` URL checks (expected 404, received 200). Stripe scenarios, Resend checks, public assets, checkout shell, current public routes, and both deployment jobs passed. A bounded read of `/admin/config.yml` confirmed `CF-Cache-Status: HIT`, age 74056 seconds, and `public, s-maxage=604800`; this is the previously tracked public Pages retirement-cache issue. The source/artifact checks and preview gates passed. The one-commit retirement exception was not reused, no broad cache purge was performed, and the failed workflow must not be represented as a green PRD promotion candidate.
+
+## Publication recovery, preview freshness and design reference (2026-09-16)
+
+### Confirmed diagnosis
+
+Publication `352167be-39f9-45ce-aa79-759c0e555006` was requested at 22:04:18 UTC on September 15. UAT's fifteen-minute cron dispatched [run 35030059450](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35030059450) at 22:15:45. It failed at Resolve deployed code under the release lock because the currently deployed code candidate concluded failure. Registration previously followed that step, so the journal had no run ID for reconciliation and the frontend stopped checking after two minutes.
+
+The implementation now kicks the existing dispatcher after acceptance, registers the workflow before dependency installation/code validation, binds code separately using the same authenticated run contract, and adds a run-matched failure callback. Lost callbacks/cancellation use existing reconciliation. A recorded deployment is not marked failed by the callback: its public identity still needs verification. Local never dispatches GitHub. Existing full run claims remain compatible; no migration, new binding or service was introduced.
+
+### Bounded hosted correction
+
+A single public probe at 22:36:39 UTC still returned HTTP 200 / cache HIT for the exact retired `/admin/config.yml`, age 75839. No cache-busting URL, broad purge, exception reuse, or release acceptance bypass was attempted.
+
+One indexed UAT journal read confirmed the exact pending request, revision `01M2KHJKN5XA26SCMEQ9VQTNA0`, request timestamp, empty run/code/deployment fields, and dispatch lease. The completed GitHub run log independently identified this publication and its acceptance failure. A conditional update matching all those facts set only this request to Failed and attached run `35030059450`. RETURNING verified the new values; D1 reported one changed record, three rows read and two index/table rows written, one attempt. The preceding read reported one row read and zero writes. This is a bounded status correction, not a content import/recovery rehearsal: no content, snapshot, commerce, public deployment or private draft changed. It prevents another hourly dispatch of this known failed attempt.
+
+The original requested revision is not yet live. Retry remains blocked until provider cache invalidation/expiry and a successful accepted code candidate. Do not silently publish newer drafts when recovering it. The new code is deliberately not pushed/deployed while the known acceptance blocker persists; PRD is unchanged.
+
+### Preview evidence
+
+The reported stale description did not reproduce in deployed Chrome or initial local Firefox investigation. New production-policy workspace tests cover typed successive newsletter descriptions, Save draft, unchanged refresh, reload, old-generation response rejection, last-successful rendering, and numeric request/display diagnostics. Browser fixtures also cover optional-font fallback versus required-font failure, hidden polling, focus/visibility/manual single-flight, and the thirty-minute polling bound. The top-right Refresh control is visible without opening history at narrow and wide sizes.
+
+Real-template testing exposed an additional Firefox problem: Google Fonts uses the public layout's `display=optional`; Firefox's font-display deadline can mark an optional face errored even when the browser correctly uses its fallback. A transport-isolation diagnostic fetched the same public bytes and still reproduced the font-display timeout, distinguishing it from the first observed external network timeout. The readiness guard now respects optional fallback and continues rejecting failed required fonts. Public font settings and CSP permissions are unchanged.
+
+After the fix, the unmodified-network local CMS smoke passed all 17 shared-template contexts in Chromium and Firefox, plus successive unsaved newsletter descriptions and unchanged refresh in both full editors. Draft and publication-state invariants passed. This used Playwright Firefox 153; the user's Firefox 155 stale existing-tab symptom is not claimed reproduced or conclusively resolved.
+
+### Delivery evidence
+
+Required checks passed after the optional-font fix: `pnpm test:unit`, `pnpm check`, `pnpm build`, and canonical `pnpm --filter @blackbox/backend build:cms` including no-KV guards. Policy tests retain approved CSS/images and deny external assets/scripts/forms. Workspace screenshots cover 390/768/1280/1600 px, narrow tabs, expanded focus restoration and reduced motion. Native Chrome visual review confirmed the direct top-right refresh control; the 390 px screenshot shows it remains accessible without horizontal overflow.
+
+Two verification infrastructure collisions were resolved without source workarounds: a CMS rebuild initially hit a Windows file lock while the local server used its artifact (stopping the server allowed the canonical build to pass), and a workspace run overlapped the root build rewriting staff assets (rerun only after build completion). Do not run a browser against an artifact being rebuilt.
+
+Logs and screenshots remain in ignored `.codex-artifacts/reliability-*` and `.codex-artifacts/content-workspace/`. The living [backoffice design reference](../../../docs/backoffice-design.md) records twelve sources, shared rules and fifteen Proposed improvements. Hosted deployment/republication remain explicitly unfinished under task 6.5.

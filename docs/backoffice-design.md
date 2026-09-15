@@ -1,0 +1,95 @@
+# Backoffice design reference
+
+Living document · reviewed 2026-09-16 · audience: content editors and label members.
+
+This is the design reference for **Content, Images, Items, Stock, and Orders**. The public site's expressive music identity remains in [DESIGN.md](../DESIGN.md); staff work needs quieter typography, predictable actions, and accurate operational state. Update this document in the same change as a backoffice behavior or pattern change.
+
+## Decision states and maintenance
+
+- **Proposed**: researched recommendation, not implementation authority.
+- **Accepted**: explicitly approved behavior awaiting delivery.
+- **Implemented**: verified behavior, with evidence linked below.
+
+For each change record the date, affected task, before/after screenshot, rationale, acceptance evidence, and any remaining limitation. Use browser screenshots of the real implementation, not generated mockups. Keep private customer/order information out of committed evidence.
+
+## Shared workspace rules — accepted
+
+Members should learn one workspace, then recognize the others. Keep Content as the landing page and the Content / Items / Stock / Orders navigation stable. Images remain part of Content. Preserve deep links, selected records, and return context.
+
+| Pattern     | Rule                                                                                                                                                            |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Typography  | Use the existing staff sans-serif for navigation, forms and operational headings. Reserve display typography for public previews.                               |
+| Layout      | One clear page/task heading. Search/filter/refresh controls in a consistent toolbar. Sticky primary actions for long editing tasks.                             |
+| Spacing     | Use existing spacing tokens, with 16–24 px between groups; no per-workspace visual system.                                                                      |
+| Controls    | Familiar installed shadcn/Radix primitives. Primary actions retain text. Icon-only controls require accessible names and tooltips. Aim for 44 px touch targets. |
+| Color       | Blue: selection/action. Amber: unsaved/pending. Green: confirmed live/success. Red: failure. Pair color with text or an icon.                                   |
+| Status      | Draft saved is not Live. A request being accepted is not completed. Preserve the last useful data while refreshing and label stale results.                     |
+| Detail      | Show what helps a member act. Put technical diagnostics behind an error-only disclosure; retain copyable reconciliation identifiers.                            |
+| Feedback    | Explain blocked actions beside the action. Keep validation, conflicts, crop guidance, stock authority, delivery facts, and recovery instructions.               |
+| Responsive  | Desktop density must not create phone-sized targets. Use existing narrow-screen sheets/tabs, visible focus and reduced-motion support.                          |
+| Performance | Start independent reads together; do not hide usable content behind unrelated reads. No background preview work while closed.                                   |
+
+Existing shared navigation, semantic colors, preview controls, image thumbnails/dimensions and async Stock reads are implemented. The recommendations below must not be counted as newly delivered versions of those existing features.
+
+## Research ledger
+
+Reviewed official documentation and product UI examples on 2026-09-16. This is a reference study, not authenticated usability testing of all twelve products. Ghost's publishing example also received direct browser visual review. Adopt the task pattern, not a product's branding or its larger feature set.
+
+| Reference                                                                                                          | Useful observation                                                     | Application / boundary                                                                |
+| ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [Sanity preview and page building](https://www.sanity.io/docs/user-guides/preview-and-page-building)               | Editing benefits from clear visual context.                            | Locate the edited section in preview; keep our iframe non-interactive.                |
+| [Contentful live preview](https://www.contentful.com/help/content-preview/live-preview/)                           | Side-by-side content and appearance reduce context switching.          | Preserve our optional editor/preview split.                                           |
+| [Payload live preview](https://payloadcms.com/docs/live-preview/overview)                                          | Preview widths support reviewing actual layouts.                       | Keep real Desktop/Mobile iframe widths.                                               |
+| [Strapi Content Manager](https://docs.strapi.io/cms/features/content-manager)                                      | Collection records and singleton settings are different editing tasks. | Singleton settings should open directly; collections retain selection.                |
+| [Ghost publishing](https://ghost.org/help/publishing-content/)                                                     | Preview and publish have clear positions and deliberate steps.         | Stable sticky actions and distinct draft/publication states.                          |
+| [Directus file library](https://docs.directus.io/user-guide/file-library/files)                                    | Central asset management connects to field-level selection.            | One image library, with the calling field's context preserved.                        |
+| [Shopify product views](https://help.shopify.com/en/manual/products/searching-filtering)                           | Search, filters and views organize operational lists.                  | Start with existing fields and truthful result coverage, not a new query platform.    |
+| [Medusa Admin](https://medusajs.com/admin)                                                                         | Product, inventory and order tasks share an admin vocabulary.          | Make cross-workspace handoffs consistent; do not import unsupported commerce actions. |
+| [Stripe Dashboard search](https://docs.stripe.com/dashboard/search)                                                | Search leads to identifiable operational records.                      | Keep useful order identifiers searchable/copyable, with details grouped by task.      |
+| [Linear views](https://linear.app/docs/custom-views)                                                               | Repeated list patterns reduce relearning.                              | Shared toolbar, selection and status hierarchy across staff workspaces.               |
+| [Notion views, filters and sorts](https://www.notion.com/help/views-filters-and-sorts)                             | Different representations can use the same underlying records.         | Image grid/list density can change without changing asset authority.                  |
+| [Airtable interface designer](https://www.airtable.com/guides/collaborate/getting-started-with-interface-designer) | Interfaces can prioritize the operator's task over raw fields.         | Group relevant details and reduce persistent implementation copy.                     |
+
+Operational detail references: [Shopify stock adjustments](https://help.shopify.com/en/manual/products/inventory/adjusting-inventory/adjusting-inventory-quantities) and [order details](https://help.shopify.com/en/manual/fulfillment/managing-orders/managing-order-details).
+
+## Three improvements per workspace — proposed
+
+Effort is relative: Small uses existing data and components; Medium changes a multi-step interaction. These are recommendations for the next UI slices, not permission to add commerce capabilities.
+
+| Workspace | Proposal                                               | Benefit                                                                  | Effort / acceptance                                                                                            |
+| --------- | ------------------------------------------------------ | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Content   | Open singleton settings directly.                      | Removes a one-record list and extra selection.                           | Small: direct entry, deep links and unsaved-change protection still work.                                      |
+| Content   | Consistent field sections and sticky actions.          | Long forms use the same hierarchy and action position.                   | Medium: required fields/errors remain visible; only optional groups collapse.                                  |
+| Content   | “Show section in preview” action.                      | Makes an edited footer/newsletter/page section easy to find.             | Medium: parent scrolls to a known section; no links/scripts enabled in iframe.                                 |
+| Images    | Compact grid/list view choice.                         | Grid supports recognition; list supports comparing dimensions and names. | Small: same records/search/selection; no duplicate fetch pipeline.                                             |
+| Images    | Consistent metadata and crop inspector.                | Dimensions and suitability are visible together.                         | Medium: reuse existing metadata and crop guidance, no invented crop editor.                                    |
+| Images    | Preserve picker return context.                        | Members return to the same field and library position.                   | Medium: retain search, selected image, scroll and focus; no extra confirmation step.                           |
+| Items     | Align headings, field groups and actions with Content. | Item creation feels like part of the same app.                           | Small: existing creation locks/recovery remain intact.                                                         |
+| Items     | Actionable readiness summary.                          | Shows what still prevents setup/publication.                             | Medium: derived only from current authoritative fields, with links to fix each blocker.                        |
+| Items     | Clear related-content and stock handoffs.              | Members move to the next task without searching again.                   | Small: preserve selected item and back destination; retain ownership boundaries.                               |
+| Stock     | Explicit Adjust stock / Count stock tabs.              | Separates a known movement from a physical recount.                      | Small: both existing operations retain validation and confirmations.                                           |
+| Stock     | Before/after quantity beside submission.               | Makes the intended stock effect easier to check.                         | Small: advisory calculation only; server freshness/revision guards remain authoritative.                       |
+| Stock     | Compact movement history.                              | Quantity, reason and time can be scanned together.                       | Small: use existing history, loading and failure states; do not imply complete data beyond its limit.          |
+| Orders    | Compact filter toolbar.                                | Active filters and reset are easy to understand.                         | Small: use current statuses and preserve the existing latest-record coverage warning.                          |
+| Orders    | Prioritize order identity, items and state in rows.    | Common triage needs fewer detail opens.                                  | Medium: payment and fulfillment remain separate; no invented status.                                           |
+| Orders    | Group payment, delivery and notification details.      | Members can find the next operational fact quickly.                      | Medium: retain copyable IDs and chronological facts from actual timestamps; no new refund/shipping automation. |
+
+## Accepted reliability behavior
+
+- Publication requests start the existing dispatcher immediately; scheduled dispatch is recovery.
+- Register workflow identity before release validation. Failed/cancelled runs must not remain Pending indefinitely. A deployment receipt still requires verification before Live.
+- Refresh publication status directly from the top bar. Poll only while visible: 15 seconds initially, 30 seconds after two minutes, stop automatic polling after thirty minutes or settlement. Returning to the tab checks immediately; manual refresh remains available.
+- Preview starts closed on desktop, remembers that preference, and renders current unsaved input when opened. Narrow screens start in Edit.
+- “Preview up to date” belongs only to the current displayed generation. Failed updates retain a visibly outdated previous rendering.
+- Respect the public site's optional-font fallback. A browser choosing its fallback after an optional font's display deadline is valid rendering; required font, stylesheet and image failures remain actionable errors. See [font-display behavior](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@font-face/font-display).
+- Diagnostics contain correlation IDs, numeric generations and failure stages, never draft text or credentials. An unconfirmed browser bug stays documented as unconfirmed.
+
+## Review checklist and evidence
+
+Review Content, Images, Items, Stock and Orders at 390, 768, 1280 and 1600 px. Exercise keyboard navigation, focus return, touch targets, reduced motion, contrast, empty/loading/error states, and unsaved-change protection. Check cross-workspace terminology before adding a new component.
+
+Current evidence and unresolved hosted acceptance are recorded in [preview validation](../openspec/changes/improve-content-workspace-previews/validation.md). Fixture screenshots are local under `.codex-artifacts/content-workspace/`; they are not proof of hosted production behavior.
+
+### Decision history
+
+- 2026-09-16: created a staff-specific reference following research across twelve products. Shared consistency and reliability rules accepted; all fifteen workspace ideas remain Proposed. Public branding and commerce permissions unchanged.

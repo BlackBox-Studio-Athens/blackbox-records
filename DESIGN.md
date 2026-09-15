@@ -260,3 +260,7 @@ Show “Preview up to date” only after styles and images load. Keep the last s
 - **Don't** add rounded card-heavy layouts where a hard editorial frame or full-width section is more appropriate.
 - **Don't** use side-stripe borders, gradient text, or repeated icon-card grids as a shortcut for hierarchy.
 - **Don't** move player behavior into page-local scripts or break shell-owned top-level navigation continuity.
+
+# Backoffice guidance
+
+For Content, Images, Items, Stock and Orders, use the living [backoffice design reference](docs/backoffice-design.md). It records shared staff patterns, research, proposal status and validation separately from the public site's visual direction.

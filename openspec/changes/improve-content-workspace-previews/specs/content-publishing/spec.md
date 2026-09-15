@@ -54,6 +54,25 @@ The workspace SHALL offer searchable content selection, an optional wide editor/
 - **THEN** the top bar distinguishes pending from live and refreshes at bounded intervals while visible
 - **AND** failure stays visible with a manual refresh or retry path, without inventing titles or authors absent from the history contract.
 
+#### Scenario: A workflow fails before content capture
+
+- **WHEN** an accepted publication starts a hosted workflow
+- **THEN** the existing dispatcher is kicked immediately and the workflow registers its run before release validation
+- **AND** failure or cancellation is acknowledged or reconciled to Failed without overriding a deployment awaiting verification.
+
+#### Scenario: A member checks a long publication
+
+- **WHEN** a publication remains pending
+- **THEN** Refresh publication status is available directly in the top bar
+- **AND** visible-page polling uses 15-second intervals for two minutes, then 30-second intervals up to thirty minutes, without overlapping refreshes
+- **AND** returning to the page checks immediately, settlement stops polling, and expiry leaves an honest pending state with manual refresh.
+
+#### Scenario: An older preview is still displayed
+
+- **WHEN** the current editor inputs differ from the displayed frame's inputs
+- **THEN** the frame is labelled outdated, never up to date
+- **AND** diagnostic evidence may contain numeric request/display generations and readiness outcomes but no editorial text.
+
 ### Requirement: Preview security and failures work across supported browsers
 
 The workspace SHALL permit validated same-environment preview assets in Firefox and Chromium without weakening script, form, connection, or private media restrictions. Preview failures SHALL have bounded private diagnostics that exclude editorial content and credentials.

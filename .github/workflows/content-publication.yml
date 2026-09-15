@@ -41,6 +41,14 @@ jobs:
         with:
           node-version: 24.20.0
           cache: pnpm
+      - name: Register publication run before validation
+        id: attempt
+        env:
+          PUBLICATION_DISPATCH_TOKEN: ${{ inputs.dispatch_token }}
+          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets[format('{0}_CMS_PUBLICATION_EXPORT_TOKEN', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_ID', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_SECRET', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+        run: node scripts/report-publication-run.mjs start
       - run: pnpm install --frozen-lockfile
       - name: Resolve deployed code under the release lock
         id: code
@@ -98,3 +106,10 @@ jobs:
           CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_ID', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
           CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_SECRET', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
         run: node scripts/acknowledge-content-publication.mjs
+      - name: Report unsuccessful publication
+        if: ${{ (failure() || cancelled()) && steps.attempt.outcome == 'success' }}
+        env:
+          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets[format('{0}_CMS_PUBLICATION_EXPORT_TOKEN', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_ID', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_SECRET', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+        run: node scripts/report-publication-run.mjs failed

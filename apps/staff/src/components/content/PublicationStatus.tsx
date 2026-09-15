@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Clock3, AlertCircle, RefreshCw, History } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
@@ -18,29 +18,61 @@ export default function PublicationStatus({
   const mobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const inFlight = useRef<Promise<void> | null>(null);
   const refreshRef = useRef(refresh);
   useEffect(() => {
     refreshRef.current = refresh;
   }, [refresh]);
+  const check = useCallback(() => {
+    if (inFlight.current) return inFlight.current;
+    setChecking(true);
+    const request = Promise.resolve()
+      .then(() => refreshRef.current())
+      .catch(() => {})
+      .finally(() => {
+        inFlight.current = null;
+        setChecking(false);
+      });
+    inFlight.current = request;
+    return request;
+  }, []);
   const pending = items.filter((item) => item.status === 'pending');
   const pendingKey = pending.map((item) => item.id).join(',');
   useEffect(() => {
+    setPaused(false);
     if (!pendingKey) return;
-    const deadline = Date.now() + 120_000;
-    let running = false;
-    const timer = setInterval(() => {
-      if (Date.now() >= deadline) {
-        clearInterval(timer);
+    const started = Date.now();
+    let timer: ReturnType<typeof setTimeout>;
+    let stopped = false;
+    const schedule = () => {
+      if (stopped) return;
+      const elapsed = Date.now() - started;
+      if (elapsed >= 30 * 60_000) {
+        setPaused(true);
         return;
       }
-      if (document.visibilityState !== 'visible' || running) return;
-      running = true;
-      void refreshRef.current().finally(() => {
-        running = false;
-      });
-    }, 15_000);
-    return () => clearInterval(timer);
-  }, [pendingKey]);
+      timer = setTimeout(
+        () => {
+          if (document.visibilityState === 'visible') void check().finally(schedule);
+          else schedule();
+        },
+        elapsed < 120_000 ? 15_000 : 30_000,
+      );
+    };
+    const returned = () => {
+      if (document.visibilityState === 'visible') void check();
+    };
+    schedule();
+    document.addEventListener('visibilitychange', returned);
+    window.addEventListener('focus', returned);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', returned);
+      window.removeEventListener('focus', returned);
+    };
+  }, [pendingKey, check]);
   const latestLive = Math.max(0, ...items.filter((item) => item.status === 'live').map((item) => item.requestedAt));
   const failed = items.some((item) => item.status === 'failed' && item.requestedAt > latestLive);
   const unavailable = message.includes('unavailable') || message.includes('could not') || message.includes('failed');
@@ -50,7 +82,9 @@ export default function PublicationStatus({
       ? 'Publication failed'
       : 'Publication status unavailable'
     : pending.length
-      ? `Publishing · ${pending.length} pending`
+      ? paused
+        ? 'Still pending · Check again'
+        : `Publishing · ${pending.length} pending`
       : items.length
         ? 'Latest publication live'
         : 'Publication history';
@@ -78,38 +112,35 @@ export default function PublicationStatus({
       <ul className="max-h-72 overflow-y-auto divide-y divide-border" aria-label="Recent publications">
         {items.map((item) => (
           <li key={item.id} className="flex items-center justify-between gap-4 py-3 text-xs">
-            <span
-              className={
-                item.status === 'failed'
-                  ? 'cms-state-error'
-                  : item.status === 'pending'
-                    ? 'cms-state-warning'
-                    : 'cms-state-success'
-              }
-            >
-              {item.status === 'live' ? 'Live' : item.status === 'pending' ? 'Pending' : 'Failed'}
-            </span>
+            <div>
+              <span
+                className={
+                  item.status === 'failed'
+                    ? 'cms-state-error'
+                    : item.status === 'pending'
+                      ? 'cms-state-warning'
+                      : 'cms-state-success'
+                }
+              >
+                {item.status === 'live' ? 'Live' : item.status === 'pending' ? 'Pending' : 'Failed'}
+              </span>
+              {item.failureReason && <p className="mt-1 max-w-56 text-muted-foreground">{item.failureReason}</p>}
+              {item.status === 'failed' && (
+                <details className="mt-1">
+                  <summary className="cursor-pointer">Diagnostic details</summary>
+                  <p className="break-all">Publication: {item.id}</p>
+                </details>
+              )}
+            </div>
             <time dateTime={new Date(item.requestedAt).toISOString()}>
               {new Date(item.requestedAt).toLocaleString()}
             </time>
           </li>
         ))}
       </ul>
-      <Button
-        type="button"
-        variant="outline"
-        disabled={checking}
-        onClick={() => {
-          setChecking(true);
-          void refresh().finally(() => setChecking(false));
-        }}
-      >
-        <RefreshCw className="size-4" />
-        {checking ? 'Checking…' : 'Refresh publication status'}
-      </Button>
     </div>
   );
-  return mobile ? (
+  const disclosure = mobile ? (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>{trigger}</SheetTrigger>
       <SheetContent className="cms-surface overflow-y-auto">
@@ -128,5 +159,24 @@ export default function PublicationStatus({
         {history}
       </PopoverContent>
     </Popover>
+  );
+  return (
+    <div className="flex min-w-0 items-center gap-1">
+      {disclosure}
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        disabled={checking}
+        aria-label="Refresh publication status"
+        title={checking ? 'Checking publication status…' : 'Refresh publication status'}
+        onClick={() => void check()}
+      >
+        <RefreshCw className="size-4" aria-hidden="true" />
+      </Button>
+      <span className="sr-only" role="status">
+        {checking ? 'Checking publication status' : summary}
+      </span>
+    </div>
   );
 }

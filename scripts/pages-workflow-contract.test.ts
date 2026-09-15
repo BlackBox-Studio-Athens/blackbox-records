@@ -12,6 +12,17 @@ const publication = parse(
 );
 
 describe('Content publication workflow', () => {
+  it('registers a run before installation and validation and reports failure without weakening acceptance', () => {
+    const steps = publication.jobs.publish.steps;
+    const attempt = steps.findIndex((step: { id?: string }) => step.id === 'attempt');
+    expect(attempt).toBeGreaterThan(0);
+    expect(attempt).toBeLessThan(
+      steps.findIndex((step: { run?: string }) => step.run === 'pnpm install --frozen-lockfile'),
+    );
+    expect(attempt).toBeLessThan(steps.findIndex((step: { id?: string }) => step.id === 'code'));
+    expect(steps.at(-1).if).toBe("${{ (failure() || cancelled()) && steps.attempt.outcome == 'success' }}");
+    expect(steps.at(-1).run).toBe('node scripts/report-publication-run.mjs failed');
+  });
   it('shares the release lock and builds selected deployed code without build credentials', () => {
     expect(publication.concurrency).toEqual(workflow.concurrency);
     const steps = publication.jobs.publish.steps;

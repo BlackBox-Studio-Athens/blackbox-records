@@ -167,6 +167,7 @@ const state = {
   diagnostics: [],
   previewStyleFailure: false,
   previewImageFailure: false,
+  previewFontDisplay: null,
   searchDelay: 0,
   historyDelay: 0,
   detailDelay: 0,
@@ -205,8 +206,14 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/preview-test.css') {
       if (state.previewStyleFailure) return fail(503);
       res.writeHead(200, { 'Content-Type': 'text/css', 'Cache-Control': 'no-store' });
-      return res.end('body {background: #121212; color: white}');
+      return res.end(
+        'body {background: #121212; color: white}' +
+          (state.previewFontDisplay
+            ? `@font-face {font-family: PreviewFont; src: url('/preview-font.woff2'); font-display: ${state.previewFontDisplay};} body {font-family: PreviewFont, sans-serif}`
+            : ''),
+      );
     }
+    if (url.pathname === '/preview-font.woff2') return fail(503);
     if (url.pathname === '/preview-test.png') {
       if (state.previewImageFailure) return fail(503);
       res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-store' });
@@ -250,6 +257,7 @@ const server = createServer(async (req, res) => {
     }
     if (url.pathname === '/_emdash/preview') {
       res.setHeader('X-Preview-Request-Id', '00000000-0000-4000-8000-000000000001');
+      res.setHeader('X-Preview-Generation', req.headers['x-preview-generation'] ?? '0');
       res.setHeader('X-Release-SHA', 'local');
       state.previewRequests.push(body);
       const title = String(body.data.title ?? body.collection);
@@ -259,8 +267,12 @@ const server = createServer(async (req, res) => {
       if (title === 'slow preview') await new Promise((resolve) => setTimeout(resolve, 1500));
       res.writeHead(200, { 'Content-Type': 'text/html', 'X-Preview-Environment': 'local' });
       const escaped = title.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+      const description = String(body.data.description ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;');
       return res.end(
-        `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${previewPolicy(origin)}"><link rel="stylesheet" href="/preview-test.css"></head><body style="min-height:2000px"><h1>${escaped}</h1><img src="/preview-test.png" alt="Preview fixture" loading="eager"></body></html>`,
+        `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${previewPolicy(origin)}"><link rel="stylesheet" href="/preview-test.css"></head><body style="min-height:2000px"><h1>${escaped}</h1><p id="newsletter-signup-area">${description}</p><img src="/preview-test.png" alt="Preview fixture" loading="eager"></body></html>`,
       );
     }
     if (url.pathname === '/_emdash/api/blackbox/publications') {
@@ -436,6 +448,16 @@ else {
     );
     await page.getByLabel('Artist name', { exact: true }).fill('Ouranopithecus');
     await appearance.getByRole('heading', { name: 'Ouranopithecus', exact: true }).waitFor();
+    state.previewFontDisplay = 'optional';
+    await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
+    await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    state.previewFontDisplay = 'swap';
+    await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
+    await page.getByRole('alert').filter({ hasText: 'Preview fonts could not load' }).waitFor();
+    assert.equal(await appearance.getByRole('heading').innerText(), 'Ouranopithecus');
+    state.previewFontDisplay = null;
+    await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
+    await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
     state.previewImageFailure = true;
     await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
     await page.getByRole('alert').filter({ hasText: 'Preview images could not load' }).waitFor();
@@ -699,6 +721,97 @@ else {
     await noStorage.getByRole('button', { name: 'Show preview', exact: true }).click();
     await noStorage.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
     await noStorage.close();
+    const newsletter = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await newsletter.goto(`${origin}/content/?collection=newsletter&id=newsletter-1`);
+    await newsletter.getByRole('button', { name: 'Show preview', exact: true }).click();
+    const newsletterPreview = newsletter.frameLocator('iframe[title="Private site appearance preview"]');
+    await newsletterPreview.getByText('News from the label', { exact: true }).waitFor();
+    await newsletter.getByRole('button', { name: 'Mobile', exact: true }).click();
+    const description = newsletter.getByLabel('Description', { exact: true });
+    await description.fill('');
+    await description.pressSequentially('First unsaved newsletter description', { delay: 20 });
+    await newsletterPreview.getByText('First unsaved newsletter description', { exact: true }).waitFor();
+    await description.fill('Second unsaved newsletter description');
+    await newsletter.getByRole('status').filter({ hasText: 'Updating preview' }).waitFor();
+    await newsletterPreview.getByText('Second unsaved newsletter description', { exact: true }).waitFor();
+    await newsletter.getByRole('button', { name: 'Save draft', exact: true }).click();
+    await newsletter.getByRole('status').filter({ hasText: 'Draft saved' }).waitFor();
+    await newsletter.getByRole('button', { name: 'Refresh preview', exact: true }).click();
+    await newsletter.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    await newsletter.reload();
+    await newsletterPreview.getByText('Second unsaved newsletter description', { exact: true }).waitFor();
+    await newsletter.route('**/_emdash/preview?*', async (route) => {
+      const response = await route.fetch();
+      await route.fulfill({ response, headers: { ...response.headers(), 'x-preview-generation': '999999' } });
+    });
+    await newsletter.getByRole('button', { name: 'Refresh preview', exact: true }).click();
+    await newsletter.getByRole('alert').filter({ hasText: 'outdated response' }).waitFor();
+    assert.equal(state.diagnostics.at(-1).stage, 'freshness');
+    assert.ok(state.diagnostics.at(-1).requestedGeneration > state.diagnostics.at(-1).displayedGeneration);
+    assert.equal(
+      await newsletterPreview.getByText('Second unsaved newsletter description', { exact: true }).isVisible(),
+      true,
+    );
+    await newsletter.unroute('**/_emdash/preview?*');
+    await newsletter.getByRole('button', { name: 'Refresh preview', exact: true }).click();
+    await newsletter.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    await newsletter.close();
+
+    // Real timers are replaced only in this isolated polling page; requests still hit the fixture server.
+    const polling = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    publications.unshift({ id: 'polling-test', status: 'pending', requestedAt: Date.now() + 1000 });
+    await polling.clock.install();
+    await polling.goto(`${origin}/content/`);
+    await polling.getByRole('button', { name: /Publishing.*pending/ }).waitFor();
+    const refreshButton = polling.getByRole('button', { name: 'Refresh publication status', exact: true });
+    assert.equal(await refreshButton.isVisible(), true, 'Refresh is available without opening history');
+    const refreshed = polling.waitForResponse('**/_emdash/api/blackbox/publications');
+    await refreshButton.click();
+    await refreshed;
+    const autoRefresh = polling.waitForResponse('**/_emdash/api/blackbox/publications');
+    await polling.clock.fastForward(15_000);
+    await autoRefresh;
+    const countReads = () =>
+      state.requests.filter((request) => request.path === '/_emdash/api/blackbox/publications').length;
+    await polling.evaluate(() =>
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' }),
+    );
+    const hiddenPublicationReads = countReads();
+    await polling.clock.fastForward(60_000);
+    assert.equal(countReads(), hiddenPublicationReads, 'Hidden pages do not poll');
+    let releaseRefresh;
+    const holdRefresh = new Promise((resolve) => {
+      releaseRefresh = resolve;
+    });
+    let concurrentReads = 0;
+    await polling.route('**/_emdash/api/blackbox/publications', async (route) => {
+      concurrentReads++;
+      await holdRefresh;
+      await route.continue();
+    });
+    const returnedRefresh = polling.waitForRequest('**/_emdash/api/blackbox/publications');
+    await polling.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+      document.dispatchEvent(new Event('visibilitychange'));
+      window.dispatchEvent(new Event('focus'));
+    });
+    await returnedRefresh;
+    await polling.clock.fastForward(15_000);
+    assert.equal(concurrentReads, 1, 'Focus, visibility and timer share one request');
+    assert.equal(await refreshButton.isEnabled(), false);
+    const returnedResponse = polling.waitForResponse('**/_emdash/api/blackbox/publications');
+    releaseRefresh();
+    await returnedResponse;
+    await polling.unroute('**/_emdash/api/blackbox/publications');
+    await polling.clock.fastForward(30 * 60_000);
+    await polling.getByRole('button', { name: 'Still pending · Check again', exact: true }).waitFor();
+    const stoppedReads = countReads();
+    await polling.clock.fastForward(60_000);
+    assert.equal(countReads(), stoppedReads, 'Automatic polling stops at the bound');
+    publications[0].status = 'live';
+    await refreshButton.click();
+    await polling.getByRole('button', { name: 'Latest publication live', exact: true }).waitFor();
+    await polling.close();
     console.log('CMS workspace browser regression passed. Screenshots:', artifacts);
   } catch (error) {
     if (page) {

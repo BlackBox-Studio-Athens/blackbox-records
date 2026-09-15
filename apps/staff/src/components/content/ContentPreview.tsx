@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Expand, Minimize, RefreshCw, Info, Monitor, Smartphone, Scan, Copy } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
@@ -27,6 +27,7 @@ export default function ContentPreview({
 }) {
   type Rendering = {
     generation: number;
+    inputKey: string;
     html: string;
     signal: AbortSignal;
     report(error: unknown, stage?: PreviewDiagnostic['stage'], directive?: string): void;
@@ -50,8 +51,14 @@ export default function ContentPreview({
   const resetScroll = useRef(false);
   const firstRender = useRef(true);
   const generation = useRef(0);
+  const displayedGeneration = useRef(0);
   const previous = useRef({ payload: '', view, retry, active: false });
   const payload = JSON.stringify({ collection, ...(id ? { id } : {}), slug, data: editorialWriteData(data) });
+  const inputKey = JSON.stringify([payload, base, view, retry]);
+  const currentInput = useRef(inputKey);
+  useLayoutEffect(() => {
+    currentInput.current = inputKey;
+  }, [inputKey]);
   useEffect(() => {
     const update = () => setVisible(document.visibilityState === 'visible');
     update();
@@ -75,6 +82,9 @@ export default function ContentPreview({
       const details: PreviewDiagnostic = {
         requestId,
         release,
+        requestedGeneration: current,
+        displayedGeneration: displayedGeneration.current,
+        readiness: 'failed',
         ...(directive ? { directive } : {}),
         stage: error instanceof PreviewAssetError ? error.stage : stage,
         ...(error instanceof PreviewAssetError ? { asset: safePreviewAsset(error.asset) } : {}),
@@ -117,11 +127,20 @@ export default function ContentPreview({
               credentials: 'same-origin',
               cache: 'no-store',
               signal: controller.signal,
-              headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1' },
+              headers: {
+                'Content-Type': 'application/json',
+                'X-EmDash-Request': '1',
+                'X-Preview-Generation': String(current),
+              },
               body: payload,
             });
             requestId = response.headers.get('X-Preview-Request-Id') ?? undefined;
             release = response.headers.get('X-Release-SHA') ?? 'unknown';
+            const responseGeneration = response.headers.get('X-Preview-Generation');
+            if (responseGeneration !== null && responseGeneration !== String(current)) {
+              report(null, 'freshness');
+              throw new Error('Preview returned an outdated response. Refresh preview to try again.');
+            }
             if (!response.ok || response.redirected || !response.headers.get('X-Preview-Environment')) {
               const details = (await response.json().catch(() => null)) as { error?: string } | null;
               throw new Error(
@@ -132,9 +151,10 @@ export default function ContentPreview({
               );
             }
             const next = await response.text();
-            if (controller.signal.aborted) return;
+            if (controller.signal.aborted || currentInput.current !== inputKey) return;
             setPending({
               generation: current,
+              inputKey,
               html: next,
               signal: controller.signal,
               report,
@@ -157,7 +177,7 @@ export default function ContentPreview({
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [payload, base, active, visible, view, retry]);
+  }, [payload, base, active, visible, view, retry, inputKey]);
   useEffect(() => {
     if (!active) setExpanded(false);
   }, [active]);
@@ -296,8 +316,10 @@ export default function ContentPreview({
           role="status"
           className={`text-xs ${error ? 'cms-state-error' : dirty ? 'cms-state-warning' : 'text-muted-foreground'}`}
         >
-          {status}
-          {error && rendered ? ' · Showing the last successful preview' : ''}
+          {status === 'Preview up to date' && rendered?.inputKey !== inputKey ? 'Updating preview' : status}
+          {rendered && (error || rendered.inputKey !== inputKey)
+            ? ' · Showing the last successful preview (outdated)'
+            : ''}
         </p>
         {collection === 'settings' && (
           <p className="text-xs text-muted-foreground">
@@ -346,6 +368,8 @@ export default function ContentPreview({
           .map((item) => (
             <iframe
               key={item.generation}
+              data-preview-generation={item.generation}
+              data-preview-readiness={item === rendered ? 'ready' : 'loading'}
               ref={item === rendered ? frame : undefined}
               title={item === rendered ? 'Private site appearance preview' : 'Loading private site appearance preview'}
               className={item === pending ? 'cms-preview-pending' : undefined}
@@ -357,7 +381,13 @@ export default function ContentPreview({
               style={{ width: width === 'desktop' ? 1280 : width === 'mobile' ? 390 : '100%' }}
               onLoad={async (event) => {
                 const iframe = event.currentTarget;
-                if (item !== pending || item.signal.aborted || item.generation !== generation.current) return;
+                if (
+                  item !== pending ||
+                  item.signal.aborted ||
+                  item.generation !== generation.current ||
+                  item.inputKey !== currentInput.current
+                )
+                  return;
                 let directive: string | undefined;
                 const recordViolation = (event: SecurityPolicyViolationEvent) => {
                   if (['style-src', 'style-src-elem', 'img-src', 'font-src'].includes(event.effectiveDirective))
@@ -370,7 +400,12 @@ export default function ContentPreview({
                   const document = previewDocument;
                   if (!document || document.URL !== 'about:srcdoc') return;
                   await checkPreviewAssets(document);
-                  if (item.signal.aborted || item.generation !== generation.current) return;
+                  if (
+                    item.signal.aborted ||
+                    item.generation !== generation.current ||
+                    item.inputKey !== currentInput.current
+                  )
+                    return;
                   if (!resetScroll.current)
                     scroll.current = {
                       x: frame.current?.contentWindow?.scrollX ?? scroll.current.x,
@@ -386,6 +421,7 @@ export default function ContentPreview({
                   firstRender.current = false;
                   resetScroll.current = false;
                   setRendered(item);
+                  displayedGeneration.current = item.generation;
                   setPending(null);
                   setError('');
                   setDiagnostic(null);

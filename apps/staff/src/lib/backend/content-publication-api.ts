@@ -1,6 +1,11 @@
 import { EditorialApiError } from './editorial-api';
 
-export type ContentPublication = { id: string; status: 'pending' | 'live' | 'failed'; requestedAt: number };
+export type ContentPublication = {
+  id: string;
+  status: 'pending' | 'live' | 'failed';
+  requestedAt: number;
+  failureReason?: string;
+};
 export type PublicationRequest = { id: string; requestedRevision: string };
 
 async function request<T>(base: string, body?: PublicationRequest): Promise<T> {

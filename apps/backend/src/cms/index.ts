@@ -98,10 +98,17 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     const requestId = crypto.randomUUID();
     const release = typeof RELEASE_SOURCE_SHA === 'undefined' ? 'local' : RELEASE_SOURCE_SHA;
     const started = performance.now();
-    const logger = createBindingLogger(this.env, { requestId, release });
+    const rawGeneration = request.headers.get('X-Preview-Generation');
+    const generation = rawGeneration && /^(0|[1-9][0-9]{0,8})$/.test(rawGeneration) ? Number(rawGeneration) : undefined;
+    const logger = createBindingLogger(this.env, {
+      requestId,
+      release,
+      ...(generation !== undefined ? { generation } : {}),
+    });
     const headers = {
       'X-Preview-Request-Id': requestId,
       'X-Release-SHA': release,
+      ...(generation !== undefined ? { 'X-Preview-Generation': String(generation) } : {}),
       'Cache-Control': 'private, no-store',
       'X-Robots-Tag': 'noindex, nofollow',
       Vary: 'Cookie, Cf-Access-Jwt-Assertion',
@@ -371,6 +378,18 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         db: bindings.CMS_DB,
         environment,
         identity,
+        onAccepted: () => {
+          if (environment === 'local' || !bindings.CMS_PUBLICATION_EXPORT_TOKEN) return;
+          this.ctx.waitUntil(
+            dispatchPendingPublication(bindings.CMS_DB, environment, bindings.CMS_PUBLICATION_GITHUB_TOKEN)
+              .then((result) => {
+                createBindingLogger(bindings).info({ event: 'publication_dispatch', ...result });
+              })
+              .catch(() => {
+                createBindingLogger(bindings).warn({ event: 'publication_dispatch_failed' });
+              }),
+          );
+        },
         fetchCms: (path: string): Promise<Response> => {
           const headers = new Headers(request.headers);
           headers.delete('Content-Length');

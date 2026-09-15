@@ -30,8 +30,11 @@ function context() {
 test('requests publication with verified identities, preserves replay after later CMS changes, and reads honest status', async () => {
   const input = { id: crypto.randomUUID(), requestedRevision: 'live-one' };
   const ctx = context();
+  const onAccepted = vi.fn();
+  Object.assign(ctx, { onAccepted });
   const response = await handlePublicationRequest(post(input), ctx);
   expect(response.status).toBe(202);
+  expect(onAccepted).toHaveBeenCalledTimes(1);
   expect(response.headers.get('Cache-Control')).toBe('private, no-store');
   const result = await response.json();
   expect(result).toEqual({ id: input.id, status: 'pending', requestedAt: expect.any(Number) });
@@ -43,6 +46,7 @@ test('requests publication with verified identities, preserves replay after late
     throw new Error('CMS changed after acceptance');
   });
   expect(await (await handlePublicationRequest(post(input), ctx)).json()).toEqual(result);
+  expect(onAccepted).toHaveBeenCalledTimes(2);
   expect(ctx.fetchCms).toHaveBeenCalledTimes(2);
   expect(await (await handlePublicationRequest(new Request(root + '/' + input.id), ctx)).json()).toEqual(result);
   expect((await readPublication(env.TEST_CMS_DB, 'local', input.id))?.actorEmail).toBe(ctx.identity.email);

@@ -1,7 +1,10 @@
 export type PreviewDiagnostic = {
   requestId?: string | undefined;
   release: string;
-  stage: 'request' | 'timeout' | 'style' | 'image' | 'font';
+  stage: 'request' | 'timeout' | 'style' | 'image' | 'font' | 'freshness';
+  requestedGeneration?: number;
+  displayedGeneration?: number;
+  readiness?: 'failed';
   asset?: string | undefined;
   directive?: string | undefined;
 };
@@ -60,6 +63,11 @@ export async function checkPreviewAssets(document: Document) {
     }),
   );
   await document.fonts?.ready;
-  if (document.fonts && Array.from(document.fonts).some((font) => font.status === 'error'))
+  // Public Google Fonts use display=optional: Firefox may reject a slow face and intentionally use the fallback.
+  // That is a valid public rendering, not a failed preview. Required (e.g. Veneer/swap) fonts still gate readiness.
+  if (
+    document.fonts &&
+    Array.from(document.fonts).some((font) => font.status === 'error' && font.display !== 'optional')
+  )
     throw new PreviewAssetError('Preview fonts could not load. Try refreshing the preview.', 'font');
 }

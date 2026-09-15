@@ -12,7 +12,7 @@ Render unsaved editorial changes with actual public templates while keeping requ
 - An authenticated same-origin POST renders shared public pages. Validate editorial input and identities, resolve published revisions and private media, and overlay only the selected draft. Bound reads and payload sizes; cache only published context briefly inside the existing CMS object.
 - Use sandboxed iframe HTML with scripts, navigation, embedded players, and submissions disabled. Keep styles/fonts/crops; refresh after 750 ms, cancel outdated requests, retain scroll and visibly stale last-successful output.
 - Desktop starts with preview closed and remembers the browser preference; opened preview is 45/55 editor/preview. Below 1100 px use Edit/Preview tabs; section navigation remains collapsible. A searchable selector replaces the record column while editing.
-- Publication summary uses existing status/time fields, an anchored desktop popover and mobile Sheet. Poll pending work every 15 seconds while visible for at most two minutes. Errors remain actionable.
+- Publication summary uses status/time fields and optional sanitized failure guidance, an anchored desktop popover and mobile Sheet. Refresh is also directly available in the top bar. Poll visible pending work every 15 seconds for two minutes, then every 30 seconds up to thirty minutes; refresh on return and prevent overlapping requests. Stop on settlement and retain manual refresh after the bound.
 - Reuse installed primitives and CSS Grid. Blue actions/selection, amber pending/unsaved, green live, red failure, always with text. Preserve publication permissions and Items handoff.
 
 ## Risks / Trade-offs
@@ -35,6 +35,14 @@ Preview reads share a request-local promise map and a four-read concurrency limi
 The measured distro detail path originally scanned its entire collection (237 reads). Direct selected-entry lookups now resolve only validated unsaved input and its referenced media/artist; full collection requests retain published surrounding entries. Shared templates and the public reader API remain unchanged.
 
 ## Firefox CSP and workflow refinement
+
+Publication requests kick the existing journal-controlled dispatcher in background execution; cron remains recovery. Register the authenticated workflow run before code acceptance and dependency installation; bind the accepted code revision afterward. Failure callbacks must match the bound run and must not override a stored deployment receipt, whose public identity still needs reconciliation. Do not weaken release acceptance to work around stale retired Pages assets. No database migration is needed for early binding or generic failure guidance.
+
+Preview freshness compares the displayed frame's request inputs with the current editor inputs, in addition to generation/abort guards. Diagnostic reports may contain numeric generations and readiness outcomes, never editorial text. The reported Firefox newsletter failure is not considered fixed without reproduction; real local rendering and production-policy fixtures cover successive description edits.
+
+Real Firefox verification reproduced a separate readiness bug: the public layout requests Google Fonts with `display=optional`, and Firefox marks a face as errored after its short display deadline. Accept that deliberate public fallback; continue rejecting failed required fonts, styles and images. No font URLs, public policy or CSP permissions change. This does not establish that the user's older-tab stale-description symptom had the same cause.
+
+The living reference is docs/backoffice-design.md. It separates proposed, accepted, and implemented behavior across Content, Images, Items, Stock, and Orders, retaining the shared dark workspace and existing commerce permissions.
 
 The Firefox reproduction loads the same meta CSP into a sandboxed srcdoc iframe: Chromium attaches the stylesheet, Firefox does not. The policy now names the validated CMS origin explicitly for styles, images and fonts. Keep the header and meta policy derived from one function; preserve the sandbox and deny script/connection/form/frame activity. Browser tests use the real policy, including negative resource tests, in Chromium and Firefox.
 

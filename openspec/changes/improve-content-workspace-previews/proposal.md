@@ -14,6 +14,8 @@ The content workspace previews selected fields with separate markup, so editors 
 
 ## Capabilities
 
+The approved follow-up also dispatches publication requests immediately, registers CI before release validation, exposes failures and top-bar refresh, traces preview freshness, and adds a living backoffice design reference. The fifteen design recommendations remain proposals rather than an implicit commerce redesign.
+
 ### Modified Capabilities
 
 - `content-publishing`: private faithful preview and focused editorial workspace.

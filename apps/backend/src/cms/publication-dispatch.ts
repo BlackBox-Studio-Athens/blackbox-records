@@ -33,7 +33,7 @@ export async function reconcilePendingPublication(
       send,
     );
     await response.body?.cancel();
-    if (response.status === 409) await failPublicationRun(context.db, environment, item.id, item.ciRunId!);
+    if (response.status === 409) await failPublicationRun(context.db, environment, item.id, item.ciRunId!, true);
     return { id: item.id, status: response.status === 200 ? 'live' : response.status === 409 ? 'failed' : 'pending' };
   }
   const response = await send(

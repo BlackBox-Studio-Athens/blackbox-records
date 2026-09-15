@@ -106,6 +106,31 @@ try {
     }
   }
   assert.deepEqual(await get('blackbox/publications'), history, 'Preview must not publish');
+  const newsletter = (await get('content/newsletter?limit=1')).items[0];
+  const newsletterBefore = await get(`content/newsletter/${newsletter.id}`);
+  for (const { name, page } of browsers) {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${base}/content/?collection=newsletter&id=${encodeURIComponent(newsletter.id)}`);
+    await page.getByRole('button', { name: 'Show preview', exact: true }).click();
+    await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    await page.getByRole('button', { name: 'Mobile', exact: true }).click();
+    const description = page.getByLabel('Description', { exact: true });
+    const preview = page.frameLocator('iframe[title="Private site appearance preview"]');
+    await description.fill('');
+    await description.pressSequentially(`${name} unsaved newsletter description A`, { delay: 15 });
+    await preview.getByText(`${name} unsaved newsletter description A`, { exact: true }).waitFor();
+    await description.fill(`${name} unsaved newsletter description B`);
+    await preview.getByText(`${name} unsaved newsletter description B`, { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
+    await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    assert.equal(
+      await preview.getByText(`${name} unsaved newsletter description B`, { exact: true }).isVisible(),
+      true,
+    );
+    console.error(`Passed ${name} real newsletter successive unsaved edits`);
+  }
+  assert.deepEqual(await get(`content/newsletter/${newsletter.id}`), newsletterBefore, 'UI previews must not save');
+  assert.deepEqual(await get('blackbox/publications'), history, 'UI previews must not publish');
   console.log(JSON.stringify(results, null, 2));
 } finally {
   await Promise.all(browsers.map(({ browser }) => browser.close()));

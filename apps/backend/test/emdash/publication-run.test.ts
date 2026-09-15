@@ -110,7 +110,7 @@ test('restricts the machine credential to the exact route, method and bounded cl
     ciRunId: '12345',
     codeSha: 'c'.repeat(40),
   };
-  for (const codeSha of [undefined, 'main', 'c'.repeat(39), 'C'.repeat(40)])
+  for (const codeSha of ['main', 'c'.repeat(39), 'C'.repeat(40)])
     expect((await handlePublicationWorkflow(post({ ...input, codeSha }), context)).status).toBe(400);
   for (const extra of [{ environment: 'prd' }, { status: 'live' }, { padding: 'x'.repeat(5000) }, { ciRunId: '../1' }])
     expect((await handlePublicationWorkflow(post({ ...input, ...extra }), context)).status).toBe(400);
@@ -146,6 +146,59 @@ test('restricts the machine credential to the exact route, method and bounded cl
       .status,
   ).toBe(409);
   expect((await handlePublicationWorkflow(post(input), { ...context, db: env.COMMERCE_DB })).status).toBe(503);
+});
+
+test('binds before code validation, fails safely, and rejects wrong-run failure callbacks', async () => {
+  const item = await requestPublication(env.TEST_CMS_DB, {
+    id: crypto.randomUUID(),
+    environment: 'uat',
+    actorEmail: 'operator@example.com',
+    requestedRevision: 'early-failure',
+  });
+  const claim = await claimPublicationDispatch(env.TEST_CMS_DB, 'uat');
+  const input = { id: item.id, dispatchToken: claim!.dispatchToken, ciRunId: '991122' };
+  expect((await handlePublicationWorkflow(post(input), context)).status).toBe(200);
+  expect((await readPublication(env.TEST_CMS_DB, 'uat', item.id))?.codeSha).toBeNull();
+  expect((await handlePublicationWorkflow(post(input), context)).status).toBe(200);
+  const failed = (ciRunId: string, credential = token) =>
+    new Request('https://staff.example/_emdash/api/blackbox/publications/failed', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${credential}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: item.id, ciRunId }),
+    });
+  expect((await handlePublicationWorkflow(failed('991122', 'b'.repeat(64)), context)).status).toBe(403);
+  expect((await handlePublicationWorkflow(failed('112299'), context)).status).toBe(409);
+  expect((await handlePublicationWorkflow(failed('991122'), context)).status).toBe(200);
+  expect((await handlePublicationWorkflow(failed('991122'), context)).status).toBe(200);
+  expect((await readPublication(env.TEST_CMS_DB, 'uat', item.id))?.status).toBe('failed');
+  expect((await handlePublicationWorkflow(post({ ...input, codeSha: 'c'.repeat(40) }), context)).status).toBe(409);
+});
+
+test('an early run binds code once and preserves a deployment receipt after a failed callback', async () => {
+  const item = await requestPublication(env.TEST_CMS_DB, {
+    id: crypto.randomUUID(),
+    environment: 'uat',
+    actorEmail: 'operator@example.com',
+    requestedRevision: 'early-success',
+  });
+  const claim = await claimPublicationDispatch(env.TEST_CMS_DB, 'uat');
+  const input = { id: item.id, dispatchToken: claim!.dispatchToken, ciRunId: '991123' };
+  expect((await handlePublicationWorkflow(post(input), context)).status).toBe(200);
+  expect((await handlePublicationWorkflow(post({ ...input, codeSha: 'c'.repeat(40) }), context)).status).toBe(200);
+  expect((await handlePublicationWorkflow(post({ ...input, codeSha: 'd'.repeat(40) }), context)).status).toBe(409);
+  await env.TEST_CMS_DB.prepare('UPDATE _blackbox_publications SET deployment_id = ? WHERE id = ?')
+    .bind(crypto.randomUUID(), item.id)
+    .run();
+  const response = await handlePublicationWorkflow(
+    new Request('https://staff.example/_emdash/api/blackbox/publications/failed', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: item.id, ciRunId: input.ciRunId }),
+    }),
+    context,
+  );
+  expect(response.status).toBe(200);
+  expect((await readPublication(env.TEST_CMS_DB, 'uat', item.id))?.status).toBe('pending');
 });
 
 test('marks only a matching deployed code and snapshot Live and replays acknowledgement without another fetch', async () => {
