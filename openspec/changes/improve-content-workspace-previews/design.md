@@ -24,4 +24,12 @@ Render unsaved editorial changes with actual public templates while keeping requ
 
 ## Migration Plan
 
-No data migration. Deliver through the existing release workflow after local checks; rollback uses the previous code artifact. This task does not deploy hosted changes.
+No data migration. Deliver through the existing release workflow after local checks; rollback uses the previous code artifact. The approved reliability/performance follow-up includes UAT deployment.
+
+## Reliability and performance follow-up
+
+Initial preview, view changes, and manual refresh run immediately; only editorial changes wait 750 ms. Each response loads a new isolated iframe generation, checked for stylesheet and image readiness before replacing the last successful frame. Failed or superseded generations cannot report success or overwrite newer output. Manual refresh retries assets even for identical HTML. Preserve scroll and actionable authentication/asset errors.
+
+Preview reads share a request-local promise map and a four-read concurrency limit. Pagination and validation remain ordered; published revisions and independent media resolve concurrently without changing budgets or authority. Items/Stock initial search and selected stock start independently; history has separate loading/error state and does not delay fresh stock. Mutations remain disabled without a fresh matching stock record. Further staff optimizations require measured evidence.
+
+The measured distro detail path originally scanned its entire collection (237 reads). Direct selected-entry lookups now resolve only validated unsaved input and its referenced media/artist; full collection requests retain published surrounding entries. Shared templates and the public reader API remain unchanged.

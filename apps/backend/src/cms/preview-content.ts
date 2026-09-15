@@ -38,10 +38,19 @@ export const previewInputSchema = z
 export type PreviewInput = z.infer<typeof previewInputSchema>;
 type Entry = { id: string; collection: string; data: Record<string, unknown> };
 type ReadCms = (path: string) => Promise<unknown>;
+// Finish sibling reads before propagating failure; no queued work may outlive the preview response.
+async function finishReads<T>(reads: Promise<T>[]): Promise<T[]> {
+  const results = await Promise.allSettled(reads);
+  return results.map((result) => {
+    if (result.status === 'rejected') throw result.reason;
+    return result.value;
+  });
+}
 export type PreviewContext = {
   input: PreviewInput;
   environment: string;
   getCollection(collection: string): Promise<Entry[]>;
+  getEntry(collection: string, id?: string): Promise<Entry | undefined>;
 };
 export const previewContext = new AsyncLocalStorage<PreviewContext>();
 
@@ -74,8 +83,29 @@ export async function readBoundedText(body: ReadableStream<Uint8Array> | null, l
 export async function createPreviewContext(
   input: PreviewInput,
   environment: string,
-  read: ReadCms,
+  fetchRead: ReadCms,
 ): Promise<PreviewContext> {
+  const reads = new Map<string, Promise<unknown>>();
+  const waiting: (() => void)[] = [];
+  let active = 0;
+  function read(path: string): Promise<unknown> {
+    if (!reads.has(path))
+      reads.set(
+        path,
+        (async () => {
+          if (active >= 4) await new Promise<void>((resolve) => waiting.push(resolve));
+          else active++;
+          try {
+            return await fetchRead(path);
+          } finally {
+            const next = waiting.shift();
+            if (next) next();
+            else active--;
+          }
+        })(),
+      );
+    return reads.get(path)!;
+  }
   const collection = input.collection as CmsCollection;
   if (collection === 'navigation') {
     input = { ...input, data: { ...input.data } };
@@ -122,87 +152,113 @@ export async function createPreviewContext(
     return images.get(id)!;
   }
   async function field(value: unknown): Promise<unknown> {
-    if (Array.isArray(value)) return Promise.all(value.map(field));
+    if (Array.isArray(value)) return finishReads(value.map(field));
     if (!value || typeof value !== 'object') return value;
     const object = value as Record<string, unknown>;
     if (typeof object.id === 'string' && (Object.keys(object).length === 1 || object.provider === 'local'))
       return image(object.id);
     return Object.fromEntries(
-      await Promise.all(
+      await finishReads(
         Object.entries(object)
           .filter(([, value]) => value !== null)
           .map(async ([key, value]) => [key, await field(value)]),
       ),
     );
   }
-  async function load(name: string): Promise<Entry[]> {
+  async function load(name: string, selectedOnly = false): Promise<Entry[]> {
     const source = Object.entries(sourceCollectionNames).find(([, target]) => target === name)?.[0] as
       CmsCollection | undefined;
     if (!source) throw new Error('Unsupported preview context.');
     const records: { id: string; slug: string; data: Record<string, unknown> }[] = [];
     let cursor: string | undefined;
     const seen = new Set<string>();
-    do {
-      const query = new URLSearchParams({ limit: '100' });
-      if (cursor) query.set('cursor', cursor);
-      const page = z
-        .object({ items: z.array(recordSchema).max(100), nextCursor: z.string().nullable().optional() })
-        .parse(await read(`content/${source}?${query}`));
-      for (const item of page.items) {
-        if (item.id === input.id && source === collection) continue;
-        if (item.status !== 'published' || !item.liveRevisionId) continue;
-        const revision = z.object({ item: revisionSchema }).parse(await read(`revisions/${item.liveRevisionId}`)).item;
-        if (revision.id !== item.liveRevisionId || revision.collection !== source || revision.entryId !== item.id)
-          throw new Error('Published content changed. Refresh preview.');
-        const { _slug, ...data } = revision.data;
-        if (source === 'navigation')
-          for (const key of ['show_in_header', 'show_in_footer'])
-            if (data[key] === 0 || data[key] === 1) data[key] = data[key] === 1;
-        if (validateCmsRevisionContent(source, data).length)
-          throw new Error('Published context is invalid. Ask a label administrator to check it.');
-        records.push({ id: item.id, slug: String(_slug ?? item.slug), data });
-      }
-      cursor = page.nextCursor ?? undefined;
-      if (cursor && seen.has(cursor)) throw new Error('Content pagination did not advance.');
-      if (cursor) seen.add(cursor);
-      if (records.length > 500 || seen.size > 5) throw new Error('Preview context exceeds its read budget.');
-    } while (cursor);
-    if (source === collection) records.push({ id: input.id ?? input.slug, slug: input.slug, data: input.data });
-    const entries = [];
-    for (const record of records) {
-      const { body, ...editorial } = record.data;
-      const data = (await field(editorial)) as Record<string, unknown>;
-      if (source === 'artists') data.slug = record.slug;
-      if (source === 'releases') {
-        // Resolve identity through a published Artist; an unrelated Artist draft never leaks into this preview.
-        const artistRecord = z
-          .object({ item: recordSchema })
-          .parse(await read(`content/artists/${identifier.parse(record.data.artist)}`)).item;
-        const artists = await get('artists');
-        if (!artists.some((artist) => artist.id === artistRecord.slug))
-          throw new Error('Publish the linked Artist before previewing this Release.');
-        data.artist = { collection: 'artists', id: artistRecord.slug };
-      }
-      for (const key of ['date', 'release_date']) if (typeof data[key] === 'string') data[key] = new Date(data[key]);
-      if (['artists', 'releases', 'news'].includes(source)) {
-        data.editorial_body = body ?? [];
-        data.content_media = Object.fromEntries(
-          await Promise.all(contentMediaIds(body).map(async (id) => [id, await image(id)])),
+    if (!selectedOnly)
+      do {
+        const query = new URLSearchParams({ limit: '100' });
+        if (cursor) query.set('cursor', cursor);
+        const page = z
+          .object({ items: z.array(recordSchema).max(100), nextCursor: z.string().nullable().optional() })
+          .parse(await read(`content/${source}?${query}`));
+        const published = page.items.filter(
+          (item) =>
+            !(item.id === input.id && source === collection) && item.status === 'published' && item.liveRevisionId,
         );
-      }
-      entries.push({
-        id: ['artists', 'releases', 'news', 'distro', 'navigation', 'socials'].includes(source) ? record.slug : 'site',
-        collection: name,
-        data,
-      });
-    }
-    return entries;
+        records.push(
+          ...(await finishReads(
+            published.map(async (item) => {
+              const revision = z
+                .object({ item: revisionSchema })
+                .parse(await read(`revisions/${item.liveRevisionId}`)).item;
+              if (revision.id !== item.liveRevisionId || revision.collection !== source || revision.entryId !== item.id)
+                throw new Error('Published content changed. Refresh preview.');
+              const { _slug, ...data } = revision.data;
+              if (source === 'navigation')
+                for (const key of ['show_in_header', 'show_in_footer'])
+                  if (data[key] === 0 || data[key] === 1) data[key] = data[key] === 1;
+              if (validateCmsRevisionContent(source, data).length)
+                throw new Error('Published context is invalid. Ask a label administrator to check it.');
+              return { id: item.id, slug: String(_slug ?? item.slug), data };
+            }),
+          )),
+        );
+        cursor = page.nextCursor ?? undefined;
+        if (cursor && seen.has(cursor)) throw new Error('Content pagination did not advance.');
+        if (cursor) seen.add(cursor);
+        if (records.length > 500 || seen.size > 5) throw new Error('Preview context exceeds its read budget.');
+      } while (cursor);
+    if (source === collection) records.push({ id: input.id ?? input.slug, slug: input.slug, data: input.data });
+    return finishReads(
+      records.map(async (record) => {
+        const { body, ...editorial } = record.data;
+        const data = (await field(editorial)) as Record<string, unknown>;
+        if (source === 'artists') data.slug = record.slug;
+        if (source === 'releases') {
+          // Resolve identity through a published Artist; an unrelated Artist draft never leaks into this preview.
+          const artistRecord = z
+            .object({ item: recordSchema })
+            .parse(await read(`content/artists/${identifier.parse(record.data.artist)}`)).item;
+          const artists = await get('artists');
+          if (!artists.some((artist) => artist.id === artistRecord.slug))
+            throw new Error('Publish the linked Artist before previewing this Release.');
+          data.artist = { collection: 'artists', id: artistRecord.slug };
+        }
+        for (const key of ['date', 'release_date']) if (typeof data[key] === 'string') data[key] = new Date(data[key]);
+        if (['artists', 'releases', 'news'].includes(source)) {
+          data.editorial_body = body ?? [];
+          data.content_media = Object.fromEntries(
+            await finishReads(contentMediaIds(body).map(async (id) => [id, await image(id)])),
+          );
+        }
+        return {
+          id: ['artists', 'releases', 'news', 'distro', 'navigation', 'socials'].includes(source)
+            ? record.slug
+            : 'site',
+          collection: name,
+          data,
+        };
+      }),
+    );
   }
   function get(name: string) {
     if (!collections.has(name)) collections.set(name, load(name));
     return collections.get(name)!;
   }
-  return { input, environment, getCollection: get };
+  let selected: Promise<Entry[]> | undefined;
+  return {
+    input,
+    environment,
+    getCollection: get,
+    async getEntry(name, key) {
+      const selectedKey = ['artists', 'releases', 'news', 'distro', 'navigation', 'socials'].includes(collection)
+        ? input.slug
+        : 'site';
+      if (name === sourceCollectionNames[collection] && key === selectedKey) {
+        selected ??= load(name, true);
+        return (await selected)[0];
+      }
+      return (await get(name)).find((entry) => entry.id === key);
+    },
+  };
 }
 
 export function getCollection(collection: string) {
@@ -213,5 +269,7 @@ export function getCollection(collection: string) {
 export async function getEntry(collection: string | { collection: string; id: string }, id?: string) {
   const name = typeof collection === 'string' ? collection : collection.collection;
   const key = typeof collection === 'string' ? id : collection.id;
-  return (await getCollection(name)).find((entry) => entry.id === key);
+  const context = previewContext.getStore();
+  if (!context) throw new Error('Private preview context is required.');
+  return context.getEntry(name, key);
 }

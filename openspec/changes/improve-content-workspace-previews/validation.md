@@ -21,3 +21,30 @@ Budgets: 256 KiB input, 4 MiB rendered HTML, 512 logical reads, 2 MiB per CMS re
 ## Delivery scope
 
 No hosted deployment or hosted verification was performed. UAT/PRD require the ordinary reviewed release workflow and Free-tier preflight. CMS code and live public code may differ; the preview states this limitation. Media uses protected originals with the same public dimensions and crop rules rather than public optimized image variants.
+
+# Reliability and performance follow-up — 2026-09-15
+
+The reported UAT first-opening failure did not recur naturally during two bounded inspections. The affected record returned valid CSS and all four images. A captured cold opening took 6,009 ms for preview HTML; ordinary content reads took 193–481 ms. This does not establish the original asset transport failure's cause.
+
+Controlled Local reproduction blocked image delivery on first opening. Restoring delivery and refreshing unchanged content made the old implementation report success with two images still broken. A failing CSS response also produced an empty `CSSStyleSheet` in Chromium: `link.sheet` alone was not a valid readiness check. The new browser regression covers these real failure paths, requires assets to load before replacing the previous frame, and checks identical-HTML retry, stale updates, invalid content, authentication expiry, and preserved drafts. The full `node scripts/test-content-workspace.mjs` suite passed, including mobile/media/publication flows and newly added stock loading races.
+
+The preview concurrency regression failed on the old reader (peak one active read) and passes on the new reader (peak four, stable order). A three-run controlled fixture with 12 published revisions and 40 ms per CMS read measured median 655 ms before and 234 ms after, with 14 reads in each run. This isolates application sequencing from transport variability; it is not a hosted CPU/quota measurement.
+
+The real Local 17-context smoke passed before and after, with no draft or publication changes. End-to-end localhost timings vary: artist detail 382/407 ms and distro detail 1,597/1,506 ms before/after. Warm artist listing improved 86/68 ms; distro listing stayed about 1.7 seconds. Read counts did not increase; artist contexts dropped from 38 to 37 through request-local deduplication. These single samples do not establish a general end-to-end speedup.
+
+Native Chrome Performance metrics through hydration on Local list/creation surfaces:
+
+| Flow         | Script time | Layout + style time |
+| ------------ | ----------: | ------------------: |
+| Content list |       79 ms |               20 ms |
+| Images       |       60 ms |               30 ms |
+| Items        |       27 ms |               37 ms |
+| Create item  |       40 ms |               14 ms |
+| Stock        |       18 ms |               13 ms |
+| Orders       |       19 ms |               14 ms |
+
+These snapshots identify no comparable multi-second browser execution bottleneck on those surfaces. Content/Orders already overlap their startup reads; existing rich-text code splitting remains. No speculative new cache, dependency, prefetching or authentication bypass was added.
+
+Final required checks, canonical CMS build and bounded UAT verification are recorded below when complete.
+
+The final selected-entry optimization reduced the Local distro detail fixture from 237 reads to 23 (1,597 ms baseline; 54 ms final sample). Release detail fell from 41 to 31 reads and news detail from 28 to 23. Listings still read full collections; their cache warming now happens when a listing is requested, rather than during a detail preview. The final 17-context smoke and full browser regression both passed. Final native Chrome inspection of the real Ouranopithecus preview confirmed all four images and stylesheet/font readiness.

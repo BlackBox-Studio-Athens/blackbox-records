@@ -14,3 +14,10 @@
 
 - [x] 3.1 Update CMS design and operating guidance, including preview limitations and local resource evidence.
 - [x] 3.2 Pass unit tests, check, public build, canonical CMS build/no-KV guard, and local browser review at 390/768/1280/1600 px.
+
+## 4. Preview recovery and staff performance follow-up
+
+- [x] 4.1 Reproduce first-load asset failure and unchanged-HTML retry; gate readiness on assets, preserve last successful rendering, and verify stale-event/authentication handling.
+- [x] 4.2 Remove non-edit debounce, deduplicate request-local preview reads, and cap concurrent reads at four; measure identical fixtures before and after.
+- [x] 4.3 Load Items/Stock search, selected stock, and history independently with isolated errors and fresh-stock mutation guards; profile remaining staff flows.
+- [ ] 4.4 Update guidance and evidence, pass required checks and canonical CMS build, deploy UAT, and verify within a bounded hosted pilot.

@@ -8,6 +8,7 @@ The content workspace previews selected fields with separate markup, so editors 
 - Reuse public Astro rendering against published context plus the unsaved record, without saving or publishing.
 - Move publication status to the top bar with bounded refresh and on-demand history.
 - Improve action copy, image guidance, keyboard behavior, and clickable affordances.
+- Recover failed preview assets, gate readiness on actual rendering, and remove measured sequential delays in previews and Items/Stock.
 
 ## Capabilities
 

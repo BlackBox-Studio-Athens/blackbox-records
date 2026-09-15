@@ -181,9 +181,17 @@ body[data-workspace='content'] > main {
   border-bottom: 1px solid var(--border);
 }
 .cms-preview-viewport {
+  position: relative;
   overflow: auto;
   flex: 1;
   min-height: 0;
+}
+
+.cms-preview-viewport iframe.cms-preview-pending {
+  position: absolute;
+  inset: 0 auto auto 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 .cms-preview-viewport iframe {
   display: block;

@@ -162,6 +162,14 @@ const state = {
   lastWrite: null,
   publicTitle: artist.title,
   previewRequests: [],
+  previewStyleFailure: false,
+  previewImageFailure: false,
+  searchDelay: 0,
+  historyDelay: 0,
+  detailDelay: 0,
+  searchFailure: false,
+  historyFailure: false,
+  requests: [],
 };
 const publications = [];
 const server = createServer(async (req, res) => {
@@ -180,7 +188,57 @@ const server = createServer(async (req, res) => {
     if (url.pathname === '/__fixture' && process.argv.includes('--serve')) {
       if (['pending', 'failed', 'live'].includes(body?.publication)) state.publication = body.publication;
       if (typeof body?.mediaFailure === 'boolean') state.mediaFailure = body.mediaFailure;
-      return ok({ saveCount: state.saveCount, previewRequests: state.previewRequests.length });
+      for (const key of ['previewStyleFailure', 'previewImageFailure', 'searchFailure', 'historyFailure'])
+        if (typeof body?.[key] === 'boolean') state[key] = body[key];
+      for (const key of ['searchDelay', 'historyDelay', 'detailDelay'])
+        if (typeof body?.[key] === 'number') state[key] = Math.min(10_000, Math.max(0, body[key]));
+      return ok({
+        saveCount: state.saveCount,
+        previewRequests: state.previewRequests.length,
+        requests: state.requests,
+      });
+    }
+    state.requests.push({ path: url.pathname, at: Date.now() });
+    if (url.pathname === '/preview-test.css') {
+      if (state.previewStyleFailure) return fail(503);
+      res.writeHead(200, { 'Content-Type': 'text/css', 'Cache-Control': 'no-store' });
+      return res.end('body {background: #121212; color: white}');
+    }
+    if (url.pathname === '/preview-test.png') {
+      if (state.previewImageFailure) return fail(503);
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'no-store' });
+      return res.end(pixels);
+    }
+    if (url.pathname === '/api/internal/variants') {
+      await new Promise((resolve) => setTimeout(resolve, state.searchDelay));
+      if (state.searchFailure) return fail(503);
+      return json(
+        ['first', 'second'].map((variantId) => ({
+          variantId,
+          storeItemSlug: variantId,
+          displayName: variantId,
+          sourceKind: 'release',
+        })),
+      );
+    }
+    if (/^\/api\/internal\/variants\/[^/]+\/stock(?:\/history)?$/.test(url.pathname)) {
+      const variantId = url.pathname.split('/')[4];
+      if (url.pathname.endsWith('/history')) {
+        await new Promise((resolve) => setTimeout(resolve, state.historyDelay));
+        return state.historyFailure ? fail(503) : json({ entries: [] });
+      }
+      await new Promise((resolve) => setTimeout(resolve, state.detailDelay));
+      return json({
+        variantId,
+        storeItemSlug: variantId,
+        displayName: variantId,
+        stock: {
+          quantity: variantId === 'first' ? 17 : 29,
+          onlineQuantity: 5,
+          revision: 3,
+          updatedAt: '2026-09-15T12:00:00Z',
+        },
+      });
     }
     if (url.pathname === '/_emdash/preview') {
       state.previewRequests.push(body);
@@ -190,7 +248,9 @@ const server = createServer(async (req, res) => {
       if (title === 'slow preview') await new Promise((resolve) => setTimeout(resolve, 1500));
       res.writeHead(200, { 'Content-Type': 'text/html', 'X-Preview-Environment': 'local' });
       const escaped = title.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-      return res.end(`<!doctype html><html><body style="min-height:2000px"><h1>${escaped}</h1></body></html>`);
+      return res.end(
+        `<!doctype html><html><head><link rel="stylesheet" href="/preview-test.css"></head><body style="min-height:2000px"><h1>${escaped}</h1><img src="/preview-test.png" alt="Preview fixture" loading="eager"></body></html>`,
+      );
     }
     if (url.pathname === '/_emdash/api/blackbox/publications') {
       if (body) {
@@ -295,6 +355,33 @@ else {
   try {
     await mkdir(artifacts, { recursive: true });
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    state.searchDelay = 1500;
+    state.historyDelay = 1500;
+    state.detailDelay = 50;
+    await page.goto(`${origin}/stock/?variantId=first`);
+    await page.waitForFunction(() => document.querySelector('#stock-count-counted-quantity')?.value === '17');
+    assert.equal(await page.getByRole('button', { name: 'Save count', exact: true }).isEnabled(), true);
+    assert.equal(await page.getByText('Loading stock history', { exact: true }).isVisible(), true);
+    assert.equal(await page.getByRole('button', { name: 'Searching items', exact: true }).isEnabled(), false);
+    await page.getByRole('button', { name: 'first Label release', exact: true }).waitFor();
+    state.detailDelay = 1000;
+    const firstRead = page.waitForRequest((request) => request.url().endsWith('/first/stock'));
+    await page.getByRole('button', { name: 'first Label release', exact: true }).click();
+    await firstRead;
+    assert.equal(await page.getByRole('button', { name: 'Save count', exact: true }).isEnabled(), false);
+    state.detailDelay = 10;
+    await page.getByRole('button', { name: 'second Label release', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('#stock-count-counted-quantity')?.value === '29');
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+    assert.equal(await page.locator('#stock-count-counted-quantity').inputValue(), '29');
+    state.searchFailure = true;
+    state.historyFailure = true;
+    state.searchDelay = state.historyDelay = state.detailDelay = 0;
+    await page.reload();
+    await page.getByRole('alert').filter({ hasText: 'History could not load' }).waitFor();
+    await page.waitForFunction(() => document.querySelector('#stock-count-counted-quantity')?.value === '29');
+    assert.equal(await page.getByRole('button', { name: 'Save count', exact: true }).isEnabled(), true);
+    state.searchFailure = state.historyFailure = false;
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(`${origin}/content/?collection=artists&id=artists-1`);
@@ -316,7 +403,24 @@ else {
     await page.getByRole('button', { name: 'Show more', exact: true }).press('Enter');
     await page.getByRole('option', { name: 'Mass Culture', exact: true }).waitFor();
     await page.keyboard.press('Escape');
-    const appearance = page.frameLocator('iframe');
+    const appearance = page.frameLocator('iframe[title="Private site appearance preview"]');
+    await appearance.getByRole('heading').waitFor();
+    state.previewImageFailure = true;
+    await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
+    await page.getByRole('alert').filter({ hasText: 'Preview images could not load' }).waitFor();
+    assert.equal(await appearance.getByRole('heading').innerText(), 'Ouranopithecus');
+    state.previewImageFailure = false;
+    const priorAssets = state.requests.filter((request) => request.path === '/preview-test.png').length;
+    await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
+    await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    assert.ok(state.requests.filter((request) => request.path === '/preview-test.png').length > priorAssets);
+    state.previewStyleFailure = true;
+    await page.reload();
+    await page.getByRole('alert').filter({ hasText: 'Preview styles could not load' }).waitFor();
+    assert.equal(await page.locator('iframe[title="Private site appearance preview"]').count(), 0);
+    state.previewStyleFailure = false;
+    await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
+    await appearance.getByRole('heading').waitFor();
     await page.getByLabel('Artist name', { exact: true }).fill('slow preview');
     const previewDeadline = Date.now() + 10_000;
     while (
@@ -335,7 +439,7 @@ else {
     assert.equal(await appearance.getByRole('heading').innerText(), 'Latest unsaved preview');
     await page.getByLabel('Artist name', { exact: true }).fill('invalid preview');
     await page.getByRole('alert').filter({ hasText: 'Check the preview fields' }).waitFor();
-    await page.getByText('Showing an outdated preview', { exact: false }).waitFor();
+    await page.getByText('Showing the last successful preview', { exact: false }).waitFor();
     await page.getByLabel('Artist name', { exact: true }).fill('Ouranopithecus draft');
     await page.getByRole('button', { name: 'Change artist image', exact: true }).click();
     await page.getByRole('heading', { name: 'Choose artist image' }).waitFor();
@@ -439,6 +543,7 @@ else {
       if (width === 390) {
         await page.getByLabel('Artist name', { exact: true }).fill('Mobile unsaved draft');
         await page.getByRole('button', { name: 'Back to records' }).click();
+        await page.getByRole('button', { name: 'Show more', exact: true }).click();
         await page.getByRole('button', { name: 'Mass Culture', exact: true }).click();
         await page
           .getByRole('status')

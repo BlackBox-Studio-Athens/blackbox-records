@@ -34,11 +34,17 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
   const [selectedVariantId, setSelectedVariantId] = useState('');
   const [stockDetail, setStockDetail] = useState<InternalStockDetail | null>(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSearchPending, setIsSearchPending] = useState(true);
+  const [searchMessage, setSearchMessage] = useState('Loading items.');
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const searchRequest = useRef(0);
+  const [historyPending, setHistoryPending] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingIntent, setLoadingIntent] = useState<StockLoadingIntent>('workspace');
   const [submittingIntent, setSubmittingIntent] = useState<StockSubmittingIntent>(null);
-  const [statusMessage, setStatusMessage] = useState('Loading stock workspace.');
+  const [statusMessage, setStatusMessage] = useState('Choose an item to see its stock.');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [changeDelta, setChangeDelta] = useState('');
   const [stockDirection, setStockDirection] = useState('remove');
@@ -54,25 +60,26 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
   const activeStockLoadRequestRef = useRef(0);
 
   const api = createInternalStockApi({ backendBaseUrl });
-  const canMutateSelectedStock = canSubmitStockMutation(selectedVariantId, stockDetail);
-  const selectedStockDetail = canMutateSelectedStock ? stockDetail : null;
+  const selectedStockDetail = canSubmitStockMutation(selectedVariantId, stockDetail) ? stockDetail : null;
+  const canMutateSelectedStock = !!selectedStockDetail && hasFreshStock && !isLoading;
 
   async function searchVariants(nextQuery = query) {
-    setErrorMessage(null);
-    setIsLoading(true);
-    setLoadingIntent(nextQuery.trim() ? 'search' : 'workspace');
-    setStatusMessage(nextQuery.trim() ? 'Searching items.' : 'Loading stock workspace.');
+    const requestId = ++searchRequest.current;
+    setSearchError(null);
+    setIsSearchPending(true);
+    setSearchMessage('Searching items.');
 
     try {
       const results = await api.searchVariants(nextQuery, 25);
+      if (requestId !== searchRequest.current) return;
       setVariants(results);
-      setStatusMessage(results.length === 0 ? 'No items found.' : `${results.length} items found.`);
+      setSearchMessage(results.length === 0 ? 'No items found.' : `${results.length} items found.`);
     } catch (error) {
-      setErrorMessage(readErrorMessage(error));
-      setStatusMessage('Stock is not available. Try again.');
+      if (requestId !== searchRequest.current) return;
+      setSearchError(readErrorMessage(error));
+      setSearchMessage('Search is unavailable. Try again.');
     } finally {
-      setIsLoading(false);
-      setLoadingIntent(null);
+      if (requestId === searchRequest.current) setIsSearchPending(false);
     }
   }
 
@@ -93,19 +100,29 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
     setStatusMessage(intent === 'refresh' ? 'Refreshing stock.' : 'Loading selected stock.');
     const requestId = activeStockLoadRequestRef.current + 1;
     activeStockLoadRequestRef.current = requestId;
+    setHistory([]);
+    setHistoryError(null);
+    setHistoryPending(true);
+    void api
+      .readStockHistory(variantId, 25)
+      .then((result) => {
+        if (requestId === activeStockLoadRequestRef.current) setHistory(result.entries);
+      })
+      .catch((error) => {
+        if (requestId === activeStockLoadRequestRef.current) setHistoryError(readErrorMessage(error));
+      })
+      .finally(() => {
+        if (requestId === activeStockLoadRequestRef.current) setHistoryPending(false);
+      });
 
     try {
-      const [detail, historyResponse] = await Promise.all([
-        api.readStock(variantId),
-        api.readStockHistory(variantId, 25),
-      ]);
+      const detail = await api.readStock(variantId);
 
       if (!shouldApplyStockLoadResult(activeStockLoadRequestRef.current, requestId)) {
         return;
       }
 
       setStockDetail(detail);
-      setHistory(historyResponse.entries);
       setHasFreshStock(true);
       if (countVariantRef.current !== variantId) {
         countVariantRef.current = variantId;
@@ -139,13 +156,12 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
     const params = new URLSearchParams(window.location.search);
     const variantId = params.get('variantId');
 
-    void (async () => {
-      await searchVariants('');
-
-      if (variantId) {
-        await loadVariant(variantId, false);
-      }
-    })();
+    void searchVariants('');
+    if (variantId) void loadVariant(variantId, false);
+    return () => {
+      searchRequest.current++;
+      activeStockLoadRequestRef.current++;
+    };
   }, []);
 
   async function handleSearch(event: { preventDefault(): void }) {
@@ -156,7 +172,7 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
   async function handleStockChange(event: { preventDefault(): void }) {
     event.preventDefault();
 
-    if (!canMutateSelectedStock) {
+    if (!canMutateSelectedStock || isSubmitting) {
       return;
     }
 
@@ -225,7 +241,6 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
     }
   }
 
-  const isSearchPending = loadingIntent === 'search' || loadingIntent === 'workspace';
   const isStockRefreshPending = loadingIntent === 'refresh';
   const loadingLabel = readStockLoadingLabel(loadingIntent);
 
@@ -288,7 +303,7 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
                     aria-label={isSearchPending ? 'Searching items' : 'Search'}
                     aria-busy={isSearchPending ? 'true' : undefined}
                     className="min-w-11 rounded-none"
-                    disabled={isLoading}
+                    disabled={isSearchPending}
                     type="submit"
                   >
                     {isSearchPending ? (
@@ -299,8 +314,13 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
                   </Button>
                 </div>
                 <p className="font-mono text-xs text-white/50" role="status" aria-live="polite">
-                  {statusMessage}
+                  {searchMessage}
                 </p>
+                {searchError && (
+                  <p role="alert" className="text-sm text-red-400">
+                    {searchError}
+                  </p>
+                )}
               </form>
             </CardContent>
           </Card>
@@ -332,8 +352,8 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
                   </span>
                 </button>
               ))}
-              {variants.length === 0 && isLoading ? (
-                <LoadingInline className="font-mono text-xs text-white/55" label={loadingLabel} />
+              {variants.length === 0 && isSearchPending ? (
+                <LoadingInline className="font-mono text-xs text-white/55" label="Loading items" />
               ) : (
                 variants.length === 0 && <p className="text-sm text-white/50">No items found. Try another name.</p>
               )}
@@ -342,6 +362,9 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
         </aside>
 
         <div className="grid content-start gap-5">
+          <p role="status" className="text-sm text-white/65">
+            {statusMessage}
+          </p>
           {showPrice && selectedVariantId && (
             <ItemPriceEditor key={selectedVariantId} variantId={selectedVariantId} backendBaseUrl={backendBaseUrl} />
           )}
@@ -370,7 +393,7 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
               </div>
               <Button
                 className="rounded-none"
-                disabled={!selectedVariantId || isLoading}
+                disabled={!selectedVariantId || isLoading || isSubmitting}
                 aria-busy={isStockRefreshPending ? 'true' : undefined}
                 onClick={() => void loadVariant(selectedVariantId, false, 'refresh')}
                 type="button"
@@ -561,10 +584,18 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
               <CardDescription>Previous stock changes and counts.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-2">
+              {historyPending && <LoadingInline label="Loading stock history" />}
+              {historyError && (
+                <p role="alert" className="text-sm text-red-400">
+                  History could not load. Use Refresh to try again. {historyError}
+                </p>
+              )}
               {history.map((entry) => (
                 <HistoryRow entry={entry} key={`${entry.type}-${entry.id}`} />
               ))}
-              {history.length === 0 && <p className="text-sm text-white/50">No recent history loaded.</p>}
+              {!historyPending && !historyError && history.length === 0 && (
+                <p className="text-sm text-white/50">No recent history loaded.</p>
+              )}
             </CardContent>
           </Card>
         </div>

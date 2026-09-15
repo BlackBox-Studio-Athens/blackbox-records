@@ -42,12 +42,100 @@ const read = async (path: string) => {
 };
 
 describe('private preview content', () => {
+  it('resolves the selected entry without loading unrelated collection records', async () => {
+    const calls: string[] = [];
+    const context = await createPreviewContext(input, 'local', async (path) => {
+      calls.push(path);
+      return read(path);
+    });
+    const [first, second] = await Promise.all([
+      context.getEntry('socials', input.slug),
+      context.getEntry('socials', input.slug),
+    ]);
+    expect(first).toBe(second);
+    expect(first?.data.title).toBe(input.data.title);
+    expect(calls).toEqual(['content/socials/social-a']);
+    expect((await context.getCollection('socials')).map((entry) => entry.data.title)).toEqual([
+      'Published Tidal',
+      input.data.title,
+    ]);
+  });
+  it('overlaps published reads with a request-wide limit of four and preserves record order', async () => {
+    let active = 0;
+    let peak = 0;
+    const context = await createPreviewContext(input, 'local', async (path) => {
+      if (path === 'content/socials?limit=100')
+        return {
+          items: Array.from({ length: 9 }, (_, index) => ({
+            id: `social-${index}`,
+            slug: `link-${index}`,
+            status: 'published',
+            liveRevisionId: `revision-${index}`,
+          })),
+        };
+      if (path.startsWith('revisions/revision-')) {
+        const index = Number(path.split('-').at(-1));
+        peak = Math.max(peak, ++active);
+        await new Promise((resolve) => setTimeout(resolve, (9 - index) * 2));
+        active--;
+        return {
+          item: {
+            id: `revision-${index}`,
+            entryId: `social-${index}`,
+            collection: 'socials',
+            data: { title: `Link ${index}`, url: 'https://example.com', order: index },
+          },
+        };
+      }
+      return read(path);
+    });
+    const [first, second] = await Promise.all([context.getCollection('socials'), context.getCollection('socials')]);
+    expect(first).toBe(second);
+    expect(first.slice(0, 9).map((entry) => entry.id)).toEqual(
+      Array.from({ length: 9 }, (_, index) => `link-${index}`),
+    );
+    expect(peak).toBe(4);
+    expect(active).toBe(0);
+  });
+
   it('overlays only the selected unsaved record and reads surrounding published revisions', async () => {
     const context = await createPreviewContext(input, 'local', read);
     const items = await previewContext.run(context, () => getCollection('socials'));
     expect(items.map((item) => item.data.title)).toEqual(['Published Tidal', 'Unsaved Bandcamp']);
     expect(JSON.stringify(items)).not.toContain('Another private draft');
     expect(() => getCollection('socials')).toThrow('Private preview context is required');
+  });
+
+  it('finishes sibling reads before reporting a failed preview', async () => {
+    let completed = 0;
+    const context = await createPreviewContext(input, 'local', async (path) => {
+      if (path === 'content/socials?limit=100')
+        return {
+          items: Array.from({ length: 6 }, (_, i) => ({
+            id: `entry-${i}`,
+            slug: `link-${i}`,
+            status: 'published',
+            liveRevisionId: `rev-${i}`,
+          })),
+        };
+      if (path.startsWith('revisions/')) {
+        const i = Number(path.split('-').at(-1));
+        if (i === 0) throw new Error('Unavailable revision');
+        await new Promise((resolve) => setTimeout(resolve, 5));
+        completed++;
+        return {
+          item: {
+            id: `rev-${i}`,
+            entryId: `entry-${i}`,
+            collection: 'socials',
+            data: { title: 'Link', url: 'https://example.com', order: i },
+          },
+        };
+      }
+      return read(path);
+    });
+    await expect(context.getCollection('socials')).rejects.toThrow('Unavailable revision');
+    expect(completed).toBe(5);
   });
 
   it('isolates simultaneous unsaved edits across async rendering', async () => {

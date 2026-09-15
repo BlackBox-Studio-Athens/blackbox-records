@@ -23,7 +23,9 @@ export default function ContentPreview({
   active: boolean;
   dirty: boolean;
 }) {
-  const [html, setHtml] = useState('');
+  type Rendering = { generation: number; html: string; signal: AbortSignal; finish(): void };
+  const [rendered, setRendered] = useState<Rendering | null>(null);
+  const [pending, setPending] = useState<Rendering | null>(null);
   const [status, setStatus] = useState('Updating preview');
   const [error, setError] = useState('');
   const [environment, setEnvironment] = useState('');
@@ -36,7 +38,10 @@ export default function ContentPreview({
   const frame = useRef<HTMLIFrameElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
   const scroll = useRef({ x: 0, y: 0 });
+  const resetScroll = useRef(false);
   const firstRender = useRef(true);
+  const generation = useRef(0);
+  const previous = useRef({ payload: '', view, retry, active: false });
   const payload = JSON.stringify({ collection, ...(id ? { id } : {}), slug, data: editorialWriteData(data) });
   useEffect(() => {
     const update = () => setVisible(document.visibilityState === 'visible');
@@ -45,45 +50,71 @@ export default function ContentPreview({
     return () => document.removeEventListener('visibilitychange', update);
   }, []);
   useEffect(() => {
-    if (!active || !visible) return;
+    if (!active || !visible) {
+      previous.current.active = false;
+      return;
+    }
     const controller = new AbortController();
+    const current = ++generation.current;
+    const editing =
+      previous.current.payload !== '' &&
+      previous.current.payload !== payload &&
+      previous.current.view === view &&
+      previous.current.retry === retry &&
+      previous.current.active;
+    previous.current = { payload, view, retry, active: true };
     setStatus('Updating preview');
-    const timeout = setTimeout(() => {
-      void (async () => {
-        try {
-          const response = await fetch(`${base}/_emdash/preview?view=${view}`, {
-            method: 'POST',
-            credentials: 'same-origin',
-            cache: 'no-store',
-            signal: controller.signal,
-            headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1' },
-            body: payload,
-          });
-          if (!response.ok) {
-            const details = (await response.json().catch(() => null)) as { error?: string } | null;
-            throw new Error(
-              response.status === 403
-                ? 'Sign in again to preview. Your edits are still here.'
-                : details?.error || 'Check your connection and try again.',
-            );
+    setPending(null);
+    const deadline = setTimeout(() => {
+      if (controller.signal.aborted) return;
+      setPending(null);
+      setStatus('Preview could not update');
+      setError('Preview took too long. Refresh preview to try again. Your edits are still here.');
+      controller.abort();
+    }, 30_000);
+    controller.signal.addEventListener('abort', () => clearTimeout(deadline), { once: true });
+    const timeout = setTimeout(
+      () => {
+        void (async () => {
+          try {
+            const response = await fetch(`${base}/_emdash/preview?view=${view}`, {
+              method: 'POST',
+              credentials: 'same-origin',
+              cache: 'no-store',
+              signal: controller.signal,
+              headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1' },
+              body: payload,
+            });
+            if (!response.ok || response.redirected || !response.headers.get('X-Preview-Environment')) {
+              const details = (await response.json().catch(() => null)) as { error?: string } | null;
+              throw new Error(
+                [401, 403].includes(response.status) ||
+                  response.redirected ||
+                  (response.ok && !response.headers.get('X-Preview-Environment'))
+                  ? 'Sign in again to preview. Your edits are still here.'
+                  : details?.error || 'Check your connection and try again.',
+              );
+            }
+            const next = await response.text();
+            if (controller.signal.aborted) return;
+            setPending({
+              generation: current,
+              html: next,
+              signal: controller.signal,
+              finish: () => clearTimeout(deadline),
+            });
+            setEnvironment(response.headers.get('X-Preview-Environment') ?? '');
+            setError('');
+          } catch (error) {
+            if (controller.signal.aborted) return;
+            setStatus('Preview could not update');
+            setError(error instanceof Error ? error.message : 'Try again.');
+            clearTimeout(deadline);
           }
-          const next = await response.text();
-          if (controller.signal.aborted) return;
-          scroll.current = {
-            x: frame.current?.contentWindow?.scrollX ?? 0,
-            y: frame.current?.contentWindow?.scrollY ?? 0,
-          };
-          setHtml(next);
-          setEnvironment(response.headers.get('X-Preview-Environment') ?? '');
-          setError('');
-          setStatus('Preview up to date');
-        } catch (error) {
-          if (controller.signal.aborted) return;
-          setStatus('Preview could not update');
-          setError(error instanceof Error ? error.message : 'Try again.');
-        }
-      })();
-    }, 750);
+        })();
+      },
+      editing ? 750 : 0,
+    );
     return () => {
       clearTimeout(timeout);
       controller.abort();
@@ -107,7 +138,9 @@ export default function ContentPreview({
       if (event.key === 'Escape') {
         setExpanded(false);
       } else if (event.key === 'Tab') {
-        const controls = panel.current?.querySelectorAll<HTMLElement>('button:not(:disabled), select, iframe');
+        const controls = panel.current?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), select, iframe:not([aria-hidden="true"])',
+        );
         const first = controls?.[0];
         const last = controls?.[controls.length - 1];
         if (event.shiftKey && document.activeElement === first) {
@@ -179,6 +212,7 @@ export default function ContentPreview({
                 value={view}
                 onChange={(event) => {
                   scroll.current = { x: 0, y: 0 };
+                  resetScroll.current = true;
                   setView(event.target.value);
                 }}
               >
@@ -203,7 +237,7 @@ export default function ContentPreview({
         >
           {status}
           {dirty ? ' · Unsaved edits' : ' · Saved draft'}
-          {error && html ? ' · Showing an outdated preview' : ''}
+          {error && rendered ? ' · Showing the last successful preview' : ''}
         </p>
         <p className="text-xs text-muted-foreground">
           Appearance only. Uses this CMS version; the live site may use an earlier version.
@@ -226,52 +260,93 @@ export default function ContentPreview({
         </Alert>
       )}
       <div className="cms-preview-viewport">
-        {html ? (
-          <iframe
-            ref={frame}
-            title="Private site appearance preview"
-            sandbox="allow-same-origin"
-            referrerPolicy="no-referrer"
-            srcDoc={html}
-            style={{ width: width === 'desktop' ? 1280 : width === 'mobile' ? 390 : '100%' }}
-            onLoad={() => {
-              const target =
-                firstRender.current && ['newsletter', 'settings', 'socials'].includes(collection)
-                  ? frame.current?.contentDocument?.querySelector(
-                      collection === 'newsletter' ? '#newsletter-signup-area' : 'footer',
-                    )
-                  : null;
-              if (target) {
-                frame.current?.contentWindow?.scrollTo(0, target.getBoundingClientRect().top - 96);
-              } else frame.current?.contentWindow?.scrollTo(scroll.current.x, scroll.current.y);
-              firstRender.current = false;
-              frame.current?.contentDocument?.addEventListener(
-                'error',
-                (event) => {
-                  if ((event.target as Element)?.tagName === 'IMG') {
-                    setError('An image could not load. Check the selected images and refresh the preview.');
-                    setStatus('Preview could not update');
-                  }
-                },
-                true,
-              );
-              const images = frame.current?.contentDocument?.images;
-              if (images && Array.from(images).some((image) => image.complete && !image.naturalWidth)) {
-                setError('Some images could not load. Check the selected images and refresh the preview.');
-                setStatus('Preview could not update');
-              }
-            }}
-          />
-        ) : error ? (
-          <p className="p-6 text-sm text-muted-foreground">Fix the issue above, then refresh the preview.</p>
-        ) : (
-          <div className="grid gap-4 p-6" aria-label="Loading site preview">
-            <Skeleton className="h-64" />
-            <Skeleton className="h-10" />
-            <Skeleton className="h-24" />
-          </div>
-        )}
+        {[rendered, pending]
+          .filter((item): item is Rendering => item !== null)
+          .map((item) => (
+            <iframe
+              key={item.generation}
+              ref={item === rendered ? frame : undefined}
+              title={item === rendered ? 'Private site appearance preview' : 'Loading private site appearance preview'}
+              className={item === pending ? 'cms-preview-pending' : undefined}
+              aria-hidden={item === pending ? true : undefined}
+              tabIndex={item === pending ? -1 : 0}
+              sandbox="allow-same-origin"
+              referrerPolicy="no-referrer"
+              srcDoc={item.html}
+              style={{ width: width === 'desktop' ? 1280 : width === 'mobile' ? 390 : '100%' }}
+              onLoad={async (event) => {
+                const iframe = event.currentTarget;
+                if (item !== pending || item.signal.aborted || item.generation !== generation.current) return;
+                try {
+                  const document = iframe.contentDocument;
+                  if (!document || document.URL !== 'about:srcdoc') return;
+                  await checkPreviewAssets(document);
+                  if (item.signal.aborted || item.generation !== generation.current) return;
+                  if (!resetScroll.current)
+                    scroll.current = {
+                      x: frame.current?.contentWindow?.scrollX ?? scroll.current.x,
+                      y: frame.current?.contentWindow?.scrollY ?? scroll.current.y,
+                    };
+                  const target =
+                    firstRender.current && ['newsletter', 'settings', 'socials'].includes(collection)
+                      ? document.querySelector(collection === 'newsletter' ? '#newsletter-signup-area' : 'footer')
+                      : null;
+                  if (target) {
+                    iframe.contentWindow?.scrollTo(0, target.getBoundingClientRect().top - 96);
+                  } else iframe.contentWindow?.scrollTo(scroll.current.x, scroll.current.y);
+                  firstRender.current = false;
+                  resetScroll.current = false;
+                  setRendered(item);
+                  setPending(null);
+                  setError('');
+                  setStatus('Preview up to date');
+                  item.finish();
+                } catch (error) {
+                  if (item.signal.aborted || item.generation !== generation.current) return;
+                  setPending(null);
+                  setError(error instanceof Error ? error.message : 'Preview assets could not load. Refresh preview.');
+                  setStatus('Preview could not update');
+                  item.finish();
+                }
+              }}
+            />
+          ))}
+        {!rendered &&
+          (error ? (
+            <p className="p-6 text-sm text-muted-foreground">Fix the issue above, then refresh the preview.</p>
+          ) : (
+            <div className="grid gap-4 p-6" aria-label="Loading site preview">
+              <Skeleton className="h-64" />
+              <Skeleton className="h-10" />
+              <Skeleton className="h-24" />
+            </div>
+          ))}
       </div>
     </section>
   );
+}
+
+async function checkPreviewAssets(document: Document) {
+  if (
+    Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).some((link) => {
+      if (!link.sheet) return true;
+      // Chromium can leave an empty sheet after a failed CSS response. Public preview CSS is never empty.
+      try {
+        return link.sheet.cssRules.length === 0;
+      } catch {
+        return false;
+      } // Cross-origin font stylesheets do not expose their rules.
+    })
+  )
+    throw new Error('Preview styles could not load. Refresh preview; if this continues, sign in again.');
+  try {
+    await Promise.all(Array.from(document.images).map((image) => image.decode()));
+  } catch {
+    throw new Error(
+      'Preview images could not load. Refresh preview; if this continues, check the selected images or sign in again.',
+    );
+  }
+  await document.fonts?.ready;
+  if (document.fonts && Array.from(document.fonts).some((font) => font.status === 'error'))
+    throw new Error('Preview fonts could not load. Refresh preview to try again.');
 }

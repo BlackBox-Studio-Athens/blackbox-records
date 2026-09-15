@@ -239,6 +239,8 @@ Start with a searchable collection list. While editing, use a compact searchable
 
 Preview shared public components with unsaved content, real fonts, responsive widths and crop rules. Label the environment and explain that CMS/public code revisions can differ. Preview is visual-only; navigation, scripts, players and submissions are disabled. Detailed behavior and verification commands live in [Content workspace](docs/content-workspace.md).
 
+Show “Preview up to date” only after styles and images load. Keep the last successful frame while checking a replacement; failed first loads show an actionable error rather than unstyled page content. Manual refresh retries identical content and its assets. Initial preview and explicit controls respond immediately; only typing is debounced. Keep independent staff read panels usable while other panels load.
+
 ## 6. Do's and Don'ts
 
 ### Do:

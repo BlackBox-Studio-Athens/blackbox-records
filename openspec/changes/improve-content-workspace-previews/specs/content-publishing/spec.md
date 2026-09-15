@@ -16,6 +16,18 @@ The content workspace SHALL render the selected unsaved record with the public s
 - **THEN** the workspace explains that preview could not update
 - **AND** any previous rendering is marked outdated and no changes are saved or published.
 
+#### Scenario: Member retries failed preview assets
+
+- **WHEN** a stylesheet or image fails and the member refreshes unchanged content
+- **THEN** the workspace reloads the preview assets and reports success only after they load
+- **AND** failed or superseded replacements cannot remove the last successful preview or lose edits.
+
+#### Scenario: Member opens or refreshes a preview
+
+- **WHEN** a member first opens a record, changes preview context, or manually refreshes
+- **THEN** preview requests start without an editing debounce
+- **AND** independent published reads overlap with no more than four active CMS reads per request and repeated reads are deduplicated.
+
 #### Scenario: Preview is accessed outside the editor
 
 - **WHEN** a request lacks authorized identity, same-origin validation, or a supported editorial payload

@@ -163,6 +163,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         })
         .on('img', {
           element(element) {
+            element.setAttribute('loading', 'eager');
             const src = new URL(element.getAttribute('src') ?? '', url);
             // Preview keeps the public dimensions/crop and serves the original through protected media access.
             if (src.origin === url.origin && src.pathname === '/_image') {
