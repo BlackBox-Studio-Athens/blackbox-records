@@ -38,7 +38,7 @@ export default function ContentNavigation({
   return (
     <Sidebar className="cms-sidebar">
       <SidebarHeader className="flex-row items-center justify-between border-b border-border px-4 py-5">
-        <span className="text-sm font-semibold">Content studio</span>
+        <span className="text-sm font-semibold">Website content</span>
         <Button
           type="button"
           variant="ghost"
@@ -95,7 +95,7 @@ export default function ContentNavigation({
                   }}
                 >
                   <ImageIcon className="size-4" aria-hidden="true" />
-                  <span>Media</span>
+                  <span>Images</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

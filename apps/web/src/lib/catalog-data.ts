@@ -1,4 +1,5 @@
-import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
+import type { CollectionEntry } from 'astro:content';
+import { getCollection, getEntry } from '@/lib/content-reader';
 
 import { createProjectRelativeUrl } from '../config/site';
 import { assertNoSlugCollisions, createSlugSuggestion } from './slugs';

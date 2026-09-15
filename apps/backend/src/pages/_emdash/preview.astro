@@ -1,0 +1,70 @@
+---
+import Home from '../../../../web/src/pages/index.astro';
+import About from '../../../../web/src/pages/about/index.astro';
+import Services from '../../../../web/src/pages/services/index.astro';
+import Artist from '../../../../web/src/pages/artists/[slug].astro';
+import Artists from '../../../../web/src/pages/artists/index.astro';
+import Release from '../../../../web/src/pages/releases/[slug].astro';
+import Releases from '../../../../web/src/pages/releases/index.astro';
+import News from '../../../../web/src/pages/news/[slug].astro';
+import NewsList from '../../../../web/src/pages/news/index.astro';
+import StoreDistro from '../../../../web/src/pages/store/distro/index.astro';
+import StoreItem from '../../../../web/src/pages/store/[slug]/index.astro';
+import Terms from '../../../../web/src/pages/terms/index.astro';
+import { createStoreItemFromDistroEntry } from '@/lib/catalog-data';
+import { getEntry, previewContext } from '../../cms/preview-content';
+
+const context = previewContext.getStore();
+if (!context) return new Response('Forbidden', { status: 403 });
+const { input } = context;
+const listing = Astro.url.searchParams.get('view') === 'listing';
+const sectionPath = ['artists', 'releases', 'news'].includes(input.collection)
+  ? `/${input.collection}/${listing ? '' : `${input.slug}/`}`
+  : input.collection === 'distro' || input.collection === 'distro_page'
+    ? '/store/distro/'
+    : input.collection === 'purchase_information'
+      ? '/terms/'
+      : ['about', 'services'].includes(input.collection)
+        ? `/${input.collection}/`
+        : '/';
+Object.assign(Astro.locals, { cmsPreviewPathname: sectionPath });
+const entry = await getEntry(
+  input.collection === 'purchase_information'
+    ? 'purchaseInformation'
+    : input.collection === 'distro_page'
+      ? 'distroPage'
+      : input.collection,
+  ['artists', 'releases', 'news', 'distro', 'navigation', 'socials'].includes(input.collection) ? input.slug : 'site',
+);
+if (!entry) throw new Error('Selected content is unavailable.');
+const pages = {
+  home: Home,
+  about: About,
+  services: Services,
+  artists: listing ? Artists : Artist,
+  releases: listing ? Releases : Release,
+  news: listing ? NewsList : News,
+  distro: listing ? StoreDistro : StoreItem,
+  distro_page: StoreDistro,
+  purchase_information: Terms,
+  navigation: Home,
+  socials: Home,
+  settings: Home,
+  newsletter: Home,
+};
+const Page = pages[input.collection];
+const props =
+  input.collection === 'artists'
+    ? { artist: entry }
+    : input.collection === 'releases'
+      ? { release: entry }
+      : input.collection === 'news'
+        ? { item: entry }
+        : input.collection === 'distro'
+          ? { entry: { storeItem: createStoreItemFromDistroEntry(entry), primaryAvailability: null } }
+          : input.collection === 'purchase_information'
+            ? { information: entry.data.content }
+            : {};
+---
+
+<Page {...props} appearancePreview />

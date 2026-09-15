@@ -196,6 +196,11 @@ export default function MediaLibrary({
                   <MediaImage item={item} base={base} />
                 </AspectRatio>
                 <span className="w-full truncate border-t border-border p-3 text-sm">{item.filename}</span>
+                {item.width && item.height && (
+                  <span className="w-full px-3 pb-3 text-xs text-muted-foreground">
+                    {item.width} × {item.height} px
+                  </span>
+                )}
                 {value === item.id && (
                   <span className="absolute top-2 right-2 rounded-full bg-primary p-1 text-primary-foreground">
                     <Check className="size-4" aria-hidden="true" />
@@ -249,6 +254,14 @@ export default function MediaLibrary({
               <dl className="grid gap-2 text-sm">
                 <dt className="text-muted-foreground">Filename</dt>
                 <dd className="break-all">{detail.filename}</dd>
+                {detail.width && detail.height && (
+                  <>
+                    <dt className="mt-3 text-muted-foreground">Dimensions</dt>
+                    <dd>
+                      {detail.width} × {detail.height} px
+                    </dd>
+                  </>
+                )}
                 <dt className="mt-3 text-muted-foreground">Library description</dt>
                 <dd>{detail.alt || 'No library description. Describe the image when adding it to content.'}</dd>
               </dl>
@@ -325,6 +338,11 @@ export function ContentImagePicker({
           <p className="truncate text-sm text-muted-foreground">
             {item?.filename || (value ? 'Current image' : 'No image selected')}
           </p>
+          {item?.width && item.height && (
+            <p className="text-xs text-muted-foreground">
+              {item.width} × {item.height} px
+            </p>
+          )}
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button

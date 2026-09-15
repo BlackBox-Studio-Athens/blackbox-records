@@ -1,5 +1,6 @@
 ---
 import DistroCard from '@/components/cards/DistroCard.astro';
+import StoreDistroSearch from './StoreDistroSearch';
 import { buttonVariants } from '@/components/ui/button';
 import { getDistroPageContent } from '@/lib/site-data';
 import {
@@ -14,6 +15,7 @@ import { getStoreCoverflowPosition } from './StoreCoverflowController';
 
 interface Props {
   entries: StoreCollectionEntry[];
+  appearancePreview?: boolean;
 }
 
 const { entries } = Astro.props;
@@ -86,7 +88,9 @@ const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'ite
         <p class="store-orientation-panel__eyebrow">Collection total</p>
         <p class="store-orientation-panel__count-value">{itemCountLabel}</p>
       </div>
-      <div class="distro-page-search" data-distro-search></div>
+      <div class="distro-page-search" data-distro-search>
+        {Astro.props.appearancePreview && <StoreDistroSearch pageKey="/store/distro/" scope="distro" />}
+      </div>
     </div>
   </div>
 </section>

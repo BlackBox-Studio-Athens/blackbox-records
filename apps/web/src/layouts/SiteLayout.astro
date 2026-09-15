@@ -181,7 +181,7 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
   </head>
   <body class={resolvedBodyClass}>
     <a class="accessibility-skip-to-content-link" href="#main">Skip to content</a>
-    <Header pathname={Astro.url.pathname} />
+    <Header pathname={(Astro.locals as { cmsPreviewPathname?: string }).cmsPreviewPathname ?? Astro.url.pathname} />
     <main class={resolvedMainClass} id="main" tabindex="-1" data-app-shell-main>
       <slot />
     </main>

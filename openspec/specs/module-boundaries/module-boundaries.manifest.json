@@ -146,6 +146,7 @@
       "roots": [
         "apps/web/src/lib/site-data.ts",
         "apps/web/src/lib/content-loader.ts",
+        "apps/web/src/lib/content-reader.ts",
         "apps/web/src/lib/content-snapshot.ts",
         "apps/web/src/lib/catalog-data.ts",
         "apps/web/src/lib/store-categories.ts",

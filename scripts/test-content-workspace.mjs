@@ -161,6 +161,7 @@ const state = {
   saveCount: 0,
   lastWrite: null,
   publicTitle: artist.title,
+  previewRequests: [],
 };
 const publications = [];
 const server = createServer(async (req, res) => {
@@ -176,8 +177,26 @@ const server = createServer(async (req, res) => {
     for await (const chunk of req) chunks.push(chunk);
     const bytes = Buffer.concat(chunks);
     const body = req.headers['content-type']?.includes('application/json') && bytes.length ? JSON.parse(bytes) : null;
+    if (url.pathname === '/__fixture' && process.argv.includes('--serve')) {
+      if (['pending', 'failed', 'live'].includes(body?.publication)) state.publication = body.publication;
+      if (typeof body?.mediaFailure === 'boolean') state.mediaFailure = body.mediaFailure;
+      return ok({ saveCount: state.saveCount, previewRequests: state.previewRequests.length });
+    }
+    if (url.pathname === '/_emdash/preview') {
+      state.previewRequests.push(body);
+      const title = String(body.data.title ?? body.collection);
+      if (title === 'invalid preview') return json({ error: 'Check the preview fields.' }, 422);
+      if (title === 'expired preview') return json({ error: 'Sign in again.' }, 403);
+      if (title === 'slow preview') await new Promise((resolve) => setTimeout(resolve, 1500));
+      res.writeHead(200, { 'Content-Type': 'text/html', 'X-Preview-Environment': 'local' });
+      const escaped = title.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+      return res.end(`<!doctype html><html><body style="min-height:2000px"><h1>${escaped}</h1></body></html>`);
+    }
     if (url.pathname === '/_emdash/api/blackbox/publications') {
       if (body) {
+        if (state.publication !== 'pending')
+          for (const publication of publications)
+            if (publication.status === 'pending') publication.status = state.publication;
         publications.unshift({ id: body.id, status: state.publication, requestedAt: Date.now() });
         if (state.publication === 'live') state.publicTitle = records.artists[0].data.title;
         return json(publications[0]);
@@ -280,25 +299,60 @@ else {
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(`${origin}/content/?collection=artists&id=artists-1`);
     await page.getByLabel('Artist name', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Choose from Artists' }).click();
     await page.getByRole('button', { name: 'Show more', exact: true }).click();
-    await page.getByRole('button', { name: 'Mass Culture', exact: true }).waitFor();
+    await page.getByRole('option', { name: 'Mass Culture', exact: true }).waitFor();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Choose from Artists' }).click();
+    await page.getByRole('combobox', { name: 'Search artists' }).fill('Ouranopithecus');
+    await page.getByRole('button', { name: 'Search', exact: true }).press('Enter');
+    await page.getByRole('option', { name: 'Ouranopithecus', exact: true }).waitFor();
+    await page.getByRole('combobox', { name: 'Search artists' }).press('ArrowDown');
+    await page.getByRole('combobox', { name: 'Search artists' }).press('Enter');
+    await page.getByRole('listbox').waitFor({ state: 'hidden' });
+    await page.getByRole('button', { name: 'Choose from Artists' }).click();
+    await page.getByRole('combobox', { name: 'Search artists' }).fill('');
+    await page.getByRole('button', { name: 'Search', exact: true }).press('Enter');
+    await page.getByRole('button', { name: 'Show more', exact: true }).press('Enter');
+    await page.getByRole('option', { name: 'Mass Culture', exact: true }).waitFor();
+    await page.keyboard.press('Escape');
+    const appearance = page.frameLocator('iframe');
+    await page.getByLabel('Artist name', { exact: true }).fill('slow preview');
+    const previewDeadline = Date.now() + 10_000;
+    while (
+      Date.now() < previewDeadline &&
+      !state.previewRequests.some((request) => request.data.title === 'slow preview')
+    )
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    assert.ok(state.previewRequests.some((request) => request.data.title === 'slow preview'));
+    await page.getByLabel('Artist name', { exact: true }).fill('Latest unsaved preview');
+    await appearance.getByRole('heading', { name: 'Latest unsaved preview', exact: true }).waitFor();
+    await new Promise((resolve) => setTimeout(resolve, 1600));
+    assert.equal(await appearance.getByRole('heading').innerText(), 'Latest unsaved preview');
+    assert.equal(state.saveCount, 0);
+    await page.getByLabel('Artist name', { exact: true }).fill('expired preview');
+    await page.getByRole('alert').filter({ hasText: 'Sign in again' }).waitFor();
+    assert.equal(await appearance.getByRole('heading').innerText(), 'Latest unsaved preview');
+    await page.getByLabel('Artist name', { exact: true }).fill('invalid preview');
+    await page.getByRole('alert').filter({ hasText: 'Check the preview fields' }).waitFor();
+    await page.getByText('Showing an outdated preview', { exact: false }).waitFor();
     await page.getByLabel('Artist name', { exact: true }).fill('Ouranopithecus draft');
-    await page.getByRole('button', { name: 'Media', exact: true }).click();
-    await page.getByRole('heading', { name: 'Media library' }).waitFor();
-    await page.getByRole('button', { name: 'Back to draft' }).click();
+    await page.getByRole('button', { name: 'Change artist image', exact: true }).click();
+    await page.getByRole('heading', { name: 'Choose artist image' }).waitFor();
+    await page.keyboard.press('Escape');
     assert.equal(await page.getByLabel('Artist name', { exact: true }).inputValue(), 'Ouranopithecus draft');
-    assert.equal(await page.getByRole('button', { name: 'Publish saved content', exact: true }).isEnabled(), false);
+    assert.equal(await page.getByRole('button', { name: 'Publish changes', exact: true }).isEnabled(), false);
     state.conflict = true;
     await page.getByRole('button', { name: 'Save draft', exact: true }).click();
     await page.getByRole('alert').filter({ hasText: 'Someone changed' }).waitFor();
     assert.equal(await page.getByLabel('Artist name', { exact: true }).inputValue(), 'Ouranopithecus draft');
     await page.getByRole('button', { name: 'More draft actions' }).click();
-    await page.getByRole('menuitem', { name: 'Load saved version' }).click();
+    await page.getByRole('menuitem', { name: 'Discard changes and reload' }).click();
     await page.getByRole('button', { name: 'Keep editing', exact: true }).click();
     assert.equal(await page.getByLabel('Artist name', { exact: true }).inputValue(), 'Ouranopithecus draft');
     state.conflict = false;
     await page.getByRole('button', { name: 'More draft actions' }).click();
-    await page.getByRole('menuitem', { name: 'Load saved version' }).click();
+    await page.getByRole('menuitem', { name: 'Discard changes and reload' }).click();
     await page.getByRole('button', { name: 'Discard changes and reload' }).click();
     await page.waitForFunction(() => document.querySelector('#content-title')?.value === 'Ouranopithecus');
     await page.getByLabel('Artist name', { exact: true }).fill('Saved draft');
@@ -307,11 +361,13 @@ else {
     assert.equal(state.saveCount, 1);
     assert.deepEqual(state.lastWrite.data.image, { id: 'artist-photo' });
     assert.equal(state.publicTitle, 'Ouranopithecus');
-    await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    await page.getByRole('button', { name: 'Expand preview', exact: true }).click();
     await page.getByRole('dialog').waitFor();
     await page.keyboard.press('Escape');
     assert.equal(
-      await page.getByRole('button', { name: 'Preview', exact: true }).evaluate((el) => el === document.activeElement),
+      await page
+        .getByRole('button', { name: 'Expand preview', exact: true })
+        .evaluate((el) => el === document.activeElement),
       true,
     );
     await page.getByRole('button', { name: 'Change artist image' }).click();
@@ -319,22 +375,28 @@ else {
     await page.getByRole('button', { name: 'Save draft', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Draft saved.' }).waitFor();
     assert.deepEqual(state.lastWrite.data.image, { id: 'record-cover' });
-    await page.getByRole('button', { name: 'Publish saved content', exact: true }).click();
+    await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
+    await page.getByRole('button', { name: /Publishing.*pending/ }).click();
     await page.getByText('Publication requested. Wait for Live', { exact: false }).waitFor();
     assert.equal(state.publicTitle, 'Ouranopithecus');
+    await page.keyboard.press('Escape');
     state.publication = 'failed';
-    await page.getByRole('button', { name: 'Publish saved content', exact: true }).click();
-    await page.getByText('Publication failed. Publish saved content to try again.', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
+    await page.getByRole('button', { name: 'Publication failed', exact: true }).click();
+    await page.getByText('Publication failed. Select Publish changes to try again.', { exact: true }).waitFor();
+    await page.keyboard.press('Escape');
     state.publication = 'live';
-    await page.getByRole('button', { name: 'Publish saved content', exact: true }).click();
+    await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
+    await page.getByRole('button', { name: 'Latest publication live', exact: true }).click();
     await page.getByText('Publication is live on fresh public page loads.', { exact: true }).waitFor();
+    await page.keyboard.press('Escape');
     const editor = page.getByRole('textbox', { name: 'Full text', exact: true });
     await editor.waitFor();
     await editor.click();
     await page.keyboard.press('Control+b');
     assert.equal(await page.locator('[data-slot="sidebar"][data-state]').getAttribute('data-state'), 'expanded');
     await page.screenshot({ path: resolve(artifacts, 'editor-desktop.png') });
-    await page.getByRole('button', { name: 'Media', exact: true }).click();
+    await page.getByRole('button', { name: 'Images', exact: true }).click();
     await page.getByRole('button', { name: 'Show more images' }).click();
     await page.getByRole('button', { name: 'Chronoboros-band-logo.jpg', exact: true }).waitFor();
     await page.getByLabel('Search images', { exact: true }).fill('no-match');
@@ -364,7 +426,7 @@ else {
     await page.getByRole('dialog').filter({ hasText: 'uploaded.png' }).waitFor();
     await page.keyboard.press('Escape');
     await page.screenshot({ path: resolve(artifacts, 'media-desktop.png') });
-    for (const width of [900, 375]) {
+    for (const width of [768, 390]) {
       await page.setViewportSize({ width, height: 900 });
       await page.getByRole('button', { name: 'Toggle Sidebar' }).click();
       await page.getByRole('button', { name: 'Artists', exact: true }).click();
@@ -374,11 +436,14 @@ else {
       });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       await page.screenshot({ path: resolve(artifacts, `editor-${width}.png`) });
-      if (width === 375) {
+      if (width === 390) {
         await page.getByLabel('Artist name', { exact: true }).fill('Mobile unsaved draft');
         await page.getByRole('button', { name: 'Back to records' }).click();
         await page.getByRole('button', { name: 'Mass Culture', exact: true }).click();
-        await page.getByRole('status').filter({ hasText: 'Save your draft or load the saved version' }).waitFor();
+        await page
+          .getByRole('status')
+          .filter({ hasText: 'Save your draft or select Discard changes and reload' })
+          .waitFor();
         await page.getByRole('button', { name: 'Return to draft' }).click();
         assert.equal(await page.getByLabel('Artist name', { exact: true }).inputValue(), 'Mobile unsaved draft');
         await page.getByLabel('Artist name', { exact: true }).fill('Saved draft');
@@ -386,8 +451,8 @@ else {
         await page.getByRole('status').filter({ hasText: 'Draft saved.' }).waitFor();
       }
       await page.getByRole('button', { name: 'Toggle Sidebar' }).click();
-      await page.getByRole('button', { name: 'Media', exact: true }).click();
-      await page.getByRole('heading', { name: 'Media library' }).waitFor();
+      await page.getByRole('button', { name: 'Images', exact: true }).click();
+      await page.getByRole('heading', { name: 'Images', exact: true }).waitFor();
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       await page.screenshot({ path: resolve(artifacts, `media-${width}.png`) });
     }
@@ -405,7 +470,7 @@ else {
       await page.locator('#content-editor-form').waitFor();
       assert.ok(await page.locator('#content-editor-form input, #content-editor-form textarea').count());
       if (['releases', 'distro'].includes(collection))
-        assert.equal(await page.getByRole('button', { name: 'Publish saved content', exact: true }).count(), 0);
+        assert.equal(await page.getByRole('button', { name: 'Publish changes', exact: true }).count(), 0);
     }
     await page.goto(`${origin}/content/?collection=socials&id=socials-1`);
     await page.getByLabel('Link name', { exact: true }).fill('Interrupted save');
@@ -416,6 +481,7 @@ else {
     state.failSave = false;
     await page.getByRole('button', { name: 'Save draft', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Draft saved.' }).waitFor();
+    await page.getByRole('button', { name: 'Back to records' }).click();
     await page.getByRole('button', { name: 'Add social link', exact: true }).click();
     await page.getByLabel('Link name', { exact: true }).fill('New social link');
     await page.getByLabel('Profile link', { exact: true }).fill('https://example.com/new');

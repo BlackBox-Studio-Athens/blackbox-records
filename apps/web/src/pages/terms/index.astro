@@ -6,7 +6,10 @@ import { createProjectRelativeUrl } from '@/config/site';
 import PurchaseDocument from '@/components/PurchaseDocument';
 import { getPurchaseInformation } from '@/lib/purchase-information';
 
-const information = getPurchaseInformation();
+interface Props {
+  information?: ReturnType<typeof getPurchaseInformation>;
+}
+const information = Astro.props.information === undefined ? getPurchaseInformation() : Astro.props.information;
 ---
 
 <SiteLayout

@@ -231,6 +231,14 @@ The embedded player is a shell-level continuity feature, not page-local decorati
 
 Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, Veneer content titles, and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.
 
+## CMS: Website content
+
+The protected `/content/` workspace uses approved Layout A and its own semantic palette. Blue means action/selection, amber means unsaved/pending, green confirms live publication, and red indicates failure; pair colors with text or icons. Public page styling stays inside the isolated preview iframe.
+
+Start with a searchable collection list. While editing, use a compact searchable selector, sticky draft actions and a 45/55 editor/preview split. Below 1100 px, use Edit/Preview tabs. Keep publication status near the top with history in a Popover or mobile Sheet. Use task wording such as Save draft, Publish changes, Images and Discard changes and reload.
+
+Preview shared public components with unsaved content, real fonts, responsive widths and crop rules. Label the environment and explain that CMS/public code revisions can differ. Preview is visual-only; navigation, scripts, players and submissions are disabled. Detailed behavior and verification commands live in [Content workspace](docs/content-workspace.md).
+
 ## 6. Do's and Don'ts
 
 ### Do:

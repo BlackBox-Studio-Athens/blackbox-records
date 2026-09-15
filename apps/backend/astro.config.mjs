@@ -1,14 +1,21 @@
 import cloudflare from '@astrojs/cloudflare';
 import react from '@astrojs/react';
+import { createRequire } from 'node:module';
 import { d1, r2 } from '@emdash-cms/cloudflare';
 import { defineConfig } from 'astro/config';
 import emdash from 'emdash/astro';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import { validateCmsFreeTier, validateCmsResources } from './scripts/cms-resources.ts';
 
 const localPath = (name) => fileURLToPath(new URL(name, import.meta.url)).replaceAll('\\', '/');
+// The public renderer owns its styling dependencies, including its Tailwind compiler.
+const { default: tailwindcss } = await import(
+  /* @vite-ignore */ pathToFileURL(
+    createRequire(new URL('../web/package.json', import.meta.url)).resolve('@tailwindcss/vite'),
+  ).href
+);
 const target = process.env.BLACKBOX_BUILD_ENV || 'mock';
 const { config, error } = ts.parseConfigFileTextToJson(
   'wrangler.jsonc',
@@ -68,6 +75,13 @@ export default defineConfig({
   publicDir: '../staff/dist',
   adapter: cloudflare({ configPath: '.emdash/wrangler.build.json', imageService: 'passthrough' }),
   vite: {
+    resolve: {
+      alias: [
+        { find: '@/lib/content-reader', replacement: localPath('src/cms/preview-content.ts') },
+        { find: '@', replacement: localPath('../web/src') },
+      ],
+    },
+    plugins: [tailwindcss()],
     define: {
       ...(process.env.SOURCE_SHA ? { RELEASE_SOURCE_SHA: JSON.stringify(process.env.SOURCE_SHA) } : {}),
       ...(process.env.GITHUB_RUN_NUMBER ? { RELEASE_RUN_NUMBER: JSON.stringify(process.env.GITHUB_RUN_NUMBER) } : {}),
@@ -76,6 +90,14 @@ export default defineConfig({
   },
   integrations: [
     react(),
+    {
+      name: 'blackbox-private-preview',
+      hooks: {
+        'astro:config:setup': ({ injectRoute }) => {
+          injectRoute({ pattern: '/_emdash/preview', entrypoint: localPath('src/pages/_emdash/preview.astro') });
+        },
+      },
+    },
     emdash({
       database: d1({ binding: 'CMS_DB' }),
       storage: r2({ binding: 'MEDIA' }),

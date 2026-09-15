@@ -100,7 +100,7 @@ export default function ContentFields({
       <Field orientation="horizontal" className="min-h-11">
         <Checkbox
           id={`content-${path}`}
-          checked={value(path) === true}
+          checked={value(path) === true || value(path) === 1}
           disabled={disabled}
           onCheckedChange={(checked) => set(path, checked === true)}
         />
@@ -206,6 +206,10 @@ export default function ContentFields({
         {field('genre', 'Genre')}
         {field('country', 'Country', { required: false })}
         {image('image', 'image_alt', 'Artist image')}
+        <p className="col-span-full text-sm text-muted-foreground">
+          Homepage portraits crop to 3:4. Use 1800 × 2400 px where possible, at least 1200 × 1600 px. Keep the band
+          centered with headroom and space at the sides.
+        </p>
         {field('bio', 'Short biography', { multiline: true })}
         {rows('profile_links', 'Artist links', { label: '', url: '' }, (path) => (
           <>

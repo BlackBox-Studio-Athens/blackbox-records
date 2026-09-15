@@ -1,218 +1,277 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
-import {
-  editorialMediaUrl,
-  editorialRequest,
-  type EditorialMedia,
-  type EditorialRecord,
-} from '../../lib/backend/editorial-api';
+import { useEffect, useRef, useState } from 'react';
+import { Expand, Minimize, RefreshCw } from 'lucide-react';
+import { Button } from '../ui/button';
+import { Alert, AlertDescription } from '../ui/alert';
+import { Skeleton } from '../ui/skeleton';
+import { editorialWriteData } from '../../lib/backend/editorial-api';
 import type { ContentData, ContentSection } from './ContentFields';
-
-const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
-function DraftImage({ value, alt, base }: { value: unknown; alt: unknown; base: string }) {
-  const id = (value as { id?: string } | null)?.id;
-  const [source, setSource] = useState('');
-  useEffect(() => {
-    let active = true;
-    setSource('');
-    if (id)
-      void editorialRequest<{ item: EditorialMedia }>(base, `media/${encodeURIComponent(id)}`)
-        .then(({ item }) => {
-          const origin = new URL(base || window.location.origin).origin;
-          if (active) setSource(editorialMediaUrl(item, origin));
-        })
-        .catch(() => {});
-    return () => {
-      active = false;
-    };
-  }, [id, base]);
-  return source ? (
-    <img src={source} alt={String(alt ?? '')} className="max-h-[32rem] w-full object-contain" />
-  ) : (
-    <p className="border border-border p-6">{id ? 'Image preview unavailable.' : 'Choose an image.'}</p>
-  );
-}
 
 export default function ContentPreview({
   collection,
+  id,
+  slug,
   data,
   base,
+  active,
+  dirty,
 }: {
   collection: ContentSection;
+  id: string;
+  slug: string;
   data: ContentData;
   base: string;
+  active: boolean;
+  dirty: boolean;
 }) {
-  const [artist, setArtist] = useState('');
+  const [html, setHtml] = useState('');
+  const [status, setStatus] = useState('Updating preview');
+  const [error, setError] = useState('');
+  const [environment, setEnvironment] = useState('');
+  const [width, setWidth] = useState('fit');
+  const [view, setView] = useState('detail');
+  const [expanded, setExpanded] = useState(false);
+  const [retry, setRetry] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const panel = useRef<HTMLElement>(null);
+  const frame = useRef<HTMLIFrameElement>(null);
+  const expandButton = useRef<HTMLButtonElement>(null);
+  const scroll = useRef({ x: 0, y: 0 });
+  const firstRender = useRef(true);
+  const payload = JSON.stringify({ collection, ...(id ? { id } : {}), slug, data: editorialWriteData(data) });
   useEffect(() => {
-    let active = true;
-    if (collection === 'releases' && typeof data.artist === 'string') {
-      void editorialRequest<{ item: EditorialRecord }>(base, `content/artists/${encodeURIComponent(data.artist)}`)
-        .then(({ item }) => {
-          if (active) setArtist(String(item.data.title));
-        })
-        .catch(() => {
-          if (active) setArtist('Artist preview unavailable.');
-        });
-    }
-    return () => {
-      active = false;
-    };
-  }, [collection, data.artist, base]);
-  const object = (value: unknown) => (value as ContentData) ?? {};
-  const text = (value: unknown) => String(value ?? '');
-  const array = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
-  const paragraph = (value: unknown) => (
-    <p className="max-w-[70ch] whitespace-pre-wrap leading-relaxed">{text(value)}</p>
-  );
-  const picture = (value: unknown, alt: unknown) => <DraftImage value={value} alt={alt} base={base} />;
-  const hero = object(data.hero);
-  const title = <h1 className="break-words text-3xl font-semibold">{text(data.title ?? hero.title)}</h1>;
-  const body =
-    Array.isArray(data.body) && data.body.length > 0 ? (
-      <Suspense fallback={<p>Loading text…</p>}>
-        <ContentBodyEditor key={JSON.stringify(data.body)} value={data.body as never} editable={false} minimal />
-      </Suspense>
-    ) : null;
-  return (
-    <section aria-label="Draft preview" className="grid min-w-0 gap-6 border border-border p-4 sm:p-8">
-      <p className="font-semibold">Draft preview. Only signed-in label members can see this.</p>
-      {collection === 'home' && (
-        <>
-          {picture(hero.image, hero.image_alt)}
-          <h1 className="text-3xl font-semibold">{text(hero.tagline)}</h1>
-          {paragraph(hero.scroll_indicator_text)}
-          <h2 className="text-2xl">{text(object(data.news).title)}</h2>
-          {paragraph(object(data.news).link_text)}
-          <h2 className="text-2xl">{text(object(data.artists).title)}</h2>
-          {paragraph(object(data.artists).button_text)}
-        </>
-      )}
-      {collection === 'about' && (
-        <>
-          {paragraph(hero.section_label)}
-          {title}
-          {picture(hero.image, hero.image_alt)}
-          {paragraph(object(data.lead).text)}
-          <h2 className="text-2xl">{text(object(data.story).title)}</h2>
-          {array(object(data.story).paragraphs).map((value, index) => (
-            <div key={index}>{paragraph(value)}</div>
-          ))}
-          {data.quote ? (
-            <blockquote>
-              {paragraph(object(data.quote).text)}
-              <cite>{text(object(data.quote).cite)}</cite>
-            </blockquote>
-          ) : null}
-          <h2 className="text-2xl">{text(object(data.contact).title)}</h2>
-          {paragraph(object(data.contact).intro)}
-          {array(object(data.contact).items).map((item, index) => (
-            <p key={index}>
-              {text(object(item).label)}: {text(object(item).value)}
-            </p>
-          ))}
-          {array(object(data.stats).items).map((item, index) => (
-            <p key={index}>
-              {text(object(item).key)} {text(object(item).label)}
-            </p>
-          ))}
-        </>
-      )}
-      {collection === 'services' && (
-        <>
-          {title}
-          {paragraph(hero.intro)}
-          {paragraph(hero.cta_text)}
-          {array(object(data.services).items).map((raw, index) => {
-            const item = object(raw);
-            return (
-              <section className="grid gap-4" key={index}>
-                <h2 className="text-2xl">{text(item.title)}</h2>
-                {picture(item.image, item.image_alt)}
-                {paragraph(item.summary)}
-                <ul className="list-disc pl-6">
-                  {array(item.bullets).map((bullet, i) => (
-                    <li key={i}>{text(bullet)}</li>
-                  ))}
-                </ul>
-                {paragraph(item.contact_note)}
-                {paragraph(item.partner_name)}
-              </section>
+    const update = () => setVisible(document.visibilityState === 'visible');
+    update();
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  }, []);
+  useEffect(() => {
+    if (!active || !visible) return;
+    const controller = new AbortController();
+    setStatus('Updating preview');
+    const timeout = setTimeout(() => {
+      void (async () => {
+        try {
+          const response = await fetch(`${base}/_emdash/preview?view=${view}`, {
+            method: 'POST',
+            credentials: 'same-origin',
+            cache: 'no-store',
+            signal: controller.signal,
+            headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1' },
+            body: payload,
+          });
+          if (!response.ok) {
+            const details = (await response.json().catch(() => null)) as { error?: string } | null;
+            throw new Error(
+              response.status === 403
+                ? 'Sign in again to preview. Your edits are still here.'
+                : details?.error || 'Check your connection and try again.',
             );
-          })}
-          <h2 className="text-2xl">{text(object(data.process).title)}</h2>
-          {paragraph(object(data.process).intro)}
-          {array(object(data.process).steps).map((step, index) => (
-            <section key={index}>
-              <h3 className="text-xl">{text(object(step).title)}</h3>
-              {paragraph(object(step).body)}
-            </section>
-          ))}
-          <h2 className="text-2xl">{text(object(data.inquiry).title)}</h2>
-          {paragraph(object(data.inquiry).intro)}
-          {paragraph(object(data.inquiry).email)}
-          {paragraph(object(data.inquiry).submit_text)}
-        </>
+          }
+          const next = await response.text();
+          if (controller.signal.aborted) return;
+          scroll.current = {
+            x: frame.current?.contentWindow?.scrollX ?? 0,
+            y: frame.current?.contentWindow?.scrollY ?? 0,
+          };
+          setHtml(next);
+          setEnvironment(response.headers.get('X-Preview-Environment') ?? '');
+          setError('');
+          setStatus('Preview up to date');
+        } catch (error) {
+          if (controller.signal.aborted) return;
+          setStatus('Preview could not update');
+          setError(error instanceof Error ? error.message : 'Try again.');
+        }
+      })();
+    }, 750);
+    return () => {
+      clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [payload, base, active, visible, view, retry]);
+  useEffect(() => {
+    if (!expanded) return;
+    const siblings: HTMLElement[] = [];
+    let node = panel.current;
+    while (node?.parentElement) {
+      for (const sibling of node.parentElement.children) {
+        if (sibling !== node && sibling instanceof HTMLElement && !sibling.inert) {
+          sibling.inert = true;
+          siblings.push(sibling);
+        }
+      }
+      node = node.parentElement;
+    }
+    expandButton.current?.focus();
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setExpanded(false);
+      } else if (event.key === 'Tab') {
+        const controls = panel.current?.querySelectorAll<HTMLElement>('button:not(:disabled), select, iframe');
+        const first = controls?.[0];
+        const last = controls?.[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    window.addEventListener('keydown', escape);
+    return () => {
+      window.removeEventListener('keydown', escape);
+      siblings.forEach((sibling) => {
+        sibling.inert = false;
+      });
+      expandButton.current?.focus();
+    };
+  }, [expanded]);
+  const hasListing = ['artists', 'releases', 'news', 'distro'].includes(collection);
+  return (
+    <section
+      ref={panel}
+      role={expanded ? 'dialog' : undefined}
+      aria-modal={expanded ? true : undefined}
+      aria-label="Site preview"
+      className={`cms-preview ${expanded ? 'cms-preview-expanded' : ''}`}
+      hidden={!active}
+    >
+      <header className="cms-preview-toolbar">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold">
+            Private preview{' '}
+            <span className="text-xs font-normal text-muted-foreground">{environment.toUpperCase()}</span>
+          </p>
+          <Button
+            ref={expandButton}
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={expanded ? 'Close expanded preview' : 'Expand preview'}
+            aria-pressed={expanded}
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? <Minimize className="size-4" /> : <Expand className="size-4" />}
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex" role="group" aria-label="Preview width">
+            {['fit', 'desktop', 'mobile'].map((size) => (
+              <Button
+                key={size}
+                type="button"
+                variant={width === size ? 'secondary' : 'ghost'}
+                size="sm"
+                aria-pressed={width === size}
+                onClick={() => setWidth(size)}
+              >
+                {size.charAt(0).toUpperCase() + size.slice(1)}
+              </Button>
+            ))}
+          </div>
+          {hasListing && (
+            <label className="text-xs">
+              View{' '}
+              <select
+                className="cms-preview-select"
+                value={view}
+                onChange={(event) => {
+                  scroll.current = { x: 0, y: 0 };
+                  setView(event.target.value);
+                }}
+              >
+                <option value="detail">Detail page</option>
+                <option value="listing">Listing</option>
+              </select>
+            </label>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Refresh preview"
+            onClick={() => setRetry((value) => value + 1)}
+          >
+            <RefreshCw className="size-4" />
+          </Button>
+        </div>
+        <p
+          role="status"
+          className={`text-xs ${error ? 'cms-state-error' : dirty ? 'cms-state-warning' : 'text-muted-foreground'}`}
+        >
+          {status}
+          {dirty ? ' · Unsaved edits' : ' · Saved draft'}
+          {error && html ? ' · Showing an outdated preview' : ''}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Appearance only. Uses this CMS version; the live site may use an earlier version.
+        </p>
+        {collection === 'settings' && (
+          <p className="text-xs text-muted-foreground">
+            Label name and established year appear in the footer. Website URL, logo metadata and location have no
+            visible page effect.
+          </p>
+        )}
+        {collection === 'purchase_information' && (
+          <p className="text-xs text-muted-foreground">
+            Wording preview only. Approval still controls what appears on the public site.
+          </p>
+        )}
+      </header>
+      {error && (
+        <Alert variant="destructive" className="m-3 w-auto">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
-      {collection === 'artists' && (
-        <>
-          {title}
-          {picture(data.image, data.image_alt)}
-          {paragraph([data.genre, data.country].filter(Boolean).join(' · '))}
-          {paragraph(data.bio)}
-          {body}
-          {paragraph(data.upcoming_release)}
-          {array(data.profile_links).map((link, index) => (
-            <p key={index}>
-              {text(object(link).label)}: {text(object(link).url)}
-            </p>
-          ))}
-          {array(data.videos).map((video, index) => (
-            <section key={index}>
-              <h2 className="text-xl">{text(object(video).title)}</h2>
-              {paragraph(object(video).description)}
-            </section>
-          ))}
-        </>
-      )}
-      {collection === 'releases' && (
-        <>
-          {title}
-          {paragraph(artist)}
-          {picture(data.cover_image, data.cover_image_alt)}
-          {paragraph(data.release_date)}
-          {paragraph(data.summary)}
-          {paragraph(array(data.formats).join(' · '))}
-          {body}
-          {array(data.credits).map((credit, index) => (
-            <p key={index}>
-              {text(object(credit).role)}: {text(object(credit).name)}
-            </p>
-          ))}
-        </>
-      )}
-      {collection === 'distro' && (
-        <>
-          {title}
-          {paragraph(data.artist_or_label)}
-          {picture(data.image, data.image_alt)}
-          {paragraph(data.group)}
-          {paragraph(data.format)}
-          {paragraph(data.summary)}
-          {paragraph(data.release_date)}
-          {array(data.gallery).map((item, index) => (
-            <div key={index}>{picture(object(item).image, object(item).image_alt)}</div>
-          ))}
-        </>
-      )}
-      {collection === 'news' && (
-        <>
-          {paragraph(data.section_label)}
-          {title}
-          {paragraph(data.date)}
-          {picture(data.image, data.image_alt)}
-          {paragraph(data.summary)}
-          {body}
-        </>
-      )}
+      <div className="cms-preview-viewport">
+        {html ? (
+          <iframe
+            ref={frame}
+            title="Private site appearance preview"
+            sandbox="allow-same-origin"
+            referrerPolicy="no-referrer"
+            srcDoc={html}
+            style={{ width: width === 'desktop' ? 1280 : width === 'mobile' ? 390 : '100%' }}
+            onLoad={() => {
+              const target =
+                firstRender.current && ['newsletter', 'settings', 'socials'].includes(collection)
+                  ? frame.current?.contentDocument?.querySelector(
+                      collection === 'newsletter' ? '#newsletter-signup-area' : 'footer',
+                    )
+                  : null;
+              if (target) {
+                frame.current?.contentWindow?.scrollTo(0, target.getBoundingClientRect().top - 96);
+              } else frame.current?.contentWindow?.scrollTo(scroll.current.x, scroll.current.y);
+              firstRender.current = false;
+              frame.current?.contentDocument?.addEventListener(
+                'error',
+                (event) => {
+                  if ((event.target as Element)?.tagName === 'IMG') {
+                    setError('An image could not load. Check the selected images and refresh the preview.');
+                    setStatus('Preview could not update');
+                  }
+                },
+                true,
+              );
+              const images = frame.current?.contentDocument?.images;
+              if (images && Array.from(images).some((image) => image.complete && !image.naturalWidth)) {
+                setError('Some images could not load. Check the selected images and refresh the preview.');
+                setStatus('Preview could not update');
+              }
+            }}
+          />
+        ) : error ? (
+          <p className="p-6 text-sm text-muted-foreground">Fix the issue above, then refresh the preview.</p>
+        ) : (
+          <div className="grid gap-4 p-6" aria-label="Loading site preview">
+            <Skeleton className="h-64" />
+            <Skeleton className="h-10" />
+            <Skeleton className="h-24" />
+          </div>
+        )}
+      </div>
     </section>
   );
 }

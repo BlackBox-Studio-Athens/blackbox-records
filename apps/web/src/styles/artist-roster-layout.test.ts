@@ -15,6 +15,6 @@ describe('Artists roster layout', () => {
   it('exposes search only when the roster contains more than five artists', () => {
     const page = readFileSync(artistsPagePath, 'utf8');
 
-    expect(page).toMatch(/artistProfiles\.length\s*>\s*5\s*&&\s*<div data-artists-roster-filters\s*\/>/s);
+    expect(page).toMatch(/artistProfiles\.length\s*>\s*5\s*&&\s*\(\s*<div data-artists-roster-filters>/s);
   });
 });

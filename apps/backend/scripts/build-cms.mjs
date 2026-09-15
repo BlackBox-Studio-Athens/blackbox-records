@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { cpSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { validateCmsFreeTier } from './cms-resources.ts';
@@ -22,6 +22,8 @@ const staff = spawnSync('pnpm', ['--filter', '@blackbox/staff', 'build'], {
   shell: process.platform === 'win32',
 });
 if (staff.status !== 0) process.exit(staff.status ?? 1);
+// Private previews reuse the public site's committed brand assets. Draft media stays behind CMS authentication.
+cpSync('../web/public/assets', '../staff/dist/assets', { recursive: true });
 const backendEnv = { ...process.env, BLACKBOX_BUILD_ENV: values.env };
 delete backendEnv.CLOUDFLARE_ENV;
 const backend = spawnSync(

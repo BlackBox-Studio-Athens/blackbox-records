@@ -116,7 +116,7 @@ function RecordPicker({
               }}
               placeholder={`Search ${label.toLowerCase()}`}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.currentTarget.getAttribute('aria-activedescendant')) {
+                if (event.key === 'Enter' && !items.length) {
                   event.preventDefault();
                   if (!busy) void search();
                 }
@@ -129,6 +129,7 @@ function RecordPicker({
                 className="w-full"
                 disabled={busy}
                 onClick={() => void search()}
+                onKeyDown={(event) => event.stopPropagation()}
               >
                 Search {label.toLowerCase()}
               </Button>
@@ -149,7 +150,13 @@ function RecordPicker({
               ))}
             </CommandList>
             {cursor && (
-              <Button type="button" variant="ghost" disabled={busy} onClick={() => void search(cursor)}>
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={busy}
+                onClick={() => void search(cursor)}
+                onKeyDown={(event) => event.stopPropagation()}
+              >
                 Show more
               </Button>
             )}

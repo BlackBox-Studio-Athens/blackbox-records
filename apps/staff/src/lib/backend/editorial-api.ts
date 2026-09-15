@@ -4,7 +4,15 @@ export type EditorialRecord = {
   data: Record<string, unknown>;
   liveRevisionId?: string | null;
 };
-export type EditorialMedia = { id: string; filename: string; url?: string; storageKey?: string; alt: string | null };
+export type EditorialMedia = {
+  id: string;
+  filename: string;
+  url?: string;
+  storageKey?: string;
+  alt: string | null;
+  width?: number;
+  height?: number;
+};
 export type EditorialList<T> = { items: T[]; nextCursor?: string };
 
 export function editorialMediaUrl(item: EditorialMedia, origin: string): string {

@@ -15,6 +15,13 @@ import {
 import { dispatchPendingPublication, reconcilePendingPublication } from './publication-dispatch';
 import { handleItemArtwork, itemArtworkPath, publishedMediaPath, servePublishedMedia } from './item-artwork';
 import { reconcileItemPublications, guardItemLifecycle, readPublicationCatalog } from './item-publication-recovery';
+import {
+  createPreviewContext,
+  previewContext,
+  previewInputSchema,
+  previewPath,
+  readBoundedText,
+} from './preview-content';
 
 export { CommerceRuntime };
 
@@ -75,6 +82,149 @@ export default {
 
 // ponytail: one editorial site per object; split by site only if we host more sites.
 export class CmsRuntime extends DurableObject<CmsBindings> {
+  // Published context only; unsaved drafts live exclusively in the request-scoped reader.
+  private previewReads = new Map<string, { expires: number; value: unknown; size: number }>();
+  private previewCacheBytes = 0;
+
+  private async preview(request: Request, role: number): Promise<Response> {
+    const url = new URL(request.url);
+    const headers = {
+      'Cache-Control': 'private, no-store',
+      'X-Robots-Tag': 'noindex, nofollow',
+      Vary: 'Cookie, Cf-Access-Jwt-Assertion',
+    };
+    if (
+      request.method !== 'POST' ||
+      role < 30 ||
+      request.headers.get('Origin') !== url.origin ||
+      request.headers.get('X-EmDash-Request') !== '1' ||
+      [...url.searchParams.keys()].some((key) => key !== 'view') ||
+      !['detail', 'listing'].includes(url.searchParams.get('view') ?? 'detail')
+    ) {
+      if (request.body) await readBoundedText(request.body, 256 * 1024).catch(() => {});
+      return new Response('Forbidden', { status: 403, headers });
+    }
+    let reads = 0;
+    let cacheMisses = 0;
+    try {
+      const input = previewInputSchema.parse(JSON.parse(await readBoundedText(request.body, 256 * 1024)));
+      const context = await createPreviewContext(
+        input,
+        this.env.PRODUCT_ENVIRONMENT?.toLowerCase() ?? 'local',
+        async (path) => {
+          if (++reads > 512) throw new Error('Preview context exceeds its read budget.');
+          // Current record identity is always checked afresh; only surrounding published reads are reused.
+          const cached = this.previewReads.get(path);
+          if (cached && cached.expires > Date.now() && path !== `content/${input.collection}/${input.id}`)
+            return cached.value;
+          cacheMisses++;
+          const readHeaders = new Headers(request.headers);
+          readHeaders.delete('Content-Type');
+          readHeaders.delete('Content-Length');
+          const response = await this.fetch(
+            new Request(new URL(`/_emdash/api/${path}`, url), { headers: readHeaders }),
+          );
+          if (!response.ok) throw new Error('Content or image could not be loaded. Refresh preview or sign in again.');
+          const serialized = await readBoundedText(response.body, 2 * 1024 * 1024);
+          const result = JSON.parse(serialized) as {
+            success: boolean;
+            data: unknown;
+          };
+          if (!result.success) throw new Error('Published content is unavailable.');
+          const size = serialized.length * 2;
+          this.previewCacheBytes -= this.previewReads.get(path)?.size ?? 0;
+          if (this.previewReads.size >= 512 || this.previewCacheBytes + size > 8 * 1024 * 1024) {
+            this.previewReads.clear();
+            this.previewCacheBytes = 0;
+          }
+          this.previewReads.set(path, { expires: Date.now() + 30_000, value: result.data, size });
+          this.previewCacheBytes += size;
+          return result.data;
+        },
+      );
+      const html = await previewContext.run(context, async () => {
+        const state = new FetchState(request);
+        const asset = await cf(state, this.env, this.ctx as unknown as ExecutionContext);
+        const rendered = asset ?? finalize(state, await astro(state));
+        if (!rendered.ok) {
+          await rendered.body?.cancel();
+          throw new Error(`Preview could not render (${rendered.status}). Check required fields and linked content.`);
+        }
+        return readBoundedText(rendered.body, 4 * 1024 * 1024);
+      });
+      const policy =
+        "default-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'none'; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'";
+      const output = new HTMLRewriter()
+        .on('html', {
+          element(element) {
+            // Public catalog markup already contains the initial coverflow positions.
+            element.setAttribute('data-store-coverflow-capable', '');
+          },
+        })
+        .on('img', {
+          element(element) {
+            const src = new URL(element.getAttribute('src') ?? '', url);
+            // Preview keeps the public dimensions/crop and serves the original through protected media access.
+            if (src.origin === url.origin && src.pathname === '/_image') {
+              const original = src.searchParams.get('href') ?? '';
+              if (/^\/(?:_astro\/|_emdash\/api\/media\/file\/)/.test(original)) {
+                element.setAttribute('src', original);
+                element.removeAttribute('srcset');
+              }
+            }
+          },
+        })
+        .on(
+          'script, iframe, object, embed, template, noscript, link[rel="modulepreload"], link[rel="prefetch"], meta[http-equiv="refresh"]',
+          {
+            element(element) {
+              element.remove();
+            },
+          },
+        )
+        .on('link[rel="preload"][as="style"]', {
+          element(element) {
+            element.setAttribute('rel', 'stylesheet');
+            element.removeAttribute('onload');
+          },
+        })
+        .on('a, button, input, select, textarea, summary, [role="button"]', {
+          element(element) {
+            element.setAttribute('inert', '');
+            element.setAttribute('tabindex', '-1');
+            if (element.tagName === 'a') {
+              element.removeAttribute('href');
+              element.removeAttribute('target');
+            }
+          },
+        })
+        .on('head', {
+          element(element) {
+            element.prepend(
+              `<meta http-equiv="Content-Security-Policy" content="${policy}"><meta name="robots" content="noindex,nofollow">`,
+              { html: true },
+            );
+          },
+        })
+        .transform(
+          new Response(html, {
+            headers: {
+              ...headers,
+              'Content-Type': 'text/html; charset=utf-8',
+              'Content-Security-Policy': `${policy}; sandbox allow-same-origin; frame-ancestors 'self'`,
+              'X-Preview-Environment': context.environment,
+              'X-Preview-Reads': String(reads),
+              'X-Preview-Cache-Misses': String(cacheMisses),
+            },
+          }),
+        );
+      return output;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Preview could not update.';
+      return Response.json({ error: message.slice(0, 1000) }, { status: 422, headers });
+    }
+  }
+
   async dispatchPublication() {
     if (!/^[a-f0-9]{64}$/.test(this.env.CMS_PUBLICATION_EXPORT_TOKEN ?? '')) return { status: 'disabled' as const };
     await reconcilePendingPublication({
@@ -134,6 +284,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     } catch {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
     }
+    if (url.pathname === previewPath) return this.preview(request, identity?.role ?? 0);
     if (url.pathname.startsWith(localPublicationRoot)) {
       if (!identity) return new Response('Forbidden', { status: 403 });
       return handleLocalPublicationRequest(request, {

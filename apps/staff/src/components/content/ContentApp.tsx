@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/button';
-import { ArrowLeft, Eye, FileText, MoreHorizontal, Plus, RefreshCw, Save, Search, Send } from 'lucide-react';
+import { ArrowLeft, FileText, MoreHorizontal, Plus, Save, Search, Send } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { ButtonGroup } from '../ui/button-group';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
@@ -11,7 +11,7 @@ import { Separator } from '../ui/separator';
 import { Skeleton } from '../ui/skeleton';
 import { Spinner } from '../ui/spinner';
 import { Alert, AlertDescription } from '../ui/alert';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../ui/sheet';
+import { Tabs } from 'radix-ui';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
 import {
   AlertDialog,
@@ -28,6 +28,8 @@ import ContentNavigation from './ContentNavigation';
 import MediaLibrary from './MediaLibrary';
 import ContentFields, { contentSections, type ContentSection, type ContentData } from './ContentFields';
 import ContentPreview from './ContentPreview';
+import ContentSelector from './ContentSelector';
+import PublicationStatus from './PublicationStatus';
 import {
   readContentPublications,
   requestContentPublication,
@@ -59,7 +61,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [mobileEditor, setMobileEditor] = useState(false);
   const [confirmTrash, setConfirmTrash] = useState(false);
   const editorHeading = useRef<HTMLHeadingElement>(null);
-  const previewTrigger = useRef<HTMLButtonElement>(null);
   const listHeading = useRef<HTMLHeadingElement>(null);
   function updateUrl(section: ContentSection, id?: string, mediaView = false) {
     const params = new URLSearchParams({ collection: section });
@@ -91,6 +92,14 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [conflict, setConflict] = useState(false);
   const [ready, setReady] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1100px)');
+    const change = () => setWide(media.matches);
+    change();
+    media.addEventListener('change', change);
+    return () => media.removeEventListener('change', change);
+  }, []);
   const [pendingNew, setPendingNew] = useState<ContentData | null>(null);
   const [publications, setPublications] = useState<ContentPublication[]>([]);
   const [publicationMessage, setPublicationMessage] = useState('');
@@ -130,11 +139,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       localStorage.removeItem(publicationKey);
       setPendingPublication(null);
       setPublications((items) => [accepted, ...items.filter((item) => item.id !== accepted.id)].slice(0, 10));
+      await publicationStatus();
       setPublicationMessage(
         accepted.status === 'live'
           ? 'Publication is live on fresh public page loads.'
           : accepted.status === 'failed'
-            ? 'Publication failed. Publish saved content to try again.'
+            ? 'Publication failed. Select Publish changes to try again.'
             : 'Publication requested. Wait for Live before checking a fresh public page.',
       );
     } catch (error) {
@@ -221,7 +231,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }, [dirty]);
   function mayLeave() {
     if (!dirty) return true;
-    setMessage('Save your draft or load the saved version before switching content.');
+    setMessage('Save your draft or select Discard changes and reload before switching content.');
     return false;
   }
   async function open(item: EditorialRecord, replace = false) {
@@ -367,7 +377,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     void list(section, undefined, '');
   }
   const canCreate = ['news', 'socials'].includes(collection);
-  const canPreview = ['home', 'about', 'services', 'artists', 'releases', 'distro', 'news'].includes(collection);
   const canPublish = !['releases', 'distro'].includes(collection);
   const title = String(data.title || data.label_name || contentSections[collection]);
   return (
@@ -381,6 +390,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         disabled={!ready || busy || !!pendingNew}
         onCollection={selectCollection}
         onMedia={() => {
+          if (!mayLeave()) return;
           setMedia(true);
           updateUrl(collection, document?.item.id, true);
         }}
@@ -394,10 +404,13 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               <BreadcrumbItem>Content</BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{media ? 'Media library' : contentSections[collection]}</BreadcrumbPage>
+                <BreadcrumbPage>{media ? 'Images' : contentSections[collection]}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+          <div className="ml-auto">
+            <PublicationStatus items={publications} message={publicationMessage} refresh={publicationStatus} />
+          </div>
           {media && document && (
             <Button
               type="button"
@@ -417,15 +430,26 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         {media && (
           <section className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
             <div className="mx-auto max-w-6xl">
-              <h1 className="text-2xl font-semibold">Media library</h1>
+              <h1 className="text-2xl font-semibold">Images</h1>
               <p className="mt-2 mb-8 text-sm text-muted-foreground">Images for your artists, releases and pages.</p>
               <MediaLibrary base={base} />
             </div>
           </section>
         )}
-        <div className="cms-content-panes" hidden={media}>
+        <Tabs.Root
+          value={preview ? 'preview' : 'edit'}
+          onValueChange={(value) => setPreview(value === 'preview')}
+          className={`cms-content-panes ${document && mobileEditor ? 'cms-editing' : ''}`}
+          hidden={media}
+        >
+          {document && mobileEditor && (
+            <Tabs.List className="cms-editor-tabs" aria-label="Content view">
+              <Tabs.Trigger value="edit">Edit</Tabs.Trigger>
+              <Tabs.Trigger value="preview">Preview</Tabs.Trigger>
+            </Tabs.List>
+          )}
           <section
-            aria-label="Content records"
+            aria-label={contentSections[collection]}
             className={`cms-records ${mobileEditor ? 'cms-records-mobile-hidden' : ''}`}
           >
             <div className="grid gap-4 border-b border-border p-4">
@@ -450,8 +474,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                     <Search aria-hidden="true" />
                   </InputGroupAddon>
                   <InputGroupInput
-                    aria-label="Search content"
-                    placeholder="Search content"
+                    aria-label={`Search ${contentSections[collection].toLowerCase()}`}
+                    placeholder={`Search ${contentSections[collection].toLowerCase()}…`}
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                   />
@@ -527,214 +551,199 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               )}
             </div>
           </section>
-          <section
-            aria-label="Content editor"
-            className={`cms-editor ${!mobileEditor ? 'cms-editor-mobile-hidden' : ''}`}
-          >
-            {document ? (
-              <>
-                <header className="cms-editor-toolbar">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0 md:hidden"
-                      aria-label="Back to records"
-                      onClick={() => {
-                        setMobileEditor(false);
-                        requestAnimationFrame(() => listHeading.current?.focus());
-                      }}
-                    >
-                      <ArrowLeft className="size-4" />
-                    </Button>
+          <Tabs.Content value="edit" forceMount asChild>
+            <section
+              aria-label="Content editor"
+              className={`cms-editor ${!mobileEditor ? 'cms-editor-mobile-hidden' : ''}`}
+            >
+              {document ? (
+                <>
+                  <header className="cms-editor-toolbar">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <ContentSelector
+                        title={title}
+                        section={contentSections[collection]}
+                        items={items}
+                        selected={document.item.id}
+                        query={query}
+                        disabled={busy || !!pendingNew}
+                        more={!!cursor}
+                        onQuery={(query) => {
+                          setQuery(query);
+                          setItems([]);
+                          setCursor(undefined);
+                        }}
+                        onSearch={() => void list()}
+                        onMore={() => void list(collection, cursor)}
+                        onSelect={open}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="shrink-0"
+                        aria-label="Back to records"
+                        onClick={() => {
+                          setMobileEditor(false);
+                          requestAnimationFrame(() => listHeading.current?.focus());
+                        }}
+                      >
+                        <ArrowLeft className="size-4" />
+                      </Button>
+                    </div>
                     <div className="min-w-0">
-                      <h2 ref={editorHeading} tabIndex={-1} className="truncate text-xl font-semibold outline-none">
+                      <h2 ref={editorHeading} tabIndex={-1} className="sr-only">
                         {title}
                       </h2>
-                      <p role="status" className="mt-1 text-xs text-muted-foreground">
-                        {dirty ? 'Unsaved changes' : 'No unsaved changes'} · Private draft
+                      <p
+                        role="status"
+                        className={`mt-1 text-xs ${dirty ? 'cms-state-warning' : 'text-muted-foreground'}`}
+                      >
+                        {dirty ? 'Unsaved changes' : 'Draft saved'} · Private draft
                       </p>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <ButtonGroup aria-label="Draft actions">
-                      {canPreview && (
-                        <Button
-                          ref={previewTrigger}
-                          type="button"
-                          variant="outline"
-                          disabled={busy}
-                          onClick={() => setPreview(true)}
-                        >
-                          <Eye className="size-4" aria-hidden="true" />
-                          Preview
+                    <div className="flex flex-wrap items-center gap-2">
+                      <ButtonGroup aria-label="Draft actions">
+                        <Button type="submit" form="content-editor-form" disabled={busy || conflict}>
+                          {busy ? <Spinner className="size-4" /> : <Save className="size-4" aria-hidden="true" />}
+                          {pendingNew ? 'Check last save' : 'Save draft'}
                         </Button>
+                      </ButtonGroup>
+                      {canPublish && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span tabIndex={dirty || conflict ? 0 : undefined}>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                disabled={busy || dirty || conflict || !document.item.id}
+                                onClick={() => void publish()}
+                              >
+                                <Send className="size-4" aria-hidden="true" />
+                                {pendingPublication ? 'Retry publication request' : 'Publish changes'}
+                              </Button>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {dirty || conflict
+                              ? 'Save your draft before requesting publication.'
+                              : 'Publish this saved revision to the website.'}
+                          </TooltipContent>
+                        </Tooltip>
                       )}
-                      <Button type="submit" form="content-editor-form" disabled={busy || conflict}>
-                        {busy ? <Spinner className="size-4" /> : <Save className="size-4" aria-hidden="true" />}
-                        {pendingNew ? 'Check last save' : 'Save draft'}
-                      </Button>
-                    </ButtonGroup>
-                    {canPublish && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span tabIndex={0}>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              disabled={busy || dirty || conflict || !document.item.id}
-                              onClick={() => void publish()}
-                            >
-                              <Send className="size-4" aria-hidden="true" />
-                              {pendingPublication ? 'Retry publication request' : 'Publish saved content'}
-                            </Button>
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>Save your draft before requesting publication.</TooltipContent>
-                      </Tooltip>
-                    )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          aria-label="More draft actions"
-                          disabled={busy || !!pendingNew}
-                        >
-                          <MoreHorizontal className="size-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className="cms-surface" align="end">
-                        <DropdownMenuItem
-                          disabled={!document.item.id}
-                          onSelect={() => {
-                            if (dirty) setConfirmReload(true);
-                            else void open(document.item, true);
-                          }}
-                        >
-                          Load saved version
-                        </DropdownMenuItem>
-                        {canCreate && (
-                          <DropdownMenuItem
-                            disabled={!document.item.id || dirty}
-                            onSelect={() => setConfirmTrash(true)}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            aria-label="More draft actions"
+                            disabled={busy || !!pendingNew}
                           >
-                            Move to trash
+                            <MoreHorizontal className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="cms-surface" align="end">
+                          <DropdownMenuItem
+                            disabled={!document.item.id}
+                            onSelect={() => {
+                              if (dirty) setConfirmReload(true);
+                              else void open(document.item, true);
+                            }}
+                          >
+                            Discard changes and reload
                           </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                          {canCreate && (
+                            <DropdownMenuItem
+                              disabled={!document.item.id || dirty}
+                              onSelect={() => setConfirmTrash(true)}
+                            >
+                              Move to trash
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </header>
+                  <div className="cms-editor-body">
+                    {message && (
+                      <Alert
+                        variant={conflict ? 'destructive' : 'default'}
+                        role={conflict ? 'alert' : 'status'}
+                        className="mb-6"
+                      >
+                        <AlertDescription className="whitespace-pre-wrap">{message}</AlertDescription>
+                      </Alert>
+                    )}
+                    {canPublish && (dirty || conflict) && (
+                      <p className="mb-4 text-sm cms-state-warning">
+                        {conflict
+                          ? 'Reload the saved version to resolve the conflict before publishing.'
+                          : 'Save your draft before publishing changes.'}
+                      </p>
+                    )}
+                    {!canPublish && (
+                      <p className="mb-6 text-sm text-muted-foreground">
+                        Save editorial changes here. Publish linked items from{' '}
+                        <a href="/items/" className="underline underline-offset-4">
+                          Items
+                        </a>
+                        .
+                      </p>
+                    )}
+                    <form id="content-editor-form" onSubmit={saveNew}>
+                      <fieldset
+                        disabled={busy || !!pendingNew}
+                        className="cms-fields grid min-w-0 gap-6 @2xl:grid-cols-2"
+                      >
+                        <legend className="mb-6 text-sm font-semibold">{contentSections[collection]} details</legend>
+                        <ContentFields
+                          key={`${document.item.id || document.item.slug}:${document._rev}`}
+                          collection={collection}
+                          data={data}
+                          base={base}
+                          disabled={busy || !!pendingNew}
+                          onChange={(next) => {
+                            setData(next);
+                            setDirty(true);
+                          }}
+                        />
+                      </fieldset>
+                    </form>
                   </div>
-                </header>
-                <div className="cms-editor-body">
+                </>
+              ) : (
+                <div className="grid flex-1 place-content-center gap-3 p-8 text-center">
+                  <FileText className="mx-auto size-8 text-muted-foreground" aria-hidden="true" />
+                  <h2 className="text-xl font-semibold">Select content to edit</h2>
+                  <p className="max-w-sm text-sm text-muted-foreground">
+                    Choose a record from {contentSections[collection].toLowerCase()} to edit its draft.
+                  </p>
                   {message && (
-                    <Alert
-                      variant={conflict ? 'destructive' : 'default'}
-                      role={conflict ? 'alert' : 'status'}
-                      className="mb-6"
-                    >
-                      <AlertDescription className="whitespace-pre-wrap">{message}</AlertDescription>
+                    <Alert role="status">
+                      <AlertDescription>{message}</AlertDescription>
                     </Alert>
                   )}
-                  {!canPublish && (
-                    <p className="mb-6 text-sm text-muted-foreground">
-                      Save editorial changes here. Publish linked items from{' '}
-                      <a href="/items/" className="underline underline-offset-4">
-                        Items
-                      </a>
-                      .
-                    </p>
-                  )}
-                  <form id="content-editor-form" onSubmit={saveNew}>
-                    <fieldset
-                      disabled={busy || !!pendingNew}
-                      className="cms-fields grid min-w-0 gap-6 @2xl:grid-cols-2"
-                    >
-                      <legend className="mb-6 text-sm font-semibold">Content details</legend>
-                      <ContentFields
-                        key={`${document.item.id || document.item.slug}:${document._rev}`}
-                        collection={collection}
-                        data={data}
-                        base={base}
-                        disabled={busy || !!pendingNew}
-                        onChange={(next) => {
-                          setData(next);
-                          setDirty(true);
-                        }}
-                      />
-                    </fieldset>
-                  </form>
                 </div>
-              </>
-            ) : (
-              <div className="grid flex-1 place-content-center gap-3 p-8 text-center">
-                <FileText className="mx-auto size-8 text-muted-foreground" aria-hidden="true" />
-                <h2 className="text-xl font-semibold">Select content to edit</h2>
-                <p className="max-w-sm text-sm text-muted-foreground">
-                  Choose a record from {contentSections[collection].toLowerCase()} to edit its draft.
-                </p>
-                {message && (
-                  <Alert role="status">
-                    <AlertDescription>{message}</AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            )}
-            <section aria-label="Recent publications" className="cms-publications border-t border-border p-4 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="text-sm font-semibold">Recent publications</h2>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  disabled={!ready || busy}
-                  onClick={() => void publicationStatus()}
-                >
-                  <RefreshCw className="size-4" aria-hidden="true" />
-                  Check publication status
-                </Button>
-              </div>
-              <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                Saved drafts are private. Wait for Live, then reload the public page to see changes. Reloading stops an
-                active music player.
-              </p>
-              {publicationMessage && (
-                <p role="status" className="mt-3 text-sm">
-                  {publicationMessage}
-                </p>
               )}
-              <ul className="mt-3 divide-y divide-border">
-                {publications.map((item) => (
-                  <li key={item.id} className="flex flex-wrap items-center gap-3 py-2 text-xs text-muted-foreground">
-                    <Badge variant="secondary" className={item.status === 'failed' ? 'text-destructive' : ''}>
-                      {item.status === 'live' ? 'Live' : item.status === 'failed' ? 'Failed' : 'Pending'}
-                    </Badge>
-                    <time dateTime={new Date(item.requestedAt).toISOString()}>
-                      {new Date(item.requestedAt).toLocaleString()}
-                    </time>
-                  </li>
-                ))}
-              </ul>
             </section>
-          </section>
-        </div>
+          </Tabs.Content>
+          {document && mobileEditor && (
+            <Tabs.Content value="preview" forceMount className="cms-preview-pane">
+              <ContentPreview
+                key={`${collection}:${document.item.id || document.item.slug}`}
+                collection={collection}
+                id={document.item.id}
+                slug={document.item.slug}
+                data={data}
+                base={base}
+                dirty={dirty}
+                active={!media && (wide || preview)}
+              />
+            </Tabs.Content>
+          )}
+        </Tabs.Root>
       </div>
-      <Sheet open={preview} onOpenChange={setPreview}>
-        <SheetContent
-          className="cms-surface w-full overflow-y-auto sm:max-w-3xl"
-          onCloseAutoFocus={(event) => {
-            event.preventDefault();
-            previewTrigger.current?.focus();
-          }}
-        >
-          <SheetHeader>
-            <SheetTitle>Draft preview</SheetTitle>
-            <SheetDescription>Only signed-in label members can see this draft.</SheetDescription>
-          </SheetHeader>
-          <div className="p-4">{document && <ContentPreview collection={collection} data={data} base={base} />}</div>
-        </SheetContent>
-      </Sheet>
       <AlertDialog open={confirmReload} onOpenChange={setConfirmReload}>
         <AlertDialogContent className="cms-surface">
           <AlertDialogHeader>
