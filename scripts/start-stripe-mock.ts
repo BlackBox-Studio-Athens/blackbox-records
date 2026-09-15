@@ -172,6 +172,19 @@ async function proxyRequest({
   upstreamOrigin: string;
 }) {
   const requestBody = await readRequestBody(request);
+  if (request.url === '/__local/webhook-session' && request.method === 'POST') {
+    const event = readJsonObject(requestBody);
+    const session = event && typeof event.id === 'string' ? checkoutSessions.get(event.id) : undefined;
+    const valid =
+      request.headers.authorization === 'Bearer sk_test_mock' &&
+      session &&
+      ['complete', 'expired', 'open'].includes(String(event?.status)) &&
+      ['paid', 'unpaid', 'no_payment_required'].includes(String(event?.payment_status));
+    if (valid) Object.assign(session, { status: event!.status, payment_status: event!.payment_status });
+    response.writeHead(valid ? 200 : 400, { 'content-type': 'application/json' });
+    response.end(JSON.stringify({ updated: !!valid }));
+    return;
+  }
   const patchedRequestBody = patchStripeMockRequest({
     body: requestBody,
     method: request.method,

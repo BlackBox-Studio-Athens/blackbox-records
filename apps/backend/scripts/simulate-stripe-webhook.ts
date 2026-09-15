@@ -102,6 +102,16 @@ export async function simulateStripeWebhook({
   ...fixtureOptions
 }: SimulateStripeWebhookOptions): Promise<{ body: string; status: number }> {
   const payload = createStripeWebhookFixturePayload(fixtureOptions);
+  // Keep the Local provider read consistent with the simulated event before delivering it.
+  if (endpointUrl === defaultEndpointUrl && webhookSecret === defaultWebhookSecret && fetcher === fetch) {
+    const updated = await fetch('http://127.0.0.1:12110/__local/webhook-session', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer sk_test_mock', 'Content-Type': 'application/json' },
+      body: JSON.stringify(JSON.parse(payload).data.object),
+    });
+    if (!updated.ok) throw new Error('Could not update the retained Local mock session.');
+    await updated.body?.cancel();
+  }
   const response = await fetcher(endpointUrl, {
     body: payload,
     headers: {
