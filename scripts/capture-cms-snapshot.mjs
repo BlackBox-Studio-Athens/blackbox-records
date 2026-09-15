@@ -185,6 +185,20 @@ export async function captureCmsSnapshot({
         record.collection === (item.sourceKind === 'release' ? 'releases' : 'distro') && record.slug === item.sourceId,
     ),
   );
+  // Published distro remains browsable before commerce setup; D1 still decides whether it can be bought.
+  for (const record of records) {
+    if (
+      storeItems &&
+      record.collection === 'distro' &&
+      !storeItems.some((item) => item.sourceKind === 'distro' && item.sourceId === record.slug)
+    )
+      storeItems.push({
+        sourceKind: 'distro',
+        sourceId: record.slug,
+        storeItemSlug: record.slug,
+        variantId: `variant_${record.slug}_standard`,
+      });
+  }
   const snapshot = canonical({ schemaVersion: 1, environment, records, media, ...(storeItems ? { storeItems } : {}) });
   const json = JSON.stringify(snapshot);
   return { snapshot, json, sha256: createHash('sha256').update(json).digest('hex'), requests, files };

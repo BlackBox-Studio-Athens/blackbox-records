@@ -18,6 +18,40 @@ const imageBytes = Buffer.from(
   'base64',
 );
 
+test('keeps published distro browsable without commerce setup and preserves bound identities', async () => {
+  const original = readers();
+  const input = {
+    ...original,
+    ...mediaReaders,
+    readPage: (collection) => (collection === 'distro' ? original.readPage('socials') : { items: [], total: 0 }),
+    readRevision: async () => ({
+      ...revision,
+      collection: 'distro',
+      data: {
+        title: 'Record',
+        group: 'CDs',
+        artist_or_label: 'Artist',
+        image: { id: 'image' },
+        image_alt: 'Cover',
+        summary: 'Album',
+        order: 0,
+      },
+    }),
+    readStoreItems: async () => [],
+  };
+  const display = {
+    sourceKind: 'distro',
+    sourceId: 'record',
+    storeItemSlug: 'record',
+    variantId: 'variant_record_standard',
+  };
+  assert.deepEqual((await captureCmsSnapshot(input)).snapshot.storeItems, [display]);
+  const bound = { ...display, storeItemSlug: 'record-cd', variantId: 'variant_retained' };
+  assert.deepEqual((await captureCmsSnapshot({ ...input, readStoreItems: async () => [bound] })).snapshot.storeItems, [
+    bound,
+  ]);
+});
+
 test('omits legacy catalog identities that have no published CMS source', async () => {
   const capture = await captureCmsSnapshot({
     ...readers(),
