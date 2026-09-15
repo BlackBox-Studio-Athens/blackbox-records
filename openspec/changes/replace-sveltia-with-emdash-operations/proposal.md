@@ -6,6 +6,10 @@ Use self-hosted EmDash for editorial CMS functionality and extend the working st
 
 ## What Changes
 
+Acceptance revision authorized by the user on 2026-09-15: reuse the accepted combined-artifact unit/check/build, recovery and integrated UAT evidence. Run only focused checks for subsequent changes and the final PRD publication/source reconciliation; do not repeat full suites or paid checkout/recovery rehearsals solely to close this change. This changes verification effort, not member functionality, data integrity, access protection or the requirement to retire old writable paths.
+
+The same request prioritizes the usable production cutover over dormant-code deletion. This milestone retires Sveltia as the hosted writer, selects runtime D1 catalog authority and routes staff to the combined Worker. Physical deletion of disabled Sveltia code, build-time migration fixtures/generation hooks and the inactive staff Pages workflow branch is deferred to the inventory in `docs/cms-retirement.md`. Retention is explicit technical debt, not completed deletion; it must not provide hosted write access, runtime fallback or a second active staff deployment.
+
 Implementation priority, revised at the user's request on 2026-09-14: finish usable member workflows with the backend already prepared. Work in the outcome order recorded in `tasks.md`, rather than expanding backend infrastructure or accumulating isolated checkpoints. Keep all acceptance requirements; measure progress by demonstrated workflows as well as completed tasks. No new framework, dependency, journal, or service is justified unless an existing required workflow cannot work without it.
 
 - **BREAKING:** Replace Sveltia/Git content writes with EmDash-managed editorial content in a dedicated D1 database and media in R2. Use supported EmDash APIs from the BlackBox-owned staff UI; its built-in admin is not the normal member workspace.

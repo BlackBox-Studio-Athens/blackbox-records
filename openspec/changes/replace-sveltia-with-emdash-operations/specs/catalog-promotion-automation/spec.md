@@ -2,12 +2,12 @@
 
 ### Requirement: Release builds use one source revision
 
-Each Software Release SHALL use one source SHA and explicit target content snapshot. Catalog records SHALL be runtime data and SHALL NOT be generated into backend code or require artifact bot commits.
+Each Software Release SHALL use one source SHA and explicit target content snapshot. Authoritative catalog records SHALL be runtime D1 data and SHALL NOT require artifact bot commits. Legacy generated migration/diagnostic inputs may remain until the documented cleanup; they SHALL NOT supply runtime fallback or overwrite live catalog data during ordinary publication.
 
 #### Scenario: Code or content changes
 
 - **WHEN** software is built
-- **THEN** the backend artifact contains schemas and application logic, not a compiled current catalog
+- **THEN** the backend resolves the current catalog from D1; any retained generated migration input is not runtime authority
 - **AND** content publication uses its own approved-code and content-revision inputs without a Worker deploy.
 
 #### Scenario: Content-only or mixed commit

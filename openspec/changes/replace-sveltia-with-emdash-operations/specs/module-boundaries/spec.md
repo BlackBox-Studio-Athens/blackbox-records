@@ -217,7 +217,7 @@ CMS integration SHALL use supported CMS interfaces for editorial records, while 
 
 - **WHEN** CMS integration and the content-model package are introduced
 - **THEN** the module-boundaries spec and manifest change together
-- **AND** deleted Sveltia roots and compiled catalog entrypoints are removed without compatibility facades.
+- **AND** retained dormant Sveltia roots and migration-only catalog entrypoints remain explicitly owned until the deferred cleanup removes them without compatibility facades.
 
 #### Scenario: Current combined-runtime boundaries are verified
 

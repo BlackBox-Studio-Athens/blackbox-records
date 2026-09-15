@@ -2,7 +2,7 @@
 
 The operating model is:
 
-- Local/UAT EmDash workspace: titles, descriptions, artwork, and guided Store Item creation. PRD still uses its pre-cutover source until the [approved migration](cms-cutover.md) completes.
+- Local/UAT/PRD EmDash workspace: titles, descriptions, artwork, and guided Store Item creation. The [cutover worksheet](cms-cutover.md) records the successful first PRD publication and released editorial write freeze.
 - Items workspace: selling-price commands backed by Stripe. Each variant has one Product; its **default Price** is the selling price.
 - BlackBox stock operations: stock and intentional checkout pauses. D1 owns orders and reservations.
 
@@ -26,7 +26,7 @@ One shared release lock prevents overlapping stateful runs. An invalid release i
 
 ## Changing a price
 
-In the Local/UAT Items workspace, open the item and use **Change price**. Check the retained operation after an interruption instead of creating another item. This creates/selects the replacement default Price through the backend; older Prices can remain active. Direct Stripe Dashboard changes remain a provider diagnostic path: use the existing Product and an EUR Price with inclusive tax, leaving app identifiers and Product presentation alone. PRD member price operations begin after cutover acceptance.
+In the Items workspace, open the item and use **Change price**. Check the retained operation after an interruption instead of creating another item. This creates/selects the replacement default Price through the backend; older Prices can remain active. Direct Stripe Dashboard changes remain a provider diagnostic path: use the existing Product and an EUR Price with inclusive tax, leaving app identifiers and Product presentation alone. PRD credentials and Disintegration linkage are configured; PRD price commands are live provider writes and retain their explicit confirmation.
 
 Signed Product/Price events refresh only the bound item. Detail and checkout reads fetch the current default and repair the D1 projection if a webhook was missed. Checkout still uses the validated concrete Price ID.
 

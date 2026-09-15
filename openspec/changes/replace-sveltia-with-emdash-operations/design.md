@@ -10,6 +10,8 @@ The authoritative migration inventory is the actual `apps/web/src/content.config
 
 **Non-Goals:** Rewriting checkout/stock/order business logic, replacing Prisma, shopper accounts, a generic workflow engine, automatic UAT-to-PRD data copying, new payment authority, marketplace plugins, BOX NOW automation, or public SSR. EmDash supplies CMS capabilities, not inventory transactions or an order engine.
 
+The user's 2026-09-15 accelerated completion scope defers physical removal of dormant Sveltia sources, migration-only generated catalog inputs and the inactive staff Pages workflow branch. Existing runtime D1 authority, disabled hosted Sveltia configuration and combined Worker routing remain mandatory. `docs/cms-retirement.md` owns the retained cleanup inventory; deletion is not represented as completed work.
+
 ## Decisions
 
 ### Delivery discipline — revised 2026-09-14
@@ -20,7 +22,7 @@ The user identified excessive time spent on defensive backend preparation withou
 
 The next deliverable is one protected item screen that reads current data, changes price through the existing command, and links to existing stock/order controls. Then complete guided item creation, followed by content editing and the complete publish path. Publication work includes the actual snapshot loader and workflow; isolated transport helpers are supporting code, not deliverables. Preserve the specified BlackBox-owned member UI and supported EmDash editor facilities; do not build a replacement rich-text engine.
 
-Test each changed behavior at the narrowest useful boundary while iterating. Reuse integration fixtures and existing regression suites. Add a test only for a required acceptance behavior or a reproduced defect that existing coverage misses; do not duplicate the same validation across new suites. At each completed workflow, run the repository-required unit, check, and build gates once on its final tree, plus the relevant browser/native check. Repeat only after relevant changes or failures. Security, money/stock integrity, draft privacy, target isolation, and quota guards remain required.
+Test each changed behavior at the narrowest useful boundary while iterating. Reuse integration fixtures and existing regression suites. Add a test only for a required acceptance behavior or a reproduced defect that existing coverage misses. At the user's request on 2026-09-15, reuse the accepted combined artifact's full gates and hosted recovery/UAT evidence; subsequent changes need only focused checks at affected boundaries and final PRD publication/source reconciliation. Do not repeat full suites or paid/recovery rehearsals merely for closure. Security, money/stock integrity, draft privacy, target isolation, and quota guards remain required.
 
 Update existing evidence and task entries briefly; do not create another checkpoint document for each helper. Commit coherent progress after verification. Report the demonstrated user outcome, the next missing integration, and any real external blocker. Keep prepared-but-unverified work visibly incomplete, without inflating the task count. Local fixture verification must remain distinct from persistent migration and hosted acceptance.
 
