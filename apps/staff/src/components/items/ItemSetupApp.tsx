@@ -231,7 +231,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           Back to items
         </a>
         <h1 className="font-display text-4xl">Create an item</h1>
-        <p>Choose the record, price and starting stock. Publishing is a separate step.</p>
+        <p>New items stay unpublished until you publish them.</p>
       </header>
       <form onSubmit={submit} className="grid gap-8">
         <fieldset disabled={locked} className="grid min-w-0 gap-5">

@@ -1,8 +1,22 @@
-import { FileText, ImageIcon, Library, Settings2, X } from 'lucide-react';
+import {
+  FileText,
+  ImageIcon,
+  Users,
+  Disc3,
+  Newspaper,
+  House,
+  Info,
+  Wrench,
+  ShoppingBag,
+  Mail,
+  Navigation,
+  Share2,
+  Settings2,
+  X,
+} from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -15,11 +29,27 @@ import {
 import { Button } from '../ui/button';
 import { contentSections, type ContentSection } from './ContentFields';
 
-const groups: { title: string; sections: ContentSection[]; icon: typeof FileText }[] = [
-  { title: 'Collections', sections: ['artists', 'releases', 'distro', 'news'], icon: Library },
-  { title: 'Pages', sections: ['home', 'about', 'services', 'distro_page', 'purchase_information'], icon: FileText },
-  { title: 'Site settings', sections: ['newsletter', 'navigation', 'socials', 'settings'], icon: Settings2 },
+const groups: { title: string; sections: ContentSection[] }[] = [
+  { title: 'Collections', sections: ['artists', 'releases', 'distro', 'news'] },
+  { title: 'Pages', sections: ['home', 'about', 'services', 'distro_page', 'purchase_information'] },
+  { title: 'Site settings', sections: ['newsletter', 'navigation', 'socials', 'settings'] },
 ];
+
+const sectionIcons: Record<ContentSection, typeof FileText> = {
+  artists: Users,
+  releases: Disc3,
+  distro: ShoppingBag,
+  news: Newspaper,
+  home: House,
+  about: Info,
+  services: Wrench,
+  distro_page: ShoppingBag,
+  purchase_information: FileText,
+  newsletter: Mail,
+  navigation: Navigation,
+  socials: Share2,
+  settings: Settings2,
+};
 
 export default function ContentNavigation({
   collection,
@@ -56,24 +86,27 @@ export default function ContentNavigation({
             <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {group.sections.map((section) => (
-                  <SidebarMenuItem key={section}>
-                    <SidebarMenuButton
-                      type="button"
-                      isActive={!media && collection === section}
-                      aria-current={!media && collection === section ? 'page' : undefined}
-                      disabled={disabled}
-                      onClick={() => {
-                        onCollection(section);
-                        setOpenMobile(false);
-                      }}
-                      className="min-h-11"
-                    >
-                      <group.icon className="size-4" aria-hidden="true" />
-                      <span>{contentSections[section]}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+                {group.sections.map((section) => {
+                  const Icon = sectionIcons[section];
+                  return (
+                    <SidebarMenuItem key={section}>
+                      <SidebarMenuButton
+                        type="button"
+                        isActive={!media && collection === section}
+                        aria-current={!media && collection === section ? 'page' : undefined}
+                        disabled={disabled}
+                        onClick={() => {
+                          onCollection(section);
+                          setOpenMobile(false);
+                        }}
+                        className="min-h-11"
+                      >
+                        <Icon className="size-4" aria-hidden="true" />
+                        <span>{contentSections[section]}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -102,9 +135,6 @@ export default function ContentNavigation({
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-border p-4 text-xs leading-relaxed text-muted-foreground">
-        Drafts stay private until publication is live.
-      </SidebarFooter>
     </Sidebar>
   );
 }

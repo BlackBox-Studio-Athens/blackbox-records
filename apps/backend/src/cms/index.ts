@@ -2,6 +2,10 @@ import { astro, FetchState } from 'astro/fetch';
 import { cf, finalize } from '@astrojs/cloudflare/fetch';
 import { productEnvironmentProfileFromBindings, type AppBindings } from '../env';
 import { authenticate } from './auth';
+import { createBindingLogger } from '../observability';
+import { previewPolicy } from './preview-policy';
+import { previewDiagnosticsPath, reportPreviewFailure } from './preview-diagnostics';
+
 import { handleLocalPublicationRequest, localPublicationRoot } from './local-publication-routes';
 import { DurableObject } from 'cloudflare:workers';
 import { CommerceRuntime } from '../index';
@@ -24,6 +28,8 @@ import {
 } from './preview-content';
 
 export { CommerceRuntime };
+
+declare const RELEASE_SOURCE_SHA: string;
 
 type CmsBindings = Omit<AppBindings, 'CMS_RUNTIME'> & {
   CMS_DB: D1Database;
@@ -85,10 +91,17 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
   // Published context only; unsaved drafts live exclusively in the request-scoped reader.
   private previewReads = new Map<string, { expires: number; value: unknown; size: number }>();
   private previewCacheBytes = 0;
+  private diagnosticLimits = new Map<string, { count: number; expires: number }>();
 
   private async preview(request: Request, role: number): Promise<Response> {
     const url = new URL(request.url);
+    const requestId = crypto.randomUUID();
+    const release = typeof RELEASE_SOURCE_SHA === 'undefined' ? 'local' : RELEASE_SOURCE_SHA;
+    const started = performance.now();
+    const logger = createBindingLogger(this.env, { requestId, release });
     const headers = {
+      'X-Preview-Request-Id': requestId,
+      'X-Release-SHA': release,
       'Cache-Control': 'private, no-store',
       'X-Robots-Tag': 'noindex, nofollow',
       Vary: 'Cookie, Cf-Access-Jwt-Assertion',
@@ -106,8 +119,10 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     }
     let reads = 0;
     let cacheMisses = 0;
+    let stage = 'validation';
     try {
       const input = previewInputSchema.parse(JSON.parse(await readBoundedText(request.body, 256 * 1024)));
+      stage = 'content';
       const context = await createPreviewContext(
         input,
         this.env.PRODUCT_ENVIRONMENT?.toLowerCase() ?? 'local',
@@ -124,7 +139,12 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           const response = await this.fetch(
             new Request(new URL(`/_emdash/api/${path}`, url), { headers: readHeaders }),
           );
-          if (!response.ok) throw new Error('Content or image could not be loaded. Refresh preview or sign in again.');
+          if (!response.ok)
+            throw new Error(
+              [401, 403].includes(response.status)
+                ? 'Sign in again to preview.'
+                : 'Content or image could not be loaded. Check linked content and refresh preview.',
+            );
           const serialized = await readBoundedText(response.body, 2 * 1024 * 1024);
           const result = JSON.parse(serialized) as {
             success: boolean;
@@ -142,6 +162,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           return result.data;
         },
       );
+      stage = 'render';
       const html = await previewContext.run(context, async () => {
         const state = new FetchState(request);
         const asset = await cf(state, this.env, this.ctx as unknown as ExecutionContext);
@@ -152,8 +173,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         }
         return readBoundedText(rendered.body, 4 * 1024 * 1024);
       });
-      const policy =
-        "default-src 'none'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; script-src 'none'; connect-src 'none'; frame-src 'none'; form-action 'none'; base-uri 'none'";
+      stage = 'assets';
+      const policy = previewPolicy(url.origin);
       const output = new HTMLRewriter()
         .on('html', {
           element(element) {
@@ -219,8 +240,28 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             },
           }),
         );
-      return output;
+      // Consume the rewrite before logging success so streaming failures are included.
+      const body = await readBoundedText(output.body, 4 * 1024 * 1024);
+      logger.info({
+        event: 'preview_render',
+        outcome: 'success',
+        durationMs: Math.round(performance.now() - started),
+        view: url.searchParams.get('view') ?? 'detail',
+        reads,
+        cacheMisses,
+      });
+      return new Response(body, { headers: output.headers });
     } catch (error) {
+      logger.warn({
+        event: 'preview_render',
+        outcome: 'failure',
+        stage,
+        durationMs: Math.round(performance.now() - started),
+        view: url.searchParams.get('view') ?? 'detail',
+        reads,
+        cacheMisses,
+        safeReason: error instanceof Error ? error.name : 'unknown',
+      });
       const message = error instanceof Error ? error.message : 'Preview could not update.';
       return Response.json({ error: message.slice(0, 1000) }, { status: 422, headers });
     }
@@ -286,6 +327,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
     }
     if (url.pathname === previewPath) return this.preview(request, identity?.role ?? 0);
+    if (url.pathname === previewDiagnosticsPath && identity)
+      return reportPreviewFailure(request, identity, this.diagnosticLimits, createBindingLogger(this.env));
     if (url.pathname.startsWith(localPublicationRoot)) {
       if (!identity) return new Response('Forbidden', { status: 403 });
       return handleLocalPublicationRequest(request, {

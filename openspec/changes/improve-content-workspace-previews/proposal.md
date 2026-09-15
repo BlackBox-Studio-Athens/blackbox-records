@@ -8,6 +8,8 @@ The content workspace previews selected fields with separate markup, so editors 
 - Reuse public Astro rendering against published context plus the unsaved record, without saving or publishing.
 - Move publication status to the top bar with bounded refresh and on-demand history.
 - Improve action copy, image guidance, keyboard behavior, and clickable affordances.
+- Fix Firefox srcdoc CSP with explicit environment origins, add bounded private diagnostics, and default to a collapsible preview.
+- Make Content the staff landing page and simplify backoffice copy and action icons.
 - Recover failed preview assets, gate readiness on actual rendering, and remove measured sequential delays in previews and Items/Stock.
 
 ## Capabilities

@@ -225,6 +225,17 @@ body[data-workspace='content'] > main {
 }
 
 @media (min-width: 1100px) {
+  .cms-editing.cms-preview-closed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cms-preview-closed .cms-editor-toolbar > * {
+    width: 100%;
+    max-width: 61.5rem;
+    margin-inline: auto;
+  }
+  .cms-preview-closed > .cms-preview-pane {
+    display: none !important;
+  }
   .cms-editor[data-state='inactive'] {
     display: flex;
   }

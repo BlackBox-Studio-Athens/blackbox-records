@@ -14,7 +14,7 @@ const { values } = parseArgs({
 if (!['local', 'mock', 'mock-api', 'uat', 'prd'].includes(values.env)) throw new Error('Unknown backend build target');
 const seed = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/generate-cms-seed.ts'], { stdio: 'inherit' });
 if (seed.status !== 0) process.exit(seed.status ?? 1);
-const staffEnv = { ...process.env };
+const staffEnv = { ...process.env, PUBLIC_STAFF_ENVIRONMENT: values.env };
 delete staffEnv.PUBLIC_BACKEND_BASE_URL;
 const staff = spawnSync('pnpm', ['--filter', '@blackbox/staff', 'build'], {
   env: staffEnv,

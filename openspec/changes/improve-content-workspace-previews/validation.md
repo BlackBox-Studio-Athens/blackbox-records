@@ -56,3 +56,13 @@ The candidate, artifact inspection, UAT Worker deployment, and UAT static deploy
 Refreshing unchanged content returned HTML in 3,999 ms, navigated a new `about:srcdoc` frame, fetched preview CSS successfully, and reached “Preview up to date” with all images and fonts loaded. This confirms deployed iframe replacement rather than reusing a failed identical document. Hosted timing variability remains substantial; the controlled Local benchmark isolates the sequencing improvement. No original intermittent transport failure recurred during this bounded pilot.
 
 The full release workflow completed successfully, including UAT provider smoke. Earlier runs' retired `/admin/*` route failures did not recur. PRD was not promoted.
+
+## Firefox policy and workspace refinement (2026-09-16)
+
+The old production meta policy was reproduced in sandboxed srcdoc frames: Chromium loaded the CSS; Firefox left the same frame unstyled. The shared explicit-origin policy now passes in both browsers while external styles/images, scripts, and form submission remain blocked. Local real-template verification passed all 17 preview contexts in both browsers, including image decoding, stylesheet rules, fonts, and unchanged draft/publication state.
+
+Workspace regression coverage includes default-closed preview, zero hidden preview requests, persistence with unavailable-storage fallback, unsaved editing/reopening, scroll restoration, replacement failures and recovery, stale responses, authentication evidence, diagnostic transport failure isolation, mobile tabs, expanded focus restoration, and staff root/logo routing. Responsive screenshots cover 390, 768, 1280, and 1600 px. Diagnostics unit checks cover authorization, origin/marker validation, bounded payloads, redaction, correlation, throttling, and bounded identity state.
+
+The diagnostic endpoint stores no reports. Existing Cloudflare structured logs receive request/release correlation and sanitized stages; draft content, cookies, HTML, and private media paths are excluded. CSP directives are included only when observed. The separate auth/me 404 is unchanged.
+
+Final source checks passed: pnpm test:unit, pnpm check, pnpm build, canonical CMS build with no-KV guards, unused-code audit (existing advisory findings), strict OpenSpec validation, and git diff --check. Final built workspace regressions passed in Firefox and Chromium; the final Local 17-context real-template smoke also passed in both browsers. One browser run overlapped a staff rebuild and timed out; the rerun against the completed artifact passed.

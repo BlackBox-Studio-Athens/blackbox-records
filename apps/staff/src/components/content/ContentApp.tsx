@@ -1,6 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/button';
-import { ArrowLeft, FileText, MoreHorizontal, Plus, Save, Search, Send } from 'lucide-react';
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  FileText,
+  MoreHorizontal,
+  Plus,
+  RotateCcw,
+  Save,
+  Search,
+  Send,
+  Trash2,
+} from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { ButtonGroup } from '../ui/button-group';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
@@ -92,10 +104,30 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [conflict, setConflict] = useState(false);
   const [ready, setReady] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [desktopPreview, setDesktopPreview] = useState(false);
+  useEffect(() => {
+    try {
+      setDesktopPreview(localStorage.getItem('blackbox-content-preview') === 'open');
+    } catch {
+      /* Optional preference. */
+    }
+  }, []);
+  function togglePreview() {
+    const next = !desktopPreview;
+    setDesktopPreview(next);
+    try {
+      localStorage.setItem('blackbox-content-preview', next ? 'open' : 'closed');
+    } catch {
+      /* Optional preference. */
+    }
+  }
   const [wide, setWide] = useState(false);
   useEffect(() => {
     const media = window.matchMedia('(min-width: 1100px)');
-    const change = () => setWide(media.matches);
+    const change = () => {
+      setWide(media.matches);
+      if (!media.matches) setPreview(false);
+    };
     change();
     media.addEventListener('change', change);
     return () => media.removeEventListener('change', change);
@@ -176,7 +208,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
   useEffect(() => {
     setReady(true);
-    const publication = localStorage.getItem(publicationKey);
+    let publication: string | null = null;
+    try {
+      publication = localStorage.getItem(publicationKey);
+    } catch {
+      // Storage can be disabled. Read authoritative publication history below; writes still retain their recovery guard.
+    }
     if (publication) {
       try {
         const input = JSON.parse(publication) as PublicationRequest;
@@ -269,7 +306,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setData(saved.item.data);
       setDirty(false);
       setItems((items) => items.map((item) => (item.id === saved.item.id ? saved.item : item)));
-      setMessage('Draft saved. The public site has not changed.');
+      setMessage('');
     } catch (error) {
       setConflict(error instanceof EditorialApiError && error.status === 409);
       setMessage(error instanceof Error ? error.message : 'We could not confirm the save. Your text is still here.');
@@ -431,7 +468,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           <section className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
             <div className="mx-auto max-w-6xl">
               <h1 className="text-2xl font-semibold">Images</h1>
-              <p className="mt-2 mb-8 text-sm text-muted-foreground">Images for your artists, releases and pages.</p>
               <MediaLibrary base={base} />
             </div>
           </section>
@@ -439,7 +475,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         <Tabs.Root
           value={preview ? 'preview' : 'edit'}
           onValueChange={(value) => setPreview(value === 'preview')}
-          className={`cms-content-panes ${document && mobileEditor ? 'cms-editing' : ''}`}
+          className={`cms-content-panes ${document && mobileEditor ? 'cms-editing' : ''} ${desktopPreview ? '' : 'cms-preview-closed'}`}
           hidden={media}
         >
           {document && mobileEditor && (
@@ -583,6 +619,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                         size="icon"
                         className="shrink-0"
                         aria-label="Back to records"
+                        title="Back to records"
                         onClick={() => {
                           setMobileEditor(false);
                           requestAnimationFrame(() => listHeading.current?.focus());
@@ -599,12 +636,28 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                         role="status"
                         className={`mt-1 text-xs ${dirty ? 'cms-state-warning' : 'text-muted-foreground'}`}
                       >
-                        {dirty ? 'Unsaved changes' : 'Draft saved'} · Private draft
+                        {busy && dirty ? 'Saving…' : dirty ? 'Unsaved changes' : 'Draft saved'}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      {wide && (
+                        <Button
+                          type="button"
+                          variant={desktopPreview ? 'secondary' : 'outline'}
+                          aria-expanded={desktopPreview}
+                          aria-controls="content-preview-pane"
+                          onClick={togglePreview}
+                        >
+                          {desktopPreview ? (
+                            <EyeOff className="size-4" aria-hidden="true" />
+                          ) : (
+                            <Eye className="size-4" aria-hidden="true" />
+                          )}
+                          {desktopPreview ? 'Hide preview' : 'Show preview'}
+                        </Button>
+                      )}
                       <ButtonGroup aria-label="Draft actions">
-                        <Button type="submit" form="content-editor-form" disabled={busy || conflict}>
+                        <Button type="submit" className="px-3" form="content-editor-form" disabled={busy || conflict}>
                           {busy ? <Spinner className="size-4" /> : <Save className="size-4" aria-hidden="true" />}
                           {pendingNew ? 'Check last save' : 'Save draft'}
                         </Button>
@@ -616,6 +669,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                               <Button
                                 type="button"
                                 variant="outline"
+                                className="px-3"
                                 disabled={busy || dirty || conflict || !document.item.id}
                                 onClick={() => void publish()}
                               >
@@ -638,6 +692,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                             variant="ghost"
                             size="icon"
                             aria-label="More draft actions"
+                            title="More draft actions"
                             disabled={busy || !!pendingNew}
                           >
                             <MoreHorizontal className="size-4" />
@@ -651,6 +706,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                               else void open(document.item, true);
                             }}
                           >
+                            <RotateCcw className="size-4" aria-hidden="true" />
                             Discard changes and reload
                           </DropdownMenuItem>
                           {canCreate && (
@@ -658,6 +714,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                               disabled={!document.item.id || dirty}
                               onSelect={() => setConfirmTrash(true)}
                             >
+                              <Trash2 className="size-4" aria-hidden="true" />
                               Move to trash
                             </DropdownMenuItem>
                           )}
@@ -696,7 +753,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                         disabled={busy || !!pendingNew}
                         className="cms-fields grid min-w-0 gap-6 @2xl:grid-cols-2"
                       >
-                        <legend className="mb-6 text-sm font-semibold">{contentSections[collection]} details</legend>
+                        <legend className="sr-only">{contentSections[collection]} details</legend>
                         <ContentFields
                           key={`${document.item.id || document.item.slug}:${document._rev}`}
                           collection={collection}
@@ -729,7 +786,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
             </section>
           </Tabs.Content>
           {document && mobileEditor && (
-            <Tabs.Content value="preview" forceMount className="cms-preview-pane">
+            <Tabs.Content value="preview" forceMount className="cms-preview-pane" id="content-preview-pane">
               <ContentPreview
                 key={`${collection}:${document.item.id || document.item.slug}`}
                 collection={collection}
@@ -738,7 +795,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 data={data}
                 base={base}
                 dirty={dirty}
-                active={!media && (wide || preview)}
+                active={!media && (wide ? desktopPreview : preview)}
               />
             </Tabs.Content>
           )}

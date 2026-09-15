@@ -149,6 +149,13 @@ jobs:
           cp -R apps/backend/dist .codex-artifacts/release/uat/worker
           pnpm --filter @blackbox/backend build:cms --env prd --out-dir ../../.codex-artifacts/release/prd/cms
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs pack
+      - name: Install preview test browsers
+        run: pnpm exec playwright install --with-deps chromium firefox
+      - name: Verify staff previews in Chromium and Firefox
+        run: |
+          node scripts/test-preview-policy.mjs
+          node scripts/test-content-workspace.mjs
+          node scripts/test-content-workspace.mjs --firefox
       - name: Upload verified release bundle
         uses: actions/upload-artifact@v7.0.1
         with:

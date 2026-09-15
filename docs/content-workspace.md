@@ -2,7 +2,7 @@
 
 `/content/` is **Website content**: grouped section navigation, a searchable collection list, then a compact content selector above the editor. Existing `?collection=…&id=…` links remain supported. `/content/?view=media` opens **Images**.
 
-The approved Layout A uses a 45/55 editor/preview grid from 1100 px. Smaller screens use Edit/Preview tabs with both surfaces mounted to preserve edits. The image picker returns to the current field without losing edits; switching records, collections, or the full Images workspace requires saving or discarding changes. The sticky editor toolbar carries the selected title, draft state, save and publication actions. Releases and distro publish through Items.
+Desktop preview starts closed. Show preview opens the approved Layout A 45/55 grid from 1100 px; Hide preview returns space to the editor. The desktop preference is remembered per browser, with storage failure tolerated. Hidden previews cancel work and do not request updates. Smaller screens use Edit/Preview tabs with both surfaces mounted to preserve edits. The image picker returns to the current field without losing edits; switching records, collections, or the full Images workspace requires saving or discarding changes. The sticky editor toolbar carries the selected title, draft state, save and publication actions. Releases and distro publish through Items.
 
 Use blue for actions and selection, amber for unsaved/pending, green for confirmed live, and red for failures. Every status includes words or an icon. Enabled actions use a pointer; fields retain editing cursors. Optional fields are labelled, validation remains beside fields, and artist images explain the public 3:4 crop.
 
@@ -38,7 +38,9 @@ Run the normal unit, check and build gates. For the focused browser regression:
 
 ```sh
 pnpm build:staff
+node scripts/test-preview-policy.mjs
 node scripts/test-content-workspace.mjs
+node scripts/test-content-workspace.mjs --firefox
 ```
 
 This serves the built staff app with in-memory API fixtures on loopback, uses the existing Playwright dependency, and writes screenshots to ignored `.codex-artifacts/content-workspace/`. It never contacts hosted CMS, D1, R2, Stripe or publication workflows. It tests frontend integration; existing backend tests remain responsible for provider and publication contracts.
@@ -46,3 +48,13 @@ This serves the built staff app with in-memory API fixtures on loopback, uses th
 For manual browser inspection, run `node scripts/test-content-workspace.mjs --serve` and open `http://127.0.0.1:4399/content/`. Fixture writes last only until the process stops.
 
 For real shared-template verification, build the canonical CMS with `pnpm --filter @blackbox/backend build:cms`, run the normal Local stack, then run `node --import tsx apps/backend/scripts/smoke-content-preview.mjs`. This loopback-only smoke previews every seeded collection, checks visual-only HTML and cross-origin rejection, reports latency/bytes/read counts, and verifies drafts and publication history are unchanged. The CMS build validates both source and generated no-KV configuration. Hosted verification requires the Free-tier preflight and is separate from local evidence.
+
+## Failure diagnostics
+
+The preview meta CSP explicitly names the validated CMS origin, including scheme and Local port. Firefox does not reliably match meta-policy `self` in `about:srcdoc`; header-only tests do not cover this boundary. Both browser fixtures use the production policy. Scripts/forms/frames/connections remain disabled.
+
+Preview responses include `X-Preview-Request-Id` and `X-Release-SHA`. In Cloudflare, open Workers & Pages → the target backend Worker → Observability, filter `event` to `preview_render` or `preview_browser_failure`, then filter `requestId` to the copied reference. Render logs include outcome, milliseconds, view and read counts. Browser reports include failure stage and sanitized asset; CSP directives appear only when observed, not inferred. Early pre-load CSP events may be absent. A successful render log alone does not establish successful browser rendering.
+
+Authenticated `POST /_emdash/preview-diagnostics` requires editor role, same-origin and `X-EmDash-Request: 1`. Strict 4 KB input; ten reports per minute/member; a bounded 1000-entry in-memory map resets on eviction/restart. No retry, KV, database write or new service. Reports exclude content, HTML, private media names, URL queries and credentials. Copy diagnostic details appears only with errors. Reporting failures do not affect editing. Cloudflare retention and account log allowances apply; do not promise permanent history.
+
+Staff `/` and the logo lead to Content. UAT has one Test environment badge; preview limitations live in About preview. Save state appears once and remains distinct from publication status. Essential image, stock, order and publication handoff guidance remains visible.

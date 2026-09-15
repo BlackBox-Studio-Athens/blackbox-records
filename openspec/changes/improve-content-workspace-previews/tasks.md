@@ -21,3 +21,11 @@
 - [x] 4.2 Remove non-edit debounce, deduplicate request-local preview reads, and cap concurrent reads at four; measure identical fixtures before and after.
 - [x] 4.3 Load Items/Stock search, selected stock, and history independently with isolated errors and fresh-stock mutation guards; profile remaining staff flows.
 - [x] 4.4 Update guidance and evidence, pass required checks and canonical CMS build, deploy UAT, and verify within a bounded hosted pilot.
+
+## 5. Cross-browser reliability and simpler staff workspace
+
+- [x] 5.1 Reproduce Firefox CSP failure and verify explicit-origin policy in Firefox and Chromium with blocked external assets/scripts/forms.
+- [x] 5.2 Add authenticated bounded, redacted diagnostics with request/release correlation and error-only disclosure.
+- [x] 5.3 Add default-closed remembered desktop preview, narrow Edit/Preview tabs, no hidden requests, and preserved editing/focus/scroll.
+- [x] 5.4 Make Content the staff landing page, clarify navigation icons, remove redundant backoffice copy, and retain essential operational guidance.
+- [ ] 5.5 Add both browsers to release gates, pass required builds/tests and responsive review, update evidence, deploy and verify UAT.

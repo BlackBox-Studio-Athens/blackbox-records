@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { Boxes, ReceiptText } from 'lucide-react';
+import { Boxes, FilePenLine, Disc3, ReceiptText } from 'lucide-react';
 
 interface Props {
   pageTitle: string;
@@ -35,12 +35,21 @@ const htmlTitle = pageTitle + ' | BlackBox Records';
   >
     <a class="accessibility-skip-to-content-link" href="#main">Skip to workspace</a>
     <header class="staff-header">
-      <a href="/stock/" class="staff-brand" aria-label="BlackBox Records staff, stock workspace"
+      <a href="/content/" class="staff-brand" aria-label="BlackBox Records staff, content workspace"
         ><img src="/logo-horizontal.png" alt="BlackBox Records" width="1024" height="253" /></a
       >
+      {
+        import.meta.env.PUBLIC_STAFF_ENVIRONMENT === 'uat' && (
+          <span class="rounded border border-border px-2 py-1 text-xs text-muted-foreground">Test environment</span>
+        )
+      }
       <nav aria-label="Staff workspace">
-        <a href="/content/" aria-current={Astro.url.pathname.startsWith('/content/') ? 'page' : undefined}>Content</a>
-        <a href="/items/" aria-current={Astro.url.pathname.startsWith('/items/') ? 'page' : undefined}>Items</a>
+        <a href="/content/" aria-current={Astro.url.pathname.startsWith('/content/') ? 'page' : undefined}
+          ><FilePenLine size={19} aria-hidden="true" />Content</a
+        >
+        <a href="/items/" aria-current={Astro.url.pathname.startsWith('/items/') ? 'page' : undefined}
+          ><Disc3 size={19} aria-hidden="true" />Items</a
+        >
         <a href="/stock/" aria-current={Astro.url.pathname.startsWith('/stock/') ? 'page' : undefined}
           ><Boxes size={19} aria-hidden="true" />Stock</a
         >

@@ -177,8 +177,7 @@ export default function ContentFields({
         Full text
       </h2>
       <p id="content-body-help" className="text-sm text-muted-foreground">
-        Use paragraphs, headings, lists, quotes, links, images with descriptions, or code. HTML, tables and galleries
-        are not supported.
+        Add text, links and images. Tables, galleries and pasted HTML are not supported.
       </p>
       <Suspense fallback={<p>Loading text editor…</p>}>
         <ContentBodyEditor

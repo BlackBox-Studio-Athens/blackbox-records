@@ -581,7 +581,6 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
           <Card className="rounded-none border-white/15 bg-[#101010]">
             <CardHeader>
               <CardTitle className="font-display text-3xl uppercase tracking-[0.06em]">Recent History</CardTitle>
-              <CardDescription>Previous stock changes and counts.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-2">
               {historyPending && <LoadingInline label="Loading stock history" />}

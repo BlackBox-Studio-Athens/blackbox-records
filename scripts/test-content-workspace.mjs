@@ -4,10 +4,12 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
-import { chromium } from 'playwright';
+import { chromium, firefox } from 'playwright';
+import { previewPolicy } from '../apps/backend/src/cms/preview-policy.ts';
 
 const root = resolve('apps/staff/dist');
-const artifacts = resolve('.codex-artifacts/content-workspace');
+const browserType = process.argv.includes('--firefox') ? firefox : chromium;
+const artifacts = resolve('.codex-artifacts/content-workspace', browserType.name());
 const pixels = await readFile('apps/staff/public/favicon-96x96.png');
 const media = [
   {
@@ -162,6 +164,7 @@ const state = {
   lastWrite: null,
   publicTitle: artist.title,
   previewRequests: [],
+  diagnostics: [],
   previewStyleFailure: false,
   previewImageFailure: false,
   searchDelay: 0,
@@ -240,16 +243,24 @@ const server = createServer(async (req, res) => {
         },
       });
     }
+    if (url.pathname === '/_emdash/preview-diagnostics') {
+      state.diagnostics.push(body);
+      res.writeHead(204);
+      return res.end();
+    }
     if (url.pathname === '/_emdash/preview') {
+      res.setHeader('X-Preview-Request-Id', '00000000-0000-4000-8000-000000000001');
+      res.setHeader('X-Release-SHA', 'local');
       state.previewRequests.push(body);
       const title = String(body.data.title ?? body.collection);
       if (title === 'invalid preview') return json({ error: 'Check the preview fields.' }, 422);
       if (title === 'expired preview') return json({ error: 'Sign in again.' }, 403);
+      if (title === 'unexpected preview') return json({ error: null });
       if (title === 'slow preview') await new Promise((resolve) => setTimeout(resolve, 1500));
       res.writeHead(200, { 'Content-Type': 'text/html', 'X-Preview-Environment': 'local' });
       const escaped = title.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
       return res.end(
-        `<!doctype html><html><head><link rel="stylesheet" href="/preview-test.css"></head><body style="min-height:2000px"><h1>${escaped}</h1><img src="/preview-test.png" alt="Preview fixture" loading="eager"></body></html>`,
+        `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${previewPolicy(origin)}"><link rel="stylesheet" href="/preview-test.css"></head><body style="min-height:2000px"><h1>${escaped}</h1><img src="/preview-test.png" alt="Preview fixture" loading="eager"></body></html>`,
       );
     }
     if (url.pathname === '/_emdash/api/blackbox/publications') {
@@ -350,7 +361,7 @@ await new Promise((resolve) => server.listen(process.argv.includes('--serve') ? 
 const origin = `http://127.0.0.1:${server.address().port}`;
 if (process.argv.includes('--serve')) console.log(`Local CMS fixtures: ${origin}/content/`);
 else {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await browserType.launch({ headless: true });
   let page;
   try {
     await mkdir(artifacts, { recursive: true });
@@ -403,20 +414,54 @@ else {
     await page.getByRole('button', { name: 'Show more', exact: true }).press('Enter');
     await page.getByRole('option', { name: 'Mass Culture', exact: true }).waitFor();
     await page.keyboard.press('Escape');
+    assert.equal(state.previewRequests.length, 0, 'Preview stays closed until requested');
+    await page.getByRole('button', { name: 'Show preview', exact: true }).click();
     const appearance = page.frameLocator('iframe[title="Private site appearance preview"]');
     await appearance.getByRole('heading').waitFor();
+    await page.evaluate(() =>
+      document.querySelector('iframe[title="Private site appearance preview"]').contentWindow.scrollTo(0, 120),
+    );
+    await page.getByRole('button', { name: 'Hide preview', exact: true }).click();
+    const hiddenReads = state.previewRequests.length;
+    await page.getByLabel('Artist name', { exact: true }).fill('Edited with preview hidden');
+    await page.waitForTimeout(850);
+    assert.equal(state.previewRequests.length, hiddenReads);
+    await page.getByRole('button', { name: 'Show preview', exact: true }).click();
+    await appearance.getByRole('heading', { name: 'Edited with preview hidden' }).waitFor();
+    assert.equal(
+      await page.evaluate(
+        () => document.querySelector('iframe[title="Private site appearance preview"]').contentWindow.scrollY,
+      ),
+      120,
+    );
+    await page.getByLabel('Artist name', { exact: true }).fill('Ouranopithecus');
+    await appearance.getByRole('heading', { name: 'Ouranopithecus', exact: true }).waitFor();
     state.previewImageFailure = true;
     await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
     await page.getByRole('alert').filter({ hasText: 'Preview images could not load' }).waitFor();
     assert.equal(await appearance.getByRole('heading').innerText(), 'Ouranopithecus');
+    await page.getByText('Diagnostic details', { exact: true }).click();
+    await page.getByRole('button', { name: 'Copy diagnostic details' }).waitFor();
+    await page.waitForFunction(() => document.querySelector('details[open]'));
+    assert.equal(state.diagnostics.at(-1)?.stage, 'image');
+    assert.equal(state.diagnostics.at(-1)?.requestId, '00000000-0000-4000-8000-000000000001');
     state.previewImageFailure = false;
     const priorAssets = state.requests.filter((request) => request.path === '/preview-test.png').length;
     await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
     assert.ok(state.requests.filter((request) => request.path === '/preview-test.png').length > priorAssets);
     state.previewStyleFailure = true;
+    let failedReports = 0;
+    await page.route('**/_emdash/preview-diagnostics', (route) => {
+      failedReports++;
+      return route.fulfill({ status: 503, body: 'Unavailable' });
+    });
     await page.reload();
     await page.getByRole('alert').filter({ hasText: 'Preview styles could not load' }).waitFor();
+    await page.waitForTimeout(150);
+    assert.equal(failedReports, 1, 'Diagnostic delivery failure must not retry');
+    assert.equal(await page.getByLabel('Artist name', { exact: true }).isEnabled(), true);
+    await page.unroute('**/_emdash/preview-diagnostics');
     assert.equal(await page.locator('iframe[title="Private site appearance preview"]').count(), 0);
     state.previewStyleFailure = false;
     await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
@@ -440,6 +485,9 @@ else {
     await page.getByLabel('Artist name', { exact: true }).fill('invalid preview');
     await page.getByRole('alert').filter({ hasText: 'Check the preview fields' }).waitFor();
     await page.getByText('Showing the last successful preview', { exact: false }).waitFor();
+    await page.getByLabel('Artist name', { exact: true }).fill('unexpected preview');
+    await page.getByRole('alert').filter({ hasText: 'unexpected response' }).waitFor();
+    assert.equal(await page.getByRole('alert').filter({ hasText: 'Sign in again' }).count(), 0);
     await page.getByLabel('Artist name', { exact: true }).fill('Ouranopithecus draft');
     await page.getByRole('button', { name: 'Change artist image', exact: true }).click();
     await page.getByRole('heading', { name: 'Choose artist image' }).waitFor();
@@ -461,7 +509,7 @@ else {
     await page.waitForFunction(() => document.querySelector('#content-title')?.value === 'Ouranopithecus');
     await page.getByLabel('Artist name', { exact: true }).fill('Saved draft');
     await page.getByRole('button', { name: 'Save draft', exact: true }).click();
-    await page.getByRole('status').filter({ hasText: 'Draft saved.' }).waitFor();
+    await page.getByRole('status').filter({ hasText: 'Draft saved' }).waitFor();
     assert.equal(state.saveCount, 1);
     assert.deepEqual(state.lastWrite.data.image, { id: 'artist-photo' });
     assert.equal(state.publicTitle, 'Ouranopithecus');
@@ -477,7 +525,7 @@ else {
     await page.getByRole('button', { name: 'Change artist image' }).click();
     await page.getByRole('button', { name: 'mass-culture-barren-point-cover.jpg', exact: true }).click();
     await page.getByRole('button', { name: 'Save draft', exact: true }).click();
-    await page.getByRole('status').filter({ hasText: 'Draft saved.' }).waitFor();
+    await page.getByRole('status').filter({ hasText: 'Draft saved' }).waitFor();
     assert.deepEqual(state.lastWrite.data.image, { id: 'record-cover' });
     await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
     await page.getByRole('button', { name: /Publishing.*pending/ }).click();
@@ -553,7 +601,7 @@ else {
         assert.equal(await page.getByLabel('Artist name', { exact: true }).inputValue(), 'Mobile unsaved draft');
         await page.getByLabel('Artist name', { exact: true }).fill('Saved draft');
         await page.getByRole('button', { name: 'Save draft', exact: true }).click();
-        await page.getByRole('status').filter({ hasText: 'Draft saved.' }).waitFor();
+        await page.getByRole('status').filter({ hasText: 'Draft saved' }).waitFor();
       }
       await page.getByRole('button', { name: 'Toggle Sidebar' }).click();
       await page.getByRole('button', { name: 'Images', exact: true }).click();
@@ -585,7 +633,7 @@ else {
     assert.equal(await page.getByLabel('Link name', { exact: true }).inputValue(), 'Interrupted save');
     state.failSave = false;
     await page.getByRole('button', { name: 'Save draft', exact: true }).click();
-    await page.getByRole('status').filter({ hasText: 'Draft saved.' }).waitFor();
+    await page.getByRole('status').filter({ hasText: 'Draft saved' }).waitFor();
     await page.getByRole('button', { name: 'Back to records' }).click();
     await page.getByRole('button', { name: 'Add social link', exact: true }).click();
     await page.getByLabel('Link name', { exact: true }).fill('New social link');
@@ -612,6 +660,45 @@ else {
     await page.getByRole('button', { name: 'Change artwork', exact: true }).waitFor();
     assert.equal(await page.locator('.staff-header').evaluate((el) => getComputedStyle(el).position), 'static');
     assert.deepEqual(errors, []);
+    const responsive = await browser.newPage({ viewport: { width: 1600, height: 900 }, reducedMotion: 'reduce' });
+    await responsive.goto(`${origin}/`);
+    await responsive.waitForURL('**/content/');
+    assert.equal(await responsive.locator('.staff-brand').getAttribute('href'), '/content/');
+    await responsive.goto(`${origin}/content/?collection=artists&id=artists-1`);
+    await responsive.getByRole('button', { name: 'Show preview', exact: true }).waitFor();
+    for (const width of [1600, 1280]) {
+      await responsive.setViewportSize({ width, height: 900 });
+      await responsive.screenshot({ path: resolve(artifacts, `editor-closed-${width}.png`) });
+      await responsive.getByRole('button', { name: 'Show preview', exact: true }).click();
+      await responsive.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+      assert.equal(await responsive.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+      await responsive.screenshot({ path: resolve(artifacts, `editor-open-${width}.png`) });
+      await responsive.getByRole('button', { name: 'Hide preview', exact: true }).click();
+    }
+    await responsive.reload();
+    await responsive.getByRole('button', { name: 'Show preview', exact: true }).waitFor();
+    await responsive.getByRole('button', { name: 'Show preview', exact: true }).click();
+    await responsive.setViewportSize({ width: 390, height: 900 });
+    assert.equal(
+      await responsive.getByRole('tab', { name: 'Edit', exact: true }).getAttribute('aria-selected'),
+      'true',
+    );
+    await responsive.getByRole('tab', { name: 'Preview', exact: true }).click();
+    await responsive.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    await responsive.getByRole('tab', { name: 'Edit', exact: true }).click();
+    await responsive.close();
+    const noStorage = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+    await noStorage.addInitScript(() => {
+      Object.defineProperty(window, 'localStorage', {
+        get() {
+          throw new Error('Unavailable');
+        },
+      });
+    });
+    await noStorage.goto(`${origin}/content/?collection=artists&id=artists-1`);
+    await noStorage.getByRole('button', { name: 'Show preview', exact: true }).click();
+    await noStorage.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    await noStorage.close();
     console.log('CMS workspace browser regression passed. Screenshots:', artifacts);
   } catch (error) {
     if (page) {

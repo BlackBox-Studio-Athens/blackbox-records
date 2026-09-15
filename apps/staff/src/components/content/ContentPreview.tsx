@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Expand, Minimize, RefreshCw } from 'lucide-react';
+import { Expand, Minimize, RefreshCw, Info, Monitor, Smartphone, Scan, Copy } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
+import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
+import { checkPreviewAssets, PreviewAssetError, safePreviewAsset, type PreviewDiagnostic } from './preview-diagnostics';
 import { editorialWriteData } from '../../lib/backend/editorial-api';
 import type { ContentData, ContentSection } from './ContentFields';
 
@@ -23,12 +25,19 @@ export default function ContentPreview({
   active: boolean;
   dirty: boolean;
 }) {
-  type Rendering = { generation: number; html: string; signal: AbortSignal; finish(): void };
+  type Rendering = {
+    generation: number;
+    html: string;
+    signal: AbortSignal;
+    report(error: unknown, stage?: PreviewDiagnostic['stage'], directive?: string): void;
+    finish(): void;
+  };
   const [rendered, setRendered] = useState<Rendering | null>(null);
   const [pending, setPending] = useState<Rendering | null>(null);
   const [status, setStatus] = useState('Updating preview');
   const [error, setError] = useState('');
-  const [environment, setEnvironment] = useState('');
+  const [diagnostic, setDiagnostic] = useState<PreviewDiagnostic | null>(null);
+  const [copied, setCopied] = useState(false);
   const [width, setWidth] = useState('fit');
   const [view, setView] = useState('detail');
   const [expanded, setExpanded] = useState(false);
@@ -52,10 +61,35 @@ export default function ContentPreview({
   useEffect(() => {
     if (!active || !visible) {
       previous.current.active = false;
+      setPending(null);
       return;
     }
     const controller = new AbortController();
     const current = ++generation.current;
+    let reported = false;
+    let requestId: string | undefined;
+    let release = 'unknown';
+    const report = (error: unknown, stage: PreviewDiagnostic['stage'] = 'request', directive?: string) => {
+      if (reported || controller.signal.aborted || current !== generation.current) return;
+      reported = true;
+      const details: PreviewDiagnostic = {
+        requestId,
+        release,
+        ...(directive ? { directive } : {}),
+        stage: error instanceof PreviewAssetError ? error.stage : stage,
+        ...(error instanceof PreviewAssetError ? { asset: safePreviewAsset(error.asset) } : {}),
+      };
+      setDiagnostic(details);
+      setCopied(false);
+      // Parent sends diagnostics; the isolated preview retains connect-src 'none'. No retries.
+      void fetch(`${base}/_emdash/preview-diagnostics`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1' },
+        body: JSON.stringify(details),
+        signal: AbortSignal.timeout(5000),
+      }).catch(() => {});
+    };
     const editing =
       previous.current.payload !== '' &&
       previous.current.payload !== payload &&
@@ -70,6 +104,7 @@ export default function ContentPreview({
       setPending(null);
       setStatus('Preview could not update');
       setError('Preview took too long. Refresh preview to try again. Your edits are still here.');
+      report(null, 'timeout');
       controller.abort();
     }, 30_000);
     controller.signal.addEventListener('abort', () => clearTimeout(deadline), { once: true });
@@ -85,14 +120,15 @@ export default function ContentPreview({
               headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1' },
               body: payload,
             });
+            requestId = response.headers.get('X-Preview-Request-Id') ?? undefined;
+            release = response.headers.get('X-Release-SHA') ?? 'unknown';
             if (!response.ok || response.redirected || !response.headers.get('X-Preview-Environment')) {
               const details = (await response.json().catch(() => null)) as { error?: string } | null;
               throw new Error(
                 [401, 403].includes(response.status) ||
-                  response.redirected ||
-                  (response.ok && !response.headers.get('X-Preview-Environment'))
+                  (response.redirected && new URL(response.url).hostname.endsWith('.cloudflareaccess.com'))
                   ? 'Sign in again to preview. Your edits are still here.'
-                  : details?.error || 'Check your connection and try again.',
+                  : details?.error || 'Preview returned an unexpected response. Refresh preview to try again.',
               );
             }
             const next = await response.text();
@@ -101,12 +137,14 @@ export default function ContentPreview({
               generation: current,
               html: next,
               signal: controller.signal,
+              report,
               finish: () => clearTimeout(deadline),
             });
-            setEnvironment(response.headers.get('X-Preview-Environment') ?? '');
+
             setError('');
           } catch (error) {
             if (controller.signal.aborted) return;
+            report(error);
             setStatus('Preview could not update');
             setError(error instanceof Error ? error.message : 'Try again.');
             clearTimeout(deadline);
@@ -120,6 +158,9 @@ export default function ContentPreview({
       controller.abort();
     };
   }, [payload, base, active, visible, view, retry]);
+  useEffect(() => {
+    if (!active) setExpanded(false);
+  }, [active]);
   useEffect(() => {
     if (!expanded) return;
     const siblings: HTMLElement[] = [];
@@ -135,6 +176,7 @@ export default function ContentPreview({
     }
     expandButton.current?.focus();
     const escape = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
       if (event.key === 'Escape') {
         setExpanded(false);
       } else if (event.key === 'Tab') {
@@ -173,16 +215,27 @@ export default function ContentPreview({
     >
       <header className="cms-preview-toolbar">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-sm font-semibold">
-            Private preview{' '}
-            <span className="text-xs font-normal text-muted-foreground">{environment.toUpperCase()}</span>
-          </p>
+          <div className="flex items-center gap-1">
+            <p className="text-sm font-semibold">Preview</p>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="ghost" size="icon" aria-label="About preview" title="About preview">
+                  <Info className="size-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="cms-surface text-sm" align="start">
+                Check appearance before publishing. Links and forms are inactive. The live website may look different
+                until its next update.
+              </PopoverContent>
+            </Popover>
+          </div>
           <Button
             ref={expandButton}
             type="button"
             variant="ghost"
             size="icon"
             aria-label={expanded ? 'Close expanded preview' : 'Expand preview'}
+            title={expanded ? 'Close expanded preview' : 'Expand preview'}
             aria-pressed={expanded}
             onClick={() => setExpanded(!expanded)}
           >
@@ -200,6 +253,13 @@ export default function ContentPreview({
                 aria-pressed={width === size}
                 onClick={() => setWidth(size)}
               >
+                {size === 'desktop' ? (
+                  <Monitor className="size-4" aria-hidden="true" />
+                ) : size === 'mobile' ? (
+                  <Smartphone className="size-4" aria-hidden="true" />
+                ) : (
+                  <Scan className="size-4" aria-hidden="true" />
+                )}
                 {size.charAt(0).toUpperCase() + size.slice(1)}
               </Button>
             ))}
@@ -226,6 +286,7 @@ export default function ContentPreview({
             variant="ghost"
             size="icon"
             aria-label="Refresh preview"
+            title="Refresh preview"
             onClick={() => setRetry((value) => value + 1)}
           >
             <RefreshCw className="size-4" />
@@ -236,11 +297,7 @@ export default function ContentPreview({
           className={`text-xs ${error ? 'cms-state-error' : dirty ? 'cms-state-warning' : 'text-muted-foreground'}`}
         >
           {status}
-          {dirty ? ' · Unsaved edits' : ' · Saved draft'}
           {error && rendered ? ' · Showing the last successful preview' : ''}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Appearance only. Uses this CMS version; the live site may use an earlier version.
         </p>
         {collection === 'settings' && (
           <p className="text-xs text-muted-foreground">
@@ -256,7 +313,31 @@ export default function ContentPreview({
       </header>
       {error && (
         <Alert variant="destructive" className="m-3 w-auto">
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>
+            {error}
+            {diagnostic && (
+              <details className="mt-2 text-xs">
+                <summary className="cursor-pointer">Diagnostic details</summary>
+                <p className="mt-2 break-all">
+                  Reference: {diagnostic.requestId ?? 'Request did not reach the preview service'} · {diagnostic.stage}
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    void navigator.clipboard
+                      .writeText(JSON.stringify(diagnostic, null, 2))
+                      .then(() => setCopied(true))
+                      .catch(() => setCopied(false));
+                  }}
+                >
+                  <Copy className="size-4" aria-hidden="true" />
+                  {copied ? 'Copied' : 'Copy diagnostic details'}
+                </Button>
+              </details>
+            )}
+          </AlertDescription>
         </Alert>
       )}
       <div className="cms-preview-viewport">
@@ -277,8 +358,16 @@ export default function ContentPreview({
               onLoad={async (event) => {
                 const iframe = event.currentTarget;
                 if (item !== pending || item.signal.aborted || item.generation !== generation.current) return;
+                let directive: string | undefined;
+                const recordViolation = (event: SecurityPolicyViolationEvent) => {
+                  if (['style-src', 'style-src-elem', 'img-src', 'font-src'].includes(event.effectiveDirective))
+                    directive = event.effectiveDirective;
+                };
+                const previewDocument = iframe.contentDocument;
+                // Some violations predate load; never invent a directive when the browser did not expose an event.
+                previewDocument?.addEventListener('securitypolicyviolation', recordViolation);
                 try {
-                  const document = iframe.contentDocument;
+                  const document = previewDocument;
                   if (!document || document.URL !== 'about:srcdoc') return;
                   await checkPreviewAssets(document);
                   if (item.signal.aborted || item.generation !== generation.current) return;
@@ -299,14 +388,18 @@ export default function ContentPreview({
                   setRendered(item);
                   setPending(null);
                   setError('');
+                  setDiagnostic(null);
                   setStatus('Preview up to date');
                   item.finish();
                 } catch (error) {
                   if (item.signal.aborted || item.generation !== generation.current) return;
+                  item.report(error, 'request', directive);
                   setPending(null);
                   setError(error instanceof Error ? error.message : 'Preview assets could not load. Refresh preview.');
                   setStatus('Preview could not update');
                   item.finish();
+                } finally {
+                  previewDocument?.removeEventListener('securitypolicyviolation', recordViolation);
                 }
               }}
             />
@@ -324,29 +417,4 @@ export default function ContentPreview({
       </div>
     </section>
   );
-}
-
-async function checkPreviewAssets(document: Document) {
-  if (
-    Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).some((link) => {
-      if (!link.sheet) return true;
-      // Chromium can leave an empty sheet after a failed CSS response. Public preview CSS is never empty.
-      try {
-        return link.sheet.cssRules.length === 0;
-      } catch {
-        return false;
-      } // Cross-origin font stylesheets do not expose their rules.
-    })
-  )
-    throw new Error('Preview styles could not load. Refresh preview; if this continues, sign in again.');
-  try {
-    await Promise.all(Array.from(document.images).map((image) => image.decode()));
-  } catch {
-    throw new Error(
-      'Preview images could not load. Refresh preview; if this continues, check the selected images or sign in again.',
-    );
-  }
-  await document.fonts?.ready;
-  if (document.fonts && Array.from(document.fonts).some((font) => font.status === 'error'))
-    throw new Error('Preview fonts could not load. Refresh preview to try again.');
 }

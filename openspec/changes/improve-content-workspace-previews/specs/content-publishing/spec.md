@@ -24,7 +24,7 @@ The content workspace SHALL render the selected unsaved record with the public s
 
 #### Scenario: Member opens or refreshes a preview
 
-- **WHEN** a member first opens a record, changes preview context, or manually refreshes
+- **WHEN** a member opens the preview, changes preview context, or manually refreshes
 - **THEN** preview requests start without an editing debounce
 - **AND** independent published reads overlap with no more than four active CMS reads per request and repeated reads are deduplicated.
 
@@ -41,7 +41,7 @@ The content workspace SHALL render the selected unsaved record with the public s
 
 ### Requirement: Content editing prioritizes the selected record and publication state
 
-The workspace SHALL offer searchable content selection, a wide editor/preview split, narrow-screen Edit/Preview tabs, helpful action copy, semantic state colors with text, and keyboard-accessible controls. Publication state SHALL remain visible near the top with history available on demand.
+The workspace SHALL offer searchable content selection, an optional wide editor/preview split, narrow-screen Edit/Preview tabs, helpful action copy, semantic state colors with text, and keyboard-accessible controls. Publication state SHALL remain visible near the top with history available on demand.
 
 #### Scenario: Member selects content
 
@@ -53,3 +53,35 @@ The workspace SHALL offer searchable content selection, a wide editor/preview sp
 - **WHEN** a publication is pending
 - **THEN** the top bar distinguishes pending from live and refreshes at bounded intervals while visible
 - **AND** failure stays visible with a manual refresh or retry path, without inventing titles or authors absent from the history contract.
+
+### Requirement: Preview security and failures work across supported browsers
+
+The workspace SHALL permit validated same-environment preview assets in Firefox and Chromium without weakening script, form, connection, or private media restrictions. Preview failures SHALL have bounded private diagnostics that exclude editorial content and credentials.
+
+#### Scenario: Firefox renders the preview
+
+- **WHEN** a member opens a preview in Firefox
+- **THEN** the explicit environment origin permits its styles, images and fonts
+- **AND** unauthorized external assets, scripts and submissions remain blocked.
+
+#### Scenario: A preview fails
+
+- **WHEN** a current preview request or asset fails
+- **THEN** an error-only disclosure offers a copyable diagnostic reference
+- **AND** at most one best-effort report correlates with server logs, with a 4 KB limit and ten reports per minute per authenticated member.
+
+### Requirement: Staff editing defaults to focused content work
+
+Staff roots and brand navigation SHALL lead to Content. Desktop preview SHALL start closed and remember the browser preference. Copy and icons SHALL help members act without exposing routine implementation details.
+
+#### Scenario: Member hides and reopens preview
+
+- **WHEN** the member hides preview
+- **THEN** preview requests stop and the editor uses available space without losing edits or position
+- **AND** reopening immediately renders current data; narrow screens independently start in Edit.
+
+#### Scenario: Member opens the backoffice
+
+- **WHEN** a member opens a staff root or follows the brand link
+- **THEN** Content opens while existing deep links remain valid
+- **AND** UAT has one Test environment marker and save/publication states remain distinct.
