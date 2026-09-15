@@ -37,6 +37,18 @@ describe('Content publication workflow', () => {
 });
 
 describe('Pages artifact promotion contract', () => {
+  it('keeps unconfirmed PRD dispatches on the read-only catalog plan', () => {
+    const plan = workflow.jobs['catalog-prd-plan'];
+    expect(plan.if).toContain("inputs.target == 'prd'");
+    for (const input of ['confirm_live_catalog_changes', 'confirm_code_promotion', 'confirm_cms_cutover']) {
+      expect(plan.if).toContain(`!inputs.${input}`);
+    }
+    expect(plan.environment).toBe('catalog-promotion-prd');
+    const commands = plan.steps.map((step: { run?: string }) => step.run ?? '').join('\n');
+    expect(commands).toContain('--plan-apply --store-item disintegration-black-vinyl-lp');
+    expect(commands).not.toMatch(/--apply\b|d1:migrations|d1:seed|wrangler deploy|pages deploy/);
+  });
+
   it('requires cutover approval or accepted CMS state before switching the PRD runtime', () => {
     expect(workflow.on.workflow_dispatch.inputs.confirm_cms_cutover.default).toBe(false);
     expect(promotion.env.PRD_CMS_RUNTIME).toBe(

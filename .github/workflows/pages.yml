@@ -12,7 +12,7 @@ on:
         description: Successful UAT candidate run ID for PRD promotion.
         type: string
       target:
-        description: UAT candidate or disabled PRD readiness promotion.
+        description: UAT candidate or PRD catalog plan; PRD mutations require their separate confirmation inputs.
         type: choice
         default: uat
         options: [uat, prd]
@@ -343,6 +343,24 @@ jobs:
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/staff --project-name=blackbox-records-staff --branch=main --commit-hash="$SOURCE_SHA"
       - *observe-prd
+  catalog-prd-plan:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && !inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion && !inputs.confirm_cms_cutover }}
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-prd
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - name: Plan PRD catalog without mutation
+        run: |
+          set -euo pipefail
+          pnpm stripe:catalog:verify --env prd --plan-apply --store-item disintegration-black-vinyl-lp | tee "$GITHUB_STEP_SUMMARY"
   catalog-prd:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}
     runs-on: ubuntu-latest
