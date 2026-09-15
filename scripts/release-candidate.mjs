@@ -25,6 +25,7 @@ export function configuration(env = process.env) {
     cmsBuild: sha256(readFileSync('apps/backend/astro.config.mjs')),
     lockfile: sha256(readFileSync('pnpm-lock.yaml')),
     migrations: inventory('apps/backend/prisma/migrations'),
+    cmsMigrations: inventory('apps/backend/cms-migrations'),
   };
 }
 

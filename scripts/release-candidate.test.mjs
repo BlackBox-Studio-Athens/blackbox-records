@@ -31,6 +31,8 @@ test('rejects promotion when combined CMS configuration differs from the candida
     assert.match(config[field], /^[0-9a-f]{64}$/);
     assert.throws(() => validateIdentity(candidate, current, { ...config, [field]: 'changed' }));
   }
+  assert.ok(Object.keys(config.cmsMigrations).includes('0001_publications.sql'));
+  assert.throws(() => validateIdentity(candidate, current, { ...config, cmsMigrations: {} }));
 });
 
 test('refreshes an artifact at the same reviewed code SHA while retaining target publication identity', () => {
