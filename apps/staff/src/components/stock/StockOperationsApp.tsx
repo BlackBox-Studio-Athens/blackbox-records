@@ -257,7 +257,7 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
                 <ShieldCheck className="size-4" />
                 <span>Private label workspace</span>
               </div>
-              <p className="font-mono text-xs text-white/45">
+              <p className="font-mono text-xs text-white/50">
                 Changes to price and stock apply immediately. Existing orders stay unchanged.
               </p>
             </CardContent>
@@ -298,7 +298,7 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
                     )}
                   </Button>
                 </div>
-                <p className="font-mono text-xs text-white/45" role="status" aria-live="polite">
+                <p className="font-mono text-xs text-white/50" role="status" aria-live="polite">
                   {statusMessage}
                 </p>
               </form>
@@ -327,7 +327,7 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
                     </span>
                     <ArrowRight className="size-4 text-white/35 transition group-hover:translate-x-1 group-hover:text-white/80" />
                   </span>
-                  <span className="text-xs uppercase tracking-[0.18em] text-white/45">
+                  <span className="text-xs uppercase tracking-[0.18em] text-white/50">
                     {variant.sourceKind === 'release' ? 'Label release' : 'Distro'}
                   </span>
                 </button>
@@ -602,7 +602,7 @@ function StockMetric({
 }) {
   return (
     <div className="border border-white/10 bg-black/35 p-4">
-      <p className="text-xs uppercase tracking-[0.22em] text-white/45">{label}</p>
+      <p className="text-xs uppercase tracking-[0.22em] text-white/50">{label}</p>
       <p className={cn('mt-3 font-display uppercase tracking-[0.06em] text-white', isText ? 'text-2xl' : 'text-5xl')}>
         {value ?? '-'}
       </p>
@@ -623,7 +623,7 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
       </Badge>
       <div className="grid gap-1">
         <p className="font-mono text-xs text-white/75">{quantityLabel}</p>
-        <p className="text-xs text-white/45">
+        <p className="text-xs text-white/50">
           {entry.actorEmail} / {formatDate(entry.recordedAt)}
         </p>
         {entry.notes && <p className="text-sm text-white/60">{entry.notes}</p>}
