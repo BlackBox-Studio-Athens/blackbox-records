@@ -2,6 +2,7 @@
 export const partial = true;
 
 import NewsDetailContent from '@/components/detail/NewsDetailContent.astro';
+import { getEntry } from '@/lib/content-reader';
 import { createNewsDetailStaticPaths, type NewsArticleEntry } from '@/lib/catalog-data';
 
 export async function getStaticPaths() {
@@ -12,7 +13,8 @@ interface Props {
   item: NewsArticleEntry;
 }
 
-const { item } = Astro.props;
+const item = Astro.props.item ?? (await getEntry('news', Astro.params.slug ?? ''));
+if (!item) return new Response('Not found', { status: 404 });
 ---
 
 <div data-app-shell-overlay-fragment data-app-shell-overlay-kind="news" data-app-shell-overlay-slug={item.id}>

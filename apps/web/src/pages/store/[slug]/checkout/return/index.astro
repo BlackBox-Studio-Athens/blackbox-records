@@ -2,6 +2,7 @@
 import CheckoutReturnStatus from '@/components/store/CheckoutReturnStatus';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { getStorePageEntryBySlug } from '@/lib/store-page-data';
 import { type StorePageEntry, createStorePageStaticPaths } from '@/lib/store-page-data';
 
 export async function getStaticPaths() {
@@ -12,7 +13,8 @@ interface Props {
   entry: StorePageEntry;
 }
 
-const { entry } = Astro.props;
+const entry = Astro.props.entry ?? (await getStorePageEntryBySlug(Astro.params.slug ?? ''));
+if (!entry) return new Response('Not found', { status: 404 });
 const { storeItem } = entry;
 const cartReturnPath = createProjectRelativeUrl('/store/checkout/return/');
 ---

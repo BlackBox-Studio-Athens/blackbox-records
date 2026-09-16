@@ -2,6 +2,7 @@
 export const partial = true;
 
 import ArtistDetailContent from '@/components/detail/ArtistDetailContent.astro';
+import { getEntry } from '@/lib/content-reader';
 import { createArtistDetailStaticPaths, type ArtistProfileEntry } from '@/lib/catalog-data';
 
 export async function getStaticPaths() {
@@ -12,7 +13,8 @@ interface Props {
   artist: ArtistProfileEntry;
 }
 
-const { artist } = Astro.props;
+const artist = Astro.props.artist ?? (await getEntry('artists', Astro.params.slug ?? ''));
+if (!artist) return new Response('Not found', { status: 404 });
 ---
 
 <div

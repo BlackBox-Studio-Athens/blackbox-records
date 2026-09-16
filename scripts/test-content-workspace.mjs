@@ -275,8 +275,13 @@ const server = createServer(async (req, res) => {
         `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${previewPolicy(origin)}"><link rel="stylesheet" href="/preview-test.css"></head><body style="min-height:2000px"><h1>${escaped}</h1><p id="newsletter-signup-area">${description}</p><img src="/preview-test.png" alt="Preview fixture" loading="eager"></body></html>`,
       );
     }
-    if (url.pathname === '/_emdash/api/blackbox/publications') {
+    if (['/_emdash/api/blackbox/publications', '/_emdash/api/blackbox/content-publications'].includes(url.pathname)) {
       if (body) {
+        assert.equal(url.pathname, '/_emdash/api/blackbox/content-publications');
+        for (const record of body.records ?? [body]) {
+          const selected = records[record.collection].find((item) => item.id === record.recordId);
+          assert.equal(record.expectedRevision, selected._rev);
+        }
         if (state.publication !== 'pending')
           for (const publication of publications)
             if (publication.status === 'pending') publication.status = state.publication;
@@ -476,6 +481,9 @@ else {
     assert.equal(state.previewRequests.length, hiddenReads);
     await page.getByRole('button', { name: 'Show preview', exact: true }).click();
     await appearance.getByRole('heading', { name: 'Edited with preview hidden' }).waitFor();
+    await page.waitForFunction(
+      () => document.querySelector('iframe[title="Private site appearance preview"]').contentWindow.scrollY === 120,
+    );
     assert.equal(
       await page.evaluate(
         () => document.querySelector('iframe[title="Private site appearance preview"]').contentWindow.scrollY,
@@ -922,6 +930,25 @@ else {
     await refreshButton.click();
     await polling.getByRole('button', { name: 'Latest publication live', exact: true }).waitFor();
     await polling.close();
+    state.publication = 'live';
+    const batch = await browser.newPage();
+    await batch.goto(`${origin}/content/?collection=artists&id=artists-1`);
+    await batch.getByRole('button', { name: 'Add to publication', exact: true }).click();
+    await batch.goto(`${origin}/content/?collection=newsletter&id=newsletter-1`);
+    await batch.getByRole('button', { name: 'Add to publication', exact: true }).click();
+    await batch.reload();
+    await batch.getByText('Selected for publication (2)', { exact: true }).click();
+    const batchRequest = batch.waitForRequest(
+      (request) => request.method() === 'POST' && request.url().endsWith('/_emdash/api/blackbox/content-publications'),
+    );
+    await batch.getByRole('button', { name: 'Publish selected (2)', exact: true }).click();
+    const payload = (await batchRequest).postDataJSON();
+    assert.deepEqual(
+      payload.records.map((record) => record.collection),
+      ['artists', 'newsletter'],
+    );
+    await batch.getByRole('button', { name: 'Latest publication live', exact: true }).waitFor();
+    await batch.close();
     console.log('CMS workspace browser regression passed. Screenshots:', artifacts);
   } catch (error) {
     if (page) {

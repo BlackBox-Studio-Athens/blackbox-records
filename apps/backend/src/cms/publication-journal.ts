@@ -49,22 +49,32 @@ export async function readRecentPublications(db: D1Database, environment: 'local
   environmentSchema.parse(environment);
   const { results } = await db
     .prepare(
-      'SELECT id, status, requested_at AS requestedAt FROM _blackbox_publications WHERE environment = ? ORDER BY rowid DESC LIMIT 10',
+      'SELECT id, status, requested_at AS requestedAt, stage, failure_code AS failureReason FROM _blackbox_publications WHERE environment = ? ORDER BY rowid DESC LIMIT 10',
     )
     .bind(environment)
     .all();
-  const summary = publicationSchema.pick({ id: true, status: true, requestedAt: true });
+  const summary = publicationSchema
+    .pick({ id: true, status: true, requestedAt: true })
+    .extend({ stage: z.string().nullable(), failureReason: z.string().nullable() });
   return results.map((item) => publicationSummary(summary.parse(item)));
 }
 
-export function publicationSummary(item: { id: string; status: 'pending' | 'live' | 'failed'; requestedAt: number }) {
+export function publicationSummary(item: {
+  id: string;
+  status: 'pending' | 'live' | 'failed';
+  requestedAt: number;
+  stage?: string | null;
+  failureReason?: string | null;
+}) {
   return {
     id: item.id,
     status: item.status,
     requestedAt: item.requestedAt,
+    ...(item.stage ? { stage: item.stage } : {}),
     ...(item.status === 'failed'
       ? {
           failureReason:
+            item.failureReason ??
             'Publication did not finish. Ask a label administrator to check the publication before trying again.',
         }
       : {}),

@@ -37,7 +37,12 @@ describe('one gated release', () => {
     expect(release.jobs['catalog-prd'].if).toBe(
       "${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}",
     );
-    expect(JSON.stringify(release.jobs['deploy-prd'])).not.toContain('--apply');
+    expect(JSON.stringify(release.jobs['deploy-prd'])).not.toMatch(
+      /stripe:catalog:verify|d1:seed:prd|confirm-live-catalog-changes/,
+    );
+    expect(JSON.stringify(release.jobs['deploy-prd'])).toContain(
+      'cms:application-migrations --env prd --apply --confirm-live-cms-changes',
+    );
     expect(source).not.toMatch(/PRD_LAUNCH_APPROVED=true|native_checkout_enabled=true|NATIVE_CHECKOUT_ENABLED: true/);
   });
 

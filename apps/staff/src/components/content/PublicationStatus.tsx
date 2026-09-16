@@ -97,7 +97,7 @@ export default function PublicationStatus({
           if (document.visibilityState === 'visible') void check().finally(schedule);
           else schedule();
         },
-        elapsed < 120_000 ? 15_000 : 30_000,
+        elapsed < 60_000 ? 2000 : 30_000,
       );
     };
     const returned = () => {
@@ -180,6 +180,17 @@ export default function PublicationStatus({
                     {item.status === 'live' ? 'Live' : item.status === 'pending' ? 'Pending' : 'Failed'}
                   </Badge>
                   {isCurrent && <span className="text-xs font-medium">Current</span>}
+                  {item.status === 'pending' && item.stage && (
+                    <span className="text-xs text-muted-foreground">
+                      {{
+                        queued: 'Waiting',
+                        preparing: 'Preparing content',
+                        verifying: 'Checking pages',
+                        confirming: 'Confirming public site',
+                        retrying: 'Retrying',
+                      }[item.stage] ?? 'Publishing'}
+                    </span>
+                  )}
                   {!isCurrent && item.status === 'failed' && (
                     <span className="text-xs text-muted-foreground">Earlier failure</span>
                   )}

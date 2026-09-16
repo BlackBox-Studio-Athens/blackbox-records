@@ -1,10 +1,10 @@
 # BlackBox Records
 
-Static Astro site for the BlackBox Records label.
+Astro site for the BlackBox Records label. Public pages render from accepted immutable content snapshots; Cloudflare Pages serves assets and forwards public reads to the renderer. See [content publication](docs/content-publication.md).
 
 ## Stack
 
-- Astro 7 (static output)
+- Astro 7 (published-content runtime plus retained static build)
 - React integration (for shadcn-ui primitives)
 - Tailwind CSS v4 + shadcn-ui setup (design implemented in Astro templates + `apps/web/src/styles/global.css`)
 - Type-safe content collections (`apps/web/src/content`)
@@ -15,13 +15,13 @@ Static Astro site for the BlackBox Records label.
 
 The site uses one Product Environment model: Local, UAT, and PRD. The full matrix lives in [`docs/environment-model.md`](docs/environment-model.md).
 
-UAT is the Cloudflare Pages static frontend:
+UAT is the Cloudflare Pages public frontend:
 
 - `site`: `https://blackbox-records-web-uat.pages.dev`
 - `base`: `/`
 - browser API target: `UAT_PUBLIC_BACKEND_BASE_URL`, expected to point at the UAT Worker
 
-PRD is the Cloudflare Pages static frontend:
+PRD is the Cloudflare Pages public frontend:
 
 - `site`: `https://blackbox-records-web.pages.dev`
 - `base`: `/`

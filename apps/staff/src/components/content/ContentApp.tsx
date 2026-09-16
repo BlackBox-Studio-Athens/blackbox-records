@@ -50,9 +50,10 @@ import PublicationStatus from './PublicationStatus';
 import { getContentValidation, type ContentValidation } from './content-validation';
 import {
   readContentPublications,
-  requestContentPublication,
+  publishSavedContent,
   type ContentPublication,
-  type PublicationRequest,
+  type SelectedPublicationRequest,
+  type SelectedPublicationRecord,
 } from '../../lib/backend/content-publication-api';
 import {
   EditorialApiError,
@@ -159,9 +160,23 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [publicationMessage, setPublicationMessage] = useState('');
   const [publicationStatusError, setPublicationStatusError] = useState('');
   const [requestingPublication, setRequestingPublication] = useState(false);
-  const [pendingPublication, setPendingPublication] = useState<PublicationRequest | null>(null);
+  const [pendingPublication, setPendingPublication] = useState<SelectedPublicationRequest | null>(null);
+  const refreshedPublication = useRef('');
   const pendingKey = `blackbox-content-create:${base}`;
-  const publicationKey = `blackbox-content-publication:${base}`;
+  const publicationKey = `blackbox-content-publication-v2:${base}`;
+  const selectionKey = `blackbox-content-publication-selection:${base}`;
+  const [publicationSelection, setPublicationSelection] = useState<(SelectedPublicationRecord & { title: string })[]>(
+    [],
+  );
+  function retainSelection(items: (SelectedPublicationRecord & { title: string })[]) {
+    try {
+      localStorage.setItem(selectionKey, JSON.stringify(items));
+    } catch {
+      setMessage('Selection could not be saved in this browser.');
+      return;
+    }
+    setPublicationSelection(items);
+  }
   const validation: ContentValidation = getContentValidation(collection, data);
 
   function focusFirstInvalid(result = validation) {
@@ -190,33 +205,49 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setPublications(result.items);
       setPublicationStatusError('');
       setPublicationMessage(result.items.length ? '' : 'No publication requests yet.');
+      const latest = result.items[0];
+      if (latest && latest.status !== 'pending' && latest.id !== refreshedPublication.current && document?.item.id) {
+        const loaded = await editorialRequest<Document>(
+          base,
+          `content/${collection}/${encodeURIComponent(document.item.id)}`,
+        );
+        setDocument((current) => (current?.item.id === loaded.item.id ? loaded : current));
+        refreshedPublication.current = latest.id;
+      }
     } catch {
       setPublicationStatusError('Publication status is unavailable. Check again before assuming a change is live.');
     }
   }
-  async function publish() {
-    if (busy || dirty || conflict || !document?.item.id || !requireValidContent()) return;
+  async function publish(records?: SelectedPublicationRecord[]) {
+    if (busy || dirty || conflict || (!records && (!document?.item.id || !requireValidContent()))) return;
     setBusy(true);
     setRequestingPublication(true);
     setPublicationMessage('Requesting publication…');
     try {
       let input = pendingPublication;
       if (!input) {
-        const published = await editorialRequest<Document>(
-          base,
-          `content/${collection}/${encodeURIComponent(document.item.id)}/publish`,
-          { _rev: document._rev },
-        );
-        setDocument(published);
-        setData(published.item.data);
-        if (!published.item.liveRevisionId) throw new Error('Load the saved version before publishing again.');
-        input = { id: crypto.randomUUID(), requestedRevision: published.item.liveRevisionId };
+        input = {
+          id: crypto.randomUUID(),
+          records: records ?? [{ collection, recordId: document!.item.id, expectedRevision: document!._rev }],
+        };
         localStorage.setItem(publicationKey, JSON.stringify(input));
         setPendingPublication(input);
       }
-      const accepted = await requestContentPublication(base, input);
+      const accepted = await publishSavedContent(base, input);
       localStorage.removeItem(publicationKey);
       setPendingPublication(null);
+      const included = 'records' in input ? input.records : [input];
+      retainSelection(
+        publicationSelection.filter(
+          (record) =>
+            !included.some(
+              (item) =>
+                item.collection === record.collection &&
+                item.recordId === record.recordId &&
+                item.expectedRevision === record.expectedRevision,
+            ),
+        ),
+      );
       setPublications((items) => [accepted, ...items.filter((item) => item.id !== accepted.id)].slice(0, 10));
       await publicationStatus();
       setPublicationMessage(
@@ -266,12 +297,44 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     }
     if (publication) {
       try {
-        const input = JSON.parse(publication) as PublicationRequest;
-        if (typeof input.id !== 'string' || typeof input.requestedRevision !== 'string') throw new Error();
+        const input = JSON.parse(publication) as SelectedPublicationRequest;
+        const records = 'records' in input ? input.records : [input];
+        if (
+          typeof input.id !== 'string' ||
+          !Array.isArray(records) ||
+          !records.length ||
+          records.length > 20 ||
+          records.some(
+            (record) =>
+              typeof record.collection !== 'string' ||
+              typeof record.recordId !== 'string' ||
+              typeof record.expectedRevision !== 'string',
+          )
+        )
+          throw new Error();
         setPendingPublication(input);
       } catch {
         setPublicationMessage('The last publication request could not be read. Ask a label administrator for help.');
       }
+    }
+    try {
+      const selected = JSON.parse(localStorage.getItem(selectionKey) ?? '[]') as (SelectedPublicationRecord & {
+        title: string;
+      })[];
+      if (
+        Array.isArray(selected) &&
+        selected.length <= 20 &&
+        selected.every(
+          (item) =>
+            typeof item.title === 'string' &&
+            typeof item.collection === 'string' &&
+            typeof item.recordId === 'string' &&
+            typeof item.expectedRevision === 'string',
+        )
+      )
+        setPublicationSelection(selected);
+    } catch {
+      setMessage('The publication selection could not be restored. Select the saved records again.');
     }
     void publicationStatus();
     const pending = sessionStorage.getItem(pendingKey);
@@ -543,7 +606,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         }}
       />
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="cms-workspace-bar flex shrink-0 items-center gap-3 border-b border-border px-4 py-3">
+        <div className="cms-workspace-bar flex shrink-0 flex-wrap items-center gap-3 border-b border-border px-4 py-3">
           <SidebarTrigger className="size-11 shrink-0" />
           <Separator orientation="vertical" className="h-5" />
           <Breadcrumb>
@@ -555,6 +618,47 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
+          {publicationSelection.length > 0 && (
+            <details className="relative ml-auto">
+              <summary className="cursor-pointer text-sm">
+                Selected for publication ({publicationSelection.length})
+              </summary>
+              <div className="absolute right-0 z-50 mt-2 w-72 max-w-[85vw] rounded-md border border-border bg-background p-4 shadow-lg">
+                <p className="mb-3 text-sm text-muted-foreground">
+                  These saved versions will go live together. Add a record again after editing it.
+                </p>
+                <ul className="mb-3 space-y-2">
+                  {publicationSelection.map((record) => (
+                    <li
+                      key={`${record.collection}/${record.recordId}`}
+                      className="flex items-center justify-between gap-2 text-sm"
+                    >
+                      <span>{record.title}</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        aria-label={`Remove ${record.title} from publication`}
+                        disabled={busy}
+                        onClick={() => retainSelection(publicationSelection.filter((item) => item !== record))}
+                      >
+                        Remove
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  type="button"
+                  disabled={busy || dirty || conflict}
+                  onClick={() => void publish(publicationSelection.map(({ title: _title, ...record }) => record))}
+                >
+                  {pendingPublication
+                    ? 'Retry publication request'
+                    : `Publish selected (${publicationSelection.length})`}
+                </Button>
+              </div>
+            </details>
+          )}
           <div className="ml-auto">
             <PublicationStatus
               items={publications}
@@ -798,6 +902,30 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                           {pendingNew ? 'Check last save' : 'Save draft'}
                         </Button>
                       </ButtonGroup>
+                      {canPublish && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={
+                            busy ||
+                            dirty ||
+                            conflict ||
+                            !validation.valid ||
+                            !document.item.id ||
+                            publicationSelection.length >= 20
+                          }
+                          onClick={() =>
+                            retainSelection([
+                              ...publicationSelection.filter(
+                                (record) => record.collection !== collection || record.recordId !== document.item.id,
+                              ),
+                              { collection, recordId: document.item.id, expectedRevision: document._rev, title },
+                            ])
+                          }
+                        >
+                          Add to publication
+                        </Button>
+                      )}
                       {canPublish && (
                         <Tooltip>
                           <TooltipTrigger asChild>

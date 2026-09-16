@@ -79,6 +79,7 @@ export default function ContentPreview({
     const contentWindow = frame.current?.contentWindow;
     if (!contentWindow || !rendered) return;
     const capture = () => {
+      if (panel.current?.hidden) return;
       scroll.current = { x: contentWindow.scrollX, y: contentWindow.scrollY };
     };
     contentWindow.addEventListener('scroll', capture, { passive: true });

@@ -92,7 +92,7 @@ export async function handlePublicationWorkflow(
     return reply(200, { data: await readPublicationCatalog(context.commerce) });
   }
   if (request.method === 'GET' && [root + '/snapshot', root + '/media'].includes(url.pathname)) {
-    const selected = z.object({ id: z.uuid(), ciRunId: z.string().regex(/^[1-9][0-9]{0,19}$/) }).safeParse({
+    const selected = z.object({ id: z.uuid(), ciRunId: z.string().regex(/^(?:[1-9][0-9]{0,19}|runtime)$/) }).safeParse({
       id: request.headers.get('X-Publication-ID'),
       ciRunId: request.headers.get('X-CI-Run-ID'),
     });

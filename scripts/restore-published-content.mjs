@@ -58,7 +58,7 @@ export async function restorePublishedContent(
     content.publicationId ?? '',
     /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i,
   );
-  assert.match(content.ciRunId ?? '', /^[1-9][0-9]{0,19}$/);
+  assert.match(content.ciRunId ?? '', /^(?:[1-9][0-9]{0,19}|runtime)$/);
   assert.match(content.snapshotSha256 ?? '', /^[a-f0-9]{64}$/);
   assert.match(token ?? '', /^[a-f0-9]{64}$/);
   assert.ok(accessClientId && accessClientSecret, 'Snapshot restore requires target Access credentials.');

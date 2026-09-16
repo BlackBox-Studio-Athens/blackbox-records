@@ -1,5 +1,7 @@
 # Catalog release
 
+Code candidates retain the renderer and Pages gateway alongside public assets and the CMS Worker. Promotion preserves the environment-owned content pointer. Routine publication does not use this workflow. See [content publication](content-publication.md).
+
 The operating model is:
 
 - Local/UAT/PRD EmDash workspace: titles, descriptions, artwork, and guided Store Item creation. The [cutover worksheet](cms-cutover.md) records the successful first PRD publication and released editorial write freeze.

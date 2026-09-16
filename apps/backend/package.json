@@ -45,6 +45,7 @@
     "test:emdash": "astro build --root test/emdash && node test/emdash/smoke.mjs",
     "test:cms-render": "node test/emdash/parity-smoke.mjs",
     "build:cms": "node scripts/build-cms.mjs",
+    "build:public": "node scripts/build-public.mjs",
     "cms:migrations": "node scripts/migrate-cms.mjs",
     "cms:application-migrations:local": "node scripts/migrate-cms-application.mjs",
     "cms:application-migrations": "node scripts/migrate-cms-application.mjs",

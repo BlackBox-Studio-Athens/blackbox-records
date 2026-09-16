@@ -8,7 +8,7 @@ Use blue for actions and selection, amber for unsaved/pending, green for confirm
 
 ## Private appearance preview
 
-The CMS build registers an authenticated `POST /_emdash/preview` Astro route. The public `content-reader` seam keeps normal static collection reads; the CMS aliases it to request-scoped published revision reads plus the selected unsaved record. Public page components, rich-text rendering, styles, fonts and crop rules are shared. No preview record, draft save or publication is created. Public Pages remain static.
+The CMS build registers an authenticated `POST /_emdash/preview` Astro route. The public `content-reader` seam keeps normal static collection reads; the CMS aliases it to request-scoped published revision reads plus the selected unsaved record. Public page components, rich-text rendering, styles, fonts and crop rules are shared. No preview record, draft save or publication is created. Public Pages serve assets and forward public reads to the accepted-snapshot renderer. Private previews never change that snapshot.
 
 The request accepts collection, identity, slug and editorial data only. Existing schemas and Access permissions apply. Requests require the same Origin and CMS request header. Input is capped at 256 KiB, response HTML at 4 MiB, and context reads at 512; surrounding responses have a 30-second cache in the existing CMS object, bounded to 512 responses and 8 MiB of serialized text. No KV or Astro sessions are enabled. Protected original images retain public layout dimensions without using public image-transform endpoints.
 
@@ -20,11 +20,11 @@ The iframe is visual-only: scripts and embedded players are removed, links/contr
 
 ## Publication visibility
 
-The top status control opens recent history in a desktop Popover or mobile Sheet. A separate Refresh publication status button is immediately available beside it. History retains status/request time and may supply sanitized failure guidance; it does not invent content titles or authors. Pending status polls every 15 seconds for two minutes, then every 30 seconds while visible, up to thirty minutes per pending set. Returning to the page checks immediately. Timer, focus and manual checks share a single in-flight request. After the bound, Still pending / Check again preserves manual refresh. An unresolved failure stays visible until a newer publication is confirmed live; older failures remain in history. Accepted requests never imply the site is live.
+The top status control opens recent history in a desktop Popover or mobile Sheet. Refresh checks immediately. Pending requests poll every two seconds for the first minute, then every thirty seconds while visible, up to thirty minutes. Returning to the page checks immediately. Checks share one in-flight request. Accepted requests never imply the site is live.
 
-An accepted hosted request kicks the existing journal-controlled dispatcher using the CMS object's background lifetime. The existing cron remains recovery; Local never dispatches GitHub. The workflow registers its run before dependency installation and code acceptance, then binds the accepted code revision before snapshot capture. Failed/cancelled attempts call the authenticated `/publications/failed` workflow endpoint; scheduler reconciliation covers lost callbacks. A stored deployment receipt stays pending until its public identity is verified. The release acceptance gate is unchanged.
+Publish changes sends the selected saved record and revision with a browser-retained request ID. The CMS journals it before native publication, prepares an immutable snapshot by replacing only that record, validates it through the public renderer, and atomically activates the snapshot. Other drafts stay private. Images already in the accepted snapshot are reused. A Durable Object alarm resumes interrupted work. Live means the public origin has confirmed the selected snapshot. No GitHub build or deployment runs for content publication.
 
-The existing five-minute dispatch lease and one-hour unbound-CI window still prevent dispatch storms. A workflow that cannot start/register at all remains retryable; a registered run that fails validation is no longer invisible to reconciliation. Polling costs at most about 64 scheduled history reads per visible pending tab over thirty minutes, plus explicit manual/focus checks; each returns at most ten journal rows and writes no sessions or KV. No new scheduled job, binding or paid service is introduced.
+Code releases still use the reviewed UAT candidate and retained PRD artifact. See [publication operation and recovery](content-publication.md) for budgets, failure behavior and Local checks.
 
 ## Component sources
 

@@ -17,6 +17,12 @@ import {
   publicationCatalogPath,
 } from './publication-routes';
 import { dispatchPendingPublication, reconcilePendingPublication } from './publication-dispatch';
+import {
+  acceptSelectedPublication,
+  InvalidPublication,
+  processRuntimePublication,
+  selectedPublicationSchema,
+} from './runtime-publication';
 import { handleItemArtwork, itemArtworkPath, publishedMediaPath, servePublishedMedia } from './item-artwork';
 import { reconcileItemPublications, guardItemLifecycle, readPublicationCatalog } from './item-publication-recovery';
 import {
@@ -40,6 +46,8 @@ type CmsBindings = Omit<AppBindings, 'CMS_RUNTIME'> & {
   CMS_HOSTNAME?: string;
   CMS_PUBLICATION_EXPORT_TOKEN?: string;
   CMS_PUBLICATION_GITHUB_TOKEN?: string;
+  CONTENT_PUBLICATION_MODE?: string;
+  PUBLIC_SITE?: Fetcher;
 };
 
 export default {
@@ -88,6 +96,41 @@ export default {
 
 // ponytail: one editorial site per object; split by site only if we host more sites.
 export class CmsRuntime extends DurableObject<CmsBindings> {
+  private publicationTask: Promise<void> | undefined;
+
+  async alarm() {
+    await this.processPublications();
+  }
+
+  private async processPublications() {
+    if (this.env.CONTENT_PUBLICATION_MODE !== 'runtime' || !this.env.PUBLIC_SITE) return;
+    if (this.publicationTask) return this.publicationTask;
+    this.publicationTask = (async () => {
+      // Arm before processing: eviction or a lost response cannot discard pending work.
+      await this.ctx.storage.setAlarm(Date.now() + 5000);
+      const { withEmDashRuntime } = await import('emdash/middleware');
+      const environment = productEnvironmentProfileFromBindings(this.env).workerDeploymentTarget;
+      const processed = await withEmDashRuntime((runtime) =>
+        processRuntimePublication({
+          db: this.env.CMS_DB,
+          bucket: this.env.MEDIA,
+          commerce: this.env.COMMERCE_DB,
+          environment,
+          renderer: this.env.PUBLIC_SITE!,
+          runtime,
+          publicOrigin:
+            environment === 'local'
+              ? 'http://127.0.0.1:4321/blackbox-records/'
+              : `https://blackbox-records-web${environment === 'uat' ? '-uat' : ''}.pages.dev`,
+        }),
+      );
+      if (!processed) await this.ctx.storage.deleteAlarm();
+      else if (typeof processed === 'number') await this.ctx.storage.setAlarm(Date.now() + processed);
+    })().finally(() => {
+      this.publicationTask = undefined;
+    });
+    return this.publicationTask;
+  }
   // Published context only; unsaved drafts live exclusively in the request-scoped reader.
   private previewReads = new Map<string, { expires: number; value: unknown; size: number }>();
   private previewCacheBytes = 0;
@@ -275,6 +318,10 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
   }
 
   async dispatchPublication() {
+    if (this.env.CONTENT_PUBLICATION_MODE === 'runtime') {
+      await this.processPublications();
+      return { status: 'runtime' as const };
+    }
     if (!/^[a-f0-9]{64}$/.test(this.env.CMS_PUBLICATION_EXPORT_TOKEN ?? '')) return { status: 'disabled' as const };
     await reconcilePendingPublication({
       db: this.env.CMS_DB,
@@ -295,6 +342,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     if (!(await this.isInitialized())) throw new Error('CMS requires explicit initialization');
     const { runScheduledTasks } = await import('emdash/middleware');
     await runScheduledTasks();
+    if (this.env.CONTENT_PUBLICATION_MODE === 'runtime') await this.processPublications();
     await reconcileItemPublications(
       this.env.COMMERCE_DB,
       this.env.CMS_DB,
@@ -334,6 +382,70 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
     }
     if (url.pathname === previewPath) return this.preview(request, identity?.role ?? 0);
+    if (url.pathname === '/_emdash/api/blackbox/content-publications') {
+      if (
+        !identity ||
+        identity.role < 30 ||
+        request.method !== 'POST' ||
+        url.search ||
+        request.headers.get('Origin') !== url.origin ||
+        request.headers.get('X-EmDash-Request') !== '1'
+      )
+        return new Response('Forbidden', { status: 403 });
+      if (bindings.CONTENT_PUBLICATION_MODE !== 'runtime' || !bindings.PUBLIC_SITE)
+        return Response.json({ error: 'PUBLICATION_UNAVAILABLE' }, { status: 503 });
+      try {
+        const input = selectedPublicationSchema.parse(JSON.parse(await readBoundedText(request.body, 16384)));
+        for (const record of input.records) {
+          const native = new Request(
+            new URL(`/_emdash/api/content/${record.collection}/${record.recordId}/publish`, url),
+            {
+              method: 'POST',
+              headers: request.headers,
+              body: JSON.stringify({ _rev: record.expectedRevision }),
+            },
+          );
+          const guarded = await guardItemLifecycle(
+            native,
+            bindings.COMMERCE_DB,
+            async () => new Response(null, { status: 403 }),
+          );
+          if (guarded) return guarded;
+        }
+        await this.ctx.storage.setAlarm(Date.now() + 1000);
+        const { withEmDashRuntime } = await import('emdash/middleware');
+        const accepted = await withEmDashRuntime((runtime) =>
+          acceptSelectedPublication(input, identity.email, {
+            runtime,
+            db: bindings.CMS_DB,
+            environment: productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
+          }),
+        );
+        this.ctx.waitUntil(this.processPublications().finally(() => this.ctx.storage.setAlarm(Date.now() + 1000)));
+        return Response.json(accepted, { status: 202, headers: { 'Cache-Control': 'private, no-store' } });
+      } catch (error) {
+        return Response.json(
+          { error: 'PUBLICATION_UNAVAILABLE' },
+          {
+            status: error instanceof InvalidPublication ? 409 : 503,
+            headers: { 'Cache-Control': 'private, no-store' },
+          },
+        );
+      }
+    }
+    const mutation = /^\/_emdash\/api\/content\/([a-z_]+)\/([A-Za-z0-9_-]+)(?:\/|$)/.exec(url.pathname);
+    if (bindings.CONTENT_PUBLICATION_MODE === 'runtime' && mutation && !['GET', 'HEAD'].includes(request.method)) {
+      const pending = await bindings.CMS_DB.prepare(
+        "SELECT id FROM _blackbox_publications WHERE status = 'pending' AND EXISTS (SELECT 1 FROM json_each(CASE WHEN json_type(request_json, '$.records') = 'array' THEN json_extract(request_json, '$.records') ELSE json_array(json(request_json)) END) WHERE json_extract(value, '$.collection') = ? AND json_extract(value, '$.recordId') = ?) LIMIT 1",
+      )
+        .bind(mutation[1], mutation[2])
+        .first();
+      if (pending)
+        return Response.json(
+          { error: 'PUBLICATION_IN_PROGRESS' },
+          { status: 409, headers: { 'Cache-Control': 'private, no-store' } },
+        );
+    }
     if (url.pathname === previewDiagnosticsPath && identity)
       return reportPreviewFailure(request, identity, this.diagnosticLimits, createBindingLogger(this.env));
     if (url.pathname.startsWith(localPublicationRoot)) {
@@ -379,6 +491,10 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         environment,
         identity,
         onAccepted: () => {
+          if (bindings.CONTENT_PUBLICATION_MODE === 'runtime') {
+            this.ctx.waitUntil(this.processPublications().finally(() => this.ctx.storage.setAlarm(Date.now() + 1000)));
+            return;
+          }
           if (environment === 'local' || !bindings.CMS_PUBLICATION_EXPORT_TOKEN) return;
           this.ctx.waitUntil(
             dispatchPendingPublication(bindings.CMS_DB, environment, bindings.CMS_PUBLICATION_GITHUB_TOKEN)
@@ -397,6 +513,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           return this.fetch(new Request(new URL(path, url), { headers }));
         },
       };
+      if (bindings.CONTENT_PUBLICATION_MODE === 'runtime' && request.method === 'POST')
+        await this.ctx.storage.setAlarm(Date.now() + 1000);
       return url.pathname === itemArtworkPath
         ? handleItemArtwork(request, {
             ...context,

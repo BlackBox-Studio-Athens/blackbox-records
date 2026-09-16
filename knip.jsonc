@@ -18,6 +18,7 @@
       "entry": [
         "astro.config.mjs",
         "src/content.config.ts",
+        "src/lib/published-purchase-browser.ts",
         "src/pages/**/*.{astro,ts}",
         "src/**/*.test.{ts,tsx}",
         "scripts/**/*.{mjs,ts}",
@@ -32,7 +33,18 @@
       "ignoreDependencies": ["cookie", "tailwindcss"],
     },
     "apps/backend": {
-      "entry": ["src/index.ts", "wrangler.jsonc", "prisma.config.ts", "scripts/**/*.{mjs,ts}", "test/**/*.test.ts"],
+      "entry": [
+        "src/index.ts",
+        "astro.public.config.mjs",
+        "src/cms/public-runtime.ts",
+        "src/cms/public-asset.ts",
+        "src/cms/published-reader.ts",
+        "src/cms/published-purchase-information.ts",
+        "wrangler.jsonc",
+        "prisma.config.ts",
+        "scripts/**/*.{mjs,ts}",
+        "test/**/*.test.ts",
+      ],
       "project": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.{mjs,ts}", "prisma.config.ts"],
       // Vitest's Cloudflare pool exposes this virtual module; it is not an installable package dependency.
       "ignoreDependencies": ["cloudflare"],

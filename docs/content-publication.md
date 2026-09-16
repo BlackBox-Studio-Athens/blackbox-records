@@ -1,0 +1,29 @@
+# Content publication
+
+Publish changes targets one saved revision. Add to publication collects up to twenty saved records across sections; the selection survives navigation and reload. Publish selected commits all selected versions in one atomic public update. Later edits must be saved and added again; a stale selected version rejects the entire request. Releases and distro still publish through Items. A durable CMS journal precedes native publication. Preparation replaces selected records in the last accepted snapshot, copies only new media, validates the affected public templates, and uses an R2 conditional write to activate the immutable manifest. Unrelated drafts are never scanned into the candidate. Items retain their catalog preparation and reconciliation rules.
+
+The public renderer runs Astro inside a SQLite Durable Object. Pages serves compiled assets and forwards public GET/HEAD requests through `PUBLIC_SITE`; staff cookies and authorization are not forwarded. The renderer has R2 access only, with no D1, commerce secrets, sessions or KV. Private namespaces are blocked. Snapshot media is publicly accessible only after acceptance. The pages.dev URLs, Local base path, checkout gates and holding branch remain unchanged.
+
+The renderer checks the pointer at most once every five seconds per active object. Its bounded HTML cache keys include code and snapshot identity. HTML uses `no-store`; versioned media is immutable. A transient pointer-read failure keeps the last verified in-memory snapshot. Cold starts without readable accepted content return 503. The site does not fall back to drafts. Sixty seconds is the normal-service p95 publication target, not an outage guarantee.
+
+## Recovery
+
+The browser retains the request ID before sending it. Retrying an uncertain response returns the same request; conflicting reuse is rejected. The CMS arms its alarm before processing and resumes pending work after eviction. Retries back off from two seconds to a five-minute ceiling. Pre-activation failures retry up to six attempts and then preserve the previous public snapshot. Once activated, confirmation remains recoverable and cannot be reported as a preparation failure. Live requires the public origin's content identity to match. Investigate repeated service failures before manually retrying a failed request.
+
+R2 manifests, media and the accepted pointer are durable. Code promotion consumes the reviewed paired renderer/CMS/gateway artifacts and keeps that pointer. Initial cutover bootstraps from the previously accepted snapshot identity. An older static deployment is not a content rollback: its content may be stale. Use a reviewed compatible code candidate; content rollback requires a separately selected, verified accepted snapshot.
+
+## Local verification
+
+`pnpm dev:stack:stripe-mock` waits for CMS initialization, imports only an empty library, and links only its initial fake catalog while preserving prices and stock. The public service stages the initial verified snapshot once. Restarts reuse the current R2 pointer and do not promote saved drafts. No Local operation dispatches GitHub or contacts hosted providers.
+
+Run `node --import tsx scripts/test-local-content-publication.mjs` against that stack. It changes and restores two Local artist drafts, measures publication latency, retries the same request ID and checks unrelated-draft privacy. The runtime Vitest regression covers failed validation, lost confirmation, compare-and-swap and request conflicts. The renderer smoke under `apps/backend/test/emdash/public-runtime-smoke.mjs` checks the accepted snapshot's public routes and media against a separate Local store. Standard unit/check/build gates and both content-editor browser regressions remain required.
+
+## Free-tier operation budget
+
+Owner: the existing BlackBox release workflow and CMS/public runtimes. Each environment adds one service-only public Worker and one SQLite Durable Object namespace. Existing R2 buckets and CMS D1 databases are reused. No paid plan, KV binding, queue or additional cron is introduced. CMS and public build wrappers reject KV in source and generated configuration.
+
+Text-only publication normally uses one journal insert, a native revision transition, roughly ten journal reads/writes, one manifest write, one pointer write and one acceptance marker. Rendering validation is bounded to sixty-one distinct pages for a twenty-record batch. Confirmation and retries add bounded reads; image changes add one source read and immutable write per new image. History polling is read-only. Public HTML and media consume Worker/DO requests; pointer reads are limited by the five-second interval, while media costs one R2 object read per uncached delivery. The HTML cache is capped at 64 entries and 8 MiB. These are application operation estimates; D1 billed rows include indexes and queries.
+
+Release pilot ceiling: one UAT text publication, at most 100 public requests, 100 R2 writes, 1,000 R2 reads, 5,000 D1 rows written, 100,000 D1 rows read, and 100 GB-s additional DO duration. Reserve at least half of each Free allowance for ordinary service. Stop the pilot on any quota warning, unexpected write amplification or failure loop. Exhaustion returns an explicit pending/failure or public 503; it never enables billing or changes the accepted pointer to an incomplete candidate. Record account-wide usage and measured results in the change's release evidence before hosted work.
+
+Pages service bindings use the API's `deployment_configs.production.services` field ([Cloudflare API](https://developers.cloudflare.com/api/resources/pages/subresources/projects/methods/edit/)). The gateway binding is verified before upload. Deployments stay in `.github/workflows/pages.yml`; PRD consumes the accepted UAT candidate without rebuilding and does not authorize catalog mutation or checkout launch.

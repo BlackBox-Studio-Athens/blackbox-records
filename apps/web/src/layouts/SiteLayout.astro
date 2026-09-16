@@ -8,6 +8,7 @@ import Footer from '@/components/Footer.astro';
 import Header from '@/components/Header.astro';
 import { createAbsoluteSiteUrl, createProjectRelativeUrl, siteBrandAssets, siteConfig } from '@/config/site';
 import { getLabelSettings, getSocialItems } from '@/lib/site-data';
+import { getPurchaseInformation } from '@/lib/purchase-information';
 
 interface Props {
   pageTitle?: string;
@@ -74,6 +75,12 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
 <html lang="en">
   <head>
     <meta charset="utf-8" />
+    <script
+      is:inline
+      type="application/json"
+      id="purchase-information"
+      set:html={JSON.stringify(getPurchaseInformation()).replaceAll('<', '\\u003c')}
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{htmlTitle}</title>
     <meta name="description" content={metadataDescription} />

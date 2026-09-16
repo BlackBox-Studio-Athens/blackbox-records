@@ -46,6 +46,7 @@ const runtime = {
   assets: { binding: 'ASSETS', run_worker_first: true, html_handling: 'auto-trailing-slash' },
   vars: {
     ...selected.vars,
+    CONTENT_PUBLICATION_MODE: 'runtime',
     ...(selected.vars.PRODUCT_ENVIRONMENT === 'LOCAL'
       ? { EMDASH_MIGRATIONS_MODE: 'auto' }
       : {
@@ -60,6 +61,9 @@ const runtime = {
     { binding: 'CMS_DB', database_name: cms.database_name, database_id: cms.database_id },
   ],
   r2_buckets: [{ binding: 'MEDIA', bucket_name: cms.bucket_name }],
+  services: [
+    { binding: 'PUBLIC_SITE', service: `blackbox-records-public-${selected.vars.PRODUCT_ENVIRONMENT.toLowerCase()}` },
+  ],
   durable_objects: {
     bindings: [...selected.durable_objects.bindings, { name: 'CMS_RUNTIME', class_name: 'CmsRuntime' }],
   },

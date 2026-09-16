@@ -141,6 +141,8 @@ jobs:
           pnpm --filter @blackbox/backend build:cms --env uat
           cp -R apps/backend/dist .codex-artifacts/release/uat/worker
           pnpm --filter @blackbox/backend build:cms --env prd --out-dir ../../.codex-artifacts/release/prd/cms
+          node scripts/build-public-release.mjs uat
+          node scripts/build-public-release.mjs prd
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs pack
       - name: Install preview test browsers
         run: pnpm exec playwright install --with-deps chromium firefox
@@ -206,6 +208,8 @@ jobs:
       - name: Deploy UAT Worker
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-backend uat
+          pnpm --filter @blackbox/backend cms:application-migrations --env uat --apply
+          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/uat/renderer/server/wrangler.json
           pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/uat/worker/server/wrangler.json --keep-vars
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker uat
           pnpm store:listing-readiness:verify -- --env uat --url "$UAT_PUBLIC_BACKEND_BASE_URL/api/store/listing-prices"
@@ -230,6 +234,7 @@ jobs:
       - name: Deploy UAT to Cloudflare Pages
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify uat
+          node .codex-artifacts/release-tools/scripts/configure-public-gateway.mjs uat
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/uat/public --project-name=blackbox-records-web-uat --branch=main --commit-hash="$SOURCE_SHA"
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-hosted uat
       - *observe-uat
@@ -305,6 +310,11 @@ jobs:
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend d1:migrations:apply:prd
+      - name: Deploy candidate PRD public renderer
+        run: |
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
+          pnpm --filter @blackbox/backend cms:application-migrations --env prd --apply --confirm-live-cms-changes
+          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/prd/renderer/server/wrangler.json
       - name: Deploy candidate combined PRD CMS Worker
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
@@ -332,6 +342,7 @@ jobs:
       - name: Deploy PRD static frontend to Cloudflare Pages
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
+          node .codex-artifacts/release-tools/scripts/configure-public-gateway.mjs prd
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/public --project-name=blackbox-records-web --branch=main --commit-hash="$SOURCE_SHA"
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-hosted prd
       - *observe-prd

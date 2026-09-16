@@ -14,7 +14,7 @@ Current product environments are Local, UAT, and PRD. UAT is Cloudflare Pages pl
 ## Current stack
 
 - pnpm workspace monorepo
-- Astro 7, static output
+- Astro 7, accepted-snapshot public runtime plus retained static build
 - React integration for shadcn-ui primitives and the persistent app shell
 - Tailwind CSS v4 + shadcn-ui primitives
 - Worker backend uses TypeScript + Hono + code-first OpenAPI
@@ -217,12 +217,12 @@ Read these first before editing:
   - default `base: /blackbox-records/`
 - Cloudflare Pages PRD builds override those defaults through non-secret `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/` so the artifact serves from the Pages domain root.
 - Do not change `site` or `base` behavior unless the task explicitly requires deployment URL changes.
-- Cloudflare Pages hosting must keep the PRD frontend static and deploy only the prebuilt `apps/web/dist` artifact.
+- Cloudflare Pages deploys the retained public assets and a GET/HEAD service-binding gateway to the accepted-snapshot renderer. Content publication does not rebuild or deploy code. See docs/content-publication.md.
 - The independent staff frontend builds to `apps/staff/dist`; its assets ship only inside the combined CMS Worker. No detached staff Pages upload runs.
 - The static frontend workflow must run `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and PRD `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
 - The PRD static build job may pass only non-secret PRD build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset. Snapshot refresh additionally supplies the non-secret `CMS_CONTENT_SOURCE`, `CMS_CONTENT_SNAPSHOT`, `CMS_CONTENT_SHA256`, and `CMS_CONTENT_ENVIRONMENT` build inputs. Restore credentials belong only to the preceding trusted restore step, never the build step.
 - Cloudflare Pages PRD deploys must run through `.github/workflows/pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not acceptance evidence.
-- Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
+- Cloudflare Pages may own only the public gateway; it must not own business backend routes, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
 - Cloudflare Pages is the UAT static host. Do not describe it as PRD rollback or legacy production hosting.
 - Native commerce migration work must treat UAT as Cloudflare Pages plus UAT Worker and PRD as Cloudflare Pages plus PRD Worker. External-shop behavior remains historical commerce context, not the final architecture.
 

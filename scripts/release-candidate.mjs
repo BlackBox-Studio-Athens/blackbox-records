@@ -22,6 +22,7 @@ export function configuration(env = process.env) {
     worker: sha256(readFileSync('apps/backend/wrangler.jsonc')),
     cmsResources: sha256(readFileSync('apps/backend/cms-resources.json')),
     cmsBuild: sha256(readFileSync('apps/backend/astro.config.mjs')),
+    publicBuild: sha256(readFileSync('apps/backend/astro.public.config.mjs')),
     lockfile: sha256(readFileSync('pnpm-lock.yaml')),
     migrations: inventory('apps/backend/prisma/migrations'),
     cmsMigrations: inventory('apps/backend/cms-migrations'),
@@ -73,6 +74,7 @@ export function validateOrder(candidate, current) {
 }
 
 export function validatePublicationFreshness(candidate, current) {
+  if (candidate.publicationMode === 'runtime' && current?.publicationMode === 'runtime') return;
   assert.deepEqual(
     candidate.content ?? null,
     current?.content ?? null,
@@ -175,7 +177,7 @@ export function contentPublicationIdentity(code, content, checkedOutSha) {
     content.publicationId ?? '',
     /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i,
   );
-  assert.match(content.ciRunId ?? '', /^[1-9][0-9]{0,19}$/);
+  assert.match(content.ciRunId ?? '', /^(?:[1-9][0-9]{0,19}|runtime)$/);
   assert.match(content.snapshotSha256 ?? '', /^[a-f0-9]{64}$/);
   return {
     ...identity(code),
@@ -218,7 +220,14 @@ export function verifyFiles(candidate, directory = bundle) {
     ])
       assert.ok(existsSync(`${directory}/${target}/${file}`), `Missing combined CMS artifact: ${target}/${file}`);
   }
-  for (const target of ['uat/public', 'prd/public', 'uat/worker', 'prd/cms', 'migrations']) {
+  for (const target of [
+    'uat/public',
+    'prd/public',
+    'uat/worker',
+    'prd/cms',
+    'migrations',
+    ...(candidate.publicationMode === 'runtime' ? ['uat/renderer', 'prd/renderer'] : []),
+  ]) {
     assert.ok(existsSync(`${directory}/${target}`), `Missing artifact: ${target}`);
     assert.deepEqual(
       inventory(`${directory}/${target}`),
@@ -266,6 +275,7 @@ async function main(command, target) {
     cpSync('apps/backend/prisma/migrations', `${bundle}/migrations`, { recursive: true });
     const candidate = {
       schema: 2,
+      publicationMode: 'runtime',
       sha,
       workflowSha: process.env.GITHUB_SHA,
       runId: process.env.GITHUB_RUN_ID,
@@ -299,9 +309,20 @@ async function main(command, target) {
       const content = surface.endsWith('public')
         ? readJson(`.codex-artifacts/release-content/${surface.split('/')[0]}/identity.json`)
         : null;
-      writeFileSync(`${bundle}/${surface}/release.json`, JSON.stringify(refreshedReleaseIdentity(candidate, content)));
+      writeFileSync(
+        `${bundle}/${surface}/release.json`,
+        JSON.stringify({ ...refreshedReleaseIdentity(candidate, content), publicationMode: 'runtime' }),
+      );
     }
-    for (const directory of ['uat/public', 'prd/public', 'uat/worker', 'prd/cms', 'migrations']) {
+    for (const directory of [
+      'uat/public',
+      'prd/public',
+      'uat/worker',
+      'prd/cms',
+      'uat/renderer',
+      'prd/renderer',
+      'migrations',
+    ]) {
       assert.ok(statSync(`${bundle}/${directory}`).isDirectory());
       candidate.files[directory] = inventory(`${bundle}/${directory}`);
     }
@@ -361,11 +382,13 @@ async function main(command, target) {
   const workerRunNumber = workerResponse.headers.get('X-Release-Run-Number');
   if (workerRunNumber !== null) validateOrder(candidate, { runNumber: Number(workerRunNumber) });
   if (command === 'verify-hosted') {
-    assert.deepEqual(
-      current,
-      readJson(`${bundle}/${target}/public/release.json`),
-      'Deployed artifact identity mismatch.',
-    );
+    assert.deepEqual(identity(current), identity(candidate), 'Deployed artifact identity mismatch.');
+    assert.equal(current.publicationMode, candidate.publicationMode);
+    assert.match(current.content?.snapshotSha256 ?? '', /^[a-f0-9]{64}$/);
+    const page = await fetch(`${site}/`, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
+    assert.ok(page.ok, 'Public renderer unavailable.');
+    assert.equal(page.headers.get('X-Release-SHA'), candidate.sha);
+    await page.body?.cancel();
   }
   if (command === 'verify-hosted' || command === 'verify-worker') {
     validateWorker(candidate, workerResponse);

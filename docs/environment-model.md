@@ -2,6 +2,8 @@
 
 BlackBox Records uses three Product Environments: Local, UAT, and PRD. Other names such as GitHub Actions environment, Stripe test mode, Stripe live mode, and sandbox are platform or provider layers mapped under that product model.
 
+Public HTML renders from accepted snapshots behind the existing Pages origins. Pages retains static assets and the public GET/HEAD gateway. Each environment has its own renderer and R2 pointer; commerce and staff remain in the backend. See [content publication](content-publication.md).
+
 ## Matrix
 
 | Product Environment | Normal mode or surface   | Static frontend                                                   | Worker runtime target                       | D1 store                  | Stripe/provider mode                 | CI credential scope     | Secret store                                                                                    | Validation gates                                                                                                                                              |

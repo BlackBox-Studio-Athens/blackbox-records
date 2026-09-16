@@ -1,5 +1,6 @@
 ---
 import NewsDetailContent from '@/components/detail/NewsDetailContent.astro';
+import { getEntry } from '@/lib/content-reader';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { createNewsDetailStaticPaths, type NewsArticleEntry } from '@/lib/catalog-data';
 
@@ -11,7 +12,8 @@ interface Props {
   item: NewsArticleEntry;
 }
 
-const { item } = Astro.props;
+const item = Astro.props.item ?? (await getEntry('news', Astro.params.slug ?? ''));
+if (!item) return new Response('Not found', { status: 404 });
 ---
 
 <SiteLayout
