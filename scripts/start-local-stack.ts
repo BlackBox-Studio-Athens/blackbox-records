@@ -29,16 +29,19 @@ const BACKEND_PORT = 8787;
 const STATIC_PORT = 4321;
 const UAT_WORKER_URL = 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev';
 
-const localCmsEnvironment = { SVELTIA_BACKEND_MODE: 'local' };
-
 export function buildStackPlan(mode: LocalStackMode): StackPlan {
   const prepare: StackCommand[] =
     mode === 'uat-connected'
       ? []
       : [
           {
-            args: ['--filter', '@blackbox/backend', 'd1:prepare:local'],
+            args: [
+              '--filter',
+              '@blackbox/backend',
+              mode === 'stripe-test' ? 'd1:prepare:local' : 'd1:migrations:apply:local',
+            ],
             command: 'pnpm',
+            env: { CI: 'true' },
             name: 'Prepare local D1',
           },
         ];
@@ -67,7 +70,6 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         args: ['site:dev'],
         command: 'pnpm',
         env: {
-          ...localCmsEnvironment,
           PUBLIC_BACKEND_BASE_URL: `http://127.0.0.1:${BACKEND_PORT}`,
           PUBLIC_CHECKOUT_CLIENT_MODE: 'stripe',
         },
@@ -77,7 +79,7 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
     );
   } else if (mode === 'stripe-mock') {
     prepare.push({
-      args: ['--filter', '@blackbox/backend', 'd1:seed:stripe-mock:local'],
+      args: ['--filter', '@blackbox/backend', 'd1:seed:stripe-mock:local', '--if-empty'],
       command: 'pnpm',
       name: 'Seed stripe-mock mappings',
     });
@@ -98,9 +100,9 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         args: ['site:dev'],
         command: 'pnpm',
         env: {
-          ...localCmsEnvironment,
           PUBLIC_BACKEND_BASE_URL: `http://127.0.0.1:${BACKEND_PORT}`,
           PUBLIC_CHECKOUT_CLIENT_MODE: 'mock',
+          CMS_LOCAL_PUBLICATION: '1',
         },
         name: 'Static site',
         waitForPort: STATIC_PORT,
@@ -108,7 +110,7 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
     );
   } else if (mode === 'stripe-mock-api') {
     prepare.push({
-      args: ['--filter', '@blackbox/backend', 'd1:seed:stripe-mock:local'],
+      args: ['--filter', '@blackbox/backend', 'd1:seed:stripe-mock:local', '--if-empty'],
       command: 'pnpm',
       name: 'Seed stripe-mock mappings',
     });
@@ -129,9 +131,9 @@ export function buildStackPlan(mode: LocalStackMode): StackPlan {
         args: ['site:dev'],
         command: 'pnpm',
         env: {
-          ...localCmsEnvironment,
           PUBLIC_BACKEND_BASE_URL: `http://127.0.0.1:${BACKEND_PORT}`,
           PUBLIC_CHECKOUT_CLIENT_MODE: 'mock',
+          CMS_LOCAL_PUBLICATION: '1',
         },
         name: 'Static site',
         waitForPort: STATIC_PORT,
@@ -238,17 +240,16 @@ async function main() {
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
 
-  for (const command of plan.longRunning) {
-    processes.start(command);
-
-    if (command.waitForPort) {
-      await Promise.race([waitForPort(command.waitForPort, command.name), processes.waitForUnexpectedExit()]);
-    }
-  }
-
   try {
+    for (const command of plan.longRunning) {
+      processes.start(command);
+      if (command.waitForPort) {
+        await Promise.race([waitForPort(command.waitForPort, command.name), processes.waitForUnexpectedExit()]);
+      }
+    }
     await processes.waitForUnexpectedExit();
   } catch (error) {
+    await processes.shutdown();
     exitAfterUnexpectedServiceExit(error);
   }
 }
@@ -296,7 +297,7 @@ async function assertPortsAvailable(ports: number[]) {
 }
 
 async function waitForPort(port: number, label: string) {
-  for (let attempt = 0; attempt < 120; attempt += 1) {
+  for (let attempt = 0; attempt < 600; attempt += 1) {
     if (!(await isPortAvailable(port))) {
       return;
     }

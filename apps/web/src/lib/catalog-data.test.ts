@@ -169,6 +169,24 @@ describe('groupDistroEntries', () => {
 });
 
 describe('StoreItem projection contract', () => {
+  it('keeps persisted Store Item identity when editorial title or format changes', async () => {
+    const release = createReleaseEntry('stable-source', {
+      artist: { collection: 'artists', id: 'afterwise' },
+      cover_image: createTestImage('/new-cover.jpg'),
+      cover_image_alt: 'New cover',
+      release_date: new Date('2026-09-14'),
+      title: 'Renamed release',
+      formats: ['CD'],
+      store_item: { storeItemSlug: 'original-store-slug', variantId: 'variant_persisted' },
+    });
+    expect(await getStoreItemForRelease(release)).toMatchObject({
+      slug: 'original-store-slug',
+      variantId: 'variant_persisted',
+      storePath: '/blackbox-records/store/original-store-slug/',
+    });
+    release.data.store_item = null;
+    expect(await getStoreItemForRelease(release)).toBeNull();
+  });
   it('creates a release-derived store item with a stable store path', async () => {
     const storeItem = await createStoreItemFromRelease(
       createReleaseEntry('caregivers-control', {

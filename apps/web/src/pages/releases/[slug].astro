@@ -1,5 +1,6 @@
 ---
 import ReleaseDetailContent from '@/components/detail/ReleaseDetailContent.astro';
+import { getEntry } from '@/lib/content-reader';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import {
   createReleaseDetailStaticPaths,
@@ -16,7 +17,8 @@ interface Props {
   release: ReleaseCatalogEntry;
 }
 
-const { release } = Astro.props;
+const release = Astro.props.release ?? (await getEntry('releases', Astro.params.slug ?? ''));
+if (!release) return new Response('Not found', { status: 404 });
 const releaseArtist = await resolveArtistProfileForRelease(release);
 const artistName = resolveReleaseArtistDisplayName(release, releaseArtist);
 ---

@@ -1,6 +1,6 @@
 import type { SandboxedPlugin } from 'emdash/plugin';
 import { ContentSaveRejectedError } from 'emdash';
-import { contentMediaIds, isCmsCollection, validateCmsContent } from './content-schema';
+import { contentMediaIds, isCmsCollection, validateCmsContent } from '@blackbox/content-model';
 
 export default {
   hooks: {

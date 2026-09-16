@@ -72,22 +72,27 @@ try {
   process.exit(1);
 }
 
-const astroProcess = spawnAstroDev();
+if (process.env.CMS_LOCAL_PUBLICATION === '1') {
+  const { startLocalPublication } = await import('./start-local-publication.mjs');
+  await startLocalPublication();
+} else {
+  const astroProcess = spawnAstroDev();
 
-const forwardSignal = (signal) => {
-  if (!astroProcess.killed) {
-    astroProcess.kill(signal);
-  }
-};
+  const forwardSignal = (signal) => {
+    if (!astroProcess.killed) {
+      astroProcess.kill(signal);
+    }
+  };
 
-process.on('SIGINT', () => forwardSignal('SIGINT'));
-process.on('SIGTERM', () => forwardSignal('SIGTERM'));
+  process.on('SIGINT', () => forwardSignal('SIGINT'));
+  process.on('SIGTERM', () => forwardSignal('SIGTERM'));
 
-astroProcess.on('exit', (code, signal) => {
-  if (signal) {
-    process.kill(process.pid, signal);
-    return;
-  }
+  astroProcess.on('exit', (code, signal) => {
+    if (signal) {
+      process.kill(process.pid, signal);
+      return;
+    }
 
-  process.exit(code ?? 0);
-});
+    process.exit(code ?? 0);
+  });
+}

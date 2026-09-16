@@ -1,0 +1,9 @@
+---
+import ContentApp from '../../components/content/ContentApp';
+import StockOpsLayout from '../../layouts/StockOpsLayout.astro';
+import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api';
+---
+
+<StockOpsLayout pageTitle="Content" pageDescription="Edit label pages and save drafts.">
+  <ContentApp backendBaseUrl={getInternalStockApiBaseUrl()} client:load />
+</StockOpsLayout>

@@ -2,11 +2,200 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createHash } from 'node:crypto';
 import { captureCmsSnapshot } from './capture-cms-snapshot.mjs';
+import { writeCmsSnapshot } from './export-cms-snapshot.mjs';
+import { prepareContentPublication } from './prepare-content-publication.mjs';
+import { acknowledgeContentPublication } from './acknowledge-content-publication.mjs';
+import { restorePublishedContent } from './restore-published-content.mjs';
+import { mkdtemp, mkdir, readFile, rm, access, writeFile } from 'node:fs/promises';
+import { activateLocalBuild } from '../apps/web/scripts/start-local-publication.mjs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const imageBytes = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWZkAAAAASUVORK5CYII=',
   'base64',
 );
+
+test('keeps published distro browsable without commerce setup and preserves bound identities', async () => {
+  const original = readers();
+  const input = {
+    ...original,
+    ...mediaReaders,
+    readPage: (collection) => (collection === 'distro' ? original.readPage('socials') : { items: [], total: 0 }),
+    readRevision: async () => ({
+      ...revision,
+      collection: 'distro',
+      data: {
+        title: 'Record',
+        group: 'CDs',
+        artist_or_label: 'Artist',
+        image: { id: 'image' },
+        image_alt: 'Cover',
+        summary: 'Album',
+        order: 0,
+      },
+    }),
+    readStoreItems: async () => [],
+  };
+  const display = {
+    sourceKind: 'distro',
+    sourceId: 'record',
+    storeItemSlug: 'record',
+    variantId: 'variant_record_standard',
+  };
+  assert.deepEqual((await captureCmsSnapshot(input)).snapshot.storeItems, [display]);
+  const bound = { ...display, storeItemSlug: 'record-cd', variantId: 'variant_retained' };
+  assert.deepEqual((await captureCmsSnapshot({ ...input, readStoreItems: async () => [bound] })).snapshot.storeItems, [
+    bound,
+  ]);
+});
+
+test('omits legacy catalog identities that have no published CMS source', async () => {
+  const capture = await captureCmsSnapshot({
+    ...readers(),
+    readStoreItems: async () => [
+      {
+        sourceKind: 'distro',
+        sourceId: '___',
+        storeItemSlug: 'local-invalid-fixture',
+        variantId: 'variant_____standard',
+      },
+    ],
+  });
+  assert.deepEqual(capture.snapshot.storeItems, []);
+});
+
+test('activates a prepared Local build and restores the served build when replacement fails', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'blackbox-publication-'));
+  try {
+    for (const name of ['public', 'next']) {
+      await mkdir(join(directory, name));
+      await writeFile(join(directory, name, 'index.html'), name);
+    }
+    await activateLocalBuild(directory);
+    assert.equal(await readFile(join(directory, 'public/index.html'), 'utf8'), 'next');
+    assert.equal(await readFile(join(directory, 'previous/index.html'), 'utf8'), 'public');
+    await assert.rejects(activateLocalBuild(directory));
+    assert.equal(await readFile(join(directory, 'public/index.html'), 'utf8'), 'next');
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('publication acknowledges only matching canonical deployment and public content without forwarding credentials', async () => {
+  const env = {
+    PUBLICATION_TARGET: 'prd',
+    CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32),
+    CLOUDFLARE_API_TOKEN: 'provider-secret',
+    CMS_PUBLICATION_EXPORT_TOKEN: 'b'.repeat(64),
+    PUBLICATION_ID: '12345678-1234-4234-8234-123456789012',
+    GITHUB_RUN_ID: '123',
+    CMS_EXPORT_ACCESS_CLIENT_ID: 'access-id',
+    CMS_EXPORT_ACCESS_CLIENT_SECRET: 'access-secret',
+  };
+  const expected = {
+    sha: 'c'.repeat(40),
+    runId: '100',
+    runNumber: 1,
+    content: { publicationId: env.PUBLICATION_ID, ciRunId: '123', snapshotSha256: 'd'.repeat(64) },
+  };
+  let calls = 0;
+  let wrongContent = false;
+  const send = async (url, init) => {
+    calls++;
+    const target = new URL(url);
+    if (target.hostname === 'api.cloudflare.com')
+      return Response.json({
+        success: true,
+        result: {
+          name: 'blackbox-records-web',
+          canonical_deployment: {
+            id: env.PUBLICATION_ID,
+            url: 'https://abc123.blackbox-records-web.pages.dev',
+            environment: 'production',
+            latest_stage: { name: 'deploy', status: 'success' },
+            deployment_trigger: { metadata: { commit_hash: expected.sha } },
+          },
+        },
+      });
+    if (
+      target.hostname === 'blackbox-records-web.pages.dev' ||
+      target.hostname === 'abc123.blackbox-records-web.pages.dev'
+    ) {
+      assert.deepEqual(init.headers, {});
+      return Response.json(wrongContent ? { ...expected, content: {} } : expected);
+    }
+    assert.equal(target.hostname, 'staff.blackboxrecordsathens.com');
+    assert.equal(JSON.parse(init.body).deploymentId, env.PUBLICATION_ID);
+    assert.equal(init.headers.Authorization, `Bearer ${env.CMS_PUBLICATION_EXPORT_TOKEN}`);
+    return Response.json({ id: env.PUBLICATION_ID, status: 'live' });
+  };
+  await acknowledgeContentPublication({ env, expected }, send);
+  assert.equal(calls, 4);
+  calls = 0;
+  wrongContent = true;
+  await assert.rejects(acknowledgeContentPublication({ env, expected }, send), /Deployment content identity differs/);
+  assert.equal(calls, 2);
+});
+
+test('publication preparation claims before bounded export and stops immediately on a rejected claim', async () => {
+  const parent = await mkdtemp(join(tmpdir(), 'publication-prepare-'));
+  const input = {
+    environment: 'local',
+    target: 'http://127.0.0.1:8799/',
+    directory: join(parent, 'snapshot'),
+    publicationId: '12345678-1234-4234-8234-123456789012',
+    dispatchToken: '12345678-1234-4234-8234-123456789013',
+    ciRunId: '123',
+    codeSha: 'a'.repeat(40),
+    token: 'b'.repeat(64),
+    exportToken: 'ec_pat_' + 'c'.repeat(43),
+    maxRequests: 30,
+    accessClientId: '',
+    accessClientSecret: '',
+  };
+  try {
+    let calls = 0;
+    await assert.rejects(
+      prepareContentPublication(input, async () => {
+        calls++;
+        return new Response('', { status: 409 });
+      }),
+      /claim failed/,
+    );
+    assert.equal(calls, 1);
+    calls = 0;
+    const result = await prepareContentPublication(input, async (url, init) => {
+      calls++;
+      if (calls === 1) {
+        assert.ok(url.pathname.endsWith('/run'));
+        assert.equal(JSON.parse(init.body).codeSha, input.codeSha);
+        return Response.json({ id: input.publicationId, status: 'pending' });
+      }
+      if (init.method === 'GET') {
+        if (url.pathname.endsWith('/catalog')) {
+          assert.equal(init.headers.get('Authorization'), null);
+          return Response.json({ data: [] });
+        }
+        assert.equal(init.headers.get('Authorization'), `Bearer ${input.exportToken}`);
+        return Response.json({ data: { items: [], total: 0, nextCursor: null } });
+      }
+      assert.ok(url.pathname.endsWith('/snapshot'));
+      assert.equal(init.headers.get('Authorization'), `Bearer ${input.token}`);
+      return Response.json({
+        id: input.publicationId,
+        snapshotSha256: createHash('sha256').update(init.body).digest('hex'),
+      });
+    });
+    assert.equal(result.requests, 28);
+    assert.equal(calls, 30);
+    assert.equal(JSON.parse(await readFile(result.path, 'utf8')).environment, 'local');
+  } finally {
+    await rm(parent, { recursive: true, force: true });
+  }
+});
 const imageMetadata = {
   id: 'image',
   filename: 'image.png',
@@ -18,6 +207,80 @@ const imageMetadata = {
   status: 'ready',
   contentHash: `sha1:${createHash('sha1').update(imageBytes).digest('hex')}`,
 };
+
+test('restores the pinned public snapshot without reading editable CMS content or forwarding public credentials', async () => {
+  const parent = await mkdtemp(join(tmpdir(), 'published-restore-'));
+  const sha256 = createHash('sha256').update(imageBytes).digest('hex');
+  const json = JSON.stringify({
+    schemaVersion: 1,
+    environment: 'uat',
+    records: [
+      {
+        collection: 'news',
+        id: 'one',
+        slug: 'news',
+        revisionId: 'live-one',
+        data: { title: 'Published', date: '2026-09-14', summary: 'Copy', image: { id: 'image' }, image_alt: 'Cover' },
+      },
+    ],
+    media: [
+      {
+        id: 'image',
+        filename: 'cover.png',
+        mimeType: 'image/png',
+        size: imageBytes.length,
+        width: 1,
+        height: 1,
+        sha256,
+      },
+    ],
+  });
+  const content = {
+    publicationId: '12345678-1234-4234-8234-123456789012',
+    ciRunId: '123',
+    snapshotSha256: createHash('sha256').update(json).digest('hex'),
+  };
+  const input = {
+    environment: 'uat',
+    target: 'https://staff-uat.blackboxrecordsathens.com/',
+    directory: join(parent, 'snapshot'),
+    token: 'a'.repeat(64),
+    accessClientId: 'id',
+    accessClientSecret: 'secret',
+    maxRequests: 2,
+  };
+  let calls = 0;
+  const send = async (url, init) => {
+    calls++;
+    const address = new URL(url);
+    if (address.hostname === 'blackbox-records-web-uat.pages.dev') {
+      assert.deepEqual(init.headers, {});
+      return Response.json({ sha: 'b'.repeat(40), content });
+    }
+    assert.equal(address.hostname, 'staff-uat.blackboxrecordsathens.com');
+    assert.equal(init.headers['X-Publication-ID'], content.publicationId);
+    assert.equal(init.headers.Authorization, `Bearer ${input.token}`);
+    assert.ok(!address.pathname.includes('/content/'));
+    return new Response(address.pathname.endsWith('/snapshot') ? json : imageBytes);
+  };
+  try {
+    assert.deepEqual(await restorePublishedContent(input, send), {
+      source: 'snapshot',
+      sha256: content.snapshotSha256,
+    });
+    assert.equal(calls, 3);
+    assert.equal(await readFile(join(input.directory, 'snapshot.json'), 'utf8'), json);
+    calls = 0;
+    await assert.rejects(
+      restorePublishedContent({ ...input, directory: join(parent, 'limited'), maxRequests: 1 }, send),
+      /request budget/,
+    );
+    assert.equal(calls, 2);
+    await assert.rejects(access(join(parent, 'limited')));
+  } finally {
+    await rm(parent, { recursive: true, force: true });
+  }
+});
 const mediaReaders = { readMedia: async () => imageMetadata, readMediaFile: async () => imageBytes };
 
 const published = {
@@ -55,6 +318,30 @@ function readers(change = () => {}) {
     },
   };
 }
+test('normalizes only native navigation boolean columns before validating published content', async () => {
+  const original = readers();
+  const input = {
+    ...original,
+    readPage: (collection) => (collection === 'navigation' ? original.readPage('socials') : { items: [], total: 0 }),
+    readRevision: async () => ({
+      ...revision,
+      collection: 'navigation',
+      data: { title: 'Home', url: '/', order: 0, show_in_header: 1, show_in_footer: 0 },
+    }),
+  };
+  const result = await captureCmsSnapshot(input);
+  assert.equal(result.snapshot.records[0].data.show_in_header, true);
+  assert.equal(result.snapshot.records[0].data.show_in_footer, false);
+  const record = await input.readRevision();
+  await assert.rejects(
+    captureCmsSnapshot({
+      ...input,
+      readRevision: async () => ({ ...record, data: { ...record.data, show_in_header: 2 } }),
+    }),
+    /Invalid published CMS content/,
+  );
+});
+
 test('captures only pinned live data with a deterministic digest, omitting draft data and pointers', async () => {
   const first = await captureCmsSnapshot(readers());
   assert.equal(first.snapshot.records.length, 1);
@@ -63,6 +350,42 @@ test('captures only pinned live data with a deterministic digest, omitting draft
   assert.equal(first.json.includes('draft-two'), false);
   assert.equal(first.sha256, (await captureCmsSnapshot(readers())).sha256);
   assert.equal(first.requests, 27);
+});
+
+test('exports captured bytes into a fresh build directory and rejects invalid input before writes', async (t) => {
+  const root = await mkdtemp(join(tmpdir(), 'blackbox-snapshot-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const capture = await captureCmsSnapshot(readers());
+  const output = join(root, 'capture');
+  const input = await writeCmsSnapshot(capture, output, 'uat');
+  assert.equal(await readFile(input.path, 'utf8'), capture.json);
+  assert.equal(input.sha256, capture.sha256);
+  const repeated = spawnSync(
+    process.execPath,
+    [
+      '--import',
+      'tsx',
+      fileURLToPath(new URL('./export-cms-snapshot.mjs', import.meta.url)),
+      '--env',
+      'local',
+      '--target',
+      'http://127.0.0.1:8799/',
+      '--out',
+      output,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(repeated.status, 1);
+  assert.match(repeated.stderr, /no CMS reads were made/);
+  await assert.rejects(writeCmsSnapshot(capture, output, 'uat'), { code: 'EEXIST' });
+  for (const invalid of [
+    { ...capture, sha256: '0'.repeat(64) },
+    { ...capture, files: new Map([['extra', imageBytes]]) },
+  ]) {
+    await assert.rejects(writeCmsSnapshot(invalid, join(root, 'invalid'), 'uat'));
+    await assert.rejects(access(join(root, 'invalid')), { code: 'ENOENT' });
+  }
+  await assert.rejects(writeCmsSnapshot(capture, join(root, 'wrong-target'), 'prd'));
 });
 test('rejects edits, revision mismatches, incomplete pages, and exhausted budgets without returning a snapshot', async () => {
   await assert.rejects(captureCmsSnapshot(readers((item) => item.version++)), /changed/);

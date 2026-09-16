@@ -12,12 +12,18 @@ const root = path.resolve(backend, '../..');
 const args = process.argv.slice(2);
 const environment = args[args.indexOf('--env') + 1];
 const apply = args.includes('--apply');
-if (environment !== 'uat' && environment !== 'prd') throw new Error('Select --env uat|prd.');
+const setLocalInclusiveTax = args.includes('--set-local-inclusive-tax');
+if (environment !== 'local' && environment !== 'uat' && environment !== 'prd')
+  throw new Error('Select --env local|uat|prd.');
+if (setLocalInclusiveTax && environment !== 'local')
+  throw new Error('--set-local-inclusive-tax is restricted to Local test Prices.');
 if (apply && environment === 'prd' && !args.includes('--confirm-live-catalog-changes')) {
   throw new Error('PRD migration requires --confirm-live-catalog-changes for this run.');
 }
 const key = process.env.STRIPE_SECRET_KEY ?? '';
-if (!key.startsWith(environment === 'uat' ? 'sk_test_' : 'sk_live_')) throw new Error('Wrong Stripe key mode.');
+if (!key.startsWith(environment === 'prd' ? 'sk_live_' : 'sk_test_') || key === 'sk_test_mock')
+  throw new Error('Wrong Stripe key mode.');
+const targetArgs = environment === 'local' ? ['--local'] : ['--env', environment, '--remote'];
 const stripe = new Stripe(key);
 const gateway = new StripeCatalogGatewayClient(stripe);
 const evidence = path.join(root, '.codex-artifacts/catalog-migration', `${environment}-${Date.now()}`);
@@ -32,7 +38,7 @@ function wrangler(args: string[]): string {
   });
 }
 function query(sql: string): string {
-  return wrangler(['d1', 'execute', 'COMMERCE_DB', '--env', environment!, '--remote', '--command', sql, '--json']);
+  return wrangler(['d1', 'execute', 'COMMERCE_DB', ...targetArgs, '--command', sql, '--json']);
 }
 function quote(value: string): string {
   return `'${value.replaceAll("'", "''")}'`;
@@ -42,9 +48,7 @@ wrangler([
   'd1',
   'export',
   'COMMERCE_DB',
-  '--env',
-  environment,
-  '--remote',
+  ...targetArgs,
   '--output',
   path.join(evidence, 'before.sql'),
   '--table',
@@ -67,16 +71,18 @@ const rows = JSON.parse(output.slice(output.indexOf('['), output.lastIndexOf(']'
 const contracts = (
   await loadStripeCatalogStoreItemContracts({
     projectRoot: root,
-    productEnvironment: environment === 'uat' ? 'UAT' : 'PRD',
+    productEnvironment: environment === 'prd' ? 'PRD' : 'UAT',
   })
-).filter((c) => c.desiredCatalogEntry.targetEnvironments.includes(environment));
+).filter((c) => c.desiredCatalogEntry.targetEnvironments.includes(environment === 'prd' ? 'prd' : 'uat'));
 const plan = [];
 for (const contract of contracts) {
   const mapping = rows.find((row) => row.variantId === contract.variantId);
+  if (environment === 'local' && mapping?.stripePriceId.startsWith('price_mock_')) continue;
   if (mapping?.stripeProductId) continue;
   const priceId = mapping?.stripePriceId;
   if (!priceId) throw new Error(`${contract.storeItemSlug}: trusted Price mapping is missing.`);
   const price = await gateway.retrievePrice(priceId);
+  const setInclusiveTax = setLocalInclusiveTax && price?.taxBehavior === 'unspecified';
   const expected = {
     appEnv: environment,
     sourceId: contract.sourceId,
@@ -88,7 +94,7 @@ for (const contract of contracts) {
     !price?.productId ||
     !Object.entries(expected).every(([k, v]) => price.productMetadata[k] === v) ||
     Object.entries(expected).some(([k, v]) => price.metadata[k] !== undefined && price.metadata[k] !== v) ||
-    !createStoreOfferPriceFromCatalogPrice(price) ||
+    !createStoreOfferPriceFromCatalogPrice(setInclusiveTax ? { ...price, taxBehavior: 'inclusive' } : price) ||
     price.productTaxCode !== 'txcd_99999999'
   ) {
     throw new Error(`${contract.storeItemSlug}: Price identity, currency, amount, or tax needs review.`);
@@ -108,6 +114,7 @@ for (const contract of contracts) {
     productId: product.id,
     priceId,
     currentDefault,
+    setInclusiveTax,
   });
 }
 await writeFile(path.join(evidence, 'bindings.json'), JSON.stringify(plan, null, 2));
@@ -116,6 +123,7 @@ console.log(
 );
 if (apply) {
   for (const item of plan) {
+    if (item.setInclusiveTax) await stripe.prices.update(item.priceId, { tax_behavior: 'inclusive' });
     if (!item.currentDefault)
       await stripe.products.update(item.productId, {
         default_price: item.priceId,
@@ -130,6 +138,6 @@ if (apply) {
       .join('\n');
     const sqlPath = path.join(evidence, 'bindings.sql');
     await writeFile(sqlPath, sql);
-    wrangler(['d1', 'execute', 'COMMERCE_DB', '--env', environment, '--remote', '--file', sqlPath, '--json']);
+    wrangler(['d1', 'execute', 'COMMERCE_DB', ...targetArgs, '--file', sqlPath, '--json']);
   }
 }

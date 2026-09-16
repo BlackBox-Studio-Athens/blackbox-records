@@ -4,6 +4,113 @@ Specify repository validation gates, local tooling, dependency-audit posture, an
 
 ## Requirements
 
+### Requirement: Cleanup validates EmDash continuity without compiled catalog
+
+Installation, ordinary checks, tests, builds and Local startup SHALL work without a generated catalog manifest. Acceptance SHALL cover runtime-only items, member prices, draft privacy, publication ordering, and staff access.
+
+#### Scenario: Clean workspace validation
+
+- **WHEN** required checks run without generated catalog outputs
+- **THEN** they pass without recreating a compiled manifest or mutating hosted catalog state.
+
+#### Scenario: Published distro lacks commerce setup
+
+- **WHEN** a snapshot contains published distro without a runtime item
+- **THEN** it remains browsable without checkout eligibility; a bound runtime identity takes precedence.
+
+### Requirement: CMS builds and hosted work prevent accidental quota exhaustion
+
+The canonical combined CMS build SHALL reject KV bindings in source and final generated Wrangler configuration. Astro sessions SHALL remain disabled while Access supplies request identity. Hosted bulk work SHALL follow the documented Free-tier operating rule.
+
+#### Scenario: A dependency introduces session storage
+
+- **WHEN** an adapter update injects a KV namespace into the generated artifact
+- **THEN** the CMS build fails before deployment
+- **AND** the authenticated-request regression continues to reject an Astro session cookie.
+
+#### Scenario: A bulk hosted operation is proposed
+
+- **WHEN** an import, repeated probe, recovery rehearsal, or background job consumes hosted operations
+- **THEN** local rehearsal and a bounded pilot establish actual operations including GET side effects
+- **AND** current account-wide remaining allowances, retry overhead, and ordinary service headroom are recorded before bulk execution
+- **AND** missing usage evidence keeps the work local.
+
+#### Scenario: Quota use exceeds the planned allowance
+
+- **WHEN** a quota alert or unexpected operation count appears
+- **THEN** affected bulk work and retries pause for diagnosis and a reduced budget
+- **AND** exhausted writes wait for the stated reset and a fresh usage check without upgrading the plan.
+
+#### Scenario: A quota-consuming resource is added intentionally
+
+- **WHEN** a new binding or background job is needed
+- **THEN** its purpose, owner, measured Free-tier budget, and exhaustion behavior are documented
+- **AND** KV requires an explicit guard/test policy change rather than a runtime bypass.
+
+### Requirement: One normal development command starts the working stack
+
+The documented normal command SHALL start public web, staff, CMS, commerce, local storage, and official Stripe mock behavior without real provider credentials or Docker.
+
+#### Scenario: Maintainer runs pnpm dev
+
+- **WHEN** the command starts on a configured development machine
+- **THEN** it runs the same stack as the canonical WebStorm launcher and existing dev:stack:stripe-mock command
+- **AND** public web stays at http://127.0.0.1:4321/blackbox-records/ with the backend on its fixed local port
+- **AND** occupied required ports fail clearly and child processes stop with the launcher.
+
+#### Scenario: The stack starts a second time
+
+- **WHEN** local CMS and commerce data already exist
+- **THEN** startup applies only pending compatible migrations and preserves prior edits and stock
+- **AND** explicit fixture reset is separate from ordinary startup.
+
+#### Scenario: Hosted credentials are absent
+
+- **WHEN** normal mock development starts
+- **THEN** no real Stripe, email, Cloudflare, GitHub, or CMS account secret is required
+- **AND** local identity bypass cannot work outside Local loopback requests.
+
+### Requirement: CMS and runtime catalog acceptance replaces generated-content checks
+
+Validation SHALL cover CMS schema/render parity, protected APIs, migration reconciliation, runtime identity, fixed/custom pricing, stock concurrency, and publication ordering without requiring hosted credentials for normal unit checks.
+
+#### Scenario: Backend is built
+
+- **WHEN** validation inspects its dependency graph and artifact
+- **THEN** no generated current catalog or imported public editorial records are required
+- **AND** deterministic tests use explicit fixtures rather than live CMS reads.
+
+#### Scenario: UAT migration is accepted
+
+- **WHEN** the integrated stack is exercised
+- **THEN** all four routine operations pass: price change, stock change, Release with ten vinyl, and Distro with ten vinyl
+- **AND** both fixed and pay-what-you-want paid flows, signed webhook replay, stock reservations, order workspace, and email retries retain their required behavior.
+
+#### Scenario: Publication or setup is interrupted
+
+- **WHEN** focused failure-injection checks retry each external-write boundary
+- **THEN** they detect duplicate identities, double opening stock, stale publication, leaked drafts, and accidental price/order resets.
+
+### Requirement: CMS cutover requires recoverability and cost evidence
+
+Cutover SHALL retain revision-bound repository gates, hosted CMS/publication checks, a restore rehearsal and free-tier resource evidence. The accepted combined artifact's existing evidence MAY be reused for unchanged behavior; subsequent changes require focused checks at affected boundaries and final PRD publication/source reconciliation. Repeating full suites, paid checkout or restore rehearsals solely for closure is not required.
+
+#### Scenario: Implementation reaches cutover
+
+- **WHEN** accepted-artifact unit/check/build and browser/provider evidence is combined with focused checks for later changes and final PRD publication verification
+- **THEN** evidence identifies their exact code revision and tested environment
+- **AND** missing account configuration, cost evidence, restore proof, or live authorization is reported as outstanding rather than successful acceptance.
+
+### Requirement: Runtime catalog validation preserves import provenance
+
+Migration and targeted catalog checks SHALL retain reviewed source matching, artwork evidence, supported price-kind policy, and rejected-duplicate handling without requiring the original distro manifest for future items.
+
+#### Scenario: Imported distro rows are checked
+
+- **WHEN** the old inventory source is converted into runtime records
+- **THEN** canonical rows, aliases, approved extras, and rejected duplicates reconcile exactly
+- **AND** new post-cutover items are validated directly rather than added to the retired manifest.
+
 ### Requirement: Standard repository gates
 
 The system SHALL run the standard repository gates after behavior-changing implementation.
@@ -394,62 +501,6 @@ The system SHALL test catalog field ownership through deterministic unit tests, 
 - **GIVEN** sandbox Stripe and Cloudflare credentials are available
 - **WHEN** live/operator checks run
 - **THEN** `pnpm stripe:webhooks:verify --env uat`, `pnpm stripe:catalog:verify --env uat`, UAT apply when needed, and Stripe sandbox smoke prove persistent webhook delivery and hosted Checkout catalog alignment without exposing secrets.
-
-### Requirement: Commerce validation MUST cover generated UAT catalog artifacts
-
-The validation workflow SHALL include a deterministic check that the backend Product Projection manifest and sandbox UAT D1 seed match the current Astro Store Item catalog.
-
-#### Scenario: Generated artifacts drift
-
-- **GIVEN** Astro Store Item content changes
-- **WHEN** `pnpm stripe:catalog:artifacts:check` runs before regenerating artifacts
-- **THEN** the command fails and identifies generated artifact drift.
-
-### Requirement: Sandbox UAT proof MUST follow reset, seed, apply, and smoke sequence
-
-The sandbox UAT proof sequence SHALL verify webhook readiness, catalog readiness, reset/apply behavior, UAT D1 seed application, backend deployment, and GitHub Pages hosted checkout smoke without committing secrets or full provider IDs. A pushed repo commit alone SHALL NOT be accepted as proof that Stripe sandbox catalog objects, D1 checkout readiness, or Store Offer snapshots have been updated.
-
-#### Scenario: Full UAT catalog proof is run
-
-- **GIVEN** Stripe sandbox credentials, the UAT Worker, and the GitHub Pages UAT storefront are available
-- **WHEN** the operator follows the documented UAT sequence
-- **THEN** catalog reset dry-run runs before confirmed mutation
-- **AND** D1 seed runs before catalog apply
-- **AND** catalog verification passes after apply
-- **AND** checkout smoke covers `checkout_surface` and `happy_path_paid`
-- **AND** evidence remains redacted and contains no secrets.
-
-#### Scenario: Confirmed provider reset invalidates stale D1 catalog pointers
-
-- **GIVEN** catalog promotion runs with confirmed UAT provider reset enabled
-- **WHEN** repo-owned sandbox Products and Prices are reset
-- **THEN** current and renamed repo-owned UAT catalog identities are included in the reset
-- **AND** active and inactive Products are included so interrupted resets can recover
-- **AND** active and inactive Prices are included so interrupted resets cannot leave canonical lookup identity behind
-- **AND** each Product is deactivated and stripped of ownership metadata before its default Price is detached from repo lookup and metadata identity
-- **AND** a Price that Stripe identifies as default during archival falls back to the same detach operation
-- **AND** non-default Prices are deactivated and stripped of repo lookup and metadata identity
-- **AND** current Store Item `StoreOfferSnapshot` and `VariantStripeMapping` rows are cleared before catalog apply
-- **AND** provider reset failure stops promotion before those D1 pointers are cleared
-- **AND** Stock, Item Availability, order state, and checkout eligibility are not cleared by the reset.
-
-#### Scenario: Promotion previews intended apply repairs
-
-- **GIVEN** UAT or PRD catalog promotion has prepared provider and D1 state
-- **WHEN** the workflow runs catalog verification with `--plan-apply`
-- **THEN** Desired Price and Product Projection repairs are planned without mutation
-- **AND** the plan succeeds only when every reported issue has its required planned repair actions
-- **AND** provider/API failures, unowned identity conflicts, orphan drift, and other unrepairable issues stop promotion before apply.
-
-#### Scenario: Provider execution lessons are enforced
-
-- **GIVEN** full sandbox catalog alignment is being accepted after an end-to-end provider run
-- **WHEN** an operator reviews the proof
-- **THEN** CLI catalog verification and smoke evidence are authoritative over Stripe Dashboard row counts
-- **AND** legacy BlackBox sandbox Product cleanup is considered only through current ownership metadata, lookup keys, or documented catalog-derived legacy names
-- **AND** webhook endpoint verification is treated as endpoint configuration proof, while paid smoke is treated as signing-secret and paid-order proof
-- **AND** the UAT Worker is redeployed from the final pushed commit after any live-run script or runtime fixes
-- **AND** low-stock smoke uses `afterglow-tape` only when low-stock behavior is the behavior under test.
 
 ### Requirement: Secret presence checks are redacted
 
@@ -1177,26 +1228,6 @@ The validation workflow SHALL extend the existing frontend runtime-performance r
 - **THEN** the run is rejected and its reason is recorded
 - **AND** Browser Use remains the authority for rendered correctness while Chrome tracing supplies only unavailable timing evidence.
 
-### Requirement: Catalog promotion validation is deterministic and fail-closed
-
-The system SHALL validate generated artifacts and every UAT promotion boundary before later mutation or deployment.
-
-#### Scenario: Artifact commit is evaluated
-
-- **WHEN** promotion starts
-- **THEN** artifact drift check, unit tests, repository check, and build pass before provider work.
-
-#### Scenario: UAT apply is evaluated
-
-- **WHEN** dry-run reports ambiguity, missing configuration, or an unsafe mutation
-- **THEN** apply does not run
-- **AND** failure output remains redacted.
-
-#### Scenario: Hosted readiness is evaluated
-
-- **WHEN** Worker/catalog preparation completes
-- **THEN** every canonical published Store Item has exactly one ready hosted listing record before static deployment.
-
 ### Requirement: Promotion evidence and smoke remain environment-safe
 
 The system SHALL verify UAT behavior and record PRD closure without inventing live proof.
@@ -1212,36 +1243,6 @@ The system SHALL verify UAT behavior and record PRD closure without inventing li
 - **WHEN** the PRD-open gate or required live configuration is absent
 - **THEN** validation reports not_configured
 - **AND** does not claim live provider, deploy, or Checkout proof.
-
-### Requirement: Distro source and projections are validated together
-
-The system SHALL fail deterministic checks when the manifest, content projection, pricing, artwork, or generated catalog disagree.
-
-#### Scenario: Manifest validation runs
-
-- **WHEN** catalog artifacts are checked
-- **THEN** emitted IDs and normalized identities are unique, aliases are unambiguous, rejected duplicates reference emitted rows, exactly the approved extras carry provenance, and every item type/price policy is valid.
-
-#### Scenario: Content projection validation runs
-
-- **WHEN** distro content is checked
-- **THEN** every current emitted content item maps to one manifest row
-- **AND** unapproved content, missing canonical content, or an emitted rejected row fails.
-
-#### Scenario: Artwork validation runs
-
-- **WHEN** an item lacks matched repository artwork
-- **THEN** artwork-fetcher evidence or explicit known-missing fallback evidence is required.
-
-### Requirement: Distro catalog acceptance includes UAT provider proof
-
-The system SHALL verify both fixed and pay-what-you-want paths before treating the manifest rollout as complete.
-
-#### Scenario: UAT proof runs
-
-- **WHEN** generated artifacts are applied to UAT
-- **THEN** catalog post-verification, static deployment, fixed-price paid smoke, and pay-what-you-want paid smoke pass
-- **AND** evidence excludes secrets, raw provider payloads, and full provider IDs.
 
 ### Requirement: UAT persistent webhook configuration is verified read-only
 
@@ -1290,123 +1291,6 @@ The system MUST keep stripe listen secrets and forwarding separate from the depl
 - **WHEN** local or investigative tooling runs stripe listen
 - **THEN** it does not overwrite the deployed UAT STRIPE_WEBHOOK_SECRET
 - **AND** listener delivery is not accepted as persistent endpoint proof.
-
-### Requirement: Generated Sveltia configuration is structurally validated
-
-The system MUST parse and validate generated Sveltia configuration for every supported mode.
-
-#### Scenario: CMS configuration tests run
-
-- **WHEN** `pnpm test:cms-admin` or the web unit suite runs
-- **THEN** tests verify local, hosted, and disabled modes; the fixed repository and `main`; publish mode; hosted authenticator URL; Astro-derived site URLs; output and media behavior; absolute global public media paths; native-compatible field names; exact collection order; and runtime version
-- **AND** generated output contains no Git Gateway, DecapBridge, proxy, placeholder, leaked secret, `allow_multiple`, `options_length`, or other unsupported retained option.
-
-#### Scenario: Required hosted configuration is missing
-
-- **WHEN** hosted mode has a blank or placeholder `SVELTIA_AUTH_BASE_URL`
-- **THEN** deterministic configuration generation fails with that variable name
-- **AND** no configured value or secret is printed.
-
-#### Scenario: Static deployment wiring changes
-
-- **WHEN** hosted workflow configuration is checked
-- **THEN** it supplies only `SVELTIA_BACKEND_MODE` and `SVELTIA_AUTH_BASE_URL` for CMS behavior
-- **AND** changes under `apps/web/src/lib/admin/**` are not excluded from static deployment triggering.
-
-### Requirement: Sveltia collection contracts have focused parity checks
-
-The system MUST test the editor structure that can create direct-to-`main` content without duplicating the complete Astro schema suite.
-
-#### Scenario: Collection contract tests run
-
-- **WHEN** CMS collection tests execute
-- **THEN** they verify collection and file identities, ordering, fields, requiredness, supported constraints, relations, media options, summaries, sort/group/filter options, preview registrations, and deletion policy
-- **AND** they fail when a stale CMS-only field, removed fixed-section type, commerce-authority field, or unsupported Sveltia option returns.
-
-#### Scenario: Shared content rules change
-
-- **WHEN** shared closed values, fixed-layout objects, Markdown fields, or Artist slug behavior changes
-- **THEN** focused tests prove the CMS output remains accepted by Astro and preserves existing public identities
-- **AND** current committed content still passes `pnpm check`.
-
-#### Scenario: Distro copy-key migration is checked
-
-- **WHEN** the focused content and CMS checks run after the migration
-- **THEN** the committed Distro page JSON, generated CMS fields, Astro schema, and rendered-copy consumers agree on the new `vinyl_12_inch`, `vinyl_10_inch`, and `vinyl_7_inch` keys
-- **AND** the old space-containing copy keys are absent while field labels, other copy keys, intro text, Distro item `group` values, and shelf behavior remain unchanged.
-
-### Requirement: Sveltia previews and media paths are tested together
-
-The system MUST cover collection-owned media paths, Sveltia preview asset resolution, and the seven preview registrations with focused checks.
-
-#### Scenario: Media and preview tests run
-
-- **WHEN** CMS media and preview tests execute
-- **THEN** they cover the existing shared global asset folder and its Local/UAT/PRD public paths, collection-relative media overrides, uploaded filename normalization, existing paths, newly selected media, invalid values, preview `getAsset` use, and all seven registrations
-- **AND** they confirm the custom admin-media route, resolver, allowlist, and Asset Library suppression are absent.
-
-#### Scenario: Collection image fields are checked
-
-- **WHEN** generated image fields are tested
-- **THEN** their media paths remain compatible with the owning Astro `image()` field
-- **AND** unsupported preview values produce a bounded fallback rather than a broken editor.
-
-### Requirement: Local and rendered Sveltia validation uses the native repository flow
-
-The system SHALL keep local CMS validation read-only and SHALL use Sveltia's native directory selection instead of a proxy or fake filesystem layer.
-
-#### Scenario: Automated local smoke runs
-
-- **WHEN** `pnpm smoke:cms-local -- --screenshots never` runs
-- **THEN** it starts local mode on the fixed loopback CMS port, opens `/admin/index.html`, verifies the pinned runtime accepts the generated configuration and reaches the native repository-selection surface, and checks configured assets and functional console errors
-- **AND** a native configuration-error screen fails the smoke even if the runtime loaded and initialization returned
-- **AND** content hashes and `git status --porcelain` remain unchanged from the baseline captured after intentional source edits
-- **AND** all spawned site and browser processes terminate with the smoke exit status.
-
-#### Scenario: Rendered local walkthrough runs
-
-- **WHEN** the owner selects the repository with Chromium's native picker and Chrome is controlled through the GPT extension
-- **THEN** it checks representative Home, Store Item, and Release editing at desktop plus the 320 CSS-pixel floor and confirms the migrated Distro page fields, without selecting Save or Publish
-- **AND** collection navigation, field order, validation, image selection, previews, focus, touch targets, and horizontal overflow remain acceptable
-- **AND** content hashes and `git status --porcelain` remain unchanged from the post-migration baseline.
-
-### Requirement: UAT Static Smoke verifies hosted Sveltia safety
-
-The system SHALL verify deployed hosted-mode Sveltia without authenticating or publishing content.
-
-#### Scenario: UAT CMS admin smoke runs
-
-- **WHEN** `pnpm smoke:uat-static -- --scenario cms_admin` targets GitHub Pages UAT
-- **THEN** it verifies the static admin document, pinned Sveltia runtime, GitHub backend, fixed repository, `main`, authenticator base URL, and absence of Decap, Git Gateway, placeholders, localhost URLs, and leaked secrets
-- **AND** it reaches native GitHub sign-in without injected controls or native configuration errors and records failures as UAT Static Smoke evidence.
-
-#### Scenario: UAT CMS asset smoke runs
-
-- **WHEN** `pnpm smoke:uat-static -- --scenario cms_assets` targets GitHub Pages UAT
-- **THEN** it verifies representative admin, configuration, preview, and collection-media assets without expecting a custom admin-media route
-- **AND** it remains read-only and separate from Provider Smoke or Promotion Evidence.
-
-### Requirement: Sveltia migration passes repository gates
-
-The system MUST validate the exact final Sveltia tree before each hosted cutover.
-
-#### Scenario: Implementation is ready for UAT
-
-- **WHEN** local migration tasks are complete
-- **THEN** `pnpm test:cms-admin`, `pnpm smoke:cms-local -- --screenshots never`, `pnpm test:unit`, `pnpm check`, and `pnpm build` pass against the exact final tree
-- **AND** the secret-free artifact remains disabled rather than falling back to writable local behavior.
-
-#### Scenario: Hosted Sveltia is accepted
-
-- **WHEN** the implementation commit deploys to UAT
-- **THEN** the `cms_admin` and `cms_assets` UAT Static Smoke scenarios pass
-- **AND** the owner completes a no-publish walkthrough through the designated GitHub account before PRD cutover.
-
-#### Scenario: PRD cutover completes
-
-- **WHEN** the UAT-accepted implementation's PRD-targeted artifact deploys to PRD
-- **THEN** the owner completes a no-publish designated-account check
-- **AND** remaining DecapBridge access is removed without retaining a Decap rollback artifact or authentication path.
 
 ### Requirement: UAT paid-email receipt proof is operator-started and non-interactive
 

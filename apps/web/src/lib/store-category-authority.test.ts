@@ -14,7 +14,7 @@ const authorityRoots = [
   'apps/web/src/lib/store-item-ownership.ts',
   'apps/web/src/pages/store',
   'packages/api-client/src',
-  'scripts/generate-stripe-uat-catalog-artifacts.ts',
+  'scripts/generate-catalog-readiness.ts',
 ];
 const sourceExtensions = new Set(['.prisma', '.sql', '.ts', '.tsx']);
 

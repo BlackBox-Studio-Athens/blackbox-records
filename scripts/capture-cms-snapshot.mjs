@@ -4,7 +4,8 @@ import {
   contentMediaIds,
   sourceCollectionNames,
   validateCmsRevisionContent,
-} from '../apps/backend/src/cms/content-schema.ts';
+  snapshotStoreItemSchema,
+} from '@blackbox/content-model';
 import { validateImage } from '../apps/backend/src/cms/media-upload.ts';
 
 const identifier = z.string().min(1).max(128);
@@ -46,6 +47,7 @@ export async function captureCmsSnapshot({
   readRevision,
   readMedia,
   readMediaFile,
+  readStoreItems,
   maxRequests = 200,
   maxMediaBytes = 256 * 1024 * 1024,
 }) {
@@ -87,6 +89,12 @@ export async function captureCmsSnapshot({
     return items.sort((a, b) => `${a.collection}/${a.id}`.localeCompare(`${b.collection}/${b.id}`));
   }
   const before = await inventory();
+  const catalog = readStoreItems
+    ? z
+        .array(snapshotStoreItemSchema)
+        .max(1000)
+        .parse(await read(readStoreItems))
+    : undefined;
   const records = [];
   for (const item of before.filter((item) => item.status === 'published')) {
     if (!item.liveRevisionId) throw new Error('Published CMS record has no live revision.');
@@ -94,6 +102,12 @@ export async function captureCmsSnapshot({
     if (revision.id !== item.liveRevisionId || revision.collection !== item.collection || revision.entryId !== item.id)
       throw new Error('CMS revision identity mismatch.');
     const { _slug, ...data } = revision.data;
+    // Native SQLite-backed revisions encode these declared booleans as 0/1.
+    // Keep numeric values invalid everywhere else, including editorial writes.
+    if (item.collection === 'navigation') {
+      for (const field of ['show_in_header', 'show_in_footer'])
+        if (data[field] === 0 || data[field] === 1) data[field] = data[field] === 1;
+    }
     const issues = validateCmsRevisionContent(item.collection, data);
     if (issues.length)
       throw new Error(`Invalid published CMS content (${item.collection}/${item.id}): ${issues.join('; ')}`);
@@ -163,7 +177,29 @@ export async function captureCmsSnapshot({
   const after = await inventory();
   if (JSON.stringify(canonical(before)) !== JSON.stringify(canonical(after)))
     throw new Error('CMS inventory changed; capture again.');
-  const snapshot = canonical({ schemaVersion: 1, environment, records, media });
+  if (catalog && JSON.stringify(catalog) !== JSON.stringify(await read(readStoreItems)))
+    throw new Error('Catalog identities changed; capture again.');
+  const storeItems = catalog?.filter((item) =>
+    records.some(
+      (record) =>
+        record.collection === (item.sourceKind === 'release' ? 'releases' : 'distro') && record.slug === item.sourceId,
+    ),
+  );
+  // Published distro remains browsable before commerce setup; D1 still decides whether it can be bought.
+  for (const record of records) {
+    if (
+      storeItems &&
+      record.collection === 'distro' &&
+      !storeItems.some((item) => item.sourceKind === 'distro' && item.sourceId === record.slug)
+    )
+      storeItems.push({
+        sourceKind: 'distro',
+        sourceId: record.slug,
+        storeItemSlug: record.slug,
+        variantId: `variant_${record.slug}_standard`,
+      });
+  }
+  const snapshot = canonical({ schemaVersion: 1, environment, records, media, ...(storeItems ? { storeItems } : {}) });
   const json = JSON.stringify(snapshot);
   return { snapshot, json, sha256: createHash('sha256').update(json).digest('hex'), requests, files };
 }

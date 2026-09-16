@@ -20,6 +20,10 @@ it('round-trips catalog data through D1 while preserving all unique identities a
     expect(created).toMatchObject({ ...input, catalogAvailability: 'withheld', catalogRevision: 0 });
     expect(await prisma.storeItemOption.findUnique({ where: { id: created.id } })).toEqual(created);
     const repository = new PrismaStoreItemOptionRepository(prisma);
+    expect(await repository.search('catalog item', 20)).toMatchObject([
+      { variantId: input.variantId, displayName: 'Catalog item' },
+    ]);
+    expect(await repository.search('no matching title', 20)).toEqual([]);
     expect(await repository.findByStoreItemSlug(parseStoreItemSlug(input.storeItemSlug))).toEqual({
       storeItemSlug: input.storeItemSlug,
       sourceKind: input.sourceKind,

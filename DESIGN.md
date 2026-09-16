@@ -231,6 +231,16 @@ The embedded player is a shell-level continuity feature, not page-local decorati
 
 Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, Veneer content titles, and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.
 
+## CMS: Website content
+
+The protected `/content/` workspace uses approved Layout A and its own semantic palette. Blue means action/selection, amber means unsaved/pending, green confirms live publication, and red indicates failure; pair colors with text or icons. Public page styling stays inside the isolated preview iframe.
+
+Start with a searchable collection list. While editing, use a compact searchable selector, sticky draft actions and an optional 45/55 editor/preview split. Desktop preview starts closed; Show preview / Hide preview remembers the browser preference. Below 1100 px, use Edit/Preview tabs. Keep publication status near the top with history in a Popover or mobile Sheet. Use task wording such as Save draft, Publish changes, Images and Discard changes and reload.
+
+Preview shared public components with unsaved content, real fonts, responsive widths and crop rules. Use one Test environment badge in the UAT header. Explain appearance-only review and possible live-site differences in About preview. Preview is visual-only; navigation, scripts, players and submissions are disabled. Detailed behavior and verification commands live in [Content workspace](docs/content-workspace.md).
+
+Show “Preview up to date” only after styles and images load. Keep the last successful frame while checking a replacement; failed first loads show an actionable error rather than unstyled page content. Manual refresh retries identical content and its assets. Initial preview and explicit controls respond immediately; only typing is debounced. Keep independent staff read panels usable while other panels load.
+
 ## 6. Do's and Don'ts
 
 ### Do:
@@ -250,3 +260,7 @@ Catalog tiles are hard-edged, image-led modules. They use square artwork frames,
 - **Don't** add rounded card-heavy layouts where a hard editorial frame or full-width section is more appropriate.
 - **Don't** use side-stripe borders, gradient text, or repeated icon-card grids as a shortcut for hierarchy.
 - **Don't** move player behavior into page-local scripts or break shell-owned top-level navigation continuity.
+
+# Backoffice guidance
+
+For Content, Images, Items, Stock and Orders, use the living [backoffice design reference](docs/backoffice-design.md). It records shared staff patterns, research, proposal status and validation separately from the public site's visual direction.

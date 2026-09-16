@@ -530,6 +530,9 @@
       "InternalVariantSummary": {
         "type": "object",
         "properties": {
+          "displayName": {
+            "type": "string"
+          },
           "sourceId": {
             "type": "string"
           },
@@ -822,6 +825,100 @@
           "onlineQuantity"
         ]
       },
+      "CatalogPriceDetail": {
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string"
+          },
+          "expectedRevision": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "requiresLiveConfirmation": {
+            "type": "boolean"
+          },
+          "price": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "fixed"
+                    ]
+                  },
+                  "currencyCode": {
+                    "type": "string",
+                    "enum": [
+                      "EUR"
+                    ]
+                  },
+                  "amountMinor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999999
+                  }
+                },
+                "required": [
+                  "kind",
+                  "currencyCode",
+                  "amountMinor"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "pay_what_you_want"
+                    ]
+                  },
+                  "currencyCode": {
+                    "type": "string",
+                    "enum": [
+                      "EUR"
+                    ]
+                  },
+                  "minimumAmountMinor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999999
+                  },
+                  "presetAmountMinor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999999
+                  },
+                  "maximumAmountMinor": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99999999
+                  }
+                },
+                "required": [
+                  "kind",
+                  "currencyCode",
+                  "minimumAmountMinor",
+                  "presetAmountMinor",
+                  "maximumAmountMinor"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "variantId",
+          "expectedRevision",
+          "requiresLiveConfirmation",
+          "price"
+        ],
+        "additionalProperties": false
+      },
       "CatalogPriceChangeResult": {
         "type": "object",
         "properties": {
@@ -862,6 +959,125 @@
               "pending",
               "completed",
               "needs_review"
+            ]
+          }
+        },
+        "required": [
+          "operationId",
+          "variantId",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "CatalogItemPublishDetail": {
+        "type": "object",
+        "properties": {
+          "expectedRevision": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "cmsRevision": {
+            "type": "string"
+          },
+          "requiresLiveConfirmation": {
+            "type": "boolean"
+          },
+          "title": {
+            "type": "string"
+          },
+          "collection": {
+            "type": "string",
+            "enum": [
+              "releases",
+              "distro"
+            ]
+          },
+          "cmsSourceId": {
+            "type": "string"
+          },
+          "availability": {
+            "type": "string",
+            "enum": [
+              "published",
+              "withheld",
+              "retired"
+            ]
+          },
+          "pending": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "operationId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "expectedRevision": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "cmsRevision": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "confirmLivePublication": {
+                "type": "boolean",
+                "default": false
+              },
+              "retryPublication": {
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "operationId",
+              "expectedRevision",
+              "cmsRevision"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "cmsRevision",
+          "requiresLiveConfirmation",
+          "title",
+          "collection",
+          "cmsSourceId",
+          "availability",
+          "pending"
+        ],
+        "additionalProperties": false
+      },
+      "CatalogItemPublishResult": {
+        "type": "object",
+        "properties": {
+          "operationId": {
+            "type": "string"
+          },
+          "variantId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "completed",
+              "needs_review"
+            ]
+          },
+          "publicationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "publicationStatus": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "live",
+              "failed"
             ]
           }
         },
@@ -1380,6 +1596,66 @@
       }
     },
     "/api/internal/variants/{variantId}/price": {
+      "get": {
+        "operationId": "readCatalogPrice",
+        "tags": [
+          "Internal catalog"
+        ],
+        "summary": "Read the current item price and edit revision without provider writes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^variant_[A-Za-z0-9_-]+$"
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current price.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPriceDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Item setup or price requires reconciliation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Price is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "operationId": "changeCatalogPrice",
         "tags": [
@@ -1855,6 +2131,223 @@
           },
           "503": {
             "description": "Operator authentication or item setup is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/variants/{variantId}/publication": {
+      "get": {
+        "operationId": "readCatalogItemPublication",
+        "tags": [
+          "Internal catalog"
+        ],
+        "summary": "Read linked content and any retained item publication.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^variant_[A-Za-z0-9_-]+$"
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Publication detail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemPublishDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Same-origin operator request required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Item or content requires review.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Publication unavailable. Retry the retained operation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "publishCatalogItem",
+        "tags": [
+          "Internal catalog"
+        ],
+        "summary": "Publish an item without changing its Price or opening stock.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^variant_[A-Za-z0-9_-]+$"
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "origin",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "x-blackbox-request",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "operationId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0
+                  },
+                  "cmsRevision": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "confirmLivePublication": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "retryPublication": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "operationId",
+                  "expectedRevision",
+                  "cmsRevision"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Retained publication status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogItemPublishResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Same-origin operator request required.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Item or content requires review.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Publication unavailable. Retry the retained operation.",
             "content": {
               "application/json": {
                 "schema": {

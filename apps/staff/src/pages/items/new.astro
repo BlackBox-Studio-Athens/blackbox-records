@@ -1,0 +1,9 @@
+---
+import ItemSetupApp from '../../components/items/ItemSetupApp';
+import StockOpsLayout from '../../layouts/StockOpsLayout.astro';
+import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api';
+---
+
+<StockOpsLayout pageTitle="Create an item" pageDescription="Add a label release, distro or merch item.">
+  <ItemSetupApp backendBaseUrl={getInternalStockApiBaseUrl()} client:load />
+</StockOpsLayout>

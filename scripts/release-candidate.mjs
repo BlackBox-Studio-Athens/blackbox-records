@@ -19,10 +19,13 @@ export function configuration(env = process.env) {
     prdSite: 'https://blackbox-records-web.pages.dev',
     uatBackend: env.UAT_PUBLIC_BACKEND_BASE_URL,
     prdBackend: env.PRD_PUBLIC_BACKEND_BASE_URL,
-    cmsAuth: env.SVELTIA_AUTH_BASE_URL,
     worker: sha256(readFileSync('apps/backend/wrangler.jsonc')),
+    cmsResources: sha256(readFileSync('apps/backend/cms-resources.json')),
+    cmsBuild: sha256(readFileSync('apps/backend/astro.config.mjs')),
+    publicBuild: sha256(readFileSync('apps/backend/astro.public.config.mjs')),
     lockfile: sha256(readFileSync('pnpm-lock.yaml')),
     migrations: inventory('apps/backend/prisma/migrations'),
+    cmsMigrations: inventory('apps/backend/cms-migrations'),
   };
 }
 
@@ -58,7 +61,7 @@ export function validateArtifacts(artifacts, sha) {
 }
 
 export function validateIdentity(candidate, current, config) {
-  assert.equal(candidate.schema, 1);
+  assert.equal(candidate.schema, 2, 'Legacy candidate contract; build and accept a fresh candidate.');
   assert.deepEqual(candidate.configuration, config, 'Target configuration changed; revalidate the candidate.');
   assert.equal(current.sha, candidate.sha, 'UAT no longer serves the selected source.');
   assert.equal(String(current.runId), String(candidate.runId), 'UAT candidate was superseded.');
@@ -68,6 +71,15 @@ export function validateIdentity(candidate, current, config) {
 export function validateOrder(candidate, current) {
   assert.ok(Number.isSafeInteger(candidate.runNumber) && candidate.runNumber > 0, 'Invalid candidate run number.');
   if (current) assert.ok(candidate.runNumber >= current.runNumber, 'A newer candidate already mutated this target.');
+}
+
+export function validatePublicationFreshness(candidate, current) {
+  if (candidate.publicationMode === 'runtime' && current?.publicationMode === 'runtime') return;
+  assert.deepEqual(
+    candidate.content ?? null,
+    current?.content ?? null,
+    'Target content changed; refresh the artifact at the reviewed code SHA before explicit promotion.',
+  );
 }
 
 export function validateWorker(candidate, response) {
@@ -151,8 +163,71 @@ function identity(candidate) {
   return { sha: candidate.sha, runId: candidate.runId, runNumber: candidate.runNumber };
 }
 
+export function refreshedReleaseIdentity(candidate, content) {
+  if (content === null) return identity(candidate);
+  return contentPublicationIdentity(candidate, content, candidate.sha);
+}
+
+export function contentPublicationIdentity(code, content, checkedOutSha) {
+  assert.match(code.sha ?? '', /^[a-f0-9]{40}$/);
+  assert.equal(code.sha, checkedOutSha, 'Publication must build the selected deployed code.');
+  assert.match(code.runId ?? '', /^[1-9][0-9]{0,19}$/);
+  validateOrder(code, null);
+  assert.match(
+    content.publicationId ?? '',
+    /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i,
+  );
+  assert.match(content.ciRunId ?? '', /^(?:[1-9][0-9]{0,19}|runtime)$/);
+  assert.match(content.snapshotSha256 ?? '', /^[a-f0-9]{64}$/);
+  return {
+    ...identity(code),
+    content: {
+      publicationId: content.publicationId,
+      ciRunId: content.ciRunId,
+      snapshotSha256: content.snapshotSha256,
+    },
+  };
+}
+
+export function publicationCodeIdentity(project, current, run, target, repository) {
+  assert.ok(['uat', 'prd'].includes(target));
+  const name = target === 'uat' ? 'blackbox-records-web-uat' : 'blackbox-records-web';
+  assert.equal(project.name, name, 'Wrong publication project.');
+  const deployment = project.canonical_deployment;
+  assert.equal(deployment?.environment, 'production', 'Publication requires the canonical production deployment.');
+  assert.equal(deployment.latest_stage?.name, 'deploy');
+  assert.equal(deployment.latest_stage?.status, 'success', 'Canonical deployment did not succeed.');
+  assert.match(current.sha ?? '', /^[a-f0-9]{40}$/);
+  assert.match(String(current.runId ?? ''), /^[1-9][0-9]{0,19}$/);
+  assert.equal(deployment.deployment_trigger?.metadata?.commit_hash, current.sha, 'Public code differs from Pages.');
+  assert.equal(deployment.deployment_trigger.metadata.branch, 'main');
+  validateRun(run, run.head_sha, repository);
+  assert.equal(String(run.id), String(current.runId), 'Public release run mismatch.');
+  assert.equal(run.run_number, current.runNumber, 'Public release sequence mismatch.');
+  validateOrder(current, null);
+  return identity({ ...current, runId: String(current.runId) });
+}
+
 export function verifyFiles(candidate, directory = bundle) {
-  for (const target of ['uat/public', 'prd/public', 'prd/staff', 'uat/worker', 'prd/worker', 'migrations']) {
+  assert.equal(candidate.schema, 2, 'Legacy candidate contract; build and accept a fresh candidate.');
+  for (const target of ['uat/worker', 'prd/cms']) {
+    for (const file of [
+      'server/wrangler.json',
+      'server/entry.mjs',
+      'client/content/index.html',
+      'client/items/index.html',
+      'client/stock/index.html',
+    ])
+      assert.ok(existsSync(`${directory}/${target}/${file}`), `Missing combined CMS artifact: ${target}/${file}`);
+  }
+  for (const target of [
+    'uat/public',
+    'prd/public',
+    'uat/worker',
+    'prd/cms',
+    'migrations',
+    ...(candidate.publicationMode === 'runtime' ? ['uat/renderer', 'prd/renderer'] : []),
+  ]) {
     assert.ok(existsSync(`${directory}/${target}`), `Missing artifact: ${target}`);
     assert.deepEqual(
       inventory(`${directory}/${target}`),
@@ -163,6 +238,31 @@ export function verifyFiles(candidate, directory = bundle) {
 }
 
 async function main(command, target) {
+  if (command === 'resolve-publication-code') {
+    assert.ok(['uat', 'prd'].includes(target));
+    const account = process.env.CLOUDFLARE_ACCOUNT_ID;
+    assert.match(account ?? '', /^[a-f0-9]{32}$/);
+    assert.ok(process.env.CLOUDFLARE_API_TOKEN, 'Pages read credential required.');
+    const name = target === 'uat' ? 'blackbox-records-web-uat' : 'blackbox-records-web';
+    const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/pages/projects/${name}`, {
+      headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}` },
+      redirect: 'error',
+      signal: AbortSignal.timeout(30_000),
+    });
+    assert.ok(response.ok, `Pages deployment lookup failed (${response.status}).`);
+    const project = await response.json();
+    assert.equal(project.success, true, 'Pages deployment lookup failed.');
+    const current = await publicJson(`https://${name}.pages.dev/release.json`);
+    assert.match(String(current.runId ?? ''), /^[1-9][0-9]{0,19}$/);
+    const repository = process.env.GITHUB_REPOSITORY;
+    assert.equal(repository, 'BlackBox-Studio-Athens/blackbox-records');
+    const run = gh(`repos/${repository}/actions/runs/${current.runId}`);
+    const selected = publicationCodeIdentity(project.result, current, run, target, repository);
+    const comparison = gh(`repos/${repository}/compare/${selected.sha}...${run.head_sha}`);
+    assert.ok(['ahead', 'identical'].includes(comparison.status), 'Published source is outside release main history.');
+    console.log(JSON.stringify(selected));
+    return;
+  }
   if (command === 'pack') {
     const sha = process.env.SOURCE_SHA;
     assert.match(sha ?? '', /^[0-9a-f]{40}$/);
@@ -174,7 +274,8 @@ async function main(command, target) {
     assert.equal(config.prdBackend, 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev');
     cpSync('apps/backend/prisma/migrations', `${bundle}/migrations`, { recursive: true });
     const candidate = {
-      schema: 1,
+      schema: 2,
+      publicationMode: 'runtime',
       sha,
       workflowSha: process.env.GITHUB_SHA,
       runId: process.env.GITHUB_RUN_ID,
@@ -184,10 +285,14 @@ async function main(command, target) {
     };
     validateOrder(candidate, null);
     for (const target of ['uat', 'prd']) {
-      const worker = readFileSync(`${bundle}/${target}/worker/index.js`, 'utf8');
+      const directory = `${bundle}/${target === 'uat' ? 'uat/worker' : 'prd/cms'}`;
+      const worker = Object.keys(inventory(directory))
+        .filter((name) => /\.(?:js|mjs)$/.test(name))
+        .map((name) => readFileSync(`${directory}/${name}`, 'utf8'))
+        .join('\n');
       assert.ok(worker.includes(sha) && worker.includes('X-Release-SHA'), 'Worker has no compiled release identity.');
     }
-    for (const surface of ['uat/public', 'prd/public', 'prd/staff']) {
+    for (const surface of ['uat/public', 'prd/public']) {
       const html = readFileSync(`${bundle}/${surface}/index.html`, 'utf8');
       if (surface === 'uat/public') assert.ok(html.includes('[TEST] ') && html.includes('TEST SITE'));
       else assert.ok(!html.includes('[TEST] ') && !html.includes('TEST SITE'));
@@ -201,9 +306,23 @@ async function main(command, target) {
           );
         }
       }
-      writeFileSync(`${bundle}/${surface}/release.json`, JSON.stringify(identity(candidate)));
+      const content = surface.endsWith('public')
+        ? readJson(`.codex-artifacts/release-content/${surface.split('/')[0]}/identity.json`)
+        : null;
+      writeFileSync(
+        `${bundle}/${surface}/release.json`,
+        JSON.stringify({ ...refreshedReleaseIdentity(candidate, content), publicationMode: 'runtime' }),
+      );
     }
-    for (const directory of ['uat/public', 'prd/public', 'prd/staff', 'uat/worker', 'prd/worker', 'migrations']) {
+    for (const directory of [
+      'uat/public',
+      'prd/public',
+      'uat/worker',
+      'prd/cms',
+      'uat/renderer',
+      'prd/renderer',
+      'migrations',
+    ]) {
       assert.ok(statSync(`${bundle}/${directory}`).isDirectory());
       candidate.files[directory] = inventory(`${bundle}/${directory}`);
     }
@@ -254,15 +373,22 @@ async function main(command, target) {
   }
   const site = target === 'uat' ? config.uatSite : config.prdSite;
   // Pages access is verified by the preceding job using the separate Pages credential.
-  const backendOnly = command === 'verify-backend' || command === 'verify-worker';
-  const current = backendOnly ? null : await publicJson(`${site}/release.json`, true);
+  const current = await publicJson(`${site}/release.json`, true);
+  if (command === 'verify' || command === 'verify-backend')
+    validatePublicationFreshness(readJson(`${bundle}/${target}/public/release.json`), current);
   validateOrder(candidate, current);
   const workerResponse = await fetch(`${backend}/api/store/capabilities`, { signal: AbortSignal.timeout(30_000) });
   assert.ok(workerResponse.ok);
   const workerRunNumber = workerResponse.headers.get('X-Release-Run-Number');
   if (workerRunNumber !== null) validateOrder(candidate, { runNumber: Number(workerRunNumber) });
   if (command === 'verify-hosted') {
-    assert.deepEqual(current, identity(candidate), 'Deployed artifact identity mismatch.');
+    assert.deepEqual(identity(current), identity(candidate), 'Deployed artifact identity mismatch.');
+    assert.equal(current.publicationMode, candidate.publicationMode);
+    assert.match(current.content?.snapshotSha256 ?? '', /^[a-f0-9]{64}$/);
+    const page = await fetch(`${site}/`, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
+    assert.ok(page.ok, 'Public renderer unavailable.');
+    assert.equal(page.headers.get('X-Release-SHA'), candidate.sha);
+    await page.body?.cancel();
   }
   if (command === 'verify-hosted' || command === 'verify-worker') {
     validateWorker(candidate, workerResponse);

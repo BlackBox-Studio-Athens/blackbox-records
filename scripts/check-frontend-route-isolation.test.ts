@@ -15,10 +15,13 @@ afterEach(() => {
 });
 
 describe('frontend route isolation', () => {
-  it.each(['stock/index.html', 'orders/index.html'])('rejects %s in the public artifact', (route) => {
-    const dist = createDist(['index.html', route]);
-    expect(() => assertFrontendRouteIsolation('web', dist)).toThrow(route);
-  });
+  it.each(['stock/index.html', 'orders/index.html', 'items/index.html', 'items/new/index.html', 'content/index.html'])(
+    'rejects %s in the public artifact',
+    (route) => {
+      const dist = createDist(['index.html', route]);
+      expect(() => assertFrontendRouteIsolation('web', dist)).toThrow(route);
+    },
+  );
 
   it.each(['admin/index.html', 'store/index.html'])('rejects %s in the staff artifact', (violation) => {
     const dist = createStaffDist(violation);
@@ -32,12 +35,15 @@ describe('frontend route isolation', () => {
 
 function createStaffDist(violation?: string): string {
   return createDist([
+    'content/index.html',
     '_headers',
     '_astro/app.js',
     'favicon-96x96.png',
     'favicon.ico',
     'favicon.svg',
     'index.html',
+    'items/index.html',
+    'items/new/index.html',
     'logo-horizontal.png',
     'orders/index.html',
     'robots.txt',

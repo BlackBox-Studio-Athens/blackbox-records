@@ -160,6 +160,7 @@
     },
     "prd": {
       "name": "blackbox-records-backend-prd",
+      "triggers": { "crons": ["*/5 * * * *"] },
       "durable_objects": { "bindings": [{ "name": "COMMERCE_RUNTIME", "class_name": "CommerceRuntime" }] },
       "routes": [
         {

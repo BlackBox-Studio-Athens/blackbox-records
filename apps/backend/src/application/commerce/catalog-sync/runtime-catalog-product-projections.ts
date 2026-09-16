@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import type { RuntimeCatalogRepository } from '../../../domain/commerce/repositories/spi';
 import type { CatalogProductProjectionReader } from './catalog-product-projections';
+import type { StripeCatalogEnvironment } from './types';
 
 const nonblank = z
   .string()
@@ -10,13 +11,13 @@ const runtimeCatalogSchema = z.object({
   cmsSourceId: nonblank,
   itemType: nonblank,
   priceKind: z.enum(['fixed', 'pay_what_you_want']),
-  catalogAvailability: z.literal('published'),
+  catalogAvailability: z.enum(['published', 'withheld', 'retired']),
   catalogRevision: z.number().int().positive(),
   productProjection: z
     .object({
       name: nonblank,
       description: z.string(),
-      imageUrls: z.array(z.url({ protocol: /^https$/ })),
+      imageUrls: z.array(z.url()),
       metadata: z.record(z.string(), z.string()),
       taxCode: nonblank.nullable(),
     })
@@ -25,12 +26,26 @@ const runtimeCatalogSchema = z.object({
 
 export function createRuntimeCatalogProductProjectionReader(
   catalog: RuntimeCatalogRepository,
+  environment: StripeCatalogEnvironment,
 ): CatalogProductProjectionReader {
   return {
     async findByStoreItem(storeItem) {
       const record = await catalog.findByStoreItem(storeItem);
-      const parsed = runtimeCatalogSchema.safeParse(record);
-      return parsed.success ? parsed.data.productProjection : null;
+      return record?.catalogAvailability === 'published' ? readRuntimeCatalogPresentation(record, environment) : null;
     },
   };
+}
+
+// Staff may edit a fully set-up item's price before publication; this does not make it buyable.
+export function readRuntimeCatalogPresentation(record: unknown, environment: StripeCatalogEnvironment) {
+  const parsed = runtimeCatalogSchema.safeParse(record);
+  if (!parsed.success) return null;
+  const projection = parsed.data.productProjection;
+  return projection.imageUrls.every(
+    (value) =>
+      new URL(value).protocol === 'https:' ||
+      (environment === 'local' && /^http:\/\/127\.0\.0\.1:8787\/media\/published\/[a-f0-9]{64}$/.test(value)),
+  )
+    ? projection
+    : null;
 }

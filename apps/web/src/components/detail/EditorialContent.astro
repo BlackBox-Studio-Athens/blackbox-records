@@ -1,0 +1,56 @@
+---
+import { render, type CollectionEntry } from 'astro:content';
+import { PortableText } from 'astro-portabletext';
+import EditorialLink from './EditorialLink.astro';
+import EditorialBlock from './EditorialBlock.astro';
+import EditorialList from './EditorialList.astro';
+import EditorialText from './EditorialText.astro';
+
+interface Props {
+  entry: CollectionEntry<'artists'> | CollectionEntry<'news'>;
+}
+const { entry } = Astro.props;
+const body = entry.data.editorial_body;
+const LegacyContent = body === undefined ? (await render(entry)).Content : undefined;
+// Split distinct numbered lists and group quote paragraphs; PortableText handles marks and nested lists.
+const groups: { quote: boolean; value: NonNullable<typeof body> }[] = [];
+let listId: string | undefined;
+for (const block of body ?? []) {
+  const quote = block._type === 'block' && block.style === 'blockquote';
+  const nextListId = block._type === 'block' && block.listItem ? block.listId : undefined;
+  const topLevel = block._type !== 'block' || (block.level ?? 1) === 1;
+  if (!groups.length || groups.at(-1)!.quote !== quote || (topLevel && listId !== nextListId))
+    groups.push({ quote, value: [] });
+  groups.at(-1)!.value.push(quote ? ({ ...block, style: 'normal' } as typeof block) : block);
+  if (topLevel) listId = nextListId;
+}
+const components = {
+  block: EditorialText,
+  listItem: EditorialText,
+  mark: { link: EditorialLink },
+  type: { image: EditorialBlock, code: EditorialBlock },
+  list: { number: EditorialList },
+};
+const withImages = (value: NonNullable<typeof body>) =>
+  value.map((block) =>
+    block._type === 'image'
+      ? { ...block, asset: { ...block.asset, image: entry.data.content_media?.[block.asset._ref] } }
+      : block,
+  );
+---
+
+{
+  LegacyContent ? (
+    <LegacyContent />
+  ) : (
+    groups.map((group) =>
+      group.quote ? (
+        <blockquote>
+          <PortableText value={withImages(group.value)} components={components} />
+        </blockquote>
+      ) : (
+        <PortableText value={withImages(group.value)} components={components} />
+      ),
+    )
+  )
+}

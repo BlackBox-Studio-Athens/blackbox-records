@@ -2,11 +2,46 @@ import { applyD1Migrations, env } from 'cloudflare:test';
 import { beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import {
   bindPublicationRun,
+  completePublication,
   claimPublicationDispatch,
   readPublication,
   requestPublication,
 } from '../../src/cms/publication-journal';
 import { handlePublicationWorkflow } from '../../src/cms/publication-routes';
+import { createPrismaClient } from '../../src/infrastructure/persistence/prisma';
+
+test('exports only stable catalog identities behind the target publication credential', async () => {
+  const db = createPrismaClient(env);
+  try {
+    const item = {
+      sourceKind: 'release' as const,
+      sourceId: 'catalog-source',
+      storeItemSlug: 'stable-item',
+      variantId: 'variant_catalog_export',
+    };
+    await db.storeItemOption.create({ data: { ...item, cmsSourceId: 'private-cms-id', catalogRevision: 1 } });
+    const ctx = { ...context, commerce: env.COMMERCE_DB };
+    const url = 'https://staff.example/_emdash/api/blackbox/publications/catalog';
+    expect((await handlePublicationWorkflow(new Request(url), ctx)).status).toBe(403);
+    const response = await handlePublicationWorkflow(
+      new Request(url, { headers: { Authorization: `Bearer ${token}` } }),
+      ctx,
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+    expect(await response.json()).toEqual({ data: [item] });
+    expect(
+      (
+        await handlePublicationWorkflow(
+          new Request(url.replace('staff.example', 'other.example'), { headers: { Authorization: `Bearer ${token}` } }),
+          ctx,
+        )
+      ).status,
+    ).toBe(403);
+  } finally {
+    await db.$disconnect();
+  }
+});
 
 beforeAll(async () => {
   await applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS);
@@ -39,6 +74,7 @@ async function prepare() {
     environment: 'uat',
     dispatchToken: claim!.dispatchToken,
     ciRunId: '12345',
+    codeSha: 'c'.repeat(40),
   });
   const upload = (kind: 'media' | 'snapshot', body: BodyInit, headers: Record<string, string> = {}) =>
     new Request(`https://staff.example/_emdash/api/blackbox/publications/${kind}`, {
@@ -71,6 +107,40 @@ const manifest = (sha256: string) => ({
   ],
 });
 
+test('exports only a live snapshot and its referenced media through authenticated workflow reads', async () => {
+  const { item, upload } = await prepare();
+  const { sha256 } = (await (await handlePublicationWorkflow(upload('media', pixels), context)).json()) as {
+    sha256: string;
+  };
+  const json = JSON.stringify(manifest(sha256));
+  const { snapshotSha256 } = (await (await handlePublicationWorkflow(upload('snapshot', json), context)).json()) as {
+    snapshotSha256: string;
+  };
+  const read = (kind: string, media = sha256, credential = token) =>
+    new Request(`https://staff.example/_emdash/api/blackbox/publications/${kind}`, {
+      headers: {
+        Authorization: `Bearer ${credential}`,
+        'X-Publication-ID': item.id,
+        'X-CI-Run-ID': '12345',
+        'X-Snapshot-Media-SHA256': media,
+      },
+    });
+  expect((await handlePublicationWorkflow(read('snapshot'), context)).status).toBe(409);
+  await completePublication(env.TEST_CMS_DB, {
+    id: item.id,
+    environment: 'uat',
+    ciRunId: '12345',
+    codeSha: 'c'.repeat(40),
+    snapshotSha256,
+    deploymentId: crypto.randomUUID(),
+  });
+  expect((await handlePublicationWorkflow(read('snapshot', sha256, 'b'.repeat(64)), context)).status).toBe(403);
+  expect(await (await handlePublicationWorkflow(read('snapshot'), context)).text()).toBe(json);
+  expect(new Uint8Array(await (await handlePublicationWorkflow(read('media'), context)).arrayBuffer())).toEqual(pixels);
+  expect((await handlePublicationWorkflow(read('media', 'e'.repeat(64)), context)).status).toBe(404);
+  expect((await handlePublicationWorkflow(read('snapshot'), { ...context, environment: 'prd' })).status).toBe(409);
+});
+
 test('uploads private media and binds one complete snapshot, with write-free replay and no Live transition', async () => {
   const { item, upload } = await prepare();
   const media = await handlePublicationWorkflow(upload('media', pixels), context);
@@ -97,6 +167,7 @@ test('uploads private media and binds one complete snapshot, with write-free rep
   expect(await readPublication(env.TEST_CMS_DB, 'uat', item.id)).toEqual({
     ...item,
     ciRunId: '12345',
+    codeSha: 'c'.repeat(40),
     snapshotSha256: result.snapshotSha256,
   });
 });

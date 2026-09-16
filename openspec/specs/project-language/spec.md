@@ -128,49 +128,50 @@ The system SHALL distinguish the branded public holding experience from the full
 
 ### Requirement: Catalog Promotion terms
 
-The system SHALL use Catalog Promotion language consistently for generated catalog artifacts, provider catalog publication, and runtime/operator controls.
+The system SHALL distinguish runtime catalog operations from Content Publication and Software Release. Old generated DesiredCatalogState and DesiredPrice terminology SHALL describe migration inputs only after cutover.
+
+#### Scenario: Runtime item setup is described
+
+- **WHEN** a member creates a sellable record
+- **THEN** Item Setup means its bounded editorial, catalog, provider, and opening-stock operation
+- **AND** Store Item, variant, source, Stock, StockChange, and Price Authority retain their existing meanings.
+
+#### Scenario: Publication and deployment are described
+
+- **WHEN** editorial content reaches the public site
+- **THEN** Content Publication identifies a target content revision rendered with its approved code revision
+- **AND** Software Release identifies application code, not an editorial label Release.
 
 #### Scenario: Promotion artifacts and evidence are discussed
 
-- **GIVEN** current Store Item content is intended to be represented in provider catalog state
-- **WHEN** specs, docs, tests, workflows, or code describe the publication path
-- **THEN** `DesiredCatalogState` is the generated repo-owned promotion input
-- **AND** `DesiredCatalogEntry` describes one buyable variant's desired Product Projection, Desired Price, target environments, availability, and first-publication stock intent
-- **AND** `DesiredPrice` means repo/provider-policy input used to create initial provider Price Authority when a variant has none, not checkout runtime authority or permission for normal promotion to replace valid existing Price Authority
-- **AND** `ProviderCatalogState` means the observed Stripe/D1 state after verification
-- **AND** `PromotionRun` means one environment-scoped execution against an artifact commit
-- **AND** `PromotionEvidence` means redacted machine-readable proof for success, failure, skipped, superseded, or not-configured outcomes.
+- **WHEN** setup, catalog repair, publication, or code promotion is reported
+- **THEN** evidence identifies the specific operation, environment, code/content revision where applicable, and result
+- **AND** no term implies shopper launch or live mutation permission.
 
 ### Requirement: Catalog ownership terms are canonical
 
-The system SHALL use consistent terms for Stripe catalog field ownership across specs, code, tests, docs, validation output, and handoff summaries.
+The system SHALL preserve Catalog Field Ownership, Product Projection, Price Authority, and Sandbox Catalog Alignment terminology while replacing repository editorial authority with CMS editorial authority.
 
 #### Scenario: Catalog Field Ownership is referenced
 
-- **GIVEN** a spec, test, script, or doc describes which system owns a catalog field
-- **WHEN** it names that boundary
-- **THEN** it uses `Catalog Field Ownership` to mean the declared source of truth and allowed sync direction for a catalog field.
+- **WHEN** an artifact names a field boundary
+- **THEN** Catalog Field Ownership identifies one source of truth and its allowed sync direction.
 
 #### Scenario: Product Projection is referenced
 
-- **GIVEN** repo-owned product presentation fields are sent to Stripe Product fields
-- **WHEN** specs, code, tests, docs, or diagnostics name that process
-- **THEN** they use `Product Projection`
-- **AND** do not describe it as bidirectional sync.
+- **WHEN** CMS-owned presentation is sent to Stripe Products
+- **THEN** it is called Product Projection, not bidirectional sync.
 
 #### Scenario: Price Authority is referenced
 
-- **GIVEN** Stripe Price amount, currency, active status, lookup key, or Price identity controls Store Offer price and checkout creation
-- **WHEN** specs, code, tests, docs, or diagnostics name that authority
-- **THEN** they use `Price Authority`
-- **AND** distinguish it from repo-owned Product Projection.
+- **WHEN** selling price is resolved
+- **THEN** Price Authority means the bound Stripe Product's valid default Price
+- **AND** a staff price form is a command input, not a second price authority.
 
 #### Scenario: Sandbox Catalog Alignment is referenced
 
-- **GIVEN** sandbox Stripe Products, Stripe Prices, D1 mappings, Store Offer snapshots, stock, and availability are verified together
-- **WHEN** specs, code, tests, docs, or diagnostics name that proof
-- **THEN** they use `Sandbox Catalog Alignment`
-- **AND** state whether the proof is dry-run, apply, smoke, or provider-live evidence.
+- **WHEN** UAT catalog, provider, and runtime state are verified
+- **THEN** Sandbox Catalog Alignment states whether evidence is read-only, applied, mocked, or provider-backed.
 
 ### Requirement: Local mode terms
 
@@ -329,7 +330,7 @@ Current Services content, visible UI, public inquiry contracts, email output, pr
 
 #### Scenario: Services page renders the vinyl offering
 
-- **WHEN** the Services page or Sveltia Services editor presents the vinyl service
+- **WHEN** the Services page or EmDash Services editor presents the vinyl service
 - **THEN** the visible title is `Vinyl Pressing`
 - **AND** the stored service id remains the stable section anchor `vinyl-printing`
 - **AND** supporting copy uses pressing and production language rather than vinyl printing.

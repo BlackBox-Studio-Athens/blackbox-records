@@ -75,11 +75,11 @@ Validation SHALL cover CMS schema/render parity, protected APIs, migration recon
 
 ### Requirement: CMS cutover requires recoverability and cost evidence
 
-The exact final tree SHALL pass repository gates and targeted hosted CMS/publication checks, including a restore rehearsal and free-tier resource assessment, before old writable paths are removed.
+Cutover SHALL retain revision-bound repository gates, hosted CMS/publication checks, a restore rehearsal and free-tier resource evidence. The accepted combined artifact's existing evidence MAY be reused for unchanged behavior; subsequent changes require focused checks at affected boundaries and final PRD publication/source reconciliation. Repeating full suites, paid checkout or restore rehearsals solely for closure is not required.
 
 #### Scenario: Implementation reaches cutover
 
-- **WHEN** unit tests, check, build, boundary checks, and relevant browser/provider suites finish
+- **WHEN** accepted-artifact unit/check/build and browser/provider evidence is combined with focused checks for later changes and final PRD publication verification
 - **THEN** evidence identifies their exact code revision and tested environment
 - **AND** missing account configuration, cost evidence, restore proof, or live authorization is reported as outstanding rather than successful acceptance.
 

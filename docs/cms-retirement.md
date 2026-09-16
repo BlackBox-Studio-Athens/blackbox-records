@@ -1,0 +1,95 @@
+# Legacy cleanup acceptance and retirement
+
+Implementation follows EmDash cutover `7134654b113b4eefdec286483ce839b359ace853`, including the published-distro correction in `123b905a`. Historical evidence remains in [the cutover worksheet](cms-cutover.md). The follow-up is `retire-legacy-cms-catalog-paths`.
+
+## Repository contract
+
+- Retired `/admin/`, `/admin/index.html`, `/admin/config.yml`, `/admin/init.js`, `/admin/admin.css` and `/admin/preview.css` return 404. Public assets, routes, metadata and checkout-shell smoke remain required.
+- Runtime D1 owns current catalog identities, member prices and source bindings. No install, check, test, build, startup or routine deployment generates a compiled catalog or applies repository catalog seeds. Readiness reads persisted state and provider bindings without imposing repository prices. The UAT paid smoke checks stock without topping it up or clearing pauses.
+- Repository contracts are migration/recovery input and explicitly loaded Local/UAT diagnostic fixtures, not the current EmDash catalog. `pnpm catalog:readiness:generate` creates recovery SQL on demand. Existing identity, stock and availability rows are preserved. Reviewed-plan and one-run PRD confirmation safeguards remain mandatory.
+- Release artifact schema 2 requires combined CMS server configuration, entrypoint and Content/Items/Stock assets for both targets. Old candidates must be rebuilt and accepted in UAT. No standalone `prd/staff`, commerce-only PRD fallback or staff Pages upload remains. Public Pages hosting, deployment ordering, freshness checks and exact-SHA Worker promotion remain unchanged.
+- Staff sources and build checks remain. Live routing, Access, CMS storage/backups, provider data and both shopper launch gates are outside retirement scope.
+
+## External retirement — September 15, 2026
+
+Read-only provider inspection established these exact targets. After successful replacement acceptance and PRD promotion, all confirmed legacy resources were deleted and verified absent, including the GitHub OAuth application after explicit action-time confirmation. Historical pre-retirement evidence below is retained, not current status.
+
+| Resource                                                                                      | Ownership and remaining consumer evidence                                                                                                          | Required retirement evidence                                                                                                       |
+| --------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| GitHub OAuth app `BlackBox Sveltia CMS`, application `3837780`, client `Ov23li7fNykWvTEb70Dq` | Owned by `blackboxrecordsathens`; sole callback and matching client ID belonged to the retired auth Worker.                                        | Permanently deleted after explicit confirmation. GitHub shows no owned OAuth apps and no authorized OAuth apps.                    |
+| Worker `sveltia-cms-auth`                                                                     | Cloudflare account `2004bfa6f5ad8b48008f1243b195ab61`; Sveltia-only OAuth bindings and public Pages allowed domains. No surviving active consumer. | Deleted after PRD acceptance; GET 404/code 10007. See receipt below.                                                               |
+| Repository variable `SVELTIA_AUTH_BASE_URL`                                                   | Pointed to the exact retired auth Worker. No surviving active workflow consumer.                                                                   | Deleted; subsequent repository variable inventory confirms absent.                                                                 |
+| Repository secrets `DECAPBRIDGE_AUTH_ENDPOINT`, `DECAPBRIDGE_AUTH_TOKEN_ENDPOINT`             | Names inventoried without reading values. No active code/workflow consumer or matching environment settings.                                       | Deleted; subsequent secret inventory confirms absent. CMS export and Cloudflare credentials retained.                              |
+| Pages project `blackbox-records-staff`                                                        | Detached direct-upload project; only domain was `blackbox-records-staff.pages.dev`. Preview and production environment-variable lists were empty.  | Deleted after accepted replacement and recovery retention; GET 404/code 8000007. Its Pages deployment history is permanently lost. |
+
+Cloudflare Workers custom-domain inspection confirms `staff.blackboxrecordsathens.com` belongs to `blackbox-records-backend-prd` and `staff-uat.blackboxrecordsathens.com` belongs to `blackbox-records-backend-uat`, both enabled. Neither hostname belongs to the detached Pages project. Preserve these mappings and Access policies.
+
+Preserve the private PRD recovery point `cms/prd/points/2026-09-15-pre-upgrade.json` in `blackbox-cms-backups-prd`. The old accepted candidate `34937507986` is historical evidence, not a schema-2 cleanup candidate. Record the fresh accepted candidate, promoted Worker version, retained combined artifact and actual resource deletion receipts here before claiming completion.
+
+## Acceptance status
+
+Final implementation tree passed `pnpm test:unit` (1,477 tests), `pnpm check`, `pnpm build` (349 public pages and six staff pages), and report-only `pnpm audit:unused`. The audit retains unrelated existing findings; no legacy cleanup finding remains. Combined `build:cms --env mock` passed its source and generated no-KV guards. `test:staff-hosting`, `test:cms-content` (including authenticated no-session-cookie checks), `test:cms-import`, `test:emdash` and `test:cms-render` passed. OpenSpec strict validation passed for the follow-up and accepted EmDash change; all 48 main specs validated.
+
+The canonical Local mock stack started without a compiled manifest and reported no stock or price reseeding. All six retired admin URLs returned 404. Restart retained publication `4c8aed0a-9e8b-4546-8afe-5cf15d107476`, snapshot SHA-256 `6f14c504989d81a975685ef3aca135342f8d5c1ce035da6848345a4d39cefb7a`, and the same three saved news records (digest `796623fb09ae53ed1047996b626ec4032a2091a9cc004e9da8945c8b5081abb9`). No editorial record was changed for this check.
+
+At approximately 10:34 UTC, account dashboards showed Workers 11,689/100,000 requests today; D1 approximately 422,560 reads and 29,830 writes today; R2 approximately 1,350 Class A and 8,320 Class B operations this billing period, 1.29 GB stored and no billable usage. Reserve at most 3,000 Worker requests, 100,000 D1 reads, 5,000 D1 writes, 100 R2 Class A and 2,000 Class B operations for one candidate/promotion and bounded acceptance, leaving over 85,000 daily Worker requests and 65,000 D1 writes for ordinary traffic. No import, recovery restore, KV operation or catalog seed is planned. Each target snapshot restore is already capped at 600 requests with no retries. Reuse the accepted cutover snapshot/read pilot; stop on quota warnings or budget overrun.
+
+## Historical first candidate — blocked on retired-route cache
+
+Cleanup commit `c521b1250a5fb3ec287e8aa2c4976dde4ac10f33` was pushed to `main`. [Candidate 34958898685](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/34958898685) passed unit/check/unused, both target snapshot restores and public/combined CMS builds, digest verification, UAT Worker deployment, persisted listing readiness and UAT Pages deployment. UAT Pages deployment is `6c3f1058-ffe6-44d5-9832-7ac7c885a841`. The canonical UAT `release.json` reports the exact cleanup SHA and run number 384.
+
+Both paid Stripe scenarios, Resend/newsletter, public assets and checkout-shell smoke passed. Other public routes, metadata, sitemap and robots checks passed. **The candidate failed acceptance on five retired admin URLs returning cached HTTP 200 rather than 404.** Do not promote this failed candidate or weaken those assertions.
+
+At approximately 10:54 UTC, direct UAT `/admin/`, `/admin/config.yml`, `/admin/init.js`, `/admin/admin.css` and `/admin/preview.css` reads returned `CF-Cache-Status: HIT`, `Age` approximately 33,709 seconds and `Cache-Control: public, s-maxage=604800`. `/admin/` still contained the old `BlackBox CMS` HTML. A single diagnostic request to `/admin/?legacy-cleanup=c521b125` returned the new HTTP 404 with `Cache-Control: no-store`; an unrelated missing path also returned 404. Requesting `Cache-Control: no-cache` did not invalidate the stale entries. Cache-busted results are diagnostic only, not acceptance.
+
+[Cloudflare documents per-data-center asset retention up to one week and zone-based cache purging](https://developers.cloudflare.com/pages/configuration/serving-pages/). No CDN purge control was available in this direct-upload Pages project's settings; the documented build-cache purge is not a CDN purge. The UAT hostname is under Cloudflare-owned `pages.dev`, not the managed custom-domain zone. Provider invalidation or cache expiry is required before rerunning failed acceptance. No public hosting, URL model, cache policy or test contract was changed to bypass this failure.
+
+The authenticated UAT Content workspace loaded its artist records and existing publication receipts after deployment. Anonymous staff HTML and CMS API requests redirected to Access (302); alternate Worker-host staff HTML and internal API requests were denied (403). No hosted editorial record was edited for this check.
+
+The retained schema-2 bundle is `release-c521b1250a5fb3ec287e8aa2c4976dde4ac10f33` in the candidate run. It is **not yet an accepted recovery release**. A local download was stopped after acceptance failed; no verified local recovery copy is claimed. Retain and verify a usable combined artifact before external retirement.
+
+PRD was not promoted and no external resources were deleted. Its prior publication remains `af0bc3fa-b62b-4030-baae-bcd29faeda46`, snapshot SHA-256 `6289a67eb4aed84f5de0b0b85a0db0966040650a2d0e7b842a422841e218cb96`; shopper checkout was verified disabled. Read-only PRD baseline fingerprints were captured for catalog identities, provider mapping, price snapshot, stock, availability and stock ledgers. All application data, public Pages projects, staff routing, Access and backups remain preserved.
+
+All 48 main specifications pass normal validation. Repository-wide strict mode still rejects 20 pre-existing placeholder Purpose sections; those unrelated specifications were not rewritten. The cleanup change and accepted EmDash change pass strict validation.
+
+At this earlier checkpoint, completion remained blocked on UAT acceptance, exact-candidate PRD promotion and verified external retirement. The subsequently approved exception and replacement release are recorded below; this failed candidate remains failed.
+
+## Historical email-free continuation
+
+After the Resend daily-quota warning, the user requested continuation without using Resend. No provider settings or normal delivery were changed. The earlier passing provider results remain historical evidence; the release workflow now uses its normal provider and active-public-surface smoke for fresh candidates.
+
+### Historical stale-cache-only exception
+
+The previously documented stale-cache-only acceptance exception was a one-off recovery aid for the September 15 candidate. It has been removed from the release workflow. Routine UAT smoke now checks the active public surface and does not probe the five retired `/admin/*` paths served by the old `pages.dev` edge cache. Those paths remain a separate cache-retirement concern and must not be treated as current public functionality.
+
+The original schema-2 artifact was retained locally as `.codex-artifacts/legacy-retirement/release-c521b125.zip` (785,884,253 bytes). SHA-256 `278a0db2cf4a9716b513b4ea9262813833c4ebaf2d6ef0745f86db7530d6fea0` matches GitHub artifact `10391879520`. Extraction to the sibling `release-c521b125/` directory passed the existing complete manifest digest and combined asset verification for all five targets. This is an integrity-verified but unaccepted candidate; retain the new accepted release before deleting external resources. Its local retention does not override the promotion expiry rule.
+
+At 11:05 UTC on September 15, the existing standalone `pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure` completed without sending email or creating checkout state. Public assets (six checks) and the checkout shell passed. Public routes had exactly five failures, all the same cached retired admin resources; the other 18 checks passed, with no console or page errors. Evidence is retained locally under `.codex-artifacts/smoke/uat/uat-static/20260915110521/`. The six direct admin GET probes also reproduced five cache hits with ages approximately 34,327 seconds and one 404. No retry loop, promotion or external deletion was started at that checkpoint. Cache invalidation or expiry remains necessary independently of the email quota.
+
+## Accepted replacement and PRD promotion
+
+[Candidate 34963650477](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/34963650477) succeeded for exact source `c521b1250a5fb3ec287e8aa2c4976dde4ac10f33`, run number 385, using trusted workflow revision `b67c60f578138a4984977c04e72b2d3037d03ff7`. The normal provider smoke step was skipped; three digest-pinned passing provider results were reused without new emails or paid orders. Fresh canonical static checks passed, including all six admin 404 checks at the CI location. The separate approved-exception receipt contains `waived: []`; this does not prove expiry at other locations. Both combined CMS builds retained their source/generated no-KV guards.
+
+Accepted artifact `10394796958` is retained as `.codex-artifacts/legacy-retirement/release-34963650477.zip` and extracted sibling `release-34963650477/`. Its 785,884,271 bytes hash to `ca145119ac01edaee80a3cdcc15188ea5c3fc091d7d3f96fe21e6fd3d9f4b900`, matching GitHub. Complete manifest digest verification passed for all five targets. GitHub retention expires September 22 at 11:41:11 UTC; local retention does not override promotion freshness safeguards. Acceptance evidence is retained under `.codex-artifacts/legacy-retirement/uat-smoke-34963650477-1/`.
+
+[PRD promotion 34965404366](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/34965404366) succeeded through the normal exact-candidate promotion path. Combined Worker version `83278983-1e12-4a95-a5ad-61d40b2df9c2` was promoted to 100%, followed by public Pages deployment `4c1b2061`. Canonical PRD `release.json` reports the selected source, candidate and run number. Publication `af0bc3fa-b62b-4030-baae-bcd29faeda46` and snapshot `6289a67eb4aed84f5de0b0b85a0db0966040650a2d0e7b842a422841e218cb96` are unchanged. No catalog apply or checkout launch was authorized; capabilities still report native checkout disabled.
+
+Read-only before/after SHA-256 fingerprints matched for all 12 commerce tables: StoreItemOption, VariantStripeMapping, StoreOfferSnapshot, Stock, ItemAvailability, StockChange, StockCount, CatalogOperation, StripeCatalogWebhookEvent, CheckoutOrder, CheckoutOrderLine and PaidOrderDelivery. Authenticated PRD Content loaded existing artists/publications; Items and Stock loaded the existing Disintegration item. Anonymous Content, publications API and internal variants API redirected to Access (302); the alternate Worker hostname denied all three (403). No editorial, stock or price write was made.
+
+The UAT-specific static runner was also used diagnostically against PRD. Its six asset checks passed, with no browser errors across all scenarios. Its overall result correctly remains failed: 45 expectations require UAT-only test labels absent from PRD, and one is the cached retired config. Inspection of the retained evidence found no other failures; this is not relabeled a successful UAT run. Evidence: `.codex-artifacts/smoke/uat/uat-static/20260915115916/`.
+
+## Verified external deletion receipts
+
+After accepted recovery retention and successful PRD promotion on September 15:
+
+- Cloudflare DELETE of exactly `sveltia-cms-auth`, without force, returned 200/success, receipt ID `d07325f2ad4b4328be1bf38d77024f35`. Settings GET then returned 404/code 10007. Its Worker-owned credentials were removed with it.
+- Cloudflare DELETE of exactly `blackbox-records-staff` returned 200/success. Project GET then returned 404/code 8000007. Its detached Pages deployment history is permanently lost; the accepted combined-Worker artifact is retained separately.
+- GitHub deleted `SVELTIA_AUTH_BASE_URL`, `DECAPBRIDGE_AUTH_ENDPOINT` and `DECAPBRIDGE_AUTH_TOKEN_ENDPOINT`. Subsequent variable/secret name inventories verify all three absent and CMS export, backup and Cloudflare credentials retained.
+- Post-deletion Cloudflare inventory still contains both public Pages projects and their existing domains. Both live staff custom domains still map to their respective combined Workers. No Access policy, CMS storage/backup or commerce/provider data was deleted.
+- After explicit action-time confirmation, GitHub accepted permanent deletion of OAuth application `3837780`. Once the queued deletion completed, refreshed Authorized OAuth Apps showed no authorized apps, and My OAuth Apps showed no owned apps. The application, its client credential and its legacy user authorizations are retired; deletion cannot be undone.
+
+The exception implementation passed 1,482 unit tests, `pnpm check`, `pnpm build` and report-only `pnpm audit:unused`. OpenSpec reconciliation preserves unrelated requirements; all 48 main specs pass normal validation and the follow-up passes strict validation.
+
+Remaining cache-only work is explicit: at approximately 11:59 UTC, five UAT routes still returned cached 200, while PRD retained only `/admin/config.yml` as a cache hit in the direct probe. The other PRD retired routes returned 404. No cache purge was performed. Natural expiry must be verified separately; neither global expiry nor unconditional 100% completion is claimed.
+
+All 11 implementation and retirement checklist tasks are complete under the approved stale-cache-only exception. The final OAuth receipt and checklist update are documentation-only; the previously passing regression evidence remains applicable to unchanged executable code. Natural cache-expiry verification is the sole outstanding acceptance follow-up. Shopper checkout remains disabled, and no Resend smoke or cache invalidation was performed during closure.

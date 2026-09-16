@@ -1,3 +1,4 @@
+import { loadStripeCatalogStoreItemContracts } from './stripe-catalog-contract';
 import { spawnSync, type SpawnSyncReturns } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -35,7 +36,6 @@ import {
 import {
   createCheckoutOrderBySessionSql,
   createRemoteD1ReadinessSql,
-  createSandboxSmokeStockTopUpSql,
   parseD1CheckoutOrderRows,
   parseRemoteD1ReadinessSummary,
 } from './stripe-sandbox-smoke/d1-sql';
@@ -51,8 +51,7 @@ import {
   calculateMinimumSmokeOnlineQuantity,
   createCheckoutPageUrl,
   createScenarioEmail,
-  createSmokeStoreCartLineItemSnapshot,
-  getStripeSandboxSmokeScenarioVariantId,
+  createStripeSandboxSmokeScenarios,
   groupStripeSandboxSmokeScenarios,
   replaceFixedCheckoutAmountExpectation,
   resolveSelectedStripeSandboxScenarios,
@@ -62,7 +61,6 @@ import {
 export {
   createCheckoutOrderBySessionSql,
   createRemoteD1ReadinessSql,
-  createSandboxSmokeStockTopUpSql,
   parseD1CheckoutOrderRows,
   parseRemoteD1ReadinessSummary,
 } from './stripe-sandbox-smoke/d1-sql';
@@ -79,12 +77,11 @@ export {
   countPaidStripeSandboxScenarios,
   createCheckoutPageUrl,
   createScenarioEmail,
-  createSmokeStoreCartLineItemSnapshot,
+  createStripeSandboxSmokeScenarios,
   getStripeSandboxSmokeScenarioVariantId,
   groupStripeSandboxSmokeScenarios,
   replaceFixedCheckoutAmountExpectation,
   resolveSelectedStripeSandboxScenarios,
-  STRIPE_SANDBOX_SMOKE_SCENARIOS,
   STRIPE_TEST_CARD_DOCS_URL,
 } from './stripe-sandbox-smoke/scenario-policy';
 
@@ -820,7 +817,10 @@ export function readStripeSandboxSmokeErrorEvidence(error: unknown): StripeSandb
 async function main() {
   const options = parseStripeSandboxSmokeArgs(process.argv.slice(2));
   const scenarios = replaceFixedCheckoutAmountExpectation(
-    resolveSelectedStripeSandboxScenarios(options.scenarioSelection),
+    resolveSelectedStripeSandboxScenarios(
+      options.scenarioSelection,
+      createStripeSandboxSmokeScenarios(await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' })),
+    ),
     options.expectedCheckoutAmountMinor,
   );
   if (
@@ -877,10 +877,6 @@ async function verifyStripeSandboxSmokeReadiness(input: {
   if (input.options.verifyEmailReceipts) {
     await runResendReceivingPreflight();
   }
-
-  ensureSandboxSmokeStock(input.minimumSmokeOnlineQuantity, [
-    ...new Set(input.scenarios.map((scenario) => getStripeSandboxSmokeScenarioVariantId(scenario))),
-  ]);
 
   const preflight = await runPreflight(input.options);
   const preflightIssues = checkStripeSandboxSmokePreflight({
@@ -1197,19 +1193,6 @@ export async function runInSettledBatches<T>(
   }
 
   return results;
-}
-
-function ensureSandboxSmokeStock(minimumQuantity: number, variantIds: readonly string[]): void {
-  if (minimumQuantity < 1) {
-    return;
-  }
-
-  for (const variantId of variantIds) {
-    console.log(
-      `Ensuring sandbox smoke stock for ${variantId}: at least ${minimumQuantity} online unit(s), without deleting or resetting D1.`,
-    );
-    runRemoteD1Sql(createSandboxSmokeStockTopUpSql(minimumQuantity, variantId));
-  }
 }
 
 async function runPreflight(
@@ -1670,11 +1653,12 @@ async function clickFirstMatchingButton(scope: Page | Frame, name: RegExp): Prom
   return false;
 }
 
-export function createSmokeStoreCartStorageEntry(scenario?: StripeSandboxSmokeScenario): {
+export function createSmokeStoreCartStorageEntry(scenario: StripeSandboxSmokeScenario): {
   key: string;
   value: string;
 } {
   const values = new Map<string, string>();
+  if (!scenario.lineItemSnapshot) throw new Error('Missing explicit smoke catalog fixture.');
 
   writeStoreCartState(
     {
@@ -1686,7 +1670,7 @@ export function createSmokeStoreCartStorageEntry(scenario?: StripeSandboxSmokeSc
         values.set(key, nextValue);
       },
     },
-    addStoreCartItem(scenario?.lineItemSnapshot ?? createSmokeStoreCartLineItemSnapshot()),
+    addStoreCartItem(scenario.lineItemSnapshot),
   );
 
   const value = values.get(STORE_CART_STORAGE_KEY);

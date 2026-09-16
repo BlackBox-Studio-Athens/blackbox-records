@@ -1,23 +1,10 @@
-import { readStoreOffer } from '../../src/application/commerce/checkout';
-import { createStripeCatalogGateway } from '../../src/infrastructure/stripe';
+import { createPublicCommerceServices } from '../../src/interfaces/http/routes/public-commerce-services';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { env } from 'cloudflare:workers';
 import { expect, it, vi } from 'vitest';
 import { createHttpApp } from '../../src/interfaces/http/app';
-import {
-  createPrismaClient,
-  D1CatalogOperationRepository,
-  PrismaStoreItemOptionRepository,
-  PrismaVariantStripeMappingRepository,
-  PrismaStoreOfferSnapshotRepository,
-  PrismaItemAvailabilityRepository,
-  PrismaStockRepository,
-} from '../../src/infrastructure/persistence/prisma';
-import {
-  CatalogReconciler,
-  createRuntimeCatalogProductProjectionReader,
-  createStripeCatalogMetadata,
-} from '../../src/application/commerce/catalog-sync';
+import { createPrismaClient, D1CatalogOperationRepository } from '../../src/infrastructure/persistence/prisma';
+import { createStripeCatalogMetadata } from '../../src/application/commerce/catalog-sync';
 import { parseStoreItemSlug, parseVariantId } from '../../src/domain/commerce';
 import { getInternalOpenApiDocument, getPublicOpenApiDocument } from '../../src/interfaces/http/openapi/api-documents';
 
@@ -250,6 +237,15 @@ it.each(
           return result;
         });
     }
+    const beforeRead = await createHttpApp().request(caseUrl, { headers: hostedHeaders }, hostedEnv);
+    expect(beforeRead.status).toBe(200);
+    expect(await beforeRead.json()).toMatchObject({
+      expectedRevision: 1,
+      requiresLiveConfirmation: false,
+      price: { kind: 'fixed', amountMinor: 1000 },
+    });
+    expect(creates).toBe(0);
+    expect(selections).toBe(0);
     if (loss !== 'none') {
       const interrupted = await createHttpApp().request(
         caseUrl,
@@ -288,29 +284,39 @@ it.each(
         status: 'completed',
       });
     }
+    const afterRead = await createHttpApp().request(caseUrl, { headers: hostedHeaders }, hostedEnv);
+    expect(afterRead.status).toBe(200);
+    const currentPrice = await afterRead.json();
+    expect(currentPrice).toMatchObject({ expectedRevision: 2, price });
+    expect(JSON.stringify(currentPrice)).not.toMatch(/price_http|prod_http/);
     expect(creates).toBe(1);
     expect(selections).toBe(1);
     expect(old).toEqual(historicalPrice);
     expect(await db.checkoutOrder.findUnique({ where: { id: historicalOrder.id }, include: { lines: true } })).toEqual(
       historicalOrder,
     );
-    const storeItems = new PrismaStoreItemOptionRepository(db);
-    const reconciler = new CatalogReconciler({
-      environment: 'uat',
-      storeItems,
-      storeOfferSnapshots: new PrismaStoreOfferSnapshotRepository(db),
-      stripeCatalog: createStripeCatalogGateway(hostedEnv),
-      variantStripeMappings: new PrismaVariantStripeMappingRepository(db),
-    });
-    const offer = await readStoreOffer(
-      storeItems,
-      new PrismaItemAvailabilityRepository(db),
-      new PrismaStockRepository(db),
-      reconciler,
-      createRuntimeCatalogProductProjectionReader(storeItems),
-      item.storeItemSlug,
-    );
-    expect(offer).toMatchObject({ catalogStatus: 'ready', canCheckout: true, price });
+    const shopper = createPublicCommerceServices(hostedEnv);
+    try {
+      expect(await shopper.readStoreOffer(item.storeItemSlug)).toMatchObject({
+        catalogStatus: 'ready',
+        canCheckout: true,
+        price,
+      });
+      expect(
+        await shopper.quoteDelivery([{ storeItemSlug: item.storeItemSlug, variantId: item.variantId, quantity: 1 }]),
+      ).toMatchObject({ amountMinor: 250, currencyCode: 'EUR' });
+      await db.storeItemOption.update({
+        where: { variantId: item.variantId },
+        data: { catalogAvailability: 'withheld' },
+      });
+      expect(await shopper.readStoreOffer(item.storeItemSlug)).toMatchObject({ canCheckout: false });
+      await db.storeItemOption.update({
+        where: { variantId: item.variantId },
+        data: { catalogAvailability: 'published' },
+      });
+    } finally {
+      await shopper.disconnect();
+    }
     expect(creates).toBe(1);
     expect(selections).toBe(1);
     expect(await db.catalogOperation.findUnique({ where: { id: command.operationId } })).toMatchObject({

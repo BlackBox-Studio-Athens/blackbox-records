@@ -1,8 +1,72 @@
 import { describe, expect, it } from 'vitest';
 
 import { patchStripeMockRequest, patchStripeMockResponse } from '../../../../scripts/start-stripe-mock';
+import { createLocalStripeMockCatalog } from '../../../../scripts/local-stripe-mock-catalog';
+import { createStripeMockProxyServer } from '../../../../scripts/start-stripe-mock';
+import { createServer } from 'node:http';
+import type { AddressInfo } from 'node:net';
 
 describe('stripe-mock local launcher proxy', () => {
+  it('updates only retained Local sessions so webhook payment and subsequent provider reads agree', async () => {
+    const upstream = createServer((_request, response) => {
+      response.setHeader('content-type', 'application/json');
+      response.end(
+        JSON.stringify({ id: 'cs_test_fixture', object: 'checkout.session', status: 'open', payment_status: 'unpaid' }),
+      );
+    });
+    await new Promise<void>((done) => upstream.listen(0, '127.0.0.1', done));
+    const proxy = createStripeMockProxyServer(`http://127.0.0.1:${(upstream.address() as AddressInfo).port}`);
+    await new Promise<void>((done) => proxy.listen(0, '127.0.0.1', done));
+    const origin = `http://127.0.0.1:${(proxy.address() as AddressInfo).port}`;
+    try {
+      await (await fetch(origin + '/v1/checkout/sessions', { method: 'POST' })).text();
+      const update = (id: string) =>
+        fetch(origin + '/__local/webhook-session', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer sk_test_mock', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, status: 'complete', payment_status: 'paid', amount_total: 1 }),
+        });
+      expect((await update('missing')).status).toBe(400);
+      expect((await update('cs_test_fixture')).status).toBe(200);
+      const saved = await fetch(origin + '/v1/checkout/sessions/cs_test_fixture').then((r) => r.json());
+      expect(saved).toMatchObject({ status: 'complete', payment_status: 'paid' });
+      expect(saved).not.toHaveProperty('amount_total');
+    } finally {
+      proxy.closeAllConnections();
+      upstream.closeAllConnections();
+      await Promise.all([
+        new Promise<void>((done) => proxy.close(() => done())),
+        new Promise<void>((done) => upstream.close(() => done())),
+      ]);
+    }
+  });
+  it('uses the retained Price for a newly created item instead of the legacy mock price table', () => {
+    const catalog = createLocalStripeMockCatalog();
+    catalog({ method: 'POST', url: '/v1/products', body: 'id=prod_blackbox_new&name=New', status: 200 });
+    const saved = catalog({
+      method: 'POST',
+      url: '/v1/prices',
+      body: 'product=prod_blackbox_new&currency=eur&unit_amount=2400',
+      status: 200,
+    })!;
+    const priceId = JSON.parse(saved.body).id;
+    const result = JSON.parse(
+      patchStripeMockResponse({
+        catalog,
+        method: 'POST',
+        url: '/v1/checkout/sessions',
+        body: JSON.stringify({ id: 'cs_test_new', object: 'checkout.session' }),
+        requestBody: new URLSearchParams({
+          'line_items[0][price]': priceId,
+          'line_items[0][quantity]': '2',
+          'automatic_tax[enabled]': 'true',
+          'shipping_options[0][shipping_rate_data][fixed_amount][amount]': '250',
+        }).toString(),
+      }),
+    );
+    expect(result.amount_total).toBe(5050);
+    expect(result.shipping_cost.amount_total).toBe(250);
+  });
   it('retains synthetic inclusive amounts and accepted delivery across Session reads', () => {
     const checkoutSessions = new Map();
     const checkoutLineItems = new Map();

@@ -1,5 +1,6 @@
 ---
 import { Image } from 'astro:assets';
+import ServicesInquiryForm from '@/components/services/ServicesInquiryForm';
 import { SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE } from '@/components/services/services-inquiry';
 import GridPattern from '@/components/ui/grid-pattern.astro';
 import { buttonVariants } from '@/components/ui/button';
@@ -135,7 +136,11 @@ const noJavaScriptInquiryRecipients = Object.entries(SERVICES_INQUIRY_RECIPIENT_
           <h2 class="services-inquiry-section__title">{inquirySection.title}</h2>
           <p class="services-inquiry-section__copy">{inquirySection.intro}</p>
         </div>
-        <div data-services-inquiry-form />
+        <div data-services-inquiry-form>
+          {Astro.props.appearancePreview && (
+            <ServicesInquiryForm email={inquirySection.email} submitText={inquirySection.submit_text} />
+          )}
+        </div>
         <noscript>
           <section aria-labelledby="services-inquiry-noscript-title" class="grid max-w-[42rem] gap-3">
             <h3 class="services-inquiry-form__label m-0" id="services-inquiry-noscript-title">

@@ -46,7 +46,7 @@ describe('protected flat-stack Delivery Charge', () => {
     for (const target of ['local', 'uat', 'prd'] as const) {
       for (const testMode of [false, true]) {
         const configured = createPackingPolicy(target, testMode);
-        const variantId = createPackingPolicy('local').items.keys().next().value!;
+        const variantId = 'variant_new_runtime_item';
         const quote = quoteDelivery([{ variantId, quantity: 1 }], configured);
         expect(quote?.amountMinor ?? null).toBe(target === 'local' || (target === 'uat' && testMode) ? 250 : null);
       }

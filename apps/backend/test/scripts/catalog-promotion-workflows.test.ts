@@ -8,6 +8,25 @@ const source = readFileSync(path.join(root, '.github/workflows/pages.yml'), 'utf
 const release = parse(source);
 
 describe('one gated release', () => {
+  it('retains and deploys the combined UAT runtime with its generated bindings and staff assets', () => {
+    const build = release.jobs['build-candidate'].steps.find(
+      (step: { name: string }) => step.name === 'Retain PRD and Worker artifacts',
+    ).run;
+    expect(build).toContain('build:cms --env uat');
+    expect(build).toContain('cp -R apps/backend/dist .codex-artifacts/release/uat/worker');
+    expect(build).toContain('build:cms --env prd --out-dir ../../.codex-artifacts/release/prd/cms');
+    const upload = release.jobs['build-candidate'].steps.find(
+      (step: { name: string }) => step.name === 'Upload verified release bundle',
+    ).with;
+    expect(upload.path).toBe('.codex-artifacts/release');
+    expect(upload['include-hidden-files']).toBe(true);
+    const deploy = release.jobs['deploy-uat'].steps.find(
+      (step: { name: string }) => step.name === 'Deploy UAT Worker',
+    ).run;
+    expect(deploy).toContain('uat/worker/server/wrangler.json --keep-vars');
+    expect(deploy).not.toContain('worker/index.js');
+  });
+
   it('limits main pushes to UAT and keeps code/catalog/launch authorization independent', () => {
     expect(release.on.workflow_dispatch.inputs.target.default).toBe('uat');
     expect(release.on.workflow_dispatch.inputs.confirm_code_promotion.default).toBe(false);
@@ -18,7 +37,12 @@ describe('one gated release', () => {
     expect(release.jobs['catalog-prd'].if).toBe(
       "${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}",
     );
-    expect(JSON.stringify(release.jobs['deploy-prd'])).not.toContain('--apply');
+    expect(JSON.stringify(release.jobs['deploy-prd'])).not.toMatch(
+      /stripe:catalog:verify|d1:seed:prd|confirm-live-catalog-changes/,
+    );
+    expect(JSON.stringify(release.jobs['deploy-prd'])).toContain(
+      'cms:application-migrations --env prd --apply --confirm-live-cms-changes',
+    );
     expect(source).not.toMatch(/PRD_LAUNCH_APPROVED=true|native_checkout_enabled=true|NATIVE_CHECKOUT_ENABLED: true/);
   });
 
@@ -63,12 +87,13 @@ describe('one gated release', () => {
 
   it('promotes the uploaded PRD version without changing existing routes', () => {
     const worker = release.jobs['deploy-prd'].steps.find(
-      (step: { name: string }) => step.name === 'Deploy candidate PRD Worker',
+      (step: { name: string }) => step.name === 'Deploy candidate combined PRD CMS Worker',
     ).run;
     expect(worker).toContain('wrangler versions upload');
-    expect(worker).toContain('--no-bundle --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"');
+    expect(worker).toContain('prd/cms/server/wrangler.json --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"');
     expect(worker).toContain('--version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes');
     expect(worker).not.toMatch(/wrangler deploy|triggers deploy|--routes/);
-    expect(worker.match(/release-candidate\.mjs verify prd/g)).toHaveLength(2);
+    expect(worker.match(/release-candidate\.mjs verify prd/g)).toHaveLength(1);
+    expect(worker).toContain('release-candidate.mjs verify-worker prd');
   });
 });

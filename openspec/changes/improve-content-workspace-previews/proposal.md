@@ -1,0 +1,25 @@
+## Why
+
+The content workspace previews selected fields with separate markup, so editors cannot reliably judge the public result. Publication history consumes editing space and important states lack clear hierarchy.
+
+## What Changes
+
+- Implement the approved focused editor with a searchable selector, live private site preview, responsive tabs, and semantic color.
+- Reuse public Astro rendering against published context plus the unsaved record, without saving or publishing.
+- Move publication status to the top bar with bounded refresh and on-demand history.
+- Improve action copy, image guidance, keyboard behavior, and clickable affordances.
+- Fix Firefox srcdoc CSP with explicit environment origins, add bounded private diagnostics, and default to a collapsible preview.
+- Make Content the staff landing page and simplify backoffice copy and action icons.
+- Recover failed preview assets, gate readiness on actual rendering, and remove measured sequential delays in previews and Items/Stock.
+
+## Capabilities
+
+The approved follow-up also dispatches publication requests immediately, registers CI before release validation, exposes failures and top-bar refresh, traces preview freshness, and adds a living backoffice design reference. The fifteen design recommendations remain proposals rather than an implicit commerce redesign.
+
+### Modified Capabilities
+
+- `content-publishing`: private faithful preview and focused editorial workspace.
+
+## Impact
+
+Staff React workspace, public content-reader seam, combined Astro CMS Worker, and local verification. No new hosted resources, migrations, commerce authority, or public rendering mode changes.

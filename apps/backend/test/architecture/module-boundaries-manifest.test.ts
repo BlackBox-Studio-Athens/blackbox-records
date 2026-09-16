@@ -63,6 +63,7 @@ describe('Module boundaries manifest', { timeout: 15_000 }, () => {
     expect(staffFrontend.roots).toEqual(['apps/staff/src/**']);
     expect(staffFrontend.allowedWorkspaceInterfaces).toEqual({
       '@blackbox/api-client': ['./internal'],
+      '@blackbox/content-model': ['.'],
     });
     expect(operatorStock.roots).not.toEqual(expect.arrayContaining([expect.stringContaining('apps/web/')]));
   });
@@ -92,17 +93,17 @@ describe('Module boundaries manifest', { timeout: 15_000 }, () => {
     );
   });
 
-  it('rejects reopening cms-admin as a temporary module', () => {
+  it('rejects reopening storefront-catalog as a temporary module', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
       modules: Record<string, Record<string, unknown>>;
     };
-    manifest.modules['cms-admin'].status = 'open-temporary';
-    manifest.modules['cms-admin'].temporaryOpenReason = 'Temporary test reason.';
-    manifest.modules['cms-admin'].exitCriteria = ['Close the temporary test exception.'];
-    manifest.modules['cms-admin'].forbiddenWhileOpen = ['Do not keep the temporary test exception.'];
+    manifest.modules['storefront-catalog'].status = 'open-temporary';
+    manifest.modules['storefront-catalog'].temporaryOpenReason = 'Temporary test reason.';
+    manifest.modules['storefront-catalog'].exitCriteria = ['Close the temporary test exception.'];
+    manifest.modules['storefront-catalog'].forbiddenWhileOpen = ['Do not keep the temporary test exception.'];
 
     expect(validateManifest(manifest)).toContain(
-      'Module cms-admin is open-temporary but is not in the approved open-temporary set',
+      'Module storefront-catalog is open-temporary but is not in the approved open-temporary set',
     );
   });
 

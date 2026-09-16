@@ -457,6 +457,34 @@ function createProcessCommand(command: string, args: string[]): { args: string[]
 }
 
 async function main(): Promise<void> {
+  if (process.argv.includes('--if-empty')) {
+    const { getPlatformProxy } = await import('wrangler');
+    const directory = mkdtempSync(path.join(tmpdir(), 'blackbox-local-commerce-read-'));
+    const configPath = path.join(directory, 'wrangler.json');
+    writeFileSync(
+      configPath,
+      JSON.stringify({
+        name: 'blackbox-local-commerce-read',
+        compatibility_date: '2026-08-31',
+        d1_databases: [{ binding: 'COMMERCE_DB', database_name: 'blackbox-records-commerce-local' }],
+      }),
+    );
+    const proxy = await getPlatformProxy<{ COMMERCE_DB: D1Database }>({
+      configPath,
+      persist: { path: path.join(backendDir, '.wrangler/state/v3') },
+      remoteBindings: false,
+      envFiles: [],
+    });
+    try {
+      if (await proxy.env.COMMERCE_DB.prepare('SELECT 1 FROM "StoreItemOption" LIMIT 1').first()) {
+        console.log('Keeping existing Local commerce data; no stock or prices were reseeded.');
+        return;
+      }
+    } finally {
+      await proxy.dispose();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  }
   const storeItems = await readLocalMockStoreItems();
   console.log(`Seeding local mock commerce state for ${storeItems.length} store item(s).`);
   process.exit(applySql(createLocalMockCommerceSql(storeItems)));

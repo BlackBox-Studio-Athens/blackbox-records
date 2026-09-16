@@ -14,7 +14,7 @@ Current product environments are Local, UAT, and PRD. UAT is Cloudflare Pages pl
 ## Current stack
 
 - pnpm workspace monorepo
-- Astro 7, static output
+- Astro 7, accepted-snapshot public runtime plus retained static build
 - React integration for shadcn-ui primitives and the persistent app shell
 - Tailwind CSS v4 + shadcn-ui primitives
 - Worker backend uses TypeScript + Hono + code-first OpenAPI
@@ -45,7 +45,8 @@ Read these first before editing:
 ## Commands
 
 - Install deps: `pnpm install`
-- Frontend dev server: `pnpm dev` or `pnpm dev:web`
+- Normal Local stack: `pnpm dev` (alias for `pnpm dev:stack:stripe-mock`)
+- Frontend-only dev server: `pnpm dev:web`
 - Staff frontend dev server: `pnpm dev:staff`
 - Frontend-only static-site launcher: `pnpm site:dev`
 - Codex/browser-smoke background site launcher: `pnpm site:dev:bg`
@@ -58,7 +59,7 @@ Read these first before editing:
 - Backend production deploy: `pnpm deploy:backend:production`
 - Static frontend deploy workflow: `.github/workflows/pages.yml`
 - Staff static build: `pnpm build:staff`
-- Catalog generation: `pnpm stripe:catalog:artifacts:generate` (ignored build inputs)
+- Explicit repository migration/recovery SQL: `pnpm catalog:readiness:generate` (ignored output; never routine catalog authority)
 - Gated catalog and site release workflow: `.github/workflows/pages.yml`
 - Full local stack with real Stripe test mode: `pnpm dev:stack:stripe-test`
 - Local frontend connected to deployed UAT Worker/API: `pnpm dev:stack:uat-connected`
@@ -115,7 +116,7 @@ Read these first before editing:
 - If that port is unavailable, the launcher should fail clearly rather than silently drifting to another port.
 - Only the static-site launcher should keep a browser/debug target attached.
 - Backend local D1 comes from Wrangler automatically during Worker dev; do not add a second D1 process to the run-config flow.
-- The stack launcher scripts must run D1 migrations and seed SQL before starting the Worker/static site.
+- The stack launcher scripts must apply D1 migrations before starting the Worker/static site. Normal mock startup seeds commerce only when empty and preserves existing stock/prices. The Local public service bootstraps CMS content only when all collections are empty and persists D1/R2 under `apps/backend/.wrangler/state`. It serves verified snapshot builds on 4321; saved drafts stay private until publication. Restart reuses the last published snapshot without promoting newer drafts. Local publication must not dispatch GitHub workflows or mutate hosted providers.
 - Keep `BlackBox Local Stack` working whenever frontend env, backend env, ports, checkout setup, D1 migrations, seed files, or WebStorm run configs change. If a change breaks the canonical launcher, fix the launcher or docs in the same commit.
 - The deterministic local mock checkout smoke path is `http://127.0.0.1:4321/blackbox-records/store/checkout/`; stripe-mock mode now seeds every current visible store item with fake local checkout state.
 - `pnpm dev:stack:uat-connected` runs the local static frontend against the deployed UAT Worker/API. It must not require copying UAT Stripe secrets or UAT Worker secrets into local files.
@@ -216,12 +217,12 @@ Read these first before editing:
   - default `base: /blackbox-records/`
 - Cloudflare Pages PRD builds override those defaults through non-secret `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/` so the artifact serves from the Pages domain root.
 - Do not change `site` or `base` behavior unless the task explicitly requires deployment URL changes.
-- Cloudflare Pages hosting must keep the PRD frontend static and deploy only the prebuilt `apps/web/dist` artifact.
-- The independent staff frontend builds to `apps/staff/dist` and deploys only to the `blackbox-records-staff` Pages project.
+- Cloudflare Pages deploys the retained public assets and a GET/HEAD service-binding gateway to the accepted-snapshot renderer. Content publication does not rebuild or deploy code. See docs/content-publication.md.
+- The independent staff frontend builds to `apps/staff/dist`; its assets ship only inside the combined CMS Worker. No detached staff Pages upload runs.
 - The static frontend workflow must run `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and PRD `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
-- The PRD static build job may pass only non-secret PRD build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset.
+- The PRD static build job may pass only non-secret PRD build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset. Snapshot refresh additionally supplies the non-secret `CMS_CONTENT_SOURCE`, `CMS_CONTENT_SNAPSHOT`, `CMS_CONTENT_SHA256`, and `CMS_CONTENT_ENVIRONMENT` build inputs. Restore credentials belong only to the preceding trusted restore step, never the build step.
 - Cloudflare Pages PRD deploys must run through `.github/workflows/pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not acceptance evidence.
-- Cloudflare Pages must not own backend routes, Pages Functions, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
+- Cloudflare Pages may own only the public gateway; it must not own business backend routes, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
 - Cloudflare Pages is the UAT static host. Do not describe it as PRD rollback or legacy production hosting.
 - Native commerce migration work must treat UAT as Cloudflare Pages plus UAT Worker and PRD as Cloudflare Pages plus PRD Worker. External-shop behavior remains historical commerce context, not the final architecture.
 

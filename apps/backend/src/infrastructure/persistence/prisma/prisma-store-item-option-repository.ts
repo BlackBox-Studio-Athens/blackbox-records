@@ -69,7 +69,10 @@ export class PrismaStoreItemOptionRepository implements StoreItemOptionRepositor
     return record ? mapStoreItemOption(record) : null;
   }
 
-  public async search(query: string | null, limit: number): Promise<StoreItemOptionRecord[]> {
+  public async search(
+    query: string | null,
+    limit: number,
+  ): Promise<(StoreItemOptionRecord & { displayName?: string })[]> {
     const trimmedQuery = query?.trim() ?? '';
 
     const records = await this.prisma.storeItemOption.findMany({
@@ -85,10 +88,17 @@ export class PrismaStoreItemOptionRepository implements StoreItemOptionRepositor
                 { sourceId: { contains: trimmedQuery } },
                 { storeItemSlug: { contains: trimmedQuery } },
                 { variantId: { contains: trimmedQuery } },
+                { productProjection: { path: '$.name', string_contains: trimmedQuery, mode: 'insensitive' } },
               ],
             },
     });
 
-    return records.map(mapStoreItemOption);
+    return records.map((record) => {
+      const name = (record.productProjection as { name?: unknown } | null)?.name;
+      return {
+        ...mapStoreItemOption(record),
+        ...(typeof name === 'string' && name.trim() ? { displayName: name } : {}),
+      };
+    });
   }
 }

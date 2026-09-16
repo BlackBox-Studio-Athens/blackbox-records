@@ -59,3 +59,11 @@ The migration converter now produces deterministic native Portable Text for ever
 - Required repository unit, check, build and boundary gates are recorded in `.codex-artifacts/emdash-m1/section2-*.log`; later final runs use the `section2-final-*` prefix.
 
 At the section 2 checkpoint, the source inventory was preparation only. The subsequent [Local migration checkpoint](local-editorial-migration-evidence.md) proves all 129 records and 152 raster image paths through a repeatable Local import. Tasks 3.2–3.5 remain open for their remaining acceptance requirements.
+
+## Hosted session revocation — 2026-09-15
+
+On deployed UAT code `98224239`, Cloudflare One showed one active user and two staff sessions. Its per-user Revoke sessions action invalidated the existing Chrome Blackbox staff session: reloading the loaded Items page returned Cloudflare Access's expired-token error before staff data was served. After Cloudflare's documented short re-login delay, the unchanged Google identity authenticated again and loaded Content, Items, Stock and Orders without another application login. No allowlist, user, role, service token or identity-provider account was removed or expanded.
+
+Member/owner mapping continues to use the shared signed-JWT verifier and EmDash roles 30/50. The runtime rejects member token administration before storage and limits owner-issued native tokens to content/media export reads. The focused checkpoint regression exercises these two boundaries. Alternate native admin/setup routes remain unavailable. This session-revocation check does not claim that the sole editor's identity-provider account was disabled.
+
+The final focused WebStorm run passes all 18 auth/composition cases, including member/owner rejection above; the workflow contract passes all four cases. Browser assets receive no runtime credential bindings: staff is built independently with same-origin APIs, while provider, export and dispatch credentials stay in the Worker or trusted workflow steps. Together with the existing protected-asset and alternate-host checks, the observed single sign-in and effective hosted revocation complete task 2.3 for the current sole-editor deployment. No second human account was created for this check.

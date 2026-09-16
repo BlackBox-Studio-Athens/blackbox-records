@@ -1,0 +1,27 @@
+---
+import type { Block, ListItem, Props as PortableProps } from 'astro-portabletext/types';
+type Props = PortableProps<(Block | ListItem) & { textAlign?: string }>;
+const { node } = Astro.props;
+const Tag = node.listItem
+  ? 'li'
+  : node.style === 'h1'
+    ? 'h1'
+    : node.style === 'h2'
+      ? 'h2'
+      : node.style === 'h3'
+        ? 'h3'
+        : node.style === 'h4'
+          ? 'h4'
+          : node.style === 'h5'
+            ? 'h5'
+            : node.style === 'h6'
+              ? 'h6'
+              : node.style === 'blockquote'
+                ? 'blockquote'
+                : 'p';
+const alignment = node.textAlign;
+const style =
+  alignment && ['left', 'center', 'right', 'justify'].includes(alignment) ? `text-align: ${alignment}` : undefined;
+---
+
+<Tag style={style}><slot /></Tag>

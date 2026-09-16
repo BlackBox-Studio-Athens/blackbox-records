@@ -90,6 +90,8 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **GIVEN** Astro content schemas and CMS fields require the same path, URL, email, image, and provider constraints
 - **WHEN** CMS configuration imports those validation primitives
 - **THEN** shared portable editorial constraints are provided by the pure content-model workspace entrypoint
+- **AND** native revision, rich-text and immutable snapshot validation use that same pure entrypoint without importing backend source into the public build
+- **AND** `storefront-catalog` owns the public snapshot loader and media reader, with `content-loader.ts` provided to Astro collection configuration
 - **AND** Astro-specific image/render handling remains in the public web application.
 
 #### Scenario: Route-lazy Store Distro search crosses the app-shell boundary
@@ -215,7 +217,7 @@ CMS integration SHALL use supported CMS interfaces for editorial records, while 
 
 - **WHEN** CMS integration and the content-model package are introduced
 - **THEN** the module-boundaries spec and manifest change together
-- **AND** deleted Sveltia roots and compiled catalog entrypoints are removed without compatibility facades.
+- **AND** retained dormant Sveltia roots and migration-only catalog entrypoints remain explicitly owned until the deferred cleanup removes them without compatibility facades.
 
 #### Scenario: Current combined-runtime boundaries are verified
 

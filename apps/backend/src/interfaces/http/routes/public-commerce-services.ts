@@ -31,7 +31,7 @@ import { createFeatureFlagReader } from '../../../infrastructure/feature-flags';
 import { createStripeCatalogGateway, createStripeCheckoutGateway } from '../../../infrastructure/stripe';
 import {
   CatalogReconciler,
-  createCurrentCatalogProductProjectionReader,
+  createRuntimeCatalogProductProjectionReader,
 } from '../../../application/commerce/catalog-sync';
 import type { AppLogger } from '../../../observability';
 import { readStoreListingPrices } from '../../../application/commerce/readers';
@@ -69,7 +69,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
   const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
   const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository(prisma);
   const orders = new PrismaOrderStateRepository(prisma);
-  const productProjections = createCurrentCatalogProductProjectionReader();
+  const productProjections = createRuntimeCatalogProductProjectionReader(storeItems, target);
   const createCatalogReconciler = () =>
     new CatalogReconciler({
       environment: productEnvironmentProfile.workerDeploymentTarget,

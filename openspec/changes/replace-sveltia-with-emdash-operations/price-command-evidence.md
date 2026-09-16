@@ -1,6 +1,6 @@
 # Protected price commands
 
-Tasks 5.1-5.4 are complete locally. The protected POST route is `/api/internal/variants/{variantId}/price`; it uses the existing Access verifier, catalog journal, scoped Stripe gateway, and native D1 completion. Item Setup and its remaining generated contract are still unfinished under task 5.5 and later sections. No hosted deployment or persistent database migration is claimed.
+Tasks 5.1-5.5 and the local item price/stock controls in 6.4 are complete. The protected POST route is `/api/internal/variants/{variantId}/price`; it uses the existing Access verifier, catalog journal, scoped Stripe gateway, and native D1 completion. No hosted deployment or persistent database migration is claimed.
 
 ## Command and authority
 
@@ -25,3 +25,13 @@ Recovery inspects active and archived Prices only on the bound Product, capped a
 The full unit suite, `pnpm check`, `pnpm build`, and strict OpenSpec validation pass. Evidence: `.codex-artifacts/emdash-m1/price-recovery-{targeted,unit,check,build}.log`. All provider responses and databases in these tests are local; no hosted Stripe or Cloudflare request is made.
 
 Official provider references were read through Stripe CLI: [create Price](https://docs.stripe.com/api/prices/create), [list Prices scoped to Product](https://docs.stripe.com/api/prices/list), and [update Product default](https://docs.stripe.com/api/products/update). Saved references are `.codex-artifacts/emdash-m1/stripe-*-docs.md`.
+
+## Items workspace — 2026-09-14
+
+`/items/` reuses the existing stock movement/count controls and staff navigation to Orders. Its price editor reads the bound current price and catalog revision through the protected GET route, without provider writes or provider identifiers in responses. Generated internal contracts cover price reads, price changes, and Item Setup; public contracts remain separate. The existing nine HTTP/SDK/D1 price cases now assert authoritative reads before and after each change and no extra writes.
+
+Chrome with the Blackbox profile verified a comma-decimal price of `27,05`, an intentionally lost local reply, and Check again returning the confirmed `€27.05` with the same command identity. Pending input survives reload in session storage. Stock movement uses Add/Remove with a positive quantity; a local show-sale fixture decreased physical stock from 10 to 8. Keyboard focus reaches the confirmation checkbox. At 320 CSS pixels, the page width is 305 pixels and the stock reason control is 44 pixels high. Browser fixtures do not constitute hosted acceptance; real application/repository behavior is covered separately by the HTTP/D1 tests.
+
+`pnpm check`, `pnpm test:unit`, `pnpm build`, `pnpm build:staff`, the canonical KV-rejecting `build:cms`, and `test:staff-hosting` passed. The combined native Worker probe checks Items, Stock, Orders, private JavaScript/cache headers, alternate-host denial, and public capabilities. Backend test concurrency is capped at two workers to avoid reproduced timeouts on this machine; assertions and timeouts were not relaxed. Logs: `.codex-artifacts/emdash-m1/items-{check,unit,build,staff-build,cms-build,hosting}.log`.
+
+Content navigation/editing, complete item creation/publication, integrated UAT acceptance, and the remaining content/order browser checks stay open under their own tasks.

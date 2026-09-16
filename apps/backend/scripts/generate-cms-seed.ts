@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { z } from 'zod';
 import type { SeedFile, SeedField } from 'emdash';
-import { cmsContentSchemas } from '../src/cms/content-schema';
+import { cmsContentSchemas } from '@blackbox/content-model';
 
 const collections: NonNullable<SeedFile['collections']> = Object.entries(cmsContentSchemas).map(([slug, schema]) => {
   const json = z.toJSONSchema(schema, { io: 'input', unrepresentable: 'any' });

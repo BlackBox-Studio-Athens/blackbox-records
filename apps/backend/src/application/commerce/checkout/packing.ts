@@ -24,7 +24,7 @@ export type PackagePackingProfile = {
 };
 
 export type PackingPolicy = {
-  items: ReadonlyMap<string, ItemPackingProfile>;
+  items: Pick<ReadonlyMap<string, ItemPackingProfile>, 'get'>;
   packages: readonly PackagePackingProfile[];
   charges: Record<ParcelTier, number>;
   allowSynthetic: boolean;

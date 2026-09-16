@@ -8,7 +8,7 @@ import {
 } from '../../../application/commerce/orders';
 import {
   CatalogReconciler,
-  createCurrentCatalogProductProjectionReader,
+  createRuntimeCatalogProductProjectionReader,
 } from '../../../application/commerce/catalog-sync';
 import type { CheckoutReconciliation } from '../../../application/commerce/checkout';
 import { EmailConfigurationError } from '../../../application/email';
@@ -42,7 +42,10 @@ export function createStripeWebhookServices(bindings: AppBindings, logger: AppLo
   const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository(prisma);
   const variantStripeMappings = new PrismaVariantStripeMappingRepository(prisma);
   const catalogWebhookEvents = new PrismaStripeCatalogWebhookEventRepository(prisma);
-  const productProjections = createCurrentCatalogProductProjectionReader();
+  const productProjections = createRuntimeCatalogProductProjectionReader(
+    storeItems,
+    productEnvironmentProfile.workerDeploymentTarget,
+  );
   const checkoutGateway = createStripeCheckoutGateway(bindings);
   const catalogReconciler = new CatalogReconciler({
     environment: productEnvironmentProfile.workerDeploymentTarget,

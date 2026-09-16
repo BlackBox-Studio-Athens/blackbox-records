@@ -9,13 +9,14 @@ const { values } = parseArgs({
     env: { type: 'string', default: 'uat' },
     apply: { type: 'boolean', default: false },
     fingerprint: { type: 'string' },
+    'wrangler-config': { type: 'string', default: '.emdash/wrangler.build.json' },
   },
 });
 if (!['uat', 'prd'].includes(values.env)) throw new Error('Select uat or prd; Local uses isolated Wrangler storage.');
 if (values.apply && !/^[a-f0-9]{64}$/.test(values.fingerprint ?? '')) {
   throw new Error('Apply requires the reviewed --fingerprint from a migration check.');
 }
-const config = JSON.parse(readFileSync('.emdash/wrangler.build.json', 'utf8'));
+const config = JSON.parse(readFileSync(values['wrangler-config'], 'utf8'));
 const resources = JSON.parse(readFileSync('cms-resources.json', 'utf8'));
 const cms = resources[values.env];
 const binding = config.d1_databases.find((db) => db.binding === 'CMS_DB');
@@ -40,7 +41,7 @@ const result = spawnSync(
     '--manifest',
     '.emdash/migrations.json',
     '--wrangler-config',
-    '.emdash/wrangler.build.json',
+    values['wrangler-config'],
     '--d1',
     cms.database_id,
     '--account-id',

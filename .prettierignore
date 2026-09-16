@@ -2,6 +2,7 @@ node_modules/
 
 dist/
 dist-holding/
+dist-public/
 build/
 out/
 .astro/

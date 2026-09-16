@@ -3,12 +3,13 @@ import { z } from 'zod';
 import { DISTRO_GROUP_VALUES } from './validation';
 
 const requiredAltText = z.string().trim().min(1, 'Describe the visible image for people who cannot see it.');
+const requiredText = z.string().trim().min(1, 'Enter a value.');
 
 export function createDistroContentSchema<TImageSchema extends z.ZodType>(image: () => TImageSchema) {
   return z.object({
-    title: z.string(),
+    title: requiredText,
     group: z.enum(DISTRO_GROUP_VALUES),
-    artist_or_label: z.string(),
+    artist_or_label: requiredText,
     image: image(),
     image_alt: requiredAltText,
     gallery: z
@@ -19,7 +20,7 @@ export function createDistroContentSchema<TImageSchema extends z.ZodType>(image:
         }),
       )
       .optional(),
-    summary: z.string(),
+    summary: requiredText,
     eyebrow: z.string().optional(),
     format: z.string().optional(),
     release_date: z.coerce.date().optional(),

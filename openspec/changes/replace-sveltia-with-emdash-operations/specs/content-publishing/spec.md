@@ -35,6 +35,12 @@ A public build SHALL consume one validated published-content snapshot and its re
 - **THEN** the new static artifact is not deployed
 - **AND** the previous public site remains available with a visible failure status for staff.
 
+#### Scenario: Published distro has no commerce setup yet
+
+- **WHEN** a published Distro source is absent from the runtime catalog
+- **THEN** the snapshot retains its canonical source-slug display entry so existing storefront content stays browsable
+- **AND** an existing bound identity takes precedence; this display projection creates no D1 item, Product, Price, stock or checkout eligibility.
+
 ### Requirement: Publish status distinguishes requested from live
 
 The workspace SHALL distinguish saved draft, publication pending, live, and failed publication. A publish request SHALL be durable and safely retryable without requiring the browser to remain open.

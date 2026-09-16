@@ -1,0 +1,115 @@
+name: Publish BlackBox content
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        type: choice
+        options: [uat, prd]
+        required: true
+      publication_id:
+        type: string
+        required: true
+      dispatch_token:
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  # ponytail: share the existing release lock; split only when target throughput requires it.
+  group: blackbox-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      PUBLICATION_TARGET: ${{ inputs.target }}
+      PUBLICATION_ID: ${{ inputs.publication_id }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout trusted publication tooling
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          version: 12.0.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24.20.0
+          cache: pnpm
+      - name: Register publication run before validation
+        id: attempt
+        env:
+          PUBLICATION_DISPATCH_TOKEN: ${{ inputs.dispatch_token }}
+          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets[format('{0}_CMS_PUBLICATION_EXPORT_TOKEN', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_ID', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_SECRET', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+        run: node scripts/report-publication-run.mjs start
+      - run: pnpm install --frozen-lockfile
+      - name: Resolve deployed code under the release lock
+        id: code
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          mkdir -p .codex-artifacts
+          node scripts/release-candidate.mjs resolve-publication-code "$PUBLICATION_TARGET" > .codex-artifacts/publication-code.json
+          node -e 'const fs=require("node:fs");const code=JSON.parse(fs.readFileSync(".codex-artifacts/publication-code.json"));fs.appendFileSync(process.env.GITHUB_OUTPUT,`sha=${code.sha}\n`);'
+      - name: Claim request and capture published content
+        id: snapshot
+        env:
+          PUBLICATION_DISPATCH_TOKEN: ${{ inputs.dispatch_token }}
+          CMS_PUBLICATION_MAX_REQUESTS: ${{ vars[format('{0}_CMS_PUBLICATION_MAX_REQUESTS', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_TOKEN: ${{ secrets[format('{0}_CMS_EXPORT_TOKEN', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets[format('{0}_CMS_PUBLICATION_EXPORT_TOKEN', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_ID', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_SECRET', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+        run: node --import tsx scripts/prepare-content-publication.mjs
+      - name: Checkout deployed source
+        uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ steps.code.outputs.sha }}
+          path: .codex-artifacts/publication-source
+          persist-credentials: false
+      - name: Install deployed source dependencies
+        working-directory: .codex-artifacts/publication-source
+        run: pnpm install --frozen-lockfile
+      - name: Build public content with deployed code
+        working-directory: .codex-artifacts/publication-source
+        env:
+          SNAPSHOT_SHA256: ${{ steps.snapshot.outputs.sha256 }}
+          ASTRO_BASE_PATH: /
+          ASTRO_SITE_URL: ${{ inputs.target == 'uat' && 'https://blackbox-records-web-uat.pages.dev' || 'https://blackbox-records-web.pages.dev' }}
+          PUBLIC_BACKEND_BASE_URL: ${{ vars[format('{0}_PUBLIC_BACKEND_BASE_URL', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          SHOW_REVIEW_SITE_MARKER: ${{ inputs.target == 'uat' && 'true' || '' }}
+        run: |
+          pnpm build:content-snapshot --snapshot ../publication-snapshot/snapshot.json --sha256 "$SNAPSHOT_SHA256" --env "$PUBLICATION_TARGET" --release-identity ../publication-code.json --publication-id "$PUBLICATION_ID" --ci-run-id "$GITHUB_RUN_ID"
+          pnpm exec tsx scripts/check-frontend-route-isolation.ts web
+      - name: Recheck code and deploy only the public artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          SOURCE_SHA: ${{ steps.code.outputs.sha }}
+        run: |
+          node scripts/release-candidate.mjs resolve-publication-code "$PUBLICATION_TARGET" > .codex-artifacts/publication-code-current.json
+          cmp .codex-artifacts/publication-code.json .codex-artifacts/publication-code-current.json
+          if [ "$PUBLICATION_TARGET" = uat ]; then project=blackbox-records-web-uat; else project=blackbox-records-web; fi
+          pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/publication-source/apps/web/dist --project-name="$project" --branch=main --commit-hash="$SOURCE_SHA"
+      - name: Verify public identity and acknowledge publication
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets[format('{0}_CMS_PUBLICATION_EXPORT_TOKEN', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_ID', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_SECRET', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+        run: node scripts/acknowledge-content-publication.mjs
+      - name: Report unsuccessful publication
+        if: ${{ (failure() || cancelled()) && steps.attempt.outcome == 'success' }}
+        env:
+          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets[format('{0}_CMS_PUBLICATION_EXPORT_TOKEN', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_ID', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets[format('{0}_CMS_EXPORT_ACCESS_CLIENT_SECRET', inputs.target == 'uat' && 'UAT' || 'PRD')] }}
+        run: node scripts/report-publication-run.mjs failed

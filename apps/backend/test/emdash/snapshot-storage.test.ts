@@ -1,7 +1,33 @@
 import { env } from 'cloudflare:test';
 import { expect, test, vi } from 'vitest';
 import { completeSnapshot, storeSnapshotMedia } from '../../src/cms/snapshot-storage';
-import { isSupportedCmsApiRequest } from '../../src/middleware';
+import { isSupportedCmsApiRequest, isCmsTokenExportRead } from '../../src/middleware';
+
+test('forwards only bounded export GET routes to native token authentication', () => {
+  const headers = { Authorization: `Bearer ec_pat_${'a'.repeat(43)}` };
+  const list = '/_emdash/api/content/artists?limit=100&orderBy=createdAt&order=asc';
+  for (const path of [
+    list,
+    list + '&cursor=next',
+    '/_emdash/api/revisions/rev1',
+    '/_emdash/api/media/image1',
+    '/_emdash/api/media/file/folder/image.png',
+  ])
+    expect(isCmsTokenExportRead(new Request('https://staff.example' + path, { headers }))).toBe(true);
+  for (const path of [
+    list + '&limit=100',
+    list + '&status=draft',
+    '/_emdash/api/content/artists',
+    '/_emdash/api/content/artists/id',
+    '/_emdash/api/admin/api-tokens',
+    '/api/internal/orders',
+    '/_emdash/api/media/file/snapshots/private.png',
+    '/_emdash/api/revisions/rev1?extra=1',
+  ])
+    expect(isCmsTokenExportRead(new Request('https://staff.example' + path, { headers }))).toBe(false);
+  expect(isCmsTokenExportRead(new Request('https://staff.example' + list, { headers, method: 'POST' }))).toBe(false);
+  expect(isCmsTokenExportRead(new Request('https://staff.example' + list))).toBe(false);
+});
 
 test('stores immutable bytes, reuses existing objects without writes, and isolates target keys', async () => {
   const bytes = new TextEncoder().encode('snapshot bytes');

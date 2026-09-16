@@ -1,0 +1,10 @@
+---
+import { cmsLinkSchema } from '@blackbox/content-model';
+interface Props {
+  node: { markDef: { href: string; blank?: boolean } };
+}
+const href = cmsLinkSchema.parse(Astro.props.node.markDef.href);
+const blank = !href.startsWith('#') && Astro.props.node.markDef.blank;
+---
+
+<a href={href} target={blank ? '_blank' : undefined} rel={blank ? 'noopener noreferrer' : undefined}><slot /></a>

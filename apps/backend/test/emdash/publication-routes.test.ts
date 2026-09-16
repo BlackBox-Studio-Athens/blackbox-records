@@ -30,8 +30,11 @@ function context() {
 test('requests publication with verified identities, preserves replay after later CMS changes, and reads honest status', async () => {
   const input = { id: crypto.randomUUID(), requestedRevision: 'live-one' };
   const ctx = context();
+  const onAccepted = vi.fn();
+  Object.assign(ctx, { onAccepted });
   const response = await handlePublicationRequest(post(input), ctx);
   expect(response.status).toBe(202);
+  expect(onAccepted).toHaveBeenCalledTimes(1);
   expect(response.headers.get('Cache-Control')).toBe('private, no-store');
   const result = await response.json();
   expect(result).toEqual({ id: input.id, status: 'pending', requestedAt: expect.any(Number) });
@@ -43,6 +46,7 @@ test('requests publication with verified identities, preserves replay after late
     throw new Error('CMS changed after acceptance');
   });
   expect(await (await handlePublicationRequest(post(input), ctx)).json()).toEqual(result);
+  expect(onAccepted).toHaveBeenCalledTimes(2);
   expect(ctx.fetchCms).toHaveBeenCalledTimes(2);
   expect(await (await handlePublicationRequest(new Request(root + '/' + input.id), ctx)).json()).toEqual(result);
   expect((await readPublication(env.TEST_CMS_DB, 'local', input.id))?.actorEmail).toBe(ctx.identity.email);
@@ -111,4 +115,28 @@ test('requires the current published revision and fails closed on CMS or migrati
   });
   expect(unavailable.status).toBe(503);
   expect(await unavailable.json()).toEqual({ error: 'PUBLICATION_UNAVAILABLE' });
+});
+
+test('reopens a bounded, redacted publication history for the current environment without browser state', async () => {
+  const ctx = context();
+  const ids = [];
+  for (let index = 0; index < 12; index++) {
+    const id = crypto.randomUUID();
+    ids.push(id);
+    expect((await handlePublicationRequest(post({ id, requestedRevision: 'live-one' }), ctx)).status).toBe(202);
+  }
+  const response = await handlePublicationRequest(new Request(root), ctx);
+  expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+  expect(await response.json()).toEqual({
+    items: ids
+      .slice(-10)
+      .reverse()
+      .map((id) => ({ id, status: 'pending', requestedAt: expect.any(Number) })),
+  });
+  expect(await (await handlePublicationRequest(new Request(root), { ...ctx, environment: 'uat' })).json()).toEqual({
+    items: [],
+  });
+  expect(
+    (await handlePublicationRequest(new Request(root), { ...ctx, identity: { ...ctx.identity, role: 10 } })).status,
+  ).toBe(403);
 });

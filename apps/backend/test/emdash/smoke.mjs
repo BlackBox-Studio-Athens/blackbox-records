@@ -66,6 +66,10 @@ try {
   });
   assert.equal(created.status, 201);
   const path = '/content/posts/' + created.data.item.id;
+  const lockPath = path + '/lock';
+  assert.equal((await request(lockPath, 'POST', {})).status, 200);
+  assert.equal((await request(lockPath)).status, 200);
+  assert.equal((await request(lockPath, 'DELETE')).status, 200);
   const current = await request(path);
   const first = await request(path, 'PUT', { _rev: current.data._rev, data: { title: 'First' } });
   assert.equal(first.status, 200);

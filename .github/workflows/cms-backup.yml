@@ -1,0 +1,46 @@
+name: Back up CMS
+on:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+    inputs:
+      kind:
+        type: choice
+        options: [daily, pre-upgrade]
+        default: pre-upgrade
+permissions:
+  contents: read
+concurrency:
+  group: blackbox-cms-backups
+  cancel-in-progress: false
+jobs:
+  backup:
+    if: vars.CMS_BACKUPS_ENABLED == 'true' && vars.CMS_BACKUP_BUDGET_REVIEWED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        target: [uat, prd]
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          version: 12.0.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24.20.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Capture CMS database and media
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CMS_BACKUP_API_TOKEN }}
+          BACKUP_BUCKET: ${{ vars[format('{0}_CMS_BACKUP_BUCKET', matrix.target == 'uat' && 'UAT' || 'PRD')] }}
+          BACKUP_TARGET: ${{ matrix.target }}
+          BACKUP_KIND: ${{ inputs.kind || 'daily' }}
+          BACKUP_MAX_BYTES: ${{ vars.CMS_BACKUP_MAX_BYTES }}
+        run: node apps/backend/scripts/cms-backup.mjs --env "$BACKUP_TARGET" --kind "$BACKUP_KIND" --backup-bucket "$BACKUP_BUCKET" --max-bytes "$BACKUP_MAX_BYTES" --hosted-budget-reviewed

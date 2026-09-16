@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
@@ -7,9 +8,12 @@ import { getPlatformProxy, unstable_dev } from 'wrangler';
 import sharp from 'sharp';
 import { inventory, parseMarkdown } from '../../../../scripts/inventory-cms-content.mjs';
 import { markdownTreeToPortableText } from '../../../../scripts/cms-markdown.mjs';
-import { sourceCollectionNames } from '../../src/cms/content-schema.ts';
+import { sourceCollectionNames } from '@blackbox/content-model';
 import { createCmsSnapshotReaders } from '../../../../scripts/cms-snapshot-readers.mjs';
 import { captureCmsSnapshot } from '../../../../scripts/capture-cms-snapshot.mjs';
+import { stageCmsSnapshot } from '../../../../scripts/stage-cms-snapshot.mjs';
+import { writeCmsSnapshot } from '../../../../scripts/export-cms-snapshot.mjs';
+import { readContentSnapshot } from '../../../web/src/lib/content-snapshot.ts';
 import { claimPublicationDispatch } from '../../src/cms/publication-journal.ts';
 
 const root = new URL('../../', import.meta.url);
@@ -18,6 +22,23 @@ const localState = mkdtempSync(join(stateRoot, 'publication-smoke-'));
 const workflowToken = 'a'.repeat(64);
 let worker;
 try {
+  const commerceMigration = spawnSync(
+    process.execPath,
+    [
+      fileURLToPath(new URL('node_modules/wrangler/bin/wrangler.js', root)),
+      'd1',
+      'migrations',
+      'apply',
+      'COMMERCE_DB',
+      '--local',
+      '--persist-to',
+      localState,
+      '--config',
+      fileURLToPath(new URL('dist/server/wrangler.json', root)),
+    ],
+    { env: { ...process.env, CI: 'true' }, encoding: 'utf8', windowsHide: true },
+  );
+  assert.equal(commerceMigration.status, 0, commerceMigration.stdout + commerceMigration.stderr);
   worker = await unstable_dev(fileURLToPath(new URL('dist/server/entry.mjs', root)), {
     config: fileURLToPath(new URL('dist/server/wrangler.json', root)),
     ip: '127.0.0.1',
@@ -30,6 +51,9 @@ try {
     logLevel: 'error',
     experimental: { disableExperimentalWarning: true },
   });
+  const stock = await fetch('http://127.0.0.1:8799/api/internal/variants');
+  assert.equal(stock.status, 200, await stock.clone().text());
+  assert.deepEqual(await stock.json(), []);
   async function request(path, method = 'GET', body) {
     const form = body instanceof FormData;
     const response = await fetch('http://127.0.0.1:8799/_emdash/api' + path, {
@@ -98,6 +122,30 @@ try {
     if (collection === 'artists') artistId = created.body.data.item.id;
     const idPath = path + '/' + created.body.data.item.id;
     const current = await request(idPath);
+    if (collection === 'releases' || collection === 'distro') {
+      assert.equal(current.body.data.item.draftRevisionId, null, 'A fresh native draft has no draft revision yet');
+      const artworkUrl = 'http://127.0.0.1:8799/media/published/' + createHash('sha256').update(pixels).digest('hex');
+      if (collection === 'releases') assert.equal((await fetch(artworkUrl)).status, 404, 'Draft artwork stays private');
+      const approve = () =>
+        fetch('http://127.0.0.1:8799/_emdash/api/blackbox/item-artwork', {
+          method: 'POST',
+          headers: { Origin: 'http://127.0.0.1:8799', 'X-EmDash-Request': '1', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ collection, entryId: current.body.data.item.id, _rev: current.body.data._rev }),
+        });
+      const approved = await approve();
+      assert.equal(approved.status, 200, await approved.clone().text());
+      assert.equal((await approved.json()).imageUrl, artworkUrl.replace(':8799/', ':8787/'));
+      assert.equal((await approve()).status, 200, 'Approval safely replays');
+      const image = await fetch(artworkUrl);
+      assert.equal(image.status, 200);
+      assert.equal(image.headers.get('cache-control'), 'public, max-age=31536000, immutable');
+      assert.deepEqual(Buffer.from(await image.arrayBuffer()), pixels);
+      assert.equal(
+        (await request(idPath)).body.data.item.status,
+        'draft',
+        'Artwork approval does not publish the item',
+      );
+    }
     assert.equal((await request(idPath, 'PUT', { _rev: current.body.data._rev, data, slug: 'renamed' })).status, 400);
     assert.equal((await request(path, 'POST', { slug: '../unsafe', data })).status, 400);
     assert.equal((await request(path, 'POST', { slug: 'metadata-check', data, status: 'published' })).status, 400);
@@ -146,13 +194,42 @@ try {
       assert.equal(edited.status, 200, JSON.stringify(edited));
     }
   }
-  const snapshot = await captureCmsSnapshot(
-    createCmsSnapshotReaders({ environment: 'local', target: 'http://127.0.0.1:8799/' }),
-  );
+  assert.equal((await request('/admin/api-tokens', 'POST', { name: 'Too broad', scopes: ['admin'] })).status, 400);
+  const exportCredential = await request('/admin/api-tokens', 'POST', {
+    name: 'Local export smoke',
+    scopes: ['content:read', 'media:read'],
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+  });
+  assert.equal(exportCredential.status, 201);
+  const exportReaders = createCmsSnapshotReaders({
+    environment: 'local',
+    target: 'http://127.0.0.1:8799/',
+    token: exportCredential.body.data.token,
+  });
+  const snapshot = await captureCmsSnapshot(exportReaders);
+  for (const [path, method] of [
+    ['/_emdash/api/content/artists', 'POST'],
+    ['/_emdash/api/admin/api-tokens', 'GET'],
+    ['/api/internal/orders', 'GET'],
+  ]) {
+    const rejected = await fetch('http://127.0.0.1:8799' + path, {
+      method,
+      headers: { Authorization: `Bearer ${exportCredential.body.data.token}` },
+    });
+    assert.equal(rejected.status, 403);
+    await rejected.body?.cancel();
+  }
+  assert.equal((await request('/admin/api-tokens/' + exportCredential.body.data.info.id, 'DELETE')).status, 200);
+  await assert.rejects(exportReaders.readRevision(snapshot.snapshot.records[0].revisionId), /401/);
   assert.equal(snapshot.snapshot.media.length, 1, 'Shared published media is captured once');
   assert.deepEqual(Buffer.from(snapshot.files.get(snapshot.snapshot.media[0].sha256)), pixels);
   assert.equal(snapshot.snapshot.records.length, 13);
   assert.equal(snapshot.json.includes('UNPUBLISHED-SNAPSHOT-MARKER'), false);
+  const buildInput = await writeCmsSnapshot(snapshot, join(localState, 'public-snapshot'), 'local');
+  const loaded = await readContentSnapshot(buildInput);
+  assert.deepEqual(loaded.snapshot, snapshot.snapshot);
+  assert.equal(loaded.media.size, 1);
+  await assert.rejects(writeCmsSnapshot(snapshot, join(localState, 'public-snapshot'), 'local'), { code: 'EEXIST' });
   const publicationResponse = await fetch('http://127.0.0.1:8799/_emdash/api/blackbox/publications', {
     method: 'POST',
     headers: { Origin: 'http://127.0.0.1:8799', 'X-EmDash-Request': '1', 'Content-Type': 'application/json' },
@@ -169,7 +246,11 @@ try {
     assert.equal(result.status, 0, result.stdout + result.stderr);
     return result.stdout;
   };
-  assert.deepEqual(JSON.parse(migrate()).pending, ['0001_publications.sql', '0002_publication_dispatch.sql']);
+  assert.deepEqual(JSON.parse(migrate()).pending, [
+    '0001_publications.sql',
+    '0002_publication_dispatch.sql',
+    '0003_local_publication_receipt.sql',
+  ]);
   migrate('--apply');
   assert.deepEqual(JSON.parse(migrate()).pending, []);
   const publicationInput = { id: crypto.randomUUID(), requestedRevision: snapshot.snapshot.records[0].revisionId };
@@ -205,7 +286,12 @@ try {
     fetch('http://127.0.0.1:8799/_emdash/api/blackbox/publications/run', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: publication.id, dispatchToken: dispatch.dispatchToken, ciRunId }),
+      body: JSON.stringify({
+        id: publication.id,
+        dispatchToken: dispatch.dispatchToken,
+        ciRunId,
+        codeSha: 'c'.repeat(40),
+      }),
     });
   const deniedRun = await bindRun('b'.repeat(64));
   assert.equal(deniedRun.status, 403);
@@ -232,11 +318,17 @@ try {
   const incomplete = await uploadSnapshot('snapshot', snapshot.json);
   assert.equal(incomplete.status, 503, 'A snapshot with missing media cannot complete');
   await incomplete.body?.cancel();
-  for (const [sha256, bytes] of snapshot.files) {
-    const media = await uploadSnapshot('media', bytes);
-    assert.equal(media.status, 200, await media.clone().text());
-    assert.deepEqual(await media.json(), { sha256 });
-  }
+  assert.deepEqual(
+    await stageCmsSnapshot({
+      environment: 'local',
+      target: 'http://127.0.0.1:8799/',
+      publicationId: publication.id,
+      ciRunId: '12345',
+      token: workflowToken,
+      capture: snapshot,
+    }),
+    { id: publication.id, snapshotSha256: snapshot.sha256 },
+  );
   for (let attempt = 0; attempt < 2; attempt++) {
     const completed = await uploadSnapshot('snapshot', snapshot.json);
     assert.equal(completed.status, 200, await completed.clone().text());

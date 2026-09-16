@@ -8,7 +8,7 @@ import sharp from 'sharp';
 import { applyCmsImport } from './apply-cms-import.mjs';
 import { inventory } from './inventory-cms-content.mjs';
 import { markdownToPortableText } from './cms-markdown.mjs';
-import { sourceCollectionNames, validateCmsContent } from '../apps/backend/src/cms/content-schema.ts';
+import { sourceCollectionNames, validateCmsContent } from '@blackbox/content-model';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
@@ -45,6 +45,7 @@ export async function importCmsContent({
   apply = false,
   verifyOnly = false,
   prepareUat,
+  preparePrd,
   prepareLocal,
 } = {}) {
   const target = new URL(base);
@@ -93,13 +94,19 @@ export async function importCmsContent({
     assert.equal(metadata.width, media.width, media.path);
     assert.equal(metadata.height, media.height, media.path);
   }
-  if ((prepareUat || prepareLocal) && apply) throw new Error('Prepare and apply are separate operations.');
-  if (prepareUat && prepareLocal) throw new Error('Prepare one CMS environment at a time.');
+  if ((prepareUat || preparePrd || prepareLocal) && apply)
+    throw new Error('Prepare and apply are separate operations.');
+  if ([prepareUat, preparePrd, prepareLocal].filter(Boolean).length > 1)
+    throw new Error('Prepare one CMS environment at a time.');
   for (const media of manifest.media) mediaIds.set(media.path, 'urn:blackbox:media:' + media.path);
   for (const record of manifest.records)
     recordIds.set(`${record.collection}/${record.id}`, `urn:blackbox:record:${record.collection}/${record.id}`);
   const plan = {
-    target: prepareUat ? 'https://staff-uat.blackboxrecordsathens.com' : target.origin,
+    target: preparePrd
+      ? 'https://staff.blackboxrecordsathens.com'
+      : prepareUat
+        ? 'https://staff-uat.blackboxrecordsathens.com'
+        : target.origin,
     retainedAssets: retainedAssets.map((media) => media.path),
     media: importMedia,
     records: [...manifest.records]
@@ -121,7 +128,7 @@ export async function importCmsContent({
       }),
     };
   }
-  const prepareDirectory = prepareUat || prepareLocal;
+  const prepareDirectory = prepareUat || preparePrd || prepareLocal;
   if (prepareDirectory) {
     for (const media of plan.media) {
       const { thumbnail } = await readMedia(media);
@@ -134,6 +141,7 @@ export async function importCmsContent({
     writeFileSync(path.join(prepareDirectory, 'apply.js'), applyCmsImport.toString());
     return {
       target: plan.target,
+      planSha256: hash(JSON.stringify(plan)),
       apply: false,
       records: plan.records.length,
       media: plan.media.length,
@@ -150,6 +158,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       apply: { type: 'boolean', default: false },
       verifyOnly: { type: 'boolean', default: false },
       prepareUat: { type: 'string' },
+      preparePrd: { type: 'string' },
       prepareLocal: { type: 'string' },
     },
   });

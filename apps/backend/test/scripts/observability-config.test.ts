@@ -51,9 +51,9 @@ const expectedTraceSampling = new Map([
 ]);
 
 describe('Worker observability config', () => {
-  it('deploys only the bounded paid-delivery UAT schedule', () => {
+  it('preserves bounded UAT delivery and PRD CMS publication schedules', () => {
     expect(readWranglerConfig().env?.uat?.triggers?.crons).toEqual(['*/15 * * * *']);
-    expect(readWranglerConfig().env?.prd?.triggers).toBeUndefined();
+    expect(readWranglerConfig().env?.prd?.triggers?.crons).toEqual(['*/5 * * * *']);
   });
 
   it('keeps logs and traces explicit for all runtime targets', () => {

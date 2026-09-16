@@ -55,6 +55,13 @@ function collectionDefinitions(source) {
     ) {
       const definition = { name: node.name.getText(syntax), references: [] };
       function inspect(child) {
+        if (ts.isCallExpression(child) && child.expression.getText(syntax) === 'publicContentLoader') {
+          const [collection, pattern, base] = child.arguments;
+          if (![collection, pattern, base].every(ts.isStringLiteral) || collection.text !== definition.name)
+            throw new Error('Inventory requires literal source configuration');
+          definition.pattern = pattern.text;
+          definition.base = base.text;
+        }
         if (ts.isCallExpression(child) && child.expression.getText(syntax) === 'glob') {
           for (const property of child.arguments[0].properties) {
             if (!ts.isStringLiteral(property.initializer))

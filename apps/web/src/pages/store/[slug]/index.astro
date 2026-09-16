@@ -1,12 +1,13 @@
 ---
 import { Image } from 'astro:assets';
-import { getEntry } from 'astro:content';
+import { getEntry } from '@/lib/content-reader';
 
 import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import StoreItemPurchaseActions from '@/components/store/StoreItemPurchaseActions';
 import PurchaseInformation from '@/components/PurchaseInformation';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { getStorePageEntryBySlug } from '@/lib/store-page-data';
 import {
   createCartLineItemSnapshotForStorePage,
   createPricedCartSeedForStorePage,
@@ -22,7 +23,8 @@ interface Props {
   entry: StorePageEntry;
 }
 
-const { entry } = Astro.props;
+const entry = Astro.props.entry ?? (await getStorePageEntryBySlug(Astro.params.slug ?? ''));
+if (!entry) return new Response('Not found', { status: 404 });
 const { storeItem, primaryAvailability } = entry;
 const metadataLabel = storeItem.metadata.join(' · ');
 const cartItem = createCartLineItemSnapshotForStorePage(storeItem, primaryAvailability, storeItem.image.src);

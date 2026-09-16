@@ -11,6 +11,17 @@ import { verifyStripeWebhookEvent } from '../../src/infrastructure/stripe';
 describe('Stripe webhook simulator', () => {
   const webhookSecret = 'whsec_local_mock';
 
+  it.each([
+    ['checkout.session.expired', 'expired'],
+    ['checkout.session.async_payment_failed', 'complete'],
+  ] as const)('defaults %s to an unpaid session', (type, status) => {
+    expect(JSON.parse(createStripeWebhookFixturePayload({ type })).data.object).toMatchObject({
+      status,
+      payment_status: 'unpaid',
+      payment_intent: null,
+    });
+  });
+
   it('creates signed checkout-session fixture payloads accepted by the verifier', async () => {
     const payload = createStripeWebhookFixturePayload({
       checkoutSessionId: 'cs_mock_variant_disintegration-black-vinyl-lp_standard',

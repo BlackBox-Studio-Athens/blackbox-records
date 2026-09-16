@@ -24,6 +24,14 @@ const steps: Record<CatalogOperationInput['kind'], CatalogOperationStep[]> = {
     'completed',
   ],
   price_change: ['started', 'validated', 'price_bound', 'default_selected', 'completed'],
+  item_publish: [
+    'started',
+    'artwork_approved',
+    'product_projected',
+    'content_published',
+    'publication_requested',
+    'completed',
+  ],
 };
 const map = (row: Row): CatalogOperation => ({
   ...row,
@@ -366,6 +374,100 @@ export class D1CatalogOperationRepository {
     return row ? map(row) : null;
   }
 
+  public async release(operation: CatalogOperation): Promise<void> {
+    await this.db
+      .prepare(
+        `UPDATE "CatalogOperation" SET claimToken = NULL, leaseUntil = NULL
+      WHERE id = ? AND status = 'pending' AND claimToken = ?`,
+      )
+      .bind(operation.id, operation.claimToken)
+      .run();
+  }
+
+  public async retryPublication(
+    operation: CatalogOperation,
+    publicationId: string,
+    now = new Date(),
+  ): Promise<CatalogOperation | null> {
+    const replacement = catalogOperationResultsSchema.parse({ publicationId }).publicationId!;
+    const row = await this.db
+      .prepare(
+        `UPDATE "CatalogOperation" SET results = json_set(results, '$.publicationId', ?), updatedAt = ?
+      WHERE id = ? AND kind = 'item_publish' AND step = 'publication_requested' AND status = 'pending'
+      AND claimToken = ? AND leaseUntil > ? AND json_extract(results, '$.publicationId') = ? RETURNING *`,
+      )
+      .bind(
+        replacement,
+        now.toISOString(),
+        operation.id,
+        operation.claimToken,
+        now.toISOString(),
+        operation.results.publicationId,
+      )
+      .first<Row>();
+    return row ? map(row) : null;
+  }
+
+  // The application calls this only after the CMS journal confirms the static publication is Live.
+  public async completeItemPublication(operation: CatalogOperation, now = new Date()): Promise<boolean> {
+    if (
+      operation.kind !== 'item_publish' ||
+      operation.step !== 'publication_requested' ||
+      !operation.claimToken ||
+      !operation.results.productProjection ||
+      !operation.results.publicationId ||
+      !operation.results.publishedRevisionId
+    )
+      return false;
+    const timestamp = now.toISOString();
+    const result = await this.db.batch([
+      this.db
+        .prepare(
+          `UPDATE "CatalogOperation" SET step = 'completed', status = 'completed', updatedAt = ?
+        WHERE id = ? AND kind = 'item_publish' AND step = 'publication_requested' AND status = 'pending'
+        AND claimToken = ? AND leaseUntil > ?
+        AND variantId = ? AND expectedRevision = ?
+        AND json_extract(results, '$.publicationId') = ? AND json_extract(results, '$.publishedRevisionId') = ?
+        AND EXISTS (SELECT 1 FROM "StoreItemOption" s WHERE s.variantId = "CatalogOperation".variantId
+          AND s.catalogRevision = "CatalogOperation".expectedRevision AND s.catalogAvailability <> 'retired'
+          AND s.cmsSourceId = json_extract("CatalogOperation".results, '$.cmsSourceId'))
+        AND EXISTS (SELECT 1 FROM "VariantStripeMapping" m WHERE m.variantId = "CatalogOperation".variantId
+          AND m.stripeProductId = json_extract("CatalogOperation".results, '$.stripeProductId')
+          AND m.stripePriceId = json_extract("CatalogOperation".results, '$.stripePriceId'))`,
+        )
+        .bind(
+          timestamp,
+          operation.id,
+          operation.claimToken,
+          timestamp,
+          operation.variantId,
+          operation.expectedRevision,
+          operation.results.publicationId,
+          operation.results.publishedRevisionId,
+        ),
+      this.db
+        .prepare(
+          `UPDATE "StoreItemOption" SET productProjection = (SELECT json_extract(results, '$.productProjection') FROM "CatalogOperation" WHERE id = ?), catalogAvailability = 'published',
+        catalogRevision = catalogRevision + 1, updatedAt = ? WHERE variantId = ? AND changes() = 1`,
+        )
+        .bind(operation.id, timestamp, operation.variantId),
+      this.db
+        .prepare(
+          `INSERT INTO "ItemAvailability" (id, variantId, status, canBuy, updatedAt)
+        SELECT ?, ?, 'available', 1, ? WHERE changes() = 1
+        ON CONFLICT(variantId) DO UPDATE SET status = 'available', canBuy = 1, updatedAt = excluded.updatedAt`,
+        )
+        .bind(crypto.randomUUID(), operation.variantId, timestamp),
+      this.db
+        .prepare(
+          `UPDATE "CatalogOperation" SET claimToken = NULL, leaseUntil = NULL
+        WHERE id = ? AND status = 'completed' AND claimToken = ? AND changes() = 1`,
+        )
+        .bind(operation.id, operation.claimToken),
+    ]);
+    return result[0].meta.changes === 1;
+  }
+
   public async advance(
     operation: CatalogOperation,
     nextStep: CatalogOperationStep,
@@ -373,7 +475,7 @@ export class D1CatalogOperationRepository {
     now = new Date(),
   ): Promise<CatalogOperation | null> {
     if (
-      (operation.kind === 'price_change' && nextStep === 'completed') ||
+      (['price_change', 'item_publish'].includes(operation.kind) && nextStep === 'completed') ||
       (operation.kind === 'item_setup' && ['stock_initialized', 'completed'].includes(nextStep)) ||
       steps[operation.kind][steps[operation.kind].indexOf(operation.step) + 1] !== nextStep
     ) {
@@ -384,7 +486,7 @@ export class D1CatalogOperationRepository {
       Object.entries(additions).some(
         ([key, value]) =>
           operation.results[key as keyof CatalogOperationResults] !== undefined &&
-          operation.results[key as keyof CatalogOperationResults] !== value,
+          JSON.stringify(operation.results[key as keyof CatalogOperationResults]) !== JSON.stringify(value),
       )
     ) {
       throw new Error('Catalog operation results cannot be replaced.');

@@ -69,6 +69,7 @@
     },
     "@blackbox/content-model": {
       "packageRoot": "packages/content-model",
+      "description": "Pure editorial, rich-text, native revision and immutable snapshot validation shared by CMS and static builds.",
       "level": "workspace-package",
       "exports": {
         ".": "packages/content-model/src/index.ts"
@@ -144,6 +145,9 @@
       "status": "closed",
       "roots": [
         "apps/web/src/lib/site-data.ts",
+        "apps/web/src/lib/content-loader.ts",
+        "apps/web/src/lib/content-reader.ts",
+        "apps/web/src/lib/content-snapshot.ts",
         "apps/web/src/lib/catalog-data.ts",
         "apps/web/src/lib/store-categories.ts",
         "apps/web/src/lib/store-item-ownership.ts",
@@ -179,6 +183,7 @@
       ],
       "providedEntrypoints": [
         "apps/web/src/lib/catalog-data.ts",
+        "apps/web/src/lib/content-loader.ts",
         "apps/web/src/lib/distro-data.ts",
         "apps/web/src/lib/slugs.ts",
         "apps/web/src/lib/site-data.ts",
@@ -254,21 +259,6 @@
       },
       "ownershipExceptions": []
     },
-    "cms-admin": {
-      "status": "closed",
-      "roots": ["apps/web/src/pages/admin/**", "apps/web/src/lib/admin/**", "apps/web/public/admin/**"],
-      "providedEntrypoints": [
-        "apps/web/public/admin/index.html",
-        "apps/web/src/pages/admin/config.yml.ts",
-        "apps/web/src/pages/admin/init.js.ts"
-      ],
-      "namedInterfaces": {},
-      "allowedDependencies": ["storefront-catalog", "platform-shared"],
-      "allowedWorkspaceInterfaces": {
-        "@blackbox/content-model": ["."]
-      },
-      "ownershipExceptions": []
-    },
     "public-commerce-http": {
       "status": "closed",
       "roots": [
@@ -280,6 +270,8 @@
         "apps/backend/src/interfaces/http/routes/cms-item-source-gateway.ts",
         "apps/backend/src/interfaces/http/routes/register-public-routes.ts",
         "apps/backend/src/interfaces/http/routes/register-public-commerce-routes.ts",
+        "apps/backend/src/interfaces/http/routes/register-internal-publication-routes.ts",
+        "apps/backend/src/interfaces/http/routes/cms-item-publication-gateway.ts",
         "apps/backend/src/interfaces/http/routes/register-public-newsletter-routes.ts",
         "apps/backend/src/interfaces/http/routes/register-public-services-inquiry-routes.ts",
         "apps/backend/src/interfaces/http/routes/public-checkout-return-url.ts",
@@ -465,7 +457,8 @@
       "namedInterfaces": {},
       "allowedDependencies": [],
       "allowedWorkspaceInterfaces": {
-        "@blackbox/api-client": ["./internal"]
+        "@blackbox/api-client": ["./internal"],
+        "@blackbox/content-model": ["."]
       },
       "ownershipExceptions": []
     },
@@ -537,7 +530,7 @@
     },
     "cms-runtime": {
       "providedEntrypoints": ["apps/backend/src/cms/index.ts", "apps/backend/src/cms/auth.ts"],
-      "allowedDependencies": ["backend-runtime", "operator-auth", "platform-shared"],
+      "allowedDependencies": ["backend-runtime", "operator-auth", "platform-shared", "commerce-persistence"],
       "namedInterfaces": {
         "combined-worker": "apps/backend/src/cms/index.ts",
         "access-auth-provider": "apps/backend/src/cms/auth.ts"

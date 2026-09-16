@@ -1,7 +1,7 @@
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
-import { loadStripeCatalogStoreItemContracts } from './stripe-catalog-contract';
+import { parseD1Rows, runD1ReadSql } from './stripe-catalog-verify';
 
 type ListingPriceRecord = {
   displayPrice?: unknown;
@@ -25,9 +25,12 @@ export function findNonReadyStoreItemSlugs(expectedSlugs: string[], payload: unk
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const contracts = await loadStripeCatalogStoreItemContracts({
-    productEnvironment: options.environment === 'prd' ? 'PRD' : 'UAT',
-  });
+  const contracts = parseD1Rows<{ storeItemSlug: string }>(
+    runD1ReadSql(
+      options.environment,
+      "SELECT storeItemSlug FROM StoreItemOption WHERE catalogAvailability = 'published';",
+    ),
+  );
   const response = await fetch(options.url, { headers: { Accept: 'application/json' } });
 
   if (!response.ok) {

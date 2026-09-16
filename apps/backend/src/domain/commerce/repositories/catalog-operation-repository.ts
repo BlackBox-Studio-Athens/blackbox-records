@@ -11,7 +11,7 @@ const identifier = z
 export const catalogOperationInputSchema = z
   .object({
     id: identifier,
-    kind: z.enum(['item_setup', 'price_change']),
+    kind: z.enum(['item_setup', 'price_change', 'item_publish']),
     inputFingerprint: z.string().regex(/^shape_v[0-9a-f]{32}$/),
     // Supplied by the verified operator context, never by browser input.
     actorEmail: z.email(),
@@ -26,6 +26,14 @@ export const catalogOperationResultsSchema = z
     stripePriceId: identifier.optional(),
     previousStripePriceId: identifier.optional(),
     stockChangeId: identifier.optional(),
+    cmsRevision: z.string().min(1).max(512).optional(),
+    sourceFingerprint: z
+      .string()
+      .regex(/^shape_v[0-9a-f]{32}$/)
+      .optional(),
+    productProjection: z.json().optional(),
+    publishedRevisionId: identifier.optional(),
+    publicationId: z.uuid().optional(),
   })
   .strict();
 export type CatalogOperationInput = z.infer<typeof catalogOperationInputSchema>;
@@ -39,6 +47,10 @@ export type CatalogOperationStep =
   | 'price_bound'
   | 'default_selected'
   | 'stock_initialized'
+  | 'artwork_approved'
+  | 'product_projected'
+  | 'content_published'
+  | 'publication_requested'
   | 'completed';
 export type CatalogOperation = CatalogOperationInput & {
   step: CatalogOperationStep;
@@ -50,6 +62,9 @@ export type CatalogOperation = CatalogOperationInput & {
 };
 
 export interface CatalogOperationRepository {
+  release(operation: CatalogOperation): Promise<void>;
+  retryPublication(operation: CatalogOperation, publicationId: string, now?: Date): Promise<CatalogOperation | null>;
+  completeItemPublication(operation: CatalogOperation, now?: Date): Promise<boolean>;
   completeSetup(
     operation: CatalogOperation,
     presentation: Pick<RuntimeCatalogRecord, 'itemType' | 'priceKind' | 'productProjection'>,

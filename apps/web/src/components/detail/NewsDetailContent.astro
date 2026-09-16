@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
-import { render } from 'astro:content';
+import EditorialContent from './EditorialContent.astro';
 
 import InternalPageHero from '@/components/InternalPageHero.astro';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,6 @@ interface Props {
 }
 
 const { item, imagePriority = true } = Astro.props;
-const { Content } = await render(item);
 const sectionLabel = item.data.section_label || 'News';
 ---
 
@@ -48,7 +47,7 @@ const sectionLabel = item.data.section_label || 'News';
         )
       }
       <div class="news-markdown-content text-sm leading-relaxed text-muted-foreground">
-        <Content />
+        <EditorialContent entry={item} />
       </div>
     </CardContent>
   </Card>

@@ -2,6 +2,8 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import http, { type IncomingHttpHeaders, type IncomingMessage, type ServerResponse } from 'node:http';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
+import { resolve } from 'node:path';
+import { createLocalStripeMockCatalog } from './local-stripe-mock-catalog';
 
 import { readLocalMockStoreOfferAmountMinor } from '../apps/backend/scripts/seed-local-mock-commerce-state';
 
@@ -24,6 +26,7 @@ export function patchStripeMockRequest(input: { body: string; method?: string; u
 
 export function patchStripeMockResponse(input: {
   body: string;
+  catalog?: ReturnType<typeof createLocalStripeMockCatalog>;
   checkoutLineItems?: StripeMockCheckoutLineItems;
   checkoutSessions?: Map<string, Record<string, unknown>>;
   method?: string;
@@ -68,7 +71,7 @@ export function patchStripeMockResponse(input: {
   const fragment = sessionId ? toSafeStripeMockFragment(sessionId) : toSafeStripeMockFragment(variantId);
 
   if (sessionId) {
-    const lineItems = readCheckoutSessionCreateLineItems(requestParams);
+    const lineItems = readCheckoutSessionCreateLineItems(requestParams, input.catalog);
 
     if (lineItems.length) {
       input.checkoutLineItems?.set(sessionId, lineItems);
@@ -102,12 +105,16 @@ export function patchStripeMockResponse(input: {
   return JSON.stringify(responseJson);
 }
 
-export function createStripeMockProxyServer(upstreamOrigin = STRIPE_MOCK_UPSTREAM_ORIGIN): http.Server {
+export function createStripeMockProxyServer(
+  upstreamOrigin = STRIPE_MOCK_UPSTREAM_ORIGIN,
+  catalogFile?: string,
+): http.Server {
   const checkoutLineItems: StripeMockCheckoutLineItems = new Map();
   const checkoutSessions = new Map<string, Record<string, unknown>>();
+  const catalog = createLocalStripeMockCatalog(catalogFile);
 
   return http.createServer((request, response) => {
-    void proxyRequest({ checkoutLineItems, checkoutSessions, request, response, upstreamOrigin }).catch(
+    void proxyRequest({ catalog, checkoutLineItems, checkoutSessions, request, response, upstreamOrigin }).catch(
       (error: unknown) => {
         writeProxyError(response, error);
       },
@@ -120,7 +127,10 @@ async function main() {
 
   await waitForStripeMock();
 
-  const proxy = createStripeMockProxyServer();
+  const proxy = createStripeMockProxyServer(
+    STRIPE_MOCK_UPSTREAM_ORIGIN,
+    resolve('apps/backend/.wrangler/state/mock-catalog.json'),
+  );
   await new Promise<void>((resolve) => {
     proxy.listen(STRIPE_MOCK_PROXY_PORT, '127.0.0.1', resolve);
   });
@@ -147,12 +157,14 @@ async function main() {
 }
 
 async function proxyRequest({
+  catalog,
   checkoutLineItems,
   checkoutSessions,
   request,
   response,
   upstreamOrigin,
 }: {
+  catalog: ReturnType<typeof createLocalStripeMockCatalog>;
   checkoutLineItems: StripeMockCheckoutLineItems;
   checkoutSessions: Map<string, Record<string, unknown>>;
   request: IncomingMessage;
@@ -160,6 +172,19 @@ async function proxyRequest({
   upstreamOrigin: string;
 }) {
   const requestBody = await readRequestBody(request);
+  if (request.url === '/__local/webhook-session' && request.method === 'POST') {
+    const event = readJsonObject(requestBody);
+    const session = event && typeof event.id === 'string' ? checkoutSessions.get(event.id) : undefined;
+    const valid =
+      request.headers.authorization === 'Bearer sk_test_mock' &&
+      session &&
+      ['complete', 'expired', 'open'].includes(String(event?.status)) &&
+      ['paid', 'unpaid', 'no_payment_required'].includes(String(event?.payment_status));
+    if (valid) Object.assign(session, { status: event!.status, payment_status: event!.payment_status });
+    response.writeHead(valid ? 200 : 400, { 'content-type': 'application/json' });
+    response.end(JSON.stringify({ updated: !!valid }));
+    return;
+  }
   const patchedRequestBody = patchStripeMockRequest({
     body: requestBody,
     method: request.method,
@@ -172,16 +197,30 @@ async function proxyRequest({
     method: request.method,
   });
   const upstreamBody = await upstreamResponse.text();
-  const patchedResponseBody = patchStripeMockResponse({
-    body: upstreamBody,
-    checkoutLineItems,
-    checkoutSessions,
-    method: request.method,
-    requestBody,
-    url: request.url,
+  const catalogResponse = catalog({
+    url: request.url ?? '/',
+    method: request.method ?? 'GET',
+    body: requestBody,
+    status: upstreamResponse.status,
+    idempotencyKey:
+      typeof request.headers['idempotency-key'] === 'string' ? request.headers['idempotency-key'] : undefined,
   });
+  const patchedResponseBody =
+    catalogResponse?.body ??
+    patchStripeMockResponse({
+      body: upstreamBody,
+      catalog,
+      checkoutLineItems,
+      checkoutSessions,
+      method: request.method,
+      requestBody,
+      url: request.url,
+    });
 
-  response.writeHead(upstreamResponse.status, copyResponseHeaders(upstreamResponse.headers, patchedResponseBody));
+  response.writeHead(
+    catalogResponse?.status ?? upstreamResponse.status,
+    copyResponseHeaders(upstreamResponse.headers, patchedResponseBody),
+  );
   response.end(patchedResponseBody);
 }
 
@@ -282,7 +321,10 @@ function patchCheckoutSessionLineItems(
   return JSON.stringify(responseJson);
 }
 
-function readCheckoutSessionCreateLineItems(requestParams: URLSearchParams): StripeMockCheckoutLineItem[] {
+function readCheckoutSessionCreateLineItems(
+  requestParams: URLSearchParams,
+  catalog?: ReturnType<typeof createLocalStripeMockCatalog>,
+): StripeMockCheckoutLineItem[] {
   const lineItems: StripeMockCheckoutLineItem[] = [];
 
   for (let index = 0; ; index += 1) {
@@ -293,9 +335,18 @@ function readCheckoutSessionCreateLineItems(requestParams: URLSearchParams): Str
     }
 
     const quantity = Number(requestParams.get(`line_items[${index}][quantity]`) ?? '1');
-    const amountMinor = readLocalMockStoreOfferAmountMinor(priceId);
+    const retained = catalog?.({
+      url: `/v1/prices/${encodeURIComponent(priceId)}`,
+      method: 'GET',
+      body: '',
+      status: 200,
+    });
+    const price = retained?.status === 200 ? JSON.parse(retained.body) : null;
+    const amountMinor = price
+      ? (price.unit_amount ?? price.custom_unit_amount?.preset)
+      : readLocalMockStoreOfferAmountMinor(priceId);
 
-    if (!Number.isInteger(quantity) || quantity < 1 || !amountMinor) {
+    if (!Number.isInteger(quantity) || quantity < 1 || !Number.isSafeInteger(amountMinor) || amountMinor <= 0) {
       return [];
     }
 
@@ -354,7 +405,7 @@ function copyResponseHeaders(headers: Headers, body: string): Record<string, str
   const copied: Record<string, string> = {};
 
   for (const [key, value] of headers.entries()) {
-    if (key.toLowerCase() === 'content-length') {
+    if (['content-length', 'transfer-encoding'].includes(key.toLowerCase())) {
       continue;
     }
 

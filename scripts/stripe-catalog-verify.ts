@@ -5,14 +5,15 @@ import { pathToFileURL } from 'node:url';
 
 import {
   CatalogReconciler,
-  catalogManifest,
   catalogFieldOwnershipMatrix,
   redactStripeObjectId,
+  readRuntimeCatalogPresentation,
   type CatalogDriftCategory,
   type CatalogSyncAction,
   type CatalogSyncIssue,
   type CatalogSyncRunResult,
   type StripeCatalogEnvironment,
+  type StripeCatalogProductProjection,
 } from '../apps/backend/src/application/commerce/catalog-sync';
 import {
   parseStoreItemSlug,
@@ -38,7 +39,7 @@ import type {
   VariantStripeMappingRepository,
 } from '../apps/backend/src/domain/commerce/repositories/spi';
 import { createStripeCatalogGateway } from '../apps/backend/src/infrastructure/stripe';
-import type { StripeCatalogStoreItemContract } from './stripe-catalog-contract';
+import { loadStripeCatalogStoreItemContracts, type StripeCatalogStoreItemContract } from './stripe-catalog-contract';
 
 type CatalogVerifyOptions = {
   apply: boolean;
@@ -204,14 +205,17 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 }
 
 export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promise<CatalogSyncRunResult> {
+  if (!options.apply && !options.planApply)
+    return verifyRuntimeCatalogItem(options.environment, options.storeItemSlug ?? undefined);
   const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(options.environment);
   if (options.apply && productEnvironmentProfile.productEnvironment === 'PRD') {
     assertPrdCatalogApplyConfirmed(options.confirmLiveCatalogChanges);
   }
 
-  const allContracts: StripeCatalogStoreItemContract[] = catalogManifest.entries
-    .filter((entry) => entry.targetEnvironments.includes(options.environment === 'prd' ? 'prd' : 'uat'))
-    .map((entry) => ({ ...entry, desiredCatalogEntry: entry, expectedSandboxPrice: entry.desiredPrice }));
+  // Explicit repository migration diagnostics; routine release does not call this path.
+  const allContracts = await loadStripeCatalogStoreItemContracts({
+    productEnvironment: options.environment === 'prd' ? 'PRD' : 'UAT',
+  });
   const contracts = selectStripeCatalogContracts(allContracts, options.storeItemSlug ?? null);
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY?.trim();
 
@@ -279,6 +283,53 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   }
 
   return result;
+}
+
+async function verifyRuntimeCatalogItem(environment: StripeCatalogEnvironment, slug: StoreItemSlug | undefined) {
+  const records = parseD1Rows<Record<string, unknown>>(
+    runD1ReadSql(
+      environment,
+      `SELECT * FROM StoreItemOption WHERE ${slug ? `storeItemSlug = ${sqlString(slug)}` : "catalogAvailability = 'published'"};`,
+    ),
+  );
+  if (slug && !records.length) throw new Error(`Unknown Store Item slug: ${slug}.`);
+  const projections = new Map<string, StripeCatalogProductProjection>();
+  const identities = records.map((record) => {
+    const projection = readRuntimeCatalogPresentation(
+      {
+        ...record,
+        productProjection:
+          typeof record.productProjection === 'string'
+            ? JSON.parse(record.productProjection)
+            : record.productProjection,
+      },
+      environment,
+    );
+    if (!projection) throw new Error(`Runtime catalog setup is incomplete for ${String(record.storeItemSlug)}.`);
+    const variantId = parseVariantId(String(record.variantId));
+    projections.set(variantId, projection);
+    return { variantId };
+  });
+  const rows = identities.length
+    ? parseD1Rows<D1CatalogRow>(runD1ReadSql(environment, createD1CatalogReadSql(identities)))
+    : [];
+  if (identities.some(({ variantId }) => rows.filter((row) => row.variantId === variantId).length !== 1))
+    throw new Error('Runtime catalog identities changed during readiness verification; retry against stable state.');
+  const repositories = createD1CatalogRepositories(environment, rows);
+  const secret = process.env.STRIPE_SECRET_KEY?.trim();
+  if (!secret) throw new Error('Missing STRIPE_SECRET_KEY for Stripe catalog verification.');
+  const reconciler = new CatalogReconciler({
+    environment,
+    ...repositories,
+    stripeCatalog: createStripeCatalogGateway({
+      STRIPE_SECRET_KEY: secret,
+      STRIPE_API_BASE_URL: process.env.STRIPE_API_BASE_URL,
+    }),
+  });
+  return reconciler.verifyBuyableCatalog({
+    apply: false,
+    expectedProductProjections: projections,
+  });
 }
 
 export function selectStripeCatalogContracts(
@@ -651,7 +702,7 @@ export function createD1CatalogReadSql(contracts: Pick<StripeCatalogStoreItemCon
   ].join('\n');
 }
 
-function runD1ReadSql(environment: StripeCatalogEnvironment, sql: string): string {
+export function runD1ReadSql(environment: StripeCatalogEnvironment, sql: string): string {
   return runD1Sql(environment, sql);
 }
 

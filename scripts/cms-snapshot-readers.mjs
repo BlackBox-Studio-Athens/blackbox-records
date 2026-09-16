@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 
 const resources = JSON.parse(readFileSync(new URL('../apps/backend/cms-resources.json', import.meta.url), 'utf8'));
 
-export function createCmsSnapshotReaders({ environment, target, headers = {}, fetchImpl = fetch }) {
+export function cmsSnapshotTarget(environment, target) {
   const origin = new URL(target);
   const allowed =
     environment === 'local'
@@ -12,16 +12,32 @@ export function createCmsSnapshotReaders({ environment, target, headers = {}, fe
         : [];
   if (!allowed.includes(origin.origin) || origin.href !== origin.origin + '/')
     throw new Error('Invalid CMS snapshot target.');
+  return origin;
+}
+
+export function createCmsSnapshotReaders({
+  environment,
+  target,
+  token,
+  publicationToken,
+  headers = {},
+  fetchImpl = fetch,
+}) {
+  const origin = cmsSnapshotTarget(environment, target);
   const requestHeaders = new Headers({ Accept: 'application/json' });
+  if (token !== undefined) {
+    if (!/^ec_pat_[A-Za-z0-9_-]{32,128}$/.test(token)) throw new Error('Invalid CMS export token.');
+    requestHeaders.set('Authorization', `Bearer ${token}`);
+  }
   const supplied = new Headers(headers);
   for (const key of ['cf-access-client-id', 'cf-access-client-secret', 'cf-access-jwt-assertion']) {
     const value = supplied.get(key);
     if (value) requestHeaders.set(key, value);
   }
-  async function readBytes(path, limit = 4 * 1024 * 1024) {
+  async function readBytes(path, limit = 4 * 1024 * 1024, selectedHeaders = requestHeaders) {
     const response = await fetchImpl(new URL(path, origin), {
       method: 'GET',
-      headers: requestHeaders,
+      headers: selectedHeaders,
       redirect: 'manual',
       signal: AbortSignal.timeout(30_000),
     });
@@ -54,6 +70,18 @@ export function createCmsSnapshotReaders({ environment, target, headers = {}, fe
   }
   return {
     environment,
+    async readStoreItems() {
+      const catalogHeaders = new Headers(requestHeaders);
+      catalogHeaders.delete('Authorization');
+      if (environment !== 'local') {
+        if (!/^[a-f0-9]{64}$/.test(publicationToken ?? ''))
+          throw new Error('Catalog export requires the publication credential.');
+        catalogHeaders.set('Authorization', `Bearer ${publicationToken}`);
+      }
+      return JSON.parse(
+        (await readBytes('/_emdash/api/blackbox/publications/catalog', 1024 * 1024, catalogHeaders)).toString('utf8'),
+      ).data;
+    },
     async readPage(collection, cursor, limit) {
       if (!/^[a-z_]+$/.test(collection) || limit !== 100 || (cursor !== null && typeof cursor !== 'string'))
         throw new Error('Invalid CMS page request.');

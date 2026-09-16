@@ -5,7 +5,6 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { currentCatalogProductProjectionEntries } from '../../src/application/commerce/catalog-sync';
 import {
   assertValidStripeCatalogStoreItemContract,
   createExpectedSandboxPrice,
@@ -15,11 +14,10 @@ import {
   type StripeCatalogStoreItemContract,
 } from '../../../../scripts/stripe-catalog-contract';
 import {
-  createCatalogManifestSource,
   createProductionCommerceReadinessSql,
   createSandboxUatCatalogStock,
   createSandboxUatCommerceSql,
-} from '../../../../scripts/generate-stripe-uat-catalog-artifacts';
+} from '../../../../scripts/generate-catalog-readiness';
 import {
   findDistroInventoryRowForContent,
   loadDistroInventorySource,
@@ -296,7 +294,6 @@ describe('stripe catalog contract projection', () => {
       productEnvironment: 'PRD',
     });
     const disintegration = contracts.find((contract) => contract.storeItemSlug === 'disintegration-black-vinyl-lp');
-    const source = createCatalogManifestSource(contracts);
 
     expect(disintegration?.desiredCatalogEntry).toMatchObject({
       availability: 'published',
@@ -318,9 +315,6 @@ describe('stripe catalog contract projection', () => {
         .filter((contract) => contract.desiredCatalogEntry.targetEnvironments.includes('prd'))
         .map((contract) => contract.storeItemSlug),
     ).toEqual(['disintegration-black-vinyl-lp']);
-    expect(source).toContain('export const catalogManifest');
-    expect(source).toContain('targetEnvironments');
-    expect(source).not.toContain('smokeCandidate');
   });
 
   it('uses format-based sandbox test prices without making the browser price authority', () => {
@@ -344,22 +338,6 @@ describe('stripe catalog contract projection', () => {
       currencyCode: 'EUR',
       kind: 'fixed',
     });
-  });
-
-  it('keeps the Worker-safe Product Projection manifest in sync with generated catalog contracts', async () => {
-    const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' });
-
-    expect(currentCatalogProductProjectionEntries).toEqual(
-      contracts.map((contract) => ({
-        alignmentStatus: contract.alignmentStatus,
-        expectedSandboxPrice: contract.desiredCatalogEntry.desiredPrice,
-        productProjection: contract.productProjection,
-        sourceId: contract.sourceId,
-        sourceKind: contract.sourceKind,
-        storeItemSlug: contract.storeItemSlug,
-        variantId: contract.variantId,
-      })),
-    );
   });
 
   it('rejects Product Projection image URLs that are not stable absolute public URLs', () => {
@@ -451,7 +429,7 @@ describe('stripe catalog contract projection', () => {
     expect(sql).not.toContain('sk_');
   });
 
-  it('preserves counted stock and checkout pauses when readiness SQL runs again', async () => {
+  it('preserves source bindings, counted stock and checkout pauses when recovery SQL runs again', async () => {
     const db = new DatabaseSync(':memory:');
     const migrations = path.resolve(__dirname, '../../prisma/migrations');
     try {
@@ -465,7 +443,11 @@ describe('stripe catalog contract projection', () => {
       db.exec(
         "UPDATE Stock SET quantity=7, onlineQuantity=3, revision=9; UPDATE ItemAvailability SET canBuy=0, status='sold_out';",
       );
+      db.exec("UPDATE StoreItemOption SET sourceId='member-' || sourceId, catalogAvailability='retired';");
+      const identities = db.prepare('SELECT * FROM StoreItemOption ORDER BY id').all();
       db.exec(sql);
+      db.exec(sql);
+      expect(db.prepare('SELECT * FROM StoreItemOption ORDER BY id').all()).toEqual(identities);
       expect(
         db.prepare('SELECT COUNT(*) AS count FROM Stock WHERE quantity<>7 OR onlineQuantity<>3 OR revision<>9').get()
           ?.count,
@@ -480,7 +462,7 @@ describe('stripe catalog contract projection', () => {
     const contracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'PRD' });
     const sql = createProductionCommerceReadinessSql(contracts);
 
-    expect(sql).toContain('Production catalog readiness seed generated from Desired Catalog State.');
+    expect(sql).toContain('repository migration data, not the current EmDash catalog.');
     expect(sql).toContain(
       "'disintegration-black-vinyl-lp', 'release', 'disintegration', 'variant_disintegration-black-vinyl-lp_standard'",
     );

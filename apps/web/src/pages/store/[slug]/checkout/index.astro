@@ -7,6 +7,7 @@ import StoreItemPurchaseActions from '@/components/store/StoreItemPurchaseAction
 import StoreOfferPriceDisplay, { STORE_OFFER_PRICE_DISPLAY_COPY } from '@/components/store/StoreOfferPriceDisplay';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { getStorePageEntryBySlug } from '@/lib/store-page-data';
 import {
   createPricedCartSeedForStorePage,
   type StorePageEntry,
@@ -21,7 +22,8 @@ interface Props {
   entry: StorePageEntry;
 }
 
-const { entry } = Astro.props;
+const entry = Astro.props.entry ?? (await getStorePageEntryBySlug(Astro.params.slug ?? ''));
+if (!entry) return new Response('Not found', { status: 404 });
 const { storeItem, primaryAvailability } = entry;
 const priceLabel = STORE_OFFER_PRICE_DISPLAY_COPY.loading;
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';

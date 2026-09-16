@@ -12,7 +12,7 @@ on:
         description: Successful UAT candidate run ID for PRD promotion.
         type: string
       target:
-        description: UAT candidate or disabled PRD readiness promotion.
+        description: UAT candidate or PRD catalog plan; PRD mutations require their separate confirmation inputs.
         type: choice
         default: uat
         options: [uat, prd]
@@ -24,6 +24,16 @@ on:
         description: Separate one-run live catalog authorization; never enables checkout.
         type: boolean
         default: false
+      confirm_cms_cutover:
+        description: One-run approval to deploy the reviewed combined PRD CMS artifact and staff route; no catalog or shopper launch authorization.
+        type: boolean
+        default: false
+      catalog_plan_sha256:
+        description: Reviewed initial-price or CMS catalog backfill plan SHA-256.
+        type: string
+      cms_import_report:
+        description: PRD import read-only verification JSON; selects catalog linkage backfill instead of initial Price preparation.
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -34,7 +44,6 @@ env:
   CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
   UAT_PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
   PRD_PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
-  SVELTIA_AUTH_BASE_URL: ${{ vars.SVELTIA_AUTH_BASE_URL }}
   SOURCE_SHA: ${{ inputs.artifact_commit_sha || github.sha }}
 jobs:
   build-candidate:
@@ -75,7 +84,9 @@ jobs:
         with:
           ref: ${{ github.sha }}
           path: .codex-artifacts/release-tools
-          sparse-checkout: scripts/release-candidate.mjs
+          sparse-checkout: |
+            scripts/
+            apps/backend/cms-resources.json
           sparse-checkout-cone-mode: false
       - name: Run unit tests
         run: pnpm test:unit
@@ -83,9 +94,20 @@ jobs:
         run: pnpm check
       - name: Run unused code audit
         run: pnpm audit:unused
+      - name: Restore current UAT publication
+        id: uat-content
+        env:
+          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets.UAT_CMS_PUBLICATION_EXPORT_TOKEN }}
+          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets.UAT_CMS_EXPORT_ACCESS_CLIENT_ID }}
+          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets.UAT_CMS_EXPORT_ACCESS_CLIENT_SECRET }}
+          CMS_PUBLICATION_MAX_REQUESTS: ${{ vars.UAT_CMS_PUBLICATION_MAX_REQUESTS }}
+        run: node --import tsx .codex-artifacts/release-tools/scripts/restore-published-content.mjs uat
       - name: Build hosted UAT static frontend
         env:
-          SVELTIA_BACKEND_MODE: hosted
+          CMS_CONTENT_SOURCE: ${{ steps.uat-content.outputs.source }}
+          CMS_CONTENT_SNAPSHOT: ${{ github.workspace }}/.codex-artifacts/release-content/uat/snapshot.json
+          CMS_CONTENT_SHA256: ${{ steps.uat-content.outputs.sha256 }}
+          CMS_CONTENT_ENVIRONMENT: uat
           ASTRO_SITE_URL: https://blackbox-records-web-uat.pages.dev
           ASTRO_BASE_PATH: /
           PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
@@ -95,29 +117,46 @@ jobs:
         run: |
           mkdir -p .codex-artifacts/release/uat .codex-artifacts/release/prd
           cp -R apps/web/dist .codex-artifacts/release/uat/public
+      - name: Restore current PRD publication
+        id: prd-content
+        env:
+          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets.PRD_CMS_PUBLICATION_EXPORT_TOKEN }}
+          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets.PRD_CMS_EXPORT_ACCESS_CLIENT_ID }}
+          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets.PRD_CMS_EXPORT_ACCESS_CLIENT_SECRET }}
+          CMS_PUBLICATION_MAX_REQUESTS: ${{ vars.PRD_CMS_PUBLICATION_MAX_REQUESTS }}
+        run: node --import tsx .codex-artifacts/release-tools/scripts/restore-published-content.mjs prd
       - name: Build hosted PRD static frontend
         env:
-          SVELTIA_BACKEND_MODE: hosted
+          CMS_CONTENT_SOURCE: ${{ steps.prd-content.outputs.source }}
+          CMS_CONTENT_SNAPSHOT: ${{ github.workspace }}/.codex-artifacts/release-content/prd/snapshot.json
+          CMS_CONTENT_SHA256: ${{ steps.prd-content.outputs.sha256 }}
+          CMS_CONTENT_ENVIRONMENT: prd
           ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
           ASTRO_BASE_PATH: /
           PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
         run: pnpm build
-      - name: Build hosted staff frontend
-        env:
-          PUBLIC_BACKEND_BASE_URL: ''
-        run: pnpm build:staff
       - name: Retain PRD and Worker artifacts
         run: |
           cp -R apps/web/dist .codex-artifacts/release/prd/public
-          cp -R apps/staff/dist .codex-artifacts/release/prd/staff
-          pnpm --filter @blackbox/backend exec wrangler deploy --env uat --dry-run --outdir ../../.codex-artifacts/release/uat/worker --define "RELEASE_SOURCE_SHA:\"$SOURCE_SHA\"" --define "RELEASE_RUN_NUMBER:\"$GITHUB_RUN_NUMBER\""
-          pnpm --filter @blackbox/backend exec wrangler deploy --env prd --dry-run --outdir ../../.codex-artifacts/release/prd/worker --define "RELEASE_SOURCE_SHA:\"$SOURCE_SHA\"" --define "RELEASE_RUN_NUMBER:\"$GITHUB_RUN_NUMBER\""
+          pnpm --filter @blackbox/backend build:cms --env uat
+          cp -R apps/backend/dist .codex-artifacts/release/uat/worker
+          pnpm --filter @blackbox/backend build:cms --env prd --out-dir ../../.codex-artifacts/release/prd/cms
+          node scripts/build-public-release.mjs uat
+          node scripts/build-public-release.mjs prd
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs pack
+      - name: Install preview test browsers
+        run: pnpm exec playwright install --with-deps chromium firefox
+      - name: Verify staff previews in Chromium and Firefox
+        run: |
+          node scripts/test-preview-policy.mjs
+          node scripts/test-content-workspace.mjs
+          node scripts/test-content-workspace.mjs --firefox
       - name: Upload verified release bundle
         uses: actions/upload-artifact@v7.0.1
         with:
           name: release-${{ inputs.artifact_commit_sha || github.sha }}
           path: .codex-artifacts/release
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 7
   inspect-uat-pages:
@@ -166,12 +205,12 @@ jobs:
           pnpm stripe:webhooks:verify --env uat
           pnpm stripe:payment-methods:verify
           pnpm --filter @blackbox/backend d1:migrations:apply:uat
-          pnpm --filter @blackbox/backend d1:seed:uat:catalog
-          pnpm stripe:catalog:verify --env uat --apply
       - name: Deploy UAT Worker
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-backend uat
-          pnpm --filter @blackbox/backend exec wrangler deploy ../../.codex-artifacts/release/uat/worker/index.js --env uat --config wrangler.jsonc --no-bundle --keep-vars
+          pnpm --filter @blackbox/backend cms:application-migrations --env uat --apply
+          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/uat/renderer/server/wrangler.json
+          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/uat/worker/server/wrangler.json --keep-vars
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker uat
           pnpm store:listing-readiness:verify -- --env uat --url "$UAT_PUBLIC_BACKEND_BASE_URL/api/store/listing-prices"
       - &observe-uat
@@ -195,6 +234,7 @@ jobs:
       - name: Deploy UAT to Cloudflare Pages
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify uat
+          node .codex-artifacts/release-tools/scripts/configure-public-gateway.mjs uat
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/uat/public --project-name=blackbox-records-web-uat --branch=main --commit-hash="$SOURCE_SHA"
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-hosted uat
       - *observe-uat
@@ -203,6 +243,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: catalog-promotion-uat
     timeout-minutes: 40
+    permissions:
+      contents: read
+      actions: read
     env: *uat-credentials
     steps:
       - *checkout
@@ -218,7 +261,8 @@ jobs:
           pnpm smoke:stripe-uat -- --site-url https://blackbox-records-web-uat.pages.dev --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL" --scenario happy_path_paid,pay_what_you_want_paid --screenshots on-failure
           pnpm smoke:resend-uat -- --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL"
           pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure
-          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-hosted uat
+      - name: Verify current UAT release identity
+        run: node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-hosted uat
       - *observe-uat
       - name: Upload UAT acceptance evidence
         if: ${{ always() }}
@@ -266,12 +310,16 @@ jobs:
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend d1:migrations:apply:prd
-      - name: Deploy candidate PRD Worker
+      - name: Deploy candidate PRD public renderer
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
-          pnpm --filter @blackbox/backend exec wrangler versions upload ../../.codex-artifacts/release/prd/worker/index.js --env prd --config wrangler.jsonc --no-bundle --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          pnpm --filter @blackbox/backend cms:application-migrations --env prd --apply --confirm-live-cms-changes
+          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/prd/renderer/server/wrangler.json
+      - name: Deploy candidate combined PRD CMS Worker
+        run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
-          pnpm --filter @blackbox/backend exec wrangler versions deploy --env prd --config wrangler.jsonc --version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes
+          pnpm --filter @blackbox/backend exec wrangler versions upload --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          pnpm --filter @blackbox/backend exec wrangler versions deploy --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker prd
       - &observe-prd
         name: Record actual deployed revisions
@@ -294,13 +342,43 @@ jobs:
       - name: Deploy PRD static frontend to Cloudflare Pages
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
+          node .codex-artifacts/release-tools/scripts/configure-public-gateway.mjs prd
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/public --project-name=blackbox-records-web --branch=main --commit-hash="$SOURCE_SHA"
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-hosted prd
-      - name: Deploy staff frontend to Cloudflare Pages
-        run: |
-          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
-          pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/staff --project-name=blackbox-records-staff --branch=main --commit-hash="$SOURCE_SHA"
       - *observe-prd
+  catalog-prd-plan:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && !inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion && !inputs.confirm_cms_cutover }}
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-prd
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - name: Plan PRD catalog without mutation
+        if: ${{ !inputs.cms_import_report }}
+        run: |
+          set -euo pipefail
+          pnpm exec tsx apps/backend/scripts/prepare-prd-initial-price.ts | tee "$GITHUB_STEP_SUMMARY"
+      - &prepare-backfill
+        name: Prepare verified PRD CMS linkage inputs
+        if: ${{ inputs.cms_import_report != '' }}
+        env:
+          CMS_IMPORT_REPORT: ${{ inputs.cms_import_report }}
+        run: |
+          set -euo pipefail
+          node --import tsx scripts/import-cms-content.mjs --preparePrd .codex-artifacts/emdash-m1/prd-import-preparation
+          printf '%s' "$CMS_IMPORT_REPORT" > .codex-artifacts/emdash-m1/prd-import-verified.json
+      - name: Plan PRD CMS catalog linkage without mutation
+        if: ${{ inputs.cms_import_report != '' }}
+        run: |
+          set -euo pipefail
+          pnpm exec tsx apps/backend/scripts/backfill-runtime-catalog.ts --env prd --cms-plan .codex-artifacts/emdash-m1/prd-import-preparation/plan.json --cms-report .codex-artifacts/emdash-m1/prd-import-verified.json | tee "$GITHUB_STEP_SUMMARY"
   catalog-prd:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}
     runs-on: ubuntu-latest
@@ -318,8 +396,10 @@ jobs:
       - *install
       - *release-tools
       - name: Verify catalog source
+        if: ${{ !inputs.cms_import_report }}
         run: pnpm test:unit && pnpm check && pnpm build
       - name: Prepare explicitly authorized PRD catalog
+        if: ${{ !inputs.confirm_cms_cutover && !inputs.cms_import_report }}
         run: |
           pnpm runtime:config:verify --env prd --require-live-secrets
           pnpm stripe:webhooks:verify --env prd
@@ -327,3 +407,21 @@ jobs:
           pnpm --filter @blackbox/backend d1:migrations:apply:prd
           pnpm --filter @blackbox/backend d1:seed:prd:catalog-readiness
           pnpm stripe:catalog:verify --env prd --apply --confirm-live-catalog-changes --ci-promotion --artifact-commit-sha "$SOURCE_SHA" --promotion-run-id "$GITHUB_RUN_ID"
+      - name: Prepare reviewed CMS cutover initial Price
+        if: ${{ inputs.confirm_cms_cutover && !inputs.cms_import_report }}
+        env:
+          REVIEWED_CATALOG_PLAN_SHA256: ${{ inputs.catalog_plan_sha256 }}
+        run: pnpm exec tsx apps/backend/scripts/prepare-prd-initial-price.ts --apply --confirm-live-catalog-changes --plan-sha256 "$REVIEWED_CATALOG_PLAN_SHA256"
+      - *prepare-backfill
+      - name: Apply reviewed PRD CMS catalog linkage
+        if: ${{ inputs.cms_import_report != '' }}
+        env:
+          REVIEWED_CATALOG_PLAN_SHA256: ${{ inputs.catalog_plan_sha256 }}
+        run: |
+          set -euo pipefail
+          pnpm exec tsx apps/backend/scripts/backfill-runtime-catalog.ts --env prd --cms-plan .codex-artifacts/emdash-m1/prd-import-preparation/plan.json --cms-report .codex-artifacts/emdash-m1/prd-import-verified.json --apply --confirm-live-catalog-changes --plan-sha256 "$REVIEWED_CATALOG_PLAN_SHA256" | tee "$GITHUB_STEP_SUMMARY"
+      - name: Configure approved PRD member price commands
+        if: ${{ inputs.cms_import_report != '' && inputs.confirm_cms_cutover }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$STRIPE_SECRET_KEY" | pnpm --filter @blackbox/backend exec wrangler secret put STRIPE_SECRET_KEY --env prd

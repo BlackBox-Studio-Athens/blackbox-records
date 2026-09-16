@@ -84,7 +84,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
 
   if (state.denied)
     return (
-      <div className="order-workspace order-access">
+      <div className="staff-workspace order-workspace order-access">
         <LockKeyhole size={36} aria-hidden="true" />
         <h1 ref={heading} tabIndex={-1}>
           Access required
@@ -103,7 +103,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
     );
 
   return (
-    <div className="order-workspace">
+    <div className="staff-workspace order-workspace">
       {state.selected && (
         <a
           className="order-back"
@@ -119,14 +119,11 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
       )}
       <header className="order-heading">
         <div>
-          <p className="order-eyebrow">Protected workspace · Read only</p>
           <h1 ref={heading} tabIndex={-1}>
             {state.selected ? 'Order detail' : 'Orders'}
           </h1>
           <p className="order-muted">
-            {state.selected
-              ? (state.session ?? 'No session recorded · Detail available for this visit only')
-              : 'Review payments, order details and notification exceptions.'}
+            {state.selected ? (state.session ?? 'No session recorded · Detail available for this visit only') : null}
           </p>
         </div>
         <div className="order-refresh">

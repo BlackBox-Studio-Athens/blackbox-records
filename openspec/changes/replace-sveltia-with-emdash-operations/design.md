@@ -10,7 +10,21 @@ The authoritative migration inventory is the actual `apps/web/src/content.config
 
 **Non-Goals:** Rewriting checkout/stock/order business logic, replacing Prisma, shopper accounts, a generic workflow engine, automatic UAT-to-PRD data copying, new payment authority, marketplace plugins, BOX NOW automation, or public SSR. EmDash supplies CMS capabilities, not inventory transactions or an order engine.
 
+The user's 2026-09-15 accelerated completion scope defers physical removal of dormant Sveltia sources, migration-only generated catalog inputs and the inactive staff Pages workflow branch. Existing runtime D1 authority, disabled hosted Sveltia configuration and combined Worker routing remain mandatory. `docs/cms-retirement.md` owns the retained cleanup inventory; deletion is not represented as completed work.
+
 ## Decisions
+
+### Delivery discipline — revised 2026-09-14
+
+The members are musicians and label collaborators, not developers or designers, and are non-native English speakers. Use short English sentences, familiar verbs, consistent labels, visible field labels, and concrete examples. Show item names, not technical IDs. Avoid jargon such as variant, delta, revision, API, reconciliation, and operation in the normal workspace. Separate Add/Remove from the positive stock quantity. Accept a comma or point for EUR decimals without changing money precision. Explain what happened and the next safe action; an uncertain payment-provider reply must not be described as a confirmed failure or success. Keep price/stock changes separate from Save draft, Preview, and Publish content. Image-generated design probes are illustrative references only; validate actual copy, values, keyboard use, and 320-pixel layout in the real UI. The user requested iterative image-assisted design; the available built-in image tool has no selectable model version.
+
+The user identified excessive time spent on defensive backend preparation without completed member workflows. Reuse the existing CMS APIs, operation journal, publication journal, stock/order screens, and snapshot functions. Connect these into working flows before extending them. A missing integration should lead to wiring existing code, not another abstraction or standalone diagnostic framework.
+
+The next deliverable is one protected item screen that reads current data, changes price through the existing command, and links to existing stock/order controls. Then complete guided item creation, followed by content editing and the complete publish path. Publication work includes the actual snapshot loader and workflow; isolated transport helpers are supporting code, not deliverables. Preserve the specified BlackBox-owned member UI and supported EmDash editor facilities; do not build a replacement rich-text engine.
+
+Test each changed behavior at the narrowest useful boundary while iterating. Reuse integration fixtures and existing regression suites. Add a test only for a required acceptance behavior or a reproduced defect that existing coverage misses. At the user's request on 2026-09-15, reuse the accepted combined artifact's full gates and hosted recovery/UAT evidence; subsequent changes need only focused checks at affected boundaries and final PRD publication/source reconciliation. Do not repeat full suites or paid/recovery rehearsals merely for closure. Security, money/stock integrity, draft privacy, target isolation, and quota guards remain required.
+
+Update existing evidence and task entries briefly; do not create another checkpoint document for each helper. Commit coherent progress after verification. Report the demonstrated user outcome, the next missing integration, and any real external blocker. Keep prepared-but-unverified work visibly incomplete, without inflating the task count. Local fixture verification must remain distinct from persistent migration and hosted acceptance.
 
 ### 1. Keep the monorepo and combine only the backend deployment
 

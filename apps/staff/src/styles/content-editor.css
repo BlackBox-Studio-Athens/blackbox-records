@@ -1,0 +1,2 @@
+/* Keep EmDash's bundled utilities below the staff app's responsive utilities. */
+@import '@emdash-cms/admin/styles.css' layer(emdash);

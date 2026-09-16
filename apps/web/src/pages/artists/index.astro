@@ -1,5 +1,6 @@
 ---
 import ArtistCard from '@/components/cards/ArtistCard.astro';
+import ArtistsRosterFilters from '@/components/artists/ArtistsRosterFilters';
 import InternalPageHero from '@/components/InternalPageHero.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { listArtistProfiles, mapArtistRosterReleaseContextById } from '@/lib/catalog-data';
@@ -11,7 +12,13 @@ const releaseContextByArtistId = await mapArtistRosterReleaseContextById();
 <SiteLayout pageTitle="Artists" pageDescription="Artists roster.">
   <InternalPageHero sectionLabel="Roster" title="Artists" />
   <section class="layout-container artists-roster-section" data-artists-roster-root>
-    {artistProfiles.length > 5 && <div data-artists-roster-filters />}
+    {
+      artistProfiles.length > 5 && (
+        <div data-artists-roster-filters>
+          {Astro.props.appearancePreview && <ArtistsRosterFilters pageKey="/artists/" />}
+        </div>
+      )
+    }
     <div class="artists-roster-grid">
       {
         artistProfiles.map((artistProfile, index) => {
