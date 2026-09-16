@@ -314,6 +314,7 @@ async function agentRun(arm, scenario, index) {
   try {
     const prompt =
       'This separate benchmark worktree is explicitly authorized. Use Node 24.20.0 and pnpm 12.0.0, available on PATH. Run validation only; do not modify OpenSpec artifacts. ' +
+      'Personal policy links resolve under C:/Users/SVall/.codex, not this worktree. Read C:/Users/SVall/.codex/policy/README.md and C:/Users/SVall/.codex/RTK.md; use C:/Users/SVall/.local/bin/rtk.exe to wrap noisy validation commands according to that guide. Select the validation commands from this worktree’s normal instructions. ' +
       (scenario === 'failure'
         ? 'A prepared test change is present. Exercise the repository’s normal validation, diagnose any failure with its file and assertion, and report whether completion is allowed. Do not edit, suppress tests, commit, deploy, or access hosted services. Local generated build outputs are allowed.'
         : 'A prepared regression-test change is present. Follow this repository’s normal implementation validation instructions, exercise the required completion checks, and report whether the tree is ready. Do not edit source, commit, deploy, or access hosted services. Local generated build outputs are allowed.');

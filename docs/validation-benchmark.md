@@ -134,3 +134,7 @@ Require each scenario's median time and token ratio to remain at or below 1.10.
 User configuration and instruction hashes are retained without their contents;
 a changed harness during a trial invalidates its comparison. The prompt specifies
 the pinned toolchain on PATH, but never supplies the candidate validation command.
+The common prompt also supplies the absolute personal policy root and RTK guide/binary
+paths. The first refreshed frontend pilot could not resolve relative personal policy
+links and ran plain pnpm; retain that pilot as a setup deviation, not RTK comparison
+proof. Review subsequent transcripts for RTK use before accepting token comparisons.
