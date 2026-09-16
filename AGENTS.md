@@ -44,6 +44,9 @@ Read these first before editing:
 
 ## Commands
 
+- Agent completion gates: `pnpm validate`; inspect its summary and only the relevant failure log.
+- Agent iteration: `pnpm validate:fast --scope all` (partial, never completion).
+- Additional staff/editor acceptance: `pnpm validate:editor` (partial; does not replace completion gates).
 - Install deps: `pnpm install`
 - Normal Local stack: `pnpm dev` (alias for `pnpm dev:stack:stripe-mock`)
 - Frontend-only dev server: `pnpm dev:web`
@@ -190,9 +193,11 @@ Read these first before editing:
 
 ### Required command policy
 
-- After finishing behavior-changing implementation, run `pnpm validate` (alias `pnpm validate:full`). It executes every leaf of `pnpm test:unit`, `pnpm check`, and `pnpm build`, with catalog preparation once. The three legacy commands remain supported independently.
+- After finishing behavior-changing implementation, run `pnpm validate` (alias `pnpm validate:full`). It executes every check required by `pnpm test:unit`, `pnpm check`, and `pnpm build`, without catalog generation. The three legacy commands remain supported independently.
 - Use `pnpm validate:fast --scope web|staff|backend|api-client|all` only during iteration. Default to `all`; shared package, content, configuration, migration, and tooling changes require `all`. Partial success never establishes completion.
 - Read the compact phase results first. On failure, inspect the named log excerpt before rerunning. Full logs and source fingerprints live in `.codex-artifacts/validation/`; do not paste successful logs into context.
+- Native Vitest JSON and ESLint statistics are retained beside logs. Inspect the relevant failed assertion or diagnostic instead of rereading successful output.
+- A passed summary establishes repository gates only. For staff/editor changes also run `pnpm validate:editor`. CMS/publication changes additionally require the relevant local checks in `docs/content-publication.md` and `docs/content-workspace.md`. Hosted checks are separate and never implicit.
 - A `passed` full summary is valid only for its recorded source fingerprint. Changed source, cancellation, missing phases, and incomplete evidence cannot establish completion. Browser/CMS/asset and other task-specific checks remain additional.
 - `pnpm check` includes Prettier format verification, ESLint, and Astro/TypeScript content checks.
 - Before pushing, run full validation again unless it just passed against the exact final tree you are pushing.

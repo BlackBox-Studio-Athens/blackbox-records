@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { execa } from 'execa';
 import { validationPlan, runValidation, sourceIdentity, diagnosticExcerpt, monitorSourceChanges } from './validate.mjs';
+import { validationReporters } from './validation-reporters.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const identity = async () => ({ sha: 'fixture', fingerprint: 'same' });
@@ -17,33 +18,34 @@ async function fixture(t) {
   return cwd;
 }
 
-test('full plan preserves every baseline leaf command and standalone preparation', async () => {
+test('full plan preserves current gates without retired catalog preparation', async () => {
   const { scripts } = JSON.parse(await readFile(path.join(root, 'package.json')));
   const plan = validationPlan();
   assert.deepEqual(
     plan.map((phase) => phase.args[0]),
-    ['stripe:catalog:artifacts:generate', 'test:unit:core', 'check:core', 'build:core'],
+    ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:types', 'check:boundaries', 'build'],
   );
-  assert.equal(scripts['build:core'], 'pnpm build:web && pnpm build:staff');
+  assert.equal(scripts.build, 'pnpm build:web && pnpm build:staff');
   assert.equal(
-    scripts['check:core'],
+    scripts.check,
     'pnpm environment:model:verify && pnpm format:check && pnpm lint && pnpm check:types && pnpm check:boundaries',
   );
-  for (const name of ['build', 'check', 'test:unit'])
-    assert.equal(scripts[name], `pnpm stripe:catalog:artifacts:generate && pnpm ${name}:core`);
+  for (const name of ['build', 'check', 'test:unit']) assert.doesNotMatch(scripts[name], /catalog/);
   assert.match(
-    scripts['test:unit:core'],
+    scripts['test:unit'],
     /--filter @blackbox\/web --filter @blackbox\/staff --filter @blackbox\/backend --filter @blackbox\/api-client test && pnpm test:contracts/,
   );
   assert.throws(() => validationPlan({ scope: 'web' }));
   assert.throws(() => validationPlan({ fast: true, scope: 'unknown' }));
-  assert.deepEqual(validationPlan({ fast: true, scope: 'backend' })[1].args, [
+  assert.deepEqual(validationPlan({ fast: true, scope: 'backend' })[0].args, [
     '--parallel',
     '--filter',
     '@blackbox/backend',
     'test',
   ]);
   assert.equal(validationPlan({ fast: true }).at(-1).name, 'contracts');
+  assert.equal(validationPlan({ editor: true }).length, 4);
+  assert.throws(() => validationPlan({ editor: true, fast: true }));
 });
 
 for (const phase of ['test', 'format', 'type', 'boundary', 'build', 'missing-artifact']) {
@@ -68,6 +70,7 @@ test('partial pass, changed source and cancellation never report full completion
   const cwd = await fixture(t);
   const phases = [command('ok', 'console.log("ok")')];
   assert.equal((await runValidation({ cwd, phases, fast: true, ...testOptions })).status, 'partial');
+  assert.equal((await runValidation({ cwd, phases, editor: true, ...testOptions })).status, 'partial');
   let reads = 0;
   assert.equal(
     (await runValidation({ cwd, phases, ...testOptions, identify: async () => ({ fingerprint: String(reads++) }) }))
@@ -171,4 +174,39 @@ test('diagnostics retain failure context within a fixed output bound', () => {
   const output = `PASS handles failures\n${'noise\n'.repeat(200)}FAIL test assertion\n${'details\n'.repeat(200)}`;
   assert.match(diagnosticExcerpt(output), /FAIL test assertion/);
   assert.ok(diagnosticExcerpt(output).length <= 6000);
+});
+
+test('parallel groups finish before build and failures cannot reach build', async (t) => {
+  const cwd = await fixture(t);
+  const phases = [command('tests', 'setTimeout(() => {}, 200)')];
+  for (let i = 0; i < 5; i++) phases.push(command(`check-${i}`, 'process.exit(0)'));
+  phases.push(command('build', 'process.exit(0)'));
+  const summary = await runValidation({ cwd, phases, jobs: 2, ...testOptions });
+  assert.equal(summary.status, 'passed');
+  assert.equal(summary.phases.at(-1).name, 'build');
+  assert.match(summary.taskAcceptance, /not established/);
+  phases[2] = command('bad-check', 'process.exit(9)');
+  const failed = await runValidation({ cwd, phases, jobs: 2, ...testOptions });
+  assert.equal(failed.exitCode, 9);
+  assert.ok(!failed.phases.some(({ name }) => name === 'build'));
+});
+
+test('native reports are opt-in and root contract ownership stays explicit', async () => {
+  const original = process.env.BLACKBOX_VALIDATION_REPORT_DIR;
+  try {
+    delete process.env.BLACKBOX_VALIDATION_REPORT_DIR;
+    assert.deepEqual(validationReporters('web'), {});
+    process.env.BLACKBOX_VALIDATION_REPORT_DIR = '/evidence';
+    assert.deepEqual(validationReporters('web').reporters, ['default', 'json']);
+    assert.notEqual(validationReporters('web').outputFile, validationReporters('backend-node').outputFile);
+  } finally {
+    if (original === undefined) delete process.env.BLACKBOX_VALIDATION_REPORT_DIR;
+    else process.env.BLACKBOX_VALIDATION_REPORT_DIR = original;
+  }
+  const web = await readFile(path.join(root, 'apps/web/vitest.config.ts'), 'utf8');
+  const contracts = await readFile(path.join(root, 'scripts/vitest.contracts.config.ts'), 'utf8');
+  for (const file of ['check-frontend-route-isolation.test.ts', 'pages-workflow-contract.test.ts']) {
+    assert.ok(web.includes(`../../scripts/${file}`));
+    assert.ok(contracts.includes(`scripts/${file}`));
+  }
 });

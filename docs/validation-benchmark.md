@@ -1,6 +1,6 @@
 # Local validation benchmark protocol
 
-Baseline: `f0e79e9a6db07cd5ac12cb9ecce6911485614fea`. Implementation is authorized on
+Refreshed baseline: `8b5160c552959751ad95e2053fc9d499dec590fb`. The September 14 report is historical, not acceptance for this revision. Implementation is authorized on
 `codex/validation-efficiency` in its separate worktree. Main is not modified.
 
 Use Node 24.20.0, pnpm 12.0.0, independent worktree dependencies and caches, and
@@ -36,19 +36,20 @@ access hosted services. Local generated build outputs are allowed.”
 
 ## Preserved gate inventory
 
-| Gate           | Required leaves                                                                                                                                                      |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Preparation    | Current catalog manifest, UAT seed, PRD readiness seed generation                                                                                                    |
-| Unit tests     | Web Vitest, Staff Vitest, backend Worker Vitest then Node Vitest, API-client Vitest                                                                                  |
-| Root contracts | Route isolation and Pages workflow Vitest; release candidate, inventory, markdown, capture/snapshot, CMS schema Node tests; candidate additionally tests this runner |
-| Check          | Environment model; Prettier; uncached ESLint; web/staff Astro checks and backend/client TypeScript checks; module audit, dependency-cruiser, commerce audit          |
-| Build          | Web Astro build, CMS mode, cache policy, font and image markup checks, public route isolation; Staff Astro build and staff route isolation                           |
+| Gate           | Required leaves                                                                                                                                                                                                                  |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unit tests     | Web Vitest, Staff Vitest, backend Worker Vitest then Node Vitest, API-client Vitest                                                                                                                                              |
+| Root contracts | Route isolation and Pages workflow Vitest; release candidate, inventory, import, markdown, capture, local publication poll, snapshot readers/staging, CMS schema and backup Node tests; candidate additionally tests this runner |
+| Check          | Environment model; Prettier; uncached ESLint; web/staff Astro checks and backend/client TypeScript checks; module audit, dependency-cruiser, commerce audit                                                                      |
+| Build          | Web Astro build, cache policy, font and image markup checks, public route isolation; Staff Astro build and staff route isolation                                                                                                 |
 
 The existing package-level parallel test/type scheduling remains unchanged.
-The runner's optional two-group experiment overlaps tests and checks only;
-catalog preparation precedes both, and builds start after both have passed.
-Sequential execution remains the default: initial two-group trials encountered
-timeouts and do not establish safe concurrency or an accepted improvement.
+The candidate's two-group scheduling overlaps tests and checks only;
+builds start after both have passed. Catalog generation is prohibited in ordinary validation.
+Two groups are the candidate default after the refreshed pilot passed in 182.9s
+versus 264.1s sequentially. This is exploratory, not acceptance evidence.
+Use `--jobs 1` for sequential diagnosis; the five-pair benchmarks must confirm
+the default before accepting it. Old baseline timeouts are not silently discarded.
 
 Run `pnpm benchmark:validation --baseline <baseline-worktree> --candidate
 <candidate-worktree> --mode commands` for command trials, and substitute
@@ -65,7 +66,7 @@ retain failures; incomplete or failed groups must not be compared as savings.
 Command trials: five paired repetitions each for fresh generated/cache state
 and warm state. Alternate A/B and B/A order. Exclude installation from elapsed
 validation time. Fresh means removing only an explicit allowlist of generated
-catalog outputs, Astro/build outputs, and test caches inside each worktree;
+Astro/build outputs and test caches inside each worktree;
 never clear the shared pnpm store or delete source. Prime each warm arm once.
 
 Agent trials: five paired repetitions of each frozen scenario (30 runs).
@@ -86,6 +87,32 @@ with actual model usage or monetary savings.
 The CLI exposes completed command/MCP events, not every polling operation.
 Report observed calls and explicit log-read commands as lower bounds. Whole-turn
 usage and elapsed time include polling, even when its call count is unavailable.
+
+## Refreshed local editor scenario
+
+Keep the three frozen agent fixtures above unchanged. Additionally compare the existing
+local staff fixture browser flow: build staff, run `scripts/test-preview-policy.mjs`,
+then `scripts/test-content-workspace.mjs` in Chromium and Firefox. Candidate instructions
+expose `pnpm validate:editor`; baseline uses its documented individual commands.
+This is additional browser evidence, not a substitute for repository completion gates.
+The fixture APIs are in-memory. Never run mutating publication trials against the
+developer's persistent library. Real CMS/public-renderer acceptance remains explicitly
+additional, requiring isolated storage and the checks in docs/content-publication.md.
+
+Run a one-pair passing/failing agent pilot before the full matrix. Pilot results are
+not five-sample acceptance evidence. Preserve all unsuccessful runs. Native Vitest
+reports identify test files/assertions; ESLint JSON records diagnostics and rule times.
+The two root contract suites formerly collected twice are owned by test:contracts;
+assertion identity, not duplicate execution count, determines preservation.
+
+Use `--scenario frontend` or `--scenario failure` with `--mode agents --repetitions 1`
+for pilots. Use `--mode commands --scenario editor` for the additional browser
+comparison. All trial prompts explicitly authorize the separate worktree while
+prohibiting OpenSpec artifact edits. Candidate agents may choose either the
+aggregate command or all three legacy gates; do not discard slower valid choices.
+The editor fixture now releases initial search/history responses only after the
+loading assertions, instead of racing a fixed 1.5-second timeout. The original
+Firefox failure and trace remain evidence; no assertion was removed or weakened.
 
 Runner acceptance checks: `node --import tsx --test scripts/validate.test.mjs
 scripts/validate-acceptance.test.mjs`. The second file invokes real failing test,

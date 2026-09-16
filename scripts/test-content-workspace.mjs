@@ -9,7 +9,10 @@ import { previewPolicy } from '../apps/backend/src/cms/preview-policy.ts';
 
 const root = resolve('apps/staff/dist');
 const browserType = process.argv.includes('--firefox') ? firefox : chromium;
-const artifacts = resolve('.codex-artifacts/content-workspace', browserType.name());
+const artifacts = resolve(
+  process.env.BLACKBOX_VALIDATION_REPORT_DIR || '.codex-artifacts/content-workspace',
+  browserType.name(),
+);
 const pixels = await readFile('apps/staff/public/favicon-96x96.png');
 const media = [
   {
@@ -155,6 +158,7 @@ records.artists.push({
   data: { ...structuredClone(artist), title: 'Mass Culture' },
 });
 const state = {
+  initialStockReads: Promise.resolve(),
   conflict: false,
   failSave: false,
   failUpload: false,
@@ -220,6 +224,7 @@ const server = createServer(async (req, res) => {
       return res.end(pixels);
     }
     if (url.pathname === '/api/internal/variants') {
+      await state.initialStockReads;
       await new Promise((resolve) => setTimeout(resolve, state.searchDelay));
       if (state.searchFailure) return fail(503);
       return json(
@@ -234,6 +239,7 @@ const server = createServer(async (req, res) => {
     if (/^\/api\/internal\/variants\/[^/]+\/stock(?:\/history)?$/.test(url.pathname)) {
       const variantId = url.pathname.split('/')[4];
       if (url.pathname.endsWith('/history')) {
+        await state.initialStockReads;
         await new Promise((resolve) => setTimeout(resolve, state.historyDelay));
         return state.historyFailure ? fail(503) : json({ entries: [] });
       }
@@ -379,12 +385,15 @@ const origin = `http://127.0.0.1:${server.address().port}`;
 if (process.argv.includes('--serve')) console.log(`Local CMS fixtures: ${origin}/content/`);
 else {
   const browser = await browserType.launch({ headless: true });
+  const initialStockReads = Promise.withResolvers();
+  state.initialStockReads = initialStockReads.promise;
   let page;
   try {
     await mkdir(artifacts, { recursive: true });
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-    state.searchDelay = 1500;
-    state.historyDelay = 1500;
+    if (process.env.BLACKBOX_VALIDATION_TRACE === '1')
+      await page.context().tracing.start({ screenshots: true, snapshots: true, sources: true });
+    // Keep loading deterministic across viewport changes and trace overhead.
     state.detailDelay = 50;
     await page.goto(`${origin}/stock/?variantId=first`);
     await page.waitForFunction(() => document.querySelector('#stock-count-counted-quantity')?.value === '17');
@@ -397,6 +406,7 @@ else {
     await page.setViewportSize({ width: 1440, height: 1000 });
     assert.equal(await page.getByText('Loading stock history', { exact: true }).isVisible(), true);
     assert.equal(await page.getByRole('button', { name: 'Searching items', exact: true }).isEnabled(), false);
+    initialStockReads.resolve();
     await page.getByRole('button', { name: 'first Label release', exact: true }).waitFor();
     state.detailDelay = 1000;
     const firstRead = page.waitForRequest((request) => request.url().endsWith('/first/stock'));
@@ -952,11 +962,16 @@ else {
     console.log('CMS workspace browser regression passed. Screenshots:', artifacts);
   } catch (error) {
     if (page) {
+      await page
+        .context()
+        .tracing.stop({ path: resolve(artifacts, 'failure-trace.zip') })
+        .catch(() => {});
       await page.screenshot({ path: resolve(artifacts, 'failure.png') });
       console.error((await page.locator('body').innerText()).slice(-3500));
     }
     throw error;
   } finally {
+    initialStockReads.resolve();
     await browser.close();
     await new Promise((resolve) => server.close(resolve));
   }

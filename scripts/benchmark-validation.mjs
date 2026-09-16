@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, rm, access, open, realpath } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rm, access, open, realpath, cp } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
@@ -7,16 +7,21 @@ import { execa } from 'execa';
 import { sourceIdentity } from './validate.mjs';
 
 function completedGates(commands, arm) {
-  const gates = arm === 'baseline' ? ['test:unit', 'check', 'build'] : ['validate(?::full)?'];
+  if (arm === 'candidate') return completedGates(commands, 'legacy') || completedGates(commands, 'aggregate');
+  const gates = arm === 'aggregate' ? ['validate(?::full)?'] : ['test:unit', 'check', 'build'];
   return gates.every((gate) =>
     commands.some(
       ({ command, exit_code }) =>
-        exit_code === 0 && new RegExp(`\\bpnpm(?:\\.cmd)?\\s+${gate}(?=[\\s'"]|$)`).test(command),
+        exit_code === 0 &&
+        !/--(?:fast|editor)\b/.test(command) &&
+        new RegExp(`\\bpnpm(?:\\.cmd)?\\s+${gate}(?=[\\s'"]|$)`).test(command),
     ),
   );
 }
 // Runnable parser checks: a successful CLI exit or a partial command is not a full gate.
 assert.equal(completedGates([{ command: 'pnpm validate:fast --scope web', exit_code: 0 }], 'candidate'), false);
+assert.equal(completedGates([{ command: 'pnpm validate --fast', exit_code: 0 }], 'candidate'), false);
+assert.equal(completedGates([{ command: 'pnpm validate --editor', exit_code: 0 }], 'candidate'), false);
 assert.equal(completedGates([{ command: 'pnpm validate', exit_code: 1 }], 'candidate'), false);
 assert.equal(completedGates([{ command: "pwsh -Command 'pnpm validate'", exit_code: 0 }], 'candidate'), true);
 assert.equal(
@@ -36,6 +41,8 @@ const { values } = parseArgs({
     rtk: { type: 'string', default: 'C:/Users/SVall/.local/bin/rtk.exe' },
     model: { type: 'string', default: 'gpt-5.6-luna' },
     effort: { type: 'string', default: 'high' },
+    scenario: { type: 'string' },
+    jobs: { type: 'string', default: '2' },
   },
 });
 if (!values.baseline || !values.candidate) throw new Error('Specify --baseline and --candidate.');
@@ -44,6 +51,14 @@ if (arms.baseline === arms.candidate) throw new Error('Benchmark arms must be se
 const repetitions = Number(values.repetitions);
 if (!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 5) throw new Error('repetitions must be 1..5.');
 if (!['commands', 'agents'].includes(values.mode)) throw new Error('mode must be commands or agents.');
+if (!['1', '2'].includes(values.jobs)) throw new Error('jobs must be 1 or 2');
+if (
+  values.scenario &&
+  !(values.mode === 'commands' ? ['fresh', 'warm', 'editor'] : ['frontend', 'backend', 'failure']).includes(
+    values.scenario,
+  )
+)
+  throw new Error('Unknown scenario');
 if (process.version !== 'v24.20.0') throw new Error('Benchmark requires Node 24.20.0.');
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const output = path.join(arms.candidate, '.codex-artifacts/validation-benchmark', `${values.mode}-${stamp}`);
@@ -64,6 +79,8 @@ const metadata = {
   startedAt: new Date().toISOString(),
   repetitions,
   mode: values.mode,
+  candidateJobs: Number(values.jobs),
+  scenario: values.scenario ?? 'all',
   rtk: (await execa(values.rtk, ['--version'])).stdout,
   codex: (await execa('codex', ['--version'])).stdout,
 };
@@ -100,7 +117,7 @@ async function save() {
               runs.filter((run) => run.usage).map((run) => run.usage.input_tokens + run.usage.output_tokens),
             ),
             failures: runs.filter((run) => !run.valid).length,
-            comparisonEligible: runs.length === repetitions && runs.every((run) => run.valid),
+            comparisonEligible: repetitions === 5 && runs.length === repetitions && runs.every((run) => run.valid),
             note: 'All observed trials, including failures. Do not compare groups unless every trial is eligible and transcripts are verified.',
           },
         ]),
@@ -112,9 +129,6 @@ async function save() {
 }
 
 const generatedPaths = [
-  'apps/backend/src/application/commerce/catalog-sync/catalog-manifest.generated.ts',
-  'apps/backend/prisma/seeds/uat-commerce-state.sql',
-  'apps/backend/prisma/seeds/prd-commerce-readiness.sql',
   ...['apps/web', 'apps/staff', 'apps/backend', 'packages/api-client'].flatMap((entry) =>
     ['.astro', 'dist', 'node_modules/.astro', 'node_modules/.vite', 'node_modules/.cache'].map(
       (suffix) => `${entry}/${suffix}`,
@@ -147,10 +161,28 @@ async function commandRun(arm, scenario, index, priming = false) {
   const cwd = arms[arm];
   if (scenario === 'fresh') await fresh(cwd);
   const record = { arm, scenario, index, priming, sourceBefore: await sourceIdentity(cwd), phases: [] };
+  const editorSteps = ['build:staff', 'preview-policy', 'editor-chromium', 'editor-firefox'];
+  const gates =
+    arm === 'baseline'
+      ? scenario === 'editor'
+        ? editorSteps
+        : ['test:unit', 'check', 'build']
+      : [scenario === 'editor' ? 'validate:editor' : 'validate'];
   const started = performance.now();
   records.push(record);
   await save();
-  for (const gate of arm === 'baseline' ? ['test:unit', 'check', 'build'] : ['validate']) {
+  for (const gate of gates) {
+    const args =
+      gate === 'preview-policy'
+        ? ['proxy', process.execPath, 'scripts/test-preview-policy.mjs']
+        : gate.startsWith('editor-')
+          ? [
+              'proxy',
+              process.execPath,
+              'scripts/test-content-workspace.mjs',
+              ...(gate === 'editor-firefox' ? ['--firefox'] : []),
+            ]
+          : ['pnpm', gate, ...(arm === 'candidate' && scenario !== 'editor' ? ['--jobs', values.jobs] : [])];
     const start = performance.now();
     const logPath = path.join(
       output,
@@ -159,7 +191,7 @@ async function commandRun(arm, scenario, index, priming = false) {
     const file = await open(logPath, 'w');
     let result;
     try {
-      result = await execa(values.rtk, ['pnpm', gate], {
+      result = await execa(values.rtk, args, {
         cwd,
         reject: false,
         stdio: ['ignore', file.fd, file.fd],
@@ -175,6 +207,7 @@ async function commandRun(arm, scenario, index, priming = false) {
     const content = await readFile(logPath, 'utf8');
     record.phases.push({
       gate,
+      command: [values.rtk, ...args],
       exitCode: result.exitCode,
       durationMs: Math.round(performance.now() - start),
       outputBytes: Buffer.byteLength(content),
@@ -184,11 +217,34 @@ async function commandRun(arm, scenario, index, priming = false) {
       logPath,
     });
     if (result.exitCode !== 0) break;
+    if (arm === 'candidate') {
+      const summaryPath = content.match(/— (.+summary\.json)/)?.[1];
+      try {
+        if (
+          !summaryPath ||
+          !path.resolve(summaryPath).startsWith(path.join(cwd, '.codex-artifacts', 'validation') + path.sep)
+        )
+          throw new Error('Missing candidate validation evidence');
+        record.validation = JSON.parse(await readFile(summaryPath, 'utf8'));
+      } catch (error) {
+        record.error = error.message;
+        break;
+      }
+    }
   }
   record.durationMs = Math.round(performance.now() - started);
+  if (scenario === 'editor' && arm === 'baseline') {
+    record.browserEvidence = path.join(output, `editor-${index}-baseline-artifacts`);
+    await cp(path.join(cwd, '.codex-artifacts/content-workspace'), record.browserEvidence, { recursive: true }).catch(
+      (error) => {
+        record.error = error.message;
+      },
+    );
+  }
   record.sourceAfter = await sourceIdentity(cwd);
   record.valid =
-    record.phases.length === (arm === 'baseline' ? 3 : 1) &&
+    !record.error &&
+    record.phases.length === gates.length &&
     record.phases.every((phase) => phase.exitCode === 0) &&
     JSON.stringify(record.sourceBefore) === JSON.stringify(record.sourceAfter);
   await save();
@@ -229,9 +285,10 @@ async function agentRun(arm, scenario, index) {
   const started = performance.now();
   try {
     const prompt =
-      scenario === 'failure'
+      'This separate benchmark worktree is explicitly authorized. Run validation only; do not modify OpenSpec artifacts. ' +
+      (scenario === 'failure'
         ? 'A prepared test change is present. Exercise the repository’s normal validation, diagnose any failure with its file and assertion, and report whether completion is allowed. Do not edit, suppress tests, commit, deploy, or access hosted services. Local generated build outputs are allowed.'
-        : 'A prepared regression-test change is present. Follow this repository’s normal implementation validation instructions, exercise the required completion checks, and report whether the tree is ready. Do not edit source, commit, deploy, or access hosted services. Local generated build outputs are allowed.';
+        : 'A prepared regression-test change is present. Follow this repository’s normal implementation validation instructions, exercise the required completion checks, and report whether the tree is ready. Do not edit source, commit, deploy, or access hosted services. Local generated build outputs are allowed.');
     record.transcript = path.join(output, `${scenario}-${index}-${arm}.jsonl`);
     await save();
     const transcript = await open(record.transcript, 'w');
@@ -321,7 +378,7 @@ for (const cwd of Object.values(arms)) {
 }
 console.log(`Evidence: ${output}`);
 if (values.mode === 'commands') {
-  for (const scenario of ['fresh', 'warm']) {
+  for (const scenario of values.scenario ? [values.scenario] : ['fresh', 'warm']) {
     if (scenario === 'warm')
       for (const arm of ['baseline', 'candidate']) {
         if (!(await commandRun(arm, scenario, 0, true))) process.exit(1);
@@ -332,7 +389,9 @@ if (values.mode === 'commands') {
       }
   }
 } else {
-  for (const scenario of ['frontend', 'backend', 'failure'])
+  for (const scenario of ['frontend', 'backend', 'failure'].filter(
+    (scenario) => !values.scenario || values.scenario === scenario,
+  ))
     for (let index = 1; index <= repetitions; index++) {
       for (const arm of index % 2 ? ['baseline', 'candidate'] : ['candidate', 'baseline']) {
         if (!(await agentRun(arm, scenario, index))) process.exit(1);

@@ -120,7 +120,7 @@ The system SHALL run the standard repository gates after behavior-changing imple
 - **GIVEN** code changes affect runtime behavior, tests, build output, scripts, or workflows
 - **WHEN** implementation is complete
 - **THEN** `pnpm validate` (alias `pnpm validate:full`) must pass every test, check, and build leaf previously owned by `pnpm test:unit`, `pnpm check`, and `pnpm build` before completion is claimed
-- **AND** those three standalone commands remain supported with their own catalog preparation
+- **AND** those three standalone commands remain supported without catalog generation
 - **AND** partial `pnpm validate:fast` results never establish completion.
 
 #### Scenario: Local validation evidence is produced

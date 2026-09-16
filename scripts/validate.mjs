@@ -1,24 +1,41 @@
 import { createHash } from 'node:crypto';
 import { createReadStream, watch } from 'node:fs';
-import { mkdir, readFile, writeFile, lstat, readlink, open, unlink } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, lstat, readlink, open, unlink, readdir } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs, stripVTControlCharacters } from 'node:util';
 import { execa } from 'execa';
 import { runFiniteCommand } from './local-process.ts';
 
-export function validationPlan({ fast = false, scope = 'all' } = {}) {
+export function validationPlan({ fast = false, scope = 'all', editor = false } = {}) {
   if (!['all', 'web', 'staff', 'backend', 'api-client'].includes(scope)) throw new Error(`Unknown scope: ${scope}`);
   if (!fast && scope !== 'all') throw new Error('Full validation cannot be scoped.');
   const phase = (name, args) => ({ name, command: 'pnpm', args });
-  const prepare = phase('prepare', ['stripe:catalog:artifacts:generate']);
+  if (editor) {
+    if (fast || scope !== 'all') throw new Error('Editor acceptance cannot be combined with scoped iteration.');
+    return [
+      phase('build:staff', ['build:staff']),
+      ...[
+        ['preview-policy', ['scripts/test-preview-policy.mjs']],
+        ['editor-chromium', ['scripts/test-content-workspace.mjs']],
+        ['editor-firefox', ['scripts/test-content-workspace.mjs', '--firefox']],
+      ].map(([name, args]) => ({ name, command: process.execPath, args })),
+    ];
+  }
   if (!fast) {
-    return [prepare, ...['test:unit:core', 'check:core', 'build:core'].map((name) => phase(name, [name]))];
+    return [
+      'test:unit',
+      'environment:model:verify',
+      'format:check',
+      'lint',
+      'check:types',
+      'check:boundaries',
+      'build',
+    ].map((name) => phase(name, [name]));
   }
   const filters = scope === 'all' ? ['web', 'staff', 'backend', 'api-client'] : [scope];
   const selection = filters.flatMap((name) => ['--filter', `@blackbox/${name}`]);
   return [
-    prepare,
     phase('tests', ['--parallel', ...selection, 'test']),
     phase('types', ['--parallel', ...selection, 'check']),
     phase('contracts', ['test:contracts']),
@@ -119,10 +136,12 @@ export async function monitorSourceChanges(cwd) {
 export async function runValidation({
   cwd = process.cwd(),
   fast = false,
+  editor = false,
+  trace = false,
   scope = 'all',
-  jobs = 1,
+  jobs = 2,
   signal,
-  phases = validationPlan({ fast, scope }),
+  phases = validationPlan({ fast, scope, editor }),
   identify = sourceIdentity,
   readPnpmVersion = async () => (await execa('pnpm', ['--version'], { cwd })).stdout,
   log = console.log,
@@ -143,9 +162,10 @@ export async function runValidation({
   const summary = {
     schemaVersion: 1,
     runId,
-    mode: fast ? 'partial' : 'full',
-    scope,
+    mode: fast || editor ? 'partial' : 'full',
+    scope: editor ? 'editor' : scope,
     jobs,
+    trace,
     startedAt: new Date().toISOString(),
     status: 'incomplete',
     exitCode: 1,
@@ -155,6 +175,8 @@ export async function runValidation({
     pnpm: null,
     sourceBefore: null,
     sourceAfter: null,
+    taskAcceptance:
+      'not established: browser, CMS, publication, asset and other task-specific checks remain additional',
   };
   let stopMonitoring;
   try {
@@ -163,7 +185,9 @@ export async function runValidation({
     if (identify === sourceIdentity) stopMonitoring = await monitorSourceChanges(cwd);
     summary.sourceBefore = await identify(cwd);
     summary.pnpm = await readPnpmVersion();
-    if (fast) log('PARTIAL validation: this does not establish implementation completion.');
+    if (process.version !== 'v24.20.0' || summary.pnpm !== '12.0.0')
+      throw new Error('Validation requires Node 24.20.0 and pnpm 12.0.0.');
+    if (fast || editor) log('PARTIAL validation: this does not establish implementation completion.');
     async function execute(phase) {
       const phaseStart = performance.now();
       const logPath = path.join(evidenceDir, `${summary.phases.length}-${phase.name.replaceAll(':', '-')}.log`);
@@ -179,7 +203,29 @@ export async function runValidation({
       const output = await open(logPath, 'w');
       try {
         if (controller.signal.aborted) throw new Error('Validation cancelled.');
-        await runFiniteCommand(phase, {
+        const command = {
+          ...phase,
+          env: {
+            ...phase.env,
+            BLACKBOX_VALIDATION_REPORT_DIR: evidenceDir,
+            BLACKBOX_VALIDATION_TRACE: trace ? '1' : undefined,
+          },
+        };
+        if (phase.name === 'lint' && phase.command === 'pnpm') {
+          command.args = [
+            'exec',
+            'eslint',
+            '.',
+            '--max-warnings=0',
+            '--stats',
+            '--format',
+            'json',
+            '--output-file',
+            path.join(evidenceDir, 'eslint.json'),
+          ];
+          entry.args = command.args;
+        }
+        await runFiniteCommand(command, {
           cwd,
           logger: () => {},
           stdio: ['ignore', output.fd, output.fd],
@@ -197,27 +243,48 @@ export async function runValidation({
       entry.durationMs = Math.round(performance.now() - phaseStart);
       const content = await readFile(logPath, 'utf8');
       entry.outputBytes = Buffer.byteLength(content);
+      if (phase.name === 'lint') {
+        const reportPath = path.join(evidenceDir, 'eslint.json');
+        const report = await readFile(reportPath, 'utf8').catch((error) => {
+          if (error.code === 'ENOENT') return null;
+          throw error;
+        });
+        if (report) {
+          entry.reportPath = reportPath;
+          entry.diagnostics = JSON.parse(report)
+            .flatMap(({ filePath, messages }) =>
+              messages.map(
+                (message) =>
+                  `${filePath}:${message.line}:${message.column} ${message.ruleId || 'parse'}: ${message.message}`,
+              ),
+            )
+            .slice(0, 15);
+        }
+      }
       entry.testSummaries = stripVTControlCharacters(content)
         .split(/\r?\n/)
         .filter((line) => /(?:Test Files|Tests)\s+\d|^[#ℹ] (?:tests|pass|fail) \d/.test(line));
       log(`${entry.status.toUpperCase()} ${phase.name} ${(entry.durationMs / 1000).toFixed(1)}s`);
       if (entry.status !== 'passed') {
-        log(`Exit code: ${entry.exitCode}\n${diagnosticExcerpt(content || entry.error || '')}\nLog: ${logPath}`);
+        log(
+          `Exit code: ${entry.exitCode}\n${diagnosticExcerpt(entry.diagnostics?.join('\n') || content || entry.error || '')}\nLog: ${logPath}`,
+        );
       }
       return entry.status === 'passed';
     }
-    let passed = await execute(phases[0]);
-    if (passed && jobs === 2 && !fast && phases.length === 4) {
-      const results = await Promise.allSettled([execute(phases[1]), execute(phases[2])]);
+    async function sequence(items) {
+      for (const phase of items) if (!(await execute(phase))) return false;
+      return true;
+    }
+    let passed;
+    if (jobs === 2 && !fast && !editor && phases.length === 7) {
+      const results = await Promise.allSettled([execute(phases[0]), sequence(phases.slice(1, -1))]);
       const rejected = results.find((result) => result.status === 'rejected');
       if (rejected) throw rejected.reason;
       passed = results.every((result) => result.value === true);
-      if (passed) passed = await execute(phases[3]);
+      if (passed) passed = await execute(phases.at(-1));
     } else {
-      for (const phase of phases.slice(1)) {
-        if (!passed) break;
-        passed = await execute(phase);
-      }
+      passed = await sequence(phases);
     }
     summary.sourceAfter = await identify(cwd);
     summary.sourceChanges = stopMonitoring ? await stopMonitoring() : [];
@@ -229,7 +296,7 @@ export async function runValidation({
       : !unchanged
         ? 'invalidated'
         : passed
-          ? fast
+          ? fast || editor
             ? 'partial'
             : 'passed'
           : 'failed';
@@ -243,7 +310,11 @@ export async function runValidation({
   } finally {
     if (stopMonitoring) await stopMonitoring().catch(() => {});
     summary.durationMs = Math.round(performance.now() - started);
+    summary.endedAt = new Date().toISOString();
     await mkdir(evidenceDir, { recursive: true });
+    summary.reports = (await readdir(evidenceDir))
+      .filter((name) => name.endsWith('.json'))
+      .map((name) => path.join(evidenceDir, name));
     await writeFile(path.join(evidenceDir, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
     signal?.removeEventListener('abort', cancel);
     await lock.close();
@@ -252,6 +323,7 @@ export async function runValidation({
   log(
     `${summary.status.toUpperCase()} ${(summary.durationMs / 1000).toFixed(1)}s — ${path.join(evidenceDir, 'summary.json')}`,
   );
+  log(`Repository gates only. ${summary.taskAcceptance}`);
   return summary;
 }
 
@@ -264,12 +336,20 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     const args = process.argv.slice(2).filter((arg) => arg !== '--');
     const { values } = parseArgs({
       args,
-      options: { fast: { type: 'boolean' }, scope: { type: 'string' }, jobs: { type: 'string' } },
+      options: {
+        fast: { type: 'boolean' },
+        editor: { type: 'boolean' },
+        trace: { type: 'boolean' },
+        scope: { type: 'string' },
+        jobs: { type: 'string' },
+      },
     });
     const summary = await runValidation({
       fast: values.fast,
+      editor: values.editor,
+      trace: values.trace,
       scope: values.scope,
-      jobs: Number(values.jobs || 1),
+      jobs: Number(values.jobs || 2),
       signal: controller.signal,
     });
     process.exitCode = summary.exitCode;
