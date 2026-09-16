@@ -680,6 +680,33 @@ else {
     await page.getByRole('button', { name: 'Search', exact: true }).filter({ visible: true }).click();
     await page.getByRole('button', { name: 'uploaded.png', exact: true }).waitFor();
 
+    await page.goto(`${origin}/content/?collection=artists&id=artists-1`);
+    await page.getByLabel('Artist name', { exact: true }).waitFor();
+    const sidebar = page.locator('[data-slot="sidebar"]');
+    if ((await sidebar.getAttribute('data-state')) !== 'expanded')
+      await page.getByRole('button', { name: 'Toggle Sidebar', exact: true }).click();
+    await page.getByRole('button', { name: 'Home page', exact: true }).click();
+    await page.locator('#content-editor-form').waitFor();
+    assert.equal(new URL(page.url()).searchParams.get('id'), 'home-1');
+    assert.equal(await page.locator('[aria-label^="Choose from "]').count(), 0);
+    assert.equal(await page.getByRole('button', { name: 'Back to records', exact: true }).count(), 0);
+
+    for (const collection of [
+      'home',
+      'about',
+      'services',
+      'distro_page',
+      'purchase_information',
+      'newsletter',
+      'settings',
+    ]) {
+      await page.goto(`${origin}/content/?collection=${collection}`);
+      await page.locator('#content-editor-form').waitFor();
+      assert.equal(new URL(page.url()).searchParams.get('id'), `${collection}-1`);
+      assert.equal(await page.locator('[aria-label^="Choose from "]').count(), 0);
+      assert.equal(await page.getByRole('button', { name: 'Back to records', exact: true }).count(), 0);
+    }
+
     const savedArtistData = structuredClone(records.artists[0].data);
     records.artists[0].data = { ...savedArtistData, image: null };
     await page.goto(`${origin}/content/?collection=artists&id=artists-1`);

@@ -29,6 +29,15 @@ export const contentSections = {
   settings: 'Label details',
 } as const;
 export type ContentSection = keyof typeof contentSections;
+export const singletonContentSections: ContentSection[] = [
+  'home',
+  'about',
+  'services',
+  'distro_page',
+  'purchase_information',
+  'newsletter',
+  'settings',
+];
 
 export default function ContentFields({
   collection,

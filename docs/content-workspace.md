@@ -1,6 +1,6 @@
 # Content workspace
 
-`/content/` is **Website content**: grouped section navigation, a searchable collection list, then a compact content selector above the editor. Existing `?collection=…&id=…` links remain supported. `/content/?view=media` opens **Images**.
+`/content/` is **Website content**: grouped section navigation, with collection sections opening a searchable record list and singleton pages/settings opening their only editable record directly. Existing `?collection=…&id=…` links remain supported. `/content/?view=media` opens **Images**. Collection editors retain the compact record selector and Back to records action; singleton editors show the record title without collection-only controls.
 
 Desktop preview starts closed. Show preview opens the approved Layout A 45/55 grid from 1100 px; Hide preview returns space to the editor. The desktop preference is remembered per browser, with storage failure tolerated. Hidden previews cancel work and do not request updates. Smaller screens use Edit/Preview tabs with both surfaces mounted to preserve edits. The image picker returns to the current field without losing edits; switching records, collections, or the full Images workspace requires saving or discarding changes. The sticky editor toolbar carries the selected title, draft state, save and publication actions. Releases and distro publish through Items.
 

@@ -38,7 +38,12 @@ import {
 import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import ContentNavigation from './ContentNavigation';
 import MediaLibrary from './MediaLibrary';
-import ContentFields, { contentSections, type ContentSection, type ContentData } from './ContentFields';
+import ContentFields, {
+  contentSections,
+  singletonContentSections,
+  type ContentSection,
+  type ContentData,
+} from './ContentFields';
 import ContentPreview from './ContentPreview';
 import ContentSelector from './ContentSelector';
 import PublicationStatus from './PublicationStatus';
@@ -243,8 +248,10 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       const page = await editorialRequest<EditorialList<EditorialRecord>>(base, `content/${section}?${params}`);
       setItems((previous) => (next ? [...previous, ...page.items] : page.items));
       setCursor(page.nextCursor);
+      return page;
     } catch {
       setMessage('We could not load the content. Select Search to try again.');
+      return null;
     } finally {
       setBusy(false);
     }
@@ -284,12 +291,14 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       }
     } else {
       const selected = new URLSearchParams(window.location.search);
-      setMedia(selected.get('view') === 'media');
+      const mediaView = selected.get('view') === 'media';
+      setMedia(mediaView);
       const section = selected.get('collection');
       const id = selected.get('id');
       if (section && Object.hasOwn(contentSections, section)) {
-        setCollection(section as ContentSection);
-        void list(section as ContentSection);
+        const contentSection = section as ContentSection;
+        setCollection(contentSection);
+        const listed = list(contentSection);
         if (id)
           void editorialRequest<Document>(base, `content/${section}/${encodeURIComponent(id)}`)
             .then((loaded) => {
@@ -298,6 +307,10 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               setMobileEditor(true);
             })
             .catch(() => setMessage('The selected content could not be loaded. Search to try again.'));
+        else if (!mediaView)
+          void listed.then((page) => {
+            openSingletonFromPage(contentSection, page);
+          });
       } else void list();
     }
   }, []);
@@ -348,25 +361,30 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       reloadFocus.current = null;
     });
   }
-  async function open(item: EditorialRecord, replace = false) {
+  async function open(item: EditorialRecord, replace = false, section = collection) {
     if (!replace && !mayLeave()) return;
     setBusy(true);
     setMessage('');
     try {
-      const loaded = await editorialRequest<Document>(base, `content/${collection}/${encodeURIComponent(item.id)}`);
+      const loaded = await editorialRequest<Document>(base, `content/${section}/${encodeURIComponent(item.id)}`);
       setDocument(loaded);
       setData(loaded.item.data);
       setDirty(false);
       setValidationAttempt(0);
       setConflict(false);
       setMobileEditor(true);
-      updateUrl(collection, loaded.item.id);
+      updateUrl(section, loaded.item.id);
       editorHeading.current?.focus();
     } catch {
       setMessage('We could not load this record. Try again.');
     } finally {
       setBusy(false);
     }
+  }
+  function openSingletonFromPage(section: ContentSection, page: EditorialList<EditorialRecord> | null) {
+    if (!singletonContentSections.includes(section) || page?.items.length !== 1) return;
+    const item = page.items[0];
+    if (item) void open(item, true, section);
   }
   async function save(event: React.FormEvent) {
     event.preventDefault();
@@ -478,7 +496,13 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   function selectCollection(section: ContentSection) {
     if (section === collection) {
       setMedia(false);
-      updateUrl(collection, document?.item.id);
+      if (!document && singletonContentSections.includes(section)) {
+        setQuery('');
+        setItems([]);
+        setCursor(undefined);
+        updateUrl(collection);
+        void list(section, undefined, '').then((page) => openSingletonFromPage(section, page));
+      } else updateUrl(collection, document?.item.id);
       return;
     }
     if (!mayLeave()) {
@@ -496,10 +520,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     setMobileEditor(false);
     setMessage('');
     updateUrl(section);
-    void list(section, undefined, '');
+    void list(section, undefined, '').then((page) => openSingletonFromPage(section, page));
   }
   const canCreate = ['news', 'socials'].includes(collection);
   const canPublish = !['releases', 'distro'].includes(collection);
+  const singleton = singletonContentSections.includes(collection);
   const title = String(data.title || data.label_name || contentSections[collection]);
   return (
     <SidebarProvider
@@ -687,38 +712,46 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 <>
                   <header className="cms-editor-toolbar">
                     <div className="flex min-w-0 items-center gap-2">
-                      <ContentSelector
-                        title={title}
-                        section={contentSections[collection]}
-                        items={items}
-                        selected={document.item.id}
-                        query={query}
-                        disabled={busy || !!pendingNew}
-                        more={!!cursor}
-                        onQuery={(query) => {
-                          setQuery(query);
-                          setItems([]);
-                          setCursor(undefined);
-                        }}
-                        onSearch={() => void list()}
-                        onMore={() => void list(collection, cursor)}
-                        onSelect={open}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="shrink-0"
-                        aria-label="Back to records"
-                        title="Back to records"
-                        onClick={() => {
-                          if (!mayLeave()) return;
-                          setMobileEditor(false);
-                          requestAnimationFrame(() => listHeading.current?.focus());
-                        }}
-                      >
-                        <ArrowLeft className="size-4" />
-                      </Button>
+                      {singleton ? (
+                        <span className="min-w-0 flex-1 truncate text-sm font-semibold" aria-hidden="true">
+                          {title}
+                        </span>
+                      ) : (
+                        <>
+                          <ContentSelector
+                            title={title}
+                            section={contentSections[collection]}
+                            items={items}
+                            selected={document.item.id}
+                            query={query}
+                            disabled={busy || !!pendingNew}
+                            more={!!cursor}
+                            onQuery={(query) => {
+                              setQuery(query);
+                              setItems([]);
+                              setCursor(undefined);
+                            }}
+                            onSearch={() => void list()}
+                            onMore={() => void list(collection, cursor)}
+                            onSelect={open}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0"
+                            aria-label="Back to records"
+                            title="Back to records"
+                            onClick={() => {
+                              if (!mayLeave()) return;
+                              setMobileEditor(false);
+                              requestAnimationFrame(() => listHeading.current?.focus());
+                            }}
+                          >
+                            <ArrowLeft className="size-4" />
+                          </Button>
+                        </>
+                      )}
                     </div>
                     <div className="min-w-0">
                       <h2 ref={editorHeading} tabIndex={-1} className="sr-only">
