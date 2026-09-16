@@ -36,7 +36,8 @@ function main(): void {
     throw new Error('Unable to find the main git worktree.');
   }
 
-  if (normalizePath(currentRoot) !== normalizePath(primaryWorktree)) {
+  const allowWorktree = process.argv.includes('--allow-worktree');
+  if (!allowWorktree && normalizePath(currentRoot) !== normalizePath(primaryWorktree)) {
     console.error(`OpenSpec work must run from the main worktree.
 
 Current checkout: ${currentRoot}
@@ -49,7 +50,7 @@ cd ${primaryWorktree}`);
 
   const currentBranch = git(['branch', '--show-current']);
 
-  if (currentBranch !== 'main') {
+  if (!allowWorktree && currentBranch !== 'main') {
     console.error(`OpenSpec work must run on branch main in the main worktree.
 
 Current branch: ${currentBranch || '(detached HEAD)'}

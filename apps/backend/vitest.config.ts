@@ -2,6 +2,7 @@ import { cloudflareTest, readD1Migrations } from '@cloudflare/vitest-pool-worker
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import { validationReporters } from '../../scripts/validation-reporters.ts';
 
 import {
   filteredViteLogger,
@@ -51,6 +52,7 @@ export default defineConfig({
     }),
   ],
   test: {
+    ...validationReporters('backend-worker'),
     maxWorkers: 2,
     // Integration cases cross real workerd/D1 boundaries; allow local process scheduling delays.
     testTimeout: 15_000,

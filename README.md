@@ -427,12 +427,16 @@ pnpm dev:clean
 ## Verification
 
 ```sh
-pnpm test:unit
-pnpm check
-pnpm build
+pnpm validate
 ```
 
 `pnpm check` is the repo-owned quality gate. It runs Prettier format verification, ESLint, and the existing Astro/TypeScript content checks.
+
+`pnpm validate` (also `pnpm validate:full`) runs the complete tests, checks and build without catalog generation. The original `pnpm test:unit`, `pnpm check`, and `pnpm build` commands remain standalone equivalents. Full logs, native Vitest JSON, ESLint statistics and `summary.json` are retained under `.codex-artifacts/validation/<run-id>/`; the summary records source identity and rejects a source change during validation. A pass establishes repository gates, not task-specific acceptance. For staff/editor changes run `pnpm validate:editor` too; CMS/publication checks remain additional as documented in [content publication](docs/content-publication.md) and [content workspace](docs/content-workspace.md).
+
+For iteration, use `pnpm validate:fast --scope web|staff|backend|api-client|all`. The default is `all`; use it for shared packages, content, config, migrations, or tooling. This runs selected-package tests and type checks plus root contracts, but is always partial and does not replace full completion or task-specific browser/CMS/asset checks. Full validation defaults to two independent test/check groups; use `--jobs 1` for sequential diagnosis. Neither mode overlaps builds with other phases. This candidate remains subject to benchmark acceptance targets. A stale `.codex-artifacts/validation/active.lock` after a hard kill requires checking that its recorded PID is no longer running before removing that exact lock. Use `pnpm validate:editor --trace` to capture the primary browser context on failure; traces supplement assertion logs and screenshots, not replace them.
+
+The measurement protocol and acceptance targets are in [the validation benchmark](docs/validation-benchmark.md). Reduced output alone is not proof of reduced total AI usage.
 
 Backend-only verification:
 
