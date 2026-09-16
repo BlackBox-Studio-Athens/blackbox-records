@@ -14,4 +14,9 @@
 
 ## UAT release verification
 
-To be recorded after the reviewed main push completes: release run URL, commit SHA, UAT Worker/CMS artifact verification, and Chromium/Firefox hosted preview confirmation.
+- Commit `7fe7080b6626d6962a757a4c5afb3a902e1d2c3d` was pushed to `main` and deployed by release run [35082777390](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35082777390).
+- `build-candidate`, `inspect-uat-pages`, `deploy-uat`, and `deploy-uat-static` passed. The UAT Worker and static Pages deployment both recorded the current release revisions; the Pages deployment is `35856dce.blackbox-records-web-uat.pages.dev`.
+- The hosted staff preview policy check passed in Chromium and Firefox. The immutable UAT Pages deployment returns `404` for every retired `/admin/*` path.
+- The release smoke job remains failed because the canonical `blackbox-records-web-uat.pages.dev` alias serves five retired `/admin/*` responses from a `cf-cache-status: HIT` object with an age of approximately 33 hours. A cache-busting query and the immutable deployment hostname return the expected `404`, confirming stale Pages edge cache rather than a current artifact regression.
+- Zone cache purge requests were accepted for `blackboxrecordsathens.com` and for the UAT Pages hostname, but did not invalidate the shared `pages.dev` object. The approved legacy-cache exception was not broadened to this commit.
+- UAT deployment is therefore live and usable through the current deployment, while task 4.2 remains open until the canonical Pages alias passes the unmodified smoke gate.
