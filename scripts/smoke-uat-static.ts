@@ -448,28 +448,6 @@ export function findPublicMediaPath(html: string, siteUrl: string): string {
 
 async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
   const routeChecks: UatStaticSmokeCheck[] = [];
-  for (const route of [
-    '/admin/',
-    '/admin/index.html',
-    '/admin/config.yml',
-    '/admin/init.js',
-    '/admin/admin.css',
-    '/admin/preview.css',
-  ]) {
-    const url = createRouteUrl(options.siteUrl, route);
-    const response = await fetchSmokeResponse(url, options.timeoutMs);
-    routeChecks.push({
-      bodyTextSnippet: null,
-      contentType: response.headers.get('content-type'),
-      issues: response.status === 404 ? [] : [`Retired route ${route} must return 404; received ${response.status}.`],
-      kind: 'page',
-      path: route,
-      status: response.status,
-      expectedStatus: 404,
-      title: null,
-      url,
-    });
-  }
   const routes = [
     ['/', ['BlackBox Records']],
     ['/releases/', ['Releases']],

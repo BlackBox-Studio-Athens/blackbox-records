@@ -34,14 +34,14 @@ describe('UAT static smoke', () => {
     expect(checkReviewSiteMarker('TEST SITE Test payments only', '[TEST] Store', '/store/')).toEqual([]);
     expect(checkReviewSiteMarker('Store', 'Store', '/store/').length).toBeGreaterThan(0);
   });
-  it('records retired route status without hiding its actual response', () => {
+  it('records public route status without hiding its actual response', () => {
     const evidence = buildUatStaticSmokeEvidence({
       checks: [
         {
-          path: '/admin/',
-          url: 'https://example.test/admin/',
-          status: 404,
-          expectedStatus: 404,
+          path: '/releases/',
+          url: 'https://example.test/releases/',
+          status: 200,
+          expectedStatus: 200,
           kind: 'page',
           issues: [],
           bodyTextSnippet: null,
@@ -56,7 +56,7 @@ describe('UAT static smoke', () => {
       siteUrl: 'https://example.test',
       status: 'passed',
     });
-    expect(evidence.checks[0].status).toBe(404);
+    expect(evidence.checks[0].status).toBe(200);
     expect(evidence.readOnly).toBe(true);
     expect(evidence.status).toBe('passed');
   });
