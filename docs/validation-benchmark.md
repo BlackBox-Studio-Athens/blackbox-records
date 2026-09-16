@@ -138,3 +138,7 @@ The common prompt also supplies the absolute personal policy root and RTK guide/
 paths. The first refreshed frontend pilot could not resolve relative personal policy
 links and ran plain pnpm; retain that pilot as a setup deviation, not RTK comparison
 proof. Review subsequent transcripts for RTK use before accepting token comparisons.
+The corrected failure pilot exposed a diagnostic-selection defect: expected D1 errors
+from passing tests appeared before the failed assertion. The runner now prioritizes
+test-failure sections and reports skipped phases explicitly. Retain the slower-token
+pilot as tuning evidence; do not mix it into the final frozen candidate matrix.

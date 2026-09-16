@@ -71,9 +71,12 @@ export async function sourceIdentity(cwd) {
 
 export function diagnosticExcerpt(text) {
   const lines = stripVTControlCharacters(text).split(/\r?\n/);
-  const first = lines.findIndex((line) =>
-    /(?:^|\s)(?:FAIL(?:ED)?(?:\s|$)|\w*Error:|error TS\d|error:|✖)|\d+:\d+\s+error/.test(line),
-  );
+  // Passing negative-path tests can log Error stacks before the actual failed assertion.
+  let first = lines.findIndex((line) => /Failed Tests|(?:^|\s)FAIL(?:\s|$)|^not ok \d/.test(line));
+  if (first < 0)
+    first = lines.findIndex((line) =>
+      /(?:^|\s)(?:FAILED(?:\s|$)|\w*Error:|error TS\d|error:|✖)|\d+:\d+\s+error/.test(line),
+    );
   return lines
     .slice(Math.max(0, first < 0 ? lines.length - 30 : first - 2), first < 0 ? undefined : first + 28)
     .join('\n')
@@ -309,6 +312,10 @@ export async function runValidation({
     log(`INCOMPLETE: ${error.message}`);
   } finally {
     if (stopMonitoring) await stopMonitoring().catch(() => {});
+    summary.skippedPhases = phases
+      .filter((phase) => !summary.phases.some((entry) => entry.name === phase.name))
+      .map(({ name }) => name);
+    for (const name of summary.skippedPhases) log(`SKIPPED ${name}: preceding failure or incomplete validation`);
     summary.durationMs = Math.round(performance.now() - started);
     summary.endedAt = new Date().toISOString();
     await mkdir(evidenceDir, { recursive: true });

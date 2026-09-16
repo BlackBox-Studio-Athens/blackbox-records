@@ -182,6 +182,9 @@ test('diagnostics retain failure context within a fixed output bound', () => {
   const output = `PASS handles failures\n${'noise\n'.repeat(200)}FAIL test assertion\n${'details\n'.repeat(200)}`;
   assert.match(diagnosticExcerpt(output), /FAIL test assertion/);
   assert.ok(diagnosticExcerpt(output).length <= 6000);
+  const negativePathLog = `Error: expected injected D1 failure\n${'passing test\n'.repeat(50)}Failed Tests 1\nFAIL fixture.test.ts\nAssertionError: expected /api/wrong\n`;
+  assert.match(diagnosticExcerpt(negativePathLog), /AssertionError: expected \/api\/wrong/);
+  assert.doesNotMatch(diagnosticExcerpt(negativePathLog), /injected D1 failure/);
 });
 
 test('parallel groups finish before build and failures cannot reach build', async (t) => {
@@ -197,6 +200,7 @@ test('parallel groups finish before build and failures cannot reach build', asyn
   const failed = await runValidation({ cwd, phases, jobs: 2, ...testOptions });
   assert.equal(failed.exitCode, 9);
   assert.ok(!failed.phases.some(({ name }) => name === 'build'));
+  assert.deepEqual(failed.skippedPhases, ['check-2', 'check-3', 'check-4', 'build']);
 });
 
 test('native reports are opt-in and root contract ownership stays explicit', async () => {
