@@ -20,6 +20,9 @@ function RecordPicker({
   value,
   selectedLabel,
   onSelect,
+  path,
+  error,
+  onBlur,
 }: {
   base: string;
   collection: 'artists' | 'releases' | 'distro' | 'media';
@@ -27,6 +30,9 @@ function RecordPicker({
   value: string;
   selectedLabel?: string;
   onSelect(item: Choice): void;
+  path?: string | undefined;
+  error?: string | undefined;
+  onBlur?: (() => void) | undefined;
 }) {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Choice[]>([]);
@@ -38,6 +44,8 @@ function RecordPicker({
   const id = useId();
   const trigger = useRef<HTMLButtonElement>(null);
   const [requiredError, setRequiredError] = useState(false);
+  const errorId = `${id}-error`;
+  const fieldError = error || '';
   const name = (item: Choice) => ('filename' in item ? item.filename : String(item.data.title ?? item.slug));
   async function search(next?: string) {
     setBusy(true);
@@ -61,12 +69,13 @@ function RecordPicker({
   }, []);
   function select(item: Choice) {
     setSelectedItem(item);
+    setRequiredError(false);
     onSelect(item);
     setOpen(false);
   }
   const selected = selectedItem?.id === value ? selectedItem : items.find((item) => item.id === value);
   return (
-    <Field>
+    <Field data-invalid={!!fieldError || (requiredError && !value)}>
       <FieldLabel htmlFor={id}>{label}</FieldLabel>
       <input
         className="sr-only"
@@ -74,6 +83,8 @@ function RecordPicker({
         aria-hidden="true"
         required
         value={value}
+        aria-invalid={!!fieldError || (requiredError && !value) || undefined}
+        aria-describedby={fieldError ? errorId : undefined}
         onChange={() => {}}
         onInvalid={(event) => {
           event.preventDefault();
@@ -85,13 +96,17 @@ function RecordPicker({
         <PopoverTrigger asChild>
           <Button
             ref={trigger}
-            aria-invalid={requiredError && !value}
+            data-content-path={path}
+            aria-invalid={!!fieldError || (requiredError && !value) || undefined}
+            aria-describedby={fieldError ? errorId : undefined}
             id={id}
             type="button"
             variant="outline"
             role="combobox"
+            aria-label={label}
             aria-expanded={open}
             className="w-full justify-between"
+            onBlur={onBlur}
           >
             <span className="truncate">
               {selected
@@ -163,7 +178,9 @@ function RecordPicker({
           </Command>
         </PopoverContent>
       </Popover>
-      {requiredError && !value && <FieldError>Choose {label.toLowerCase()} before saving.</FieldError>}
+      <FieldError id={errorId}>
+        {fieldError || (requiredError && !value ? `Choose ${label.toLowerCase()} before saving.` : '')}
+      </FieldError>
       {(busy || message) && (
         <p role="status" className="text-sm text-muted-foreground">
           {busy ? 'Loading' : message}
@@ -175,6 +192,16 @@ function RecordPicker({
 
 export default function EditorialPicker(props: Parameters<typeof RecordPicker>[0]) {
   if (props.collection === 'media')
-    return <ContentImagePicker base={props.base} value={props.value} label={props.label} onSelect={props.onSelect} />;
+    return (
+      <ContentImagePicker
+        base={props.base}
+        value={props.value}
+        label={props.label}
+        onSelect={props.onSelect}
+        error={props.error}
+        onBlur={props.onBlur}
+        path={props.path}
+      />
+    );
   return <RecordPicker {...props} />;
 }

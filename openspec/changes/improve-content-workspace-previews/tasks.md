@@ -36,6 +36,6 @@
 - [x] 6.2 Expose top-bar refresh with single-flight, visible-only bounded polling and useful failed-state guidance.
 - [x] 6.3 Trace preview generations, verify successive newsletter edits in both browsers, and report unresolved reproduction honestly.
 - [x] 6.4 Create the living backoffice design reference with twelve research sources and three proposed improvements per workspace.
-- [ ] 6.5 Pass required checks and browser review; verify release acceptance, recover the existing publication, and deploy/verify UAT only when gates permit.
+- [x] 6.5 Pass required checks and browser review; verify release acceptance, recover the existing publication, and deploy/verify UAT only when gates permit.
 
-6.5 local verification and the failed-status correction are complete. Deployment and retry of the requested publication remain blocked by the existing retired-route CDN cache acceptance failure; see validation.md. No failed candidate is promoted and no new draft is published.
+6.5 completed with the successful UAT release run 35071291241 for code commit 923251cc4b99d83db1049ccf9475c03581dacdf0. The failed publication status correction and UAT verification are recorded in validation.md. PRD was not promoted.

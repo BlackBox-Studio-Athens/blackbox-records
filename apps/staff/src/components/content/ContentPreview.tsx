@@ -16,6 +16,7 @@ export default function ContentPreview({
   base,
   active,
   dirty,
+  valid,
 }: {
   collection: ContentSection;
   id: string;
@@ -24,6 +25,7 @@ export default function ContentPreview({
   base: string;
   active: boolean;
   dirty: boolean;
+  valid: boolean;
 }) {
   type Rendering = {
     generation: number;
@@ -69,6 +71,14 @@ export default function ContentPreview({
     if (!active || !visible) {
       previous.current.active = false;
       setPending(null);
+      return;
+    }
+    if (!valid) {
+      previous.current.active = false;
+      setPending(null);
+      setError('');
+      setDiagnostic(null);
+      setStatus('Fix the highlighted fields to update preview');
       return;
     }
     const controller = new AbortController();
@@ -177,7 +187,7 @@ export default function ContentPreview({
       clearTimeout(timeout);
       controller.abort();
     };
-  }, [payload, base, active, visible, view, retry, inputKey]);
+  }, [payload, base, active, valid, visible, view, retry, inputKey]);
   useEffect(() => {
     if (!active) setExpanded(false);
   }, [active]);

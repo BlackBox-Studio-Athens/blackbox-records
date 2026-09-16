@@ -77,6 +77,10 @@ The user independently refreshed UAT in their Firefox and confirmed: “Yes, pre
 
 The workflow's final provider smoke failed only its five retired public `/admin/*` URL checks (expected 404, received 200). Stripe scenarios, Resend checks, public assets, checkout shell, current public routes, and both deployment jobs passed. A bounded read of `/admin/config.yml` confirmed `CF-Cache-Status: HIT`, age 74056 seconds, and `public, s-maxage=604800`; this is the previously tracked public Pages retirement-cache issue. The source/artifact checks and preview gates passed. The one-commit retirement exception was not reused, no broad cache purge was performed, and the failed workflow must not be represented as a green PRD promotion candidate.
 
+## Superseding UAT release verification — 2026-09-16
+
+Release run [35071291241](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35071291241) completed successfully for commit `923251cc4b99d83db1049ccf9475c03581dacdf0`. The UAT Worker, Pages artifact, browser preview gates, release identity checks and UAT smoke passed. This closes task 6.5; PRD remains unpromoted.
+
 ## Publication recovery, preview freshness and design reference (2026-09-16)
 
 ### Confirmed diagnosis

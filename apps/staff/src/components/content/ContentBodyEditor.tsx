@@ -7,7 +7,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '../../styles/content-editor.css';
 
 export default function ContentBodyEditor(
-  props: PortableTextEditorProps & { 'aria-describedby'?: string; 'aria-invalid'?: boolean },
+  props: PortableTextEditorProps & {
+    'aria-describedby'?: string;
+    'aria-invalid'?: boolean;
+    'data-content-path'?: string;
+    onBlur?: () => void;
+  },
 ) {
   const onEditorReady = useCallback<NonNullable<PortableTextEditorProps['onEditorReady']>>(
     (editor) => {
@@ -17,6 +22,8 @@ export default function ContentBodyEditor(
         input.setAttribute('aria-multiline', 'true');
         input.setAttribute('aria-readonly', String(props.editable === false));
         input.setAttribute('aria-invalid', String(props['aria-invalid'] === true));
+        if (props['data-content-path']) input.setAttribute('data-content-path', props['data-content-path']);
+        input.onblur = props.onBlur ?? null;
         if (props['aria-describedby']) input.setAttribute('aria-describedby', props['aria-describedby']);
         else input.removeAttribute('aria-describedby');
         if (props['aria-labelledby']) input.setAttribute('aria-labelledby', props['aria-labelledby']);
@@ -24,7 +31,15 @@ export default function ContentBodyEditor(
       }
       props.onEditorReady?.(editor);
     },
-    [props.editable, props['aria-labelledby'], props['aria-describedby'], props['aria-invalid'], props.onEditorReady],
+    [
+      props.editable,
+      props['aria-labelledby'],
+      props['aria-describedby'],
+      props['aria-invalid'],
+      props['data-content-path'],
+      props.onBlur,
+      props.onEditorReady,
+    ],
   );
   const [queries] = useState(
     () => new QueryClient({ defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } } }),

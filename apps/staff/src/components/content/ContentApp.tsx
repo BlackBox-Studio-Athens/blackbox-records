@@ -42,6 +42,7 @@ import ContentFields, { contentSections, type ContentSection, type ContentData }
 import ContentPreview from './ContentPreview';
 import ContentSelector from './ContentSelector';
 import PublicationStatus from './PublicationStatus';
+import { getContentValidation, type ContentValidation } from './content-validation';
 import {
   readContentPublications,
   requestContentPublication,
@@ -72,6 +73,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [media, setMedia] = useState(false);
   const [mobileEditor, setMobileEditor] = useState(false);
   const [confirmTrash, setConfirmTrash] = useState(false);
+  const discardTrigger = useRef<HTMLButtonElement>(null);
+  const reloadFocus = useRef<HTMLElement | null>(null);
   const editorHeading = useRef<HTMLHeadingElement>(null);
   const listHeading = useRef<HTMLHeadingElement>(null);
   function updateUrl(section: ContentSection, id?: string, mediaView = false) {
@@ -86,6 +89,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [document, setDocument] = useState<Document | null>(null);
   const [data, setData] = useState<ContentData>({});
   const [dirty, setDirty] = useState(false);
+  const [validationAttempt, setValidationAttempt] = useState(0);
   const [confirmReload, setConfirmReload] = useState(false);
   const [busy, setIsBusy] = useState(false);
   const busyFocus = useRef<HTMLElement | null>(null);
@@ -138,6 +142,27 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [pendingPublication, setPendingPublication] = useState<PublicationRequest | null>(null);
   const pendingKey = `blackbox-content-create:${base}`;
   const publicationKey = `blackbox-content-publication:${base}`;
+  const validation: ContentValidation = getContentValidation(collection, data);
+
+  function focusFirstInvalid(result = validation) {
+    const path = result.firstPath;
+    const controls = [...window.document.querySelectorAll<HTMLElement>('[data-content-path]')];
+    const target = path
+      ? (controls.find((control) => control.dataset.contentPath === path) ??
+        controls.find((control) => path.startsWith(`${control.dataset.contentPath}.`)))
+      : controls[0];
+    if (!target) return;
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: 'center' });
+  }
+
+  function requireValidContent(result = validation) {
+    if (result.valid) return true;
+    setValidationAttempt((attempt) => attempt + 1);
+    setMessage('');
+    requestAnimationFrame(() => focusFirstInvalid(result));
+    return false;
+  }
 
   async function publicationStatus() {
     try {
@@ -149,7 +174,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     }
   }
   async function publish() {
-    if (busy || dirty || conflict || !document?.item.id) return;
+    if (busy || dirty || conflict || !document?.item.id || !requireValidContent()) return;
     setBusy(true);
     setPublicationMessage('Requesting publication…');
     try {
@@ -268,8 +293,42 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }, [dirty]);
   function mayLeave() {
     if (!dirty) return true;
-    setMessage('Save your draft or select Discard changes and reload before switching content.');
+    reloadFocus.current = window.document.activeElement instanceof HTMLElement ? window.document.activeElement : null;
+    setConfirmReload(true);
     return false;
+  }
+  function requestDiscard(trigger: HTMLElement | null = discardTrigger.current) {
+    reloadFocus.current = trigger;
+    setConfirmReload(true);
+  }
+  async function discardChanges() {
+    const current = document;
+    const focusTarget = reloadFocus.current ?? discardTrigger.current;
+    setConfirmReload(false);
+    if (!current) return;
+    if (!current.item.id) {
+      try {
+        sessionStorage.removeItem(pendingKey);
+      } catch {
+        /* Storage can be disabled. */
+      }
+      setPendingNew(null);
+      setDocument(null);
+      setData({});
+      setDirty(false);
+      setValidationAttempt(0);
+      setConflict(false);
+      setMobileEditor(false);
+      updateUrl(collection);
+      requestAnimationFrame(() => listHeading.current?.focus());
+    } else {
+      await open(current.item, true);
+    }
+    requestAnimationFrame(() => {
+      if (focusTarget?.isConnected) focusTarget.focus();
+      else listHeading.current?.focus();
+      reloadFocus.current = null;
+    });
   }
   async function open(item: EditorialRecord, replace = false) {
     if (!replace && !mayLeave()) return;
@@ -280,6 +339,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setDocument(loaded);
       setData(loaded.item.data);
       setDirty(false);
+      setValidationAttempt(0);
       setConflict(false);
       setMobileEditor(true);
       updateUrl(collection, loaded.item.id);
@@ -293,6 +353,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   async function save(event: React.FormEvent) {
     event.preventDefault();
     if (!document || busy || conflict) return;
+    if (!requireValidContent()) return;
     setBusy(true);
     setMessage('');
     try {
@@ -305,6 +366,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setDocument(saved);
       setData(saved.item.data);
       setDirty(false);
+      setValidationAttempt(0);
       setItems((items) => items.map((item) => (item.id === saved.item.id ? saved.item : item)));
       setMessage('');
     } catch (error) {
@@ -324,6 +386,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         : { title: '', url: '', order: 0 },
     );
     setDirty(false);
+    setValidationAttempt(0);
     setConflict(false);
     setMessage('');
     setMobileEditor(true);
@@ -333,6 +396,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     if (document?.item.id) return save(event);
     event.preventDefault();
     if (!document || busy) return;
+    if (!requireValidContent()) return;
     setBusy(true);
     setMessage('');
     try {
@@ -355,6 +419,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setData(saved.item.data);
       setItems((items) => [saved.item, ...items.filter((item) => item.id !== saved.item.id)]);
       setDirty(false);
+      setValidationAttempt(0);
       setMessage('Draft created. The public site has not changed.');
       updateUrl(collection, saved.item.id);
     } catch (error) {
@@ -381,6 +446,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setItems((items) => items.filter((item) => item.id !== document.item.id));
       setDocument(null);
       setDirty(false);
+      setValidationAttempt(0);
       setMessage('Moved to trash. The public site has not changed.');
       setMobileEditor(false);
       updateUrl(collection);
@@ -408,6 +474,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     setItems([]);
     setCursor(undefined);
     setDirty(false);
+    setValidationAttempt(0);
     setMobileEditor(false);
     setMessage('');
     updateUrl(section);
@@ -621,6 +688,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                         aria-label="Back to records"
                         title="Back to records"
                         onClick={() => {
+                          if (!mayLeave()) return;
                           setMobileEditor(false);
                           requestAnimationFrame(() => listHeading.current?.focus());
                         }}
@@ -656,6 +724,17 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                           {desktopPreview ? 'Hide preview' : 'Show preview'}
                         </Button>
                       )}
+                      <Button
+                        ref={discardTrigger}
+                        type="button"
+                        variant="outline"
+                        className="px-3"
+                        disabled={!dirty || busy || !!pendingNew}
+                        onClick={() => requestDiscard()}
+                      >
+                        <RotateCcw className="size-4" aria-hidden="true" />
+                        Discard changes
+                      </Button>
                       <ButtonGroup aria-label="Draft actions">
                         <Button type="submit" className="px-3" form="content-editor-form" disabled={busy || conflict}>
                           {busy ? <Spinner className="size-4" /> : <Save className="size-4" aria-hidden="true" />}
@@ -665,12 +744,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                       {canPublish && (
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <span tabIndex={dirty || conflict ? 0 : undefined}>
+                            <span tabIndex={dirty || conflict || !validation.valid ? 0 : undefined}>
                               <Button
                                 type="button"
                                 variant="outline"
                                 className="px-3"
-                                disabled={busy || dirty || conflict || !document.item.id}
+                                disabled={busy || dirty || conflict || !validation.valid || !document.item.id}
                                 onClick={() => void publish()}
                               >
                                 <Send className="size-4" aria-hidden="true" />
@@ -679,9 +758,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                             </span>
                           </TooltipTrigger>
                           <TooltipContent>
-                            {dirty || conflict
-                              ? 'Save your draft before requesting publication.'
-                              : 'Publish this saved revision to the website.'}
+                            {!validation.valid
+                              ? 'Fix the highlighted fields before publishing.'
+                              : dirty || conflict
+                                ? 'Save your draft before requesting publication.'
+                                : 'Publish this saved revision to the website.'}
                           </TooltipContent>
                         </Tooltip>
                       )}
@@ -699,16 +780,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="cms-surface" align="end">
-                          <DropdownMenuItem
-                            disabled={!document.item.id}
-                            onSelect={() => {
-                              if (dirty) setConfirmReload(true);
-                              else void open(document.item, true);
-                            }}
-                          >
-                            <RotateCcw className="size-4" aria-hidden="true" />
-                            Discard changes and reload
-                          </DropdownMenuItem>
                           {canCreate && (
                             <DropdownMenuItem
                               disabled={!document.item.id || dirty}
@@ -723,6 +794,14 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                     </div>
                   </header>
                   <div className="cms-editor-body">
+                    {validationAttempt > 0 && !validation.valid && (
+                      <Alert variant="destructive" role="alert" className="mb-6">
+                        <AlertDescription>
+                          Fix {validation.issues.length === 1 ? 'the highlighted field' : 'the highlighted fields'}{' '}
+                          before saving.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                     {message && (
                       <Alert
                         variant={conflict ? 'destructive' : 'default'}
@@ -748,7 +827,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                         .
                       </p>
                     )}
-                    <form id="content-editor-form" onSubmit={saveNew}>
+                    <form id="content-editor-form" noValidate onSubmit={saveNew}>
                       <fieldset
                         disabled={busy || !!pendingNew}
                         className="cms-fields grid min-w-0 gap-6 @2xl:grid-cols-2"
@@ -760,6 +839,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                           data={data}
                           base={base}
                           disabled={busy || !!pendingNew}
+                          validation={validation}
+                          validationAttempt={validationAttempt}
                           onChange={(next) => {
                             setData(next);
                             setDirty(true);
@@ -795,27 +876,41 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 data={data}
                 base={base}
                 dirty={dirty}
+                valid={validation.valid}
                 active={!media && (wide ? desktopPreview : preview)}
               />
             </Tabs.Content>
           )}
         </Tabs.Root>
       </div>
-      <AlertDialog open={confirmReload} onOpenChange={setConfirmReload}>
+      <AlertDialog
+        open={confirmReload}
+        onOpenChange={(open) => {
+          setConfirmReload(open);
+          if (!open) {
+            const focusTarget = reloadFocus.current ?? discardTrigger.current;
+            requestAnimationFrame(() => {
+              if (focusTarget?.isConnected) focusTarget.focus();
+              else discardTrigger.current?.focus();
+              reloadFocus.current = null;
+            });
+          }
+        }}
+      >
         <AlertDialogContent className="cms-surface">
           <AlertDialogHeader>
-            <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
-            <AlertDialogDescription>Your unsaved edits will be replaced with the saved version.</AlertDialogDescription>
+            <AlertDialogTitle>
+              {document?.item.id ? 'Discard unsaved changes?' : 'Discard new content?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {document?.item.id
+                ? 'Your unsaved edits will be replaced with the saved version.'
+                : 'Your new content will be cleared and will not be saved.'}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (document) void open(document.item, true);
-              }}
-            >
-              Discard changes and reload
-            </AlertDialogAction>
+            <AlertDialogAction onClick={() => void discardChanges()}>Discard changes</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

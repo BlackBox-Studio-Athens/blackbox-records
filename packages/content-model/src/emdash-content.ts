@@ -119,6 +119,10 @@ export const cmsContentSchemas = {
 } satisfies Record<string, z.ZodType>;
 
 export type CmsCollection = keyof typeof cmsContentSchemas;
+export type CmsContentIssue = {
+  path: Array<string | number>;
+  message: string;
+};
 export const sourceCollectionNames: Record<CmsCollection, string> = {
   artists: 'artists',
   releases: 'releases',
@@ -141,7 +145,7 @@ export function isCmsCollection(value: string): value is CmsCollection {
 
 // EmDash stores absent optional columns as null. Validate that representation as
 // absent, while still rejecting unknown keys and null required fields.
-export function validateCmsContent(collection: CmsCollection, data: Record<string, unknown>) {
+export function getCmsContentIssues(collection: CmsCollection, data: Record<string, unknown>): CmsContentIssue[] {
   const schema = cmsContentSchemas[collection];
   const known =
     collection === 'purchase_information' ? ['publication', 'content'] : Object.keys((schema as z.ZodObject).shape);
@@ -149,18 +153,26 @@ export function validateCmsContent(collection: CmsCollection, data: Record<strin
     Object.entries(data).filter(([field, value]) => value !== null || !known.includes(field)),
   );
   const result = schema.safeParse(normalized);
-  if (!result.success) return result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`);
-  const issues: string[] = [];
-  function unknownFields(input: unknown, parsed: unknown, field = '') {
+  if (!result.success)
+    return result.error.issues.map((issue) => ({
+      path: issue.path.map((segment) => (typeof segment === 'number' ? segment : String(segment))),
+      message: issue.message,
+    }));
+  const issues: CmsContentIssue[] = [];
+  function unknownFields(input: unknown, parsed: unknown, path: Array<string | number> = []) {
     if (!input || typeof input !== 'object' || !parsed || typeof parsed !== 'object') return;
     for (const [name, value] of Object.entries(input)) {
-      const next = field ? `${field}.${name}` : name;
-      if (!Object.hasOwn(parsed, name)) issues.push(`${next}: Unsupported field.`);
+      const next = [...path, Array.isArray(input) ? Number(name) : name];
+      if (!Object.hasOwn(parsed, name)) issues.push({ path: next, message: 'Unsupported field.' });
       else unknownFields(value, (parsed as Record<string, unknown>)[name], next);
     }
   }
   unknownFields(normalized, result.data);
   return issues;
+}
+
+export function validateCmsContent(collection: CmsCollection, data: Record<string, unknown>) {
+  return getCmsContentIssues(collection, data).map((issue) => `${issue.path.join('.')}: ${issue.message}`);
 }
 
 export function contentMediaIds(data: unknown): string[] {

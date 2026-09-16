@@ -90,6 +90,42 @@ Review Content, Images, Items, Stock and Orders at 390, 768, 1280 and 1600 px. E
 
 Current evidence and unresolved hosted acceptance are recorded in [preview validation](../openspec/changes/improve-content-workspace-previews/validation.md). Fixture screenshots are local under `.codex-artifacts/content-workspace/`; they are not proof of hosted production behavior.
 
+## Second research round — 2026-09-16
+
+This round focused on safe editing and the existing Content / Images slice. The sources below describe patterns that fit the current app; they do not authorize new permissions, autosave, or a new component library.
+
+| Reference                                                                                             | Useful observation                                                                                                              | Application now                                                                                                             |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [Sanity validation](https://www.sanity.io/docs/studio/validation)                                     | Validation belongs to the field or object that can be corrected, while document-level rules cover relationships between fields. | Keep Zod as the shared source of truth, return paths for nested issues, and render the message beside the affected control. |
+| [Contentful live preview](https://www.contentful.com/developers/docs/tutorials/preview/live-preview/) | Side-by-side preview keeps the draft and its visual result in one working context.                                              | Keep preview optional, preserve the last good frame, and block requests when the draft cannot render validly.               |
+| [Payload live preview](https://payloadcms.com/docs/live-preview/overview)                             | Breakpoint-aware preview controls are useful when they change the viewport being reviewed.                                      | Keep Fit, Desktop, and Mobile controls tied to real iframe widths.                                                          |
+| [shadcn Field](https://ui.shadcn.com/docs/components/base/field)                                      | Labels, descriptions, controls, and errors form one accessible field unit.                                                      | Use `Field`, `FieldSet`, `FieldGroup`, and `FieldError` for Content sections and inline errors.                             |
+| [shadcn Combobox](https://ui.shadcn.com/docs/components/base/combobox)                                | Searchable selection works best when the trigger, search field, current choice, and empty state are explicit.                   | Keep the installed Command / Popover relationship picker and attach external schema errors to its trigger.                  |
+| [shadcn Sheet](https://ui.shadcn.com/docs/components/aria/sheet)                                      | A sheet supports a focused mobile selection task without losing the parent form.                                                | Keep image selection in the existing Sheet and return focus to the calling field.                                           |
+| [shadcn Alert Dialog](https://ui.shadcn.com/docs/components/base/alert-dialog)                        | Destructive or irreversible actions need a deliberate confirmation step.                                                        | Use the existing AlertDialog for visible discard recovery and restore focus to its trigger.                                 |
+
+### Selected for this commit
+
+| Workspace | Idea | State | Why |
+| --- | --- | --- |
+| Content | Inline schema validation beside each field, including nested rows. | Implemented | Editors can correct the value before Save, Publish, or Preview is attempted. |
+| Content | A visible discard action with confirmation and saved-version recovery. | Implemented | Recovery is discoverable and protects unsaved work across navigation. |
+| Content | Grouped fieldsets with sticky editing actions. | Implemented | Long forms keep a clear hierarchy while the primary actions remain available. |
+| Images | Field-aware picker errors with image suitability metadata. | Implemented | A failed or unsuitable selection is actionable at the field that owns it. |
+
+### Three ideas per workspace after the second round
+
+The first three Content ideas and the first Images idea are selected above. The other ideas remain proposed for later slices.
+
+| Workspace | Idea 1                                                                     | Idea 2                                                           | Idea 3                                                              |
+| --------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Content   | Inline field validation and focus to the first invalid value. **Selected** | Visible discard recovery with confirmation. **Selected**         | Grouped fieldsets and sticky actions. **Selected**                  |
+| Images    | Field-aware picker errors and suitability metadata. **Selected**           | Compact grid / list view for recognition or comparison. Proposed | Preserve search, scroll, and calling-field return context. Proposed |
+| Items     | Readiness checklist linked to the fields that block handoff. Proposed      | Field-level commercial validation before publication. Proposed   | Related-content handoff that preserves the selected item. Proposed  |
+| Stock     | Explicit adjustment and recount modes. Proposed                            | Before-and-after quantities beside submission. Proposed          | Compact history for quantity, reason, and time. Proposed            |
+| Orders    | Quick filters for common operational states. Proposed                      | Clearer status identity in each order row. Proposed              | Grouped payment, delivery, and notification details. Proposed       |
+
 ### Decision history
 
-- 2026-09-16: created a staff-specific reference following research across twelve products. Shared consistency and reliability rules accepted; all fifteen workspace ideas remain Proposed. Public branding and commerce permissions unchanged.
+- 2026-09-16: created a staff-specific reference following research across twelve products. Shared consistency and reliability rules accepted; the initial workspace ideas remained Proposed until the second research round. Public branding and commerce permissions unchanged.
+- 2026-09-16: selected Content inline validation, discard recovery, grouped fieldsets, and field-aware Images errors for the editor safety slice. Items, Stock, and Orders remain proposed for later work.

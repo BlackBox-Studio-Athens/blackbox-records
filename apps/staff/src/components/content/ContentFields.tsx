@@ -1,14 +1,15 @@
-import { lazy, Suspense } from 'react';
-import { cmsBodySchema, DISTRO_GROUP_VALUES } from '@blackbox/content-model';
+import { lazy, Suspense, useState } from 'react';
+import { DISTRO_GROUP_VALUES, DISTRO_INTRO_FIELDS } from '@blackbox/content-model';
+import { ArrowUp, Plus, Trash2 } from 'lucide-react';
 import EditorialPicker from '../items/EditorialPicker';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
-import { Field, FieldLabel, FieldDescription } from '../ui/field';
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '../ui/field';
 import { Checkbox } from '../ui/checkbox';
 import { NativeSelect } from '../ui/native-select';
-import { Alert, AlertDescription } from '../ui/alert';
 import { ContentImagePicker } from './MediaLibrary';
+import { contentFieldErrors, type ContentValidation } from './content-validation';
 
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
 export type ContentData = Record<string, unknown>;
@@ -35,13 +36,27 @@ export default function ContentFields({
   onChange,
   base,
   disabled = false,
+  validation,
+  validationAttempt,
 }: {
   collection: ContentSection;
   data: ContentData;
   onChange(data: ContentData): void;
   base: string;
   disabled?: boolean;
+  validation: ContentValidation;
+  validationAttempt: number;
 }) {
+  const [touched, setTouched] = useState<Set<string>>(() => new Set());
+  function touch(path: string) {
+    setTouched((current) => (current.has(path) ? current : new Set(current).add(path)));
+  }
+  function errors(path: string) {
+    return validationAttempt > 0 || touched.has(path) ? contentFieldErrors(validation, path) : [];
+  }
+  function exactErrors(path: string) {
+    return validationAttempt > 0 || touched.has(path) ? (validation.byPath[path] ?? []) : [];
+  }
   function value(path: string): unknown {
     return path
       .split('.')
@@ -62,15 +77,29 @@ export default function ContentFields({
     onChange(updated);
   }
   const fieldClass = 'min-h-11 w-full min-w-0';
-  function field(
-    path: string,
-    label: string,
-    options: { multiline?: boolean; type?: string; required?: boolean } = {},
-  ) {
+  type FieldOptions = {
+    multiline?: boolean;
+    type?: string;
+    required?: boolean;
+    min?: number;
+    max?: number;
+    step?: number;
+  };
+  function field(path: string, label: string, options: FieldOptions = {}) {
+    const id = `content-${path}`;
+    const errorId = `${id}-error`;
+    const descriptionId = `${id}-description`;
+    const fieldErrors = validationAttempt > 0 || touched.has(path) ? (validation.byPath[path] ?? []) : [];
+    const describedBy = [options.required === false ? descriptionId : '', fieldErrors.length ? errorId : '']
+      .filter(Boolean)
+      .join(' ');
     const props = {
-      id: `content-${path}`,
+      id,
+      'data-content-path': path,
       value: String(value(path) ?? ''),
       required: options.required ?? true,
+      'aria-invalid': fieldErrors.length > 0 || undefined,
+      'aria-describedby': describedBy || undefined,
       onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const input = event.target.value;
         set(
@@ -82,45 +111,69 @@ export default function ContentFields({
             : input || (options.required === false ? (path.includes('.') ? undefined : null) : ''),
         );
       },
+      onBlur: () => touch(path),
     };
     return (
-      <Field className={options.multiline ? 'col-span-full' : 'min-w-0'} key={path}>
+      <Field
+        className={options.multiline ? 'col-span-full' : 'min-w-0'}
+        data-invalid={fieldErrors.length > 0}
+        key={path}
+      >
         <FieldLabel htmlFor={props.id}>{label}</FieldLabel>
         {options.multiline ? (
           <Textarea {...props} className={fieldClass} rows={4} />
         ) : (
-          <Input {...props} type={options.type ?? 'text'} />
+          <Input {...props} type={options.type ?? 'text'} min={options.min} max={options.max} step={options.step} />
         )}
-        {options.required === false && <FieldDescription>Optional</FieldDescription>}
+        {options.required === false && <FieldDescription id={descriptionId}>Optional</FieldDescription>}
+        <FieldError id={errorId}>{fieldErrors.join(' ')}</FieldError>
       </Field>
     );
   }
   function check(path: string, label: string) {
+    const fieldErrors = errors(path);
+    const errorId = `content-${path}-error`;
     return (
-      <Field orientation="horizontal" className="min-h-11">
+      <Field orientation="horizontal" className="min-h-11" data-invalid={fieldErrors.length > 0}>
         <Checkbox
           id={`content-${path}`}
+          data-content-path={path}
           checked={value(path) === true || value(path) === 1}
           disabled={disabled}
+          aria-invalid={fieldErrors.length > 0 || undefined}
+          aria-describedby={fieldErrors.length ? errorId : undefined}
+          onBlur={() => touch(path)}
           onCheckedChange={(checked) => set(path, checked === true)}
         />
         <FieldLabel htmlFor={`content-${path}`}>{label}</FieldLabel>
+        <FieldError id={errorId}>{fieldErrors.join(' ')}</FieldError>
       </Field>
     );
   }
   function image(path: string, alt: string, label: string) {
     const reference = value(path) as { id?: string } | undefined;
+    const fieldErrors = exactErrors(path);
     return (
-      <section className="col-span-full grid gap-4 border-y border-border py-6">
-        <ContentImagePicker
-          base={base}
-          label={label}
-          value={reference?.id ?? ''}
-          disabled={disabled}
-          onSelect={(item) => set(path, { id: item.id })}
-        />
-        {field(alt, 'Describe the image')}
-      </section>
+      <FieldSet
+        className="col-span-full min-w-0 gap-4 border-y border-border py-6"
+        data-invalid={errors(path).length > 0}
+      >
+        <FieldLegend variant="label">{label}</FieldLegend>
+        <FieldGroup className="gap-4">
+          <ContentImagePicker
+            base={base}
+            label={label}
+            value={reference?.id ?? ''}
+            disabled={disabled}
+            error={fieldErrors.join(' ') || undefined}
+            hideLabel
+            onBlur={() => touch(path)}
+            onSelect={(item) => set(path, { id: item.id })}
+            path={path}
+          />
+          {field(alt, 'Describe the image')}
+        </FieldGroup>
+      </FieldSet>
     );
   }
   function rows(
@@ -130,73 +183,78 @@ export default function ContentFields({
     render: (path: string, index: number) => React.ReactNode,
   ) {
     const items = Array.isArray(value(path)) ? (value(path) as unknown[]) : [];
+    const fieldErrors = exactErrors(path);
     return (
-      <section className="col-span-full grid min-w-0 gap-4">
-        <h2 className="text-base font-semibold">{label}</h2>
-        {items.map((_, index) => (
-          <div className="grid min-w-0 gap-4 border-t border-border pt-4" key={`${path}-${index}`}>
-            {render(`${path}.${index}`, index)}
-            <div className="flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={index === 0}
-                onClick={() => {
-                  const next = [...items];
-                  [next[index - 1], next[index]] = [next[index], next[index - 1]];
-                  set(path, next);
-                }}
-              >
-                Move up
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() =>
-                  set(
-                    path,
-                    items.filter((_, i) => i !== index),
-                  )
-                }
-              >
-                Remove row {index + 1}
-              </Button>
+      <FieldSet className="col-span-full grid min-w-0 gap-4" data-invalid={errors(path).length > 0}>
+        <FieldLegend>{label}</FieldLegend>
+        <FieldError>{fieldErrors.join(' ')}</FieldError>
+        <FieldGroup className="gap-4">
+          {items.map((_, index) => (
+            <div className="grid min-w-0 gap-4 border-t border-border pt-4" key={`${path}-${index}`}>
+              {render(`${path}.${index}`, index)}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={index === 0}
+                  onClick={() => {
+                    const next = [...items];
+                    [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                    set(path, next);
+                  }}
+                >
+                  <ArrowUp className="size-4" aria-hidden="true" />
+                  Move up
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    set(
+                      path,
+                      items.filter((_, i) => i !== index),
+                    )
+                  }
+                >
+                  <Trash2 className="size-4" aria-hidden="true" />
+                  Remove row {index + 1}
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
-        <Button type="button" variant="outline" onClick={() => set(path, [...items, structuredClone(initial)])}>
-          Add row
-        </Button>
-      </section>
+          ))}
+          <Button type="button" variant="outline" onClick={() => set(path, [...items, structuredClone(initial)])}>
+            <Plus className="size-4" aria-hidden="true" />
+            Add row
+          </Button>
+        </FieldGroup>
+      </FieldSet>
     );
   }
-  const bodyValidation = cmsBodySchema.safeParse(data.body ?? []);
   const body = (
-    <section className="col-span-full grid min-w-0 gap-3">
-      <h2 id="content-body-label" className="text-base font-semibold">
-        Full text
-      </h2>
-      <p id="content-body-help" className="text-sm text-muted-foreground">
-        Add text, links and images. Tables, galleries and pasted HTML are not supported.
-      </p>
-      <Suspense fallback={<p>Loading text editor…</p>}>
-        <ContentBodyEditor
-          aria-labelledby="content-body-label"
-          aria-describedby={bodyValidation.success ? 'content-body-help' : 'content-body-help content-body-error'}
-          aria-invalid={!bodyValidation.success}
-          editable={!disabled}
-          value={(data.body ?? []) as never}
-          onChange={(body) => set('body', body)}
-        />
-      </Suspense>
-      {!bodyValidation.success && (
-        <Alert id="content-body-error" variant="destructive">
-          <AlertDescription>
-            {bodyValidation.error.issues[0]?.message} Your text is still here and has not been saved.
-          </AlertDescription>
-        </Alert>
-      )}
-    </section>
+    <FieldSet className="col-span-full grid min-w-0 gap-3" data-invalid={errors('body').length > 0}>
+      <FieldLegend id="content-body-label">Full text</FieldLegend>
+      <FieldGroup className="gap-3">
+        <p id="content-body-help" className="text-sm text-muted-foreground">
+          Add text, links and images. Tables, galleries and pasted HTML are not supported.
+        </p>
+        <Suspense fallback={<p>Loading text editor…</p>}>
+          <ContentBodyEditor
+            aria-labelledby="content-body-label"
+            aria-describedby={errors('body').length ? 'content-body-help content-body-error' : 'content-body-help'}
+            aria-invalid={errors('body').length > 0}
+            data-content-path="body"
+            editable={!disabled}
+            value={(data.body ?? []) as never}
+            onBlur={() => touch('body')}
+            onChange={(body) => {
+              touch('body');
+              set('body', body);
+            }}
+          />
+        </Suspense>
+        <FieldError id="content-body-error">{errors('body').join(' ')}</FieldError>
+      </FieldGroup>
+    </FieldSet>
   );
   if (collection === 'artists')
     return (
@@ -235,8 +293,11 @@ export default function ContentFields({
           base={base}
           collection="artists"
           label="Artist"
+          path="artist"
           value={String(data.artist ?? '')}
           selectedLabel="Current artist"
+          error={errors('artist').join(' ') || undefined}
+          onBlur={() => touch('artist')}
           onSelect={(item) => set('artist', item.id)}
         />
         {field('release_date', 'Release date', { type: 'date' })}
@@ -271,18 +332,33 @@ export default function ContentFields({
       <>
         {field('title', 'Item title')}
         {field('artist_or_label', 'Artist or label')}
-        <label className="grid gap-2">
-          Physical format
-          <NativeSelect
-            className={fieldClass}
-            value={String(data.group)}
-            onChange={(event) => set('group', event.target.value)}
-          >
-            {DISTRO_GROUP_VALUES.map((group) => (
-              <option key={group}>{group}</option>
-            ))}
-          </NativeSelect>
-        </label>
+        {(() => {
+          const fieldErrors = errors('group');
+          const id = 'content-group';
+          const errorId = `${id}-error`;
+          return (
+            <Field data-invalid={fieldErrors.length > 0}>
+              <FieldLabel htmlFor={id}>Physical format</FieldLabel>
+              <NativeSelect
+                id={id}
+                data-content-path="group"
+                className={fieldClass}
+                value={String(data.group ?? '')}
+                required
+                aria-invalid={fieldErrors.length > 0 || undefined}
+                aria-describedby={fieldErrors.length ? errorId : undefined}
+                onBlur={() => touch('group')}
+                onChange={(event) => set('group', event.target.value)}
+              >
+                <option value="">Choose a physical format</option>
+                {DISTRO_GROUP_VALUES.map((group) => (
+                  <option key={group}>{group}</option>
+                ))}
+              </NativeSelect>
+              <FieldError id={errorId}>{fieldErrors.join(' ')}</FieldError>
+            </Field>
+          );
+        })()}
         {image('image', 'image_alt', 'Item image')}
         {field('summary', 'Short description', { multiline: true })}
         {rows('gallery', 'More images', { image: null, image_alt: '' }, (path) =>
@@ -291,7 +367,7 @@ export default function ContentFields({
         {field('eyebrow', 'Small heading', { required: false })}
         {field('format', 'Format description', { required: false })}
         {field('release_date', 'Release date', { type: 'date', required: false })}
-        {field('order', 'Display order', { type: 'number' })}
+        {field('order', 'Display order', { type: 'number', min: 0, step: 1 })}
       </>
     );
   if (collection === 'home')
@@ -388,7 +464,7 @@ export default function ContentFields({
       <>
         {field('title', 'Link text')}
         {field('url', 'Page link')}
-        {field('order', 'Display order', { type: 'number' })}
+        {field('order', 'Display order', { type: 'number', min: 0, step: 1 })}
         {check('show_in_header', 'Show at the top of the site')}
         {check('show_in_footer', 'Show at the bottom of the site')}
       </>
@@ -398,7 +474,7 @@ export default function ContentFields({
       <>
         {field('title', 'Link name')}
         {field('url', 'Profile link')}
-        {field('order', 'Display order', { type: 'number' })}
+        {field('order', 'Display order', { type: 'number', min: 0, step: 1 })}
       </>
     );
   if (collection === 'newsletter')
@@ -416,7 +492,7 @@ export default function ContentFields({
     return (
       <>
         {field('label_name', 'Label name')}
-        {field('established_year', 'Year established', { type: 'number' })}
+        {field('established_year', 'Year established', { type: 'number', min: 1900, max: 2100, step: 1 })}
         {field('url', 'Label website', { type: 'url' })}
         {field('logo', 'Logo path')}
         {field('location.locality', 'City')}
@@ -428,24 +504,40 @@ export default function ContentFields({
       <>
         {field('hero.title', 'Page title')}
         {field('hero.intro', 'Introduction', { multiline: true })}
-        {Object.keys((data.group_intros as object) ?? {}).map((key) =>
-          field(`group_intros.${key}`, key.replaceAll('_', ' '), { multiline: true }),
-        )}
+        {DISTRO_INTRO_FIELDS.map(({ name, label }) => field(`group_intros.${name}`, label, { multiline: true }))}
+        {Object.keys((data.group_intros as object) ?? {})
+          .filter((key) => !DISTRO_INTRO_FIELDS.some(({ name }) => name === key))
+          .map((key) => field(`group_intros.${key}`, key.replaceAll('_', ' '), { multiline: true }))}
       </>
     );
   return (
     <>
-      <label className="grid gap-2">
-        Public wording approval
-        <NativeSelect
-          className={fieldClass}
-          value={String(data.publication)}
-          onChange={(event) => set('publication', event.target.value)}
-        >
-          <option value="pending">Awaiting review</option>
-          <option value="approved">Approved by the label</option>
-        </NativeSelect>
-      </label>
+      {(() => {
+        const fieldErrors = errors('publication');
+        const id = 'content-publication';
+        const errorId = `${id}-error`;
+        return (
+          <Field data-invalid={fieldErrors.length > 0}>
+            <FieldLabel htmlFor={id}>Public wording approval</FieldLabel>
+            <NativeSelect
+              id={id}
+              data-content-path="publication"
+              className={fieldClass}
+              value={String(data.publication ?? '')}
+              required
+              aria-invalid={fieldErrors.length > 0 || undefined}
+              aria-describedby={fieldErrors.length ? errorId : undefined}
+              onBlur={() => touch('publication')}
+              onChange={(event) => set('publication', event.target.value)}
+            >
+              <option value="">Choose approval state</option>
+              <option value="pending">Awaiting review</option>
+              <option value="approved">Approved by the label</option>
+            </NativeSelect>
+            <FieldError id={errorId}>{fieldErrors.join(' ')}</FieldError>
+          </Field>
+        );
+      })()}
       {field('content.revision', 'Date of wording', { type: 'date' })}
       {field('content.seller.name', 'Seller name')}
       {field('content.seller.address', 'Seller address', { multiline: true })}

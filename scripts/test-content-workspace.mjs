@@ -430,12 +430,38 @@ else {
     await page.getByRole('button', { name: 'Show preview', exact: true }).click();
     const appearance = page.frameLocator('iframe[title="Private site appearance preview"]');
     await appearance.getByRole('heading').waitFor();
+    const previewCountBeforeInvalid = state.previewRequests.length;
+    const saveCountBeforeInvalid = state.saveCount;
+    const artistName = page.getByLabel('Artist name', { exact: true });
+    await artistName.fill('   ');
+    await artistName.blur();
+    await page.getByText('Enter a value.', { exact: true }).waitFor();
+    await page.getByRole('status').filter({ hasText: 'Fix the highlighted fields' }).waitFor();
+    assert.equal(state.previewRequests.length, previewCountBeforeInvalid, 'Invalid edits do not request previews');
+    assert.equal(await page.getByRole('button', { name: 'Publish changes', exact: true }).isEnabled(), false);
+    await page.getByRole('button', { name: 'Save draft', exact: true }).click();
+    await page.getByRole('alert').filter({ hasText: 'Fix the highlighted field' }).waitFor();
+    assert.equal(state.saveCount, saveCountBeforeInvalid, 'Invalid edits do not save');
+    await artistName.fill('Ouranopithecus');
+    await artistName.blur();
+    await appearance.getByRole('heading', { name: 'Ouranopithecus', exact: true }).waitFor();
+    const artistLink = page.getByLabel('Website address', { exact: true }).first();
+    await artistLink.fill('not-a-url');
+    await artistLink.blur();
+    await page.getByText('Use a full HTTPS URL.', { exact: true }).first().waitFor();
+    const previewCountBeforeNestedInvalid = state.previewRequests.length;
+    await page.getByRole('button', { name: 'Save draft', exact: true }).click();
+    await page.getByRole('alert').filter({ hasText: 'Fix the highlighted field' }).waitFor();
+    assert.equal(state.saveCount, saveCountBeforeInvalid, 'Nested invalid edits do not save');
+    assert.equal(state.previewRequests.length, previewCountBeforeNestedInvalid, 'Nested invalid edits do not preview');
+    await artistLink.fill('https://example.com');
+    await artistLink.blur();
     await page.evaluate(() =>
       document.querySelector('iframe[title="Private site appearance preview"]').contentWindow.scrollTo(0, 120),
     );
     await page.getByRole('button', { name: 'Hide preview', exact: true }).click();
     const hiddenReads = state.previewRequests.length;
-    await page.getByLabel('Artist name', { exact: true }).fill('Edited with preview hidden');
+    await artistName.fill('Edited with preview hidden');
     await page.waitForTimeout(850);
     assert.equal(state.previewRequests.length, hiddenReads);
     await page.getByRole('button', { name: 'Show preview', exact: true }).click();
@@ -446,7 +472,7 @@ else {
       ),
       120,
     );
-    await page.getByLabel('Artist name', { exact: true }).fill('Ouranopithecus');
+    await artistName.fill('Ouranopithecus');
     await appearance.getByRole('heading', { name: 'Ouranopithecus', exact: true }).waitFor();
     state.previewFontDisplay = 'optional';
     await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
@@ -488,7 +514,7 @@ else {
     state.previewStyleFailure = false;
     await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
     await appearance.getByRole('heading').waitFor();
-    await page.getByLabel('Artist name', { exact: true }).fill('slow preview');
+    await artistName.fill('slow preview');
     const previewDeadline = Date.now() + 10_000;
     while (
       Date.now() < previewDeadline &&
@@ -496,38 +522,41 @@ else {
     )
       await new Promise((resolve) => setTimeout(resolve, 25));
     assert.ok(state.previewRequests.some((request) => request.data.title === 'slow preview'));
-    await page.getByLabel('Artist name', { exact: true }).fill('Latest unsaved preview');
+    await artistName.fill('Latest unsaved preview');
     await appearance.getByRole('heading', { name: 'Latest unsaved preview', exact: true }).waitFor();
     await new Promise((resolve) => setTimeout(resolve, 1600));
     assert.equal(await appearance.getByRole('heading').innerText(), 'Latest unsaved preview');
     assert.equal(state.saveCount, 0);
-    await page.getByLabel('Artist name', { exact: true }).fill('expired preview');
+    await artistName.fill('expired preview');
     await page.getByRole('alert').filter({ hasText: 'Sign in again' }).waitFor();
     assert.equal(await appearance.getByRole('heading').innerText(), 'Latest unsaved preview');
-    await page.getByLabel('Artist name', { exact: true }).fill('invalid preview');
+    await artistName.fill('invalid preview');
     await page.getByRole('alert').filter({ hasText: 'Check the preview fields' }).waitFor();
     await page.getByText('Showing the last successful preview', { exact: false }).waitFor();
-    await page.getByLabel('Artist name', { exact: true }).fill('unexpected preview');
+    await artistName.fill('unexpected preview');
     await page.getByRole('alert').filter({ hasText: 'unexpected response' }).waitFor();
     assert.equal(await page.getByRole('alert').filter({ hasText: 'Sign in again' }).count(), 0);
-    await page.getByLabel('Artist name', { exact: true }).fill('Ouranopithecus draft');
+    await artistName.fill('Ouranopithecus draft');
     await page.getByRole('button', { name: 'Change artist image', exact: true }).click();
     await page.getByRole('heading', { name: 'Choose artist image' }).waitFor();
     await page.keyboard.press('Escape');
-    assert.equal(await page.getByLabel('Artist name', { exact: true }).inputValue(), 'Ouranopithecus draft');
+    assert.equal(await artistName.inputValue(), 'Ouranopithecus draft');
     assert.equal(await page.getByRole('button', { name: 'Publish changes', exact: true }).isEnabled(), false);
     state.conflict = true;
     await page.getByRole('button', { name: 'Save draft', exact: true }).click();
     await page.getByRole('alert').filter({ hasText: 'Someone changed' }).waitFor();
-    assert.equal(await page.getByLabel('Artist name', { exact: true }).inputValue(), 'Ouranopithecus draft');
-    await page.getByRole('button', { name: 'More draft actions' }).click();
-    await page.getByRole('menuitem', { name: 'Discard changes and reload' }).click();
+    assert.equal(await artistName.inputValue(), 'Ouranopithecus draft');
+    const discard = page.getByRole('button', { name: 'Discard changes', exact: true });
+    assert.equal(await discard.isVisible(), true);
+    assert.equal(await discard.isEnabled(), true);
+    await discard.click();
+    await page.getByRole('alertdialog').waitFor();
     await page.getByRole('button', { name: 'Keep editing', exact: true }).click();
+    await page.waitForFunction(() => document.activeElement?.textContent === 'Discard changes');
     assert.equal(await page.getByLabel('Artist name', { exact: true }).inputValue(), 'Ouranopithecus draft');
     state.conflict = false;
-    await page.getByRole('button', { name: 'More draft actions' }).click();
-    await page.getByRole('menuitem', { name: 'Discard changes and reload' }).click();
-    await page.getByRole('button', { name: 'Discard changes and reload' }).click();
+    await discard.click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Discard changes', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('#content-title')?.value === 'Ouranopithecus');
     await page.getByLabel('Artist name', { exact: true }).fill('Saved draft');
     await page.getByRole('button', { name: 'Save draft', exact: true }).click();
@@ -613,17 +642,16 @@ else {
       if (width === 390) {
         await page.getByLabel('Artist name', { exact: true }).fill('Mobile unsaved draft');
         await page.getByRole('button', { name: 'Back to records' }).click();
-        await page.getByRole('button', { name: 'Show more', exact: true }).click();
-        await page.getByRole('button', { name: 'Mass Culture', exact: true }).click();
-        await page
-          .getByRole('status')
-          .filter({ hasText: 'Save your draft or select Discard changes and reload' })
-          .waitFor();
-        await page.getByRole('button', { name: 'Return to draft' }).click();
+        await page.getByRole('alertdialog').waitFor();
+        await page.getByRole('button', { name: 'Keep editing', exact: true }).click();
+        await page.waitForFunction(() => document.activeElement?.getAttribute('aria-label') === 'Back to records');
         assert.equal(await page.getByLabel('Artist name', { exact: true }).inputValue(), 'Mobile unsaved draft');
         await page.getByLabel('Artist name', { exact: true }).fill('Saved draft');
         await page.getByRole('button', { name: 'Save draft', exact: true }).click();
         await page.getByRole('status').filter({ hasText: 'Draft saved' }).waitFor();
+        await page.getByRole('button', { name: 'Back to records' }).click();
+        await page.getByRole('button', { name: 'Show more', exact: true }).click();
+        await page.getByRole('button', { name: 'Mass Culture', exact: true }).click();
       }
       await page.getByRole('button', { name: 'Toggle Sidebar' }).click();
       await page.getByRole('button', { name: 'Images', exact: true }).click();
@@ -638,6 +666,28 @@ else {
     state.mediaFailure = false;
     await page.getByRole('button', { name: 'Search', exact: true }).filter({ visible: true }).click();
     await page.getByRole('button', { name: 'uploaded.png', exact: true }).waitFor();
+
+    const savedArtistData = structuredClone(records.artists[0].data);
+    records.artists[0].data = { ...savedArtistData, image: null };
+    await page.goto(`${origin}/content/?collection=artists&id=artists-1`);
+    await page.getByLabel('Artist name', { exact: true }).waitFor();
+    const saveCountBeforeImageInvalid = state.saveCount;
+    await page.getByRole('button', { name: 'Save draft', exact: true }).click();
+    await page.getByText('Invalid input: expected object, received undefined', { exact: true }).waitFor();
+    assert.equal(await page.locator('[data-content-path="image"][aria-invalid="true"]').count(), 1);
+    assert.equal(state.saveCount, saveCountBeforeImageInvalid, 'Missing images do not save');
+    records.artists[0].data = savedArtistData;
+
+    const savedReleaseData = structuredClone(records.releases[0].data);
+    records.releases[0].data = { ...savedReleaseData, artist: '' };
+    await page.goto(`${origin}/content/?collection=releases&id=releases-1`);
+    await page.getByRole('combobox', { name: 'Artist', exact: true }).waitFor();
+    const saveCountBeforeRelationshipInvalid = state.saveCount;
+    await page.getByRole('button', { name: 'Save draft', exact: true }).click();
+    await page.getByText('Too small: expected string to have >=1 characters', { exact: true }).waitFor();
+    assert.equal(await page.locator('[data-content-path="artist"][aria-invalid="true"]').count(), 1);
+    assert.equal(state.saveCount, saveCountBeforeRelationshipInvalid, 'Missing relationships do not save');
+    records.releases[0].data = savedReleaseData;
 
     // Every collection still renders its existing fields through direct links.
     for (const collection of Object.keys(records)) {
@@ -657,6 +707,12 @@ else {
     await page.getByRole('button', { name: 'Save draft', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Draft saved' }).waitFor();
     await page.getByRole('button', { name: 'Back to records' }).click();
+    await page.getByRole('button', { name: 'Add social link', exact: true }).click();
+    await page.getByLabel('Link name', { exact: true }).fill('New social link');
+    assert.equal(await page.getByRole('button', { name: 'Discard changes', exact: true }).isEnabled(), true);
+    await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await page.getByRole('heading', { name: 'Social links', exact: true }).waitFor();
     await page.getByRole('button', { name: 'Add social link', exact: true }).click();
     await page.getByLabel('Link name', { exact: true }).fill('New social link');
     await page.getByLabel('Profile link', { exact: true }).fill('https://example.com/new');

@@ -279,13 +279,22 @@ export function ContentImagePicker({
   label,
   onSelect,
   disabled = false,
+  error,
+  onBlur,
+  path,
+  hideLabel,
 }: {
   base: string;
   value: string;
   label: string;
   onSelect(item: EditorialMedia): void;
   disabled?: boolean;
+  error?: string | undefined;
+  onBlur?: (() => void) | undefined;
+  path?: string | undefined;
+  hideLabel?: boolean | undefined;
 }) {
+  const id = useId();
   const [open, setOpen] = useState(false);
   const [item, setItem] = useState<EditorialMedia | null>(null);
   const [failed, setFailed] = useState(false);
@@ -307,10 +316,13 @@ export function ContentImagePicker({
   }, [base, value]);
   const trigger = useRef<HTMLButtonElement>(null);
   const [requiredError, setRequiredError] = useState(false);
+  const fieldError = error || (failed ? 'This image could not be loaded. Choose it again.' : '');
+  const errorId = `${id}-error`;
   return (
-    <Field>
-      <span className="text-sm font-medium">{label}</span>
+    <Field data-invalid={!!fieldError}>
+      {!hideLabel && <FieldLabel htmlFor={id}>{label}</FieldLabel>}
       <input
+        id={`${id}-value`}
         className="sr-only"
         tabIndex={-1}
         aria-hidden="true"
@@ -347,10 +359,15 @@ export function ContentImagePicker({
             <SheetTrigger asChild>
               <Button
                 ref={trigger}
+                id={id}
+                data-content-path={path}
                 type="button"
                 variant="outline"
                 disabled={disabled}
-                aria-invalid={requiredError && !value}
+                aria-label={`${value ? 'Change' : 'Choose'} ${label.toLowerCase()}`}
+                aria-invalid={!!fieldError || (requiredError && !value) || undefined}
+                aria-describedby={fieldError ? errorId : undefined}
+                onBlur={onBlur}
               >
                 {value ? 'Change' : 'Choose'} {label.toLowerCase()}
               </Button>
@@ -367,6 +384,7 @@ export function ContentImagePicker({
                   disabled={disabled}
                   onSelect={(image) => {
                     setItem(image);
+                    setRequiredError(false);
                     onSelect(image);
                     setOpen(false);
                   }}
@@ -376,7 +394,9 @@ export function ContentImagePicker({
           </Sheet>
         </div>
       </div>
-      {requiredError && !value && <FieldError>Choose {label.toLowerCase()} before saving.</FieldError>}
+      <FieldError id={errorId}>
+        {fieldError || (requiredError && !value ? `Choose ${label.toLowerCase()} before saving.` : '')}
+      </FieldError>
     </Field>
   );
 }
