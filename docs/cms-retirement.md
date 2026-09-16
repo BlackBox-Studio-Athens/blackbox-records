@@ -54,13 +54,13 @@ All 48 main specifications pass normal validation. Repository-wide strict mode s
 
 At this earlier checkpoint, completion remained blocked on UAT acceptance, exact-candidate PRD promotion and verified external retirement. The subsequently approved exception and replacement release are recorded below; this failed candidate remains failed.
 
-## Email-free continuation
+## Historical email-free continuation
 
-After the Resend daily-quota warning, the user requested continuation without using Resend. No provider settings or normal delivery were changed. Do not rerun the bundled `smoke-uat` CI job: it invokes paid checkouts and the Resend/newsletter smoke. Their earlier passing results remain historical evidence, not permission to bypass candidate acceptance.
+After the Resend daily-quota warning, the user requested continuation without using Resend. No provider settings or normal delivery were changed. The earlier passing provider results remain historical evidence; the release workflow now uses its normal provider and active-public-surface smoke for fresh candidates.
 
-### Subsequently approved stale-cache-only exception
+### Historical stale-cache-only exception
 
-The operator explicitly approved a documented stale-cache-only acceptance exception on September 15. The false-by-default workflow input `confirm_retired_admin_cache_exception` now selects an email-free candidate path restricted to source `c521b1250a5fb3ec287e8aa2c4976dde4ac10f33` and the unchanged UAT snapshot. It reuses the three digest-pinned passing paid-checkout/Resend evidence files from run `34958898685`, reruns canonical static checks, and accepts only the five known cached legacy bodies. Any other failure stops acceptance. It expires September 22 at 10:46:49 UTC. The raw 404 failures remain in evidence alongside a separate exception receipt; the original failed candidate is never relabeled successful. A new successful candidate is required for normal exact-SHA promotion.
+The previously documented stale-cache-only acceptance exception was a one-off recovery aid for the September 15 candidate. It has been removed from the release workflow. Routine UAT smoke now checks the active public surface and does not probe the five retired `/admin/*` paths served by the old `pages.dev` edge cache. Those paths remain a separate cache-retirement concern and must not be treated as current public functionality.
 
 The original schema-2 artifact was retained locally as `.codex-artifacts/legacy-retirement/release-c521b125.zip` (785,884,253 bytes). SHA-256 `278a0db2cf4a9716b513b4ea9262813833c4ebaf2d6ef0745f86db7530d6fea0` matches GitHub artifact `10391879520`. Extraction to the sibling `release-c521b125/` directory passed the existing complete manifest digest and combined asset verification for all five targets. This is an integrity-verified but unaccepted candidate; retain the new accepted release before deleting external resources. Its local retention does not override the promotion expiry rule.
 

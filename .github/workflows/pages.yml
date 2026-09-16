@@ -20,10 +20,6 @@ on:
         description: Promote this reviewed candidate to disabled PRD; no catalog or launch authorization.
         type: boolean
         default: false
-      confirm_retired_admin_cache_exception:
-        description: Approved September 15 retirement exception for c521b125 only; reuse pinned provider evidence without sending email. Expires September 22.
-        type: boolean
-        default: false
       confirm_live_catalog_changes:
         description: Separate one-run live catalog authorization; never enables checkout.
         type: boolean
@@ -62,9 +58,6 @@ jobs:
           set -euo pipefail
           [[ "$GITHUB_REF" == 'refs/heads/main' ]]
           [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          if [[ '${{ inputs.confirm_retired_admin_cache_exception }}' == 'true' ]]; then
-            [[ "$SOURCE_SHA" == 'c521b1250a5fb3ec287e8aa2c4976dde4ac10f33' ]]
-          fi
           gh api "repos/$GITHUB_REPOSITORY/compare/$SOURCE_SHA...main" --jq '.status' | grep -Eq '^(ahead|identical)$'
       - &checkout
         name: Checkout
@@ -259,26 +252,10 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
       - name: Run UAT provider smoke
-        if: ${{ !inputs.confirm_retired_admin_cache_exception }}
         run: |
           pnpm smoke:stripe-uat -- --site-url https://blackbox-records-web-uat.pages.dev --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL" --scenario happy_path_paid,pay_what_you_want_paid --screenshots on-failure
           pnpm smoke:resend-uat -- --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL"
           pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure
-      - name: Download previously passed provider evidence for approved retirement exception
-        if: ${{ inputs.confirm_retired_admin_cache_exception }}
-        uses: actions/download-artifact@v8.0.1
-        with:
-          github-token: ${{ github.token }}
-          run-id: '34958898685'
-          name: uat-smoke-34958898685-1
-          path: .codex-artifacts/legacy-provider-evidence
-      - name: Verify approved stale-cache-only retirement exception without email
-        if: ${{ inputs.confirm_retired_admin_cache_exception }}
-        env:
-          CONFIRM_RETIRED_ADMIN_CACHE_EXCEPTION: ${{ inputs.confirm_retired_admin_cache_exception }}
-        run: |
-          node --test .codex-artifacts/release-tools/scripts/release-candidate.test.mjs
-          node --import tsx .codex-artifacts/release-tools/scripts/accept-legacy-retirement.mjs
       - name: Verify current UAT release identity
         run: node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-hosted uat
       - *observe-uat
