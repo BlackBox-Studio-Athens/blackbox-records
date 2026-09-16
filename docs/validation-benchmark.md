@@ -1,5 +1,7 @@
 # Local validation benchmark protocol
 
+Current results and unresolved acceptance items: [refreshed measurement report](validation-refresh-report.md).
+
 Refreshed baseline: `8b5160c552959751ad95e2053fc9d499dec590fb`. The September 14 report is historical, not acceptance for this revision. Implementation is authorized on
 `codex/validation-efficiency` in its separate worktree. Main is not modified.
 
