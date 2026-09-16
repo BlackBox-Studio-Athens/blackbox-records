@@ -5,7 +5,7 @@ Refreshed baseline: `8b5160c552959751ad95e2053fc9d499dec590fb`. The September 14
 
 Use Node 24.20.0, pnpm 12.0.0, independent worktree dependencies and caches, and
 RTK 0.47.0 in both arms. Record setup separately. Do not time competing workloads.
-The installed Codex default at protocol freeze is `gpt-5.6-luna`, effort `high`;
+The benchmark model is pinned to `gpt-5.6-luna`, effort `high`;
 pin both for every agent trial. Keep existing user configuration, rules, tools,
 and RTK guidance. Use fresh sessions, one at a time, with JSONL event capture.
 
@@ -126,3 +126,11 @@ median full command time and 20% lower median total agent tokens across equally
 weighted scenarios. No scenario's median time or tokens may regress over 10%.
 Compare full to full, not fast to full. Missing usage or a failing baseline
 leaves acceptance incomplete. Do not discard unfavorable runs.
+
+Evaluate command reduction separately in fresh and warm state. For agent tokens,
+weight the three scenarios equally using the mean of their candidate/baseline
+median token ratios, not a sum that lets the most expensive scenario dominate.
+Require each scenario's median time and token ratio to remain at or below 1.10.
+User configuration and instruction hashes are retained without their contents;
+a changed harness during a trial invalidates its comparison. The prompt specifies
+the pinned toolchain on PATH, but never supplies the candidate validation command.

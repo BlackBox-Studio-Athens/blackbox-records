@@ -3,6 +3,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { execa } from 'execa';
 import { sourceIdentity } from './validate.mjs';
 
@@ -64,6 +65,21 @@ const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 const output = path.join(arms.candidate, '.codex-artifacts/validation-benchmark', `${values.mode}-${stamp}`);
 await mkdir(output, { recursive: true });
 const records = [];
+const interruption = new AbortController();
+process.on('SIGINT', () => interruption.abort());
+process.on('SIGTERM', () => interruption.abort());
+async function harnessIdentity() {
+  const configRoot = process.env.CODEX_HOME || path.join(os.homedir(), '.codex');
+  const identity = {};
+  for (const file of ['config.toml', 'AGENTS.md', 'policy/token-efficiency.md', 'RTK.md']) {
+    const contents = await readFile(path.join(configRoot, file)).catch((error) => {
+      if (error.code === 'ENOENT') return null;
+      throw error;
+    });
+    identity[file] = contents ? createHash('sha256').update(contents).digest('hex') : null;
+  }
+  return identity;
+}
 const metadata = {
   baseline: arms.baseline,
   candidate: arms.candidate,
@@ -81,6 +97,9 @@ const metadata = {
   mode: values.mode,
   candidateJobs: Number(values.jobs),
   scenario: values.scenario ?? 'all',
+  sandbox: 'workspace-write',
+  ephemeral: true,
+  harness: await harnessIdentity(),
   rtk: (await execa(values.rtk, ['--version'])).stdout,
   codex: (await execa('codex', ['--version'])).stdout,
 };
@@ -196,6 +215,7 @@ async function commandRun(arm, scenario, index, priming = false) {
         reject: false,
         stdio: ['ignore', file.fd, file.fd],
         killDescendants: true,
+        cancelSignal: interruption.signal,
         timeout: 20 * 60_000,
       });
     } catch (error) {
@@ -216,6 +236,7 @@ async function commandRun(arm, scenario, index, priming = false) {
         .filter((line) => /(?:Test Files|Tests)\s+\d|^[#ℹ] (?:tests|pass|fail) \d/.test(line)),
       logPath,
     });
+    await save();
     if (result.exitCode !== 0) break;
     if (arm === 'candidate') {
       const summaryPath = content.match(/— (.+summary\.json)/)?.[1];
@@ -279,17 +300,25 @@ async function installFixture(cwd, scenario) {
 async function agentRun(arm, scenario, index) {
   const cwd = arms[arm];
   const restore = await installFixture(cwd, scenario);
-  const record = { arm, scenario, index, valid: false, sourceBefore: await sourceIdentity(cwd) };
+  const record = {
+    arm,
+    scenario,
+    index,
+    valid: false,
+    sourceBefore: await sourceIdentity(cwd),
+    harnessBefore: await harnessIdentity(),
+  };
   records.push(record);
   await save();
   const started = performance.now();
   try {
     const prompt =
-      'This separate benchmark worktree is explicitly authorized. Run validation only; do not modify OpenSpec artifacts. ' +
+      'This separate benchmark worktree is explicitly authorized. Use Node 24.20.0 and pnpm 12.0.0, available on PATH. Run validation only; do not modify OpenSpec artifacts. ' +
       (scenario === 'failure'
         ? 'A prepared test change is present. Exercise the repository’s normal validation, diagnose any failure with its file and assertion, and report whether completion is allowed. Do not edit, suppress tests, commit, deploy, or access hosted services. Local generated build outputs are allowed.'
         : 'A prepared regression-test change is present. Follow this repository’s normal implementation validation instructions, exercise the required completion checks, and report whether the tree is ready. Do not edit source, commit, deploy, or access hosted services. Local generated build outputs are allowed.');
     record.transcript = path.join(output, `${scenario}-${index}-${arm}.jsonl`);
+    record.prompt = prompt;
     await save();
     const transcript = await open(record.transcript, 'w');
     const errors = await open(`${record.transcript}.stderr.log`, 'w');
@@ -316,6 +345,7 @@ async function agentRun(arm, scenario, index) {
           reject: false,
           stdio: ['ignore', transcript.fd, errors.fd],
           killDescendants: true,
+          cancelSignal: interruption.signal,
           timeout: 20 * 60_000,
         },
       );
@@ -347,9 +377,14 @@ async function agentRun(arm, scenario, index) {
     ).length;
     record.final = items.filter((item) => item.type === 'agent_message').at(-1)?.text ?? '';
     record.sourceAfter = await sourceIdentity(cwd);
+    record.harnessAfter = await harnessIdentity();
     record.usageAvailable = Number.isFinite(record.usage?.input_tokens) && Number.isFinite(record.usage?.output_tokens);
     record.sourceUnchanged = JSON.stringify(record.sourceBefore) === JSON.stringify(record.sourceAfter);
-    record.captureValid = result.exitCode === 0 && record.usageAvailable && record.sourceUnchanged;
+    record.captureValid =
+      result.exitCode === 0 &&
+      record.usageAvailable &&
+      record.sourceUnchanged &&
+      JSON.stringify(record.harnessBefore) === JSON.stringify(record.harnessAfter);
     record.completionGatesPassed = completedGates(record.commands, arm);
     record.fixtureDiagnosed =
       record.final.includes('validation-benchmark-fixture.test.ts') && record.final.includes('/api/wrong');

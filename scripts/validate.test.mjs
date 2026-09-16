@@ -168,6 +168,14 @@ test('worktree guard rejects by default and accepts explicit authorization', asy
     root.replaceAll('\\', '/').replace(/\/$/, '').toLowerCase() === primary && branch === 'main' ? 0 : 1,
   );
   assert.equal((await run(['--allow-worktree'])).exitCode, 0);
+  if ((await run([])).exitCode === 1) {
+    const wrapper = await execa(process.execPath, ['--import', 'tsx', 'scripts/run-openspec.ts', '--', '--version'], {
+      cwd: root,
+      reject: false,
+    });
+    assert.equal(wrapper.exitCode, 1);
+    assert.match(wrapper.stderr, /main worktree/);
+  }
 });
 
 test('diagnostics retain failure context within a fixed output bound', () => {
