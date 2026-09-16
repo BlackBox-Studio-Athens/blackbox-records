@@ -7,6 +7,6 @@
 
 ## Verification and release
 
-- [ ] 5. Pass unit, check, build and browser checks; verify Free-tier budget.
-- [ ] 6. Rebase onto local main, merge, remove worktree and push the verified tree.
-- [ ] 7. Release and verify UAT; promote the accepted artifact and verify PRD.
+- [x] 5. Pass unit, check, build and browser checks; verify Free-tier budget.
+- [x] 6. Rebase onto local main, merge, remove worktree and push the verified tree.
+- [x] 7. Release and verify UAT; promote the accepted artifact and verify PRD.
