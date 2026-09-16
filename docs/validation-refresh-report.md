@@ -1,4 +1,10 @@
-# Refreshed local validation measurements — unaccepted
+# Refreshed local validation measurements — closed, unaccepted
+
+Closed at the user's request on 2026-09-17. No further benchmark retries or
+sandbox repairs are scheduled. The implementation and evidence remain in the
+review worktree, unmerged; main retains its existing validation behavior and
+required gates. No benchmark process or validation lock remained at closure.
+This closes the investigation, not the unmet acceptance criteria.
 
 Status: 2026-09-17. The full-command speed target is met. Overall acceptance is
 incomplete: the thirty-agent matrix stopped at its first candidate trial after
@@ -129,7 +135,7 @@ constraints propagate to child processes through restricted permissions; do not
 treat an unrestricted parent retry as proof of sandbox success. See the
 [Windows sandbox design](https://openai.com/index/building-codex-windows-sandbox/).
 
-Remaining: resolve the sandbox/output failure without weakening permissions or
+Only if explicitly reopened: resolve the sandbox/output failure without weakening permissions or
 gates; repeat controlled pilots if setup changes; complete all thirty agent trials
 with transcript review; run the additional five editor pairs; run the legacy three
 gates once against the final candidate as the explicit compatibility check.
