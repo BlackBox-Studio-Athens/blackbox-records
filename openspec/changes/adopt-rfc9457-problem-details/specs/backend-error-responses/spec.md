@@ -2,7 +2,7 @@
 
 ### Requirement: Worker API errors use a shared JSON contract
 
-The system MUST return RFC 9457 problem details with `application/problem+json` for BlackBox-owned JSON API error responses, preserving existing safe code and legacy message fields.
+The system MUST return RFC 9457 problem details with `application/problem+json` for migrated BlackBox-owned JSON API error responses, preserving existing safe codes and each route family's legacy error representation.
 
 #### Scenario: Public API returns an expected error
 
@@ -37,9 +37,22 @@ The system MUST return RFC 9457 problem details with `application/problem+json` 
 - **THEN** the upstream contract is preserved and documented as outside app-owned problem generation
 - **AND** consumers safely handle that response without exposing its raw body as an application error message.
 
+#### Scenario: App-owned CMS uses a legacy error variant
+
+- **WHEN** a migrated app-owned CMS route previously returned a safe string error code or a nested error object
+- **THEN** standard problem members are added alongside the unchanged legacy error representation and required discriminators
+- **AND** Hono's `error === detail` convention is not imposed on that CMS representation
+- **AND** private/no-store, authentication and runtime-publication recovery semantics remain intact.
+
+#### Scenario: Public renderer returns a document failure
+
+- **WHEN** the public gateway or renderer returns an HTML or plain-text error rather than an app-owned JSON API response
+- **THEN** that representation remains outside problem-details generation
+- **AND** no commerce API envelope is imposed on public documents or media.
+
 ### Requirement: Error schemas are shared across route contracts
 
-The system SHALL define its problem-details schema once, reuse it across migrated app-owned route families, and preserve compatibility with independently deployed browser clients.
+The system SHALL define its problem-details base schema once, extend it only with explicit typed legacy representations for migrated route families, and preserve compatibility with independently deployed browser clients.
 
 #### Scenario: Route documents an error response
 
@@ -51,7 +64,13 @@ The system SHALL define its problem-details schema once, reuse it across migrate
 
 - **WHEN** the error contract changes
 - **THEN** public/internal API descriptions and generated clients are regenerated and verified separately
-- **AND** legacy readers can still use `error`, while new readers prefer `detail` with legacy fallback.
+- **AND** legacy readers retain their existing `error` representation while new readers prefer safe `detail` with family-specific legacy fallback.
+
+#### Scenario: Native CMS is outside the generated Hono descriptions
+
+- **WHEN** a native app-owned CMS route changes its error representation
+- **THEN** existing CMS client fixtures verify its media type and legacy compatibility separately
+- **AND** generating the public/internal Hono documents is not presented as CMS schema coverage.
 
 #### Scenario: A response is outside the known schema
 

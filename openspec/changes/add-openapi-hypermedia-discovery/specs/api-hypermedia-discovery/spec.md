@@ -30,6 +30,12 @@ The system SHALL describe supported current actions with a relation, concrete ta
 - **THEN** it can resolve request headers, parameters, body schema, and response contracts from the referenced operation
 - **AND** it does not have to guess a route or infer mutation semantics from prose.
 
+#### Scenario: Native CMS lacks a generated operation
+
+- **WHEN** a permitted native CMS workflow is not described in the current Hono OpenAPI documents
+- **THEN** discovery may link to its existing authorized read resource or workspace handoff
+- **AND** it does not advertise an executable action with an invented or unresolved operation reference, expose service-only controls, or create a second schema source solely for discovery.
+
 #### Scenario: State does not permit an action
 
 - **WHEN** a workflow state or current permission rules out an action
@@ -60,6 +66,12 @@ The system MUST validate authentication, environment, permissions, current state
 - **WHEN** a client invokes an action with a stale revision or now-disabled checkout state
 - **THEN** execution fails through the documented safe error contract without an unauthorized or duplicate effect
 - **AND** refreshed discovery does not itself authorize resubmission.
+
+#### Scenario: An existing journaled action is discovered
+
+- **WHEN** discovery describes an item, price or publication operation already protected by a durable request identity
+- **THEN** its existing identity, revision, actor, same-origin and live-confirmation requirements remain authoritative
+- **AND** discovery does not impose a new checkout/stock identity format on that operation or mint fresh identities on GET.
 
 #### Scenario: Client receives a malicious link or description
 

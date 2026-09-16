@@ -43,6 +43,13 @@ The system MUST retain original provider request identity/parameters and pending
 - **THEN** the system resolves durable Session identity through supported recovery or reports an unresolved/review outcome
 - **AND** it does not blindly repeat creation or release a potentially payable hold.
 
+#### Scenario: Price or delivery policy changes before retry
+
+- **WHEN** the same caller intent is retried after a server-side price, parcel tariff or monetary-policy change
+- **THEN** lookup resolves the original attempt before new quote/reconciliation/reservation work and reuses its immutable accepted provider parameters
+- **AND** current launch/capability and provider-state checks still apply without a second hold or repricing the original attempt
+- **AND** existing monetary snapshots, paid/review finalization and outbox replay remain authoritative.
+
 #### Scenario: An attempt is terminal
 
 - **WHEN** a completed, expired, or review-required attempt is retried with its old key
@@ -64,3 +71,9 @@ The system SHALL keep retry identity separate from StoreCart, restrict it to its
 - **WHEN** key support is rolled out across independent server/client releases
 - **THEN** the compatibility bridge explicitly identifies keyless legacy calls as outside retry protection
 - **AND** final acceptance requires keys on maintained checkout clients and safe rejection of keyless new attempts.
+
+#### Scenario: Another operation already has retry identity
+
+- **WHEN** an item, price or selected-record/batch publication request uses its existing durable operation ID
+- **THEN** that accepted identity and recovery contract remain unchanged
+- **AND** neither those operations nor the read-only delivery-quote POST acquire a checkout idempotency-header requirement.

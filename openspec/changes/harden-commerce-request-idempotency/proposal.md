@@ -4,7 +4,7 @@ A double-click or response lost after a successful write can create another pend
 
 ## What Changes
 
-- Audit the completed EmDash item/price operation journal, existing order/provider recovery, webhook deduplication, stock transactions, and recount revision checks before adding anything.
+- Reuse completed item/price journals, durable selected-record/batch publication identity, order/provider recovery, webhook deduplication, stock transactions and recount revision checks; add protection only where checkout/stock retry identity is still missing.
 - Give a checkout attempt one opaque client request identity and one persisted pending CheckoutOrder; reuse the identity for retries and use a new identity for a new intentional attempt.
 - Make stock adjustment and recount retries recover their original committed ledger result without repeating a write; preserve the original recount revision for first execution.
 - Persist input fingerprints and request identity in the existing D1-owned order/ledger scope wherever feasible; use database uniqueness and atomic writes instead of a memory cache or generic middleware store.
@@ -23,6 +23,6 @@ None.
 
 ## Impact
 
-Blocked until `replace-sveltia-with-emdash-operations` completes final acceptance/handoff and spec reconciliation. Follow RFC 9457 for the resulting conflict/retry contract. The user's low-volume guidance resolves the initial scope discussion; wider mutation unification is deferred. See [the sequence](../verify-http3-transport-coverage/planning-evidence.md).
+Revised on 2026-09-17 after accepted EmDash cutover and runtime-publication rollout. Reuse those receipts and reconcile affected current checkout/stock contracts; archive and dormant cleanup are not blockers. Follow RFC 9457 for the conflict/retry contract. Preserve implemented monetary-policy and paid-order recovery semantics without treating their outstanding hosted/business acceptance as completed by this work. The user's low-volume guidance resolves scope; wider mutation unification remains deferred. See [the current sequence](../verify-http3-transport-coverage/proposal.md).
 
 Expected changes are additive D1/Prisma fields/constraints, existing repository/application seams, selected request headers and CORS allowance, generated clients, browser attempt state, and concurrency/recovery tests. Keep attempt metadata separate from StoreCart contents. No Redis, KV, queue, new scheduled cleanup, generic operation bus, or rewrite of the EmDash journal. New required request identity is a contract change and must use the staged compatibility rollout described in the design.

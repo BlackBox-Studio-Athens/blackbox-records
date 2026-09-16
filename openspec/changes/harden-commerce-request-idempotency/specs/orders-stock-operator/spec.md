@@ -2,7 +2,7 @@
 
 ### Requirement: Keyed operator stock retries apply one ledger effect
 
-The system SHALL commit each keyed StockChange or StockCount and its request identity atomically, scoped to the verified actor, operation, and Product Environment, so a recognized retry does not repeat stock or ledger effects.
+The system SHALL commit each keyed StockChange or StockCount and its request identity atomically, scoped to the verified actor, operation, and Product Environment, so a recognized retry does not repeat stock or ledger effects. Existing item/price/publication journals and paid-order stock/outbox deduplication SHALL retain their current contracts rather than being moved into a generic request journal.
 
 #### Scenario: A stock adjustment acknowledgement is lost
 
