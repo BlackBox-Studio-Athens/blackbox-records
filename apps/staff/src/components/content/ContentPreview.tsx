@@ -14,6 +14,7 @@ export default function ContentPreview({
   slug,
   data,
   base,
+  restoreScroll,
   active,
   dirty,
   valid,
@@ -23,6 +24,7 @@ export default function ContentPreview({
   slug: string;
   data: ContentData;
   base: string;
+  restoreScroll?: { x: number; y: number } | undefined;
   active: boolean;
   dirty: boolean;
   valid: boolean;
@@ -61,6 +63,27 @@ export default function ContentPreview({
   useLayoutEffect(() => {
     currentInput.current = inputKey;
   }, [inputKey]);
+  useLayoutEffect(() => {
+    if (restoreScroll) scroll.current = { x: restoreScroll.x, y: restoreScroll.y };
+  }, [restoreScroll?.x, restoreScroll?.y]);
+  useEffect(() => {
+    if (!active || !rendered) return;
+    const restore = () => {
+      frame.current?.contentWindow?.scrollTo(scroll.current.x, scroll.current.y);
+    };
+    restore();
+    const animationFrame = requestAnimationFrame(restore);
+    return () => cancelAnimationFrame(animationFrame);
+  }, [active, rendered?.generation]);
+  useEffect(() => {
+    const contentWindow = frame.current?.contentWindow;
+    if (!contentWindow || !rendered) return;
+    const capture = () => {
+      scroll.current = { x: contentWindow.scrollX, y: contentWindow.scrollY };
+    };
+    contentWindow.addEventListener('scroll', capture, { passive: true });
+    return () => contentWindow.removeEventListener('scroll', capture);
+  }, [rendered?.generation]);
   useEffect(() => {
     const update = () => setVisible(document.visibilityState === 'visible');
     update();
@@ -426,7 +449,9 @@ export default function ContentPreview({
                       ? document.querySelector(collection === 'newsletter' ? '#newsletter-signup-area' : 'footer')
                       : null;
                   if (target) {
-                    iframe.contentWindow?.scrollTo(0, target.getBoundingClientRect().top - 96);
+                    const targetY = target.getBoundingClientRect().top - 96;
+                    scroll.current = { x: 0, y: targetY };
+                    iframe.contentWindow?.scrollTo(0, targetY);
                   } else iframe.contentWindow?.scrollTo(scroll.current.x, scroll.current.y);
                   firstRender.current = false;
                   resetScroll.current = false;

@@ -84,7 +84,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
 
   if (state.denied)
     return (
-      <div className="order-workspace order-access">
+      <div className="staff-workspace order-workspace order-access">
         <LockKeyhole size={36} aria-hidden="true" />
         <h1 ref={heading} tabIndex={-1}>
           Access required
@@ -103,7 +103,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
     );
 
   return (
-    <div className="order-workspace">
+    <div className="staff-workspace order-workspace">
       {state.selected && (
         <a
           className="order-back"

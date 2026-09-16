@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import '../../styles/content.css';
-import { Check, ImageIcon, Search, Upload } from 'lucide-react';
+import { Check, ImageIcon, LayoutGrid, List as ListIcon, Search, Upload } from 'lucide-react';
 import { Button } from '../ui/button';
+import { ButtonGroup } from '../ui/button-group';
 import { Input } from '../ui/input';
 import { Field, FieldLabel, FieldDescription, FieldError } from '../ui/field';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
@@ -17,6 +18,12 @@ import {
   type EditorialMedia,
   type EditorialList,
 } from '../../lib/backend/editorial-api';
+
+function cropSuitability(item: EditorialMedia) {
+  if (!item.width || !item.height) return 'Crop unknown';
+  const ratio = item.width / item.height;
+  return Math.abs(ratio - 3 / 4) <= 0.08 ? '3:4 crop friendly' : 'Review crop';
+}
 
 export function MediaImage({ item, base, className = '' }: { item: EditorialMedia; base: string; className?: string }) {
   const [failed, setFailed] = useState(false);
@@ -58,6 +65,7 @@ export default function MediaLibrary({
   const [message, setMessage] = useState('');
   const [error, setError] = useState(false);
   const [detail, setDetail] = useState<EditorialMedia | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const detailTrigger = useRef<HTMLElement | null>(null);
   const sequence = useRef(0);
   const busy = loading || uploading || disabled;
@@ -109,7 +117,7 @@ export default function MediaLibrary({
 
   return (
     <div className="cms-media grid min-w-0 gap-6">
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <Field className="min-w-48 flex-1">
           <FieldLabel htmlFor={`${id}-search`}>Search images</FieldLabel>
           <InputGroup className="h-11">
@@ -131,9 +139,36 @@ export default function MediaLibrary({
             />
           </InputGroup>
         </Field>
-        <Button type="button" variant="outline" disabled={busy} onClick={() => void search()}>
-          Search
-        </Button>
+        <div className="flex flex-wrap items-end gap-3">
+          <Button type="button" variant="outline" disabled={busy} onClick={() => void search()}>
+            <Search aria-hidden="true" />
+            Search
+          </Button>
+          <ButtonGroup aria-label="Image view">
+            <Button
+              type="button"
+              size="icon"
+              variant={viewMode === 'grid' ? 'secondary' : 'outline'}
+              aria-pressed={viewMode === 'grid'}
+              aria-label="Grid view"
+              title="Grid view"
+              onClick={() => setViewMode('grid')}
+            >
+              <LayoutGrid aria-hidden="true" />
+            </Button>
+            <Button
+              type="button"
+              size="icon"
+              variant={viewMode === 'list' ? 'secondary' : 'outline'}
+              aria-pressed={viewMode === 'list'}
+              aria-label="List view"
+              title="List view"
+              onClick={() => setViewMode('list')}
+            >
+              <ListIcon aria-hidden="true" />
+            </Button>
+          </ButtonGroup>
+        </div>
       </div>
       {/* blocks.so/file-upload/file-upload-02: native upload field, adapted to the existing CMS command. */}
       <Field className="rounded-lg border border-dashed border-border bg-muted/20 p-4">
@@ -171,7 +206,7 @@ export default function MediaLibrary({
       <div
         aria-busy={loading}
         aria-label="Images"
-        className="grid grid-cols-2 gap-3 @[36rem]:grid-cols-3 @[56rem]:grid-cols-4"
+        className={viewMode === 'grid' ? 'cms-media-grid' : 'cms-media-list'}
       >
         {loading && items.length === 0
           ? Array.from({ length: 6 }, (_, index) => <Skeleton key={index} className="aspect-square rounded-lg" />)
@@ -183,7 +218,7 @@ export default function MediaLibrary({
                 variant="outline"
                 disabled={busy}
                 aria-pressed={onSelect ? value === item.id : undefined}
-                className="relative h-auto min-w-0 flex-col gap-0 overflow-hidden p-0 text-left whitespace-normal aria-pressed:border-ring aria-pressed:ring-2 aria-pressed:ring-ring"
+                className={`cms-media-card relative h-auto min-w-0 gap-0 overflow-hidden p-0 text-left whitespace-normal aria-pressed:border-ring aria-pressed:ring-2 aria-pressed:ring-ring ${viewMode === 'grid' ? 'flex-col' : 'cms-media-list-card'}`}
                 onClick={(event) => {
                   if (onSelect) onSelect(item);
                   else {
@@ -195,12 +230,17 @@ export default function MediaLibrary({
                 <AspectRatio ratio={4 / 3} className="w-full bg-muted/30 p-2">
                   <MediaImage item={item} base={base} />
                 </AspectRatio>
-                <span className="w-full truncate border-t border-border p-3 text-sm">{item.filename}</span>
-                {item.width && item.height && (
-                  <span className="w-full px-3 pb-3 text-xs text-muted-foreground">
-                    {item.width} × {item.height} px
-                  </span>
-                )}
+                <span className="cms-media-filename w-full truncate border-t border-border p-3 text-sm">
+                  {item.filename}
+                </span>
+                <span className="cms-media-meta w-full flex-wrap gap-x-3 gap-y-1 px-3 pb-3 text-xs text-muted-foreground">
+                  {item.width && item.height && (
+                    <span>
+                      {item.width} × {item.height} px
+                    </span>
+                  )}
+                  <span>{cropSuitability(item)}</span>
+                </span>
                 {value === item.id && (
                   <span className="absolute top-2 right-2 rounded-full bg-primary p-1 text-primary-foreground">
                     <Check className="size-4" aria-hidden="true" />

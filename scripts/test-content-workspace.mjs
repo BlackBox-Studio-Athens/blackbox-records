@@ -383,7 +383,13 @@ else {
     state.detailDelay = 50;
     await page.goto(`${origin}/stock/?variantId=first`);
     await page.waitForFunction(() => document.querySelector('#stock-count-counted-quantity')?.value === '17');
+    await page.getByRole('button', { name: 'Count stock', exact: true }).click();
     assert.equal(await page.getByRole('button', { name: 'Save count', exact: true }).isEnabled(), true);
+    for (const width of [390, 768]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
     assert.equal(await page.getByText('Loading stock history', { exact: true }).isVisible(), true);
     assert.equal(await page.getByRole('button', { name: 'Searching items', exact: true }).isEnabled(), false);
     await page.getByRole('button', { name: 'first Label release', exact: true }).waitFor();
@@ -397,12 +403,16 @@ else {
     await page.waitForFunction(() => document.querySelector('#stock-count-counted-quantity')?.value === '29');
     await new Promise((resolve) => setTimeout(resolve, 1100));
     assert.equal(await page.locator('#stock-count-counted-quantity').inputValue(), '29');
+    await page.getByRole('button', { name: 'Adjust stock', exact: true }).click();
+    await page.getByText('After this change', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Count stock', exact: true }).click();
     state.searchFailure = true;
     state.historyFailure = true;
     state.searchDelay = state.historyDelay = state.detailDelay = 0;
     await page.reload();
     await page.getByRole('alert').filter({ hasText: 'History could not load' }).waitFor();
     await page.waitForFunction(() => document.querySelector('#stock-count-counted-quantity')?.value === '29');
+    await page.getByRole('button', { name: 'Count stock', exact: true }).click();
     assert.equal(await page.getByRole('button', { name: 'Save count', exact: true }).isEnabled(), true);
     state.searchFailure = state.historyFailure = false;
     const errors = [];
@@ -585,12 +595,12 @@ else {
     await page.keyboard.press('Escape');
     state.publication = 'failed';
     await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
-    await page.getByRole('button', { name: 'Publication failed', exact: true }).click();
+    await page.getByRole('button', { name: /Publication failed/ }).click();
     await page.getByText('Publication failed. Select Publish changes to try again.', { exact: true }).waitFor();
     await page.keyboard.press('Escape');
     state.publication = 'live';
     await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
-    await page.getByRole('button', { name: 'Latest publication live', exact: true }).click();
+    await page.getByRole('button', { name: /Latest publication live/ }).click();
     await page.getByText('Publication is live on fresh public page loads.', { exact: true }).waitFor();
     await page.keyboard.press('Escape');
     const editor = page.getByRole('textbox', { name: 'Full text', exact: true });
@@ -602,6 +612,9 @@ else {
     await page.getByRole('button', { name: 'Images', exact: true }).click();
     await page.getByRole('button', { name: 'Show more images' }).click();
     await page.getByRole('button', { name: 'Chronoboros-band-logo.jpg', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'List view', exact: true }).click();
+    await page.locator('.cms-media-list-card').first().waitFor();
+    await page.getByRole('button', { name: 'Grid view', exact: true }).click();
     await page.getByLabel('Search images', { exact: true }).fill('no-match');
     await page.getByRole('button', { name: 'Search', exact: true }).filter({ visible: true }).click();
     await page.getByText('No matching images', { exact: true }).waitFor();
@@ -736,6 +749,16 @@ else {
     await page.getByRole('button', { name: 'Choose artwork', exact: true }).click();
     await page.getByRole('button', { name: 'uploaded.png', exact: true }).click();
     await page.getByRole('button', { name: 'Change artwork', exact: true }).waitFor();
+    await page.getByText('Ready to continue', { exact: true }).waitFor();
+    await page.goto(`${origin}/orders/`);
+    await page.getByRole('heading', { name: 'Orders', exact: true }).waitFor();
+    await page.locator('.order-toolbar select').first().waitFor();
+    await page.getByText('Latest 100 orders by creation time', { exact: false }).waitFor();
+    for (const width of [390, 768]) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    }
+    await page.setViewportSize({ width: 1440, height: 1000 });
     assert.equal(await page.locator('.staff-header').evaluate((el) => getComputedStyle(el).position), 'static');
     assert.deepEqual(errors, []);
     const responsive = await browser.newPage({ viewport: { width: 1600, height: 900 }, reducedMotion: 'reduce' });
@@ -821,6 +844,10 @@ else {
     await polling.getByRole('button', { name: /Publishing.*pending/ }).waitFor();
     const refreshButton = polling.getByRole('button', { name: 'Refresh publication status', exact: true });
     assert.equal(await refreshButton.isVisible(), true, 'Refresh is available without opening history');
+    await polling.getByRole('button', { name: /Publishing.*pending/ }).click();
+    await polling.getByText('Current', { exact: true }).waitFor();
+    await polling.getByText('Earlier failure', { exact: true }).first().waitFor();
+    await polling.keyboard.press('Escape');
     const refreshed = polling.waitForResponse('**/_emdash/api/blackbox/publications');
     await refreshButton.click();
     await refreshed;

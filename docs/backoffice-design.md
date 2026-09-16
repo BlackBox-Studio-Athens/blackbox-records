@@ -88,7 +88,7 @@ Effort is relative: Small uses existing data and components; Medium changes a mu
 
 Review Content, Images, Items, Stock and Orders at 390, 768, 1280 and 1600 px. Exercise keyboard navigation, focus return, touch targets, reduced motion, contrast, empty/loading/error states, and unsaved-change protection. Check cross-workspace terminology before adding a new component.
 
-Current evidence and unresolved hosted acceptance are recorded in [preview validation](../openspec/changes/improve-content-workspace-previews/validation.md). Fixture screenshots are local under `.codex-artifacts/content-workspace/`; they are not proof of hosted production behavior.
+Current evidence and unresolved hosted acceptance are recorded in [preview validation](../openspec/changes/improve-content-workspace-previews/validation.md) and the [publication status refresh validation](../openspec/changes/publication-status-and-backoffice-refresh/validation.md). Fixture screenshots are local under `.codex-artifacts/content-workspace/`; they are not proof of hosted production behavior.
 
 ## Second research round — 2026-09-16
 
@@ -115,17 +115,42 @@ This round focused on safe editing and the existing Content / Images slice. The 
 
 ### Three ideas per workspace after the second round
 
-The first three Content ideas and the first Images idea are selected above. The other ideas remain proposed for later slices.
+The three Content ideas, the first two Images ideas, the first two Items ideas, and all three Stock and Orders ideas are selected for the current refresh. The remaining ideas stay proposed for later slices.
 
-| Workspace | Idea 1                                                                     | Idea 2                                                           | Idea 3                                                              |
-| --------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------- |
-| Content   | Inline field validation and focus to the first invalid value. **Selected** | Visible discard recovery with confirmation. **Selected**         | Grouped fieldsets and sticky actions. **Selected**                  |
-| Images    | Field-aware picker errors and suitability metadata. **Selected**           | Compact grid / list view for recognition or comparison. Proposed | Preserve search, scroll, and calling-field return context. Proposed |
-| Items     | Readiness checklist linked to the fields that block handoff. Proposed      | Field-level commercial validation before publication. Proposed   | Related-content handoff that preserves the selected item. Proposed  |
-| Stock     | Explicit adjustment and recount modes. Proposed                            | Before-and-after quantities beside submission. Proposed          | Compact history for quantity, reason, and time. Proposed            |
-| Orders    | Quick filters for common operational states. Proposed                      | Clearer status identity in each order row. Proposed              | Grouped payment, delivery, and notification details. Proposed       |
+| Workspace | Idea 1                                                                     | Idea 2                                                               | Idea 3                                                              |
+| --------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| Content   | Inline field validation and focus to the first invalid value. **Selected** | Visible discard recovery with confirmation. **Selected**             | Grouped fieldsets and sticky actions. **Selected**                  |
+| Images    | Field-aware picker errors and suitability metadata. **Selected**           | Compact grid / list view for recognition or comparison. **Selected** | Preserve search, scroll, and calling-field return context. Proposed |
+| Items     | Readiness checklist linked to the fields that block handoff. **Selected**  | Field-level commercial validation before publication. **Selected**   | Related-content handoff that preserves the selected item. Proposed  |
+| Stock     | Explicit adjustment and recount modes. **Selected**                        | Before-and-after quantities beside submission. **Selected**          | Compact history for quantity, reason, and time. **Selected**        |
+| Orders    | Quick filters for common operational states. **Selected**                  | Clearer status identity in each order row. **Selected**              | Grouped payment, delivery, and notification details. **Selected**   |
+
+### Publication status truth and visual refresh — 2026-09-16
+
+The top-right publication indicator represents the current request, not the most alarming retained history row. The summarizer uses this order:
+
+1. `Publishing…` while the current request is being submitted.
+2. `Publishing · N pending` when the newest journal entry is pending.
+3. `Publication failed` when the newest journal entry failed.
+4. `Latest publication live` when the newest journal entry is live.
+5. `Publication status unavailable` when the current state cannot be trusted.
+
+History is an audit trail. Keep every row, label the newest row **Current**, and label older failures as historical. A status-read error is separate from the publication message, so a failed refresh cannot reinterpret an old row or claim Live. The refresh action stays visible beside the status and pending polling continues only while the page is visible and inside its existing bound.
+
+The second research round selected the following visual work for the current refresh:
+
+| Workspace | Implemented visual treatment                                                                                                      |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Content   | Clear current publication hierarchy, compact history rows, current-request marker, tighter toolbar, and consistent status alerts. |
+| Images    | Grid/list density switch, selected and focused states, dimensions, crop-suitability guidance, and field-aware error treatment.    |
+| Items     | Grouped setup sections, a compact readiness checklist, and clearer next-step context.                                             |
+| Stock     | Compact operator header, Adjust/Count modes, before/after quantities, and denser history.                                         |
+| Orders    | Compact filter toolbar, status pills, stronger order-row hierarchy, and grouped detail facts.                                     |
+
+These changes use the installed Lucide and shadcn/Radix primitives, Inter/system typography, existing API data, and existing permission/recovery boundaries. They do not add a component library, commerce action, publication endpoint, or interactive preview behavior. The remaining research ideas in the tables above stay proposed until a separate slice selects them.
 
 ### Decision history
 
 - 2026-09-16: created a staff-specific reference following research across twelve products. Shared consistency and reliability rules accepted; the initial workspace ideas remained Proposed until the second research round. Public branding and commerce permissions unchanged.
 - 2026-09-16: selected Content inline validation, discard recovery, grouped fieldsets, and field-aware Images errors for the editor safety slice. Items, Stock, and Orders remain proposed for later work.
+- 2026-09-16: selected and implemented the publication-status priority rule and the visual refresh for Content, Images, Items, Stock, and Orders. Retained publication history remains unchanged; current-state status is derived separately.

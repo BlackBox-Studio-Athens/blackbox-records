@@ -104,6 +104,54 @@ body[data-workspace='content'] > main {
 .cms-media {
   container-type: inline-size;
 }
+.cms-media-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.cms-media-list {
+  display: grid;
+  gap: 0.5rem;
+}
+.cms-media-card {
+  border-color: var(--border);
+  background: color-mix(in oklch, var(--card) 70%, transparent);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+.cms-media-card:hover {
+  border-color: var(--ring);
+  background: var(--accent);
+}
+.cms-media-card:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.cms-media-meta {
+  display: flex;
+}
+.cms-media-list-card {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr) auto;
+  align-items: center;
+  text-align: left;
+}
+.cms-media-list-card > [data-slot='aspect-ratio'] {
+  width: 6rem;
+  border-radius: 0.375rem;
+}
+.cms-media-list-card > .cms-media-filename {
+  width: auto;
+  border-top: 0;
+  padding: 0.75rem;
+}
+.cms-media-list-card > .cms-media-meta {
+  width: auto;
+  display: grid;
+  justify-items: end;
+  padding: 0.75rem;
+}
 .cms-workspace-bar > [data-slot='separator'] {
   height: 1.25rem;
 }
@@ -219,9 +267,45 @@ body[data-workspace='content'] > main {
   display: none;
 }
 .cms-publication-trigger {
+  min-width: 0;
   white-space: normal;
   text-align: left;
   font-size: 0.75rem;
+}
+.cms-publication-trigger [data-slot='badge'] {
+  flex-shrink: 0;
+}
+.cms-publication-refresh {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+}
+.cms-publication-refresh:hover {
+  color: var(--foreground);
+}
+.cms-refreshing {
+  animation: cms-refresh-spin 900ms linear infinite;
+}
+.cms-publication-history-row {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-block: 0.75rem;
+  font-size: 0.75rem;
+}
+.cms-publication-history-row time {
+  flex-shrink: 0;
+  color: var(--muted-foreground);
+  text-align: right;
+}
+.cms-publication-history-row details summary {
+  width: fit-content;
+}
+
+@keyframes cms-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (min-width: 1100px) {
@@ -241,6 +325,16 @@ body[data-workspace='content'] > main {
   }
   .cms-preview-pane[data-state='inactive'] {
     display: block;
+  }
+}
+@media (min-width: 768px) {
+  .cms-media-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1100px) {
+  .cms-media-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 @media (max-width: 1099px) {
@@ -339,5 +433,8 @@ body[data-workspace='content'] > main {
   .cms-surface *::after {
     animation: none !important;
     transition: none !important;
+  }
+  .cms-refreshing {
+    animation: none;
   }
 }

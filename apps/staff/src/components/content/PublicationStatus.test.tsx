@@ -1,16 +1,77 @@
-import { expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import PublicationStatus from './PublicationStatus';
+import PublicationStatus, { summarizePublicationStatus } from './PublicationStatus';
 import type { ContentPublication } from '../../lib/backend/content-publication-api';
 
-it('distinguishes pending, unresolved failure, confirmed live and unavailable history', () => {
-  const render = (items: ContentPublication[], message = '') =>
-    renderToStaticMarkup(<PublicationStatus items={items} message={message} refresh={async () => {}} />);
-  const failed: ContentPublication = { id: 'failed', status: 'failed', requestedAt: 1 };
-  expect(render([{ id: 'pending', status: 'pending', requestedAt: 2 }])).toContain('Publishing · 1 pending');
-  expect(render([failed])).toContain('Publication failed');
-  expect(render([{ id: 'live', status: 'live', requestedAt: 2 }, failed])).toContain('Latest publication live');
-  expect(render([], 'Publication status is unavailable.')).toContain('Publication status unavailable');
-  expect(render([])).not.toContain('Latest publication live');
-  expect(render([failed])).toContain('aria-label="Refresh publication status"');
+const publication = (id: string, status: ContentPublication['status'], requestedAt: number): ContentPublication => ({
+  id,
+  status,
+  requestedAt,
+});
+
+describe('summarizePublicationStatus', () => {
+  it('lets a newer pending request outrank an older failure', () => {
+    expect(
+      summarizePublicationStatus([publication('pending', 'pending', 2), publication('failed', 'failed', 1)]),
+    ).toMatchObject({ view: 'pending', label: 'Publishing · 1 pending' });
+  });
+
+  it('lets a newer live request outrank an older failure', () => {
+    expect(
+      summarizePublicationStatus([publication('live', 'live', 2), publication('failed', 'failed', 1)]),
+    ).toMatchObject({ view: 'live', label: 'Latest publication live' });
+  });
+
+  it('reports the newest failure', () => {
+    expect(
+      summarizePublicationStatus([publication('failed', 'failed', 2), publication('live', 'live', 1)]),
+    ).toMatchObject({
+      view: 'failed',
+      label: 'Publication failed',
+    });
+  });
+
+  it('shows an in-flight request before server history exists', () => {
+    expect(summarizePublicationStatus([publication('failed', 'failed', 1)], { requesting: true })).toMatchObject({
+      view: 'requesting',
+      label: 'Publishing…',
+    });
+  });
+
+  it('keeps a known state stale when status refresh fails', () => {
+    expect(
+      summarizePublicationStatus([publication('pending', 'pending', 1)], { statusError: 'Status unavailable.' }),
+    ).toMatchObject({ view: 'pending', stale: true });
+    expect(summarizePublicationStatus([], { statusError: 'Status unavailable.' })).toMatchObject({
+      view: 'unavailable',
+      label: 'Publication status unavailable',
+    });
+  });
+
+  it('reports empty history explicitly', () => {
+    expect(summarizePublicationStatus([])).toMatchObject({ view: 'empty', label: 'Publication history' });
+  });
+});
+
+it('renders the current status and direct refresh action', () => {
+  const html = renderToStaticMarkup(
+    <PublicationStatus
+      items={[publication('pending', 'pending', 2), publication('failed', 'failed', 1)]}
+      message="Publication requested. Wait for Live."
+      refresh={async () => {}}
+    />,
+  );
+  expect(html).toContain('Publishing · 1 pending');
+  expect(html).toContain('aria-label="Refresh publication status"');
+});
+
+it('does not let an operation message reclassify history', () => {
+  const html = renderToStaticMarkup(
+    <PublicationStatus
+      items={[publication('live', 'live', 2), publication('failed', 'failed', 1)]}
+      message="Publication failed. Select Publish changes to try again."
+      refresh={async () => {}}
+    />,
+  );
+  expect(html).toContain('Latest publication live');
 });

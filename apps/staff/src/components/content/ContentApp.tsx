@@ -109,6 +109,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [ready, setReady] = useState(false);
   const [preview, setPreview] = useState(false);
   const [desktopPreview, setDesktopPreview] = useState(false);
+  const [previewScroll, setPreviewScroll] = useState({ key: '', x: 0, y: 0 });
   useEffect(() => {
     try {
       setDesktopPreview(localStorage.getItem('blackbox-content-preview') === 'open');
@@ -117,6 +118,18 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     }
   }, []);
   function togglePreview() {
+    if (desktopPreview) {
+      const contentWindow = window.document.querySelector<HTMLIFrameElement>(
+        'iframe[title="Private site appearance preview"]',
+      )?.contentWindow;
+      if (contentWindow) {
+        setPreviewScroll({
+          key: document ? `${collection}:${document.item.id || document.item.slug}` : '',
+          x: contentWindow.scrollX,
+          y: contentWindow.scrollY,
+        });
+      }
+    }
     const next = !desktopPreview;
     setDesktopPreview(next);
     try {
@@ -139,6 +152,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [pendingNew, setPendingNew] = useState<ContentData | null>(null);
   const [publications, setPublications] = useState<ContentPublication[]>([]);
   const [publicationMessage, setPublicationMessage] = useState('');
+  const [publicationStatusError, setPublicationStatusError] = useState('');
+  const [requestingPublication, setRequestingPublication] = useState(false);
   const [pendingPublication, setPendingPublication] = useState<PublicationRequest | null>(null);
   const pendingKey = `blackbox-content-create:${base}`;
   const publicationKey = `blackbox-content-publication:${base}`;
@@ -168,14 +183,16 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     try {
       const result = await readContentPublications(base);
       setPublications(result.items);
+      setPublicationStatusError('');
       setPublicationMessage(result.items.length ? '' : 'No publication requests yet.');
     } catch {
-      setPublicationMessage('Publication status is unavailable. Check again before assuming a change is live.');
+      setPublicationStatusError('Publication status is unavailable. Check again before assuming a change is live.');
     }
   }
   async function publish() {
     if (busy || dirty || conflict || !document?.item.id || !requireValidContent()) return;
     setBusy(true);
+    setRequestingPublication(true);
     setPublicationMessage('Requesting publication…');
     try {
       let input = pendingPublication;
@@ -212,6 +229,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       }
       setPublicationMessage(error instanceof Error ? error.message : 'Publication could not be confirmed.');
     } finally {
+      setRequestingPublication(false);
       setBusy(false);
     }
   }
@@ -513,7 +531,13 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
             </BreadcrumbList>
           </Breadcrumb>
           <div className="ml-auto">
-            <PublicationStatus items={publications} message={publicationMessage} refresh={publicationStatus} />
+            <PublicationStatus
+              items={publications}
+              requesting={requestingPublication}
+              statusError={publicationStatusError}
+              message={publicationMessage}
+              refresh={publicationStatus}
+            />
           </div>
           {media && document && (
             <Button
@@ -875,6 +899,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 slug={document.item.slug}
                 data={data}
                 base={base}
+                restoreScroll={
+                  previewScroll.key === `${collection}:${document.item.id || document.item.slug}`
+                    ? previewScroll
+                    : undefined
+                }
                 dirty={dirty}
                 valid={validation.valid}
                 active={!media && (wide ? desktopPreview : preview)}

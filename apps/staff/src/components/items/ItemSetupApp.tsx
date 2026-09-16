@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { DISTRO_GROUP_VALUES } from '@blackbox/content-model';
+import { CheckCircle2, CircleAlert } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
@@ -138,6 +139,18 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   const draftKey = `blackbox-release-draft:${backendBaseUrl}`;
   const sell = kind !== 'release' || mode === 'existing' || sellRelease;
   const locked = !ready || busy || !!pending || !!draftPending || needsReview || !!completed || !!draftSaved;
+  const setupReadiness = [
+    {
+      label: 'Record details',
+      ready: mode === 'existing' ? !!existing : !!title.trim() && (kind !== 'release' || (!!artist && !!date)),
+    },
+    { label: 'Artwork', ready: mode === 'existing' || (!!image && !!alt.trim()) },
+    {
+      label: sell ? 'Price' : 'Shop setup skipped',
+      ready: !sell || (!!amount.trim() && (!custom || (!!minimum.trim() && !!maximum.trim()))),
+    },
+    { label: sell ? 'Starting stock' : 'Release draft', ready: !sell || /^\d+$/.test(quantity) },
+  ];
   useEffect(() => {
     setReady(true);
     const saved = sessionStorage.getItem(storageKey);
@@ -225,17 +238,17 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   }
   const inputClass = 'min-h-11 w-full min-w-0 border border-border bg-background p-2';
   return (
-    <div className="mx-auto grid max-w-3xl gap-8 px-4 py-8 sm:px-8">
-      <header className="grid gap-3">
+    <div className="staff-workspace staff-item-setup mx-auto grid max-w-3xl gap-8 px-4 py-8 sm:px-8">
+      <header className="staff-workspace-hero grid gap-3">
         <a href="/items/" className="underline">
           Back to items
         </a>
-        <h1 className="font-display text-4xl">Create an item</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Create an item</h1>
         <p>New items stay unpublished until you publish them.</p>
       </header>
-      <form onSubmit={submit} className="grid gap-8">
-        <fieldset disabled={locked} className="grid min-w-0 gap-5">
-          <legend className="mb-4 text-xl font-semibold">1. Item details</legend>
+      <form onSubmit={submit} className="staff-form grid gap-8">
+        <fieldset disabled={locked} className="staff-form-section grid min-w-0 gap-5">
+          <legend className="staff-section-title mb-4 text-xl font-semibold">1. Item details</legend>
           <label className="grid gap-2">
             What are you adding?
             <select
@@ -364,8 +377,8 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           )}
         </fieldset>
         {sell && (
-          <fieldset disabled={locked} className="grid min-w-0 gap-5">
-            <legend className="mb-4 text-xl font-semibold">2. Price and starting stock</legend>
+          <fieldset disabled={locked} className="staff-form-section grid min-w-0 gap-5">
+            <legend className="staff-section-title mb-4 text-xl font-semibold">2. Price and starting stock</legend>
             <label className="flex min-h-11 items-center gap-3">
               <input type="checkbox" checked={custom} onChange={(event) => setCustom(event.target.checked)} />
               Let buyers choose what to pay
@@ -421,6 +434,21 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
             </label>
           </fieldset>
         )}
+        <section className="staff-readiness" aria-label="Item setup readiness">
+          <div>
+            <p className="staff-section-title">Ready to continue</p>
+            <p className="text-sm text-muted-foreground">Complete the required steps before checking the item.</p>
+          </div>
+          <div className="staff-readiness-items">
+            {setupReadiness.map((item) => (
+              <div key={item.label} className={item.ready ? 'staff-readiness-item is-ready' : 'staff-readiness-item'}>
+                {item.ready ? <CheckCircle2 aria-hidden="true" /> : <CircleAlert aria-hidden="true" />}
+                <span>{item.label}</span>
+                <span className="sr-only">{item.ready ? 'ready' : 'needs attention'}</span>
+              </div>
+            ))}
+          </div>
+        </section>
         {!completed && !draftSaved && (
           <Button type="submit" disabled={!ready || busy || needsReview}>
             {busy

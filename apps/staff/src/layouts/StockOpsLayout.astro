@@ -30,8 +30,8 @@ const htmlTitle = pageTitle + ' | BlackBox Records';
     />
   </head>
   <body
-    data-workspace={Astro.url.pathname.startsWith('/content/') ? 'content' : undefined}
-    class="min-h-screen overflow-x-clip bg-background text-foreground"
+    data-workspace={Astro.url.pathname.startsWith('/content/') ? 'content' : 'staff'}
+    class="staff-body min-h-screen overflow-x-clip bg-background text-foreground"
   >
     <a class="accessibility-skip-to-content-link" href="#main">Skip to workspace</a>
     <header class="staff-header">
@@ -40,7 +40,7 @@ const htmlTitle = pageTitle + ' | BlackBox Records';
       >
       {
         import.meta.env.PUBLIC_STAFF_ENVIRONMENT === 'uat' && (
-          <span class="rounded border border-border px-2 py-1 text-xs text-muted-foreground">Test environment</span>
+          <span class="staff-environment-badge">Test environment</span>
         )
       }
       <nav aria-label="Staff workspace">
