@@ -7,7 +7,6 @@ export type ContentPublication = {
   failureReason?: string;
   stage?: string;
 };
-export type PublicationRequest = { id: string; requestedRevision: string };
 
 export type SelectedPublicationRecord = { collection: string; recordId: string; expectedRevision: string };
 export type SelectedPublicationRequest =
@@ -33,13 +32,12 @@ export async function publishSavedContent(
   return response.json() as Promise<ContentPublication>;
 }
 
-async function request<T>(base: string, body?: PublicationRequest): Promise<T> {
+export async function readContentPublications(base: string): Promise<{ items: ContentPublication[] }> {
   const response = await fetch(`${base}/_emdash/api/blackbox/publications`, {
-    method: body ? 'POST' : 'GET',
+    method: 'GET',
     credentials: 'same-origin',
     cache: 'no-store',
-    headers: { 'X-EmDash-Request': '1', ...(body ? { 'Content-Type': 'application/json' } : {}) },
-    body: body ? JSON.stringify(body) : null,
+    headers: { 'X-EmDash-Request': '1' },
   });
   if (!response.ok)
     throw new EditorialApiError(
@@ -48,9 +46,5 @@ async function request<T>(base: string, body?: PublicationRequest): Promise<T> {
         ? 'This publication conflicts with a newer change. Load the saved version before publishing again.'
         : 'Publication could not be confirmed. Check status or retry the request. The public site may still be unchanged.',
     );
-  return response.json() as Promise<T>;
+  return response.json() as Promise<{ items: ContentPublication[] }>;
 }
-
-export const readContentPublications = (base: string) => request<{ items: ContentPublication[] }>(base);
-export const requestContentPublication = (base: string, body: PublicationRequest) =>
-  request<ContentPublication>(base, body);

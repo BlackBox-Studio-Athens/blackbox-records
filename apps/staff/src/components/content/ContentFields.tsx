@@ -22,7 +22,7 @@ export const contentSections = {
   about: 'About page',
   services: 'Services page',
   distro_page: 'Distro page',
-  purchase_information: 'Purchase information',
+  purchase_information: 'Buying & delivery',
   newsletter: 'Newsletter',
   navigation: 'Navigation',
   socials: 'Social links',
@@ -170,6 +170,7 @@ export default function ContentFields({
         <FieldLegend variant="label">{label}</FieldLegend>
         <FieldGroup className="gap-4">
           <ContentImagePicker
+            cropRatio={collection === 'artists' ? 0.75 : ['releases', 'distro'].includes(collection) ? 1 : undefined}
             base={base}
             label={label}
             value={reference?.id ?? ''}
@@ -214,6 +215,18 @@ export default function ContentFields({
                 >
                   <ArrowUp className="size-4" aria-hidden="true" />
                   Move up
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={index === items.length - 1}
+                  onClick={() => {
+                    const next = [...items];
+                    [next[index], next[index + 1]] = [next[index + 1], next[index]];
+                    set(path, next);
+                  }}
+                >
+                  Move down
                 </Button>
                 <Button
                   type="button"
@@ -271,11 +284,13 @@ export default function ContentFields({
         {field('title', 'Artist name')}
         {field('genre', 'Genre')}
         {field('country', 'Country', { required: false })}
+        <h2 className="col-span-full text-lg font-semibold">Photography</h2>
         {image('image', 'image_alt', 'Artist image')}
         <p className="col-span-full text-sm text-muted-foreground">
           Homepage portraits crop to 3:4. Use 1800 × 2400 px where possible, at least 1200 × 1600 px. Keep the band
           centered with headroom and space at the sides.
         </p>
+        <h2 className="col-span-full text-lg font-semibold">Biography</h2>
         {field('bio', 'Short biography', { multiline: true })}
         {rows('profile_links', 'Artist links', { label: '', url: '' }, (path) => (
           <>
@@ -286,11 +301,19 @@ export default function ContentFields({
         {rows('videos', 'Videos', { title: '', youtube_video_id: '' }, (path) => (
           <>
             {field(`${path}.title`, 'Video title')}
-            {field(`${path}.youtube_video_id`, 'YouTube video code')}
+            <YouTubeField
+              path={`${path}.youtube_video_id`}
+              initial={String(value(`${path}.youtube_video_id`) ?? '')}
+              onChange={(id) => set(`${path}.youtube_video_id`, id)}
+              errors={errors(`${path}.youtube_video_id`)}
+            />
             {field(`${path}.description`, 'Description', { multiline: true, required: false })}
           </>
         ))}
-        {field('upcoming_release', 'Upcoming release', { required: false })}
+        <details className="col-span-full">
+          <summary className="min-h-11 cursor-pointer">Additional artist details</summary>
+          {field('upcoming_release', 'Upcoming release', { required: false })}
+        </details>
         {body}
       </>
     );
@@ -382,12 +405,19 @@ export default function ContentFields({
   if (collection === 'home')
     return (
       <>
+        <h2 className="col-span-full text-lg font-semibold">Opening content</h2>
         {field('hero.tagline', 'Opening text', { multiline: true })}
         {image('hero.image', 'hero.image_alt', 'Home image')}
         {field('hero.scroll_indicator_text', 'Scroll hint')}
-        {field('news.title', 'News heading')}
-        {field('news.link_text', 'News link text')}
-        {field('news.link_url', 'News link')}
+        <details className="col-span-full">
+          <summary className="min-h-11 cursor-pointer">News — currently hidden on the website</summary>
+          <div className="grid gap-6">
+            {field('news.title', 'News heading')}
+            {field('news.link_text', 'News link text')}
+            {field('news.link_url', 'News link')}
+          </div>
+        </details>
+        <h2 className="col-span-full text-lg font-semibold">Artist promotion</h2>
         {field('artists.title', 'Artists heading')}
         {field('artists.button_text', 'Artists button text')}
         {field('artists.button_link', 'Artists button link')}
@@ -400,8 +430,10 @@ export default function ContentFields({
         {field('hero.title', 'Page title')}
         {image('hero.image', 'hero.image_alt', 'About image')}
         {field('lead.text', 'Opening text', { multiline: true })}
+        <h2 className="col-span-full text-lg font-semibold">Our story</h2>
         {field('story.title', 'Story heading')}
         {rows('story.paragraphs', 'Story', '', (path) => field(path, 'Paragraph', { multiline: true }))}
+        <h2 className="col-span-full text-lg font-semibold">Quote</h2>
         {data.quote ? (
           <>
             {field('quote.text', 'Quote', { multiline: true })}
@@ -415,6 +447,7 @@ export default function ContentFields({
             Add quote
           </Button>
         )}
+        <h2 className="col-span-full text-lg font-semibold">Contact</h2>
         {field('contact.title', 'Contact heading')}
         {field('contact.intro', 'Contact introduction', { multiline: true })}
         {rows('contact.items', 'Contact details', { label: '', value: '' }, (path) => (
@@ -454,6 +487,7 @@ export default function ContentFields({
             </>
           ),
         )}
+        <h2 className="col-span-full text-lg font-semibold">How we work</h2>
         {field('process.title', 'Process heading')}
         {field('process.intro', 'Process introduction', { multiline: true })}
         {rows('process.steps', 'Process steps', { title: '', body: '' }, (path) => (
@@ -462,6 +496,7 @@ export default function ContentFields({
             {field(`${path}.body`, 'Step text', { multiline: true })}
           </>
         ))}
+        <h2 className="col-span-full text-lg font-semibold">Contact form</h2>
         {field('inquiry.title', 'Contact form heading')}
         {field('inquiry.intro', 'Contact form introduction', { multiline: true })}
         {field('inquiry.email', 'Contact email', { type: 'email' })}
@@ -473,7 +508,9 @@ export default function ContentFields({
       <>
         {field('title', 'Link text')}
         {field('url', 'Page link')}
-        {field('order', 'Display order', { type: 'number', min: 0, step: 1 })}
+        <p className="col-span-full text-sm text-muted-foreground">
+          Use Move up or Move down in the link list to change its position.
+        </p>
         {check('show_in_header', 'Show at the top of the site')}
         {check('show_in_footer', 'Show at the bottom of the site')}
       </>
@@ -483,7 +520,9 @@ export default function ContentFields({
       <>
         {field('title', 'Link name')}
         {field('url', 'Profile link')}
-        {field('order', 'Display order', { type: 'number', min: 0, step: 1 })}
+        <p className="col-span-full text-sm text-muted-foreground">
+          Use Move up or Move down in the link list to change its position.
+        </p>
       </>
     );
   if (collection === 'newsletter')
@@ -502,10 +541,18 @@ export default function ContentFields({
       <>
         {field('label_name', 'Label name')}
         {field('established_year', 'Year established', { type: 'number', min: 1900, max: 2100, step: 1 })}
-        {field('url', 'Label website', { type: 'url' })}
-        {field('logo', 'Logo path')}
-        {field('location.locality', 'City')}
-        {field('location.country', 'Country')}
+        <details className="col-span-full">
+          <summary className="min-h-11 cursor-pointer">Search engines and label metadata</summary>
+          <p className="mb-4 text-sm text-muted-foreground">
+            These details describe the label to search engines; they do not change the visible page copy.
+          </p>
+          <div className="grid gap-6">
+            {field('url', 'Label website', { type: 'url' })}
+            {field('logo', 'Logo path')}
+            {field('location.locality', 'City')}
+            {field('location.country', 'Country')}
+          </div>
+        </details>
       </>
     );
   if (collection === 'distro_page')
@@ -570,5 +617,58 @@ export default function ContentFields({
         </section>
       ))}
     </>
+  );
+}
+
+export function youtubeVideoId(input: string): string | null {
+  if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input;
+  try {
+    const url = new URL(input);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+    const host = url.hostname.toLowerCase();
+    const id =
+      host === 'youtu.be'
+        ? url.pathname.slice(1)
+        : ['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(host)
+          ? url.pathname === '/watch'
+            ? url.searchParams.get('v')
+            : /^\/(?:shorts|embed)\//.test(url.pathname)
+              ? url.pathname.split('/')[2]
+              : null
+          : null;
+    return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+function YouTubeField({
+  path,
+  initial,
+  onChange,
+  errors,
+}: {
+  path: string;
+  initial: string;
+  onChange(id: string): void;
+  errors: string[];
+}) {
+  const [url, setUrl] = useState(initial ? `https://www.youtube.com/watch?v=${initial}` : '');
+  const invalid = !!url && !youtubeVideoId(url);
+  return (
+    <Field data-invalid={invalid || !!errors.length}>
+      <FieldLabel htmlFor={`content-${path}`}>YouTube URL</FieldLabel>
+      <Input
+        id={`content-${path}`}
+        data-content-path={path}
+        value={url}
+        aria-invalid={invalid || !!errors.length}
+        aria-describedby={`content-${path}-error`}
+        onChange={(event) => {
+          setUrl(event.target.value);
+          onChange(youtubeVideoId(event.target.value) ?? event.target.value);
+        }}
+      />
+      <FieldError id={`content-${path}-error`}>{invalid ? 'Paste a YouTube video URL.' : errors.join(' ')}</FieldError>
+    </Field>
   );
 }

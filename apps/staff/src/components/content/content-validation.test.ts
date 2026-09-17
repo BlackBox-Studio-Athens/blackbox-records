@@ -1,3 +1,4 @@
+import { youtubeVideoId } from './ContentFields';
 import { describe, expect, it } from 'vitest';
 import { getContentValidation } from './content-validation';
 
@@ -33,4 +34,12 @@ describe('content validation adapter', () => {
     expect(result.byPath['profile_links.0.url']).toBeDefined();
     expect(result.byPath.country).toBeUndefined();
   });
+});
+
+it('accepts YouTube video URLs and rejects other hosts and malformed identities', () => {
+  expect(youtubeVideoId('https://youtu.be/dQw4w9WgXcQ?t=12')).toBe('dQw4w9WgXcQ');
+  expect(youtubeVideoId('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
+  expect(youtubeVideoId('https://youtube.com/shorts/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
+  expect(youtubeVideoId('https://youtube.com.evil.example/watch?v=dQw4w9WgXcQ')).toBeNull();
+  expect(youtubeVideoId('javascript:alert(1)')).toBeNull();
 });

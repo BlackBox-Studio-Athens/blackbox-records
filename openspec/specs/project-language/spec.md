@@ -369,3 +369,16 @@ The system SHALL use Software Release for deployed application code, Release Can
 - **WHEN** a candidate is promoted
 - **THEN** its source SHA, target artifact, and acceptance identify the Software Release
 - **AND** existing Promotion Evidence remains redacted and environment-scoped.
+
+### Requirement: Staff language describes label work
+
+Staff navigation and routine instructions SHALL use Artist, Release, Distro, Merch, Website, Images, Stock and Orders as defined in `UBIQUITOUS_LANGUAGE.md`. Internal CMS and payment identities SHALL remain unchanged and appear only where needed for reconciliation.
+
+#### Scenario: A member edits an already published release
+
+- **WHEN** the member changes its editorial text
+- **THEN** the workspace distinguishes Changes saved privately from Unpublished changes
+- **AND** On the website describes only the accepted public revision
+- **AND** its actual format names the sellable option, while stock shows copies on hand and available online.
+
+Use **Count stock**, **Counting progress**, and **Finish counting** in staff instructions. **Available to buy online** means the quantity customers may buy through the website, not total physical inventory. Use **copies** for music and **units** for merchandise. **Review website changes** discovers saved drafts and lets members publish one or several explicitly selected entries; it is not a price or stock operation.

@@ -6,6 +6,7 @@ export type FrontendRouteIsolationMode = 'web' | 'staff';
 
 const staffFiles = new Set([
   'content/index.html',
+  'review/index.html',
   '_headers',
   'favicon-96x96.png',
   'favicon.ico',
@@ -24,7 +25,7 @@ export function assertFrontendRouteIsolation(mode: FrontendRouteIsolationMode, d
 
   if (mode === 'web') {
     const stockFiles = files.filter((file) =>
-      ['stock', 'orders', 'items', 'content'].some((route) => file === route || file.startsWith(`${route}/`)),
+      ['stock', 'orders', 'items', 'content', 'review'].some((route) => file === route || file.startsWith(`${route}/`)),
     );
     if (stockFiles.length > 0) {
       throw new Error(`Public web artifact contains staff files: ${stockFiles.join(', ')}`);

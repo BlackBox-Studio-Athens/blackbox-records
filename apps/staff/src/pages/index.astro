@@ -1,18 +1,9 @@
 ---
-const contentUrl = '/content/';
+import StockOpsLayout from '../layouts/StockOpsLayout.astro';
+import StaffOverview from '../components/StaffOverview';
+import { getInternalStockApiBaseUrl } from '../lib/backend/internal-stock-api';
 ---
 
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Content | BlackBox Records</title>
-    <meta name="robots" content="noindex, nofollow" />
-    <meta http-equiv="refresh" content={'0;url=' + contentUrl} />
-    <link rel="canonical" href={contentUrl} />
-  </head>
-  <body>
-    <p><a href={contentUrl}>Continue to content</a></p>
-  </body>
-</html>
+<StockOpsLayout pageTitle="Overview" pageDescription="Run the label: website, catalog, stock and orders.">
+  <StaffOverview base={getInternalStockApiBaseUrl()} client:load />
+</StockOpsLayout>

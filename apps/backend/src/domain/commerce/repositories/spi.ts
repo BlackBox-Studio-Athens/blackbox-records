@@ -21,6 +21,9 @@ export type {
   SessionlessPendingCheckoutOrder,
 } from './checkout-stock-hold-repository';
 export type {
+  InventoryItem,
+  InventoryQuery,
+  InventoryPage,
   RuntimeCatalogRecord,
   RuntimeCatalogRepository,
   StoreItemOptionRecord,

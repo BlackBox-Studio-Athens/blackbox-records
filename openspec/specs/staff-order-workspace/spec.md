@@ -29,9 +29,9 @@ The system MUST serve an order workspace at `/orders/` in the existing protected
 - **THEN** no payment, stock, order transition, notification resend, customer communication, or dispatch mutation occurs
 - **AND** the existing Local loopback-only identity exception remains limited to Local.
 
-### Requirement: Recent-order coverage is explicit
+### Requirement: Orders support complete server-side search and cursor pagination
 
-The workspace SHALL request the latest 100 orders by creation time for the selected payment status, SHALL default to all payment statuses, and SHALL identify that its list and notification filters cover this bounded subset, not all recently updated orders.
+The workspace SHALL search all authorized orders by order reference, customer name/email, and payment reference using bounded cursor pages. Payment and email filters SHALL apply before pagination. The default page size is 25 with a server maximum of 50. Creation time and order identity establish stable ordering. Visible information updates every sixty seconds and on stale return or reconnect; hidden and offline views pause reads. This supersedes the latest-100 subset and routine refresh controls.
 
 #### Scenario: Operator filters payment state
 
@@ -42,9 +42,8 @@ The workspace SHALL request the latest 100 orders by creation time for the selec
 #### Scenario: Operator filters notification attention
 
 - **WHEN** the operator filters pending or needs-review notifications
-- **THEN** filtering applies to the retrieved recent subset
-- **AND** the coverage label remains visible
-- **AND** zero matches do not imply that all historical orders are clear.
+- **THEN** filtering applies to the complete authorized server-side result set before pagination
+- **AND** Next and Previous preserve the current search and payment filter.
 
 #### Scenario: An older session is known
 

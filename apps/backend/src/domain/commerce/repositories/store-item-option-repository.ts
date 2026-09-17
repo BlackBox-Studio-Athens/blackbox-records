@@ -33,3 +33,24 @@ export type RuntimeCatalogRecord = StoreItemOptionRecord & {
 export interface RuntimeCatalogRepository {
   findByStoreItem(storeItem: StoreItemOptionRecord): Promise<RuntimeCatalogRecord | null>;
 }
+
+export type InventoryQuery = {
+  q: string;
+  area: 'all' | 'release' | 'distro' | 'merch';
+  format?: string | undefined;
+  cursor?: string | undefined;
+  limit: number;
+  before?: string | undefined;
+};
+export type InventoryItem = {
+  variantId: string;
+  storeItemSlug: string;
+  sourceId: string;
+  sourceKind: StoreItemSourceKind;
+  cmsSourceId: string | null;
+  displayName: string;
+  itemType: string | null;
+  quantity: number | null;
+  onlineQuantity: number | null;
+};
+export type InventoryPage = { items: InventoryItem[]; nextCursor?: string; before: string };

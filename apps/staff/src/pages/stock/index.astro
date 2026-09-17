@@ -6,9 +6,6 @@ import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api
 const backendBaseUrl = getInternalStockApiBaseUrl();
 ---
 
-<StockOpsLayout
-  pageTitle="Stock Operations"
-  pageDescription="Protected BlackBox stock operations workspace for label operators."
->
-  <StockOperationsApp backendBaseUrl={backendBaseUrl} mode="stock" client:load />
+<StockOpsLayout pageTitle="Stock" pageDescription="Protected BlackBox stock operations workspace for label operators.">
+  <StockOperationsApp backendBaseUrl={backendBaseUrl} client:load />
 </StockOpsLayout>

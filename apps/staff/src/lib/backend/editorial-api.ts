@@ -3,12 +3,31 @@ export type EditorialRecord = {
   slug: string;
   data: Record<string, unknown>;
   liveRevisionId?: string | null;
+  draftRevisionId?: string | null;
+  collection?: string;
+  artistTitle?: string | null;
+  publicationState?: 'draft' | 'changes' | 'pending' | 'published' | undefined;
+  selling?:
+    | {
+        variantId: string;
+        storeItemSlug: string;
+        itemType: string | null;
+        quantity: number | null;
+        onlineQuantity: number | null;
+        amountMinor: number | null;
+        currencyCode: string | null;
+        catalogAvailability: string;
+        freshUntil: string | null;
+      }
+    | null
+    | undefined;
 };
 export type EditorialMedia = {
   id: string;
   filename: string;
   url?: string;
   storageKey?: string;
+  meta?: { storageKey?: string };
   alt: string | null;
   width?: number;
   height?: number;
@@ -16,7 +35,8 @@ export type EditorialMedia = {
 export type EditorialList<T> = { items: T[]; nextCursor?: string };
 
 export function editorialMediaUrl(item: EditorialMedia, origin: string): string {
-  const path = item.url ?? (item.storageKey ? `/_emdash/api/media/file/${encodeURIComponent(item.storageKey)}` : '');
+  const storageKey = item.storageKey ?? item.meta?.storageKey;
+  const path = item.url ?? (storageKey ? `/_emdash/api/media/file/${encodeURIComponent(storageKey)}` : '');
   if (!path) return '';
   try {
     const url = new URL(path, origin);
@@ -73,7 +93,7 @@ export async function editorialRequest<T>(
     throw new EditorialApiError(
       response.status,
       response.status === 409
-        ? 'Someone changed this record. Your text is still here. Load the saved version before saving again.'
+        ? 'Someone changed this entry. Your text is still here. Load the saved version before saving again.'
         : (validation ?? 'We could not confirm this request. Check your connection and try again.'),
     );
   }
@@ -84,18 +104,18 @@ export async function editorialRequest<T>(
 
 export async function createEditorialDraft(
   base: string,
-  collection: 'artists' | 'releases',
+  collection: 'artists' | 'releases' | 'distro',
   command: { slug: string; data: Record<string, unknown> },
 ) {
   try {
-    return await editorialRequest<{ item: EditorialRecord }>(
+    return await editorialRequest<{ item: EditorialRecord; _rev: string }>(
       base,
       `content/${collection}/${encodeURIComponent(command.slug)}`,
     );
   } catch (error) {
     if (!(error instanceof EditorialApiError) || error.status !== 404) throw error;
   }
-  return editorialRequest<{ item: EditorialRecord }>(base, `content/${collection}`, command);
+  return editorialRequest<{ item: EditorialRecord; _rev: string }>(base, `content/${collection}`, command);
 }
 
 export function editorialSlug(title: string, identity: string): string {

@@ -9,6 +9,9 @@
       "InternalCheckoutOrder": {
         "type": "object",
         "properties": {
+          "orderReference": {
+            "type": "string"
+          },
           "checkoutExpiresAt": {
             "type": "string",
             "format": "date-time"
@@ -527,11 +530,70 @@
           "error"
         ]
       },
+      "InventoryPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/InternalVariantSummary"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "cmsSourceId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "cmsSourceId"
+                  ]
+                }
+              ]
+            }
+          },
+          "nextCursor": {
+            "type": "string"
+          },
+          "before": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items",
+          "before"
+        ]
+      },
       "InternalVariantSummary": {
         "type": "object",
         "properties": {
           "displayName": {
             "type": "string"
+          },
+          "itemType": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "onlineQuantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
           },
           "sourceId": {
             "type": "string"
@@ -1037,6 +1099,30 @@
               "cmsRevision"
             ],
             "additionalProperties": false
+          },
+          "operationStatus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "pending",
+              "completed",
+              "needs_review",
+              null
+            ]
+          },
+          "publicationStatus": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "pending",
+              "live",
+              "failed",
+              null
+            ]
           }
         },
         "required": [
@@ -1092,6 +1178,123 @@
     "parameters": {}
   },
   "paths": {
+    "/api/internal/orders/search": {
+      "get": {
+        "tags": [
+          "Internal Orders"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/InternalOrderStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "needs_review"
+              ]
+            },
+            "required": false,
+            "name": "notification",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}T[\\d:.]+Z~[A-Za-z0-9_-]{1,128}$"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search all protected orders with stable pagination.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/InternalCheckoutOrder"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid search cursor.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/internal/orders": {
       "get": {
         "tags": [
@@ -1193,6 +1396,111 @@
           },
           "404": {
             "description": "Checkout order not found.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/inventory": {
+      "get": {
+        "tags": [
+          "Internal Stock"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "default": ""
+            },
+            "required": false,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "release",
+                "distro",
+                "merch"
+              ],
+              "default": "all"
+            },
+            "required": false,
+            "name": "area",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "format",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 25
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "name": "before",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A bounded inventory page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InventoryPage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
             "content": {
               "application/json": {
                 "schema": {

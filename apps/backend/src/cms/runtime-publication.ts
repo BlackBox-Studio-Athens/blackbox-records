@@ -3,6 +3,7 @@ import type { EmDashRuntime } from 'emdash/middleware';
 import {
   contentMediaIds,
   isCmsCollection,
+  validateCmsRevisionContent,
   replacePublishedRecord,
   type ContentSnapshot,
 } from '@blackbox/content-model';
@@ -93,17 +94,39 @@ export async function acceptSelectedPublication(
       throw new InvalidPublication('Load the saved version before publishing.');
     const revisionId = current.item.draftRevisionId ?? current.item.liveRevisionId;
     if (!revisionId) throw new InvalidPublication('Save content before publishing.');
+    const revision = successful(await deps.runtime.handleRevisionGet(revisionId)).item;
+    const { _slug: _slug, ...content } = revision.data;
+    if (!isCmsCollection(record.collection) || validateCmsRevisionContent(record.collection, content).length)
+      throw new InvalidPublication('Complete the highlighted fields before publishing.');
     records.push({ ...record, revisionId });
   }
   const intent = { id: selected.id, records };
-  await deps.db
+  const inserted = await deps.db
     .prepare(
       `INSERT INTO _blackbox_publications
-    (id, environment, actor_email, requested_revision, requested_at, request_json, stage, ci_run_id)
-    VALUES (?, ?, ?, ?, ?, ?, 'queued', 'runtime') ON CONFLICT(id) DO NOTHING`,
+      (id, environment, actor_email, requested_revision, requested_at, request_json, stage, ci_run_id)
+      SELECT ?, ?, ?, ?, ?, ?, 'queued', 'runtime'
+      WHERE NOT EXISTS (SELECT 1 FROM _blackbox_publications p
+        WHERE p.environment = ? AND p.status = 'pending' AND p.request_json IS NOT NULL
+        AND EXISTS (SELECT 1 FROM json_each(CASE WHEN json_type(p.request_json, '$.records') = 'array'
+          THEN json_extract(p.request_json, '$.records') ELSE json_array(json(p.request_json)) END) r
+          JOIN json_each(?) selected ON json_extract(selected.value, '$.collection') = json_extract(r.value, '$.collection')
+          AND json_extract(selected.value, '$.recordId') = json_extract(r.value, '$.recordId')))
+      ON CONFLICT(id) DO NOTHING`,
     )
-    .bind(selected.id, deps.environment, actorEmail, records[0].revisionId, Date.now(), JSON.stringify(intent))
+    .bind(
+      selected.id,
+      deps.environment,
+      actorEmail,
+      records[0].revisionId,
+      Date.now(),
+      JSON.stringify(intent),
+      deps.environment,
+      JSON.stringify(selected.records),
+    )
     .run();
+  if (!inserted.meta.changes && !(await readPublication(deps.db, deps.environment, selected.id)))
+    throw new InvalidPublication('These changes are already updating the website. Check status.');
   // Re-read the winning row, including when simultaneous callers used the same id.
   return acceptSelectedPublication(selected, actorEmail, deps);
 }
@@ -170,7 +193,13 @@ export async function processRuntimePublication(deps: Dependencies) {
       }
       let candidate = current.snapshot;
       const changedRecords: { collection: string; slug: string }[] = [];
+      let publicationCatalog: Awaited<ReturnType<typeof readPublicationCatalog>> | undefined;
       for (const intent of selections.length ? selections : [{ revisionId: job.revisionId }]) {
+        const revision = successful(await deps.runtime.handleRevisionGet(intent.revisionId)).item;
+        if (!isCmsCollection(revision.collection)) throw new InvalidPublication('Unsupported collection.');
+        const { _slug: _validationSlug, ...publicationData } = revision.data;
+        if (validateCmsRevisionContent(revision.collection, publicationData).length)
+          throw new InvalidPublication('Incomplete drafts cannot be published.');
         if ('collection' in intent) {
           const record = successful(await deps.runtime.handleContentGet(intent.collection, intent.recordId));
           if (record.item.liveRevisionId !== intent.revisionId)
@@ -180,8 +209,6 @@ export async function processRuntimePublication(deps: Dependencies) {
               }),
             );
         }
-        const revision = successful(await deps.runtime.handleRevisionGet(intent.revisionId)).item;
-        if (!isCmsCollection(revision.collection)) throw new InvalidPublication('Unsupported collection.');
         const recordState = successful(await deps.runtime.handleContentGet(revision.collection, revision.entryId));
         if (recordState.item.liveRevisionId !== revision.id || recordState.item.status !== 'published')
           throw new InvalidPublication('Selected revision is not published.');
@@ -221,7 +248,8 @@ export async function processRuntimePublication(deps: Dependencies) {
         let identities = candidate.storeItems;
         if (['releases', 'distro'].includes(record.collection)) {
           const kind = record.collection === 'releases' ? 'release' : 'distro';
-          const selected = (await readPublicationCatalog(deps.commerce)).filter(
+          publicationCatalog ??= await readPublicationCatalog(deps.commerce);
+          const selected = publicationCatalog.filter(
             (item) => item.sourceKind === kind && item.sourceId === record.slug,
           );
           identities = [

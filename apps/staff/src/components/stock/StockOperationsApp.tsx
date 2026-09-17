@@ -1,4 +1,4 @@
-import { ArrowDownUp, ArrowRight, ClipboardCheck, RefreshCcw, Search, ShieldCheck } from 'lucide-react';
+import { ArrowDownUp, ClipboardCheck, Disc3 } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 
@@ -16,22 +16,56 @@ import {
   type InternalStockHistoryResponse,
   type InternalVariantSummary,
 } from '../../lib/backend/internal-stock-api';
+import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 import { cn } from '../../lib/utils';
-import ItemPriceEditor from './ItemPriceEditor';
-import ItemPublication from './ItemPublication';
+import FormatFilter, { formatLabel } from '../items/FormatFilter';
+import { editorialRequest, editorialMediaUrl, type EditorialMedia } from '../../lib/backend/editorial-api';
+import {
+  recordProgress,
+  stocktakeKey,
+  stocktakeSchema,
+  pendingCountKey,
+  pendingCountSchema,
+  type Stocktake,
+} from './stocktake';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from '../ui/alert-dialog';
 
 interface StockOperationsAppProps {
   backendBaseUrl: string;
-  mode?: 'items' | 'stock';
 }
 
 type HistoryEntry = InternalStockHistoryResponse['entries'][number];
 export type StockLoadingIntent = 'refresh' | 'search' | 'variant' | 'workspace' | null;
 type StockSubmittingIntent = 'stockChange' | 'stockCount' | null;
 
-export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: StockOperationsAppProps) {
-  const isItemsWorkspace = mode === 'items';
+export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAppProps) {
   const [query, setQuery] = useState('');
+  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [area, setArea] = useState('all');
+  const [format, setFormat] = useState('');
+  const [nextCursor, setNextCursor] = useState<string>();
+  const [pages, setPages] = useState<string[]>(['']);
+  const [pageCursor, setPageCursor] = useState('');
+  const [artwork, setArtwork] = useState<Record<string, string>>({});
+  const [stocktake, setStocktake] = useState<Stocktake | null>(null);
+  const [startingStocktake, setStartingStocktake] = useState(false);
+  const [leaveAction, setLeaveAction] = useState<(() => void) | null>(null);
+  const [countEdited, setCountEdited] = useState(false);
+  const [countUnconfirmed, setCountUnconfirmed] = useState(false);
+  const focusedVariant = useRef('');
+  const selectionUrl = useRef('');
+  const inventoryRef = useRef<HTMLElement>(null);
+  const inventoryScroll = useRef(0);
+  const pageScroll = useRef(0);
   const [variants, setVariants] = useState<InternalVariantSummary[]>([]);
   const [selectedVariantId, setSelectedVariantId] = useState('');
   const [stockDetail, setStockDetail] = useState<InternalStockDetail | null>(null);
@@ -43,11 +77,12 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
   const searchRequest = useRef(0);
   const [historyPending, setHistoryPending] = useState(false);
   const [historyError, setHistoryError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingIntent, setLoadingIntent] = useState<StockLoadingIntent>('workspace');
   const [submittingIntent, setSubmittingIntent] = useState<StockSubmittingIntent>(null);
+  const isSubmitting = submittingIntent !== null;
   const [statusMessage, setStatusMessage] = useState('Choose an item to see its stock.');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [changeUnconfirmed, setChangeUnconfirmed] = useState(false);
   const [changeDelta, setChangeDelta] = useState('');
   const [stockDirection, setStockDirection] = useState('remove');
   const [stockMode, setStockMode] = useState<'adjust' | 'count'>('adjust');
@@ -78,12 +113,52 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
     setSearchMessage('Searching items.');
 
     try {
-      const results = await api.searchVariants(nextQuery, 25);
+      const page = await readStaffQuery(['inventory-page', backendBaseUrl, nextQuery, area, format, pageCursor], () =>
+        api.readInventory({
+          q: nextQuery,
+          area,
+          format: format || undefined,
+          cursor: pageCursor || undefined,
+        }),
+      );
+      const results = page.items;
       if (requestId !== searchRequest.current) return;
       setVariants(results);
-      setSearchMessage(results.length === 0 ? 'No items found.' : `${results.length} items found.`);
+      setNextCursor(page.nextCursor);
+      setSearchMessage(results.length === 0 ? 'No items found.' : `${results.length} items on this page.`);
+      const url = new URL(window.location.href);
+      for (const [key, value] of Object.entries({ q: nextQuery, area, format, cursor: pageCursor })) {
+        if (value) url.searchParams.set(key, value);
+        else url.searchParams.delete(key);
+      }
+      window.history.replaceState(window.history.state, '', url);
+      selectionUrl.current = url.href;
+      void editorialRequest<{ items: { variantId: string; image: EditorialMedia | null }[] }>(
+        backendBaseUrl,
+        `blackbox/inventory-artwork?items=${encodeURIComponent(JSON.stringify(results.map((item) => ({ variantId: item.variantId, sourceKind: item.sourceKind, sourceId: item.cmsSourceId ?? item.sourceId }))))}`,
+      )
+        .then((result) => {
+          if (requestId === searchRequest.current)
+            setArtwork(
+              Object.fromEntries(
+                result.items.map((item) => [
+                  item.variantId,
+                  item.image
+                    ? editorialMediaUrl(item.image, new URL(backendBaseUrl || window.location.origin).origin)
+                    : '',
+                ]),
+              ),
+            );
+        })
+        .catch(() => {
+          if (requestId === searchRequest.current) setArtwork({});
+        });
     } catch (error) {
       if (requestId !== searchRequest.current) return;
+      if (error instanceof InternalStockApiError && [401, 403].includes(error.status)) {
+        setVariants([]);
+        setArtwork({});
+      }
       setSearchError(readErrorMessage(error));
       setSearchMessage('Search is unavailable. Try again.');
     } finally {
@@ -101,6 +176,7 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
     }
 
     setSelectedVariantId(variantId);
+    if (intent === 'variant') setInventoryOpen(false);
     setHasFreshStock(false);
     setErrorMessage(null);
     setIsLoading(true);
@@ -108,22 +184,7 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
     setStatusMessage(intent === 'refresh' ? 'Refreshing stock.' : 'Loading selected stock.');
     const requestId = activeStockLoadRequestRef.current + 1;
     activeStockLoadRequestRef.current = requestId;
-    setHistory([]);
-    setHistoryError(null);
-    setHistoryPending(!isItemsWorkspace);
-    if (!isItemsWorkspace) {
-      void api
-        .readStockHistory(variantId, 25)
-        .then((result) => {
-          if (requestId === activeStockLoadRequestRef.current) setHistory(result.entries);
-        })
-        .catch((error) => {
-          if (requestId === activeStockLoadRequestRef.current) setHistoryError(readErrorMessage(error));
-        })
-        .finally(() => {
-          if (requestId === activeStockLoadRequestRef.current) setHistoryPending(false);
-        });
-    }
+    if (stockDetail?.variantId !== variantId) setHistory([]);
 
     try {
       const detail = await api.readStock(variantId);
@@ -132,7 +193,35 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
         return;
       }
 
+      if (
+        stockDetail?.variantId !== variantId ||
+        stockDetail.stock.revision !== detail.stock.revision ||
+        historyError
+      ) {
+        setHistoryPending(true);
+        setHistoryError(null);
+        void api
+          .readStockHistory(variantId, 25)
+          .then((result) => {
+            if (requestId === activeStockLoadRequestRef.current) setHistory(result.entries);
+          })
+          .catch((error) => {
+            if (requestId === activeStockLoadRequestRef.current) setHistoryError(readErrorMessage(error));
+          })
+          .finally(() => {
+            if (requestId === activeStockLoadRequestRef.current) setHistoryPending(false);
+          });
+      }
+      if (countVariantRef.current === variantId && expectedRevision !== detail.stock.revision)
+        setCountNeedsReassessment(true);
       setStockDetail(detail);
+      setVariants((rows) =>
+        rows.map((row) =>
+          row.variantId === detail.variantId
+            ? { ...row, quantity: detail.stock.quantity, onlineQuantity: detail.stock.onlineQuantity }
+            : row,
+        ),
+      );
       setHasFreshStock(true);
       if (countVariantRef.current !== variantId) {
         countVariantRef.current = variantId;
@@ -147,8 +236,9 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
       if (shouldUpdateUrl) {
         const url = new URL(window.location.href);
         url.searchParams.set('variantId', variantId);
-        window.history.replaceState({}, '', url);
+        window.history.pushState({ inventoryPages: pages }, '', url);
       }
+      selectionUrl.current = window.location.href;
     } catch (error) {
       if (shouldApplyStockLoadResult(activeStockLoadRequestRef.current, requestId)) {
         setErrorMessage(readErrorMessage(error));
@@ -165,29 +255,205 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const variantId = params.get('variantId');
-
-    void searchVariants('');
-    if (variantId) void loadVariant(variantId, false);
+    setQuery(params.get('q') ?? '');
+    setArea(params.get('area') ?? 'all');
+    setFormat(params.get('format') ?? '');
+    setPageCursor(params.get('cursor') ?? '');
+    if (Array.isArray(window.history.state?.inventoryPages)) setPages(window.history.state.inventoryPages);
+    try {
+      const pending = pendingCountSchema.safeParse(JSON.parse(sessionStorage.getItem(pendingCountKey) ?? 'null'));
+      const stored = stocktakeSchema.safeParse(JSON.parse(sessionStorage.getItem(stocktakeKey) ?? 'null'));
+      if (stored.success) {
+        setStocktake(stored.data);
+        setArea(stored.data.area);
+        setFormat(stored.data.format);
+        setQuery(stored.data.q);
+        setStockMode('count');
+        void loadVariant(stored.data.items[stored.data.index]!.variantId, false);
+      } else if (variantId) void loadVariant(variantId, false);
+      if (pending.success) {
+        setCountUnconfirmed(true);
+        countVariantRef.current = pending.data.variantId;
+        setExpectedRevision(pending.data.expectedRevision);
+        setCountedQuantity(pending.data.countedQuantity);
+        setOnlineQuantity(pending.data.onlineQuantity);
+        setCountNotes(pending.data.notes);
+        setCountEdited(true);
+        setCountNeedsReassessment(true);
+        setStockMode('count');
+        setErrorMessage('The last count was not confirmed. Check stock and history before continuing.');
+        void loadVariant(pending.data.variantId, false);
+      }
+    } catch {
+      if (variantId) void loadVariant(variantId, false);
+    }
     return () => {
       searchRequest.current++;
       activeStockLoadRequestRef.current++;
     };
   }, []);
 
-  async function handleSearch(event: { preventDefault(): void }) {
-    event.preventDefault();
-    await searchVariants(query);
+  useEffect(() => {
+    window.history.replaceState({ ...window.history.state, inventoryPages: pages }, '', window.location.href);
+  }, [pages]);
+
+  function protectInput(action: () => void) {
+    if (isSubmitting || changeUnconfirmed || countUnconfirmed) return;
+    if (changeDelta || changeNotes || countEdited || countNotes) setLeaveAction(() => action);
+    else action();
+  }
+
+  function chooseVariant(id: string) {
+    setChangeDelta('');
+    setChangeNotes('');
+    setCountEdited(false);
+    setCountNotes('');
+    countVariantRef.current = '';
+    inventoryScroll.current = inventoryRef.current?.scrollTop ?? 0;
+    pageScroll.current = window.scrollY;
+    void loadVariant(id);
+  }
+  useEffect(() => {
+    if (isLoading || !selectedVariantId || inventoryOpen || focusedVariant.current === selectedVariantId) return;
+    focusedVariant.current = selectedVariantId;
+    window.document
+      .querySelector<HTMLElement>(stockMode === 'count' ? '#stock-count-counted-quantity' : '#stock-change-direction')
+      ?.focus();
+  }, [selectedVariantId, isLoading, inventoryOpen]);
+
+  useEffect(() => {
+    const unfinished = !!(
+      changeDelta ||
+      changeNotes ||
+      countEdited ||
+      countNotes ||
+      changeUnconfirmed ||
+      countUnconfirmed ||
+      isSubmitting
+    );
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (unfinished) event.preventDefault();
+    };
+    const leave = (event: MouseEvent) => {
+      const link = (event.target as Element).closest('a[href]');
+      if (
+        !(link instanceof HTMLAnchorElement) ||
+        link.target === '_blank' ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        event.altKey ||
+        event.button !== 0 ||
+        !unfinished
+      )
+        return;
+      event.preventDefault();
+      protectInput(() => window.location.assign(link.href));
+    };
+    const back = () => {
+      const target = window.location.href;
+      const params = new URLSearchParams(window.location.search);
+      if (unfinished && selectionUrl.current)
+        window.history.replaceState(window.history.state, '', selectionUrl.current);
+      protectInput(() => {
+        window.history.replaceState(window.history.state, '', target);
+        setQuery(params.get('q') ?? '');
+        setArea(params.get('area') ?? 'all');
+        setFormat(params.get('format') ?? '');
+        setPageCursor(params.get('cursor') ?? '');
+        const id = params.get('variantId');
+        if (id) void loadVariant(id, false);
+        else {
+          setSelectedVariantId('');
+          setInventoryOpen(true);
+        }
+      });
+    };
+    window.addEventListener('beforeunload', beforeUnload);
+    window.document.addEventListener('click', leave, true);
+    window.addEventListener('popstate', back);
+    return () => {
+      window.removeEventListener('beforeunload', beforeUnload);
+      window.document.removeEventListener('click', leave, true);
+      window.removeEventListener('popstate', back);
+    };
+  }, [changeDelta, changeNotes, countEdited, countNotes, changeUnconfirmed, countUnconfirmed, isSubmitting]);
+
+  function saveStocktake(value: Stocktake | null) {
+    setStocktake(value);
+    try {
+      if (value) sessionStorage.setItem(stocktakeKey, JSON.stringify(value));
+      else sessionStorage.removeItem(stocktakeKey);
+    } catch {
+      setErrorMessage('This browser cannot remember counting progress. Recorded counts are safe; keep this tab open.');
+    }
+  }
+
+  async function startStocktake() {
+    setStartingStocktake(true);
+    try {
+      const items: Stocktake['items'] = [];
+      const seen = new Set<string>();
+      let cursor: string | undefined;
+      let before: string | undefined;
+      do {
+        const page = await api.readInventory({
+          q: query,
+          area,
+          format: format || undefined,
+          cursor,
+          before,
+          limit: 50,
+        });
+        for (const item of page.items)
+          if (!seen.has(item.variantId)) {
+            seen.add(item.variantId);
+            items.push({ variantId: item.variantId });
+          }
+        cursor = page.nextCursor;
+        before = page.before;
+        if (items.length > 10000) throw new Error('Choose a smaller group to count.');
+      } while (cursor);
+      if (!items.length) {
+        setStatusMessage('No items to count. Choose another group.');
+        return;
+      }
+      saveStocktake({ items, index: 0, confirmed: [], skipped: [], area, format, q: query });
+      setStockMode('count');
+      chooseVariant(items[0]!.variantId);
+    } catch (error) {
+      setErrorMessage(readErrorMessage(error));
+    } finally {
+      setStartingStocktake(false);
+    }
+  }
+
+  async function advanceStocktake(status: 'confirmed' | 'skipped') {
+    if (!stocktake) return;
+    const next = recordProgress(stocktake, status);
+    setCountNotes('');
+    setCountEdited(false);
+    countVariantRef.current = '';
+    saveStocktake(next);
+    if (next.index === stocktake.index) {
+      if (status === 'skipped' && selectedStockDetail) {
+        setCountedQuantity(String(selectedStockDetail.stock.quantity));
+        setOnlineQuantity(String(selectedStockDetail.stock.onlineQuantity));
+      }
+      setStatusMessage('End of the count. Review skipped items or finish.');
+      return;
+    }
+    await loadVariant(next.items[next.index]!.variantId);
   }
 
   async function handleStockChange(event: { preventDefault(): void }) {
     event.preventDefault();
 
-    if (!canMutateSelectedStock || isSubmitting) {
+    if (!canMutateSelectedStock || isSubmitting || changeUnconfirmed) {
       return;
     }
 
     const variantId = selectedVariantId;
-    setIsSubmitting(true);
     setSubmittingIntent('stockChange');
     setErrorMessage(null);
     setStatusMessage('Saving stock change.');
@@ -203,9 +469,12 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
       await loadVariant(variantId, false, 'refresh');
       setStatusMessage('Stock updated.');
     } catch (error) {
-      setErrorMessage(readErrorMessage(error));
+      setChangeUnconfirmed(true);
+      await loadVariant(variantId, false, 'refresh');
+      setErrorMessage(
+        `Update not confirmed. Check the stock and recent history before entering another change. ${readErrorMessage(error)}`,
+      );
     } finally {
-      setIsSubmitting(false);
       setSubmittingIntent(null);
     }
   }
@@ -218,22 +487,30 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
     }
 
     const variantId = selectedVariantId;
-    setIsSubmitting(true);
     setSubmittingIntent('stockCount');
     setErrorMessage(null);
     setStatusMessage('Saving count.');
 
     try {
+      sessionStorage.setItem(
+        pendingCountKey,
+        JSON.stringify({ variantId, expectedRevision, countedQuantity, onlineQuantity, notes: countNotes }),
+      );
+      setCountUnconfirmed(true);
       await api.recordStockCount(variantId, {
         expectedRevision,
         countedQuantity: Number(countedQuantity),
         notes: normalizeNotes(countNotes),
         onlineQuantity: Number(onlineQuantity),
       });
+      sessionStorage.removeItem(pendingCountKey);
+      setCountUnconfirmed(false);
       setCountNotes('');
+      setCountEdited(false);
       countVariantRef.current = '';
       await loadVariant(variantId, false, 'refresh');
       setStatusMessage('Stock count saved.');
+      await advanceStocktake('confirmed');
     } catch (error) {
       setCountNeedsReassessment(true);
       await loadVariant(variantId, false, 'refresh');
@@ -241,210 +518,286 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
         setStatusMessage('Stock changed. Your count and notes are retained. Reassess before submitting again.');
       } else {
         setStatusMessage(
-          'The count was not confirmed. Refresh stock and history before deciding whether to submit again.',
+          'The count was not confirmed. Check the current stock and history before deciding whether to submit again.',
         );
       }
       setErrorMessage(readErrorMessage(error));
     } finally {
-      setIsSubmitting(false);
       setSubmittingIntent(null);
     }
   }
 
-  const isStockRefreshPending = loadingIntent === 'refresh';
+  useStaffRead(
+    ['stock', backendBaseUrl, selectedVariantId],
+    async () => {
+      if (selectedVariantId) await loadVariant(selectedVariantId, false, 'refresh');
+      else await searchVariants();
+    },
+    { enabled: !isSubmitting, interval: 60_000 },
+  );
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      if (navigator.onLine && window.document.visibilityState === 'visible') void searchVariants(query);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [query, area, format, pageCursor]);
   const loadingLabel = readStockLoadingLabel(loadingIntent);
 
   return (
-    <div className="staff-workspace staff-stock-workspace min-h-screen">
-      <section className="staff-workspace-hero">
-        <div className="staff-workspace-hero__inner">
-          <div className="grid gap-3">
-            <Badge variant="outline" className="w-fit">
-              <ShieldCheck aria-hidden="true" />
-              Protected operations
-            </Badge>
-            <div className="grid gap-2">
-              <h1>{isItemsWorkspace ? 'Items' : 'Stock'}</h1>
-              <p>
-                {isItemsWorkspace
-                  ? 'Prepare catalog items, set prices, and publish them when ready.'
-                  : 'Keep physical and online stock aligned.'}
-              </p>
-            </div>
+    <div className={`staff-workspace staff-stock-workspace min-h-screen ${selectedVariantId ? 'has-selection' : ''}`}>
+      <header className="inventory-heading">
+        <h1>
+          {selectedStockDetail?.displayName ?? selectedStockDetail?.storeItemSlug.replaceAll('-', ' ') ?? 'Stock'}
+        </h1>
+        {selectedVariantId && (
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setInventoryOpen(!inventoryOpen);
+              requestAnimationFrame(() => {
+                if (inventoryRef.current) inventoryRef.current.scrollTop = inventoryScroll.current;
+                window.scrollTo(0, pageScroll.current);
+                window.document.getElementById(`inventory-${selectedVariantId}`)?.focus();
+              });
+            }}
+          >
+            {inventoryOpen ? 'Return to stock task' : 'Back to inventory'}
+          </Button>
+        )}
+      </header>
+      <section
+        className={cn(
+          'inventory-workspace',
+          selectedVariantId && 'inventory-workspace-selected',
+          inventoryOpen && 'inventory-browsing',
+        )}
+      >
+        <aside ref={inventoryRef} className="inventory-list" aria-label="Inventory">
+          <div className="inventory-toolbar">
+            <Input
+              aria-label="Search items"
+              placeholder="Search titles-"
+              value={query}
+              disabled={!!stocktake || startingStocktake}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setPageCursor('');
+                setPages(['']);
+              }}
+            />
+            <select
+              aria-label="Inventory area"
+              value={area}
+              disabled={!!stocktake || startingStocktake}
+              onChange={(event) => {
+                setArea(event.target.value);
+                setPageCursor('');
+                setPages(['']);
+              }}
+            >
+              <option value="all">All</option>
+              <option value="release">Label releases</option>
+              <option value="distro">Distro</option>
+              <option value="merch">Merch</option>
+            </select>
+            <FormatFilter
+              value={format}
+              disabled={!!stocktake || startingStocktake}
+              onChange={(value) => {
+                setFormat(value);
+                setPageCursor('');
+                setPages(['']);
+              }}
+            />
+            {!stocktake && (
+              <Button
+                variant="outline"
+                disabled={startingStocktake || isSubmitting}
+                onClick={() => protectInput(() => void startStocktake())}
+              >
+                {startingStocktake ? 'Preparing count…' : 'Count stock'}
+              </Button>
+            )}
           </div>
-          <div className="staff-workspace-meta">
-            <ShieldCheck aria-hidden="true" />
-            <span>Changes apply immediately. Existing orders stay unchanged.</span>
+          <p role="status" className="inventory-message">
+            {searchMessage}
+          </p>
+          {!selectedVariantId && errorMessage && <p role="alert">{errorMessage}</p>}
+          {searchError && (
+            <p role="alert">
+              {searchError}{' '}
+              <Button variant="outline" onClick={() => void searchVariants()}>
+                Retry inventory
+              </Button>
+            </p>
+          )}
+          <div className="inventory-columns" aria-hidden="true">
+            <span>Title / format</span>
+            <span>On hand</span>
+            <span>Available to buy online</span>
           </div>
-        </div>
-      </section>
-
-      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-5 sm:px-6 lg:grid-cols-[minmax(19rem,0.45fr)_minmax(0,1fr)] lg:px-8">
-        <aside className="grid content-start gap-5">
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle>Find an item</CardTitle>
-              <CardDescription>Search by item name.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form className="grid gap-3" onSubmit={handleSearch}>
-                <div className="flex gap-2">
-                  <Input
-                    aria-label="Search items"
-                    className="border-input bg-background"
-                    id="stock-variant-search"
-                    name="q"
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="barren, tape, distro..."
-                    value={query}
-                  />
+          {variants.map((variant) => (
+            <button
+              type="button"
+              key={variant.variantId}
+              id={`inventory-${variant.variantId}`}
+              className="inventory-row"
+              aria-pressed={selectedVariantId === variant.variantId}
+              disabled={isSubmitting || !!stocktake}
+              onClick={() => protectInput(() => chooseVariant(variant.variantId))}
+            >
+              <span className="inventory-identity">
+                {artwork[variant.variantId] ? (
+                  <img src={artwork[variant.variantId]} width="48" height="48" alt="" loading="lazy" />
+                ) : (
+                  <Disc3 aria-hidden="true" className="inventory-artwork-placeholder" />
+                )}
+                <span>
+                  <strong>{variant.displayName ?? variant.storeItemSlug.replaceAll('-', ' ')}</strong>
+                  <small>{formatLabel(variant.itemType ?? 'Format not set')}</small>
+                </span>
+              </span>
+              <span className="inventory-quantity">
+                <strong>{variant.quantity ?? '-'}</strong>
+                <small>{variant.itemType === 'Clothes' ? 'units' : 'copies'} on hand</small>
+              </span>
+              <span className="inventory-quantity">
+                <strong>{variant.onlineQuantity ?? '-'}</strong>
+                <small>available to buy online</small>
+              </span>
+            </button>
+          ))}
+          <nav aria-label="Inventory pages" className="inventory-pagination">
+            <Button
+              variant="outline"
+              disabled={!pageCursor || isSearchPending}
+              onClick={() => {
+                const previous = pages.slice(0, -1);
+                setPages(previous.length ? previous : ['']);
+                setPageCursor(previous.at(-1) ?? '');
+              }}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!nextCursor || isSearchPending}
+              onClick={() => {
+                if (nextCursor) {
+                  setPages((value) => [...value, nextCursor]);
+                  setPageCursor(nextCursor);
+                }
+              }}
+            >
+              Next
+            </Button>
+          </nav>
+        </aside>
+        {selectedVariantId && (
+          <div className="staff-stock-task inventory-task">
+            {stocktake && (
+              <section className="stocktake-progress" aria-label="Counting progress">
+                <strong>
+                  Count {stocktake.index + 1} of {stocktake.items.length}
+                </strong>
+                <span>
+                  {stocktake.confirmed.length} recorded - {stocktake.skipped.length} skipped
+                </span>
+                <div className="flex flex-wrap gap-2">
                   <Button
-                    aria-label={isSearchPending ? 'Searching items' : 'Search'}
-                    aria-busy={isSearchPending ? 'true' : undefined}
-                    className="min-w-11"
-                    disabled={isSearchPending}
-                    type="submit"
+                    variant="outline"
+                    disabled={isSubmitting || stocktake.index === 0}
+                    onClick={() =>
+                      protectInput(() => {
+                        const previous = { ...stocktake, index: stocktake.index - 1 };
+                        saveStocktake(previous);
+                        chooseVariant(previous.items[previous.index]!.variantId);
+                      })
+                    }
                   >
-                    {isSearchPending ? (
-                      <LoadingButtonContent label={<span className="sr-only">Searching items</span>} />
-                    ) : (
-                      <Search className="size-4" />
-                    )}
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={isSubmitting}
+                    onClick={() => protectInput(() => void advanceStocktake('skipped'))}
+                  >
+                    Skip for now
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={isSubmitting}
+                    onClick={() => protectInput(() => saveStocktake(null))}
+                  >
+                    Finish counting
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground" role="status" aria-live="polite">
-                  {searchMessage}
-                </p>
-                {searchError && (
-                  <p role="alert" className="text-sm text-red-400">
-                    {searchError}
-                  </p>
-                )}
-              </form>
-            </CardContent>
-          </Card>
+              </section>
+            )}
+            <p role="status" className="sr-only">
+              {statusMessage}
+            </p>
 
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle>{isItemsWorkspace ? 'Items' : 'Inventory'}</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              {variants.map((variant) => (
-                <button
-                  className={cn(
-                    'group grid gap-2 rounded-md border border-border bg-background p-3 text-left transition hover:border-ring hover:bg-accent',
-                    selectedVariantId === variant.variantId && 'border-ring bg-accent',
-                  )}
-                  disabled={isSubmitting}
-                  key={variant.variantId}
-                  onClick={() => void loadVariant(variant.variantId)}
-                  type="button"
-                >
-                  <span className="flex items-center justify-between gap-3">
-                    <span className="text-sm capitalize text-foreground">
-                      {variant.displayName ?? variant.storeItemSlug.replaceAll('-', ' ')}
-                    </span>
-                    <ArrowRight className="size-4 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-foreground" />
-                  </span>
-                  <span className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    {variant.sourceKind === 'release' ? 'Label release' : 'Distro'}
-                  </span>
-                </button>
-              ))}
-              {variants.length === 0 && isSearchPending ? (
-                <LoadingInline className="text-xs text-muted-foreground" label="Loading items" />
-              ) : (
-                variants.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No items found. Try another name.</p>
-                )
-              )}
-            </CardContent>
-          </Card>
-        </aside>
-
-        <div className="grid content-start gap-5">
-          <p role="status" className="text-sm text-muted-foreground">
-            {statusMessage}
-          </p>
-          {isItemsWorkspace && selectedVariantId && (
-            <ItemPriceEditor key={selectedVariantId} variantId={selectedVariantId} backendBaseUrl={backendBaseUrl} />
-          )}
-          {isItemsWorkspace && selectedVariantId && (
-            <ItemPublication
-              key={`publication-${selectedVariantId}`}
-              variantId={selectedVariantId}
-              backendBaseUrl={backendBaseUrl}
-            />
-          )}
-          {errorMessage && (
-            <div
-              className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-foreground"
-              role="alert"
-            >
-              {errorMessage}
-            </div>
-          )}
-
-          <Card className="border-border bg-card">
-            <CardHeader className="flex-row items-start justify-between gap-4">
-              <div className="grid gap-1">
-                <CardTitle>Current stock</CardTitle>
-                <CardDescription>
-                  {selectedStockDetail
-                    ? (selectedStockDetail.displayName ?? selectedStockDetail.storeItemSlug.replaceAll('-', ' '))
-                    : 'Choose an item to see its stock.'}
-                </CardDescription>
-              </div>
-              <Button
-                disabled={!selectedVariantId || isLoading || isSubmitting}
-                aria-busy={isStockRefreshPending ? 'true' : undefined}
-                onClick={() => void loadVariant(selectedVariantId, false, 'refresh')}
-                type="button"
-                variant="outline"
+            {errorMessage && (
+              <div
+                className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-sm text-foreground"
+                role="alert"
               >
-                {isStockRefreshPending ? (
-                  <LoadingButtonContent label="Refreshing stock" />
-                ) : (
-                  <>
-                    <RefreshCcw className="size-4" />
-                    Refresh
-                  </>
-                )}
-              </Button>
-              {isItemsWorkspace && selectedVariantId && (
-                <Button asChild type="button" variant="outline">
-                  <a href={`/stock/?variantId=${encodeURIComponent(selectedVariantId)}`}>Manage stock</a>
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              {isLoading && !selectedStockDetail ? (
-                <LoadingStateBlock
-                  className="min-h-40 border-border bg-background"
-                  title={loadingLabel}
-                  description="Getting the latest stock count."
-                />
-              ) : (
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <StockMetric label="Physical stock" value={selectedStockDetail?.stock.quantity} />
-                  <StockMetric label="Available online" value={selectedStockDetail?.stock.onlineQuantity} />
-                  <StockMetric label="Updated" value={formatDate(selectedStockDetail?.stock.updatedAt)} isText />
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                {errorMessage}
+              </div>
+            )}
 
-          {!isItemsWorkspace && (
-            <div className="grid gap-5">
+            <Card className="staff-current-stock border-border bg-card">
+              <CardHeader className="flex-row items-start justify-between gap-4">
+                <div className="grid gap-1">
+                  <CardTitle>Current stock</CardTitle>
+                  <CardDescription>
+                    {selectedStockDetail
+                      ? (selectedStockDetail.displayName ?? selectedStockDetail.storeItemSlug.replaceAll('-', ' '))
+                      : 'Choose an item to see its stock.'}
+                  </CardDescription>
+                </div>
+                {errorMessage && (
+                  <Button
+                    disabled={isLoading || isSubmitting}
+                    onClick={() => void loadVariant(selectedVariantId, false, 'refresh')}
+                    variant="outline"
+                  >
+                    Retry stock
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                {isLoading && !selectedStockDetail ? (
+                  <LoadingStateBlock
+                    className="min-h-40 border-border bg-background"
+                    title={loadingLabel}
+                    description="Getting the latest stock count."
+                  />
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <StockMetric
+                      label={selectedStockDetail?.itemType === 'Clothes' ? 'Units on hand' : 'Copies on hand'}
+                      value={selectedStockDetail?.stock.quantity}
+                    />
+                    <StockMetric label="Available to buy online" value={selectedStockDetail?.stock.onlineQuantity} />
+                    <StockMetric label="Updated" value={formatDate(selectedStockDetail?.stock.updatedAt)} isText />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="staff-stock-controls grid gap-5">
               <ButtonGroup aria-label="Stock operation mode" className="w-full sm:w-fit">
                 <Button
                   type="button"
                   variant={stockMode === 'adjust' ? 'secondary' : 'outline'}
                   aria-pressed={stockMode === 'adjust'}
+                  disabled={!!stocktake || startingStocktake}
                   onClick={() => setStockMode('adjust')}
                 >
                   <ArrowDownUp aria-hidden="true" />
-                  Adjust stock
+                  Add or remove copies
                 </Button>
                 <Button
                   type="button"
@@ -456,11 +809,11 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                   Count stock
                 </Button>
               </ButtonGroup>
-              <div className="grid gap-5 xl:grid-cols-2">
+              <div className="grid gap-5">
                 <div hidden={stockMode !== 'adjust'}>
                   <Card className="border-border bg-card">
                     <CardHeader>
-                      <CardTitle>Add or remove stock</CardTitle>
+                      <CardTitle className="sr-only">Add or remove copies</CardTitle>
                       <CardDescription>
                         Remove stock after a sale or a gift. Add stock when new copies arrive.
                       </CardDescription>
@@ -475,7 +828,7 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                         <select
                           id="stock-change-direction"
                           className="min-h-11 border border-border bg-background p-2"
-                          disabled={!canMutateSelectedStock || isSubmitting}
+                          disabled={!selectedStockDetail || isSubmitting}
                           value={stockDirection}
                           onChange={(event) => setStockDirection(event.target.value)}
                         >
@@ -485,7 +838,7 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                         <label htmlFor="stock-change-delta">How many?</label>
                         <Input
                           className="border-input bg-background"
-                          disabled={!canMutateSelectedStock || isSubmitting}
+                          disabled={!selectedStockDetail || isSubmitting}
                           id="stock-change-delta"
                           name="delta"
                           onChange={(event) => setChangeDelta(event.target.value)}
@@ -499,7 +852,7 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                         <label htmlFor="stock-change-reason">Reason</label>
                         <select
                           className="min-h-11 border border-input bg-background p-2"
-                          disabled={!canMutateSelectedStock || isSubmitting}
+                          disabled={!selectedStockDetail || isSubmitting}
                           id="stock-change-reason"
                           name="reason"
                           onChange={(event) => setChangeReason(event.target.value)}
@@ -514,7 +867,7 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                         <label htmlFor="stock-change-notes">Notes (optional)</label>
                         <Textarea
                           className="border-input bg-background"
-                          disabled={!canMutateSelectedStock || isSubmitting}
+                          disabled={!selectedStockDetail || isSubmitting}
                           id="stock-change-notes"
                           name="notes"
                           onChange={(event) => setChangeNotes(event.target.value)}
@@ -528,10 +881,32 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                         >
                           <span>After this change</span>
                           <strong>
-                            {adjustmentInvalid ? 'Cannot go below zero' : (adjustmentQuantity ?? 'Enter a quantity')}
+                            {adjustmentInvalid
+                              ? 'Cannot go below zero'
+                              : adjustmentQuantity === null || !selectedStockDetail
+                                ? 'Enter a quantity'
+                                : `${adjustmentQuantity} on hand · ${Math.min(adjustmentQuantity, Math.max(0, selectedStockDetail.stock.onlineQuantity + Number(changeDelta) * (stockDirection === 'remove' ? -1 : 1)))} available to buy online`}
                           </strong>
                         </div>
-                        <Button disabled={!canMutateSelectedStock || isSubmitting || adjustmentInvalid} type="submit">
+                        {changeUnconfirmed && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={!hasFreshStock || historyPending || !!historyError}
+                            onClick={() => {
+                              setChangeUnconfirmed(false);
+                              setChangeDelta('');
+                              setChangeNotes('');
+                              setErrorMessage(null);
+                            }}
+                          >
+                            I checked the stock and history
+                          </Button>
+                        )}
+                        <Button
+                          disabled={!canMutateSelectedStock || isSubmitting || adjustmentInvalid || changeUnconfirmed}
+                          type="submit"
+                        >
                           {submittingIntent === 'stockChange' ? (
                             <LoadingButtonContent label="Saving stock change" />
                           ) : (
@@ -546,9 +921,10 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                 <div hidden={stockMode !== 'count'}>
                   <Card className="border-border bg-card">
                     <CardHeader>
-                      <CardTitle>Count stock</CardTitle>
+                      <CardTitle className="sr-only">Count stock</CardTitle>
                       <CardDescription>
-                        Enter how many you have counted, then how many may be sold online.
+                        Enter how many you have counted. The online quantity is how many customers may buy through the
+                        website.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -560,24 +936,30 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                         <label htmlFor="stock-count-counted-quantity">Physical stock counted</label>
                         <Input
                           className="border-input bg-background"
-                          disabled={!canMutateSelectedStock || isSubmitting}
+                          disabled={!selectedStockDetail || isSubmitting}
                           id="stock-count-counted-quantity"
                           min="0"
                           name="countedQuantity"
-                          onChange={(event) => setCountedQuantity(event.target.value)}
+                          onChange={(event) => {
+                            setCountedQuantity(event.target.value);
+                            setCountEdited(true);
+                          }}
                           placeholder="Counted Stock"
                           required
                           type="number"
                           value={countedQuantity}
                         />
-                        <label htmlFor="stock-count-online-quantity">Available online</label>
+                        <label htmlFor="stock-count-online-quantity">Available to buy online</label>
                         <Input
                           className="border-input bg-background"
-                          disabled={!canMutateSelectedStock || isSubmitting}
+                          disabled={!selectedStockDetail || isSubmitting}
                           id="stock-count-online-quantity"
                           min="0"
                           name="onlineQuantity"
-                          onChange={(event) => setOnlineQuantity(event.target.value)}
+                          onChange={(event) => {
+                            setOnlineQuantity(event.target.value);
+                            setCountEdited(true);
+                          }}
                           placeholder="OnlineStock"
                           required
                           type="number"
@@ -586,7 +968,7 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                         <label htmlFor="stock-count-notes">Notes (optional)</label>
                         <Textarea
                           className="border-input bg-background"
-                          disabled={!canMutateSelectedStock || isSubmitting}
+                          disabled={!selectedStockDetail || isSubmitting}
                           id="stock-count-notes"
                           name="notes"
                           onChange={(event) => setCountNotes(event.target.value)}
@@ -595,10 +977,19 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                         />
                         {countNeedsReassessment && (
                           <Button
-                            disabled={!canMutateSelectedStock || !hasFreshStock || isLoading || isSubmitting}
+                            disabled={
+                              !canMutateSelectedStock ||
+                              !hasFreshStock ||
+                              isLoading ||
+                              isSubmitting ||
+                              historyPending ||
+                              !!historyError
+                            }
                             onClick={() => {
                               if (!selectedStockDetail || !hasFreshStock) return;
                               setExpectedRevision(selectedStockDetail.stock.revision);
+                              sessionStorage.removeItem(pendingCountKey);
+                              setCountUnconfirmed(false);
                               setCountNeedsReassessment(false);
                               setStatusMessage(
                                 'Count reassessed against the displayed stock. Review and save when ready.',
@@ -610,6 +1001,14 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                             I have reassessed this count
                           </Button>
                         )}
+                        <div className="staff-operation-preview" aria-live="polite">
+                          <span>Count to save</span>
+                          <strong>
+                            {countedQuantity && onlineQuantity
+                              ? `${countedQuantity} on hand · ${onlineQuantity} available to buy online · difference ${Number(countedQuantity) - (selectedStockDetail?.stock.quantity ?? 0)}`
+                              : 'Enter both quantities'}
+                          </strong>
+                        </div>
                         <Button
                           disabled={
                             !canMutateSelectedStock ||
@@ -622,27 +1021,19 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                         >
                           {submittingIntent === 'stockCount' ? (
                             <LoadingButtonContent label="Saving count" />
+                          ) : stocktake ? (
+                            'Record count and next'
                           ) : (
                             'Save count'
                           )}
                         </Button>
-                        <div className="staff-operation-preview" aria-live="polite">
-                          <span>Count to save</span>
-                          <strong>
-                            {countedQuantity && onlineQuantity
-                              ? `${countedQuantity} physical · ${onlineQuantity} online`
-                              : 'Enter both quantities'}
-                          </strong>
-                        </div>
                       </form>
                     </CardContent>
                   </Card>
                 </div>
               </div>
             </div>
-          )}
 
-          {!isItemsWorkspace && (
             <Card className="border-border bg-card">
               <CardHeader>
                 <CardTitle>Recent history</CardTitle>
@@ -651,7 +1042,10 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                 {historyPending && <LoadingInline label="Loading stock history" />}
                 {historyError && (
                   <p role="alert" className="text-sm text-destructive">
-                    History could not load. Use Refresh to try again. {historyError}
+                    History could not load. {historyError}
+                    <Button variant="outline" onClick={() => void loadVariant(selectedVariantId, false, 'refresh')}>
+                      Retry history
+                    </Button>
                   </p>
                 )}
                 {history.map((entry) => (
@@ -662,9 +1056,40 @@ export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: S
                 )}
               </CardContent>
             </Card>
-          )}
-        </div>
-      </section>
+          </div>
+        )}
+      </section>{' '}
+      <AlertDialog
+        open={!!leaveAction}
+        onOpenChange={(open) => {
+          if (!open) setLeaveAction(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave this unfinished stock change?</AlertDialogTitle>
+            <AlertDialogDescription>
+              These entries have not been recorded. Keep editing or discard them to continue.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const action = leaveAction;
+                setLeaveAction(null);
+                setChangeDelta('');
+                setChangeNotes('');
+                setCountEdited(false);
+                setCountNotes('');
+                action?.();
+              }}
+            >
+              Discard and continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -725,7 +1150,7 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
         {entry.notes && <p className="text-sm text-muted-foreground">{entry.notes}</p>}
       </div>
       {'onlineQuantity' in entry && (
-        <p className="font-mono text-xs text-muted-foreground">Available online: {entry.onlineQuantity}</p>
+        <p className="font-mono text-xs text-muted-foreground">Available to buy online: {entry.onlineQuantity}</p>
       )}
     </article>
   );

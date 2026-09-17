@@ -1,4 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useDraftAutosave } from '../../hooks/use-draft-autosave';
+import { Progress } from 'radix-ui';
 import { DISTRO_GROUP_VALUES } from '@blackbox/content-model';
 import { CheckCircle2, CircleAlert } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -7,7 +9,12 @@ import EditorialPicker from './EditorialPicker';
 import NewArtistFields from './NewArtistFields';
 import { euroMinor } from '../stock/ItemPriceEditor';
 import { createInternalStockApi, type CatalogSetupCommand } from '../../lib/backend/internal-stock-api';
-import { createEditorialDraft, editorialSlug, type EditorialRecord } from '../../lib/backend/editorial-api';
+import {
+  createEditorialDraft,
+  editorialRequest,
+  editorialSlug,
+  type EditorialRecord,
+} from '../../lib/backend/editorial-api';
 
 export function releaseDetails(input: {
   title: string;
@@ -74,7 +81,7 @@ export function setupCommand(input: {
       ? (input.existing.data.group as CatalogSetupCommand['itemType'])
       : input.format;
   if (!DISTRO_GROUP_VALUES.includes(itemType)) throw new Error('Choose a supported format.');
-  if (input.kind === 'merch' && itemType !== 'Clothes') throw new Error('Choose a clothes record for Merch.');
+  if (input.kind === 'merch' && itemType !== 'Clothes') throw new Error('Choose clothing for Merch.');
   if (!input.existing && (!input.image || !input.alt.trim())) throw new Error('Choose artwork and describe the image.');
   if (!input.existing && sourceKind === 'release' && (!input.artist || !input.date))
     throw new Error('Choose an artist and release date.');
@@ -109,6 +116,10 @@ export function setupCommand(input: {
 }
 
 export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: string }) {
+  const [step, setStep] = useState(0);
+  const draftDocument = useRef<{ item: EditorialRecord; _rev: string } | null>(null);
+  const [savedData, setSavedData] = useState('');
+  const draftSlug = useRef('');
   const [ready, setReady] = useState(false);
   const [kind, setKind] = useState<'release' | 'distro' | 'merch'>('release');
   const [mode, setMode] = useState('new');
@@ -141,7 +152,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   const locked = !ready || busy || !!pending || !!draftPending || needsReview || !!completed || !!draftSaved;
   const setupReadiness = [
     {
-      label: 'Record details',
+      label: 'Details',
       ready: mode === 'existing' ? !!existing : !!title.trim() && (kind !== 'release' || (!!artist && !!date)),
     },
     { label: 'Artwork', ready: mode === 'existing' || (!!image && !!alt.trim()) },
@@ -151,8 +162,152 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
     },
     { label: sell ? 'Starting stock' : 'Release draft', ready: !sell || /^\d+$/.test(quantity) },
   ];
+  const editorialData =
+    kind === 'release'
+      ? {
+          title,
+          artist,
+          release_date: date,
+          summary,
+          cover_image: image ? { id: image } : null,
+          cover_image_alt: alt,
+          formats: [format],
+        }
+      : {
+          title,
+          artist_or_label: artistOrLabel,
+          summary,
+          image: image ? { id: image } : null,
+          image_alt: alt,
+          group: format,
+          format,
+          order: 0,
+        };
+  const editorialJson = JSON.stringify(editorialData);
+  const autosave = useDraftAutosave({
+    identity: kind,
+    value: editorialData,
+    dirty: mode === 'new' && !!title.trim() && editorialJson !== savedData,
+    enabled: ready && !busy && !pending && !draftPending && !completed && !draftSaved,
+    save: async (data) => {
+      const collection = kind === 'release' ? 'releases' : 'distro';
+      if (!draftSlug.current) draftSlug.current = editorialSlug(title, crypto.randomUUID());
+      sessionStorage.setItem(
+        `blackbox-catalog-draft:${backendBaseUrl}`,
+        JSON.stringify({ collection, slug: draftSlug.current }),
+      );
+      const current = draftDocument.current;
+      const result = current
+        ? await editorialRequest<{ item: EditorialRecord; _rev: string }>(
+            backendBaseUrl,
+            `content/${collection}/${current.item.id}`,
+            { _rev: current._rev, data },
+            'PUT',
+          )
+        : await createEditorialDraft(backendBaseUrl, collection, { slug: draftSlug.current, data });
+      draftDocument.current = result;
+      if (!current) {
+        draftDocument.current = await editorialRequest(
+          backendBaseUrl,
+          `content/${collection}/${result.item.id}`,
+          { _rev: result._rev, data },
+          'PUT',
+        );
+      }
+    },
+    saved: (data) => setSavedData(JSON.stringify(data)),
+  });
   useEffect(() => {
-    setReady(true);
+    if (mode !== 'new' || !title || savedData === editorialJson) return;
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    const leave = (event: MouseEvent) => {
+      const link = (event.target as Element)?.closest<HTMLAnchorElement>('a[href]');
+      if (
+        !link ||
+        link.origin !== location.origin ||
+        link.target ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        event.button !== 0
+      )
+        return;
+      event.preventDefault();
+      void autosave.flush().then((saved) => {
+        if (saved) location.assign(link.href);
+      });
+    };
+    window.addEventListener('beforeunload', warn);
+    document.addEventListener('click', leave, true);
+    return () => {
+      window.removeEventListener('beforeunload', warn);
+      document.removeEventListener('click', leave, true);
+    };
+  }, [mode, title, savedData, editorialJson]);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedKind = params.get('kind');
+    if (requestedKind === 'release' || requestedKind === 'distro' || requestedKind === 'merch') {
+      setKind(requestedKind);
+      setFormat(requestedKind === 'merch' ? 'Clothes' : 'Vinyl 12-inch');
+    }
+    const selectedCollection = params.get('collection');
+    const selectedId = params.get('id');
+    if (selectedId && (selectedCollection === 'releases' || selectedCollection === 'distro')) {
+      setMode('existing');
+      setKind(selectedCollection === 'releases' ? 'release' : 'distro');
+      void editorialRequest<{ item: EditorialRecord }>(
+        backendBaseUrl,
+        `content/${selectedCollection}/${encodeURIComponent(selectedId)}`,
+      )
+        .then(({ item }) => {
+          setExisting(item);
+          setTitle(String(item.data.title));
+          setReady(true);
+        })
+        .catch(() => setMessage('This title could not be loaded. Return to the catalog and try again.'));
+    } else {
+      const retained = sessionStorage.getItem(`blackbox-catalog-draft:${backendBaseUrl}`);
+      if (retained) {
+        try {
+          const saved = JSON.parse(retained) as { collection: string; slug: string };
+          if (!['releases', 'distro'].includes(saved.collection) || !/^[a-z0-9-]+$/.test(saved.slug))
+            throw new Error('Invalid draft');
+          if (requestedKind && (requestedKind === 'release') !== (saved.collection === 'releases')) {
+            setReady(true);
+          } else {
+            draftSlug.current = saved.slug;
+            void editorialRequest<{ item: EditorialRecord; _rev: string }>(
+              backendBaseUrl,
+              `content/${saved.collection}/${saved.slug}`,
+            )
+              .then((result) => {
+                draftDocument.current = result;
+                const data = result.item.data;
+                setKind(saved.collection === 'releases' ? 'release' : data.group === 'Clothes' ? 'merch' : 'distro');
+                setTitle(String(data.title ?? ''));
+                setArtist(String(data.artist ?? ''));
+                setArtistOrLabel(String(data.artist_or_label ?? ''));
+                setDate(String(data.release_date ?? ''));
+                setSummary(String(data.summary ?? ''));
+                const artwork = (data.cover_image ?? data.image) as { id?: string } | null;
+                setImage(artwork?.id ?? '');
+                setAlt(String(data.cover_image_alt ?? data.image_alt ?? ''));
+                setFormat((Array.isArray(data.formats) ? data.formats[0] : data.group) as typeof format);
+                setMessage('Your private draft has been restored.');
+                setReady(true);
+              })
+              .catch(() => {
+                setNeedsReview(true);
+                setMessage('The last draft could not be checked. Return to the catalog before starting another.');
+              });
+          }
+        } catch {
+          setNeedsReview(true);
+          setMessage('The last draft could not be restored. Return to the catalog.');
+        }
+      } else setReady(true);
+    }
     const saved = sessionStorage.getItem(storageKey);
     if (saved) {
       try {
@@ -178,10 +333,27 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (busy || needsReview || completed || draftSaved) return;
+    if (!pending && !draftPending && step < 2) {
+      if (step === 0 && !setupReadiness.slice(0, 2).every((item) => item.ready)) {
+        setMessage('Complete the title, artist, date and artwork before continuing.');
+        return;
+      }
+      if (mode === 'new' && !(await autosave.flush())) return;
+      setMessage('');
+      setStep(step === 0 && !sell ? 2 : step + 1);
+      return;
+    }
+    if (mode === 'new' && !pending && !draftPending && !(await autosave.flush())) return;
     setBusy(true);
     setMessage('');
     try {
       if (!sell) {
+        if (draftDocument.current) {
+          setDraftSaved(draftDocument.current.item.id);
+          setMessage('Your release draft is ready to preview and publish.');
+          sessionStorage.removeItem(`blackbox-catalog-draft:${backendBaseUrl}`);
+          return;
+        }
         const command = draftPending ?? {
           slug: editorialSlug(title, crypto.randomUUID()),
           data: releaseDetails({ title, artist, date, summary, image, alt, format }),
@@ -199,7 +371,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
         setupCommand({
           identity: crypto.randomUUID(),
           kind,
-          existing: mode === 'existing' ? existing : null,
+          existing: mode === 'existing' ? existing : (draftDocument.current?.item ?? null),
           title,
           artist,
           artistOrLabel,
@@ -214,12 +386,13 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           custom,
           quantity,
         });
-      if (mode === 'existing' && !existing && !pending) throw new Error('Choose an existing record.');
+      if (mode === 'existing' && !existing && !pending) throw new Error('Choose an existing title.');
       sessionStorage.setItem(storageKey, JSON.stringify(command));
       setPending(command);
       const result = await createInternalStockApi({ backendBaseUrl }).setupItem(command);
       if (result.status === 'completed') {
         sessionStorage.removeItem(storageKey);
+        sessionStorage.removeItem(`blackbox-catalog-draft:${backendBaseUrl}`);
         setCompleted(result.variantId);
         setMessage('Item created. It is not published in the shop yet.');
       } else if (result.status === 'needs_review') {
@@ -241,51 +414,51 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
     <div className="staff-workspace staff-item-setup mx-auto grid max-w-3xl gap-8 px-4 py-8 sm:px-8">
       <header className="staff-workspace-hero grid gap-3">
         <a href="/items/" className="underline">
-          Back to items
+          Back to catalog
         </a>
-        <h1 className="text-3xl font-semibold tracking-tight">Create an item</h1>
-        <p>New items stay unpublished until you publish them.</p>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          Add {kind === 'release' ? 'release' : kind === 'merch' ? 'merch' : 'distro'}
+        </h1>
+        <p>Website details stay private until you publish them.</p>
       </header>
+      <Progress.Root
+        value={step + 1}
+        max={3}
+        aria-label={`Step ${step + 1} of 3`}
+        className="h-1 overflow-hidden bg-muted"
+      >
+        <Progress.Indicator className="h-full bg-primary" style={{ width: `${((step + 1) / 3) * 100}%` }} />
+      </Progress.Root>
+      <ol className="flex gap-4 text-sm" aria-label="Add to catalog">
+        {['Details', 'Price & starting stock', 'Review'].map((label, index) => (
+          <li key={label} aria-current={step === index ? 'step' : undefined}>
+            {index + 1}. {label}
+          </li>
+        ))}
+      </ol>
+      <p role="status">
+        {autosave.saving
+          ? 'Saving…'
+          : autosave.error
+            ? `Not saved · ${autosave.error}`
+            : savedData
+              ? 'Changes saved privately'
+              : ''}
+      </p>
+      {autosave.error && (
+        <Button variant="outline" onClick={() => void autosave.flush()}>
+          Retry save
+        </Button>
+      )}
       <form onSubmit={submit} className="staff-form grid gap-8">
-        <fieldset disabled={locked} className="staff-form-section grid min-w-0 gap-5">
-          <legend className="staff-section-title mb-4 text-xl font-semibold">1. Item details</legend>
-          <label className="grid gap-2">
-            What are you adding?
-            <select
-              className={inputClass}
-              value={kind}
-              onChange={(event) => {
-                const selected = event.target.value as typeof kind;
-                setKind(selected);
-                setExisting(null);
-                setFormat(selected === 'merch' ? 'Clothes' : 'Vinyl 12-inch');
-              }}
-            >
-              <option value="release">Label release</option>
-              <option value="distro">Distro</option>
-              <option value="merch">Merch</option>
-            </select>
-          </label>
-          <label className="grid gap-2">
-            Record
-            <select
-              className={inputClass}
-              value={mode}
-              onChange={(event) => {
-                setMode(event.target.value);
-                setExisting(null);
-              }}
-            >
-              <option value="new">Create a new record</option>
-              <option value="existing">Use an existing record</option>
-            </select>
-          </label>
+        <fieldset hidden={step !== 0} disabled={locked || step !== 0} className="staff-form-section grid min-w-0 gap-5">
+          <legend className="staff-section-title mb-4 text-xl font-semibold">Details</legend>
           {mode === 'existing' ? (
             <EditorialPicker
               key={kind}
               base={backendBaseUrl}
               collection={kind === 'release' ? 'releases' : 'distro'}
-              label="Existing record"
+              label="Selected title"
               value={existing?.id ?? ''}
               onSelect={(item) => {
                 if ('data' in item) setExisting(item);
@@ -377,8 +550,12 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           )}
         </fieldset>
         {sell && (
-          <fieldset disabled={locked} className="staff-form-section grid min-w-0 gap-5">
-            <legend className="staff-section-title mb-4 text-xl font-semibold">2. Price and starting stock</legend>
+          <fieldset
+            hidden={step !== 1}
+            disabled={locked || step !== 1}
+            className="staff-form-section grid min-w-0 gap-5"
+          >
+            <legend className="staff-section-title mb-4 text-xl font-semibold">Price & starting stock</legend>
             <label className="flex min-h-11 items-center gap-3">
               <input type="checkbox" checked={custom} onChange={(event) => setCustom(event.target.checked)} />
               Let buyers choose what to pay
@@ -416,7 +593,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
               </label>
             )}
             <label className="grid gap-2">
-              How many copies do you have?
+              How many {kind === 'merch' ? 'units' : 'copies'} do you have?
               <Input
                 required
                 type="number"
@@ -426,38 +603,61 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 onChange={(event) => setQuantity(event.target.value)}
               />
               <span className="text-sm text-muted-foreground">
-                These copies will also be available online when the item is published.
+                These {kind === 'merch' ? 'units' : 'copies'} will also be available to buy online when the item is
+                published.
               </span>
-            </label>
-            <label className="flex min-h-11 items-center gap-3">
-              <input type="checkbox" required />I confirm this price and starting stock
             </label>
           </fieldset>
         )}
-        <section className="staff-readiness" aria-label="Item setup readiness">
-          <div>
-            <p className="staff-section-title">Ready to continue</p>
-            <p className="text-sm text-muted-foreground">Complete the required steps before checking the item.</p>
-          </div>
-          <div className="staff-readiness-items">
-            {setupReadiness.map((item) => (
-              <div key={item.label} className={item.ready ? 'staff-readiness-item is-ready' : 'staff-readiness-item'}>
-                {item.ready ? <CheckCircle2 aria-hidden="true" /> : <CircleAlert aria-hidden="true" />}
-                <span>{item.label}</span>
-                <span className="sr-only">{item.ready ? 'ready' : 'needs attention'}</span>
-              </div>
-            ))}
-          </div>
-        </section>
+        {step === 2 && (
+          <section className="staff-readiness" aria-label="Item setup readiness">
+            <div>
+              <p className="staff-section-title">Ready to continue</p>
+              <p className="text-sm text-muted-foreground">Complete the required steps before checking the item.</p>
+            </div>
+            <div className="staff-readiness-items">
+              {setupReadiness.map((item) => (
+                <div key={item.label} className={item.ready ? 'staff-readiness-item is-ready' : 'staff-readiness-item'}>
+                  {item.ready ? <CheckCircle2 aria-hidden="true" /> : <CircleAlert aria-hidden="true" />}
+                  <span>{item.label}</span>
+                  <span className="sr-only">{item.ready ? 'ready' : 'needs attention'}</span>
+                </div>
+              ))}
+            </div>
+            <p>
+              {title || String(existing?.data.title ?? '')}
+              {sell
+                ? ` · ${format} · EUR ${amount} · ${quantity} ${kind === 'merch' ? 'units' : 'copies'} available to buy online`
+                : ' · Website only'}
+            </p>
+            {sell && !pending && (
+              <label className="flex min-h-11 items-center gap-3">
+                <input type="checkbox" required />I confirm this price and starting stock
+              </label>
+            )}
+          </section>
+        )}
+        {step > 0 && !pending && !draftPending && !completed && !draftSaved && (
+          <Button
+            type="button"
+            variant="outline"
+            disabled={busy}
+            onClick={() => setStep(step === 2 && !sell ? 0 : step - 1)}
+          >
+            Back
+          </Button>
+        )}
         {!completed && !draftSaved && (
           <Button type="submit" disabled={!ready || busy || needsReview}>
             {busy
               ? 'Checking item…'
               : pending || draftPending
                 ? 'Check again'
-                : sell
-                  ? 'Create item'
-                  : 'Save release draft'}
+                : step < 2
+                  ? 'Continue'
+                  : sell
+                    ? 'Confirm price and starting stock'
+                    : 'Save release draft'}
           </Button>
         )}
         {message && <p role="status">{message}</p>}

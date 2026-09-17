@@ -10,7 +10,8 @@ import {
   Package,
   UserRound,
 } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { Button } from '../ui/button';
 import type { InternalOrder, OrderStatus } from '../../lib/backend/internal-order-api';
 
 export const paymentLabels: Record<OrderStatus, string> = {
@@ -20,7 +21,7 @@ export const paymentLabels: Record<OrderStatus, string> = {
   needs_review: 'Needs review',
 };
 const deliveryLabels = {
-  shopper_confirmation: 'Shopper confirmation',
+  shopper_confirmation: 'Confirmation email',
   ops_fulfillment: 'Fulfillment email',
   newsletter_registration: 'Newsletter registration',
 };
@@ -61,7 +62,7 @@ export function OrderStatusLabel({ status }: { status: OrderStatus | 'pending' |
   return (
     <span className={`order-status order-status--${status}`}>
       <Icon size={17} aria-hidden="true" />
-      {status === 'pending' ? 'Pending' : status === 'delivered' ? 'Delivered' : paymentLabels[status]}
+      {status === 'pending' ? 'Email pending' : status === 'delivered' ? 'Email delivered' : paymentLabels[status]}
     </span>
   );
 }
@@ -73,6 +74,29 @@ export function notificationStatus(order: InternalOrder) {
       : order.deliveries.length
         ? 'delivered'
         : null;
+}
+function CopyReference({ value }: { value: string | null }) {
+  const [message, setMessage] = useState('');
+  return (
+    <span>
+      <code>{value ?? 'Not recorded'}</code>
+      {value && (
+        <Button
+          variant="ghost"
+          className="ml-2"
+          onClick={() => {
+            void navigator.clipboard.writeText(value).then(
+              () => setMessage('Copied'),
+              () => setMessage('Select and copy the reference above.'),
+            );
+          }}
+        >
+          Copy
+        </Button>
+      )}
+      <span role="status">{message}</span>
+    </span>
+  );
 }
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -266,9 +290,11 @@ export default function OrderDetail({ order }: { order: InternalOrder }) {
         <summary>Order references &amp; timeline</summary>
         <dl className="order-delivery-facts">
           <Fact label="Checkout Session">
-            {order.checkoutSessionId ?? 'No session recorded. This order has no permanent detail link.'}
+            <CopyReference value={order.checkoutSessionId} />
           </Fact>
-          <Fact label="PaymentIntent">{order.stripePaymentIntentId ?? 'Not recorded'}</Fact>
+          <Fact label="PaymentIntent">
+            <CopyReference value={order.stripePaymentIntentId} />
+          </Fact>
           <Fact label="Store Item">{order.storeItemSlug}</Fact>
           <Fact label="Variant">{order.variantId}</Fact>
           <Fact label="Created">{formatOrderTime(order.createdAt)}</Fact>

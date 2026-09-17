@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { usePublicationPolling } from '../content/PublicationStatus';
+import { useStaffRead } from '../../lib/staff-query';
 import { Button } from '../ui/button';
 import {
   createInternalStockApi,
@@ -9,6 +11,8 @@ import {
 
 export default function ItemPublication({ variantId, backendBaseUrl }: { variantId: string; backendBaseUrl: string }) {
   const api = createInternalStockApi({ backendBaseUrl });
+  const [readAttempt, setReadAttempt] = useState(0);
+  const [readFailed, setReadFailed] = useState(false);
   const [detail, setDetail] = useState<CatalogItemPublishDetail | null>(null);
   const [pending, setPending] = useState<CatalogItemPublishCommand | null>(null);
   const [message, setMessage] = useState('Loading publication…');
@@ -23,7 +27,10 @@ export default function ItemPublication({ variantId, backendBaseUrl }: { variant
       .readPublication(variantId)
       .then((current) => {
         if (!active) return;
+        setReadFailed(false);
         setDetail(current);
+        setFailed(current.publicationStatus === 'failed');
+        setNeedsReview(current.operationStatus === 'needs_review');
         const saved = localStorage.getItem(storageKey);
         setPending(current.pending ?? (saved ? (JSON.parse(saved) as CatalogItemPublishCommand) : null));
         setMessage(
@@ -33,12 +40,47 @@ export default function ItemPublication({ variantId, backendBaseUrl }: { variant
         );
       })
       .catch(() => {
-        if (active) setMessage('Publication is unavailable. Complete item setup and reload.');
+        if (active) {
+          setReadFailed(true);
+          setMessage('Publication could not be checked. Retry to keep working here.');
+        }
       });
     return () => {
       active = false;
     };
-  }, []);
+  }, [variantId, backendBaseUrl, readAttempt]);
+
+  async function checkStatus() {
+    if (busy) return;
+    try {
+      const current = await api.readPublication(variantId);
+      if (detail?.cmsRevision !== current.cmsRevision) setConfirmed(false);
+      setDetail(current);
+      setReadFailed(false);
+      setFailed(current.publicationStatus === 'failed');
+      setNeedsReview(current.operationStatus === 'needs_review');
+      if (current.pending) {
+        setPending(current.pending);
+        setMessage(
+          current.operationStatus === 'needs_review'
+            ? 'Publication needs an administrator review. Your operation has been retained.'
+            : current.publicationStatus === 'failed'
+              ? 'The website update failed. Retry publication to use the approved content.'
+              : 'Updating website…',
+        );
+      } else if (pending && current.availability === 'published') {
+        localStorage.removeItem(storageKey);
+        setPending(null);
+        setConfirmed(false);
+        setMessage('On the website.');
+      }
+    } catch {
+      setReadFailed(true);
+      setMessage('Update not confirmed. Check status to try again.');
+    }
+  }
+  const polling = usePublicationPolling(!failed && !needsReview ? (pending?.operationId ?? '') : '', checkStatus);
+  useStaffRead(['item-publication', backendBaseUrl, variantId], checkStatus, { enabled: !busy && !pending });
 
   async function publish() {
     if (busy || needsReview || !detail) return;
@@ -103,7 +145,17 @@ export default function ItemPublication({ variantId, backendBaseUrl }: { variant
           Publish this item to the live shop
         </label>
       )}
-      <p role="status">{message}</p>
+      <p role="status">{polling.paused ? 'Update not confirmed' : message}</p>
+      {polling.paused && (
+        <Button variant="outline" disabled={polling.checking} onClick={() => void polling.check()}>
+          Check status
+        </Button>
+      )}
+      {readFailed && (
+        <Button variant="outline" onClick={() => setReadAttempt((attempt) => attempt + 1)}>
+          Retry publication details
+        </Button>
+      )}
       <Button
         className="min-h-11"
         disabled={busy || needsReview || !detail || (!pending && detail.requiresLiveConfirmation && !confirmed)}

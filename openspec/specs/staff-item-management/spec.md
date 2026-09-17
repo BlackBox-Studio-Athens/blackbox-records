@@ -6,6 +6,16 @@ Let label members create sellable items and change their prices through one reli
 
 ## Requirements
 
+### Requirement: Catalog editing builds on EmDash
+
+The label-focused staff interface SHALL use EmDash APIs for content, private drafts, revision conflicts, references and media, and reuse its Portable Text editor. Catalog details SHALL combine Details, Selling and Stock destinations without moving commerce or stock authority into EmDash. Creation SHALL guide Details → Price & starting stock → Review, with private editorial autosave and explicit confirmed selling setup. Editorial-only releases SHALL skip selling setup and retain an independent publication path.
+
+#### Scenario: An occasional member resumes an unfinished release
+
+- **WHEN** a member returns to their saved release draft
+- **THEN** incomplete editorial details remain private and editable
+- **AND** no price or opening stock is created until the member explicitly confirms setup.
+
 ### Requirement: Member language and input are accessible to nontechnical musicians
 
 The member workspace SHALL use short, familiar English for label members who are non-native English speakers. Normal screens SHALL use item names and action labels rather than backend identifiers, provider terminology, or developer vocabulary. Stock movement SHALL accept a positive quantity with a separate Add or Remove choice. EUR price entry SHALL accept either a comma or a decimal point with at most two decimal places. Feedback SHALL distinguish a confirmed result from an uncertain result and offer a clear next action without asking the member to understand retry identities.

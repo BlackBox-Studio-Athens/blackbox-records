@@ -1,12 +1,9 @@
 ---
-import StockOperationsApp from '../../components/stock/StockOperationsApp';
+import ContentApp from '../../components/content/ContentApp';
 import StockOpsLayout from '../../layouts/StockOpsLayout.astro';
 import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api';
 ---
 
-<StockOpsLayout pageTitle="Items" pageDescription="Manage catalog items, prices and publication.">
-  <a href="/items/new/" class="mx-4 mt-6 inline-flex min-h-11 items-center border border-border px-4 underline"
-    >Create an item</a
-  >
-  <StockOperationsApp backendBaseUrl={getInternalStockApiBaseUrl()} mode="items" client:load />
+<StockOpsLayout pageTitle="Catalog" pageDescription="Manage releases, distro and merch.">
+  <ContentApp backendBaseUrl={getInternalStockApiBaseUrl()} client:load />
 </StockOpsLayout>

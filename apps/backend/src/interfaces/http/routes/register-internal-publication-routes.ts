@@ -37,6 +37,8 @@ const detailSchema = z
     cmsSourceId: z.string(),
     availability: z.enum(['published', 'withheld', 'retired']),
     pending: catalogItemPublishSchema.nullable(),
+    operationStatus: z.enum(['pending', 'completed', 'needs_review']).nullable().optional(),
+    publicationStatus: z.enum(['pending', 'live', 'failed']).nullable().optional(),
   })
   .strict()
   .openapi('CatalogItemPublishDetail');
@@ -95,6 +97,10 @@ export function registerInternalPublicationRoutes(app: AppOpenApi) {
               expectedRevision: record.catalogRevision,
               availability: record.catalogAvailability,
               requiresLiveConfirmation,
+              operationStatus: retained?.status ?? null,
+              publicationStatus: retained?.results.publicationId
+                ? (await cms.readPublication(retained.results.publicationId)).status
+                : null,
               pending: retained?.results.cmsRevision
                 ? {
                     operationId: retained.id,

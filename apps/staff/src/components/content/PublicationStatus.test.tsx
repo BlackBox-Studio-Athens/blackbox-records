@@ -31,13 +31,6 @@ describe('summarizePublicationStatus', () => {
     });
   });
 
-  it('shows an in-flight request before server history exists', () => {
-    expect(summarizePublicationStatus([publication('failed', 'failed', 1)], { requesting: true })).toMatchObject({
-      view: 'requesting',
-      label: 'Publishing…',
-    });
-  });
-
   it('keeps a known state stale when status refresh fails', () => {
     expect(
       summarizePublicationStatus([publication('pending', 'pending', 1)], { statusError: 'Status unavailable.' }),
@@ -53,7 +46,7 @@ describe('summarizePublicationStatus', () => {
   });
 });
 
-it('renders the current status and direct refresh action', () => {
+it('renders pending status without a routine refresh action', () => {
   const html = renderToStaticMarkup(
     <PublicationStatus
       items={[publication('pending', 'pending', 2), publication('failed', 'failed', 1)]}
@@ -62,7 +55,7 @@ it('renders the current status and direct refresh action', () => {
     />,
   );
   expect(html).toContain('Publishing · 1 pending');
-  expect(html).toContain('aria-label="Refresh publication status"');
+  expect(html).not.toContain('aria-label="Check publication status"');
 });
 
 it('does not let an operation message reclassify history', () => {
@@ -74,4 +67,11 @@ it('does not let an operation message reclassify history', () => {
     />,
   );
   expect(html).toContain('Latest publication live');
+});
+
+it('offers a contextual status retry when reads fail', () => {
+  const html = renderToStaticMarkup(
+    <PublicationStatus items={[]} message="" statusError="Connection lost" refresh={async () => {}} />,
+  );
+  expect(html).toContain('aria-label="Check publication status"');
 });

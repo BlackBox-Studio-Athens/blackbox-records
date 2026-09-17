@@ -1,4 +1,5 @@
 import { createRoute, z } from '@hono/zod-openapi';
+import { inventoryQuerySchema } from '../../../application/commerce/stock';
 
 import type { AppBindings, AppOpenApi } from '../../../env';
 import type { AppLogger } from '../../../observability';
@@ -78,6 +79,9 @@ const variantSearchQuerySchema = z
 const variantSummarySchema = z
   .object({
     displayName: z.string().optional(),
+    itemType: z.string().nullable().optional(),
+    quantity: z.number().int().nonnegative().nullable().optional(),
+    onlineQuantity: z.number().int().nonnegative().nullable().optional(),
     sourceId: z.string(),
     sourceKind: z.enum(['release', 'distro']),
     storeItemSlug: z.string(),
@@ -171,6 +175,30 @@ const recordedStockCountResponseSchema = z
     variantId: z.string(),
   })
   .openapi('RecordedStockCountResponse');
+
+const inventoryRoute = createRoute({
+  method: 'get',
+  path: '/api/internal/inventory',
+  request: { query: inventoryQuerySchema },
+  responses: {
+    200: {
+      description: 'A bounded inventory page.',
+      content: {
+        'application/json': {
+          schema: z
+            .object({
+              items: z.array(variantSummarySchema.extend({ cmsSourceId: z.string().nullable() })),
+              nextCursor: z.string().optional(),
+              before: z.string(),
+            })
+            .openapi('InventoryPage'),
+        },
+      },
+    },
+    ...operatorAccessErrorResponses,
+  },
+  tags: ['Internal Stock'],
+});
 
 const searchVariantsRoute = createRoute({
   method: 'get',
@@ -356,6 +384,11 @@ const postStockCountRoute = createRoute({
 });
 
 export function registerInternalStockRoutes(app: AppOpenApi): void {
+  app.openapi(inventoryRoute, async (context) =>
+    withInternalStockServices(context.env, async (services) =>
+      jsonNoStore(context.json(await services.readInventory(context.req.valid('query')), 200)),
+    ),
+  );
   app.openapi(searchVariantsRoute, async (context) => {
     const logger = requestLogger(context);
 

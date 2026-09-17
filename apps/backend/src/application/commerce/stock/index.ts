@@ -4,6 +4,8 @@ export { readVariantStockHistory } from './read-variant-stock-history';
 export { recordStockChange } from './record-stock-change';
 export { recordStockCount } from './record-stock-count';
 export { searchVariants } from './search-variants';
+export { inventoryQuerySchema } from './inventory';
+export type { InventoryQuery } from '../../../domain/commerce/repositories/spi';
 export type { RecordStockChangeCommand } from './record-stock-change';
 export type { RecordStockCountCommand } from './record-stock-count';
 export type {

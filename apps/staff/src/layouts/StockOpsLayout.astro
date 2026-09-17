@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
-import { Boxes, FilePenLine, Disc3, ReceiptText } from 'lucide-react';
+import StaffShell from '../components/StaffShell';
+import '../styles/staff-workspace.css';
 
 interface Props {
   pageTitle: string;
@@ -34,32 +35,8 @@ const htmlTitle = pageTitle + ' | BlackBox Records';
     class="staff-body min-h-screen overflow-x-clip bg-background text-foreground"
   >
     <a class="accessibility-skip-to-content-link" href="#main">Skip to workspace</a>
-    <header class="staff-header">
-      <a href="/content/" class="staff-brand" aria-label="BlackBox Records staff, content workspace"
-        ><img src="/logo-horizontal.png" alt="BlackBox Records" width="1024" height="253" /></a
-      >
-      {
-        import.meta.env.PUBLIC_STAFF_ENVIRONMENT === 'uat' && (
-          <span class="staff-environment-badge">Test environment</span>
-        )
-      }
-      <nav aria-label="Staff workspace">
-        <a href="/content/" aria-current={Astro.url.pathname.startsWith('/content/') ? 'page' : undefined}
-          ><FilePenLine size={19} aria-hidden="true" />Content</a
-        >
-        <a href="/items/" aria-current={Astro.url.pathname.startsWith('/items/') ? 'page' : undefined}
-          ><Disc3 size={19} aria-hidden="true" />Items</a
-        >
-        <a href="/stock/" aria-current={Astro.url.pathname.startsWith('/stock/') ? 'page' : undefined}
-          ><Boxes size={19} aria-hidden="true" />Stock</a
-        >
-        <a href="/orders/" aria-current={Astro.url.pathname.startsWith('/orders/') ? 'page' : undefined}
-          ><ReceiptText size={19} aria-hidden="true" />Orders</a
-        >
-      </nav>
-    </header>
-    <main id="main" tabindex="-1">
+    <StaffShell title={pageTitle} environment={import.meta.env.PUBLIC_STAFF_ENVIRONMENT} client:load>
       <slot />
-    </main>
+    </StaffShell>
   </body>
 </html>

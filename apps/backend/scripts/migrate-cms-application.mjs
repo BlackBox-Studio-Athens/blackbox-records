@@ -53,18 +53,57 @@ const proxy = await getPlatformProxy({
   envFiles: [],
 });
 let pending;
+let privateDraftFieldsToUpdate = 0;
 try {
   const db = proxy.env.CMS_DB;
   const exists = await db
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = '_blackbox_app_migrations'")
     .first();
+  const fieldsExist = await db
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='_emdash_fields'")
+    .first();
+  if (fieldsExist) {
+    const collections = [
+      'artists',
+      'releases',
+      'distro',
+      'news',
+      'navigation',
+      'socials',
+      'settings',
+      'home',
+      'about',
+      'services',
+      'newsletter',
+      'distro_page',
+      'purchase_information',
+    ];
+    const where =
+      '"required" = 1 AND collection_id IN (SELECT id FROM _emdash_collections WHERE slug IN (SELECT value FROM json_each(?)))';
+    const count = await db
+      .prepare(`SELECT count(*) AS total FROM _emdash_fields WHERE ${where}`)
+      .bind(JSON.stringify(collections))
+      .first();
+    privateDraftFieldsToUpdate = count.total;
+    if (values.apply && count.total)
+      await db
+        .prepare(`UPDATE _emdash_fields SET "required" = 0 WHERE ${where}`)
+        .bind(JSON.stringify(collections))
+        .run();
+  }
   const applied = exists
     ? (await db.prepare('SELECT name FROM _blackbox_app_migrations ORDER BY id').all()).results.map((row) => row.name)
     : [];
   pending = readdirSync(migrations)
     .filter((name) => name.endsWith('.sql') && !applied.includes(name))
     .sort();
-  console.log(JSON.stringify({ environment: values.env, database: resource.database_name, applied, pending }, null, 2));
+  console.log(
+    JSON.stringify(
+      { environment: values.env, database: resource.database_name, applied, pending, privateDraftFieldsToUpdate },
+      null,
+      2,
+    ),
+  );
 } finally {
   await proxy.dispose();
 }

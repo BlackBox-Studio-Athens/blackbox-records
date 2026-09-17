@@ -1,4 +1,64 @@
 export type paths = {
+    "/api/internal/inventory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    area?: "all" | "release" | "distro" | "merch";
+                    before?: string;
+                    cursor?: string;
+                    format?: string;
+                    limit?: number;
+                    q?: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A bounded inventory page. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["InventoryPage"];
+                    };
+                };
+                /** @description Operator authentication failed. */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description Operator authentication is temporarily unavailable. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/items/setup": {
         parameters: {
             query?: never;
@@ -113,6 +173,77 @@ export type paths = {
                 };
                 /** @description Checkout order not found. */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description Operator authentication is temporarily unavailable. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/internal/orders/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: {
+            parameters: {
+                query?: {
+                    cursor?: string;
+                    limit?: number;
+                    notification?: "pending" | "needs_review";
+                    q?: string;
+                    status?: components["schemas"]["InternalOrderStatus"];
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Search all protected orders with stable pagination. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["InternalCheckoutOrder"][];
+                            nextCursor: string | null;
+                        };
+                    };
+                };
+                /** @description Invalid search cursor. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description Operator authentication failed. */
+                401: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -562,6 +693,8 @@ export type components = {
             /** @enum {string} */
             collection: "releases" | "distro";
             expectedRevision: number;
+            /** @enum {string|null} */
+            operationStatus?: "pending" | "completed" | "needs_review" | null;
             pending: {
                 cmsRevision: string;
                 /** @default false */
@@ -572,6 +705,8 @@ export type components = {
                 /** @default false */
                 retryPublication: boolean;
             } | null;
+            /** @enum {string|null} */
+            publicationStatus?: "pending" | "live" | "failed" | null;
             requiresLiveConfirmation: boolean;
             title: string;
         };
@@ -707,6 +842,7 @@ export type components = {
             needsReviewReason: string | null;
             /** Format: date-time */
             notPaidAt: string | null;
+            orderReference?: string;
             /** Format: date-time */
             paidAt: string | null;
             shippingLocker: {
@@ -779,11 +915,21 @@ export type components = {
         };
         InternalVariantSummary: {
             displayName?: string;
+            itemType?: string | null;
+            onlineQuantity?: number | null;
+            quantity?: number | null;
             sourceId: string;
             /** @enum {string} */
             sourceKind: "release" | "distro";
             storeItemSlug: string;
             variantId: string;
+        };
+        InventoryPage: {
+            before: string;
+            items: (components["schemas"]["InternalVariantSummary"] & {
+                cmsSourceId: string | null;
+            })[];
+            nextCursor?: string;
         };
         RecordedStockChangeResponse: {
             entry: components["schemas"]["InternalStockChangeEntry"];

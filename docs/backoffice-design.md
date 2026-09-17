@@ -1,8 +1,10 @@
 # Backoffice design reference
 
+The staff interface is built on EmDash's APIs, not a second CMS or a replacement admin backend. EmDash owns content, private drafts, revision conflict checks, references, media, and the reused Portable Text editor. Label-specific forms and publication review coordinate these APIs with the existing commerce services. The native full admin screens are not the staff navigation foundation.
+
 Living document · reviewed 2026-09-17 · audience: content editors and label members.
 
-This is the design reference for **Content, Images, Items, Stock, and Orders**. The public site's expressive music identity remains in [DESIGN.md](../DESIGN.md); staff work needs quieter typography, predictable actions, and accurate operational state. Update this document in the same change as a backoffice behavior or pattern change.
+This is the design reference for the **staff workspace**. The public site's expressive music identity remains in [DESIGN.md](../DESIGN.md); staff work needs quieter typography, predictable actions, and accurate operational state. Update this document in the same change as a backoffice behavior or pattern change.
 
 ## Decision states and maintenance
 
@@ -12,30 +14,48 @@ This is the design reference for **Content, Images, Items, Stock, and Orders**. 
 
 For each change record the date, affected task, before/after screenshot, rationale, acceptance evidence, and any remaining limitation. Use browser screenshots of the real implementation, not generated mockups. Keep private customer/order information out of committed evidence.
 
-## Shared workspace rules — accepted
+## Record-label workspace — accepted 2026-09-17, implementation under verification
 
-Members should learn one workspace, then recognize the others. Keep Content as the landing page and the Content / Items / Stock / Orders navigation stable. Images remain part of Content. Preserve deep links, selected records, and return context.
+This decision supersedes the Content landing dashboard, persistent staging queue, manual refresh controls, separate Items navigation, and closed-by-default desktop preview described in the historical research below. The accepted implementation plan is tracked in [the change checklist](../openspec/changes/redesign-staff-workspace/tasks.md). Do not treat old research screenshots as evidence for the redesign.
 
-| Pattern     | Rule                                                                                                                                                            |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Typography  | Use the existing staff sans-serif for navigation, forms and operational headings. Reserve display typography for public previews.                               |
-| Layout      | One clear page/task heading. Search/filter/refresh controls in a consistent toolbar. Sticky primary actions for long editing tasks.                             |
-| Spacing     | Use existing spacing tokens, with 16–24 px between groups; no per-workspace visual system.                                                                      |
-| Controls    | Familiar installed shadcn/Radix primitives. Primary actions retain text. Icon-only controls require accessible names and tooltips. Aim for 44 px touch targets. |
-| Color       | Blue: selection/action. Amber: unsaved/pending. Green: confirmed live/success. Red: failure. Pair color with text or an icon.                                   |
-| Status      | Draft saved is not Live. A request being accepted is not completed. Preserve the last useful data while refreshing and label stale results.                     |
-| Detail      | Show what helps a member act. Put technical diagnostics behind an error-only disclosure; retain copyable reconciliation identifiers.                            |
-| Feedback    | Explain blocked actions beside the action. Keep validation, conflicts, crop guidance, stock authority, delivery facts, and recovery instructions.               |
-| Responsive  | Desktop density must not create phone-sized targets. Use existing narrow-screen sheets/tabs, visible focus and reduced-motion support.                          |
-| Performance | Start independent reads together; do not hide usable content behind unrelated reads. No background preview work while closed.                                   |
+Use one dark workspace: **Overview**; **Catalog** (Artists, Releases, Distro & merch); **Website** (Pages, News, Navigation & footer, Label details); **Images**; **Stock**; **Orders**. The root and logo open Overview. Existing content and variant links remain supported. Navigation describes members' work, while editorial, price, stock and publication authorities remain separate.
 
-Existing shared navigation, semantic colors, preview controls, image thumbnails/dimensions and async Stock reads are implemented. The recommendations below must not be counted as newly delivered versions of those existing features.
+Overview starts with Edit a page, Add to the catalog, and Update stock. Recent private drafts and actionable website/order problems follow as ordinary rows. No fabricated totals or workflow tutorial. Website Pages opens Home, About, Services, Distro introduction and Buying & delivery directly. Buying & delivery retains its wording approval.
 
-## Staff publishing and workspace redesign — implemented 2026-09-17
+Editors save private drafts after 1.5 seconds without typing. Unfinished fields may be saved; structural, size, security and supplied-reference checks still apply. Publication completeness is checked separately. One save runs at a time; newer typing survives older responses. Failure and conflict retain local input. Navigation must finish saving or offer recovery. Closing a browser is never a save guarantee.
 
-Content uses a Decap-style staged queue: editors save, add eligible records to publication, then use the persistent top-bar `Publish changes (N)` action. The queue is capped at twenty records, persists through reload, and opens as a shadcn Popover on desktop or Sheet on narrow screens. Saving a queued record removes its old revision; failed batches remain staged for retry. The empty editor is a compact Card dashboard with collection summary, staged count, publication status and next-step shortcuts. More draft actions always exposes queue/history actions plus any contextual trash or navigation action; those surfaces hand off after the menu closes so they remain open.
+Publish changes reviews an exact saved version and its destination. New typing remains private. Optional list selection uses the existing twenty-entry limit; the old persistent staging step is removed, and old retained selections are recovered for explicit review. Per-entry website state comes from the accepted snapshot, not the latest global publication. Prices and stock always require explicit confirmation.
 
-Items and Stock have separate ownership boundaries. Items owns catalog setup, prices and item publication, and shows only a read-only stock summary with a `Manage stock` link. Stock owns adjustments, recounts and ledger history. Releases and distro make their commerce publication path explicit with `Publish from Items`. Images intentionally remains a flat library: folders would add taxonomy and persistence work without helping the current collection size or picker workflow. The implementation reuses installed shadcn/Radix primitives and existing API contracts; no endpoint, migration or dependency was added.
+Releases and distro/merch use Details, Selling and Stock. Creation follows Details → Price & starting stock → Review; a website-only release skips selling. A sold-out title is a valid state. The stock workspace offers Add or remove copies and Count stock, preserves entered quantities when background reads change, and requires reassessment of a changed count baseline. Orders searches the complete server result set with cursor pagination. Email delivery never means parcel dispatch.
+
+Use sans-serif text, 16 px inputs, 44 px targets, restrained headings, blue actions, and semantic states with text. At 1280 px and above, editors start beside a resizable preview; visibility preference is remembered. Smaller widths use Edit/Preview tabs. Public components retain their own design. Images stays flat, with contextual selection, placement-owned alt text, search and grid/list views.
+
+### Staff navigation and identity, approved 2026-09-17
+
+The selected A direction supersedes the all-in-one global sidebar. At widths of at least 1440 px, use a 72 px dark header with six equally prominent labeled icons: Overview, Catalog, Website, Images, Stock and Orders. Muted gray, violet, blue, sage, copper and teal icon backgrounds identify these areas; filled backgrounds and stronger text identify the active area. Blue remains the primary action color. Navigation adds no reads or counters.
+
+Catalog opens Releases and shows Artists, Releases and Distro & merch in a 256 px contextual sidebar. Website opens Pages and shows Pages, News, Navigation & footer and Label details. Sidebars stay visible while editing, with an optional hide control remembered per area. Other areas use the full content width. Below 1440 px, a compact header names the current area and opens a labeled Menu drawer containing the same destinations and contextual links. Existing draft-save interception protects navigation; menus do not dismiss a failed save.
+
+Add opens existing Artist, Release, Distro and Merch creation flows. View website opens the matching Local, UAT or PRD public homepage in a new tab. Preserve the UAT indicator and existing URLs, Back behavior and editor state.
+
+The user selected logo C, Office stamp, after three image-generated concepts using the original logo as reference. The available built-in image model was explicitly approved instead of an unverifiable GPT Image 2.5 selection. Following the user's fidelity correction, production uses the selected C artwork extracted directly from the approved concept image, with its dark background removed and edge transparency reconstructed. Do not substitute an HTML badge or regenerate the lettering. The transparent 686 × 162 PNG preserves the selected composition and replaces only the staff logo asset. The accessible logo name is BlackBox Records Staff and it links to Overview. Public branding is unchanged. The reference image remains in the local generated-image evidence, not the shipped assets.
+
+Verify the shell at 390, 768, 1280, 1439, 1440 and 1600 px in Chromium and Firefox, including menu focus, pending saves, selection, contextual visibility, logo readability and overflow. Browser evidence remains under ignored validation artifacts.
+
+### Automatic updates
+
+| View                              | Policy                                                                               |
+| --------------------------------- | ------------------------------------------------------------------------------------ |
+| Catalog, pages, images            | Entry, confirmed changes, stale return/reconnect; search after 300 ms                |
+| Visible orders and selected stock | 60 seconds, plus entry and stale return/reconnect                                    |
+| Pending publication               | 2 seconds during the first minute, then 30 seconds; stop at settlement or 30 minutes |
+| Open preview                      | Existing 750 ms typing debounce; immediate opening/context change                    |
+
+Pause hidden/offline background reads, deduplicate simultaneous reads, retain useful results, and offer contextual Retry. A publication timeout says Update not confirmed and offers Check status. Editor buffers are never query-cache state.
+
+### Evidence and rollout
+
+Run repository and editor gates against the final tree, browser acceptance at 390/768/1280/1600 px in Chromium and Firefox, and the real shared-template preview smoke. The fixture preview is intentionally simplified and cannot establish public-template fidelity. Screenshots and logs remain under ignored `.codex-artifacts/`. Measure request/database-read costs locally before the bounded UAT pilot required by [the Free-tier rule](cloudflare-free-tier.md). This redesign does not authorize payment launch, public-site redesign or fulfillment automation.
 
 ## Research ledger
 
@@ -58,7 +78,7 @@ Reviewed official documentation and product UI examples on 2026-09-16. This is a
 
 Operational detail references: [Shopify stock adjustments](https://help.shopify.com/en/manual/products/inventory/adjusting-inventory/adjusting-inventory-quantities) and [order details](https://help.shopify.com/en/manual/fulfillment/managing-orders/managing-order-details).
 
-## Three improvements per workspace — proposed
+## Historical proposals — superseded where they conflict with the accepted redesign
 
 Effort is relative: Small uses existing data and components; Medium changes a multi-step interaction. These are recommendations for the next UI slices, not permission to add commerce capabilities.
 
@@ -80,7 +100,7 @@ Effort is relative: Small uses existing data and components; Medium changes a mu
 | Orders    | Prioritize order identity, items and state in rows.    | Common triage needs fewer detail opens.                                  | Medium: payment and fulfillment remain separate; no invented status.                                           |
 | Orders    | Group payment, delivery and notification details.      | Members can find the next operational fact quickly.                      | Medium: retain copyable IDs and chronological facts from actual timestamps; no new refund/shipping automation. |
 
-## Accepted reliability behavior
+## Historical reliability decisions — subject to the accepted redesign
 
 - Publication requests start the existing dispatcher immediately; scheduled dispatch is recovery.
 - Register workflow identity before release validation. Failed/cancelled runs must not remain Pending indefinitely. A deployment receipt still requires verification before Live.
@@ -162,3 +182,27 @@ These changes use the installed Lucide and shadcn/Radix primitives, Inter/system
 - 2026-09-16: selected and implemented the publication-status priority rule and the visual refresh for Content, Images, Items, Stock, and Orders. Retained publication history remains unchanged; current-state status is derived separately.
 - 2026-09-16: implemented direct entry for the true singleton Content sections (`home`, `about`, `services`, `distro_page`, `purchase_information`, `newsletter`, `settings`). Collection sections retain list-first selection; direct links and unsaved-change protection remain unchanged. Local acceptance is covered by `scripts/test-content-workspace.mjs`.
 - 2026-09-17: implemented the staged Content publication queue, responsive Popover/Sheet queue UI, compact empty dashboard, populated More draft actions, explicit Releases/Distro Items handoff, and the Items/Stock ownership boundary. Chromium browser regression passed; Firefox and repository gates remain the final acceptance checks for this change.
+
+## Growing catalog and stocktakes
+
+Distro & merch uses EmDash field filtering and cursor pagination: All, Distro, Merch and existing format groups, with title/recently edited sorting and 25-entry pages. Filters apply before pagination. No new taxonomy or public category is created.
+
+Stock uses the available width for thumbnail rows and quantities. Selection opens a 420 px task panel at 1280 px and above; smaller screens open a focused task with Back to inventory. Search and filters operate on the complete operational result set. Legacy CD/Tape labels remain stored unchanged and match CDs/Tapes filters.
+
+Start stocktake captures a fixed sequence from the selected group using bounded inventory pages. Record count and next confirms one existing revision-protected stock count at a time. Previous, Skip for now and Finish stocktake retain explicit control. Same-tab session storage remembers progress, not authoritative stock. Unconfirmed counts preserve their baseline and entered values for recovery; a changed baseline requires reassessment. New arrivals enter the next stocktake.
+
+EmDash's exported ContentRepository resolves editorial links in batches. Stock remains authoritative in the commerce repository. Artwork enrichment failure must not hide inventory. Browsing adds no schema writes: an administrator-only, same-origin POST to `/_emdash/api/blackbox/catalog-schema` prepares the distro group index and title sorting through EmDash SchemaRegistry. Local startup performs this idempotent setup; hosted invocation requires the separate Free-tier preflight and UAT approval. New databases receive the settings through the seed schema.
+
+Acceptance includes 250+ entries, real Local EmDash reads and Chromium/Firefox checks. Hosted validation and rollout remain separate.
+
+Local read-cost evidence: the real D1 integration test with 250 inventory items measured one SQL statement and 375 rows read for a filtered 25-item page. The browser regression observes one inventory request plus one batched artwork request per settled page; image-file requests are separate. This excludes authentication/session costs and is not a hosted quota measurement. Measure the complete UAT request path under the Free-tier preflight before rollout.
+
+## Website changes review (September 2026 refinement)
+
+Staff utilities and Overview open `/review/`. This supersedes the list-checkbox publication queue. Review discovers saved unpublished Website and Catalog entries through the EmDash workspace adapter, with search, area filters and up to 25 entries per page. Selection persists in the same tab, up to 20 entries across pages. Incomplete drafts remain visible with editing links. A final review checks saved versions; a changed version requires renewed review. The editor's Publish changes shortcut finishes autosave and selects only that entry. One selected entry uses Publish change; several use Publish selected changes.
+
+Editorial publication includes selling-linked entries but does not activate the shop, change price, or change stock. Selling retains its activation approvals and native lifecycle guard. Pending request identities survive response loss; failed operations require a fresh review. The batch service accepts all reviewed entries in one website update.
+
+Count stock and Finish counting replace visible Stocktake wording; internal storage identities remain compatible. Quantities read Available to buy online, with copies for music and units for merchandise. The online quantity is how many customers may buy through the website.
+
+Review discovery uses bounded native EmDash cursor reads and existing accepted-snapshot comparisons, never private CMS table queries. The client follows sparse continuations until its page fills or reaches the end, cancelling stale searches. It does not load the entire library into browser memory or poll a global draft count. Hosted rollout still requires a Free-tier cost preflight.

@@ -39,6 +39,7 @@ function RecordPicker({
   const [cursor, setCursor] = useState<string>();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const requestSequence = useRef(0);
   const [selectedItem, setSelectedItem] = useState<Choice | null>(null);
   const [open, setOpen] = useState(false);
   const id = useId();
@@ -48,6 +49,7 @@ function RecordPicker({
   const fieldError = error || '';
   const name = (item: Choice) => ('filename' in item ? item.filename : String(item.data.title ?? item.slug));
   async function search(next?: string) {
+    const request = ++requestSequence.current;
     setBusy(true);
     setMessage('');
     try {
@@ -55,18 +57,27 @@ function RecordPicker({
       if (query.trim()) params.set('q', query.trim());
       if (next) params.set('cursor', next);
       const page = await editorialRequest<EditorialList<Choice>>(base, `content/${collection}?${params}`);
+      if (request !== requestSequence.current) return;
       setItems((previous) => (next ? [...previous, ...page.items] : page.items));
       setCursor(page.nextCursor);
-      if (!page.items.length) setMessage('No matching records.');
+      if (!page.items.length) setMessage('No matches.');
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : 'Could not load records.');
+      if (request !== requestSequence.current) return;
+      setMessage(error instanceof Error ? error.message : 'Could not load choices.');
     } finally {
-      setBusy(false);
+      if (request === requestSequence.current) setBusy(false);
     }
   }
   useEffect(() => {
-    void search();
-  }, []);
+    if (!open) return;
+    const timer = window.setTimeout(() => {
+      if (navigator.onLine && document.visibilityState === 'visible') void search();
+    }, 300);
+    return () => {
+      window.clearTimeout(timer);
+      requestSequence.current++;
+    };
+  }, [query, open]);
   function select(item: Choice) {
     setSelectedItem(item);
     setRequiredError(false);
@@ -123,7 +134,6 @@ function RecordPicker({
             <CommandInput
               aria-label={`Search ${label.toLowerCase()}`}
               value={query}
-              disabled={busy}
               onValueChange={(query) => {
                 setQuery(query);
                 setItems([]);
@@ -137,20 +147,22 @@ function RecordPicker({
                 }
               }}
             />
-            <div className="border-b p-2">
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full"
-                disabled={busy}
-                onClick={() => void search()}
-                onKeyDown={(event) => event.stopPropagation()}
-              >
-                Search {label.toLowerCase()}
-              </Button>
-            </div>
+            {message && (
+              <div className="border-b p-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full"
+                  disabled={busy}
+                  onClick={() => void search()}
+                  onKeyDown={(event) => event.stopPropagation()}
+                >
+                  Retry {label.toLowerCase()}
+                </Button>
+              </div>
+            )}
             <CommandList aria-label={label}>
-              <CommandEmpty>{busy ? 'Loading' : 'No matching records.'}</CommandEmpty>
+              <CommandEmpty>{busy ? 'Loading' : 'No matches.'}</CommandEmpty>
               {items.map((item) => (
                 <CommandItem
                   key={item.id}
@@ -194,6 +206,7 @@ export default function EditorialPicker(props: Parameters<typeof RecordPicker>[0
   if (props.collection === 'media')
     return (
       <ContentImagePicker
+        cropRatio={props.label === 'Artwork' ? 1 : props.label === 'Artist photo' ? 0.75 : undefined}
         base={props.base}
         value={props.value}
         label={props.label}

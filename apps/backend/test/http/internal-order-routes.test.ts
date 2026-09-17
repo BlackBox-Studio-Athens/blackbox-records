@@ -57,6 +57,56 @@ describe('internal order routes', () => {
     expect(mockReadRecentCheckoutOrders).not.toHaveBeenCalled();
   });
 
+  it('searches beyond one page with server filters and a stable continuation cursor', async () => {
+    const first = currentPaidCheckoutOrder();
+    const second = { ...first, id: 'older_order', createdAt: new Date(first.createdAt.getTime() - 1000) };
+    mockReadRecentCheckoutOrders.mockResolvedValueOnce([
+      { order: first, deliveries: [] },
+      { order: second, deliveries: [] },
+    ]);
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://127.0.0.1/api/internal/orders/search?limit=1&q=Example&status=paid&notification=pending',
+      undefined,
+      LOCAL_ENV,
+    );
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    const result = (await response.json()) as { items: unknown[]; nextCursor: string };
+    expect(result.items).toHaveLength(1);
+    expect(result.nextCursor).toBe(`${first.createdAt.toISOString()}~${first.id}`);
+    expect(mockReadRecentCheckoutOrders).toHaveBeenLastCalledWith({
+      limit: 2,
+      status: 'paid',
+      q: 'Example',
+      notification: 'pending',
+    });
+    mockReadRecentCheckoutOrders.mockResolvedValueOnce([{ order: second, deliveries: [] }]);
+    const next = await app.request(
+      `http://127.0.0.1/api/internal/orders/search?limit=1&q=Example&status=paid&notification=pending&cursor=${encodeURIComponent(result.nextCursor)}`,
+      undefined,
+      LOCAL_ENV,
+    );
+    expect(await next.json()).toMatchObject({ nextCursor: null, items: [{ orderReference: second.id }] });
+    expect(mockReadRecentCheckoutOrders).toHaveBeenLastCalledWith({
+      limit: 2,
+      status: 'paid',
+      q: 'Example',
+      notification: 'pending',
+      cursor: { createdAt: first.createdAt, id: first.id },
+    });
+  });
+
+  it('denies hosted order search before constructing a repository', async () => {
+    const response = await createHttpApp().request(
+      'https://ops.example/api/internal/orders/search?q=customer',
+      undefined,
+      HOSTED_ENV,
+    );
+    expect(response.status).toBe(401);
+    expect(mockCreateInternalOrderServices).not.toHaveBeenCalled();
+  });
+
   it('lists recent checkout orders for operators on the protected internal surface', async () => {
     const paidOrder = currentPaidCheckoutOrder();
     Object.assign(paidOrder, {
@@ -199,6 +249,7 @@ describe('internal order routes', () => {
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      orderReference: 'order_2',
       acceptedDeliveryAmountMinor: null,
       acceptedParcelTier: null,
       monetaryPolicyReference: null,

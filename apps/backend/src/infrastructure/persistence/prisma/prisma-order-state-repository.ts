@@ -205,22 +205,41 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
 
   public async listRecent(input: ListRecentCheckoutOrdersInput): Promise<CheckoutOrderRecord[]> {
     const records = await this.prisma.checkoutOrder.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: input.limit,
-      where: input.status
-        ? {
-            status: input.status,
-          }
-        : undefined,
+      include: { lines: true },
+      where: {
+        ...(input.status ? { status: input.status } : {}),
+        ...(input.notification ? { deliveries: { some: { status: input.notification } } } : {}),
+        AND: [
+          ...(input.cursor
+            ? [
+                {
+                  OR: [
+                    { createdAt: { lt: input.cursor.createdAt } },
+                    { createdAt: input.cursor.createdAt, id: { lt: input.cursor.id } },
+                  ],
+                },
+              ]
+            : []),
+          ...(input.q
+            ? [
+                {
+                  OR: [
+                    { id: { contains: input.q } },
+                    { recipientName: { contains: input.q } },
+                    { shopperEmail: { contains: input.q } },
+                    { checkoutSessionId: { contains: input.q } },
+                    { stripePaymentIntentId: { contains: input.q } },
+                  ],
+                },
+              ]
+            : []),
+        ],
+      },
     });
 
-    return Promise.all(
-      records.map(async (record) =>
-        mapCheckoutOrder({ ...record, lines: await this.readCheckoutOrderLines(record.id) }),
-      ),
-    );
+    return records.map((record) => mapCheckoutOrder({ ...record, lines: record.lines.map(mapCheckoutOrderLine) }));
   }
 
   public async saveTransition(

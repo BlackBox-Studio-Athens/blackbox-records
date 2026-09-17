@@ -2,6 +2,10 @@ import { astro, FetchState } from 'astro/fetch';
 import { cf, finalize } from '@astrojs/cloudflare/fetch';
 import { productEnvironmentProfileFromBindings, type AppBindings } from '../env';
 import { authenticate } from './auth';
+import { isCmsCollection, validateCmsDraft, validateCmsRevisionContent } from '@blackbox/content-model';
+import { readStaffWorkspace } from './staff-workspace';
+import { readInventoryArtwork } from './inventory-artwork';
+import { prepareCatalogSchema } from './catalog-schema';
 import { createBindingLogger } from '../observability';
 import { previewPolicy } from './preview-policy';
 import { previewDiagnosticsPath, reportPreviewFailure } from './preview-diagnostics';
@@ -124,6 +128,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
               : `https://blackbox-records-web${environment === 'uat' ? '-uat' : ''}.pages.dev`,
         }),
       );
+      if (typeof processed === 'boolean')
+        await reconcileItemPublications(this.env.COMMERCE_DB, this.env.CMS_DB, environment);
       if (!processed) await this.ctx.storage.deleteAlarm();
       else if (typeof processed === 'number') await this.ctx.storage.setAlarm(Date.now() + processed);
     })().finally(() => {
@@ -382,6 +388,40 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
     }
     if (url.pathname === previewPath) return this.preview(request, identity?.role ?? 0);
+    if (url.pathname === '/_emdash/api/blackbox/catalog-schema') {
+      if (
+        identity?.role !== 50 ||
+        request.method !== 'POST' ||
+        request.headers.get('Origin') !== url.origin ||
+        request.headers.get('X-EmDash-Request') !== '1'
+      )
+        return new Response('Forbidden', { status: 403 });
+      const { withEmDashRuntime } = await import('emdash/middleware');
+      return withEmDashRuntime(prepareCatalogSchema);
+    }
+    if (['/_emdash/api/blackbox/workspace', '/_emdash/api/blackbox/inventory-artwork'].includes(url.pathname)) {
+      if (!identity || identity.role < 30 || request.method !== 'GET')
+        return new Response('Forbidden', { status: 403 });
+      try {
+        const { withEmDashRuntime } = await import('emdash/middleware');
+        if (url.pathname.endsWith('/inventory-artwork'))
+          return await withEmDashRuntime((runtime) => readInventoryArtwork(request, runtime));
+        return await withEmDashRuntime((runtime) =>
+          readStaffWorkspace(request, {
+            runtime,
+            db: bindings.CMS_DB,
+            commerce: bindings.COMMERCE_DB,
+            bucket: bindings.MEDIA,
+            environment: productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
+          }),
+        );
+      } catch {
+        return Response.json(
+          { success: false, error: { message: 'The workspace could not be loaded. Retry.' } },
+          { status: 503, headers: { 'Cache-Control': 'private, no-store' } },
+        );
+      }
+    }
     if (url.pathname === '/_emdash/api/blackbox/content-publications') {
       if (
         !identity ||
@@ -396,22 +436,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         return Response.json({ error: 'PUBLICATION_UNAVAILABLE' }, { status: 503 });
       try {
         const input = selectedPublicationSchema.parse(JSON.parse(await readBoundedText(request.body, 16384)));
-        for (const record of input.records) {
-          const native = new Request(
-            new URL(`/_emdash/api/content/${record.collection}/${record.recordId}/publish`, url),
-            {
-              method: 'POST',
-              headers: request.headers,
-              body: JSON.stringify({ _rev: record.expectedRevision }),
-            },
-          );
-          const guarded = await guardItemLifecycle(
-            native,
-            bindings.COMMERCE_DB,
-            async () => new Response(null, { status: 403 }),
-          );
-          if (guarded) return guarded;
-        }
+        // This path publishes editorial revisions only. Commerce availability and its
+        // native lifecycle guard remain owned by the separate Selling operation.
         await this.ctx.storage.setAlarm(Date.now() + 1000);
         const { withEmDashRuntime } = await import('emdash/middleware');
         const accepted = await withEmDashRuntime((runtime) =>
@@ -435,11 +461,19 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     }
     const mutation = /^\/_emdash\/api\/content\/([a-z_]+)\/([A-Za-z0-9_-]+)(?:\/|$)/.exec(url.pathname);
     if (bindings.CONTENT_PUBLICATION_MODE === 'runtime' && mutation && !['GET', 'HEAD'].includes(request.method)) {
-      const pending = await bindings.CMS_DB.prepare(
-        "SELECT id FROM _blackbox_publications WHERE status = 'pending' AND EXISTS (SELECT 1 FROM json_each(CASE WHEN json_type(request_json, '$.records') = 'array' THEN json_extract(request_json, '$.records') ELSE json_array(json(request_json)) END) WHERE json_extract(value, '$.collection') = ? AND json_extract(value, '$.recordId') = ?) LIMIT 1",
-      )
-        .bind(mutation[1], mutation[2])
-        .first();
+      let pending;
+      try {
+        pending = await bindings.CMS_DB.prepare(
+          "SELECT id FROM _blackbox_publications WHERE status = 'pending' AND EXISTS (SELECT 1 FROM json_each(CASE WHEN json_type(request_json, '$.records') = 'array' THEN json_extract(request_json, '$.records') ELSE json_array(json(request_json)) END) WHERE json_extract(value, '$.collection') = ? AND json_extract(value, '$.recordId') = ?) LIMIT 1",
+        )
+          .bind(mutation[1], mutation[2])
+          .first();
+      } catch {
+        return Response.json(
+          { error: 'PUBLICATION_STATUS_UNAVAILABLE' },
+          { status: 503, headers: { 'Cache-Control': 'private, no-store' } },
+        );
+      }
       if (pending)
         return Response.json(
           { error: 'PUBLICATION_IN_PROGRESS' },
@@ -559,7 +593,49 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       if ((origin && origin !== url.origin) || request.headers.get('X-EmDash-Request') !== '1') {
         return new Response('Forbidden', { status: 403 });
       }
+      const editorialWrite = /^\/_emdash\/api\/content\/([a-z_]+)(?:\/([A-Za-z0-9_-]+))?$/.exec(url.pathname);
+      if (editorialWrite && ['POST', 'PUT'].includes(request.method)) {
+        try {
+          const raw = await readBoundedText(request.body, 272 * 1024);
+          request = new Request(request, { body: raw });
+          const payload = JSON.parse(raw) as { data?: unknown };
+          if (
+            !isCmsCollection(editorialWrite[1]) ||
+            !payload.data ||
+            typeof payload.data !== 'object' ||
+            Array.isArray(payload.data)
+          )
+            throw new Error('Invalid draft.');
+          const issues = validateCmsDraft(editorialWrite[1], payload.data as Record<string, unknown>);
+          if (issues.length)
+            return Response.json(
+              { success: false, error: { message: issues.join('\n') } },
+              { status: 422, headers: { 'Cache-Control': 'private, no-store' } },
+            );
+        } catch {
+          return Response.json(
+            { success: false, error: { message: 'Invalid or oversized draft.' } },
+            { status: 400, headers: { 'Cache-Control': 'private, no-store' } },
+          );
+        }
+      }
       if (identity && identity.role >= 30) {
+        const publishing = /^\/_emdash\/api\/content\/([a-z_]+)\/([A-Za-z0-9_-]+)\/publish$/.exec(url.pathname);
+        if (publishing && request.method === 'POST') {
+          const raw = await readBoundedText(request.body, 16384);
+          request = new Request(request, { body: raw });
+          const { withEmDashRuntime } = await import('emdash/middleware');
+          const valid = await withEmDashRuntime(async (runtime) => {
+            const current = await runtime.handleContentGet(publishing[1], publishing[2]);
+            if (!current.success || !isCmsCollection(publishing[1])) return false;
+            return validateCmsRevisionContent(publishing[1], current.data.item.data).length === 0;
+          });
+          if (!valid)
+            return Response.json(
+              { success: false, error: { message: 'Complete the highlighted fields before publishing.' } },
+              { status: 422 },
+            );
+        }
         const lifecycle = await guardItemLifecycle(request, bindings.COMMERCE_DB, (path) => {
           const headers = new Headers(request.headers);
           headers.delete('Content-Length');

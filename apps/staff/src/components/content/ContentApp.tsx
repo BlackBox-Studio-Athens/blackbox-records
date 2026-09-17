@@ -1,40 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/button';
-import {
-  ArrowLeft,
-  ArrowUpRight,
-  Eye,
-  EyeOff,
-  FileText,
-  History,
-  ListChecks,
-  MoreHorizontal,
-  Plus,
-  RotateCcw,
-  Save,
-  Search,
-  Trash2,
-} from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, FileText, History, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
-import { ButtonGroup } from '../ui/button-group';
-import { Card, CardContent, CardDescription, CardHeader } from '../ui/card';
+
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
 import { Table, TableBody, TableRow, TableCell } from '../ui/table';
-import { SidebarProvider, SidebarTrigger } from '../ui/sidebar';
-import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbPage, BreadcrumbSeparator } from '../ui/breadcrumb';
-import { Separator } from '../ui/separator';
+import CatalogSelling from '../items/CatalogSelling';
+import FormatFilter, { formatLabel } from '../items/FormatFilter';
+import WebsitePages from '../WebsitePages';
+import { useDraftAutosave } from '../../hooks/use-draft-autosave';
+import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
+
 import { Skeleton } from '../ui/skeleton';
-import { Spinner } from '../ui/spinner';
+
 import { Alert, AlertDescription } from '../ui/alert';
 import { Tabs } from 'radix-ui';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '../ui/dropdown-menu';
+  Group as ResizablePanelGroup,
+  Panel as ResizablePanel,
+  Separator as ResizableHandle,
+} from 'react-resizable-panels';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -45,7 +31,7 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '../ui/alert-dialog';
-import ContentNavigation from './ContentNavigation';
+
 import MediaLibrary from './MediaLibrary';
 import ContentFields, {
   contentSections,
@@ -54,20 +40,15 @@ import ContentFields, {
   type ContentData,
 } from './ContentFields';
 import ContentPreview from './ContentPreview';
-import ContentSelector from './ContentSelector';
-import PublicationQueue, { type PublicationSelectionItem } from './PublicationQueue';
+
+import { saveSelection } from './publication-selection';
 import PublicationStatus from './PublicationStatus';
 import { getContentValidation, type ContentValidation } from './content-validation';
-import {
-  readContentPublications,
-  publishSavedContent,
-  type ContentPublication,
-  type SelectedPublicationRequest,
-  type SelectedPublicationRecord,
-} from '../../lib/backend/content-publication-api';
+import { readContentPublications, type ContentPublication } from '../../lib/backend/content-publication-api';
 import {
   EditorialApiError,
   editorialRequest,
+  editorialMediaUrl,
   editorialSlug,
   editorialWriteData,
   type EditorialList,
@@ -76,28 +57,48 @@ import {
 
 type Document = { item: EditorialRecord; _rev: string };
 function contentSave(document: Document, data: ContentData) {
-  if (!document._rev) throw new Error('Load the saved version before saving.');
+  if (!document._rev) throw new Error('Load the saved version before publishing.');
   // The saved slug and identity remain unchanged when the member renames a title.
   return { _rev: document._rev, data: editorialWriteData(data) };
 }
 
 export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: string }) {
+  const [focusedPath, setFocusedPath] = useState('');
+  const [catalogTab, setCatalogTab] = useState<'details' | 'selling' | 'stock'>('details');
+  const [landing, setLanding] = useState<'pages' | 'footer' | null>(null);
   const [collection, setCollection] = useState<ContentSection>('artists');
   const [items, setItems] = useState<EditorialRecord[]>([]);
+  const listSequence = useRef(0);
   const [cursor, setCursor] = useState<string>();
   const [query, setQuery] = useState('');
+  const [catalogArea, setCatalogArea] = useState('all');
+  const [format, setFormat] = useState('');
+  const [sort, setSort] = useState('title');
+  const [pageCursors, setPageCursors] = useState<string[]>(['']);
+  const pageCursor = useRef('');
+  const browseKey = useRef('');
   const [media, setMedia] = useState(false);
   const [mobileEditor, setMobileEditor] = useState(false);
   const [confirmTrash, setConfirmTrash] = useState(false);
-  const discardTrigger = useRef<HTMLButtonElement>(null);
   const reloadFocus = useRef<HTMLElement | null>(null);
   const editorHeading = useRef<HTMLHeadingElement>(null);
+  const listFocus = useRef<HTMLElement | null>(null);
   const listHeading = useRef<HTMLHeadingElement>(null);
   function updateUrl(section: ContentSection, id?: string, mediaView = false) {
     const params = new URLSearchParams({ collection: section });
+    if (section === collection) {
+      if (query) params.set('q', query);
+      if (catalogArea !== 'all') params.set('area', catalogArea);
+      if (format) params.set('format', format);
+      if (sort !== 'title') params.set('sort', sort);
+      if (pageCursor.current) params.set('cursor', pageCursor.current);
+    }
     if (id) params.set('id', id);
     if (mediaView) params.set('view', 'media');
-    window.history.replaceState(null, '', `${window.location.pathname}?${params}`);
+    const next = `${window.location.pathname}?${params}`;
+    if (next !== window.location.pathname + window.location.search)
+      window.history.pushState({ catalogPages: pageCursors }, '', next);
+    window.dispatchEvent(new Event('staff:navigation'));
   }
   useEffect(() => {
     if (mobileEditor && !media) editorHeading.current?.focus();
@@ -128,7 +129,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [previewScroll, setPreviewScroll] = useState({ key: '', x: 0, y: 0 });
   useEffect(() => {
     try {
-      setDesktopPreview(localStorage.getItem('blackbox-content-preview') === 'open');
+      setDesktopPreview(localStorage.getItem('blackbox-content-preview') !== 'closed');
     } catch {
       /* Optional preference. */
     }
@@ -156,7 +157,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
   const [wide, setWide] = useState(false);
   useEffect(() => {
-    const media = window.matchMedia('(min-width: 1100px)');
+    const media = window.matchMedia('(min-width: 1280px)');
     const change = () => {
       setWide(media.matches);
       if (!media.matches) setPreview(false);
@@ -169,41 +170,13 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [publications, setPublications] = useState<ContentPublication[]>([]);
   const [publicationMessage, setPublicationMessage] = useState('');
   const [publicationStatusError, setPublicationStatusError] = useState('');
-  const [requestingPublication, setRequestingPublication] = useState(false);
-  const [pendingPublication, setPendingPublication] = useState<SelectedPublicationRequest | null>(null);
   const refreshedPublication = useRef('');
   const pendingKey = `blackbox-content-create:${base}`;
-  const publicationKey = `blackbox-content-publication-v2:${base}`;
-  const selectionKey = `blackbox-content-publication-selection:${base}`;
-  const [publicationSelection, setPublicationSelection] = useState<PublicationSelectionItem[]>([]);
-  const [publicationQueueOpen, setPublicationQueueOpen] = useState(false);
   const [publicationHistoryOpen, setPublicationHistoryOpen] = useState(false);
   const [draftActionsOpen, setDraftActionsOpen] = useState(false);
-  function openPublicationSurface(target: 'queue' | 'history') {
+  function openPublicationSurface() {
     setDraftActionsOpen(false);
-    setPublicationQueueOpen(false);
-    setPublicationHistoryOpen(false);
-    window.setTimeout(() => {
-      requestAnimationFrame(() => {
-        if (target === 'queue') setPublicationQueueOpen(true);
-        else setPublicationHistoryOpen(true);
-      });
-    }, 0);
-  }
-  function retainSelection(items: PublicationSelectionItem[]) {
-    try {
-      localStorage.setItem(selectionKey, JSON.stringify(items));
-    } catch {
-      setMessage('Selection could not be saved in this browser.');
-      return;
-    }
-    setPublicationSelection(items);
-  }
-  function removeQueuedRecord(collectionName: string, recordId: string) {
-    const next = publicationSelection.filter(
-      (record) => record.collection !== collectionName || record.recordId !== recordId,
-    );
-    if (next.length !== publicationSelection.length) retainSelection(next);
+    setTimeout(() => setPublicationHistoryOpen(true), 0);
   }
   const validation: ContentValidation = getContentValidation(collection, data);
 
@@ -215,6 +188,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         controls.find((control) => path.startsWith(`${control.dataset.contentPath}.`)))
       : controls[0];
     if (!target) return;
+    let parent = target.parentElement;
+    while (parent) {
+      if (parent instanceof HTMLDetailsElement) parent.open = true;
+      parent = parent.parentElement;
+    }
     target.focus({ preventScroll: true });
     target.scrollIntoView({ block: 'center' });
   }
@@ -239,79 +217,65 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           base,
           `content/${collection}/${encodeURIComponent(document.item.id)}`,
         );
-        setDocument((current) => (current?.item.id === loaded.item.id ? loaded : current));
+        const summary = await editorialRequest<EditorialList<EditorialRecord>>(
+          base,
+          `blackbox/workspace?collection=${collection}&id=${encodeURIComponent(loaded.item.id)}`,
+        );
+        setDocument((current) =>
+          current?.item.id === loaded.item.id
+            ? {
+                ...current,
+                ...(JSON.stringify(editorialWriteData(current.item.data)) ===
+                JSON.stringify(editorialWriteData(loaded.item.data))
+                  ? { _rev: loaded._rev }
+                  : {}),
+                item: {
+                  ...current.item,
+                  publicationState: summary.items[0]?.publicationState,
+                  selling: summary.items[0]?.selling,
+                },
+              }
+            : current,
+        );
+
         refreshedPublication.current = latest.id;
       }
     } catch {
       setPublicationStatusError('Publication status is unavailable. Check again before assuming a change is live.');
     }
   }
-  async function publish(records?: SelectedPublicationRecord[]) {
-    if (busy || dirty || conflict || (!records && (!document?.item.id || !requireValidContent()))) return;
-    setBusy(true);
-    setRequestingPublication(true);
-    setPublicationMessage('Requesting publication…');
-    try {
-      let input = pendingPublication;
-      if (!input) {
-        input = {
-          id: crypto.randomUUID(),
-          records: records ?? [{ collection, recordId: document!.item.id, expectedRevision: document!._rev }],
-        };
-        localStorage.setItem(publicationKey, JSON.stringify(input));
-        setPendingPublication(input);
-      }
-      const accepted = await publishSavedContent(base, input);
-      localStorage.removeItem(publicationKey);
-      setPendingPublication(null);
-      const included = 'records' in input ? input.records : [input];
-      if (accepted.status !== 'failed') {
-        retainSelection(
-          publicationSelection.filter(
-            (record) =>
-              !included.some(
-                (item) =>
-                  item.collection === record.collection &&
-                  item.recordId === record.recordId &&
-                  item.expectedRevision === record.expectedRevision,
-              ),
-          ),
-        );
-      }
-      setPublications((items) => [accepted, ...items.filter((item) => item.id !== accepted.id)].slice(0, 10));
-      await publicationStatus();
-      setPublicationMessage(
-        accepted.status === 'live'
-          ? 'Publication is live on fresh public page loads.'
-          : accepted.status === 'failed'
-            ? 'Publication failed. Select Publish changes to try again.'
-            : 'Publication requested. Wait for Live before checking a fresh public page.',
-      );
-    } catch (error) {
-      if (error instanceof EditorialApiError && [400, 409].includes(error.status)) {
-        localStorage.removeItem(publicationKey);
-        setPendingPublication(null);
-        setConflict(error.status === 409);
-      }
-      setPublicationMessage(error instanceof Error ? error.message : 'Publication could not be confirmed.');
-    } finally {
-      setRequestingPublication(false);
-      setBusy(false);
-    }
-  }
-
-  async function list(section = collection, next?: string, search = query) {
-    setBusy(true);
+  async function list(section = collection, next = pageCursor.current, search = query) {
+    const sequence = ++listSequence.current;
+    if (!document) setBusy(true);
     try {
       const params = new URLSearchParams({ limit: '25' });
       if (search.trim()) params.set('q', search.trim());
       if (next) params.set('cursor', next);
-      const page = await editorialRequest<EditorialList<EditorialRecord>>(base, `content/${section}?${params}`);
-      setItems((previous) => (next ? [...previous, ...page.items] : page.items));
+      const locationParams = new URLSearchParams(window.location.search);
+      const initial = !ready;
+      if (initial && locationParams.get('q')) params.set('q', locationParams.get('q')!);
+      const areaValue = initial ? (locationParams.get('area') ?? 'all') : catalogArea;
+      const formatValue = initial ? (locationParams.get('format') ?? '') : format;
+      const sortValue = initial ? (locationParams.get('sort') ?? 'title') : sort;
+      params.set('sort', sortValue);
+      if (section === 'distro') {
+        params.set('area', areaValue);
+        if (formatValue) params.set('format', formatValue);
+      }
+      const page = await readStaffQuery(['catalog-page', base, section, params.toString()], () =>
+        editorialRequest<EditorialList<EditorialRecord>>(base, `blackbox/workspace?collection=${section}&${params}`),
+      );
+      if (sequence !== listSequence.current) return null;
+      setItems(page.items);
+      pageCursor.current = next;
+      const url = new URL(window.location.href);
+      if (next) url.searchParams.set('cursor', next);
+      else url.searchParams.delete('cursor');
+      window.history.replaceState(window.history.state, '', url);
       setCursor(page.nextCursor);
       return page;
     } catch {
-      setMessage('We could not load the content. Select Search to try again.');
+      setMessage('We could not load these entries. Try again.');
       return null;
     } finally {
       setBusy(false);
@@ -319,82 +283,96 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
   useEffect(() => {
     setReady(true);
-    let publication: string | null = null;
-    try {
-      publication = localStorage.getItem(publicationKey);
-    } catch {
-      // Storage can be disabled. Read authoritative publication history below; writes still retain their recovery guard.
-    }
-    if (publication) {
-      try {
-        const input = JSON.parse(publication) as SelectedPublicationRequest;
-        const records = 'records' in input ? input.records : [input];
-        if (
-          typeof input.id !== 'string' ||
-          !Array.isArray(records) ||
-          !records.length ||
-          records.length > 20 ||
-          records.some(
-            (record) =>
-              typeof record.collection !== 'string' ||
-              typeof record.recordId !== 'string' ||
-              typeof record.expectedRevision !== 'string',
-          )
-        )
-          throw new Error();
-        setPendingPublication(input);
-      } catch {
-        setPublicationMessage('The last publication request could not be read. Ask a label administrator for help.');
-      }
-    }
-    try {
-      const selected = JSON.parse(localStorage.getItem(selectionKey) ?? '[]') as (SelectedPublicationRecord & {
-        title: string;
-      })[];
-      if (
-        Array.isArray(selected) &&
-        selected.length <= 20 &&
-        selected.every(
-          (item) =>
-            typeof item.title === 'string' &&
-            typeof item.collection === 'string' &&
-            typeof item.recordId === 'string' &&
-            typeof item.expectedRevision === 'string',
-        )
-      )
-        setPublicationSelection(selected);
-    } catch {
-      setMessage('The publication selection could not be restored. Select the saved records again.');
-    }
+    const listParams = new URLSearchParams(window.location.search);
+    setQuery(listParams.get('q') ?? '');
+    setCatalogArea(listParams.get('area') ?? 'all');
+    setFormat(listParams.get('format') ?? '');
+    setSort(listParams.get('sort') ?? 'title');
+    pageCursor.current = listParams.get('cursor') ?? '';
+    if (Array.isArray(window.history.state?.catalogPages)) setPageCursors(window.history.state.catalogPages);
+    browseKey.current = JSON.stringify([
+      listParams.get('q') ?? '',
+      listParams.get('area') ?? 'all',
+      listParams.get('format') ?? '',
+      listParams.get('sort') ?? 'title',
+    ]);
     void publicationStatus();
     const pending = sessionStorage.getItem(pendingKey);
     if (pending) {
       try {
         const saved = JSON.parse(pending) as { collection: ContentSection; slug: string; data: ContentData };
-        if (!['news', 'socials'].includes(saved.collection)) throw new Error('Unsupported section');
+        if (!['news', 'socials', 'artists'].includes(saved.collection)) throw new Error('Unsupported section');
         setCollection(saved.collection);
         setDocument({ item: { id: '', slug: saved.slug, data: saved.data }, _rev: '' });
         setData(saved.data);
         setPendingNew(saved.data);
+        setDirty(true);
         setMobileEditor(true);
-        setMessage('Check the last save before creating another record.');
+        setMessage('Check the last save before creating another entry.');
         void list(saved.collection);
       } catch {
         setMessage('The last save could not be read. Ask a label administrator for help.');
       }
     } else {
       const selected = new URLSearchParams(window.location.search);
+      if (selected.has('history')) setPublicationHistoryOpen(true);
+      if (window.location.pathname.startsWith('/items/')) {
+        const variantId = selected.get('variantId');
+        if (variantId) {
+          void editorialRequest<EditorialList<EditorialRecord>>(
+            base,
+            `blackbox/workspace?variantId=${encodeURIComponent(variantId)}`,
+          )
+            .then((page) => {
+              const item = page.items[0];
+              if (!item) throw new Error('This catalog entry is unavailable.');
+              window.location.replace(`/content/?collection=${item.collection}&id=${encodeURIComponent(item.id)}`);
+            })
+            .catch((error) => setMessage(error.message));
+          return;
+        }
+        selected.set('collection', 'releases');
+      }
+      if (!selected.has('collection') && selected.get('view') !== 'media') {
+        setLanding(selected.get('view') === 'footer' ? 'footer' : 'pages');
+        return;
+      }
       const mediaView = selected.get('view') === 'media';
       setMedia(mediaView);
       const section = selected.get('collection');
       const id = selected.get('id');
+      if (selected.get('tab') === 'selling') setCatalogTab('selling');
       if (section && Object.hasOwn(contentSections, section)) {
         const contentSection = section as ContentSection;
         setCollection(contentSection);
         const listed = list(contentSection);
+        if (contentSection === 'artists' && selected.get('new') === '1' && !id) {
+          void create('artists');
+          return;
+        }
         if (id)
           void editorialRequest<Document>(base, `content/${section}/${encodeURIComponent(id)}`)
             .then((loaded) => {
+              void editorialRequest<EditorialList<EditorialRecord>>(
+                base,
+                `blackbox/workspace?collection=${section}&id=${encodeURIComponent(id)}`,
+              )
+                .then((page) =>
+                  setDocument((current) =>
+                    current?.item.id === id
+                      ? {
+                          ...current,
+                          item: {
+                            ...current.item,
+                            selling: page.items[0]?.selling,
+                            publicationState: page.items[0]?.publicationState,
+                            collection: section,
+                          },
+                        }
+                      : current,
+                  ),
+                )
+                .catch(() => setMessage('Website status is unavailable. Reopen this entry to try again.'));
               setDocument(loaded);
               setData(loaded.item.data);
               setMobileEditor(true);
@@ -421,13 +399,13 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     setConfirmReload(true);
     return false;
   }
-  function requestDiscard(trigger: HTMLElement | null = discardTrigger.current) {
+  function requestDiscard(trigger: HTMLElement | null = window.document.activeElement as HTMLElement | null) {
     reloadFocus.current = trigger;
     setConfirmReload(true);
   }
   async function discardChanges() {
     const current = document;
-    const focusTarget = reloadFocus.current ?? discardTrigger.current;
+    const focusTarget = reloadFocus.current ?? editorHeading.current;
     setConfirmReload(false);
     if (!current) return;
     if (!current.item.id) {
@@ -455,12 +433,20 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     });
   }
   async function open(item: EditorialRecord, replace = false, section = collection) {
-    if (!replace && !mayLeave()) return;
+    if (!replace && !(await autosave.flush())) {
+      setConfirmReload(true);
+      return;
+    }
+    if (!replace) listFocus.current = window.document.activeElement as HTMLElement;
     setBusy(true);
     setMessage('');
     try {
       const loaded = await editorialRequest<Document>(base, `content/${section}/${encodeURIComponent(item.id)}`);
-      setDocument(loaded);
+      setDocument({
+        ...loaded,
+        item: { ...loaded.item, selling: item.selling, publicationState: item.publicationState, collection: section },
+      });
+      setCatalogTab('details');
       setData(loaded.item.data);
       setDirty(false);
       setValidationAttempt(0);
@@ -469,7 +455,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       updateUrl(section, loaded.item.id);
       editorHeading.current?.focus();
     } catch {
-      setMessage('We could not load this record. Try again.');
+      setMessage('We could not load this entry. Try again.');
     } finally {
       setBusy(false);
     }
@@ -479,88 +465,183 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     const item = page.items[0];
     if (item) void open(item, true, section);
   }
-  async function save(event: React.FormEvent) {
+  const currentDocument = useRef(document);
+  currentDocument.current = document;
+  const latestData = useRef(data);
+  latestData.current = data;
+  const autosave = useDraftAutosave({
+    identity: `${collection}:${document?.item.slug || ''}`,
+    value: data,
+    dirty,
+    enabled: !!document && !busy && !conflict && document.item.publicationState !== 'pending',
+    async save(snapshot) {
+      const current = currentDocument.current;
+      if (!current) return;
+      try {
+        let result: Document;
+        if (current.item.id) {
+          result = await editorialRequest<Document>(
+            base,
+            `content/${collection}/${encodeURIComponent(current.item.id)}`,
+            contentSave(current, snapshot),
+            'PUT',
+          );
+        } else {
+          const commandData = pendingNew ?? editorialWriteData(snapshot);
+          sessionStorage.setItem(
+            pendingKey,
+            JSON.stringify({ collection, slug: current.item.slug, data: commandData }),
+          );
+          setPendingNew(commandData);
+          try {
+            result = await editorialRequest<Document>(base, `content/${collection}/${current.item.slug}`);
+          } catch (error) {
+            if (!(error instanceof EditorialApiError) || error.status !== 404) throw error;
+            result = await editorialRequest<Document>(base, `content/${collection}`, {
+              slug: current.item.slug,
+              data: commandData,
+            });
+          }
+          // Native creation has no revision yet; materialize the private revision for exact publication review.
+          result = await editorialRequest<Document>(
+            base,
+            `content/${collection}/${encodeURIComponent(result.item.id)}`,
+            { _rev: result._rev, data: editorialWriteData(snapshot) },
+            'PUT',
+          );
+          sessionStorage.removeItem(pendingKey);
+          setPendingNew(null);
+        }
+        currentDocument.current = result;
+        result.item = {
+          ...result.item,
+          selling: current.item.selling,
+          collection,
+          publicationState:
+            current.item.publicationState === 'published' || current.item.publicationState === 'changes'
+              ? 'changes'
+              : 'draft',
+        };
+        setDocument(result);
+        setItems((previous) => [result.item, ...previous.filter((item) => item.id !== result.item.id)]);
+        updateUrl(collection, result.item.id);
+      } catch (error) {
+        if (error instanceof EditorialApiError && error.status === 409) setConflict(true);
+        throw error;
+      }
+    },
+    saved(snapshot) {
+      if (JSON.stringify(latestData.current) === JSON.stringify(snapshot)) setDirty(false);
+    },
+  });
+  async function saveNew(event: React.FormEvent) {
     event.preventDefault();
-    if (!document || busy || conflict) return;
-    if (!requireValidContent()) return;
-    setBusy(true);
-    setMessage('');
-    try {
-      const saved = await editorialRequest<Document>(
-        base,
-        `content/${collection}/${encodeURIComponent(document.item.id)}`,
-        contentSave(document, data),
-        'PUT',
-      );
-      setDocument(saved);
-      setData(saved.item.data);
-      setDirty(false);
-      setValidationAttempt(0);
-      setItems((items) => items.map((item) => (item.id === saved.item.id ? saved.item : item)));
-      removeQueuedRecord(collection, saved.item.id);
-      setMessage('');
-    } catch (error) {
-      setConflict(error instanceof EditorialApiError && error.status === 409);
-      setMessage(error instanceof Error ? error.message : 'We could not confirm the save. Your text is still here.');
-    } finally {
-      setBusy(false);
-    }
+    await autosave.flush();
   }
-  async function create() {
-    if (!mayLeave() || !['news', 'socials'].includes(collection)) return;
-    // Start locally. The server receives the first write only after the form is valid.
-    setDocument({ item: { id: '', slug: editorialSlug(collection, crypto.randomUUID()), data: {} }, _rev: '' });
+  useEffect(() => {
+    const leave = (event: MouseEvent) => {
+      const link = (event.target as Element)?.closest<HTMLAnchorElement>('a[href]');
+      if (
+        !link ||
+        link.origin !== location.origin ||
+        link.target ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        event.button !== 0 ||
+        !dirty
+      )
+        return;
+      event.preventDefault();
+      void autosave.flush().then((saved) => {
+        if (saved) location.assign(link.href);
+        else setConfirmReload(true);
+      });
+    };
+    window.document.addEventListener('click', leave, true);
+    return () => window.document.removeEventListener('click', leave, true);
+  }, [dirty, autosave.flush]);
+  useEffect(() => {
+    const followHistory = () => {
+      void autosave.flush().then(async (saved) => {
+        if (!saved) {
+          setConfirmReload(true);
+          return;
+        }
+        const params = new URLSearchParams(window.location.search);
+        const section = params.get('collection') as ContentSection;
+        if (!section || !Object.hasOwn(contentSections, section)) {
+          setLanding(params.get('view') === 'footer' ? 'footer' : 'pages');
+          return;
+        }
+        setLanding(null);
+        setCollection(section);
+        const id = params.get('id');
+        if (!id) {
+          setDocument(null);
+          setMobileEditor(false);
+          requestAnimationFrame(() =>
+            (listFocus.current?.isConnected ? listFocus.current : listHeading.current)?.focus(),
+          );
+          return;
+        }
+        try {
+          const page = await editorialRequest<EditorialList<EditorialRecord>>(
+            base,
+            `blackbox/workspace?collection=${section}&id=${encodeURIComponent(id)}`,
+          );
+          if (page.items[0]) await open(page.items[0], true, section);
+        } catch {
+          setMessage('This entry could not be loaded. Your saved draft is retained.');
+        }
+      });
+    };
+    window.addEventListener('popstate', followHistory);
+    return () => window.removeEventListener('popstate', followHistory);
+  }, [autosave.flush, collection]);
+  useStaffRead(['content', base, collection, query, catalogArea, format, sort], () => list(), {
+    enabled: ready && !dirty && !media && !landing && !document && !busy,
+  });
+  useEffect(() => {
+    if (!ready || dirty || landing || media) return;
+    const key = JSON.stringify([query, catalogArea, format, sort]);
+    if (key === browseKey.current) return;
+    const timer = window.setTimeout(() => {
+      browseKey.current = key;
+      pageCursor.current = '';
+      setPageCursors(['']);
+      const url = new URL(window.location.href);
+      for (const [key, value] of Object.entries({ q: query, area: catalogArea, format, sort })) {
+        if (value) url.searchParams.set(key, value);
+        else url.searchParams.delete(key);
+      }
+      url.searchParams.delete('cursor');
+      window.history.replaceState(window.history.state, '', url);
+      void list(collection, '');
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [query, catalogArea, format, sort]);
+  useEffect(() => {
+    if (ready)
+      window.history.replaceState({ ...window.history.state, catalogPages: pageCursors }, '', window.location.href);
+  }, [pageCursors, ready]);
+  async function create(section = collection) {
+    if (!mayLeave() || !['news', 'socials', 'artists'].includes(section)) return;
+    // Start locally; incomplete editorial work is saved privately.
+    setDocument({ item: { id: '', slug: editorialSlug(section, crypto.randomUUID()), data: {} }, _rev: '' });
     setData(
-      collection === 'news'
-        ? { title: '', date: '', summary: '', image: null, image_alt: '', body: [] }
-        : { title: '', url: '', order: 0 },
+      section === 'artists'
+        ? { title: '', genre: '', bio: '', image: null, image_alt: '', profile_links: [], videos: [] }
+        : section === 'news'
+          ? { title: '', date: '', summary: '', image: null, image_alt: '', body: [] }
+          : { title: '', url: '', order: 0 },
     );
-    setDirty(false);
+    setDirty(true);
     setValidationAttempt(0);
     setConflict(false);
     setMessage('');
     setMobileEditor(true);
-    updateUrl(collection);
-  }
-  async function saveNew(event: React.FormEvent) {
-    if (document?.item.id) return save(event);
-    event.preventDefault();
-    if (!document || busy) return;
-    if (!requireValidContent()) return;
-    setBusy(true);
-    setMessage('');
-    try {
-      const commandData = pendingNew ?? editorialWriteData(data);
-      sessionStorage.setItem(pendingKey, JSON.stringify({ collection, slug: document.item.slug, data: commandData }));
-      setPendingNew(commandData);
-      let saved: Document;
-      try {
-        saved = await editorialRequest<Document>(base, `content/${collection}/${document.item.slug}`);
-      } catch (error) {
-        if (!(error instanceof EditorialApiError) || error.status !== 404) throw error;
-        saved = await editorialRequest<Document>(base, `content/${collection}`, {
-          slug: document.item.slug,
-          data: commandData,
-        });
-      }
-      sessionStorage.removeItem(pendingKey);
-      setPendingNew(null);
-      setDocument(saved);
-      setData(saved.item.data);
-      setItems((items) => [saved.item, ...items.filter((item) => item.id !== saved.item.id)]);
-      setDirty(false);
-      setValidationAttempt(0);
-      setMessage('Draft created. The public site has not changed.');
-      updateUrl(collection, saved.item.id);
-    } catch (error) {
-      if (error instanceof EditorialApiError && [400, 422].includes(error.status)) {
-        sessionStorage.removeItem(pendingKey);
-        setPendingNew(null);
-      }
-      setMessage(error instanceof Error ? error.message : 'We could not confirm the save. Your text is still here.');
-    } finally {
-      setBusy(false);
-    }
+    updateUrl(section);
   }
   async function remove() {
     if (!document?.item.id || busy || !['news', 'socials'].includes(collection)) return;
@@ -587,144 +668,61 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setBusy(false);
     }
   }
-  function selectCollection(section: ContentSection) {
-    if (section === collection) {
-      setMedia(false);
-      if (!document && singletonContentSections.includes(section)) {
-        setQuery('');
-        setItems([]);
-        setCursor(undefined);
-        updateUrl(collection);
-        void list(section, undefined, '').then((page) => openSingletonFromPage(section, page));
-      } else updateUrl(collection, document?.item.id);
-      return;
-    }
-    if (!mayLeave()) {
-      setMedia(false);
-      return;
-    }
-    setCollection(section);
-    setMedia(false);
-    setQuery('');
-    setDocument(null);
-    setItems([]);
-    setCursor(undefined);
-    setDirty(false);
-    setValidationAttempt(0);
-    setMobileEditor(false);
+  async function moveLink(index: number, direction: -1 | 1) {
+    const ordered = [...items].sort((a, b) => Number(a.data.order ?? 0) - Number(b.data.order ?? 0));
+    const current = ordered[index];
+    const adjacent = ordered[index + direction];
+    if (!current || !adjacent || busy || cursor || query) return;
+    [ordered[index], ordered[index + direction]] = [adjacent, current];
+    const destinations = ordered
+      .map((item, order) => ({ item, order }))
+      .filter(({ item, order }) => Number(item.data.order) !== order);
+    setBusy(true);
     setMessage('');
-    updateUrl(section);
-    void list(section, undefined, '').then((page) => openSingletonFromPage(section, page));
+    try {
+      for (const destination of destinations) {
+        const saved = await editorialRequest<Document>(base, `content/${collection}/${destination.item.id}`);
+        await editorialRequest<Document>(
+          base,
+          `content/${collection}/${destination.item.id}`,
+          { _rev: saved._rev, data: { ...editorialWriteData(saved.item.data), order: destination.order } },
+          'PUT',
+        );
+      }
+      setMessage('Link order saved privately. Open Review website changes when you are ready to publish.');
+    } catch {
+      setMessage(
+        'The ordering change was not completed. Some changes may be saved privately. Check the list before publishing.',
+      );
+    } finally {
+      await list();
+      setBusy(false);
+    }
   }
-  const canCreate = ['news', 'socials'].includes(collection);
-  const canPublish = !['releases', 'distro'].includes(collection);
+  const canCreate = ['news', 'socials', 'artists'].includes(collection);
+
   const singleton = singletonContentSections.includes(collection);
   const title = String(data.title || data.label_name || contentSections[collection]);
-  const staleRecordKeys = publicationSelection
-    .filter(
-      (record) =>
-        record.collection === collection &&
-        record.recordId === document?.item.id &&
-        record.expectedRevision !== document?._rev,
-    )
-    .map((record) => `${record.collection}/${record.recordId}`);
-  const publicationBlockedReason = dirty
-    ? 'Save the current draft before publishing staged changes.'
-    : conflict
-      ? 'Reload the saved version before publishing staged changes.'
-      : staleRecordKeys.length
-        ? 'This staged record has changed. Save it and add it to the publication again.'
-        : undefined;
-  const currentRecordStaged = publicationSelection.some(
-    (record) => record.collection === collection && record.recordId === document?.item.id,
-  );
-  function stageCurrentRecord() {
-    if (!document?.item.id || busy || dirty || conflict || !validation.valid) return;
-    if (currentRecordStaged) {
-      removeQueuedRecord(collection, document.item.id);
-      return;
-    }
-    if (publicationSelection.length >= 20) {
-      setMessage('The publication queue is full. Publish or remove a staged record before adding another.');
-      return;
-    }
-    retainSelection([
-      ...publicationSelection.filter(
-        (record) => record.collection !== collection || record.recordId !== document.item.id,
-      ),
-      { collection, recordId: document.item.id, expectedRevision: document._rev, title },
-    ]);
-  }
-  function publishSelection() {
-    void publish(publicationSelection.map(({ title: _title, ...record }) => record));
-  }
-  return (
-    <SidebarProvider
-      className="cms-surface cms-workspace"
-      style={{ '--sidebar-width': '220px' } as React.CSSProperties}
-    >
-      <ContentNavigation
-        collection={collection}
-        media={media}
-        disabled={!ready || busy || !!pendingNew}
-        onCollection={selectCollection}
-        onMedia={() => {
-          if (!mayLeave()) return;
-          setMedia(true);
-          updateUrl(collection, document?.item.id, true);
-        }}
-      />
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <div className="cms-workspace-bar flex shrink-0 flex-wrap items-center gap-3 border-b border-border px-4 py-3">
-          <SidebarTrigger className="size-11 shrink-0" />
-          <Separator orientation="vertical" className="h-5" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>Content</BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>{media ? 'Images' : contentSections[collection]}</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-          <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
-            <PublicationQueue
-              records={publicationSelection}
-              staleRecordKeys={staleRecordKeys}
-              disabled={busy}
-              blockedReason={publicationBlockedReason}
-              pendingPublication={pendingPublication}
-              open={publicationQueueOpen}
-              onOpenChange={setPublicationQueueOpen}
-              onRemove={(record) => removeQueuedRecord(record.collection, record.recordId)}
-              onPublish={publishSelection}
-            />
-            <PublicationStatus
-              items={publications}
-              requesting={requestingPublication}
-              statusError={publicationStatusError}
-              message={publicationMessage}
-              refresh={publicationStatus}
-              open={publicationHistoryOpen}
-              onOpenChange={setPublicationHistoryOpen}
-            />
-          </div>
-          {media && document && (
-            <Button
-              type="button"
-              variant="ghost"
-              className="ml-auto"
-              aria-label="Back to draft"
-              onClick={() => {
-                setMedia(false);
-                updateUrl(collection, document.item.id);
-              }}
-            >
-              <ArrowLeft className="size-4" aria-hidden="true" />
-              <span className="hidden sm:inline">Back to draft</span>
-            </Button>
-          )}
+  if (landing)
+    return (
+      <>
+        <WebsitePages footer={landing === 'footer'} />
+        <div className="px-6">
+          <PublicationStatus
+            items={publications}
+            statusError={publicationStatusError}
+            message={publicationMessage}
+            refresh={publicationStatus}
+            open={publicationHistoryOpen}
+            onOpenChange={setPublicationHistoryOpen}
+            compact
+          />
         </div>
+      </>
+    );
+  return (
+    <div className="cms-surface cms-workspace">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {media && (
           <section className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
             <div className="mx-auto max-w-6xl">
@@ -736,7 +734,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         <Tabs.Root
           value={preview ? 'preview' : 'edit'}
           onValueChange={(value) => setPreview(value === 'preview')}
-          className={`cms-content-panes ${document && mobileEditor ? 'cms-editing' : ''} ${desktopPreview ? '' : 'cms-preview-closed'}`}
+          className={`cms-content-panes ${document && mobileEditor ? 'cms-editing' : ''} ${desktopPreview && catalogTab === 'details' ? '' : 'cms-preview-closed'}`}
           hidden={media}
         >
           {document && mobileEditor && (
@@ -777,14 +775,53 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                     onChange={(event) => setQuery(event.target.value)}
                   />
                 </InputGroup>
-                <Button type="submit" variant="outline" disabled={!ready || busy}>
-                  Search
-                </Button>
               </form>
+              {['artists', 'releases', 'distro', 'news'].includes(collection) && (
+                <div className="flex flex-wrap gap-2">
+                  {collection === 'distro' && (
+                    <>
+                      <select
+                        aria-label="Catalog area"
+                        className="min-h-11 border border-border bg-background p-2"
+                        value={catalogArea}
+                        onChange={(event) => setCatalogArea(event.target.value)}
+                      >
+                        <option value="all">All</option>
+                        <option value="distro">Distro</option>
+                        <option value="merch">Merch</option>
+                      </select>
+                      <FormatFilter value={format} onChange={setFormat} />
+                    </>
+                  )}
+                  <select
+                    aria-label="Sort catalog"
+                    className="min-h-11 border border-border bg-background p-2"
+                    value={sort}
+                    onChange={(event) => setSort(event.target.value)}
+                  >
+                    <option value="title">Title A–Z</option>
+                    <option value="updated">Recently edited</option>
+                  </select>
+                </div>
+              )}
+              {['releases', 'distro'].includes(collection) && (
+                <div className="flex gap-2">
+                  <Button asChild>
+                    <a href={`/items/new/?kind=${collection === 'releases' ? 'release' : 'distro'}`}>
+                      Add {collection === 'releases' ? 'release' : 'distro'}
+                    </a>
+                  </Button>
+                  {collection === 'distro' && (
+                    <Button variant="outline" asChild>
+                      <a href="/items/new/?kind=merch">Add merch</a>
+                    </Button>
+                  )}
+                </div>
+              )}
               {canCreate && (
                 <Button type="button" disabled={!ready || busy || !!pendingNew} onClick={() => void create()}>
                   <Plus className="size-4" aria-hidden="true" />
-                  Add {collection === 'news' ? 'news' : 'social link'}
+                  Add {collection === 'news' ? 'news' : collection === 'artists' ? 'artist' : 'social link'}
                 </Button>
               )}
               {!mobileEditor && document && (
@@ -795,7 +832,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
               {!mobileEditor && message && (
-                <Alert role={conflict ? 'alert' : 'status'} className="m-4 w-auto md:hidden">
+                <Alert role={conflict ? 'alert' : 'status'} className="m-4 w-auto">
                   <AlertDescription>{message}</AlertDescription>
                 </Alert>
               )}
@@ -808,23 +845,101 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               ) : (
                 <Table>
                   <TableBody>
-                    {items.map((item) => (
+                    {(['navigation', 'socials'].includes(collection)
+                      ? [...items].sort((a, b) => Number(a.data.order ?? 0) - Number(b.data.order ?? 0))
+                      : items
+                    ).map((item, index) => (
                       <TableRow key={item.id} data-state={document?.item.id === item.id ? 'selected' : undefined}>
                         <TableCell className="p-0">
                           <Button
                             type="button"
                             variant="ghost"
-                            className="h-auto min-h-16 w-full justify-start rounded-none px-4 py-3 text-left whitespace-normal"
+                            className="cms-entry-row h-auto min-h-16 w-full justify-start rounded-none px-4 py-3 text-left whitespace-normal"
                             disabled={!ready || busy || !!pendingNew}
                             aria-current={document?.item.id === item.id ? 'true' : undefined}
                             onClick={() => void open(item)}
                           >
-                            <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                            {(() => {
+                              const artwork = item.data.cover_image ?? item.data.image;
+                              const src =
+                                artwork && typeof artwork === 'object'
+                                  ? editorialMediaUrl(
+                                      artwork as Parameters<typeof editorialMediaUrl>[0],
+                                      new URL(base || window.location.origin).origin,
+                                    )
+                                  : '';
+                              return src ? (
+                                <img src={src} alt="" className="size-12 shrink-0 object-cover" loading="lazy" />
+                              ) : (
+                                <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                              );
+                            })()}
                             <span className="min-w-0 break-words">
                               {String(item.data.title ?? item.data.label_name ?? contentSections[collection])}
+                              {typeof item.data.group === 'string' && (
+                                <span className="block text-sm text-muted-foreground">
+                                  {formatLabel(item.data.group)}
+                                </span>
+                              )}
+                              {(item.artistTitle || typeof item.data.artist_or_label === 'string') && (
+                                <span className="block text-sm text-muted-foreground">
+                                  {item.artistTitle || String(item.data.artist_or_label)}
+                                </span>
+                              )}
+                            </span>
+                            <span className="cms-entry-summary ml-auto text-sm text-muted-foreground">
+                              {item.publicationState === 'published'
+                                ? 'On the website'
+                                : item.publicationState === 'changes'
+                                  ? 'Unpublished changes'
+                                  : item.publicationState === 'pending'
+                                    ? 'Updating website…'
+                                    : 'Draft'}
+                              {item.selling && (
+                                <>
+                                  {' '}
+                                  · {item.selling.itemType}
+                                  {item.selling.amountMinor !== null && (
+                                    <>
+                                      {' '}
+                                      ·{' '}
+                                      {new Intl.NumberFormat('en-GB', {
+                                        style: 'currency',
+                                        currency: item.selling.currencyCode || 'EUR',
+                                      }).format(item.selling.amountMinor / 100)}
+                                    </>
+                                  )}{' '}
+                                  ·{' '}
+                                  {item.selling.onlineQuantity === null
+                                    ? 'Online quantity unavailable'
+                                    : `${item.selling.onlineQuantity} ${item.data.group === 'Clothes' ? 'units' : 'copies'} available to buy online`}
+                                </>
+                              )}
                             </span>
                           </Button>
                         </TableCell>
+                        {['navigation', 'socials'].includes(collection) && (
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              <Button
+                                variant="outline"
+                                disabled={busy || !!cursor || !!query || index === 0}
+                                onClick={() => void moveLink(index, -1)}
+                                aria-label={`Move ${String(item.data.title)} up`}
+                              >
+                                Move up
+                              </Button>
+                              <Button
+                                variant="outline"
+                                disabled={busy || !!cursor || !!query || index === items.length - 1}
+                                onClick={() => void moveLink(index, 1)}
+                                aria-label={`Move ${String(item.data.title)} down`}
+                              >
+                                Move down
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -833,368 +948,288 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               {!busy && !items.length && (
                 <p className="p-6 text-sm text-muted-foreground">No matching content. Try another search.</p>
               )}
-              {cursor && (
+              {(cursor || pageCursor.current) && (
                 <div className="p-4">
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
-                    disabled={busy}
-                    onClick={() => void list(collection, cursor)}
+                    disabled={busy || !pageCursor.current}
+                    onClick={() => {
+                      const previous = pageCursors.slice(0, -1);
+                      setPageCursors(previous.length ? previous : ['']);
+                      void list(collection, previous.at(-1) ?? '');
+                    }}
                   >
-                    Show more
+                    Previous
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={busy || !cursor}
+                    onClick={() => {
+                      if (cursor) {
+                        setPageCursors((pages) => [...pages, cursor]);
+                        void list(collection, cursor);
+                      }
+                    }}
+                  >
+                    Next
                   </Button>
                 </div>
               )}
             </div>
           </section>
-          <Tabs.Content value="edit" forceMount asChild>
-            <section
-              aria-label="Content editor"
-              className={`cms-editor ${!mobileEditor ? 'cms-editor-mobile-hidden' : ''}`}
+          <ResizablePanelGroup
+            orientation="horizontal"
+            className={`cms-editor-split ${preview ? 'is-preview' : 'is-edit'}`}
+          >
+            <ResizablePanel
+              id="editor"
+              defaultSize="50%"
+              minSize={wide && desktopPreview ? '35%' : '0%'}
+              className="cms-edit-panel"
             >
-              {document ? (
-                <>
-                  <header className="cms-editor-toolbar">
-                    <div className="flex min-w-0 items-center gap-2">
-                      {singleton ? (
-                        <span className="min-w-0 flex-1 truncate text-sm font-semibold" aria-hidden="true">
-                          {title}
-                        </span>
-                      ) : (
-                        <>
-                          <ContentSelector
-                            title={title}
-                            section={contentSections[collection]}
-                            items={items}
-                            selected={document.item.id}
-                            query={query}
-                            disabled={busy || !!pendingNew}
-                            more={!!cursor}
-                            onQuery={(query) => {
-                              setQuery(query);
-                              setItems([]);
-                              setCursor(undefined);
-                            }}
-                            onSearch={() => void list()}
-                            onMore={() => void list(collection, cursor)}
-                            onSelect={open}
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="shrink-0"
-                            aria-label="Back to records"
-                            title="Back to records"
-                            onClick={() => {
-                              if (!mayLeave()) return;
-                              setMobileEditor(false);
-                              requestAnimationFrame(() => listHeading.current?.focus());
-                            }}
-                          >
-                            <ArrowLeft className="size-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <h2 ref={editorHeading} tabIndex={-1} className="sr-only">
-                        {title}
-                      </h2>
-                      <p
-                        role="status"
-                        className={`mt-1 text-xs ${dirty ? 'cms-state-warning' : 'text-muted-foreground'}`}
-                      >
-                        {busy && dirty ? 'Saving…' : dirty ? 'Unsaved changes' : 'Draft saved'}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {wide && (
-                        <Button
-                          type="button"
-                          variant={desktopPreview ? 'secondary' : 'outline'}
-                          aria-expanded={desktopPreview}
-                          aria-controls="content-preview-pane"
-                          onClick={togglePreview}
-                        >
-                          {desktopPreview ? (
-                            <EyeOff className="size-4" aria-hidden="true" />
-                          ) : (
-                            <Eye className="size-4" aria-hidden="true" />
-                          )}
-                          {desktopPreview ? 'Hide preview' : 'Show preview'}
-                        </Button>
-                      )}
-                      <Button
-                        ref={discardTrigger}
-                        type="button"
-                        variant="outline"
-                        className="px-3"
-                        disabled={!dirty || busy || !!pendingNew}
-                        onClick={() => requestDiscard()}
-                      >
-                        <RotateCcw className="size-4" aria-hidden="true" />
-                        Discard changes
-                      </Button>
-                      <ButtonGroup aria-label="Draft actions">
-                        <Button type="submit" className="px-3" form="content-editor-form" disabled={busy || conflict}>
-                          {busy ? <Spinner className="size-4" /> : <Save className="size-4" aria-hidden="true" />}
-                          {pendingNew ? 'Check last save' : 'Save draft'}
-                        </Button>
-                      </ButtonGroup>
-                      {canPublish && (
-                        <Button
-                          type="button"
-                          variant={currentRecordStaged ? 'secondary' : 'outline'}
-                          disabled={
-                            busy ||
-                            dirty ||
-                            conflict ||
-                            !validation.valid ||
-                            !document.item.id ||
-                            (!currentRecordStaged && publicationSelection.length >= 20)
-                          }
-                          onClick={stageCurrentRecord}
-                        >
-                          <ListChecks className="size-4" aria-hidden="true" />
-                          {currentRecordStaged ? 'In publication' : 'Add to publication'}
-                        </Button>
-                      )}
-                      {!canPublish && (
-                        <Button asChild type="button" variant="outline">
-                          <a href="/items/">
-                            <ArrowUpRight className="size-4" aria-hidden="true" />
-                            Publish from Items
-                          </a>
-                        </Button>
-                      )}
-                      <DropdownMenu open={draftActionsOpen} onOpenChange={setDraftActionsOpen}>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            aria-label="More draft actions"
-                            title="More draft actions"
-                            disabled={busy || !!pendingNew}
-                          >
-                            <MoreHorizontal className="size-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="cms-surface" align="end">
-                          <DropdownMenuLabel>Draft workflow</DropdownMenuLabel>
-                          {canPublish ? (
-                            <DropdownMenuItem
-                              disabled={
-                                busy ||
-                                dirty ||
-                                conflict ||
-                                !validation.valid ||
-                                !document.item.id ||
-                                (!currentRecordStaged && publicationSelection.length >= 20)
-                              }
-                              onSelect={(event) => {
-                                if (currentRecordStaged) {
-                                  event.preventDefault();
-                                  openPublicationSurface('queue');
-                                } else stageCurrentRecord();
+              <Tabs.Content value="edit" forceMount asChild>
+                <section
+                  aria-label="Content editor"
+                  className={`cms-editor ${!mobileEditor ? 'cms-editor-mobile-hidden' : ''}`}
+                >
+                  {document ? (
+                    <>
+                      <header className="cms-editor-toolbar">
+                        <div className="flex items-center justify-between gap-3">
+                          <h1 ref={editorHeading} tabIndex={-1}>
+                            {title}
+                          </h1>
+                          {!singleton && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Back to list"
+                              onClick={() => {
+                                void autosave.flush().then((saved) => {
+                                  if (!saved) {
+                                    setConfirmReload(true);
+                                    return;
+                                  }
+                                  setMobileEditor(false);
+                                  setDocument(null);
+                                  updateUrl(collection);
+                                  requestAnimationFrame(() =>
+                                    (listFocus.current?.isConnected ? listFocus.current : listHeading.current)?.focus({
+                                      preventScroll: true,
+                                    }),
+                                  );
+                                });
                               }}
                             >
-                              <ListChecks className="size-4" aria-hidden="true" />
-                              {currentRecordStaged ? 'Open publish queue' : 'Add to publication'}
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem asChild>
-                              <a href="/items/">
-                                <ArrowUpRight className="size-4" aria-hidden="true" />
-                                Publish from Items
-                              </a>
-                            </DropdownMenuItem>
+                              <ArrowLeft />
+                            </Button>
                           )}
-                          <DropdownMenuItem
-                            onSelect={(event) => {
-                              event.preventDefault();
-                              openPublicationSurface('history');
-                            }}
-                          >
-                            <History className="size-4" aria-hidden="true" />
-                            Publication history
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          {canCreate && (
-                            <DropdownMenuItem
-                              disabled={!document.item.id || dirty}
-                              onSelect={() => setConfirmTrash(true)}
-                            >
-                              <Trash2 className="size-4" aria-hidden="true" />
-                              Move to trash
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </header>
-                  <div className="cms-editor-body">
-                    {validationAttempt > 0 && !validation.valid && (
-                      <Alert variant="destructive" role="alert" className="mb-6">
-                        <AlertDescription>
-                          Fix {validation.issues.length === 1 ? 'the highlighted field' : 'the highlighted fields'}{' '}
-                          before saving.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    {message && (
-                      <Alert
-                        variant={conflict ? 'destructive' : 'default'}
-                        role={conflict ? 'alert' : 'status'}
-                        className="mb-6"
-                      >
-                        <AlertDescription className="whitespace-pre-wrap">{message}</AlertDescription>
-                      </Alert>
-                    )}
-                    {canPublish && (dirty || conflict) && (
-                      <p className="mb-4 text-sm cms-state-warning">
-                        {conflict
-                          ? 'Reload the saved version to resolve the conflict before publishing.'
-                          : 'Save your draft before publishing changes.'}
-                      </p>
-                    )}
-                    {!canPublish && (
-                      <p className="mb-6 text-sm text-muted-foreground">
-                        Save editorial changes here. Publish linked items from{' '}
-                        <a href="/items/" className="underline underline-offset-4">
-                          Items
-                        </a>
-                        .
-                      </p>
-                    )}
-                    <form id="content-editor-form" noValidate onSubmit={saveNew}>
-                      <fieldset
-                        disabled={busy || !!pendingNew}
-                        className="cms-fields grid min-w-0 gap-6 @2xl:grid-cols-2"
-                      >
-                        <legend className="sr-only">{contentSections[collection]} details</legend>
-                        <ContentFields
-                          key={`${document.item.id || document.item.slug}:${document._rev}`}
-                          collection={collection}
-                          data={data}
-                          base={base}
-                          disabled={busy || !!pendingNew}
-                          validation={validation}
-                          validationAttempt={validationAttempt}
-                          onChange={(next) => {
-                            setData(next);
-                            setDirty(true);
-                          }}
-                        />
-                      </fieldset>
-                    </form>
-                  </div>
-                </>
-              ) : (
-                <div className="cms-empty-state min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
-                  <Card className="mx-auto w-full max-w-2xl border-border bg-card">
-                    <CardHeader>
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="grid gap-2">
-                          <h2 className="text-xl font-semibold">Website content</h2>
-                          <CardDescription>
-                            Choose a record from {contentSections[collection].toLowerCase()} to edit, or review staged
-                            changes before publishing.
-                          </CardDescription>
                         </div>
-                        <Badge variant="secondary">
-                          {items.length}
-                          {cursor ? '+' : ''} records
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="grid gap-5">
-                      <div className="grid gap-3 rounded-md border border-border bg-muted/20 p-4 sm:grid-cols-3">
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Current section</p>
-                          <p className="mt-1 font-medium">{contentSections[collection]}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Staged changes</p>
-                          <p className="mt-1 font-medium">
-                            {publicationSelection.length ? `${publicationSelection.length} ready` : 'None yet'}
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p role="status" className="text-sm text-muted-foreground">
+                            {autosave.saving
+                              ? 'Saving…'
+                              : autosave.error
+                                ? 'Not saved'
+                                : dirty
+                                  ? 'Unsaved changes'
+                                  : 'Changes saved'}{' '}
+                            ·{' '}
+                            {{
+                              published: 'On the website',
+                              changes: 'Unpublished changes',
+                              pending: 'Updating website…',
+                              draft: 'Draft',
+                            }[document.item.publicationState!] ?? 'Website status unavailable'}
                           </p>
-                        </div>
-                        <div>
-                          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Public site</p>
-                          <p className="mt-1 font-medium">Unchanged until publish</p>
-                        </div>
-                      </div>
-                      <div className="grid gap-3 sm:grid-cols-3">
-                        {[
-                          ['1', 'Edit', 'Choose a saved record and update its draft.'],
-                          ['2', 'Stage', 'Add saved revisions to the publication queue.'],
-                          ['3', 'Publish', 'Publish the staged set together.'],
-                        ].map(([number, label, description]) => (
-                          <div key={number} className="flex gap-3">
-                            <span className="grid size-7 shrink-0 place-content-center rounded-full bg-secondary text-xs font-semibold">
-                              {number}
-                            </span>
-                            <div className="grid gap-1">
-                              <p className="text-sm font-medium">{label}</p>
-                              <p className="text-xs leading-5 text-muted-foreground">{description}</p>
-                            </div>
+                          <div className="flex items-center gap-2">
+                            {autosave.error && (
+                              <Button variant="outline" onClick={() => void autosave.flush()}>
+                                Retry save
+                              </Button>
+                            )}
+                            {wide && (
+                              <Button variant="outline" aria-expanded={desktopPreview} onClick={togglePreview}>
+                                {desktopPreview ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}Preview
+                              </Button>
+                            )}
+                            <Button
+                              disabled={busy || conflict || autosave.saving}
+                              onClick={() => {
+                                if (!requireValidContent()) return;
+                                void autosave
+                                  .flush()
+                                  .then((saved) => {
+                                    const current = currentDocument.current;
+                                    if (!saved || !current?.item.id) return;
+                                    saveSelection(base, [
+                                      { collection, recordId: current.item.id, expectedRevision: current._rev, title },
+                                    ]);
+                                    window.location.assign('/review/');
+                                  })
+                                  .catch(() =>
+                                    setMessage(
+                                      'The review could not be opened. Your saved draft is safe. Allow session storage and retry.',
+                                    ),
+                                  );
+                              }}
+                            >
+                              Publish changes
+                            </Button>
+                            <DropdownMenu open={draftActionsOpen} onOpenChange={setDraftActionsOpen}>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" aria-label="More draft actions">
+                                  <MoreHorizontal />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent className="cms-surface" align="end">
+                                <DropdownMenuItem onSelect={() => openPublicationSurface()}>
+                                  <History />
+                                  Publication history
+                                </DropdownMenuItem>
+                                {dirty && (
+                                  <DropdownMenuItem onSelect={() => requestDiscard()}>
+                                    Discard unsaved changes
+                                  </DropdownMenuItem>
+                                )}
+                                {['news', 'socials'].includes(collection) && (
+                                  <DropdownMenuItem
+                                    disabled={!document.item.id || dirty}
+                                    onSelect={() => setConfirmTrash(true)}
+                                  >
+                                    <Trash2 />
+                                    Move to trash
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
-                        ))}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          disabled={busy || !items.length}
-                          onClick={() => {
-                            if (items[0]) void open(items[0]);
-                          }}
-                        >
-                          <FileText className="size-4" aria-hidden="true" />
-                          Open first record
-                        </Button>
-                        <Button type="button" variant="outline" onClick={() => setPublicationQueueOpen(true)}>
-                          <ListChecks className="size-4" aria-hidden="true" />
-                          Review staged changes
-                        </Button>
-                        <Button type="button" variant="ghost" onClick={() => setPublicationHistoryOpen(true)}>
-                          <History className="size-4" aria-hidden="true" />
-                          Publication history
-                        </Button>
-                      </div>
-                      {message && (
-                        <Alert role="status">
-                          <AlertDescription>{message}</AlertDescription>
-                        </Alert>
+                        </div>
+                        {autosave.error && (
+                          <p role="alert" className="text-sm cms-state-error">
+                            {autosave.error}
+                          </p>
+                        )}
+                        <div className="cms-publication-controls">
+                          <PublicationStatus
+                            items={publications}
+                            statusError={publicationStatusError}
+                            message={publicationMessage}
+                            refresh={publicationStatus}
+                            open={publicationHistoryOpen}
+                            onOpenChange={setPublicationHistoryOpen}
+                            compact
+                          />
+                        </div>
+                      </header>
+                      {['releases', 'distro'].includes(collection) && (
+                        <div className="flex gap-2 border-b px-4" role="group" aria-label="Catalog details">
+                          {(['details', 'selling', 'stock'] as const).map((section) => (
+                            <Button
+                              key={section}
+                              variant={catalogTab === section ? 'secondary' : 'ghost'}
+                              aria-pressed={catalogTab === section}
+                              onClick={() => setCatalogTab(section)}
+                            >
+                              {section === 'details' ? 'Details' : section === 'selling' ? 'Selling' : 'Stock'}
+                            </Button>
+                          ))}
+                        </div>
                       )}
-                    </CardContent>
-                  </Card>
-                </div>
+                      {catalogTab !== 'details' && (
+                        <CatalogSelling item={document.item} base={base} section={catalogTab} />
+                      )}
+                      <div className="cms-editor-body" hidden={catalogTab !== 'details'}>
+                        {validationAttempt > 0 && !validation.valid && (
+                          <Alert variant="destructive" role="alert" className="mb-6">
+                            <AlertDescription>
+                              Fix {validation.issues.length === 1 ? 'the highlighted field' : 'the highlighted fields'}{' '}
+                              before publishing.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                        {message && (
+                          <Alert
+                            variant={conflict ? 'destructive' : 'default'}
+                            role={conflict ? 'alert' : 'status'}
+                            className="mb-6"
+                          >
+                            <AlertDescription className="whitespace-pre-wrap">{message}</AlertDescription>
+                          </Alert>
+                        )}
+                        <form
+                          id="content-editor-form"
+                          noValidate
+                          onSubmit={saveNew}
+                          onFocusCapture={(event) =>
+                            setFocusedPath(
+                              (event.target as HTMLElement).closest<HTMLElement>('[data-content-path]')?.dataset
+                                .contentPath ?? '',
+                            )
+                          }
+                        >
+                          <fieldset disabled={busy} className="cms-fields grid min-w-0 gap-6 @2xl:grid-cols-2">
+                            <legend className="sr-only">{contentSections[collection]} details</legend>
+                            <ContentFields
+                              key={document.item.slug}
+                              collection={collection}
+                              data={data}
+                              base={base}
+                              disabled={busy}
+                              validation={validation}
+                              validationAttempt={validationAttempt}
+                              onChange={(next) => {
+                                setData(next);
+                                setDirty(true);
+                              }}
+                            />
+                          </fieldset>
+                        </form>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="p-6 text-muted-foreground">Choose a title to edit.</div>
+                  )}
+                </section>
+              </Tabs.Content>
+            </ResizablePanel>
+            <ResizableHandle
+              disabled={!wide || !desktopPreview}
+              className="cms-resize-handle"
+              aria-label="Resize editor and preview"
+            />
+            <ResizablePanel
+              id="preview"
+              defaultSize="50%"
+              minSize={wide && desktopPreview ? '25%' : '0%'}
+              className="cms-preview-panel"
+            >
+              {document && mobileEditor && (
+                <Tabs.Content value="preview" forceMount className="cms-preview-pane" id="content-preview-pane">
+                  <ContentPreview
+                    key={`${collection}:${document.item.id || document.item.slug}`}
+                    collection={collection}
+                    focusedPath={focusedPath}
+                    id={document.item.id}
+                    slug={document.item.slug}
+                    data={data}
+                    base={base}
+                    restoreScroll={
+                      previewScroll.key === `${collection}:${document.item.id || document.item.slug}`
+                        ? previewScroll
+                        : undefined
+                    }
+                    dirty={dirty}
+                    valid={validation.valid}
+                    active={!media && catalogTab === 'details' && (wide ? desktopPreview : preview)}
+                  />
+                </Tabs.Content>
               )}
-            </section>
-          </Tabs.Content>
-          {document && mobileEditor && (
-            <Tabs.Content value="preview" forceMount className="cms-preview-pane" id="content-preview-pane">
-              <ContentPreview
-                key={`${collection}:${document.item.id || document.item.slug}`}
-                collection={collection}
-                id={document.item.id}
-                slug={document.item.slug}
-                data={data}
-                base={base}
-                restoreScroll={
-                  previewScroll.key === `${collection}:${document.item.id || document.item.slug}`
-                    ? previewScroll
-                    : undefined
-                }
-                dirty={dirty}
-                valid={validation.valid}
-                active={!media && (wide ? desktopPreview : preview)}
-              />
-            </Tabs.Content>
-          )}
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </Tabs.Root>
       </div>
       <AlertDialog
@@ -1202,10 +1237,10 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         onOpenChange={(open) => {
           setConfirmReload(open);
           if (!open) {
-            const focusTarget = reloadFocus.current ?? discardTrigger.current;
+            const focusTarget = reloadFocus.current ?? editorHeading.current;
             requestAnimationFrame(() => {
               if (focusTarget?.isConnected) focusTarget.focus();
-              else discardTrigger.current?.focus();
+              else editorHeading.current?.focus();
               reloadFocus.current = null;
             });
           }
@@ -1240,6 +1275,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </SidebarProvider>
+    </div>
   );
 }

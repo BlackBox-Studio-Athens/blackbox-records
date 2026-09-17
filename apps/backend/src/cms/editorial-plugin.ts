@@ -1,6 +1,6 @@
 import type { SandboxedPlugin } from 'emdash/plugin';
 import { ContentSaveRejectedError } from 'emdash';
-import { contentMediaIds, isCmsCollection, validateCmsContent } from '@blackbox/content-model';
+import { contentMediaIds, isCmsCollection, validateCmsDraft } from '@blackbox/content-model';
 
 export default {
   hooks: {
@@ -8,9 +8,9 @@ export default {
       errorPolicy: 'abort',
       handler: async (event, context) => {
         if (!isCmsCollection(event.collection)) throw new ContentSaveRejectedError('Unsupported editorial collection.');
-        const issues = validateCmsContent(event.collection, event.content);
+        const issues = validateCmsDraft(event.collection, event.content);
         if (issues.length) throw new ContentSaveRejectedError(issues.join('\n'));
-        if (event.collection === 'releases') {
+        if (event.collection === 'releases' && event.content.artist) {
           const artist = await context.content?.get('artists', String(event.content.artist));
           if (!artist) throw new ContentSaveRejectedError('artist: Select an existing Artist.');
         }

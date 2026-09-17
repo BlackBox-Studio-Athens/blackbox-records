@@ -2,8 +2,9 @@ import {
   readCheckoutOrder,
   readRecentCheckoutOrders,
   type PaidOrderDeliverySummary,
+  type ReadRecentCheckoutOrdersQuery,
 } from '../../../application/commerce/orders';
-import type { CheckoutOrderRecord, OrderStatus } from '../../../domain/commerce/repositories/spi';
+import type { CheckoutOrderRecord } from '../../../domain/commerce/repositories/spi';
 import type { AppBindings } from '../../../env';
 import { D1PaidOrderDeliveryRepository } from '../../../infrastructure/persistence/d1-paid-order-delivery-repository';
 import { createPrismaClient, PrismaOrderStateRepository } from '../../../infrastructure/persistence/prisma';
@@ -29,10 +30,7 @@ export function createInternalOrderServices(bindings: AppBindings) {
         order,
       };
     },
-    readRecentCheckoutOrders: async (query: {
-      limit: number;
-      status?: OrderStatus | null;
-    }): Promise<InternalOrderRead[]> => {
+    readRecentCheckoutOrders: async (query: ReadRecentCheckoutOrdersQuery): Promise<InternalOrderRead[]> => {
       const recentOrders = await readRecentCheckoutOrders(orders, query);
       const deliverySummaries = await deliveries.listSummaries(recentOrders.map(({ id }) => id));
 

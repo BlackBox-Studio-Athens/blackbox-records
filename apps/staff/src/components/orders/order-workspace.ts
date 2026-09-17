@@ -8,10 +8,17 @@ import {
 type ReadState<T> = { data: T | null; readAt: string | null; loading: boolean; error: string | null };
 const emptyRead = <T>(): ReadState<T> => ({ data: null, readAt: null, loading: false, error: null });
 
-export function createOrderWorkspace(api: ReturnType<typeof createInternalOrderApi>) {
+export function createOrderWorkspace(
+  api: Pick<ReturnType<typeof createInternalOrderApi>, 'list' | 'detail'> &
+    Partial<Pick<ReturnType<typeof createInternalOrderApi>, 'search'>>,
+) {
   let state = {
     denied: false,
     status: '' as OrderStatus | '',
+    query: '',
+    notification: '' as '' | 'pending' | 'needs_review',
+    nextCursor: null as string | null,
+    cursor: undefined as string | undefined,
     selected: false,
     session: null as string | null,
     list: emptyRead<InternalOrder[]>(),
@@ -28,7 +35,17 @@ export function createOrderWorkspace(api: ReturnType<typeof createInternalOrderA
     if (error instanceof InternalOrderApiError && (error.status === 401 || error.status === 403)) {
       listRequest++;
       detailRequest++;
-      publish({ denied: true, list: emptyRead(), detail: emptyRead(), session: null, selected: false });
+      publish({
+        denied: true,
+        query: '',
+        notification: '',
+        cursor: undefined,
+        nextCursor: null,
+        list: emptyRead(),
+        detail: emptyRead(),
+        session: null,
+        selected: false,
+      });
       return true;
     }
     return false;
@@ -48,15 +65,26 @@ export function createOrderWorkspace(api: ReturnType<typeof createInternalOrderA
       listRequest++;
       detailRequest++;
     },
-    async loadList(status = state.status) {
+    async loadList(status = state.status, query = state.query, notification = state.notification, cursor?: string) {
       if (state.denied) return;
       const request = ++listRequest;
       const previous = status === state.status ? state.list : emptyRead<InternalOrder[]>();
-      publish({ status, list: { ...previous, loading: true, error: null } });
+      publish({ status, query, notification, cursor, list: { ...previous, loading: true, error: null } });
       try {
-        const data = await api.list(status || undefined);
+        const page = api.search
+          ? await api.search({
+              ...(status ? { status } : {}),
+              ...(query ? { q: query } : {}),
+              ...(notification ? { notification } : {}),
+              ...(cursor ? { cursor } : {}),
+            })
+          : { items: await api.list(status || undefined), nextCursor: null };
+        const data = page.items;
         if (request !== listRequest || state.denied) return;
-        publish({ list: { data, readAt: new Date().toISOString(), loading: false, error: null } });
+        publish({
+          nextCursor: page.nextCursor,
+          list: { data, readAt: new Date().toISOString(), loading: false, error: null },
+        });
       } catch (error) {
         if (denied(error) || request !== listRequest) return;
         publish({ list: { ...previous, loading: false, error: message(error) } });

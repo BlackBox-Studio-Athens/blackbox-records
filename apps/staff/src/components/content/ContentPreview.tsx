@@ -10,6 +10,7 @@ import type { ContentData, ContentSection } from './ContentFields';
 
 export default function ContentPreview({
   collection,
+  focusedPath = '',
   id,
   slug,
   data,
@@ -20,6 +21,7 @@ export default function ContentPreview({
   valid,
 }: {
   collection: ContentSection;
+  focusedPath?: string;
   id: string;
   slug: string;
   data: ContentData;
@@ -51,6 +53,27 @@ export default function ContentPreview({
   const panel = useRef<HTMLElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!active || !focusedPath) return;
+    const doc = frame.current?.contentDocument;
+    if (!doc) return;
+    const value = focusedPath
+      .split('.')
+      .reduce<unknown>(
+        (value, key) => (value && typeof value === 'object' ? (value as Record<string, unknown>)[key] : undefined),
+        data,
+      );
+    const text = typeof value === 'string' ? value.trim() : '';
+    const target = text
+      ? Array.from(doc.querySelectorAll<HTMLElement>('h1,h2,h3,p,figcaption,a')).find(
+          (element) => element.textContent?.trim() === text,
+        )
+      : focusedPath.includes('image')
+        ? doc.querySelector<HTMLElement>('main img')
+        : null;
+    target?.scrollIntoView({ block: 'center', behavior: 'instant' });
+  }, [focusedPath, active]);
+
   const scroll = useRef({ x: 0, y: 0 });
   const resetScroll = useRef(false);
   const firstRender = useRef(true);
@@ -147,7 +170,7 @@ export default function ContentPreview({
       if (controller.signal.aborted) return;
       setPending(null);
       setStatus('Preview could not update');
-      setError('Preview took too long. Refresh preview to try again. Your edits are still here.');
+      setError('Preview took too long. Retry preview to try again. Your edits are still here.');
       report(null, 'timeout');
       controller.abort();
     }, 30_000);
@@ -173,7 +196,7 @@ export default function ContentPreview({
             const responseGeneration = response.headers.get('X-Preview-Generation');
             if (responseGeneration !== null && responseGeneration !== String(current)) {
               report(null, 'freshness');
-              throw new Error('Preview returned an outdated response. Refresh preview to try again.');
+              throw new Error('Preview returned an outdated response. Retry preview to try again.');
             }
             if (!response.ok || response.redirected || !response.headers.get('X-Preview-Environment')) {
               const details = (await response.json().catch(() => null)) as { error?: string } | null;
@@ -181,7 +204,7 @@ export default function ContentPreview({
                 [401, 403].includes(response.status) ||
                   (response.redirected && new URL(response.url).hostname.endsWith('.cloudflareaccess.com'))
                   ? 'Sign in again to preview. Your edits are still here.'
-                  : details?.error || 'Preview returned an unexpected response. Refresh preview to try again.',
+                  : details?.error || 'Preview returned an unexpected response. Retry preview to try again.',
               );
             }
             const next = await response.text();
@@ -335,16 +358,18 @@ export default function ContentPreview({
               </select>
             </label>
           )}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label="Refresh preview"
-            title="Refresh preview"
-            onClick={() => setRetry((value) => value + 1)}
-          >
-            <RefreshCw className="size-4" />
-          </Button>
+          {error && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Retry preview"
+              title="Retry preview"
+              onClick={() => setRetry((value) => value + 1)}
+            >
+              <RefreshCw className="size-4" />
+            </Button>
+          )}
         </div>
         <p
           role="status"
@@ -467,7 +492,7 @@ export default function ContentPreview({
                   if (item.signal.aborted || item.generation !== generation.current) return;
                   item.report(error, 'request', directive);
                   setPending(null);
-                  setError(error instanceof Error ? error.message : 'Preview assets could not load. Refresh preview.');
+                  setError(error instanceof Error ? error.message : 'Preview assets could not load. Retry preview.');
                   setStatus('Preview could not update');
                   item.finish();
                 } finally {
@@ -478,7 +503,7 @@ export default function ContentPreview({
           ))}
         {!rendered &&
           (error ? (
-            <p className="p-6 text-sm text-muted-foreground">Fix the issue above, then refresh the preview.</p>
+            <p className="p-6 text-sm text-muted-foreground">Fix the issue above, then retry the preview.</p>
           ) : (
             <div className="grid gap-4 p-6" aria-label="Loading site preview">
               <Skeleton className="h-64" />

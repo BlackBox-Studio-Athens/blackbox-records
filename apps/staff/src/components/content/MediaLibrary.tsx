@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import '../../styles/content.css';
+import { useStaffRead } from '../../lib/staff-query';
 import { Check, ChevronDown, ImageIcon, LayoutGrid, List as ListIcon, Search, Upload } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
@@ -20,13 +21,23 @@ import {
   type EditorialList,
 } from '../../lib/backend/editorial-api';
 
-function cropSuitability(item: EditorialMedia) {
-  if (!item.width || !item.height) return 'Crop unknown';
+function cropSuitability(item: EditorialMedia, cropRatio?: number) {
+  if (!cropRatio || !item.width || !item.height) return '';
   const ratio = item.width / item.height;
-  return Math.abs(ratio - 3 / 4) <= 0.08 ? '3:4 crop friendly' : 'Review crop';
+  return Math.abs(ratio - cropRatio) <= 0.08 ? 'Fits this crop' : 'Check the crop';
 }
 
-export function MediaImage({ item, base, className = '' }: { item: EditorialMedia; base: string; className?: string }) {
+function MediaImage({
+  item,
+  base,
+  className = '',
+  crop = false,
+}: {
+  item: EditorialMedia;
+  base: string;
+  className?: string;
+  crop?: boolean;
+}) {
   const [failed, setFailed] = useState(false);
   const url =
     typeof window === 'undefined' ? '' : editorialMediaUrl(item, new URL(base || window.location.origin).origin);
@@ -35,6 +46,7 @@ export function MediaImage({ item, base, className = '' }: { item: EditorialMedi
       src={url}
       alt={item.alt ?? ''}
       loading="lazy"
+      style={{ objectFit: crop ? 'cover' : 'contain' }}
       className={`h-full w-full object-contain ${className}`}
       onError={() => setFailed(true)}
     />
@@ -51,14 +63,18 @@ export default function MediaLibrary({
   value,
   onSelect,
   disabled = false,
+  remembered,
+  cropRatio,
 }: {
+  cropRatio?: number | undefined;
+  remembered?: React.RefObject<{ query: string; view: 'grid' | 'list' }>;
   base: string;
   value?: string;
   onSelect?(item: EditorialMedia): void;
   disabled?: boolean;
 }) {
   const id = useId();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(remembered?.current.query ?? '');
   const [items, setItems] = useState<EditorialMedia[]>([]);
   const [cursor, setCursor] = useState<string>();
   const [loading, setLoading] = useState(true);
@@ -66,7 +82,10 @@ export default function MediaLibrary({
   const [message, setMessage] = useState('');
   const [error, setError] = useState(false);
   const [detail, setDetail] = useState<EditorialMedia | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(remembered?.current.view ?? 'grid');
+  useEffect(() => {
+    if (remembered) remembered.current = { query, view: viewMode };
+  }, [remembered, query, viewMode]);
   const [uploadOpen, setUploadOpen] = useState(false);
   const detailTrigger = useRef<HTMLElement | null>(null);
   const sequence = useRef(0);
@@ -92,17 +111,21 @@ export default function MediaLibrary({
     } catch (error) {
       if (sequence.current !== request) return;
       setError(true);
-      setMessage(error instanceof Error ? error.message : 'Images could not be loaded. Search to retry.');
+      setMessage(error instanceof Error ? error.message : 'Images could not be loaded. Try again.');
     } finally {
       if (sequence.current === request) setLoading(false);
     }
   }
   useEffect(() => {
-    void search();
+    const timer = window.setTimeout(() => {
+      if (navigator.onLine) void search();
+    }, 300);
     return () => {
+      window.clearTimeout(timer);
       sequence.current++;
     };
-  }, [base]);
+  }, [base, query]);
+  useStaffRead(['images', base, query], () => search(), { enabled: !uploading && !disabled });
 
   async function upload(file: File) {
     setUploading(true);
@@ -146,10 +169,11 @@ export default function MediaLibrary({
           </InputGroup>
         </Field>
         <div className="flex flex-wrap items-end gap-3">
-          <Button type="button" variant="outline" disabled={busy} onClick={() => void search()}>
-            <Search aria-hidden="true" />
-            Search
-          </Button>
+          {error && (
+            <Button type="button" variant="outline" disabled={busy} onClick={() => void search()}>
+              Retry images
+            </Button>
+          )}
           <ToggleGroup
             type="single"
             value={viewMode}
@@ -245,8 +269,8 @@ export default function MediaLibrary({
                   }
                 }}
               >
-                <AspectRatio ratio={4 / 3} className="w-full bg-muted/30 p-2">
-                  <MediaImage item={item} base={base} />
+                <AspectRatio ratio={cropRatio ?? 4 / 3} className="w-full bg-muted/30 p-2">
+                  <MediaImage item={item} base={base} crop={!!cropRatio} />
                 </AspectRatio>
                 <span className="cms-media-filename w-full truncate border-t border-border p-3 text-sm">
                   {item.filename}
@@ -257,7 +281,7 @@ export default function MediaLibrary({
                       {item.width} × {item.height} px
                     </span>
                   )}
-                  <span>{cropSuitability(item)}</span>
+                  <span>{cropSuitability(item, cropRatio)}</span>
                 </span>
                 {value === item.id && (
                   <span className="absolute top-2 right-2 rounded-full bg-primary p-1 text-primary-foreground">
@@ -341,7 +365,9 @@ export function ContentImagePicker({
   onBlur,
   path,
   hideLabel,
+  cropRatio,
 }: {
+  cropRatio?: number | undefined;
   base: string;
   value: string;
   label: string;
@@ -354,6 +380,9 @@ export function ContentImagePicker({
 }) {
   const id = useId();
   const [open, setOpen] = useState(false);
+  const remembered = useRef<{ query: string; view: 'grid' | 'list' }>({ query: '', view: 'grid' });
+  const scrollPosition = useRef(0);
+  const pickerContent = useRef<HTMLDivElement>(null);
   const [item, setItem] = useState<EditorialMedia | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -430,14 +459,34 @@ export function ContentImagePicker({
                 {value ? 'Change' : 'Choose'} {label.toLowerCase()}
               </Button>
             </SheetTrigger>
-            <SheetContent className="cms-surface w-full overflow-y-auto sm:max-w-3xl">
+            <SheetContent
+              ref={pickerContent}
+              onScroll={(event) => {
+                scrollPosition.current = event.currentTarget.scrollTop;
+              }}
+              onOpenAutoFocus={() =>
+                requestAnimationFrame(() => {
+                  if (pickerContent.current) pickerContent.current.scrollTop = scrollPosition.current;
+                })
+              }
+              className="cms-surface w-full overflow-y-auto sm:max-w-3xl"
+            >
               <SheetHeader>
                 <SheetTitle>Choose {label.toLowerCase()}</SheetTitle>
                 <SheetDescription>Select an image from the library or upload a new one.</SheetDescription>
               </SheetHeader>
               <div className="p-4 sm:p-6">
+                {cropRatio && (
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    {cropRatio === 0.75
+                      ? 'Portraits use a centered 3:4 crop. Aim for 1800 × 2400 px, at least 1200 × 1600 px, with headroom and room at the sides.'
+                      : 'Artwork uses a centered square crop. These previews show what will be visible.'}
+                  </p>
+                )}
                 <MediaLibrary
+                  cropRatio={cropRatio}
                   base={base}
+                  remembered={remembered}
                   value={value}
                   disabled={disabled}
                   onSelect={(image) => {

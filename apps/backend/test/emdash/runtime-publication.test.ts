@@ -9,6 +9,7 @@ import {
   readPublishedSnapshot,
 } from '../../src/cms/published-storage';
 import { completeSnapshot, storeSnapshotMedia } from '../../src/cms/snapshot-storage';
+import { createPrismaClient } from '../../src/infrastructure/persistence/prisma';
 import { readPublication } from '../../src/cms/publication-journal';
 
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));
@@ -57,7 +58,12 @@ async function setup() {
     handleRevisionGet: vi.fn(async () => ({
       success: true,
       data: {
-        item: { id: 'selected', collection: 'news', entryId: 'news', data: { ...data, title: 'Selected title' } },
+        item: {
+          id: 'selected',
+          collection: 'news',
+          entryId: 'news',
+          data: { ...data, title: 'Selected title' } as Record<string, unknown>,
+        },
       },
     })),
     handleMediaGet: vi.fn(),
@@ -204,4 +210,98 @@ test('activates a selected batch together and rejects stale selections before mu
   expect(snapshot.records.map((record) => record.data.title).sort()).toEqual(['Batch news', 'Batch other']);
   expect(runtime.handleContentPublish).toHaveBeenCalledTimes(2);
   expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+});
+
+test('rejects an incomplete selected draft before publication or native transitions', async () => {
+  const { deps, runtime, input } = await setup();
+  const revision = await runtime.handleRevisionGet();
+  runtime.handleRevisionGet.mockResolvedValue({
+    ...revision,
+    data: { item: { ...revision.data.item, data: { ...revision.data.item.data, title: '' } } },
+  });
+  await expect(acceptSelectedPublication(input, 'editor@example.com', deps)).rejects.toThrow('Complete');
+  expect(runtime.handleContentPublish).not.toHaveBeenCalled();
+  expect(await readPublication(deps.db, 'local', input.id)).toBeNull();
+});
+
+test('a different operation cannot publish an entry already pending', async () => {
+  const { deps, input } = await setup();
+  await acceptSelectedPublication(input, 'editor@example.com', deps);
+  await expect(
+    acceptSelectedPublication({ ...input, id: crypto.randomUUID() }, 'editor@example.com', deps),
+  ).rejects.toThrow('already updating');
+  expect((await acceptSelectedPublication(input, 'editor@example.com', deps)).id).toBe(input.id);
+});
+
+test('publishes selling-linked editorial details without changing price, stock or shop activation', async () => {
+  const { deps, runtime, input } = await setup();
+  const db = createPrismaClient(env);
+  const variantId = 'variant_review-editorial-only';
+  await db.storeItemOption.create({
+    data: {
+      variantId,
+      storeItemSlug: 'review-editorial-only',
+      sourceKind: 'distro',
+      sourceId: 'news',
+      cmsSourceId: 'news',
+      catalogRevision: 1,
+      catalogAvailability: 'withheld',
+    },
+  });
+  await db.stock.create({ data: { variantId, quantity: 12, onlineQuantity: 7 } });
+  await db.variantStripeMapping.create({
+    data: { variantId, stripeProductId: 'prod_review', stripePriceId: 'price_review' },
+  });
+  const before = await Promise.all([
+    db.storeItemOption.findUnique({ where: { variantId } }),
+    db.stock.findUnique({ where: { variantId } }),
+    db.variantStripeMapping.findUnique({ where: { variantId } }),
+  ]);
+  runtime.handleRevisionGet.mockResolvedValue({
+    success: true,
+    data: {
+      item: {
+        id: 'selected',
+        collection: 'distro',
+        entryId: 'news',
+        data: {
+          title: 'Reviewed distro title',
+          artist_or_label: 'Other label',
+          group: 'CDs',
+          image: { id: 'image' },
+          image_alt: 'Sleeve',
+          summary: 'Updated website details',
+          gallery: [],
+          order: 0,
+        },
+      },
+    },
+  });
+  try {
+    await acceptSelectedPublication({ ...input, collection: 'distro' }, 'editor@example.com', deps);
+    await processRuntimePublication(deps);
+    expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+    expect(
+      await Promise.all([
+        db.storeItemOption.findUnique({ where: { variantId } }),
+        db.stock.findUnique({ where: { variantId } }),
+        db.variantStripeMapping.findUnique({ where: { variantId } }),
+      ]),
+    ).toEqual(before);
+  } finally {
+    await db.variantStripeMapping.delete({ where: { variantId } });
+    await db.stock.delete({ where: { variantId } });
+    await db.storeItemOption.delete({ where: { variantId } });
+  }
+});
+
+test('concurrent different identities cannot create two pending publications for the same entry', async () => {
+  const { deps, input } = await setup();
+  const results = await Promise.allSettled(
+    [input, { ...input, id: crypto.randomUUID() }].map((request) =>
+      acceptSelectedPublication(request, 'editor@example.com', deps),
+    ),
+  );
+  expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+  expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
 });

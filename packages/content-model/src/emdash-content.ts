@@ -175,6 +175,49 @@ export function validateCmsContent(collection: CmsCollection, data: Record<strin
   return getCmsContentIssues(collection, data).map((issue) => `${issue.path.join('.')}: ${issue.message}`);
 }
 
+// Drafts may omit unfinished fields, but never introduce unknown fields, unsafe
+// links, invalid types, or unsupported rich-text blocks. Publication uses the
+// complete schemas above, including their cross-field refinements.
+function draftSchema(schema: z.ZodType): z.ZodType {
+  if (schema === cmsBodySchema) return cmsBodySchema.optional().nullable();
+  if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable || schema instanceof z.ZodDefault)
+    return draftSchema(schema.unwrap() as z.ZodType);
+  if (schema instanceof z.ZodObject)
+    return z
+      .object(
+        Object.fromEntries(
+          Object.entries(schema.shape).map(([name, field]) => [name, draftSchema(field as z.ZodType)]),
+        ),
+      )
+      .strict()
+      .optional()
+      .nullable();
+  if (schema instanceof z.ZodArray)
+    return z
+      .array(draftSchema(schema.element as z.ZodType))
+      .max(1000)
+      .optional()
+      .nullable();
+  if (schema instanceof z.ZodUnion)
+    return z
+      .union(schema.options.map((option) => draftSchema(option as z.ZodType)))
+      .optional()
+      .nullable();
+  return z
+    .union([schema, z.literal('')])
+    .optional()
+    .nullable();
+}
+const cmsDraftSchemas = Object.fromEntries(
+  Object.entries(cmsContentSchemas).map(([name, schema]) => [name, draftSchema(schema)]),
+);
+
+export function validateCmsDraft(collection: CmsCollection, data: Record<string, unknown>): string[] {
+  if (JSON.stringify(data).length > 256 * 1024) return ['Draft is too large.'];
+  const result = cmsDraftSchemas[collection]!.safeParse(data);
+  return result.success ? [] : result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`);
+}
+
 export function contentMediaIds(data: unknown): string[] {
   const ids = new Set<string>();
   function visit(value: unknown) {

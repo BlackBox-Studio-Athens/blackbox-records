@@ -206,6 +206,7 @@ model CheckoutOrder {
 
   @@index([variantId, status])
   @@index([status, createdAt])
+  @@index([createdAt, id])
 }
 
 model CheckoutOrderLine {

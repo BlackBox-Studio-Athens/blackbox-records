@@ -47,7 +47,7 @@ try {
     persist: true,
     persistTo: localState,
     envFiles: [],
-    vars: { CMS_PUBLICATION_EXPORT_TOKEN: workflowToken },
+    vars: { CMS_PUBLICATION_EXPORT_TOKEN: workflowToken, CONTENT_PUBLICATION_MODE: 'workflow' },
     logLevel: 'error',
     experimental: { disableExperimentalWarning: true },
   });
@@ -65,7 +65,12 @@ try {
       response.headers.getSetCookie().every((cookie) => !cookie.startsWith('astro-session=')),
       'Access-authenticated CMS requests must not create a rate-limited KV login session',
     );
-    return { status: response.status, body: await response.json() };
+    const text = await response.text();
+    try {
+      return { status: response.status, body: JSON.parse(text) };
+    } catch {
+      throw new Error(`${method} ${path} returned ${response.status}: ${text.slice(0, 400)}`);
+    }
   }
   const pixels = await sharp({ create: { width: 40, height: 60, channels: 3, background: '#333' } })
     .png()
@@ -113,7 +118,7 @@ try {
     if (collection === 'releases') data.artist = artistId;
     if (record.body.trim()) data.body = markdownTreeToPortableText(parseMarkdown(record.body));
     const path = '/content/' + collection;
-    for (const invalid of [{}, { ...data, provider_id: 'forged' }]) {
+    for (const invalid of [{ ...data, provider_id: 'forged' }]) {
       const rejected = await request(path, 'POST', { slug: 'invalid-check', data: invalid });
       assert.ok(rejected.status >= 400 && rejected.status < 500, collection + ': ' + JSON.stringify(rejected));
     }
@@ -121,7 +126,22 @@ try {
     assert.equal(created.status, 201, collection + ': ' + JSON.stringify(created));
     if (collection === 'artists') artistId = created.body.data.item.id;
     const idPath = path + '/' + created.body.data.item.id;
-    const current = await request(idPath);
+    let current = await request(idPath);
+    if (collection === 'artists') {
+      const incomplete = await request(idPath, 'PUT', {
+        _rev: current.body.data._rev,
+        data: { title: '', bio: 'Still writing' },
+      });
+      assert.equal(incomplete.status, 200, JSON.stringify(incomplete));
+      assert.equal(
+        (await request(idPath + '/publish', 'POST', { _rev: incomplete.body.data._rev })).status,
+        422,
+        'Incomplete drafts cannot publish',
+      );
+      const complete = await request(idPath, 'PUT', { _rev: incomplete.body.data._rev, data });
+      assert.equal(complete.status, 200, JSON.stringify(complete));
+      current = await request(idPath);
+    }
     if (collection === 'releases' || collection === 'distro') {
       assert.equal(current.body.data.item.draftRevisionId, null, 'A fresh native draft has no draft revision yet');
       const artworkUrl = 'http://127.0.0.1:8799/media/published/' + createHash('sha256').update(pixels).digest('hex');
@@ -250,9 +270,18 @@ try {
     '0001_publications.sql',
     '0002_publication_dispatch.sql',
     '0003_local_publication_receipt.sql',
+    '0004_runtime_publication.sql',
   ]);
   migrate('--apply');
   assert.deepEqual(JSON.parse(migrate()).pending, []);
+  const workspaceSummary = await request('/blackbox/workspace?collection=artists');
+  assert.equal(workspaceSummary.status, 200, JSON.stringify(workspaceSummary));
+  assert.ok(
+    workspaceSummary.body.data.items.every(
+      (item) => item.collection === 'artists' && item.publicationState === 'draft',
+    ),
+  );
+
   const publicationInput = { id: crypto.randomUUID(), requestedRevision: snapshot.snapshot.records[0].revisionId };
   const sendPublication = () =>
     fetch('http://127.0.0.1:8799/_emdash/api/blackbox/publications', {

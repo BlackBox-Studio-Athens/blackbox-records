@@ -121,6 +121,11 @@ try {
       writeFileSync(resolve(directory, 'complete.json'), '{}');
     }
   }
+  const catalogSchema = await fetch('http://127.0.0.1:8787/_emdash/api/blackbox/catalog-schema', {
+    method: 'POST',
+    headers: { Origin: 'http://127.0.0.1:8787', 'X-EmDash-Request': '1' },
+  });
+  if (!catalogSchema.ok) throw new Error('Local catalog browsing schema could not be prepared.');
   writeFileSync(readyPath, JSON.stringify({ pid: process.pid }));
   console.log('[Local CMS] Staff: http://127.0.0.1:8787/content/');
   await worker.waitUntilExit();

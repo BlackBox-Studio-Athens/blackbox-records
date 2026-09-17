@@ -170,3 +170,18 @@ describe('Order facts and notification language', () => {
     ).toBe('needs_review');
   });
 });
+
+it('sends complete search filters and cursors to the server', async () => {
+  const search = vi.fn(async () => ({ items: [exampleOrder], nextCursor: 'next-page' }));
+  const workspace = createOrderWorkspace({ ...api(), search });
+  await workspace.loadList('paid', 'customer@example.com', 'pending');
+  expect(search).toHaveBeenLastCalledWith({ status: 'paid', q: 'customer@example.com', notification: 'pending' });
+  expect(workspace.getSnapshot().nextCursor).toBe('next-page');
+  await workspace.loadList('paid', 'customer@example.com', 'pending', 'next-page');
+  expect(search).toHaveBeenLastCalledWith({
+    status: 'paid',
+    q: 'customer@example.com',
+    notification: 'pending',
+    cursor: 'next-page',
+  });
+});

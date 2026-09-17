@@ -1,0 +1,9 @@
+---
+import WebsiteChanges from '../../components/content/WebsiteChanges';
+import StockOpsLayout from '../../layouts/StockOpsLayout.astro';
+import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api';
+---
+
+<StockOpsLayout pageTitle="Review website changes" pageDescription="Review and publish saved website changes together.">
+  <WebsiteChanges base={getInternalStockApiBaseUrl()} client:load />
+</StockOpsLayout>

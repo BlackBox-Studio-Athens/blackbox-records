@@ -1,40 +1,43 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import {
-  ArrowLeft,
-  ArrowRight,
-  ChevronRight,
-  Inbox,
-  LockKeyhole,
-  Mail,
-  RefreshCw,
-  Search,
-  TriangleAlert,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronRight, Inbox, LockKeyhole, Mail, TriangleAlert } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { createInternalOrderApi, type InternalOrder, type OrderStatus } from '../../lib/backend/internal-order-api';
+import { useStaffRead } from '../../lib/staff-query';
 import { createOrderWorkspace } from './order-workspace';
 import OrderDetail, { formatOrderTime, notificationStatus, OrderStatusLabel, paymentLabels } from './OrderDetail';
 
 export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: string }) {
   const workspace = useMemo(() => createOrderWorkspace(createInternalOrderApi(backendBaseUrl)), [backendBaseUrl]);
   const state = useSyncExternalStore(workspace.subscribe, workspace.getSnapshot, workspace.getSnapshot);
-  const [lookup, setLookup] = useState('');
-  const [notification, setNotification] = useState('all');
+  const [notification, setNotification] = useState<'' | 'pending' | 'needs_review'>('');
+  const [search, setSearch] = useState('');
+  const [previousCursors, setPreviousCursors] = useState<(string | undefined)[]>([]);
   const heading = useRef<HTMLHeadingElement>(null);
   const focusPending = useRef(false);
+  const listScrollTop = useRef(0);
   const listFocusIndex = useRef<number | null>(null);
   const listElement = useRef<HTMLUListElement>(null);
 
   useEffect(() => {
     const followUrl = () => {
-      const session = new URLSearchParams(window.location.search).get('checkoutSessionId')?.trim();
+      focusPending.current = true;
+      const params = new URLSearchParams(window.location.search);
+      const session = params.get('checkoutSessionId')?.trim();
       if (session) {
-        setLookup(session);
         void workspace.lookup(session);
-      } else workspace.back();
+        return;
+      }
+      workspace.back();
+      const requested = params.get('status') as OrderStatus;
+      const status = ['paid', 'not_paid', 'needs_review', 'pending_payment'].includes(requested) ? requested : '';
+      const q = params.get('q') ?? '';
+      const notification = params.get('notification');
+      const filter = notification === 'pending' || notification === 'needs_review' ? notification : '';
+      setSearch(q);
+      setNotification(filter);
+      void workspace.loadList(status, q, filter, params.get('cursor') ?? undefined);
     };
-    void workspace.loadList();
     followUrl();
     window.addEventListener('popstate', followUrl);
     return () => {
@@ -45,13 +48,19 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
 
   useEffect(() => {
     if (state.denied) {
-      setLookup('');
+      setSearch('');
+      setNotification('');
+      setPreviousCursors([]);
       window.history.replaceState(null, '', '/orders/');
       heading.current?.focus();
     } else if (focusPending.current) {
       focusPending.current = false;
       if (!state.selected && listFocusIndex.current !== null) {
-        listElement.current?.querySelectorAll<HTMLButtonElement>('button')[listFocusIndex.current]?.focus();
+        listElement.current
+          ?.querySelectorAll<HTMLButtonElement>('button')
+          [listFocusIndex.current]?.focus({ preventScroll: true });
+        const main = document.getElementById('main');
+        if (main) main.scrollTop = listScrollTop.current;
       } else heading.current?.focus();
     }
   }, [state.selected, state.session, state.denied]);
@@ -60,16 +69,17 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
     focusPending.current = true;
     window.history.pushState(null, '', `/orders/?${new URLSearchParams({ checkoutSessionId: session })}`);
     void workspace.lookup(session);
-    window.scrollTo(0, 0);
+    document.getElementById('main')?.scrollTo(0, 0);
   }
   function inspect(order: InternalOrder, index: number) {
     listFocusIndex.current = index;
+    listScrollTop.current = document.getElementById('main')?.scrollTop ?? 0;
     if (order.checkoutSessionId) openSession(order.checkoutSessionId);
     else {
       focusPending.current = true;
       window.history.pushState(null, '', '/orders/');
       workspace.inspectUnbound(order);
-      window.scrollTo(0, 0);
+      document.getElementById('main')?.scrollTo(0, 0);
     }
   }
   function back() {
@@ -77,10 +87,35 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
     window.history.pushState(null, '', '/orders/');
     workspace.back();
   }
+  useEffect(() => {
+    if (state.selected || state.denied || !state.list.data) return;
+    const params = new URLSearchParams();
+    if (state.status) params.set('status', state.status);
+    if (state.query) params.set('q', state.query);
+    if (state.notification) params.set('notification', state.notification);
+    if (state.cursor) params.set('cursor', state.cursor);
+    window.history.replaceState(null, '', `/orders/${params.size ? `?${params}` : ''}`);
+  }, [state.selected, state.denied, state.status, state.query, state.notification, state.cursor, state.list.data]);
   const read = state.selected ? state.detail : state.list;
-  const orders = (state.list.data ?? []).filter(
-    (order) => notification === 'all' || order.deliveries.some((delivery) => delivery.status === notification),
+  const orders = state.list.data ?? [];
+  useStaffRead(
+    ['orders', state.session, state.status, state.query, state.notification, state.cursor],
+    () =>
+      state.selected && state.session
+        ? workspace.lookup(state.session)
+        : workspace.loadList(state.status, state.query, state.notification, state.cursor),
+    { enabled: !state.denied, interval: 60_000 },
   );
+  useEffect(() => {
+    if (search === state.query && notification === state.notification) return;
+    const timer = window.setTimeout(() => {
+      if (!state.selected) {
+        setPreviousCursors([]);
+        void workspace.loadList(state.status, search, notification);
+      }
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [search, notification]);
 
   if (state.denied)
     return (
@@ -114,7 +149,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
           }}
         >
           <ArrowLeft size={18} aria-hidden="true" />
-          Back to recent orders
+          Back to orders
         </a>
       )}
       <header className="order-heading">
@@ -123,27 +158,10 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
             {state.selected ? 'Order detail' : 'Orders'}
           </h1>
           <p className="order-muted">
-            {state.selected ? (state.session ?? 'No session recorded · Detail available for this visit only') : null}
+            {state.selected ? (state.detail.data?.orderReference ?? 'Order details') : null}
           </p>
         </div>
         <div className="order-refresh">
-          {(!state.selected || state.session) && (
-            <Button
-              variant="outline"
-              disabled={read.loading}
-              onClick={() => {
-                if (state.selected && state.session) void workspace.lookup(state.session);
-                else void workspace.loadList();
-              }}
-            >
-              <RefreshCw
-                size={17}
-                aria-hidden="true"
-                className={read.loading ? 'animate-spin motion-reduce:animate-none' : ''}
-              />
-              {read.loading ? 'Refreshing' : 'Refresh'}
-            </Button>
-          )}
           {read.readAt && <span className="order-muted">Read at {formatOrderTime(read.readAt)}</span>}
         </div>
       </header>
@@ -154,7 +172,10 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
               Payment status
               <select
                 value={state.status}
-                onChange={(event) => void workspace.loadList(event.target.value as OrderStatus | '')}
+                onChange={(event) => {
+                  setPreviousCursors([]);
+                  void workspace.loadList(event.target.value as OrderStatus | '');
+                }}
               >
                 <option value="">All statuses</option>
                 {Object.entries(paymentLabels).map(([value, label]) => (
@@ -165,56 +186,36 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
               </select>
             </label>
             <label>
-              Notifications in this subset
-              <select value={notification} onChange={(event) => setNotification(event.target.value)}>
-                <option value="all">All notifications</option>
+              Email status
+              <select
+                value={notification}
+                onChange={(event) => setNotification(event.target.value as typeof notification)}
+              >
+                <option value="">All emails</option>
                 <option value="pending">Pending</option>
                 <option value="needs_review">Needs review</option>
               </select>
             </label>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (lookup.trim()) {
-                  listFocusIndex.current = null;
-                  openSession(lookup.trim());
-                }
-              }}
-            >
-              <label htmlFor="order-session">Find a Checkout Session</label>
-              <div className="order-lookup">
-                <Input
-                  id="order-session"
-                  value={lookup}
-                  onChange={(event) => setLookup(event.target.value)}
-                  placeholder="cs_…"
-                  required
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-                <Button type="submit" disabled={!lookup.trim()}>
-                  <Search size={18} aria-hidden="true" />
-                  Find order
-                </Button>
-              </div>
-            </form>
+            <label htmlFor="order-search">
+              Search orders
+              <Input
+                id="order-search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Name, email or order reference"
+                autoComplete="off"
+              />
+            </label>
           </div>
-          <p className="order-coverage">
-            <Inbox size={18} aria-hidden="true" />
-            <span>
-              Latest 100 orders by creation time
-              {state.status ? ` with payment status “${paymentLabels[state.status]}”` : ', across all payment statuses'}
-              . Notification filters cover this subset only. Older orders updated recently may be absent. Use a Checkout
-              Session to look beyond this list.
-            </span>
-          </p>
         </>
       )}
       {read.error && (
         <div className="order-error" role="alert">
           <TriangleAlert size={21} aria-hidden="true" />
           <div>
-            <strong>{read.data ? 'Refresh failed. Showing stale data.' : 'Unable to load this view.'}</strong>
+            <strong>
+              {read.data ? 'Automatic update failed. Showing the last saved information.' : 'Unable to load this view.'}
+            </strong>
             <p>{read.error}</p>
             {read.readAt && <p>Last successful read: {formatOrderTime(read.readAt)}.</p>}
             <Button
@@ -239,7 +240,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
             ? 'Refreshing saved order facts…'
             : 'Loading orders…'
           : !state.selected && state.list.data
-            ? `${orders.length} ${orders.length === 1 ? 'order' : 'orders'} shown in this recent subset.`
+            ? `${orders.length} ${orders.length === 1 ? 'order' : 'orders'} shown.`
             : ''}
       </div>
       {read.loading && !read.data && (
@@ -253,11 +254,37 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
         state.detail.data && <OrderDetail order={state.detail.data} />
       ) : (
         <section aria-label="Recent orders" aria-busy={state.list.loading}>
+          <div className="my-4 flex gap-2">
+            {!!previousCursors.length && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const previous = [...previousCursors];
+                  const cursor = previous.pop();
+                  setPreviousCursors(previous);
+                  void workspace.loadList(state.status, search, notification, cursor);
+                }}
+              >
+                Previous
+              </Button>
+            )}
+            {state.nextCursor && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setPreviousCursors([...previousCursors, state.cursor]);
+                  void workspace.loadList(state.status, search, notification, state.nextCursor ?? undefined);
+                }}
+              >
+                Next
+              </Button>
+            )}
+          </div>
           {!!orders.length && (
             <>
               <div className="order-list-heading" aria-hidden="true">
                 <span>Created / item</span>
-                <span>Session</span>
+                <span>Customer / total</span>
                 <span>Payment</span>
                 <span>Notifications</span>
                 <span />
@@ -275,14 +302,27 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                       >
                         <span className="order-row-created">
                           <time dateTime={order.createdAt}>{formatOrderTime(order.createdAt)}</time>
-                          <small>{order.storeItemSlug}</small>
+                          <small>
+                            {order.fulfillment.kind === 'current'
+                              ? order.fulfillment.lines.map((line) => line.displayName).join(', ')
+                              : order.storeItemSlug}
+                          </small>
                         </span>
-                        <span className="order-session">
-                          {order.checkoutSessionId
-                            ? order.checkoutSessionId.length > 22
-                              ? `${order.checkoutSessionId.slice(0, 12)}…${order.checkoutSessionId.slice(-6)}`
-                              : order.checkoutSessionId
-                            : 'No session'}
+                        <span>
+                          {order.fulfillment.kind === 'current' ? (
+                            <>
+                              <span>{order.fulfillment.recipientName}</span>
+                              <small className="block">
+                                {order.fulfillment.amountTotalMinor === null
+                                  ? 'Unknown total'
+                                  : new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(
+                                      order.fulfillment.amountTotalMinor / 100,
+                                    )}
+                              </small>
+                            </>
+                          ) : (
+                            (order.orderReference ?? 'Payment not complete')
+                          )}
                         </span>
                         <OrderStatusLabel status={order.status} />
                         <span className="order-row-notification">
@@ -306,18 +346,18 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
           {state.list.data && !orders.length && (
             <div className="order-empty">
               <Inbox size={32} aria-hidden="true" />
-              <h2>No orders in this subset</h2>
-              <p>
-                {notification !== 'all'
-                  ? 'Try all notifications or another payment status.'
-                  : 'Try another payment status or look up a known Checkout Session.'}{' '}
-                This is not an all-clear for historical orders.
-              </p>
-              {notification !== 'all' && (
-                <Button variant="outline" onClick={() => setNotification('all')}>
-                  Show all notifications
-                </Button>
-              )}
+              <h2>No matching orders</h2>
+              <p>Try a different name, email, reference or filter.</p>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearch('');
+                  setNotification('');
+                  void workspace.loadList('', '', '');
+                }}
+              >
+                Clear filters
+              </Button>
             </div>
           )}
         </section>

@@ -21,6 +21,7 @@ const HOSTED_ENV = {
 
 const mockDisconnect = vi.fn(async () => {});
 const mockSearchVariants = vi.fn();
+const mockReadInventory = vi.fn();
 const mockReadVariantStock = vi.fn();
 const mockReadVariantStockHistory = vi.fn();
 const mockRecordStockChange = vi.fn();
@@ -50,11 +51,29 @@ vi.mock('../../src/interfaces/http/routes/internal-stock-services', () => ({
       recordStockChange: mockRecordStockChange,
       recordStockCount: mockRecordStockCount,
       searchVariants: mockSearchVariants,
+      readInventory: mockReadInventory,
     };
   },
 }));
 
 describe('internal stock routes', () => {
+  it('protects inventory access and validates pagination before reading', async () => {
+    const app = createHttpApp();
+    expect((await app.request('https://ops.example/api/internal/inventory', undefined, HOSTED_ENV)).status).toBe(401);
+    expect(
+      (await app.request('http://127.0.0.1/api/internal/inventory?cursor=invalid', undefined, LOCAL_ENV)).status,
+    ).toBe(400);
+    expect(mockReadInventory).not.toHaveBeenCalled();
+    mockReadInventory.mockResolvedValueOnce({ items: [], before: '2026-01-01T00:00:00Z' });
+    const response = await app.request(
+      'http://127.0.0.1/api/internal/inventory?area=merch&limit=25',
+      undefined,
+      LOCAL_ENV,
+    );
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    expect(mockReadInventory).toHaveBeenCalledWith({ area: 'merch', limit: 25, q: '' });
+  });
   beforeEach(() => {
     vi.clearAllMocks();
   });

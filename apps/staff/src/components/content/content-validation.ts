@@ -8,7 +8,7 @@ export type ContentValidation = {
   firstPath?: string | undefined;
 };
 
-export function contentPath(path: string | Array<string | number>): string {
+function contentPath(path: string | Array<string | number>): string {
   return Array.isArray(path) ? path.join('.') : path;
 }
 

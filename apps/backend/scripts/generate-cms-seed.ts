@@ -10,7 +10,6 @@ const collections: NonNullable<SeedFile['collections']> = Object.entries(cmsCont
     string,
     z.core.JSONSchema.JSONSchema
   >;
-  const required = new Set(variants.flatMap((variant) => variant.required ?? []));
   const fields: SeedField[] = Object.entries(properties).map(([name, property]) => {
     let type: SeedField['type'] = 'json';
     if (property.type === 'string') type = property.format === 'date' ? 'datetime' : 'string';
@@ -22,7 +21,9 @@ const collections: NonNullable<SeedFile['collections']> = Object.entries(cmsCont
       slug: name,
       label: name.replaceAll('_', ' '),
       type,
-      required: required.has(name),
+      // Native fields accept private incomplete work; the editorial hook validates safety and publication checks completeness.
+      required: false,
+      ...(slug === 'distro' && name === 'group' ? { indexed: true } : {}),
       ...(type === 'reference' ? { options: { collection: 'artists' } } : {}),
     };
   });
@@ -30,6 +31,7 @@ const collections: NonNullable<SeedFile['collections']> = Object.entries(cmsCont
     slug,
     label: slug.replaceAll('_', ' '),
     routable: false,
+    ...(properties.title ? { titleField: 'title' } : {}),
     supports: ['drafts', 'revisions', 'preview'],
     fields,
   };

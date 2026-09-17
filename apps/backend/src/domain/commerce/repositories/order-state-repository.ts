@@ -249,6 +249,9 @@ export type CheckoutOrderTransitionInput = {
 export type ListRecentCheckoutOrdersInput = {
   limit: number;
   status?: OrderStatus | null;
+  q?: string;
+  cursor?: { createdAt: Date; id: string };
+  notification?: 'pending' | 'needs_review';
 };
 
 export interface OrderStateRepository {

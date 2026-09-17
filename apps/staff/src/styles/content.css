@@ -7,11 +7,6 @@ body[data-workspace='content'] {
   overflow: hidden;
 }
 
-body[data-workspace='content'] > main {
-  min-width: 0;
-  min-height: 0;
-}
-
 .cms-surface {
   --background: oklch(0.18 0.005 260);
   --foreground: oklch(0.95 0.005 260);
@@ -50,11 +45,6 @@ body[data-workspace='content'] > main {
   height: 100%;
   min-height: 0;
   overflow: hidden;
-}
-
-.cms-sidebar[data-slot='sidebar-container'] {
-  position: absolute;
-  height: 100%;
 }
 
 .cms-content-panes {
@@ -104,28 +94,6 @@ body[data-workspace='content'] > main {
 .cms-media {
   container-type: inline-size;
 }
-.cms-content-selector-search {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  border-bottom: 1px solid var(--border);
-}
-.cms-content-selector-search [data-slot='command-input-wrapper'] {
-  min-width: 0;
-  flex: 1;
-  border-bottom: 0;
-  padding-inline: 0.25rem;
-}
-.cms-content-selector-search [data-slot='command-input'] {
-  min-width: 0;
-  height: 2.5rem;
-  padding-block: 0.5rem;
-}
-.cms-content-selector-footer {
-  padding: 0.5rem;
-  border-top: 1px solid var(--border);
-}
 .cms-media-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -173,9 +141,6 @@ body[data-workspace='content'] > main {
   display: grid;
   justify-items: end;
   padding: 0.75rem;
-}
-.cms-workspace-bar > [data-slot='separator'] {
-  height: 1.25rem;
 }
 .cms-state-success {
   color: var(--success);
@@ -330,7 +295,7 @@ body[data-workspace='content'] > main {
   }
 }
 
-@media (min-width: 1100px) {
+@media (min-width: 1280px) {
   .cms-editing.cms-preview-closed {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -354,12 +319,12 @@ body[data-workspace='content'] > main {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
-@media (min-width: 1100px) {
+@media (min-width: 1280px) {
   .cms-media-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
-@media (max-width: 1099px) {
+@media (max-width: 1279px) {
   .cms-content-panes,
   .cms-editing {
     grid-template-columns: minmax(0, 1fr);

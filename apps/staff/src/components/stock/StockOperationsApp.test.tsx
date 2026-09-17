@@ -13,11 +13,10 @@ describe('Stock operations loading feedback', () => {
     const html = renderToStaticMarkup(<StockOperationsApp backendBaseUrl="http://127.0.0.1:8787" />);
 
     expect(html).toContain('Loading items.');
-    expect(html).toContain('Choose an item to see its stock.');
+    expect(html).not.toContain('Current stock');
     expect(html).toContain('role="status"');
-    expect(html).toContain('aria-busy="true"');
-    expect(html).toContain('aria-label="Searching items"');
-    expect(html).toContain('animate-spin');
+    expect(html).toContain('aria-label="Inventory"');
+    expect(html).toContain('aria-label="Inventory pages"');
   });
 
   it('uses canonical operator labels for stock read intents', () => {
@@ -38,22 +37,14 @@ describe('Stock operations loading feedback', () => {
     expect(canSubmitStockMutation('variant_b', { variantId: 'variant_b' })).toBe(true);
   });
 
-  it('keeps Items read-only for stock and focused on catalog work', () => {
-    const html = renderToStaticMarkup(<StockOperationsApp backendBaseUrl="http://127.0.0.1:8787" mode="items" />);
-
-    expect(html).toContain('Prepare catalog items, set prices, and publish them when ready.');
-    expect(html).not.toContain('Adjust stock');
-    expect(html).not.toContain('Count stock');
-    expect(html).not.toContain('Recent history');
-  });
-
   it('keeps Stock focused on inventory operations without catalog publishing controls', () => {
-    const html = renderToStaticMarkup(<StockOperationsApp backendBaseUrl="http://127.0.0.1:8787" mode="stock" />);
+    const html = renderToStaticMarkup(<StockOperationsApp backendBaseUrl="http://127.0.0.1:8787" />);
 
-    expect(html).toContain('Keep physical and online stock aligned.');
-    expect(html).toContain('Adjust stock');
     expect(html).toContain('Count stock');
-    expect(html).toContain('Recent history');
+    expect(html).toContain('All formats');
+    expect(html).not.toContain('Adjust stock');
+    expect(html).not.toContain('stock-count-quantity');
+    expect(html).not.toContain('Recent history');
     expect(html).not.toContain('Prepare catalog items, set prices, and publish them when ready.');
   });
 });

@@ -32,6 +32,7 @@ export function createInternalOrderApi(baseUrl = '') {
     };
   });
   const list = client.path('/api/internal/orders').method('get').create();
+  const search = client.path('/api/internal/orders/search').method('get').create();
   const detail = client.path('/api/internal/orders/checkout-sessions/{checkoutSessionId}').method('get').create();
   const init = { cache: 'no-store', credentials: 'same-origin' } as const;
 
@@ -46,6 +47,15 @@ export function createInternalOrderApi(baseUrl = '') {
   }
 
   return {
+    async search(query: {
+      limit?: number;
+      q?: string;
+      cursor?: string;
+      status?: OrderStatus;
+      notification?: 'pending' | 'needs_review';
+    }) {
+      return read(() => search({ limit: 25, ...query }, init));
+    },
     async list(status?: OrderStatus) {
       const orders = await read(() => list({ limit: 100, ...(status ? { status } : {}) }, init));
       if (!Array.isArray(orders)) throw new InternalOrderApiError(0);

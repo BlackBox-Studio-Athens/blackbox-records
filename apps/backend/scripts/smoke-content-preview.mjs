@@ -6,7 +6,8 @@ const base = 'http://127.0.0.1:8787';
 const get = async (path) => {
   const response = await fetch(`${base}/_emdash/api/${path}`);
   assert.equal(response.status, 200, path);
-  return (await response.json()).data;
+  const body = await response.json();
+  return body.data ?? body;
 };
 function clean(value) {
   if (Array.isArray(value)) return value.map(clean);
@@ -18,6 +19,7 @@ const headers = { Origin: base, 'X-EmDash-Request': '1', 'Content-Type': 'applic
 const history = await get('blackbox/publications');
 const results = [];
 const browsers = [];
+let restoreNewsletter;
 if (process.argv.includes('--browsers')) {
   const { chromium, firefox } = await import('playwright');
   for (const type of [chromium, firefox]) {
@@ -108,10 +110,10 @@ try {
   assert.deepEqual(await get('blackbox/publications'), history, 'Preview must not publish');
   const newsletter = (await get('content/newsletter?limit=1')).items[0];
   const newsletterBefore = await get(`content/newsletter/${newsletter.id}`);
+  restoreNewsletter = { id: newsletter.id, data: clean(newsletterBefore.item.data) };
   for (const { name, page } of browsers) {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(`${base}/content/?collection=newsletter&id=${encodeURIComponent(newsletter.id)}`);
-    await page.getByRole('button', { name: 'Show preview', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
     await page.getByRole('button', { name: 'Mobile', exact: true }).click();
     const description = page.getByLabel('Description', { exact: true });
@@ -119,9 +121,18 @@ try {
     await description.fill('');
     await description.pressSequentially(`${name} unsaved newsletter description A`, { delay: 15 });
     await preview.getByText(`${name} unsaved newsletter description A`, { exact: true }).waitFor();
+    const saved = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        response.request().postDataJSON()?.data?.description === `${name} unsaved newsletter description B`,
+    );
     await description.fill(`${name} unsaved newsletter description B`);
     await preview.getByText(`${name} unsaved newsletter description B`, { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Refresh preview', exact: true }).click();
+    assert.equal((await saved).status(), 200);
+    assert.equal(
+      (await get(`content/newsletter/${newsletter.id}`)).item.data.description,
+      `${name} unsaved newsletter description B`,
+    );
     await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
     assert.equal(
       await preview.getByText(`${name} unsaved newsletter description B`, { exact: true }).isVisible(),
@@ -129,9 +140,20 @@ try {
     );
     console.error(`Passed ${name} real newsletter successive unsaved edits`);
   }
-  assert.deepEqual(await get(`content/newsletter/${newsletter.id}`), newsletterBefore, 'UI previews must not save');
+  // Editor typing autosaves privately; preview POSTs above never save or publish.
   assert.deepEqual(await get('blackbox/publications'), history, 'UI previews must not publish');
   console.log(JSON.stringify(results, null, 2));
 } finally {
   await Promise.all(browsers.map(({ browser }) => browser.close()));
+  if (restoreNewsletter) {
+    const path = `content/newsletter/${restoreNewsletter.id}`;
+    const current = await get(path);
+    const restored = await fetch(`${base}/_emdash/api/${path}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ _rev: current._rev, data: restoreNewsletter.data }),
+    });
+    assert.equal(restored.status, 200, 'Restore Local newsletter draft');
+    assert.deepEqual(clean((await get(path)).item.data), restoreNewsletter.data);
+  }
 }

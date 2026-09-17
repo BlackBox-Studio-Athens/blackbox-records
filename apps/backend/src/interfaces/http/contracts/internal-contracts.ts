@@ -1,11 +1,16 @@
 const internalContractModules = [
   {
     name: 'internal-orders',
-    paths: ['/api/internal/orders', '/api/internal/orders/checkout-sessions/{checkoutSessionId}'],
+    paths: [
+      '/api/internal/orders/search',
+      '/api/internal/orders',
+      '/api/internal/orders/checkout-sessions/{checkoutSessionId}',
+    ],
   },
   {
     name: 'internal-stock',
     paths: [
+      '/api/internal/inventory',
       '/api/internal/variants',
       '/api/internal/variants/{variantId}/stock',
       '/api/internal/variants/{variantId}/stock/history',

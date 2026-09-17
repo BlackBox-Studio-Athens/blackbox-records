@@ -8,7 +8,7 @@ import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescri
 import { useIsMobile } from '../../hooks/use-mobile';
 import type { ContentPublication } from '../../lib/backend/content-publication-api';
 
-export type PublicationStatusView = 'requesting' | 'pending' | 'failed' | 'live' | 'unavailable' | 'empty';
+type PublicationStatusView = 'pending' | 'failed' | 'live' | 'unavailable' | 'empty';
 
 export type PublicationStatusSummary = {
   view: PublicationStatusView;
@@ -18,10 +18,8 @@ export type PublicationStatusSummary = {
 
 export function summarizePublicationStatus(
   items: ContentPublication[],
-  options: { requesting?: boolean; statusError?: string } = {},
+  options: { statusError?: string } = {},
 ): PublicationStatusSummary {
-  if (options.requesting) return { view: 'requesting', label: 'Publishing…', stale: false };
-
   const current = items[0];
   if (current?.status === 'pending') {
     return {
@@ -42,7 +40,7 @@ export function summarizePublicationStatus(
 
 export type PublicationStatusProps = {
   items: ContentPublication[];
-  requesting?: boolean;
+  compact?: boolean;
   statusError?: string;
   message: string;
   refresh(): Promise<void>;
@@ -52,7 +50,7 @@ export type PublicationStatusProps = {
 
 export default function PublicationStatus({
   items,
-  requesting = false,
+  compact = false,
   statusError = '',
   message,
   refresh,
@@ -61,72 +59,18 @@ export default function PublicationStatus({
 }: PublicationStatusProps) {
   const mobile = useIsMobile();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
-  const [checking, setChecking] = useState(false);
-  const [paused, setPaused] = useState(false);
-  const inFlight = useRef<Promise<void> | null>(null);
-  const refreshRef = useRef(refresh);
-  useEffect(() => {
-    refreshRef.current = refresh;
-  }, [refresh]);
-  const check = useCallback(() => {
-    if (inFlight.current) return inFlight.current;
-    setChecking(true);
-    const request = Promise.resolve()
-      .then(() => refreshRef.current())
-      .catch(() => {})
-      .finally(() => {
-        inFlight.current = null;
-        setChecking(false);
-      });
-    inFlight.current = request;
-    return request;
-  }, []);
   const open = controlledOpen ?? uncontrolledOpen;
   const setOpen = onOpenChange ?? setUncontrolledOpen;
-
   const current = items[0];
   const pendingKey = current?.status === 'pending' ? current.id : '';
-  useEffect(() => {
-    setPaused(false);
-    if (!pendingKey) return;
-    const started = Date.now();
-    let timer: ReturnType<typeof setTimeout>;
-    let stopped = false;
-    const schedule = () => {
-      if (stopped) return;
-      const elapsed = Date.now() - started;
-      if (elapsed >= 30 * 60_000) {
-        setPaused(true);
-        return;
-      }
-      timer = setTimeout(
-        () => {
-          if (document.visibilityState === 'visible') void check().finally(schedule);
-          else schedule();
-        },
-        elapsed < 60_000 ? 2000 : 30_000,
-      );
-    };
-    const returned = () => {
-      if (document.visibilityState === 'visible') void check();
-    };
-    schedule();
-    document.addEventListener('visibilitychange', returned);
-    window.addEventListener('focus', returned);
-    return () => {
-      stopped = true;
-      clearTimeout(timer);
-      document.removeEventListener('visibilitychange', returned);
-      window.removeEventListener('focus', returned);
-    };
-  }, [pendingKey, check]);
+  const { check, checking, paused } = usePublicationPolling(pendingKey, refresh);
 
-  const summary = summarizePublicationStatus(items, { requesting, statusError });
-  const label = summary.view === 'pending' && paused ? 'Still pending · Check again' : summary.label;
+  const summary = summarizePublicationStatus(items, { statusError });
+  const label = summary.view === 'pending' && paused ? 'Update not confirmed' : summary.label;
   const Icon =
     summary.view === 'failed' || summary.view === 'unavailable'
       ? AlertCircle
-      : summary.view === 'pending' || summary.view === 'requesting'
+      : summary.view === 'pending'
         ? Clock3
         : summary.view === 'live'
           ? CheckCircle2
@@ -134,7 +78,7 @@ export default function PublicationStatus({
   const stateClass =
     summary.view === 'failed' || summary.view === 'unavailable'
       ? 'cms-state-error'
-      : summary.view === 'pending' || summary.view === 'requesting'
+      : summary.view === 'pending'
         ? 'cms-state-warning'
         : summary.view === 'live'
           ? 'cms-state-success'
@@ -249,25 +193,89 @@ export default function PublicationStatus({
       </PopoverContent>
     </Popover>
   );
+  if (compact && !open && !statusError && !pendingKey && current?.status !== 'failed') return null;
   return (
     <div className="flex min-w-0 items-center gap-1">
       {disclosure}
-      <Button
-        type="button"
-        variant="ghost"
-        className="cms-publication-refresh"
-        disabled={checking}
-        aria-label="Refresh publication status"
-        title={checking ? 'Checking publication status…' : 'Refresh publication status'}
-        aria-busy={checking}
-        onClick={() => void check()}
-      >
-        <RefreshCw className={`size-4 ${checking ? 'cms-refreshing' : ''}`} aria-hidden="true" />
-        <span className="hidden sm:inline">Refresh</span>
-      </Button>
+      {(statusError || paused) && (
+        <Button
+          type="button"
+          variant="ghost"
+          className="cms-publication-refresh"
+          disabled={checking}
+          aria-label="Check publication status"
+          title={checking ? 'Checking publication status…' : 'Check publication status'}
+          aria-busy={checking}
+          onClick={() => void check()}
+        >
+          <RefreshCw className={`size-4 ${checking ? 'cms-refreshing' : ''}`} aria-hidden="true" />
+          <span>Check status</span>
+        </Button>
+      )}
       <span className="sr-only" role="status">
         {checking ? 'Checking publication status' : label}
       </span>
     </div>
   );
+}
+
+export function usePublicationPolling(pendingKey: string, refresh: () => Promise<void>) {
+  const [checking, setChecking] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const inFlight = useRef<Promise<void> | null>(null);
+  const refreshRef = useRef(refresh);
+  useEffect(() => {
+    refreshRef.current = refresh;
+  }, [refresh]);
+  const check = useCallback(() => {
+    if (inFlight.current) return inFlight.current;
+    setChecking(true);
+    const request = Promise.resolve()
+      .then(() => refreshRef.current())
+      .catch(() => {})
+      .finally(() => {
+        inFlight.current = null;
+        setChecking(false);
+      });
+    inFlight.current = request;
+    return request;
+  }, []);
+  useEffect(() => {
+    setPaused(false);
+    if (!pendingKey) return;
+    const started = Date.now();
+    let timer: ReturnType<typeof setTimeout>;
+    let stopped = false;
+    const schedule = () => {
+      if (stopped) return;
+      const elapsed = Date.now() - started;
+      if (elapsed >= 30 * 60_000) {
+        setPaused(true);
+        return;
+      }
+      timer = setTimeout(
+        () => {
+          if (document.visibilityState === 'visible' && navigator.onLine) void check().finally(schedule);
+          else schedule();
+        },
+        elapsed < 60_000 ? 2000 : 30_000,
+      );
+    };
+    const returned = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) void check();
+    };
+    schedule();
+    document.addEventListener('visibilitychange', returned);
+    window.addEventListener('focus', returned);
+    window.addEventListener('online', returned);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', returned);
+      window.removeEventListener('focus', returned);
+      window.removeEventListener('online', returned);
+    };
+  }, [pendingKey, check]);
+
+  return { check, checking, paused };
 }

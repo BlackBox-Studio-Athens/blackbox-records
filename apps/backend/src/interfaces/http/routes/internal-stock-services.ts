@@ -9,6 +9,7 @@ import {
   VariantNotFoundError,
 } from '../../../application/commerce/stock';
 import type { AppBindings } from '../../../env';
+import type { InventoryQuery } from '../../../application/commerce/stock';
 import {
   createPrismaClient,
   D1OperatorStockRepository,
@@ -27,6 +28,7 @@ export function createInternalStockServices(bindings: AppBindings) {
   const stockCounts = new PrismaStockCountRepository(prisma);
 
   return {
+    readInventory: (query: InventoryQuery) => storeItemOptions.readInventory(query),
     disconnect: async () => prisma.$disconnect(),
     errors: {
       InvalidStockOperationError,
@@ -37,7 +39,12 @@ export function createInternalStockServices(bindings: AppBindings) {
       const { stock: state, ...item } = await readVariantStock(storeItemOptions, stock, variantId);
       const record = await storeItemOptions.findByStoreItem(item);
       const name = (record?.productProjection as { name?: unknown } | null)?.name;
-      return { ...item, stock: state, ...(typeof name === 'string' && name.trim() ? { displayName: name } : {}) };
+      return {
+        ...item,
+        stock: state,
+        itemType: record?.itemType ?? null,
+        ...(typeof name === 'string' && name.trim() ? { displayName: name } : {}),
+      };
     },
     readVariantStockHistory: async (variantId: string, limit: number) =>
       readVariantStockHistory(storeItemOptions, stockChanges, stockCounts, variantId, limit),

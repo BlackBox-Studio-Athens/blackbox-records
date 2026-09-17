@@ -68,7 +68,7 @@ export default function NewArtistFields({ base, onCreated }: { base: string; onC
   return (
     <div className="grid gap-4">
       {!open && (
-        <Button type="button" onClick={() => setOpen(true)}>
+        <Button type="button" variant="outline" onClick={() => setOpen(true)}>
           Add a new artist
         </Button>
       )}

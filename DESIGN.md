@@ -231,15 +231,15 @@ The embedded player is a shell-level continuity feature, not page-local decorati
 
 Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, Veneer content titles, and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.
 
-## CMS: Website content
+## Staff workspace
 
-The protected `/content/` workspace uses approved Layout A and its own semantic palette. Blue means action/selection, amber means unsaved/pending, green confirms live publication, and red indicates failure; pair colors with text or icons. Public page styling stays inside the isolated preview iframe.
+Staff uses its own dark, sans-serif product surface built on EmDash APIs. The living [backoffice reference](docs/backoffice-design.md) supersedes the older Content landing, staging, refresh, preview-default and all-sidebar decisions.
 
-Start with a searchable collection list. While editing, use a compact searchable selector, sticky draft actions and an optional 45/55 editor/preview split. Desktop preview starts closed; Show preview / Hide preview remembers the browser preference. Below 1100 px, use Edit/Preview tabs. Keep publication status near the top with history in a Popover or mobile Sheet. Use task wording such as Save draft, Publish changes, Images and Discard changes and reload.
+At widths of at least 1440 px, a 72 px top bar exposes Overview, Catalog, Website, Images, Stock and Orders with labeled icons on muted gray, violet, blue, sage, copper and teal squares. Filled active backgrounds provide clear selection. Catalog and Website have optional 256 px contextual sidebars. Smaller widths use a compact header and labeled Menu drawer. Blue means action; semantic statuses retain text and icons.
 
-Preview shared public components with unsaved content, real fonts, responsive widths and crop rules. Use one Test environment badge in the UAT header. Explain appearance-only review and possible live-site differences in About preview. Preview is visual-only; navigation, scripts, players and submissions are disabled. Detailed behavior and verification commands live in [Content workspace](docs/content-workspace.md).
+The approved Staff logo is the Office stamp treatment: the selected C artwork extracted directly from the approved concept image as a transparent 686 × 162 PNG. Preserve its exact composition, lettering and Staff badge rather than recreating the endorsement in HTML. This is staff-only branding; public logo assets remain unchanged.
 
-Show “Preview up to date” only after styles and images load. Keep the last successful frame while checking a replacement; failed first loads show an actionable error rather than unstyled page content. Manual refresh retries identical content and its assets. Initial preview and explicit controls respond immediately; only typing is debounced. Keep independent staff read panels usable while other panels load.
+Editors autosave private drafts and publish explicitly. Real shared-template previews start alongside editors at 1280 px and above, with remembered visibility; smaller widths use Edit/Preview tabs. Preview remains non-interactive and debounces typing for 750 ms. Preserve draft buffers and navigation recovery.
 
 ## 6. Do's and Don'ts
 
@@ -264,3 +264,13 @@ Show “Preview up to date” only after styles and images load. Keep the last s
 # Backoffice guidance
 
 For Content, Images, Items, Stock and Orders, use the living [backoffice design reference](docs/backoffice-design.md). It records shared staff patterns, research, proposal status and validation separately from the public site's visual direction.
+
+## Website changes review (September 2026 refinement)
+
+Staff utilities and Overview open `/review/`. This supersedes the list-checkbox publication queue. Review discovers saved unpublished Website and Catalog entries through the EmDash workspace adapter, with search, area filters and up to 25 entries per page. Selection persists in the same tab, up to 20 entries across pages. Incomplete drafts remain visible with editing links. A final review checks saved versions; a changed version requires renewed review. The editor's Publish changes shortcut finishes autosave and selects only that entry. One selected entry uses Publish change; several use Publish selected changes.
+
+Editorial publication includes selling-linked entries but does not activate the shop, change price, or change stock. Selling retains its activation approvals and native lifecycle guard. Pending request identities survive response loss; failed operations require a fresh review. The batch service accepts all reviewed entries in one website update.
+
+Count stock and Finish counting replace visible Stocktake wording; internal storage identities remain compatible. Quantities read Available to buy online, with copies for music and units for merchandise. The online quantity is how many customers may buy through the website.
+
+Review discovery uses bounded native EmDash cursor reads and existing accepted-snapshot comparisons, never private CMS table queries. The client follows sparse continuations until its page fills or reaches the end, cancelling stale searches. It does not load the entire library into browser memory or poll a global draft count. Hosted rollout still requires a Free-tier cost preflight.

@@ -92,6 +92,7 @@ const paidOrderFulfillmentSchema = z.discriminatedUnion('kind', [
 
 const checkoutOrderSchema = z
   .object({
+    orderReference: z.string().optional(),
     checkoutExpiresAt: z.string().datetime(),
     checkoutSessionId: z.string().nullable(),
     createdAt: z.string().datetime(),
@@ -168,7 +169,68 @@ const getOrderByCheckoutSessionRoute = createRoute({
   tags: ['Internal Orders'],
 });
 
+const searchOrdersRoute = createRoute({
+  method: 'get',
+  path: '/api/internal/orders/search',
+  request: {
+    query: orderListQuerySchema.extend({
+      q: z.string().trim().max(200).optional(),
+      notification: z.enum(['pending', 'needs_review']).optional(),
+      cursor: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z~[A-Za-z0-9_-]{1,128}$/)
+        .optional(),
+    }),
+  },
+  responses: {
+    400: {
+      content: { 'application/json': { schema: backendErrorResponseSchema } },
+      description: 'Invalid search cursor.',
+    },
+    200: {
+      content: {
+        'application/json': {
+          schema: z.object({ items: z.array(checkoutOrderSchema), nextCursor: z.string().nullable() }),
+        },
+      },
+      description: 'Search all protected orders with stable pagination.',
+    },
+    ...operatorAccessErrorResponses,
+  },
+  tags: ['Internal Orders'],
+});
+
 export function registerInternalOrderRoutes(app: AppOpenApi): void {
+  app.openapi(searchOrdersRoute, async (context) => {
+    const services = createInternalOrderServices(context.env);
+    try {
+      const query = context.req.valid('query');
+      const limit = Math.min(query.limit ?? 25, 50);
+      const [createdAt, id] = query.cursor?.split('~') ?? [];
+      if (createdAt && !Number.isFinite(Date.parse(createdAt)))
+        return jsonError(context, { code: 'invalid_request', message: 'Invalid cursor.', status: 400 });
+      const results = await services.readRecentCheckoutOrders({
+        limit: limit + 1,
+        status: query.status ?? null,
+        ...(query.q ? { q: query.q } : {}),
+        ...(query.notification ? { notification: query.notification } : {}),
+        ...(createdAt && id ? { cursor: { createdAt: new Date(createdAt), id } } : {}),
+      });
+      const page = results.slice(0, limit);
+      const last = page.at(-1)?.order;
+      return jsonNoStore(
+        context.json(
+          {
+            items: page.map(toCheckoutOrderResponse),
+            nextCursor: results.length > limit && last ? `${last.createdAt.toISOString()}~${last.id}` : null,
+          },
+          200,
+        ),
+      );
+    } finally {
+      await services.disconnect();
+    }
+  });
   app.openapi(listOrdersRoute, async (context) => {
     const services = createInternalOrderServices(context.env);
 
@@ -211,6 +273,7 @@ function toCheckoutOrderResponse(read: InternalOrderRead) {
   const { deliveries, order } = read;
 
   return {
+    orderReference: order.id,
     checkoutExpiresAt: order.checkoutExpiresAt.toISOString(),
     checkoutSessionId: order.checkoutSessionId,
     createdAt: order.createdAt.toISOString(),

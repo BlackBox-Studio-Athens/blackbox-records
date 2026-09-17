@@ -55,10 +55,6 @@ export function buildInternalStockApiUrl(
 
   const suffix = queryString.size > 0 ? `?${queryString.toString()}` : '';
 
-  if (!baseUrl) {
-    return `${path}${suffix}`;
-  }
-
   return `${baseUrl}${path}${suffix}`;
 }
 
@@ -86,10 +82,22 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
       );
     }
 
-    return readJson<TResponse>(response);
+    return response.json() as Promise<TResponse>;
   }
 
   return {
+    readInventory(
+      query: {
+        q?: string;
+        area?: string;
+        format?: string | undefined;
+        cursor?: string | undefined;
+        before?: string | undefined;
+        limit?: number;
+      } = {},
+    ) {
+      return fetchJson<InternalApiComponents['schemas']['InventoryPage']>('/api/internal/inventory', undefined, query);
+    },
     readPublication(variantId: string) {
       return fetchJson<CatalogItemPublishDetail>(`/api/internal/variants/${encodeURIComponent(variantId)}/publication`);
     },
@@ -151,10 +159,6 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
       return fetchJson<InternalVariantSummary[]>('/api/internal/variants', undefined, { limit, q: query });
     },
   };
-}
-
-async function readJson<TResponse>(response: Response): Promise<TResponse> {
-  return response.json() as Promise<TResponse>;
 }
 
 async function readErrorBody(response: Response): Promise<BackendErrorResponse | { error?: string } | null> {
