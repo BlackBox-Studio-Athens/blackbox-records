@@ -491,6 +491,9 @@ else {
     await page.evaluate(() =>
       document.querySelector('iframe[title="Private site appearance preview"]').contentWindow.scrollTo(0, 120),
     );
+    await page.waitForFunction(
+      () => document.querySelector('iframe[title="Private site appearance preview"]').contentWindow.scrollY === 120,
+    );
     await page.getByRole('button', { name: 'Hide preview', exact: true }).click();
     const hiddenReads = state.previewRequests.length;
     await artistName.fill('Edited with preview hidden');
