@@ -45,6 +45,8 @@ export type PublicationStatusProps = {
   statusError?: string;
   message: string;
   refresh(): Promise<void>;
+  open?: boolean;
+  onOpenChange?(open: boolean): void;
 };
 
 export default function PublicationStatus({
@@ -53,9 +55,11 @@ export default function PublicationStatus({
   statusError = '',
   message,
   refresh,
+  open: controlledOpen,
+  onOpenChange,
 }: PublicationStatusProps) {
   const mobile = useIsMobile();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [checking, setChecking] = useState(false);
   const [paused, setPaused] = useState(false);
   const inFlight = useRef<Promise<void> | null>(null);
@@ -76,6 +80,8 @@ export default function PublicationStatus({
     inFlight.current = request;
     return request;
   }, []);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = onOpenChange ?? setUncontrolledOpen;
 
   const current = items[0];
   const pendingKey = current?.status === 'pending' ? current.id : '';

@@ -22,14 +22,15 @@ import ItemPublication from './ItemPublication';
 
 interface StockOperationsAppProps {
   backendBaseUrl: string;
-  showPrice?: boolean;
+  mode?: 'items' | 'stock';
 }
 
 type HistoryEntry = InternalStockHistoryResponse['entries'][number];
 export type StockLoadingIntent = 'refresh' | 'search' | 'variant' | 'workspace' | null;
 type StockSubmittingIntent = 'stockChange' | 'stockCount' | null;
 
-export default function StockOperationsApp({ backendBaseUrl, showPrice = false }: StockOperationsAppProps) {
+export default function StockOperationsApp({ backendBaseUrl, mode = 'stock' }: StockOperationsAppProps) {
+  const isItemsWorkspace = mode === 'items';
   const [query, setQuery] = useState('');
   const [variants, setVariants] = useState<InternalVariantSummary[]>([]);
   const [selectedVariantId, setSelectedVariantId] = useState('');
@@ -109,18 +110,20 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
     activeStockLoadRequestRef.current = requestId;
     setHistory([]);
     setHistoryError(null);
-    setHistoryPending(true);
-    void api
-      .readStockHistory(variantId, 25)
-      .then((result) => {
-        if (requestId === activeStockLoadRequestRef.current) setHistory(result.entries);
-      })
-      .catch((error) => {
-        if (requestId === activeStockLoadRequestRef.current) setHistoryError(readErrorMessage(error));
-      })
-      .finally(() => {
-        if (requestId === activeStockLoadRequestRef.current) setHistoryPending(false);
-      });
+    setHistoryPending(!isItemsWorkspace);
+    if (!isItemsWorkspace) {
+      void api
+        .readStockHistory(variantId, 25)
+        .then((result) => {
+          if (requestId === activeStockLoadRequestRef.current) setHistory(result.entries);
+        })
+        .catch((error) => {
+          if (requestId === activeStockLoadRequestRef.current) setHistoryError(readErrorMessage(error));
+        })
+        .finally(() => {
+          if (requestId === activeStockLoadRequestRef.current) setHistoryPending(false);
+        });
+    }
 
     try {
       const detail = await api.readStock(variantId);
@@ -261,10 +264,10 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
               Protected operations
             </Badge>
             <div className="grid gap-2">
-              <h1>{showPrice ? 'Items' : 'Stock'}</h1>
+              <h1>{isItemsWorkspace ? 'Items' : 'Stock'}</h1>
               <p>
-                {showPrice
-                  ? 'Prepare an item, price it, and keep its stock ready.'
+                {isItemsWorkspace
+                  ? 'Prepare catalog items, set prices, and publish them when ready.'
                   : 'Keep physical and online stock aligned.'}
               </p>
             </div>
@@ -323,7 +326,7 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
 
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>Items</CardTitle>
+              <CardTitle>{isItemsWorkspace ? 'Items' : 'Inventory'}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2">
               {variants.map((variant) => (
@@ -363,10 +366,10 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
           <p role="status" className="text-sm text-muted-foreground">
             {statusMessage}
           </p>
-          {showPrice && selectedVariantId && (
+          {isItemsWorkspace && selectedVariantId && (
             <ItemPriceEditor key={selectedVariantId} variantId={selectedVariantId} backendBaseUrl={backendBaseUrl} />
           )}
-          {showPrice && selectedVariantId && (
+          {isItemsWorkspace && selectedVariantId && (
             <ItemPublication
               key={`publication-${selectedVariantId}`}
               variantId={selectedVariantId}
@@ -408,6 +411,11 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
                   </>
                 )}
               </Button>
+              {isItemsWorkspace && selectedVariantId && (
+                <Button asChild type="button" variant="outline">
+                  <a href={`/stock/?variantId=${encodeURIComponent(selectedVariantId)}`}>Manage stock</a>
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="grid gap-4">
               {isLoading && !selectedStockDetail ? (
@@ -426,231 +434,235 @@ export default function StockOperationsApp({ backendBaseUrl, showPrice = false }
             </CardContent>
           </Card>
 
-          <div className="grid gap-5">
-            <ButtonGroup aria-label="Stock operation mode" className="w-full sm:w-fit">
-              <Button
-                type="button"
-                variant={stockMode === 'adjust' ? 'secondary' : 'outline'}
-                aria-pressed={stockMode === 'adjust'}
-                onClick={() => setStockMode('adjust')}
-              >
-                <ArrowDownUp aria-hidden="true" />
-                Adjust stock
-              </Button>
-              <Button
-                type="button"
-                variant={stockMode === 'count' ? 'secondary' : 'outline'}
-                aria-pressed={stockMode === 'count'}
-                onClick={() => setStockMode('count')}
-              >
-                <ClipboardCheck aria-hidden="true" />
-                Count stock
-              </Button>
-            </ButtonGroup>
-            <div className="grid gap-5 xl:grid-cols-2">
-              <div hidden={stockMode !== 'adjust'}>
-                <Card className="border-border bg-card">
-                  <CardHeader>
-                    <CardTitle>Add or remove stock</CardTitle>
-                    <CardDescription>
-                      Remove stock after a sale or a gift. Add stock when new copies arrive.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form
-                      className="grid gap-3"
-                      onSubmit={handleStockChange}
-                      aria-busy={submittingIntent === 'stockChange' ? 'true' : undefined}
-                    >
-                      <label htmlFor="stock-change-direction">What changed?</label>
-                      <select
-                        id="stock-change-direction"
-                        className="min-h-11 border border-border bg-background p-2"
-                        disabled={!canMutateSelectedStock || isSubmitting}
-                        value={stockDirection}
-                        onChange={(event) => setStockDirection(event.target.value)}
+          {!isItemsWorkspace && (
+            <div className="grid gap-5">
+              <ButtonGroup aria-label="Stock operation mode" className="w-full sm:w-fit">
+                <Button
+                  type="button"
+                  variant={stockMode === 'adjust' ? 'secondary' : 'outline'}
+                  aria-pressed={stockMode === 'adjust'}
+                  onClick={() => setStockMode('adjust')}
+                >
+                  <ArrowDownUp aria-hidden="true" />
+                  Adjust stock
+                </Button>
+                <Button
+                  type="button"
+                  variant={stockMode === 'count' ? 'secondary' : 'outline'}
+                  aria-pressed={stockMode === 'count'}
+                  onClick={() => setStockMode('count')}
+                >
+                  <ClipboardCheck aria-hidden="true" />
+                  Count stock
+                </Button>
+              </ButtonGroup>
+              <div className="grid gap-5 xl:grid-cols-2">
+                <div hidden={stockMode !== 'adjust'}>
+                  <Card className="border-border bg-card">
+                    <CardHeader>
+                      <CardTitle>Add or remove stock</CardTitle>
+                      <CardDescription>
+                        Remove stock after a sale or a gift. Add stock when new copies arrive.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <form
+                        className="grid gap-3"
+                        onSubmit={handleStockChange}
+                        aria-busy={submittingIntent === 'stockChange' ? 'true' : undefined}
                       >
-                        <option value="remove">Remove stock</option>
-                        <option value="add">Add stock</option>
-                      </select>
-                      <label htmlFor="stock-change-delta">How many?</label>
-                      <Input
-                        className="border-input bg-background"
-                        disabled={!canMutateSelectedStock || isSubmitting}
-                        id="stock-change-delta"
-                        name="delta"
-                        onChange={(event) => setChangeDelta(event.target.value)}
-                        placeholder="For example, 2"
-                        min="1"
-                        step="1"
-                        required
-                        type="number"
-                        value={changeDelta}
-                      />
-                      <label htmlFor="stock-change-reason">Reason</label>
-                      <select
-                        className="min-h-11 border border-input bg-background p-2"
-                        disabled={!canMutateSelectedStock || isSubmitting}
-                        id="stock-change-reason"
-                        name="reason"
-                        onChange={(event) => setChangeReason(event.target.value)}
-                        required
-                        value={changeReason}
-                      >
-                        <option value="manual_adjustment">Other stock change</option>
-                        <option value="show_sale">Sold at a show</option>
-                        <option value="delivery">New delivery</option>
-                        <option value="gift">Gift or promo copy</option>
-                      </select>
-                      <label htmlFor="stock-change-notes">Notes (optional)</label>
-                      <Textarea
-                        className="border-input bg-background"
-                        disabled={!canMutateSelectedStock || isSubmitting}
-                        id="stock-change-notes"
-                        name="notes"
-                        onChange={(event) => setChangeNotes(event.target.value)}
-                        placeholder="Notes"
-                        value={changeNotes}
-                      />
-                      <div
-                        className="staff-operation-preview"
-                        data-invalid={adjustmentInvalid ? 'true' : undefined}
-                        aria-live="polite"
-                      >
-                        <span>After this change</span>
-                        <strong>
-                          {adjustmentInvalid ? 'Cannot go below zero' : (adjustmentQuantity ?? 'Enter a quantity')}
-                        </strong>
-                      </div>
-                      <Button disabled={!canMutateSelectedStock || isSubmitting || adjustmentInvalid} type="submit">
-                        {submittingIntent === 'stockChange' ? (
-                          <LoadingButtonContent label="Saving stock change" />
-                        ) : (
-                          'Save stock change'
-                        )}
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div hidden={stockMode !== 'count'}>
-                <Card className="border-border bg-card">
-                  <CardHeader>
-                    <CardTitle>Count stock</CardTitle>
-                    <CardDescription>
-                      Enter how many you have counted, then how many may be sold online.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form
-                      className="grid gap-3"
-                      onSubmit={handleStockCount}
-                      aria-busy={submittingIntent === 'stockCount' ? 'true' : undefined}
-                    >
-                      <label htmlFor="stock-count-counted-quantity">Physical stock counted</label>
-                      <Input
-                        className="border-input bg-background"
-                        disabled={!canMutateSelectedStock || isSubmitting}
-                        id="stock-count-counted-quantity"
-                        min="0"
-                        name="countedQuantity"
-                        onChange={(event) => setCountedQuantity(event.target.value)}
-                        placeholder="Counted Stock"
-                        required
-                        type="number"
-                        value={countedQuantity}
-                      />
-                      <label htmlFor="stock-count-online-quantity">Available online</label>
-                      <Input
-                        className="border-input bg-background"
-                        disabled={!canMutateSelectedStock || isSubmitting}
-                        id="stock-count-online-quantity"
-                        min="0"
-                        name="onlineQuantity"
-                        onChange={(event) => setOnlineQuantity(event.target.value)}
-                        placeholder="OnlineStock"
-                        required
-                        type="number"
-                        value={onlineQuantity}
-                      />
-                      <label htmlFor="stock-count-notes">Notes (optional)</label>
-                      <Textarea
-                        className="border-input bg-background"
-                        disabled={!canMutateSelectedStock || isSubmitting}
-                        id="stock-count-notes"
-                        name="notes"
-                        onChange={(event) => setCountNotes(event.target.value)}
-                        placeholder="Notes"
-                        value={countNotes}
-                      />
-                      {countNeedsReassessment && (
-                        <Button
-                          disabled={!canMutateSelectedStock || !hasFreshStock || isLoading || isSubmitting}
-                          onClick={() => {
-                            if (!selectedStockDetail || !hasFreshStock) return;
-                            setExpectedRevision(selectedStockDetail.stock.revision);
-                            setCountNeedsReassessment(false);
-                            setStatusMessage(
-                              'Count reassessed against the displayed stock. Review and save when ready.',
-                            );
-                          }}
-                          type="button"
-                          variant="outline"
+                        <label htmlFor="stock-change-direction">What changed?</label>
+                        <select
+                          id="stock-change-direction"
+                          className="min-h-11 border border-border bg-background p-2"
+                          disabled={!canMutateSelectedStock || isSubmitting}
+                          value={stockDirection}
+                          onChange={(event) => setStockDirection(event.target.value)}
                         >
-                          I have reassessed this count
+                          <option value="remove">Remove stock</option>
+                          <option value="add">Add stock</option>
+                        </select>
+                        <label htmlFor="stock-change-delta">How many?</label>
+                        <Input
+                          className="border-input bg-background"
+                          disabled={!canMutateSelectedStock || isSubmitting}
+                          id="stock-change-delta"
+                          name="delta"
+                          onChange={(event) => setChangeDelta(event.target.value)}
+                          placeholder="For example, 2"
+                          min="1"
+                          step="1"
+                          required
+                          type="number"
+                          value={changeDelta}
+                        />
+                        <label htmlFor="stock-change-reason">Reason</label>
+                        <select
+                          className="min-h-11 border border-input bg-background p-2"
+                          disabled={!canMutateSelectedStock || isSubmitting}
+                          id="stock-change-reason"
+                          name="reason"
+                          onChange={(event) => setChangeReason(event.target.value)}
+                          required
+                          value={changeReason}
+                        >
+                          <option value="manual_adjustment">Other stock change</option>
+                          <option value="show_sale">Sold at a show</option>
+                          <option value="delivery">New delivery</option>
+                          <option value="gift">Gift or promo copy</option>
+                        </select>
+                        <label htmlFor="stock-change-notes">Notes (optional)</label>
+                        <Textarea
+                          className="border-input bg-background"
+                          disabled={!canMutateSelectedStock || isSubmitting}
+                          id="stock-change-notes"
+                          name="notes"
+                          onChange={(event) => setChangeNotes(event.target.value)}
+                          placeholder="Notes"
+                          value={changeNotes}
+                        />
+                        <div
+                          className="staff-operation-preview"
+                          data-invalid={adjustmentInvalid ? 'true' : undefined}
+                          aria-live="polite"
+                        >
+                          <span>After this change</span>
+                          <strong>
+                            {adjustmentInvalid ? 'Cannot go below zero' : (adjustmentQuantity ?? 'Enter a quantity')}
+                          </strong>
+                        </div>
+                        <Button disabled={!canMutateSelectedStock || isSubmitting || adjustmentInvalid} type="submit">
+                          {submittingIntent === 'stockChange' ? (
+                            <LoadingButtonContent label="Saving stock change" />
+                          ) : (
+                            'Save stock change'
+                          )}
                         </Button>
-                      )}
-                      <Button
-                        disabled={
-                          !canMutateSelectedStock ||
-                          !hasFreshStock ||
-                          isSubmitting ||
-                          isLoading ||
-                          countNeedsReassessment
-                        }
-                        type="submit"
+                      </form>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div hidden={stockMode !== 'count'}>
+                  <Card className="border-border bg-card">
+                    <CardHeader>
+                      <CardTitle>Count stock</CardTitle>
+                      <CardDescription>
+                        Enter how many you have counted, then how many may be sold online.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <form
+                        className="grid gap-3"
+                        onSubmit={handleStockCount}
+                        aria-busy={submittingIntent === 'stockCount' ? 'true' : undefined}
                       >
-                        {submittingIntent === 'stockCount' ? (
-                          <LoadingButtonContent label="Saving count" />
-                        ) : (
-                          'Save count'
+                        <label htmlFor="stock-count-counted-quantity">Physical stock counted</label>
+                        <Input
+                          className="border-input bg-background"
+                          disabled={!canMutateSelectedStock || isSubmitting}
+                          id="stock-count-counted-quantity"
+                          min="0"
+                          name="countedQuantity"
+                          onChange={(event) => setCountedQuantity(event.target.value)}
+                          placeholder="Counted Stock"
+                          required
+                          type="number"
+                          value={countedQuantity}
+                        />
+                        <label htmlFor="stock-count-online-quantity">Available online</label>
+                        <Input
+                          className="border-input bg-background"
+                          disabled={!canMutateSelectedStock || isSubmitting}
+                          id="stock-count-online-quantity"
+                          min="0"
+                          name="onlineQuantity"
+                          onChange={(event) => setOnlineQuantity(event.target.value)}
+                          placeholder="OnlineStock"
+                          required
+                          type="number"
+                          value={onlineQuantity}
+                        />
+                        <label htmlFor="stock-count-notes">Notes (optional)</label>
+                        <Textarea
+                          className="border-input bg-background"
+                          disabled={!canMutateSelectedStock || isSubmitting}
+                          id="stock-count-notes"
+                          name="notes"
+                          onChange={(event) => setCountNotes(event.target.value)}
+                          placeholder="Notes"
+                          value={countNotes}
+                        />
+                        {countNeedsReassessment && (
+                          <Button
+                            disabled={!canMutateSelectedStock || !hasFreshStock || isLoading || isSubmitting}
+                            onClick={() => {
+                              if (!selectedStockDetail || !hasFreshStock) return;
+                              setExpectedRevision(selectedStockDetail.stock.revision);
+                              setCountNeedsReassessment(false);
+                              setStatusMessage(
+                                'Count reassessed against the displayed stock. Review and save when ready.',
+                              );
+                            }}
+                            type="button"
+                            variant="outline"
+                          >
+                            I have reassessed this count
+                          </Button>
                         )}
-                      </Button>
-                      <div className="staff-operation-preview" aria-live="polite">
-                        <span>Count to save</span>
-                        <strong>
-                          {countedQuantity && onlineQuantity
-                            ? `${countedQuantity} physical · ${onlineQuantity} online`
-                            : 'Enter both quantities'}
-                        </strong>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
+                        <Button
+                          disabled={
+                            !canMutateSelectedStock ||
+                            !hasFreshStock ||
+                            isSubmitting ||
+                            isLoading ||
+                            countNeedsReassessment
+                          }
+                          type="submit"
+                        >
+                          {submittingIntent === 'stockCount' ? (
+                            <LoadingButtonContent label="Saving count" />
+                          ) : (
+                            'Save count'
+                          )}
+                        </Button>
+                        <div className="staff-operation-preview" aria-live="polite">
+                          <span>Count to save</span>
+                          <strong>
+                            {countedQuantity && onlineQuantity
+                              ? `${countedQuantity} physical · ${onlineQuantity} online`
+                              : 'Enter both quantities'}
+                          </strong>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle>Recent history</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-2">
-              {historyPending && <LoadingInline label="Loading stock history" />}
-              {historyError && (
-                <p role="alert" className="text-sm text-destructive">
-                  History could not load. Use Refresh to try again. {historyError}
-                </p>
-              )}
-              {history.map((entry) => (
-                <HistoryRow entry={entry} key={`${entry.type}-${entry.id}`} />
-              ))}
-              {!historyPending && !historyError && history.length === 0 && (
-                <p className="text-sm text-muted-foreground">No recent history loaded.</p>
-              )}
-            </CardContent>
-          </Card>
+          {!isItemsWorkspace && (
+            <Card className="border-border bg-card">
+              <CardHeader>
+                <CardTitle>Recent history</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-2">
+                {historyPending && <LoadingInline label="Loading stock history" />}
+                {historyError && (
+                  <p role="alert" className="text-sm text-destructive">
+                    History could not load. Use Refresh to try again. {historyError}
+                  </p>
+                )}
+                {history.map((entry) => (
+                  <HistoryRow entry={entry} key={`${entry.type}-${entry.id}`} />
+                ))}
+                {!historyPending && !historyError && history.length === 0 && (
+                  <p className="text-sm text-muted-foreground">No recent history loaded.</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </section>
     </div>

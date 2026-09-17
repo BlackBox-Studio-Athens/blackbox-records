@@ -37,4 +37,23 @@ describe('Stock operations loading feedback', () => {
     expect(canSubmitStockMutation('variant_b', null)).toBe(false);
     expect(canSubmitStockMutation('variant_b', { variantId: 'variant_b' })).toBe(true);
   });
+
+  it('keeps Items read-only for stock and focused on catalog work', () => {
+    const html = renderToStaticMarkup(<StockOperationsApp backendBaseUrl="http://127.0.0.1:8787" mode="items" />);
+
+    expect(html).toContain('Prepare catalog items, set prices, and publish them when ready.');
+    expect(html).not.toContain('Adjust stock');
+    expect(html).not.toContain('Count stock');
+    expect(html).not.toContain('Recent history');
+  });
+
+  it('keeps Stock focused on inventory operations without catalog publishing controls', () => {
+    const html = renderToStaticMarkup(<StockOperationsApp backendBaseUrl="http://127.0.0.1:8787" mode="stock" />);
+
+    expect(html).toContain('Keep physical and online stock aligned.');
+    expect(html).toContain('Adjust stock');
+    expect(html).toContain('Count stock');
+    expect(html).toContain('Recent history');
+    expect(html).not.toContain('Prepare catalog items, set prices, and publish them when ready.');
+  });
 });

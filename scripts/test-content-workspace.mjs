@@ -432,6 +432,13 @@ else {
     state.searchFailure = state.historyFailure = false;
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
+    await page.goto(`${origin}/content/`);
+    await page.getByRole('heading', { name: 'Website content', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Review staged changes', exact: true }).click();
+    await page.getByText('Nothing staged yet', { exact: true }).waitFor();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Open first record', exact: true }).click();
+    await page.getByLabel('Artist name', { exact: true }).waitFor();
     await page.goto(`${origin}/content/?collection=artists&id=artists-1`);
     await page.getByLabel('Artist name', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Choose from Artists' }).click();
@@ -606,18 +613,20 @@ else {
     await page.getByRole('button', { name: 'Save draft', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Draft saved' }).waitFor();
     assert.deepEqual(state.lastWrite.data.image, { id: 'record-cover' });
-    await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
+    await page.getByRole('button', { name: 'Add to publication', exact: true }).click();
+    await page.getByRole('button', { name: 'Publish changes (1)', exact: true }).click();
     await page.getByRole('button', { name: /Publishing.*pending/ }).click();
     await page.getByText('Publication requested. Wait for Live', { exact: false }).waitFor();
     assert.equal(state.publicTitle, 'Ouranopithecus');
     await page.keyboard.press('Escape');
     state.publication = 'failed';
-    await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
+    await page.getByRole('button', { name: 'Add to publication', exact: true }).click();
+    await page.getByRole('button', { name: 'Publish changes (1)', exact: true }).click();
     await page.getByRole('button', { name: /Publication failed/ }).click();
     await page.getByText('Publication failed. Select Publish changes to try again.', { exact: true }).waitFor();
     await page.keyboard.press('Escape');
     state.publication = 'live';
-    await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
+    await page.getByRole('button', { name: 'Publish changes (1)', exact: true }).click();
     await page.getByRole('button', { name: /Latest publication live/ }).click();
     await page.getByText('Publication is live on fresh public page loads.', { exact: true }).waitFor();
     await page.keyboard.press('Escape');
@@ -752,8 +761,10 @@ else {
       await page.goto(`${origin}/content/?collection=${collection}&id=${collection}-1`);
       await page.locator('#content-editor-form').waitFor();
       assert.ok(await page.locator('#content-editor-form input, #content-editor-form textarea').count());
-      if (['releases', 'distro'].includes(collection))
-        assert.equal(await page.getByRole('button', { name: 'Publish changes', exact: true }).count(), 0);
+      if (['releases', 'distro'].includes(collection)) {
+        assert.equal(await page.getByRole('button', { name: 'Add to publication', exact: true }).count(), 0);
+        assert.equal(await page.getByRole('link', { name: 'Publish from Items', exact: true }).count(), 1);
+      }
     }
     await page.goto(`${origin}/content/?collection=socials&id=socials-1`);
     await page.getByLabel('Link name', { exact: true }).fill('Interrupted save');
@@ -944,14 +955,20 @@ else {
     const batch = await browser.newPage();
     await batch.goto(`${origin}/content/?collection=artists&id=artists-1`);
     await batch.getByRole('button', { name: 'Add to publication', exact: true }).click();
+    await batch.setViewportSize({ width: 390, height: 900 });
+    await batch.getByRole('button', { name: 'Staged changes (1)', exact: true }).click();
+    await batch.getByRole('heading', { name: 'Staged publication', exact: true }).waitFor();
+    await batch.keyboard.press('Escape');
+    await batch.setViewportSize({ width: 1280, height: 900 });
     await batch.goto(`${origin}/content/?collection=newsletter&id=newsletter-1`);
     await batch.getByRole('button', { name: 'Add to publication', exact: true }).click();
     await batch.reload();
-    await batch.getByText('Selected for publication (2)', { exact: true }).click();
+    await batch.getByRole('button', { name: 'Staged changes (2)', exact: true }).click();
+    await batch.getByText('Staged publication', { exact: true }).waitFor();
     const batchRequest = batch.waitForRequest(
       (request) => request.method() === 'POST' && request.url().endsWith('/_emdash/api/blackbox/content-publications'),
     );
-    await batch.getByRole('button', { name: 'Publish selected (2)', exact: true }).click();
+    await batch.getByRole('button', { name: 'Publish changes (2)', exact: true }).last().click();
     const payload = (await batchRequest).postDataJSON();
     assert.deepEqual(
       payload.records.map((record) => record.collection),

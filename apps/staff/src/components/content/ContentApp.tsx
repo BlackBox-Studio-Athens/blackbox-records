@@ -2,19 +2,22 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/button';
 import {
   ArrowLeft,
+  ArrowUpRight,
   Eye,
   EyeOff,
   FileText,
+  History,
+  ListChecks,
   MoreHorizontal,
   Plus,
   RotateCcw,
   Save,
   Search,
-  Send,
   Trash2,
 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { ButtonGroup } from '../ui/button-group';
+import { Card, CardContent, CardDescription, CardHeader } from '../ui/card';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
 import { Table, TableBody, TableRow, TableCell } from '../ui/table';
 import { SidebarProvider, SidebarTrigger } from '../ui/sidebar';
@@ -24,7 +27,14 @@ import { Skeleton } from '../ui/skeleton';
 import { Spinner } from '../ui/spinner';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Tabs } from 'radix-ui';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '../ui/dropdown-menu';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -35,7 +45,6 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '../ui/alert-dialog';
-import { Tooltip, TooltipTrigger, TooltipContent } from '../ui/tooltip';
 import ContentNavigation from './ContentNavigation';
 import MediaLibrary from './MediaLibrary';
 import ContentFields, {
@@ -46,6 +55,7 @@ import ContentFields, {
 } from './ContentFields';
 import ContentPreview from './ContentPreview';
 import ContentSelector from './ContentSelector';
+import PublicationQueue, { type PublicationSelectionItem } from './PublicationQueue';
 import PublicationStatus from './PublicationStatus';
 import { getContentValidation, type ContentValidation } from './content-validation';
 import {
@@ -165,10 +175,10 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const pendingKey = `blackbox-content-create:${base}`;
   const publicationKey = `blackbox-content-publication-v2:${base}`;
   const selectionKey = `blackbox-content-publication-selection:${base}`;
-  const [publicationSelection, setPublicationSelection] = useState<(SelectedPublicationRecord & { title: string })[]>(
-    [],
-  );
-  function retainSelection(items: (SelectedPublicationRecord & { title: string })[]) {
+  const [publicationSelection, setPublicationSelection] = useState<PublicationSelectionItem[]>([]);
+  const [publicationQueueOpen, setPublicationQueueOpen] = useState(false);
+  const [publicationHistoryOpen, setPublicationHistoryOpen] = useState(false);
+  function retainSelection(items: PublicationSelectionItem[]) {
     try {
       localStorage.setItem(selectionKey, JSON.stringify(items));
     } catch {
@@ -176,6 +186,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       return;
     }
     setPublicationSelection(items);
+  }
+  function removeQueuedRecord(collectionName: string, recordId: string) {
+    const next = publicationSelection.filter(
+      (record) => record.collection !== collectionName || record.recordId !== recordId,
+    );
+    if (next.length !== publicationSelection.length) retainSelection(next);
   }
   const validation: ContentValidation = getContentValidation(collection, data);
 
@@ -237,17 +253,19 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       localStorage.removeItem(publicationKey);
       setPendingPublication(null);
       const included = 'records' in input ? input.records : [input];
-      retainSelection(
-        publicationSelection.filter(
-          (record) =>
-            !included.some(
-              (item) =>
-                item.collection === record.collection &&
-                item.recordId === record.recordId &&
-                item.expectedRevision === record.expectedRevision,
-            ),
-        ),
-      );
+      if (accepted.status !== 'failed') {
+        retainSelection(
+          publicationSelection.filter(
+            (record) =>
+              !included.some(
+                (item) =>
+                  item.collection === record.collection &&
+                  item.recordId === record.recordId &&
+                  item.expectedRevision === record.expectedRevision,
+              ),
+          ),
+        );
+      }
       setPublications((items) => [accepted, ...items.filter((item) => item.id !== accepted.id)].slice(0, 10));
       await publicationStatus();
       setPublicationMessage(
@@ -467,6 +485,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setDirty(false);
       setValidationAttempt(0);
       setItems((items) => items.map((item) => (item.id === saved.item.id ? saved.item : item)));
+      removeQueuedRecord(collection, saved.item.id);
       setMessage('');
     } catch (error) {
       setConflict(error instanceof EditorialApiError && error.status === 409);
@@ -589,6 +608,44 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const canPublish = !['releases', 'distro'].includes(collection);
   const singleton = singletonContentSections.includes(collection);
   const title = String(data.title || data.label_name || contentSections[collection]);
+  const staleRecordKeys = publicationSelection
+    .filter(
+      (record) =>
+        record.collection === collection &&
+        record.recordId === document?.item.id &&
+        record.expectedRevision !== document?._rev,
+    )
+    .map((record) => `${record.collection}/${record.recordId}`);
+  const publicationBlockedReason = dirty
+    ? 'Save the current draft before publishing staged changes.'
+    : conflict
+      ? 'Reload the saved version before publishing staged changes.'
+      : staleRecordKeys.length
+        ? 'This staged record has changed. Save it and add it to the publication again.'
+        : undefined;
+  const currentRecordStaged = publicationSelection.some(
+    (record) => record.collection === collection && record.recordId === document?.item.id,
+  );
+  function stageCurrentRecord() {
+    if (!document?.item.id || busy || dirty || conflict || !validation.valid) return;
+    if (currentRecordStaged) {
+      removeQueuedRecord(collection, document.item.id);
+      return;
+    }
+    if (publicationSelection.length >= 20) {
+      setMessage('The publication queue is full. Publish or remove a staged record before adding another.');
+      return;
+    }
+    retainSelection([
+      ...publicationSelection.filter(
+        (record) => record.collection !== collection || record.recordId !== document.item.id,
+      ),
+      { collection, recordId: document.item.id, expectedRevision: document._rev, title },
+    ]);
+  }
+  function publishSelection() {
+    void publish(publicationSelection.map(({ title: _title, ...record }) => record));
+  }
   return (
     <SidebarProvider
       className="cms-surface cms-workspace"
@@ -618,54 +675,26 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
-          {publicationSelection.length > 0 && (
-            <details className="relative ml-auto">
-              <summary className="cursor-pointer text-sm">
-                Selected for publication ({publicationSelection.length})
-              </summary>
-              <div className="absolute right-0 z-50 mt-2 w-72 max-w-[85vw] rounded-md border border-border bg-background p-4 shadow-lg">
-                <p className="mb-3 text-sm text-muted-foreground">
-                  These saved versions will go live together. Add a record again after editing it.
-                </p>
-                <ul className="mb-3 space-y-2">
-                  {publicationSelection.map((record) => (
-                    <li
-                      key={`${record.collection}/${record.recordId}`}
-                      className="flex items-center justify-between gap-2 text-sm"
-                    >
-                      <span>{record.title}</span>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        aria-label={`Remove ${record.title} from publication`}
-                        disabled={busy}
-                        onClick={() => retainSelection(publicationSelection.filter((item) => item !== record))}
-                      >
-                        Remove
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  type="button"
-                  disabled={busy || dirty || conflict}
-                  onClick={() => void publish(publicationSelection.map(({ title: _title, ...record }) => record))}
-                >
-                  {pendingPublication
-                    ? 'Retry publication request'
-                    : `Publish selected (${publicationSelection.length})`}
-                </Button>
-              </div>
-            </details>
-          )}
-          <div className="ml-auto">
+          <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
+            <PublicationQueue
+              records={publicationSelection}
+              staleRecordKeys={staleRecordKeys}
+              disabled={busy}
+              blockedReason={publicationBlockedReason}
+              pendingPublication={pendingPublication}
+              open={publicationQueueOpen}
+              onOpenChange={setPublicationQueueOpen}
+              onRemove={(record) => removeQueuedRecord(record.collection, record.recordId)}
+              onPublish={publishSelection}
+            />
             <PublicationStatus
               items={publications}
               requesting={requestingPublication}
               statusError={publicationStatusError}
               message={publicationMessage}
               refresh={publicationStatus}
+              open={publicationHistoryOpen}
+              onOpenChange={setPublicationHistoryOpen}
             />
           </div>
           {media && document && (
@@ -905,51 +934,28 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                       {canPublish && (
                         <Button
                           type="button"
-                          variant="outline"
+                          variant={currentRecordStaged ? 'secondary' : 'outline'}
                           disabled={
                             busy ||
                             dirty ||
                             conflict ||
                             !validation.valid ||
                             !document.item.id ||
-                            publicationSelection.length >= 20
+                            (!currentRecordStaged && publicationSelection.length >= 20)
                           }
-                          onClick={() =>
-                            retainSelection([
-                              ...publicationSelection.filter(
-                                (record) => record.collection !== collection || record.recordId !== document.item.id,
-                              ),
-                              { collection, recordId: document.item.id, expectedRevision: document._rev, title },
-                            ])
-                          }
+                          onClick={stageCurrentRecord}
                         >
-                          Add to publication
+                          <ListChecks className="size-4" aria-hidden="true" />
+                          {currentRecordStaged ? 'In publication' : 'Add to publication'}
                         </Button>
                       )}
-                      {canPublish && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span tabIndex={dirty || conflict || !validation.valid ? 0 : undefined}>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                className="px-3"
-                                disabled={busy || dirty || conflict || !validation.valid || !document.item.id}
-                                onClick={() => void publish()}
-                              >
-                                <Send className="size-4" aria-hidden="true" />
-                                {pendingPublication ? 'Retry publication request' : 'Publish changes'}
-                              </Button>
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            {!validation.valid
-                              ? 'Fix the highlighted fields before publishing.'
-                              : dirty || conflict
-                                ? 'Save your draft before requesting publication.'
-                                : 'Publish this saved revision to the website.'}
-                          </TooltipContent>
-                        </Tooltip>
+                      {!canPublish && (
+                        <Button asChild type="button" variant="outline">
+                          <a href="/items/">
+                            <ArrowUpRight className="size-4" aria-hidden="true" />
+                            Publish from Items
+                          </a>
+                        </Button>
                       )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -965,6 +971,38 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="cms-surface" align="end">
+                          <DropdownMenuLabel>Draft workflow</DropdownMenuLabel>
+                          {canPublish ? (
+                            <DropdownMenuItem
+                              disabled={
+                                busy ||
+                                dirty ||
+                                conflict ||
+                                !validation.valid ||
+                                !document.item.id ||
+                                (!currentRecordStaged && publicationSelection.length >= 20)
+                              }
+                              onSelect={() => {
+                                if (currentRecordStaged) setPublicationQueueOpen(true);
+                                else stageCurrentRecord();
+                              }}
+                            >
+                              <ListChecks className="size-4" aria-hidden="true" />
+                              {currentRecordStaged ? 'Open publish queue' : 'Add to publication'}
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem asChild>
+                              <a href="/items/">
+                                <ArrowUpRight className="size-4" aria-hidden="true" />
+                                Publish from Items
+                              </a>
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem onSelect={() => setPublicationHistoryOpen(true)}>
+                            <History className="size-4" aria-hidden="true" />
+                            Publication history
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           {canCreate && (
                             <DropdownMenuItem
                               disabled={!document.item.id || dirty}
@@ -1036,17 +1074,84 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                   </div>
                 </>
               ) : (
-                <div className="grid flex-1 place-content-center gap-3 p-8 text-center">
-                  <FileText className="mx-auto size-8 text-muted-foreground" aria-hidden="true" />
-                  <h2 className="text-xl font-semibold">Select content to edit</h2>
-                  <p className="max-w-sm text-sm text-muted-foreground">
-                    Choose a record from {contentSections[collection].toLowerCase()} to edit its draft.
-                  </p>
-                  {message && (
-                    <Alert role="status">
-                      <AlertDescription>{message}</AlertDescription>
-                    </Alert>
-                  )}
+                <div className="cms-empty-state min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
+                  <Card className="mx-auto w-full max-w-2xl border-border bg-card">
+                    <CardHeader>
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="grid gap-2">
+                          <h2 className="text-xl font-semibold">Website content</h2>
+                          <CardDescription>
+                            Choose a record from {contentSections[collection].toLowerCase()} to edit, or review staged
+                            changes before publishing.
+                          </CardDescription>
+                        </div>
+                        <Badge variant="secondary">
+                          {items.length}
+                          {cursor ? '+' : ''} records
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="grid gap-5">
+                      <div className="grid gap-3 rounded-md border border-border bg-muted/20 p-4 sm:grid-cols-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Current section</p>
+                          <p className="mt-1 font-medium">{contentSections[collection]}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Staged changes</p>
+                          <p className="mt-1 font-medium">
+                            {publicationSelection.length ? `${publicationSelection.length} ready` : 'None yet'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Public site</p>
+                          <p className="mt-1 font-medium">Unchanged until publish</p>
+                        </div>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-3">
+                        {[
+                          ['1', 'Edit', 'Choose a saved record and update its draft.'],
+                          ['2', 'Stage', 'Add saved revisions to the publication queue.'],
+                          ['3', 'Publish', 'Publish the staged set together.'],
+                        ].map(([number, label, description]) => (
+                          <div key={number} className="flex gap-3">
+                            <span className="grid size-7 shrink-0 place-content-center rounded-full bg-secondary text-xs font-semibold">
+                              {number}
+                            </span>
+                            <div className="grid gap-1">
+                              <p className="text-sm font-medium">{label}</p>
+                              <p className="text-xs leading-5 text-muted-foreground">{description}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          disabled={busy || !items.length}
+                          onClick={() => {
+                            if (items[0]) void open(items[0]);
+                          }}
+                        >
+                          <FileText className="size-4" aria-hidden="true" />
+                          Open first record
+                        </Button>
+                        <Button type="button" variant="outline" onClick={() => setPublicationQueueOpen(true)}>
+                          <ListChecks className="size-4" aria-hidden="true" />
+                          Review staged changes
+                        </Button>
+                        <Button type="button" variant="ghost" onClick={() => setPublicationHistoryOpen(true)}>
+                          <History className="size-4" aria-hidden="true" />
+                          Publication history
+                        </Button>
+                      </div>
+                      {message && (
+                        <Alert role="status">
+                          <AlertDescription>{message}</AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
               )}
             </section>

@@ -4,9 +4,9 @@ import StockOpsLayout from '../../layouts/StockOpsLayout.astro';
 import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api';
 ---
 
-<StockOpsLayout pageTitle="Items" pageDescription="Manage label items, prices and stock.">
+<StockOpsLayout pageTitle="Items" pageDescription="Manage catalog items, prices and publication.">
   <a href="/items/new/" class="mx-4 mt-6 inline-flex min-h-11 items-center border border-border px-4 underline"
     >Create an item</a
   >
-  <StockOperationsApp backendBaseUrl={getInternalStockApiBaseUrl()} showPrice client:load />
+  <StockOperationsApp backendBaseUrl={getInternalStockApiBaseUrl()} mode="items" client:load />
 </StockOpsLayout>

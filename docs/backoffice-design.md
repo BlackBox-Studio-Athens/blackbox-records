@@ -31,6 +31,12 @@ Members should learn one workspace, then recognize the others. Keep Content as t
 
 Existing shared navigation, semantic colors, preview controls, image thumbnails/dimensions and async Stock reads are implemented. The recommendations below must not be counted as newly delivered versions of those existing features.
 
+## Staff publishing and workspace redesign — implemented 2026-09-17
+
+Content uses a Decap-style staged queue: editors save, add eligible records to publication, then use the persistent top-bar `Publish changes (N)` action. The queue is capped at twenty records, persists through reload, and opens as a shadcn Popover on desktop or Sheet on narrow screens. Saving a queued record removes its old revision; failed batches remain staged for retry. The empty editor is a compact Card dashboard with collection summary, staged count, publication status and next-step shortcuts. More draft actions always exposes queue/history actions plus any contextual trash or navigation action.
+
+Items and Stock have separate ownership boundaries. Items owns catalog setup, prices and item publication, and shows only a read-only stock summary with a `Manage stock` link. Stock owns adjustments, recounts and ledger history. Releases and distro make their commerce publication path explicit with `Publish from Items`. The implementation reuses installed shadcn/Radix primitives and existing API contracts; no endpoint, migration or dependency was added.
+
 ## Research ledger
 
 Reviewed official documentation and product UI examples on 2026-09-16. This is a reference study, not authenticated usability testing of all twelve products. Ghost's publishing example also received direct browser visual review. Adopt the task pattern, not a product's branding or its larger feature set.
@@ -139,13 +145,13 @@ History is an audit trail. Keep every row, label the newest row **Current**, and
 
 The second research round selected the following visual work for the current refresh:
 
-| Workspace | Implemented visual treatment                                                                                                      |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Content   | Clear current publication hierarchy, compact history rows, current-request marker, tighter toolbar, and consistent status alerts. |
-| Images    | Grid/list density switch, selected and focused states, dimensions, crop-suitability guidance, and field-aware error treatment.    |
-| Items     | Grouped setup sections, a compact readiness checklist, and clearer next-step context.                                             |
-| Stock     | Compact operator header, Adjust/Count modes, before/after quantities, and denser history.                                         |
-| Orders    | Compact filter toolbar, status pills, stronger order-row hierarchy, and grouped detail facts.                                     |
+| Workspace | Implemented visual treatment                                                                                                                                                                                    |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Content   | Clear current publication hierarchy, staged queue with responsive Popover/Sheet controls, compact empty dashboard, compact history rows, current-request marker, tighter toolbar, and consistent status alerts. |
+| Images    | Grid/list density switch, selected and focused states, dimensions, crop-suitability guidance, and field-aware error treatment.                                                                                  |
+| Items     | Grouped setup sections, a compact readiness checklist, explicit publication ownership, read-only stock summary, and clearer next-step context.                                                                  |
+| Stock     | Compact operator header, Adjust/Count modes, before/after quantities, explicit mutation ownership, and denser history.                                                                                          |
+| Orders    | Compact filter toolbar, status pills, stronger order-row hierarchy, and grouped detail facts.                                                                                                                   |
 
 These changes use the installed Lucide and shadcn/Radix primitives, Inter/system typography, existing API data, and existing permission/recovery boundaries. They do not add a component library, commerce action, publication endpoint, or interactive preview behavior. The remaining research ideas in the tables above stay proposed until a separate slice selects them.
 
@@ -155,3 +161,4 @@ These changes use the installed Lucide and shadcn/Radix primitives, Inter/system
 - 2026-09-16: selected Content inline validation, discard recovery, grouped fieldsets, and field-aware Images errors for the editor safety slice. Items, Stock, and Orders remain proposed for later work.
 - 2026-09-16: selected and implemented the publication-status priority rule and the visual refresh for Content, Images, Items, Stock, and Orders. Retained publication history remains unchanged; current-state status is derived separately.
 - 2026-09-16: implemented direct entry for the true singleton Content sections (`home`, `about`, `services`, `distro_page`, `purchase_information`, `newsletter`, `settings`). Collection sections retain list-first selection; direct links and unsaved-change protection remain unchanged. Local acceptance is covered by `scripts/test-content-workspace.mjs`.
+- 2026-09-17: implemented the staged Content publication queue, responsive Popover/Sheet queue UI, compact empty dashboard, populated More draft actions, explicit Releases/Distro Items handoff, and the Items/Stock ownership boundary. Chromium browser regression passed; Firefox and repository gates remain the final acceptance checks for this change.
