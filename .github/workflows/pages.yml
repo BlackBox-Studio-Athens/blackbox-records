@@ -147,6 +147,8 @@ jobs:
       - name: Install preview test browsers
         run: pnpm exec playwright install --with-deps chromium firefox
       - name: Verify staff previews in Chromium and Firefox
+        env:
+          STAFF_PREVIEW_ENVIRONMENT: prd
         run: |
           node scripts/test-preview-policy.mjs
           node scripts/test-content-workspace.mjs

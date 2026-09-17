@@ -10,6 +10,11 @@ import { previewPolicy } from '../apps/backend/src/cms/preview-policy.ts';
 
 const root = resolve('apps/staff/dist');
 const browserType = process.argv.includes('--firefox') ? firefox : chromium;
+const expectedWebsiteUrl =
+  {
+    uat: 'https://blackbox-records-web-uat.pages.dev/',
+    prd: 'https://blackbox-records-web.pages.dev/',
+  }[process.env.STAFF_PREVIEW_ENVIRONMENT] || 'http://127.0.0.1:4321/blackbox-records/';
 const artifacts = resolve(
   process.env.BLACKBOX_VALIDATION_REPORT_DIR || '.codex-artifacts/content-workspace',
   browserType.name(),
@@ -547,7 +552,7 @@ else {
     }
     assert.equal(
       await page.getByRole('link', { name: 'View website', exact: true }).getAttribute('href'),
-      'http://127.0.0.1:4321/blackbox-records/',
+      expectedWebsiteUrl,
     );
     await page.getByRole('button', { name: 'Add', exact: true }).click();
     for (const [name, href] of [
