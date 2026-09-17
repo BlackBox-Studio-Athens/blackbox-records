@@ -178,6 +178,18 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [publicationSelection, setPublicationSelection] = useState<PublicationSelectionItem[]>([]);
   const [publicationQueueOpen, setPublicationQueueOpen] = useState(false);
   const [publicationHistoryOpen, setPublicationHistoryOpen] = useState(false);
+  const [draftActionsOpen, setDraftActionsOpen] = useState(false);
+  function openPublicationSurface(target: 'queue' | 'history') {
+    setDraftActionsOpen(false);
+    setPublicationQueueOpen(false);
+    setPublicationHistoryOpen(false);
+    window.setTimeout(() => {
+      requestAnimationFrame(() => {
+        if (target === 'queue') setPublicationQueueOpen(true);
+        else setPublicationHistoryOpen(true);
+      });
+    }, 0);
+  }
   function retainSelection(items: PublicationSelectionItem[]) {
     try {
       localStorage.setItem(selectionKey, JSON.stringify(items));
@@ -957,7 +969,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                           </a>
                         </Button>
                       )}
-                      <DropdownMenu>
+                      <DropdownMenu open={draftActionsOpen} onOpenChange={setDraftActionsOpen}>
                         <DropdownMenuTrigger asChild>
                           <Button
                             type="button"
@@ -982,9 +994,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                 !document.item.id ||
                                 (!currentRecordStaged && publicationSelection.length >= 20)
                               }
-                              onSelect={() => {
-                                if (currentRecordStaged) setPublicationQueueOpen(true);
-                                else stageCurrentRecord();
+                              onSelect={(event) => {
+                                if (currentRecordStaged) {
+                                  event.preventDefault();
+                                  openPublicationSurface('queue');
+                                } else stageCurrentRecord();
                               }}
                             >
                               <ListChecks className="size-4" aria-hidden="true" />
@@ -998,7 +1012,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                               </a>
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuItem onSelect={() => setPublicationHistoryOpen(true)}>
+                          <DropdownMenuItem
+                            onSelect={(event) => {
+                              event.preventDefault();
+                              openPublicationSurface('history');
+                            }}
+                          >
                             <History className="size-4" aria-hidden="true" />
                             Publication history
                           </DropdownMenuItem>

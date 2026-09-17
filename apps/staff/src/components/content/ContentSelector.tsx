@@ -45,30 +45,40 @@ export default function ContentSelector({
           <ChevronsUpDown className="size-4 shrink-0" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="cms-surface w-80 max-w-[calc(100vw-2rem)] p-0">
-        <Command shouldFilter={false}>
-          <CommandInput
-            aria-label={`Search ${section.toLowerCase()}`}
-            placeholder={`Search ${section.toLowerCase()}…`}
-            value={query}
-            onValueChange={onQuery}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && !items.length) {
-                event.preventDefault();
-                if (!disabled) onSearch();
-              }
-            }}
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            disabled={disabled}
-            onClick={onSearch}
-            onKeyDown={(event) => event.stopPropagation()}
-          >
-            Search
-          </Button>
-          <CommandList>
+      <PopoverContent
+        side="bottom"
+        align="start"
+        sideOffset={8}
+        collisionPadding={8}
+        className="cms-surface cms-content-selector w-[min(24rem,calc(100vw-1rem))] max-w-[calc(100vw-1rem)] p-0"
+      >
+        <Command shouldFilter={false} className="cms-content-selector-command h-auto min-h-0 rounded-md">
+          <div className="cms-content-selector-search">
+            <CommandInput
+              wrapperClassName="h-11 min-w-0 flex-1 border-b-0 px-1"
+              aria-label={`Search ${section.toLowerCase()}`}
+              placeholder={`Search ${section.toLowerCase()}…`}
+              value={query}
+              onValueChange={onQuery}
+              onKeyDownCapture={(event) => {
+                if (event.key === 'Enter' && !items.length) {
+                  event.preventDefault();
+                  if (!disabled) onSearch();
+                }
+              }}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              disabled={disabled}
+              onClick={onSearch}
+              onKeyDown={(event) => event.stopPropagation()}
+            >
+              Search
+            </Button>
+          </div>
+          <CommandList className="cms-content-selector-list max-h-72 min-h-0 p-1">
             <CommandEmpty>{disabled ? 'Loading content…' : 'No matching content. Try another search.'}</CommandEmpty>
             {items.map((item) => (
               <CommandItem
@@ -85,15 +95,18 @@ export default function ContentSelector({
             ))}
           </CommandList>
           {more && (
-            <Button
-              type="button"
-              variant="ghost"
-              disabled={disabled}
-              onClick={onMore}
-              onKeyDown={(event) => event.stopPropagation()}
-            >
-              Show more
-            </Button>
+            <div className="cms-content-selector-footer">
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                disabled={disabled}
+                onClick={onMore}
+                onKeyDown={(event) => event.stopPropagation()}
+              >
+                Show more
+              </Button>
+            </div>
           )}
         </Command>
       </PopoverContent>

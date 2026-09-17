@@ -1,8 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import '../../styles/content.css';
-import { Check, ImageIcon, LayoutGrid, List as ListIcon, Search, Upload } from 'lucide-react';
+import { Check, ChevronDown, ImageIcon, LayoutGrid, List as ListIcon, Search, Upload } from 'lucide-react';
 import { Button } from '../ui/button';
-import { ButtonGroup } from '../ui/button-group';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { Input } from '../ui/input';
 import { Field, FieldLabel, FieldDescription, FieldError } from '../ui/field';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
@@ -66,9 +67,14 @@ export default function MediaLibrary({
   const [error, setError] = useState(false);
   const [detail, setDetail] = useState<EditorialMedia | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [uploadOpen, setUploadOpen] = useState(false);
   const detailTrigger = useRef<HTMLElement | null>(null);
   const sequence = useRef(0);
   const busy = loading || uploading || disabled;
+
+  useEffect(() => {
+    if (!loading && (items.length === 0 || error)) setUploadOpen(true);
+  }, [error, items.length, loading]);
 
   async function search(next?: string) {
     const request = ++sequence.current;
@@ -144,54 +150,66 @@ export default function MediaLibrary({
             <Search aria-hidden="true" />
             Search
           </Button>
-          <ButtonGroup aria-label="Image view">
-            <Button
-              type="button"
-              size="icon"
-              variant={viewMode === 'grid' ? 'secondary' : 'outline'}
-              aria-pressed={viewMode === 'grid'}
-              aria-label="Grid view"
-              title="Grid view"
-              onClick={() => setViewMode('grid')}
-            >
+          <ToggleGroup
+            type="single"
+            value={viewMode}
+            onValueChange={(value) => {
+              if (value === 'grid' || value === 'list') setViewMode(value);
+            }}
+            aria-label="Image view"
+            className="cms-media-view-toggle"
+          >
+            <ToggleGroupItem value="grid" aria-label="Grid view" title="Grid view">
               <LayoutGrid aria-hidden="true" />
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              variant={viewMode === 'list' ? 'secondary' : 'outline'}
-              aria-pressed={viewMode === 'list'}
-              aria-label="List view"
-              title="List view"
-              onClick={() => setViewMode('list')}
-            >
+            </ToggleGroupItem>
+            <ToggleGroupItem value="list" aria-label="List view" title="List view">
               <ListIcon aria-hidden="true" />
-            </Button>
-          </ButtonGroup>
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
       </div>
       {/* blocks.so/file-upload/file-upload-02: native upload field, adapted to the existing CMS command. */}
-      <Field className="rounded-lg border border-dashed border-border bg-muted/20 p-4">
-        <FieldLabel htmlFor={`${id}-upload`}>
-          <Upload className="size-4" aria-hidden="true" />
-          Upload an image
-        </FieldLabel>
-        <Input
-          id={`${id}-upload`}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          disabled={busy}
-          aria-describedby={`${id}-upload-help`}
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            event.target.value = '';
-            if (file) void upload(file);
-          }}
-        />
-        <FieldDescription id={`${id}-upload-help`}>
-          JPG, PNG or WebP, up to 20 MB. Uploading does not publish the image.
-        </FieldDescription>
-      </Field>
+      <Collapsible open={uploadOpen} onOpenChange={setUploadOpen} className="grid gap-3">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3">
+          <div className="min-w-0">
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Upload className="size-4" aria-hidden="true" />
+              Upload images
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">Add a JPG, PNG or WebP without publishing it.</p>
+          </div>
+          <CollapsibleTrigger asChild>
+            <Button type="button" variant="ghost" size="sm" className="shrink-0">
+              {uploadOpen ? 'Hide' : 'Upload'}
+              <ChevronDown
+                className={`size-4 transition-transform ${uploadOpen ? 'rotate-180' : ''}`}
+                aria-hidden="true"
+              />
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+        <CollapsibleContent>
+          <Field className="rounded-lg border border-dashed border-border bg-muted/20 p-4">
+            <FieldLabel htmlFor={`${id}-upload`}>Choose an image</FieldLabel>
+            <Input
+              id={`${id}-upload`}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={busy}
+              aria-label="Upload an image"
+              aria-describedby={`${id}-upload-help`}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (file) void upload(file);
+              }}
+            />
+            <FieldDescription id={`${id}-upload-help`}>
+              JPG, PNG or WebP, up to 20 MB. Uploading does not publish the image.
+            </FieldDescription>
+          </Field>
+        </CollapsibleContent>
+      </Collapsible>
       {uploading && (
         <p role="status" className="flex items-center gap-2 text-sm">
           <Spinner className="size-4" />

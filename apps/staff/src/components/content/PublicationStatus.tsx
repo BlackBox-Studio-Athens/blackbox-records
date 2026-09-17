@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CheckCircle2, Clock3, AlertCircle, RefreshCw, History } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Sheet, SheetTrigger, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '../ui/sheet';
 import { useIsMobile } from '../../hooks/use-mobile';
@@ -203,10 +204,16 @@ export default function PublicationStatus({
                 </div>
                 {item.failureReason && <p className="mt-1 max-w-56 text-muted-foreground">{item.failureReason}</p>}
                 {item.status === 'failed' && (
-                  <details className="mt-1">
-                    <summary className="cursor-pointer">Diagnostic details</summary>
-                    <p className="break-all">Publication: {item.id}</p>
-                  </details>
+                  <Accordion type="single" collapsible className="mt-1">
+                    <AccordionItem value={`diagnostic-${item.id}`} className="border-b-0">
+                      <AccordionTrigger className="w-fit justify-start py-1 text-xs font-normal hover:no-underline">
+                        Diagnostic details
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-1 text-xs">
+                        <p className="break-all">Publication: {item.id}</p>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
                 )}
               </div>
               <time dateTime={new Date(item.requestedAt).toISOString()}>

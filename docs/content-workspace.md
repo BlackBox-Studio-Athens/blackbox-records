@@ -1,10 +1,10 @@
 # Content workspace
 
-`/content/` is **Website content**: grouped section navigation, with collection sections opening a searchable record list and singleton pages/settings opening their only editable record directly. Existing `?collection=…&id=…` links remain supported. `/content/?view=media` opens **Images**. Collection editors retain the compact record selector and Back to records action; singleton editors show the record title without collection-only controls.
+`/content/` is **Website content**: grouped section navigation, with collection sections opening a searchable record list and singleton pages/settings opening their only editable record directly. Existing `?collection=…&id=…` links remain supported. `/content/?view=media` opens **Images**. Collection editors retain the compact, bounded Command/Popover record selector and Back to records action; singleton editors show the record title without collection-only controls.
 
 Desktop preview starts closed. Show preview opens the approved Layout A 45/55 grid from 1100 px; Hide preview returns space to the editor. The desktop preference is remembered per browser, with storage failure tolerated. Hidden previews cancel work and do not request updates. Smaller screens use Edit/Preview tabs with both surfaces mounted to preserve edits. The image picker returns to the current field without losing edits; switching records, collections, or the full Images workspace requires saving or discarding changes. The sticky editor toolbar carries the selected title, draft state, save action and the visible `Add to publication` action when eligible. A persistent top-bar queue exposes `Staged changes (N)` and `Publish changes (N)` for website editorial records; the queue uses a desktop Popover and mobile Sheet, survives reload, and accepts at most twenty records. Releases and distro show an explicit `Publish from Items` handoff.
 
-When no record is selected, the editor is a compact workspace dashboard rather than an empty canvas. It shows the current collection, staged count, public status, the Edit → Stage → Publish sequence, and shortcuts to the first record, queue and history. The More draft actions menu remains populated with queue, history and contextual navigation/trash actions.
+When no record is selected, the editor is a compact workspace dashboard rather than an empty canvas. It shows the current collection, staged count, public status, the Edit → Stage → Publish sequence, and shortcuts to the first record, queue and history. The More draft actions menu remains populated with queue, history and contextual navigation/trash actions; queue and history hand off after the menu closes so the destination Popover or Sheet does not immediately dismiss. Images stays a flat library, with grid/list density controls and a collapsible upload area; folders are intentionally out of scope until the media API and collection size justify them.
 
 Use blue for actions and selection, amber for unsaved/pending, green for confirmed live, and red for failures. Every status includes words or an icon. Enabled actions use a pointer; fields retain editing cursors. Optional fields are labelled, validation remains beside fields, and artist images explain the public 3:4 crop.
 
@@ -30,7 +30,7 @@ Code releases still use the reviewed UAT candidate and retained PRD artifact. Se
 
 ## Component sources
 
-- Official [shadcn New York registry](https://ui.shadcn.com/docs/components): Sidebar, Table, InputGroup, Breadcrumb, ButtonGroup, Field, NativeSelect, Checkbox, Command/Popover combobox, DropdownMenu, AlertDialog, Alert, Sheet, AspectRatio, Tooltip, Skeleton, Empty, ScrollArea and supporting components.
+- Official [shadcn New York registry](https://ui.shadcn.com/docs/components): Sidebar, Table, InputGroup, Breadcrumb, ButtonGroup, Field, NativeSelect, Checkbox, Command/Popover combobox, DropdownMenu, AlertDialog, Alert, Sheet, AspectRatio, Tooltip, Skeleton, Empty, ScrollArea, ToggleGroup, Collapsible, Accordion and supporting components.
 - [blocks.so File Upload Simple](https://blocks.so/file-upload/file-upload-02): adapted native file input, label and help presentation. Uploads call the existing `uploadArtwork` helper.
 - EmDash 0.38's existing Portable Text editor remains the rich-text engine.
 

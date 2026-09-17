@@ -1,6 +1,6 @@
 # Backoffice design reference
 
-Living document · reviewed 2026-09-16 · audience: content editors and label members.
+Living document · reviewed 2026-09-17 · audience: content editors and label members.
 
 This is the design reference for **Content, Images, Items, Stock, and Orders**. The public site's expressive music identity remains in [DESIGN.md](../DESIGN.md); staff work needs quieter typography, predictable actions, and accurate operational state. Update this document in the same change as a backoffice behavior or pattern change.
 
@@ -33,9 +33,9 @@ Existing shared navigation, semantic colors, preview controls, image thumbnails/
 
 ## Staff publishing and workspace redesign — implemented 2026-09-17
 
-Content uses a Decap-style staged queue: editors save, add eligible records to publication, then use the persistent top-bar `Publish changes (N)` action. The queue is capped at twenty records, persists through reload, and opens as a shadcn Popover on desktop or Sheet on narrow screens. Saving a queued record removes its old revision; failed batches remain staged for retry. The empty editor is a compact Card dashboard with collection summary, staged count, publication status and next-step shortcuts. More draft actions always exposes queue/history actions plus any contextual trash or navigation action.
+Content uses a Decap-style staged queue: editors save, add eligible records to publication, then use the persistent top-bar `Publish changes (N)` action. The queue is capped at twenty records, persists through reload, and opens as a shadcn Popover on desktop or Sheet on narrow screens. Saving a queued record removes its old revision; failed batches remain staged for retry. The empty editor is a compact Card dashboard with collection summary, staged count, publication status and next-step shortcuts. More draft actions always exposes queue/history actions plus any contextual trash or navigation action; those surfaces hand off after the menu closes so they remain open.
 
-Items and Stock have separate ownership boundaries. Items owns catalog setup, prices and item publication, and shows only a read-only stock summary with a `Manage stock` link. Stock owns adjustments, recounts and ledger history. Releases and distro make their commerce publication path explicit with `Publish from Items`. The implementation reuses installed shadcn/Radix primitives and existing API contracts; no endpoint, migration or dependency was added.
+Items and Stock have separate ownership boundaries. Items owns catalog setup, prices and item publication, and shows only a read-only stock summary with a `Manage stock` link. Stock owns adjustments, recounts and ledger history. Releases and distro make their commerce publication path explicit with `Publish from Items`. Images intentionally remains a flat library: folders would add taxonomy and persistence work without helping the current collection size or picker workflow. The implementation reuses installed shadcn/Radix primitives and existing API contracts; no endpoint, migration or dependency was added.
 
 ## Research ledger
 

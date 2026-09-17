@@ -618,6 +618,14 @@ else {
     await page.getByRole('status').filter({ hasText: 'Draft saved' }).waitFor();
     assert.deepEqual(state.lastWrite.data.image, { id: 'record-cover' });
     await page.getByRole('button', { name: 'Add to publication', exact: true }).click();
+    await page.getByRole('button', { name: 'More draft actions', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Open publish queue', exact: true }).click();
+    await page.getByRole('heading', { name: 'Staged publication', exact: true }).waitFor();
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'More draft actions', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Publication history', exact: true }).click();
+    await page.getByRole('heading', { name: 'Publication history', exact: true }).waitFor();
+    await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Publish changes (1)', exact: true }).click();
     await page.getByRole('button', { name: /Publishing.*pending/ }).click();
     await page.getByText('Publication requested. Wait for Live', { exact: false }).waitFor();
@@ -643,9 +651,9 @@ else {
     await page.getByRole('button', { name: 'Images', exact: true }).click();
     await page.getByRole('button', { name: 'Show more images' }).click();
     await page.getByRole('button', { name: 'Chronoboros-band-logo.jpg', exact: true }).waitFor();
-    await page.getByRole('button', { name: 'List view', exact: true }).click();
+    await page.getByRole('radio', { name: 'List view', exact: true }).click();
     await page.locator('.cms-media-list-card').first().waitFor();
-    await page.getByRole('button', { name: 'Grid view', exact: true }).click();
+    await page.getByRole('radio', { name: 'Grid view', exact: true }).click();
     await page.getByLabel('Search images', { exact: true }).fill('no-match');
     await page.getByRole('button', { name: 'Search', exact: true }).filter({ visible: true }).click();
     await page.getByText('No matching images', { exact: true }).waitFor();
@@ -969,6 +977,11 @@ else {
     await batch.reload();
     await batch.getByRole('button', { name: 'Staged changes (2)', exact: true }).click();
     await batch.getByText('Staged publication', { exact: true }).waitFor();
+    await batch.keyboard.press('Escape');
+    await batch.getByRole('button', { name: 'More draft actions', exact: true }).click();
+    await batch.getByRole('menuitem', { name: 'Open publish queue', exact: true }).click();
+    await batch.getByRole('heading', { name: 'Staged publication', exact: true }).waitFor();
+    await batch.keyboard.press('Escape');
     const batchRequest = batch.waitForRequest(
       (request) => request.method() === 'POST' && request.url().endsWith('/_emdash/api/blackbox/content-publications'),
     );
