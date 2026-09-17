@@ -488,6 +488,7 @@ else {
     assert.equal(state.previewRequests.length, previewCountBeforeNestedInvalid, 'Nested invalid edits do not preview');
     await artistLink.fill('https://example.com');
     await artistLink.blur();
+    await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
     await page.evaluate(() =>
       document.querySelector('iframe[title="Private site appearance preview"]').contentWindow.scrollTo(0, 120),
     );
