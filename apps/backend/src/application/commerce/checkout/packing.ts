@@ -1,4 +1,4 @@
-export type ParcelTier = 'small' | 'medium';
+type ParcelTier = 'small' | 'medium';
 
 export type ItemPackingProfile = {
   lengthMm: number;

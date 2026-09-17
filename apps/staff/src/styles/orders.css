@@ -48,7 +48,7 @@
 .order-workspace p {
   max-width: 75ch;
 }
-.order-workspace :is(dd, code, .order-session, .order-heading p, small) {
+.order-workspace :is(dd, code, .order-heading p, small) {
   overflow-wrap: anywhere;
 }
 .order-heading {
@@ -107,30 +107,6 @@
   color: var(--foreground);
   font: inherit;
 }
-.order-lookup {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.order-lookup input {
-  flex: 1 1 12rem;
-  min-width: 0;
-  height: 44px;
-}
-.order-lookup button {
-  flex-shrink: 0;
-}
-.order-coverage {
-  display: flex;
-  align-items: start;
-  gap: 0.6rem;
-  color: var(--muted-foreground);
-  margin: 1rem 0 0;
-  font-size: 0.8rem;
-}
-.order-coverage svg {
-  margin-top: 0.2rem;
-}
 .order-load-status {
   color: var(--muted-foreground);
   font-size: 0.8rem;
@@ -187,11 +163,6 @@
 .order-row-created small {
   color: var(--muted-foreground);
   font-size: 0.75rem;
-}
-.order-session {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
 }
 .order-status,
 .order-row-notification .order-muted {

@@ -95,15 +95,8 @@ body[data-workspace='content'] {
   padding: 0;
   background: none;
 }
-.staff-shell .staff-workspace-hero__inner {
-  padding: 24px;
-  gap: 12px;
-}
 .staff-shell .staff-workspace-hero h1 {
   font-size: 28px;
-}
-.staff-shell .staff-workspace-meta {
-  display: none;
 }
 .staff-shell .cms-workspace {
   display: flex;
@@ -129,9 +122,6 @@ body[data-workspace='content'] {
   font-size: 20px;
   font-weight: 600;
 }
-.staff-shell .cms-workspace-bar {
-  padding: 8px 16px;
-}
 .staff-shell .cms-editor-toolbar p {
   margin: 0;
 }
@@ -147,9 +137,6 @@ body[data-workspace='content'] {
   }
   .staff-shell .cms-editor-body {
     padding-top: 8px;
-  }
-  .staff-shell .cms-workspace-bar {
-    padding-block: 4px;
   }
 }
 

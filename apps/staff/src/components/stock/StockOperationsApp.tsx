@@ -189,7 +189,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     try {
       const detail = await api.readStock(variantId);
 
-      if (!shouldApplyStockLoadResult(activeStockLoadRequestRef.current, requestId)) {
+      if (activeStockLoadRequestRef.current !== requestId) {
         return;
       }
 
@@ -240,12 +240,12 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
       }
       selectionUrl.current = window.location.href;
     } catch (error) {
-      if (shouldApplyStockLoadResult(activeStockLoadRequestRef.current, requestId)) {
+      if (activeStockLoadRequestRef.current === requestId) {
         setErrorMessage(readErrorMessage(error));
         setStatusMessage(intent === 'refresh' ? 'Stock refresh failed.' : 'Item is not available. Try again.');
       }
     } finally {
-      if (shouldApplyStockLoadResult(activeStockLoadRequestRef.current, requestId)) {
+      if (activeStockLoadRequestRef.current === requestId) {
         setIsLoading(false);
         setLoadingIntent(null);
       }
@@ -1099,10 +1099,6 @@ export function readStockLoadingLabel(intent: StockLoadingIntent) {
   if (intent === 'search') return 'Searching items';
   if (intent === 'variant') return 'Loading selected stock';
   return 'Loading stock workspace';
-}
-
-export function shouldApplyStockLoadResult(activeRequestId: number, requestId: number) {
-  return activeRequestId === requestId;
 }
 
 export function canSubmitStockMutation(

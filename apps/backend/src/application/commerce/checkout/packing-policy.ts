@@ -9,14 +9,14 @@ const measuredPackages: PackagePackingProfile[] = [];
 export const hostedMonetaryPolicyReference: string | null = null;
 
 const syntheticReference = { measurementReference: 'synthetic-test-2026-09-11', synthetic: true };
-export const syntheticItemProfile: ItemPackingProfile = {
+const syntheticItemProfile: ItemPackingProfile = {
   ...syntheticReference,
   lengthMm: 315,
   widthMm: 315,
   thicknessMm: 8,
   weightGrams: 220,
 };
-export const syntheticPackages: PackagePackingProfile[] = [
+const syntheticPackages: PackagePackingProfile[] = [
   {
     ...syntheticReference,
     tier: 'small',

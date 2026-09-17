@@ -4,9 +4,8 @@ import type { RequestIdVariables } from 'hono/request-id';
 import { z } from 'zod';
 
 export const productEnvironmentSchema = z.enum(['LOCAL', 'UAT', 'PRD']);
-export const workerRuntimeTargetSchema = z.enum(['local', 'uat', 'prd']);
-export const stripeModeSchema = workerRuntimeTargetSchema;
-export const emailDeliveryPolicySchema = z.enum(['direct', 'uat-sink']);
+const workerRuntimeTargetSchema = z.enum(['local', 'uat', 'prd']);
+const emailDeliveryPolicySchema = z.enum(['direct', 'uat-sink']);
 const absoluteHttpsUrlSchema = z
   .string()
   .trim()
@@ -17,7 +16,6 @@ const absoluteHttpsUrlSchema = z
 
 export type ProductEnvironment = z.infer<typeof productEnvironmentSchema>;
 export type WorkerRuntimeTarget = z.infer<typeof workerRuntimeTargetSchema>;
-export type AppEnvironment = ProductEnvironment;
 
 export type OperatorIdentity = {
   email: string;
@@ -41,7 +39,7 @@ export const productEnvironmentProfileSchema = z.object({
   emailProviderTag: workerRuntimeTargetSchema,
   nativeCheckoutEnabledByDefault: z.boolean(),
   productEnvironment: productEnvironmentSchema,
-  stripeMode: stripeModeSchema,
+  stripeMode: workerRuntimeTargetSchema,
   requiresDeployedSecretsByDefault: z.boolean(),
   workerDeploymentTarget: workerRuntimeTargetSchema,
 });

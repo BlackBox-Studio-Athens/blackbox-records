@@ -52,12 +52,6 @@ const emailPattern = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi;
 const bearerPattern = /\bBearer\s+[A-Za-z0-9._~+/=-]+/g;
 const secretPattern = /\b(?:sk_(?:test|live)|whsec)_[A-Za-z0-9_]+\b/g;
 
-const noopLogger: AppLogger = {
-  error() {},
-  info() {},
-  warn() {},
-};
-
 export function createWorkerLogger(base: Partial<StructuredLogRecord> = {}): AppLogger {
   return {
     error: (record) => console.error(cleanLogRecord({ ...base, ...record })),
@@ -82,10 +76,6 @@ export function createBindingLogger(
       : {}),
     ...extra,
   });
-}
-
-export function createNoopLogger(): AppLogger {
-  return noopLogger;
 }
 
 export function cleanLogRecord(record: StructuredLogRecord): Record<string, LogValue> {

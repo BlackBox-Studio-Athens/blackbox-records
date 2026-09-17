@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { createMoney, formatMoney, moneyToCurrencyCode, moneyToMinorAmount } from './money';
-export { STORE_CART_ADD_ITEM_EVENT, STORE_CART_OPEN_REQUESTED_EVENT } from './store-cart-events';
+export { STORE_CART_ADD_ITEM_EVENT } from './store-cart-events';
 
 export const STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v2';
 const LEGACY_STORE_CART_STORAGE_KEY = 'blackbox.storeCart.v1';

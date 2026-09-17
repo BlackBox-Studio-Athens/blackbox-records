@@ -2,11 +2,7 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
-import StockOperationsApp, {
-  canSubmitStockMutation,
-  readStockLoadingLabel,
-  shouldApplyStockLoadResult,
-} from './StockOperationsApp';
+import StockOperationsApp, { canSubmitStockMutation, readStockLoadingLabel } from './StockOperationsApp';
 
 describe('Stock operations loading feedback', () => {
   it('renders initial stock workspace loading as a visible busy state', () => {
@@ -24,11 +20,6 @@ describe('Stock operations loading feedback', () => {
     expect(readStockLoadingLabel('search')).toBe('Searching items');
     expect(readStockLoadingLabel('variant')).toBe('Loading selected stock');
     expect(readStockLoadingLabel('refresh')).toBe('Refreshing stock');
-  });
-
-  it('ignores stale variant load responses after a newer request starts', () => {
-    expect(shouldApplyStockLoadResult(2, 1)).toBe(false);
-    expect(shouldApplyStockLoadResult(2, 2)).toBe(true);
   });
 
   it('blocks stock mutations until selected Variant and loaded Stock detail match', () => {

@@ -45,7 +45,7 @@ export function jsonNoStore<TResponse extends Response>(response: TResponse): TR
   return response;
 }
 
-export function createBackendErrorBody(
+function createBackendErrorBody(
   context: Context<AppEnv>,
   input: Pick<BackendErrorResponseInput, 'code' | 'message'>,
 ): BackendErrorResponse {

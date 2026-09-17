@@ -7,7 +7,7 @@ import {
 } from '../../apps/backend/src/application/email/paid-order-templates';
 
 export const RESEND_RECEIPT_CLOCK_SKEW_LOOKBACK_MS = 5 * 60_000;
-export const RESEND_RECEIPT_POLL_INTERVAL_MS = 2_000;
+const RESEND_RECEIPT_POLL_INTERVAL_MS = 2_000;
 export const DEFAULT_RESEND_RECEIPT_TIMEOUT_MS = 120_000;
 
 export type ResendReceivedEmail = {

@@ -1,7 +1,7 @@
 import { validateSlug } from './slugs';
 import { reservedStoreRouteSegments } from './store-categories';
 
-export type StoreItemSourceKind = 'distro' | 'release';
+type StoreItemSourceKind = 'distro' | 'release';
 
 export type StoreItemProjectionCandidate = {
   physicalEditionKeys: readonly string[];

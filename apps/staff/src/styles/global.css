@@ -90,17 +90,6 @@
   translate: 0;
 }
 
-.staff-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem clamp(1rem, 4vw, 3rem);
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in oklch, var(--background) 94%, transparent);
-  backdrop-filter: blur(10px);
-}
 .staff-brand {
   flex-shrink: 0;
   display: flex;
@@ -112,36 +101,6 @@
   display: block;
   width: clamp(7rem, 20vw, 11rem);
   height: auto;
-}
-.staff-header nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-left: auto;
-}
-.staff-header nav a {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-height: 44px;
-  padding: 0.6rem 0.75rem;
-  color: var(--muted-foreground);
-  border-radius: 0.25rem;
-  transition:
-    color 120ms ease-out,
-    background-color 120ms ease-out;
-}
-.staff-header nav a:hover,
-.staff-header nav a[aria-current='page'] {
-  color: var(--foreground);
-  background: var(--accent);
-}
-.staff-header nav a[aria-current='page'] svg {
-  color: var(--ring);
-}
-.staff-header a:focus-visible {
-  outline: 2px solid var(--foreground);
-  outline-offset: 4px;
 }
 .staff-environment-badge {
   display: inline-flex;
@@ -181,15 +140,6 @@
   border-bottom: 1px solid var(--border);
   background: var(--card);
 }
-.staff-workspace-hero__inner {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1.5rem;
-  width: min(100%, 80rem);
-  margin-inline: auto;
-  padding: 2rem clamp(1rem, 4vw, 3rem);
-}
 .staff-workspace-hero h1 {
   margin: 0;
   font-size: clamp(1.75rem, 3vw, 2.5rem);
@@ -201,15 +151,6 @@
   margin: 0.5rem 0 0;
   color: var(--muted-foreground);
   font-size: 0.95rem;
-}
-.staff-workspace-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  max-width: 28rem;
-  color: var(--muted-foreground);
-  font-size: 0.8rem;
-  line-height: 1.45;
 }
 .staff-section-title {
   display: flex;
@@ -325,17 +266,5 @@ textarea,
   .staff-workspace *::after {
     animation: none !important;
     transition: none !important;
-  }
-}
-
-@media (max-width: 767px) {
-  .staff-workspace-hero__inner {
-    align-items: start;
-    flex-direction: column;
-    padding-block: 1.5rem;
-  }
-
-  .staff-workspace-meta {
-    max-width: none;
   }
 }
