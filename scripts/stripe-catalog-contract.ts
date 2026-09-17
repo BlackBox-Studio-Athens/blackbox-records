@@ -100,6 +100,10 @@ const CATALOG_RELEASE_PRD_INITIAL_STOCK: Record<string, { onlineQuantity: number
     quantity: 15,
   },
 };
+const CATALOG_PRD_DEFAULT_INITIAL_STOCK = {
+  onlineQuantity: 0,
+  quantity: 0,
+};
 export const STRIPE_PHYSICAL_GOODS_TAX_CODE = 'txcd_99999999';
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
@@ -215,7 +219,7 @@ async function readReleaseContracts(
         const coverImage = resolveCatalogCoverImagePathForRelease(sourceId, content.cover_image);
         const titleParts = ['BlackBox Records', content.title, optionLabel].filter(Boolean);
         const expectedPrice = CATALOG_RELEASE_PRICE_OVERRIDES[sourceId] ?? createExpectedSandboxPrice(optionLabel);
-        const productionInitialStock = CATALOG_RELEASE_PRD_INITIAL_STOCK[sourceId];
+        const productionInitialStock = getPrdInitialStock(sourceId, options);
 
         return {
           artistId: content.artist,
@@ -291,6 +295,7 @@ async function readDistroContracts(
           storeItemSlug: sourceId,
         },
         name: titleParts.join(' - '),
+        productionInitialStock: getPrdInitialStock(sourceId, options),
         sourceId,
         sourceKind: 'distro',
         storeItemSlug: sourceId,
@@ -421,6 +426,16 @@ function createContract(input: {
     storeItemSlug: input.storeItemSlug,
     variantId: input.variantId,
   };
+}
+
+function getPrdInitialStock(
+  sourceId: string,
+  options: LoadStripeCatalogContractsOptions,
+): { onlineQuantity: number; quantity: number } | undefined {
+  return (
+    CATALOG_RELEASE_PRD_INITIAL_STOCK[sourceId] ??
+    (resolveCatalogProductEnvironment(options) === 'PRD' ? CATALOG_PRD_DEFAULT_INITIAL_STOCK : undefined)
+  );
 }
 
 function createDesiredPrice(
@@ -665,8 +680,7 @@ export function resolveCatalogAssetTarget(options: LoadStripeCatalogContractsOpt
   basePath: string;
   siteUrl: string;
 } {
-  const productEnvironment =
-    options.productEnvironment ?? parseCatalogProductEnvironment(process.env.CATALOG_PRODUCT_ENVIRONMENT);
+  const productEnvironment = resolveCatalogProductEnvironment(options);
 
   if (productEnvironment === 'PRD') {
     return {
@@ -679,6 +693,10 @@ export function resolveCatalogAssetTarget(options: LoadStripeCatalogContractsOpt
     basePath: process.env.UAT_CATALOG_ASSET_BASE_PATH ?? process.env.ASTRO_BASE_PATH ?? defaultBasePath,
     siteUrl: process.env.UAT_CATALOG_ASSET_SITE_URL ?? process.env.ASTRO_SITE_URL ?? defaultSiteUrl,
   };
+}
+
+function resolveCatalogProductEnvironment(options: LoadStripeCatalogContractsOptions): CatalogProductEnvironment {
+  return options.productEnvironment ?? parseCatalogProductEnvironment(process.env.CATALOG_PRODUCT_ENVIRONMENT);
 }
 
 function parseCatalogProductEnvironment(value: string | undefined): CatalogProductEnvironment {

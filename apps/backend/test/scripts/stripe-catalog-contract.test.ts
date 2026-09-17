@@ -202,7 +202,11 @@ describe('stripe catalog contract projection', () => {
           amountMinor: 2800,
           currencyCode: 'EUR',
         },
-        targetEnvironments: ['uat'],
+        stockInitialization: {
+          initialOnlineQuantity: 0,
+          initialQuantity: 0,
+        },
+        targetEnvironments: ['uat', 'prd'],
       },
       expectedSandboxPrice: {
         amountMinor: 2800,
@@ -289,7 +293,7 @@ describe('stripe catalog contract projection', () => {
     );
   });
 
-  it('generates Desired Catalog State with only approved production targets', async () => {
+  it('generates Desired Catalog State for every current production Store Item', async () => {
     const contracts = await loadStripeCatalogStoreItemContracts({
       productEnvironment: 'PRD',
     });
@@ -311,10 +315,15 @@ describe('stripe catalog contract projection', () => {
       targetEnvironments: ['uat', 'prd'],
     });
     expect(
-      contracts
-        .filter((contract) => contract.desiredCatalogEntry.targetEnvironments.includes('prd'))
-        .map((contract) => contract.storeItemSlug),
-    ).toEqual(['disintegration-black-vinyl-lp']);
+      contracts.filter((contract) => contract.desiredCatalogEntry.targetEnvironments.includes('prd')),
+    ).toHaveLength(104);
+    expect(contracts.find((contract) => contract.storeItemSlug === 'barren-point')?.desiredCatalogEntry).toMatchObject({
+      stockInitialization: {
+        initialOnlineQuantity: 0,
+        initialQuantity: 0,
+      },
+      targetEnvironments: ['uat', 'prd'],
+    });
   });
 
   it('uses format-based sandbox test prices without making the browser price authority', () => {
@@ -466,8 +475,12 @@ describe('stripe catalog contract projection', () => {
     expect(sql).toContain(
       "'disintegration-black-vinyl-lp', 'release', 'disintegration', 'variant_disintegration-black-vinyl-lp_standard'",
     );
+    expect(sql).toContain("'anarchotribal-vinyl', 'release', 'anarchotribal', 'variant_anarchotribal-vinyl_standard'");
+    expect(sql).toContain("'barren-point', 'distro', 'barren-point', 'variant_barren-point_standard'");
     expect(sql).toContain("'variant_disintegration-black-vinyl-lp_standard', 'available', TRUE");
     expect(sql).toContain("'variant_disintegration-black-vinyl-lp_standard', 15, 12");
+    expect(sql).toContain("'variant_anarchotribal-vinyl_standard', 0, 0");
+    expect(sql).toContain("'variant_barren-point_standard', 0, 0");
     expect(sql).not.toContain('99, 99');
     expect(sql).not.toContain('DO UPDATE SET\n    "quantity" = excluded."quantity"');
   });

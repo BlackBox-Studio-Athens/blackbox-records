@@ -37,7 +37,11 @@ const reviewGuidance: Record<string, string> = {
 
 export function formatOrderTime(value: string | null) {
   return value
-    ? new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+    ? new Intl.DateTimeFormat('en-GB', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: 'Europe/Athens',
+      }).format(new Date(value))
     : 'Unknown';
 }
 export function money(value: number | null) {

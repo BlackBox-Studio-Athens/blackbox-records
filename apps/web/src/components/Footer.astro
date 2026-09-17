@@ -8,13 +8,14 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { PrivacyLink } from '@/components/PurchaseInformation';
 import { getPurchaseInformation } from '@/lib/purchase-information';
+import { formatYear } from '@/utils/content';
 
 const [footerNavigationItems, socialItems, labelSettings] = await Promise.all([
   getFooterNavigationItems(),
   getSocialItems(),
   getLabelSettings(),
 ]);
-const currentYear = new Date().getUTCFullYear();
+const currentYear = Number(formatYear(new Date()));
 const establishedYear = Number(labelSettings.established_year) || currentYear;
 const copyrightYears =
   establishedYear > 0 && establishedYear < currentYear ? `${establishedYear}-${currentYear}` : `${currentYear}`;

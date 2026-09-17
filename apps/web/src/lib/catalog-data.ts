@@ -45,7 +45,7 @@ export type ArtistRosterReleaseContext = {
 const nonPhysicalReleaseFormats = new Set(['digital']);
 
 function formatMonthYear(value: Date) {
-  return value.toLocaleDateString('en-US', { month: 'short', year: 'numeric', timeZone: 'UTC' });
+  return value.toLocaleDateString('en-US', { month: 'short', timeZone: 'Europe/Athens', year: 'numeric' });
 }
 
 function sortArtistProfilesByName(left: ArtistProfileEntry, right: ArtistProfileEntry) {

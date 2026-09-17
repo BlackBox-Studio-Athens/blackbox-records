@@ -739,6 +739,7 @@ function formatDate(value?: string | null): string {
   return new Intl.DateTimeFormat('en', {
     dateStyle: 'medium',
     timeStyle: 'short',
+    timeZone: 'Europe/Athens',
   }).format(new Date(value));
 }
 

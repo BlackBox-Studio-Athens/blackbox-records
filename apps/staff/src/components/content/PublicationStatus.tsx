@@ -217,7 +217,11 @@ export default function PublicationStatus({
                 )}
               </div>
               <time dateTime={new Date(item.requestedAt).toISOString()}>
-                {new Date(item.requestedAt).toLocaleString()}
+                {new Intl.DateTimeFormat('en-GB', {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                  timeZone: 'Europe/Athens',
+                }).format(new Date(item.requestedAt))}
               </time>
             </li>
           );
