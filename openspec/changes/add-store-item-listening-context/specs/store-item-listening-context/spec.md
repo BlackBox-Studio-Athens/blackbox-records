@@ -53,8 +53,20 @@ The system SHALL link a release-backed Store Item to its actual source release a
 #### Scenario: A required source release cannot resolve
 
 - **WHEN** a release-backed Store Item references a missing release
-- **THEN** content validation or the build reports the invalid relationship
+- **THEN** content validation or rendering reports the invalid relationship
 - **AND** it does not silently substitute another release.
+
+#### Scenario: A source has unpublished changes
+
+- **WHEN** a public Store Item resolves release or artist context
+- **THEN** it reads the accepted snapshot through the existing content reader, without exposing editable CMS drafts
+- **AND** retained static rendering uses the same source relationships.
+
+#### Scenario: An editor previews listening context
+
+- **WHEN** the shared item template is shown in an authenticated CMS preview
+- **THEN** the existing preview sanitization keeps third-party embeds inert
+- **AND** previewing does not publish source changes or start a player session.
 
 ### Requirement: Listening preserves purchase and player boundaries
 

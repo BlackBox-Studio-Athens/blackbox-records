@@ -10,6 +10,7 @@ Store Item pages expose purchase actions but no direct listening action or route
 - Keep the selected sellable option explicit without presenting every release format as a selectable or available Store Item option.
 - Omit listening/editorial actions when supported data or a verified relation is absent. Current Distro content has no listening fields; do not guess relationships or add catalog-wide enrichment in this slice.
 - Preserve single-session, close/minimize/stop, keyboard/focus, and third-party iframe navigation limits.
+- Resolve editorial context through the existing content reader in accepted-snapshot runtime and retained static rendering; keep unpublished edits private and CMS previews free of active embeds.
 
 ## Capabilities
 

@@ -19,6 +19,8 @@
 
 ## 4. Acceptance and Handoff
 
+Reconciled 2026-09-17: the corrections are implemented; only designated-account acceptance and closure remain. Reuse the existing Orders workspace and manual runbook. Run remaining provider proof on the current combined CMS/commerce Worker through `CommerceRuntime`, preserving D1 authority, with hosted Pages UAT at `/`. Existing evidence retains its original account/commit; do not recreate the completed migrations or treat old-account proof as new-account acceptance. Any code correction uses `pnpm validate` and the focused commerce checks. Broader request hardening belongs to `harden-commerce-request-idempotency`, not a second reconciliation implementation here.
+
 - [x] 4.1 Run focused signed-webhook and real local D1 rollback/replay tests plus `pnpm test:unit`, `pnpm check`, `pnpm build`, and `pnpm audit:commerce-boundaries`; verify any generated contracts and strict-validate this change.
 - [x] 4.2 Before accepting hosted fulfillment, inspect potentially affected existing orders through protected/redacted reads and record whether manual address correction/customer contact is required; do not bulk rewrite immutable paid history.
 - [ ] 4.3 After new-account test-mode access and approved recipients exist, prove differing shipping/billing, a delayed webhook return, failed delivery/resend, stock-shortage review, and ordinary paid/outbox delivery on the same corrected commit; record evidence before accepting the reservation/outbox parent gates.

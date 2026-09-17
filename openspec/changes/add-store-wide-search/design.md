@@ -28,6 +28,6 @@ See [proposal.md](proposal.md). `StoreDistroSearch.tsx` already owns search cont
 
 ## Migration Plan
 
-No data migration. Implement shared scope support and markup together, run Distro regressions, All search checks and existing performance profiles, then use the normal static deployment path when authorized. Rollback both markup and shared-module wiring together. Honor the Impeccable preflight before changing visible controls and preserve the current BlackBox search styling.
+Reconciled 2026-09-17: all implementation tasks are complete. Search still filters the current rendered cards locally; the accepted-snapshot renderer does not require a remote search index or a new implementation. Future code changes use `pnpm validate`, relevant performance checks and the paired renderer/CMS/Pages release. Content publication updates the accepted catalog separately. Rollback markup and shared-module wiring together through a compatible code candidate while preserving the accepted content pointer. Honor the Impeccable preflight before further visible changes.
 
 Coordinate policy-link content with `complete-shopper-purchase-information`; this change owns All discovery layout only. The accepted direction does not waive the implementation-time Impeccable shape/image gates.

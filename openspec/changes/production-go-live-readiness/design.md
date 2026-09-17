@@ -1,6 +1,6 @@
 ## Context
 
-The repository now has a verified production Holding Page, aligned Local/UAT/PRD environments, accepted Sveltia editing, protected operator APIs, and separate controls for catalog preparation, launch approval, and runtime checkout. Remaining launch work spans new-account Stripe proof, PRD-only data preparation, exact-tree acceptance, and an atomic public-origin cutover.
+The repository now has a verified Holding Page, hosted Pages UAT/PRD, EmDash Content/Items/Stock/Orders in the combined CMS Worker, accepted-snapshot public rendering, and independent code/catalog/launch controls. Remaining launch work is current-account provider and operational proof, approved shopper wording, exact-code-and-content acceptance, and public-origin cutover. Sveltia and compiled repository catalog paths are retired.
 
 The public apex must not imply readiness before those gates close. UAT data and Stripe test-mode objects are evidence only, not production seed material.
 
@@ -33,19 +33,19 @@ Freeze source/configuration changes, including final-origin settings, before sel
 
 ### UAT and PRD data stay isolated
 
-The active `align-cloudflare-uat-and-release-promotion` change owns the dedicated Cloudflare Pages UAT cutover and explicit Software Release promotion. Use its accepted UAT source SHA/run and verified PRD-targeted artifacts for technical PRD deployment once that change is accepted. Main pushes do not authorize PRD publication. Code confirmation is separate from live-catalog confirmation, launch approval, runtime checkout enablement, and apex activation. Existing prerequisite evidence retains its original host and revision; a changed target or configuration requires fresh affected checks.
+The implemented `align-cloudflare-uat-and-release-promotion`, `replace-sveltia-with-emdash-operations` and `reliable-content-publication` changes supply the release/publication paths. Follow `docs/catalog-promotion.md`: select the reviewed full `artifact_commit_sha`, successful `candidate_run_id` and `confirm_code_promotion=true`; consume retained PRD renderer, Pages gateway/assets and combined CMS Worker artifacts without rebuilding. Refresh an expired or content-mismatched candidate through UAT. Main pushes authorize no PRD promotion. Existing evidence retains its original host/revision; changed code, content or configuration requires affected checks.
 
-PRD is prepared from repository-owned content and generated catalog artifacts. UAT D1 rows, Stripe test-mode Products/Prices, synthetic stock, and UAT smoke evidence are never copied or treated as PRD data.
+PRD editorial content comes from its own accepted immutable CMS snapshot; runtime catalog/stock/order data remains in PRD D1 with bound live provider identities. Items owns explicit catalog setup/publication and price commands. Normal releases neither generate compiled catalogs nor seed inventory. Repository recovery inputs are exceptional, reviewed migration tools. Never copy UAT drafts, snapshots, D1 rows, test Products/Prices, synthetic stock or acceptance status into PRD.
 
 ### Canonical origin changes atomically
 
-Prepare final `ASTRO_SITE_URL`, Sveltia `site_url`, shopper-facing email links, sitemap/metadata, and assertions before approval. Keep catalog and email image URLs on the reachable PRD technical asset host through cutover; changing the site's canonical identity does not require migrating its asset host. Pin the existing `PRD_CATALOG_ASSET_SITE_URL` override so an apex `ASTRO_SITE_URL` does not silently retarget generated Product images while the apex still serves Holding Page. Verify the artifact through the technical Pages origin and explicitly allowlist technical and apex checkout returns for smoke and public use. After successful smoke, switch the apex to that verified artifact and check public routing, without code or generated-asset changes. The existing production Worker URL remains the browser API target.
+Prepare final `ASTRO_SITE_URL`, renderer/CMS public-origin configuration, shopper email links, sitemap/metadata and assertions before approval. Keep accepted media and catalog/email image URLs reachable through the PRD technical origin while the apex serves Holding Page; inspect current snapshot/provider URLs rather than restoring retired catalog-generation overrides. Verify the paired release and accepted PRD snapshot through technical Pages and explicitly allowlist technical/apex checkout returns. After successful smoke, switch the apex to that verified gateway/runtime without changing code or content. The existing production Worker URL remains the browser API target.
 
 ### Stripe work is last
 
 After the new Stripe account exists, test mode closes in this order: listing-price stabilization, checkout stock reservations, then paid-order delivery outbox. Live Products/Prices, Payment Method Configuration, webhook, secrets, D1 preparation, and deployment follow while shopper checkout remains closed.
 
-Implement all three corrections locally before provider acceptance. Use one corrected UAT code commit and approved recipients to prove listing prices, then reservation/checkout behavior, then delivery recovery. Reference the same scenario evidence from overlapping child tasks; do not repeat purchases or full checks solely for another checklist. Sync/archive provider-dependent checkout-creation work, reservations, outbox, and paid-reconciliation after their respective evidence passes. Archival paperwork does not block shared UAT execution, and all changes must close before launch.
+All three corrections are implemented. Listing-price stabilization, checkout creation, reservations, outbox and atomic-stock corrections are already archived; preserve their dated evidence and its account limitations. Use one current UAT candidate and approved recipients for only missing or affected account/provider checks: listing prices, reservation/checkout, then paid reconciliation and delivery recovery. Do not reopen archives or repeat purchases for bookkeeping. Paid-reconciliation remains open for its declared account acceptance and closure.
 
 The staff portal is PRD-only; no UAT staff hostname is provisioned. On 2026-09-09 the user approved accepting and archiving `make-operator-stock-writes-atomic` from real local D1 race/rollback tests, local native browser flows, and repository gates. Its protected PRD adjustment/recount/conflict, retained-input, reassessment, audit, and Access allow/deny proof remains launch task 4.9 after PRD migration and matching Worker/staff deployment with checkout closed. Use approved real-stock operations, preserve audit history, and do not seed synthetic production sales or stock. Local archival does not satisfy this launch gate.
 
@@ -63,7 +63,7 @@ The 2026-09-09 review was rechecked against the current main worktree at HEAD `4
 | 6. Premature final order confirmation         | `fix-paid-order-reconciliation`     | Null, pending, and review order statuses all show recorded-order success.                                                                                                                             |
 | 7. No committed PRD retry schedule            | This change, tasks 4.5 and 4.8      | `apps/backend/wrangler.jsonc` has UAT `*/15 * * * *` at lines 133-135; PRD lines 156-193 have no triggers. Remote schedule was not inspected. Already planned configuration, now explicit acceptance. |
 
-Do not create another delivery scheduler or outbox change. Add the PRD 15-minute Cron to the existing environment configuration and verify the deployed handler drains due rows through the existing five-row, leased, bounded delivery processor. Prove controlled transient recovery with approved test recipients in UAT; verify PRD scheduled invocation/bindings while checkout remains closed. Do not manufacture a production paid order or send an unapproved email to test Cron. After the separately authorized live smoke, inspect its actual delivery state.
+The table above is historical failure evidence, not current implementation status. As of 2026-09-17, source config has PRD `*/5 * * * *` and UAT `*/15 * * * *`. Verify the existing deployed schedule and `CommerceRuntime` forwarding to the bounded leased processor; do not add another Cron or revert cadence to match the old proposal. Follow `docs/cloudflare-free-tier.md`, including measured operation budgets and source/generated CMS no-KV guards. Reuse UAT controlled transient-recovery evidence where applicable. Do not manufacture a PRD paid order or send an unapproved email; inspect real delivery only after live-smoke approval.
 
 ### Manual selling operations are a launch gate
 
@@ -85,6 +85,12 @@ Live catalog mutation requires the one-run `confirm_live_catalog_changes` workfl
 
 `GR` is the complete supported delivery-country set. No non-Greece provider, quote, or fallback path is introduced.
 
+### Code and content acceptance are recorded separately
+
+Record the exact application commit/candidate run and PRD accepted snapshot identity/digest together. Publishing content does not rebuild code; source SHA alone cannot prove approved wording or artwork. Recheck affected surfaces after either identity changes. Reuse completed EmDash/runtime-publication evidence from `docs/cms-cutover.md` and `docs/content-publication.md`; close actual outstanding editor-safety/publication-status acceptance before launch. Code rollback promotes a compatible candidate preserving the content pointer; content rollback selects a verified accepted snapshot. An old static artifact is not a content rollback.
+
+Orders and Store search are complete. Remaining paid-account/VAT/purchase-wording acceptance can proceed in parallel with listening and unresolved Distro photography; shared template changes integrate with the implemented purchase hierarchy. Listening and comprehensive photo enrichment are not newly invented payment-launch gates. New request-idempotency work remains in its own ticket; assess its findings for launch relevance without duplicating implementation here.
+
 ### Evidence uses one canonical location
 
 Raw performance output is stored under ignored `.codex-artifacts/runtime-performance/<commit>/`. Concise accepted results are appended to this change's `README.md`. Browser Use is the rendering authority; DevTools is used only for trace categories or throttling Browser Use cannot provide.
@@ -105,14 +111,14 @@ No other reviewer or automated result can create launch approval. After all prep
 
 1. Record completed prerequisite archives and accepted evidence.
 2. Remeasure Store performance on one exact production build; record no action or close one bounded child.
-3. Implement and locally validate the three correction changes; account access is not a prerequisite for this work.
+3. Reuse implemented correction/archive evidence and fix only concrete regressions found on the launch candidate; account access is not a prerequisite for local corrections.
 4. Obtain the new Stripe account, approved secret-store credentials, and approved UAT recipients; close shared provider evidence in the declared order.
 5. Prepare live Stripe, PRD D1, Worker bindings, Access, Cron, email, catalog, approved shopper policies, and the manual operating handoff while checkout remains closed.
-6. Run deterministic generation, full repository gates, strict OpenSpec validation, and Browser Use against the exact tree.
+6. Run deterministic Prisma/API generation where applicable, `pnpm validate`, `pnpm validate:editor`, relevant Local publication checks, strict OpenSpec validation and Browser Use against the exact code and accepted content snapshot. No routine compiled catalog generation or stock seeding.
 7. Set the runtime feature flag true while launch approval remains absent and prove checkout stays closed.
 8. After explicit user approval, set `PRD_LAUNCH_APPROVED=true`, run one bounded live checkout smoke, and cut over the public apex only on success.
 9. Keep the Holding Page rollback target for at least 24 hours, then retire holding-only dependencies and archive this change after accepted stability.
 
 ## Open Questions
 
-Account identifiers, credentials, approved recipients, shipping-charge treatment, tax/receipt/invoice ownership, and policy wording are external execution inputs. The gate is fixed: none can be assumed complete and any required monetary implementation must finish before launch approval. These inputs do not block preparing the verified code corrections.
+Account configuration evidence, approved recipients, measured packing, fiscal-provider coverage, named operating owners and approved policy wording remain external execution inputs. The existing taxable-inclusive and €2.50/€3.50 shipping decisions are settled; verify their implementation and provider coverage rather than reopening them. No missing acceptance is assumed complete. Independent listening and media work need not wait for these inputs.

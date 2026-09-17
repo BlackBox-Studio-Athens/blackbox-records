@@ -14,7 +14,7 @@
 
 ## 3. Validate publication readiness
 
-- [ ] 3.1 Replace synthetic fixtures with the approved public wording only after task 1.2 is complete; compare every published section and summary to its approved source and verify no placeholder or private evidence enters the static artifact.
+- [ ] 3.1 Resolve the approval blockers recorded by task 1.2, edit the existing EmDash `purchase_information` singleton, and explicitly publish its reviewed revision through Website Content. Compare accepted-snapshot terms/privacy, metadata/sitemap, footer, forms and hydrated item/cart/checkout summaries with approved wording; verify pending drafts/placeholders remain private and record snapshot identity plus redacted public evidence for launch task 2.7. Do not overwrite live CMS content by editing bootstrap JSON. Any required code fix uses `pnpm validate` and relevant editor/publication checks.
 - [x] 3.2 Run `pnpm test:unit`, `pnpm check`, and `pnpm build` on the final tree; use native Browser Use for desktop/mobile, keyboard, link anchors, consent adjacency, and item/cart/checkout information coverage, recording redacted evidence.
 - [x] 3.3 Supply this child's coverage and acceptance evidence to launch task 2.7 and VAT task 4.4, without repeating implementation or publication checks for each checklist; reference accepted VAT inputs without requiring VAT archival first. Verify launch approval and pending owner/provider decisions remain with the existing parent and VAT child.
 - [x] 3.4 Run `pnpm openspec -- validate complete-shopper-purchase-information --type change --strict` and `git diff --check`; leave publication/hosted acceptance pending until approved text and authorized deployment evidence exist.

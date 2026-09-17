@@ -1,5 +1,7 @@
 ## 1. Confirm integration and presentation
 
+Reconciled 2026-09-17: implementation is complete; do not rebuild this workspace. Staff now ships inside the combined CMS Worker beside Content, Items and Stock. Preserve the recorded checks below as historical evidence; current hosted launch acceptance belongs to `production-go-live-readiness` task 4.9. Future code changes use `pnpm validate` plus `pnpm validate:editor`.
+
 - [x] 1.1 Run `pnpm openspec:guard`, inspect the current generated internal order contract and staff Access wiring, and record the accepted API fields and main-worktree status in change evidence.
 - [x] 1.2 Complete the applicable Impeccable context and shape review for the staff list/detail flow; verify a reviewed layout covers recent-subset labeling, private detail, access failure, and narrow-screen use before UI mutation.
 

@@ -2,6 +2,8 @@
 
 Acceptance evidence: [validation.md](validation.md).
 
+Reconciled 2026-09-17: all 12 tasks remain complete. The current accepted-snapshot renderer supplies the same searchable card contract. Preserve historical measurements below; recheck affected browser/performance behavior on the launch candidate under parent tasks 2.3 and 5.5 rather than reopening implementation. Listing-cache exploration remains separately owned by `assess-cloudflare-listing-price-caching`.
+
 - [x] 1.1 Run `pnpm openspec:guard` and trace current Distro search, flat All coverflow initialization, lazy portal wiring and snapshot cleanup; record the single-controller ownership change and verify the existing module entrypoint/dependencies suffice.
 - [x] 1.2 Complete the applicable Impeccable review for the accepted compact All discovery direction and Search Store using existing styling; review first-viewport artwork, shortened introduction, compact format handoff, and a single mode-appropriate count while preserving category navigation and policy links.
 

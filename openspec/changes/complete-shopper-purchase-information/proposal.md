@@ -23,4 +23,4 @@ None. `greek-vat-and-shipping-charges` continues to own the pending monetary and
 
 ## Impact
 
-Public static content and validation, `/terms/`, new `/privacy/`, shared footer, Store Item/cart/checkout presentation and route metadata/sitemap; launch task 2.7 references this child. No checkout authorization, tax engine, fiscal integration, account configuration, or country-scope changes. The owner supplies factual business commitments and approved wording; `production-go-live-readiness` owns publication/deployment acceptance and launch approval.
+The implemented public pages, purchase hierarchy and shared links now consume accepted CMS content. Remaining work is approved wording in the existing `purchase_information` singleton and verified snapshot publication, including hydrated summaries and metadata/sitemap. Launch task 2.7 references this child. No checkout authorization, tax engine, fiscal integration, account configuration, or country-scope changes. The owner supplies factual business commitments and approved wording; `production-go-live-readiness` owns launch acceptance.

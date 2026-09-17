@@ -1,5 +1,7 @@
 ## 1. Add Optional Distro Galleries
 
+Reconciled 2026-09-17: checked tasks below retain historical implementation evidence, including retired Sveltia/artifact tooling. Do not rerun those retired paths. Remaining work uses EmDash media/drafts, Items publication and accepted public snapshots; unresolved photography and edition/rights blockers remain open.
+
 - [x] 1.1 Add failing schema and Sveltia tests for optional ordered `gallery` entries containing one local image and required alt text; verify existing Distro entries remain valid without the field.
 - [x] 1.2 Add the optional `gallery` schema and matching Sveltia list field without changing required primary `image`/`image_alt`, inventory, commerce, or provider fields; verify focused schema/CMS tests pass.
 - [x] 1.3 Add failing direct detail-route tests proving a Distro item's `sourceId` loads gallery data from its original content entry in canonical `/store/[slug]/` rendering, while shared `StorePageEntry`, `StoreItem`, card, cart, checkout-return, provider, and release-derived projections remain unchanged.
@@ -12,7 +14,7 @@
 
 ## 3. Research CD Media and Copy
 
-- [ ] 3.1 Using the Chrome GPT extension first and Computer Use only as fallback, research every current CD alphabetically in small ledger-driven batches; verify each completed row has official Bandcamp and/or official band/label Facebook evidence, reviewed copy, a verified physical-CD image, and recorded reuse rights for each accepted asset.
+- [ ] 3.1 Reconcile the existing ledger to current CMS Distro IDs, then research unresolved/new CDs in small batches using native Codex browser inspection of official Bandcamp, artist/label websites, Instagram or YouTube; Facebook is optional when available and permitted. Preserve verified prior work and record matching-edition photos, reviewed copy and reuse rights.
 - [ ] 3.2 Add only useful matching-edition secondary views with required alt text when distinct official views exist; verify duplicate crops, unrelated editions, marketplace images, cover-only substitutes, and generated mockups do not satisfy completion.
 - [ ] 3.3 Keep any CD without a verified physical-product photo explicitly unresolved and request a user-supplied verified asset; do not claim change completion while such a row remains.
 
@@ -22,10 +24,10 @@
 
 ## 5. Verify Content and Projection Boundaries
 
-- [ ] 5.1 Run the final dynamic completeness check; verify one ledger row per current Distro content entry, complete copy review, real physical-product photography for every current CD, per-asset source/rights evidence, manifest reconciliation, no duplicate row, and no unresolved blocker before completion is claimed.
+- [ ] 5.1 Adapt and run the existing change-local completeness check against current CMS Distro identities/media; verify one ledger row per current item, preserved legacy identity mapping where applicable, complete copy review, actual CD photography, per-asset source/rights evidence and no duplicate/unresolved row. Do not require a new CMS item to exist in the retired repository inventory manifest.
 - [x] 5.2 Run the artwork-fetcher unit suite only if its existing normalization or evidence helpers changed; otherwise verify no browser automation or new network source was added under `tools/artwork-fetcher`.
-- [ ] 5.3 Regenerate and check catalog artifacts with the existing repo commands, then run read-only `pnpm stripe:catalog:verify --env uat` when UAT access is configured; verify primary image/summary drift is explicit, gallery images are absent from provider projection, and no provider mutation is applied.
-- [ ] 5.4 Run `pnpm assets:check`, `pnpm test:unit`, `pnpm check`, and `pnpm build`; verify asset policy, content schemas, generated artifacts, tests, and production build pass on the final tree.
+- [ ] 5.3 Verify the current Items readiness/publication contract and bounded read-only `pnpm stripe:catalog:verify --env uat --store-item <slug>` for affected items when authorized; report primary-image/summary effects, confirm gallery exclusion from provider presentation, and apply no unapproved provider mutation or repository recovery seed.
+- [ ] 5.4 Save accepted media/copy through EmDash and publish selected revisions through Items; verify schema/media policy, accepted-snapshot identity, draft privacy and public output with relevant Local checks from the publication/workspace docs. Run `pnpm assets:check` for repository assets and `pnpm validate` plus `pnpm validate:editor` if code changes; content publication alone requires no code deployment.
 - [x] 5.5 Use Browser Use at desktop and 390 pixels on a representative single-image Distro detail, each approved gallery cardinality available in the final content, and Store cards; verify image quality, order, alt/accessibility structure, lazy loading, no overflow/layout shift, and unchanged primary card/cart presentation without adding duplicate or low-value media to satisfy testing.
 
 ## 6. Normalize Verified CD Photography

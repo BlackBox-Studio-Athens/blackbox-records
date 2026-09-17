@@ -4,9 +4,9 @@ Core production foundations are implemented, but final launch still needs one co
 
 ## What Changes
 
-- Record completed performance, environment, Sveltia, holding-page, operator-access, and production-control prerequisites by archive and accepted commit while retaining Decap evidence only as migration history.
+- Record completed performance, environment, EmDash, accepted-snapshot publication, staff/search, holding-page and commerce prerequisites by their actual evidence; retain Decap/Sveltia only as migration history.
 - Keep the public apex on the verified Holding Page while non-Stripe planning and post-commerce performance checks finish.
-- Make one exact commit SHA own the build, Worker, catalog, tests, evidence, launch approval, and cutover.
+- Pin the exact code candidate and its paired renderer/CMS/Pages artifacts alongside the independently accepted PRD content snapshot and runtime catalog evidence for launch approval and cutover.
 - Require new-account Stripe test-mode closure before live-mode preparation; never promote UAT D1 rows, test objects, synthetic stock, or UAT evidence into PRD.
 - Close the verified checkout-creation, paid-reconciliation, and operator-stock correction changes before commerce sign-off, with local regressions and separate new-account acceptance.
 - Verify the committed and deployed PRD delivery schedule, rehearse manual fulfillment/refund operations, and publish approved shipping/returns/privacy information with explicit charge and receipt/invoice decisions.

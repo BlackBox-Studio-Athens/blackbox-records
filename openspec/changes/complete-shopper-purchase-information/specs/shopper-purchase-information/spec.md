@@ -21,7 +21,7 @@ The system MUST publish only approved public seller/support details, dispatch ex
 - **THEN** publication acceptance remains incomplete and the missing input is recorded
 - **AND** the site does not publish placeholders, invented deadlines, or unsupported policy assurances as final information.
 
-### Requirement: Full information is reachable through stable static routes
+### Requirement: Full information is reachable through stable document routes
 
 The system SHALL retain `/terms/` for purchase/delivery information and SHALL provide `/privacy/`, with accessible descriptive links and correct deployment-aware metadata.
 
@@ -37,11 +37,23 @@ The system SHALL retain `/terms/` for purchase/delivery information and SHALL pr
 - **THEN** approved text describes the site's actual relevant data uses and contact path
 - **AND** existing explicit newsletter consent remains distinct from purchase or service inquiry.
 
-#### Scenario: Static pages are opened directly
+#### Scenario: Document pages are opened directly
 
-- **WHEN** either route is loaded without JavaScript or under the UAT base path or PRD root
+- **WHEN** either route is loaded without JavaScript under Local `/blackbox-records/` or hosted UAT/PRD `/`
 - **THEN** approved document text and navigation links remain usable
 - **AND** title, canonical metadata, footer links, and sitemap entries resolve to the correct environment paths.
+
+#### Scenario: Approved wording is saved but not published
+
+- **WHEN** an editor saves the purchase-information singleton without activating its selected revision
+- **THEN** public pages and hydrated summaries retain the accepted snapshot's approved information
+- **AND** draft wording, placeholders and private review evidence remain unavailable publicly.
+
+#### Scenario: Approved wording is published
+
+- **WHEN** the selected reviewed revision becomes the accepted public snapshot
+- **THEN** full documents, summaries, privacy visibility and metadata reflect that revision without a code deployment
+- **AND** publication evidence records its snapshot identity separately from the application commit.
 
 ### Requirement: Decision points expose concise relevant answers
 

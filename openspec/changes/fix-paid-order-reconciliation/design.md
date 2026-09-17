@@ -51,6 +51,8 @@ For payment processing or paid-but-unconfirmed results, refresh the existing rea
 
 ## Migration Plan
 
+Current state, 2026-09-17: steps 1–2 are implemented and historical-order inspection is recorded. Remaining work is shared designated-account acceptance and closure. The combined CMS Worker now delegates commerce requests and scheduled work through `CommerceRuntime`; D1 remains authoritative. Orders supplies the protected read-only inspection surface. Preserve existing migrations/history and apply only genuinely missing compatible migrations through the current release flow.
+
 1. Reuse existing recipient/address columns, add nullable `needsReviewReason`, regenerate Prisma and affected internal contracts, and implement guarded review transitions over existing order/outbox seams. Never rewrite commerce history.
 2. Test signed webhook handling, actual D1 rollback/replay, protected review reads, fulfillment projections, and return state/cart lifecycle locally.
 3. On one new-account UAT tree, prove differing billing/shipping, delayed webhook return, retry/resend, shortage review, and ordinary paid delivery with approved recipients. These corrections must be implemented before accepting the reservation/outbox parent proofs; archive this change after that evidence.

@@ -2,7 +2,7 @@
 
 ### Requirement: Distro artwork uses approved source evidence
 
-The system SHALL use matched repository artwork, verified artwork-fetcher output, or manually verified official Bandcamp or artist/label Facebook product photography for current Distro items. Every accepted image SHALL remain a repo-owned Content Image with per-asset source and compatible reuse-rights evidence.
+The system SHALL use matched existing artwork, verified artwork-fetcher output, or manually verified official artist/label product photography for current Distro items. Every accepted image SHALL remain an owned Content Image with per-asset source and compatible reuse-rights evidence. Current editorial changes SHALL use CMS media and accepted snapshot publication; repository assets remain valid retained inputs, not routine live editing authority.
 
 #### Scenario: Existing matched artwork is available
 
@@ -16,7 +16,7 @@ The system SHALL use matched repository artwork, verified artwork-fetcher output
 
 #### Scenario: Official physical-product photo is manually researched
 
-- **WHEN** an official Bandcamp page or official artist/label Facebook publication exposes a photo of the matched physical edition
+- **WHEN** an official Bandcamp page, artist/label website, Instagram, YouTube or permitted Facebook publication exposes a photo of the matched physical edition
 - **THEN** a human review verifies artist, title, format, edition, and visible packaging before the photo is accepted
 - **AND** reviewable research evidence maps the accepted local filename to that source URL and its reuse-rights status
 - **AND** no browser automation or authentication bypass is added to `tools/artwork-fetcher`.
@@ -30,7 +30,7 @@ The system SHALL use matched repository artwork, verified artwork-fetcher output
 #### Scenario: Primary and secondary image roles are assigned
 
 - **WHEN** a Distro item has more than one accepted image
-- **THEN** exactly one repo-owned image remains primary for cards, cart, metadata, and provider projection
+- **THEN** exactly one owned image remains primary for cards, cart, metadata, and provider projection
 - **AND** additional images are detail-only Content Images unless a later field-ownership change explicitly promotes them.
 
 #### Scenario: Artwork is known missing

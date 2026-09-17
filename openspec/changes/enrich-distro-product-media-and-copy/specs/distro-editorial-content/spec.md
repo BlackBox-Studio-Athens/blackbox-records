@@ -6,7 +6,7 @@ Defines complete, source-backed editorial copy and physical-product media for Di
 
 ### Requirement: Distro summaries use official release evidence
 
-Every current canonical Distro item SHALL have concise original summary copy reviewed against at least one official Bandcamp release or product page or official band/label Facebook publication for that item.
+Every current canonical Distro item SHALL have concise original summary copy reviewed against an official Bandcamp page or artist/label website, Instagram, YouTube or permitted Facebook publication identifying that item.
 
 #### Scenario: Existing summary is supported
 
@@ -32,8 +32,8 @@ Every current Distro item classified as a CD MUST use at least one image of the 
 
 #### Scenario: Official CD photography is found
 
-- **WHEN** an official Bandcamp page or official band/label Facebook publication shows the stocked CD edition
-- **THEN** the repository stores a local Content Image showing the actual packaging
+- **WHEN** a verified official artist/label source shows the stocked CD edition
+- **THEN** CMS-owned media stores a Content Image showing the actual packaging
 - **AND** jewel cases, digipaks, softcases, sleeves, or other real packaging are accepted when they match the edition
 - **AND** the image alt text describes the visible package and view.
 
@@ -71,13 +71,13 @@ Every current Distro item classified as a CD MUST use at least one image of the 
 
 #### Scenario: No verified physical CD image is found
 
-- **WHEN** official Bandcamp and official artist or label Facebook sources do not provide a confidently matched physical-product image
+- **WHEN** available permitted official sources do not provide a confidently matched physical-product image
 - **THEN** the item is recorded as unresolved
 - **AND** a cover-only image, generated mockup, marketplace photo, or unrelated edition does not satisfy completion.
 
 ### Requirement: Distro detail pages support secondary product images
 
-The system SHALL allow a Distro item to define an ordered list of secondary local Content Images with required alt text while retaining one primary image.
+The system SHALL allow a Distro item to define an ordered list of secondary CMS-owned Content Images with required alt text while retaining one primary image. Public rendering SHALL use accepted snapshot media rather than unpublished uploads or third-party hotlinks.
 
 #### Scenario: Distro item has secondary images
 
