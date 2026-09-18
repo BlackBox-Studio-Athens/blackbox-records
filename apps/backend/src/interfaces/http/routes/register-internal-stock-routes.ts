@@ -4,7 +4,19 @@ import { inventoryQuerySchema } from '../../../application/commerce/stock';
 import { areCommerceIdempotencyKeysRequired, type AppBindings, type AppOpenApi } from '../../../env';
 import type { AppLogger } from '../../../observability';
 import { requestLogger, runWithTraceSpan, traceContextFromHono } from '../../../observability';
-import { jsonError, jsonNoStore, operatorAccessErrorResponses, problemContent } from '../responses';
+import {
+  addHypermedia,
+  addLinkHeader,
+  apiAction,
+  apiLink,
+  apiPath,
+  hypermediaMetadataShape,
+  jsonError,
+  jsonNoStore,
+  linkResponseHeaders,
+  operatorAccessErrorResponses,
+  problemContent,
+} from '../responses';
 import { createInternalStockServices } from './internal-stock-services';
 
 type InternalStockServices = ReturnType<typeof createInternalStockServices>;
@@ -86,6 +98,7 @@ const variantSummarySchema = z
     sourceKind: z.enum(['release', 'distro']),
     storeItemSlug: z.string(),
     variantId: z.string(),
+    ...hypermediaMetadataShape,
   })
   .openapi('InternalVariantSummary');
 
@@ -140,6 +153,7 @@ const stockHistoryResponseSchema = z
   .object({
     entries: z.array(z.union([stockChangeEntrySchema, stockCountEntrySchema])),
     variantId: z.string(),
+    ...hypermediaMetadataShape,
   })
   .openapi('InternalStockHistoryResponse');
 
@@ -165,6 +179,7 @@ const recordedStockChangeResponseSchema = z
     entry: stockChangeEntrySchema,
     stock: stockStateSchema,
     variantId: z.string(),
+    ...hypermediaMetadataShape,
   })
   .openapi('RecordedStockChangeResponse');
 
@@ -173,12 +188,14 @@ const recordedStockCountResponseSchema = z
     entry: stockCountEntrySchema,
     stock: stockStateSchema,
     variantId: z.string(),
+    ...hypermediaMetadataShape,
   })
   .openapi('RecordedStockCountResponse');
 
 const inventoryRoute = createRoute({
   method: 'get',
   path: '/api/internal/inventory',
+  operationId: 'listInternalInventory',
   request: { query: inventoryQuerySchema },
   responses: {
     200: {
@@ -190,6 +207,7 @@ const inventoryRoute = createRoute({
               items: z.array(variantSummarySchema.extend({ cmsSourceId: z.string().nullable() })),
               nextCursor: z.string().optional(),
               before: z.string(),
+              ...hypermediaMetadataShape,
             })
             .openapi('InventoryPage'),
         },
@@ -203,11 +221,13 @@ const inventoryRoute = createRoute({
 const searchVariantsRoute = createRoute({
   method: 'get',
   path: '/api/internal/variants',
+  operationId: 'searchInternalVariants',
   request: {
     query: variantSearchQuerySchema,
   },
   responses: {
     200: {
+      headers: linkResponseHeaders,
       content: {
         'application/json': {
           schema: z.array(variantSummarySchema),
@@ -223,6 +243,7 @@ const searchVariantsRoute = createRoute({
 const getVariantStockRoute = createRoute({
   method: 'get',
   path: '/api/internal/variants/{variantId}/stock',
+  operationId: 'readVariantStock',
   request: {
     params: variantParamsSchema,
   },
@@ -251,6 +272,7 @@ const getVariantStockRoute = createRoute({
 const getVariantStockHistoryRoute = createRoute({
   method: 'get',
   path: '/api/internal/variants/{variantId}/stock/history',
+  operationId: 'readVariantStockHistory',
   request: {
     params: variantParamsSchema,
     query: stockHistoryQuerySchema,
@@ -280,6 +302,7 @@ const getVariantStockHistoryRoute = createRoute({
 const postStockChangeRoute = createRoute({
   method: 'post',
   path: '/api/internal/variants/{variantId}/stock/changes',
+  operationId: 'recordStockChange',
   request: {
     headers: z.object({ 'idempotency-key': z.uuid({ version: 'v4' }).optional() }),
     body: {
@@ -320,6 +343,7 @@ const postStockChangeRoute = createRoute({
 const postStockCountRoute = createRoute({
   method: 'post',
   path: '/api/internal/variants/{variantId}/stock/counts',
+  operationId: 'recordStockCount',
   request: {
     headers: z.object({ 'idempotency-key': z.uuid({ version: 'v4' }).optional() }),
     body: {
@@ -360,7 +384,15 @@ const postStockCountRoute = createRoute({
 export function registerInternalStockRoutes(app: AppOpenApi): void {
   app.openapi(inventoryRoute, async (context) =>
     withInternalStockServices(context.env, async (services) =>
-      jsonNoStore(context.json(await services.readInventory(context.req.valid('query')), 200)),
+      jsonNoStore(
+        context.json(
+          addHypermedia(
+            await services.readInventory(context.req.valid('query')),
+            internalCollectionLinks('/api/internal/inventory'),
+          ),
+          200,
+        ),
+      ),
     ),
   );
   app.openapi(searchVariantsRoute, async (context) => {
@@ -375,7 +407,8 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         outcome: 'ok',
       });
 
-      return jsonNoStore(context.json(variants, 200));
+      const response = jsonNoStore(context.json(variants.map(toVariantSummaryResponse), 200));
+      return addLinkHeader(response, internalCollectionLinks('/api/internal/variants'));
     });
   });
 
@@ -393,7 +426,16 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
           variantId,
         });
 
-        return jsonNoStore(context.json(toStockDetailResponse(detail), 200));
+        return jsonNoStore(
+          context.json(
+            addHypermedia(
+              toStockDetailResponse(detail),
+              variantLinks(variantId),
+              variantActions(variantId, detail.stock.revision),
+            ),
+            200,
+          ),
+        );
       } catch (error) {
         const routeError = toInternalStockRouteError(services, error, {
           invalidRequestMessage: 'Invalid variant id.',
@@ -433,7 +475,21 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
           variantId,
         });
 
-        return jsonNoStore(context.json({ entries: entries.map(toHistoryEntryResponse), variantId }, 200));
+        return jsonNoStore(
+          context.json(
+            addHypermedia({ entries: entries.map(toHistoryEntryResponse), variantId }, [
+              apiLink({
+                href: apiPath('api', 'internal', 'variants', variantId, 'stock', 'history'),
+                rel: 'self',
+              }),
+              apiLink({
+                href: apiPath('api', 'internal', 'variants', variantId, 'stock'),
+                rel: 'up',
+              }),
+            ]),
+            200,
+          ),
+        );
       } catch (error) {
         const routeError = toInternalStockRouteError(services, error, {
           invalidRequestMessage: 'Invalid variant id.',
@@ -502,11 +558,14 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
 
         return jsonNoStore(
           context.json(
-            {
-              entry: toStockChangeEntryResponse(result.entry),
-              stock: toStockStateResponse(result.stock),
-              variantId,
-            },
+            addHypermedia(
+              {
+                entry: toStockChangeEntryResponse(result.entry),
+                stock: toStockStateResponse(result.stock),
+                variantId,
+              },
+              variantLinks(variantId),
+            ),
             200,
           ),
         );
@@ -587,11 +646,14 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
 
         return jsonNoStore(
           context.json(
-            {
-              entry: toStockCountEntryResponse(result.entry),
-              stock: toStockStateResponse(result.stock),
-              variantId,
-            },
+            addHypermedia(
+              {
+                entry: toStockCountEntryResponse(result.entry),
+                stock: toStockStateResponse(result.stock),
+                variantId,
+              },
+              variantLinks(variantId),
+            ),
             200,
           ),
         );
@@ -648,6 +710,58 @@ function toStockDetailResponse(detail: {
     storeItemSlug: detail.storeItemSlug,
     variantId: detail.variantId,
   };
+}
+
+function toVariantSummaryResponse<TVariant extends { variantId: string }>(variant: TVariant) {
+  return addHypermedia(variant, variantLinks(variant.variantId));
+}
+
+function internalCollectionLinks(self: string) {
+  return [
+    apiLink({ href: self, rel: 'self' }),
+    apiLink({ href: '/api/internal/', rel: 'up' }),
+    apiLink({ href: '/api/internal/openapi.json', rel: 'service-desc' }),
+  ];
+}
+
+function variantLinks(variantId: string) {
+  return [
+    apiLink({
+      href: apiPath('api', 'internal', 'variants', variantId, 'stock'),
+      rel: 'self',
+    }),
+    apiLink({
+      href: apiPath('api', 'internal', 'variants', variantId, 'stock', 'history'),
+      rel: 'history',
+    }),
+    apiLink({
+      href: apiPath('api', 'internal', 'variants', variantId, 'price'),
+      rel: 'price',
+    }),
+    apiLink({
+      href: apiPath('api', 'internal', 'variants', variantId, 'publication'),
+      rel: 'publication',
+    }),
+  ];
+}
+
+function variantActions(variantId: string, revision: number | null) {
+  return [
+    apiAction({
+      href: apiPath('api', 'internal', 'variants', variantId, 'stock', 'changes'),
+      method: 'POST',
+      operationRef: 'recordStockChange',
+      parameters: { path: { variantId } },
+      rel: 'record-stock-change',
+    }),
+    apiAction({
+      href: apiPath('api', 'internal', 'variants', variantId, 'stock', 'counts'),
+      method: 'POST',
+      operationRef: 'recordStockCount',
+      parameters: { body: { expectedRevision: revision }, path: { variantId } },
+      rel: 'record-stock-count',
+    }),
+  ];
 }
 
 function toStockStateResponse(stock: {

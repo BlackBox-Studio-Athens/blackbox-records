@@ -12,6 +12,11 @@ describe('OpenAPI documents', () => {
     expect(document.openapi).toBe('3.1.0');
     expect(Object.keys(document.paths ?? {})).toEqual(publicContractPaths);
     expect(JSON.stringify(document).toLowerCase()).not.toContain('cache-control');
+    expect(document.paths?.['/api/checkout/sessions']?.post?.operationId).toBe('createCheckoutSession');
+    expect(document.paths?.['/api/store/items/{storeItemSlug}']?.get?.operationId).toBe('getStoreItem');
+    expect(document.paths?.['/api/store/']?.get?.operationId).toBe('getPublicApiDiscovery');
+    expect(document.paths).not.toHaveProperty('/api/internal/');
+    expect(JSON.stringify(document)).not.toMatch(/CMS_RUNTIME|STRIPE_SECRET_KEY|\/api\/internal/);
   });
 
   it('emits coherent catalogStatus-discriminated Store Offer branches', () => {
@@ -53,5 +58,12 @@ describe('OpenAPI documents', () => {
     expect(document.openapi).toBe('3.1.0');
     expect(Object.keys(document.paths ?? {})).toEqual(internalContractPaths);
     expect(JSON.stringify(document).toLowerCase()).not.toContain('cache-control');
+    expect(document.paths?.['/api/internal/']?.get?.operationId).toBe('getInternalApiDiscovery');
+    expect(document.paths?.['/api/internal/variants/{variantId}/stock']?.get?.operationId).toBe('readVariantStock');
+    expect(document.paths?.['/api/internal/variants/{variantId}/price']?.post?.operationId).toBe('changeCatalogPrice');
+    expect(document.paths?.['/api/internal/variants/{variantId}/publication']?.post?.operationId).toBe(
+      'publishCatalogItem',
+    );
+    expect(document.paths?.['/api/internal/variants']?.get?.responses?.['200']?.headers?.Link).toBeDefined();
   });
 });

@@ -1,4 +1,47 @@
+import { createRoute, z } from '@hono/zod-openapi';
+
+import { hypermediaLinkSchema, operatorAccessErrorResponses } from '../responses';
+
+const internalApiDiscoverySchema = z
+  .object({ links: z.array(hypermediaLinkSchema).min(1) })
+  .strict()
+  .openapi('InternalApiDiscovery');
+
+const internalApiDescriptionSchema = z.record(z.string(), z.unknown()).openapi('InternalApiDescription');
+
+export const getInternalApiDiscoveryRoute = createRoute({
+  method: 'get',
+  path: '/api/internal/',
+  operationId: 'getInternalApiDiscovery',
+  responses: {
+    200: {
+      content: { 'application/json': { schema: internalApiDiscoverySchema } },
+      description: 'Protected operator API navigation and description links.',
+    },
+    ...operatorAccessErrorResponses,
+  },
+  tags: ['Discovery'],
+});
+
+export const getInternalApiDescriptionRoute = createRoute({
+  method: 'get',
+  path: '/api/internal/openapi.json',
+  operationId: 'getInternalApiDescription',
+  responses: {
+    200: {
+      content: { 'application/json': { schema: internalApiDescriptionSchema } },
+      description: 'Protected internal OpenAPI 3.1 description.',
+    },
+    ...operatorAccessErrorResponses,
+  },
+  tags: ['Discovery'],
+});
+
 const internalContractModules = [
+  {
+    name: 'internal-discovery',
+    paths: [getInternalApiDiscoveryRoute.path, getInternalApiDescriptionRoute.path],
+  },
   {
     name: 'internal-orders',
     paths: [

@@ -14,13 +14,24 @@ import {
   PrismaVariantStripeMappingRepository,
 } from '../../../infrastructure/persistence/prisma';
 import { createStripeCatalogGateway } from '../../../infrastructure/stripe';
-import { jsonError, jsonNoStore, operatorAccessErrorResponses, problemContent } from '../responses';
+import {
+  addHypermedia,
+  apiAction,
+  apiLink,
+  apiPath,
+  hypermediaMetadataShape,
+  jsonError,
+  jsonNoStore,
+  operatorAccessErrorResponses,
+  problemContent,
+} from '../responses';
 
 const resultSchema = z
   .object({
     operationId: z.string(),
     variantId: z.string(),
     status: z.enum(['pending', 'completed', 'needs_review']),
+    ...hypermediaMetadataShape,
   })
   .strict()
   .openapi('CatalogPriceChangeResult');
@@ -36,6 +47,7 @@ export function registerInternalPriceRoutes(app: AppOpenApi): void {
       expectedRevision: z.number().int().positive(),
       requiresLiveConfirmation: z.boolean(),
       price: catalogPriceChangeSchema.shape.price,
+      ...hypermediaMetadataShape,
     })
     .strict()
     .openapi('CatalogPriceDetail');
@@ -57,6 +69,7 @@ export function registerInternalPriceRoutes(app: AppOpenApi): void {
     async (context) => {
       const prisma = createPrismaClient(context.env);
       try {
+        const variantId = context.req.valid('param').variantId;
         const result = await readCatalogPrice(
           {
             environment: productEnvironmentProfileFromBindings(context.env).workerDeploymentTarget,
@@ -64,9 +77,23 @@ export function registerInternalPriceRoutes(app: AppOpenApi): void {
             mappings: new PrismaVariantStripeMappingRepository(prisma),
             gateway: createStripeCatalogGateway(context.env),
           },
-          context.req.valid('param').variantId,
+          variantId,
         );
-        return jsonNoStore(context.json(detailSchema.parse(result), 200));
+        const detail = detailSchema.parse(result);
+        return jsonNoStore(
+          context.json(
+            addHypermedia(detail, catalogPriceLinks(variantId), [
+              apiAction({
+                href: apiPath('api', 'internal', 'variants', variantId, 'price'),
+                method: 'POST',
+                operationRef: 'changeCatalogPrice',
+                parameters: { body: { expectedRevision: detail.expectedRevision }, path: { variantId } },
+                rel: 'change-price',
+              }),
+            ]),
+            200,
+          ),
+        );
       } catch (error) {
         return error instanceof CatalogPriceConflictError
           ? jsonError(context, {
@@ -131,6 +158,7 @@ export function registerInternalPriceRoutes(app: AppOpenApi): void {
         });
       const prisma = createPrismaClient(context.env);
       try {
+        const variantId = context.req.valid('param').variantId;
         const result = await changeCatalogPrice(
           {
             environment,
@@ -139,11 +167,11 @@ export function registerInternalPriceRoutes(app: AppOpenApi): void {
             journal: new D1CatalogOperationRepository(context.env.COMMERCE_DB),
             gateway: createStripeCatalogGateway(context.env),
           },
-          context.req.valid('param').variantId,
+          variantId,
           context.get('operatorIdentity').email,
           command,
         );
-        return jsonNoStore(context.json(resultSchema.parse(result), 200));
+        return jsonNoStore(context.json(addHypermedia(resultSchema.parse(result), catalogPriceLinks(variantId)), 200));
       } catch (error) {
         if (error instanceof CatalogOperationConflictError || error instanceof CatalogPriceConflictError)
           return jsonError(context, {
@@ -161,4 +189,21 @@ export function registerInternalPriceRoutes(app: AppOpenApi): void {
       }
     },
   );
+}
+
+function catalogPriceLinks(variantId: string) {
+  return [
+    apiLink({
+      href: apiPath('api', 'internal', 'variants', variantId, 'price'),
+      rel: 'self',
+    }),
+    apiLink({
+      href: apiPath('api', 'internal', 'variants', variantId, 'stock'),
+      rel: 'stock',
+    }),
+    apiLink({
+      href: apiPath('api', 'internal', 'variants', variantId, 'publication'),
+      rel: 'publication',
+    }),
+  ];
 }

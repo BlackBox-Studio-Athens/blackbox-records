@@ -132,6 +132,12 @@ describe('public commerce routes', () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
+    mockReadStoreCapabilities.mockResolvedValue({
+      nativeCheckout: {
+        enabled: false,
+        unavailableReason: 'Native checkout is temporarily unavailable.',
+      },
+    });
   });
 
   it('returns backend-known store item offer state', async () => {
@@ -155,12 +161,24 @@ describe('public commerce routes', () => {
     expect(mockReadStoreOffer).toHaveBeenCalledWith('disintegration-black-vinyl-lp');
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toMatchObject({
       availability: {
         label: 'Available',
         status: 'available',
       },
       canCheckout: true,
+      links: [
+        {
+          href: '/api/store/items/disintegration-black-vinyl-lp',
+          rel: 'self',
+          type: 'application/json',
+        },
+        {
+          href: '/api/store/items/disintegration-black-vinyl-lp/variants',
+          rel: 'variants',
+          type: 'application/json',
+        },
+      ],
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
@@ -210,6 +228,7 @@ describe('public commerce routes', () => {
     expect(mockReadStoreOffer).not.toHaveBeenCalled();
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
+    expect(response.headers.get('Link')).toContain('</api/store/listing-prices>');
     const body = await response.json();
     expect(body).toEqual([
       {
@@ -256,9 +275,94 @@ describe('public commerce routes', () => {
           status: 'available',
         },
         canCheckout: true,
+        links: [
+          {
+            href: '/api/store/items/disintegration-black-vinyl-lp',
+            rel: 'self',
+            type: 'application/json',
+          },
+          {
+            href: '/api/store/items/disintegration-black-vinyl-lp/variants',
+            rel: 'variants',
+            type: 'application/json',
+          },
+        ],
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
+    ]);
+    expect(response.headers.get('Link')).toContain('rel="self"');
+  });
+
+  it('publishes scoped public discovery and omits unavailable checkout actions', async () => {
+    mockReadStoreOffer.mockResolvedValueOnce({
+      availability: { label: 'Available', status: 'available' },
+      canCheckout: true,
+      catalogStatus: 'ready',
+      price: { amountMinor: 2800, currencyCode: 'EUR', display: '€28.00', kind: 'fixed' },
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    });
+
+    const app = createHttpApp();
+    const discovery = await app.request('http://backend.test/api/store/', {}, testBindings);
+    expect(discovery.status).toBe(200);
+    expectNoStoreCacheControl(discovery);
+    const discoveryBody = (await discovery.json()) as { links?: unknown };
+    expect(discoveryBody.links).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ href: '/api/store/openapi.json', rel: 'service-desc' }),
+        expect.objectContaining({ href: '/api/store/capabilities', rel: 'capabilities' }),
+      ]),
+    );
+    expect(JSON.stringify(discoveryBody)).not.toContain('/api/internal');
+
+    const description = await app.request('http://backend.test/api/store/openapi.json', {}, testBindings);
+    expect(description.status).toBe(200);
+    const document = (await description.json()) as { paths: Record<string, unknown> };
+    expect(document.paths['/api/internal']).toBeUndefined();
+    expect(JSON.stringify(document)).not.toMatch(/CMS_RUNTIME|stripe_secret|\/api\/internal/);
+
+    const item = await app.request(
+      'http://backend.test/api/store/items/disintegration-black-vinyl-lp',
+      {},
+      testBindings,
+    );
+    expect(await item.json()).not.toHaveProperty('actions');
+  });
+
+  it('advertises checkout only when the current capability gate is enabled', async () => {
+    mockReadStoreCapabilities.mockResolvedValueOnce({
+      nativeCheckout: { enabled: true, unavailableReason: null },
+    });
+    mockReadStoreOffer.mockResolvedValueOnce({
+      availability: { label: 'Available', status: 'available' },
+      canCheckout: true,
+      catalogStatus: 'ready',
+      price: { amountMinor: 2800, currencyCode: 'EUR', display: '€28.00', kind: 'fixed' },
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    });
+
+    const response = await createHttpApp().request(
+      'http://backend.test/api/store/items/disintegration-black-vinyl-lp',
+      {},
+      testBindings,
+    );
+    const body = (await response.json()) as { actions?: unknown };
+    expect(body.actions).toEqual([
+      expect.objectContaining({
+        href: '/api/checkout/sessions',
+        method: 'POST',
+        operationRef: 'createCheckoutSession',
+        rel: 'checkout',
+        parameters: {
+          body: {
+            storeItemSlug: 'disintegration-black-vinyl-lp',
+            variantId: 'variant_disintegration-black-vinyl-lp_standard',
+          },
+        },
+      }),
     ]);
   });
 
@@ -394,6 +498,17 @@ describe('public commerce routes', () => {
     );
 
     expect(response.headers.get('Access-Control-Allow-Headers')).toContain('Idempotency-Key');
+  });
+
+  it('exposes only the Link relationship header to an allowed browser origin', async () => {
+    const response = await createHttpApp().request(
+      'http://backend.test/api/store/listing-prices',
+      { headers: { origin: 'https://blackbox.example' } },
+      testBindings,
+    );
+
+    expect(response.headers.get('Access-Control-Expose-Headers')).toContain('Link');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('https://blackbox.example');
   });
 
   it('accepts checkout starts without a shipping locker snapshot', async () => {

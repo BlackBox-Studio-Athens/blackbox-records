@@ -409,6 +409,105 @@ export function jsonError<TStatus extends ContentfulStatusCode>(
   return jsonNoStore(response);
 }
 
+const actionParameterValueSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+
+export const hypermediaLinkSchema = z
+  .object({
+    href: z.string().min(1),
+    rel: z.string().regex(/^[a-z][a-z0-9.-]*$/),
+    type: z.string().min(1).optional(),
+  })
+  .strict()
+  .openapi('ApiLink');
+
+const actionParametersSchema = z
+  .object({
+    body: z.record(z.string(), z.unknown()).optional(),
+    path: z.record(z.string(), actionParameterValueSchema).optional(),
+    query: z.record(z.string(), actionParameterValueSchema).optional(),
+  })
+  .strict()
+  .openapi('ApiActionParameters');
+
+export const hypermediaActionSchema = z
+  .object({
+    href: z.string().min(1),
+    method: z.enum(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']),
+    operationRef: z.string().min(1),
+    parameters: actionParametersSchema.optional(),
+    rel: z.string().regex(/^[a-z][a-z0-9.-]*$/),
+    type: z.string().min(1).optional(),
+  })
+  .strict()
+  .openapi('ApiAction');
+
+export const hypermediaMetadataShape = {
+  actions: z.array(hypermediaActionSchema).min(1).optional(),
+  links: z.array(hypermediaLinkSchema).min(1).optional(),
+};
+
+export const hypermediaMetadataSchema = z.object(hypermediaMetadataShape).strict().openapi('HypermediaMetadata');
+
+export const linkResponseHeaders = {
+  Link: {
+    description: 'RFC 8288 relationships for this response.',
+    schema: { type: 'string' },
+  },
+} as const;
+
+export type ApiAction = z.infer<typeof hypermediaActionSchema>;
+export type ApiLink = z.infer<typeof hypermediaLinkSchema>;
+
+export function apiAction(input: ApiAction): ApiAction {
+  return { ...input, type: input.type ?? 'application/json' };
+}
+
+export function apiLink(input: ApiLink): ApiLink {
+  return { ...input, type: input.type ?? 'application/json' };
+}
+
+export function apiPath(...segments: string[]): string {
+  return `/${segments.map(encodePathSegment).join('/')}`;
+}
+
+export function addHypermedia<T extends Record<string, unknown>>(
+  value: T,
+  links: readonly ApiLink[],
+  actions?: readonly ApiAction[],
+): T & { actions?: ApiAction[]; links: ApiLink[] } {
+  return {
+    ...value,
+    links: [...links],
+    ...(actions?.length ? { actions: [...actions] } : {}),
+  };
+}
+
+export function addLinkHeader<TResponse extends Response>(response: TResponse, links: readonly ApiLink[]): TResponse {
+  const value = links
+    .filter((link) => isSafeRelativeHref(link.href))
+    .map((link) => {
+      const type = link.type ? `; type="${escapeHeaderValue(link.type)}"` : '';
+      return `<${link.href}>; rel="${link.rel}"${type}`;
+    })
+    .join(', ');
+
+  if (value) response.headers.set('Link', value);
+
+  return response;
+}
+
+function encodePathSegment(value: string): string {
+  return encodeURIComponent(value).replace(/[!'()*]/g, (character) => `%${character.charCodeAt(0).toString(16)}`);
+}
+
+function escapeHeaderValue(value: string): string {
+  return value.replace(/["\\\r\n]/g, (character) => `\\${character}`);
+}
+
+function isSafeRelativeHref(href: string): boolean {
+  return href.startsWith('/') && !href.startsWith('//') && !/[\r\n]/.test(href);
+}
+
 function problemCodeForLegacyError(code: string): string {
   return normalizeProblemCode(cmsLegacyProblemCodes[code as keyof typeof cmsLegacyProblemCodes] ?? code);
 }

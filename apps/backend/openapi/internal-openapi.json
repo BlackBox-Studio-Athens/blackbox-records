@@ -6,6 +6,104 @@
   },
   "components": {
     "schemas": {
+      "InternalApiDiscovery": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "links"
+        ],
+        "additionalProperties": false
+      },
+      "ApiLink": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rel": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]*$"
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "href",
+          "rel"
+        ],
+        "additionalProperties": false
+      },
+      "BackendErrorResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ProblemDetails"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ]
+          }
+        ]
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^\\/problems\\/[a-z][a-z0-9_]*$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "code"
+        ]
+      },
+      "InternalApiDescription": {
+        "type": "object",
+        "additionalProperties": {}
+      },
       "InternalCheckoutOrder": {
         "type": "object",
         "properties": {
@@ -510,62 +608,6 @@
           "needs_review"
         ]
       },
-      "BackendErrorResponse": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/ProblemDetails"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "error": {
-                "type": "string",
-                "minLength": 1
-              }
-            },
-            "required": [
-              "error"
-            ]
-          }
-        ]
-      },
-      "ProblemDetails": {
-        "type": "object",
-        "properties": {
-          "type": {
-            "type": "string",
-            "pattern": "^\\/problems\\/[a-z][a-z0-9_]*$"
-          },
-          "title": {
-            "type": "string",
-            "minLength": 1
-          },
-          "status": {
-            "type": "integer",
-            "minimum": 100,
-            "maximum": 599
-          },
-          "detail": {
-            "type": "string",
-            "minLength": 1
-          },
-          "code": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "requestId": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "type",
-          "title",
-          "status",
-          "detail",
-          "code"
-        ]
-      },
       "InventoryPage": {
         "type": "object",
         "properties": {
@@ -598,12 +640,115 @@
           },
           "before": {
             "type": "string"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiAction"
+            },
+            "minItems": 1
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
           }
         },
         "required": [
           "items",
           "before"
         ]
+      },
+      "ApiAction": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string",
+            "minLength": 1
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE"
+            ]
+          },
+          "operationRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/ApiActionParameters"
+          },
+          "rel": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]*$"
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "href",
+          "method",
+          "operationRef",
+          "rel"
+        ],
+        "additionalProperties": false
+      },
+      "ApiActionParameters": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "path": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "query": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
       },
       "InternalVariantSummary": {
         "type": "object",
@@ -646,6 +791,20 @@
           },
           "variantId": {
             "type": "string"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiAction"
+            },
+            "minItems": 1
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
           }
         },
         "required": [
@@ -724,6 +883,20 @@
           },
           "variantId": {
             "type": "string"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiAction"
+            },
+            "minItems": 1
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
           }
         },
         "required": [
@@ -838,6 +1011,20 @@
           },
           "variantId": {
             "type": "string"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiAction"
+            },
+            "minItems": 1
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
           }
         },
         "required": [
@@ -882,6 +1069,20 @@
           },
           "variantId": {
             "type": "string"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiAction"
+            },
+            "minItems": 1
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
           }
         },
         "required": [
@@ -1007,6 +1208,20 @@
                 "additionalProperties": false
               }
             ]
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiAction"
+            },
+            "minItems": 1
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
           }
         },
         "required": [
@@ -1033,6 +1248,20 @@
               "completed",
               "needs_review"
             ]
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiAction"
+            },
+            "minItems": 1
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
           }
         },
         "required": [
@@ -1058,6 +1287,20 @@
               "completed",
               "needs_review"
             ]
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiAction"
+            },
+            "minItems": 1
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
           }
         },
         "required": [
@@ -1159,6 +1402,20 @@
               "failed",
               null
             ]
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiAction"
+            },
+            "minItems": 1
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
           }
         },
         "required": [
@@ -1201,6 +1458,20 @@
               "live",
               "failed"
             ]
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiAction"
+            },
+            "minItems": 1
+          },
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
           }
         },
         "required": [
@@ -1214,8 +1485,89 @@
     "parameters": {}
   },
   "paths": {
+    "/api/internal/": {
+      "get": {
+        "operationId": "getInternalApiDiscovery",
+        "tags": [
+          "Discovery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Protected operator API navigation and description links.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalApiDiscovery"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/openapi.json": {
+      "get": {
+        "operationId": "getInternalApiDescription",
+        "tags": [
+          "Discovery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Protected internal OpenAPI 3.1 description.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalApiDescription"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/internal/orders/search": {
       "get": {
+        "operationId": "searchInternalOrders",
         "tags": [
           "Internal Orders"
         ],
@@ -1333,6 +1685,7 @@
     },
     "/api/internal/orders": {
       "get": {
+        "operationId": "listInternalOrders",
         "tags": [
           "Internal Orders"
         ],
@@ -1359,6 +1712,14 @@
         "responses": {
           "200": {
             "description": "Recent checkout orders for protected operator reconciliation.",
+            "headers": {
+              "Link": {
+                "description": "RFC 8288 relationships for this response.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -1395,6 +1756,7 @@
     },
     "/api/internal/orders/checkout-sessions/{checkoutSessionId}": {
       "get": {
+        "operationId": "getInternalOrderByCheckoutSession",
         "tags": [
           "Internal Orders"
         ],
@@ -1455,6 +1817,7 @@
     },
     "/api/internal/inventory": {
       "get": {
+        "operationId": "listInternalInventory",
         "tags": [
           "Internal Stock"
         ],
@@ -1560,6 +1923,7 @@
     },
     "/api/internal/variants": {
       "get": {
+        "operationId": "searchInternalVariants",
         "tags": [
           "Internal Stock"
         ],
@@ -1587,6 +1951,14 @@
         "responses": {
           "200": {
             "description": "Search variants for internal stock operations.",
+            "headers": {
+              "Link": {
+                "description": "RFC 8288 relationships for this response.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -1623,6 +1995,7 @@
     },
     "/api/internal/variants/{variantId}/stock": {
       "get": {
+        "operationId": "readVariantStock",
         "tags": [
           "Internal Stock"
         ],
@@ -1693,6 +2066,7 @@
     },
     "/api/internal/variants/{variantId}/stock/history": {
       "get": {
+        "operationId": "readVariantStockHistory",
         "tags": [
           "Internal Stock"
         ],
@@ -1773,6 +2147,7 @@
     },
     "/api/internal/variants/{variantId}/stock/changes": {
       "post": {
+        "operationId": "recordStockChange",
         "tags": [
           "Internal Stock"
         ],
@@ -1871,6 +2246,7 @@
     },
     "/api/internal/variants/{variantId}/stock/counts": {
       "post": {
+        "operationId": "recordStockCount",
         "tags": [
           "Internal Stock"
         ],

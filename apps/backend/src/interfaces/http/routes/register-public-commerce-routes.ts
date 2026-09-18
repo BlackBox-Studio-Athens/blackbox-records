@@ -1,6 +1,8 @@
 import { areCommerceIdempotencyKeysRequired, type AppOpenApi } from '../../../env';
 import {
   getCheckoutStateRoute,
+  getPublicApiDescriptionRoute,
+  getPublicApiDiscoveryRoute,
   getStoreCapabilitiesRoute,
   getStoreListingPricesRoute,
   getStoreItemRoute,
@@ -10,11 +12,23 @@ import {
 } from '../contracts/public-contracts';
 import { createStartCheckoutLineCommand } from '../../../application/commerce/checkout';
 import { requestLogger, safeCheckoutSessionId, traceContextFromHono, runWithTraceSpan } from '../../../observability';
-import { jsonError, jsonNoStore } from '../responses';
+import { addHypermedia, addLinkHeader, apiAction, apiLink, apiPath, jsonError, jsonNoStore } from '../responses';
 import { createPublicCheckoutCancelUrl, createPublicCheckoutReturnUrl } from './public-checkout-return-url';
 import { createPublicCommerceServices, readPublicStoreCapabilities } from './public-commerce-services';
 
-export function registerPublicCommerceRoutes(app: AppOpenApi): void {
+const publicDiscoveryLinks = [
+  apiLink({ href: '/api/store/', rel: 'self' }),
+  apiLink({ href: '/api/store/openapi.json', rel: 'service-desc' }),
+  apiLink({ href: '/api/store/capabilities', rel: 'capabilities' }),
+  apiLink({ href: '/api/store/listing-prices', rel: 'listing' }),
+];
+
+export function registerPublicCommerceRoutes(app: AppOpenApi, getPublicOpenApiDocument: () => object): void {
+  app.openapi(getPublicApiDiscoveryRoute, (context) => jsonNoStore(context.json({ links: publicDiscoveryLinks }, 200)));
+  app.openapi(getPublicApiDescriptionRoute, (context) =>
+    jsonNoStore(context.json(getPublicOpenApiDocument() as Record<string, unknown>, 200)),
+  );
+
   app.openapi(postDeliveryQuoteRoute, async (context) => {
     const services = createPublicCommerceServices(context.env);
     try {
@@ -47,7 +61,11 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
     const services = createPublicCommerceServices(context.env);
 
     try {
-      return jsonNoStore(context.json(await services.readStoreListingPrices(), 200));
+      const response = jsonNoStore(context.json(await services.readStoreListingPrices(), 200));
+      return addLinkHeader(response, [
+        apiLink({ href: '/api/store/listing-prices', rel: 'self' }),
+        apiLink({ href: '/api/store/openapi.json', rel: 'service-desc' }),
+      ]);
     } finally {
       await services.disconnect();
     }
@@ -68,7 +86,12 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
         });
       }
 
-      return jsonNoStore(context.json(offer, 200));
+      const checkoutEnabled =
+        offer.canCheckout &&
+        offer.catalogStatus === 'ready' &&
+        (await readPublicStoreCapabilities(context.env, requestLogger(context))).nativeCheckout.enabled;
+
+      return jsonNoStore(context.json(toStoreOfferResponse(offer, checkoutEnabled), 200));
     } finally {
       await services.disconnect();
     }
@@ -89,7 +112,26 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
         });
       }
 
-      return jsonNoStore(context.json(variants, 200));
+      const checkoutEnabled = variants.some((offer) => offer.canCheckout && offer.catalogStatus === 'ready')
+        ? (await readPublicStoreCapabilities(context.env, requestLogger(context))).nativeCheckout.enabled
+        : false;
+      const response = jsonNoStore(
+        context.json(
+          variants.map((offer) => toStoreOfferResponse(offer, checkoutEnabled)),
+          200,
+        ),
+      );
+      return addLinkHeader(response, [
+        apiLink({
+          href: apiPath('api', 'store', 'items', storeItemSlug, 'variants'),
+          rel: 'self',
+        }),
+        apiLink({
+          href: apiPath('api', 'store', 'items', storeItemSlug),
+          rel: 'up',
+        }),
+        apiLink({ href: '/api/store/openapi.json', rel: 'service-desc' }),
+      ]);
     } finally {
       await services.disconnect();
     }
@@ -313,4 +355,46 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
       await services.disconnect();
     }
   });
+}
+
+function toStoreOfferResponse<
+  TOffer extends {
+    canCheckout: boolean;
+    catalogStatus: string;
+    storeItemSlug: string;
+    variantId: string;
+  },
+>(offer: TOffer, checkoutEnabled: boolean) {
+  const actions =
+    offer.canCheckout && offer.catalogStatus === 'ready' && checkoutEnabled
+      ? [
+          apiAction({
+            href: '/api/checkout/sessions',
+            method: 'POST',
+            operationRef: 'createCheckoutSession',
+            parameters: {
+              body: {
+                storeItemSlug: offer.storeItemSlug,
+                variantId: offer.variantId,
+              },
+            },
+            rel: 'checkout',
+          }),
+        ]
+      : undefined;
+
+  return addHypermedia(
+    offer,
+    [
+      apiLink({
+        href: apiPath('api', 'store', 'items', offer.storeItemSlug),
+        rel: 'self',
+      }),
+      apiLink({
+        href: apiPath('api', 'store', 'items', offer.storeItemSlug, 'variants'),
+        rel: 'variants',
+      }),
+    ],
+    actions,
+  );
 }

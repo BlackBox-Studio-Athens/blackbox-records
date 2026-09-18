@@ -239,10 +239,27 @@ it.each(
     }
     const beforeRead = await createHttpApp().request(caseUrl, { headers: hostedHeaders }, hostedEnv);
     expect(beforeRead.status).toBe(200);
-    expect(await beforeRead.json()).toMatchObject({
+    const beforeBody = await beforeRead.json();
+    expect(beforeBody).toMatchObject({
       expectedRevision: 1,
       requiresLiveConfirmation: false,
       price: { kind: 'fixed', amountMinor: 1000 },
+      links: expect.arrayContaining([
+        expect.objectContaining({ rel: 'self' }),
+        expect.objectContaining({ rel: 'stock' }),
+        expect.objectContaining({ rel: 'publication' }),
+      ]),
+      actions: [
+        expect.objectContaining({
+          href: `/api/internal/variants/variant_http_price_${scenario}/price`,
+          method: 'POST',
+          operationRef: 'changeCatalogPrice',
+          parameters: expect.objectContaining({
+            body: { expectedRevision: 1 },
+            path: { variantId: `variant_http_price_${scenario}` },
+          }),
+        }),
+      ],
     });
     expect(creates).toBe(0);
     expect(selections).toBe(0);
@@ -278,7 +295,7 @@ it.each(
       );
       expect(response.status).toBe(200);
       expect(response.headers.get('Cache-Control')).toBe('no-store');
-      expect(await response.json()).toEqual({
+      expect(await response.json()).toMatchObject({
         operationId: command.operationId,
         variantId: item.variantId,
         status: 'completed',

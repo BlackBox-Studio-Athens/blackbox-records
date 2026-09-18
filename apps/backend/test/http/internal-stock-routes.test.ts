@@ -131,7 +131,7 @@ describe('internal stock routes', () => {
 
     expect(response.status).toBe(401);
     expectNoStoreCacheControl(response);
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toMatchObject({
       type: '/problems/unauthorized',
       title: 'Unauthorized.',
       status: 401,
@@ -164,12 +164,35 @@ describe('internal stock routes', () => {
     expect(mockSearchVariants).toHaveBeenCalledWith('barren', 10);
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
+    expect(response.headers.get('Link')).toContain('</api/internal/openapi.json>');
     await expect(response.json()).resolves.toEqual([
       {
         sourceId: 'disintegration',
         sourceKind: 'release',
         storeItemSlug: 'disintegration-black-vinyl-lp',
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
+        links: [
+          {
+            href: '/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock',
+            rel: 'self',
+            type: 'application/json',
+          },
+          {
+            href: '/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/history',
+            rel: 'history',
+            type: 'application/json',
+          },
+          {
+            href: '/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/price',
+            rel: 'price',
+            type: 'application/json',
+          },
+          {
+            href: '/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/publication',
+            rel: 'publication',
+            type: 'application/json',
+          },
+        ],
       },
     ]);
   });
@@ -197,7 +220,7 @@ describe('internal stock routes', () => {
 
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
-    await expect(response.json()).resolves.toEqual({
+    await expect(response.json()).resolves.toMatchObject({
       sourceId: 'disintegration',
       sourceKind: 'release',
       stock: {
@@ -208,7 +231,38 @@ describe('internal stock routes', () => {
       },
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      links: expect.arrayContaining([
+        expect.objectContaining({ rel: 'self' }),
+        expect.objectContaining({ rel: 'history' }),
+        expect.objectContaining({ rel: 'price' }),
+        expect.objectContaining({ rel: 'publication' }),
+      ]),
+      actions: expect.arrayContaining([
+        expect.objectContaining({ operationRef: 'recordStockChange', method: 'POST' }),
+        expect.objectContaining({ operationRef: 'recordStockCount', method: 'POST' }),
+      ]),
     });
+  });
+
+  it('protects operator discovery and publishes resolvable stock actions', async () => {
+    const app = createHttpApp();
+    expect((await app.request('https://ops.example/api/internal/', undefined, HOSTED_ENV)).status).toBe(401);
+
+    const discovery = await app.request('http://127.0.0.1/api/internal/', undefined, LOCAL_ENV);
+    expect(discovery.status).toBe(200);
+    expectNoStoreCacheControl(discovery);
+    expect(await discovery.json()).toMatchObject({
+      links: expect.arrayContaining([
+        expect.objectContaining({ href: '/api/internal/openapi.json', rel: 'service-desc' }),
+        expect.objectContaining({ href: '/api/internal/variants', rel: 'variants' }),
+      ]),
+    });
+
+    const description = await app.request('http://127.0.0.1/api/internal/openapi.json', undefined, LOCAL_ENV);
+    expect(description.status).toBe(200);
+    const document = (await description.json()) as { paths: Record<string, unknown> };
+    expect(document.paths['/api/internal/variants/{variantId}/stock']).toBeDefined();
+    expect(document.paths['/api/store/']).toBeUndefined();
   });
 
   it('attributes stock changes to the Access-authenticated operator email', async () => {
@@ -279,6 +333,12 @@ describe('internal stock routes', () => {
         updatedAt: '2026-04-24T12:05:00.000Z',
       },
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      links: expect.arrayContaining([
+        expect.objectContaining({ rel: 'self' }),
+        expect.objectContaining({ rel: 'history' }),
+        expect.objectContaining({ rel: 'price' }),
+        expect.objectContaining({ rel: 'publication' }),
+      ]),
     });
   });
 

@@ -6,7 +6,15 @@ import {
   type OrderStatus,
 } from '../../../domain/commerce/repositories/spi';
 import type { AppOpenApi } from '../../../env';
-import { jsonError, jsonNoStore, operatorAccessErrorResponses, problemContent } from '../responses';
+import {
+  addLinkHeader,
+  apiLink,
+  jsonError,
+  jsonNoStore,
+  linkResponseHeaders,
+  operatorAccessErrorResponses,
+  problemContent,
+} from '../responses';
 import { createInternalOrderServices, type InternalOrderRead } from './internal-order-services';
 
 const orderStatusSchema = z
@@ -124,11 +132,13 @@ const checkoutOrderSchema = z
 const listOrdersRoute = createRoute({
   method: 'get',
   path: '/api/internal/orders',
+  operationId: 'listInternalOrders',
   request: {
     query: orderListQuerySchema,
   },
   responses: {
     200: {
+      headers: linkResponseHeaders,
       content: {
         'application/json': {
           schema: z.array(checkoutOrderSchema),
@@ -144,6 +154,7 @@ const listOrdersRoute = createRoute({
 const getOrderByCheckoutSessionRoute = createRoute({
   method: 'get',
   path: '/api/internal/orders/checkout-sessions/{checkoutSessionId}',
+  operationId: 'getInternalOrderByCheckoutSession',
   request: {
     params: checkoutSessionParamsSchema,
   },
@@ -168,6 +179,7 @@ const getOrderByCheckoutSessionRoute = createRoute({
 const searchOrdersRoute = createRoute({
   method: 'get',
   path: '/api/internal/orders/search',
+  operationId: 'searchInternalOrders',
   request: {
     query: orderListQuerySchema.extend({
       q: z.string().trim().max(200).optional(),
@@ -237,7 +249,11 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
         status: (query.status as OrderStatus | undefined) ?? null,
       });
 
-      return jsonNoStore(context.json(orders.map(toCheckoutOrderResponse), 200));
+      const response = jsonNoStore(context.json(orders.map(toCheckoutOrderResponse), 200));
+      return addLinkHeader(response, [
+        apiLink({ href: '/api/internal/orders', rel: 'self' }),
+        apiLink({ href: '/api/internal/openapi.json', rel: 'service-desc' }),
+      ]);
     } finally {
       await services.disconnect();
     }

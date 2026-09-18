@@ -14,13 +14,23 @@ import {
   D1OperatorStockRepository,
 } from '../../../infrastructure/persistence/prisma';
 import { createStripeCatalogGateway } from '../../../infrastructure/stripe';
-import { jsonError, jsonNoStore, operatorAccessErrorResponses, problemContent } from '../responses';
+import {
+  addHypermedia,
+  apiLink,
+  apiPath,
+  hypermediaMetadataShape,
+  jsonError,
+  jsonNoStore,
+  operatorAccessErrorResponses,
+  problemContent,
+} from '../responses';
 
 const resultSchema = z
   .object({
     operationId: z.string(),
     variantId: z.string(),
     status: z.enum(['pending', 'completed', 'needs_review']),
+    ...hypermediaMetadataShape,
   })
   .strict()
   .openapi('CatalogItemSetupResult');
@@ -96,7 +106,26 @@ export function registerInternalSetupRoutes(app: AppOpenApi): void {
           context.get('operatorIdentity').email,
           command,
         );
-        return jsonNoStore(context.json(resultSchema.parse(result), 200));
+        const parsed = resultSchema.parse(result);
+        return jsonNoStore(
+          context.json(
+            addHypermedia(parsed, [
+              apiLink({
+                href: apiPath('api', 'internal', 'variants', parsed.variantId, 'stock'),
+                rel: 'stock',
+              }),
+              apiLink({
+                href: apiPath('api', 'internal', 'variants', parsed.variantId, 'price'),
+                rel: 'price',
+              }),
+              apiLink({
+                href: apiPath('api', 'internal', 'variants', parsed.variantId, 'publication'),
+                rel: 'publication',
+              }),
+            ]),
+            200,
+          ),
+        );
       } catch (error) {
         if (error instanceof CatalogOperationConflictError || error instanceof CatalogPriceConflictError)
           return jsonError(context, {

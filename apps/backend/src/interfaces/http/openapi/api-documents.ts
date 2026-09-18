@@ -7,7 +7,7 @@ import { registerPublicRoutes } from '../routes/register-public-routes';
 function createPublicOpenApiApp(): AppOpenApi {
   const app = new OpenAPIHono<AppEnv>();
 
-  registerPublicRoutes(app);
+  registerPublicRoutes(app, getPublicOpenApiDocument);
 
   return app;
 }
@@ -15,7 +15,7 @@ function createPublicOpenApiApp(): AppOpenApi {
 function createInternalOpenApiApp(): AppOpenApi {
   const app = new OpenAPIHono<AppEnv>();
 
-  registerInternalRoutes(app);
+  registerInternalRoutes(app, getInternalOpenApiDocument);
 
   return app;
 }

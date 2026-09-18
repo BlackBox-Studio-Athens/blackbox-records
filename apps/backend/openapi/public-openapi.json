@@ -6,6 +6,48 @@
   },
   "components": {
     "schemas": {
+      "PublicApiDiscovery": {
+        "type": "object",
+        "properties": {
+          "links": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ApiLink"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "links"
+        ],
+        "additionalProperties": false
+      },
+      "ApiLink": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rel": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]*$"
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "href",
+          "rel"
+        ],
+        "additionalProperties": false
+      },
+      "PublicApiDescription": {
+        "type": "object",
+        "additionalProperties": {}
+      },
       "DeliveryQuoteResponse": {
         "type": "object",
         "properties": {
@@ -296,6 +338,20 @@
               },
               "price": {
                 "$ref": "#/components/schemas/PublicStoreOfferPrice"
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiAction"
+                },
+                "minItems": 1
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiLink"
+                },
+                "minItems": 1
               }
             },
             "required": [
@@ -348,6 +404,20 @@
               },
               "price": {
                 "type": "null"
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiAction"
+                },
+                "minItems": 1
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiLink"
+                },
+                "minItems": 1
               }
             },
             "required": [
@@ -400,6 +470,20 @@
               },
               "price": {
                 "type": "null"
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiAction"
+                },
+                "minItems": 1
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiLink"
+                },
+                "minItems": 1
               }
             },
             "required": [
@@ -484,6 +568,95 @@
             ]
           }
         ]
+      },
+      "ApiAction": {
+        "type": "object",
+        "properties": {
+          "href": {
+            "type": "string",
+            "minLength": 1
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE"
+            ]
+          },
+          "operationRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "parameters": {
+            "$ref": "#/components/schemas/ApiActionParameters"
+          },
+          "rel": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]*$"
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "href",
+          "method",
+          "operationRef",
+          "rel"
+        ],
+        "additionalProperties": false
+      },
+      "ApiActionParameters": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "object",
+            "additionalProperties": {}
+          },
+          "path": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "query": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
       },
       "StartCheckoutResponse": {
         "type": "object",
@@ -711,6 +884,46 @@
     "parameters": {}
   },
   "paths": {
+    "/api/store/": {
+      "get": {
+        "operationId": "getPublicApiDiscovery",
+        "tags": [
+          "Discovery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Public API navigation and description links.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicApiDiscovery"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/store/openapi.json": {
+      "get": {
+        "operationId": "getPublicApiDescription",
+        "tags": [
+          "Discovery"
+        ],
+        "responses": {
+          "200": {
+            "description": "Public OpenAPI 3.1 description.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicApiDescription"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/store/delivery-quote": {
       "post": {
         "tags": [
@@ -775,6 +988,7 @@
     },
     "/api/store/capabilities": {
       "get": {
+        "operationId": "getStoreCapabilities",
         "tags": [
           "Store"
         ],
@@ -794,12 +1008,21 @@
     },
     "/api/store/listing-prices": {
       "get": {
+        "operationId": "listStoreListingPrices",
         "tags": [
           "Store"
         ],
         "responses": {
           "200": {
             "description": "Browser-safe current Store listing-price presentation.",
+            "headers": {
+              "Link": {
+                "description": "RFC 8288 relationships for this response.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -816,6 +1039,7 @@
     },
     "/api/store/items/{storeItemSlug}": {
       "get": {
+        "operationId": "getStoreItem",
         "tags": [
           "Store"
         ],
@@ -856,6 +1080,7 @@
     },
     "/api/store/items/{storeItemSlug}/variants": {
       "get": {
+        "operationId": "listStoreItemVariants",
         "tags": [
           "Store"
         ],
@@ -873,6 +1098,14 @@
         "responses": {
           "200": {
             "description": "Checkout-eligible variants for one store item.",
+            "headers": {
+              "Link": {
+                "description": "RFC 8288 relationships for this response.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -899,6 +1132,7 @@
     },
     "/api/checkout/sessions": {
       "post": {
+        "operationId": "createCheckoutSession",
         "tags": [
           "Checkout"
         ],
@@ -978,6 +1212,7 @@
     },
     "/api/checkout/sessions/{checkoutSessionId}/state": {
       "get": {
+        "operationId": "getCheckoutState",
         "tags": [
           "Checkout"
         ],
@@ -1018,6 +1253,7 @@
     },
     "/api/newsletter/registrations": {
       "post": {
+        "operationId": "registerNewsletter",
         "tags": [
           "Newsletter"
         ],
@@ -1066,6 +1302,7 @@
     },
     "/api/services/inquiries": {
       "post": {
+        "operationId": "submitServicesInquiry",
         "tags": [
           "Services"
         ],

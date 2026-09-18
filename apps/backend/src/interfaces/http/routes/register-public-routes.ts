@@ -4,8 +4,8 @@ import { registerPublicNewsletterRoutes } from './register-public-newsletter-rou
 import { registerPublicServicesInquiryRoutes } from './register-public-services-inquiry-routes';
 import { registerStripeWebhookRoutes } from './register-stripe-webhook-routes';
 
-export function registerPublicRoutes(app: AppOpenApi): void {
-  registerPublicCommerceRoutes(app);
+export function registerPublicRoutes(app: AppOpenApi, getPublicOpenApiDocument: () => object): void {
+  registerPublicCommerceRoutes(app, getPublicOpenApiDocument);
   registerPublicNewsletterRoutes(app);
   registerPublicServicesInquiryRoutes(app);
   registerStripeWebhookRoutes(app);

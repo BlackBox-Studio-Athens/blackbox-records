@@ -256,7 +256,14 @@ try {
     body: JSON.stringify({ id: crypto.randomUUID(), requestedRevision: snapshot.snapshot.records[0].revisionId }),
   });
   assert.equal(publicationResponse.status, 503, 'Unapplied application migrations must fail closed without bootstrap');
-  assert.deepEqual(await publicationResponse.json(), { error: 'PUBLICATION_UNAVAILABLE' });
+  assert.deepEqual(await publicationResponse.json(), {
+    type: '/problems/publication_unavailable',
+    title: 'Publication unavailable.',
+    status: 503,
+    detail: 'Publication is temporarily unavailable.',
+    code: 'publication_unavailable',
+    error: 'PUBLICATION_UNAVAILABLE',
+  });
   const migrate = (...args) => {
     const result = spawnSync(
       process.execPath,

@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { requestId } from 'hono/request-id';
 
 import type { AppEnv, AppOpenApi } from '../../env';
+import { getInternalOpenApiDocument, getPublicOpenApiDocument } from './openapi/api-documents';
 import { requestObservabilityMiddleware } from '../../observability';
 import { errorHandler } from './error-handler';
 import { notFoundHandler } from './not-found-handler';
@@ -38,7 +39,7 @@ export function createHttpApp(): AppOpenApi {
     cors({
       allowHeaders: ['Content-Type', 'Idempotency-Key'],
       allowMethods: ['GET', 'POST', 'OPTIONS'],
-      exposeHeaders: ['X-Request-Id'],
+      exposeHeaders: ['Link', 'X-Request-Id'],
       maxAge: 600,
       origin: (origin, context) => {
         if (!origin) {
@@ -52,8 +53,8 @@ export function createHttpApp(): AppOpenApi {
     }),
   );
 
-  registerPublicRoutes(app);
-  registerInternalRoutes(app);
+  registerPublicRoutes(app, getPublicOpenApiDocument);
+  registerInternalRoutes(app, getInternalOpenApiDocument);
 
   app.notFound(notFoundHandler);
   app.onError(errorHandler);

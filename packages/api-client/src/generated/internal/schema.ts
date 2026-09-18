@@ -1,4 +1,20 @@
 export type paths = {
+    "/api/internal/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getInternalApiDiscovery"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/inventory": {
         parameters: {
             query?: never;
@@ -6,51 +22,7 @@ export type paths = {
             path?: never;
             cookie?: never;
         };
-        get: {
-            parameters: {
-                query?: {
-                    area?: "all" | "release" | "distro" | "merch";
-                    before?: string;
-                    cursor?: string;
-                    format?: string;
-                    limit?: number;
-                    q?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description A bounded inventory page. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["InventoryPage"];
-                    };
-                };
-                /** @description Operator authentication failed. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication is temporarily unavailable. */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["listInternalInventory"];
         put?: never;
         post?: never;
         delete?: never;
@@ -79,6 +51,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/internal/openapi.json": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getInternalApiDescription"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/orders": {
         parameters: {
             query?: never;
@@ -86,47 +74,7 @@ export type paths = {
             path?: never;
             cookie?: never;
         };
-        get: {
-            parameters: {
-                query?: {
-                    limit?: number;
-                    status?: components["schemas"]["InternalOrderStatus"];
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Recent checkout orders for protected operator reconciliation. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["InternalCheckoutOrder"][];
-                    };
-                };
-                /** @description Operator authentication failed. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication is temporarily unavailable. */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["listInternalOrders"];
         put?: never;
         post?: never;
         delete?: never;
@@ -142,55 +90,7 @@ export type paths = {
             path?: never;
             cookie?: never;
         };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    checkoutSessionId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Checkout order state for one checkout session. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["InternalCheckoutOrder"];
-                    };
-                };
-                /** @description Operator authentication failed. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Checkout order not found. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication is temporarily unavailable. */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["getInternalOrderByCheckoutSession"];
         put?: never;
         post?: never;
         delete?: never;
@@ -206,62 +106,7 @@ export type paths = {
             path?: never;
             cookie?: never;
         };
-        get: {
-            parameters: {
-                query?: {
-                    cursor?: string;
-                    limit?: number;
-                    notification?: "pending" | "needs_review";
-                    q?: string;
-                    status?: components["schemas"]["InternalOrderStatus"];
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Search all protected orders with stable pagination. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            items: components["schemas"]["InternalCheckoutOrder"][];
-                            nextCursor: string | null;
-                        };
-                    };
-                };
-                /** @description Invalid search cursor. */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication failed. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication is temporarily unavailable. */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["searchInternalOrders"];
         put?: never;
         post?: never;
         delete?: never;
@@ -277,47 +122,7 @@ export type paths = {
             path?: never;
             cookie?: never;
         };
-        get: {
-            parameters: {
-                query?: {
-                    limit?: number;
-                    q?: string;
-                };
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Search variants for internal stock operations. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["InternalVariantSummary"][];
-                    };
-                };
-                /** @description Operator authentication failed. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication is temporarily unavailable. */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["searchInternalVariants"];
         put?: never;
         post?: never;
         delete?: never;
@@ -372,64 +177,7 @@ export type paths = {
             path?: never;
             cookie?: never;
         };
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    variantId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Current stock for a variant. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["InternalStockDetail"];
-                    };
-                };
-                /** @description Invalid variant id. */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication failed. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Variant not found. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication is temporarily unavailable. */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["readVariantStock"];
         put?: never;
         post?: never;
         delete?: never;
@@ -447,79 +195,7 @@ export type paths = {
         };
         get?: never;
         put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: {
-                    "idempotency-key"?: string;
-                };
-                path: {
-                    variantId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["InternalStockChangeBody"];
-                };
-            };
-            responses: {
-                /** @description Recorded a stock change. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["RecordedStockChangeResponse"];
-                    };
-                };
-                /** @description Invalid stock change. */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication failed. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Variant not found. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description The stock request key conflicts with another operation or is required. */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication is temporarily unavailable. */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-            };
-        };
+        post: operations["recordStockChange"];
         delete?: never;
         options?: never;
         head?: never;
@@ -535,79 +211,7 @@ export type paths = {
         };
         get?: never;
         put?: never;
-        post: {
-            parameters: {
-                query?: never;
-                header?: {
-                    "idempotency-key"?: string;
-                };
-                path: {
-                    variantId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["InternalStockCountBody"];
-                };
-            };
-            responses: {
-                /** @description Recorded a stock count. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["RecordedStockCountResponse"];
-                    };
-                };
-                /** @description Invalid stock count. */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication failed. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Variant not found. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Stock changed since the recount began. */
-                409: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication is temporarily unavailable. */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-            };
-        };
+        post: operations["recordStockCount"];
         delete?: never;
         options?: never;
         head?: never;
@@ -621,66 +225,7 @@ export type paths = {
             path?: never;
             cookie?: never;
         };
-        get: {
-            parameters: {
-                query?: {
-                    limit?: number;
-                };
-                header?: never;
-                path: {
-                    variantId: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Recent stock history for a variant. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["InternalStockHistoryResponse"];
-                    };
-                };
-                /** @description Invalid variant id. */
-                400: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication failed. */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Variant not found. */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-                /** @description Operator authentication is temporarily unavailable. */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
-                    };
-                };
-            };
-        };
+        get: operations["readVariantStockHistory"];
         put?: never;
         post?: never;
         delete?: never;
@@ -693,10 +238,36 @@ export type paths = {
 export type webhooks = Record<string, never>;
 export type components = {
     schemas: {
+        ApiAction: {
+            href: string;
+            /** @enum {string} */
+            method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+            operationRef: string;
+            parameters?: components["schemas"]["ApiActionParameters"];
+            rel: string;
+            type?: string;
+        };
+        ApiActionParameters: {
+            body?: {
+                [key: string]: unknown;
+            };
+            path?: {
+                [key: string]: string | number | boolean | null;
+            };
+            query?: {
+                [key: string]: string | number | boolean | null;
+            };
+        };
+        ApiLink: {
+            href: string;
+            rel: string;
+            type?: string;
+        };
         BackendErrorResponse: components["schemas"]["ProblemDetails"] & {
             error: string;
         };
         CatalogItemPublishDetail: {
+            actions?: components["schemas"]["ApiAction"][];
             /** @enum {string} */
             availability: "published" | "withheld" | "retired";
             cmsRevision: string;
@@ -704,6 +275,7 @@ export type components = {
             /** @enum {string} */
             collection: "releases" | "distro";
             expectedRevision: number;
+            links?: components["schemas"]["ApiLink"][];
             /** @enum {string|null} */
             operationStatus?: "pending" | "completed" | "needs_review" | null;
             pending: {
@@ -722,6 +294,8 @@ export type components = {
             title: string;
         };
         CatalogItemPublishResult: {
+            actions?: components["schemas"]["ApiAction"][];
+            links?: components["schemas"]["ApiLink"][];
             operationId: string;
             /** Format: uuid */
             publicationId?: string;
@@ -732,19 +306,25 @@ export type components = {
             variantId: string;
         };
         CatalogItemSetupResult: {
+            actions?: components["schemas"]["ApiAction"][];
+            links?: components["schemas"]["ApiLink"][];
             operationId: string;
             /** @enum {string} */
             status: "pending" | "completed" | "needs_review";
             variantId: string;
         };
         CatalogPriceChangeResult: {
+            actions?: components["schemas"]["ApiAction"][];
+            links?: components["schemas"]["ApiLink"][];
             operationId: string;
             /** @enum {string} */
             status: "pending" | "completed" | "needs_review";
             variantId: string;
         };
         CatalogPriceDetail: {
+            actions?: components["schemas"]["ApiAction"][];
             expectedRevision: number;
+            links?: components["schemas"]["ApiLink"][];
             price: {
                 amountMinor: number;
                 /** @enum {string} */
@@ -762,6 +342,12 @@ export type components = {
             };
             requiresLiveConfirmation: boolean;
             variantId: string;
+        };
+        InternalApiDescription: {
+            [key: string]: unknown;
+        };
+        InternalApiDiscovery: {
+            links: components["schemas"]["ApiLink"][];
         };
         InternalCheckoutOrder: {
             acceptedDeliveryAmountMinor: number | null;
@@ -914,7 +500,9 @@ export type components = {
             stock: components["schemas"]["InternalStockState"];
         };
         InternalStockHistoryResponse: {
+            actions?: components["schemas"]["ApiAction"][];
             entries: (components["schemas"]["InternalStockChangeEntry"] | components["schemas"]["InternalStockCountEntry"])[];
+            links?: components["schemas"]["ApiLink"][];
             variantId: string;
         };
         InternalStockState: {
@@ -925,8 +513,10 @@ export type components = {
             updatedAt: string | null;
         };
         InternalVariantSummary: {
+            actions?: components["schemas"]["ApiAction"][];
             displayName?: string;
             itemType?: string | null;
+            links?: components["schemas"]["ApiLink"][];
             onlineQuantity?: number | null;
             quantity?: number | null;
             sourceId: string;
@@ -936,10 +526,12 @@ export type components = {
             variantId: string;
         };
         InventoryPage: {
+            actions?: components["schemas"]["ApiAction"][];
             before: string;
             items: (components["schemas"]["InternalVariantSummary"] & {
                 cmsSourceId: string | null;
             })[];
+            links?: components["schemas"]["ApiLink"][];
             nextCursor?: string;
         };
         ProblemDetails: {
@@ -951,12 +543,16 @@ export type components = {
             type: string;
         };
         RecordedStockChangeResponse: {
+            actions?: components["schemas"]["ApiAction"][];
             entry: components["schemas"]["InternalStockChangeEntry"];
+            links?: components["schemas"]["ApiLink"][];
             stock: components["schemas"]["InternalStockState"];
             variantId: string;
         };
         RecordedStockCountResponse: {
+            actions?: components["schemas"]["ApiAction"][];
             entry: components["schemas"]["InternalStockCountEntry"];
+            links?: components["schemas"]["ApiLink"][];
             stock: components["schemas"]["InternalStockState"];
             variantId: string;
         };
@@ -969,6 +565,89 @@ export type components = {
 };
 export type $defs = Record<string, never>;
 export interface operations {
+    getInternalApiDiscovery: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Protected operator API navigation and description links. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalApiDiscovery"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    listInternalInventory: {
+        parameters: {
+            query?: {
+                area?: "all" | "release" | "distro" | "merch";
+                before?: string;
+                cursor?: string;
+                format?: string;
+                limit?: number;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A bounded inventory page. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryPage"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
     setupCatalogItem: {
         parameters: {
             query?: never;
@@ -1071,6 +750,235 @@ export interface operations {
                 };
             };
             /** @description Operator authentication or item setup is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    getInternalApiDescription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Protected internal OpenAPI 3.1 description. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalApiDescription"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    listInternalOrders: {
+        parameters: {
+            query?: {
+                limit?: number;
+                status?: components["schemas"]["InternalOrderStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent checkout orders for protected operator reconciliation. */
+            200: {
+                headers: {
+                    /** @description RFC 8288 relationships for this response. */
+                    Link?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalCheckoutOrder"][];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    getInternalOrderByCheckoutSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                checkoutSessionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Checkout order state for one checkout session. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalCheckoutOrder"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Checkout order not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    searchInternalOrders: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                limit?: number;
+                notification?: "pending" | "needs_review";
+                q?: string;
+                status?: components["schemas"]["InternalOrderStatus"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Search all protected orders with stable pagination. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["InternalCheckoutOrder"][];
+                        nextCursor: string | null;
+                    };
+                };
+            };
+            /** @description Invalid search cursor. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    searchInternalVariants: {
+        parameters: {
+            query?: {
+                limit?: number;
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Search variants for internal stock operations. */
+            200: {
+                headers: {
+                    /** @description RFC 8288 relationships for this response. */
+                    Link?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalVariantSummary"][];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -1364,6 +1272,270 @@ export interface operations {
                 };
             };
             /** @description Publication unavailable. Retry the retained operation. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    readVariantStock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current stock for a variant. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalStockDetail"];
+                };
+            };
+            /** @description Invalid variant id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Variant not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    recordStockChange: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string;
+            };
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["InternalStockChangeBody"];
+            };
+        };
+        responses: {
+            /** @description Recorded a stock change. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordedStockChangeResponse"];
+                };
+            };
+            /** @description Invalid stock change. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Variant not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description The stock request key conflicts with another operation or is required. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    recordStockCount: {
+        parameters: {
+            query?: never;
+            header?: {
+                "idempotency-key"?: string;
+            };
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["InternalStockCountBody"];
+            };
+        };
+        responses: {
+            /** @description Recorded a stock count. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecordedStockCountResponse"];
+                };
+            };
+            /** @description Invalid stock count. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Variant not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Stock changed since the recount began. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    readVariantStockHistory: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recent stock history for a variant. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalStockHistoryResponse"];
+                };
+            };
+            /** @description Invalid variant id. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Variant not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
             503: {
                 headers: {
                     [name: string]: unknown;

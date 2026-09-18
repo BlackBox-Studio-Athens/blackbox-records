@@ -1,7 +1,40 @@
 import { createRoute, z } from '@hono/zod-openapi';
 
 import { SERVICES_INQUIRY_FIELD_LIMITS, SERVICES_INQUIRY_SERVICES } from '../../../application/email';
-import { problemContent } from '../responses';
+import { hypermediaLinkSchema, hypermediaMetadataShape, linkResponseHeaders, problemContent } from '../responses';
+
+const publicApiDiscoverySchema = z
+  .object({ links: z.array(hypermediaLinkSchema).min(1) })
+  .strict()
+  .openapi('PublicApiDiscovery');
+
+const publicApiDescriptionSchema = z.record(z.string(), z.unknown()).openapi('PublicApiDescription');
+
+export const getPublicApiDiscoveryRoute = createRoute({
+  method: 'get',
+  path: '/api/store/',
+  operationId: 'getPublicApiDiscovery',
+  responses: {
+    200: {
+      content: { 'application/json': { schema: publicApiDiscoverySchema } },
+      description: 'Public API navigation and description links.',
+    },
+  },
+  tags: ['Discovery'],
+});
+
+export const getPublicApiDescriptionRoute = createRoute({
+  method: 'get',
+  path: '/api/store/openapi.json',
+  operationId: 'getPublicApiDescription',
+  responses: {
+    200: {
+      content: { 'application/json': { schema: publicApiDescriptionSchema } },
+      description: 'Public OpenAPI 3.1 description.',
+    },
+  },
+  tags: ['Discovery'],
+});
 
 const storeItemParamsSchema = z
   .object({
@@ -47,18 +80,21 @@ const storeOfferSchema = z
       canCheckout: z.literal(true),
       catalogStatus: z.literal('ready'),
       price: offerPriceSchema,
+      ...hypermediaMetadataShape,
     }),
     storeOfferIdentitySchema.extend({
       availability: z.object({ label: z.string(), status: z.literal('sold_out') }),
       canCheckout: z.literal(false),
       catalogStatus: z.literal('sold_out'),
       price: z.null(),
+      ...hypermediaMetadataShape,
     }),
     storeOfferIdentitySchema.extend({
       availability: z.object({ label: z.string(), status: z.literal('unavailable') }),
       canCheckout: z.literal(false),
       catalogStatus: z.literal('catalog_drift'),
       price: z.null(),
+      ...hypermediaMetadataShape,
     }),
   ])
   .openapi('PublicStoreOffer');
@@ -225,6 +261,7 @@ export const servicesInquiryResponseSchema = z
 export const getStoreItemRoute = createRoute({
   method: 'get',
   path: '/api/store/items/{storeItemSlug}',
+  operationId: 'getStoreItem',
   request: {
     params: storeItemParamsSchema,
   },
@@ -248,6 +285,7 @@ export const getStoreItemRoute = createRoute({
 export const getStoreCapabilitiesRoute = createRoute({
   method: 'get',
   path: '/api/store/capabilities',
+  operationId: 'getStoreCapabilities',
   responses: {
     200: {
       content: {
@@ -264,8 +302,10 @@ export const getStoreCapabilitiesRoute = createRoute({
 export const getStoreListingPricesRoute = createRoute({
   method: 'get',
   path: '/api/store/listing-prices',
+  operationId: 'listStoreListingPrices',
   responses: {
     200: {
+      headers: linkResponseHeaders,
       content: {
         'application/json': {
           schema: z.array(storeListingPriceSchema),
@@ -280,11 +320,13 @@ export const getStoreListingPricesRoute = createRoute({
 export const getStoreItemVariantsRoute = createRoute({
   method: 'get',
   path: '/api/store/items/{storeItemSlug}/variants',
+  operationId: 'listStoreItemVariants',
   request: {
     params: storeItemParamsSchema,
   },
   responses: {
     200: {
+      headers: linkResponseHeaders,
       content: {
         'application/json': {
           schema: z.array(storeOfferSchema),
@@ -303,6 +345,7 @@ export const getStoreItemVariantsRoute = createRoute({
 export const postCheckoutSessionRoute = createRoute({
   method: 'post',
   path: '/api/checkout/sessions',
+  operationId: 'createCheckoutSession',
   request: {
     headers: z
       .object({
@@ -349,6 +392,7 @@ export const postCheckoutSessionRoute = createRoute({
 export const getCheckoutStateRoute = createRoute({
   method: 'get',
   path: '/api/checkout/sessions/{checkoutSessionId}/state',
+  operationId: 'getCheckoutState',
   request: {
     params: checkoutSessionParamsSchema,
   },
@@ -372,6 +416,7 @@ export const getCheckoutStateRoute = createRoute({
 export const postNewsletterRegistrationRoute = createRoute({
   method: 'post',
   path: '/api/newsletter/registrations',
+  operationId: 'registerNewsletter',
   request: {
     body: {
       content: {
@@ -405,6 +450,7 @@ export const postNewsletterRegistrationRoute = createRoute({
 export const postServicesInquiryRoute = createRoute({
   method: 'post',
   path: '/api/services/inquiries',
+  operationId: 'submitServicesInquiry',
   request: {
     body: {
       content: {
@@ -436,6 +482,8 @@ export const postServicesInquiryRoute = createRoute({
 });
 
 const publicContractModules = [
+  getPublicApiDiscoveryRoute,
+  getPublicApiDescriptionRoute,
   postDeliveryQuoteRoute,
   getStoreCapabilitiesRoute,
   getStoreListingPricesRoute,
