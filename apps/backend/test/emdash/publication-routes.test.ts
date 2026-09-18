@@ -114,7 +114,15 @@ test('requires the current published revision and fails closed on CMS or migrati
     db: env.COMMERCE_DB,
   });
   expect(unavailable.status).toBe(503);
-  expect(await unavailable.json()).toEqual({ error: 'PUBLICATION_UNAVAILABLE' });
+  expect(unavailable.headers.get('Content-Type')).toContain('application/problem+json');
+  expect(await unavailable.json()).toEqual({
+    type: '/problems/publication_unavailable',
+    title: 'Publication unavailable.',
+    status: 503,
+    detail: 'Publication is temporarily unavailable.',
+    code: 'publication_unavailable',
+    error: 'PUBLICATION_UNAVAILABLE',
+  });
 });
 
 test('reopens a bounded, redacted publication history for the current environment without browser state', async () => {

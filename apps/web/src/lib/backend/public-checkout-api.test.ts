@@ -134,7 +134,18 @@ describe('createPublicCheckoutApi', () => {
     };
     webMswServer.use(
       http.post<Record<string, never>, ServicesInquiryBody, BackendErrorResponse>('*/api/services/inquiries', () =>
-        HttpResponse.json({ code, error, requestId: 'req_services_inquiry' }, { status }),
+        HttpResponse.json(
+          {
+            type: `/problems/${code}`,
+            title: 'Request failed.',
+            status,
+            detail: error,
+            code,
+            error,
+            requestId: 'req_services_inquiry',
+          },
+          { status },
+        ),
       ),
     );
 
@@ -180,7 +191,7 @@ describe('createPublicCheckoutApi', () => {
         error: 'Checkout unavailable or not configured.',
         requestId: 'req_test_checkout_unavailable',
       },
-      message: 'Checkout unavailable or not configured.',
+      message: 'Checkout is unavailable right now.',
       name: 'PublicCheckoutApiError',
       status: 409,
     } satisfies Partial<PublicCheckoutApiError>);
@@ -198,6 +209,37 @@ describe('createPublicCheckoutApi', () => {
     await expect(api.startCheckout(publicCheckoutFixtures.startCheckoutBody)).rejects.toMatchObject({
       message: 'Legacy checkout error.',
       status: 409,
+    } satisfies Partial<PublicCheckoutApiError>);
+  });
+
+  it('does not surface foreign problem types or HTML auth documents', async () => {
+    webMswServer.use(
+      http.post<Record<string, never>, StartCheckoutBody>('*/api/checkout/sessions', () =>
+        HttpResponse.json(
+          {
+            type: 'https://provider.example/problems/internal',
+            detail: 'Provider secret details.',
+            error: 'Provider secret details.',
+          },
+          { status: 503 },
+        ),
+      ),
+    );
+    const api = createPublicCheckoutApi(apiClientMswBaseUrl);
+    await expect(api.startCheckout(publicCheckoutFixtures.startCheckoutBody)).rejects.toMatchObject({
+      message: 'Could not start checkout.',
+      status: 503,
+    } satisfies Partial<PublicCheckoutApiError>);
+
+    webMswServer.use(
+      http.post<Record<string, never>, StartCheckoutBody>(
+        '*/api/checkout/sessions',
+        () => new HttpResponse('<html>Sign in</html>', { status: 503, headers: { 'content-type': 'text/html' } }),
+      ),
+    );
+    await expect(api.startCheckout(publicCheckoutFixtures.startCheckoutBody)).rejects.toMatchObject({
+      message: 'Could not start checkout.',
+      status: 503,
     } satisfies Partial<PublicCheckoutApiError>);
   });
 });

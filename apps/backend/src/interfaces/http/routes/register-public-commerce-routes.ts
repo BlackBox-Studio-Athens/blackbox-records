@@ -19,6 +19,12 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
     const services = createPublicCommerceServices(context.env);
     try {
       return jsonNoStore(context.json({ quote: await services.quoteDelivery(context.req.valid('json').lines) }, 200));
+    } catch {
+      return jsonError(context, {
+        code: 'service_unavailable',
+        message: 'Delivery quote is temporarily unavailable.',
+        status: 503,
+      });
     } finally {
       await services.disconnect();
     }
@@ -174,7 +180,7 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
 
         return jsonError(context, {
           code: 'not_found',
-          message: error.message,
+          message: 'Store item not found.',
           status: 404,
         });
       }

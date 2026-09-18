@@ -507,6 +507,10 @@ describe('Stripe webhook routes', () => {
     expect(response.status).toBe(400);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/invalid_request',
+      title: 'Invalid request.',
+      status: 400,
+      detail: 'Stripe webhook signature is required.',
       code: 'invalid_request',
       error: 'Stripe webhook signature is required.',
       requestId: expect.any(String),
@@ -536,6 +540,10 @@ describe('Stripe webhook routes', () => {
     expectNoStoreCacheControl(response);
     const body = await response.json();
     expect(body).toEqual({
+      type: '/problems/invalid_request',
+      title: 'Invalid request.',
+      status: 400,
+      detail: 'Stripe webhook signature verification failed.',
       code: 'invalid_request',
       error: 'Stripe webhook signature verification failed.',
       requestId: expect.any(String),
@@ -569,6 +577,10 @@ describe('Stripe webhook routes', () => {
     expect(response.status).toBe(500);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/internal_server_error',
+      title: 'Internal Server Error',
+      status: 500,
+      detail: 'Stripe webhook is not configured.',
       code: 'internal_server_error',
       error: 'Stripe webhook is not configured.',
       requestId: expect.any(String),
@@ -596,6 +608,10 @@ describe('Stripe webhook routes', () => {
     expect(response.status).toBe(500);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/internal_server_error',
+      title: 'Internal Server Error',
+      status: 500,
+      detail: 'Internal Server Error',
       code: 'internal_server_error',
       error: 'Internal Server Error',
       requestId: expect.any(String),

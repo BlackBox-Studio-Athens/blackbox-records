@@ -1,7 +1,9 @@
 import { Fetcher } from 'openapi-typescript-fetch';
+import { http, HttpResponse } from 'msw';
 import { describe, expect, it, vi } from 'vitest';
 
 import { apiClientMswBaseUrl, internalStockFixtures, publicCheckoutFixtures } from './test/msw-handlers';
+import { apiClientMswServer } from './test/msw-server';
 import { createInternalApiFetcher } from './internal-client';
 import { createPublicApiFetcher } from './public-client';
 
@@ -39,6 +41,36 @@ describe('api client fetchers', () => {
       data: internalStockFixtures.stockDetail,
       ok: true,
       status: 200,
+    });
+  });
+
+  it.each([
+    [
+      'application/problem+json',
+      {
+        type: '/problems/checkout_unavailable',
+        title: 'Checkout unavailable.',
+        status: 409,
+        detail: 'Checkout is unavailable.',
+        code: 'checkout_unavailable',
+        error: 'Checkout is unavailable.',
+      },
+    ],
+    ['application/json', { code: 'checkout_unavailable', error: 'Legacy checkout error.' }],
+  ] as const)('parses %s error JSON without a client upgrade', async (contentType, body) => {
+    apiClientMswServer.use(
+      http.post('*/api/checkout/sessions', () =>
+        HttpResponse.json(body, { status: 409, headers: { 'content-type': contentType } }),
+      ),
+    );
+    const startCheckout = createPublicApiFetcher(apiClientMswBaseUrl)
+      .path('/api/checkout/sessions')
+      .method('post')
+      .create();
+
+    await expect(startCheckout(publicCheckoutFixtures.startCheckoutBody)).rejects.toMatchObject({
+      status: 409,
+      data: body,
     });
   });
 

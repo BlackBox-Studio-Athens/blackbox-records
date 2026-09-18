@@ -44,19 +44,22 @@ const detailSchema = z
   .openapi('CatalogItemPublishDetail');
 const params = z.object({ variantId: z.string().regex(/^variant_[A-Za-z0-9_-]+$/) });
 const errors = {
-  400: { description: 'Invalid request.', content: { 'application/json': { schema: backendErrorResponseSchema } } },
+  400: {
+    description: 'Invalid request.',
+    content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
+  },
   403: {
     description: 'Same-origin operator request required.',
-    content: { 'application/json': { schema: backendErrorResponseSchema } },
+    content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
   },
   409: {
     description: 'Item or content requires review.',
-    content: { 'application/json': { schema: backendErrorResponseSchema } },
+    content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
   },
   ...operatorAccessErrorResponses,
   503: {
     description: 'Publication unavailable. Retry the retained operation.',
-    content: { 'application/json': { schema: backendErrorResponseSchema } },
+    content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
   },
 };
 

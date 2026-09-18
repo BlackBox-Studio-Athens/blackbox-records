@@ -37,7 +37,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication is temporarily unavailable. */
@@ -46,7 +46,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -113,7 +113,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication is temporarily unavailable. */
@@ -122,7 +122,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -168,7 +168,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Checkout order not found. */
@@ -177,7 +177,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication is temporarily unavailable. */
@@ -186,7 +186,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -239,7 +239,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication failed. */
@@ -248,7 +248,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication is temporarily unavailable. */
@@ -257,7 +257,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -304,7 +304,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication is temporarily unavailable. */
@@ -313,7 +313,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -398,7 +398,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication failed. */
@@ -407,7 +407,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Variant not found. */
@@ -416,7 +416,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication is temporarily unavailable. */
@@ -425,7 +425,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -477,7 +477,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication failed. */
@@ -486,7 +486,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Variant not found. */
@@ -495,7 +495,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication is temporarily unavailable. */
@@ -504,7 +504,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -554,7 +554,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication failed. */
@@ -563,7 +563,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Variant not found. */
@@ -572,7 +572,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Stock changed since the recount began. */
@@ -581,7 +581,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication is temporarily unavailable. */
@@ -590,7 +590,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -636,7 +636,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication failed. */
@@ -645,7 +645,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Variant not found. */
@@ -654,7 +654,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Operator authentication is temporarily unavailable. */
@@ -663,7 +663,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -680,10 +680,8 @@ export type paths = {
 export type webhooks = Record<string, never>;
 export type components = {
     schemas: {
-        BackendErrorResponse: {
-            code: string;
+        BackendErrorResponse: components["schemas"]["ProblemDetails"] & {
             error: string;
-            requestId?: string;
         };
         CatalogItemPublishDetail: {
             /** @enum {string} */
@@ -931,6 +929,14 @@ export type components = {
             })[];
             nextCursor?: string;
         };
+        ProblemDetails: {
+            code: string;
+            detail: string;
+            requestId?: string;
+            status: number;
+            title: string;
+            type: string;
+        };
         RecordedStockChangeResponse: {
             entry: components["schemas"]["InternalStockChangeEntry"];
             stock: components["schemas"]["InternalStockState"];
@@ -1021,7 +1027,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Operator authentication failed. */
@@ -1030,7 +1036,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Same-origin operator request required. */
@@ -1039,7 +1045,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Operation input or catalog revision conflicts, or live confirmation is missing. */
@@ -1048,7 +1054,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Operator authentication or item setup is temporarily unavailable. */
@@ -1057,7 +1063,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
         };
@@ -1088,7 +1094,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Item setup or price requires reconciliation. */
@@ -1097,7 +1103,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Price is temporarily unavailable. */
@@ -1106,7 +1112,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
         };
@@ -1164,7 +1170,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Operator authentication failed. */
@@ -1173,7 +1179,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Same-origin operator request required. */
@@ -1182,7 +1188,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Operation input or catalog revision conflicts, or live confirmation is missing. */
@@ -1191,7 +1197,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Operator authentication or price processing is temporarily unavailable. */
@@ -1200,7 +1206,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
         };
@@ -1231,7 +1237,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Operator authentication failed. */
@@ -1240,7 +1246,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Same-origin operator request required. */
@@ -1249,7 +1255,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Item or content requires review. */
@@ -1258,7 +1264,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Publication unavailable. Retry the retained operation. */
@@ -1267,7 +1273,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
         };
@@ -1314,7 +1320,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Operator authentication failed. */
@@ -1323,7 +1329,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Same-origin operator request required. */
@@ -1332,7 +1338,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Item or content requires review. */
@@ -1341,7 +1347,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
             /** @description Publication unavailable. Retry the retained operation. */
@@ -1350,7 +1356,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BackendErrorResponse"];
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
                 };
             };
         };

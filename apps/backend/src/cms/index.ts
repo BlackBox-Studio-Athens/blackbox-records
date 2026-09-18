@@ -30,6 +30,12 @@ import {
 import { handleItemArtwork, itemArtworkPath, publishedMediaPath, servePublishedMedia } from './item-artwork';
 import { reconcileItemPublications, guardItemLifecycle, readPublicationCatalog } from './item-publication-recovery';
 import {
+  cmsNestedProblemResponse,
+  cmsStringProblemResponse,
+  createCmsNestedProblemBody,
+  problemResponse,
+} from '../interfaces/http/responses';
+import {
   createPreviewContext,
   previewContext,
   previewInputSchema,
@@ -318,8 +324,12 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         cacheMisses,
         safeReason: error instanceof Error ? error.name : 'unknown',
       });
-      const message = error instanceof Error ? error.message : 'Preview could not update.';
-      return Response.json({ error: message.slice(0, 1000) }, { status: 422, headers });
+      return cmsStringProblemResponse(422, 'PREVIEW_FAILED', {
+        code: 'preview_failed',
+        detail: 'Preview could not update. Check required fields and linked content.',
+        headers,
+        requestId,
+      });
     }
   }
 
@@ -416,8 +426,15 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           }),
         );
       } catch {
-        return Response.json(
-          { success: false, error: { message: 'The workspace could not be loaded. Retry.' } },
+        return problemResponse(
+          {
+            success: false,
+            ...createCmsNestedProblemBody({
+              status: 503,
+              code: 'service_unavailable',
+              error: { message: 'The workspace could not be loaded. Retry.' },
+            }),
+          },
           { status: 503, headers: { 'Cache-Control': 'private, no-store' } },
         );
       }
@@ -433,7 +450,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       )
         return new Response('Forbidden', { status: 403 });
       if (bindings.CONTENT_PUBLICATION_MODE !== 'runtime' || !bindings.PUBLIC_SITE)
-        return Response.json({ error: 'PUBLICATION_UNAVAILABLE' }, { status: 503 });
+        return cmsStringProblemResponse(503, 'PUBLICATION_UNAVAILABLE');
       try {
         const input = selectedPublicationSchema.parse(JSON.parse(await readBoundedText(request.body, 16384)));
         // This path publishes editorial revisions only. Commerce availability and its
@@ -450,13 +467,10 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         this.ctx.waitUntil(this.processPublications().finally(() => this.ctx.storage.setAlarm(Date.now() + 1000)));
         return Response.json(accepted, { status: 202, headers: { 'Cache-Control': 'private, no-store' } });
       } catch (error) {
-        return Response.json(
-          { error: 'PUBLICATION_UNAVAILABLE' },
-          {
-            status: error instanceof InvalidPublication ? 409 : 503,
-            headers: { 'Cache-Control': 'private, no-store' },
-          },
-        );
+        const status = error instanceof InvalidPublication ? 409 : 503;
+        return cmsStringProblemResponse(status, 'PUBLICATION_UNAVAILABLE', {
+          code: error instanceof InvalidPublication ? 'publication_conflict' : 'publication_unavailable',
+        });
       }
     }
     const mutation = /^\/_emdash\/api\/content\/([a-z_]+)\/([A-Za-z0-9_-]+)(?:\/|$)/.exec(url.pathname);
@@ -469,16 +483,9 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           .bind(mutation[1], mutation[2])
           .first();
       } catch {
-        return Response.json(
-          { error: 'PUBLICATION_STATUS_UNAVAILABLE' },
-          { status: 503, headers: { 'Cache-Control': 'private, no-store' } },
-        );
+        return cmsStringProblemResponse(503, 'PUBLICATION_STATUS_UNAVAILABLE');
       }
-      if (pending)
-        return Response.json(
-          { error: 'PUBLICATION_IN_PROGRESS' },
-          { status: 409, headers: { 'Cache-Control': 'private, no-store' } },
-        );
+      if (pending) return cmsStringProblemResponse(409, 'PUBLICATION_IN_PROGRESS');
     }
     if (url.pathname === previewDiagnosticsPath && identity)
       return reportPreviewFailure(request, identity, this.diagnosticLimits, createBindingLogger(this.env));
@@ -582,11 +589,11 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           !body.scopes.includes('content:read') ||
           !body.scopes.includes('media:read')
         )
-          return Response.json({ error: { code: 'EXPORT_READ_SCOPES_REQUIRED' } }, { status: 400 });
+          return cmsNestedProblemResponse(400, { code: 'EXPORT_READ_SCOPES_REQUIRED' });
       }
     }
     if (!(await this.isInitialized())) {
-      return Response.json({ error: { code: 'CMS_NOT_INITIALIZED' } }, { status: 503 });
+      return cmsNestedProblemResponse(503, { code: 'CMS_NOT_INITIALIZED' });
     }
     if (!['GET', 'HEAD'].includes(request.method)) {
       const origin = request.headers.get('Origin');
@@ -608,13 +615,28 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             throw new Error('Invalid draft.');
           const issues = validateCmsDraft(editorialWrite[1], payload.data as Record<string, unknown>);
           if (issues.length)
-            return Response.json(
-              { success: false, error: { message: issues.join('\n') } },
+            return problemResponse(
+              {
+                success: false,
+                ...createCmsNestedProblemBody({
+                  status: 422,
+                  code: 'invalid_editorial_save',
+                  detail: 'The editorial save is invalid.',
+                  error: { message: issues.join('\n') },
+                }),
+              },
               { status: 422, headers: { 'Cache-Control': 'private, no-store' } },
             );
         } catch {
-          return Response.json(
-            { success: false, error: { message: 'Invalid or oversized draft.' } },
+          return problemResponse(
+            {
+              success: false,
+              ...createCmsNestedProblemBody({
+                status: 400,
+                code: 'invalid_editorial_save',
+                error: { message: 'Invalid or oversized draft.' },
+              }),
+            },
             { status: 400, headers: { 'Cache-Control': 'private, no-store' } },
           );
         }
@@ -631,9 +653,16 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             return validateCmsRevisionContent(publishing[1], current.data.item.data).length === 0;
           });
           if (!valid)
-            return Response.json(
-              { success: false, error: { message: 'Complete the highlighted fields before publishing.' } },
-              { status: 422 },
+            return problemResponse(
+              {
+                success: false,
+                ...createCmsNestedProblemBody({
+                  status: 422,
+                  code: 'invalid_editorial_save',
+                  error: { message: 'Complete the highlighted fields before publishing.' },
+                }),
+              },
+              { status: 422, headers: { 'Cache-Control': 'private, no-store' } },
             );
         }
         const lifecycle = await guardItemLifecycle(request, bindings.COMMERCE_DB, (path) => {
@@ -647,7 +676,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       if (url.pathname.startsWith('/_emdash/api/media')) {
         if (url.pathname.replace(/\/+$/, '') !== '/_emdash/api/media' || request.method !== 'POST') {
           await request.body?.pipeTo(new WritableStream());
-          return Response.json({ error: { code: 'UNSUPPORTED_MEDIA_ACTION' } }, { status: 405 });
+          return cmsNestedProblemResponse(405, { code: 'UNSUPPORTED_MEDIA_ACTION' });
         }
         const { validateImageUpload } = await import('./media-upload');
         const upload = await validateImageUpload(request);
@@ -668,7 +697,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           Array.isArray(body.data) ||
           Object.keys(body).some((key) => !['_rev', 'data', 'slug', 'skipRevision'].includes(key))
         ) {
-          return Response.json({ error: { code: 'INVALID_EDITORIAL_SAVE' } }, { status: 400 });
+          return cmsNestedProblemResponse(400, { code: 'INVALID_EDITORIAL_SAVE' });
         }
       }
     }

@@ -1,3 +1,5 @@
+import { extractSafeProblemDetail } from './problem-details';
+
 export type EditorialRecord = {
   id: string;
   slug: string;
@@ -85,11 +87,9 @@ export async function editorialRequest<T>(
     body: multipart ? body : body === undefined ? null : JSON.stringify(body),
   });
   if (!response.ok) {
-    const details = (await response.json().catch(() => null)) as { error?: { message?: unknown } } | null;
-    const validation =
-      [400, 422].includes(response.status) && typeof details?.error?.message === 'string'
-        ? details.error.message.slice(0, 1000)
-        : null;
+    const details = await response.json().catch(() => null);
+    const detail = extractSafeProblemDetail(details, '');
+    const validation = [400, 422].includes(response.status) && detail ? detail : null;
     throw new EditorialApiError(
       response.status,
       response.status === 409

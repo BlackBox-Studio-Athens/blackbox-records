@@ -36,7 +36,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Store item not found. */
@@ -45,7 +45,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Checkout unavailable or not configured. */
@@ -54,7 +54,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Native checkout is temporarily unavailable. */
@@ -63,7 +63,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -107,7 +107,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -157,7 +157,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Newsletter signup is temporarily unavailable. */
@@ -166,7 +166,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -214,7 +214,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
                 /** @description Services inquiry submission is temporarily unavailable. */
@@ -223,7 +223,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -302,6 +302,24 @@ export type paths = {
                         "application/json": components["schemas"]["DeliveryQuoteResponse"];
                     };
                 };
+                /** @description The delivery quote request is invalid. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
+                /** @description The delivery quote service is temporarily unavailable. */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -343,7 +361,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -389,7 +407,7 @@ export type paths = {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["BackendErrorResponse"];
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
             };
@@ -441,10 +459,8 @@ export type paths = {
 export type webhooks = Record<string, never>;
 export type components = {
     schemas: {
-        BackendErrorResponse: {
-            code: string;
+        BackendErrorResponse: components["schemas"]["ProblemDetails"] & {
             error: string;
-            requestId?: string;
         };
         CheckoutState: {
             checkoutSessionId: string;
@@ -484,6 +500,14 @@ export type components = {
         NewsletterRegistrationResponse: {
             /** @enum {string} */
             status: "registered";
+        };
+        ProblemDetails: {
+            code: string;
+            detail: string;
+            requestId?: string;
+            status: number;
+            title: string;
+            type: string;
         };
         PublicStoreListingPrice: {
             displayPrice: string;

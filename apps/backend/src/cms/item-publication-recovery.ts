@@ -2,6 +2,7 @@ import { D1CatalogOperationRepository } from '../infrastructure/persistence/pris
 import { readPublication } from './publication-journal';
 import { z } from 'zod';
 import { snapshotStoreItemSchema } from '@blackbox/content-model';
+import { cmsNestedProblemResponse } from '../interfaces/http/responses';
 
 export async function readPublicationCatalog(db: D1Database) {
   const rows = await db
@@ -28,7 +29,7 @@ export async function guardItemLifecycle(
       .regex(/^[A-Za-z0-9_-]{1,128}$/)
       .parse(decodeURIComponent(encodedId));
   } catch {
-    return Response.json({ error: { code: 'INVALID_IDENTITY' } }, { status: 400 });
+    return cmsNestedProblemResponse(400, { code: 'INVALID_IDENTITY' });
   }
   const item = await db
     .prepare(
@@ -46,7 +47,7 @@ export async function guardItemLifecycle(
         .json()
         .catch(() => null),
     );
-  if (!body.success) return Response.json({ error: { code: 'REVISION_REQUIRED' } }, { status: 400 });
+  if (!body.success) return cmsNestedProblemResponse(400, { code: 'REVISION_REQUIRED' });
   if (action === 'publish') {
     const operation = await db
       .prepare(
@@ -55,7 +56,7 @@ export async function guardItemLifecycle(
       )
       .bind(item.variantId, new Date().toISOString(), body.data._rev)
       .first();
-    return operation ? null : Response.json({ error: { code: 'USE_ITEM_PUBLICATION' } }, { status: 409 });
+    return operation ? null : cmsNestedProblemResponse(409, { code: 'USE_ITEM_PUBLICATION' });
   }
   const response = await readSource(`/_emdash/api/content/${collection}/${id}`);
   const current = response.ok
@@ -63,7 +64,7 @@ export async function guardItemLifecycle(
     : null;
   if (!current?.success) {
     if (!response.bodyUsed) await response.body?.cancel();
-    return Response.json({ error: { code: 'REVISION_CHANGED' } }, { status: 409 });
+    return cmsNestedProblemResponse(409, { code: 'REVISION_CHANGED' });
   }
   // Pause before the native unpublish. An interrupted CMS response must never leave checkout enabled.
   await db.batch([

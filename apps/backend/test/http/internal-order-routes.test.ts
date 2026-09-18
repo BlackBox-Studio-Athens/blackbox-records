@@ -49,6 +49,10 @@ describe('internal order routes', () => {
     expect(response.status).toBe(401);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/unauthorized',
+      title: 'Unauthorized.',
+      status: 401,
+      detail: 'Unauthorized.',
       code: 'unauthorized',
       error: 'Unauthorized.',
       requestId: expect.any(String),
@@ -312,6 +316,10 @@ describe('internal order routes', () => {
     expect(response.status).toBe(404);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/not_found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'Checkout order not found.',
       code: 'not_found',
       error: 'Checkout order not found.',
       requestId: expect.any(String),

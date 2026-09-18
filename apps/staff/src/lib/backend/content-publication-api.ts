@@ -1,4 +1,5 @@
 import { EditorialApiError } from './editorial-api';
+import { extractSafeProblemDetail } from './problem-details';
 
 export type ContentPublication = {
   id: string;
@@ -22,13 +23,16 @@ export async function publishSavedContent(
     headers: { 'X-EmDash-Request': '1', 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
-  if (!response.ok)
+  if (!response.ok) {
+    const detail = extractSafeProblemDetail(await response.json().catch(() => null), '');
     throw new EditorialApiError(
       response.status,
-      response.status === 409
-        ? 'Load the saved version before publishing again.'
-        : 'Publication could not be confirmed. Check status or retry.',
+      detail ||
+        (response.status === 409
+          ? 'Load the saved version before publishing again.'
+          : 'Publication could not be confirmed. Check status or retry.'),
     );
+  }
   return response.json() as Promise<ContentPublication>;
 }
 
@@ -39,12 +43,15 @@ export async function readContentPublications(base: string): Promise<{ items: Co
     cache: 'no-store',
     headers: { 'X-EmDash-Request': '1' },
   });
-  if (!response.ok)
+  if (!response.ok) {
+    const detail = extractSafeProblemDetail(await response.json().catch(() => null), '');
     throw new EditorialApiError(
       response.status,
-      response.status === 409
-        ? 'This publication conflicts with a newer change. Load the saved version before publishing again.'
-        : 'Publication could not be confirmed. Check status or retry the request. The public site may still be unchanged.',
+      detail ||
+        (response.status === 409
+          ? 'This publication conflicts with a newer change. Load the saved version before publishing again.'
+          : 'Publication could not be confirmed. Check status or retry the request. The public site may still be unchanged.'),
     );
+  }
   return response.json() as Promise<{ items: ContentPublication[] }>;
 }

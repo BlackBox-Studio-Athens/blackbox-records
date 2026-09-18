@@ -159,7 +159,7 @@ const getOrderByCheckoutSessionRoute = createRoute({
     ...operatorAccessErrorResponses,
     404: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -184,7 +184,7 @@ const searchOrdersRoute = createRoute({
   },
   responses: {
     400: {
-      content: { 'application/json': { schema: backendErrorResponseSchema } },
+      content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
       description: 'Invalid search cursor.',
     },
     200: {

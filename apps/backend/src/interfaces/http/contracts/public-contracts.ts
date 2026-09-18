@@ -137,6 +137,18 @@ export const postDeliveryQuoteRoute = createRoute({
     },
   },
   responses: {
+    400: {
+      description: 'The delivery quote request is invalid.',
+      content: {
+        'application/problem+json': { schema: backendErrorResponseSchema },
+      },
+    },
+    503: {
+      description: 'The delivery quote service is temporarily unavailable.',
+      content: {
+        'application/problem+json': { schema: backendErrorResponseSchema },
+      },
+    },
     200: {
       description: 'Current complete-cart delivery quote, or unavailable.',
       content: {
@@ -231,7 +243,7 @@ export const getStoreItemRoute = createRoute({
     },
     404: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -290,7 +302,7 @@ export const getStoreItemVariantsRoute = createRoute({
     },
     404: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -323,7 +335,7 @@ export const postCheckoutSessionRoute = createRoute({
     },
     400: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -331,7 +343,7 @@ export const postCheckoutSessionRoute = createRoute({
     },
     404: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -339,7 +351,7 @@ export const postCheckoutSessionRoute = createRoute({
     },
     409: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -347,7 +359,7 @@ export const postCheckoutSessionRoute = createRoute({
     },
     503: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -374,7 +386,7 @@ export const getCheckoutStateRoute = createRoute({
     },
     409: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -407,7 +419,7 @@ export const postNewsletterRegistrationRoute = createRoute({
     },
     400: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -415,7 +427,7 @@ export const postNewsletterRegistrationRoute = createRoute({
     },
     503: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -448,7 +460,7 @@ export const postServicesInquiryRoute = createRoute({
     },
     400: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -456,7 +468,7 @@ export const postServicesInquiryRoute = createRoute({
     },
     503: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },

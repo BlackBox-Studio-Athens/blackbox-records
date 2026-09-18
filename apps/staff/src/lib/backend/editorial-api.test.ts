@@ -63,6 +63,40 @@ it('sends the exact saved revision and surfaces a stale save without retrying a 
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 
+it('prefers local problem details and ignores foreign problem documents', async () => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          type: '/problems/invalid_editorial_save',
+          title: 'Invalid editorial save.',
+          status: 422,
+          detail: 'The title is required.',
+          code: 'invalid_editorial_save',
+          error: { message: 'The title is required.' },
+        }),
+        { status: 422, headers: { 'content-type': 'application/problem+json' } },
+      ),
+    )
+    .mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ type: 'https://provider.example/problems/internal', detail: 'Private provider detail.' }),
+        { status: 422, headers: { 'content-type': 'application/problem+json' } },
+      ),
+    );
+  vi.stubGlobal('fetch', fetch);
+
+  await expect(editorialRequest('', 'content/artists/artist-one', { data: {} }, 'POST')).rejects.toMatchObject({
+    status: 422,
+    message: 'The title is required.',
+  });
+  await expect(editorialRequest('', 'content/artists/artist-one', { data: {} }, 'POST')).rejects.toMatchObject({
+    status: 422,
+    message: 'We could not confirm this request. Check your connection and try again.',
+  });
+});
+
 it('recovers a lost create reply by reading the same stable slug without another write', async () => {
   let created = false;
   let writes = 0;

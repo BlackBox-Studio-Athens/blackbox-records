@@ -31,6 +31,10 @@ describe('operator access middleware', () => {
     expect(response.status).toBe(401);
     expect(response.headers.get('Cache-Control')).toBe('no-store');
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/unauthorized',
+      title: 'Unauthorized.',
+      status: 401,
+      detail: 'Unauthorized.',
       code: 'unauthorized',
       error: 'Unauthorized.',
       requestId: expect.any(String),
@@ -47,6 +51,10 @@ describe('operator access middleware', () => {
     expect(response.status).toBe(503);
     expect(response.headers.get('Cache-Control')).toBe('no-store');
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/operator_access_unavailable',
+      title: 'Operator access temporarily unavailable.',
+      status: 503,
+      detail: 'Operator access temporarily unavailable.',
       code: 'operator_access_unavailable',
       error: 'Operator access temporarily unavailable.',
       requestId: expect.any(String),
@@ -62,6 +70,10 @@ describe('operator access middleware', () => {
     expect(response.status).toBe(503);
     expect(response.headers.get('Cache-Control')).toBe('no-store');
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/operator_access_unavailable',
+      title: 'Operator access temporarily unavailable.',
+      status: 503,
+      detail: 'Operator access temporarily unavailable.',
       code: 'operator_access_unavailable',
       error: 'Operator access temporarily unavailable.',
       requestId: expect.any(String),

@@ -511,14 +511,47 @@
         ]
       },
       "BackendErrorResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ProblemDetails"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ]
+          }
+        ]
+      },
+      "ProblemDetails": {
         "type": "object",
         "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^\\/problems\\/[a-z][a-z0-9_]*$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          },
           "code": {
             "type": "string",
             "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "error": {
-            "type": "string"
           },
           "requestId": {
             "type": "string",
@@ -526,8 +559,11 @@
           }
         },
         "required": [
-          "code",
-          "error"
+          "type",
+          "title",
+          "status",
+          "detail",
+          "code"
         ]
       },
       "InventoryPage": {
@@ -1265,7 +1301,7 @@
           "400": {
             "description": "Invalid search cursor.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1275,7 +1311,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1285,7 +1321,7 @@
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1337,7 +1373,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1347,7 +1383,7 @@
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1387,7 +1423,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1397,7 +1433,7 @@
           "404": {
             "description": "Checkout order not found.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1407,7 +1443,7 @@
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1502,7 +1538,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1512,7 +1548,7 @@
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1565,7 +1601,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1575,7 +1611,7 @@
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1615,7 +1651,7 @@
           "400": {
             "description": "Invalid variant id.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1625,7 +1661,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1635,7 +1671,7 @@
           "404": {
             "description": "Variant not found.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1645,7 +1681,7 @@
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1695,7 +1731,7 @@
           "400": {
             "description": "Invalid variant id.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1705,7 +1741,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1715,7 +1751,7 @@
           "404": {
             "description": "Variant not found.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1725,7 +1761,7 @@
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1774,7 +1810,7 @@
           "400": {
             "description": "Invalid stock change.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1784,7 +1820,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1794,7 +1830,7 @@
           "404": {
             "description": "Variant not found.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1804,7 +1840,7 @@
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1853,7 +1889,7 @@
           "400": {
             "description": "Invalid stock count.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1863,7 +1899,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1873,7 +1909,7 @@
           "404": {
             "description": "Variant not found.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1883,7 +1919,7 @@
           "409": {
             "description": "Stock changed since the recount began.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1893,7 +1929,7 @@
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1935,7 +1971,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1945,7 +1981,7 @@
           "409": {
             "description": "Item setup or price requires reconciliation.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1955,7 +1991,7 @@
           "503": {
             "description": "Price is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2116,7 +2152,7 @@
           "400": {
             "description": "Invalid request.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2126,7 +2162,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2136,7 +2172,7 @@
           "403": {
             "description": "Same-origin operator request required.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2146,7 +2182,7 @@
           "409": {
             "description": "Operation input or catalog revision conflicts, or live confirmation is missing.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2156,7 +2192,7 @@
           "503": {
             "description": "Operator authentication or price processing is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2400,7 +2436,7 @@
           "400": {
             "description": "Invalid request.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2410,7 +2446,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2420,7 +2456,7 @@
           "403": {
             "description": "Same-origin operator request required.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2430,7 +2466,7 @@
           "409": {
             "description": "Operation input or catalog revision conflicts, or live confirmation is missing.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2440,7 +2476,7 @@
           "503": {
             "description": "Operator authentication or item setup is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2482,7 +2518,7 @@
           "400": {
             "description": "Invalid request.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2492,7 +2528,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2502,7 +2538,7 @@
           "403": {
             "description": "Same-origin operator request required.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2512,7 +2548,7 @@
           "409": {
             "description": "Item or content requires review.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2522,7 +2558,7 @@
           "503": {
             "description": "Publication unavailable. Retry the retained operation.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2617,7 +2653,7 @@
           "400": {
             "description": "Invalid request.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2627,7 +2663,7 @@
           "401": {
             "description": "Operator authentication failed.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2637,7 +2673,7 @@
           "403": {
             "description": "Same-origin operator request required.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2647,7 +2683,7 @@
           "409": {
             "description": "Item or content requires review.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -2657,7 +2693,7 @@
           "503": {
             "description": "Publication unavailable. Retry the retained operation.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }

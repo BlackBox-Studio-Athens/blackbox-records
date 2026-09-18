@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { ProductEnvironmentProfile } from '../env';
 import { approvePublicationImage } from './snapshot-storage';
 import { readBytes, readJson } from './publication-routes';
+import { cmsStringProblemResponse } from '../interfaces/http/responses';
 
 export const itemArtworkPath = '/_emdash/api/blackbox/item-artwork';
 export const publishedMediaPath = '/media/published/';
@@ -32,7 +33,7 @@ export async function handleItemArtwork(
   const url = new URL(request.url);
   const reply = async (status: number, error: string) => {
     await request.body?.pipeTo(new WritableStream());
-    return Response.json({ error }, { status, headers: { 'Cache-Control': 'private, no-store' } });
+    return cmsStringProblemResponse(status, error);
   };
   if (url.pathname !== itemArtworkPath || url.search) return reply(404, 'NOT_FOUND');
   if (request.method !== 'POST') return reply(405, 'METHOD_NOT_ALLOWED');

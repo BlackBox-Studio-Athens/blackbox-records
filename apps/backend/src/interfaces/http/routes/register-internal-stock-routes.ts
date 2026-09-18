@@ -49,7 +49,7 @@ function toInternalStockRouteError(
   options: { includeInvalidStockOperation?: boolean; invalidRequestMessage: string },
 ): InternalStockRouteError | null {
   if (error instanceof services.errors.VariantNotFoundError) {
-    return { code: 'not_found', message: error.message, status: 404 };
+    return { code: 'not_found', message: 'Variant not found.', status: 404 };
   }
 
   if (options.includeInvalidStockOperation && error instanceof services.errors.InvalidStockOperationError) {
@@ -238,7 +238,7 @@ const getVariantStockRoute = createRoute({
     ...operatorAccessErrorResponses,
     400: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -246,7 +246,7 @@ const getVariantStockRoute = createRoute({
     },
     404: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -275,7 +275,7 @@ const getVariantStockHistoryRoute = createRoute({
     ...operatorAccessErrorResponses,
     400: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -283,7 +283,7 @@ const getVariantStockHistoryRoute = createRoute({
     },
     404: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -317,7 +317,7 @@ const postStockChangeRoute = createRoute({
     },
     400: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -326,7 +326,7 @@ const postStockChangeRoute = createRoute({
     ...operatorAccessErrorResponses,
     404: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -351,7 +351,7 @@ const postStockCountRoute = createRoute({
   },
   responses: {
     409: {
-      content: { 'application/json': { schema: backendErrorResponseSchema } },
+      content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
       description: 'Stock changed since the recount began.',
     },
     200: {
@@ -364,7 +364,7 @@ const postStockCountRoute = createRoute({
     },
     400: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },
@@ -373,7 +373,7 @@ const postStockCountRoute = createRoute({
     ...operatorAccessErrorResponses,
     404: {
       content: {
-        'application/json': {
+        'application/problem+json': {
           schema: backendErrorResponseSchema,
         },
       },

@@ -1,4 +1,5 @@
 import { enrichImageMetadata } from 'emdash/media';
+import { cmsNestedProblemResponse } from '../interfaces/http/responses';
 
 const maxImageBytes = 20 * 1024 * 1024;
 const maxThumbnailBytes = 1024 * 1024;
@@ -87,7 +88,7 @@ export async function validateImageUpload(request: Request): Promise<Response | 
     return null;
   } catch (error) {
     const code = error instanceof Error && error.message === 'UPLOAD_TOO_LARGE' ? 'UPLOAD_TOO_LARGE' : 'INVALID_IMAGE';
-    return Response.json({ error: { code } }, { status: code === 'UPLOAD_TOO_LARGE' ? 413 : 400 });
+    return cmsNestedProblemResponse(code === 'UPLOAD_TOO_LARGE' ? 413 : 400, { code });
   } finally {
     await cancellation;
   }

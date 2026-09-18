@@ -37,12 +37,45 @@ it('retries the same publication identity after a lost response and reads server
 it('preserves a publication conflict status so the form can stop retrying a stale request', async () => {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async () => Response.json({ error: 'REVISION_NOT_PUBLISHED' }, { status: 409 })),
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            type: '/problems/publication_conflict',
+            title: 'Publication conflict.',
+            status: 409,
+            detail: 'The publication request conflicts with another request.',
+            code: 'publication_conflict',
+            error: 'REVISION_NOT_PUBLISHED',
+          }),
+          { status: 409, headers: { 'content-type': 'application/problem+json' } },
+        ),
+    ),
   );
   await expect(
     publishSavedContent('', {
       id: 'request-one',
       records: [{ collection: 'artists', recordId: 'artist-one', expectedRevision: 'old-revision' }],
     }),
-  ).rejects.toMatchObject({ status: 409 });
+  ).rejects.toMatchObject({
+    status: 409,
+    message: 'The publication request conflicts with another request.',
+  });
+});
+
+it('maps a legacy CMS code to safe copy during deploy skew', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => Response.json({ error: 'REVISION_NOT_PUBLISHED' }, { status: 409 })),
+  );
+
+  await expect(
+    publishSavedContent('', {
+      id: 'request-one',
+      records: [{ collection: 'artists', recordId: 'artist-one', expectedRevision: 'old-revision' }],
+    }),
+  ).rejects.toMatchObject({
+    status: 409,
+    message: 'The requested revision is not published.',
+  });
 });

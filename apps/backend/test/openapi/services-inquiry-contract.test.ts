@@ -97,10 +97,10 @@ describe('Services inquiry public contract', () => {
     });
     expect(Object.keys(operation?.responses ?? {})).toEqual(['200', '400', '503']);
     expect(operation?.responses?.['400']).toMatchObject({
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/BackendErrorResponse' } } },
+      content: { 'application/problem+json': { schema: { $ref: '#/components/schemas/BackendErrorResponse' } } },
     });
     expect(operation?.responses?.['503']).toMatchObject({
-      content: { 'application/json': { schema: { $ref: '#/components/schemas/BackendErrorResponse' } } },
+      content: { 'application/problem+json': { schema: { $ref: '#/components/schemas/BackendErrorResponse' } } },
       description: 'Services inquiry submission is temporarily unavailable.',
     });
     expect(requestSchema).toMatchObject({

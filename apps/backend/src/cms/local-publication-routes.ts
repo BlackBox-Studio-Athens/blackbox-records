@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { acknowledgeLocalPublication, readNextLocalPublication, readPublication } from './publication-journal';
 import { readJson } from './publication-routes';
+import { cmsStringProblemResponse } from '../interfaces/http/responses';
 
 export const localPublicationRoot = '/_emdash/api/blackbox/publications/local/';
 
@@ -12,6 +13,8 @@ export async function handleLocalPublicationRequest(
   const url = new URL(request.url);
   const reply = async (status: number, value: unknown) => {
     await request.body?.pipeTo(new WritableStream());
+    if (value && typeof value === 'object' && 'error' in value && typeof value.error === 'string')
+      return cmsStringProblemResponse(status, value.error);
     return Response.json(value, { status, headers: { 'Cache-Control': 'private, no-store' } });
   };
   if (

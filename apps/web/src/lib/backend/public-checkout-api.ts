@@ -157,12 +157,16 @@ function isOpenApiErrorLike(error: unknown): error is OpenApiErrorLike {
 }
 
 function extractBackendErrorMessage(body: unknown, fallbackMessage: string): string {
-  if (body && typeof body === 'object' && 'error' in body) {
-    const errorMessage = (body as { error?: unknown }).error;
+  if (!body || typeof body !== 'object') return fallbackMessage;
 
-    if (typeof errorMessage === 'string' && errorMessage.trim()) {
-      return errorMessage;
-    }
+  const record = body as Record<string, unknown>;
+  const localType = typeof record.type === 'string' && /^\/problems\/[a-z][a-z0-9_]*$/.test(record.type);
+  if (localType && typeof record.detail === 'string' && record.detail.trim())
+    return record.detail.trim().slice(0, 1000);
+
+  if (typeof record.error === 'string' && (!('type' in record) || localType) && record.error.trim()) {
+    if (/^[A-Z][A-Z0-9_]+$/.test(record.error.trim())) return fallbackMessage;
+    return record.error.trim().slice(0, 1000);
   }
 
   return fallbackMessage;

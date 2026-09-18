@@ -1,6 +1,7 @@
 import type { MiddlewareHandler } from 'astro';
 import { slugPatternSource } from '@blackbox/content-model';
 import { isCmsCollection } from '@blackbox/content-model';
+import { cmsNestedProblemResponse } from './interfaces/http/responses';
 
 const slugPattern = new RegExp(slugPatternSource);
 
@@ -61,7 +62,7 @@ export const onRequest: MiddlewareHandler = async ({ request, url }, next) => {
   const [, collection, id, action] = match;
   const reject = async (code: string, status = 400) => {
     await request.body?.pipeTo(new WritableStream());
-    return Response.json({ error: { code } }, { status });
+    return cmsNestedProblemResponse(status, { code });
   };
   if (!isCmsCollection(collection)) return reject('UNSUPPORTED_COLLECTION');
   const lock = id && action === 'lock' && ['POST', 'DELETE'].includes(request.method);

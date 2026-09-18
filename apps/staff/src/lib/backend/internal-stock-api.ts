@@ -1,4 +1,5 @@
 import type { InternalApiComponents, InternalApiOperations } from '@blackbox/api-client/internal';
+import { extractSafeProblemDetail } from './problem-details';
 
 export type InternalVariantSummary = InternalApiComponents['schemas']['InternalVariantSummary'];
 export type InternalStockDetail = InternalApiComponents['schemas']['InternalStockDetail'];
@@ -78,7 +79,7 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
       const body = await readErrorBody(response);
       throw new InternalStockApiError(
         response.status,
-        body?.error ?? `Internal stock API request failed with ${response.status}.`,
+        extractSafeProblemDetail(body, `Internal stock API request failed with ${response.status}.`),
       );
     }
 
@@ -161,7 +162,7 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
   };
 }
 
-async function readErrorBody(response: Response): Promise<BackendErrorResponse | { error?: string } | null> {
+async function readErrorBody(response: Response): Promise<BackendErrorResponse | { error?: unknown } | null> {
   const text = await response.text();
 
   if (!text) {
@@ -169,7 +170,7 @@ async function readErrorBody(response: Response): Promise<BackendErrorResponse |
   }
 
   try {
-    return JSON.parse(text) as BackendErrorResponse | { error?: string };
+    return JSON.parse(text) as BackendErrorResponse | { error?: unknown };
   } catch {
     return null;
   }

@@ -60,6 +60,62 @@
           "quote"
         ]
       },
+      "BackendErrorResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ProblemDetails"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "error"
+            ]
+          }
+        ]
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "pattern": "^\\/problems\\/[a-z][a-z0-9_]*$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 599
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "requestId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "status",
+          "detail",
+          "code"
+        ]
+      },
       "StartCheckoutLine": {
         "type": "object",
         "properties": {
@@ -429,26 +485,6 @@
           }
         ]
       },
-      "BackendErrorResponse": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9_]*$"
-          },
-          "error": {
-            "type": "string"
-          },
-          "requestId": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "code",
-          "error"
-        ]
-      },
       "StartCheckoutResponse": {
         "type": "object",
         "properties": {
@@ -713,6 +749,26 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "The delivery quote request is invalid.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The delivery quote service is temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -788,7 +844,7 @@
           "404": {
             "description": "Store item not found.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -831,7 +887,7 @@
           "404": {
             "description": "Store item not found.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -869,7 +925,7 @@
           "400": {
             "description": "Invalid checkout request.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -879,7 +935,7 @@
           "404": {
             "description": "Store item not found.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -889,7 +945,7 @@
           "409": {
             "description": "Checkout unavailable or not configured.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -899,7 +955,7 @@
           "503": {
             "description": "Native checkout is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -939,7 +995,7 @@
           "409": {
             "description": "Checkout is not configured.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -977,7 +1033,7 @@
           "400": {
             "description": "Invalid newsletter signup request.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -987,7 +1043,7 @@
           "503": {
             "description": "Newsletter signup is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1025,7 +1081,7 @@
           "400": {
             "description": "Invalid Services inquiry request.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }
@@ -1035,7 +1091,7 @@
           "503": {
             "description": "Services inquiry submission is temporarily unavailable.",
             "content": {
-              "application/json": {
+              "application/problem+json": {
                 "schema": {
                   "$ref": "#/components/schemas/BackendErrorResponse"
                 }

@@ -130,6 +130,10 @@ describe('internal stock routes', () => {
     expect(response.status).toBe(401);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/unauthorized',
+      title: 'Unauthorized.',
+      status: 401,
+      detail: 'Unauthorized.',
       code: 'unauthorized',
       error: 'Unauthorized.',
       requestId: expect.any(String),
@@ -356,6 +360,10 @@ describe('internal stock routes', () => {
     expect(response.status).toBe(400);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/invalid_request',
+      title: 'Invalid request.',
+      status: 400,
+      detail: 'Online stock cannot exceed counted stock.',
       code: 'invalid_request',
       error: 'Online stock cannot exceed counted stock.',
       requestId: expect.any(String),
@@ -376,6 +384,10 @@ describe('internal stock routes', () => {
     expectNoStoreCacheControl(response);
     const body = await response.json();
     expect(body).toEqual({
+      type: '/problems/not_found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'Variant not found.',
       code: 'not_found',
       error: 'Variant not found.',
       requestId: expect.any(String),

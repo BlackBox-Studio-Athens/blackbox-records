@@ -16,6 +16,7 @@ import {
   recordPublicationDeployment,
   requestPublication,
 } from './publication-journal';
+import { cmsStringProblemResponse } from '../interfaces/http/responses';
 
 const revisionId = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 const bodySchema = z.object({ id: z.uuid(), requestedRevision: revisionId }).strict();
@@ -45,6 +46,8 @@ export async function handlePublicationWorkflow(
 ) {
   const reply = async (status: number, value: unknown) => {
     await request.body?.pipeTo(new WritableStream());
+    if (value && typeof value === 'object' && 'error' in value && typeof value.error === 'string')
+      return cmsStringProblemResponse(status, value.error);
     return Response.json(value, { status, headers: { 'Cache-Control': 'private, no-store' } });
   };
   const url = new URL(request.url);
@@ -325,6 +328,8 @@ export async function handlePublicationRequest(
   const path = url.pathname.replace(/\/+$/, '');
   const reply = async (status: number, value: unknown) => {
     await request.body?.pipeTo(new WritableStream());
+    if (value && typeof value === 'object' && 'error' in value && typeof value.error === 'string')
+      return cmsStringProblemResponse(status, value.error);
     return Response.json(value, { status, headers: { 'Cache-Control': 'private, no-store' } });
   };
   const summary = publicationSummary;

@@ -26,7 +26,7 @@ const resultSchema = z
   .openapi('CatalogItemSetupResult');
 const errorResponse = (description: string) => ({
   description,
-  content: { 'application/json': { schema: backendErrorResponseSchema } },
+  content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
 });
 
 export function registerInternalSetupRoutes(app: AppOpenApi): void {

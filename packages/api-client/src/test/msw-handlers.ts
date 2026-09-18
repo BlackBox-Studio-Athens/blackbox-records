@@ -31,6 +31,10 @@ export const publicCheckoutFixtures = {
     status: 'complete',
   } satisfies CheckoutState,
   checkoutUnavailable: {
+    type: '/problems/checkout_unavailable',
+    title: 'Checkout unavailable.',
+    status: 409,
+    detail: 'Checkout is unavailable right now.',
     code: 'checkout_unavailable',
     error: 'Checkout unavailable or not configured.',
     requestId: 'req_test_checkout_unavailable',
@@ -75,6 +79,10 @@ export const publicCheckoutFixtures = {
 
 export const internalStockFixtures = {
   missingOperatorIdentity: {
+    type: '/problems/unauthorized',
+    title: 'Unauthorized.',
+    status: 401,
+    detail: 'Missing operator identity.',
     code: 'missing_operator_identity',
     error: 'Missing operator identity.',
     requestId: 'req_test_missing_operator_identity',

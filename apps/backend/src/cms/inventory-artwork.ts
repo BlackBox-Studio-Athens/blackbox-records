@@ -1,6 +1,7 @@
 import { ContentRepository } from 'emdash';
 import type { EmDashRuntime } from 'emdash/middleware';
 import { z } from 'zod';
+import { buildProblemDetails, problemResponse } from '../interfaces/http/responses';
 
 const input = z
   .array(
@@ -14,7 +15,14 @@ const input = z
 
 export async function readInventoryArtwork(request: Request, runtime: EmDashRuntime) {
   const parsed = input.safeParse(JSON.parse(new URL(request.url).searchParams.get('items') ?? '[]'));
-  if (!parsed.success) return Response.json({ success: false }, { status: 400 });
+  if (!parsed.success)
+    return problemResponse(
+      {
+        success: false,
+        ...buildProblemDetails({ code: 'invalid_request', detail: 'Invalid inventory request.', status: 400 }),
+      },
+      { status: 400, headers: { 'Cache-Control': 'private, no-store' } },
+    );
   const repository = new ContentRepository(runtime.db);
   const items: { variantId: string; image: unknown }[] = [];
   await Promise.all(

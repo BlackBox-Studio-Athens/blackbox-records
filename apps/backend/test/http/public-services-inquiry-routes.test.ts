@@ -116,6 +116,10 @@ describe('public Services inquiry HTTP route', () => {
     expect(response.status).toBe(400);
     expect(response.headers.get('Cache-Control')).toBe('no-store');
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/invalid_request',
+      title: 'Invalid request.',
+      status: 400,
+      detail: 'Invalid request.',
       code: 'invalid_request',
       error: 'Invalid request.',
       requestId: expect.any(String),
@@ -238,6 +242,10 @@ async function expectUnavailableResponse(response: Response): Promise<void> {
   expect(response.status).toBe(503);
   expect(response.headers.get('Cache-Control')).toBe('no-store');
   await expect(response.clone().json()).resolves.toEqual({
+    type: '/problems/services_inquiry_unavailable',
+    title: 'Services inquiry unavailable.',
+    status: 503,
+    detail: 'Services inquiry submission is temporarily unavailable.',
     code: 'services_inquiry_unavailable',
     error: 'Services inquiry submission is temporarily unavailable.',
     requestId: expect.any(String),

@@ -11,6 +11,10 @@ describe('internal stock UI boundary', () => {
 
       expect(response.status).toBe(404);
       await expect(response.json()).resolves.toEqual({
+        type: '/problems/not_found',
+        title: 'Not Found',
+        status: 404,
+        detail: 'Not Found',
         code: 'not_found',
         error: 'Not Found',
       });

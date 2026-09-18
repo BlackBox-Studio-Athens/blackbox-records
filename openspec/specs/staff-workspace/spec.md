@@ -1,5 +1,9 @@
 # Staff workspace
 
+## Purpose
+
+Provide one protected, environment-aware workspace for staff editorial, catalog, stock, and order operations while preserving draft privacy, commerce authority, and accessible recovery.
+
 ## Shared navigation and language
 
 The workspace SHALL use one dark staff shell with Overview, Catalog, Website, Images, Stock and Orders. Domain terms SHALL follow UBIQUITOUS_LANGUAGE.md. Existing content and variant URLs SHALL remain usable, and browser Back SHALL retain list context.
@@ -29,6 +33,8 @@ Search and filters SHALL apply to the complete server result set, with bounded c
 ## Acceptance
 
 Local acceptance SHALL cover incomplete drafts, typing during saves, conflicts, offline recovery, duplicate operations, publication failure, hidden polling, stale stock counts, order pagination and access denial. Chromium and Firefox SHALL cover 390, 768, 1280 and 1600 px, keyboard, reduced motion and real shared-template previews. At 390 px the first editable field SHALL begin within 250 px. Final repository/editor gates and content/publication checks SHALL pass before hosted rollout. UAT requires the Cloudflare Free-tier preflight; payment launch and fulfillment automation are outside this change.
+
+## Requirements
 
 ### Requirement: Browse a growing catalog
 

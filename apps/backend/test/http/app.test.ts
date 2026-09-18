@@ -34,6 +34,10 @@ describe('createHttpApp', () => {
     const response = await app.request('http://backend.test/nope');
 
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/not_found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'Not Found',
       code: 'not_found',
       error: 'Not Found',
     });
@@ -45,7 +49,7 @@ describe('createHttpApp', () => {
 
     const response = await app.request('http://backend.test/nope');
 
-    expect(response.headers.get('content-type')).toContain('application/json');
+    expect(response.headers.get('content-type')).toContain('application/problem+json');
   });
 
   it('allows configured browser origins to call local API routes', async () => {
@@ -154,6 +158,10 @@ describe('createHttpApp', () => {
       expectNoStoreCacheControl(response);
       const body = await response.json();
       expect(body).toEqual({
+        type: '/problems/internal_server_error',
+        title: 'Internal Server Error',
+        status: 500,
+        detail: 'Internal Server Error',
         code: 'internal_server_error',
         error: 'Internal Server Error',
         requestId: expect.any(String),
@@ -185,6 +193,10 @@ describe('createHttpApp', () => {
     expect(response.status).toBe(403);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/forbidden',
+      title: 'Forbidden.',
+      status: 403,
+      detail: 'Forbidden by policy.',
       code: 'forbidden',
       error: 'Forbidden by policy.',
       requestId: expect.any(String),

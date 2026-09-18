@@ -265,6 +265,10 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(404);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/not_found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'Store item not found.',
       code: 'not_found',
       error: 'Store item not found.',
       requestId: expect.any(String),
@@ -442,6 +446,10 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(503);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/newsletter_unavailable',
+      title: 'Newsletter unavailable.',
+      status: 503,
+      detail: 'Newsletter signup is temporarily unavailable.',
       code: 'newsletter_unavailable',
       error: 'Newsletter signup is temporarily unavailable.',
       requestId: expect.any(String),
@@ -512,6 +520,10 @@ describe('public commerce routes', () => {
     expectNoStoreCacheControl(response);
     const body = await response.json();
     expect(body).toEqual({
+      type: '/problems/services_inquiry_unavailable',
+      title: 'Services inquiry unavailable.',
+      status: 503,
+      detail: 'Services inquiry submission is temporarily unavailable.',
       code: 'services_inquiry_unavailable',
       error: 'Services inquiry submission is temporarily unavailable.',
       requestId: expect.any(String),
@@ -544,6 +556,10 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(400);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/invalid_request',
+      title: 'Invalid request.',
+      status: 400,
+      detail: 'Invalid request.',
       code: 'invalid_request',
       error: 'Invalid request.',
       requestId: expect.any(String),
@@ -572,6 +588,10 @@ describe('public commerce routes', () => {
     expectNoStoreCacheControl(response);
     const body = await response.json();
     expect(body).toEqual({
+      type: '/problems/invalid_request',
+      title: 'Invalid request.',
+      status: 400,
+      detail: 'Invalid request.',
       code: 'invalid_request',
       error: 'Invalid request.',
       requestId: expect.any(String),
@@ -603,6 +623,10 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(409);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/checkout_unavailable',
+      title: 'Checkout unavailable.',
+      status: 409,
+      detail: 'Checkout return URL is not allowed.',
       code: 'checkout_unavailable',
       error: 'Checkout return URL is not allowed.',
       requestId: expect.any(String),
@@ -632,6 +656,10 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(409);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/checkout_unavailable',
+      title: 'Checkout unavailable.',
+      status: 409,
+      detail: 'Checkout return URL is not allowed.',
       code: 'checkout_unavailable',
       error: 'Checkout return URL is not allowed.',
       requestId: expect.any(String),
@@ -662,6 +690,10 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(409);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/checkout_unavailable',
+      title: 'Checkout unavailable.',
+      status: 409,
+      detail: 'Checkout is not configured for this item.',
       code: 'checkout_unavailable',
       error: 'Checkout is not configured for this item.',
       requestId: expect.any(String),
@@ -692,6 +724,10 @@ describe('public commerce routes', () => {
     expect(response.status).toBe(503);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      type: '/problems/checkout_unavailable',
+      title: 'Checkout unavailable.',
+      status: 503,
+      detail: 'Native checkout is temporarily unavailable.',
       code: 'checkout_unavailable',
       error: 'Native checkout is temporarily unavailable.',
       requestId: expect.any(String),

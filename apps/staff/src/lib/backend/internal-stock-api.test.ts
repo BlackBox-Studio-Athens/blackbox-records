@@ -91,4 +91,36 @@ describe('createInternalStockApi', () => {
       new InternalStockApiError(404, 'Internal stock API request failed with 404.'),
     );
   });
+
+  it('prefers local RFC problem details and ignores foreign extensions', async () => {
+    const problemApi = createInternalStockApi({
+      fetcher: async () =>
+        new Response(
+          JSON.stringify({
+            type: '/problems/not_found',
+            title: 'Not Found',
+            status: 404,
+            detail: 'Variant not found.',
+            code: 'not_found',
+            error: 'Variant not found.',
+          }),
+          { status: 404, headers: { 'content-type': 'application/problem+json' } },
+        ),
+    });
+    const foreignApi = createInternalStockApi({
+      fetcher: async () =>
+        new Response(
+          JSON.stringify({ type: 'https://provider.example/problems/internal', detail: 'Private detail.' }),
+          {
+            status: 503,
+            headers: { 'content-type': 'application/problem+json' },
+          },
+        ),
+    });
+
+    await expect(problemApi.searchVariants()).rejects.toEqual(new InternalStockApiError(404, 'Variant not found.'));
+    await expect(foreignApi.searchVariants()).rejects.toEqual(
+      new InternalStockApiError(503, 'Internal stock API request failed with 503.'),
+    );
+  });
 });

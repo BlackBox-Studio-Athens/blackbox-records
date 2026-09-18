@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { DISTRO_GROUP_VALUES, isCmsCollection, sourceCollectionNames } from '@blackbox/content-model';
 import type { EmDashRuntime } from 'emdash/middleware';
 import { readPublicationPointer, readPublishedSnapshot, type PublicationEnvironment } from './published-storage';
+import { createCmsNestedProblemBody, problemResponse } from '../interfaces/http/responses';
 
 const reviewPositionSchema = z
   .object({
@@ -43,16 +44,20 @@ export async function readStaffWorkspace(
 ) {
   const query = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
   const headers = { 'Cache-Control': 'private, no-store' };
-  if (!query.success)
-    return Response.json({ success: false, error: { message: 'Invalid search.' } }, { status: 400, headers });
+  const problem = (status: number, message: string, code = 'invalid_request') =>
+    problemResponse(
+      {
+        success: false,
+        ...createCmsNestedProblemBody({ status, code, error: { message } }),
+      },
+      { status, headers },
+    );
+  if (!query.success) return problem(400, 'Invalid search.');
   if (query.data.view === 'changes' && query.data.cursor) {
     try {
       reviewPositionSchema.parse(JSON.parse(query.data.cursor));
     } catch {
-      return Response.json(
-        { success: false, error: { message: 'Invalid review position.' } },
-        { status: 400, headers },
-      );
+      return problem(400, 'Invalid review position.');
     }
   }
   let { collection, id } = query.data;
@@ -63,11 +68,7 @@ export async function readStaffWorkspace(
       .prepare('SELECT cmsSourceId, sourceId, sourceKind FROM StoreItemOption WHERE variantId = ?')
       .bind(variantId)
       .first<{ cmsSourceId: string | null; sourceId: string; sourceKind: string }>();
-    if (!linked)
-      return Response.json(
-        { success: false, error: { message: 'This catalog entry is unavailable.' } },
-        { status: 404, headers },
-      );
+    if (!linked) return problem(404, 'This catalog entry is unavailable.', 'not_found');
     collection = linked.sourceKind === 'release' ? 'releases' : 'distro';
     id = linked.cmsSourceId ?? linked.sourceId;
   }
