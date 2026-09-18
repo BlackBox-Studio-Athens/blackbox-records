@@ -1,7 +1,7 @@
 import { createRoute, z } from '@hono/zod-openapi';
 
 import { SERVICES_INQUIRY_FIELD_LIMITS, SERVICES_INQUIRY_SERVICES } from '../../../application/email';
-import { backendErrorResponseSchema } from '../responses';
+import { problemContent } from '../responses';
 
 const storeItemParamsSchema = z
   .object({
@@ -139,15 +139,11 @@ export const postDeliveryQuoteRoute = createRoute({
   responses: {
     400: {
       description: 'The delivery quote request is invalid.',
-      content: {
-        'application/problem+json': { schema: backendErrorResponseSchema },
-      },
+      content: problemContent,
     },
     503: {
       description: 'The delivery quote service is temporarily unavailable.',
-      content: {
-        'application/problem+json': { schema: backendErrorResponseSchema },
-      },
+      content: problemContent,
     },
     200: {
       description: 'Current complete-cart delivery quote, or unavailable.',
@@ -242,11 +238,7 @@ export const getStoreItemRoute = createRoute({
       description: 'Backend-known checkout eligibility for one store item.',
     },
     404: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Store item not found.',
     },
   },
@@ -301,11 +293,7 @@ export const getStoreItemVariantsRoute = createRoute({
       description: 'Checkout-eligible variants for one store item.',
     },
     404: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Store item not found.',
     },
   },
@@ -334,35 +322,19 @@ export const postCheckoutSessionRoute = createRoute({
       description: 'Created a hosted Stripe Checkout Session.',
     },
     400: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Invalid checkout request.',
     },
     404: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Store item not found.',
     },
     409: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Checkout unavailable or not configured.',
     },
     503: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Native checkout is temporarily unavailable.',
     },
   },
@@ -385,11 +357,7 @@ export const getCheckoutStateRoute = createRoute({
       description: 'Sanitized Checkout Session state for shopper return UI.',
     },
     409: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Checkout is not configured.',
     },
   },
@@ -418,19 +386,11 @@ export const postNewsletterRegistrationRoute = createRoute({
       description: 'Registered a public newsletter contact.',
     },
     400: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Invalid newsletter signup request.',
     },
     503: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Newsletter signup is temporarily unavailable.',
     },
   },
@@ -459,19 +419,11 @@ export const postServicesInquiryRoute = createRoute({
       description: 'Submitted a Services inquiry for provider delivery.',
     },
     400: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Invalid Services inquiry request.',
     },
     503: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Services inquiry submission is temporarily unavailable.',
     },
   },

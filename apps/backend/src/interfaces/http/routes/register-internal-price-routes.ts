@@ -14,7 +14,7 @@ import {
   PrismaVariantStripeMappingRepository,
 } from '../../../infrastructure/persistence/prisma';
 import { createStripeCatalogGateway } from '../../../infrastructure/stripe';
-import { backendErrorResponseSchema, jsonError, jsonNoStore, operatorAccessErrorResponses } from '../responses';
+import { jsonError, jsonNoStore, operatorAccessErrorResponses, problemContent } from '../responses';
 
 const resultSchema = z
   .object({
@@ -26,7 +26,7 @@ const resultSchema = z
   .openapi('CatalogPriceChangeResult');
 const errorResponse = (description: string) => ({
   description,
-  content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
+  content: problemContent,
 });
 
 export function registerInternalPriceRoutes(app: AppOpenApi): void {

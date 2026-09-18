@@ -4,7 +4,7 @@ import { inventoryQuerySchema } from '../../../application/commerce/stock';
 import type { AppBindings, AppOpenApi } from '../../../env';
 import type { AppLogger } from '../../../observability';
 import { requestLogger, runWithTraceSpan, traceContextFromHono } from '../../../observability';
-import { backendErrorResponseSchema, jsonError, jsonNoStore, operatorAccessErrorResponses } from '../responses';
+import { jsonError, jsonNoStore, operatorAccessErrorResponses, problemContent } from '../responses';
 import { createInternalStockServices } from './internal-stock-services';
 
 type InternalStockServices = ReturnType<typeof createInternalStockServices>;
@@ -237,19 +237,11 @@ const getVariantStockRoute = createRoute({
     },
     ...operatorAccessErrorResponses,
     400: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Invalid variant id.',
     },
     404: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Variant not found.',
     },
   },
@@ -274,19 +266,11 @@ const getVariantStockHistoryRoute = createRoute({
     },
     ...operatorAccessErrorResponses,
     400: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Invalid variant id.',
     },
     404: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Variant not found.',
     },
   },
@@ -316,20 +300,12 @@ const postStockChangeRoute = createRoute({
       description: 'Recorded a stock change.',
     },
     400: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Invalid stock change.',
     },
     ...operatorAccessErrorResponses,
     404: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Variant not found.',
     },
   },
@@ -351,7 +327,7 @@ const postStockCountRoute = createRoute({
   },
   responses: {
     409: {
-      content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
+      content: problemContent,
       description: 'Stock changed since the recount began.',
     },
     200: {
@@ -363,20 +339,12 @@ const postStockCountRoute = createRoute({
       description: 'Recorded a stock count.',
     },
     400: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Invalid stock count.',
     },
     ...operatorAccessErrorResponses,
     404: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Variant not found.',
     },
   },

@@ -6,7 +6,7 @@ import {
   type OrderStatus,
 } from '../../../domain/commerce/repositories/spi';
 import type { AppOpenApi } from '../../../env';
-import { backendErrorResponseSchema, jsonError, jsonNoStore, operatorAccessErrorResponses } from '../responses';
+import { jsonError, jsonNoStore, operatorAccessErrorResponses, problemContent } from '../responses';
 import { createInternalOrderServices, type InternalOrderRead } from './internal-order-services';
 
 const orderStatusSchema = z
@@ -158,11 +158,7 @@ const getOrderByCheckoutSessionRoute = createRoute({
     },
     ...operatorAccessErrorResponses,
     404: {
-      content: {
-        'application/problem+json': {
-          schema: backendErrorResponseSchema,
-        },
-      },
+      content: problemContent,
       description: 'Checkout order not found.',
     },
   },
@@ -184,7 +180,7 @@ const searchOrdersRoute = createRoute({
   },
   responses: {
     400: {
-      content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
+      content: problemContent,
       description: 'Invalid search cursor.',
     },
     200: {

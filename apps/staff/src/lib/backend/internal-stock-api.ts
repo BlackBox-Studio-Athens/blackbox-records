@@ -18,8 +18,6 @@ export type CatalogPriceCommand = Pick<CatalogPriceDetail, 'expectedRevision' | 
   operationId: string;
   confirmLivePriceChange: boolean;
 };
-type BackendErrorResponse = InternalApiComponents['schemas']['BackendErrorResponse'];
-
 type FetchLike = typeof fetch;
 
 interface CreateInternalStockApiOptions {
@@ -162,7 +160,7 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
   };
 }
 
-async function readErrorBody(response: Response): Promise<BackendErrorResponse | { error?: unknown } | null> {
+async function readErrorBody(response: Response): Promise<unknown> {
   const text = await response.text();
 
   if (!text) {
@@ -170,7 +168,7 @@ async function readErrorBody(response: Response): Promise<BackendErrorResponse |
   }
 
   try {
-    return JSON.parse(text) as BackendErrorResponse | { error?: unknown };
+    return JSON.parse(text);
   } catch {
     return null;
   }

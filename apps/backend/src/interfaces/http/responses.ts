@@ -4,7 +4,7 @@ import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
 import type { AppEnv } from '../../env';
 
-export const PROBLEM_JSON_MEDIA_TYPE = 'application/problem+json';
+const PROBLEM_JSON_MEDIA_TYPE = 'application/problem+json';
 
 type ProblemDefinition = {
   title: string;
@@ -12,7 +12,7 @@ type ProblemDefinition = {
   statuses: readonly number[];
 };
 
-export const problemRegistry = {
+const problemRegistry = {
   invalid_request: { title: 'Invalid request.', defaultDetail: 'Invalid request.', statuses: [400] },
   unsupported_collection: {
     title: 'Unsupported collection.',
@@ -219,9 +219,9 @@ const cmsLegacyProblemCodes = {
   PREVIEW_FAILED: 'preview_failed',
 } as const;
 
-export type CmsNestedLegacyError = { code: string; message?: string } | { message: string; code?: string };
+type CmsNestedLegacyError = { code: string; message?: string } | { message: string; code?: string };
 
-export type ProblemDetails = {
+type ProblemDetails = {
   type: string;
   title: string;
   status: number;
@@ -230,14 +230,14 @@ export type ProblemDetails = {
   requestId?: string;
 };
 
-export type ProblemDetailsInput = {
+type ProblemDetailsInput = {
   code: string;
   detail?: string;
   status: number;
   requestId?: string;
 };
 
-export const problemDetailsSchema = z
+const problemDetailsSchema = z
   .object({
     type: z.string().regex(/^\/problems\/[a-z][a-z0-9_]*$/),
     title: z.string().min(1),
@@ -248,29 +248,24 @@ export const problemDetailsSchema = z
   })
   .openapi('ProblemDetails');
 
-export const backendErrorResponseSchema = z
+const backendErrorResponseSchema = z
   .intersection(problemDetailsSchema, z.object({ error: z.string().min(1) }))
   .openapi('BackendErrorResponse');
 
-export type BackendErrorResponse = z.infer<typeof backendErrorResponseSchema>;
-export type CmsStringProblemDetails = ProblemDetails & { error: string };
-export type CmsNestedProblemDetails = ProblemDetails & { error: CmsNestedLegacyError };
+export const problemContent = {
+  [PROBLEM_JSON_MEDIA_TYPE]: { schema: backendErrorResponseSchema },
+} as const;
+
+type CmsStringProblemDetails = ProblemDetails & { error: string };
+type CmsNestedProblemDetails = ProblemDetails & { error: CmsNestedLegacyError };
 
 export const operatorAccessErrorResponses = {
   401: {
-    content: {
-      [PROBLEM_JSON_MEDIA_TYPE]: {
-        schema: backendErrorResponseSchema,
-      },
-    },
+    content: problemContent,
     description: 'Operator authentication failed.',
   },
   503: {
-    content: {
-      [PROBLEM_JSON_MEDIA_TYPE]: {
-        schema: backendErrorResponseSchema,
-      },
-    },
+    content: problemContent,
     description: 'Operator authentication is temporarily unavailable.',
   },
 } as const;
@@ -309,7 +304,7 @@ export function buildProblemDetails(input: ProblemDetailsInput): ProblemDetails 
   };
 }
 
-export function createCmsStringProblemBody(input: {
+function createCmsStringProblemBody(input: {
   code?: string;
   detail?: string;
   error: string;

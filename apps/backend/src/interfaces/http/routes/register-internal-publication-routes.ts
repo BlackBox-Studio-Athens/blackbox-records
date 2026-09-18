@@ -14,7 +14,7 @@ import {
   PrismaVariantStripeMappingRepository,
 } from '../../../infrastructure/persistence/prisma';
 import { createStripeCatalogGateway } from '../../../infrastructure/stripe';
-import { backendErrorResponseSchema, jsonError, jsonNoStore, operatorAccessErrorResponses } from '../responses';
+import { jsonError, jsonNoStore, operatorAccessErrorResponses, problemContent } from '../responses';
 import { createCmsItemPublicationGateway } from './cms-item-publication-gateway';
 
 const resultSchema = z
@@ -46,20 +46,20 @@ const params = z.object({ variantId: z.string().regex(/^variant_[A-Za-z0-9_-]+$/
 const errors = {
   400: {
     description: 'Invalid request.',
-    content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
+    content: problemContent,
   },
   403: {
     description: 'Same-origin operator request required.',
-    content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
+    content: problemContent,
   },
   409: {
     description: 'Item or content requires review.',
-    content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
+    content: problemContent,
   },
   ...operatorAccessErrorResponses,
   503: {
     description: 'Publication unavailable. Retry the retained operation.',
-    content: { 'application/problem+json': { schema: backendErrorResponseSchema } },
+    content: problemContent,
   },
 };
 
