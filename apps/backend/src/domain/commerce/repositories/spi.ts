@@ -11,6 +11,7 @@ export type {
   CatalogOperationStep,
 } from './catalog-operation-repository';
 export type {
+  CheckoutRetryAttempt,
   CheckoutStockHoldLineInput,
   CheckoutStockHoldRepository,
   CreateCheckoutStockHoldInput,

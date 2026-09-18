@@ -117,6 +117,7 @@ export type StripeCheckoutSessionState = {
   } | null;
   amountTotalMinor: number | null;
   checkoutSessionId: CheckoutSessionId;
+  checkoutUrl?: string | null;
   currencyCode: string | null;
   customer: StripeCheckoutCustomerSnapshot;
   newsletterConsentCopyVersion: string | null;

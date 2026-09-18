@@ -89,6 +89,7 @@ describe('StripeCheckoutGateway', () => {
   });
   it('freezes expiry and idempotency parameters across real SDK retries', async () => {
     let now = Date.parse('2026-09-09T10:00:02.900Z');
+    const checkoutExpiresAt = new Date('2026-09-09T10:35:02.000Z');
     const clock = vi.spyOn(Date, 'now').mockImplementation(() => now);
     const requests: { body: string; key: string | null }[] = [];
     const stripe = new Stripe('sk_test_mock', {
@@ -117,7 +118,7 @@ describe('StripeCheckoutGateway', () => {
           monetaryPolicyReference: 'synthetic-local-inclusive-v1',
         },
         cancelUrl: 'https://example.com/cancel',
-        checkoutExpiresAt: new Date(now - 1000),
+        checkoutExpiresAt,
         orderId: 'order_retry',
         successUrl: 'https://example.com/return',
         storeItemSlug: storeItemSlug('test-item'),
@@ -127,7 +128,7 @@ describe('StripeCheckoutGateway', () => {
       expect(requests).toHaveLength(2);
       expect(requests[0]).toEqual(requests[1]);
       expect(requests[0]?.key).toBe('checkout-order:order_retry');
-      expect(result.checkoutExpiresAt).toEqual(new Date('2026-09-09T10:35:02.000Z'));
+      expect(result.checkoutExpiresAt).toEqual(checkoutExpiresAt);
     } finally {
       clock.mockRestore();
     }
@@ -197,12 +198,13 @@ describe('StripeCheckoutGateway', () => {
     });
   });
 
-  it('calculates expiry after delayed hold work with a provider latency margin', async () => {
+  it('passes the persisted expiry after delayed hold work', async () => {
     const createdAt = new Date('2026-09-09T10:00:00.900Z');
     const providerNow = new Date(createdAt.getTime() + 2_000);
+    const checkoutExpiresAt = new Date(createdAt.getTime() + 35 * 60 * 1000);
     const clock = vi.spyOn(Date, 'now').mockReturnValue(providerNow.getTime());
     const create = vi.fn(async (params: { expires_at?: number }) => {
-      expect(params.expires_at! - Math.floor(providerNow.getTime() / 1000)).toBe(35 * 60);
+      expect(params.expires_at).toBe(Math.floor(checkoutExpiresAt.getTime() / 1000));
       return {
         expires_at: params.expires_at,
         id: 'cs_test_delayed',
@@ -222,7 +224,7 @@ describe('StripeCheckoutGateway', () => {
           monetaryPolicyReference: 'synthetic-local-inclusive-v1',
         },
         cancelUrl: 'https://blackbox.example/checkout',
-        checkoutExpiresAt: new Date(createdAt.getTime() + 30 * 60 * 1000),
+        checkoutExpiresAt,
         orderId: 'order_delayed',
         storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
         stripePriceId: stripePriceId('price_test_barren_point'),

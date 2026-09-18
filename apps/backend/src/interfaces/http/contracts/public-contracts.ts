@@ -304,6 +304,11 @@ export const postCheckoutSessionRoute = createRoute({
   method: 'post',
   path: '/api/checkout/sessions',
   request: {
+    headers: z
+      .object({
+        'idempotency-key': z.uuid({ version: 'v4' }).optional(),
+      })
+      .openapi('CheckoutIdempotencyHeaders'),
     body: {
       content: {
         'application/json': {

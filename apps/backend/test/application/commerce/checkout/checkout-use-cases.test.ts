@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CatalogDriftError,
   CheckoutCreationError,
+  CheckoutIdempotencyConflictError,
+  CheckoutRetryableError,
   CustomPriceCartError,
   CheckoutUnavailableError,
   NativeCheckoutDisabledError,
@@ -24,6 +26,7 @@ function startCheckout(...args: Parameters<typeof startCheckoutWithPolicy>) {
   };
   return startCheckoutWithPolicy(...args);
 }
+
 import type { CheckoutSessionId, VariantId } from '../../../../src/domain/commerce';
 import type {
   CatalogProductProjectionReader,
@@ -33,6 +36,7 @@ import type {
   StripeCatalogPrice,
   StripeCatalogProductProjection,
 } from '../../../../src/application/commerce/catalog-sync';
+import type { CheckoutRetryAttempt } from '../../../../src/domain/commerce/repositories/spi';
 import type {
   CheckoutOrderRecord,
   CheckoutOrderTransitionInput,
@@ -54,6 +58,7 @@ import type {
   StoreItemOptionRepository,
   StoreItemSourceRef,
 } from '../../../../src/domain/commerce/repositories/spi';
+import type { RequestIdentity } from '../../../../src/domain/commerce/repositories/request-identity';
 import { EMPTY_PAID_CHECKOUT_ORDER_FIELDS } from '../../../../src/domain/commerce/repositories/spi';
 import {
   cartQuantity,
@@ -156,6 +161,11 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
   public async createPendingHold(input: CreateCheckoutStockHoldInput): Promise<CreateCheckoutStockHoldResult> {
     this.createPendingHoldCalls += 1;
 
+    if (input.requestIdentity) {
+      const existing = await this.findByRequestIdentity(input.requestIdentity);
+      if (existing) return { attempt: existing, kind: 'existing' };
+    }
+
     for (const line of input.lines) {
       if ((await this.findEffectiveAvailability(line.variantId))! < line.quantity) return { kind: 'unavailable' };
     }
@@ -163,10 +173,16 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
     const [primaryLine] = input.lines;
     const hold: SessionlessPendingCheckoutOrder = {
       ...EMPTY_PAID_CHECKOUT_ORDER_FIELDS,
+      ...input.monetaryPolicy,
+      checkoutCancelUrl: input.checkoutCancelUrl ?? null,
       checkoutExpiresAt: input.checkoutExpiresAt,
       checkoutSessionId: null,
+      checkoutSuccessUrl: input.checkoutSuccessUrl ?? null,
       createdAt: input.createdAt,
       id: input.orderId,
+      idempotencyEnvironment: input.requestIdentity?.productEnvironment ?? null,
+      idempotencyFingerprint: input.requestIdentity?.requestFingerprint ?? null,
+      idempotencyKeyDigest: input.requestIdentity?.keyDigest ?? null,
       lines: input.lines.map((line) => ({
         createdAt: input.createdAt,
         id: crypto.randomUUID(),
@@ -176,6 +192,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
       needsReviewAt: null,
       notPaidAt: null,
       paidAt: null,
+      newsletterOptIn: input.newsletterOptIn ?? false,
       shippingLocker: null,
       status: 'pending_payment',
       statusUpdatedAt: input.createdAt,
@@ -194,12 +211,14 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
     checkoutSessionId: CheckoutSessionId,
     boundAt: Date,
     checkoutExpiresAt: Date = hold.checkoutExpiresAt,
+    checkoutUrl?: string,
   ): Promise<SessionBoundPendingCheckoutOrder | null> {
     if (this.bindShouldFail) return null;
     if (this.records.get(hold.id)?.status !== 'pending_payment') return null;
 
     const bound: SessionBoundPendingCheckoutOrder = {
       ...hold,
+      checkoutUrl: checkoutUrl ?? hold.checkoutUrl,
       checkoutExpiresAt,
       checkoutSessionId,
       statusUpdatedAt: boundAt,
@@ -209,6 +228,58 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
     this.records.delete(hold.id);
     this.records.set(checkoutSessionId, bound);
     return bound;
+  }
+
+  public async claimCheckoutProvider(
+    orderId: string,
+    claimToken: string,
+    claimedAt: Date,
+    leaseUntil: Date,
+  ): Promise<'claimed' | 'in_progress' | 'unavailable'> {
+    const entry = [...this.records.entries()].find(([, record]) => record.id === orderId);
+    const current = entry?.[1];
+    if (!entry || !current || current.status !== 'pending_payment' || current.checkoutSessionId !== null) {
+      return 'unavailable';
+    }
+    if (
+      current.checkoutProviderClaimToken &&
+      current.checkoutProviderLeaseUntil &&
+      current.checkoutProviderLeaseUntil > claimedAt
+    ) {
+      return 'in_progress';
+    }
+
+    this.records.set(entry[0], {
+      ...current,
+      checkoutProviderClaimToken: claimToken,
+      checkoutProviderLeaseUntil: leaseUntil,
+    });
+    return 'claimed';
+  }
+
+  public async findByRequestIdentity(identity: RequestIdentity): Promise<CheckoutRetryAttempt | null> {
+    const record = [...this.records.values()].find(
+      (candidate) =>
+        candidate.idempotencyEnvironment === identity.productEnvironment &&
+        candidate.idempotencyKeyDigest === identity.keyDigest,
+    );
+    if (!record) return null;
+
+    return {
+      acceptedDeliveryAmountMinor: record.acceptedDeliveryAmountMinor ?? null,
+      acceptedParcelTier: record.acceptedParcelTier ?? null,
+      checkoutCancelUrl: record.checkoutCancelUrl,
+      checkoutExpiresAt: record.checkoutExpiresAt,
+      checkoutSessionId: record.checkoutSessionId,
+      checkoutSuccessUrl: record.checkoutSuccessUrl,
+      checkoutUrl: record.checkoutUrl,
+      id: record.id,
+      idempotencyFingerprint: record.idempotencyFingerprint,
+      lines: record.lines ?? [],
+      monetaryPolicyReference: record.monetaryPolicyReference ?? null,
+      newsletterOptIn: record.newsletterOptIn,
+      status: record.status,
+    };
   }
 
   public async releaseSessionlessHold(
@@ -234,6 +305,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
     recoveredCheckoutSessionId: CheckoutSessionId,
     recoveredAt: Date,
     checkoutExpiresAt?: Date,
+    checkoutUrl?: string,
   ): Promise<boolean> {
     const current = this.records.get(orderId);
     if (!current || current.status !== 'pending_payment' || current.checkoutSessionId !== null) return false;
@@ -241,6 +313,7 @@ class InMemoryOrderStateRepository implements OrderStateRepository, CheckoutStoc
     this.records.delete(orderId);
     this.records.set(recoveredCheckoutSessionId, {
       ...current,
+      checkoutUrl: checkoutUrl ?? current.checkoutUrl,
       checkoutExpiresAt: checkoutExpiresAt ?? current.checkoutExpiresAt,
       checkoutSessionId: recoveredCheckoutSessionId,
       statusUpdatedAt: recoveredAt,
@@ -1290,6 +1363,192 @@ describe('checkout use cases', () => {
         ],
       }),
     );
+  });
+
+  it('baseline: repeated keyless checkout submissions repeat the hold and provider call', async () => {
+    const command = {
+      cancelUrl: 'https://example.com/checkout',
+      successUrl: 'https://example.com/return',
+      storeItemSlug: storeItem.storeItemSlug,
+      variantId: storeItem.variantId,
+    };
+
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      command,
+    );
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      command,
+    );
+
+    expect(orders.createPendingHoldCalls).toBe(2);
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledTimes(2);
+  });
+
+  it('replays a keyed checkout without creating a second hold or provider session', async () => {
+    checkoutGateway.readCheckoutSession = vi.fn(async () => ({
+      amountTotalMinor: 2800,
+      checkoutSessionId: checkoutSessionId('cs_test_123'),
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
+      currencyCode: 'EUR',
+      customer: { email: null, name: null, phone: null },
+      newsletterConsentCopyVersion: null,
+      newsletterOptIn: false,
+      paymentStatus: 'unpaid' as const,
+      shippingAddress: null,
+      shippingRecipientName: null,
+      status: 'open' as const,
+    }));
+    const command = {
+      cancelUrl: 'https://example.com/checkout',
+      idempotencyKey: 'checkout-key-1',
+      successUrl: 'https://example.com/return',
+      storeItemSlug: storeItem.storeItemSlug,
+      variantId: storeItem.variantId,
+    };
+
+    const first = await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      command,
+    );
+    const reconciliationCount = catalogReconciler.calls.length;
+    catalogReconciler.prices.set(
+      storeItem.variantId,
+      createCatalogPrice({ amountMinor: 9999, priceId: 'price_test_changed_after_hold', storeItem }),
+    );
+    const replay = await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      command,
+    );
+
+    expect(replay).toEqual(first);
+    expect(orders.createPendingHoldCalls).toBe(1);
+    expect(catalogReconciler.calls).toHaveLength(reconciliationCount);
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledTimes(1);
+    expect(checkoutGateway.readCheckoutSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a concurrent keyed provider request behind the claim lease', async () => {
+    let releaseProvider!: () => void;
+    let signalProviderStarted!: () => void;
+    const providerStarted = new Promise<void>((resolve) => {
+      signalProviderStarted = resolve;
+    });
+    const providerGate = new Promise<void>((resolve) => {
+      releaseProvider = resolve;
+    });
+    checkoutGateway.createHostedCheckoutSession = vi.fn(async () => {
+      signalProviderStarted();
+      await providerGate;
+      return {
+        checkoutExpiresAt: new Date('2026-09-09T10:35:02.000Z'),
+        checkoutSessionId: checkoutSessionId('cs_test_claimed'),
+        checkoutUrl: 'https://checkout.stripe.test/session/cs_test_claimed',
+      };
+    });
+    const command = {
+      cancelUrl: 'https://example.com/checkout',
+      idempotencyKey: 'checkout-key-claim',
+      successUrl: 'https://example.com/return',
+      storeItemSlug: storeItem.storeItemSlug,
+      variantId: storeItem.variantId,
+    };
+
+    const first = startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      command,
+    );
+    await providerStarted;
+
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        command,
+      ),
+    ).rejects.toBeInstanceOf(CheckoutRetryableError);
+
+    releaseProvider();
+    await expect(first).resolves.toEqual({
+      checkoutSessionId: 'cs_test_claimed',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_claimed',
+    });
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a keyed checkout when the retry payload changes', async () => {
+    const command = {
+      cancelUrl: 'https://example.com/checkout',
+      idempotencyKey: 'checkout-key-2',
+      successUrl: 'https://example.com/return',
+      storeItemSlug: storeItem.storeItemSlug,
+      variantId: storeItem.variantId,
+    };
+
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      command,
+    );
+
+    await expect(
+      startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          ...command,
+          newsletterOptIn: true,
+        },
+      ),
+    ).rejects.toBeInstanceOf(CheckoutIdempotencyConflictError);
+    expect(orders.createPendingHoldCalls).toBe(1);
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledTimes(1);
   });
 
   it('rejects checkout when active Stripe Price Authority is ambiguous', async () => {

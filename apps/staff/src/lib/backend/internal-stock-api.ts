@@ -136,21 +136,23 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
         { limit },
       );
     },
-    recordStockChange(variantId: string, body: InternalStockChangeBody) {
+    recordStockChange(variantId: string, body: InternalStockChangeBody, idempotencyKey?: string) {
       return fetchJson<RecordedStockChangeResponse>(
         `/api/internal/variants/${encodeURIComponent(variantId)}/stock/changes`,
         {
           body: JSON.stringify(body),
           method: 'POST',
+          ...(idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : {}),
         },
       );
     },
-    recordStockCount(variantId: string, body: InternalStockCountBody) {
+    recordStockCount(variantId: string, body: InternalStockCountBody, idempotencyKey?: string) {
       return fetchJson<RecordedStockCountResponse>(
         `/api/internal/variants/${encodeURIComponent(variantId)}/stock/counts`,
         {
           body: JSON.stringify(body),
           method: 'POST',
+          ...(idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : {}),
         },
       );
     },

@@ -1469,6 +1469,9 @@ export const StockChangeScalarFieldEnum = {
   reason: 'reason',
   notes: 'notes',
   actorEmail: 'actorEmail',
+  idempotencyKeyDigest: 'idempotencyKeyDigest',
+  idempotencyFingerprint: 'idempotencyFingerprint',
+  idempotencyEnvironment: 'idempotencyEnvironment',
   recordedAt: 'recordedAt'
 } as const
 
@@ -1482,6 +1485,9 @@ export const StockCountScalarFieldEnum = {
   onlineQuantity: 'onlineQuantity',
   notes: 'notes',
   actorEmail: 'actorEmail',
+  idempotencyKeyDigest: 'idempotencyKeyDigest',
+  idempotencyFingerprint: 'idempotencyFingerprint',
+  idempotencyEnvironment: 'idempotencyEnvironment',
   recordedAt: 'recordedAt'
 } as const
 
@@ -1493,6 +1499,14 @@ export const CheckoutOrderScalarFieldEnum = {
   storeItemSlug: 'storeItemSlug',
   variantId: 'variantId',
   checkoutSessionId: 'checkoutSessionId',
+  checkoutUrl: 'checkoutUrl',
+  checkoutCancelUrl: 'checkoutCancelUrl',
+  checkoutSuccessUrl: 'checkoutSuccessUrl',
+  idempotencyKeyDigest: 'idempotencyKeyDigest',
+  idempotencyFingerprint: 'idempotencyFingerprint',
+  idempotencyEnvironment: 'idempotencyEnvironment',
+  checkoutProviderClaimToken: 'checkoutProviderClaimToken',
+  checkoutProviderLeaseUntil: 'checkoutProviderLeaseUntil',
   checkoutExpiresAt: 'checkoutExpiresAt',
   stripePaymentIntentId: 'stripePaymentIntentId',
   amountTotalMinor: 'amountTotalMinor',

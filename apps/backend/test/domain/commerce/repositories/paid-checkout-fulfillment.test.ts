@@ -126,11 +126,19 @@ function currentPaidOrder(): CheckoutOrderRecord {
 
   return {
     amountTotalMinor: 2500,
+    checkoutUrl: null,
+    checkoutCancelUrl: null,
+    checkoutSuccessUrl: null,
     checkoutExpiresAt: new Date('2026-09-01T09:30:00.000Z'),
     checkoutSessionId: checkoutSessionId('cs_test_paid_fulfillment'),
     createdAt,
     currencyCode: 'EUR',
     id: 'order_paid_fulfillment',
+    idempotencyKeyDigest: null,
+    idempotencyFingerprint: null,
+    idempotencyEnvironment: null,
+    checkoutProviderClaimToken: null,
+    checkoutProviderLeaseUntil: null,
     lines: [
       {
         createdAt,

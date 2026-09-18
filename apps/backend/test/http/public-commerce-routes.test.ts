@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   CatalogDriftError,
   CheckoutConfigurationError,
+  CheckoutAttemptTerminalError,
   CheckoutUnavailableError,
+  CheckoutIdempotencyConflictError,
+  CheckoutRetryableError,
   NativeCheckoutDisabledError,
   StoreItemNotFoundError,
   VariantMismatchError,
@@ -28,7 +31,10 @@ vi.mock('../../src/interfaces/http/routes/public-commerce-services', () => ({
     disconnect: mockDisconnect,
     errors: {
       CatalogDriftError,
+      CheckoutAttemptTerminalError,
       CheckoutConfigurationError,
+      CheckoutIdempotencyConflictError,
+      CheckoutRetryableError,
       CheckoutUnavailableError,
       NativeCheckoutDisabledError,
       StoreItemNotFoundError,
@@ -311,6 +317,83 @@ describe('public commerce routes', () => {
     await expect(response.json()).resolves.toEqual({
       checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
     });
+  });
+
+  it('forwards a UUIDv4 Idempotency-Key without exposing provider fields', async () => {
+    mockStartCheckout.mockResolvedValueOnce({
+      checkoutSessionId: 'cs_test_123',
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
+    });
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/checkout/sessions',
+      {
+        body: JSON.stringify({
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
+        }),
+        headers: {
+          'Idempotency-Key': '123e4567-e89b-42d3-a456-426614174000',
+          origin: 'https://blackbox.example',
+          referer: 'https://blackbox.example/store/checkout/',
+          'content-type': 'application/json',
+        },
+        method: 'POST',
+      },
+      testBindings,
+    );
+
+    expect(mockStartCheckout).toHaveBeenCalledWith(
+      expect.objectContaining({ idempotencyKey: '123e4567-e89b-42d3-a456-426614174000' }),
+    );
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      checkoutUrl: 'https://checkout.stripe.test/session/cs_test_123',
+    });
+  });
+
+  it('requires a checkout key when the runtime enforcement flag is enabled', async () => {
+    const response = await createHttpApp().request(
+      'http://backend.test/api/checkout/sessions',
+      {
+        body: JSON.stringify({
+          storeItemSlug: 'disintegration-black-vinyl-lp',
+          variantId: 'variant_disintegration-black-vinyl-lp_standard',
+        }),
+        headers: {
+          origin: 'https://blackbox.example',
+          referer: 'https://blackbox.example/store/checkout/',
+          'content-type': 'application/json',
+        },
+        method: 'POST',
+      },
+      { ...testBindings, COMMERCE_IDEMPOTENCY_KEYS_REQUIRED: 'true' },
+    );
+
+    expect(mockStartCheckout).not.toHaveBeenCalled();
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'idempotency_key_required',
+      status: 409,
+    });
+  });
+
+  it('allows Idempotency-Key in the browser CORS preflight', async () => {
+    const response = await createHttpApp().request(
+      'http://backend.test/api/checkout/sessions',
+      {
+        headers: {
+          'access-control-request-headers': 'Content-Type, Idempotency-Key',
+          'access-control-request-method': 'POST',
+          origin: 'https://blackbox.example',
+        },
+        method: 'OPTIONS',
+      },
+      testBindings,
+    );
+
+    expect(response.headers.get('Access-Control-Allow-Headers')).toContain('Idempotency-Key');
   });
 
   it('accepts checkout starts without a shipping locker snapshot', async () => {

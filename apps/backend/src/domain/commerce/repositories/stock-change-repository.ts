@@ -1,5 +1,6 @@
 import type { VariantId } from '../ids';
 import type { StockChangeDelta } from '../quantities';
+import type { RequestIdentity } from './request-identity';
 
 export type StockChangeRecord = {
   id: string;
@@ -18,6 +19,7 @@ export type RecordStockChangeInput = {
   notes: string | null;
   actorEmail: string;
   recordedAt?: Date;
+  requestIdentity?: RequestIdentity | null;
 };
 
 export interface StockChangeRepository {

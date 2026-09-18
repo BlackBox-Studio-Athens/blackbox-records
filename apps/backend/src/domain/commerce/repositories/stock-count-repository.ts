@@ -1,5 +1,6 @@
 import type { VariantId } from '../ids';
 import type { StockQuantity } from '../quantities';
+import type { RequestIdentity } from './request-identity';
 
 export type StockCountRecord = {
   id: string;
@@ -18,6 +19,7 @@ export type RecordStockCountInput = {
   notes: string | null;
   actorEmail: string;
   recordedAt?: Date;
+  requestIdentity?: RequestIdentity | null;
 };
 
 export interface StockCountRepository {

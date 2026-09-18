@@ -219,6 +219,22 @@ describe('commerce stock use cases', () => {
     });
   });
 
+  it('baseline: repeated keyless stock changes repeat the ledger effect', async () => {
+    const command = {
+      actorEmail: 'operator@blackboxrecords.example',
+      notes: null,
+      quantityDelta: stockChangeDelta(1),
+      reason: 'delivery',
+      variantId: storeItem.variantId,
+    };
+
+    await recordStockChange(storeItems, operatorStock, command);
+    await recordStockChange(storeItems, operatorStock, command);
+
+    expect(stockChanges.records).toHaveLength(2);
+    expect((await readVariantStock(storeItems, stock, storeItem.variantId)).stock.quantity).toBe(2);
+  });
+
   it('rejects stock changes that would drive stock below zero', async () => {
     await expect(
       recordStockChange(storeItems, operatorStock, {

@@ -55,6 +55,31 @@ const problemRegistry = {
     defaultDetail: 'Checkout unavailable.',
     statuses: [409, 503],
   },
+  checkout_idempotency_conflict: {
+    title: 'Checkout request conflict.',
+    defaultDetail: 'The checkout request key conflicts with another request.',
+    statuses: [409],
+  },
+  checkout_retryable: {
+    title: 'Checkout retry required.',
+    defaultDetail: 'Retry the checkout request with the same request key.',
+    statuses: [409],
+  },
+  checkout_attempt_terminal: {
+    title: 'Checkout attempt is closed.',
+    defaultDetail: 'Start a new checkout attempt.',
+    statuses: [409],
+  },
+  idempotency_key_required: {
+    title: 'Refresh required.',
+    defaultDetail: 'Refresh this page before starting a new request.',
+    statuses: [409],
+  },
+  stock_idempotency_conflict: {
+    title: 'Stock request conflict.',
+    defaultDetail: 'The stock request key conflicts with another operation.',
+    statuses: [409],
+  },
   catalog_drift: {
     title: 'Catalog drift.',
     defaultDetail: 'The catalog needs review before checkout.',

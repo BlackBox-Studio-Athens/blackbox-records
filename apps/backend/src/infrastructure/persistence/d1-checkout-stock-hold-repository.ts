@@ -1,10 +1,15 @@
 import {
+  createCartQuantity,
   createStockQuantity,
+  parseStoreItemSlug,
   parseCheckoutSessionId,
+  parseStripePriceId,
+  parseVariantId,
   type CheckoutSessionId,
   type VariantId,
 } from '../../domain/commerce';
 import type {
+  CheckoutRetryAttempt,
   CheckoutOrderLineRecord,
   CheckoutStockHoldRepository,
   CreateCheckoutStockHoldInput,
@@ -15,6 +20,7 @@ import type {
   SessionlessPendingCheckoutOrder,
 } from '../../domain/commerce/repositories/spi';
 import { EMPTY_PAID_CHECKOUT_ORDER_FIELDS } from '../../domain/commerce/repositories/spi';
+import type { RequestIdentity } from '../../domain/commerce/repositories/request-identity';
 
 type EffectiveAvailabilityRow = {
   effectiveQuantity: number;
@@ -24,6 +30,35 @@ type ExpiredSessionBoundCheckoutHoldRow = {
   checkoutExpiresAt: string;
   checkoutSessionId: string;
   id: string;
+};
+
+type CheckoutRetryAttemptRow = {
+  acceptedDeliveryAmountMinor: number | null;
+  acceptedParcelTier: string | null;
+  checkoutCancelUrl: string | null;
+  checkoutExpiresAt: string;
+  checkoutSessionId: string | null;
+  checkoutSuccessUrl: string | null;
+  checkoutUrl: string | null;
+  id: string;
+  idempotencyFingerprint: string | null;
+  monetaryPolicyReference: string | null;
+  newsletterOptIn: number | null;
+  status: 'pending_payment' | 'paid' | 'not_paid' | 'needs_review';
+};
+
+type CheckoutRetryLineRow = {
+  createdAt: string;
+  displayName: string | null;
+  id: string;
+  lineAmountMinor: number | null;
+  optionLabel: string | null;
+  orderId: string;
+  quantity: number;
+  storeItemSlug: string;
+  stripePriceId: string | null;
+  unitAmountMinor: number | null;
+  variantId: string;
 };
 
 export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepository {
@@ -49,11 +84,13 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
       .prepare(
         [
           'INSERT INTO "CheckoutOrder"',
-          '  ("id", "storeItemSlug", "variantId", "checkoutSessionId", "checkoutExpiresAt", "stripePaymentIntentId",',
+          '  ("id", "storeItemSlug", "variantId", "checkoutSessionId", "checkoutUrl", "checkoutCancelUrl", "checkoutSuccessUrl",',
+          '   "idempotencyKeyDigest", "idempotencyFingerprint", "idempotencyEnvironment", "checkoutProviderClaimToken", "checkoutProviderLeaseUntil",',
+          '   "checkoutExpiresAt", "stripePaymentIntentId",',
           '   "shippingLockerId", "shippingLockerCountryCode", "shippingLockerNameOrLabel", "status",',
           '   "statusUpdatedAt", "paidAt", "notPaidAt", "needsReviewAt", "createdAt", "updatedAt",',
-          '   "acceptedDeliveryAmountMinor", "acceptedParcelTier", "monetaryPolicyReference")',
-          'SELECT ?, ?, ?, NULL, ?, NULL, NULL, NULL, NULL, ?, ?, NULL, NULL, NULL, ?, ?, ?, ?, ?',
+          '   "acceptedDeliveryAmountMinor", "acceptedParcelTier", "monetaryPolicyReference", "newsletterOptIn")',
+          'SELECT ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, NULL, NULL, ?, NULL, NULL, NULL, NULL, ?, ?, NULL, NULL, NULL, ?, ?, ?, ?, ?, ?',
           `WHERE ${availability.sql}`,
         ].join('\n'),
       )
@@ -61,6 +98,11 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
         input.orderId,
         primaryLine.storeItemSlug,
         primaryLine.variantId,
+        input.checkoutCancelUrl ?? null,
+        input.checkoutSuccessUrl ?? null,
+        input.requestIdentity?.keyDigest ?? null,
+        input.requestIdentity?.requestFingerprint ?? null,
+        input.requestIdentity?.productEnvironment ?? null,
         input.checkoutExpiresAt.toISOString(),
         'pending_payment',
         input.createdAt.toISOString(),
@@ -69,6 +111,7 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
         input.monetaryPolicy?.acceptedDeliveryAmountMinor ?? null,
         input.monetaryPolicy?.acceptedParcelTier ?? null,
         input.monetaryPolicy?.monetaryPolicyReference ?? null,
+        input.newsletterOptIn ? 1 : 0,
         ...availability.params,
       );
     const lineInserts = lineRecords.map((line) =>
@@ -98,7 +141,16 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
           'pending_payment',
         ),
     );
-    const [orderResult] = await this.db.batch([orderInsert, ...lineInserts]);
+    let orderResult: D1Result | undefined;
+    try {
+      [orderResult] = await this.db.batch([orderInsert, ...lineInserts]);
+    } catch (error) {
+      if (input.requestIdentity) {
+        const attempt = await this.findByRequestIdentity(input.requestIdentity);
+        if (attempt) return { attempt, kind: 'existing' };
+      }
+      throw error;
+    }
 
     if (readChangeCount(orderResult) === 0) {
       return { kind: 'unavailable' };
@@ -108,8 +160,13 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
       hold: {
         ...EMPTY_PAID_CHECKOUT_ORDER_FIELDS,
         ...input.monetaryPolicy,
+        checkoutCancelUrl: input.checkoutCancelUrl ?? null,
         checkoutExpiresAt: input.checkoutExpiresAt,
         checkoutSessionId: null,
+        checkoutSuccessUrl: input.checkoutSuccessUrl ?? null,
+        idempotencyEnvironment: input.requestIdentity?.productEnvironment ?? null,
+        idempotencyFingerprint: input.requestIdentity?.requestFingerprint ?? null,
+        idempotencyKeyDigest: input.requestIdentity?.keyDigest ?? null,
         createdAt: input.createdAt,
         id: input.orderId,
         lines: lineRecords,
@@ -121,6 +178,7 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
         statusUpdatedAt: input.createdAt,
         storeItemSlug: primaryLine.storeItemSlug,
         stripePaymentIntentId: null,
+        newsletterOptIn: input.newsletterOptIn ?? false,
         updatedAt: input.createdAt,
         variantId: primaryLine.variantId,
       },
@@ -133,17 +191,19 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
     checkoutSessionId: CheckoutSessionId,
     boundAt: Date,
     checkoutExpiresAt: Date = hold.checkoutExpiresAt,
+    checkoutUrl?: string,
   ): Promise<SessionBoundPendingCheckoutOrder | null> {
     const result = await this.db
       .prepare(
         [
           'UPDATE "CheckoutOrder"',
-          'SET "checkoutSessionId" = ?, "checkoutExpiresAt" = ?, "statusUpdatedAt" = ?, "updatedAt" = ?',
+          'SET "checkoutSessionId" = ?, "checkoutUrl" = COALESCE(?, "checkoutUrl"), "checkoutExpiresAt" = ?, "checkoutProviderClaimToken" = NULL, "checkoutProviderLeaseUntil" = NULL, "statusUpdatedAt" = ?, "updatedAt" = ?',
           'WHERE "id" = ? AND "status" = ? AND "checkoutSessionId" IS NULL',
         ].join('\n'),
       )
       .bind(
         checkoutSessionId,
+        checkoutUrl ?? null,
         checkoutExpiresAt.toISOString(),
         boundAt.toISOString(),
         boundAt.toISOString(),
@@ -158,8 +218,110 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
       ...hold,
       checkoutExpiresAt,
       checkoutSessionId,
+      checkoutUrl: checkoutUrl ?? hold.checkoutUrl,
+      checkoutProviderClaimToken: null,
+      checkoutProviderLeaseUntil: null,
       statusUpdatedAt: boundAt,
       updatedAt: boundAt,
+    };
+  }
+
+  public async claimCheckoutProvider(
+    orderId: string,
+    claimToken: string,
+    claimedAt: Date,
+    leaseUntil: Date,
+  ): Promise<'claimed' | 'in_progress' | 'unavailable'> {
+    const result = await this.db
+      .prepare(
+        [
+          'UPDATE "CheckoutOrder"',
+          'SET "checkoutProviderClaimToken" = ?, "checkoutProviderLeaseUntil" = ?',
+          'WHERE "id" = ? AND "status" = ? AND "checkoutSessionId" IS NULL',
+          '  AND ("checkoutProviderClaimToken" IS NULL OR "checkoutProviderLeaseUntil" <= ?)',
+        ].join('\n'),
+      )
+      .bind(claimToken, leaseUntil.toISOString(), orderId, 'pending_payment', claimedAt.toISOString())
+      .run();
+
+    if (readChangeCount(result) === 1) return 'claimed';
+
+    const row = await this.db
+      .prepare(
+        'SELECT "status", "checkoutSessionId", "checkoutProviderClaimToken", "checkoutProviderLeaseUntil" FROM "CheckoutOrder" WHERE "id" = ?',
+      )
+      .bind(orderId)
+      .first<{
+        checkoutProviderClaimToken: string | null;
+        checkoutProviderLeaseUntil: string | null;
+        checkoutSessionId: string | null;
+        status: string;
+      }>();
+
+    if (
+      row?.status === 'pending_payment' &&
+      row.checkoutSessionId === null &&
+      row.checkoutProviderClaimToken &&
+      row.checkoutProviderLeaseUntil &&
+      row.checkoutProviderLeaseUntil > claimedAt.toISOString()
+    ) {
+      return 'in_progress';
+    }
+
+    return 'unavailable';
+  }
+
+  public async findByRequestIdentity(identity: RequestIdentity): Promise<CheckoutRetryAttempt | null> {
+    const row = await this.db
+      .prepare(
+        [
+          'SELECT "id", "status", "checkoutSessionId", "checkoutUrl", "checkoutCancelUrl", "checkoutSuccessUrl",',
+          '       "checkoutExpiresAt", "idempotencyFingerprint", "acceptedDeliveryAmountMinor", "acceptedParcelTier",',
+          '       "monetaryPolicyReference", "newsletterOptIn"',
+          'FROM "CheckoutOrder"',
+          'WHERE "idempotencyEnvironment" = ? AND "idempotencyKeyDigest" = ?',
+          'LIMIT 1',
+        ].join('\n'),
+      )
+      .bind(identity.productEnvironment, identity.keyDigest)
+      .first<CheckoutRetryAttemptRow>();
+
+    if (!row) return null;
+
+    const lineRows = await this.db
+      .prepare(
+        'SELECT "id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel", "quantity", "unitAmountMinor", "lineAmountMinor", "createdAt" FROM "CheckoutOrderLine" WHERE "orderId" = ? ORDER BY "createdAt" ASC, "id" ASC',
+      )
+      .bind(row.id)
+      .all<CheckoutRetryLineRow>();
+
+    return {
+      acceptedDeliveryAmountMinor: row.acceptedDeliveryAmountMinor,
+      acceptedParcelTier:
+        row.acceptedParcelTier === 'small' || row.acceptedParcelTier === 'medium' ? row.acceptedParcelTier : null,
+      checkoutCancelUrl: row.checkoutCancelUrl,
+      checkoutExpiresAt: new Date(row.checkoutExpiresAt),
+      checkoutSessionId: row.checkoutSessionId ? parseCheckoutSessionId(row.checkoutSessionId) : null,
+      checkoutSuccessUrl: row.checkoutSuccessUrl,
+      checkoutUrl: row.checkoutUrl,
+      id: row.id,
+      idempotencyFingerprint: row.idempotencyFingerprint,
+      lines: lineRows.results.map((line) => ({
+        createdAt: new Date(line.createdAt),
+        displayName: line.displayName,
+        id: line.id,
+        lineAmountMinor: line.lineAmountMinor,
+        optionLabel: line.optionLabel,
+        orderId: line.orderId,
+        quantity: createCartQuantity(line.quantity),
+        storeItemSlug: parseStoreItemSlug(line.storeItemSlug),
+        stripePriceId: line.stripePriceId ? parseStripePriceId(line.stripePriceId) : null,
+        unitAmountMinor: line.unitAmountMinor,
+        variantId: parseVariantId(line.variantId),
+      })),
+      monetaryPolicyReference: row.monetaryPolicyReference,
+      newsletterOptIn: row.newsletterOptIn === null ? null : row.newsletterOptIn === 1,
+      status: row.status,
     };
   }
 
@@ -251,17 +413,19 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
     checkoutSessionId: CheckoutSessionId,
     recoveredAt: Date,
     checkoutExpiresAt?: Date,
+    checkoutUrl?: string,
   ): Promise<boolean> {
     const result = await this.db
       .prepare(
         [
           'UPDATE "CheckoutOrder"',
-          'SET "checkoutSessionId" = ?, "checkoutExpiresAt" = COALESCE(?, "checkoutExpiresAt"), "statusUpdatedAt" = ?, "updatedAt" = ?',
+          'SET "checkoutSessionId" = ?, "checkoutUrl" = COALESCE(?, "checkoutUrl"), "checkoutExpiresAt" = COALESCE(?, "checkoutExpiresAt"), "checkoutProviderClaimToken" = NULL, "checkoutProviderLeaseUntil" = NULL, "statusUpdatedAt" = ?, "updatedAt" = ?',
           'WHERE "id" = ? AND "status" = ? AND "checkoutSessionId" IS NULL',
         ].join('\n'),
       )
       .bind(
         checkoutSessionId,
+        checkoutUrl ?? null,
         checkoutExpiresAt?.toISOString() ?? null,
         recoveredAt.toISOString(),
         recoveredAt.toISOString(),

@@ -26,6 +26,8 @@ import {
   stocktakeSchema,
   pendingCountKey,
   pendingCountSchema,
+  pendingChangeKey,
+  pendingChangeSchema,
   type Stocktake,
 } from './stocktake';
 import {
@@ -135,7 +137,15 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
       selectionUrl.current = url.href;
       void editorialRequest<{ items: { variantId: string; image: EditorialMedia | null }[] }>(
         backendBaseUrl,
-        `blackbox/inventory-artwork?items=${encodeURIComponent(JSON.stringify(results.map((item) => ({ variantId: item.variantId, sourceKind: item.sourceKind, sourceId: item.cmsSourceId ?? item.sourceId }))))}`,
+        `blackbox/inventory-artwork?items=${encodeURIComponent(
+          JSON.stringify(
+            results.map((item) => ({
+              variantId: item.variantId,
+              sourceKind: item.sourceKind,
+              sourceId: item.cmsSourceId ?? item.sourceId,
+            })),
+          ),
+        )}`,
       )
         .then((result) => {
           if (requestId === searchRequest.current)
@@ -262,6 +272,9 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     if (Array.isArray(window.history.state?.inventoryPages)) setPages(window.history.state.inventoryPages);
     try {
       const pending = pendingCountSchema.safeParse(JSON.parse(sessionStorage.getItem(pendingCountKey) ?? 'null'));
+      const pendingChange = pendingChangeSchema.safeParse(
+        JSON.parse(sessionStorage.getItem(pendingChangeKey) ?? 'null'),
+      );
       const stored = stocktakeSchema.safeParse(JSON.parse(sessionStorage.getItem(stocktakeKey) ?? 'null'));
       if (stored.success) {
         setStocktake(stored.data);
@@ -271,13 +284,22 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
         setStockMode('count');
         void loadVariant(stored.data.items[stored.data.index]!.variantId, false);
       } else if (variantId) void loadVariant(variantId, false);
+      if (pendingChange.success) {
+        setChangeUnconfirmed(true);
+        setStockMode('adjust');
+        setStockDirection(pendingChange.data.delta < 0 ? 'remove' : 'add');
+        setChangeDelta(String(Math.abs(pendingChange.data.delta)));
+        setChangeReason(pendingChange.data.reason);
+        setChangeNotes(pendingChange.data.notes ?? '');
+        void loadVariant(pendingChange.data.variantId, false);
+      }
       if (pending.success) {
         setCountUnconfirmed(true);
         countVariantRef.current = pending.data.variantId;
         setExpectedRevision(pending.data.expectedRevision);
         setCountedQuantity(pending.data.countedQuantity);
         setOnlineQuantity(pending.data.onlineQuantity);
-        setCountNotes(pending.data.notes);
+        setCountNotes(pending.data.notes ?? '');
         setCountEdited(true);
         setCountNeedsReassessment(true);
         setStockMode('count');
@@ -313,6 +335,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     pageScroll.current = window.scrollY;
     void loadVariant(id);
   }
+
   useEffect(() => {
     if (isLoading || !selectedVariantId || inventoryOpen || focusedVariant.current === selectedVariantId) return;
     focusedVariant.current = selectedVariantId;
@@ -454,16 +477,36 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     }
 
     const variantId = selectedVariantId;
+    const delta = Number(changeDelta) * (stockDirection === 'remove' ? -1 : 1);
+    const notes = normalizeNotes(changeNotes);
+    const pendingChange = pendingChangeSchema.safeParse(JSON.parse(sessionStorage.getItem(pendingChangeKey) ?? 'null'));
+    const idempotencyKey =
+      pendingChange.success &&
+      pendingChange.data.variantId === variantId &&
+      pendingChange.data.delta === delta &&
+      pendingChange.data.reason === changeReason &&
+      pendingChange.data.notes === notes
+        ? pendingChange.data.idempotencyKey
+        : crypto.randomUUID();
     setSubmittingIntent('stockChange');
     setErrorMessage(null);
     setStatusMessage('Saving stock change.');
 
     try {
-      await api.recordStockChange(variantId, {
-        delta: Number(changeDelta) * (stockDirection === 'remove' ? -1 : 1),
-        notes: normalizeNotes(changeNotes),
-        reason: changeReason,
-      });
+      sessionStorage.setItem(
+        pendingChangeKey,
+        JSON.stringify({ delta, idempotencyKey, notes, reason: changeReason, variantId }),
+      );
+      await api.recordStockChange(
+        variantId,
+        {
+          delta,
+          notes,
+          reason: changeReason,
+        },
+        idempotencyKey,
+      );
+      sessionStorage.removeItem(pendingChangeKey);
       setChangeDelta('');
       setChangeNotes('');
       await loadVariant(variantId, false, 'refresh');
@@ -487,6 +530,17 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     }
 
     const variantId = selectedVariantId;
+    const notes = normalizeNotes(countNotes);
+    const pendingCount = pendingCountSchema.safeParse(JSON.parse(sessionStorage.getItem(pendingCountKey) ?? 'null'));
+    const idempotencyKey =
+      pendingCount.success &&
+      pendingCount.data.variantId === variantId &&
+      pendingCount.data.expectedRevision === expectedRevision &&
+      pendingCount.data.countedQuantity === countedQuantity &&
+      pendingCount.data.onlineQuantity === onlineQuantity &&
+      pendingCount.data.notes === notes
+        ? pendingCount.data.idempotencyKey
+        : crypto.randomUUID();
     setSubmittingIntent('stockCount');
     setErrorMessage(null);
     setStatusMessage('Saving count.');
@@ -494,15 +548,19 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     try {
       sessionStorage.setItem(
         pendingCountKey,
-        JSON.stringify({ variantId, expectedRevision, countedQuantity, onlineQuantity, notes: countNotes }),
+        JSON.stringify({ variantId, expectedRevision, countedQuantity, onlineQuantity, notes, idempotencyKey }),
       );
       setCountUnconfirmed(true);
-      await api.recordStockCount(variantId, {
-        expectedRevision,
-        countedQuantity: Number(countedQuantity),
-        notes: normalizeNotes(countNotes),
-        onlineQuantity: Number(onlineQuantity),
-      });
+      await api.recordStockCount(
+        variantId,
+        {
+          expectedRevision,
+          countedQuantity: Number(countedQuantity),
+          notes,
+          onlineQuantity: Number(onlineQuantity),
+        },
+        idempotencyKey,
+      );
       sessionStorage.removeItem(pendingCountKey);
       setCountUnconfirmed(false);
       setCountNotes('');
@@ -895,6 +953,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                             disabled={!hasFreshStock || historyPending || !!historyError}
                             onClick={() => {
                               setChangeUnconfirmed(false);
+                              sessionStorage.removeItem(pendingChangeKey);
                               setChangeDelta('');
                               setChangeNotes('');
                               setErrorMessage(null);

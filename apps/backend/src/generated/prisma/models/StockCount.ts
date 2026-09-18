@@ -43,6 +43,9 @@ export type StockCountMinAggregateOutputType = {
   onlineQuantity: number | null
   notes: string | null
   actorEmail: string | null
+  idempotencyKeyDigest: string | null
+  idempotencyFingerprint: string | null
+  idempotencyEnvironment: string | null
   recordedAt: Date | null
 }
 
@@ -53,6 +56,9 @@ export type StockCountMaxAggregateOutputType = {
   onlineQuantity: number | null
   notes: string | null
   actorEmail: string | null
+  idempotencyKeyDigest: string | null
+  idempotencyFingerprint: string | null
+  idempotencyEnvironment: string | null
   recordedAt: Date | null
 }
 
@@ -63,6 +69,9 @@ export type StockCountCountAggregateOutputType = {
   onlineQuantity: number
   notes: number
   actorEmail: number
+  idempotencyKeyDigest: number
+  idempotencyFingerprint: number
+  idempotencyEnvironment: number
   recordedAt: number
   _all: number
 }
@@ -85,6 +94,9 @@ export type StockCountMinAggregateInputType = {
   onlineQuantity?: true
   notes?: true
   actorEmail?: true
+  idempotencyKeyDigest?: true
+  idempotencyFingerprint?: true
+  idempotencyEnvironment?: true
   recordedAt?: true
 }
 
@@ -95,6 +107,9 @@ export type StockCountMaxAggregateInputType = {
   onlineQuantity?: true
   notes?: true
   actorEmail?: true
+  idempotencyKeyDigest?: true
+  idempotencyFingerprint?: true
+  idempotencyEnvironment?: true
   recordedAt?: true
 }
 
@@ -105,6 +120,9 @@ export type StockCountCountAggregateInputType = {
   onlineQuantity?: true
   notes?: true
   actorEmail?: true
+  idempotencyKeyDigest?: true
+  idempotencyFingerprint?: true
+  idempotencyEnvironment?: true
   recordedAt?: true
   _all?: true
 }
@@ -202,6 +220,9 @@ export type StockCountGroupByOutputType = {
   onlineQuantity: number
   notes: string | null
   actorEmail: string
+  idempotencyKeyDigest: string | null
+  idempotencyFingerprint: string | null
+  idempotencyEnvironment: string | null
   recordedAt: Date
   _count: StockCountCountAggregateOutputType | null
   _avg: StockCountAvgAggregateOutputType | null
@@ -235,6 +256,9 @@ export type StockCountWhereInput = {
   onlineQuantity?: Prisma.IntFilter<"StockCount"> | number
   notes?: Prisma.StringNullableFilter<"StockCount"> | string | null
   actorEmail?: Prisma.StringFilter<"StockCount"> | string
+  idempotencyKeyDigest?: Prisma.StringNullableFilter<"StockCount"> | string | null
+  idempotencyFingerprint?: Prisma.StringNullableFilter<"StockCount"> | string | null
+  idempotencyEnvironment?: Prisma.StringNullableFilter<"StockCount"> | string | null
   recordedAt?: Prisma.DateTimeFilter<"StockCount"> | Date | string
 }
 
@@ -245,6 +269,9 @@ export type StockCountOrderByWithRelationInput = {
   onlineQuantity?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   actorEmail?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrderInput | Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
 }
 
@@ -258,6 +285,9 @@ export type StockCountWhereUniqueInput = Prisma.AtLeast<{
   onlineQuantity?: Prisma.IntFilter<"StockCount"> | number
   notes?: Prisma.StringNullableFilter<"StockCount"> | string | null
   actorEmail?: Prisma.StringFilter<"StockCount"> | string
+  idempotencyKeyDigest?: Prisma.StringNullableFilter<"StockCount"> | string | null
+  idempotencyFingerprint?: Prisma.StringNullableFilter<"StockCount"> | string | null
+  idempotencyEnvironment?: Prisma.StringNullableFilter<"StockCount"> | string | null
   recordedAt?: Prisma.DateTimeFilter<"StockCount"> | Date | string
 }, "id">
 
@@ -268,6 +298,9 @@ export type StockCountOrderByWithAggregationInput = {
   onlineQuantity?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   actorEmail?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrderInput | Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
   _count?: Prisma.StockCountCountOrderByAggregateInput
   _avg?: Prisma.StockCountAvgOrderByAggregateInput
@@ -286,6 +319,9 @@ export type StockCountScalarWhereWithAggregatesInput = {
   onlineQuantity?: Prisma.IntWithAggregatesFilter<"StockCount"> | number
   notes?: Prisma.StringNullableWithAggregatesFilter<"StockCount"> | string | null
   actorEmail?: Prisma.StringWithAggregatesFilter<"StockCount"> | string
+  idempotencyKeyDigest?: Prisma.StringNullableWithAggregatesFilter<"StockCount"> | string | null
+  idempotencyFingerprint?: Prisma.StringNullableWithAggregatesFilter<"StockCount"> | string | null
+  idempotencyEnvironment?: Prisma.StringNullableWithAggregatesFilter<"StockCount"> | string | null
   recordedAt?: Prisma.DateTimeWithAggregatesFilter<"StockCount"> | Date | string
 }
 
@@ -296,6 +332,9 @@ export type StockCountCreateInput = {
   onlineQuantity: number
   notes?: string | null
   actorEmail: string
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
   recordedAt?: Date | string
 }
 
@@ -306,6 +345,9 @@ export type StockCountUncheckedCreateInput = {
   onlineQuantity: number
   notes?: string | null
   actorEmail: string
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
   recordedAt?: Date | string
 }
 
@@ -316,6 +358,9 @@ export type StockCountUpdateInput = {
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actorEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -326,6 +371,9 @@ export type StockCountUncheckedUpdateInput = {
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actorEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -336,6 +384,9 @@ export type StockCountCreateManyInput = {
   onlineQuantity: number
   notes?: string | null
   actorEmail: string
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
   recordedAt?: Date | string
 }
 
@@ -346,6 +397,9 @@ export type StockCountUpdateManyMutationInput = {
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actorEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -356,6 +410,9 @@ export type StockCountUncheckedUpdateManyInput = {
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actorEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -366,6 +423,9 @@ export type StockCountCountOrderByAggregateInput = {
   onlineQuantity?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   actorEmail?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
 }
 
@@ -381,6 +441,9 @@ export type StockCountMaxOrderByAggregateInput = {
   onlineQuantity?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   actorEmail?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
 }
 
@@ -391,6 +454,9 @@ export type StockCountMinOrderByAggregateInput = {
   onlineQuantity?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   actorEmail?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
 }
 
@@ -408,6 +474,9 @@ export type StockCountSelect<ExtArgs extends runtime.Types.Extensions.InternalAr
   onlineQuantity?: boolean
   notes?: boolean
   actorEmail?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
   recordedAt?: boolean
 }, ExtArgs["result"]["stockCount"]>
 
@@ -418,6 +487,9 @@ export type StockCountSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Ex
   onlineQuantity?: boolean
   notes?: boolean
   actorEmail?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
   recordedAt?: boolean
 }, ExtArgs["result"]["stockCount"]>
 
@@ -428,6 +500,9 @@ export type StockCountSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ex
   onlineQuantity?: boolean
   notes?: boolean
   actorEmail?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
   recordedAt?: boolean
 }, ExtArgs["result"]["stockCount"]>
 
@@ -438,10 +513,13 @@ export type StockCountSelectScalar = {
   onlineQuantity?: boolean
   notes?: boolean
   actorEmail?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
   recordedAt?: boolean
 }
 
-export type StockCountOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "variantId" | "countedQuantity" | "onlineQuantity" | "notes" | "actorEmail" | "recordedAt", ExtArgs["result"]["stockCount"]>
+export type StockCountOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "variantId" | "countedQuantity" | "onlineQuantity" | "notes" | "actorEmail" | "idempotencyKeyDigest" | "idempotencyFingerprint" | "idempotencyEnvironment" | "recordedAt", ExtArgs["result"]["stockCount"]>
 
 export type $StockCountPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "StockCount"
@@ -453,6 +531,9 @@ export type $StockCountPayload<ExtArgs extends runtime.Types.Extensions.Internal
     onlineQuantity: number
     notes: string | null
     actorEmail: string
+    idempotencyKeyDigest: string | null
+    idempotencyFingerprint: string | null
+    idempotencyEnvironment: string | null
     recordedAt: Date
   }, ExtArgs["result"]["stockCount"]>
   composites: {}
@@ -883,6 +964,9 @@ export interface StockCountFieldRefs {
   readonly onlineQuantity: Prisma.FieldRef<"StockCount", 'Int'>
   readonly notes: Prisma.FieldRef<"StockCount", 'String'>
   readonly actorEmail: Prisma.FieldRef<"StockCount", 'String'>
+  readonly idempotencyKeyDigest: Prisma.FieldRef<"StockCount", 'String'>
+  readonly idempotencyFingerprint: Prisma.FieldRef<"StockCount", 'String'>
+  readonly idempotencyEnvironment: Prisma.FieldRef<"StockCount", 'String'>
   readonly recordedAt: Prisma.FieldRef<"StockCount", 'DateTime'>
 }
     

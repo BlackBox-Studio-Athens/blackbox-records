@@ -1,4 +1,4 @@
-import type { AppOpenApi } from '../../../env';
+import { areCommerceIdempotencyKeysRequired, type AppOpenApi } from '../../../env';
 import {
   getCheckoutStateRoute,
   getStoreCapabilitiesRoute,
@@ -101,6 +101,14 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
 
     try {
       const body = context.req.valid('json');
+      const idempotencyKey = context.req.valid('header')['idempotency-key'];
+      if (areCommerceIdempotencyKeysRequired(context.env) && !idempotencyKey) {
+        return jsonError(context, {
+          code: 'idempotency_key_required',
+          message: 'Refresh this page before starting checkout.',
+          status: 409,
+        });
+      }
       const lines =
         body.lines ??
         (body.storeItemSlug && body.variantId
@@ -149,6 +157,7 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
               context.env.CHECKOUT_RETURN_ORIGINS,
             ),
             ...(body.lines ? { lines: checkoutLines } : {}),
+            idempotencyKey,
             newsletterOptIn: body.newsletterOptIn === true,
             successUrl: createPublicCheckoutReturnUrl(
               context.req.raw.headers,
@@ -171,6 +180,27 @@ export function registerPublicCommerceRoutes(app: AppOpenApi): void {
 
       return jsonNoStore(context.json({ checkoutUrl: checkoutSession.checkoutUrl }, 200));
     } catch (error) {
+      if (error instanceof services.errors.CheckoutIdempotencyConflictError) {
+        return jsonError(context, {
+          code: 'checkout_idempotency_conflict',
+          message: error.message,
+          status: 409,
+        });
+      }
+      if (error instanceof services.errors.CheckoutRetryableError) {
+        return jsonError(context, {
+          code: 'checkout_retryable',
+          message: error.message,
+          status: 409,
+        });
+      }
+      if (error instanceof services.errors.CheckoutAttemptTerminalError) {
+        return jsonError(context, {
+          code: 'checkout_attempt_terminal',
+          message: error.message,
+          status: 409,
+        });
+      }
       if (error instanceof services.errors.StoreItemNotFoundError) {
         logger.warn({
           event: 'checkout_start_outcome',

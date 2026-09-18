@@ -29,6 +29,14 @@ function mapCheckoutOrder(record: {
   totalVatMinor?: number | null;
   amountTotalMinor: number | null;
   checkoutSessionId: string | null;
+  checkoutUrl?: string | null;
+  checkoutCancelUrl?: string | null;
+  checkoutSuccessUrl?: string | null;
+  idempotencyKeyDigest?: string | null;
+  idempotencyFingerprint?: string | null;
+  idempotencyEnvironment?: string | null;
+  checkoutProviderClaimToken?: string | null;
+  checkoutProviderLeaseUntil?: string | null;
   checkoutExpiresAt: Date;
   createdAt: Date;
   currencyCode: string | null;
@@ -73,6 +81,14 @@ function mapCheckoutOrder(record: {
     deliveryVatMinor: record.deliveryVatMinor ?? null,
     totalVatMinor: record.totalVatMinor ?? null,
     checkoutSessionId: record.checkoutSessionId ? parseCheckoutSessionId(record.checkoutSessionId) : null,
+    checkoutUrl: record.checkoutUrl ?? null,
+    checkoutCancelUrl: record.checkoutCancelUrl ?? null,
+    checkoutSuccessUrl: record.checkoutSuccessUrl ?? null,
+    idempotencyKeyDigest: record.idempotencyKeyDigest ?? null,
+    idempotencyFingerprint: record.idempotencyFingerprint ?? null,
+    idempotencyEnvironment: record.idempotencyEnvironment ?? null,
+    checkoutProviderClaimToken: record.checkoutProviderClaimToken ?? null,
+    checkoutProviderLeaseUntil: record.checkoutProviderLeaseUntil ? new Date(record.checkoutProviderLeaseUntil) : null,
     checkoutExpiresAt: record.checkoutExpiresAt,
     createdAt: record.createdAt,
     currencyCode: record.currencyCode,

@@ -28,6 +28,7 @@
   ],
   "vars": {
     "PRODUCT_ENVIRONMENT": "LOCAL",
+    "COMMERCE_IDEMPOTENCY_KEYS_REQUIRED": "true",
     "LOCAL_OPERATOR_EMAIL": "operator@blackboxrecords.example",
     "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321",
     "EMAIL_BRAND_HOME_URL": "https://blackbox-records-web-uat.pages.dev/",
@@ -64,6 +65,7 @@
       ],
       "vars": {
         "PRODUCT_ENVIRONMENT": "LOCAL",
+        "COMMERCE_IDEMPOTENCY_KEYS_REQUIRED": "true",
         "LOCAL_OPERATOR_EMAIL": "operator@blackboxrecords.example",
         "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321",
         "EMAIL_BRAND_HOME_URL": "https://blackbox-records-web-uat.pages.dev/",
@@ -104,6 +106,7 @@
       ],
       "vars": {
         "PRODUCT_ENVIRONMENT": "LOCAL",
+        "COMMERCE_IDEMPOTENCY_KEYS_REQUIRED": "true",
         "LOCAL_OPERATOR_EMAIL": "operator@blackboxrecords.example",
         "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321",
         "EMAIL_BRAND_HOME_URL": "https://blackbox-records-web-uat.pages.dev/",
@@ -148,6 +151,7 @@
       ],
       "vars": {
         "PRODUCT_ENVIRONMENT": "UAT",
+        "COMMERCE_IDEMPOTENCY_KEYS_REQUIRED": "true",
         "CHECKOUT_RETURN_ORIGINS": "http://127.0.0.1:4321,http://localhost:4321,https://blackbox-records-web-uat.pages.dev",
         "EMAIL_BRAND_HOME_URL": "https://blackbox-records-web-uat.pages.dev/",
         "EMAIL_BRAND_LOGO_URL": "https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png",
@@ -190,6 +194,7 @@
       ],
       "vars": {
         "PRODUCT_ENVIRONMENT": "PRD",
+        "COMMERCE_IDEMPOTENCY_KEYS_REQUIRED": "true",
         "CHECKOUT_RETURN_ORIGINS": "https://blackbox-records-web.pages.dev",
         "EMAIL_BRAND_HOME_URL": "https://blackbox-records-web.pages.dev/",
         "EMAIL_BRAND_LOGO_URL": "https://blackbox-records-web.pages.dev/assets/images/brand/logo-horizontal.png",

@@ -1,7 +1,9 @@
 import type {
+  CheckoutRetryAttempt,
   CheckoutStockHoldRepository,
   CreateCheckoutStockHoldInput,
   ItemAvailabilityRepository,
+  SessionlessPendingCheckoutOrder,
   StockRepository,
   StoreItemOptionRepository,
 } from '../../../domain/commerce/repositories/spi';
@@ -9,12 +11,16 @@ import {
   createCartQuantity,
   parseStoreItemSlug,
   parseVariantId,
+  type AcceptedMonetaryPolicy,
   type CartQuantity,
   type StoreItemSlug,
   type VariantId,
 } from '../../../domain/commerce';
 import {
+  CheckoutAttemptTerminalError,
   CheckoutCreationError,
+  CheckoutRetryableError,
+  CheckoutIdempotencyConflictError,
   CustomPriceCartError,
   CheckoutUnavailableError,
   NativeCheckoutDisabledError,
@@ -31,9 +37,11 @@ import {
 import type { CheckoutSessionLineItem, CheckoutGateway, FeatureFlagReader, HostedCheckoutSession } from './spi';
 import { quoteDelivery, type PackingPolicy } from './packing';
 import { createPackingPolicy } from './packing-policy';
+import { createCheckoutRequestFingerprint, createRequestIdentity } from '../../../domain/commerce/request-idempotency';
 
 export type StartCheckoutCommand = {
   cancelUrl: string;
+  idempotencyKey?: string;
   lines?: StartCheckoutLineCommand[];
   newsletterOptIn?: boolean;
   successUrl: string;
@@ -51,9 +59,11 @@ type StartCheckoutOptions = {
   now?: Date;
   packingPolicy?: PackingPolicy;
   monetaryPolicyReference?: string | null;
+  productEnvironment?: string;
 };
 
 const CHECKOUT_HOLD_DURATION_MS = 35 * 60 * 1000;
+const CHECKOUT_PROVIDER_LEASE_MS = 30 * 1000;
 
 const enabledFeatureFlags: FeatureFlagReader = {
   isNativeCheckoutEnabled: async () => true,
@@ -99,7 +109,7 @@ function mergeCheckoutLines(lines: StartCheckoutLineCommand[]): StartCheckoutLin
   const mergedLines = new Map<string, StartCheckoutLineCommand>();
 
   for (const line of lines) {
-    const key = `${line.storeItemSlug}:${line.variantId}`;
+    const key = line.storeItemSlug + ':' + line.variantId;
     const existingLine = mergedLines.get(key);
 
     mergedLines.set(key, {
@@ -134,6 +144,31 @@ export async function startCheckout(
 
   if (requestedLines.length === 0) {
     throw new CheckoutUnavailableError();
+  }
+
+  const requestFingerprint = createCheckoutRequestFingerprint({
+    cancelUrl: command.cancelUrl,
+    lines: requestedLines,
+    newsletterOptIn: command.newsletterOptIn === true,
+    successUrl: command.successUrl,
+  });
+  const requestIdentity = await createRequestIdentity({
+    idempotencyKey: command.idempotencyKey,
+    productEnvironment: options.productEnvironment ?? 'local',
+    requestFingerprint,
+  });
+
+  if (requestIdentity) {
+    const existingAttempt = await checkoutHolds.findByRequestIdentity(requestIdentity);
+    if (existingAttempt) {
+      return resumeCheckoutAttempt(
+        checkoutGateway,
+        checkoutHolds,
+        existingAttempt,
+        requestIdentity.requestFingerprint,
+        options.now,
+      );
+    }
   }
 
   const validatedLines: CheckoutSessionLineItem[] = [];
@@ -208,7 +243,7 @@ export async function startCheckout(
   ) {
     throw new CheckoutUnavailableError();
   }
-  const monetaryPolicy = {
+  const monetaryPolicy: AcceptedMonetaryPolicy = {
     acceptedDeliveryAmountMinor: delivery.amountMinor,
     acceptedParcelTier: delivery.tier,
     monetaryPolicyReference: options.monetaryPolicyReference,
@@ -216,13 +251,30 @@ export async function startCheckout(
   const checkoutExpiresAt = new Date(createdAt.getTime() + CHECKOUT_HOLD_DURATION_MS);
   const [firstLine, ...remainingLines] = validatedLines;
   const holdInput: CreateCheckoutStockHoldInput = {
+    checkoutCancelUrl: command.cancelUrl,
+    checkoutSuccessUrl: command.successUrl,
     monetaryPolicy,
     checkoutExpiresAt,
     createdAt,
     lines: [firstLine!, ...remainingLines],
+    newsletterOptIn: command.newsletterOptIn === true,
     orderId: crypto.randomUUID(),
+    requestIdentity,
   };
   let holdResult = await checkoutHolds.createPendingHold(holdInput);
+
+  if (holdResult.kind === 'existing') {
+    if (!requestIdentity || holdResult.attempt.idempotencyFingerprint !== requestIdentity.requestFingerprint) {
+      throw new CheckoutIdempotencyConflictError();
+    }
+    return resumeCheckoutAttempt(
+      checkoutGateway,
+      checkoutHolds,
+      holdResult.attempt,
+      requestIdentity.requestFingerprint,
+      createdAt,
+    );
+  }
 
   if (holdResult.kind === 'unavailable') {
     const [firstVariantId, ...remainingVariantIds] = validatedLines.map((line) => line.variantId);
@@ -247,71 +299,196 @@ export async function startCheckout(
     if (releasedAnyHold) holdResult = await checkoutHolds.createPendingHold(holdInput);
   }
 
-  if (holdResult.kind === 'unavailable') throw new CheckoutUnavailableError();
+  if (holdResult.kind !== 'created') throw new CheckoutUnavailableError();
 
+  return createCheckoutForHold(checkoutGateway, checkoutHolds, holdResult.hold, true, createdAt);
+}
+
+async function resumeCheckoutAttempt(
+  checkoutGateway: CheckoutGateway,
+  checkoutHolds: CheckoutStockHoldRepository,
+  attempt: CheckoutRetryAttempt,
+  requestFingerprint: string,
+  now = new Date(),
+): Promise<Pick<HostedCheckoutSession, 'checkoutSessionId' | 'checkoutUrl'>> {
+  if (attempt.idempotencyFingerprint !== requestFingerprint) {
+    throw new CheckoutIdempotencyConflictError();
+  }
+
+  if (attempt.status !== 'pending_payment') {
+    throw new CheckoutAttemptTerminalError();
+  }
+
+  if (attempt.checkoutSessionId) {
+    let providerSession;
+    try {
+      providerSession = await checkoutGateway.readCheckoutSession(attempt.checkoutSessionId);
+    } catch {
+      throw new CheckoutRetryableError();
+    }
+
+    if (providerSession.paymentStatus === 'paid' || providerSession.status === 'complete') {
+      throw new CheckoutAttemptTerminalError();
+    }
+
+    if (providerSession.status === 'expired') {
+      throw new CheckoutAttemptTerminalError();
+    }
+
+    if (providerSession.status === 'open') {
+      const checkoutUrl = attempt.checkoutUrl ?? providerSession.checkoutUrl;
+      if (checkoutUrl) {
+        return {
+          checkoutSessionId: attempt.checkoutSessionId,
+          checkoutUrl,
+        };
+      }
+    }
+
+    throw new CheckoutRetryableError();
+  }
+
+  const claim = await checkoutHolds.claimCheckoutProvider(
+    attempt.id,
+    crypto.randomUUID(),
+    now,
+    new Date(now.getTime() + CHECKOUT_PROVIDER_LEASE_MS),
+  );
+  if (claim === 'in_progress') throw new CheckoutRetryableError();
+  if (claim === 'unavailable') throw new CheckoutAttemptTerminalError();
+
+  return createCheckoutForHold(checkoutGateway, checkoutHolds, attempt, false, now);
+}
+
+async function createCheckoutForHold(
+  checkoutGateway: CheckoutGateway,
+  checkoutHolds: CheckoutStockHoldRepository,
+  hold: SessionlessPendingCheckoutOrder | CheckoutRetryAttempt,
+  isNewHold: boolean,
+  now: Date,
+): Promise<Pick<HostedCheckoutSession, 'checkoutSessionId' | 'checkoutUrl'>> {
+  if (isNewHold) {
+    const claim = await checkoutHolds.claimCheckoutProvider(
+      hold.id,
+      crypto.randomUUID(),
+      now,
+      new Date(now.getTime() + CHECKOUT_PROVIDER_LEASE_MS),
+    );
+    if (claim !== 'claimed') throw new CheckoutRetryableError();
+  }
+
+  const request = createHostedCheckoutRequest(hold);
   let checkoutSession: HostedCheckoutSession;
 
   try {
-    checkoutSession = await checkoutGateway.createHostedCheckoutSession({
-      monetaryPolicy,
-      cancelUrl: command.cancelUrl,
-      checkoutExpiresAt,
-      lineItems: validatedLines,
-      newsletterOptIn: command.newsletterOptIn === true,
-      orderId: holdResult.hold.id,
-      successUrl: command.successUrl,
-    });
+    checkoutSession = await checkoutGateway.createHostedCheckoutSession(request);
   } catch (error) {
-    if (error instanceof CheckoutCreationError && error.definitiveNonCreation) {
-      await checkoutHolds.releaseSessionlessHold(holdResult.hold, new Date());
-    } else if (error instanceof CheckoutCreationError && error.session) {
-      await checkoutHolds.recoverCheckoutSession(
-        holdResult.hold.id,
-        error.session.checkoutSessionId,
-        new Date(),
-        error.session.checkoutExpiresAt,
-      );
+    if (error instanceof CheckoutCreationError) {
+      if (error.definitiveNonCreation) {
+        await checkoutHolds.releaseSessionlessHold(hold as SessionlessPendingCheckoutOrder, now);
+      } else if (error.session) {
+        await checkoutHolds.recoverCheckoutSession(
+          hold.id,
+          error.session.checkoutSessionId,
+          now,
+          error.session.checkoutExpiresAt,
+          error.session.checkoutUrl,
+        );
+      }
     }
     throw error;
   }
 
-  let boundOrder;
+  let boundOrder: unknown;
   try {
-    boundOrder = await checkoutHolds.bindCheckoutSession(
-      holdResult.hold,
-      checkoutSession.checkoutSessionId,
-      new Date(),
-      checkoutSession.checkoutExpiresAt,
-    );
+    boundOrder = isNewHold
+      ? await checkoutHolds.bindCheckoutSession(
+          hold as SessionlessPendingCheckoutOrder,
+          checkoutSession.checkoutSessionId,
+          now,
+          checkoutSession.checkoutExpiresAt,
+          checkoutSession.checkoutUrl,
+        )
+      : await checkoutHolds.recoverCheckoutSession(
+          hold.id,
+          checkoutSession.checkoutSessionId,
+          now,
+          checkoutSession.checkoutExpiresAt,
+          checkoutSession.checkoutUrl,
+        );
   } catch {
-    // A failed write can still have committed; recover the same Session below.
     boundOrder = null;
   }
 
-  if (!boundOrder) {
-    const recovered = await checkoutHolds.recoverCheckoutSession(
-      holdResult.hold.id,
-      checkoutSession.checkoutSessionId,
-      new Date(),
-      checkoutSession.checkoutExpiresAt,
-    );
-    const expiredSession = await checkoutGateway.expireHostedCheckoutSession(checkoutSession.checkoutSessionId);
-    if (recovered && expiredSession.status === 'expired' && expiredSession.paymentStatus !== 'paid') {
-      await checkoutHolds.releaseSessionBoundHold(
-        {
-          id: holdResult.hold.id,
-          checkoutSessionId: checkoutSession.checkoutSessionId,
-          checkoutExpiresAt: checkoutSession.checkoutExpiresAt,
-        },
-        new Date(),
-      );
-    }
-
-    throw new CheckoutUnavailableError();
+  if (boundOrder) {
+    return {
+      checkoutSessionId: checkoutSession.checkoutSessionId,
+      checkoutUrl: checkoutSession.checkoutUrl,
+    };
   }
 
+  const recovered = await checkoutHolds.recoverCheckoutSession(
+    hold.id,
+    checkoutSession.checkoutSessionId,
+    now,
+    checkoutSession.checkoutExpiresAt,
+    checkoutSession.checkoutUrl,
+  );
+  const expiredSession = await checkoutGateway.expireHostedCheckoutSession(checkoutSession.checkoutSessionId);
+  if (recovered && expiredSession.status === 'expired' && expiredSession.paymentStatus !== 'paid') {
+    await checkoutHolds.releaseSessionBoundHold(
+      {
+        id: hold.id,
+        checkoutSessionId: checkoutSession.checkoutSessionId,
+        checkoutExpiresAt: checkoutSession.checkoutExpiresAt,
+      },
+      now,
+    );
+  }
+
+  throw isNewHold ? new CheckoutUnavailableError() : new CheckoutRetryableError();
+}
+
+function createHostedCheckoutRequest(
+  hold: SessionlessPendingCheckoutOrder | CheckoutRetryAttempt,
+): Parameters<CheckoutGateway['createHostedCheckoutSession']>[0] {
+  if (!hold.checkoutCancelUrl || !hold.checkoutSuccessUrl) throw new CheckoutRetryableError();
+  const acceptedDeliveryAmountMinor = hold.acceptedDeliveryAmountMinor;
+  if (
+    typeof acceptedDeliveryAmountMinor !== 'number' ||
+    !Number.isSafeInteger(acceptedDeliveryAmountMinor) ||
+    acceptedDeliveryAmountMinor <= 0 ||
+    (hold.acceptedParcelTier !== 'small' && hold.acceptedParcelTier !== 'medium') ||
+    !hold.monetaryPolicyReference?.trim()
+  ) {
+    throw new CheckoutRetryableError();
+  }
+
+  const lineItems = hold.lines.map((line) => {
+    if (!line.stripePriceId) throw new CheckoutRetryableError();
+    return {
+      displayName: line.displayName ?? 'Store item',
+      lineAmountMinor: line.lineAmountMinor,
+      optionLabel: line.optionLabel,
+      quantity: line.quantity,
+      storeItemSlug: line.storeItemSlug,
+      stripePriceId: line.stripePriceId,
+      unitAmountMinor: line.unitAmountMinor,
+      variantId: line.variantId,
+    };
+  });
+
   return {
-    checkoutSessionId: checkoutSession.checkoutSessionId,
-    checkoutUrl: checkoutSession.checkoutUrl,
+    cancelUrl: hold.checkoutCancelUrl,
+    checkoutExpiresAt: hold.checkoutExpiresAt,
+    lineItems,
+    monetaryPolicy: {
+      acceptedDeliveryAmountMinor,
+      acceptedParcelTier: hold.acceptedParcelTier,
+      monetaryPolicyReference: hold.monetaryPolicyReference,
+    },
+    newsletterOptIn: hold.newsletterOptIn === true,
+    orderId: hold.id,
+    successUrl: hold.checkoutSuccessUrl,
   };
 }

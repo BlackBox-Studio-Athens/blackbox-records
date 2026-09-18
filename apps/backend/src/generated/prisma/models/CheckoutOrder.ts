@@ -49,6 +49,14 @@ export type CheckoutOrderMinAggregateOutputType = {
   storeItemSlug: string | null
   variantId: string | null
   checkoutSessionId: string | null
+  checkoutUrl: string | null
+  checkoutCancelUrl: string | null
+  checkoutSuccessUrl: string | null
+  idempotencyKeyDigest: string | null
+  idempotencyFingerprint: string | null
+  idempotencyEnvironment: string | null
+  checkoutProviderClaimToken: string | null
+  checkoutProviderLeaseUntil: string | null
   checkoutExpiresAt: Date | null
   stripePaymentIntentId: string | null
   amountTotalMinor: number | null
@@ -90,6 +98,14 @@ export type CheckoutOrderMaxAggregateOutputType = {
   storeItemSlug: string | null
   variantId: string | null
   checkoutSessionId: string | null
+  checkoutUrl: string | null
+  checkoutCancelUrl: string | null
+  checkoutSuccessUrl: string | null
+  idempotencyKeyDigest: string | null
+  idempotencyFingerprint: string | null
+  idempotencyEnvironment: string | null
+  checkoutProviderClaimToken: string | null
+  checkoutProviderLeaseUntil: string | null
   checkoutExpiresAt: Date | null
   stripePaymentIntentId: string | null
   amountTotalMinor: number | null
@@ -131,6 +147,14 @@ export type CheckoutOrderCountAggregateOutputType = {
   storeItemSlug: number
   variantId: number
   checkoutSessionId: number
+  checkoutUrl: number
+  checkoutCancelUrl: number
+  checkoutSuccessUrl: number
+  idempotencyKeyDigest: number
+  idempotencyFingerprint: number
+  idempotencyEnvironment: number
+  checkoutProviderClaimToken: number
+  checkoutProviderLeaseUntil: number
   checkoutExpiresAt: number
   stripePaymentIntentId: number
   amountTotalMinor: number
@@ -192,6 +216,14 @@ export type CheckoutOrderMinAggregateInputType = {
   storeItemSlug?: true
   variantId?: true
   checkoutSessionId?: true
+  checkoutUrl?: true
+  checkoutCancelUrl?: true
+  checkoutSuccessUrl?: true
+  idempotencyKeyDigest?: true
+  idempotencyFingerprint?: true
+  idempotencyEnvironment?: true
+  checkoutProviderClaimToken?: true
+  checkoutProviderLeaseUntil?: true
   checkoutExpiresAt?: true
   stripePaymentIntentId?: true
   amountTotalMinor?: true
@@ -233,6 +265,14 @@ export type CheckoutOrderMaxAggregateInputType = {
   storeItemSlug?: true
   variantId?: true
   checkoutSessionId?: true
+  checkoutUrl?: true
+  checkoutCancelUrl?: true
+  checkoutSuccessUrl?: true
+  idempotencyKeyDigest?: true
+  idempotencyFingerprint?: true
+  idempotencyEnvironment?: true
+  checkoutProviderClaimToken?: true
+  checkoutProviderLeaseUntil?: true
   checkoutExpiresAt?: true
   stripePaymentIntentId?: true
   amountTotalMinor?: true
@@ -274,6 +314,14 @@ export type CheckoutOrderCountAggregateInputType = {
   storeItemSlug?: true
   variantId?: true
   checkoutSessionId?: true
+  checkoutUrl?: true
+  checkoutCancelUrl?: true
+  checkoutSuccessUrl?: true
+  idempotencyKeyDigest?: true
+  idempotencyFingerprint?: true
+  idempotencyEnvironment?: true
+  checkoutProviderClaimToken?: true
+  checkoutProviderLeaseUntil?: true
   checkoutExpiresAt?: true
   stripePaymentIntentId?: true
   amountTotalMinor?: true
@@ -402,6 +450,14 @@ export type CheckoutOrderGroupByOutputType = {
   storeItemSlug: string
   variantId: string
   checkoutSessionId: string | null
+  checkoutUrl: string | null
+  checkoutCancelUrl: string | null
+  checkoutSuccessUrl: string | null
+  idempotencyKeyDigest: string | null
+  idempotencyFingerprint: string | null
+  idempotencyEnvironment: string | null
+  checkoutProviderClaimToken: string | null
+  checkoutProviderLeaseUntil: string | null
   checkoutExpiresAt: Date
   stripePaymentIntentId: string | null
   amountTotalMinor: number | null
@@ -466,6 +522,14 @@ export type CheckoutOrderWhereInput = {
   storeItemSlug?: Prisma.StringFilter<"CheckoutOrder"> | string
   variantId?: Prisma.StringFilter<"CheckoutOrder"> | string
   checkoutSessionId?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  checkoutUrl?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  checkoutCancelUrl?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  checkoutSuccessUrl?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  idempotencyKeyDigest?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  idempotencyFingerprint?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  idempotencyEnvironment?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  checkoutProviderClaimToken?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  checkoutProviderLeaseUntil?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   checkoutExpiresAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   stripePaymentIntentId?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   amountTotalMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
@@ -509,6 +573,14 @@ export type CheckoutOrderOrderByWithRelationInput = {
   storeItemSlug?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   checkoutSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutCancelUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutSuccessUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutProviderClaimToken?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutProviderLeaseUntil?: Prisma.SortOrderInput | Prisma.SortOrder
   checkoutExpiresAt?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrderInput | Prisma.SortOrder
   amountTotalMinor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -555,6 +627,14 @@ export type CheckoutOrderWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CheckoutOrderWhereInput | Prisma.CheckoutOrderWhereInput[]
   storeItemSlug?: Prisma.StringFilter<"CheckoutOrder"> | string
   variantId?: Prisma.StringFilter<"CheckoutOrder"> | string
+  checkoutUrl?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  checkoutCancelUrl?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  checkoutSuccessUrl?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  idempotencyKeyDigest?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  idempotencyFingerprint?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  idempotencyEnvironment?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  checkoutProviderClaimToken?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
+  checkoutProviderLeaseUntil?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   checkoutExpiresAt?: Prisma.DateTimeFilter<"CheckoutOrder"> | Date | string
   stripePaymentIntentId?: Prisma.StringNullableFilter<"CheckoutOrder"> | string | null
   amountTotalMinor?: Prisma.IntNullableFilter<"CheckoutOrder"> | number | null
@@ -598,6 +678,14 @@ export type CheckoutOrderOrderByWithAggregationInput = {
   storeItemSlug?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   checkoutSessionId?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutCancelUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutSuccessUrl?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutProviderClaimToken?: Prisma.SortOrderInput | Prisma.SortOrder
+  checkoutProviderLeaseUntil?: Prisma.SortOrderInput | Prisma.SortOrder
   checkoutExpiresAt?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrderInput | Prisma.SortOrder
   amountTotalMinor?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -647,6 +735,14 @@ export type CheckoutOrderScalarWhereWithAggregatesInput = {
   storeItemSlug?: Prisma.StringWithAggregatesFilter<"CheckoutOrder"> | string
   variantId?: Prisma.StringWithAggregatesFilter<"CheckoutOrder"> | string
   checkoutSessionId?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  checkoutUrl?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  checkoutCancelUrl?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  checkoutSuccessUrl?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  idempotencyKeyDigest?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  idempotencyFingerprint?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  idempotencyEnvironment?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  checkoutProviderClaimToken?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
+  checkoutProviderLeaseUntil?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
   checkoutExpiresAt?: Prisma.DateTimeWithAggregatesFilter<"CheckoutOrder"> | Date | string
   stripePaymentIntentId?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrder"> | string | null
   amountTotalMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrder"> | number | null
@@ -688,6 +784,14 @@ export type CheckoutOrderCreateInput = {
   storeItemSlug: string
   variantId: string
   checkoutSessionId?: string | null
+  checkoutUrl?: string | null
+  checkoutCancelUrl?: string | null
+  checkoutSuccessUrl?: string | null
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
+  checkoutProviderClaimToken?: string | null
+  checkoutProviderLeaseUntil?: string | null
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
@@ -731,6 +835,14 @@ export type CheckoutOrderUncheckedCreateInput = {
   storeItemSlug: string
   variantId: string
   checkoutSessionId?: string | null
+  checkoutUrl?: string | null
+  checkoutCancelUrl?: string | null
+  checkoutSuccessUrl?: string | null
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
+  checkoutProviderClaimToken?: string | null
+  checkoutProviderLeaseUntil?: string | null
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
@@ -774,6 +886,14 @@ export type CheckoutOrderUpdateInput = {
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutCancelUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSuccessUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderClaimToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderLeaseUntil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -817,6 +937,14 @@ export type CheckoutOrderUncheckedUpdateInput = {
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutCancelUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSuccessUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderClaimToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderLeaseUntil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -860,6 +988,14 @@ export type CheckoutOrderCreateManyInput = {
   storeItemSlug: string
   variantId: string
   checkoutSessionId?: string | null
+  checkoutUrl?: string | null
+  checkoutCancelUrl?: string | null
+  checkoutSuccessUrl?: string | null
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
+  checkoutProviderClaimToken?: string | null
+  checkoutProviderLeaseUntil?: string | null
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
@@ -901,6 +1037,14 @@ export type CheckoutOrderUpdateManyMutationInput = {
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutCancelUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSuccessUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderClaimToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderLeaseUntil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -942,6 +1086,14 @@ export type CheckoutOrderUncheckedUpdateManyInput = {
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutCancelUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSuccessUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderClaimToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderLeaseUntil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -983,6 +1135,14 @@ export type CheckoutOrderCountOrderByAggregateInput = {
   storeItemSlug?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   checkoutSessionId?: Prisma.SortOrder
+  checkoutUrl?: Prisma.SortOrder
+  checkoutCancelUrl?: Prisma.SortOrder
+  checkoutSuccessUrl?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrder
+  checkoutProviderClaimToken?: Prisma.SortOrder
+  checkoutProviderLeaseUntil?: Prisma.SortOrder
   checkoutExpiresAt?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrder
   amountTotalMinor?: Prisma.SortOrder
@@ -1033,6 +1193,14 @@ export type CheckoutOrderMaxOrderByAggregateInput = {
   storeItemSlug?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   checkoutSessionId?: Prisma.SortOrder
+  checkoutUrl?: Prisma.SortOrder
+  checkoutCancelUrl?: Prisma.SortOrder
+  checkoutSuccessUrl?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrder
+  checkoutProviderClaimToken?: Prisma.SortOrder
+  checkoutProviderLeaseUntil?: Prisma.SortOrder
   checkoutExpiresAt?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrder
   amountTotalMinor?: Prisma.SortOrder
@@ -1074,6 +1242,14 @@ export type CheckoutOrderMinOrderByAggregateInput = {
   storeItemSlug?: Prisma.SortOrder
   variantId?: Prisma.SortOrder
   checkoutSessionId?: Prisma.SortOrder
+  checkoutUrl?: Prisma.SortOrder
+  checkoutCancelUrl?: Prisma.SortOrder
+  checkoutSuccessUrl?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrder
+  checkoutProviderClaimToken?: Prisma.SortOrder
+  checkoutProviderLeaseUntil?: Prisma.SortOrder
   checkoutExpiresAt?: Prisma.SortOrder
   stripePaymentIntentId?: Prisma.SortOrder
   amountTotalMinor?: Prisma.SortOrder
@@ -1165,6 +1341,14 @@ export type CheckoutOrderCreateWithoutLinesInput = {
   storeItemSlug: string
   variantId: string
   checkoutSessionId?: string | null
+  checkoutUrl?: string | null
+  checkoutCancelUrl?: string | null
+  checkoutSuccessUrl?: string | null
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
+  checkoutProviderClaimToken?: string | null
+  checkoutProviderLeaseUntil?: string | null
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
@@ -1207,6 +1391,14 @@ export type CheckoutOrderUncheckedCreateWithoutLinesInput = {
   storeItemSlug: string
   variantId: string
   checkoutSessionId?: string | null
+  checkoutUrl?: string | null
+  checkoutCancelUrl?: string | null
+  checkoutSuccessUrl?: string | null
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
+  checkoutProviderClaimToken?: string | null
+  checkoutProviderLeaseUntil?: string | null
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
@@ -1265,6 +1457,14 @@ export type CheckoutOrderUpdateWithoutLinesInput = {
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutCancelUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSuccessUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderClaimToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderLeaseUntil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1307,6 +1507,14 @@ export type CheckoutOrderUncheckedUpdateWithoutLinesInput = {
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutCancelUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSuccessUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderClaimToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderLeaseUntil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1349,6 +1557,14 @@ export type CheckoutOrderCreateWithoutDeliveriesInput = {
   storeItemSlug: string
   variantId: string
   checkoutSessionId?: string | null
+  checkoutUrl?: string | null
+  checkoutCancelUrl?: string | null
+  checkoutSuccessUrl?: string | null
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
+  checkoutProviderClaimToken?: string | null
+  checkoutProviderLeaseUntil?: string | null
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
@@ -1391,6 +1607,14 @@ export type CheckoutOrderUncheckedCreateWithoutDeliveriesInput = {
   storeItemSlug: string
   variantId: string
   checkoutSessionId?: string | null
+  checkoutUrl?: string | null
+  checkoutCancelUrl?: string | null
+  checkoutSuccessUrl?: string | null
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
+  checkoutProviderClaimToken?: string | null
+  checkoutProviderLeaseUntil?: string | null
   checkoutExpiresAt: Date | string
   stripePaymentIntentId?: string | null
   amountTotalMinor?: number | null
@@ -1449,6 +1673,14 @@ export type CheckoutOrderUpdateWithoutDeliveriesInput = {
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutCancelUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSuccessUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderClaimToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderLeaseUntil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1491,6 +1723,14 @@ export type CheckoutOrderUncheckedUpdateWithoutDeliveriesInput = {
   storeItemSlug?: Prisma.StringFieldUpdateOperationsInput | string
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   checkoutSessionId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutCancelUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutSuccessUrl?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderClaimToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  checkoutProviderLeaseUntil?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   checkoutExpiresAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   stripePaymentIntentId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   amountTotalMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1573,6 +1813,14 @@ export type CheckoutOrderSelect<ExtArgs extends runtime.Types.Extensions.Interna
   storeItemSlug?: boolean
   variantId?: boolean
   checkoutSessionId?: boolean
+  checkoutUrl?: boolean
+  checkoutCancelUrl?: boolean
+  checkoutSuccessUrl?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
+  checkoutProviderClaimToken?: boolean
+  checkoutProviderLeaseUntil?: boolean
   checkoutExpiresAt?: boolean
   stripePaymentIntentId?: boolean
   amountTotalMinor?: boolean
@@ -1617,6 +1865,14 @@ export type CheckoutOrderSelectCreateManyAndReturn<ExtArgs extends runtime.Types
   storeItemSlug?: boolean
   variantId?: boolean
   checkoutSessionId?: boolean
+  checkoutUrl?: boolean
+  checkoutCancelUrl?: boolean
+  checkoutSuccessUrl?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
+  checkoutProviderClaimToken?: boolean
+  checkoutProviderLeaseUntil?: boolean
   checkoutExpiresAt?: boolean
   stripePaymentIntentId?: boolean
   amountTotalMinor?: boolean
@@ -1658,6 +1914,14 @@ export type CheckoutOrderSelectUpdateManyAndReturn<ExtArgs extends runtime.Types
   storeItemSlug?: boolean
   variantId?: boolean
   checkoutSessionId?: boolean
+  checkoutUrl?: boolean
+  checkoutCancelUrl?: boolean
+  checkoutSuccessUrl?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
+  checkoutProviderClaimToken?: boolean
+  checkoutProviderLeaseUntil?: boolean
   checkoutExpiresAt?: boolean
   stripePaymentIntentId?: boolean
   amountTotalMinor?: boolean
@@ -1699,6 +1963,14 @@ export type CheckoutOrderSelectScalar = {
   storeItemSlug?: boolean
   variantId?: boolean
   checkoutSessionId?: boolean
+  checkoutUrl?: boolean
+  checkoutCancelUrl?: boolean
+  checkoutSuccessUrl?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
+  checkoutProviderClaimToken?: boolean
+  checkoutProviderLeaseUntil?: boolean
   checkoutExpiresAt?: boolean
   stripePaymentIntentId?: boolean
   amountTotalMinor?: boolean
@@ -1735,7 +2007,7 @@ export type CheckoutOrderSelectScalar = {
   updatedAt?: boolean
 }
 
-export type CheckoutOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "variantId" | "checkoutSessionId" | "checkoutExpiresAt" | "stripePaymentIntentId" | "amountTotalMinor" | "acceptedDeliveryAmountMinor" | "acceptedParcelTier" | "monetaryPolicyReference" | "merchandiseGrossMinor" | "deliveryGrossMinor" | "deliveryVatMinor" | "totalVatMinor" | "currencyCode" | "recipientName" | "shopperEmail" | "shopperPhone" | "shippingAddressLine1" | "shippingAddressLine2" | "shippingAddressCity" | "shippingAddressPostalCode" | "shippingAddressState" | "shippingAddressCountryCode" | "newsletterOptIn" | "newsletterConsentAt" | "newsletterConsentCopyVersion" | "shippingLockerId" | "shippingLockerCountryCode" | "shippingLockerNameOrLabel" | "status" | "statusUpdatedAt" | "paidAt" | "notPaidAt" | "needsReviewAt" | "needsReviewReason" | "createdAt" | "updatedAt", ExtArgs["result"]["checkoutOrder"]>
+export type CheckoutOrderOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "storeItemSlug" | "variantId" | "checkoutSessionId" | "checkoutUrl" | "checkoutCancelUrl" | "checkoutSuccessUrl" | "idempotencyKeyDigest" | "idempotencyFingerprint" | "idempotencyEnvironment" | "checkoutProviderClaimToken" | "checkoutProviderLeaseUntil" | "checkoutExpiresAt" | "stripePaymentIntentId" | "amountTotalMinor" | "acceptedDeliveryAmountMinor" | "acceptedParcelTier" | "monetaryPolicyReference" | "merchandiseGrossMinor" | "deliveryGrossMinor" | "deliveryVatMinor" | "totalVatMinor" | "currencyCode" | "recipientName" | "shopperEmail" | "shopperPhone" | "shippingAddressLine1" | "shippingAddressLine2" | "shippingAddressCity" | "shippingAddressPostalCode" | "shippingAddressState" | "shippingAddressCountryCode" | "newsletterOptIn" | "newsletterConsentAt" | "newsletterConsentCopyVersion" | "shippingLockerId" | "shippingLockerCountryCode" | "shippingLockerNameOrLabel" | "status" | "statusUpdatedAt" | "paidAt" | "notPaidAt" | "needsReviewAt" | "needsReviewReason" | "createdAt" | "updatedAt", ExtArgs["result"]["checkoutOrder"]>
 export type CheckoutOrderInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   lines?: boolean | Prisma.CheckoutOrder$linesArgs<ExtArgs>
   deliveries?: boolean | Prisma.CheckoutOrder$deliveriesArgs<ExtArgs>
@@ -1755,6 +2027,14 @@ export type $CheckoutOrderPayload<ExtArgs extends runtime.Types.Extensions.Inter
     storeItemSlug: string
     variantId: string
     checkoutSessionId: string | null
+    checkoutUrl: string | null
+    checkoutCancelUrl: string | null
+    checkoutSuccessUrl: string | null
+    idempotencyKeyDigest: string | null
+    idempotencyFingerprint: string | null
+    idempotencyEnvironment: string | null
+    checkoutProviderClaimToken: string | null
+    checkoutProviderLeaseUntil: string | null
     checkoutExpiresAt: Date
     stripePaymentIntentId: string | null
     amountTotalMinor: number | null
@@ -2218,6 +2498,14 @@ export interface CheckoutOrderFieldRefs {
   readonly storeItemSlug: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly variantId: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly checkoutSessionId: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly checkoutUrl: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly checkoutCancelUrl: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly checkoutSuccessUrl: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly idempotencyKeyDigest: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly idempotencyFingerprint: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly idempotencyEnvironment: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly checkoutProviderClaimToken: Prisma.FieldRef<"CheckoutOrder", 'String'>
+  readonly checkoutProviderLeaseUntil: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly checkoutExpiresAt: Prisma.FieldRef<"CheckoutOrder", 'DateTime'>
   readonly stripePaymentIntentId: Prisma.FieldRef<"CheckoutOrder", 'String'>
   readonly amountTotalMinor: Prisma.FieldRef<"CheckoutOrder", 'Int'>

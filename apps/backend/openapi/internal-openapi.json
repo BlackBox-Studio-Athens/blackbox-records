@@ -1785,6 +1785,15 @@
             "required": true,
             "name": "variantId",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "idempotency-key",
+            "in": "header"
           }
         ],
         "requestBody": {
@@ -1837,6 +1846,16 @@
               }
             }
           },
+          "409": {
+            "description": "The stock request key conflicts with another operation or is required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
             "content": {
@@ -1864,6 +1883,15 @@
             "required": true,
             "name": "variantId",
             "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "idempotency-key",
+            "in": "header"
           }
         ],
         "requestBody": {

@@ -41,6 +41,9 @@ export type StockChangeMinAggregateOutputType = {
   reason: string | null
   notes: string | null
   actorEmail: string | null
+  idempotencyKeyDigest: string | null
+  idempotencyFingerprint: string | null
+  idempotencyEnvironment: string | null
   recordedAt: Date | null
 }
 
@@ -51,6 +54,9 @@ export type StockChangeMaxAggregateOutputType = {
   reason: string | null
   notes: string | null
   actorEmail: string | null
+  idempotencyKeyDigest: string | null
+  idempotencyFingerprint: string | null
+  idempotencyEnvironment: string | null
   recordedAt: Date | null
 }
 
@@ -61,6 +67,9 @@ export type StockChangeCountAggregateOutputType = {
   reason: number
   notes: number
   actorEmail: number
+  idempotencyKeyDigest: number
+  idempotencyFingerprint: number
+  idempotencyEnvironment: number
   recordedAt: number
   _all: number
 }
@@ -81,6 +90,9 @@ export type StockChangeMinAggregateInputType = {
   reason?: true
   notes?: true
   actorEmail?: true
+  idempotencyKeyDigest?: true
+  idempotencyFingerprint?: true
+  idempotencyEnvironment?: true
   recordedAt?: true
 }
 
@@ -91,6 +103,9 @@ export type StockChangeMaxAggregateInputType = {
   reason?: true
   notes?: true
   actorEmail?: true
+  idempotencyKeyDigest?: true
+  idempotencyFingerprint?: true
+  idempotencyEnvironment?: true
   recordedAt?: true
 }
 
@@ -101,6 +116,9 @@ export type StockChangeCountAggregateInputType = {
   reason?: true
   notes?: true
   actorEmail?: true
+  idempotencyKeyDigest?: true
+  idempotencyFingerprint?: true
+  idempotencyEnvironment?: true
   recordedAt?: true
   _all?: true
 }
@@ -198,6 +216,9 @@ export type StockChangeGroupByOutputType = {
   reason: string
   notes: string | null
   actorEmail: string
+  idempotencyKeyDigest: string | null
+  idempotencyFingerprint: string | null
+  idempotencyEnvironment: string | null
   recordedAt: Date
   _count: StockChangeCountAggregateOutputType | null
   _avg: StockChangeAvgAggregateOutputType | null
@@ -231,6 +252,9 @@ export type StockChangeWhereInput = {
   reason?: Prisma.StringFilter<"StockChange"> | string
   notes?: Prisma.StringNullableFilter<"StockChange"> | string | null
   actorEmail?: Prisma.StringFilter<"StockChange"> | string
+  idempotencyKeyDigest?: Prisma.StringNullableFilter<"StockChange"> | string | null
+  idempotencyFingerprint?: Prisma.StringNullableFilter<"StockChange"> | string | null
+  idempotencyEnvironment?: Prisma.StringNullableFilter<"StockChange"> | string | null
   recordedAt?: Prisma.DateTimeFilter<"StockChange"> | Date | string
 }
 
@@ -241,6 +265,9 @@ export type StockChangeOrderByWithRelationInput = {
   reason?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   actorEmail?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrderInput | Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
 }
 
@@ -254,6 +281,9 @@ export type StockChangeWhereUniqueInput = Prisma.AtLeast<{
   reason?: Prisma.StringFilter<"StockChange"> | string
   notes?: Prisma.StringNullableFilter<"StockChange"> | string | null
   actorEmail?: Prisma.StringFilter<"StockChange"> | string
+  idempotencyKeyDigest?: Prisma.StringNullableFilter<"StockChange"> | string | null
+  idempotencyFingerprint?: Prisma.StringNullableFilter<"StockChange"> | string | null
+  idempotencyEnvironment?: Prisma.StringNullableFilter<"StockChange"> | string | null
   recordedAt?: Prisma.DateTimeFilter<"StockChange"> | Date | string
 }, "id">
 
@@ -264,6 +294,9 @@ export type StockChangeOrderByWithAggregationInput = {
   reason?: Prisma.SortOrder
   notes?: Prisma.SortOrderInput | Prisma.SortOrder
   actorEmail?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrderInput | Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrderInput | Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
   _count?: Prisma.StockChangeCountOrderByAggregateInput
   _avg?: Prisma.StockChangeAvgOrderByAggregateInput
@@ -282,6 +315,9 @@ export type StockChangeScalarWhereWithAggregatesInput = {
   reason?: Prisma.StringWithAggregatesFilter<"StockChange"> | string
   notes?: Prisma.StringNullableWithAggregatesFilter<"StockChange"> | string | null
   actorEmail?: Prisma.StringWithAggregatesFilter<"StockChange"> | string
+  idempotencyKeyDigest?: Prisma.StringNullableWithAggregatesFilter<"StockChange"> | string | null
+  idempotencyFingerprint?: Prisma.StringNullableWithAggregatesFilter<"StockChange"> | string | null
+  idempotencyEnvironment?: Prisma.StringNullableWithAggregatesFilter<"StockChange"> | string | null
   recordedAt?: Prisma.DateTimeWithAggregatesFilter<"StockChange"> | Date | string
 }
 
@@ -292,6 +328,9 @@ export type StockChangeCreateInput = {
   reason: string
   notes?: string | null
   actorEmail: string
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
   recordedAt?: Date | string
 }
 
@@ -302,6 +341,9 @@ export type StockChangeUncheckedCreateInput = {
   reason: string
   notes?: string | null
   actorEmail: string
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
   recordedAt?: Date | string
 }
 
@@ -312,6 +354,9 @@ export type StockChangeUpdateInput = {
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actorEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -322,6 +367,9 @@ export type StockChangeUncheckedUpdateInput = {
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actorEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -332,6 +380,9 @@ export type StockChangeCreateManyInput = {
   reason: string
   notes?: string | null
   actorEmail: string
+  idempotencyKeyDigest?: string | null
+  idempotencyFingerprint?: string | null
+  idempotencyEnvironment?: string | null
   recordedAt?: Date | string
 }
 
@@ -342,6 +393,9 @@ export type StockChangeUpdateManyMutationInput = {
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actorEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -352,6 +406,9 @@ export type StockChangeUncheckedUpdateManyInput = {
   reason?: Prisma.StringFieldUpdateOperationsInput | string
   notes?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   actorEmail?: Prisma.StringFieldUpdateOperationsInput | string
+  idempotencyKeyDigest?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyFingerprint?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  idempotencyEnvironment?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   recordedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -362,6 +419,9 @@ export type StockChangeCountOrderByAggregateInput = {
   reason?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   actorEmail?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
 }
 
@@ -376,6 +436,9 @@ export type StockChangeMaxOrderByAggregateInput = {
   reason?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   actorEmail?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
 }
 
@@ -386,6 +449,9 @@ export type StockChangeMinOrderByAggregateInput = {
   reason?: Prisma.SortOrder
   notes?: Prisma.SortOrder
   actorEmail?: Prisma.SortOrder
+  idempotencyKeyDigest?: Prisma.SortOrder
+  idempotencyFingerprint?: Prisma.SortOrder
+  idempotencyEnvironment?: Prisma.SortOrder
   recordedAt?: Prisma.SortOrder
 }
 
@@ -402,6 +468,9 @@ export type StockChangeSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   reason?: boolean
   notes?: boolean
   actorEmail?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
   recordedAt?: boolean
 }, ExtArgs["result"]["stockChange"]>
 
@@ -412,6 +481,9 @@ export type StockChangeSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   reason?: boolean
   notes?: boolean
   actorEmail?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
   recordedAt?: boolean
 }, ExtArgs["result"]["stockChange"]>
 
@@ -422,6 +494,9 @@ export type StockChangeSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   reason?: boolean
   notes?: boolean
   actorEmail?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
   recordedAt?: boolean
 }, ExtArgs["result"]["stockChange"]>
 
@@ -432,10 +507,13 @@ export type StockChangeSelectScalar = {
   reason?: boolean
   notes?: boolean
   actorEmail?: boolean
+  idempotencyKeyDigest?: boolean
+  idempotencyFingerprint?: boolean
+  idempotencyEnvironment?: boolean
   recordedAt?: boolean
 }
 
-export type StockChangeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "variantId" | "quantityDelta" | "reason" | "notes" | "actorEmail" | "recordedAt", ExtArgs["result"]["stockChange"]>
+export type StockChangeOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "variantId" | "quantityDelta" | "reason" | "notes" | "actorEmail" | "idempotencyKeyDigest" | "idempotencyFingerprint" | "idempotencyEnvironment" | "recordedAt", ExtArgs["result"]["stockChange"]>
 
 export type $StockChangePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "StockChange"
@@ -447,6 +525,9 @@ export type $StockChangePayload<ExtArgs extends runtime.Types.Extensions.Interna
     reason: string
     notes: string | null
     actorEmail: string
+    idempotencyKeyDigest: string | null
+    idempotencyFingerprint: string | null
+    idempotencyEnvironment: string | null
     recordedAt: Date
   }, ExtArgs["result"]["stockChange"]>
   composites: {}
@@ -877,6 +958,9 @@ export interface StockChangeFieldRefs {
   readonly reason: Prisma.FieldRef<"StockChange", 'String'>
   readonly notes: Prisma.FieldRef<"StockChange", 'String'>
   readonly actorEmail: Prisma.FieldRef<"StockChange", 'String'>
+  readonly idempotencyKeyDigest: Prisma.FieldRef<"StockChange", 'String'>
+  readonly idempotencyFingerprint: Prisma.FieldRef<"StockChange", 'String'>
+  readonly idempotencyEnvironment: Prisma.FieldRef<"StockChange", 'String'>
   readonly recordedAt: Prisma.FieldRef<"StockChange", 'DateTime'>
 }
     

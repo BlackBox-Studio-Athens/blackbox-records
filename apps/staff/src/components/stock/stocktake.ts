@@ -14,12 +14,24 @@ export const stocktakeSchema = z
 export type Stocktake = z.infer<typeof stocktakeSchema>;
 export const stocktakeKey = 'blackbox-stocktake';
 export const pendingCountKey = 'blackbox-pending-count';
+export const pendingChangeKey = 'blackbox-pending-change';
+export const pendingChangeSchema = z.object({
+  variantId: z.string().min(1),
+  delta: z
+    .number()
+    .int()
+    .refine((value) => value !== 0),
+  reason: z.string().min(1),
+  notes: z.string().nullable(),
+  idempotencyKey: z.string().uuid(),
+});
 export const pendingCountSchema = z.object({
   variantId: z.string().min(1),
   expectedRevision: z.number().int().nonnegative().nullable(),
   countedQuantity: z.string(),
   onlineQuantity: z.string(),
-  notes: z.string(),
+  notes: z.string().nullable(),
+  idempotencyKey: z.string().uuid(),
 });
 
 export function recordProgress(session: Stocktake, status: 'confirmed' | 'skipped'): Stocktake {

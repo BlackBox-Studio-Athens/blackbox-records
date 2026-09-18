@@ -1,5 +1,8 @@
 import {
   CheckoutConfigurationError,
+  CheckoutIdempotencyConflictError,
+  CheckoutRetryableError,
+  CheckoutAttemptTerminalError,
   CheckoutUnavailableError,
   CatalogDriftError,
   NativeCheckoutDisabledError,
@@ -84,6 +87,9 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
     errors: {
       CatalogDriftError,
       CheckoutConfigurationError,
+      CheckoutIdempotencyConflictError,
+      CheckoutRetryableError,
+      CheckoutAttemptTerminalError,
       CheckoutUnavailableError,
       NativeCheckoutDisabledError,
       StoreItemNotFoundError,
@@ -166,6 +172,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
           monetaryPolicyReference: packingPolicy.allowSynthetic
             ? `synthetic-${target}-inclusive-v1`
             : hostedMonetaryPolicyReference,
+          productEnvironment: productEnvironmentProfile.productEnvironment,
         },
       ),
   };

@@ -29,6 +29,7 @@ const mockRecordStockCount = vi.fn();
 const VariantNotFoundError = class VariantNotFoundError extends Error {};
 const InvalidStockOperationError = class InvalidStockOperationError extends Error {};
 const StockConflictError = class StockConflictError extends Error {};
+const StockIdempotencyConflictError = class StockIdempotencyConflictError extends Error {};
 const mockCreateInternalStockServices = vi.fn();
 
 function expectNoStoreCacheControl(response: Response): void {
@@ -43,6 +44,7 @@ vi.mock('../../src/interfaces/http/routes/internal-stock-services', () => ({
       disconnect: mockDisconnect,
       errors: {
         StockConflictError,
+        StockIdempotencyConflictError,
         InvalidStockOperationError,
         VariantNotFoundError,
       },
@@ -250,7 +252,9 @@ describe('internal stock routes', () => {
 
     expect(mockRecordStockChange).toHaveBeenCalledWith({
       actorEmail: 'operator@blackboxrecords.example',
+      idempotencyKey: undefined,
       notes: 'Packed for table',
+      productEnvironment: 'LOCAL',
       quantityDelta: -1,
       reason: 'sale',
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
@@ -275,6 +279,90 @@ describe('internal stock routes', () => {
         updatedAt: '2026-04-24T12:05:00.000Z',
       },
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    });
+  });
+
+  it('forwards the UUIDv4 Idempotency-Key for stock changes', async () => {
+    mockRecordStockChange.mockResolvedValueOnce({
+      entry: {
+        actorEmail: LOCAL_ENV.LOCAL_OPERATOR_EMAIL,
+        id: 'change_keyed',
+        notes: null,
+        quantityDelta: 1,
+        reason: 'sale',
+        recordedAt: new Date('2026-04-24T12:05:00.000Z'),
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      },
+      stock: {
+        revision: 5,
+        createdAt: new Date('2026-04-24T10:00:00.000Z'),
+        onlineQuantity: 3,
+        quantity: 4,
+        updatedAt: new Date('2026-04-24T12:05:00.000Z'),
+        variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      },
+    });
+
+    const response = await createHttpApp().request(
+      'http://127.0.0.1/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/changes',
+      {
+        body: JSON.stringify({ delta: 1, reason: 'sale' }),
+        headers: {
+          'content-type': 'application/json',
+          'idempotency-key': '123e4567-e89b-42d3-a456-426614174001',
+        },
+        method: 'POST',
+      },
+      LOCAL_ENV,
+    );
+
+    expect(mockRecordStockChange).toHaveBeenCalledWith(
+      expect.objectContaining({ idempotencyKey: '123e4567-e89b-42d3-a456-426614174001' }),
+    );
+    expect(response.status).toBe(200);
+  });
+
+  it('requires a stock key when runtime enforcement is enabled', async () => {
+    const response = await createHttpApp().request(
+      'http://127.0.0.1/api/internal/variants/variant_test/stock/changes',
+      {
+        body: JSON.stringify({ delta: 1, reason: 'sale' }),
+        headers: { 'content-type': 'application/json' },
+        method: 'POST',
+      },
+      { ...LOCAL_ENV, COMMERCE_IDEMPOTENCY_KEYS_REQUIRED: 'true' },
+    );
+
+    expect(mockRecordStockChange).not.toHaveBeenCalled();
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'idempotency_key_required',
+      status: 409,
+    });
+  });
+
+  it('maps a stock payload conflict to a safe 409 response', async () => {
+    mockRecordStockChange.mockRejectedValueOnce(
+      new StockIdempotencyConflictError('The request key was already used for different input.'),
+    );
+
+    const response = await createHttpApp().request(
+      'http://127.0.0.1/api/internal/variants/variant_test/stock/changes',
+      {
+        body: JSON.stringify({ delta: 1, reason: 'sale' }),
+        headers: {
+          'content-type': 'application/json',
+          'idempotency-key': '123e4567-e89b-42d3-a456-426614174002',
+        },
+        method: 'POST',
+      },
+      LOCAL_ENV,
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({
+      code: 'stock_idempotency_conflict',
+      status: 409,
     });
   });
 

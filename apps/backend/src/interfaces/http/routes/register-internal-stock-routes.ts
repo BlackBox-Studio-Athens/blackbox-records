@@ -1,7 +1,7 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { inventoryQuerySchema } from '../../../application/commerce/stock';
 
-import type { AppBindings, AppOpenApi } from '../../../env';
+import { areCommerceIdempotencyKeysRequired, type AppBindings, type AppOpenApi } from '../../../env';
 import type { AppLogger } from '../../../observability';
 import { requestLogger, runWithTraceSpan, traceContextFromHono } from '../../../observability';
 import { jsonError, jsonNoStore, operatorAccessErrorResponses, problemContent } from '../responses';
@@ -281,6 +281,7 @@ const postStockChangeRoute = createRoute({
   method: 'post',
   path: '/api/internal/variants/{variantId}/stock/changes',
   request: {
+    headers: z.object({ 'idempotency-key': z.uuid({ version: 'v4' }).optional() }),
     body: {
       content: {
         'application/json': {
@@ -303,6 +304,10 @@ const postStockChangeRoute = createRoute({
       content: problemContent,
       description: 'Invalid stock change.',
     },
+    409: {
+      content: problemContent,
+      description: 'The stock request key conflicts with another operation or is required.',
+    },
     ...operatorAccessErrorResponses,
     404: {
       content: problemContent,
@@ -316,6 +321,7 @@ const postStockCountRoute = createRoute({
   method: 'post',
   path: '/api/internal/variants/{variantId}/stock/counts',
   request: {
+    headers: z.object({ 'idempotency-key': z.uuid({ version: 'v4' }).optional() }),
     body: {
       content: {
         'application/json': {
@@ -460,6 +466,14 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
       try {
         const { variantId } = context.req.valid('param');
         const body = context.req.valid('json');
+        const idempotencyKey = context.req.valid('header')['idempotency-key'];
+        if (areCommerceIdempotencyKeysRequired(context.env) && !idempotencyKey) {
+          return jsonError(context, {
+            code: 'idempotency_key_required',
+            message: 'Refresh this page before recording stock movement.',
+            status: 409,
+          });
+        }
         const result = await runWithTraceSpan(
           traceContextFromHono(context),
           'stock.mutate',
@@ -475,6 +489,8 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
               quantityDelta: body.delta,
               reason: body.reason,
               variantId,
+              idempotencyKey,
+              productEnvironment: context.env.PRODUCT_ENVIRONMENT,
             }),
         );
 
@@ -495,6 +511,13 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
           ),
         );
       } catch (error) {
+        if (error instanceof services.errors.StockIdempotencyConflictError) {
+          return jsonError(context, {
+            code: 'stock_idempotency_conflict',
+            message: error.message,
+            status: 409,
+          });
+        }
         const routeError = toInternalStockRouteError(services, error, {
           includeInvalidStockOperation: true,
           invalidRequestMessage: 'Invalid stock change request.',
@@ -527,6 +550,14 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
       try {
         const { variantId } = context.req.valid('param');
         const body = context.req.valid('json');
+        const idempotencyKey = context.req.valid('header')['idempotency-key'];
+        if (areCommerceIdempotencyKeysRequired(context.env) && !idempotencyKey) {
+          return jsonError(context, {
+            code: 'idempotency_key_required',
+            message: 'Refresh this page before recording the recount.',
+            status: 409,
+          });
+        }
         const result = await runWithTraceSpan(
           traceContextFromHono(context),
           'stock.mutate',
@@ -543,6 +574,8 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
               notes: body.notes ?? null,
               onlineQuantity: body.onlineQuantity,
               variantId,
+              idempotencyKey,
+              productEnvironment: context.env.PRODUCT_ENVIRONMENT,
             }),
         );
 
@@ -566,6 +599,13 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         if (error instanceof services.errors.StockConflictError) {
           logStockOutcome(logger, 'warn', { operation: 'count', outcome: 'conflict', safeReason: 'stock_changed' });
           return jsonError(context, { code: 'stock_conflict', message: error.message, status: 409 });
+        }
+        if (error instanceof services.errors.StockIdempotencyConflictError) {
+          return jsonError(context, {
+            code: 'stock_idempotency_conflict',
+            message: error.message,
+            status: 409,
+          });
         }
         const routeError = toInternalStockRouteError(services, error, {
           includeInvalidStockOperation: true,

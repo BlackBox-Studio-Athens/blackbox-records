@@ -25,6 +25,7 @@ export function toStripeCheckoutSessionState(session: Stripe.Checkout.Session): 
       policyReference: session.metadata?.monetaryPolicyReference ?? null,
     },
     checkoutSessionId: parseCheckoutSessionId(session.id),
+    checkoutUrl: readOptionalString(session.url),
     currencyCode: readOptionalString(session.currency)?.toUpperCase() ?? null,
     customer: {
       email:

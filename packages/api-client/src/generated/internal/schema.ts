@@ -450,7 +450,9 @@ export type paths = {
         post: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    "idempotency-key"?: string;
+                };
                 path: {
                     variantId: string;
                 };
@@ -498,6 +500,15 @@ export type paths = {
                         "application/problem+json": components["schemas"]["BackendErrorResponse"];
                     };
                 };
+                /** @description The stock request key conflicts with another operation or is required. */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                    };
+                };
                 /** @description Operator authentication is temporarily unavailable. */
                 503: {
                     headers: {
@@ -527,7 +538,9 @@ export type paths = {
         post: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    "idempotency-key"?: string;
+                };
                 path: {
                     variantId: string;
                 };

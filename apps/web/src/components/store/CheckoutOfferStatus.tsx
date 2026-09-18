@@ -22,6 +22,7 @@ import { DeliverySummary, useDeliveryQuote } from './DeliverySummary';
 import { PrivacyLink } from '@/components/PurchaseInformation';
 import { createCheckoutShippingGateView } from './checkout-shipping-step-state';
 import { createCartLineItemSnapshotFromWorkerOffer, type StoreItemCartSeed } from './StoreItemPurchaseActions';
+import { clearCheckoutAttempt, getOrCreateCheckoutAttempt } from './checkout-attempt';
 
 interface CheckoutOfferStatusProps {
   checkoutClientMode?: string;
@@ -84,6 +85,7 @@ export default function CheckoutOfferStatus({
 }: CheckoutOfferStatusProps) {
   const [view, setView] = useState<CheckoutOfferStatusView>(() => createInitialCheckoutOfferView(initialAvailability));
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutAttemptTerminal, setCheckoutAttemptTerminal] = useState(false);
   const [isStartingCheckout, setIsStartingCheckout] = useState(false);
   const [isNewsletterOptedIn, setIsNewsletterOptedIn] = useState(false);
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
@@ -186,14 +188,23 @@ export default function CheckoutOfferStatus({
     }
 
     setCheckoutError(null);
+    setCheckoutAttemptTerminal(false);
     setIsStartingCheckout(true);
 
-    const checkoutState = await startHostedCheckout({
-      api: checkoutApi,
+    const primaryVariantId = currentCartLines[0]?.variantId ?? view.variantId ?? fallbackStartLine.variantId;
+    const idempotencyKey = getOrCreateCheckoutAttempt({
       lines: currentCartLines,
       newsletterOptIn: isNewsletterOptedIn,
       storeItemSlug: fallbackStartLine.storeItemSlug,
-      variantId: currentCartLines[0]?.variantId ?? view.variantId ?? fallbackStartLine.variantId,
+      variantId: primaryVariantId,
+    });
+    const checkoutState = await startHostedCheckout({
+      api: checkoutApi,
+      idempotencyKey,
+      lines: currentCartLines,
+      newsletterOptIn: isNewsletterOptedIn,
+      storeItemSlug: fallbackStartLine.storeItemSlug,
+      variantId: primaryVariantId,
     });
 
     if (checkoutState.kind === 'redirect') {
@@ -202,11 +213,13 @@ export default function CheckoutOfferStatus({
     }
 
     setCheckoutError(checkoutState.message);
+    setCheckoutAttemptTerminal(checkoutState.code === 'checkout_attempt_terminal');
     setIsStartingCheckout(false);
   }
 
   function clearCheckoutError() {
     setCheckoutError(null);
+    setCheckoutAttemptTerminal(false);
   }
 
   return (
@@ -326,12 +339,27 @@ export default function CheckoutOfferStatus({
             )}
 
             {checkoutError && (
-              <p
-                className="border border-amber-300/40 bg-amber-300/10 p-3 text-xs leading-relaxed text-amber-100"
-                role="alert"
-              >
-                {checkoutError}
-              </p>
+              <div className="space-y-3">
+                <p
+                  className="border border-amber-300/40 bg-amber-300/10 p-3 text-xs leading-relaxed text-amber-100"
+                  role="alert"
+                >
+                  {checkoutError}
+                </p>
+                {checkoutAttemptTerminal && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      clearCheckoutAttempt();
+                      setCheckoutAttemptTerminal(false);
+                      setCheckoutError(null);
+                    }}
+                  >
+                    Start a new checkout
+                  </Button>
+                )}
+              </div>
             )}
 
             {isStartingCheckout && (

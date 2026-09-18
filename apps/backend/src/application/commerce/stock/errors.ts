@@ -18,3 +18,11 @@ export class StockConflictError extends Error {
     this.name = 'StockConflictError';
   }
 }
+
+export class StockIdempotencyConflictError extends RequestIdentityConflictError {
+  public constructor() {
+    super('This Idempotency-Key was already used for different stock input. Start a new operation.');
+    this.name = 'StockIdempotencyConflictError';
+  }
+}
+import { RequestIdentityConflictError } from '../../../domain/commerce/repositories/request-identity';

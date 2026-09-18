@@ -57,7 +57,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
     try {
       session = await this.stripe.checkout.sessions.create(
         {
-          expires_at: Math.floor(Date.now() / 1000) + 35 * 60,
+          expires_at: Math.floor(request.checkoutExpiresAt.getTime() / 1000),
           automatic_tax: { enabled: true },
           adaptive_pricing: { enabled: false },
           allow_promotion_codes: false,
@@ -115,7 +115,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
     };
 
     if (!session.url?.trim() || !Number.isFinite(identity.checkoutExpiresAt.getTime())) {
-      throw new CheckoutCreationError(false, identity);
+      throw new CheckoutCreationError(false, { ...identity, checkoutUrl: session.url ?? undefined });
     }
 
     return {

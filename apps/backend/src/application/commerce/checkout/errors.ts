@@ -27,7 +27,11 @@ export class CheckoutConfigurationError extends Error {
 export class CheckoutCreationError extends CheckoutConfigurationError {
   public constructor(
     public readonly definitiveNonCreation: boolean,
-    public readonly session: { checkoutSessionId: CheckoutSessionId; checkoutExpiresAt: Date } | null = null,
+    public readonly session: {
+      checkoutSessionId: CheckoutSessionId;
+      checkoutExpiresAt: Date;
+      checkoutUrl?: string;
+    } | null = null,
   ) {
     super('Checkout could not be started.');
   }
@@ -43,5 +47,26 @@ export class CustomPriceCartError extends CheckoutUnavailableError {
 export class NativeCheckoutDisabledError extends Error {
   public constructor() {
     super('Native checkout is temporarily unavailable.');
+  }
+}
+
+export class CheckoutIdempotencyConflictError extends Error {
+  public constructor() {
+    super('This checkout key was already used for a different request. Start a new checkout.');
+    this.name = 'CheckoutIdempotencyConflictError';
+  }
+}
+
+export class CheckoutRetryableError extends Error {
+  public constructor() {
+    super('Checkout is still being confirmed. Retry with the same Idempotency-Key.');
+    this.name = 'CheckoutRetryableError';
+  }
+}
+
+export class CheckoutAttemptTerminalError extends Error {
+  public constructor() {
+    super('This checkout attempt is no longer payable. Start a new checkout with a new request key.');
+    this.name = 'CheckoutAttemptTerminalError';
   }
 }

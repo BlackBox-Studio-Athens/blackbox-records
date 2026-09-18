@@ -1,5 +1,8 @@
 export {
   CheckoutCreationError,
+  CheckoutIdempotencyConflictError,
+  CheckoutRetryableError,
+  CheckoutAttemptTerminalError,
   CustomPriceCartError,
   CheckoutConfigurationError,
   CheckoutUnavailableError,

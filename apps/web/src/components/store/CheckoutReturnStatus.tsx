@@ -7,6 +7,7 @@ import { LoadingStateBlock } from '@/components/ui/loading-feedback';
 import { createEmptyStoreCartState, writeStoreCartState } from '@/lib/store-cart';
 import { CHECKOUT_CART_UPDATED_EVENT, STORE_CART_OPEN_REQUESTED_EVENT } from '@/lib/store-cart-events';
 import { cn } from '@/lib/utils';
+import { clearCheckoutAttempt } from './checkout-attempt';
 import {
   createCheckoutReturnStatusView,
   loadCheckoutReturnState,
@@ -68,6 +69,7 @@ export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, stor
 
     clearedCheckoutSessionIds.current.add(checkoutSessionId);
     clearStoreCartAfterPaidCheckout();
+    clearCheckoutAttempt();
   }, [loadState]);
 
   if (loadState.kind === 'loading') {

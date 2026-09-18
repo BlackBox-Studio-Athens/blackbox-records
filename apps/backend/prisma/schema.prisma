@@ -139,27 +139,35 @@ model Stock {
 }
 
 model StockChange {
-  id            String   @id @default(cuid())
-  variantId     String
-  quantityDelta Int
-  reason        String
-  notes         String?
-  actorEmail    String
-  recordedAt    DateTime @default(now())
+  id                    String   @id @default(cuid())
+  variantId             String
+  quantityDelta         Int
+  reason                String
+  notes                 String?
+  actorEmail            String
+  idempotencyKeyDigest  String?
+  idempotencyFingerprint String?
+  idempotencyEnvironment String?
+  recordedAt            DateTime @default(now())
 
   @@index([variantId, recordedAt])
+  @@index([idempotencyEnvironment, idempotencyKeyDigest, actorEmail])
 }
 
 model StockCount {
-  id              String   @id @default(cuid())
-  variantId       String
-  countedQuantity Int
-  onlineQuantity  Int
-  notes           String?
-  actorEmail      String
-  recordedAt      DateTime @default(now())
+  id                    String   @id @default(cuid())
+  variantId             String
+  countedQuantity       Int
+  onlineQuantity        Int
+  notes                 String?
+  actorEmail            String
+  idempotencyKeyDigest  String?
+  idempotencyFingerprint String?
+  idempotencyEnvironment String?
+  recordedAt            DateTime @default(now())
 
   @@index([variantId, recordedAt])
+  @@index([idempotencyEnvironment, idempotencyKeyDigest, actorEmail])
 }
 
 model CheckoutOrder {
@@ -167,6 +175,14 @@ model CheckoutOrder {
   storeItemSlug                String
   variantId                    String
   checkoutSessionId            String?             @unique
+  checkoutUrl                  String?
+  checkoutCancelUrl            String?
+  checkoutSuccessUrl           String?
+  idempotencyKeyDigest         String?
+  idempotencyFingerprint       String?
+  idempotencyEnvironment       String?
+  checkoutProviderClaimToken   String?
+  checkoutProviderLeaseUntil   String?
   checkoutExpiresAt            DateTime
   stripePaymentIntentId        String?
   amountTotalMinor             Int?
@@ -205,6 +221,7 @@ model CheckoutOrder {
   deliveries                   PaidOrderDelivery[]
 
   @@index([variantId, status])
+  @@index([idempotencyEnvironment, idempotencyKeyDigest])
   @@index([status, createdAt])
   @@index([createdAt, id])
 }

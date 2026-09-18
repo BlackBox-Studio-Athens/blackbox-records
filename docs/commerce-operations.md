@@ -6,6 +6,14 @@ This is the launch runbook for paid orders, review exceptions, delivery, and man
 
 The on-duty operator checks the correct Stripe account and Product Environment, failed webhook deliveries, protected `/api/internal/orders?status=needs_review`, and paid orders with pending or exhausted delivery attempts. Use Access-protected reads and provider dashboards. Keep addresses, contact details, payment references, and raw payloads out of public evidence and logs. Record environment, accepted commit, redacted order reference, outcome, operator, and time.
 
+## Request retry identity
+
+Maintained checkout and stock clients send a UUIDv4 Idempotency-Key only on checkout creation, stock changes, and stock counts. The Worker stores only a SHA-256 digest and input fingerprint with the existing order or ledger row; raw keys never belong in logs, URLs, StoreCart, or D1 payloads. Delivery quotes and existing item, price, publication, and setup request IDs are separate contracts.
+
+The same key and input replays the original effect. A changed input returns a safe 409 conflict; an in-progress checkout returns a retryable 409; an expired, paid, reviewed, or otherwise closed attempt returns a terminal 409 and requires an explicit new checkout. Stock replay returns the original ledger identity while the staff UI refetches current authoritative stock. A recount whose original revision is stale still requires reassessment and a new intent.
+
+The server supports a short compatibility bridge when COMMERCE_IDEMPOTENCY_KEYS_REQUIRED is unset; keyless calls retain the old non-deduplicated behavior and are outside the retry guarantee. Maintained Local, UAT, and PRD runtime configurations set COMMERCE_IDEMPOTENCY_KEYS_REQUIRED=true, so a stale client receives idempotency_key_required instead of a server-generated key. The additive fields remain durable through rollback, and no KV, queue, cleanup job, or paid service is required.
+
 ## Staff order workspace
 
 Open `/orders/` on the protected staff hostname, or choose Orders beside Stock. The workspace is read-only and uses the same Access identity as stock operations. The root landing page still opens Stock.

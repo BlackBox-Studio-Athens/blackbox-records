@@ -178,6 +178,12 @@ export function isCheckoutLaunchApprovedFromBindings(
   );
 }
 
+export function areCommerceIdempotencyKeysRequired(
+  bindings: Pick<AppBindings, 'COMMERCE_IDEMPOTENCY_KEYS_REQUIRED'>,
+): boolean {
+  return bindings.COMMERCE_IDEMPOTENCY_KEYS_REQUIRED?.trim().toLowerCase() === 'true';
+}
+
 export type AppBindings = {
   CMS_RUNTIME?: Pick<DurableObjectNamespace, 'getByName'>;
   PRODUCT_ENVIRONMENT: ProductEnvironment;
@@ -185,6 +191,7 @@ export type AppBindings = {
   CF_ACCESS_POLICY_AUD?: string;
   CF_ACCESS_TEAM_DOMAIN?: string;
   CHECKOUT_RETURN_ORIGINS?: string;
+  COMMERCE_IDEMPOTENCY_KEYS_REQUIRED?: string;
   FLAGS?: FlagshipBinding;
   NATIVE_CHECKOUT_ENABLED?: string;
   LOCAL_OPERATOR_EMAIL?: string;

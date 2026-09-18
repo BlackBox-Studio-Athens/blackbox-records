@@ -32,7 +32,7 @@ export interface PublicCheckoutApi {
   readStoreCapabilities(): Promise<StoreCapabilities>;
   readStoreOffer(storeItemSlug: string): Promise<PublicStoreOffer>;
   readStoreOfferVariants(storeItemSlug: string): Promise<PublicStoreOffer[]>;
-  startCheckout(body: StartCheckoutBody): Promise<StartCheckoutResponse>;
+  startCheckout(body: StartCheckoutBody, idempotencyKey?: string): Promise<StartCheckoutResponse>;
   readCheckoutState(checkoutSessionId: string): Promise<CheckoutState>;
   registerNewsletterSignup(body: NewsletterRegistrationBody): Promise<NewsletterRegistrationResponse>;
 }
@@ -91,8 +91,12 @@ export function createPublicCheckoutApi(
         'Could not load the store offer variants.',
       );
     },
-    async startCheckout(body: StartCheckoutBody) {
-      return readPublicCheckoutResponse(() => startCheckoutRequest(body), 'Could not start checkout.');
+    async startCheckout(body: StartCheckoutBody, idempotencyKey?: string) {
+      return readPublicCheckoutResponse(
+        () =>
+          startCheckoutRequest(body, idempotencyKey ? { headers: { 'Idempotency-Key': idempotencyKey } } : undefined),
+        'Could not start checkout.',
+      );
     },
     async readCheckoutState(checkoutSessionId: string) {
       return readPublicCheckoutResponse(

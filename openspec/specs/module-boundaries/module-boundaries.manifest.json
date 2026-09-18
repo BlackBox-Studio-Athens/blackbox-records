@@ -317,11 +317,16 @@
         "apps/backend/src/domain/commerce/ids.ts",
         "apps/backend/src/domain/commerce/quantities.ts",
         "apps/backend/src/domain/commerce/monetary.ts",
+        "apps/backend/src/domain/commerce/request-idempotency.ts",
         "apps/backend/src/domain/commerce/repositories/**"
       ],
-      "providedEntrypoints": ["apps/backend/src/domain/commerce/index.ts"],
+      "providedEntrypoints": [
+        "apps/backend/src/domain/commerce/index.ts",
+        "apps/backend/src/domain/commerce/request-idempotency.ts"
+      ],
       "namedInterfaces": {
-        "repository-spi": "apps/backend/src/domain/commerce/repositories/spi.ts"
+        "repository-spi": "apps/backend/src/domain/commerce/repositories/spi.ts",
+        "request-identity": "apps/backend/src/domain/commerce/repositories/request-identity.ts"
       },
       "allowedDependencies": [],
       "allowedWorkspaceInterfaces": {},

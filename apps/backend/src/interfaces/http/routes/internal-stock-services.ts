@@ -1,6 +1,7 @@
 import {
   InvalidStockOperationError,
   StockConflictError,
+  StockIdempotencyConflictError,
   readVariantStock,
   readVariantStockHistory,
   recordStockChange,
@@ -33,6 +34,7 @@ export function createInternalStockServices(bindings: AppBindings) {
     errors: {
       InvalidStockOperationError,
       StockConflictError,
+      StockIdempotencyConflictError,
       VariantNotFoundError,
     },
     readVariantStock: async (variantId: string) => {
@@ -54,6 +56,8 @@ export function createInternalStockServices(bindings: AppBindings) {
       quantityDelta: number;
       reason: string;
       variantId: string;
+      idempotencyKey?: string;
+      productEnvironment: string;
     }) => recordStockChange(storeItemOptions, operatorStock, command),
     recordStockCount: async (command: {
       expectedRevision: number | null;
@@ -62,6 +66,8 @@ export function createInternalStockServices(bindings: AppBindings) {
       notes: string | null;
       onlineQuantity: number;
       variantId: string;
+      idempotencyKey?: string;
+      productEnvironment: string;
     }) => recordStockCount(storeItemOptions, operatorStock, command),
     searchVariants: async (query: string | null, limit: number) => searchVariants(storeItemOptions, query, limit),
   };

@@ -13,11 +13,19 @@ export function currentPaidCheckoutOrder(newsletterOptIn = true): CurrentPaidChe
 
   return {
     amountTotalMinor: 2500,
+    checkoutUrl: null,
+    checkoutCancelUrl: null,
+    checkoutSuccessUrl: null,
     checkoutExpiresAt: new Date('2026-08-31T10:25:00.000Z'),
     checkoutSessionId: parseCheckoutSessionId('cs_test_paid'),
     createdAt,
     currencyCode: 'EUR',
     id: 'order_paid',
+    idempotencyKeyDigest: null,
+    idempotencyFingerprint: null,
+    idempotencyEnvironment: null,
+    checkoutProviderClaimToken: null,
+    checkoutProviderLeaseUntil: null,
     lines: [
       {
         createdAt,

@@ -1,4 +1,9 @@
-export { InvalidStockOperationError, StockConflictError, VariantNotFoundError } from './errors';
+export {
+  InvalidStockOperationError,
+  StockConflictError,
+  StockIdempotencyConflictError,
+  VariantNotFoundError,
+} from './errors';
 export { readVariantStock } from './read-variant-stock';
 export { readVariantStockHistory } from './read-variant-stock-history';
 export { recordStockChange } from './record-stock-change';

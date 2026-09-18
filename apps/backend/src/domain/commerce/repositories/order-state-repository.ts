@@ -17,6 +17,14 @@ export type CheckoutOrderRecord = OrderMonetaryFields & {
   storeItemSlug: StoreItemSlug;
   variantId: VariantId;
   checkoutSessionId: CheckoutSessionId | null;
+  checkoutUrl: string | null;
+  checkoutCancelUrl: string | null;
+  checkoutSuccessUrl: string | null;
+  idempotencyKeyDigest: string | null;
+  idempotencyFingerprint: string | null;
+  idempotencyEnvironment: string | null;
+  checkoutProviderClaimToken: string | null;
+  checkoutProviderLeaseUntil: Date | null;
   checkoutExpiresAt: Date;
   currencyCode: string | null;
   newsletterConsentAt: Date | null;
@@ -45,6 +53,14 @@ export type CheckoutOrderRecord = OrderMonetaryFields & {
 };
 
 export const EMPTY_PAID_CHECKOUT_ORDER_FIELDS = {
+  checkoutUrl: null,
+  checkoutCancelUrl: null,
+  checkoutSuccessUrl: null,
+  idempotencyKeyDigest: null,
+  idempotencyFingerprint: null,
+  idempotencyEnvironment: null,
+  checkoutProviderClaimToken: null,
+  checkoutProviderLeaseUntil: null,
   needsReviewReason: null,
   amountTotalMinor: null,
   currencyCode: null,
@@ -63,6 +79,14 @@ export const EMPTY_PAID_CHECKOUT_ORDER_FIELDS = {
 } as const satisfies Pick<
   CheckoutOrderRecord,
   | 'amountTotalMinor'
+  | 'checkoutUrl'
+  | 'checkoutCancelUrl'
+  | 'checkoutSuccessUrl'
+  | 'idempotencyKeyDigest'
+  | 'idempotencyFingerprint'
+  | 'idempotencyEnvironment'
+  | 'checkoutProviderClaimToken'
+  | 'checkoutProviderLeaseUntil'
   | 'needsReviewReason'
   | 'currencyCode'
   | 'newsletterConsentAt'

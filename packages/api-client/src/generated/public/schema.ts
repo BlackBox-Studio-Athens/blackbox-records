@@ -11,7 +11,9 @@ export type paths = {
         post: {
             parameters: {
                 query?: never;
-                header?: never;
+                header?: {
+                    "idempotency-key"?: string;
+                };
                 path?: never;
                 cookie?: never;
             };

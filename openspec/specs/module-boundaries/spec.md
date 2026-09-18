@@ -24,7 +24,7 @@ The combined Worker SHALL retain closed module ownership and existing applicatio
 #### Scenario: Runtime catalog data is read
 
 - **WHEN** catalog projections are loaded from D1
-- **THEN** `commerce-domain` provides the runtime catalog contract through `repository-spi`, `commerce-persistence` implements it, and `catalog-sync` validates and reads it through its existing root entrypoint
+- **THEN** `commerce-domain` provides the runtime catalog contract through `repository-spi`, the pure request fingerprinting helper through `request-idempotency`, the request identity contract through `request-identity`, `commerce-persistence` implements it, and `catalog-sync` validates and reads it through its existing root entrypoint
 - **AND** CMS plugins cannot import commerce repositories and public web cannot import CMS server code.
 
 #### Scenario: Combined scheduled work runs

@@ -2,6 +2,8 @@ import type { CheckoutSessionId, StoreItemSlug, StripePriceId, VariantId } from 
 import type { CartQuantity, StockQuantity } from '../quantities';
 import type { AcceptedMonetaryPolicy } from '../monetary';
 import type { CheckoutOrderLineRecord, CheckoutOrderRecord } from './order-state-repository';
+import type { RequestIdentity } from './request-identity';
+import type { OrderStatus } from './order-state-repository';
 
 export type CheckoutStockHoldLineInput = {
   displayName: string;
@@ -46,15 +48,37 @@ export type SessionlessNotPaidCheckoutOrder = Omit<
 };
 
 export type CreateCheckoutStockHoldInput = {
+  checkoutCancelUrl?: string;
   monetaryPolicy?: AcceptedMonetaryPolicy;
   checkoutExpiresAt: Date;
   createdAt: Date;
+  checkoutSuccessUrl?: string;
   lines: [CheckoutStockHoldLineInput, ...CheckoutStockHoldLineInput[]];
+  newsletterOptIn?: boolean;
   orderId: string;
+  requestIdentity?: RequestIdentity | null;
 };
 
 export type CreateCheckoutStockHoldResult =
-  { hold: SessionlessPendingCheckoutOrder; kind: 'created' } | { kind: 'unavailable' };
+  | { hold: SessionlessPendingCheckoutOrder; kind: 'created' }
+  | { attempt: CheckoutRetryAttempt; kind: 'existing' }
+  | { kind: 'unavailable' };
+
+export type CheckoutRetryAttempt = {
+  acceptedDeliveryAmountMinor: number | null;
+  acceptedParcelTier: 'small' | 'medium' | null;
+  checkoutCancelUrl: string | null;
+  checkoutExpiresAt: Date;
+  checkoutSessionId: CheckoutSessionId | null;
+  checkoutSuccessUrl: string | null;
+  checkoutUrl: string | null;
+  id: string;
+  idempotencyFingerprint: string | null;
+  lines: CheckoutOrderLineRecord[];
+  monetaryPolicyReference: string | null;
+  newsletterOptIn: boolean | null;
+  status: OrderStatus;
+};
 
 export interface CheckoutStockHoldRepository {
   bindCheckoutSession(
@@ -62,7 +86,15 @@ export interface CheckoutStockHoldRepository {
     checkoutSessionId: CheckoutSessionId,
     boundAt: Date,
     checkoutExpiresAt?: Date,
+    checkoutUrl?: string,
   ): Promise<SessionBoundPendingCheckoutOrder | null>;
+  claimCheckoutProvider(
+    orderId: string,
+    claimToken: string,
+    claimedAt: Date,
+    leaseUntil: Date,
+  ): Promise<'claimed' | 'in_progress' | 'unavailable'>;
+  findByRequestIdentity(identity: RequestIdentity): Promise<CheckoutRetryAttempt | null>;
   createPendingHold(input: CreateCheckoutStockHoldInput): Promise<CreateCheckoutStockHoldResult>;
   findEffectiveAvailability(variantId: VariantId): Promise<StockQuantity | null>;
   listOldestExpiredSessionBoundHolds(
@@ -74,6 +106,7 @@ export interface CheckoutStockHoldRepository {
     checkoutSessionId: CheckoutSessionId,
     recoveredAt: Date,
     checkoutExpiresAt?: Date,
+    checkoutUrl?: string,
   ): Promise<boolean>;
   releaseSessionBoundHold(hold: ExpiredSessionBoundCheckoutHold, releasedAt: Date): Promise<boolean>;
   releaseSessionlessHold(

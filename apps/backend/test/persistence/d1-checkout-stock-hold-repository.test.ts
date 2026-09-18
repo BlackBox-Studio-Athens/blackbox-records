@@ -54,6 +54,65 @@ describe('D1CheckoutStockHoldRepository', () => {
     });
   });
 
+  it('returns one durable hold for concurrent keyed checkout starts', async () => {
+    const variantId = parseVariantId(`variant_hold_idempotency_${crypto.randomUUID()}`);
+    const repository = new D1CheckoutStockHoldRepository(env.COMMERCE_DB);
+    await seedStock(variantId, 2);
+    const requestIdentity = {
+      keyDigest: 'a'.repeat(64),
+      productEnvironment: 'LOCAL',
+      requestFingerprint: 'b'.repeat(64),
+    };
+    const createHold = (orderId: string) =>
+      repository.createPendingHold({
+        checkoutCancelUrl: 'https://example.com/checkout',
+        checkoutExpiresAt: new Date('2026-08-31T20:30:00.000Z'),
+        createdAt: new Date('2026-08-31T20:00:00.000Z'),
+        checkoutSuccessUrl: 'https://example.com/return',
+        lines: [
+          {
+            displayName: 'Keyed hold item',
+            lineAmountMinor: 2500,
+            optionLabel: null,
+            quantity: createCartQuantity(1),
+            storeItemSlug: parseStoreItemSlug('keyed-hold-item'),
+            stripePriceId: parseStripePriceId('price_test_keyed_hold'),
+            unitAmountMinor: 2500,
+            variantId,
+          },
+        ],
+        monetaryPolicy: {
+          acceptedDeliveryAmountMinor: 250,
+          acceptedParcelTier: 'small',
+          monetaryPolicyReference: 'test-inclusive-v1',
+        },
+        orderId,
+        requestIdentity,
+      });
+
+    const results = await Promise.all([createHold(crypto.randomUUID()), createHold(crypto.randomUUID())]);
+    const created = results.find((result) => result.kind === 'created');
+    const existing = results.find((result) => result.kind === 'existing');
+
+    expect(created?.kind).toBe('created');
+    expect(existing?.kind).toBe('existing');
+    if (created?.kind !== 'created' || existing?.kind !== 'existing') return;
+
+    expect(existing.attempt.id).toBe(created.hold.id);
+    await expect(
+      env.COMMERCE_DB.prepare(
+        'SELECT "idempotencyEnvironment", "idempotencyFingerprint", "checkoutCancelUrl", "checkoutSuccessUrl" FROM "CheckoutOrder" WHERE "id" = ?',
+      )
+        .bind(created.hold.id)
+        .first(),
+    ).resolves.toEqual({
+      checkoutCancelUrl: 'https://example.com/checkout',
+      checkoutSuccessUrl: 'https://example.com/return',
+      idempotencyEnvironment: 'LOCAL',
+      idempotencyFingerprint: 'b'.repeat(64),
+    });
+  });
+
   it('commits no order or line when one cart line is unavailable', async () => {
     const availableVariantId = parseVariantId(`variant_hold_available_${crypto.randomUUID()}`);
     const unavailableVariantId = parseVariantId(`variant_hold_unavailable_${crypto.randomUUID()}`);

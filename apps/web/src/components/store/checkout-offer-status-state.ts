@@ -166,6 +166,7 @@ export type HostedCheckoutStartState =
       kind: 'redirect';
     }
   | {
+      code?: string;
       kind: 'error';
       message: string;
     };
@@ -174,6 +175,7 @@ export type HostedCheckoutStartInput = {
   api: PublicCheckoutApi;
   lines?: CartLine[];
   newsletterOptIn?: boolean;
+  idempotencyKey?: string;
   storeItemSlug: string;
   variantId: string;
 };
@@ -182,6 +184,7 @@ export async function startHostedCheckout({
   api,
   lines,
   newsletterOptIn = false,
+  idempotencyKey,
   storeItemSlug,
   variantId,
 }: HostedCheckoutStartInput): Promise<HostedCheckoutStartState> {
@@ -194,12 +197,15 @@ export async function startHostedCheckout({
             variantId: line.variantId,
           }))
         : [];
-    const { checkoutUrl } = await api.startCheckout({
+    const checkoutRequest = {
       ...(checkoutLines.length > 0 ? { lines: checkoutLines } : {}),
       ...(newsletterOptIn ? { newsletterOptIn: true } : {}),
       storeItemSlug,
       variantId,
-    });
+    };
+    const { checkoutUrl } = idempotencyKey
+      ? await api.startCheckout(checkoutRequest, idempotencyKey)
+      : await api.startCheckout(checkoutRequest);
 
     if (typeof checkoutUrl !== 'string' || !checkoutUrl.trim()) {
       return {
@@ -213,11 +219,19 @@ export async function startHostedCheckout({
       kind: 'redirect',
     };
   } catch (error) {
+    const code = error instanceof PublicCheckoutApiError ? readCheckoutErrorCode(error) : undefined;
     return {
+      ...(code ? { code } : {}),
       kind: 'error',
       message: readCheckoutErrorMessage(error),
     };
   }
+}
+
+function readCheckoutErrorCode(error: PublicCheckoutApiError): string | undefined {
+  if (!error.body || typeof error.body !== 'object') return undefined;
+  const code = (error.body as { code?: unknown }).code;
+  return typeof code === 'string' ? code : undefined;
 }
 
 function readCheckoutErrorMessage(error: unknown): string {

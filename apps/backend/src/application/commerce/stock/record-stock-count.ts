@@ -1,7 +1,17 @@
 import type { OperatorStockRepository, StoreItemOptionRepository } from '../../../domain/commerce/repositories/spi';
 import { createStockQuantity, createStockState, parseVariantId } from '../../../domain/commerce';
-import { InvalidStockOperationError, StockConflictError, VariantNotFoundError } from './errors';
+import {
+  InvalidStockOperationError,
+  StockConflictError,
+  StockIdempotencyConflictError,
+  VariantNotFoundError,
+} from './errors';
+import { RequestIdentityConflictError } from '../../../domain/commerce/repositories/request-identity';
 import type { RecordedStockCount } from './types';
+import {
+  createRequestIdentity,
+  createStockCountRequestFingerprint,
+} from '../../../domain/commerce/request-idempotency';
 
 export type RecordStockCountCommand = {
   expectedRevision: unknown;
@@ -10,6 +20,8 @@ export type RecordStockCountCommand = {
   onlineQuantity: unknown;
   notes: string | null;
   actorEmail: string;
+  idempotencyKey?: string;
+  productEnvironment?: string;
 };
 
 export async function recordStockCount(
@@ -42,14 +54,34 @@ export async function recordStockCount(
     throw new InvalidStockOperationError('A stock revision or explicit null is required.');
   }
 
-  const result = await stock.recordCount({
-    expectedRevision,
-    actorEmail: command.actorEmail,
+  const notes = command.notes?.trim() || null;
+  const requestFingerprint = createStockCountRequestFingerprint({
     countedQuantity: nextStock.quantity,
-    notes: command.notes,
+    expectedRevision,
+    notes,
     onlineQuantity: nextStock.onlineQuantity,
     variantId,
   });
+  const requestIdentity = await createRequestIdentity({
+    idempotencyKey: command.idempotencyKey,
+    productEnvironment: command.productEnvironment ?? 'local',
+    requestFingerprint,
+  });
+  let result;
+  try {
+    result = await stock.recordCount({
+      expectedRevision,
+      actorEmail: command.actorEmail,
+      countedQuantity: nextStock.quantity,
+      notes,
+      onlineQuantity: nextStock.onlineQuantity,
+      requestIdentity,
+      variantId,
+    });
+  } catch (error) {
+    if (error instanceof RequestIdentityConflictError) throw new StockIdempotencyConflictError();
+    throw error;
+  }
 
   if (!result) throw new StockConflictError();
   return result;
