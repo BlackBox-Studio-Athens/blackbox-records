@@ -102,7 +102,7 @@ Use [UAT staff](https://staff-uat.blackboxrecordsathens.com/content/) or the Loc
 
 ## Prerequisites
 
-- Node.js 24.20.0, pinned by `.node-version` and the root package engine
+- Node.js 24.21.0, pinned by `.node-version` and the root package engine
 - pnpm 12.0.0, via the repo `packageManager` field
 - Go, only for the local official `stripe-mock` launcher
 
@@ -114,7 +114,7 @@ pnpm install
 
 ## Toolchain policy
 
-- Keep local and CI Node on `24.20.0`; update `.node-version`, the root package engine, and every workflow together.
+- Keep local and CI Node on `24.21.0`; update `.node-version`, the root package engine, and every workflow together.
 - Keep TypeScript on `5.9.3` until `openapi-typescript` publishes a compatible TypeScript 6 peer range.
 - Keep Prisma on the latest compatible v7 line, currently `7.10.0`; datasource URL configuration lives in `apps/backend/prisma.config.ts`.
 - Keep backend Wrangler pinned to `4.131.1` with Workers types `5.20260911.1`. The existing Workers test-pool overrides remain separate. Astro 7.3.2 builds use Vite 8.3.0 and Rolldown 1.2.8; earlier locked versions generated invalid EmDash chunks.
@@ -690,7 +690,7 @@ CI/deploy credentials and public build variables:
 
 - UAT deployment is handled by `.github/workflows/pages.yml`.
 - Deploy-relevant pushes to `main` build both targets and deploy UAT only; pushes changing only `docs/**`, `openspec/**`, root `*.md`, or root `LICENSE` are skipped. `workflow_dispatch` remains available for a forced deployment.
-- The shared static workflow uses Node 24.20.0, pnpm 12.0.0, explicit pnpm setup/install steps, and only deploys UAT if all of these succeed:
+- The shared static workflow uses Node 24.21.0, pnpm 12.0.0, explicit pnpm setup/install steps, and only deploys UAT if all of these succeed:
   - `pnpm test:unit`
   - `pnpm check`
   - `pnpm audit:unused`

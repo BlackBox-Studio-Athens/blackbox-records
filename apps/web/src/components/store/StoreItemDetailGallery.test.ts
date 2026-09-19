@@ -45,3 +45,32 @@ describe('Store Item detail gallery contract', () => {
     expect(gallerySource).not.toMatch(/carousel|lightbox/i);
   });
 });
+
+describe('Store Item listening context contract', () => {
+  it('resolves release identity through the content reader and fails on a missing source', () => {
+    expect(source).toContain(
+      "storeItem.sourceKind === 'release' ? await getEntry('releases', storeItem.sourceId) : null",
+    );
+    expect(source).toContain("storeItem.sourceKind === 'release' && !sourceRelease");
+    expect(source).toContain('throw new Error(`Missing Release source entry');
+    expect(source).toContain('resolveArtistProfileForRelease(sourceRelease)');
+    expect(source).toContain('resolveReleaseArtistDisplayName(sourceRelease, sourceReleaseArtist)');
+    expect(source).toContain('buildEmbeddedPlayerData(');
+    expect(source).toContain('sourceRelease.id');
+    expect(source).toContain('sourceRelease.data');
+    expect(source).toContain('`${sourceRelease.data.title} — ${sourceReleaseArtistName}`');
+    expect(source).not.toContain("getEntry('releases', storeItem.title)");
+  });
+
+  it('keeps provider and editorial actions independently conditional', () => {
+    expect(source).toContain('(sourceReleasePlayerData || sourceReleaseUrl || sourceReleaseArtistUrl)');
+    expect(source).toContain('sourceReleasePlayerData && (');
+    expect(source).toContain('sourceReleaseUrl && (');
+    expect(source).toContain('sourceReleaseArtistUrl && (');
+    expect(source).toContain("storeItem.sourceKind === 'distro' ? await getEntry('distro', storeItem.sourceId) : null");
+    expect(source).toContain('<StoreItemPurchaseActions client:load cartItem={cartItem} cartSeed={cartSeed} />');
+    expect(source).toContain('embeddedPlayerData={sourceReleasePlayerData}');
+    expect(source).not.toContain('embeddedPlayerData={cartItem}');
+    expect(source).not.toContain("getEntry('artists', storeItem.sourceId)");
+  });
+});

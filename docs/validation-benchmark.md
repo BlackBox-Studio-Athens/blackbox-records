@@ -5,7 +5,7 @@ Current results and unresolved acceptance items: [refreshed measurement report](
 Refreshed baseline: `8b5160c552959751ad95e2053fc9d499dec590fb`. The September 14 report is historical, not acceptance for this revision. Implementation is authorized on
 `codex/validation-efficiency` in its separate worktree. Main is not modified.
 
-Use Node 24.20.0, pnpm 12.0.0, independent worktree dependencies and caches, and
+Use Node 24.21.0, pnpm 12.0.0, independent worktree dependencies and caches, and
 RTK 0.47.0 in both arms. Record setup separately. Do not time competing workloads.
 The benchmark model is pinned to `gpt-5.6-luna`, effort `high`;
 pin both for every agent trial. Keep existing user configuration, rules, tools,

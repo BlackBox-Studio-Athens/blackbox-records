@@ -188,8 +188,8 @@ export async function runValidation({
     if (identify === sourceIdentity) stopMonitoring = await monitorSourceChanges(cwd);
     summary.sourceBefore = await identify(cwd);
     summary.pnpm = await readPnpmVersion();
-    if (process.version !== 'v24.20.0' || summary.pnpm !== '12.0.0')
-      throw new Error('Validation requires Node 24.20.0 and pnpm 12.0.0.');
+    if (process.version !== 'v24.21.0' || summary.pnpm !== '12.0.0')
+      throw new Error('Validation requires Node 24.21.0 and pnpm 12.0.0.');
     if (fast || editor) log('PARTIAL validation: this does not establish implementation completion.');
     async function execute(phase) {
       const phaseStart = performance.now();

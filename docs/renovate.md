@@ -26,7 +26,7 @@ First local update pass on 2026-05-23:
 
 Current cross-workspace alignment pass on 2026-09-01:
 
-- The live workspace is aligned to Node `24.20.0`, pnpm `12.0.0`, Astro `7.2.9`, Wrangler `4.127.1`, and Prisma `7.10.0`.
+- The live workspace is aligned to Node `24.21.0`, pnpm `12.0.0`, Astro `7.2.9`, Wrangler `4.127.1`, and Prisma `7.10.0`.
 - TypeScript remains on `5.9.3` because the current OpenAPI code-generation toolchain still requires its TypeScript 5 peer contract.
 - Prisma remains on the stable v7 line; Prisma 8 release candidates are not accepted by this repository's compatibility policy.
 - The pnpm 12 lockfile may contain more than one YAML document; lockfile consumers must select the primary dependency document by structure.

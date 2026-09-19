@@ -2,11 +2,17 @@
 import { Image } from 'astro:assets';
 import { getEntry } from '@/lib/content-reader';
 
+import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import StoreItemPurchaseActions from '@/components/store/StoreItemPurchaseActions';
 import PurchaseInformation from '@/components/PurchaseInformation';
 import { createProjectRelativeUrl } from '@/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import {
+  createReleaseDetailPath,
+  resolveArtistProfileForRelease,
+  resolveReleaseArtistDisplayName,
+} from '@/lib/catalog-data';
 import { getStorePageEntryBySlug } from '@/lib/store-page-data';
 import {
   createCartLineItemSnapshotForStorePage,
@@ -14,6 +20,7 @@ import {
   type StorePageEntry,
   createStorePageStaticPaths,
 } from '@/lib/store-page-data';
+import { buildEmbeddedPlayerData } from '@/utils/music';
 
 export async function getStaticPaths() {
   return createStorePageStaticPaths();
@@ -29,6 +36,27 @@ const { storeItem, primaryAvailability } = entry;
 const metadataLabel = storeItem.metadata.join(' · ');
 const cartItem = createCartLineItemSnapshotForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const cartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
+const sourceRelease = storeItem.sourceKind === 'release' ? await getEntry('releases', storeItem.sourceId) : null;
+
+if (storeItem.sourceKind === 'release' && !sourceRelease) {
+  throw new Error(`Missing Release source entry for Store Item ${storeItem.slug}: ${storeItem.sourceId}.`);
+}
+
+const sourceReleaseArtist = sourceRelease ? await resolveArtistProfileForRelease(sourceRelease) : undefined;
+const sourceReleaseArtistName = sourceRelease
+  ? resolveReleaseArtistDisplayName(sourceRelease, sourceReleaseArtist)
+  : undefined;
+const sourceReleasePlayerData = sourceRelease
+  ? buildEmbeddedPlayerData(
+      sourceRelease.id,
+      sourceRelease.data,
+      `${sourceRelease.data.title} — ${sourceReleaseArtistName}`,
+    )
+  : null;
+const sourceReleaseUrl = sourceRelease ? createReleaseDetailPath(sourceRelease) : null;
+const sourceReleaseArtistUrl = sourceReleaseArtist
+  ? createProjectRelativeUrl(`/artists/${sourceReleaseArtist.data.slug}/`)
+  : null;
 const distroSource = storeItem.sourceKind === 'distro' ? await getEntry('distro', storeItem.sourceId) : null;
 
 if (storeItem.sourceKind === 'distro' && !distroSource) {
@@ -60,6 +88,40 @@ const isDistroCd = distroSource?.data.group === 'CDs';
               <p class="text-sm font-semibold text-foreground" data-store-item-option>
                 {primaryAvailability.optionLabel}
               </p>
+            )
+          }
+          {
+            (sourceReleasePlayerData || sourceReleaseUrl || sourceReleaseArtistUrl) && (
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1" data-store-item-listening-context>
+                {sourceReleasePlayerData && (
+                  <MusicStreamingServiceListenTrigger
+                    embeddedPlayerData={sourceReleasePlayerData}
+                    includeCardAttribute
+                    tone="accent"
+                    variant="standalone"
+                  />
+                )}
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                  {sourceReleaseUrl && (
+                    <a
+                      href={sourceReleaseUrl}
+                      data-astro-prefetch
+                      class="underline decoration-border underline-offset-4 transition-colors hover:text-foreground"
+                    >
+                      Release
+                    </a>
+                  )}
+                  {sourceReleaseArtistUrl && (
+                    <a
+                      href={sourceReleaseArtistUrl}
+                      data-astro-prefetch
+                      class="underline decoration-border underline-offset-4 transition-colors hover:text-foreground"
+                    >
+                      {sourceReleaseArtistName}
+                    </a>
+                  )}
+                </div>
+              </div>
             )
           }
         </div>
