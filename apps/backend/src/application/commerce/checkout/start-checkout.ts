@@ -34,6 +34,7 @@ import {
   type CatalogProductProjectionReader,
   type CatalogReconciler,
 } from '../catalog-sync';
+import { NEWSLETTER_CONSENT_COPY_VERSION } from './types';
 import type { CheckoutSessionLineItem, CheckoutGateway, FeatureFlagReader, HostedCheckoutSession } from './spi';
 import { quoteDelivery, type PackingPolicy } from './packing';
 import { createPackingPolicy } from './packing-policy';
@@ -257,6 +258,8 @@ export async function startCheckout(
     checkoutExpiresAt,
     createdAt,
     lines: [firstLine!, ...remainingLines],
+    newsletterConsentAt: command.newsletterOptIn ? createdAt : null,
+    newsletterConsentCopyVersion: command.newsletterOptIn ? NEWSLETTER_CONSENT_COPY_VERSION : null,
     newsletterOptIn: command.newsletterOptIn === true,
     orderId: crypto.randomUUID(),
     requestIdentity,

@@ -113,6 +113,49 @@ describe('D1CheckoutStockHoldRepository', () => {
     });
   });
 
+  it('persists complete newsletter consent on an opted-in pending hold', async () => {
+    const variantId = parseVariantId(`variant_hold_newsletter_${crypto.randomUUID()}`);
+    const repository = new D1CheckoutStockHoldRepository(env.COMMERCE_DB);
+    const createdAt = new Date('2026-08-31T20:00:00.000Z');
+    await seedStock(variantId, 1);
+
+    const created = await repository.createPendingHold({
+      checkoutExpiresAt: new Date('2026-08-31T20:30:00.000Z'),
+      createdAt,
+      lines: [
+        {
+          displayName: 'Newsletter hold item',
+          lineAmountMinor: 2500,
+          optionLabel: null,
+          quantity: createCartQuantity(1),
+          storeItemSlug: parseStoreItemSlug('newsletter-hold-item'),
+          stripePriceId: parseStripePriceId('price_test_newsletter_hold'),
+          unitAmountMinor: 2500,
+          variantId,
+        },
+      ],
+      newsletterConsentAt: createdAt,
+      newsletterConsentCopyVersion: 'blackbox-newsletter-v1',
+      newsletterOptIn: true,
+      orderId: crypto.randomUUID(),
+    });
+
+    expect(created.kind).toBe('created');
+    if (created.kind !== 'created') return;
+
+    await expect(
+      env.COMMERCE_DB.prepare(
+        'SELECT "newsletterOptIn", "newsletterConsentAt", "newsletterConsentCopyVersion" FROM "CheckoutOrder" WHERE "id" = ?',
+      )
+        .bind(created.hold.id)
+        .first(),
+    ).resolves.toEqual({
+      newsletterConsentAt: createdAt.toISOString(),
+      newsletterConsentCopyVersion: 'blackbox-newsletter-v1',
+      newsletterOptIn: 1,
+    });
+  });
+
   it('commits no order or line when one cart line is unavailable', async () => {
     const availableVariantId = parseVariantId(`variant_hold_available_${crypto.randomUUID()}`);
     const unavailableVariantId = parseVariantId(`variant_hold_unavailable_${crypto.randomUUID()}`);

@@ -89,8 +89,8 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
           '   "checkoutExpiresAt", "stripePaymentIntentId",',
           '   "shippingLockerId", "shippingLockerCountryCode", "shippingLockerNameOrLabel", "status",',
           '   "statusUpdatedAt", "paidAt", "notPaidAt", "needsReviewAt", "createdAt", "updatedAt",',
-          '   "acceptedDeliveryAmountMinor", "acceptedParcelTier", "monetaryPolicyReference", "newsletterOptIn")',
-          'SELECT ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, NULL, NULL, ?, NULL, NULL, NULL, NULL, ?, ?, NULL, NULL, NULL, ?, ?, ?, ?, ?, ?',
+          '   "acceptedDeliveryAmountMinor", "acceptedParcelTier", "monetaryPolicyReference", "newsletterOptIn", "newsletterConsentAt", "newsletterConsentCopyVersion")',
+          'SELECT ?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, NULL, NULL, ?, NULL, NULL, NULL, NULL, ?, ?, NULL, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?',
           `WHERE ${availability.sql}`,
         ].join('\n'),
       )
@@ -112,6 +112,8 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
         input.monetaryPolicy?.acceptedParcelTier ?? null,
         input.monetaryPolicy?.monetaryPolicyReference ?? null,
         input.newsletterOptIn ? 1 : 0,
+        input.newsletterConsentAt?.toISOString() ?? null,
+        input.newsletterConsentCopyVersion ?? null,
         ...availability.params,
       );
     const lineInserts = lineRecords.map((line) =>
@@ -173,6 +175,8 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
         needsReviewAt: null,
         notPaidAt: null,
         paidAt: null,
+        newsletterConsentAt: input.newsletterConsentAt ?? null,
+        newsletterConsentCopyVersion: input.newsletterConsentCopyVersion ?? null,
         shippingLocker: null,
         status: 'pending_payment',
         statusUpdatedAt: input.createdAt,

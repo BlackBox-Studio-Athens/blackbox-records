@@ -54,6 +54,8 @@ export type CreateCheckoutStockHoldInput = {
   createdAt: Date;
   checkoutSuccessUrl?: string;
   lines: [CheckoutStockHoldLineInput, ...CheckoutStockHoldLineInput[]];
+  newsletterConsentAt?: Date | null;
+  newsletterConsentCopyVersion?: string | null;
   newsletterOptIn?: boolean;
   orderId: string;
   requestIdentity?: RequestIdentity | null;
