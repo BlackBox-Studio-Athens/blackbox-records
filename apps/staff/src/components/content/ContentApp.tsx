@@ -41,7 +41,8 @@ import ContentFields, {
 } from './ContentFields';
 import ContentPreview from './ContentPreview';
 
-import { saveSelection } from './publication-selection';
+import PublicationReviewFlow from './PublicationReviewFlow';
+import PublicationHistory from './PublicationHistory';
 import PublicationStatus from './PublicationStatus';
 import { getContentValidation, type ContentValidation } from './content-validation';
 import { readContentPublications, type ContentPublication } from '../../lib/backend/content-publication-api';
@@ -173,6 +174,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const refreshedPublication = useRef('');
   const pendingKey = `blackbox-content-create:${base}`;
   const [publicationHistoryOpen, setPublicationHistoryOpen] = useState(false);
+  const [reviewing, setReviewing] = useState(false);
   const [draftActionsOpen, setDraftActionsOpen] = useState(false);
   function openPublicationSurface() {
     setDraftActionsOpen(false);
@@ -703,6 +705,21 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
 
   const singleton = singletonContentSections.includes(collection);
   const title = String(data.title || data.label_name || contentSections[collection]);
+  if (reviewing && document)
+    return (
+      <div className="cms-surface staff-page publication-editor">
+        <PublicationReviewFlow
+          base={base}
+          individual
+          records={[{ collection, recordId: document.item.id, expectedRevision: document._rev }]}
+          onPublished={() => void publicationStatus()}
+          onBack={() => {
+            setReviewing(false);
+            requestAnimationFrame(() => editorHeading.current?.focus());
+          }}
+        />
+      </div>
+    );
   if (landing)
     return (
       <>
@@ -1065,10 +1082,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                   .then((saved) => {
                                     const current = currentDocument.current;
                                     if (!saved || !current?.item.id) return;
-                                    saveSelection(base, [
-                                      { collection, recordId: current.item.id, expectedRevision: current._rev, title },
-                                    ]);
-                                    window.location.assign('/review/');
+                                    setReviewing(true);
                                   })
                                   .catch(() =>
                                     setMessage(
@@ -1077,7 +1091,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                   );
                               }}
                             >
-                              Publish changes
+                              Review changes
                             </Button>
                             <DropdownMenu open={draftActionsOpen} onOpenChange={setDraftActionsOpen}>
                               <DropdownMenuTrigger asChild>
@@ -1113,17 +1127,15 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                             {autosave.error}
                           </p>
                         )}
-                        <div className="cms-publication-controls">
-                          <PublicationStatus
-                            items={publications}
-                            statusError={publicationStatusError}
-                            message={publicationMessage}
-                            refresh={publicationStatus}
-                            open={publicationHistoryOpen}
-                            onOpenChange={setPublicationHistoryOpen}
-                            compact
+                        {publicationHistoryOpen && (
+                          <PublicationHistory
+                            key={`${collection}/${document.item.id}`}
+                            base={base}
+                            collection={collection}
+                            recordId={document.item.id}
+                            initiallyOpen
                           />
-                        </div>
+                        )}
                       </header>
                       {['releases', 'distro'].includes(collection) && (
                         <div className="flex gap-2 border-b px-4" role="group" aria-label="Catalog details">

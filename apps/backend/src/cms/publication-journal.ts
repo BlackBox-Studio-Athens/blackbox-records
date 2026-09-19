@@ -16,6 +16,8 @@ const requestSchema = z
   })
   .strict();
 const publicationSchema = requestSchema.extend({
+  stage: z.string().nullable().optional(),
+  failureReason: z.string().nullable().optional(),
   requestedAt: z.number().int().nonnegative(),
   status: z.enum(['pending', 'live', 'failed']),
   snapshotSha256: z
@@ -36,7 +38,7 @@ export async function readPublication(db: D1Database, environment: 'local' | 'ua
   const row = await db
     .prepare(
       `SELECT id, environment, actor_email AS actorEmail,
-    requested_revision AS requestedRevision, requested_at AS requestedAt, status,
+    requested_revision AS requestedRevision, requested_at AS requestedAt, status, stage, failure_code AS failureReason,
     snapshot_sha256 AS snapshotSha256, code_sha AS codeSha, ci_run_id AS ciRunId, deployment_id AS deploymentId
     FROM _blackbox_publications WHERE id = ? AND environment = ?`,
     )
@@ -57,6 +59,68 @@ export async function readRecentPublications(db: D1Database, environment: 'local
     .pick({ id: true, status: true, requestedAt: true })
     .extend({ stage: z.string().nullable(), failureReason: z.string().nullable() });
   return results.map((item) => publicationSummary(summary.parse(item)));
+}
+
+export const publicationHistoryQuery = z
+  .object({
+    cursor: z.coerce.number().int().positive().optional(),
+    collection: z
+      .string()
+      .regex(/^[a-z_]+$/)
+      .optional(),
+    recordId: z
+      .string()
+      .regex(/^[A-Za-z0-9_-]{1,128}$/)
+      .optional(),
+  })
+  .strict()
+  .refine((q) => Boolean(q.collection) === Boolean(q.recordId));
+
+export async function readPublicationHistory(
+  db: D1Database,
+  environment: 'local' | 'uat' | 'prd',
+  query: z.infer<typeof publicationHistoryQuery>,
+) {
+  const { results } = await db
+    .prepare(
+      `SELECT rowid AS cursor, id, actor_email AS actorEmail,
+    requested_at AS requestedAt, status, stage, failure_code AS failureReason, request_json AS requestJson
+    FROM _blackbox_publications WHERE environment = ? AND (? IS NULL OR rowid < ?)
+    AND (? IS NULL OR EXISTS (SELECT 1 FROM json_each(CASE WHEN json_type(request_json, '$.records') = 'array'
+      THEN json_extract(request_json, '$.records') ELSE json_array(json(request_json)) END)
+      WHERE json_extract(value, '$.collection') = ? AND json_extract(value, '$.recordId') = ?))
+    ORDER BY rowid DESC LIMIT 21`,
+    )
+    .bind(
+      environment,
+      query.cursor ?? null,
+      query.cursor ?? null,
+      query.collection ?? null,
+      query.collection ?? null,
+      query.recordId ?? null,
+    )
+    .all<{
+      cursor: number;
+      id: string;
+      actorEmail: string;
+      requestedAt: number;
+      status: 'pending' | 'live' | 'failed';
+      stage: string | null;
+      failureReason: string | null;
+      requestJson: string | null;
+    }>();
+  const items = results.slice(0, 20).map((row) => {
+    const intent = row.requestJson ? JSON.parse(row.requestJson) : null;
+    const entries = intent
+      ? (intent.records ?? [intent]).map((entry: { collection?: string; recordId?: string; title?: string }) => ({
+          collection: entry.collection,
+          recordId: entry.recordId,
+          title: entry.title ?? 'Title unavailable for this earlier update',
+        }))
+      : [];
+    return { ...publicationSummary(row), actorEmail: row.actorEmail, environment, entries };
+  });
+  return { items, ...(results.length > 20 ? { nextCursor: String(results[19].cursor) } : {}) };
 }
 
 export function publicationSummary(item: {

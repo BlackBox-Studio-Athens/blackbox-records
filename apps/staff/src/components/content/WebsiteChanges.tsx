@@ -1,90 +1,53 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/button';
+import { Checkbox } from '../ui/checkbox';
+import { Input } from '../ui/input';
+import { Skeleton } from '../ui/skeleton';
 import {
   editorialRequest,
   EditorialApiError,
   type EditorialList,
   type EditorialRecord,
 } from '../../lib/backend/editorial-api';
-import {
-  readContentPublications,
-  publishSavedContent,
-  type ContentPublication,
-  type SelectedPublicationRequest,
-} from '../../lib/backend/content-publication-api';
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 import { contentSections, type ContentSection } from './ContentFields';
 import { getContentValidation } from './content-validation';
-import { readSelection, saveSelection, type PublicationSelectionItem } from './publication-selection';
-import { usePublicationPolling } from './PublicationStatus';
+import {
+  readSelection,
+  saveSelection,
+  restorePublication,
+  type PublicationSelectionItem,
+} from './publication-selection';
+import PublicationReviewFlow, { PublicationSteps } from './PublicationReviewFlow';
+import PublicationHistory from './PublicationHistory';
 
-type Saved = { item: EditorialRecord; _rev: string };
 const key = (item: { collection?: string; id?: string; recordId?: string }) =>
   `${item.collection}/${item.recordId ?? item.id}`;
-const editUrl = (item: { collection?: string; id?: string; recordId?: string }) =>
-  `/content/?${new URLSearchParams({ collection: item.collection ?? '', id: item.recordId ?? item.id ?? '' })}`;
 const title = (item: EditorialRecord) =>
   String(item.data.title || item.data.label_name || contentSections[item.collection as ContentSection] || 'Untitled');
-
-function blockers(validation: ReturnType<typeof getContentValidation>) {
-  return [
-    ...new Set(
-      validation.issues.map((issue) => {
-        if (!/^(Invalid|Too small|Too big|Unrecognized)/.test(issue.message)) return issue.message;
-        const path = (Array.isArray(issue.path) ? issue.path.join(' ') : issue.path)
-          .replace(/[_.]/g, ' ')
-          .replace(/\bgroup\b/g, 'format')
-          .replace(/\bhero\b/g, 'opening section');
-        return `Complete ${path || 'the required details'}.`;
-      }),
-    ),
-  ].join(' ');
-}
 
 export default function WebsiteChanges({ base }: { base: string }) {
   const [items, setItems] = useState<EditorialRecord[]>([]);
   const [selection, setSelection] = useState<PublicationSelectionItem[]>([]);
-  const [reviewed, setReviewed] = useState(false);
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState('all');
-  const [cursor, setCursor] = useState('');
   const [pages, setPages] = useState<string[]>(['']);
+  const [cursor, setCursor] = useState('');
   const [next, setNext] = useState<string>();
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const lock = useRef(false);
-  const sequence = useRef(0);
   const [error, setError] = useState('');
-  const [recoveryError, setRecoveryError] = useState('');
-  const [message, setMessage] = useState('');
-  const [pending, setPending] = useState<SelectedPublicationRequest | null>(null);
-  const [publications, setPublications] = useState<ContentPublication[]>([]);
-  const pendingKey = `blackbox-content-publication-v2:${base}`;
+  const [reviewing, setReviewing] = useState(false);
+  const sequence = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null);
   const root = useRef<HTMLDivElement>(null);
   const restorePosition = useRef(true);
-
-  useEffect(() => {
-    if (loading || !ready || !restorePosition.current) return;
-    restorePosition.current = false;
-    const saved = history.state?.reviewPosition;
-    if (!saved || !root.current) return;
-    const link = [...root.current.querySelectorAll<HTMLAnchorElement>('a')].find((item) => item.href === saved.href);
-    link?.focus({ preventScroll: true });
-    root.current.scrollTop = saved.scroll;
-    window.scrollTo(0, saved.windowScroll);
-  }, [loading, ready]);
   function select(value: PublicationSelectionItem[]) {
     try {
-      saveSelection(base, value);
+      setSelection(saveSelection(base, value));
     } catch {
       setError('This browser cannot remember your selection. Allow session storage and retry.');
-      return false;
     }
-    setSelection(value);
-    setReviewed(false);
-    return true;
   }
   async function list() {
     const request = ++sequence.current;
@@ -107,46 +70,19 @@ export default function WebsiteChanges({ base }: { base: string }) {
       setItems(found);
       setNext(continuation);
       setError('');
-    } catch (cause) {
+    } catch (error) {
       if (request !== sequence.current) return;
-      if (cause instanceof EditorialApiError && [401, 403].includes(cause.status)) {
+      if (error instanceof EditorialApiError && [401, 403].includes(error.status)) {
         setItems([]);
         setSelection([]);
-        setReviewed(false);
       }
       setError('Website changes could not be loaded. Retry to continue.');
     } finally {
       if (request === sequence.current) setLoading(false);
     }
   }
-  async function status() {
-    try {
-      const result = await readContentPublications(base);
-      setPublications(result.items);
-      if (pending) {
-        const operation = result.items.find((item) => item.id === pending.id);
-        if (operation?.status === 'live') {
-          localStorage.removeItem(pendingKey);
-          setPending(null);
-          select([]);
-          setMessage('On the website.');
-          await list();
-        } else if (operation?.status === 'failed') {
-          setMessage('The website update failed. Review the saved changes before trying again.');
-        }
-      }
-    } catch {
-      setError('Update not confirmed. Check status to continue.');
-    }
-  }
-  const pendingState = publications.find((item) => item.id === pending?.id)?.status;
-  const polling = usePublicationPolling(
-    pendingState === 'failed' ? '' : (pending?.id ?? publications.find((item) => item.status === 'pending')?.id ?? ''),
-    status,
-  );
   useEffect(() => {
     const restore = () => {
-      setReviewed(false);
       const params = new URLSearchParams(location.search);
       setQuery(params.get('q') ?? '');
       setScope(params.get('scope') ?? 'all');
@@ -156,39 +92,10 @@ export default function WebsiteChanges({ base }: { base: string }) {
     };
     restore();
     try {
-      const restored = readSelection(base);
-      setSelection(restored);
-      const stored = localStorage.getItem(pendingKey);
-      if (stored) {
-        const input = JSON.parse(stored) as SelectedPublicationRequest;
-        const records = 'records' in input ? input.records : [input];
-        if (
-          typeof input.id !== 'string' ||
-          !records.length ||
-          records.length > 20 ||
-          records.some(
-            (item) =>
-              typeof item.collection !== 'string' ||
-              typeof item.recordId !== 'string' ||
-              typeof item.expectedRevision !== 'string',
-          )
-        )
-          throw new Error();
-        setPending(input);
-        setSelection(
-          records.map((item) => ({
-            ...item,
-            title:
-              restored.find((entry) => key(entry) === key(item))?.title ??
-              contentSections[item.collection as ContentSection] ??
-              item.recordId,
-          })),
-        );
-      }
+      setSelection(readSelection(base));
+      if (restorePublication(base)) setReviewing(true);
     } catch {
-      setRecoveryError(
-        'Saved review could not be restored. Ask a label administrator to check publication status before starting again.',
-      );
+      setError('Saved selection or publication could not be restored. Check publication history before continuing.');
     }
     setReady(true);
     window.addEventListener('popstate', restore);
@@ -199,152 +106,47 @@ export default function WebsiteChanges({ base }: { base: string }) {
     };
   }, [base]);
   useEffect(() => {
-    if (ready) void status();
-  }, [ready, pending?.id]);
-  useEffect(() => {
-    if (!ready) return;
+    if (!ready || reviewing) return;
     const timer = setTimeout(() => void list(), 300);
     return () => {
       clearTimeout(timer);
       sequence.current++;
     };
-  }, [ready, query, scope, cursor]);
-  useStaffRead(
-    ['website-changes-return', base, query, scope, cursor],
-    async () => {
-      setReviewed(false);
-      await list();
-      await status();
-    },
-    { enabled: ready && !busy },
-  );
+  }, [ready, query, scope, cursor, reviewing]);
+  useEffect(() => {
+    if (loading || !ready || reviewing || !restorePosition.current) return;
+    restorePosition.current = false;
+    const saved = history.state?.reviewPosition;
+    if (!saved || !root.current) return;
+    [...root.current.querySelectorAll<HTMLAnchorElement>('a')]
+      .find((link) => link.href === saved.href)
+      ?.focus({ preventScroll: true });
+    root.current.scrollTop = saved.scroll;
+    window.scrollTo(0, saved.windowScroll);
+  }, [loading, ready, reviewing]);
+  useStaffRead(['website-changes-return', base, query, scope, cursor], list, { enabled: ready && !reviewing });
   function browse(q: string, area: string, page = '', trail = ['']) {
     setQuery(q);
     setScope(area);
     setCursor(page);
     setPages(trail);
-    setReviewed(false);
     const params = new URLSearchParams({ q, scope: area });
     if (page) params.set('cursor', page);
     history.pushState({ reviewPages: trail }, '', `/review/?${params}`);
   }
-  async function add(entries: EditorialRecord[]) {
-    if (lock.current || pending) return;
-    lock.current = true;
-    setBusy(true);
-    setError('');
-    try {
-      const fresh = entries
+  function add(entries: EditorialRecord[]) {
+    select([
+      ...selection,
+      ...entries
         .filter((item) => !selection.some((chosen) => key(chosen) === key(item)))
-        .slice(0, 20 - selection.length);
-      const saved = await Promise.all(
-        fresh.map(async (item) => {
-          const result = await editorialRequest<Saved>(
-            base,
-            `content/${item.collection}/${encodeURIComponent(item.id)}`,
-          );
-          if (!getContentValidation(item.collection as ContentSection, result.item.data).valid)
-            throw new Error('An entry changed or needs more details. Finish editing it first.');
-          return {
-            collection: item.collection!,
-            recordId: item.id,
-            expectedRevision: result._rev,
-            title: title({ ...result.item, collection: item.collection! }),
-          };
-        }),
-      );
-      select([...selection, ...saved]);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Selection could not be checked.');
-    } finally {
-      lock.current = false;
-      setBusy(false);
-    }
-  }
-  async function review() {
-    if (lock.current || !selection.length || recoveryError) return;
-    lock.current = true;
-    setBusy(true);
-    setError('');
-    try {
-      const checked = await Promise.all(
-        selection.map(async (item) => {
-          const result = await editorialRequest<Saved>(
-            base,
-            `content/${item.collection}/${encodeURIComponent(item.recordId)}`,
-          );
-          const summary = await editorialRequest<EditorialList<EditorialRecord>>(
-            base,
-            `blackbox/workspace?${new URLSearchParams({ collection: item.collection, id: item.recordId })}`,
-          );
-          if (summary.items[0]?.publicationState === 'pending')
-            throw new Error(`${item.title} is already updating the website. Check status.`);
-          if (summary.items[0]?.publicationState === 'published')
-            throw new Error(`${item.title} is already on the website. Remove it from this selection.`);
-          const validation = getContentValidation(item.collection as ContentSection, result.item.data);
-          if (!validation.valid)
-            throw new Error(`${item.title}: ${blockers(validation)} Finish editing before publishing.`);
-          return {
-            ...item,
-            expectedRevision: result._rev,
-            title: title({ ...result.item, collection: item.collection! }),
-          };
-        }),
-      );
-      const changed = checked.some((item, index) => item.expectedRevision !== selection[index]?.expectedRevision);
-      if (!select(checked)) return;
-      setReviewed(!changed);
-      setMessage(
-        changed
-          ? 'A selected entry changed. Check the updated selection, then review again.'
-          : 'These saved versions will appear on the website. Newer edits stay private.',
-      );
-      requestAnimationFrame(() => heading.current?.focus());
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Review failed.');
-    } finally {
-      lock.current = false;
-      setBusy(false);
-    }
-  }
-  async function publish() {
-    if (lock.current || recoveryError || (!pending && !reviewed)) return;
-    lock.current = true;
-    setBusy(true);
-    setError('');
-    try {
-      const input = pending ?? {
-        id: crypto.randomUUID(),
-        records: selection.map(({ title: _title, ...item }) => item),
-      };
-      localStorage.setItem(pendingKey, JSON.stringify(input));
-      setPending(input);
-      const result = await publishSavedContent(base, input);
-      setPublications((items) => [result, ...items.filter((item) => item.id !== result.id)]);
-      setMessage(
-        result.status === 'live'
-          ? 'On the website.'
-          : result.status === 'failed'
-            ? 'The website update failed. Review the saved changes before trying again.'
-            : 'Updating website…',
-      );
-      if (result.status === 'live') {
-        localStorage.removeItem(pendingKey);
-        setPending(null);
-        select([]);
-      }
-      await list();
-    } catch (cause) {
-      if (cause instanceof EditorialApiError && [400, 409].includes(cause.status)) {
-        localStorage.removeItem(pendingKey);
-        setPending(null);
-        setReviewed(false);
-      }
-      setError(cause instanceof Error ? cause.message : 'Update not confirmed. Check status before retrying.');
-    } finally {
-      lock.current = false;
-      setBusy(false);
-    }
+        .slice(0, 20 - selection.length)
+        .map((item) => ({
+          collection: item.collection!,
+          recordId: item.id,
+          expectedRevision: 'review-required',
+          title: title(item),
+        })),
+    ]);
   }
   return (
     <div
@@ -363,85 +165,45 @@ export default function WebsiteChanges({ base }: { base: string }) {
           );
       }}
     >
-      <h1>Review website changes</h1>
-      <p>Choose the saved changes to put on the website. Price, stock and shop activation are handled separately.</p>
-      {recoveryError && <p role="alert">{recoveryError}</p>}
-      {error && (
-        <div role="alert">
-          <p>{error}</p>
-          <Button variant="outline" onClick={() => void (pending ? status() : list())}>
-            Retry
-          </Button>
-        </div>
-      )}
-      {(message || polling.paused) && <p role="status">{polling.paused ? 'Update not confirmed' : message}</p>}
-      {pending ? (
-        <section aria-label="Publication in progress">
-          <h2>Website update</h2>
-          <p>Your publication is retained. Check its status before starting another.</p>
-          <Button variant="outline" disabled={busy || polling.checking} onClick={() => void polling.check()}>
-            Check status
-          </Button>
-          {pendingState === undefined && (
-            <Button disabled={busy} onClick={() => void publish()}>
-              Retry publication
-            </Button>
-          )}
-          {pendingState === 'failed' && (
-            <Button
-              disabled={busy}
-              onClick={() => {
-                localStorage.removeItem(pendingKey);
-                setPending(null);
-                setReviewed(false);
-              }}
-            >
-              Review changes again
-            </Button>
-          )}
-        </section>
+      {reviewing ? (
+        <PublicationReviewFlow
+          base={base}
+          records={selection}
+          onReviewed={(review) => select(review.entries)}
+          onPublished={(published) =>
+            select(selection.filter((entry) => !published.some((record) => key(record) === key(entry))))
+          }
+          onBack={() => {
+            setReviewing(false);
+            requestAnimationFrame(() => heading.current?.focus());
+          }}
+        />
       ) : (
         <>
-          <section aria-label="Selected website changes">
-            <h2 ref={heading} tabIndex={-1}>
-              {reviewed ? 'Ready to publish' : `Selected changes (${selection.length}/20)`}
-            </h2>
-            {selection.length > 0 ? (
-              <>
-                <ul>
-                  {selection.map((item) => (
-                    <li key={key(item)}>
-                      <a href={editUrl(item)}>{item.title}</a>
-                      <span>{contentSections[item.collection as ContentSection]}</span>
-                      <Button
-                        variant="ghost"
-                        disabled={busy}
-                        onClick={() => select(selection.filter((entry) => key(entry) !== key(item)))}
-                        aria-label={`Remove ${item.title} from publication`}
-                      >
-                        Remove
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-                <Button disabled={busy} onClick={() => void (reviewed ? publish() : review())}>
-                  {busy
-                    ? 'Checking…'
-                    : reviewed
-                      ? selection.length === 1
-                        ? 'Publish change'
-                        : `Publish selected changes (${selection.length})`
-                      : 'Review selection'}
-                </Button>
-              </>
-            ) : (
-              <p>No changes selected. Other drafts will stay private.</p>
-            )}
-          </section>
+          <header className="publication-heading">
+            <div>
+              <h1 ref={heading} tabIndex={-1}>
+                Review website changes
+              </h1>
+              <p className="text-muted-foreground">
+                Choose which saved changes to publish together. Other drafts stay private.
+              </p>
+            </div>
+            <PublicationHistory base={base} />
+          </header>
+          <PublicationSteps step={1} />
+          {error && (
+            <div role="alert" className="publication-issues">
+              <p>{error}</p>
+              <Button variant="outline" onClick={() => void list()}>
+                Retry
+              </Button>
+            </div>
+          )}
           <div className="website-changes-toolbar">
             <label>
               Find a change
-              <input type="search" value={query} onChange={(event) => browse(event.target.value, scope)} />
+              <Input type="search" value={query} onChange={(event) => browse(event.target.value, scope)} />
             </label>
             <label>
               Area
@@ -453,9 +215,9 @@ export default function WebsiteChanges({ base }: { base: string }) {
             </label>
             <Button
               variant="outline"
-              disabled={busy || loading || selection.length === 20}
+              disabled={loading || selection.length === 20}
               onClick={() =>
-                void add(
+                add(
                   items.filter(
                     (item) =>
                       item.publicationState !== 'pending' &&
@@ -467,27 +229,49 @@ export default function WebsiteChanges({ base }: { base: string }) {
               Select ready changes on this page
             </Button>
           </div>
-          {loading && <p role="status">Loading changes…</p>}
+          {selection.length > 0 && (
+            <details className="publication-selected">
+              <summary>{selection.length} selected across pages</summary>
+              <ul>
+                {selection.map((entry) => (
+                  <li key={key(entry)}>
+                    {entry.title}
+                    <Button
+                      variant="ghost"
+                      aria-label={`Remove ${entry.title} from publication`}
+                      onClick={() => select(selection.filter((item) => key(item) !== key(entry)))}
+                    >
+                      Remove
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {loading && (
+            <div role="status">
+              <span>Loading changes…</span>
+              <Skeleton className="h-24 w-full" />
+            </div>
+          )}
           <div aria-busy={loading} className="website-change-list">
             {items.map((item) => {
               const validation = getContentValidation(item.collection as ContentSection, item.data);
               const selected = selection.some((entry) => key(entry) === key(item));
               const updating = item.publicationState === 'pending';
+              const href = `/content/?${new URLSearchParams({ collection: item.collection!, id: item.id })}`;
               return (
                 <article key={key(item)}>
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     aria-label={`Select ${title(item)} for publication`}
                     checked={selected}
-                    disabled={
-                      busy || loading || updating || !validation.valid || (!selected && selection.length === 20)
-                    }
-                    onChange={() =>
-                      selected ? select(selection.filter((entry) => key(entry) !== key(item))) : void add([item])
+                    disabled={loading || updating || !validation.valid || (!selected && selection.length === 20)}
+                    onCheckedChange={() =>
+                      selected ? select(selection.filter((entry) => key(entry) !== key(item))) : add([item])
                     }
                   />
                   <div>
-                    <a href={editUrl(item)}>
+                    <a href={href}>
                       <strong>{title(item)}</strong>
                     </a>
                     <p>
@@ -495,16 +279,21 @@ export default function WebsiteChanges({ base }: { base: string }) {
                       {updating
                         ? 'Updating website…'
                         : item.publicationState === 'draft'
-                          ? 'Draft'
+                          ? 'New entry'
                           : 'Unpublished changes'}
                     </p>
-                    {!updating && <p>{validation.valid ? 'Ready for review' : blockers(validation)}</p>}
-                    {!validation.valid && <a href={editUrl(item)}>Finish editing</a>}
-                    {item.selling && (
-                      <p>
-                        Website details only. Price, stock and shop availability stay unchanged.{' '}
-                        <a href={`${editUrl(item)}&tab=selling`}>Selling</a>
+                    {!updating && (
+                      <p className={validation.valid ? 'text-muted-foreground' : 'cms-state-warning'}>
+                        {validation.valid ? 'Ready for review' : 'Needs details before publishing'}
                       </p>
+                    )}
+                    {!validation.valid && <a href={href}>Finish editing</a>}
+                    {!validation.valid && (
+                      <ul>
+                        {validation.issues.map((issue, index) => (
+                          <li key={index}>{issue.message}</li>
+                        ))}
+                      </ul>
                     )}
                   </div>
                 </article>
@@ -512,13 +301,9 @@ export default function WebsiteChanges({ base }: { base: string }) {
             })}
           </div>
           {!loading && !items.length && (
-            <p>
-              {next
-                ? 'No unpublished changes in this part of the catalog. Continue to check more.'
-                : 'No more website changes to review.'}
-            </p>
+            <p>{query ? 'No changes match this search.' : 'No more website changes to review.'}</p>
           )}
-          <nav aria-label="Changes pages">
+          <nav aria-label="Changes pages" className="flex gap-2">
             <Button
               variant="outline"
               disabled={loading || pages.length < 2}
@@ -534,6 +319,15 @@ export default function WebsiteChanges({ base }: { base: string }) {
               Next
             </Button>
           </nav>
+          <footer className="publication-action-bar">
+            <div>
+              <strong>{selection.length}/20 changes selected</strong>
+              <p className="text-sm text-muted-foreground">Review the differences before publishing.</p>
+            </div>
+            <Button disabled={!selection.length} onClick={() => setReviewing(true)}>
+              Review selected changes
+            </Button>
+          </footer>
         </>
       )}
     </div>

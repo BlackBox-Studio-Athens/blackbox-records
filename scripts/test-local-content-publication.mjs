@@ -6,6 +6,7 @@ import { setTimeout } from 'node:timers/promises';
 
 const staff = 'http://127.0.0.1:8787';
 const site = 'http://127.0.0.1:4321/blackbox-records';
+const reviewCosts = [];
 async function api(path, body, method = 'POST') {
   const response = await fetch(`${staff}/_emdash/api/${path}`, {
     method: body ? method : 'GET',
@@ -14,6 +15,8 @@ async function api(path, body, method = 'POST') {
     signal: AbortSignal.timeout(15000),
   });
   assert.ok(response.ok, `${path}: ${response.status}`);
+  if (path === 'blackbox/publication-review')
+    reviewCosts.push(Number(response.headers.get('X-Publication-Review-Reads')));
   return response.json();
 }
 async function save(item, data) {
@@ -27,6 +30,31 @@ async function publish(item, saved, extra = []) {
     id: randomUUID(),
     records: [{ collection: 'artists', recordId: item.id, expectedRevision: saved._rev }, ...extra],
   };
+  const review = await api('blackbox/publication-review', { records: input.records });
+  assert.equal(review.dependencies.length, 0);
+  assert.ok(review.entries.every((entry) => entry.issues.length === 0));
+  input.baseline = review.baseline;
+  const beforePreview = await api('blackbox/publications');
+  const preview = await fetch(`${staff}/_emdash/preview`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1', Origin: staff },
+    body: JSON.stringify({
+      collection: 'artists',
+      id: item.id,
+      publication: { records: input.records, baseline: input.baseline },
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+  assert.equal(preview.status, 200, await preview.clone().text());
+  const html = await preview.text();
+  assert.ok(html.includes(saved.item.data.genre), 'Shared-template publication preview shows selected saved content.');
+  assert.equal(preview.headers.get('X-Preview-Environment'), 'local');
+  const imagePath = html.match(/src="([^" ]*\/_emdash\/api\/blackbox\/review-media\/[^" ]+)"/)?.[1];
+  assert.ok(imagePath, 'Combined preview uses immutable accepted images');
+  const image = await fetch(new URL(imagePath, staff));
+  assert.equal(image.status, 200, 'Accepted image is available through the private review route');
+  await image.body?.cancel();
+  assert.deepEqual(await api('blackbox/publications'), beforePreview, 'Review and preview never create a publication');
   await api('blackbox/content-publications', input);
   // Repeat the same request to exercise response-loss recovery without duplicate publication.
   await api('blackbox/content-publications', input);
@@ -62,7 +90,16 @@ try {
   ]);
   const together = await fetch(`${site}/artists/${other.slug}/`).then((response) => response.text());
   assert.ok(together.includes(marker), 'Selected batch record did not go live.');
-  console.log(JSON.stringify({ elapsedMs, batchElapsedMs, unrelatedDraftPrivate: true, idempotency: true }));
+  console.log(
+    JSON.stringify({
+      elapsedMs,
+      batchElapsedMs,
+      unrelatedDraftPrivate: true,
+      idempotency: true,
+      reviewCmsReads: reviewCosts,
+      combinedPreview: true,
+    }),
+  );
 } finally {
   const restoredOther = await save(other, other.data);
   const restored = await save(selected, selected.data);

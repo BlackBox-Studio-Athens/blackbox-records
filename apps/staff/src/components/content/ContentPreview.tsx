@@ -7,6 +7,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { checkPreviewAssets, PreviewAssetError, safePreviewAsset, type PreviewDiagnostic } from './preview-diagnostics';
 import { editorialWriteData } from '../../lib/backend/editorial-api';
 import type { ContentData, ContentSection } from './ContentFields';
+import type { PublicationReviewInput } from '@blackbox/content-model';
 
 export default function ContentPreview({
   collection,
@@ -19,6 +20,8 @@ export default function ContentPreview({
   active,
   dirty,
   valid,
+  publication,
+  onReadiness,
 }: {
   collection: ContentSection;
   focusedPath?: string;
@@ -30,6 +33,8 @@ export default function ContentPreview({
   active: boolean;
   dirty: boolean;
   valid: boolean;
+  publication?: PublicationReviewInput;
+  onReadiness?(state: 'loading' | 'ready' | 'failed'): void;
 }) {
   type Rendering = {
     generation: number;
@@ -80,9 +85,16 @@ export default function ContentPreview({
   const generation = useRef(0);
   const displayedGeneration = useRef(0);
   const previous = useRef({ payload: '', view, retry, active: false });
-  const payload = JSON.stringify({ collection, ...(id ? { id } : {}), slug, data: editorialWriteData(data) });
+  const payload = JSON.stringify(
+    publication
+      ? { collection, id, publication }
+      : { collection, ...(id ? { id } : {}), slug, data: editorialWriteData(data) },
+  );
   const inputKey = JSON.stringify([payload, base, view, retry]);
   const currentInput = useRef(inputKey);
+  useEffect(() => {
+    onReadiness?.(error ? 'failed' : rendered?.inputKey === inputKey ? 'ready' : 'loading');
+  }, [error, rendered?.inputKey, inputKey, onReadiness]);
   useLayoutEffect(() => {
     currentInput.current = inputKey;
   }, [inputKey]);
@@ -293,7 +305,11 @@ export default function ContentPreview({
       <header className="cms-preview-toolbar">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-1">
-            <p className="text-sm font-semibold">Preview</p>
+            <p className="text-sm font-semibold">
+              {publication
+                ? `Preview of ${publication.records.length === 1 ? 'this change' : `all ${publication.records.length} changes`}`
+                : 'Preview'}
+            </p>
             <Popover>
               <PopoverTrigger asChild>
                 <Button type="button" variant="ghost" size="icon" aria-label="About preview" title="About preview">

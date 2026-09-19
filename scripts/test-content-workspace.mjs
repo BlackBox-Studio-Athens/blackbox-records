@@ -394,6 +394,7 @@ const server = createServer(async (req, res) => {
       res.setHeader('X-Preview-Generation', req.headers['x-preview-generation'] ?? '0');
       res.setHeader('X-Release-SHA', 'local');
       state.previewRequests.push(body);
+      if (body.publication) body.data = records[body.collection].find((item) => item.id === body.id).data;
       const title = String(body.data.title ?? body.collection);
       if (title === 'invalid preview') return json({ error: 'Check the preview fields.' }, 422);
       if (title === 'expired preview') return json({ error: 'Sign in again.' }, 403);
@@ -409,6 +410,48 @@ const server = createServer(async (req, res) => {
         `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${previewPolicy(origin)}"><link rel="stylesheet" href="/preview-test.css"></head><body style="min-height:2000px"><h1>${escaped}</h1><p id="newsletter-signup-area">${description}</p><img src="/preview-test.png" alt="Preview fixture" loading="eager"></body></html>`,
       );
     }
+    if (url.pathname === '/_emdash/api/blackbox/publication-review') {
+      const entries = body.records.map((record) => {
+        const item = records[record.collection].find((item) => item.id === record.recordId);
+        return {
+          collection: record.collection,
+          recordId: item.id,
+          expectedRevision: item._rev,
+          title: item.data.title ?? item.data.label_name ?? record.collection,
+          slug: item.slug,
+          before: { ...item.data, title: 'Previously published title' },
+          after: item.data,
+          issues: [],
+        };
+      });
+      return json({
+        baseline: 'a'.repeat(64),
+        environment: 'local',
+        publicUrl: expectedWebsiteUrl,
+        entries,
+        dependencies: [],
+        media: Object.fromEntries(
+          media.map((item) => [item.id, { src: `/preview-test.png`, width: 96, height: 96, format: 'png' }]),
+        ),
+        referenceTitles: {},
+        baselineReferenceTitles: {},
+      });
+    }
+    if (url.pathname === '/_emdash/api/blackbox/publications/history') {
+      const collection = url.searchParams.get('collection'),
+        id = url.searchParams.get('recordId');
+      return json({
+        items: publications.filter(
+          (item) => !id || item.entries?.some((entry) => entry.collection === collection && entry.recordId === id),
+        ),
+      });
+    }
+    if (/^\/_emdash\/api\/blackbox\/publications\/[^/]+$/.test(url.pathname)) {
+      const publication = publications.find((item) => item.id === url.pathname.split('/').at(-1));
+      if (!publication) return json({ error: 'Not found' }, 404);
+      if (state.publication !== 'pending') publication.status = state.publication;
+      return json(publication);
+    }
     if (['/_emdash/api/blackbox/publications', '/_emdash/api/blackbox/content-publications'].includes(url.pathname)) {
       if (body) {
         assert.equal(url.pathname, '/_emdash/api/blackbox/content-publications');
@@ -419,7 +462,19 @@ const server = createServer(async (req, res) => {
         if (state.publication !== 'pending')
           for (const publication of publications)
             if (publication.status === 'pending') publication.status = state.publication;
-        publications.unshift({ id: body.id, status: state.publication, requestedAt: Date.now() });
+        const existing = publications.find((item) => item.id === body.id);
+        if (existing) return json(existing);
+        publications.unshift({
+          id: body.id,
+          status: state.publication,
+          requestedAt: Date.now(),
+          environment: 'local',
+          actorEmail: 'editor@example.com',
+          entries: (body.records ?? [body]).map((record) => ({
+            ...record,
+            title: records[record.collection].find((item) => item.id === record.recordId).data.title,
+          })),
+        });
         if (state.publication === 'live') state.publicTitle = records.artists[0].data.title;
         return json(publications[0]);
       }
@@ -659,7 +714,7 @@ else {
     );
     assert.equal(records.artists[0].data.title, '', 'Incomplete drafts save privately');
     assert.equal(state.publicTitle, 'Ouranopithecus', 'Saving does not publish');
-    await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
+    await page.getByRole('button', { name: 'Review changes', exact: true }).click();
     await page.getByRole('alert').filter({ hasText: 'Fix the highlighted' }).waitFor();
     state.saveDelay = 1200;
     await artistName.fill('Earlier typing');
@@ -729,19 +784,40 @@ else {
     await artistName.fill('Publication review');
     await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
     const reviewed = records.artists[0]._rev;
-    await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
-    await page.getByRole('heading', { name: 'Review website changes', exact: true }).waitFor();
+    await page.evaluate(() =>
+      sessionStorage.setItem(
+        'blackbox-website-review:',
+        JSON.stringify([
+          { collection: 'artists', recordId: 'artists-2', expectedRevision: 'old', title: 'Mass Culture' },
+        ]),
+      ),
+    );
+    await page.getByRole('button', { name: 'Review changes', exact: true }).click();
+    await page.getByRole('heading', { name: 'Review your changes', exact: true }).waitFor();
+    assert.ok((await page.url()).includes('/content/'), 'Single-entry review stays in the editor');
+    for (const width of [390, 768, 1280, 1600]) {
+      await page.setViewportSize({ width, height: 960 });
+      assert.ok(
+        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        `Guided review fits ${width}`,
+      );
+      await page.screenshot({ path: resolve(artifacts, `publication-guided-${width}.png`) });
+    }
     const publishing = page.waitForRequest(
       (request) => request.method() === 'POST' && request.url().endsWith('/blackbox/content-publications'),
     );
-    await page.getByRole('button', { name: 'Review selection', exact: true }).click();
     await page.getByRole('button', { name: 'Publish change', exact: true }).click();
     assert.equal((await publishing).postDataJSON().records[0].expectedRevision, reviewed);
     await page.keyboard.press('Escape');
     state.publication = 'live';
     await page.getByRole('button', { name: 'Check status', exact: true }).click();
-    await page.getByRole('status').filter({ hasText: 'On the website.' }).waitFor();
-    await page.goBack();
+    await page.getByRole('heading', { name: 'Your changes are on the website', exact: true }).waitFor();
+    assert.equal(
+      await page.evaluate(() => JSON.parse(sessionStorage.getItem('blackbox-website-review:'))[0].recordId),
+      'artists-2',
+      'Individual publication preserves grouped selection',
+    );
+    await page.getByRole('button', { name: 'Back to editing', exact: true }).click();
     await artistName.waitFor();
     // Asset failures retain useful preview content and offer a scoped retry.
     state.previewImageFailure = true;
@@ -820,25 +896,71 @@ else {
     }
 
     await page.getByRole('button', { name: 'Select ready changes on this page' }).click();
-    await page.getByRole('heading', { name: 'Selected changes (20/20)' }).waitFor();
+    await page.getByText('20/20 changes selected', { exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Select ready changes on this page' }).isEnabled(), false);
     await page.getByRole('button', { name: 'Next', exact: true }).click();
     await page.waitForURL((url) => url.searchParams.has('cursor'));
     await page.reload();
-    await page.getByRole('heading', { name: 'Selected changes (20/20)' }).waitFor();
+    await page.getByText('20/20 changes selected', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Previous', exact: true }).click();
-    await page.getByRole('button', { name: 'Review selection', exact: true }).click();
-    await page.getByRole('heading', { name: 'Ready to publish', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Review selected changes', exact: true }).click();
+    await page.getByRole('heading', { name: 'Review your changes', exact: true }).waitFor();
     const batch = page.waitForRequest(
       (request) => request.method() === 'POST' && request.url().endsWith('/blackbox/content-publications'),
     );
     state.publication = 'live';
-    await page.getByRole('button', { name: 'Publish selected changes (20)', exact: true }).click();
+    await page.getByRole('button', { name: 'Publish 20 changes', exact: true }).click();
     const chosen = (await batch).postDataJSON().records;
     assert.equal(chosen.length, 20);
     assert.ok(new Set(chosen.map((item) => item.collection)).size > 1);
-    await page.getByRole('heading', { name: 'Selected changes (0/20)' }).waitFor();
+    await page.getByRole('button', { name: 'Back to changes', exact: true }).click();
+    await page.getByText('0/20 changes selected', { exact: true }).waitFor();
     records.distro = originalDistro;
+
+    // Explicit visual-preview bypass and lost-response recovery reuse one operation
+    // without replacing the unrelated grouped selection, even after reload.
+    await page.goto(`${origin}/content/?collection=artists&id=artists-1`);
+    await page.locator('#content-title').waitFor();
+    await page.evaluate(() =>
+      sessionStorage.setItem(
+        'blackbox-website-review:',
+        JSON.stringify([
+          { collection: 'artists', recordId: 'artists-2', expectedRevision: 'old', title: 'Mass Culture' },
+        ]),
+      ),
+    );
+    state.previewImageFailure = true;
+    state.publication = 'pending';
+    await page.getByRole('button', { name: 'Review changes', exact: true }).click();
+    await page.getByRole('alert').filter({ hasText: 'Preview images could not load' }).waitFor();
+    const publicationCount = publications.length;
+    const publicationRoute = '**/_emdash/api/blackbox/content-publications';
+    await page.route(publicationRoute, async (route) => {
+      await route.fetch();
+      await route.abort('failed');
+    });
+    const lostResponse = page.waitForEvent('requestfailed', (request) =>
+      request.url().endsWith('/blackbox/content-publications'),
+    );
+    await page.getByRole('button', { name: 'Publish without preview', exact: true }).click();
+    await lostResponse;
+    await page.getByRole('button', { name: 'Check status', exact: true }).waitFor();
+    await page.unroute(publicationRoute);
+    await page.goto(`${origin}/review/`);
+    await page.getByRole('button', { name: 'Check status', exact: true }).waitFor();
+    await page.reload();
+    state.publication = 'live';
+    await page.getByRole('heading', { name: 'Your changes are on the website', exact: true }).waitFor();
+    assert.equal(
+      publications.length,
+      publicationCount + 1,
+      'Lost response and reload do not create another publication',
+    );
+    assert.equal(
+      await page.evaluate(() => JSON.parse(sessionStorage.getItem('blackbox-website-review:'))[0].recordId),
+      'artists-2',
+    );
+    state.previewImageFailure = false;
 
     await page.goto(`${origin}/stock/`);
     await page.locator('.inventory-row').first().waitFor();

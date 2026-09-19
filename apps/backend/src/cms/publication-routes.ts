@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { publicationHistoryQuery, readPublicationHistory } from './publication-journal';
 import { createHash, timingSafeEqual } from 'node:crypto';
 import { completeSnapshot, storeSnapshotMedia } from './snapshot-storage';
 import { isCmsCollection, parseContentSnapshot } from '@blackbox/content-model';
@@ -334,8 +335,13 @@ export async function handlePublicationRequest(
   };
   const summary = publicationSummary;
   if (context.identity.role < 30) return reply(403, { error: 'FORBIDDEN' });
-  if (url.search) return reply(400, { error: 'INVALID_REQUEST' });
+  if (url.search && path !== root + '/history') return reply(400, { error: 'INVALID_REQUEST' });
   try {
+    if (request.method === 'GET' && path === root + '/history') {
+      const query = publicationHistoryQuery.safeParse(Object.fromEntries(url.searchParams));
+      if (!query.success) return reply(400, { error: 'INVALID_REQUEST' });
+      return reply(200, await readPublicationHistory(context.db, context.environment, query.data));
+    }
     if (request.method === 'GET' && path === root) {
       const items = await readRecentPublications(context.db, context.environment);
       return reply(200, { items });

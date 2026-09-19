@@ -6,6 +6,8 @@ import {
   validateCmsRevisionContent,
   replacePublishedRecord,
   type ContentSnapshot,
+  publicationRecordSchema,
+  publicationReviewSchema,
 } from '@blackbox/content-model';
 import {
   activatePublication,
@@ -17,16 +19,14 @@ import { storeSnapshotMedia } from './snapshot-storage';
 import { validateImage } from './media-upload';
 import { readPublicationCatalog } from './item-publication-recovery';
 import { publicationSummary, readPublication } from './publication-journal';
+import { reviewPublication } from './publication-review';
 
-const identifier = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
-const selectedRecordSchema = z
-  .object({
-    collection: z.string().refine(isCmsCollection),
-    recordId: identifier,
-    expectedRevision: z.string().min(1).max(256),
-  })
+const identifier = publicationRecordSchema.shape.recordId;
+const selectedRecordSchema = publicationRecordSchema;
+const baselineSchema = publicationReviewSchema.shape.baseline;
+const batchSchema = z
+  .object({ id: z.uuid(), records: z.array(selectedRecordSchema).min(1).max(20), baseline: baselineSchema })
   .strict();
-const batchSchema = z.object({ id: z.uuid(), records: z.array(selectedRecordSchema).min(1).max(20) }).strict();
 export const selectedPublicationSchema = z
   .union([
     batchSchema,
@@ -40,8 +40,9 @@ export const selectedPublicationSchema = z
 const intentSchema = z.union([
   z.object({
     id: z.uuid(),
+    baseline: baselineSchema,
     records: z
-      .array(selectedRecordSchema.extend({ revisionId: identifier }))
+      .array(selectedRecordSchema.extend({ revisionId: identifier, title: z.string().optional() }))
       .min(1)
       .max(20),
   }),
@@ -68,7 +69,7 @@ function successful<T>(result: { success: true; data: T } | { success: false; er
 export async function acceptSelectedPublication(
   input: z.input<typeof selectedPublicationSchema>,
   actorEmail: string,
-  deps: Pick<Dependencies, 'runtime' | 'db' | 'environment'>,
+  deps: Pick<Dependencies, 'runtime' | 'db' | 'environment'> & { bucket?: R2Bucket },
 ) {
   const selected = selectedPublicationSchema.parse(input);
   const existing = await deps.db
@@ -81,11 +82,33 @@ export async function acceptSelectedPublication(
     const retained = intentSchema.parse(JSON.parse(existing.request_json ?? 'null'));
     if (
       existing.actor_email !== actorEmail ||
+      ('baseline' in selected ? selected.baseline : undefined) !==
+        ('baseline' in retained ? retained.baseline : undefined) ||
       JSON.stringify(selected.records) !==
-        JSON.stringify(retained.records.map(({ revisionId: _revisionId, ...record }) => record))
+        JSON.stringify(
+          retained.records.map(({ collection, recordId, expectedRevision }) => ({
+            collection,
+            recordId,
+            expectedRevision,
+          })),
+        )
     )
       throw new InvalidPublication('Publication request conflicts with an existing request.');
     return publicationSummary((await readPublication(deps.db, deps.environment, selected.id))!);
+  }
+  const reviewedBaseline = 'baseline' in selected ? selected.baseline : undefined;
+  if (reviewedBaseline) {
+    if (!deps.bucket) throw new InvalidPublication('Publication review is unavailable.');
+    try {
+      const { review } = await reviewPublication(
+        { records: selected.records, baseline: reviewedBaseline },
+        { ...deps, bucket: deps.bucket },
+      );
+      if (review.dependencies.length || review.entries.some((entry) => entry.issues.length))
+        throw new Error('Resolve publication issues and required drafts before publishing.');
+    } catch (error) {
+      throw new InvalidPublication(error instanceof Error ? error.message : 'Review changed.');
+    }
   }
   const records = [];
   for (const record of selected.records) {
@@ -98,9 +121,9 @@ export async function acceptSelectedPublication(
     const { _slug: _slug, ...content } = revision.data;
     if (!isCmsCollection(record.collection) || validateCmsRevisionContent(record.collection, content).length)
       throw new InvalidPublication('Complete the highlighted fields before publishing.');
-    records.push({ ...record, revisionId });
+    records.push({ ...record, revisionId, title: String(content.title ?? content.label_name ?? current.item.slug) });
   }
-  const intent = { id: selected.id, records };
+  const intent = { id: selected.id, records, ...(reviewedBaseline ? { baseline: reviewedBaseline } : {}) };
   const inserted = await deps.db
     .prepare(
       `INSERT INTO _blackbox_publications
@@ -184,7 +207,13 @@ export async function processRuntimePublication(deps: Dependencies) {
     if (pointer.id !== job.id) {
       if (pointer.generation >= job.generation) throw new InvalidPublication('A newer publication is already active.');
       await updateStage('preparing');
-      const selections = job.requestJson ? intentSchema.parse(JSON.parse(job.requestJson)).records : [];
+      const retained = job.requestJson ? intentSchema.parse(JSON.parse(job.requestJson)) : undefined;
+      const reviewedBaseline = retained && 'baseline' in retained ? retained.baseline : undefined;
+      if (reviewedBaseline && reviewedBaseline !== current.pointer.snapshotSha256)
+        throw new InvalidPublication('The website changed. Review the latest comparison before publishing.');
+      const selections = [...(retained?.records ?? [])].sort(
+        (a, b) => Number(b.collection === 'artists') - Number(a.collection === 'artists'),
+      );
       // Check the whole batch before any native transition. Public activation remains atomic.
       for (const intent of selections) {
         const record = successful(await deps.runtime.handleContentGet(intent.collection, intent.recordId));
@@ -306,8 +335,19 @@ export async function processRuntimePublication(deps: Dependencies) {
         current.pointer.id,
         { onlyIf: { etagDoesNotMatch: '*' } },
       );
-      if (!(await activatePublication(deps.bucket, deps.environment, pointer, current.etag)))
+      // Recheck the reviewed versions after rendering, before exposing the candidate.
+      for (const intent of selections) {
+        const fresh = successful(await deps.runtime.handleContentGet(intent.collection, intent.recordId));
+        if (
+          fresh.item.liveRevisionId !== intent.revisionId ||
+          (fresh.item.draftRevisionId && fresh.item.draftRevisionId !== intent.revisionId)
+        )
+          throw new InvalidPublication('A selected draft changed. Review again before publishing.');
+      }
+      if (!(await activatePublication(deps.bucket, deps.environment, pointer, current.etag))) {
+        if (reviewedBaseline) throw new InvalidPublication('The website changed. Review again before publishing.');
         throw new Error('Publication activation must be retried.');
+      }
     }
     await updateStage('confirming');
     await deps.bucket.put(`snapshots/${deps.environment}/accepted/${pointer.snapshotSha256}`, job.id, {
@@ -348,7 +388,7 @@ export async function processRuntimePublication(deps: Dependencies) {
       )
       .bind(
         failed ? 'failed' : 'pending',
-        failed ? 'failed' : 'retrying',
+        failed ? 'failed' : activated ? 'confirming' : 'retrying',
         error instanceof InvalidPublication
           ? error.message
           : 'Publication could not finish. Retry or ask an administrator to check service availability.',

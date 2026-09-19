@@ -26,9 +26,15 @@ export function replacePublishedRecord(
 }
 
 /** Shared mapping for runtime rendering; callers supply only an accepted, validated snapshot. */
-export function publishedCollection(snapshot: ContentSnapshot, collection: string, mediaBase: string) {
+export function publishedCollection(
+  snapshot: ContentSnapshot,
+  collection: string,
+  mediaBase: string,
+  privateImages: Record<string, { src: string; width: number; height: number; format: string }> = {},
+) {
   const images = new Map(snapshot.media.map((item) => [item.id, item]));
   function image(id: string) {
+    if (privateImages[id]) return privateImages[id];
     const item = images.get(id);
     if (!item) throw new Error('Published image is unavailable.');
     return {

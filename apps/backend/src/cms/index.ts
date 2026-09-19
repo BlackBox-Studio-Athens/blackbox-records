@@ -10,6 +10,13 @@ import { prepareCatalogSchema } from './catalog-schema';
 import { createBindingLogger } from '../observability';
 import { previewPolicy } from './preview-policy';
 import { previewDiagnosticsPath, reportPreviewFailure } from './preview-diagnostics';
+import { publicationReviewSchema } from '@blackbox/content-model';
+import {
+  reviewPublication,
+  publicationPreviewContext,
+  PublicationReviewConflict,
+  publicationPublicUrl,
+} from './publication-review';
 
 import { handleLocalPublicationRequest, localPublicationRoot } from './local-publication-routes';
 import { DurableObject } from 'cloudflare:workers';
@@ -185,12 +192,37 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     let cacheMisses = 0;
     let stage = 'validation';
     try {
-      const input = previewInputSchema.parse(JSON.parse(await readBoundedText(request.body, 256 * 1024)));
+      const previewBody = JSON.parse(await readBoundedText(request.body, 256 * 1024));
+      const publication =
+        previewBody && typeof previewBody === 'object' && 'publication' in previewBody
+          ? publicationReviewSchema.parse(previewBody.publication)
+          : undefined;
+      const reviewed = publication
+        ? await (async () => {
+            if (!publication.baseline || publication.records.some((r) => !r.expectedRevision))
+              throw new PublicationReviewConflict('Review the saved versions before previewing.');
+            const { withEmDashRuntime } = await import('emdash/middleware');
+            return withEmDashRuntime((runtime) =>
+              reviewPublication(publication, {
+                runtime,
+                bucket: this.env.MEDIA,
+                environment: productEnvironmentProfileFromBindings(this.env).workerDeploymentTarget,
+              }),
+            );
+          })()
+        : undefined;
+      const selectedContext = reviewed
+        ? publicationPreviewContext(reviewed.review, reviewed.candidate, previewBody.id, previewBody.collection)
+        : undefined;
+      if (reviewed) {
+        reads = reviewed.reads;
+        cacheMisses = reviewed.reads;
+      }
+      const input = selectedContext?.input ?? previewInputSchema.parse(previewBody);
       stage = 'content';
-      const context = await createPreviewContext(
-        input,
-        this.env.PRODUCT_ENVIRONMENT?.toLowerCase() ?? 'local',
-        async (path) => {
+      const context =
+        selectedContext ??
+        (await createPreviewContext(input, this.env.PRODUCT_ENVIRONMENT?.toLowerCase() ?? 'local', async (path) => {
           if (++reads > 512) throw new Error('Preview context exceeds its read budget.');
           // Current record identity is always checked afresh; only surrounding published reads are reused.
           const cached = this.previewReads.get(path);
@@ -224,8 +256,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           this.previewReads.set(path, { expires: Date.now() + 30_000, value: result.data, size });
           this.previewCacheBytes += size;
           return result.data;
-        },
-      );
+        }));
       stage = 'render';
       const html = await previewContext.run(context, async () => {
         const state = new FetchState(request);
@@ -253,7 +284,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             // Preview keeps the public dimensions/crop and serves the original through protected media access.
             if (src.origin === url.origin && src.pathname === '/_image') {
               const original = src.searchParams.get('href') ?? '';
-              if (/^\/(?:_astro\/|_emdash\/api\/media\/file\/)/.test(original)) {
+              if (/^\/(?:_astro\/|_emdash\/api\/(?:media\/file\/|blackbox\/review-media\/))/.test(original)) {
                 element.setAttribute('src', original);
                 element.removeAttribute('srcset');
               }
@@ -442,6 +473,58 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         );
       }
     }
+    if (url.pathname.startsWith('/_emdash/api/blackbox/review-media/')) {
+      const path = /^\/_emdash\/api\/blackbox\/review-media\/([a-f0-9]{64})\/([a-f0-9]{64})$/.exec(url.pathname);
+      if (
+        !identity ||
+        identity.role < 30 ||
+        !path ||
+        url.search ||
+        !['GET', 'HEAD'].includes(request.method) ||
+        !bindings.PUBLIC_SITE
+      )
+        return new Response('Not found', { status: 404 });
+      const publicUrl = publicationPublicUrl(productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget);
+      const response = await bindings.PUBLIC_SITE.fetch(
+        new Request(new URL(`media/content/${path[1]}/${path[2]}`, publicUrl), { method: request.method }),
+      );
+      const headers = new Headers(response.headers);
+      headers.set('Cache-Control', 'private, no-store');
+      return new Response(response.body, { status: response.status, headers });
+    }
+    if (url.pathname === '/_emdash/api/blackbox/publication-review') {
+      if (
+        !identity ||
+        identity.role < 30 ||
+        request.method !== 'POST' ||
+        url.search ||
+        request.headers.get('Origin') !== url.origin ||
+        request.headers.get('X-EmDash-Request') !== '1'
+      )
+        return new Response('Forbidden', { status: 403 });
+      try {
+        const input = publicationReviewSchema.parse(JSON.parse(await readBoundedText(request.body, 16384)));
+        const { withEmDashRuntime } = await import('emdash/middleware');
+        const result = await withEmDashRuntime((runtime) =>
+          reviewPublication(input, {
+            runtime,
+            bucket: bindings.MEDIA,
+            environment: productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
+          }),
+        );
+        return Response.json(result.review, {
+          headers: { 'Cache-Control': 'private, no-store', 'X-Publication-Review-Reads': String(result.reads) },
+        });
+      } catch (error) {
+        return Response.json(
+          { error: error instanceof PublicationReviewConflict ? error.message : 'Review could not load. Retry.' },
+          {
+            status: error instanceof PublicationReviewConflict ? 409 : 400,
+            headers: { 'Cache-Control': 'private, no-store' },
+          },
+        );
+      }
+    }
     if (url.pathname === '/_emdash/api/blackbox/content-publications') {
       if (
         !identity ||
@@ -464,6 +547,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           acceptSelectedPublication(input, identity.email, {
             runtime,
             db: bindings.CMS_DB,
+            bucket: bindings.MEDIA,
             environment: productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
           }),
         );

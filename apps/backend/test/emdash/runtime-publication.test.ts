@@ -11,6 +11,8 @@ import {
 import { completeSnapshot, storeSnapshotMedia } from '../../src/cms/snapshot-storage';
 import { createPrismaClient } from '../../src/infrastructure/persistence/prisma';
 import { readPublication } from '../../src/cms/publication-journal';
+import { readPublicationHistory } from '../../src/cms/publication-journal';
+import { reviewPublication, publicationPreviewContext } from '../../src/cms/publication-review';
 
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));
 beforeEach(async () => {
@@ -304,4 +306,247 @@ test('concurrent different identities cannot create two pending publications for
   );
   expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
   expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+});
+
+test('review and combined preview read saved revisions over the accepted website without mutations', async () => {
+  const { deps, runtime, pointer } = await setup();
+  const { review, candidate } = await reviewPublication({ records: [{ collection: 'news', recordId: 'news' }] }, deps);
+  expect(review.entries[0]).toMatchObject({
+    before: { title: 'Published title' },
+    after: { title: 'Selected title' },
+    expectedRevision: 'version-1',
+    issues: [],
+  });
+  expect(review.baseline).toBe(pointer.snapshotSha256);
+  expect(review.destinations).toContainEqual({
+    collection: 'news',
+    recordId: 'news',
+    slug: 'news',
+    title: 'Selected title',
+  });
+  expect(() => publicationPreviewContext(review, candidate, 'other', 'news')).toThrow('highlighted');
+  const context = publicationPreviewContext(review, candidate, 'news', 'news');
+  expect((await context.getEntry('news', 'news'))?.data.title).toBe('Selected title');
+  expect((await context.getEntry('news', 'other'))?.data.title).toBe('Published title');
+  expect(review.media.image.src).toContain(`/review-media/${pointer.snapshotSha256}/`);
+  expect(runtime.handleContentPublish).not.toHaveBeenCalled();
+  expect((await deps.db.prepare('SELECT COUNT(*) AS count FROM _blackbox_publications').first())?.count).toBe(0);
+  expect((await readPublicationPointer(deps.bucket, 'local'))?.pointer).toEqual(pointer);
+});
+
+test('reviewed publications reject baseline changes before acceptance and processing', async () => {
+  const { deps, input, pointer, runtime } = await setup();
+  const selected = {
+    id: input.id,
+    baseline: pointer.snapshotSha256,
+    records: [{ collection: input.collection, recordId: input.recordId, expectedRevision: input.expectedRevision }],
+  };
+  await expect(
+    acceptSelectedPublication({ ...selected, baseline: 'b'.repeat(64) }, 'editor@example.com', deps),
+  ).rejects.toThrow('website changed');
+  await acceptSelectedPublication(selected, 'editor@example.com', deps);
+  await deps.bucket.put(currentPublicationKey('local'), JSON.stringify({ ...pointer, snapshotSha256: 'b'.repeat(64) }));
+  // A valid replacement manifest is required before baseline comparison.
+  const oldManifest = await deps.bucket.get(`snapshots/local/manifest/${pointer.snapshotSha256}`);
+  const updated = JSON.parse(await oldManifest!.text());
+  updated.records[1].data.title = 'Another editor published';
+  const next = await completeSnapshot(deps.bucket, 'local', JSON.stringify(updated));
+  await deps.bucket.put(currentPublicationKey('local'), JSON.stringify({ ...pointer, snapshotSha256: next.sha256 }));
+  await processRuntimePublication(deps);
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('failed');
+  expect(runtime.handleContentPublish).not.toHaveBeenCalled();
+  expect((await readPublicationPointer(deps.bucket, 'local'))?.pointer.snapshotSha256).toBe(next.sha256);
+});
+
+test('a reviewed baseline remains bound across lost responses and confirmation recovery', async () => {
+  const { deps, input, pointer, renderer, runtime } = await setup();
+  const selected = {
+    id: input.id,
+    baseline: pointer.snapshotSha256,
+    records: [{ collection: input.collection, recordId: input.recordId, expectedRevision: input.expectedRevision }],
+  };
+  await acceptSelectedPublication(selected, 'editor@example.com', deps);
+  renderer.fetch.mockImplementationOnce(async (request) =>
+    Response.json({ sha: 'c'.repeat(40), snapshotSha256: ((await request.json()) as typeof pointer).snapshotSha256 }),
+  );
+  renderer.fetch.mockRejectedValueOnce(new Error('lost confirmation'));
+  await processRuntimePublication(deps);
+  expect((await readPublication(deps.db, 'local', input.id))?.stage).toBe('confirming');
+  expect((await acceptSelectedPublication(selected, 'editor@example.com', deps)).status).toBe('pending');
+  await expect(
+    acceptSelectedPublication({ ...selected, baseline: 'c'.repeat(64) }, 'editor@example.com', deps),
+  ).rejects.toThrow('conflicts');
+  await processRuntimePublication(deps);
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+  expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
+  const history = await readPublicationHistory(deps.db, 'local', { collection: 'news', recordId: 'news' });
+  expect(history.items[0]).toMatchObject({
+    actorEmail: 'editor@example.com',
+    environment: 'local',
+    entries: [{ title: 'Selected title', collection: 'news', recordId: 'news' }],
+  });
+  expect((await readPublicationHistory(deps.db, 'local', { collection: 'news', recordId: 'other' })).items).toEqual([]);
+});
+
+test('rejects a saved revision changed after review and rechecks after renderer validation', async () => {
+  const { deps, runtime, input, renderer, pointer } = await setup();
+  await expect(
+    reviewPublication({ records: [{ collection: 'news', recordId: 'news', expectedRevision: 'stale' }] }, deps),
+  ).rejects.toThrow('draft changed');
+  const selected = {
+    id: input.id,
+    baseline: pointer.snapshotSha256,
+    records: [{ collection: input.collection, recordId: input.recordId, expectedRevision: input.expectedRevision }],
+  };
+  await acceptSelectedPublication(selected, 'editor@example.com', deps);
+  renderer.fetch.mockImplementationOnce(async (request) => {
+    runtime.handleContentGet.mockResolvedValue({
+      success: true,
+      data: {
+        _rev: 'new',
+        item: {
+          id: 'news',
+          slug: 'news',
+          status: 'published',
+          draftRevisionId: 'new-draft',
+          liveRevisionId: 'selected',
+        },
+      },
+    });
+    return Response.json({
+      sha: 'c'.repeat(40),
+      snapshotSha256: ((await request.json()) as typeof pointer).snapshotSha256,
+    });
+  });
+  await processRuntimePublication(deps);
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('failed');
+  expect((await readPublicationPointer(deps.bucket, 'local'))?.pointer).toEqual(pointer);
+});
+
+test.each(['artist-first', 'release-first'])(
+  'publishes a new Artist and Release together (%s) with explicit dependency review',
+  async (order) => {
+    const { deps, pointer } = await setup();
+    const content: Record<string, Record<string, unknown>> = {
+      artists: {
+        title: 'New artist',
+        genre: 'Noise rock',
+        image: { id: 'image' },
+        image_alt: 'Portrait',
+        bio: 'Music from Athens.',
+        profile_links: [],
+        videos: [],
+      },
+      releases: {
+        title: 'New release',
+        artist: 'new-artist',
+        release_date: '2026-09-19',
+        cover_image: { id: 'image' },
+        cover_image_alt: 'Sleeve',
+        formats: ['Vinyl'],
+        credits: [],
+      },
+    };
+    const ids: Record<string, string> = { artists: 'new-artist', releases: 'new-release' };
+    const live = new Set<string>();
+    const runtime = {
+      handleContentGet: vi.fn(async (collection: string) => ({
+        success: true,
+        data: {
+          _rev: 'v1',
+          item: {
+            id: ids[collection],
+            slug: ids[collection],
+            status: live.has(collection) ? 'published' : 'draft',
+            draftRevisionId: `revision-${collection}`,
+            liveRevisionId: live.has(collection) ? `revision-${collection}` : null,
+            data: content[collection],
+          },
+        },
+      })),
+      handleRevisionGet: vi.fn(async (revision: string) => {
+        const collection = revision.slice('revision-'.length);
+        return {
+          success: true,
+          data: { item: { id: revision, collection, entryId: ids[collection], data: content[collection] } },
+        };
+      }),
+      handleContentPublish: vi.fn(async (collection: string) => {
+        live.add(collection);
+        return { success: true, data: {} };
+      }),
+      handleMediaGet: vi.fn(),
+    };
+    deps.runtime = runtime as unknown as EmDashRuntime;
+    const release = { collection: 'releases', recordId: ids.releases, expectedRevision: 'v1' };
+    const artist = { collection: 'artists', recordId: ids.artists, expectedRevision: 'v1' };
+    const alone = await reviewPublication({ records: [release] }, deps);
+    expect(alone.review.dependencies).toEqual([
+      {
+        collection: 'artists',
+        recordId: 'new-artist',
+        title: 'New artist',
+        requiredBy: 'New release',
+        available: true,
+      },
+    ]);
+    expect(() => publicationPreviewContext(alone.review, alone.candidate, ids.releases, 'releases')).toThrow('Resolve');
+    const selected = order === 'artist-first' ? [artist, release] : [release, artist];
+    const { review, candidate } = await reviewPublication({ records: selected }, deps);
+    expect(review.entries.map((e) => e.issues)).toEqual([[], []]);
+    expect(review.dependencies).toEqual([]);
+    const context = publicationPreviewContext(review, candidate, ids.releases, 'releases');
+    expect((await context.getEntry('releases', 'new-release'))?.data.artist).toEqual({
+      collection: 'artists',
+      id: 'new-artist',
+    });
+    expect((await context.getEntry('artists', 'new-artist'))?.data.title).toBe('New artist');
+    const id = crypto.randomUUID();
+    await acceptSelectedPublication(
+      { id, baseline: pointer.snapshotSha256, records: selected },
+      'editor@example.com',
+      deps,
+    );
+    await processRuntimePublication(deps);
+    expect((await readPublication(deps.db, 'local', id))?.status).toBe('live');
+    expect(runtime.handleContentPublish.mock.calls.map((call) => call[0])).toEqual(['artists', 'releases']);
+    // A later unrelated Artist draft must neither become a dependency nor leak into the Release preview.
+    content.artists.title = 'Private artist edit';
+    runtime.handleContentGet.mockClear();
+    const later = await reviewPublication({ records: [release] }, deps);
+    expect(later.review.dependencies).toEqual([]);
+    expect(
+      (
+        await publicationPreviewContext(later.review, later.candidate, ids.releases, 'releases').getEntry(
+          'artists',
+          'new-artist',
+        )
+      )?.data.title,
+    ).toBe('New artist');
+    expect(runtime.handleContentGet.mock.calls.map((call) => call[0])).toEqual(['releases']);
+  },
+);
+
+test('history is cursor-paginated, filtered and honest about legacy metadata', async () => {
+  const { deps } = await setup();
+  for (let i = 0; i < 23; i++)
+    await deps.db
+      .prepare(
+        `INSERT INTO _blackbox_publications
+    (id, environment, actor_email, requested_revision, requested_at, request_json) VALUES (?, 'local', 'editor@example.com', ?, ?, ?)`,
+      )
+      .bind(
+        crypto.randomUUID(),
+        `rev-${i}`,
+        i,
+        i === 0 ? null : JSON.stringify({ records: [{ collection: 'news', recordId: 'news', title: `Update ${i}` }] }),
+      )
+      .run();
+  const first = await readPublicationHistory(deps.db, 'local', {});
+  expect(first.items).toHaveLength(20);
+  expect(first.nextCursor).toBeDefined();
+  const next = await readPublicationHistory(deps.db, 'local', { cursor: Number(first.nextCursor) });
+  expect(next.items).toHaveLength(3);
+  expect(next.items[2].entries).toEqual([]);
+  expect(new Set([...first.items, ...next.items].map((item) => item.id)).size).toBe(23);
 });

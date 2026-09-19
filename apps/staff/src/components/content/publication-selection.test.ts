@@ -1,5 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest';
-import { readSelection, saveSelection } from './publication-selection';
+import { pendingPublicationKey, readSelection, saveSelection, restorePublication } from './publication-selection';
 
 beforeEach(() => {
   for (const name of ['sessionStorage', 'localStorage']) {
@@ -24,4 +24,28 @@ test('rejects malformed or oversized selections before they can become publicati
   expect(() => saveSelection('', Array(21).fill(item))).toThrow();
   localStorage.setItem('blackbox-content-publication-selection:', '[{"collection":"unknown"}]');
   expect(() => readSelection('')).toThrow();
+});
+
+test('normalizes legacy pending requests once without changing identity or grouped selection', () => {
+  const record = { collection: 'artists', recordId: 'artist', expectedRevision: 'v1' };
+  const id = '00000000-0000-4000-8000-000000000001';
+  saveSelection('', [{ ...record, title: 'Band' }]);
+  for (const request of [
+    { id, ...record },
+    { id, records: [record], baseline: 'a'.repeat(64) },
+  ]) {
+    localStorage.setItem(pendingPublicationKey(''), JSON.stringify(request));
+    expect(restorePublication('')).toEqual({
+      id,
+      records: [record],
+      ...('baseline' in request ? { baseline: request.baseline } : {}),
+    });
+    expect(localStorage.getItem(pendingPublicationKey(''))).toBe(JSON.stringify(request));
+    expect(readSelection('')).toEqual([{ ...record, title: 'Band' }]);
+  }
+  localStorage.setItem(
+    pendingPublicationKey(''),
+    JSON.stringify({ id, records: [{ collection: 'artists', recordId: 'artist' }] }),
+  );
+  expect(() => restorePublication('')).toThrow('incomplete');
 });

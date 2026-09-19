@@ -91,10 +91,22 @@ Acceptance includes 250+ entries, real Local EmDash reads and Chromium/Firefox c
 
 ## Website changes review (September 2026 refinement)
 
-Staff utilities and Overview open `/review/`. This supersedes the list-checkbox publication queue. Review discovers saved unpublished Website and Catalog entries through the EmDash workspace adapter, with search, area filters and up to 25 entries per page. Selection persists in the same tab, up to 20 entries across pages. Incomplete drafts remain visible with editing links. A final review checks saved versions; a changed version requires renewed review. The editor's Publish changes shortcut finishes autosave and selects only that entry. One selected entry uses Publish change; several use Publish selected changes.
+Staff utilities and Overview open `/review/`. This supersedes the list-checkbox publication queue. Review discovers saved unpublished Website and Catalog entries through the EmDash workspace adapter, with search, area filters and up to 25 entries per page. Selection persists in the same tab, up to 20 entries across pages. Incomplete drafts remain visible with editing links. A final review checks saved versions; a changed version requires renewed review. The editor's Review changes shortcut finishes autosave and opens an individual review without replacing grouped selection. One selected entry uses Publish change; several use Publish N changes.
 
 Editorial publication includes selling-linked entries but does not activate the shop, change price, or change stock. Selling retains its activation approvals and native lifecycle guard. Pending request identities survive response loss; failed operations require a fresh review. The batch service accepts all reviewed entries in one website update.
 
 Count stock and Finish counting replace visible Stocktake wording; internal storage identities remain compatible. Quantities read Available to buy online, with copies for music and units for merchandise. The online quantity is how many customers may buy through the website.
 
 Review discovery uses bounded native EmDash cursor reads and existing accepted-snapshot comparisons, never private CMS table queries. The client follows sparse continuations until its page fills or reaches the end, cancelling stale searches. It does not load the entire library into browser memory or poll a global draft count. Hosted rollout still requires a Free-tier cost preflight.
+
+## Guided publication review
+
+The approved B direction uses Select → Review → Publish. Individual Review changes finishes autosave and stays inside the editor; Back to editing preserves its buffer and the separate grouped selection. Group selection at `/review/` retains search, area filters, pagination and the twenty-entry limit. Incomplete entries keep editing links and validation messages.
+
+Expandable entry comparisons label On the website and After publishing, with readable text, formatted content, images, descriptions, links and ordered lists. New entries say Not yet published. Explicitly include required unpublished references and review again. Already-published references use accepted website content even when newer drafts exist.
+
+At 1280px and above, comparisons sit beside the private, non-interactive public-template preview. Smaller widths use keyboard-accessible Changes/Preview tabs. The existing staff header, branding, tokens and shadcn controls remain; restrained blue actions and 44px targets identify the primary path. A sticky action bar shows destination, count and Publish change/Publish N changes without another confirmation dialog.
+
+Preparing, Checking website and Confirming publication reflect backend stages. Only confirmed public content says On the website. Check status recovers uncertain outcomes; terminal preparation failures return to review. A failed visual preview can be retried or explicitly bypassed, while mandatory server checks remain. Read-only history supports older pages and entry filtering, with unavailable legacy details labeled honestly.
+
+Price, stock, shop activation and launch approvals keep their existing ownership. There is no scheduling, undo, restoration or approval-role workflow. Hosted rollout requires the existing Cloudflare Free-tier preflight and separately authorized bounded UAT acceptance.
