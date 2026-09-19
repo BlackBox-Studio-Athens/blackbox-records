@@ -6,7 +6,24 @@ The accepted [runtime publication](../../../docs/content-publication.md) is no l
 
 ## Goals / Non-Goals
 
-Deliver a measured decision and a user discussion. Default to keeping `no-store` until a benefit and acceptable staleness are established. This assessment does not choose a TTL, add a cache, change Store Offer freshness, cache private CMS data, or provision resources. Static asset/document policy is an inventory context, not permission to broaden the change.
+### Approved staff implementation — 2026-09-19
+
+The user requested implementation of the recommended plan and both staff candidates. This section supersedes the earlier assessment-only restrictions below. Listing and mutable staff responses retain `no-store`; no listing contract delta or TTL is needed.
+
+- Serve successful content-hashed `/_astro/` JS/CSS/font assets with `private, no-cache, must-revalidate`, retaining platform ETags and conditional responses. Require authentication before asset handling on every request, including conditional GET/HEAD. Restrict reuse to assets with validators, no query string, no cookies set, and matching content types. HTML, errors, private media and APIs retain `private, no-store`. No positive freshness lifetime or shared edge cache is introduced.
+- Retain one parsed, verified accepted manifest per CMS object, keyed by bucket identity, product environment and SHA. The existing maximum manifest input is 4 MiB; only one completed snapshot is retained. Read the current pointer on every workspace request. A changed SHA is fetched and verified before use; pointer or manifest failures fail the request without stale fallback. Cache only completed values, never request-scoped streams or promises; eviction/restart causes a normal verified read.
+- Keep mutable CMS, pending-publication and commerce reads unchanged. No new bindings, writes, scheduled jobs, hosted probes or resources. A warm same-SHA workspace read saves one R2 GET and parse; asset revalidation can save body bytes but still requires Worker/object/auth work. Measure these deterministic savings locally; hosted demand and hit rates remain unknown.
+- Verify cache isolation, pointer change/deletion/failure, invalid manifests, fresh drafts, conditional assets and denied access. Run full validation, editor acceptance and relevant local CMS/publication regressions before completion. Rollback restores the asset `no-store` override and removes manifest reuse; mandatory revalidation prevents offline stale asset reuse. Deployment remains a separate action through the existing workflow.
+
+The original assessment phase delivered a measured comparison without runtime changes. The approved follow-up above implements only the two staff optimizations. Store Offer freshness, mutable private CMS responses and provisioned resources remain unchanged.
+
+### Staff applicability expansion
+
+Inventory Overview, Catalog and item creation, Website, Images, Review, Stock and Orders. Trace initial reads, focus/visibility refresh, polling, explicit reloads and writes. Distinguish HTTP caching from existing document-local query deduplication; existing intervals are observed behavior, not new freshness approval.
+
+Rank immutable hashed staff assets and accepted manifests keyed by environment/content digest separately from mutable drafts, stock, prices, orders, permissions and publication status. A manifest reuse candidate must still read the current pointer and validate the selected checksum; it must not turn that digest into a validator for unrelated commerce or draft data. Keep Access and origin authorization on every protected request. Never propose a shared public response cache for private staff representations.
+
+For each candidate record work saved, remaining authorization/pointer/database work, mutation and cross-tab invalidation, identity changes, errors, memory bounds and reset behavior. Research current Cloudflare and installed query-library semantics. Label unmeasured staff demand, payloads, timings and hit rates unknown. Any new hosted staff pilot needs its own local rehearsal, side-effect trace and numeric budget; the five-listing-read allowance is not a staff crawling allowance. Present candidates for discussion without changing runtime code or choosing TTLs.
 
 ## Decisions
 
@@ -51,7 +68,7 @@ Prefer bounded expiry without distributed invalidation infrastructure if the use
 
 ## Migration Plan
 
-This is an assessment-only change: inventory, rehearse, budget, measure, compare, then discuss. Do not modify runtime headers/fetch settings while completing it. A no-change decision can close the assessment. If a cache is selected, update the proposal/design/tasks and full affected `store-listing-price-presentation` requirements before implementation, recording approved TTLs, actual technology, rollout and purge/fallback behavior. The independent user decision on staleness is a deliberate gate, not an unanswered implementation detail hidden in this design.
+The assessment was followed by the user's 2026-09-19 implementation request. Apply the staff mechanisms above locally, verify the combined artifact and editor behavior, and use the existing reviewed release workflow for any separately requested deployment. Browser assets require revalidation immediately; the manifest slot resets with the object and changes with the fresh pointer. No TTL or listing freshness change is part of this rollout. Restore no-store asset headers and uncached manifest reads to roll back.
 
 ## References
 

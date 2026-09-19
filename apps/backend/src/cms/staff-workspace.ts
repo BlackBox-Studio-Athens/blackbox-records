@@ -32,6 +32,15 @@ const querySchema = z
   })
   .strict();
 
+export type StaffSnapshotCache = {
+  current?: {
+    bucket: R2Bucket;
+    environment: PublicationEnvironment;
+    sha256: string;
+    snapshot: Awaited<ReturnType<typeof readPublishedSnapshot>>;
+  };
+};
+
 export async function readStaffWorkspace(
   request: Request,
   deps: {
@@ -40,6 +49,7 @@ export async function readStaffWorkspace(
     commerce: D1Database;
     bucket: R2Bucket;
     environment: PublicationEnvironment;
+    snapshotCache?: StaffSnapshotCache;
   },
 ) {
   const query = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
@@ -73,9 +83,21 @@ export async function readStaffWorkspace(
     id = linked.cmsSourceId ?? linked.sourceId;
   }
   const pointer = await readPublicationPointer(deps.bucket, deps.environment);
+  const cached = deps.snapshotCache?.current;
   const snapshot = pointer
-    ? await readPublishedSnapshot(deps.bucket, deps.environment, pointer.pointer.snapshotSha256)
+    ? cached?.bucket === deps.bucket &&
+      cached.environment === deps.environment &&
+      cached.sha256 === pointer.pointer.snapshotSha256
+      ? cached.snapshot
+      : await readPublishedSnapshot(deps.bucket, deps.environment, pointer.pointer.snapshotSha256)
     : null;
+  if (deps.snapshotCache) {
+    // One verified manifest (at most 4 MiB input); no request promises or mutable staff data.
+    deps.snapshotCache.current =
+      pointer && snapshot
+        ? { bucket: deps.bucket, environment: deps.environment, sha256: pointer.pointer.snapshotSha256, snapshot }
+        : undefined;
+  }
   const review = query.data.view === 'changes';
   const sections = (collection ? [collection] : Object.keys(sourceCollectionNames)).filter(
     (section) =>

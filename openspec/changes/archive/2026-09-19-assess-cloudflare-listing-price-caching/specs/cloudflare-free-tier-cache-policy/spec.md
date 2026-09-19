@@ -1,5 +1,27 @@
 ## ADDED Requirements
 
+### Requirement: Staff immutable reuse preserves fresh authorization and mutable state
+
+Staff caching MUST introduce no time-based freshness window. Successful hashed code/style/font assets MAY use private browser storage with mandatory revalidation and platform validators after authentication. Staff HTML, APIs, private media, errors and cookie-setting responses MUST remain no-store.
+
+#### Scenario: A browser revalidates a staff asset
+
+- **WHEN** a browser conditionally requests an eligible hashed asset
+- **THEN** authorization runs before any successful or not-modified response
+- **AND** denied access cannot reuse an earlier response without validation.
+
+#### Scenario: Workspace reads the same accepted manifest
+
+- **WHEN** the freshly read pointer selects the same environment, bucket and checksum as the CMS object's single retained verified manifest
+- **THEN** the workspace reuses the parsed manifest without another R2 manifest read
+- **AND** mutable drafts, publication status and commerce queries still run.
+
+#### Scenario: Publication changes or cannot be read
+
+- **WHEN** the current pointer changes, disappears or fails to read
+- **THEN** the workspace uses the newly verified manifest, no accepted manifest, or an explicit failure respectively
+- **AND** no old snapshot is substituted for an unreadable or invalid new publication.
+
 ### Requirement: Listing-price caching requires a measured explicit decision
 
 The system MUST preserve fresh no-store listing-price behavior until the current accepted runtime-publication/commerce topology has been assessed and the user has agreed to any changed listing freshness budget and cache mechanism.
@@ -46,3 +68,11 @@ The system MUST preserve fresh no-store listing-price behavior until the current
 - **WHEN** the user agrees to a concrete listing-price cache policy
 - **THEN** affected listing/freshness contracts are revised before runtime changes, with explicit maximum stale time, target isolation, invalidation/failure/rollback behavior and measured operation budget
 - **AND** Store Offer, checkout, stock, orders, capabilities, private staff/CMS and publication data retain their authoritative fresh-read boundaries.
+
+#### Scenario: Newly introduced staff pages are assessed
+
+- **WHEN** caching applicability is investigated for Overview, Catalog, Website, Images, Review, Stock or Orders
+- **THEN** the assessment distinguishes immutable assets and accepted content manifests from protected mutable representations and existing document-local query reuse
+- **AND** it records request triggers, saved and remaining work, identity isolation, mutation invalidation, errors and measurement limitations
+- **AND** Access checks, draft privacy, fresh action baselines and current refresh contracts remain unchanged
+- **AND** neither private shared caching nor a new TTL is authorized by the research request.

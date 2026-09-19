@@ -3,7 +3,8 @@ import { cf, finalize } from '@astrojs/cloudflare/fetch';
 import { productEnvironmentProfileFromBindings, type AppBindings } from '../env';
 import { authenticate } from './auth';
 import { isCmsCollection, validateCmsDraft, validateCmsRevisionContent } from '@blackbox/content-model';
-import { readStaffWorkspace } from './staff-workspace';
+import { readStaffWorkspace, type StaffSnapshotCache } from './staff-workspace';
+import { staffAssetResponse } from './staff-assets';
 import { readInventoryArtwork } from './inventory-artwork';
 import { prepareCatalogSchema } from './catalog-schema';
 import { createBindingLogger } from '../observability';
@@ -107,6 +108,7 @@ export default {
 // ponytail: one editorial site per object; split by site only if we host more sites.
 export class CmsRuntime extends DurableObject<CmsBindings> {
   private publicationTask: Promise<void> | undefined;
+  private staffSnapshotCache: StaffSnapshotCache = {};
 
   async alarm() {
     await this.processPublications();
@@ -423,6 +425,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             commerce: bindings.COMMERCE_DB,
             bucket: bindings.MEDIA,
             environment: productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
+            snapshotCache: this.staffSnapshotCache,
           }),
         );
       } catch {
@@ -566,9 +569,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     }
     if (!url.pathname.startsWith('/_emdash/') && ['GET', 'HEAD'].includes(request.method)) {
       const response = await bindings.ASSETS.fetch(request);
-      const headers = new Headers(response.headers);
-      headers.set('Cache-Control', 'private, no-store');
-      return new Response(response.body, { status: response.status, headers });
+      return staffAssetResponse(request, response);
     }
     // Staff uses the supported REST contract; alternate writers and setup remain unavailable.
     if (!isSupportedCmsApiRequest(request)) {

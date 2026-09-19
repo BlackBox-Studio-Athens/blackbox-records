@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change define-cloudflare-free-tier-cache-policy. Update Purpose after archive.
+Defines cache categories and freshness rules for the public site, commerce APIs, and protected staff surfaces while preserving authoritative state, privacy, and Cloudflare Free-tier limits.
 
 ## Requirements
 
@@ -14,7 +14,29 @@ The system SHALL classify cache behavior with canonical categories for Static As
 
 - **WHEN** a maintainer reviews cache behavior
 - **THEN** the source-of-truth cache policy identifies whether the behavior belongs to static CDN/browser caching, document revalidation, Worker API freshness, authoritative commerce state, or same-session shell caching
-- **AND** the policy does not describe CMS-level caching as part of this change.
+- **AND** the policy does not describe caching for mutable private CMS data as part of this change.
+
+### Requirement: Staff immutable reuse preserves fresh authorization and mutable state
+
+Staff caching MUST introduce no time-based freshness window. Successful hashed code/style/font assets MAY use private browser storage with mandatory revalidation and platform validators after authentication. Staff HTML, APIs, private media, errors and cookie-setting responses MUST remain no-store.
+
+#### Scenario: A browser revalidates a staff asset
+
+- **WHEN** a browser conditionally requests an eligible hashed asset
+- **THEN** authorization runs before any successful or not-modified response
+- **AND** denied access cannot reuse an earlier response without validation.
+
+#### Scenario: Workspace reads the same accepted manifest
+
+- **WHEN** the freshly read pointer selects the same environment, bucket and checksum as the CMS object's single retained verified manifest
+- **THEN** the workspace reuses the parsed manifest without another R2 manifest read
+- **AND** mutable drafts, publication status and commerce queries still run.
+
+#### Scenario: Publication changes or cannot be read
+
+- **WHEN** the current pointer changes, disappears or fails to read
+- **THEN** the workspace uses the newly verified manifest, no accepted manifest, or an explicit failure respectively
+- **AND** no old snapshot is substituted for an unreadable or invalid new publication.
 
 #### Scenario: New cacheable surface is proposed
 
