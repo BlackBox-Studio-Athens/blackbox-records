@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { changedPublicationFields, type PublicationReview } from '@blackbox/content-model';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
-import { contentSections, type ContentSection } from './ContentFields';
+import { contentSections, type ContentSection } from '../../lib/content-sections';
 
 const publicationFieldLabel = (key: string) =>
   ({

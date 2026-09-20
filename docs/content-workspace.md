@@ -30,6 +30,36 @@ Workspace reads check the accepted R2 pointer on every request. The CMS object r
 
 Protected hashed `/_astro/` scripts, styles and fonts with ETags use `private, no-cache, must-revalidate`. Browsers may retain their bytes but must revalidate after authentication before reuse; no freshness TTL or offline reuse is enabled. Staff HTML, APIs, private media, errors and cookie-setting responses remain `private, no-store`. The combined-artifact `test:staff-hosting` smoke checks conditional GET/HEAD and denied access. Rollback restores the asset no-store override and removes the object's manifest slot; no purge or new resource is needed.
 
+## Compact staff thumbnails
+
+EmDash remains the owner of original media. The CMS Worker owns only the private display derivative in the existing `MEDIA` R2 binding:
+
+- Original keys are flat native media filenames. Derivatives use `staff-thumbnails/v1/<original-storage-key>.png`.
+- The authenticated route is `/_emdash/api/blackbox/thumbnails/<encoded-original-storage-key>`. It serves private, no-store `image/png` responses at most 96 × 96 pixels and 40 KiB. It has no D1 record, CMS content field, KV binding or public URL.
+- Compact Content and Stock rows use this route. Full editor/media previews continue to use the native original route.
+- A missing or invalid derivative shows the existing fixed-size placeholder and does not retry or request the original. An upload keeps the native POST status/body; its validated optional thumbnail is stored only after the native write succeeds, and a derivative write failure does not undo the original upload.
+
+The bounded Local preparation commands are:
+
+```sh
+pnpm --filter @blackbox/backend exec node --import tsx scripts/prepare-staff-thumbnails.mjs --env local --limit 25
+pnpm --filter @blackbox/backend exec node --import tsx scripts/prepare-staff-thumbnails.mjs --env local --limit 25 --apply
+```
+
+The default is a dry run. `--limit` accepts 1–25, `--max-bytes` accepts 1–67,108,864 and defaults to 67,108,864, and `--cursor` resumes one opaque R2 list page. Every invocation performs one list page only. Hosted UAT/PRD preparation must use the same bounded commands with `--env uat|prd` plus `--hosted-budget-reviewed`; review the account-wide Free-tier worksheet before any hosted run. `--apply` adds at most 25 derivative PUTs. The script binds only `MEDIA`, never executes backups or SQL, compares each original ETag before reading, and retains the input cursor when a page is interrupted.
+
+### Preparation operation worksheet
+
+| Operation                  | Bounded Local/hosted estimate                                                                                                                                                                 |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R2 reads per page          | 1 LIST + at most 25 derivative HEADs + 25 original GETs; original reads are capped at 20 MiB each and 64 MiB cumulative by default                                                            |
+| R2 writes per applied page | At most 25 derivative PUTs; each derivative is at most 40 KiB                                                                                                                                 |
+| Derivative storage         | Existing `MEDIA` storage only; no new bucket, binding, D1 row, KV write or session                                                                                                            |
+| Backup overhead            | CMS media backups that include `MEDIA` must budget each retained derivative blob and its manifest/blob metadata in addition to existing originals; do not run a backup as part of preparation |
+| Hosted gate                | Current account-wide Free-tier usage, ordinary-service headroom, remote proxy/background overhead, and explicit one-run authorization are required before UAT/PRD                             |
+
+Rollback is a code change, not an original-media operation: restore the previous staff bundle/Worker route and compact rows return to their prior original-media behavior. Leave already-created `staff-thumbnails/v1/` objects untouched unless a separately authorized storage cleanup has an inventory and budget; never delete the native originals as rollback.
+
 The top status control opens recent history in a desktop Popover or mobile Sheet. A contextual Check status action recovers a failed or timed-out check. Pending requests poll every two seconds for the first minute, then every thirty seconds while visible, up to thirty minutes. Returning to the page checks immediately. Checks share one in-flight request. Accepted requests never imply the site is live.
 
 Publication review retains selected saved entries with their exact revisions and a browser-retained request ID. `Publish changes` journals that selection, prepares an immutable snapshot replacing only those entries, validates it through the public renderer, and atomically activates it. The API remains atomic for a maximum batch of twenty; failed operations retain their identity for recovery. New typing and unrelated drafts stay private. Existing staged selections are carried into review without publishing automatically. Images already in the accepted snapshot are reused. A Durable Object alarm resumes interrupted work. On the website means the accepted snapshot contains that entry's reviewed revision. No GitHub build or deployment runs for content publication. Shop publication remains an explicit, safety-gated Catalog action.

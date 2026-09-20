@@ -6,7 +6,7 @@ import { Skeleton } from '../ui/skeleton';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { checkPreviewAssets, PreviewAssetError, safePreviewAsset, type PreviewDiagnostic } from './preview-diagnostics';
 import { editorialWriteData } from '../../lib/backend/editorial-api';
-import type { ContentData, ContentSection } from './ContentFields';
+import type { ContentData, ContentSection } from '../../lib/content-sections';
 import type { PublicationReviewInput } from '@blackbox/content-model';
 
 export default function ContentPreview({

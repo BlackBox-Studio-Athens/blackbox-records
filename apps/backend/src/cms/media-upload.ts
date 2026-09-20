@@ -4,7 +4,19 @@ import { cmsNestedProblemResponse } from '../interfaces/http/responses';
 const maxImageBytes = 20 * 1024 * 1024;
 const maxThumbnailBytes = 1024 * 1024;
 
-export async function validateImage(file: File, limit = maxImageBytes) {
+type ValidatedImage = {
+  bytes: Uint8Array;
+  metadata: Awaited<ReturnType<typeof enrichImageMetadata>>;
+};
+
+export type ValidatedUploadThumbnail = {
+  bytes: Uint8Array;
+  contentType: string;
+  width: number;
+  height: number;
+};
+
+async function readValidatedImage(file: File, limit: number): Promise<ValidatedImage> {
   if (
     !file.size ||
     file.size > limit ||
@@ -37,10 +49,16 @@ export async function validateImage(file: File, limit = maxImageBytes) {
   });
   if (!metadata.width || !metadata.height || metadata.width * metadata.height > 100_000_000)
     throw new Error('INVALID_IMAGE');
-  return metadata;
+  return { bytes, metadata };
 }
 
-export async function validateImageUpload(request: Request): Promise<Response | null> {
+export async function validateImage(file: File, limit = maxImageBytes) {
+  return (await readValidatedImage(file, limit)).metadata;
+}
+
+export async function validateImageUpload(
+  request: Request,
+): Promise<Response | { thumbnail?: ValidatedUploadThumbnail }> {
   let size = 0;
   let cancellation: Promise<void> | undefined;
   try {
@@ -74,18 +92,25 @@ export async function validateImageUpload(request: Request): Promise<Response | 
       throw new Error('INVALID_IMAGE');
     const file = form.get('file');
     if (!(file instanceof File)) throw new Error('INVALID_IMAGE');
-    const dimensions = await validateImage(file, maxImageBytes);
+    const dimensions = await readValidatedImage(file, maxImageBytes);
+    let validatedThumbnail: ValidatedUploadThumbnail | undefined;
     const thumbnail = form.get('thumbnail');
     if (thumbnail !== null) {
       if (!(thumbnail instanceof File)) throw new Error('INVALID_IMAGE');
-      const preview = await validateImage(thumbnail, maxThumbnailBytes);
-      if (preview.width! * preview.height! > 1_000_000) throw new Error('INVALID_IMAGE');
+      const preview = await readValidatedImage(thumbnail, maxThumbnailBytes);
+      if (preview.metadata.width! * preview.metadata.height! > 1_000_000) throw new Error('INVALID_IMAGE');
+      validatedThumbnail = {
+        bytes: preview.bytes,
+        contentType: thumbnail.type,
+        width: preview.metadata.width!,
+        height: preview.metadata.height!,
+      };
     }
     for (const dimension of ['width', 'height'] as const) {
       const supplied = form.get(dimension);
-      if (supplied !== null && supplied !== String(dimensions[dimension])) throw new Error('INVALID_IMAGE');
+      if (supplied !== null && supplied !== String(dimensions.metadata[dimension])) throw new Error('INVALID_IMAGE');
     }
-    return null;
+    return { thumbnail: validatedThumbnail };
   } catch (error) {
     const code = error instanceof Error && error.message === 'UPLOAD_TOO_LARGE' ? 'UPLOAD_TOO_LARGE' : 'INVALID_IMAGE';
     return cmsNestedProblemResponse(code === 'UPLOAD_TOO_LARGE' ? 413 : 400, { code });

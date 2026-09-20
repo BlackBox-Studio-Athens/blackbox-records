@@ -1,9 +1,10 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cms, orders, fetchCommerce } = vi.hoisted(() => ({
+const { cms, orders, fetchCommerce, cmsAsset } = vi.hoisted(() => ({
   cms: vi.fn(),
   orders: vi.fn(),
   fetchCommerce: vi.fn(),
+  cmsAsset: vi.fn(),
 }));
 vi.mock('astro/fetch', () => ({ astro: vi.fn(), FetchState: vi.fn() }));
 vi.mock('cloudflare:workers', () => ({
@@ -14,7 +15,7 @@ vi.mock('cloudflare:workers', () => ({
     ) {}
   },
 }));
-vi.mock('@astrojs/cloudflare/fetch', () => ({ cf: vi.fn(), finalize: vi.fn() }));
+vi.mock('@astrojs/cloudflare/fetch', () => ({ cf: cmsAsset, finalize: vi.fn() }));
 vi.mock('emdash/middleware', () => ({ runScheduledTasks: cms }));
 vi.mock('../../src/index', () => ({ CommerceRuntime: class {}, default: { scheduled: orders, fetch: fetchCommerce } }));
 vi.mock('../../src/cms/auth', () => ({ authenticate: vi.fn().mockRejectedValue(new Error('Unauthorized')) }));
@@ -22,7 +23,16 @@ vi.mock('../../src/cms/auth', () => ({ authenticate: vi.fn().mockRejectedValue(n
 import worker, { CmsRuntime } from '../../src/cms';
 import { authenticate } from '../../src/cms/auth';
 
+const thumbnailBytes = Uint8Array.from(
+  Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64'),
+);
+
 describe('EmDash checkpoint composition', () => {
+  beforeEach(() => {
+    vi.mocked(authenticate).mockReset().mockRejectedValue(new Error('Unauthorized'));
+    cmsAsset.mockReset();
+  });
+
   it('rejects member token administration before storage and restricts owner tokens to export reads', async () => {
     const prepare = vi.fn();
     const runtime = new CmsRuntime(
@@ -45,7 +55,7 @@ describe('EmDash checkpoint composition', () => {
     expect(prepare).not.toHaveBeenCalled();
   });
 
-  it('serves staff assets only after authentication and never initializes an empty hosted CMS', async () => {
+  it('keeps static assets out of the CMS object and never initializes an empty hosted CMS', async () => {
     const assets = vi.fn().mockResolvedValue(new Response('staff'));
     const first = vi.fn().mockResolvedValue(null);
     const bindings = {
@@ -58,8 +68,9 @@ describe('EmDash checkpoint composition', () => {
     expect(assets).not.toHaveBeenCalled();
     vi.mocked(authenticate).mockResolvedValueOnce({ email: 'member@example.com', name: 'Member', role: 30 });
     const response = await runtime.fetch(new Request('https://staff.example/stock/'));
-    expect(await response.text()).toBe('staff');
-    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(response.status).toBe(404);
+    expect(await response.text()).toBe('Not found');
+    expect(assets).not.toHaveBeenCalled();
     expect(bindings.CMS_DB.prepare).not.toHaveBeenCalled();
     vi.mocked(authenticate).mockResolvedValueOnce({ email: 'member@example.com', name: 'Member', role: 30 });
     expect((await runtime.fetch(new Request('https://staff.example/_emdash/api/content/posts'))).status).toBe(503);
@@ -68,6 +79,228 @@ describe('EmDash checkpoint composition', () => {
     vi.mocked(authenticate).mockResolvedValueOnce({ email: 'member@example.com', name: 'Member', role: 30 });
     expect((await runtime.fetch(new Request('https://staff.example/_emdash/api/content/posts'))).status).toBe(503);
   });
+
+  it('routes authenticated staff static GET and HEAD requests directly to assets', async () => {
+    vi.mocked(authenticate).mockReset().mockResolvedValue({ email: 'member@example.com', name: 'Member', role: 30 });
+    const assets = vi.fn().mockResolvedValue(new Response('staff'));
+    const cms = vi.fn().mockResolvedValue(new Response('cms'));
+    const bindings = {
+      PRODUCT_ENVIRONMENT: 'LOCAL',
+      ASSETS: { fetch: assets },
+      CMS_DB: { prepare: vi.fn() },
+      CMS_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetch: cms }) },
+    } as unknown as Parameters<typeof worker.fetch>[1];
+
+    for (const method of ['GET', 'HEAD']) {
+      const request = new Request(`http://127.0.0.1/${method.toLowerCase()}.html`, { method });
+      const response = await worker.fetch(request, bindings, {} as ExecutionContext);
+      expect(response.status).toBe(200);
+      expect(assets).toHaveBeenCalledExactlyOnceWith(request);
+      expect(cms).not.toHaveBeenCalled();
+      expect(bindings.CMS_DB.prepare).not.toHaveBeenCalled();
+      assets.mockClear();
+    }
+    expect(authenticate).toHaveBeenCalledTimes(2);
+  });
+
+  it('denies static assets before the asset binding when identity verification fails', async () => {
+    const assets = vi.fn().mockResolvedValue(new Response('staff'));
+    const bindings = {
+      PRODUCT_ENVIRONMENT: 'LOCAL',
+      ASSETS: { fetch: assets },
+    } as unknown as Parameters<typeof worker.fetch>[1];
+
+    const response = await worker.fetch(new Request('http://127.0.0.1/stock/'), bindings, {} as ExecutionContext);
+    expect(response.status).toBe(403);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(assets).not.toHaveBeenCalled();
+  });
+
+  it('serves private thumbnails with one R2 read and rejects malformed or token-export access', async () => {
+    vi.mocked(authenticate).mockResolvedValue({ email: 'member@example.com', name: 'Member', role: 30 });
+    const object = {
+      body: {},
+      arrayBuffer: vi.fn().mockResolvedValue(thumbnailBytes.buffer),
+      size: thumbnailBytes.byteLength,
+      httpMetadata: { contentType: 'image/png' },
+      customMetadata: { version: '1', width: '1', height: '1' },
+    };
+    const get = vi.fn().mockResolvedValue(object);
+    const head = vi.fn().mockResolvedValue(object);
+    const media = { get, head };
+    const bindings = {
+      PRODUCT_ENVIRONMENT: 'LOCAL',
+      MEDIA: media,
+      ASSETS: { fetch: vi.fn() },
+      CMS_RUNTIME: { getByName: vi.fn() },
+    } as unknown as Parameters<typeof worker.fetch>[1];
+    const path = 'http://127.0.0.1/_emdash/api/blackbox/thumbnails/cover.png';
+
+    const response = await worker.fetch(new Request(path), bindings, {} as ExecutionContext);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('private, no-store');
+    expect(response.headers.get('content-type')).toContain('image/png');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(thumbnailBytes);
+    expect(get).toHaveBeenCalledExactlyOnceWith('staff-thumbnails/v1/cover.png.png');
+    expect(head).not.toHaveBeenCalled();
+
+    const headResponse = await worker.fetch(new Request(path, { method: 'HEAD' }), bindings, {} as ExecutionContext);
+    expect(headResponse.status).toBe(200);
+    expect((await headResponse.arrayBuffer()).byteLength).toBe(0);
+    expect(head).toHaveBeenCalledExactlyOnceWith('staff-thumbnails/v1/cover.png.png');
+
+    get.mockClear();
+    head.mockClear();
+    const malformed = await worker.fetch(
+      new Request('http://127.0.0.1/_emdash/api/blackbox/thumbnails/cover%2Fother.png'),
+      bindings,
+      {} as ExecutionContext,
+    );
+    expect(malformed.status).toBe(400);
+    expect(malformed.headers.get('cache-control')).toBe('private, no-store');
+    expect(get).not.toHaveBeenCalled();
+    expect(head).not.toHaveBeenCalled();
+
+    get.mockResolvedValueOnce(null);
+    const missing = await worker.fetch(new Request(path), bindings, {} as ExecutionContext);
+    expect(missing.status).toBe(404);
+    expect(missing.headers.get('cache-control')).toBe('private, no-store');
+    get.mockClear();
+    head.mockClear();
+
+    const token = await worker.fetch(
+      new Request(path, { headers: { Authorization: `Bearer ec_pat_${'a'.repeat(32)}` } }),
+      bindings,
+      {} as ExecutionContext,
+    );
+    expect(token.status).toBe(403);
+    expect(get).not.toHaveBeenCalled();
+    expect(head).not.toHaveBeenCalled();
+  });
+
+  it('keeps native media status and identity while storing only compatible post-upload derivatives', async () => {
+    vi.mocked(authenticate).mockResolvedValue({ email: 'member@example.com', name: 'Member', role: 30 });
+    const put = vi.fn().mockResolvedValue(undefined);
+    const storageKey = '01JABC1234567890ABCDEF.png';
+    const runtime = () =>
+      new CmsRuntime(
+        {} as DurableObjectState,
+        {
+          PRODUCT_ENVIRONMENT: 'LOCAL',
+          MEDIA: { put },
+          COMMERCE_DB: { prepare: vi.fn() },
+        } as unknown as ConstructorParameters<typeof CmsRuntime>[1],
+      );
+    const uploadRequest = (thumbnail = thumbnailBytes) => {
+      const form = new FormData();
+      form.set('file', new File([thumbnailBytes], 'cover.png', { type: 'image/png' }));
+      form.set('thumbnail', new File([thumbnail], 'thumbnail.png', { type: 'image/png' }));
+      return new Request('http://127.0.0.1/_emdash/api/media', {
+        method: 'POST',
+        headers: { Origin: 'http://127.0.0.1', 'X-EmDash-Request': '1' },
+        body: form,
+      });
+    };
+    const native = (status: 200 | 201) =>
+      Response.json({ success: true, data: { item: { id: 'media', storageKey } } }, { status });
+
+    cmsAsset.mockResolvedValueOnce(native(201)).mockResolvedValueOnce(native(200));
+    const first = await runtime().fetch(uploadRequest());
+    const second = await runtime().fetch(uploadRequest());
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(200);
+    expect(((await first.json()) as { data: { item: { storageKey: string } } }).data.item.storageKey).toBe(storageKey);
+    expect(((await second.json()) as { data: { item: { storageKey: string } } }).data.item.storageKey).toBe(storageKey);
+    expect(put).toHaveBeenCalledTimes(2);
+    expect(put.mock.calls[0][0]).toBe(`staff-thumbnails/v1/${storageKey}.png`);
+    expect(put.mock.calls[0][2]).toMatchObject({
+      httpMetadata: { contentType: 'image/png' },
+      customMetadata: { version: '1', width: '1', height: '1' },
+    });
+
+    put.mockClear();
+    cmsAsset.mockReset();
+    const rejected = await runtime().fetch(
+      new Request('http://127.0.0.1/_emdash/api/media', {
+        method: 'POST',
+        headers: { Origin: 'http://127.0.0.1', 'X-EmDash-Request': '1' },
+        body: (() => {
+          const form = new FormData();
+          form.set('file', new File(['not an image'], 'cover.png', { type: 'image/png' }));
+          return form;
+        })(),
+      }),
+    );
+    expect(rejected.status).toBe(400);
+    expect(cmsAsset).not.toHaveBeenCalled();
+    expect(put).not.toHaveBeenCalled();
+
+    const incompatible = new Uint8Array(thumbnailBytes);
+    incompatible[19] = 97;
+    cmsAsset.mockResolvedValueOnce(native(201));
+    const incompatibleResponse = await runtime().fetch(uploadRequest(incompatible));
+    expect(incompatibleResponse.status).toBe(201);
+    expect(put).not.toHaveBeenCalled();
+
+    put.mockRejectedValueOnce(new Error('MEDIA unavailable'));
+    cmsAsset.mockResolvedValueOnce(native(201));
+    const derivativeFailure = await runtime().fetch(uploadRequest());
+    expect(derivativeFailure.status).toBe(201);
+    expect(((await derivativeFailure.json()) as { data: { item: { storageKey: string } } }).data.item.storageKey).toBe(
+      storageKey,
+    );
+  });
+
+  it('keeps public, internal, workflow, export, and unsupported requests on their existing destinations', async () => {
+    vi.mocked(authenticate).mockReset().mockResolvedValue({ email: 'member@example.com', name: 'Member', role: 30 });
+    const commerce = vi.fn().mockResolvedValue(new Response('commerce'));
+    const cms = vi.fn().mockResolvedValue(new Response('cms'));
+    const assets = vi.fn().mockResolvedValue(new Response('assets'));
+    const bindings = {
+      PRODUCT_ENVIRONMENT: 'LOCAL',
+      ASSETS: { fetch: assets },
+      COMMERCE_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetch: commerce }) },
+      CMS_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetch: cms }) },
+    } as unknown as Parameters<typeof worker.fetch>[1];
+
+    expect(
+      (await worker.fetch(new Request('http://127.0.0.1/api/store/capabilities'), bindings, {} as ExecutionContext))
+        .status,
+    ).toBe(200);
+    expect(
+      (await worker.fetch(new Request('http://127.0.0.1/api/internal/variants'), bindings, {} as ExecutionContext))
+        .status,
+    ).toBe(200);
+    expect(
+      (
+        await worker.fetch(
+          new Request('http://127.0.0.1/_emdash/api/blackbox/publications/run', { method: 'POST' }),
+          bindings,
+          {} as ExecutionContext,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (
+        await worker.fetch(
+          new Request('http://127.0.0.1/_emdash/api/media/file/cover.jpg', {
+            headers: { Authorization: `Bearer ec_pat_${'a'.repeat(32)}` },
+          }),
+          bindings,
+          {} as ExecutionContext,
+        )
+      ).status,
+    ).toBe(200);
+    expect(
+      (await worker.fetch(new Request('http://127.0.0.1/stock/', { method: 'POST' }), bindings, {} as ExecutionContext))
+        .status,
+    ).toBe(200);
+    expect(commerce).toHaveBeenCalledTimes(2);
+    expect(cms).toHaveBeenCalledTimes(3);
+    expect(assets).not.toHaveBeenCalled();
+  });
+
   it('routes checkout to commerce without invoking the CMS or consuming its CPU allowance', async () => {
     const request = new Request('https://shop.example/api/checkout/sessions', { method: 'POST', body: '{}' });
     const fetch = vi.fn().mockResolvedValue(new Response('checkout', { status: 200 }));

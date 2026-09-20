@@ -36,13 +36,39 @@ export type EditorialMedia = {
 };
 export type EditorialList<T> = { items: T[]; nextCursor?: string };
 
+const staffThumbnailOriginalKeyPattern = /^[A-Za-z0-9][A-Za-z0-9_-]{0,159}\.(?:png|jpe?g|webp)$/i;
+const nativeMediaPath = '/_emdash/api/media/file/';
+
 export function editorialMediaUrl(item: EditorialMedia, origin: string): string {
   const storageKey = item.storageKey ?? item.meta?.storageKey;
-  const path = item.url ?? (storageKey ? `/_emdash/api/media/file/${encodeURIComponent(storageKey)}` : '');
+  const path = item.url ?? (storageKey ? `${nativeMediaPath}${encodeURIComponent(storageKey)}` : '');
   if (!path) return '';
   try {
     const url = new URL(path, origin);
-    return url.origin === new URL(origin).origin && url.pathname.startsWith('/_emdash/api/media/file/') ? url.href : '';
+    return url.origin === new URL(origin).origin && url.pathname.startsWith(nativeMediaPath) ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+export function staffThumbnailUrl(item: EditorialMedia, origin: string): string {
+  const candidates = [item.storageKey, item.meta?.storageKey];
+  const original = editorialMediaUrl(item, origin);
+  if (original) {
+    try {
+      const url = new URL(original);
+      if (!url.search && !url.hash) candidates.push(url.pathname.slice(nativeMediaPath.length));
+    } catch {
+      // Keep the empty fallback below.
+    }
+  }
+  const storageKey = candidates.find(
+    (candidate): candidate is string => !!candidate && staffThumbnailOriginalKeyPattern.test(candidate),
+  );
+  if (!storageKey) return '';
+  try {
+    const base = new URL(origin).origin;
+    return `${base}/_emdash/api/blackbox/thumbnails/${encodeURIComponent(storageKey)}`;
   } catch {
     return '';
   }
@@ -136,7 +162,7 @@ export async function uploadArtwork(base: string, file: File): Promise<Editorial
   const bitmap = await createImageBitmap(file);
   try {
     const canvas = document.createElement('canvas');
-    const scale = Math.min(1, 64 / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(1, 96 / Math.max(bitmap.width, bitmap.height));
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     const context = canvas.getContext('2d');
@@ -146,7 +172,7 @@ export async function uploadArtwork(base: string, file: File): Promise<Editorial
     if (!thumbnail) throw new Error('We could not prepare this image. Choose another file.');
     const form = new FormData();
     form.set('file', file);
-    form.set('thumbnail', thumbnail, 'thumbnail.png');
+    if (thumbnail.size <= 40 * 1024) form.set('thumbnail', thumbnail, 'thumbnail.png');
     const result = await editorialRequest<{ item: EditorialMedia }>(base, 'media', form);
     return result.item;
   } finally {

@@ -10,7 +10,7 @@ import {
   type EditorialRecord,
 } from '../../lib/backend/editorial-api';
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
-import { contentSections, type ContentSection } from './ContentFields';
+import { contentSections, type ContentSection } from '../../lib/content-sections';
 import { getContentValidation } from './content-validation';
 import {
   readSelection,

@@ -19,7 +19,7 @@ import {
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 import { cn } from '../../lib/utils';
 import FormatFilter, { formatLabel } from '../items/FormatFilter';
-import { editorialRequest, editorialMediaUrl, type EditorialMedia } from '../../lib/backend/editorial-api';
+import { editorialRequest, staffThumbnailUrl, type EditorialMedia } from '../../lib/backend/editorial-api';
 import {
   recordProgress,
   stocktakeKey,
@@ -154,7 +154,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                 result.items.map((item) => [
                   item.variantId,
                   item.image
-                    ? editorialMediaUrl(item.image, new URL(backendBaseUrl || window.location.origin).origin)
+                    ? staffThumbnailUrl(item.image, new URL(backendBaseUrl || window.location.origin).origin)
                     : '',
                 ]),
               ),
@@ -706,7 +706,21 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
             >
               <span className="inventory-identity">
                 {artwork[variant.variantId] ? (
-                  <img src={artwork[variant.variantId]} width="48" height="48" alt="" loading="lazy" />
+                  <img
+                    src={artwork[variant.variantId]}
+                    width="48"
+                    height="48"
+                    alt={variant.displayName ?? variant.storeItemSlug.replaceAll('-', ' ')}
+                    loading="lazy"
+                    onError={() =>
+                      setArtwork((current) => {
+                        if (!current[variant.variantId]) return current;
+                        const next = { ...current };
+                        delete next[variant.variantId];
+                        return next;
+                      })
+                    }
+                  />
                 ) : (
                   <Disc3 aria-hidden="true" className="inventory-artwork-placeholder" />
                 )}

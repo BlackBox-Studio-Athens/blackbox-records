@@ -6,7 +6,7 @@ import { Tabs } from 'radix-ui';
 import { Skeleton } from '../ui/skeleton';
 import ContentPreview from './ContentPreview';
 import PublicationComparison from './PublicationComparison';
-import { type ContentSection } from './ContentFields';
+import { type ContentSection } from '../../lib/content-sections';
 import { usePublicationPolling } from './PublicationStatus';
 import {
   readPublicationReview,

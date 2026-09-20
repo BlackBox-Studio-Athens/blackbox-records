@@ -3,7 +3,7 @@ import { AlertCircle, CheckCircle2, Clock3, History, RefreshCw } from 'lucide-re
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import type { ContentPublication } from '../../lib/backend/content-publication-api';
-import { requestPublicationHistory } from './PublicationHistory';
+import { requestPublicationHistory } from '../../lib/publication-history-events';
 
 type PublicationStatusView = 'pending' | 'failed' | 'live' | 'unavailable' | 'empty';
 

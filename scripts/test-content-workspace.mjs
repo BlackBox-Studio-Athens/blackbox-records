@@ -10,6 +10,7 @@ import { previewPolicy } from '../apps/backend/src/cms/preview-policy.ts';
 
 const root = resolve('apps/staff/dist');
 const browserType = process.argv.includes('--firefox') ? firefox : chromium;
+const contractViolation = process.argv.includes('--violate-original-artwork');
 const expectedWebsiteUrl =
   {
     uat: 'https://blackbox-records-web-uat.pages.dev/',
@@ -186,6 +187,13 @@ const state = {
   detailDelay: 0,
   searchFailure: false,
   historyFailure: false,
+  overviewDraftDelay: 0,
+  overviewPublicationDelay: 0,
+  overviewOrdersDelay: 0,
+  overviewDraftFailure: false,
+  overviewPublicationFailure: false,
+  overviewOrdersFailure: false,
+  compactProbe: null,
   requests: [],
 };
 const publications = [];
@@ -215,13 +223,17 @@ const server = createServer(async (req, res) => {
         if (typeof body?.[key] === 'boolean') state[key] = body[key];
       for (const key of ['searchDelay', 'historyDelay', 'detailDelay'])
         if (typeof body?.[key] === 'number') state[key] = Math.min(10_000, Math.max(0, body[key]));
+      for (const key of ['overviewDraftDelay', 'overviewPublicationDelay', 'overviewOrdersDelay'])
+        if (typeof body?.[key] === 'number') state[key] = Math.min(10_000, Math.max(0, body[key]));
+      for (const key of ['overviewDraftFailure', 'overviewPublicationFailure', 'overviewOrdersFailure'])
+        if (typeof body?.[key] === 'boolean') state[key] = body[key];
       return ok({
         saveCount: state.saveCount,
         previewRequests: state.previewRequests.length,
         requests: state.requests,
       });
     }
-    state.requests.push({ path: url.pathname, at: Date.now() });
+    state.requests.push({ path: url.pathname, method: req.method, at: Date.now() });
     if (url.pathname === '/preview-test.css') {
       if (state.previewStyleFailure) return fail(503);
       res.writeHead(200, { 'Content-Type': 'text/css', 'Cache-Control': 'no-store' });
@@ -239,6 +251,9 @@ const server = createServer(async (req, res) => {
       return res.end(pixels);
     }
     if (url.pathname === '/_emdash/api/blackbox/workspace') {
+      if (!url.search && state.overviewDraftDelay)
+        await new Promise((resolve) => setTimeout(resolve, state.overviewDraftDelay));
+      if (!url.search && state.overviewDraftFailure) return fail(503);
       const collection = url.searchParams.get('collection');
       const id = url.searchParams.get('id');
       const q = (url.searchParams.get('q') ?? '').toLowerCase();
@@ -292,6 +307,10 @@ const server = createServer(async (req, res) => {
       });
     }
     if (url.pathname === '/api/internal/orders/search') {
+      if (url.searchParams.get('status') === 'needs_review' && url.searchParams.get('limit') === '1') {
+        await new Promise((resolve) => setTimeout(resolve, state.overviewOrdersDelay));
+        if (state.overviewOrdersFailure) return fail(503);
+      }
       if (state.orderDenied) return json({ error: 'Unauthorized', code: 'unauthorized' }, 403);
       const q = (url.searchParams.get('q') ?? '').toLowerCase();
       const rows = fixtureOrders.filter((order) =>
@@ -310,7 +329,17 @@ const server = createServer(async (req, res) => {
       return json(fixtureOrders.find((order) => order.checkoutSessionId === url.pathname.split('/').at(-1)));
     }
     if (url.pathname === '/_emdash/api/blackbox/inventory-artwork') {
-      return ok({ items: JSON.parse(url.searchParams.get('items') ?? '[]').map((item) => ({ ...item, image: null })) });
+      return ok({
+        items: JSON.parse(url.searchParams.get('items') ?? '[]').map((item) => ({
+          ...item,
+          image: {
+            id: `artwork-${item.variantId}`,
+            filename: `${item.variantId}.jpg`,
+            storageKey: item.variantId === 'first' ? 'missing.jpg' : `${item.variantId}.jpg`,
+            alt: `${item.variantId} artwork`,
+          },
+        })),
+      });
     }
     if (url.pathname === '/api/internal/inventory' || url.pathname === '/api/internal/variants') {
       await state.initialStockReads;
@@ -438,6 +467,7 @@ const server = createServer(async (req, res) => {
       });
     }
     if (url.pathname === '/_emdash/api/blackbox/publications/history') {
+      if (state.historyFailure) return fail(503);
       const collection = url.searchParams.get('collection'),
         id = url.searchParams.get('recordId');
       return json({
@@ -453,6 +483,10 @@ const server = createServer(async (req, res) => {
       return json(publication);
     }
     if (['/_emdash/api/blackbox/publications', '/_emdash/api/blackbox/content-publications'].includes(url.pathname)) {
+      if (!body) {
+        await new Promise((resolve) => setTimeout(resolve, state.overviewPublicationDelay));
+        if (state.overviewPublicationFailure) return fail(503);
+      }
       if (body) {
         assert.equal(url.pathname, '/_emdash/api/blackbox/content-publications');
         for (const record of body.records ?? [body]) {
@@ -484,9 +518,26 @@ const server = createServer(async (req, res) => {
       return json({ items: publications });
     }
     if (url.pathname.startsWith('/_emdash/api/media/file/')) {
+      if (state.compactProbe) state.compactProbe.originalRequests++;
+      if (contractViolation && state.compactProbe) return fail(404);
       const key = url.pathname.split('/').at(-1);
       res.writeHead(200, { 'Content-Type': key.endsWith('.jpg') ? 'image/jpeg' : 'image/png' });
       return res.end(images[key] ? await readFile(resolve('apps/web/src/content', images[key])) : pixels);
+    }
+    if (url.pathname.startsWith('/_emdash/api/blackbox/thumbnails/')) {
+      const key = decodeURIComponent(url.pathname.slice('/_emdash/api/blackbox/thumbnails/'.length));
+      if (state.compactProbe) {
+        state.compactProbe.thumbnailRequests++;
+        state.compactProbe.byKey[key] = (state.compactProbe.byKey[key] ?? 0) + 1;
+      }
+      if (contractViolation && state.compactProbe) {
+        res.writeHead(302, { Location: `/_emdash/api/media/file/${encodeURIComponent(key)}` });
+        return res.end();
+      }
+      if (key === 'missing.jpg') return fail(404);
+      if (state.compactProbe) state.compactProbe.thumbnailBytes += pixels.byteLength;
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'private, no-store' });
+      return res.end(pixels);
     }
     if (url.pathname === '/_emdash/api/media') {
       if (req.method === 'POST') {
@@ -571,6 +622,107 @@ await new Promise((resolve) => server.listen(process.argv.includes('--serve') ? 
 const origin = `http://127.0.0.1:${server.address().port}`;
 if (process.argv.includes('--serve')) console.log(`Local CMS fixtures: ${origin}/content/`);
 else {
+  const optionalChunk = /\/_astro\/(?:PublicationHistory|ContentBodyEditor)[^/]*\.(?:js|css)$/;
+  async function assertClosedOptionalFeatures(browser) {
+    for (const [label, path, ready] of [
+      ['Overview', '/', (probe) => probe.getByRole('heading', { name: 'Overview', exact: true }).waitFor()],
+      ['Stock', '/stock/', (probe) => probe.locator('.inventory-row').first().waitFor()],
+      ['Orders', '/orders/', (probe) => probe.getByText('Test customer 0', { exact: true }).waitFor()],
+    ]) {
+      const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+      const probe = await context.newPage();
+      const requests = [];
+      probe.on('request', (request) => requests.push(new URL(request.url()).pathname));
+      try {
+        await probe.goto(`${origin}${path}`);
+        await ready(probe);
+        assert.deepEqual(
+          requests.filter((requestPath) => optionalChunk.test(requestPath)),
+          [],
+          `${label} must not request closed history/editor chunks`,
+        );
+      } finally {
+        await context.close();
+      }
+    }
+  }
+
+  async function assertOptionalFeatures(browser) {
+    const historyContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const historyPage = await historyContext.newPage();
+    const historyRequests = [];
+    historyPage.on('request', (request) => historyRequests.push(new URL(request.url()).pathname));
+    try {
+      await historyPage.goto(`${origin}/`);
+      const trigger = historyPage.getByRole('button', { name: 'Publication history', exact: true });
+      await trigger.click();
+      await historyPage.getByRole('heading', { name: 'Publication history', exact: true }).waitFor();
+      assert.ok(
+        historyRequests.some((requestPath) => /\/PublicationHistory[^/]*\.js$/.test(requestPath)),
+        'Opening history must load the history chunk',
+      );
+      await historyPage.getByRole('button', { name: 'Close', exact: true }).click();
+      await historyPage.waitForFunction(() => document.activeElement?.textContent?.includes('Publication history'));
+      assert.equal(await trigger.evaluate((element) => element === document.activeElement), true);
+
+      state.historyFailure = true;
+      await trigger.click();
+      await historyPage.getByRole('alert').waitFor();
+      state.historyFailure = false;
+      await historyPage.getByRole('button', { name: 'Retry history', exact: true }).click();
+      await historyPage.getByText('No publications recorded.', { exact: true }).waitFor();
+    } finally {
+      state.historyFailure = false;
+      await historyContext.close();
+    }
+
+    const editorContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const editorPage = await editorContext.newPage();
+    const editorRequests = [];
+    editorPage.on('request', (request) => editorRequests.push(new URL(request.url()).pathname));
+    try {
+      await editorPage.goto(`${origin}/content/?collection=artists&id=artists-1`);
+      await editorPage.getByLabel('Artist name', { exact: true }).waitFor();
+      assert.ok(
+        editorRequests.some((requestPath) => /\/ContentBodyEditor[^/]*\.js$/.test(requestPath)),
+        'Opening an editor must load the editor chunk',
+      );
+      assert.ok(
+        editorRequests.some((requestPath) => /\/ContentBodyEditor[^/]*\.css$/.test(requestPath)),
+        'Opening an editor must load editor CSS',
+      );
+    } finally {
+      await editorContext.close();
+    }
+  }
+
+  async function assertOverviewPanels(browser) {
+    state.overviewOrdersDelay = 3000;
+    const delayedContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const delayedPage = await delayedContext.newPage();
+    try {
+      await delayedPage.goto(`${origin}/`);
+      await delayedPage.getByRole('link', { name: /Ouranopithecus/ }).waitFor({ timeout: 1500 });
+      assert.equal(await delayedPage.getByText('Loading recent work…', { exact: true }).count(), 0);
+    } finally {
+      await delayedContext.close();
+    }
+
+    state.overviewOrdersDelay = 0;
+    state.overviewOrdersFailure = true;
+    const failedContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const failedPage = await failedContext.newPage();
+    try {
+      await failedPage.goto(`${origin}/`);
+      await failedPage.getByRole('link', { name: /Ouranopithecus/ }).waitFor();
+      await failedPage.getByRole('alert').filter({ hasText: 'Orders could not be read.' }).waitFor();
+      assert.equal(await failedPage.getByRole('link', { name: /Ouranopithecus/ }).count(), 1);
+    } finally {
+      state.overviewOrdersFailure = false;
+      await failedContext.close();
+    }
+  }
+
   const browser = await browserType.launch({ headless: true });
   const initialStockReads = Promise.withResolvers();
   state.initialStockReads = initialStockReads.promise;
@@ -581,6 +733,9 @@ else {
     if (process.env.BLACKBOX_VALIDATION_TRACE === '1')
       await page.context().tracing.start({ screenshots: true, snapshots: true, sources: true });
     initialStockReads.resolve();
+    await assertClosedOptionalFeatures(browser);
+    await assertOptionalFeatures(browser);
+    await assertOverviewPanels(browser);
     await page.goto(`${origin}/content/?collection=releases`);
     await page.getByRole('button', { name: 'Hide navigation', exact: true }).waitFor();
     const topNavigation = page.locator('.staff-top-navigation');
@@ -597,9 +752,40 @@ else {
       ['Catalog', '/content/?collection=releases'],
       ['Overview', '/'],
     ]) {
+      if (name === 'Stock')
+        state.compactProbe = { originalRequests: 0, thumbnailRequests: 0, thumbnailBytes: 0, byKey: {} };
       await topNavigation.getByRole('link', { name, exact: true }).click();
       await page.waitForURL(`${origin}${path}`);
       await topNavigation.locator(`a[aria-current="page"]`).filter({ hasText: name }).waitFor();
+      if (name === 'Stock') {
+        await page.locator('.inventory-row').first().waitFor();
+        assert.equal(await page.locator('.inventory-row').count(), 25);
+        for (const row of await page.locator('.inventory-row').all()) await row.scrollIntoViewIfNeeded();
+        await page.waitForFunction(
+          () =>
+            document.querySelectorAll('.inventory-row img, .inventory-row .inventory-artwork-placeholder').length ===
+            25,
+        );
+        await page.locator('#inventory-first .inventory-artwork-placeholder').waitFor();
+        await page.waitForTimeout(250);
+        assert.equal(state.compactProbe.originalRequests, 0, 'Compact stock rows must not request original media');
+        assert.equal(state.compactProbe.thumbnailRequests, 25, 'Each compact stock row must request one thumbnail');
+        assert.ok(state.compactProbe.thumbnailBytes <= 1024 * 1024, 'Compact thumbnails must stay under 1 MiB');
+        const missingReads = state.compactProbe.byKey['missing.jpg'];
+        assert.equal(missingReads, 1, 'Missing artwork should make one thumbnail request');
+        await page.waitForTimeout(250);
+        assert.equal(state.compactProbe.byKey['missing.jpg'], missingReads, 'Missing artwork must not retry');
+        console.log(
+          'Compact artwork contract probe:',
+          JSON.stringify({
+            originalRequests: state.compactProbe.originalRequests,
+            thumbnailRequests: state.compactProbe.thumbnailRequests,
+            thumbnailBytes: state.compactProbe.thumbnailBytes,
+            missingReads,
+          }),
+        );
+        state.compactProbe = null;
+      }
       assert.equal(
         await page.locator('.staff-context-navigation').count(),
         ['Catalog', 'Website'].includes(name) ? 1 : 0,

@@ -8,19 +8,9 @@ import {
   publicationStage,
   type ContentPublication,
 } from '../../lib/backend/content-publication-api';
-import { contentSections, type ContentSection } from './ContentFields';
-
-export type PublicationHistoryFilter = {
-  collection?: string;
-  recordId?: string;
-};
-
-export const publicationHistoryEvent = 'staff:open-publication-history';
-
-export function requestPublicationHistory(filter: PublicationHistoryFilter = {}) {
-  if (typeof window !== 'undefined')
-    window.dispatchEvent(new CustomEvent<PublicationHistoryFilter>(publicationHistoryEvent, { detail: filter }));
-}
+import { contentSections, type ContentSection } from '../../lib/content-sections';
+export { publicationHistoryEvent, requestPublicationHistory } from '../../lib/publication-history-events';
+export type { PublicationHistoryFilter } from '../../lib/publication-history-events';
 
 export function publicationHistoryTitle(item: ContentPublication) {
   const entries = item.entries ?? [];

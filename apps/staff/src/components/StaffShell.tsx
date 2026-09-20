@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowUpRight,
   Boxes,
@@ -18,10 +18,9 @@ import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { getInternalStockApiBaseUrl } from '../lib/backend/internal-stock-api';
-import PublicationHistory, {
-  publicationHistoryEvent,
-  type PublicationHistoryFilter,
-} from './content/PublicationHistory';
+import { publicationHistoryEvent, type PublicationHistoryFilter } from '../lib/publication-history-events';
+
+const PublicationHistory = lazy(() => import('./content/PublicationHistory'));
 
 const areas = [
   { label: 'Overview', href: '/', icon: House, color: 'overview', links: [] },
@@ -298,13 +297,17 @@ export default function StaffShell({
           </main>
         </div>
       </div>
-      <PublicationHistory
-        base={base}
-        collection={historyFilter.collection}
-        recordId={historyFilter.recordId}
-        open={historyOpen}
-        onOpenChange={closeHistory}
-      />
+      {historyOpen && (
+        <Suspense fallback={<p role="status">Loading history…</p>}>
+          <PublicationHistory
+            base={base}
+            collection={historyFilter.collection}
+            recordId={historyFilter.recordId}
+            open={historyOpen}
+            onOpenChange={closeHistory}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

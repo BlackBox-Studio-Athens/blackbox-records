@@ -44,23 +44,24 @@ import {
 } from '../ui/alert-dialog';
 
 import MediaLibrary from './MediaLibrary';
-import ContentFields, {
+import ContentFields from './ContentFields';
+import {
   contentSections,
   singletonContentSections,
   type ContentSection,
   type ContentData,
-} from './ContentFields';
+} from '../../lib/content-sections';
 import ContentPreview from './ContentPreview';
 
 import PublicationReviewFlow from './PublicationReviewFlow';
-import { requestPublicationHistory } from './PublicationHistory';
+import { requestPublicationHistory } from '../../lib/publication-history-events';
 import PublicationStatus from './PublicationStatus';
 import { getContentValidation, type ContentValidation } from './content-validation';
 import { readContentPublications, type ContentPublication } from '../../lib/backend/content-publication-api';
 import {
   EditorialApiError,
   editorialRequest,
-  editorialMediaUrl,
+  staffThumbnailUrl,
   editorialSlug,
   editorialWriteData,
   type EditorialList,
@@ -90,6 +91,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const pageCursor = useRef('');
   const browseKey = useRef('');
   const [media, setMedia] = useState(false);
+  const [failedArtwork, setFailedArtwork] = useState<Record<string, string>>({});
   const [mobileEditor, setMobileEditor] = useState(false);
   const [confirmTrash, setConfirmTrash] = useState(false);
   const reloadFocus = useRef<HTMLElement | null>(null);
@@ -888,15 +890,23 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                           >
                             {(() => {
                               const artwork = item.data.cover_image ?? item.data.image;
-                              const src =
+                              const mediaItem =
                                 artwork && typeof artwork === 'object'
-                                  ? editorialMediaUrl(
-                                      artwork as Parameters<typeof editorialMediaUrl>[0],
-                                      new URL(base || window.location.origin).origin,
-                                    )
-                                  : '';
-                              return src ? (
-                                <img src={src} alt="" className="size-12 shrink-0 object-cover" loading="lazy" />
+                                  ? (artwork as Parameters<typeof staffThumbnailUrl>[0])
+                                  : null;
+                              const src = mediaItem
+                                ? staffThumbnailUrl(mediaItem, new URL(base || window.location.origin).origin)
+                                : '';
+                              return src && failedArtwork[item.id] !== src ? (
+                                <img
+                                  src={src}
+                                  alt={mediaItem?.alt ?? ''}
+                                  className="size-12 shrink-0 object-cover"
+                                  width="48"
+                                  height="48"
+                                  loading="lazy"
+                                  onError={() => setFailedArtwork((current) => ({ ...current, [item.id]: src }))}
+                                />
                               ) : (
                                 <FileText className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                               );

@@ -5,6 +5,7 @@ import {
   editorialRequest,
   editorialSlug,
   editorialWriteData,
+  staffThumbnailUrl,
   uploadArtwork,
 } from './editorial-api';
 
@@ -27,6 +28,51 @@ it('resolves native media detail and list responses without loading foreign or p
   expect(editorialMediaUrl({ ...media, url: '/_emdash/api/media/file/stored.png' }, origin)).toBe(expected);
   expect(editorialMediaUrl({ ...media, url: 'https://foreign.invalid/image.png' }, origin)).toBe('');
   expect(editorialMediaUrl({ ...media, url: '/_emdash/api/media/file/../backup' }, origin)).toBe('');
+});
+
+it('builds private thumbnails only from approved native media identities', () => {
+  const origin = 'http://127.0.0.1:8799';
+  const media = { id: 'image', filename: 'cover.png', alt: null, storageKey: 'stored.png' };
+  const { storageKey: _storageKey, ...mediaWithoutKey } = media;
+  expect(staffThumbnailUrl(media, origin)).toBe(`${origin}/_emdash/api/blackbox/thumbnails/stored.png`);
+  expect(staffThumbnailUrl({ ...mediaWithoutKey, meta: { storageKey: 'stored-2.webp' } }, origin)).toBe(
+    `${origin}/_emdash/api/blackbox/thumbnails/stored-2.webp`,
+  );
+  expect(staffThumbnailUrl({ ...mediaWithoutKey, url: '/_emdash/api/media/file/stored-3.jpg' }, origin)).toBe(
+    `${origin}/_emdash/api/blackbox/thumbnails/stored-3.jpg`,
+  );
+  expect(staffThumbnailUrl({ ...media, storageKey: 'private/stored.png' }, origin)).toBe('');
+  expect(staffThumbnailUrl({ ...mediaWithoutKey, url: 'https://foreign.invalid/file.png' }, origin)).toBe('');
+  expect(staffThumbnailUrl({ ...mediaWithoutKey, url: '/_emdash/api/media/file/stored.png?x=1' }, origin)).toBe('');
+});
+
+it('uploads a PNG thumbnail capped at 96 pixels and 40 KiB', async () => {
+  const bitmap = { width: 200, height: 100, close: vi.fn() };
+  const context = { drawImage: vi.fn() };
+  const canvas = {
+    width: 0,
+    height: 0,
+    getContext: vi.fn(() => context),
+    toBlob: vi.fn((callback: BlobCallback) => callback(new Blob(['png'], { type: 'image/png' }))),
+  } as unknown as HTMLCanvasElement;
+  const fetch = vi.fn(async (_url: string, init: RequestInit) => {
+    const form = init.body as FormData;
+    const thumbnail = form.get('thumbnail');
+    expect(thumbnail).toBeInstanceOf(File);
+    expect((thumbnail as File).type).toBe('image/png');
+    expect((thumbnail as File).size).toBeLessThanOrEqual(40 * 1024);
+    expect(canvas.width).toBe(96);
+    expect(canvas.height).toBe(48);
+    return new Response(JSON.stringify({ success: true, data: { item: { id: 'image' } } }), { status: 201 });
+  });
+  vi.stubGlobal(
+    'createImageBitmap',
+    vi.fn(async () => bitmap),
+  );
+  vi.stubGlobal('document', { createElement: vi.fn(() => canvas) });
+  vi.stubGlobal('fetch', fetch);
+  await uploadArtwork('', new File(['original'], 'cover.jpg', { type: 'image/jpeg' }));
+  expect(bitmap.close).toHaveBeenCalledOnce();
 });
 
 it('keeps native media identities and rich text while removing read-only image delivery metadata', () => {

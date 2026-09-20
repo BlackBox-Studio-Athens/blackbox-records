@@ -36,6 +36,13 @@ import {
   selectedPublicationSchema,
 } from './runtime-publication';
 import { handleItemArtwork, itemArtworkPath, publishedMediaPath, servePublishedMedia } from './item-artwork';
+import type { ValidatedUploadThumbnail } from './media-upload';
+import {
+  createStaffThumbnailCandidate,
+  serveStaffThumbnail,
+  staffThumbnailPutOptions,
+  staffThumbnailRoutePrefix,
+} from './staff-thumbnails';
 import { reconcileItemPublications, guardItemLifecycle, readPublicationCatalog } from './item-publication-recovery';
 import {
   cmsNestedProblemResponse,
@@ -96,6 +103,30 @@ export default {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
     if (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/internal/')) {
       return bindings.COMMERCE_RUNTIME.getByName('store').fetch(request);
+    }
+    if (url.pathname.startsWith(staffThumbnailRoutePrefix)) {
+      try {
+        const identity = await authenticate(request);
+        if (identity.role < 30) throw new Error('Unauthorized');
+      } catch {
+        return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
+      }
+      return serveStaffThumbnail(request, bindings.MEDIA);
+    }
+    const staffStaticRequest =
+      ['GET', 'HEAD'].includes(request.method) &&
+      !url.pathname.startsWith('/_emdash/') &&
+      !url.pathname.startsWith('/api/') &&
+      !publicationWorkflowPaths.has(url.pathname) &&
+      !isCmsTokenExportRead(request);
+    if (staffStaticRequest) {
+      try {
+        await authenticate(request);
+      } catch {
+        return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
+      }
+      const response = await bindings.ASSETS.fetch(request);
+      return staffAssetResponse(request, response);
     }
     try {
       // Staff and workflow credentials are verified inside the CMS object before private responses.
@@ -651,10 +682,6 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           })
         : handlePublicationRequest(request, context);
     }
-    if (!url.pathname.startsWith('/_emdash/') && ['GET', 'HEAD'].includes(request.method)) {
-      const response = await bindings.ASSETS.fetch(request);
-      return staffAssetResponse(request, response);
-    }
     // Staff uses the supported REST contract; alternate writers and setup remain unavailable.
     if (!isSupportedCmsApiRequest(request)) {
       await request.body?.pipeTo(new WritableStream());
@@ -680,6 +707,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     if (!(await this.isInitialized())) {
       return cmsNestedProblemResponse(503, { code: 'CMS_NOT_INITIALIZED' });
     }
+    let validatedThumbnail: ValidatedUploadThumbnail | undefined;
     if (!['GET', 'HEAD'].includes(request.method)) {
       const origin = request.headers.get('Origin');
       if ((origin && origin !== url.origin) || request.headers.get('X-EmDash-Request') !== '1') {
@@ -765,7 +793,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         }
         const { validateImageUpload } = await import('./media-upload');
         const upload = await validateImageUpload(request);
-        if (upload) return upload;
+        if (upload instanceof Response) return upload;
+        validatedThumbnail = upload.thumbnail;
       }
       if (request.method === 'PUT' && /^\/_emdash\/api\/content\/[^/]+\/[^/]+$/.test(url.pathname)) {
         const body = (await request
@@ -790,6 +819,22 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     // Astro only consumes waitUntil here; DurableObjectState provides that lifecycle hook.
     const asset = await cf(state, bindings, this.ctx as unknown as ExecutionContext);
     const response = asset ?? finalize(state, await astro(state));
+    if (validatedThumbnail && [200, 201].includes(response.status)) {
+      try {
+        const payload = (await response
+          .clone()
+          .json()
+          .catch(() => null)) as {
+          data?: { item?: { storageKey?: unknown } };
+        } | null;
+        const storageKey = payload?.data?.item?.storageKey;
+        const candidate =
+          typeof storageKey === 'string' ? createStaffThumbnailCandidate(storageKey, validatedThumbnail.bytes) : null;
+        if (candidate) await bindings.MEDIA.put(candidate.key, candidate.bytes, staffThumbnailPutOptions(candidate));
+      } catch {
+        createBindingLogger(bindings).warn({ event: 'staff_thumbnail_store_failed', status: response.status });
+      }
+    }
     response.headers.set('Cache-Control', 'private, no-store');
     return response;
   }
