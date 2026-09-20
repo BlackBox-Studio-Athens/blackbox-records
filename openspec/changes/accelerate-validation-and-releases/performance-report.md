@@ -34,8 +34,8 @@ These are three comparable warm candidate runs, not a matched baseline/candidate
 
 The first activated run failed in the parallel Chromium editor check while Firefox passed. Rerunning the failed candidate on the same source revision passed both browsers and the full UAT path. This is one successful post-change attempt, not the required five-sample cohort.
 
-| Run | Source | Result | Execution |
-| --- | --- | ---: | ---: |
+| Run                                                                                                           | Source                                     |  Result |     Execution |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------ | ------: | ------------: |
 | [35500652918, attempt 2](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35500652918) | `d11a79c7e6c772b587b82537e20eab8f31321cf8` | success | 914s / 15m14s |
 
 The historical UAT median was 1,310.5s / 21m50.5s. This pilot was 396.5s / 6m36.5s lower, or 30.3% below that historical median. It clears the 20% threshold as a single observation, but does not establish the required five-run claim. The successful attempt's major jobs were candidate 590s, inspection 32s, Worker deploy 95s, Pages deploy 54s, and smoke 128s. PRD deployment, catalog mutation, and payment flows were skipped.
