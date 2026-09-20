@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, ClipboardCheck } from 'lucide-react';
 import { editorialRequest, type EditorialList, type EditorialRecord } from '../lib/backend/editorial-api';
 import { readContentPublications, type ContentPublication } from '../lib/backend/content-publication-api';
 import { createInternalOrderApi } from '../lib/backend/internal-order-api';
@@ -77,7 +77,12 @@ export default function StaffOverview({ base }: { base: string }) {
       )}
       <section className="mt-8">
         <h2>Recent drafts</h2>
-        <a href="/review/">Review website changes</a>
+        <Button asChild className="staff-overview-review">
+          <a href="/review/">
+            <ClipboardCheck aria-hidden="true" />
+            Review changes
+          </a>
+        </Button>
         {loading ? (
           <p role="status" className="mt-4 text-muted-foreground">
             Loading recent work…

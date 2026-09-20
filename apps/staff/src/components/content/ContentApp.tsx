@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/button';
-import { ArrowLeft, Eye, EyeOff, FileText, History, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ClipboardCheck,
+  Eye,
+  EyeOff,
+  FileText,
+  History,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Trash2,
+} from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
@@ -42,7 +53,7 @@ import ContentFields, {
 import ContentPreview from './ContentPreview';
 
 import PublicationReviewFlow from './PublicationReviewFlow';
-import PublicationHistory from './PublicationHistory';
+import { requestPublicationHistory } from './PublicationHistory';
 import PublicationStatus from './PublicationStatus';
 import { getContentValidation, type ContentValidation } from './content-validation';
 import { readContentPublications, type ContentPublication } from '../../lib/backend/content-publication-api';
@@ -173,12 +184,14 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [publicationStatusError, setPublicationStatusError] = useState('');
   const refreshedPublication = useRef('');
   const pendingKey = `blackbox-content-create:${base}`;
-  const [publicationHistoryOpen, setPublicationHistoryOpen] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [draftActionsOpen, setDraftActionsOpen] = useState(false);
   function openPublicationSurface() {
     setDraftActionsOpen(false);
-    setTimeout(() => setPublicationHistoryOpen(true), 0);
+    requestPublicationHistory({
+      ...(collection ? { collection } : {}),
+      ...(document?.item.id ? { recordId: document.item.id } : {}),
+    });
   }
   const validation: ContentValidation = getContentValidation(collection, data);
 
@@ -317,7 +330,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       }
     } else {
       const selected = new URLSearchParams(window.location.search);
-      if (selected.has('history')) setPublicationHistoryOpen(true);
       if (window.location.pathname.startsWith('/items/')) {
         const variantId = selected.get('variantId');
         if (variantId) {
@@ -730,8 +742,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
             statusError={publicationStatusError}
             message={publicationMessage}
             refresh={publicationStatus}
-            open={publicationHistoryOpen}
-            onOpenChange={setPublicationHistoryOpen}
             compact
           />
         </div>
@@ -1091,6 +1101,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                   );
                               }}
                             >
+                              <ClipboardCheck aria-hidden="true" />
                               Review changes
                             </Button>
                             <DropdownMenu open={draftActionsOpen} onOpenChange={setDraftActionsOpen}>
@@ -1126,15 +1137,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                           <p role="alert" className="text-sm cms-state-error">
                             {autosave.error}
                           </p>
-                        )}
-                        {publicationHistoryOpen && (
-                          <PublicationHistory
-                            key={`${collection}/${document.item.id}`}
-                            base={base}
-                            collection={collection}
-                            recordId={document.item.id}
-                            initiallyOpen
-                          />
                         )}
                       </header>
                       {['releases', 'distro'].includes(collection) && (

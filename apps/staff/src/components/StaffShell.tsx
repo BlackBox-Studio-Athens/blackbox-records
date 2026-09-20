@@ -1,11 +1,13 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowUpRight,
   Boxes,
+  ClipboardCheck,
   ChevronLeft,
   Disc3,
   Globe,
   House,
+  History,
   ImageIcon,
   Menu,
   PanelLeft,
@@ -15,6 +17,11 @@ import {
 import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { getInternalStockApiBaseUrl } from '../lib/backend/internal-stock-api';
+import PublicationHistory, {
+  publicationHistoryEvent,
+  type PublicationHistoryFilter,
+} from './content/PublicationHistory';
 
 const areas = [
   { label: 'Overview', href: '/', icon: House, color: 'overview', links: [] },
@@ -64,6 +71,11 @@ export default function StaffShell({
   const [location, setLocation] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [hiddenAreas, setHiddenAreas] = useState<string[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [historyFilter, setHistoryFilter] = useState<PublicationHistoryFilter>({});
+  const historyFocus = useRef<HTMLElement | null>(null);
+  const historyUrl = useRef('');
+  const base = getInternalStockApiBaseUrl();
   useEffect(() => {
     const update = () => setLocation(window.location.pathname + window.location.search);
     update();
@@ -81,6 +93,35 @@ export default function StaffShell({
       window.removeEventListener('staff:navigation', update);
     };
   }, []);
+  function showHistory(filter: PublicationHistoryFilter = {}, trigger?: HTMLElement | null) {
+    historyFocus.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
+    setHistoryFilter(filter);
+    setMenuOpen(false);
+    window.setTimeout(() => setHistoryOpen(true), 0);
+  }
+  function closeHistory(open: boolean) {
+    setHistoryOpen(open);
+    if (!open) {
+      const trigger = historyFocus.current;
+      window.requestAnimationFrame(() => trigger?.focus());
+    }
+  }
+  useEffect(() => {
+    const open = (event: Event) => {
+      const detail = (event as CustomEvent<PublicationHistoryFilter>).detail ?? {};
+      showHistory(detail);
+    };
+    window.addEventListener(publicationHistoryEvent, open);
+    return () => window.removeEventListener(publicationHistoryEvent, open);
+  }, []);
+  useEffect(() => {
+    const url = new URL(location || '/', window.location.origin);
+    if (url.searchParams.get('history') !== '1' || historyUrl.current === url.href) return;
+    historyUrl.current = url.href;
+    const collection = url.searchParams.get('collection');
+    const recordId = url.searchParams.get('id');
+    showHistory({ ...(collection ? { collection } : {}), ...(recordId ? { recordId } : {}) });
+  }, [location]);
   const url = new URL(location || '/', 'https://staff.invalid');
   const section =
     url.searchParams.get('collection') ??
@@ -154,13 +195,21 @@ export default function StaffShell({
   function utilities() {
     return (
       <>
-        <a
-          className="staff-review-link"
-          href="/review/"
-          aria-current={url.pathname.startsWith('/review/') ? 'page' : undefined}
+        <Button asChild className="staff-review-link">
+          <a href="/review/" aria-current={url.pathname.startsWith('/review/') ? 'page' : undefined}>
+            <ClipboardCheck aria-hidden="true" />
+            Review changes
+          </a>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="staff-history-link"
+          onClick={(event) => showHistory({}, event.currentTarget)}
         >
-          Review website changes
-        </a>
+          <History aria-hidden="true" />
+          Publication history
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline">
@@ -249,6 +298,13 @@ export default function StaffShell({
           </main>
         </div>
       </div>
+      <PublicationHistory
+        base={base}
+        collection={historyFilter.collection}
+        recordId={historyFilter.recordId}
+        open={historyOpen}
+        onOpenChange={closeHistory}
+      />
     </div>
   );
 }

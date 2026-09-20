@@ -19,7 +19,6 @@ import {
   type PublicationSelectionItem,
 } from './publication-selection';
 import PublicationReviewFlow, { PublicationSteps } from './PublicationReviewFlow';
-import PublicationHistory from './PublicationHistory';
 
 const key = (item: { collection?: string; id?: string; recordId?: string }) =>
   `${item.collection}/${item.recordId ?? item.id}`;
@@ -189,7 +188,6 @@ export default function WebsiteChanges({ base }: { base: string }) {
                 Choose which saved changes to publish together. Other drafts stay private.
               </p>
             </div>
-            <PublicationHistory base={base} />
           </header>
           <PublicationSteps step={1} />
           {error && (

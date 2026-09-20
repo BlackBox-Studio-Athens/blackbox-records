@@ -119,9 +119,24 @@ function Value({
   );
 }
 
-export default function PublicationComparison({ review }: { review: PublicationReview }) {
+export default function PublicationComparison({
+  review,
+  activeEntry,
+  onActiveEntryChange,
+}: {
+  review: PublicationReview;
+  activeEntry?: string;
+  onActiveEntryChange?(value: string): void;
+}) {
+  const firstEntry = `${review.entries[0]?.collection}/${review.entries[0]?.recordId}`;
   return (
-    <Accordion type="multiple" defaultValue={[`${review.entries[0]?.collection}/${review.entries[0]?.recordId}`]}>
+    <Accordion
+      type="single"
+      collapsible
+      {...(activeEntry === undefined
+        ? { defaultValue: firstEntry }
+        : { value: activeEntry, onValueChange: onActiveEntryChange ?? (() => {}) })}
+    >
       {review.entries.map((entry) => {
         const fields = changedPublicationFields(entry);
         return (

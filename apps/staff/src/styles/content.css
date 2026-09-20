@@ -271,23 +271,6 @@ body[data-workspace='content'] {
 .cms-refreshing {
   animation: cms-refresh-spin 900ms linear infinite;
 }
-.cms-publication-history-row {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-block: 0.75rem;
-  font-size: 0.75rem;
-}
-.cms-publication-history-row time {
-  flex-shrink: 0;
-  color: var(--muted-foreground);
-  text-align: right;
-}
-.cms-publication-history-row [data-slot='accordion-trigger'] {
-  width: fit-content;
-}
-
 @keyframes cms-refresh-spin {
   to {
     transform: rotate(360deg);

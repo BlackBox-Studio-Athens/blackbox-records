@@ -357,7 +357,7 @@ export default function ContentPreview({
               </Button>
             ))}
           </div>
-          {hasListing && (
+          {hasListing && !publication && (
             <label className="text-xs">
               View{' '}
               <select

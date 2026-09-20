@@ -6,7 +6,6 @@ import { Tabs } from 'radix-ui';
 import { Skeleton } from '../ui/skeleton';
 import ContentPreview from './ContentPreview';
 import PublicationComparison from './PublicationComparison';
-import PublicationHistory from './PublicationHistory';
 import { type ContentSection } from './ContentFields';
 import { usePublicationPolling } from './PublicationStatus';
 import {
@@ -18,6 +17,18 @@ import {
 } from '../../lib/backend/content-publication-api';
 import { EditorialApiError } from '../../lib/backend/editorial-api';
 import { pendingPublicationKey, restorePublication } from './publication-selection';
+
+const entryKey = (entry?: { collection: string; recordId: string }) =>
+  entry ? `${entry.collection}/${entry.recordId}` : '';
+
+export function publicationPreviewDestination(review: PublicationReview, activeEntry: string) {
+  const destinations = review.destinations?.length ? review.destinations : review.entries;
+  const selected = review.entries.find((entry) => entryKey(entry) === activeEntry);
+  if (!selected) return destinations[0];
+  if (['navigation', 'socials', 'settings', 'newsletter'].includes(selected.collection))
+    return destinations.find((entry) => entry.collection === 'home') ?? destinations[0];
+  return destinations.find((entry) => entryKey(entry) === activeEntry) ?? destinations[0];
+}
 
 export function PublicationSteps({ step }: { step: number }) {
   return (
@@ -56,7 +67,8 @@ export default function PublicationReviewFlow({
   const [recoveryError, setRecoveryError] = useState('');
   const [stale, setStale] = useState(false);
   const [previewState, setPreviewState] = useState<'loading' | 'ready' | 'failed'>('loading');
-  const [previewIndex, setPreviewIndex] = useState(0);
+  const [previewStateKey, setPreviewStateKey] = useState('');
+  const [activeEntry, setActiveEntry] = useState('');
   const [tab, setTab] = useState('changes');
   const [wide, setWide] = useState(false);
   const lock = useRef(false);
@@ -82,8 +94,12 @@ export default function PublicationReviewFlow({
       setReview(next);
       onReviewed?.(next);
       setRecords(next.entries);
-      setPreviewIndex(0);
+      const active = next.entries.some((entry) => entryKey(entry) === activeEntry)
+        ? activeEntry
+        : entryKey(next.entries[0]);
+      setActiveEntry(active);
       setPreviewState('loading');
+      setPreviewStateKey('');
       heading.current?.focus();
     } catch (error) {
       if (request === sequence.current) {
@@ -192,9 +208,10 @@ export default function PublicationReviewFlow({
       setBusy(false);
     }
   }
-  const destinations = review?.destinations ?? review?.entries ?? [];
-  const preview = destinations[previewIndex];
-  const historyFilter = individual && initialRecords.length === 1 ? initialRecords[0] : undefined;
+  const preview = review ? publicationPreviewDestination(review, activeEntry) : undefined;
+  const previewKey = preview ? entryKey(preview) : '';
+  const previewReady = previewState === 'ready' && previewStateKey === previewKey;
+  const previewFailed = previewState === 'failed' && previewStateKey === previewKey;
   return (
     <section className="publication-flow" aria-label="Publication review">
       <header className="publication-heading">
@@ -212,7 +229,6 @@ export default function PublicationReviewFlow({
               : 'Check what will change. Other drafts stay private.'}
           </p>
         </div>
-        <PublicationHistory base={base} collection={historyFilter?.collection} recordId={historyFilter?.recordId} />
       </header>
       <PublicationSteps step={pending ? 3 : 2} />
       {(error || recoveryError) && (
@@ -341,7 +357,7 @@ export default function PublicationReviewFlow({
                 <h3>
                   {review.entries.length} {review.entries.length === 1 ? 'change' : 'changes'} to review
                 </h3>
-                <PublicationComparison review={review} />
+                <PublicationComparison review={review} activeEntry={activeEntry} onActiveEntryChange={setActiveEntry} />
               </div>
               <div
                 id={`${tabId}-preview`}
@@ -350,24 +366,15 @@ export default function PublicationReviewFlow({
                 hidden={!wide && tab !== 'preview'}
                 className="publication-preview-pane"
               >
-                <label className="publication-page-selector">
-                  Preview page
-                  <select
-                    value={previewIndex}
-                    onChange={(event) => {
-                      setPreviewIndex(Number(event.target.value));
-                      setPreviewState('loading');
-                    }}
-                  >
-                    {destinations.map((entry, index) => (
-                      <option key={`${entry.collection}/${entry.recordId}`} value={index}>
-                        {entry.title}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                {preview && (
+                  <div className="publication-preview-destination">
+                    <span>Preview</span>
+                    <strong>{preview.title}</strong>
+                  </div>
+                )}
                 {preview && (
                   <ContentPreview
+                    key={previewKey}
                     base={base}
                     collection={preview.collection as ContentSection}
                     id={preview.recordId}
@@ -377,7 +384,10 @@ export default function PublicationReviewFlow({
                     active={wide || tab === 'preview'}
                     dirty={false}
                     valid={!blocked}
-                    onReadiness={setPreviewState}
+                    onReadiness={(state) => {
+                      setPreviewState(state);
+                      setPreviewStateKey(previewKey);
+                    }}
                   />
                 )}
               </div>
@@ -408,13 +418,13 @@ export default function PublicationReviewFlow({
                 busy ||
                 Boolean(blocked) ||
                 Boolean(recoveryError) ||
-                (previewState === 'loading' && (wide || tab === 'preview'))
+                (!previewReady && !previewFailed && (wide || tab === 'preview'))
               }
               onClick={() => void publish()}
             >
               {busy
                 ? 'Checking…'
-                : previewState !== 'ready'
+                : !previewReady
                   ? 'Publish without preview'
                   : review?.entries.length === 1
                     ? 'Publish change'
