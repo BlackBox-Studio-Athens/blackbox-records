@@ -1,6 +1,6 @@
 # Performance report
 
-Status: local implementation evidence is complete; hosted performance acceptance remains pending.
+Status: local implementation evidence is complete; one hosted UAT pilot passed, while five-sample performance acceptance remains pending.
 
 ## Accepted local changes
 
@@ -30,13 +30,23 @@ All three runs used source SHA `a66f6755b3f5ca804cc59ae557c4e8b60087d2af`, finge
 
 These are three comparable warm candidate runs, not a matched baseline/candidate campaign. The retained pilot controls use different source and test inventories, so the required 20% warm-median improvement is not claimed and task 5.1 remains open. The final ordinary validation is rerun after this report is finalized; its summary records the final source identity.
 
+## Hosted UAT pilot
+
+The first activated run failed in the parallel Chromium editor check while Firefox passed. Rerunning the failed candidate on the same source revision passed both browsers and the full UAT path. This is one successful post-change attempt, not the required five-sample cohort.
+
+| Run | Source | Result | Execution |
+| --- | --- | ---: | ---: |
+| [35500652918, attempt 2](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35500652918) | `d11a79c7e6c772b587b82537e20eab8f31321cf8` | success | 914s / 15m14s |
+
+The historical UAT median was 1,310.5s / 21m50.5s. This pilot was 396.5s / 6m36.5s lower, or 30.3% below that historical median. It clears the 20% threshold as a single observation, but does not establish the required five-run claim. The successful attempt's major jobs were candidate 590s, inspection 32s, Worker deploy 95s, Pages deploy 54s, and smoke 128s. PRD deployment, catalog mutation, and payment flows were skipped.
+
 ## Final local run record
 
 Final source identity and validation summary paths are recorded by the final `pnpm validate` run under `.codex-artifacts/validation/`. Final uncached formatting, editor acceptance, affected release-candidate tests, and strict OpenSpec validation are required before completion is claimed.
 
 ## Evidence gaps
 
-No new hosted release, UAT payment, PRD promotion, or Free-tier quota-consuming operation was dispatched for this change. Therefore there are no five-sample post-change UAT cohorts, no measured cross-run image-cache net saving, and no measured compact upload/download end-to-end improvement. The pilot observations in `research.md` remain supporting context only.
+Only one successful post-change UAT attempt is recorded, so the five-sample hosted acceptance cohort is still missing. There is no measured cross-run image-cache net saving or compact upload/download end-to-end improvement yet. No PRD promotion, catalog mutation, or payment flow was dispatched; the UAT run used the normal authorized release path. The pilot result is recorded here, while the historical observations in `research.md` remain supporting context rather than a controlled baseline campaign.
 
 ## Rollback
 
