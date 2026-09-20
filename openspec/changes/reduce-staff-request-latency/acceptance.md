@@ -1,6 +1,6 @@
 # Acceptance worksheet
 
-Status: local implementation and acceptance passed. Hosted preparation, deployment, and Greek-network acceptance remain pending explicit authorization and hosted evidence.
+Status: local implementation, UAT hosted acceptance, and authorized PRD code/thumbnail work passed for the bounded scope. Greek-network timing and full hosted image-sample coverage remain open.
 
 ## Local evidence
 
@@ -35,7 +35,7 @@ Complete separately for UAT and PRD, before repeated probes or preparation. Appl
 
 ### UAT preflight
 
-- Target environment / deployment revision: UAT; candidate source is the final locally validated tree at `c320716293ca3a42998c42fa6afebc675b092fe7` before the release commit.
+- Target environment / deployment revision: UAT; source `7a5f1c342bdcd85713e75c3877428bde729f245b`, Worker version `11616c53-30fa-4257-86fb-d54f3310467f`, Pages deployment `74d0ad0b-f70b-4bda-bc1c-60b7615a13fe`.
 - Authorization or existing release approval reference: explicit user authorization granted in this implementation session on 2026-09-21 for the hosted continuation.
 - Account usage observation time and source: 2026-09-20 22:19 UTC; Cloudflare account dashboard for account `2004bfa6f5ad8b48008f1243b195ab61`.
 - Remaining Worker requests/CPU allowance: Workers Free showed `5,498 / 100,000` requests today, leaving 94,502 displayed request slots; current-period Workers usage showed 64.59k requests and 194,838 ms CPU. The Free plan limit is 10 ms CPU per request; stop on any CPU/quota warning.
@@ -44,24 +44,25 @@ Complete separately for UAT and PRD, before repeated probes or preparation. Appl
 - Remaining R2 Class A/Class B operations and storage allowance: current-period billing totals were 1.62k Class A, 33.55k Class B, and 0.26 GB-month storage; displayed included amounts are 1,000,000 Class A, 10,000,000 Class B, and 10 GB-month.
 - Ordinary-service headroom reserved: retain at least half of each displayed daily allowance for ordinary traffic; no automatic retries or unreviewed follow-on batch.
 - Local requests/operations measured per page and per preparation batch: the 25-item Local dry run used 1 LIST, 25 HEAD, and 25 GET with 0 PUT; first apply used 1 LIST, 25 HEAD, 25 GET, and 25 PUT; replay used 1 LIST and 25 HEAD with 0 GET/PUT. The `--limit 3` pilot is bounded to 1 LIST, at most 3 derivative HEADs, at most 3 original GETs, and at most 3 derivative PUTs on apply, with at most 120 KiB derivative storage before backup overhead.
-- Allowed pilot views/batches and maximum operations, including setup/background/retry overhead: one canonical UAT candidate release, one `--limit 3` dry run, one reviewed `--limit 3 --apply`, and at most 12 Greek timing activations; no further derivative batch without a new budget check.
-- Pilot actual use / difference from estimate: pending deployment.
-- Stop condition and final remaining allowance: stop on quota warning, failed authentication, unexpected write amplification, retry loop, or any operation/storage total exceeding this worksheet; record final dashboard values after the pilot.
+- Allowed pilot views/batches and maximum operations, including setup/background/retry overhead: one canonical UAT candidate release, the reviewed `--limit 3` dry/apply/replay, one reviewed first-page expansion capped at 25 objects, and at most 12 Greek timing activations; no unbounded continuation or further derivative batch.
+- Pilot actual use / difference from estimate: the UAT three-object apply used 1 LIST, 3 HEAD, 3 GET, and 3 PUT with 1,038 derivative bytes; replay used 1 LIST and 3 HEAD with 0 GET/PUT. The reviewed first-page expansion used a dry run of 1 LIST, 25 HEAD, and 22 GET, then 1 LIST, 25 HEAD, 22 GET, and 22 PUT on apply; replay found all 25 valid with no writes. Reports are linked in [UAT hosted evidence](../../../.codex-artifacts/reduce-staff-request-latency/uat-hosted-evidence.md).
+- Post-pilot dashboard: Workers 6,289/100,000 requests today and 65.39k requests/195,580 ms CPU current period; Durable Objects 42.7k requests/1.86k GB-sec; D1 424.96k reads/1.52k writes/14.91 MB; R2 1.65k Class A/37.81k Class B/1.45 GB. No quota warning, retry, unexpected write amplification, or paid setting was observed.
+- Stop condition and final remaining allowance: the reviewed UAT batches are stopped. The next-page token was invalid across a fresh hosted session, so no second-page write or unbounded retry was attempted. Further UAT derivative work requires a fresh worksheet and explicit bounded review.
 
 ### PRD preflight
 
-- Target environment / deployment revision: pending separate PRD candidate authorization and UAT candidate evidence.
-- Authorization or existing release approval reference: not yet established by the UAT authorization above.
-- Account usage observation time and source: the same account snapshot is retained above; a fresh PRD worksheet is required before promotion.
-- Remaining Worker requests/CPU allowance: use the fresh account snapshot immediately before promotion.
-- Remaining Durable Object requests/duration allowance: use the fresh account snapshot immediately before promotion.
-- Remaining D1 reads/writes allowance: use the fresh account snapshot immediately before promotion.
-- Remaining R2 Class A/Class B operations and storage allowance: use the fresh account snapshot immediately before promotion.
+- Target environment / deployment revision: PRD promotion of reviewed source `7a5f1c342bdcd85713e75c3877428bde729f245b`; candidate run `35541402889` is the successful UAT run.
+- Authorization or existing release approval reference: explicit user authorization in this implementation session on 2026-09-21 to push to PRD; scope is code promotion plus the bounded derivative pilot, not catalog mutation, checkout launch, or a plan change.
+- Account usage observation time and source: fresh Cloudflare account dashboard snapshot after UAT probes, 2026-09-20 22:46 UTC observation window; account `2004bfa6f5ad8b48008f1243b195ab61`.
+- Remaining Worker requests/CPU allowance: 6,289/100,000 requests today, leaving 93,711 displayed request slots; current period 65.39k requests and 195,580 ms CPU. Keep the PRD pilot bounded and stop on any CPU/quota warning.
+- Remaining Durable Object requests/duration allowance: 42.7k requests and 1.86k GB-sec current period against displayed Free limits of 100,000 requests/day and 13,000 GB-sec/day.
+- Remaining D1 reads/writes allowance: 424.96k rows read and 1.52k rows written current period, 14.91 MB total storage against displayed Free limits of 5,000,000 reads/day, 100,000 writes/day, and 5 GB storage.
+- Remaining R2 Class A/Class B operations and storage allowance: 1.65k Class A, 37.81k Class B, and 1.45 GB current-period storage against displayed included amounts of 1,000,000 Class A, 10,000,000 Class B, and 10 GB-month.
 - Ordinary-service headroom reserved: at least half of each displayed daily allowance.
 - Local requests/operations measured per page and per preparation batch: same bounded Local evidence above; hosted PRD values are not inferred from it.
-- Allowed pilot views/batches and maximum operations, including setup/background/retry overhead: none until separate PRD authorization and a reviewed full-SHA/candidate run are recorded.
-- Pilot actual use / difference from estimate: not run.
-- Stop condition and final remaining allowance: do not start PRD work without the separate authorization and fresh usage snapshot.
+- Allowed pilot views/batches and maximum operations, including setup/background/retry overhead: one PRD workflow promotion of the reviewed candidate, the reviewed `--limit 3` dry/apply/replay, one reviewed first-page expansion capped at 25 objects, and one replay; no catalog or checkout mutation.
+- Pilot actual use / difference from estimate: the three-object PRD apply wrote 3 derivatives and replay wrote 0. The first-page expansion used a dry run of 1 LIST, 25 HEAD, and 22 GET, then 1 LIST, 25 HEAD, 22 GET, and 22 PUT on apply; replay found all 25 valid with no writes. Original bytes read were 8,113,991 and derivative bytes written were 253,030. Evidence is [prd-hosted-evidence.md](../../../.codex-artifacts/reduce-staff-request-latency/prd-hosted-evidence.md).
+- Stop condition and final remaining allowance: the authorized PRD code promotion and first-page derivative pilot are stopped. Catalog, checkout, and CMS-cutover mutation jobs were skipped. A second-page continuation was not attempted after the hosted token failure; further PRD derivative work requires a fresh worksheet and explicit bounded review.
 
 Preparation upper bound per invocation is one LIST plus at most 25 derivative HEADs and 25 original GETs; apply adds at most 25 PUTs. Account for remote proxy overhead and backup retention. Start with `--limit 3`, compare actual use, then explicitly authorize the next bounded batch. GET probes must still be checked for incidental writes. Do not loop until all pages complete.
 
@@ -80,25 +81,25 @@ Record the same fields for every activation:
 
 "Usable primary content" means successfully loaded Overview content/publication panels or a loaded/intentionally empty Website/Stock list with its intended controls enabled. A loader, server-rendered default collection, blank hydrated container, or failed API result is not successful completion. Record unexpected API/asset failures as failed activations rather than dropping them or adding replacement samples. Local browser checks should use these same visible states without adding production telemetry.
 
-| Criterion                 | Required evidence                                                                                       | Result       |
-| ------------------------- | ------------------------------------------------------------------------------------------------------- | ------------ |
-| Static bypass             | No editorial object/D1 involvement for staff HTML/build files; 200 and authorized 304 work              | Not measured |
-| Authentication            | Invalid/missing identity, wrong host, and validators cannot disclose private files or thumbnails        | Not measured |
-| Image payload             | 25 compact covers total at most 1 MiB; zero original-image requests                                     | Not measured |
-| Startup features          | No closed history/editor JS or editor-specific CSS on Overview/Stock/Orders                             | Not measured |
-| Independent panels        | Slow/failed orders do not block drafts/publications                                                     | Not measured |
-| Greek warm latency target | Per-route median HTML TTFB ≤500 ms; median usable primary content ≤1,500 ms on stable desktop broadband | Not measured |
-| Critical asset outliers   | Report every critical asset above 2 seconds; investigate repeated occurrences                           | Not measured |
-| Free-tier viability       | Entry CPU within Workers Free allowance; bounded request/storage costs; no quota failures or sessions   | Not measured |
+| Criterion                 | Required evidence                                                                                       | Result                                                                                                                                                                       |
+| ------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Static bypass             | No editorial object/D1 involvement for staff HTML/build files; 200 and authorized 304 work              | Passed in UAT and PRD hosted checks                                                                                                                                          |
+| Authentication            | Invalid/missing identity, wrong host, and validators cannot disclose private files or thumbnails        | Passed in UAT pilot; see hosted evidence                                                                                                                                     |
+| Image payload             | 25 compact covers total at most 1 MiB; zero original-image requests                                     | Local contract passed; UAT/PRD stock checks saw 25 rows and 0 original requests, but hosted derivative coverage remained partial (PRD 11 compact images and 14 placeholders) |
+| Startup features          | No closed history/editor JS or editor-specific CSS on Overview/Stock/Orders                             | Passed in UAT Overview/Stock request capture                                                                                                                                 |
+| Independent panels        | Slow/failed orders do not block drafts/publications                                                     | Not measured                                                                                                                                                                 |
+| Greek warm latency target | Per-route median HTML TTFB ≤500 ms; median usable primary content ≤1,500 ms on stable desktop broadband | Not measured                                                                                                                                                                 |
+| Critical asset outliers   | Report every critical asset above 2 seconds; investigate repeated occurrences                           | Not measured                                                                                                                                                                 |
+| Free-tier viability       | Entry CPU within Workers Free allowance; bounded request/storage costs; no quota failures or sessions   | Bounded UAT/PRD work completed without quota warnings or paid settings; not a substitute for Greek timing                                                                    |
 
 Report first visits individually and each route's three warm samples as median plus minimum/maximum. Do not claim a meaningful p95 from this small pilot. An improvement over the Swiss observations is not a controlled Greek before/after comparison. If possible, collect the same bounded baseline on the current revision before deployment; otherwise label the comparison unavailable and assess the absolute targets.
 
 ## Outcome and handoff
 
 - Local implementation: passed for sections 1–6; final fingerprint is recorded in [final-validation.md](../../../.codex-artifacts/reduce-staff-request-latency/final-validation.md).
-- UAT hosted functional acceptance: not run; explicit deployment and hosted-batch authorization are still required.
+- UAT hosted functional acceptance: passed for the canonical run and bounded thumbnail pilot; evidence is [uat-hosted-evidence.md](../../../.codex-artifacts/reduce-staff-request-latency/uat-hosted-evidence.md).
 - Greek performance targets: not measured; local Chromium/Firefox contract probes are not a Greek-network baseline.
-- PRD promotion and preparation: not authorized and not run.
-- Remaining cause and next action: obtain release authorization, complete bounded UAT evidence, then separately obtain PRD promotion/preparation authorization.
+- PRD promotion and preparation: explicitly authorized and completed through the canonical workflow for source `7a5f1c342bdcd85713e75c3877428bde729f245b`; evidence is [prd-hosted-evidence.md](../../../.codex-artifacts/reduce-staff-request-latency/prd-hosted-evidence.md). The first-page derivative pilot passed within budget, while the rendered 25-row sample remained partial.
+- Remaining cause and next action: the available connection is Switzerland (`loc=CH`), so complete Greek timing only from a real Greek connection. The remote continuation token also failed across sessions (`10023`), so full hosted image-sample acceptance remains open until a safe bounded continuation path is available.
 
 Do not mark hosted tasks complete because local tests passed. Do not archive the change with required acceptance outstanding. If external access or approval is unavailable, hand off the verified implementation and list the unchecked hosted tasks explicitly.
