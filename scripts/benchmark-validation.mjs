@@ -19,6 +19,121 @@ function completedGates(commands, arm) {
     ),
   );
 }
+
+function selectedGateCommands(mode, scenario) {
+  if (scenario === 'editor') return ['build:staff', 'preview-policy', 'editor-chromium', 'editor-firefox'];
+  return mode === 'aggregate' ? ['validate'] : ['test:unit', 'check', 'build'];
+}
+
+function isCompleteValidationSummary(summary) {
+  return Boolean(
+    summary &&
+    summary.status === 'passed' &&
+    summary.exitCode === 0 &&
+    summary.mode === 'full' &&
+    summary.scope === 'all' &&
+    Array.isArray(summary.phases) &&
+    summary.phases.length === 7 &&
+    summary.phases.every((phase) => phase.status === 'passed' && phase.exitCode === 0) &&
+    Array.isArray(summary.skippedPhases) &&
+    summary.skippedPhases.length === 0 &&
+    summary.sourceBefore &&
+    summary.sourceAfter &&
+    summary.sourceBefore.sha === summary.sourceAfter.sha &&
+    summary.sourceBefore.fingerprint === summary.sourceAfter.fingerprint,
+  );
+}
+
+async function assertionInventory(cwd) {
+  const files = (
+    await execa(
+      'git',
+      [
+        'ls-files',
+        '-z',
+        '--cached',
+        '--others',
+        '--exclude-standard',
+        '--',
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/*.test.mjs',
+      ],
+      { cwd },
+    )
+  ).stdout
+    .split('\0')
+    .filter(Boolean)
+    .sort();
+  return { files, fileCount: files.length };
+}
+
+async function benchmarkSnapshot(cwd) {
+  const source = await sourceIdentity(cwd);
+  const pnpm = (await execa('pnpm', ['--version'], { cwd })).stdout.trim();
+  return {
+    schemaVersion: 1,
+    capturedAt: new Date().toISOString(),
+    source,
+    tools: {
+      node: process.version,
+      pnpm,
+      platform: os.platform(),
+      release: os.release(),
+      cpu: os.cpus()[0]?.model ?? null,
+      cores: os.cpus().length,
+      memoryBytes: os.totalmem(),
+    },
+    gates: {
+      legacy: selectedGateCommands('legacy', 'all'),
+      aggregate: selectedGateCommands('aggregate', 'all'),
+      fast: ['validate', '--fast'],
+    },
+    assertions: await assertionInventory(cwd),
+  };
+}
+
+function assertCompatibleSnapshots(before, after) {
+  assert.equal(before.schemaVersion, 1, 'Unsupported benchmark capture schema.');
+  assert.equal(after.schemaVersion, 1, 'Unsupported benchmark capture schema.');
+  assert.deepEqual(before.tools, after.tools, 'Benchmark captures use incompatible machine or toolchain.');
+  assert.deepEqual(before.gates, after.gates, 'Benchmark captures use incompatible gate inventories.');
+  assert.deepEqual(before.assertions, after.assertions, 'Benchmark assertion inventory changed.');
+}
+
+async function runCaptureOrCompare(values) {
+  const cwd = path.resolve(values.cwd || process.cwd());
+  if (values.capture) {
+    const destination = path.resolve(cwd, values.capture);
+    await access(destination).then(
+      () => {
+        throw new Error(`Refusing to overwrite benchmark capture: ${destination}`);
+      },
+      (error) => {
+        if (error.code !== 'ENOENT') throw error;
+      },
+    );
+    const capture = await benchmarkSnapshot(cwd);
+    await mkdir(path.dirname(destination), { recursive: true });
+    await writeFile(destination, `${JSON.stringify(capture, null, 2)}\n`, { flag: 'wx' });
+    console.log(`Capture: ${destination}`);
+    return;
+  }
+
+  const beforePath = path.resolve(cwd, values.compare);
+  const before = JSON.parse(await readFile(beforePath, 'utf8'));
+  const after = await benchmarkSnapshot(cwd);
+  assertCompatibleSnapshots(before, after);
+  const comparison = {
+    schemaVersion: 1,
+    before: { path: beforePath, source: before.source },
+    after: { source: after.source },
+    sourceChanged: before.source.sha !== after.source.sha || before.source.fingerprint !== after.source.fingerprint,
+    compatible: true,
+    note: 'Source changes between same-checkout captures are recorded; changes during a timed run invalidate that run.',
+  };
+  console.log(JSON.stringify(comparison, null, 2));
+}
 // Runnable parser checks: a successful CLI exit or a partial command is not a full gate.
 assert.equal(completedGates([{ command: 'pnpm validate:fast --scope web', exit_code: 0 }], 'candidate'), false);
 assert.equal(completedGates([{ command: 'pnpm validate --fast', exit_code: 0 }], 'candidate'), false);
@@ -44,8 +159,20 @@ const { values } = parseArgs({
     effort: { type: 'string', default: 'high' },
     scenario: { type: 'string' },
     jobs: { type: 'string', default: '2' },
+    'baseline-gate': { type: 'string', default: 'legacy' },
+    'candidate-gate': { type: 'string', default: 'aggregate' },
+    capture: { type: 'string' },
+    compare: { type: 'string' },
+    cwd: { type: 'string' },
   },
 });
+if (values.capture && values.compare) throw new Error('Choose --capture or --compare, not both.');
+if (values.capture || values.compare) {
+  if (values.baseline || values.candidate) throw new Error('Capture/compare does not use benchmark arms.');
+  if (values.compare === '') throw new Error('Specify a capture path for --compare.');
+  await runCaptureOrCompare(values);
+  process.exit(0);
+}
 if (!values.baseline || !values.candidate) throw new Error('Specify --baseline and --candidate.');
 const arms = { baseline: path.resolve(values.baseline), candidate: path.resolve(values.candidate) };
 if (arms.baseline === arms.candidate) throw new Error('Benchmark arms must be separate worktrees.');
@@ -53,6 +180,11 @@ const repetitions = Number(values.repetitions);
 if (!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 5) throw new Error('repetitions must be 1..5.');
 if (!['commands', 'agents'].includes(values.mode)) throw new Error('mode must be commands or agents.');
 if (!['1', '2'].includes(values.jobs)) throw new Error('jobs must be 1 or 2');
+for (const [name, value] of [
+  ['baseline-gate', values['baseline-gate']],
+  ['candidate-gate', values['candidate-gate']],
+])
+  if (!['legacy', 'aggregate'].includes(value)) throw new Error(`${name} must be legacy or aggregate.`);
 if (
   values.scenario &&
   !(values.mode === 'commands' ? ['fresh', 'warm', 'editor'] : ['frontend', 'backend', 'failure']).includes(
@@ -96,6 +228,8 @@ const metadata = {
   repetitions,
   mode: values.mode,
   candidateJobs: Number(values.jobs),
+  baselineGate: values['baseline-gate'],
+  candidateGate: values['candidate-gate'],
   scenario: values.scenario ?? 'all',
   sandbox: 'workspace-write',
   ephemeral: true,
@@ -180,13 +314,9 @@ async function commandRun(arm, scenario, index, priming = false) {
   const cwd = arms[arm];
   if (scenario === 'fresh') await fresh(cwd);
   const record = { arm, scenario, index, priming, sourceBefore: await sourceIdentity(cwd), phases: [] };
-  const editorSteps = ['build:staff', 'preview-policy', 'editor-chromium', 'editor-firefox'];
+  const gateMode = arm === 'baseline' ? values['baseline-gate'] : values['candidate-gate'];
   const gates =
-    arm === 'baseline'
-      ? scenario === 'editor'
-        ? editorSteps
-        : ['test:unit', 'check', 'build']
-      : [scenario === 'editor' ? 'validate:editor' : 'validate'];
+    scenario === 'editor' ? selectedGateCommands(gateMode, scenario) : selectedGateCommands(gateMode, 'all');
   const started = performance.now();
   records.push(record);
   await save();
@@ -201,7 +331,9 @@ async function commandRun(arm, scenario, index, priming = false) {
               'scripts/test-content-workspace.mjs',
               ...(gate === 'editor-firefox' ? ['--firefox'] : []),
             ]
-          : ['pnpm', gate, ...(arm === 'candidate' && scenario !== 'editor' ? ['--jobs', values.jobs] : [])];
+          : gate === 'validate'
+            ? ['pnpm', gate, '--jobs', values.jobs]
+            : ['pnpm', gate];
     const start = performance.now();
     const logPath = path.join(
       output,
@@ -238,7 +370,7 @@ async function commandRun(arm, scenario, index, priming = false) {
     });
     await save();
     if (result.exitCode !== 0) break;
-    if (arm === 'candidate') {
+    if (gate === 'validate') {
       const summaryPath = content.match(/— (.+summary\.json)/)?.[1];
       try {
         if (
@@ -247,6 +379,8 @@ async function commandRun(arm, scenario, index, priming = false) {
         )
           throw new Error('Missing candidate validation evidence');
         record.validation = JSON.parse(await readFile(summaryPath, 'utf8'));
+        record.validationComplete = isCompleteValidationSummary(record.validation);
+        if (!record.validationComplete) throw new Error('Candidate validation evidence is partial or invalid.');
       } catch (error) {
         record.error = error.message;
         break;
@@ -267,6 +401,7 @@ async function commandRun(arm, scenario, index, priming = false) {
     !record.error &&
     record.phases.length === gates.length &&
     record.phases.every((phase) => phase.exitCode === 0) &&
+    (gateMode !== 'aggregate' || record.validationComplete === true) &&
     JSON.stringify(record.sourceBefore) === JSON.stringify(record.sourceAfter);
   await save();
   console.log(`${scenario} ${index} ${arm}: ${record.valid ? 'valid' : 'INVALID'} ${record.durationMs}ms`);

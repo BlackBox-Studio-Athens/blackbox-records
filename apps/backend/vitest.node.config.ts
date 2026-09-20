@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitest/config';
 import { validationReporters } from '../../scripts/validation-reporters.ts';
+import { backendNodeTestFiles } from './vitest-test-selection.ts';
 
 import { filteredViteLogger, filterBackendTestConsoleLog } from './test/setup/filtered-vite-logger';
 
@@ -16,6 +17,7 @@ export default defineConfig({
       'test/http/public-commerce-routes.test.ts',
       'test/http/stripe-webhook-routes.test.ts',
       'test/scripts/**/*.test.ts',
+      ...backendNodeTestFiles,
     ],
     onConsoleLog: filterBackendTestConsoleLog,
   },

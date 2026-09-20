@@ -25,7 +25,7 @@ test('full plan preserves current gates without retired catalog preparation', as
     plan.map((phase) => phase.args[0]),
     ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:types', 'check:boundaries', 'build'],
   );
-  assert.equal(scripts.build, 'pnpm build:web && pnpm build:staff');
+  assert.equal(scripts.build, 'node --import tsx scripts/run-release-preparation.mjs builds');
   assert.equal(
     scripts.check,
     'pnpm environment:model:verify && pnpm format:check && pnpm lint && pnpm check:types && pnpm check:boundaries',
@@ -46,6 +46,12 @@ test('full plan preserves current gates without retired catalog preparation', as
   assert.equal(validationPlan({ fast: true }).at(-1).name, 'contracts');
   assert.equal(validationPlan({ editor: true }).length, 4);
   assert.throws(() => validationPlan({ editor: true, fast: true }));
+  assert.deepEqual(
+    validationPlan({ checks: true }).map((phase) => phase.name),
+    ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:types', 'check:boundaries'],
+  );
+  assert.throws(() => validationPlan({ checks: true, fast: true }));
+  assert.throws(() => validationPlan({ checks: true, scope: 'web' }));
 });
 
 for (const phase of ['test', 'format', 'type', 'boundary', 'build', 'missing-artifact']) {
@@ -201,6 +207,17 @@ test('parallel groups finish before build and failures cannot reach build', asyn
   assert.equal(failed.exitCode, 9);
   assert.ok(!failed.phases.some(({ name }) => name === 'build'));
   assert.deepEqual(failed.skippedPhases, ['check-2', 'check-3', 'check-4', 'build']);
+});
+
+test('checks mode is partial and never schedules a build', async (t) => {
+  const cwd = await fixture(t);
+  const phases = [command('test:unit', 'setTimeout(() => {}, 20)'), command('check', 'process.exit(0)')];
+  const summary = await runValidation({ cwd, phases, checks: true, jobs: 2, ...testOptions });
+  assert.equal(summary.status, 'partial');
+  assert.equal(summary.scope, 'checks');
+  assert.equal(summary.mode, 'partial');
+  assert.deepEqual(summary.skippedPhases, []);
+  assert.ok(!summary.phases.some(({ name }) => name === 'build'));
 });
 
 test('native reports are opt-in and root contract ownership stays explicit', async () => {

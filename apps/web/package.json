@@ -22,8 +22,10 @@
     "build": "astro build --root . && pnpm cache:policy:check && pnpm brand-font:check && pnpm image-markup:check",
     "preview": "astro preview --root .",
     "check": "astro check --root .",
-    "test": "vitest run",
-    "test:unit": "vitest run",
+    "test:lightweight": "vitest run --config vitest.config.ts",
+    "test:request": "vitest run --config vitest.request.config.ts",
+    "test": "pnpm test:lightweight && pnpm test:request",
+    "test:unit": "pnpm test:lightweight && pnpm test:request",
     "astro": "astro"
   },
   "dependencies": {

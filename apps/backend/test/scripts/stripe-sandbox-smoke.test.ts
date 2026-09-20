@@ -38,6 +38,7 @@ import {
   createStripeSandboxSmokeScenarios,
   STRIPE_TEST_CARD_DOCS_URL,
   toLocalCheckoutOrderRow,
+  waitForRemoteOrderAfterCheckout,
   type LocalCheckoutOrderRow,
   type RemoteD1ReadinessSummary,
 } from '../../../../scripts/smoke-stripe-sandbox';
@@ -676,6 +677,121 @@ describe('Stripe sandbox Playwright smoke runner', () => {
     expect(
       didScenarioPass(paidOrder, STRIPE_SANDBOX_SMOKE_SCENARIOS.insufficient_funds, 'Your card was declined.'),
     ).toBe(false);
+  });
+
+  it('stops paid polling on the first paid state while preserving pending and non-paid behavior', async () => {
+    let now = 0;
+    let reads = 0;
+    const durations = createEmptyStripeSandboxSmokeDurations();
+    const dependencies = {
+      now: () => now,
+      sleep: async (ms: number) => {
+        now += ms;
+      },
+      readPublicCheckoutStateOrder: async () => {
+        reads += 1;
+        return { order: paidOrder, source: 'worker' as const };
+      },
+      readRemoteCheckoutOrderBySession: () => paidOrder,
+    };
+    await expect(
+      waitForRemoteOrderAfterCheckout(
+        'cs_test_123',
+        STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid,
+        { timeoutMs: 1, workerUrl: 'https://worker.example.test', verifyEmailReceipts: false },
+        durations,
+        dependencies,
+      ),
+    ).resolves.toEqual(paidOrder);
+    expect(reads).toBe(1);
+    expect(durations.remoteOrderFirstPaidMs).toBe(0);
+    expect(durations.remoteOrderPollCount).toBe(1);
+
+    now = 0;
+    reads = 0;
+    const delayedDurations = createEmptyStripeSandboxSmokeDurations();
+    await expect(
+      waitForRemoteOrderAfterCheckout(
+        'cs_test_123',
+        STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid,
+        { timeoutMs: 1, workerUrl: 'https://worker.example.test', verifyEmailReceipts: false },
+        delayedDurations,
+        {
+          ...dependencies,
+          readPublicCheckoutStateOrder: async () => {
+            reads += 1;
+            return { order: reads === 1 ? pendingOrder : paidOrder, source: 'worker' as const };
+          },
+        },
+      ),
+    ).resolves.toEqual(paidOrder);
+    expect(delayedDurations.remoteOrderPollCount).toBe(2);
+    expect(delayedDurations.remoteOrderFirstPaidMs).toBe(1_000);
+
+    const nonPaidDurations = createEmptyStripeSandboxSmokeDurations();
+    await expect(
+      waitForRemoteOrderAfterCheckout(
+        'cs_test_123',
+        STRIPE_SANDBOX_SMOKE_SCENARIOS.insufficient_funds,
+        { timeoutMs: 1, workerUrl: 'https://worker.example.test', verifyEmailReceipts: false },
+        nonPaidDurations,
+        {
+          now: () => 0,
+          sleep: async () => {},
+          readPublicCheckoutStateOrder: async () => ({ order: pendingOrder, source: 'worker' as const }),
+          readRemoteCheckoutOrderBySession: () => pendingOrder,
+        },
+      ),
+    ).resolves.toEqual(pendingOrder);
+    expect(nonPaidDurations.remoteOrderPollCount).toBe(1);
+
+    now = 0;
+    reads = 0;
+    const neverPaidDurations = createEmptyStripeSandboxSmokeDurations();
+    await expect(
+      waitForRemoteOrderAfterCheckout(
+        'cs_test_123',
+        STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid,
+        { timeoutMs: 1, workerUrl: 'https://worker.example.test', verifyEmailReceipts: false },
+        neverPaidDurations,
+        {
+          now: () => now,
+          sleep: async (ms: number) => {
+            now += ms;
+          },
+          readPublicCheckoutStateOrder: async () => {
+            reads += 1;
+            return { order: pendingOrder, source: 'worker' as const };
+          },
+          readRemoteCheckoutOrderBySession: () => pendingOrder,
+        },
+      ),
+    ).resolves.toEqual(pendingOrder);
+    expect(neverPaidDurations.remoteOrderPollCount).toBe(120);
+    expect(neverPaidDurations.remoteOrderFirstPaidMs).toBeNull();
+
+    const missingProjection = buildStripeSandboxSmokeEvidence({
+      artifactPaths: { tracePath: null },
+      checkoutPageUrl: 'https://checkout.example.test',
+      options: { siteUrl: 'https://site.example.test', workerUrl: 'https://worker.example.test' },
+      result: {
+        checkoutSurface: createStripeCheckoutSurfaceObservation(
+          'BlackBox UAT - Disintegration\n€28.00\nPayment method\nCard\nCard information',
+          checkoutSurfaceExpectation,
+        ),
+        checkoutSessionProjection: null,
+        checkoutSessionId: 'cs_test_123',
+        durations: createEmptyStripeSandboxSmokeDurations(),
+        finalUrl: 'https://checkout.example.test/return',
+        observedStripeUi: 'Checkout paid',
+        order: paidOrder,
+        screenshotPath: null,
+        webhookDeliveryDiagnostics: null,
+      },
+      runId: '20260517000102',
+      scenario: STRIPE_SANDBOX_SMOKE_SCENARIOS.happy_path_paid,
+    });
+    expect(missingProjection.passed).toBe(false);
   });
 
   it('extracts hosted Checkout surface amount and dynamic payment method expectations', () => {

@@ -2,8 +2,7 @@
 
 Current results and unresolved acceptance items: [refreshed measurement report](validation-refresh-report.md).
 
-Refreshed baseline: `8b5160c552959751ad95e2053fc9d499dec590fb`. The September 14 report is historical, not acceptance for this revision. Implementation is authorized on
-`codex/validation-efficiency` in its separate worktree. Main is not modified.
+Refreshed baseline: `8b5160c552959751ad95e2053fc9d499dec590fb`. The September 14 report is historical, not acceptance for this revision. Run the protocol from the reviewed checkout; use separate worktrees only for a two-arm comparison.
 
 Use Node 24.21.0, pnpm 12.0.0, independent worktree dependencies and caches, and
 RTK 0.47.0 in both arms. Record setup separately. Do not time competing workloads.
@@ -62,6 +61,14 @@ constitutes acceptance without transcript review and the stated thresholds.
 Passing agent scenarios now stop the campaign unless all required gate commands
 exited successfully. Usage capture alone is not successful validation. Statistics
 retain failures; incomplete or failed groups must not be compared as savings.
+
+For the measured aggregate gate, use `--baseline-gate aggregate
+--candidate-gate aggregate`; the default keeps the legacy baseline and aggregate
+candidate paths available for compatibility. To freeze a same-checkout source,
+tool, gate, and test-file inventory without timing a run, use
+`pnpm benchmark:validation --capture <path>`. Compare a later capture with
+`pnpm benchmark:validation --compare <path>`; captures are never overwritten,
+and incompatible machine, tool, gate, or assertion inventories are rejected.
 
 ## Measurements
 

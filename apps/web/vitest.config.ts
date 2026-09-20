@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   test: {
-    ...validationReporters('web'),
+    ...validationReporters('web-lightweight'),
     maxWorkers: 2,
     include: ['src/**/*.test.{ts,tsx}', 'test/**/*.test.{ts,tsx}', '../../scripts/**/*.test.ts'],
     // These root contracts run once through test:contracts, also included in scoped validation.
@@ -19,7 +19,8 @@ export default defineConfig({
       ...configDefaults.exclude,
       '../../scripts/check-frontend-route-isolation.test.ts',
       '../../scripts/pages-workflow-contract.test.ts',
+      'src/lib/backend/public-checkout-api.test.ts',
     ],
-    setupFiles: ['./src/test/setup-msw.ts'],
+    setupFiles: ['./src/test/setup-reject-network.ts'],
   },
 });

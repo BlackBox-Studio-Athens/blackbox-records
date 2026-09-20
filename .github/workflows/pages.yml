@@ -78,6 +78,26 @@ jobs:
       - &install
         name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Start Astro image cache restore timer
+        id: astro-cache-restore-start
+        run: echo "started_ms=$(date +%s%3N)" >> "$GITHUB_OUTPUT"
+      - name: Restore Astro image cache
+        id: astro-cache
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: apps/web/node_modules/.astro/assets
+          key: astro-assets-v1-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('pnpm-lock.yaml', 'package.json', 'apps/web/package.json', 'apps/web/astro.config.mjs') }}-${{ inputs.artifact_commit_sha || github.sha }}-${{ github.run_id }}
+          restore-keys: |
+            astro-assets-v1-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('pnpm-lock.yaml', 'package.json', 'apps/web/package.json', 'apps/web/astro.config.mjs') }}-
+      - name: Record Astro image cache restore
+        if: ${{ always() }}
+        run: |
+          set -euo pipefail
+          end_ms=$(date +%s%3N)
+          bytes=$(du -sb apps/web/node_modules/.astro/assets 2>/dev/null | cut -f1 || true)
+          bytes=${bytes:-0}
+          elapsed_ms=$((end_ms - ${{ steps.astro-cache-restore-start.outputs.started_ms }}))
+          echo "Astro image cache restore: hit=${{ steps.astro-cache.outputs.cache-hit }} bytes=${bytes} elapsed_ms=${elapsed_ms}" >> "$GITHUB_STEP_SUMMARY"
       - &release-tools
         name: Checkout trusted release tooling
         uses: actions/checkout@v7.0.1
@@ -88,10 +108,8 @@ jobs:
             scripts/
             apps/backend/cms-resources.json
           sparse-checkout-cone-mode: false
-      - name: Run unit tests
-        run: pnpm test:unit
-      - name: Run workspace checks
-        run: pnpm check
+      - name: Run validation checks
+        run: pnpm validate:checks
       - name: Run unused code audit
         run: pnpm audit:unused
       - name: Restore current UAT publication
@@ -149,10 +167,43 @@ jobs:
       - name: Verify staff previews in Chromium and Firefox
         env:
           STAFF_PREVIEW_ENVIRONMENT: prd
+        run: node --import tsx scripts/run-release-preparation.mjs browsers
+      - name: Measure Astro image cache candidate
+        id: astro-cache-candidate
+        if: ${{ success() }}
         run: |
-          node scripts/test-preview-policy.mjs
-          node scripts/test-content-workspace.mjs
-          node scripts/test-content-workspace.mjs --firefox
+          set -euo pipefail
+          bytes=$(du -sb apps/web/node_modules/.astro/assets 2>/dev/null | cut -f1 || true)
+          bytes=${bytes:-0}
+          echo "bytes=${bytes}" >> "$GITHUB_OUTPUT"
+          if (( bytes <= 629145600 )); then
+            echo "save=true" >> "$GITHUB_OUTPUT"
+            echo "Astro image cache candidate: bytes=${bytes}, save=true" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "save=false" >> "$GITHUB_OUTPUT"
+            echo "Astro image cache candidate: bytes=${bytes}, save=false (over 600 MiB)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Start Astro image cache save timer
+        id: astro-cache-save-start
+        if: ${{ steps.astro-cache-candidate.outputs.save == 'true' }}
+        run: echo "started_ms=$(date +%s%3N)" >> "$GITHUB_OUTPUT"
+      - name: Save Astro image cache
+        if: ${{ steps.astro-cache-candidate.outputs.save == 'true' }}
+        continue-on-error: true
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: apps/web/node_modules/.astro/assets
+          key: astro-assets-v1-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('pnpm-lock.yaml', 'package.json', 'apps/web/package.json', 'apps/web/astro.config.mjs') }}-${{ inputs.artifact_commit_sha || github.sha }}-${{ github.run_id }}
+      - name: Record Astro image cache save
+        if: ${{ always() && steps.astro-cache-candidate.outputs.save == 'true' }}
+        run: |
+          set -euo pipefail
+          end_ms=$(date +%s%3N)
+          elapsed_ms=$((end_ms - ${{ steps.astro-cache-save-start.outputs.started_ms }}))
+          echo "Astro image cache save: bytes=${{ steps.astro-cache-candidate.outputs.bytes }} elapsed_ms=${elapsed_ms}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Start release bundle upload timer
+        id: release-upload-start
+        run: echo "started_ms=$(date +%s%3N)" >> "$GITHUB_OUTPUT"
       - name: Upload verified release bundle
         uses: actions/upload-artifact@v7.0.1
         with:
@@ -160,6 +211,22 @@ jobs:
           path: .codex-artifacts/release
           include-hidden-files: true
           if-no-files-found: error
+          compression-level: 1
+          retention-days: 7
+      - name: Record release bundle upload
+        if: ${{ always() }}
+        run: |
+          set -euo pipefail
+          end_ms=$(date +%s%3N)
+          elapsed_ms=$((end_ms - ${{ steps.release-upload-start.outputs.started_ms }}))
+          echo "Release bundle upload elapsed_ms=${elapsed_ms}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload validation diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: validation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .codex-artifacts/validation
+          if-no-files-found: ignore
           retention-days: 7
   inspect-uat-pages:
     needs: build-candidate
@@ -170,9 +237,10 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - *checkout
-      - *pnpm
-      - *node
-      - *install
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24.21.0
       - *release-tools
       - &download-candidate
         name: Download verified release bundle

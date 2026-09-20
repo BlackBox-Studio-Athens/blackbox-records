@@ -1,13 +1,25 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout } from 'node:timers/promises';
 
 const bundle = '.codex-artifacts/release';
 const manifestPath = `${bundle}/manifest.json`;
+const transportPath = `${bundle}/transport.json`;
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'));
 const gh = (endpoint) => JSON.parse(execFileSync('gh', ['api', endpoint], { encoding: 'utf8' }));
@@ -129,6 +141,178 @@ export function inventory(directory, prefix = '') {
   );
 }
 
+function safePath(root, target, relative = '') {
+  const targetPart = String(target).replaceAll('\\', '/');
+  const relativePart = String(relative).replaceAll('\\', '/');
+  assert(
+    targetPart &&
+      !path.posix.isAbsolute(targetPart) &&
+      !path.win32.isAbsolute(targetPart) &&
+      !targetPart.split('/').includes('..'),
+    'Invalid release path.',
+  );
+  assert(
+    relativePart &&
+      !path.posix.isAbsolute(relativePart) &&
+      !path.win32.isAbsolute(relativePart) &&
+      !relativePart.split('/').includes('..'),
+    'Invalid release path.',
+  );
+  const resolved = path.resolve(root, targetPart, relativePart);
+  assert(resolved.startsWith(path.resolve(root) + path.sep), 'Release path escapes its output root.');
+  return resolved;
+}
+
+function regularFile(filename) {
+  const stat = lstatSync(filename);
+  assert(stat.isFile() && !stat.isSymbolicLink(), `Release artifact is not a regular file: ${filename}`);
+  return stat;
+}
+
+function manifestEntries(candidate) {
+  assert.equal(candidate.schema, 2, 'Compact transport requires schema 2.');
+  assert(
+    candidate.files && typeof candidate.files === 'object' && !Array.isArray(candidate.files),
+    'Invalid manifest files.',
+  );
+  const destinations = new Set();
+  const entries = [];
+  for (const [target, files] of Object.entries(candidate.files)) {
+    assert(files && typeof files === 'object' && !Array.isArray(files), `Invalid manifest target: ${target}`);
+    for (const [relative, digest] of Object.entries(files)) {
+      const destination = safePath('.', target, relative);
+      const key = process.platform === 'win32' ? destination.toLowerCase() : destination;
+      assert(!destinations.has(key), `Duplicate release destination: ${target}/${relative}`);
+      destinations.add(key);
+      assert.match(digest, /^[a-f0-9]{64}$/, `Invalid manifest digest: ${target}/${relative}`);
+      entries.push({ target, relative, digest });
+    }
+  }
+  return entries;
+}
+
+function manifestObjects(candidate, directory) {
+  const objects = new Map();
+  for (const { target, relative, digest } of manifestEntries(candidate)) {
+    const source = safePath(directory, target, relative);
+    assertNoSymlinkParents(directory, source);
+    const stat = regularFile(source);
+    const bytes = readFileSync(source);
+    assert.equal(sha256(bytes), digest, `Manifest digest mismatch: ${target}/${relative}`);
+    objects.set(digest, { size: stat.size, source });
+  }
+  return objects;
+}
+
+function manifestDigests(candidate) {
+  return new Set(manifestEntries(candidate).map(({ digest }) => digest));
+}
+
+export function packBundle(directory = bundle) {
+  const manifest = readFileSync(path.join(directory, 'manifest.json'));
+  const candidate = JSON.parse(manifest.toString('utf8'));
+  const objects = manifestObjects(candidate, directory);
+  const logicalBytes = Object.values(candidate.files ?? {})
+    .flatMap((files) => Object.keys(files).map((relative) => files[relative]))
+    .reduce((total, digest) => total + objects.get(digest).size, 0);
+  const temporary = `${directory}.pack-${process.pid}`;
+  const previous = `${directory}.unpacked-${process.pid}`;
+  rmSync(temporary, { recursive: true, force: true });
+  mkdirSync(path.join(temporary, 'objects'), { recursive: true });
+  try {
+    writeFileSync(path.join(temporary, 'manifest.json'), manifest, { flag: 'wx' });
+    for (const [digest, object] of objects)
+      writeFileSync(path.join(temporary, 'objects', digest), readFileSync(object.source), { flag: 'wx' });
+    const marker = {
+      transportVersion: 1,
+      manifestSha256: sha256(manifest),
+      objects: Object.fromEntries([...objects].map(([digest, object]) => [digest, { size: object.size }])),
+    };
+    writeFileSync(path.join(temporary, path.basename(transportPath)), `${JSON.stringify(marker, null, 2)}\n`, {
+      flag: 'wx',
+    });
+    renameSync(directory, previous);
+    renameSync(temporary, directory);
+    rmSync(previous, { recursive: true, force: true });
+  } catch (error) {
+    rmSync(temporary, { recursive: true, force: true });
+    throw error;
+  }
+  return {
+    objectCount: objects.size,
+    logicalBytes,
+    storedBytes: [...objects.values()].reduce((total, object) => total + object.size, 0),
+  };
+}
+
+function assertNoSymlinkParents(root, filename) {
+  let current = path.dirname(filename);
+  const rootPath = path.resolve(root);
+  while (current.startsWith(rootPath + path.sep)) {
+    const stat = lstatSync(current, { throwIfNoEntry: false });
+    if (stat) assert(!stat.isSymbolicLink(), `Release materialization encountered a symlink: ${current}`);
+    current = path.dirname(current);
+  }
+}
+
+export function materializeBundle(directory = bundle) {
+  if (!existsSync(path.join(directory, 'transport.json'))) return { materialized: false };
+  const manifestBytes = readFileSync(path.join(directory, 'manifest.json'));
+  const marker = JSON.parse(readFileSync(path.join(directory, 'transport.json'), 'utf8'));
+  const candidate = JSON.parse(manifestBytes.toString('utf8'));
+  assert.equal(marker.transportVersion, 1, 'Unsupported release transport version.');
+  assert.equal(marker.manifestSha256, sha256(manifestBytes), 'Release transport manifest mismatch.');
+  const expectedNames = [...manifestDigests(candidate)].sort();
+  const declared = marker.objects;
+  assert(declared && typeof declared === 'object' && !Array.isArray(declared), 'Invalid release transport objects.');
+  assert.deepEqual(Object.keys(declared).sort(), expectedNames, 'Release transport objects differ from the manifest.');
+  const objectDirectory = path.join(directory, 'objects');
+  const objectDirectoryStat = lstatSync(objectDirectory);
+  assert(
+    objectDirectoryStat.isDirectory() && !objectDirectoryStat.isSymbolicLink(),
+    'Invalid release object directory.',
+  );
+  const actualNames = readdirSync(objectDirectory, { withFileTypes: true })
+    .map((entry) => {
+      assert(entry.isFile() && !entry.isSymbolicLink(), 'Release transport objects must be regular files.');
+      return entry.name;
+    })
+    .sort();
+  assert.deepEqual(actualNames, expectedNames, 'Release transport contains unexpected objects.');
+  for (const digest of expectedNames) {
+    assert.match(digest, /^[a-f0-9]{64}$/);
+    const filename = path.join(objectDirectory, digest);
+    const bytes = readFileSync(filename);
+    assert(
+      Number.isSafeInteger(declared[digest]?.size) && declared[digest].size >= 0,
+      `Invalid object size: ${digest}`,
+    );
+    assert.equal(bytes.byteLength, declared[digest]?.size, `Release transport object size mismatch: ${digest}`);
+    assert.equal(sha256(bytes), digest, `Release transport object digest mismatch: ${digest}`);
+  }
+
+  const temporary = `${directory}.materialized-${process.pid}`;
+  const previous = `${directory}.compact-${process.pid}`;
+  rmSync(temporary, { recursive: true, force: true });
+  mkdirSync(temporary, { recursive: true });
+  try {
+    writeFileSync(path.join(temporary, 'manifest.json'), manifestBytes, { flag: 'wx' });
+    for (const { target, relative, digest } of manifestEntries(candidate)) {
+      const destination = safePath(temporary, target, relative);
+      assertNoSymlinkParents(temporary, destination);
+      mkdirSync(path.dirname(destination), { recursive: true });
+      writeFileSync(destination, readFileSync(path.join(objectDirectory, digest)), { flag: 'wx' });
+    }
+    renameSync(directory, previous);
+    renameSync(temporary, directory);
+    rmSync(previous, { recursive: true, force: true });
+  } catch (error) {
+    rmSync(temporary, { recursive: true, force: true });
+    throw error;
+  }
+  return { materialized: true, objectCount: expectedNames.length };
+}
+
 async function publicJson(url, optional = false) {
   const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
   if (optional && response.status === 404) return null;
@@ -209,6 +393,7 @@ export function publicationCodeIdentity(project, current, run, target, repositor
 }
 
 export function verifyFiles(candidate, directory = bundle) {
+  materializeBundle(directory);
   assert.equal(candidate.schema, 2, 'Legacy candidate contract; build and accept a fresh candidate.');
   for (const target of ['uat/worker', 'prd/cms']) {
     for (const file of [
@@ -264,6 +449,7 @@ async function main(command, target) {
     return;
   }
   if (command === 'pack') {
+    const startedAt = performance.now();
     const sha = process.env.SOURCE_SHA;
     assert.match(sha ?? '', /^[0-9a-f]{40}$/);
     assert.match(process.env.GITHUB_RUN_ID ?? '', /^[1-9][0-9]*$/);
@@ -327,6 +513,10 @@ async function main(command, target) {
       candidate.files[directory] = inventory(`${bundle}/${directory}`);
     }
     writeFileSync(manifestPath, JSON.stringify(candidate, null, 2));
+    const transport = packBundle(bundle);
+    console.log(
+      `Packed ${transport.objectCount} unique release objects: logical=${transport.logicalBytes} bytes, stored=${transport.storedBytes} bytes, elapsed=${Math.round(performance.now() - startedAt)}ms.`,
+    );
     return;
   }
 
@@ -337,7 +527,9 @@ async function main(command, target) {
     console.log(JSON.stringify(await observe(candidate, target)));
     return;
   }
+  const verificationStartedAt = performance.now();
   verifyFiles(candidate);
+  console.log(`Verified release bundle in ${Math.round(performance.now() - verificationStartedAt)}ms.`);
   assert.deepEqual(candidate.configuration, configuration(), 'Build/deploy configuration differs.');
   const config = candidate.configuration;
   if (target === 'prd') {

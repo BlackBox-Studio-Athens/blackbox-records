@@ -281,6 +281,8 @@ export type StripeSandboxSmokeDurations = {
   checkoutOpenMs: number;
   evidenceWriteMs: number;
   remoteOrderPollMs: number;
+  remoteOrderFirstPaidMs: number | null;
+  remoteOrderPollCount: number;
   stripeFormFillMs: number;
   stripeOutcomeMs: number;
   stripeSubmitMs: number;
@@ -1161,6 +1163,8 @@ export function createEmptyStripeSandboxSmokeDurations(): StripeSandboxSmokeDura
     checkoutOpenMs: 0,
     evidenceWriteMs: 0,
     remoteOrderPollMs: 0,
+    remoteOrderFirstPaidMs: null,
+    remoteOrderPollCount: 0,
     stripeFormFillMs: 0,
     stripeOutcomeMs: 0,
     stripeSubmitMs: 0,
@@ -1345,7 +1349,8 @@ async function runScenarioWithBrowser(input: {
           'remote order poll',
           durations,
           'remoteOrderPollMs',
-          async () => waitForRemoteOrderAfterCheckout(resolvedCheckoutSessionId, input.scenario, input.options),
+          async () =>
+            waitForRemoteOrderAfterCheckout(resolvedCheckoutSessionId, input.scenario, input.options, durations),
         )
       : null;
     const webhookDeliveryDiagnostics =
@@ -1682,34 +1687,57 @@ export function createSmokeStoreCartStorageEntry(scenario: StripeSandboxSmokeSce
   return { key: STORE_CART_STORAGE_KEY, value };
 }
 
-async function waitForRemoteOrderAfterCheckout(
+export async function waitForRemoteOrderAfterCheckout(
   checkoutSessionId: string,
   scenario: StripeSandboxSmokeScenario,
   options: Pick<StripeSandboxSmokeOptions, 'timeoutMs' | 'workerUrl' | 'verifyEmailReceipts'>,
+  durations: StripeSandboxSmokeDurations = createEmptyStripeSandboxSmokeDurations(),
+  dependencies: {
+    now?: () => number;
+    sleep?: (ms: number) => Promise<void>;
+    readPublicCheckoutStateOrder?: typeof readPublicCheckoutStateOrder;
+    readRemoteCheckoutOrderBySession?: (
+      checkoutSessionId: string,
+    ) => LocalCheckoutOrderRow | null | Promise<LocalCheckoutOrderRow | null>;
+  } = {},
 ): Promise<LocalCheckoutOrderRow | null> {
+  const now = dependencies.now ?? Date.now;
+  const wait = dependencies.sleep ?? sleep;
+  const readPublic = dependencies.readPublicCheckoutStateOrder ?? readPublicCheckoutStateOrder;
+  const readRemote = dependencies.readRemoteCheckoutOrderBySession ?? readRemoteCheckoutOrderBySession;
   const timeoutMs = scenario.expectedOrderStatus === 'paid' ? Math.max(options.timeoutMs, 120_000) : 15_000;
-  const deadline = Date.now() + timeoutMs;
+  const startedAt = now();
+  const deadline = startedAt + timeoutMs;
   let latest: LocalCheckoutOrderRow | null = null;
   let usePublicCheckoutState = !options.verifyEmailReceipts;
 
-  while (Date.now() < deadline) {
+  while (now() < deadline) {
+    durations.remoteOrderPollCount += 1;
     if (usePublicCheckoutState) {
-      const workerResult = await readPublicCheckoutStateOrder(options.workerUrl, checkoutSessionId);
+      const workerResult = await readPublic(options.workerUrl, checkoutSessionId);
       latest = workerResult.order;
       usePublicCheckoutState = workerResult.source !== 'fallback';
     } else {
-      latest = readRemoteCheckoutOrderBySession(checkoutSessionId);
+      latest = await readRemote(checkoutSessionId);
     }
 
-    if (latest && didScenarioPass(latest, scenario, scenario.expectedStripeErrorPattern?.source ?? '')) {
-      return readRemoteCheckoutOrderBySession(checkoutSessionId) ?? latest;
+    if (latest?.status === 'paid' && durations.remoteOrderFirstPaidMs === null) {
+      durations.remoteOrderFirstPaidMs = now() - startedAt;
+    }
+
+    const ready =
+      scenario.expectedOrderStatus === 'paid'
+        ? latest?.status === 'paid'
+        : latest && didScenarioPass(latest, scenario, scenario.expectedStripeErrorPattern?.source ?? '');
+    if (ready) {
+      return (await readRemote(checkoutSessionId)) ?? latest;
     }
 
     if (latest && scenario.expectedOrderStatus !== 'paid') {
       return latest;
     }
 
-    await sleep(1_000);
+    await wait(1_000);
   }
 
   return latest;

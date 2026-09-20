@@ -122,9 +122,11 @@ describe('Pages artifact promotion contract', () => {
     expect(tooling.with.path).toBe('.codex-artifacts/release-tools');
     expect(JSON.stringify(build)).toContain('node .codex-artifacts/release-tools/scripts/release-candidate.mjs pack');
     const steps = build.steps.map((step: { name: string }) => step.name);
-    expect(steps.indexOf('Run unit tests')).toBeLessThan(steps.indexOf('Build hosted UAT static frontend'));
-    expect(steps.indexOf('Run workspace checks')).toBeLessThan(steps.indexOf('Build hosted UAT static frontend'));
+    expect(steps.indexOf('Run validation checks')).toBeLessThan(steps.indexOf('Build hosted UAT static frontend'));
     expect(steps.indexOf('Run unused code audit')).toBeLessThan(steps.indexOf('Build hosted UAT static frontend'));
+    expect(build.steps.find((step: { name: string }) => step.name === 'Run validation checks').run).toBe(
+      'pnpm validate:checks',
+    );
     const uat = build.steps.find((step: { name: string }) => step.name === 'Build hosted UAT static frontend');
     const prd = build.steps.find((step: { name: string }) => step.name === 'Build hosted PRD static frontend');
     expect(uat.env.ASTRO_BASE_PATH).toBe('/');
@@ -150,6 +152,24 @@ describe('Pages artifact promotion contract', () => {
     }
     const staff = build.steps.find((step: { name: string }) => step.name === 'Build hosted staff frontend');
     expect(staff).toBeUndefined();
+    const imageCache = build.steps.find((step: { name: string }) => step.name === 'Restore Astro image cache');
+    expect(imageCache.uses).toBe('actions/cache/restore@v6.1.0');
+    expect(imageCache.with.path).toBe('apps/web/node_modules/.astro/assets');
+    expect(imageCache.with.key).toContain('${{ github.run_id }}');
+    const upload = build.steps.find((step: { name: string }) => step.name === 'Upload verified release bundle');
+    expect(upload.with['compression-level']).toBe(1);
+    const diagnostics = build.steps.find((step: { name: string }) => step.name === 'Upload validation diagnostics');
+    expect(diagnostics.if).toBe('${{ failure() }}');
+    expect(diagnostics.with.path).toBe('.codex-artifacts/validation');
+  });
+
+  it('keeps UAT inspection built-in-only after downloading the candidate', () => {
+    const steps = workflow.jobs['inspect-uat-pages'].steps;
+    expect(steps.some((step: { name?: string }) => step.name === 'Setup pnpm')).toBe(false);
+    expect(steps.some((step: { name?: string }) => step.name === 'Install dependencies')).toBe(false);
+    expect(steps.some((step: { uses?: string }) => step.uses?.startsWith('actions/cache/'))).toBe(false);
+    expect(steps.find((step: { name?: string }) => step.name === 'Setup Node.js').with['node-version']).toBe('24.21.0');
+    expect(steps.at(-1).run).toBe('node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify uat');
   });
 
   it('promotes only the selected retained artifact without rebuilding it', () => {

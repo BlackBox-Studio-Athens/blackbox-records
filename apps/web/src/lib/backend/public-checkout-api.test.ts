@@ -28,6 +28,10 @@ describe('resolvePublicCheckoutApiBaseUrl', () => {
 });
 
 describe('createPublicCheckoutApi', () => {
+  it('rejects an unhandled MSW request', async () => {
+    await expect(fetch('https://unmocked.invalid/')).rejects.toThrow();
+  });
+
   it('reads browser-safe store capabilities through the public Worker route', async () => {
     const api = createPublicCheckoutApi(apiClientMswBaseUrl);
     const result = await api.readStoreCapabilities();

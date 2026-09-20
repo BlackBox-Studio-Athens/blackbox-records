@@ -281,6 +281,88 @@ test('restores the pinned public snapshot without reading editable CMS content o
     await rm(parent, { recursive: true, force: true });
   }
 });
+
+test('restores media four-wide, settles a failed batch, and never accepts partial output', async () => {
+  const parent = await mkdtemp(join(tmpdir(), 'published-batched-restore-'));
+  const files = Array.from({ length: 5 }, (_, index) => Buffer.concat([imageBytes, Buffer.from([index])]));
+  const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
+  const media = files.map((bytes, index) => ({
+    id: `image-${index}`,
+    filename: `cover-${index}.png`,
+    mimeType: 'image/png',
+    size: bytes.length,
+    width: 1,
+    height: 1,
+    sha256: hash(bytes),
+  }));
+  const json = JSON.stringify({
+    schemaVersion: 1,
+    environment: 'uat',
+    records: media.map((item, index) => ({
+      collection: 'news',
+      id: `news-${index}`,
+      slug: `news-${index}`,
+      revisionId: `live-${index}`,
+      data: { title: 'Published', date: '2026-09-14', summary: 'Copy', image: { id: item.id }, image_alt: 'Cover' },
+    })),
+    media,
+  });
+  const content = {
+    publicationId: '12345678-1234-4234-8234-123456789012',
+    ciRunId: '123',
+    snapshotSha256: hash(Buffer.from(json)),
+  };
+  const input = {
+    environment: 'uat',
+    target: 'https://staff-uat.blackboxrecordsathens.com/',
+    directory: join(parent, 'snapshot'),
+    token: 'a'.repeat(64),
+    accessClientId: 'id',
+    accessClientSecret: 'secret',
+    maxRequests: 6,
+  };
+  let active = 0;
+  let maximum = 0;
+  let mediaCalls = 0;
+  const send = async (url, init) => {
+    const address = new URL(url);
+    if (address.hostname === 'blackbox-records-web-uat.pages.dev')
+      return Response.json({ sha: 'b'.repeat(40), content });
+    if (address.pathname.endsWith('/snapshot')) return new Response(json);
+    const index = media.findIndex((item) => item.sha256 === init.headers['X-Snapshot-Media-SHA256']);
+    mediaCalls++;
+    active++;
+    maximum = Math.max(maximum, active);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    active--;
+    return new Response(files[index]);
+  };
+  try {
+    await assert.doesNotReject(restorePublishedContent(input, send));
+    assert.equal(mediaCalls, 5);
+    assert.equal(maximum, 4);
+    assert.equal(await readFile(join(input.directory, 'snapshot.json'), 'utf8'), json);
+
+    let failedMediaCalls = 0;
+    await assert.rejects(
+      restorePublishedContent({ ...input, directory: join(parent, 'failed') }, async (url, init) => {
+        const address = new URL(url);
+        if (address.hostname === 'blackbox-records-web-uat.pages.dev')
+          return Response.json({ sha: 'b'.repeat(40), content });
+        if (address.pathname.endsWith('/snapshot')) return new Response(json);
+        failedMediaCalls++;
+        const index = media.findIndex((item) => item.sha256 === init.headers['X-Snapshot-Media-SHA256']);
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        return new Response(index === 0 ? Buffer.from('wrong') : files[index]);
+      }),
+      /digest mismatch|Expected values|AssertionError/,
+    );
+    assert.equal(failedMediaCalls, 4);
+    await assert.rejects(access(join(parent, 'failed')));
+  } finally {
+    await rm(parent, { recursive: true, force: true });
+  }
+});
 const mediaReaders = { readMedia: async () => imageMetadata, readMediaFile: async () => imageBytes };
 
 const published = {

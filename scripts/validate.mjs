@@ -7,9 +7,11 @@ import { parseArgs, stripVTControlCharacters } from 'node:util';
 import { execa } from 'execa';
 import { runFiniteCommand } from './local-process.ts';
 
-export function validationPlan({ fast = false, scope = 'all', editor = false } = {}) {
+export function validationPlan({ fast = false, scope = 'all', editor = false, checks = false } = {}) {
   if (!['all', 'web', 'staff', 'backend', 'api-client'].includes(scope)) throw new Error(`Unknown scope: ${scope}`);
-  if (!fast && scope !== 'all') throw new Error('Full validation cannot be scoped.');
+  if (checks && (fast || editor || scope !== 'all'))
+    throw new Error('Checks validation cannot be combined with fast, editor, or scoped validation.');
+  if (!fast && !checks && scope !== 'all') throw new Error('Full validation cannot be scoped.');
   const phase = (name, args) => ({ name, command: 'pnpm', args });
   if (editor) {
     if (fast || scope !== 'all') throw new Error('Editor acceptance cannot be combined with scoped iteration.');
@@ -21,6 +23,11 @@ export function validationPlan({ fast = false, scope = 'all', editor = false } =
         ['editor-firefox', ['scripts/test-content-workspace.mjs', '--firefox']],
       ].map(([name, args]) => ({ name, command: process.execPath, args })),
     ];
+  }
+  if (checks) {
+    return ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:types', 'check:boundaries'].map(
+      (name) => phase(name, [name]),
+    );
   }
   if (!fast) {
     return [
@@ -140,11 +147,12 @@ export async function runValidation({
   cwd = process.cwd(),
   fast = false,
   editor = false,
+  checks = false,
   trace = false,
   scope = 'all',
   jobs = 2,
   signal,
-  phases = validationPlan({ fast, scope, editor }),
+  phases = validationPlan({ fast, scope, editor, checks }),
   identify = sourceIdentity,
   readPnpmVersion = async () => (await execa('pnpm', ['--version'], { cwd })).stdout,
   log = console.log,
@@ -165,8 +173,8 @@ export async function runValidation({
   const summary = {
     schemaVersion: 1,
     runId,
-    mode: fast || editor ? 'partial' : 'full',
-    scope: editor ? 'editor' : scope,
+    mode: fast || editor || checks ? 'partial' : 'full',
+    scope: editor ? 'editor' : checks ? 'checks' : scope,
     jobs,
     trace,
     startedAt: new Date().toISOString(),
@@ -280,12 +288,15 @@ export async function runValidation({
       return true;
     }
     let passed;
-    if (jobs === 2 && !fast && !editor && phases.length === 7) {
-      const results = await Promise.allSettled([execute(phases[0]), sequence(phases.slice(1, -1))]);
+    const canOverlap = jobs === 2 && !fast && !editor && phases.length > 1 && phases[0].name === 'test:unit';
+    if (canOverlap) {
+      const hasBuild = phases.at(-1)?.name === 'build';
+      const middle = phases.slice(1, hasBuild ? -1 : undefined);
+      const results = await Promise.allSettled([execute(phases[0]), sequence(middle)]);
       const rejected = results.find((result) => result.status === 'rejected');
       if (rejected) throw rejected.reason;
       passed = results.every((result) => result.value === true);
-      if (passed) passed = await execute(phases.at(-1));
+      if (passed && hasBuild) passed = await execute(phases.at(-1));
     } else {
       passed = await sequence(phases);
     }
@@ -299,7 +310,7 @@ export async function runValidation({
       : !unchanged
         ? 'invalidated'
         : passed
-          ? fast || editor
+          ? fast || editor || checks
             ? 'partial'
             : 'passed'
           : 'failed';
@@ -346,6 +357,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
       options: {
         fast: { type: 'boolean' },
         editor: { type: 'boolean' },
+        checks: { type: 'boolean' },
         trace: { type: 'boolean' },
         scope: { type: 'string' },
         jobs: { type: 'string' },
@@ -354,6 +366,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     const summary = await runValidation({
       fast: values.fast,
       editor: values.editor,
+      checks: values.checks,
       trace: values.trace,
       scope: values.scope,
       jobs: Number(values.jobs || 2),

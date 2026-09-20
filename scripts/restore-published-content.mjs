@@ -85,13 +85,20 @@ export async function restorePublishedContent(
     'Snapshot media budget exceeded.',
   );
   const files = new Map();
-  for (const [sha256, item] of media) {
-    const body = await bytes(new URL('/_emdash/api/blackbox/publications/media', origin), item.size, {
-      ...headers,
-      'X-Snapshot-Media-SHA256': sha256,
-    });
-    assert.equal(createHash('sha256').update(body).digest('hex'), sha256);
-    files.set(sha256, body);
+  const entries = [...media];
+  for (let index = 0; index < entries.length; index += 4) {
+    const results = await Promise.allSettled(
+      entries.slice(index, index + 4).map(async ([sha256, item]) => {
+        const body = await bytes(new URL('/_emdash/api/blackbox/publications/media', origin), item.size, {
+          ...headers,
+          'X-Snapshot-Media-SHA256': sha256,
+        });
+        assert.equal(createHash('sha256').update(body).digest('hex'), sha256);
+        files.set(sha256, body);
+      }),
+    );
+    const failure = results.find((result) => result.status === 'rejected');
+    if (failure) throw failure.reason;
   }
   await mkdir(resolve(directory, '..'), { recursive: true });
   await writeCmsSnapshot({ json, sha256: content.snapshotSha256, files }, directory, environment);

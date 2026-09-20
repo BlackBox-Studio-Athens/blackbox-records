@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
@@ -9,7 +9,9 @@ import {
   publicationCodeIdentity,
   refreshedReleaseIdentity,
   inventory,
+  materializeBundle,
   observe,
+  packBundle,
   validateArtifacts,
   validateIdentity,
   validateOrder,
@@ -225,4 +227,70 @@ test('retained artifact verification rejects missing and modified files', (conte
   writeFileSync(`${directory}/prd/public/artifact`, sha);
   rmSync(`${directory}/prd/cms`, { recursive: true });
   assert.throws(() => verifyFiles({ schema: 2, files }, directory), /Missing combined CMS artifact/);
+});
+
+test('compact transport round-trips complete logical files and rejects unexpected objects', () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'blackbox-release-transport-'));
+  try {
+    const repeated = 'same payload\n'.repeat(100);
+    const files = {};
+    for (const target of ['uat/public', 'prd/public']) {
+      mkdirSync(`${directory}/${target}`, { recursive: true });
+      for (let index = 0; index < 6; index += 1) {
+        writeFileSync(`${directory}/${target}/asset-${index}.txt`, repeated);
+      }
+      files[target] = inventory(`${directory}/${target}`);
+    }
+    const candidate = { schema: 2, files };
+    writeFileSync(`${directory}/manifest.json`, JSON.stringify(candidate));
+    const packed = packBundle(directory);
+    assert.equal(packed.logicalBytes, repeated.length * 12);
+    assert.equal(packed.storedBytes, repeated.length);
+    assert.ok(packed.storedBytes < packed.logicalBytes / 2);
+    assert.ok(existsSync(`${directory}/transport.json`));
+    assert.deepEqual(Object.keys(materializeBundle(directory)), ['materialized', 'objectCount']);
+    for (const target of Object.keys(files)) assert.deepEqual(inventory(`${directory}/${target}`), files[target]);
+    assert.equal(materializeBundle(directory).materialized, false);
+
+    packBundle(directory);
+    const object = readdirSync(`${directory}/objects`)[0];
+    const originalObject = readFileSync(`${directory}/objects/${object}`);
+    writeFileSync(`${directory}/objects/${object}`, 'tampered');
+    assert.throws(() => materializeBundle(directory), /size mismatch|digest mismatch/);
+    assert.ok(existsSync(`${directory}/transport.json`), 'failed materialization leaves the compact input intact');
+
+    writeFileSync(`${directory}/objects/${object}`, originalObject);
+    materializeBundle(directory);
+    packBundle(directory);
+    const missingObject = readdirSync(`${directory}/objects`)[0];
+    const missingBytes = readFileSync(`${directory}/objects/${missingObject}`);
+    rmSync(`${directory}/objects/${missingObject}`);
+    assert.throws(() => materializeBundle(directory), /objects differ from the manifest|unexpected objects/);
+    writeFileSync(`${directory}/objects/${missingObject}`, missingBytes);
+    materializeBundle(directory);
+    packBundle(directory);
+    writeFileSync(`${directory}/objects/${'f'.repeat(64)}`, 'extra');
+    assert.throws(() => materializeBundle(directory), /unexpected objects/);
+    assert.equal(readFileSync(`${directory}/manifest.json`, 'utf8'), JSON.stringify(candidate));
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('compact transport rejects path escapes and duplicate logical destinations before packing', () => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'blackbox-release-transport-paths-'));
+  try {
+    mkdirSync(`${directory}/uat/public`, { recursive: true });
+    writeFileSync(`${directory}/uat/public/asset`, 'asset');
+    const digest = 'a'.repeat(64);
+    for (const files of [
+      { uat: { '../escape': digest } },
+      { uat: { 'public/asset': digest }, 'uat/public': { asset: digest } },
+    ]) {
+      writeFileSync(`${directory}/manifest.json`, JSON.stringify({ schema: 2, files }));
+      assert.throws(() => packBundle(directory), /Invalid release path|Duplicate release destination/);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });

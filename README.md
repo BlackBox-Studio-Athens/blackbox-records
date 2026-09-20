@@ -434,6 +434,8 @@ pnpm validate
 
 `pnpm validate` (also `pnpm validate:full`) runs the complete tests, checks and build without catalog generation. The original `pnpm test:unit`, `pnpm check`, and `pnpm build` commands remain standalone equivalents. Full logs, native Vitest JSON, ESLint statistics and `summary.json` are retained under `.codex-artifacts/validation/<run-id>/`; the summary records source identity and rejects a source change during validation. A pass establishes repository gates, not task-specific acceptance. For staff/editor changes run `pnpm validate:editor` too; CMS/publication checks remain additional as documented in [content publication](docs/content-publication.md) and [content workspace](docs/content-workspace.md).
 
+For CI prerequisites without a build, use `pnpm validate:checks`; it is partial and does not establish completion. `pnpm format:check` uses the native content cache under the ignored validation cache directory; use `pnpm format:check:uncached` for parity or diagnosis. The root `pnpm build` overlaps independent web/staff builds and joins both results before returning.
+
 For iteration, use `pnpm validate:fast --scope web|staff|backend|api-client|all`. The default is `all`; use it for shared packages, content, config, migrations, or tooling. This runs selected-package tests and type checks plus root contracts, but is always partial and does not replace full completion or task-specific browser/CMS/asset checks. Full validation defaults to two independent test/check groups; use `--jobs 1` for sequential diagnosis. Neither mode overlaps builds with other phases. This candidate remains subject to benchmark acceptance targets. A stale `.codex-artifacts/validation/active.lock` after a hard kill requires checking that its recorded PID is no longer running before removing that exact lock. Use `pnpm validate:editor --trace` to capture the primary browser context on failure; traces supplement assertion logs and screenshots, not replace them.
 
 The measurement protocol and acceptance targets are in [the validation benchmark](docs/validation-benchmark.md). Reduced output alone is not proof of reduced total AI usage.
@@ -691,8 +693,7 @@ CI/deploy credentials and public build variables:
 - UAT deployment is handled by `.github/workflows/pages.yml`.
 - Deploy-relevant pushes to `main` build both targets and deploy UAT only; pushes changing only `docs/**`, `openspec/**`, root `*.md`, or root `LICENSE` are skipped. `workflow_dispatch` remains available for a forced deployment.
 - The shared static workflow uses Node 24.21.0, pnpm 12.0.0, explicit pnpm setup/install steps, and only deploys UAT if all of these succeed:
-  - `pnpm test:unit`
-  - `pnpm check`
+  - `pnpm validate:checks`
   - `pnpm audit:unused`
   - `pnpm build:web` for the UAT artifact
 - The build step passes `PUBLIC_BACKEND_BASE_URL` from `UAT_PUBLIC_BACKEND_BASE_URL` so the Cloudflare Pages URL serves as the public UAT surface.
@@ -706,7 +707,7 @@ CI/deploy credentials and public build variables:
 - The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
 - The staff artifact is built separately at `apps/staff/dist` and packaged into the combined Worker; no standalone staff Pages upload runs.
 - Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/pages.yml`, not by local manual `wrangler pages deploy`.
-- The shared static workflow runs `pnpm test:unit`, `pnpm check`, and `pnpm audit:unused` before separate `pnpm build:web` and `pnpm build:staff` steps.
+- The shared static workflow runs `pnpm validate:checks` and `pnpm audit:unused`, restores only Astro's native image asset cache, then builds the UAT and PRD targets in the existing content order. Independent web/staff preparation and the Chromium/Firefox fixture checks overlap after their prerequisites; packaging waits for all results.
 - The workflow sets Cloudflare-root static build values with `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/`.
 - The workflow passes only browser-safe public Astro variables into the frontend runtime: `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`.
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.
