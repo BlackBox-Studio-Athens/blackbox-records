@@ -162,7 +162,11 @@ records.artists.push({
   ...structuredClone(records.artists[0]),
   id: 'artists-2',
   slug: 'mass-culture',
-  data: { ...structuredClone(artist), title: 'Mass Culture' },
+  data: { ...structuredClone(artist), title: 'Mass Culture saved draft' },
+  liveData: { ...structuredClone(artist), title: 'Mass Culture' },
+  liveRevisionId: 'live-1',
+  draftRevisionId: 'draft-1',
+  _rev: '2',
 });
 const state = {
   initialStockReads: Promise.resolve(),
@@ -279,7 +283,13 @@ const server = createServer(async (req, res) => {
               .map((item) => ({
                 ...item,
                 collection: section,
-                publicationState: 'draft',
+                publicationState: item.draftRevisionId
+                  ? item.liveRevisionId
+                    ? 'changes'
+                    : 'draft'
+                  : item.liveRevisionId
+                    ? 'published'
+                    : 'draft',
                 selling:
                   section === 'releases' && item.id === 'releases-1'
                     ? {
@@ -564,6 +574,15 @@ const server = createServer(async (req, res) => {
       const item = list.find((row) => row.id === id || row.slug === id);
       if (action === 'publish') {
         item.liveRevisionId = 'live-1';
+        return ok({ item, _rev: item._rev });
+      }
+      if (action === 'discard-draft') {
+        assert.equal(req.method, 'POST');
+        assert.equal(body._rev, item._rev);
+        assert.ok(item.liveRevisionId && item.draftRevisionId);
+        item.data = structuredClone(item.liveData);
+        item.draftRevisionId = null;
+        item._rev = String(Number(item._rev) + 1);
         return ok({ item, _rev: item._rev });
       }
       if (req.method === 'PUT') {
@@ -1147,6 +1166,44 @@ else {
       'artists-2',
     );
     state.previewImageFailure = false;
+
+    await page.goto(`${origin}/content/?collection=artists&id=artists-2`);
+    const savedDraftArtistName = page.getByLabel('Artist name', { exact: true });
+    await savedDraftArtistName.waitFor();
+    assert.equal(await savedDraftArtistName.inputValue(), 'Mass Culture saved draft');
+    await savedDraftArtistName.fill('Local edit before discard');
+    await page.getByRole('button', { name: 'More draft actions' }).click();
+    const savedDiscardItem = page.getByRole('menuitem', { name: 'Discard saved changes', exact: true });
+    assert.equal(await savedDiscardItem.isDisabled(), true, 'Saved-draft discard waits for unsaved edits');
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'More draft actions' }).click();
+    await page.getByRole('menuitem', { name: 'Discard unsaved changes', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
+    await page.waitForFunction(
+      (expected) => document.querySelector('#content-title')?.value === expected,
+      'Mass Culture saved draft',
+    );
+    assert.equal(await savedDraftArtistName.inputValue(), 'Mass Culture saved draft');
+    await page.getByRole('button', { name: 'More draft actions' }).click();
+    await page.getByRole('menuitem', { name: 'Discard saved changes', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Keep saved changes', exact: true }).click();
+    assert.equal(await savedDraftArtistName.inputValue(), 'Mass Culture saved draft');
+    await page.getByRole('button', { name: 'More draft actions' }).click();
+    await page.getByRole('menuitem', { name: 'Discard saved changes', exact: true }).click();
+    const discardRequest = page.waitForRequest(
+      (request) => request.method() === 'POST' && request.url().endsWith('/content/artists/artists-2/discard-draft'),
+    );
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Discard saved changes', exact: true }).click();
+    await discardRequest;
+    await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
+    await page.waitForFunction(
+      (expected) => document.querySelector('#content-title')?.value === expected,
+      'Mass Culture',
+    );
+    assert.equal(await savedDraftArtistName.inputValue(), 'Mass Culture');
+    assert.equal(records.artists.find((item) => item.id === 'artists-2').data.title, 'Mass Culture');
+    assert.equal(records.artists.find((item) => item.id === 'artists-2').draftRevisionId, null);
 
     await page.goto(`${origin}/stock/`);
     await page.locator('.inventory-row').first().waitFor();

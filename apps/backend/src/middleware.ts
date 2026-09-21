@@ -69,7 +69,7 @@ export const onRequest: MiddlewareHandler = async ({ request, url }, next) => {
   const remove = id && !action && request.method === 'DELETE' && ['news', 'socials'].includes(collection);
   const create = !id && request.method === 'POST';
   const save = id && !action && request.method === 'PUT';
-  const lifecycle = id && ['publish', 'unpublish'].includes(action ?? '') && request.method === 'POST';
+  const lifecycle = id && ['publish', 'unpublish', 'discard-draft'].includes(action ?? '') && request.method === 'POST';
   if (lock) return next();
   if (!create && !save && !lifecycle && !remove) return reject('UNSUPPORTED_EDITORIAL_ACTION', 405);
   const body: unknown = await request

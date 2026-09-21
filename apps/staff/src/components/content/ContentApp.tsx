@@ -94,6 +94,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [failedArtwork, setFailedArtwork] = useState<Record<string, string>>({});
   const [mobileEditor, setMobileEditor] = useState(false);
   const [confirmTrash, setConfirmTrash] = useState(false);
+  const [confirmDraftDiscard, setConfirmDraftDiscard] = useState(false);
   const reloadFocus = useRef<HTMLElement | null>(null);
   const editorHeading = useRef<HTMLHeadingElement>(null);
   const listFocus = useRef<HTMLElement | null>(null);
@@ -448,6 +449,59 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       reloadFocus.current = null;
     });
   }
+  async function discardSavedDraft() {
+    const current = document;
+    if (
+      !current?.item.id ||
+      dirty ||
+      busy ||
+      autosave.saving ||
+      conflict ||
+      current.item.publicationState === 'pending' ||
+      !current.item.liveRevisionId ||
+      !current.item.draftRevisionId
+    )
+      return;
+    setConfirmDraftDiscard(false);
+    setBusy(true);
+    setMessage('');
+    try {
+      await editorialRequest(
+        base,
+        `content/${collection}/${encodeURIComponent(current.item.id)}/discard-draft`,
+        { _rev: current._rev },
+        'POST',
+      );
+      const loaded = await editorialRequest<Document>(
+        base,
+        `content/${collection}/${encodeURIComponent(current.item.id)}`,
+      );
+      const summary = await editorialRequest<EditorialList<EditorialRecord>>(
+        base,
+        `blackbox/workspace?collection=${collection}&id=${encodeURIComponent(current.item.id)}`,
+      );
+      const nextItem = {
+        ...loaded.item,
+        selling: summary.items[0]?.selling,
+        publicationState: summary.items[0]?.publicationState,
+        collection,
+      };
+      const nextDocument = { ...loaded, item: nextItem };
+      currentDocument.current = nextDocument;
+      setDocument(nextDocument);
+      setData(loaded.item.data);
+      setItems((items) => items.map((item) => (item.id === nextItem.id ? nextItem : item)));
+      setDirty(false);
+      setValidationAttempt(0);
+      setConflict(false);
+      setMessage('Saved changes discarded. The live version is now shown.');
+    } catch (error) {
+      if (error instanceof EditorialApiError && error.status === 409) setConflict(true);
+      setMessage(error instanceof Error ? error.message : 'We could not discard the saved changes.');
+    } finally {
+      setBusy(false);
+    }
+  }
   async function open(item: EditorialRecord, replace = false, section = collection) {
     if (!replace && !(await autosave.flush())) {
       setConfirmReload(true);
@@ -719,6 +773,9 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
 
   const singleton = singletonContentSections.includes(collection);
   const title = String(data.title || data.label_name || contentSections[collection]);
+  const canDiscardSavedDraft = Boolean(
+    document?.item.id && document.item.liveRevisionId && document.item.draftRevisionId,
+  );
   if (reviewing && document)
     return (
       <div className="cms-surface staff-page publication-editor">
@@ -1130,6 +1187,20 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                     Discard unsaved changes
                                   </DropdownMenuItem>
                                 )}
+                                {canDiscardSavedDraft && (
+                                  <DropdownMenuItem
+                                    disabled={
+                                      busy ||
+                                      dirty ||
+                                      autosave.saving ||
+                                      conflict ||
+                                      document.item.publicationState === 'pending'
+                                    }
+                                    onSelect={() => setConfirmDraftDiscard(true)}
+                                  >
+                                    Discard saved changes
+                                  </DropdownMenuItem>
+                                )}
                                 {['news', 'socials'].includes(collection) && (
                                   <DropdownMenuItem
                                     disabled={!document.item.id || dirty}
@@ -1284,6 +1355,21 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           <AlertDialogFooter>
             <AlertDialogCancel>Keep editing</AlertDialogCancel>
             <AlertDialogAction onClick={() => void discardChanges()}>Discard changes</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={confirmDraftDiscard} onOpenChange={setConfirmDraftDiscard}>
+        <AlertDialogContent className="cms-surface">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Discard saved changes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The current private draft will be removed and the live version will be shown. The public site will not
+              change.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep saved changes</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void discardSavedDraft()}>Discard saved changes</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

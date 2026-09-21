@@ -92,6 +92,21 @@ try {
     403,
   );
 
+  const publishedRevision = await request(path, 'PUT', {
+    _rev: first.data._rev,
+    data: { title: 'Live title' },
+  });
+  assert.equal((await request(path + '/publish', 'POST', { _rev: publishedRevision.data._rev })).status, 200);
+  const liveBeforeDraft = await request(path);
+  const savedDraft = await request(path, 'PUT', {
+    _rev: liveBeforeDraft.data._rev,
+    data: { title: 'Saved draft title' },
+  });
+  assert.equal((await request(path + '/discard-draft', 'POST', { _rev: liveBeforeDraft.data._rev })).status, 409);
+  assert.equal((await request(path + '/discard-draft', 'POST', { _rev: savedDraft.data._rev })).status, 200);
+  const restored = await request(path);
+  assert.equal(restored.data.item.data.title, 'Live title', 'Discarding a draft restores live content');
+
   // Exercise both a never-published draft and a previously published entry.
   for (const published of [false, true]) {
     if (published) {
