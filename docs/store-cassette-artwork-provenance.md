@@ -12,3 +12,23 @@ The store content source contains four cassette Store Items. Each has one `stand
 | `the-vagina-lips-random-tapes-cassette` — The Vagina lips, _Random Tapes_ | `variant_the-vagina-lips-random-tapes-cassette_standard` | Mock fallback       | Inner Ear’s official artist page (`https://inner-ear.gr/en/artists/vagina-lips/`) and Discogs (`https://www.discogs.com/release/8497993-The-Vagina-Lips-The-Vagina-Lips`) describe a 2015 self-titled cassette released by the label Random Tapes. Discogs has no product image, and the authoritative title conflicts with the current Store Item title. No exact image can be matched without guessing, so the existing cassette fallback remains unchanged.                                                                                                                                                      |
 
 The reusable manifest is `tools/artwork-fetcher/cassette_store_artwork_manifest.csv`. It contains matched products only; unmatched items are deliberately absent so reruns cannot overwrite their fallbacks.
+
+## Gallery selections, September 22, 2026
+
+For `add-store-product-photo-hover`, the user confirmed “we have full permissions, proceed” for the product photography. This is the reuse evidence for these selections. Band in the Pit's official page currently displays “all rights reserved”; the older research ledger's `cc-by-nd-4.0` annotation is not evidence of the page's current license. The explicit permission resolves acceptance for this task without changing the public license declaration or claiming Bandcamp grants a Creative Commons license.
+
+Keep the current primary images. Use these unaltered official photos, in the listed gallery order, through each environment's own EmDash media records:
+
+| Item                  | Official photo and dimensions                                        | Placement description                                                                     |
+| --------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Band in the Pit, 2016 | [0013073977](https://f4.bcbits.com/img/0013073977_10.jpg), 1200×1032 | 2016 cassette cases, yellow printed inserts and white cassette shells arranged together   |
+| Band in the Pit, 2016 | [0013056306](https://f4.bcbits.com/img/0013056306_10.jpg), 900×1200  | Both sides of the white 2016 cassette with handwritten track labels on a green background |
+| Band in the Pit, 2016 | [0013056277](https://f4.bcbits.com/img/0013056277_10.jpg), 900×1200  | Back of the clear 2016 cassette case showing the white tape and printed track list        |
+| Broken Fingers, EGO   | [0017949436](https://f4.bcbits.com/img/0017949436_10.jpg), 900×1200  | EGO cassette cases, black tapes and printed inserts arranged together                     |
+| Broken Fingers, EGO   | [0017949440](https://f4.bcbits.com/img/0017949440_10.jpg), 1200×900  | EGO cassette beside its illustrated case and a row of labeled case spines                 |
+
+The [2016 release page](https://bandinthepit.bandcamp.com/album/2016) identifies the 50-copy high-bias cassette; its yellow artwork and track labels match the retained source. The [EGO release page](https://broken-fingers.bandcamp.com/album/ego) identifies the November 2019 EGO LP cassette and supplies both selected views. No crops, generated pixels, enlargement or additional derivatives are needed.
+
+Exclude Band in the Pit's `0013056307` pile photograph as redundant with the clearer side view and `0013056278` car-stereo photograph because it mainly shows the dashboard. Magmarus remains excluded without verified cassette-product photography; The Vagina Lips remains excluded because the recorded edition/title mismatch is unresolved. Existing accepted Distro CD galleries need no replacement or additional upload to gain the preview.
+
+These are editorial selections, not evidence of UAT or PRD publication. Repository catalog JSON remains unchanged; hosted release/publication gates still apply.

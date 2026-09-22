@@ -1,4 +1,4 @@
-import { listDistroEntries, listStoreItems, type StoreItem } from './catalog-data';
+import { listDistroEntries, listStoreItems, type DistroCatalogEntry, type StoreItem } from './catalog-data';
 import { groupDistroEntries } from './distro-data';
 import type { DistroGroupName, DistroIntroKey } from '@blackbox/content-model';
 import { getPrimaryAvailabilityForStoreItem, type ItemAvailability } from './item-availability';
@@ -17,6 +17,7 @@ type StoreDistroFacets = {
 export type StoreCollectionEntry = {
   categoryIds: readonly StoreCatalogMembership[];
   distro: StoreDistroFacets | null;
+  previewImage: NonNullable<DistroCatalogEntry['data']['gallery']>[number] | null;
   primaryAvailability: ItemAvailability | null;
   storeItem: StoreItem;
 };
@@ -124,6 +125,7 @@ export async function listStoreCollectionEntries(
           sourceKind: storeItem.sourceKind,
         }),
         distro,
+        previewImage: distroEntry?.data.gallery?.find(({ image }) => image.src !== storeItem.image.src) ?? null,
         primaryAvailability: await getPrimaryAvailabilityForStoreItem(storeItem.slug),
         storeItem,
       };

@@ -15,6 +15,9 @@ describe('Store Item detail gallery contract', () => {
     expect(source).not.toContain('{availabilityLabel}');
     expect(source.indexOf('data-store-purchase-group')).toBeLessThan(source.indexOf('<Image'));
     for (const card of [distroCard, storeCard]) {
+      expect(card).toContain('src={previewImage.image}');
+      expect(card).toContain('data-store-preview-image');
+      expect(card).toContain('aria-hidden="true"');
       expect(card).toContain("style={isDistroCd ? 'object-fit: contain; transform: none;' : undefined}");
       expect(card).toContain("? '(min-width: 1280px) 24rem, (min-width: 768px) 50vw, 100vw'");
       expect(card).toContain(': coverflowPreview');

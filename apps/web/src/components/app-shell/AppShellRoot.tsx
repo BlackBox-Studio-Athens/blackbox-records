@@ -40,6 +40,7 @@ import {
   type StoreListingPriceActivationState,
 } from './store-listing-price-activation';
 import { Spinner } from '@/components/ui/spinner';
+import { connectStorePreviewImages } from './dom/store-preview-images';
 import type { SiteNavigationItem } from '@/lib/site-data';
 import type { StoreCartState } from '@/lib/store-cart';
 import { createOverlayFragmentLoader } from './overlay/overlay-fragment-loader';
@@ -343,12 +344,17 @@ export default function AppShellRoot({
     if (typeof window === 'undefined') return;
 
     if (parseShellSectionRoute(activeShellPathname)?.kind !== 'store') return;
-    return connectStoreListingPricePresentation({
+    const disconnectPreviewImages = connectStorePreviewImages(document);
+    const disconnectPrices = connectStoreListingPricePresentation({
       readListingPrices:
         getPreparedStoreListingPriceReader(storeListingPriceActivationStateRef.current, activeShellPathname) ??
         readPublicStoreListingPrices,
       root: document,
     });
+    return () => {
+      disconnectPreviewImages();
+      disconnectPrices();
+    };
   }, [activeShellPathname]);
 
   useEffect(() => {

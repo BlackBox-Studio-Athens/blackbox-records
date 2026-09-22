@@ -52,6 +52,15 @@ class FakeElement {
         },
       ];
     }
+    if (selector === '[data-store-preview-ready]' && this.innerHTML.includes('data-store-preview-ready')) {
+      return [
+        {
+          removeAttribute: () => {
+            this.innerHTML = this.innerHTML.replace(' data-store-preview-ready', '');
+          },
+        },
+      ];
+    }
     if (selector === '[data-distro-search-hidden]' && this.innerHTML.includes('data-distro-search-hidden')) {
       const removeSearchHiddenAttribute = () => {
         this.innerHTML = this.innerHTML.replace(/\s+data-distro-search-hidden(?:="")?/g, '');
@@ -93,7 +102,7 @@ class FakeElement {
 function createSnapshotDocument() {
   const main = new FakeElement(
     { class: 'catalog-page' },
-    '<section>Catalog</section><div data-artists-roster-filters>hydrated filters</div><div data-distro-search><input value="vinyl"></div><a hidden data-distro-search-hidden>Item</a><span data-store-listing-price data-store-listing-price-state="ready">€28.00</span>',
+    '<section>Catalog</section><div data-artists-roster-filters>hydrated filters</div><div data-distro-search><input value="vinyl"></div><a hidden data-distro-search-hidden>Item</a><span data-store-listing-price data-store-listing-price-state="ready">€28.00</span><img data-store-preview-image data-store-preview-ready>',
   );
   const canonical = new FakeElement();
   canonical.href = 'https://example.test/blackbox-records/store/distro/';
@@ -284,6 +293,8 @@ describe('shell page snapshots', () => {
     expect(snapshot?.mainHtml).toContain('data-store-listing-price-state="loading"');
     expect(snapshot?.mainHtml).toContain('Checking price');
     expect(snapshot?.mainHtml).not.toContain('€28.00');
+    expect(snapshot?.mainHtml).toContain('data-store-preview-image');
+    expect(snapshot?.mainHtml).not.toContain('data-store-preview-ready');
   });
 
   it('updates document metadata when a snapshot is applied', () => {

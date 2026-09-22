@@ -1,5 +1,13 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import distroPage from '../content/distro-page/site.json';
+
+const galleryFixture = vi.hoisted(() => ({
+  gallery: undefined as { image: { src: string }; image_alt: string }[] | undefined,
+}));
+
+afterEach(() => {
+  galleryFixture.gallery = undefined;
+});
 
 vi.mock('astro:content', () => ({
   getCollection: vi.fn(async (collectionName: string) => {
@@ -11,6 +19,7 @@ vi.mock('astro:content', () => ({
             artist: { id: 'afterwise' },
             cover_image: { src: '/disintegration.jpg' },
             cover_image_alt: 'Disintegration cover',
+            gallery: galleryFixture.gallery,
             formats: ['Black Vinyl LP'],
             merch_url: '/store/',
             release_date: new Date('2026-09-01T00:00:00.000Z'),
@@ -45,6 +54,7 @@ vi.mock('astro:content', () => ({
             group: 'Tapes',
             image: { src: '/afterglow.jpg' },
             image_alt: 'Afterglow tape',
+            gallery: galleryFixture.gallery,
             order: 1,
             summary: 'Small-run cassette.',
             title: 'Afterglow Tape',
@@ -78,6 +88,33 @@ import {
 } from './store-collection';
 
 describe('store collection entries', () => {
+  it('selects the first different gallery source without changing primary or commerce projections', async () => {
+    const baseline = await listStoreCollectionEntries();
+    expect(baseline.every((entry) => entry.previewImage === null)).toBe(true);
+    const primary = { image: { src: '/afterglow.jpg' }, image_alt: 'Primary duplicate' };
+    const front = { image: { src: '/tape-front.jpg' }, image_alt: 'Cassette front' };
+    const back = { image: { src: '/tape-back.jpg' }, image_alt: 'Cassette back' };
+
+    for (const [gallery, expected] of [
+      [[], null],
+      [[primary, primary], null],
+      [[primary, front, back], front],
+      [[primary, back, front], back],
+    ] as const) {
+      galleryFixture.gallery = [...gallery];
+      const entries = await listStoreCollectionEntries();
+      expect(entries.find((entry) => entry.storeItem.sourceKind === 'distro')?.previewImage).toEqual(expected);
+      expect(
+        entries
+          .filter((entry) => entry.storeItem.sourceKind === 'release')
+          .every((entry) => entry.previewImage === null),
+      ).toBe(true);
+      expect(entries.map(({ previewImage: _preview, ...entry }) => entry)).toEqual(
+        baseline.map(({ previewImage: _preview, ...entry }) => entry),
+      );
+    }
+  });
+
   it('returns a unified collection with primary availability for all release and distro store candidates', async () => {
     const collectionEntries = await listStoreCollectionEntries();
 
@@ -209,6 +246,7 @@ describe('store collection entries', () => {
     ): StoreCollectionEntry => ({
       categoryIds: group === 'Clothes' ? ['distro', 'merch'] : ['distro'],
       distro: { format: group, group, order, searchText: `${title} ${group}` },
+      previewImage: null,
       primaryAvailability: null,
       storeItem: {
         eyebrow: null,

@@ -213,6 +213,12 @@ export default function ContentFields({
     return (
       <FieldSet className="col-span-full grid min-w-0 gap-4" data-invalid={errors(path).length > 0}>
         <FieldLegend>{label}</FieldLegend>
+        {path === 'gallery' && (
+          <FieldDescription>
+            The first extra photo different from the main image appears on hover or keyboard focus. All gallery photos
+            appear on the item page.
+          </FieldDescription>
+        )}
         <FieldError>{fieldErrors.join(' ')}</FieldError>
         <FieldGroup className="gap-4">
           {items.map((_, index) => (

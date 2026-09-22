@@ -117,6 +117,9 @@ export function readDocumentShellPageSnapshot(
   });
   sanitizeStoreCoverflowSnapshot(mainElementClone);
   sanitizeStoreListingPricePlaceholders(mainElementClone);
+  mainElementClone.querySelectorAll<HTMLElement>('[data-store-preview-ready]').forEach((image) => {
+    image.removeAttribute('data-store-preview-ready');
+  });
   mainElementClone.querySelectorAll<HTMLElement>('[data-services-inquiry-form]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';
   });
