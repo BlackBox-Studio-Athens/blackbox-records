@@ -74,7 +74,7 @@ type Dependencies = {
   sources: CmsItemSourceGateway;
   // The CMS adapter must resolve only approved public media, never browser-supplied provider presentation.
   preparePresentation(source: CmsItemSource): Promise<StripeCatalogProductProjection>;
-  gateway: StripeCatalogSetupGateway & StripeCatalogPriceChangeGateway;
+  gateway: Pick<StripeCatalogSetupGateway, 'ensureSetupProduct'> & StripeCatalogPriceChangeGateway;
   stock: Pick<OperatorStockRepository, 'initializeOpeningStock'>;
   now?: () => Date;
 };

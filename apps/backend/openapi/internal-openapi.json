@@ -1124,6 +1124,270 @@
           "onlineQuantity"
         ]
       },
+      "CatalogSellingDetail": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "ready"
+                ]
+              },
+              "detail": {
+                "$ref": "#/components/schemas/CatalogPriceDetail"
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiAction"
+                },
+                "minItems": 1
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiLink"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "state",
+              "detail"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "setup_required"
+                ]
+              },
+              "variantId": {
+                "type": "string"
+              },
+              "expectedRevision": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "cmsRevision": {
+                "type": "string"
+              },
+              "cmsSourceId": {
+                "type": "string"
+              },
+              "itemType": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 128
+              },
+              "priceKind": {
+                "type": "string",
+                "enum": [
+                  "fixed",
+                  "pay_what_you_want"
+                ]
+              },
+              "requiresLiveConfirmation": {
+                "type": "boolean"
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiAction"
+                },
+                "minItems": 1
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiLink"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "state",
+              "variantId",
+              "expectedRevision",
+              "cmsRevision",
+              "cmsSourceId",
+              "itemType",
+              "priceKind",
+              "requiresLiveConfirmation"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": [
+                  "blocked"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "details",
+                  "resume",
+                  "administrator",
+                  "price_change",
+                  "publication"
+                ]
+              },
+              "operationId": {
+                "type": "string"
+              },
+              "pending": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "operationId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "cmsRevision": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "itemType": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "price": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "fixed"
+                            ]
+                          },
+                          "currencyCode": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "currencyCode",
+                          "amountMinor"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "pay_what_you_want"
+                            ]
+                          },
+                          "currencyCode": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "minimumAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          },
+                          "presetAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          },
+                          "maximumAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "currencyCode",
+                          "minimumAmountMinor",
+                          "presetAmountMinor",
+                          "maximumAmountMinor"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "confirmLiveSetup": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "operationId",
+                  "expectedRevision",
+                  "cmsRevision",
+                  "itemType",
+                  "price"
+                ],
+                "additionalProperties": false
+              },
+              "actions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiAction"
+                },
+                "minItems": 1
+              },
+              "links": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ApiLink"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "state",
+              "reason",
+              "action",
+              "pending"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
       "CatalogPriceDetail": {
         "type": "object",
         "properties": {
@@ -2332,6 +2596,312 @@
           },
           "503": {
             "description": "Operator authentication is temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/variants/{variantId}/selling": {
+      "get": {
+        "operationId": "readCatalogSelling",
+        "tags": [
+          "Internal catalog"
+        ],
+        "summary": "Read Selling readiness without catalog or provider writes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^variant_[A-Za-z0-9_-]+$"
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Selected item Selling readiness.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogSellingDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Item not found.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Reviewed input or catalog state conflicts.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Selling is temporarily unavailable. Retry retained work with the same operation identity.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/variants/{variantId}/price/initialize": {
+      "post": {
+        "operationId": "initializeCatalogPrice",
+        "tags": [
+          "Internal catalog"
+        ],
+        "summary": "Set the first price on an existing withheld item without changing stock or publication.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^variant_[A-Za-z0-9_-]+$"
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "origin",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "x-blackbox-request",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "operationId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128,
+                    "pattern": "^[A-Za-z0-9_-]+$"
+                  },
+                  "expectedRevision": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "cmsRevision": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 512
+                  },
+                  "itemType": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 128
+                  },
+                  "price": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "fixed"
+                            ]
+                          },
+                          "currencyCode": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "amountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "currencyCode",
+                          "amountMinor"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "pay_what_you_want"
+                            ]
+                          },
+                          "currencyCode": {
+                            "type": "string",
+                            "enum": [
+                              "EUR"
+                            ]
+                          },
+                          "minimumAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          },
+                          "presetAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          },
+                          "maximumAmountMinor": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 99999999
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "currencyCode",
+                          "minimumAmountMinor",
+                          "presetAmountMinor",
+                          "maximumAmountMinor"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "confirmLiveSetup": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "required": [
+                  "operationId",
+                  "expectedRevision",
+                  "cmsRevision",
+                  "itemType",
+                  "price"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Retained initial price operation status.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CatalogPriceChangeResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Same-origin operator request required.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Item not found.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Reviewed input or catalog state conflicts.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Selling is temporarily unavailable. Retry retained work with the same operation identity.",
             "content": {
               "application/problem+json": {
                 "schema": {

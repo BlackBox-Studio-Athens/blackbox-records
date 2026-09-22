@@ -1,9 +1,11 @@
 import { readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { backendNodeTestFiles, resolveBackendWorkerMaxWorkers } from '../../vitest-test-selection';
+
+afterEach(() => vi.unstubAllEnvs());
 
 async function testFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -29,6 +31,7 @@ describe('backend Vitest runtime selection', () => {
   });
 
   it('defaults a newly unclassified test to Workers and validates the diagnostic override', () => {
+    vi.stubEnv('BLACKBOX_BACKEND_WORKERS', undefined);
     const newFile = 'test/application/new-unclassified.test.ts';
     expect(backendNodeTestFiles.includes(newFile as (typeof backendNodeTestFiles)[number])).toBe(false);
     expect(resolveBackendWorkerMaxWorkers({ cpuCount: 6, memoryBytes: 24 * 1024 ** 3 })).toBe(3);

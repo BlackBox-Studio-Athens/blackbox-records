@@ -152,6 +152,23 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/internal/variants/{variantId}/price/initialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set the first price on an existing withheld item without changing stock or publication. */
+        post: operations["initializeCatalogPrice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/internal/variants/{variantId}/publication": {
         parameters: {
             query?: never;
@@ -164,6 +181,23 @@ export type paths = {
         put?: never;
         /** Publish an item without changing its Price or opening stock. */
         post: operations["publishCatalogItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/internal/variants/{variantId}/selling": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Selling readiness without catalog or provider writes. */
+        get: operations["readCatalogSelling"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -342,6 +376,58 @@ export type components = {
             };
             requiresLiveConfirmation: boolean;
             variantId: string;
+        };
+        CatalogSellingDetail: {
+            actions?: components["schemas"]["ApiAction"][];
+            detail: components["schemas"]["CatalogPriceDetail"];
+            links?: components["schemas"]["ApiLink"][];
+            /** @enum {string} */
+            state: "ready";
+        } | {
+            actions?: components["schemas"]["ApiAction"][];
+            cmsRevision: string;
+            cmsSourceId: string;
+            expectedRevision: number;
+            itemType: string | null;
+            links?: components["schemas"]["ApiLink"][];
+            /** @enum {string} */
+            priceKind: "fixed" | "pay_what_you_want";
+            requiresLiveConfirmation: boolean;
+            /** @enum {string} */
+            state: "setup_required";
+            variantId: string;
+        } | {
+            /** @enum {string} */
+            action: "details" | "resume" | "administrator" | "price_change" | "publication";
+            actions?: components["schemas"]["ApiAction"][];
+            links?: components["schemas"]["ApiLink"][];
+            operationId?: string;
+            pending: {
+                cmsRevision: string;
+                /** @default false */
+                confirmLiveSetup: boolean;
+                expectedRevision: number;
+                itemType: string;
+                operationId: string;
+                price: {
+                    amountMinor: number;
+                    /** @enum {string} */
+                    currencyCode: "EUR";
+                    /** @enum {string} */
+                    kind: "fixed";
+                } | {
+                    /** @enum {string} */
+                    currencyCode: "EUR";
+                    /** @enum {string} */
+                    kind: "pay_what_you_want";
+                    maximumAmountMinor: number;
+                    minimumAmountMinor: number;
+                    presetAmountMinor: number;
+                };
+            } | null;
+            reason: string;
+            /** @enum {string} */
+            state: "blocked";
         };
         InternalApiDescription: {
             [key: string]: unknown;
@@ -1132,6 +1218,111 @@ export interface operations {
             };
         };
     };
+    initializeCatalogPrice: {
+        parameters: {
+            query?: never;
+            header?: {
+                origin?: string;
+                "x-blackbox-request"?: string;
+            };
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    cmsRevision: string;
+                    /** @default false */
+                    confirmLiveSetup?: boolean;
+                    expectedRevision: number;
+                    itemType: string;
+                    operationId: string;
+                    price: {
+                        amountMinor: number;
+                        /** @enum {string} */
+                        currencyCode: "EUR";
+                        /** @enum {string} */
+                        kind: "fixed";
+                    } | {
+                        /** @enum {string} */
+                        currencyCode: "EUR";
+                        /** @enum {string} */
+                        kind: "pay_what_you_want";
+                        maximumAmountMinor: number;
+                        minimumAmountMinor: number;
+                        presetAmountMinor: number;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Retained initial price operation status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogPriceChangeResult"];
+                };
+            };
+            /** @description Invalid request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Same-origin operator request required. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Item not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Reviewed input or catalog state conflicts. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Selling is temporarily unavailable. Retry retained work with the same operation identity. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
     readCatalogItemPublication: {
         parameters: {
             query?: never;
@@ -1272,6 +1463,73 @@ export interface operations {
                 };
             };
             /** @description Publication unavailable. Retry the retained operation. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    readCatalogSelling: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Selected item Selling readiness. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogSellingDetail"];
+                };
+            };
+            /** @description Invalid request. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Item not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Reviewed input or catalog state conflicts. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Selling is temporarily unavailable. Retry retained work with the same operation identity. */
             503: {
                 headers: {
                     [name: string]: unknown;

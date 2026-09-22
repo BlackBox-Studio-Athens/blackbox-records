@@ -2,6 +2,7 @@ import Stripe from 'stripe';
 
 import { parseStripePriceId } from '../../domain/commerce';
 import type {
+  StripeCatalogEnvironment,
   StripeCatalogGateway,
   StripeCatalogSetupGateway,
   StripeCatalogSetupProductInput,
@@ -32,6 +33,34 @@ export class StripeCatalogGatewayClient
     private readonly stripe: Stripe,
     private readonly providerLiveMode?: boolean,
   ) {}
+
+  public async inspectSetupProduct(productId: string, environment: StripeCatalogEnvironment) {
+    if (this.providerLiveMode !== (environment === 'prd'))
+      throw new CheckoutConfigurationError('Stripe mode does not match this environment.');
+    try {
+      const product = await this.stripe.products.retrieve(productId);
+      if ('deleted' in product)
+        return { active: false, deleted: true, live: false, defaultPriceId: null, taxCode: null, metadata: {} };
+      return {
+        active: product.active,
+        deleted: false,
+        live: product.livemode,
+        defaultPriceId: defaultPriceId(product),
+        taxCode: normalizeProductTaxCode(product.tax_code),
+        metadata: product.metadata,
+      };
+    } catch (error) {
+      if (
+        isStripeNotFoundError(error) &&
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'resource_missing'
+      )
+        return null;
+      throw error;
+    }
+  }
 
   public async ensureSetupProduct(
     input: StripeCatalogSetupProductInput,

@@ -199,6 +199,7 @@ describe('stripe catalog verify script helpers', () => {
       productTaxCode: 'txcd_99999999',
     };
     const stripeCatalog = {
+      inspectSetupProduct: vi.fn(),
       ensureSetupProduct: vi.fn(),
       createReplacementPrice: vi.fn(),
       selectReplacementPrice: vi.fn(),

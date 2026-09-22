@@ -161,6 +161,23 @@ const records = Object.fromEntries(
     [{ id: `${collection}-1`, slug: `${collection}-slug`, data, _rev: '1' }],
   ]),
 );
+const sellingJourney = process.argv.includes('--selling');
+if (sellingJourney)
+  records.releases.push({
+    ...structuredClone(records.releases[0]),
+    id: 'releases-retained',
+    slug: 'retained',
+    data: { ...structuredClone(data.releases), title: 'Retained stocked CD' },
+  });
+const sellingFixture = {
+  amount: null,
+  revision: 0,
+  conflict: true,
+  failRefresh: false,
+  reads: 0,
+  writes: [],
+  publicationReads: 0,
+};
 records.artists.push({
   ...structuredClone(records.artists[0]),
   id: 'artists-2',
@@ -279,6 +296,10 @@ const server = createServer(async (req, res) => {
               .filter(
                 (item) =>
                   (!id || item.id === id || item.slug === id) &&
+                  (!url.searchParams.has('variantId') ||
+                    (url.searchParams.get('variantId') === 'variant_retained'
+                      ? item.id === 'releases-retained'
+                      : item.id === 'releases-1')) &&
                   (!q ||
                     String(item.data.title ?? '')
                       .toLowerCase()
@@ -299,19 +320,31 @@ const server = createServer(async (req, res) => {
                     ? 'published'
                     : 'draft',
                 selling:
-                  section === 'releases' && item.id === 'releases-1'
+                  section === 'releases' && item.id === 'releases-retained'
                     ? {
-                        variantId: 'first',
-                        storeItemSlug: 'barren-point',
-                        itemType: 'Black vinyl LP',
-                        quantity: 99,
-                        onlineQuantity: 99,
-                        amountMinor: 2800,
+                        variantId: 'variant_retained',
+                        storeItemSlug: 'retained',
+                        itemType: sellingFixture.amount === null ? null : 'CDs',
+                        quantity: 1,
+                        onlineQuantity: 1,
+                        amountMinor: sellingFixture.amount,
                         currencyCode: 'EUR',
-                        catalogAvailability: 'published',
+                        catalogAvailability: 'withheld',
                         freshUntil: null,
                       }
-                    : null,
+                    : section === 'releases' && item.id === 'releases-1'
+                      ? {
+                          variantId: 'first',
+                          storeItemSlug: 'barren-point',
+                          itemType: 'Black vinyl LP',
+                          quantity: 99,
+                          onlineQuantity: 99,
+                          amountMinor: 2800,
+                          currencyCode: 'EUR',
+                          catalogAvailability: 'published',
+                          freshUntil: null,
+                        }
+                      : null,
               }))
           : [],
       );
@@ -411,6 +444,66 @@ const server = createServer(async (req, res) => {
         stock: { quantity: body.countedQuantity, onlineQuantity: body.onlineQuantity, revision: state.stockRevision },
       });
     }
+    if (/^\/api\/internal\/variants\/[^/]+\/selling$/.test(url.pathname)) {
+      sellingFixture.reads++;
+      const variantId = url.pathname.split('/')[4];
+      if (sellingFixture.failRefresh) {
+        sellingFixture.failRefresh = false;
+        return fail(503);
+      }
+      if (variantId !== 'variant_retained' || sellingFixture.amount !== null)
+        return json({
+          state: 'ready',
+          detail: {
+            variantId,
+            expectedRevision: sellingFixture.revision || 1,
+            requiresLiveConfirmation: false,
+            price: {
+              kind: 'fixed',
+              currencyCode: 'EUR',
+              amountMinor: variantId === 'variant_retained' ? sellingFixture.amount : 2800,
+            },
+          },
+        });
+      return json({
+        state: 'setup_required',
+        variantId,
+        expectedRevision: sellingFixture.revision,
+        cmsRevision: '1',
+        cmsSourceId: 'releases-retained',
+        itemType: null,
+        priceKind: 'fixed',
+        requiresLiveConfirmation: false,
+      });
+    }
+    if (/^\/api\/internal\/variants\/[^/]+\/price\/initialize$/.test(url.pathname)) {
+      sellingFixture.writes.push(body);
+      if (sellingFixture.conflict) {
+        sellingFixture.conflict = false;
+        sellingFixture.revision++;
+        return fail(409);
+      }
+      assert.equal(body.expectedRevision, sellingFixture.revision);
+      assert.equal(body.cmsRevision, '1');
+      assert.equal(body.itemType, 'CDs');
+      sellingFixture.amount = body.price.amountMinor;
+      sellingFixture.revision++;
+      sellingFixture.failRefresh = true;
+      return json({ operationId: body.operationId, variantId: 'variant_retained', status: 'completed' });
+    }
+    if (/^\/api\/internal\/variants\/[^/]+\/publication$/.test(url.pathname)) {
+      sellingFixture.publicationReads++;
+      return json({
+        expectedRevision: sellingFixture.revision || 1,
+        cmsRevision: '1',
+        requiresLiveConfirmation: false,
+        title: 'Retained stocked CD',
+        collection: 'releases',
+        cmsSourceId: 'releases-retained',
+        availability: 'withheld',
+        pending: null,
+      });
+    }
     if (/^\/api\/internal\/variants\/[^/]+\/stock(?:\/history)?$/.test(url.pathname)) {
       const variantId = url.pathname.split('/')[4];
       if (url.pathname.endsWith('/history')) {
@@ -424,8 +517,8 @@ const server = createServer(async (req, res) => {
         storeItemSlug: variantId,
         displayName: variantId,
         stock: {
-          quantity: variantId === 'first' ? 17 : 29,
-          onlineQuantity: 5,
+          quantity: variantId === 'variant_retained' ? 1 : variantId === 'first' ? 17 : 29,
+          onlineQuantity: variantId === 'variant_retained' ? 1 : 5,
           revision: state.stockRevision,
           updatedAt: '2026-09-15T12:00:00Z',
         },
@@ -670,10 +763,86 @@ const server = createServer(async (req, res) => {
     res.end(String(error));
   }
 });
-await new Promise((resolve) => server.listen(process.argv.includes('--serve') ? 4399 : 0, '127.0.0.1', resolve));
+await new Promise((resolve) =>
+  server.listen(
+    process.argv.includes('--serve') ? Number(process.env.BLACKBOX_FIXTURE_PORT ?? 4399) : 0,
+    '127.0.0.1',
+    resolve,
+  ),
+);
 const origin = `http://127.0.0.1:${server.address().port}`;
 if (process.argv.includes('--serve')) console.log(`Local CMS fixtures: ${origin}/content/`);
-else {
+else if (sellingJourney) {
+  const browser = await chromium.launch();
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  await mkdir(artifacts, { recursive: true });
+  try {
+    await page.goto(`${origin}/stock/?variantId=variant_retained`);
+    await page.getByRole('link', { name: 'Selling', exact: true }).click();
+    await page.waitForURL(/collection=releases.*id=releases-retained.*tab=selling/);
+    await page.getByText('No price set', { exact: true }).waitFor();
+    assert.equal(sellingFixture.publicationReads, 0, 'Unfinished setup must not mount publication preflight');
+    const amount = page.getByRole('textbox', { name: 'Price (EUR)', exact: true });
+    assert.equal(await amount.inputValue(), '');
+    await page.getByRole('combobox', { name: /^Format/ }).selectOption('CDs');
+    await amount.focus();
+    await page.keyboard.type('12,50');
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Enter');
+    await page.getByText(/Your amount is retained/).waitFor();
+    assert.equal(await amount.inputValue(), '12,50');
+    page.once('dialog', (dialog) => dialog.dismiss());
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    assert.equal(await amount.inputValue(), '12,50');
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('input[inputmode="decimal"]')?.value === '');
+    await page.setViewportSize({ width: 320, height: 780 });
+    await page.getByRole('combobox', { name: /^Format/ }).selectOption('CDs');
+    await amount.fill('12.50');
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 320));
+    assert.ok((await page.getByRole('button', { name: 'Set price', exact: true }).boundingBox()).height >= 44);
+    await page.screenshot({ path: resolve(artifacts, 'selling-initial-320.png'), fullPage: true });
+    await page.getByRole('button', { name: 'Set price', exact: true }).click();
+    await page.getByText('Price saved. Existing orders are unchanged.', { exact: true }).waitFor();
+    await page.getByText(/Selling details could not be refreshed/).waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Set price', exact: true }).count(), 0);
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
+    await page.getByText('Current price: €12.50', { exact: true }).waitFor();
+    assert.equal(sellingFixture.writes.length, 2, 'Conflict and corrected review submit once each');
+    assert.equal(sellingFixture.writes[0].price.amountMinor, 1250);
+    assert.equal(sellingFixture.writes[1].price.amountMinor, 1250);
+    assert.ok(sellingFixture.publicationReads > 0);
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.screenshot({ path: resolve(artifacts, 'selling-desktop.png'), fullPage: true });
+    await page.setViewportSize({ width: 320, height: 780 });
+    await page.getByRole('button', { name: 'Change price', exact: true }).waitFor();
+    assert.ok(
+      await page.evaluate(() => document.documentElement.scrollWidth <= 320),
+      'No horizontal overflow at 320px',
+    );
+    assert.ok((await page.getByRole('button', { name: 'Change price', exact: true }).boundingBox()).height >= 44);
+    await page.screenshot({ path: resolve(artifacts, 'selling-320.png'), fullPage: true });
+    await page.goto(`${origin}/stock/?variantId=variant_retained`);
+    await page.getByRole('link', { name: 'Selling', exact: true }).waitFor();
+    const stock = await (await page.request.get(`${origin}/api/internal/variants/variant_retained/stock`)).json();
+    assert.equal(stock.stock.quantity, 1);
+    assert.equal(stock.stock.onlineQuantity, 1);
+    await page.goto(`${origin}/content/?collection=releases&id=releases-1&tab=selling`);
+    await page.getByText('Current price: €28.00', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Change price', exact: true }).waitFor();
+    console.log(
+      'Retained Selling journey passed: keyboard, comma/point, conflict/Refresh, saved/read-failure, 320px, configured control, Stock handoff.',
+    );
+  } catch (error) {
+    await page.screenshot({ path: resolve(artifacts, 'selling-failure.png'), fullPage: true });
+    console.error((await page.locator('body').innerText()).slice(-2500));
+    throw error;
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+} else {
   const optionalChunk = /\/_astro\/(?:PublicationHistory|ContentBodyEditor)[^/]*\.(?:js|css)$/;
   async function assertClosedOptionalFeatures(browser) {
     for (const [label, path, ready] of [
@@ -1118,8 +1287,8 @@ else {
     await page.getByRole('button', { name: 'Publish change', exact: true }).click();
     assert.equal((await publishing).postDataJSON().records[0].expectedRevision, reviewed);
     await page.keyboard.press('Escape');
-    state.publication = 'live';
     await page.getByRole('button', { name: 'Check status', exact: true }).click();
+    state.publication = 'live';
     await page.getByRole('heading', { name: 'Your changes are on the website', exact: true }).waitFor();
     assert.equal(
       await page.evaluate(() => JSON.parse(sessionStorage.getItem('blackbox-website-review:'))[0].recordId),
@@ -1292,7 +1461,9 @@ else {
     const savedDraftArtistName = page.getByLabel('Artist name', { exact: true });
     await savedDraftArtistName.waitFor();
     assert.equal(await savedDraftArtistName.inputValue(), 'Mass Culture saved draft');
+    state.failSave = true;
     await savedDraftArtistName.fill('Local edit before discard');
+    await page.getByRole('button', { name: 'Retry save', exact: true }).waitFor();
     await page.getByRole('button', { name: 'More draft actions' }).click();
     const savedDiscardItem = page.getByRole('menuitem', { name: 'Discard saved changes', exact: true });
     assert.equal(await savedDiscardItem.isDisabled(), true, 'Saved-draft discard waits for unsaved edits');
@@ -1300,6 +1471,7 @@ else {
     await page.getByRole('button', { name: 'More draft actions' }).click();
     await page.getByRole('menuitem', { name: 'Discard unsaved changes', exact: true }).click();
     await page.getByRole('alertdialog').getByRole('button', { name: 'Discard changes', exact: true }).click();
+    state.failSave = false;
     await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
     await page.waitForFunction(
       (expected) => document.querySelector('#content-title')?.value === expected,

@@ -2,6 +2,31 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { expect, it } from 'vitest';
 
+it('extends the operation kind without losing historical receipts, claims or the unresolved-variant guard', () => {
+  const db = new DatabaseSync(':memory:');
+  try {
+    const migration = (name: string) =>
+      db.exec(readFileSync(new URL(`../../prisma/migrations/${name}`, import.meta.url), 'utf8'));
+    migration('0021_catalog_operation.sql');
+    migration('0022_item_publication_operation.sql');
+    db.exec(`INSERT INTO CatalogOperation (id, kind, inputFingerprint, actorEmail, variantId, expectedRevision, step, status, results)
+      VALUES ('receipt', 'price_change', 'shape_old', 'operator@example.com', 'variant_history', 1, 'completed', 'completed', '{"stripePriceId":"price_old"}');
+      INSERT INTO CatalogOperation (id, kind, inputFingerprint, actorEmail, variantId, expectedRevision, claimToken, leaseUntil)
+      VALUES ('pending', 'item_publish', 'shape_pending', 'operator@example.com', 'variant_pending', 2, 'claim', '2026-09-22');`);
+    const original = db.prepare('SELECT * FROM CatalogOperation ORDER BY id').all();
+    migration('0024_price_initialization_operation.sql');
+    expect(db.prepare('SELECT * FROM CatalogOperation ORDER BY id').all()).toEqual(original);
+    const insert =
+      db.prepare(`INSERT INTO CatalogOperation (id, kind, inputFingerprint, actorEmail, variantId, expectedRevision)
+      VALUES (?, 'price_initialize', 'shape_new', 'operator@example.com', ?, 0)`);
+    insert.run('initial', 'variant_initial');
+    expect(() => insert.run('competing', 'variant_initial')).toThrow();
+    expect(() => insert.run('blocked', 'variant_pending')).toThrow();
+  } finally {
+    db.close();
+  }
+});
+
 it('adds catalog fields without rewriting existing identity, provider mapping, or availability', () => {
   const db = new DatabaseSync(':memory:');
   try {

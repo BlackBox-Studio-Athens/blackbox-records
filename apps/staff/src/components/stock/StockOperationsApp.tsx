@@ -828,6 +828,21 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                       ? (selectedStockDetail.displayName ?? selectedStockDetail.storeItemSlug.replaceAll('-', ' '))
                       : 'Choose an item to see its stock.'}
                   </CardDescription>
+                  {selectedStockDetail && (
+                    <a
+                      className="inline-flex min-h-11 items-center underline"
+                      href={`/items/?${new URLSearchParams({ variantId: selectedStockDetail.variantId, tab: 'selling' })}`}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        const href = event.currentTarget.href;
+                        protectInput(() => {
+                          window.location.href = href;
+                        });
+                      }}
+                    >
+                      Selling
+                    </a>
+                  )}
                 </div>
                 {errorMessage && (
                   <Button

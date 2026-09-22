@@ -11,7 +11,7 @@ const identifier = z
 export const catalogOperationInputSchema = z
   .object({
     id: identifier,
-    kind: z.enum(['item_setup', 'price_change', 'item_publish']),
+    kind: z.enum(['item_setup', 'price_change', 'item_publish', 'price_initialize']),
     inputFingerprint: z.string().regex(/^shape_v[0-9a-f]{32}$/),
     // Supplied by the verified operator context, never by browser input.
     actorEmail: z.email(),
@@ -32,6 +32,7 @@ export const catalogOperationResultsSchema = z
       .regex(/^shape_v[0-9a-f]{32}$/)
       .optional(),
     productProjection: z.json().optional(),
+    initializationInput: z.json().optional(),
     publishedRevisionId: identifier.optional(),
     publicationId: z.uuid().optional(),
   })
@@ -77,8 +78,14 @@ export interface CatalogOperationRepository {
     presentation: Pick<RuntimeCatalogRecord, 'itemType' | 'priceKind' | 'productProjection'>,
     now?: Date,
   ): Promise<boolean>;
-  begin(input: CatalogOperationInput): Promise<CatalogOperation>;
+  begin(input: CatalogOperationInput, accepted?: CatalogOperationResults): Promise<CatalogOperation>;
   find(id: string): Promise<CatalogOperation | null>;
+  findUnresolved(variantId: string): Promise<CatalogOperation | null>;
+  completePriceInitialization(
+    operation: CatalogOperation,
+    snapshot: StoreOfferSnapshotState,
+    now?: Date,
+  ): Promise<boolean>;
   claim(id: string, now?: Date): Promise<CatalogOperation | null>;
   advance(
     operation: CatalogOperation,

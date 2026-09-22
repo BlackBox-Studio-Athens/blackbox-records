@@ -64,6 +64,12 @@ export type {
 
 export { CatalogPriceConflictError } from './types';
 export { changeCatalogPrice, readCatalogPrice, catalogPriceChangeSchema } from './change-catalog-price';
+export {
+  initializeCatalogPrice,
+  readCatalogSelling,
+  catalogPriceInitializeSchema,
+  CatalogSellingNotFoundError,
+} from './initialize-catalog-price';
 export { setupCatalogItem, catalogItemSetupSchema, prepareCmsSetupPresentation } from './setup-catalog-item';
 export { publishCatalogItem, catalogItemPublishSchema } from './publish-catalog-item';
 export { readRuntimeCatalogPresentation } from './runtime-catalog-product-projections';

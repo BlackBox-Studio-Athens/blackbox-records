@@ -24,6 +24,7 @@ const steps: Record<CatalogOperationInput['kind'], CatalogOperationStep[]> = {
     'completed',
   ],
   price_change: ['started', 'validated', 'price_bound', 'default_selected', 'completed'],
+  price_initialize: ['started', 'product_bound', 'price_bound', 'default_selected', 'completed'],
   item_publish: [
     'started',
     'artwork_approved',
@@ -41,14 +42,33 @@ const map = (row: Row): CatalogOperation => ({
 export class D1CatalogOperationRepository {
   public constructor(private readonly db: D1Database) {}
 
-  public async begin(input: CatalogOperationInput): Promise<CatalogOperation> {
+  public async begin(input: CatalogOperationInput, accepted: CatalogOperationResults = {}): Promise<CatalogOperation> {
     const value = catalogOperationInputSchema.parse(input);
+    const retained = await this.find(value.id);
+    if (retained) {
+      if (Object.entries(value).some(([key, field]) => retained[key as keyof CatalogOperationInput] !== field))
+        throw new CatalogOperationConflictError('Catalog operation conflicts with existing input.');
+      return retained;
+    }
+    const results = catalogOperationResultsSchema.parse(accepted);
+    if (
+      value.kind === 'price_initialize' &&
+      (!results.initializationInput ||
+        !results.productProjection ||
+        !results.cmsSourceId ||
+        !results.cmsRevision ||
+        !results.sourceFingerprint)
+    )
+      throw new CatalogOperationConflictError('Initial pricing requires reviewed input.');
     await this.db
       .prepare(
         `INSERT INTO "CatalogOperation"
-      (id, kind, inputFingerprint, actorEmail, variantId, expectedRevision)
-      SELECT ?, ?, ?, ?, ?, ? WHERE
-        EXISTS (SELECT 1 FROM "StoreItemOption" WHERE variantId = ? AND catalogRevision = ?)
+      (id, kind, inputFingerprint, actorEmail, variantId, expectedRevision, results)
+      SELECT ?, ?, ?, ?, ?, ?, ? WHERE
+        (EXISTS (SELECT 1 FROM "StoreItemOption" WHERE variantId = ? AND catalogRevision = ?)
+        AND (? <> 'price_initialize' OR (
+          EXISTS (SELECT 1 FROM "StoreItemOption" WHERE variantId = ? AND catalogAvailability = 'withheld')
+          AND NOT EXISTS (SELECT 1 FROM "VariantStripeMapping" WHERE variantId = ?))))
         OR (? = 'item_setup' AND ? = 0 AND NOT EXISTS (SELECT 1 FROM "StoreItemOption" WHERE variantId = ?))
       ON CONFLICT DO NOTHING`,
       )
@@ -59,8 +79,12 @@ export class D1CatalogOperationRepository {
         value.actorEmail,
         value.variantId,
         value.expectedRevision,
+        JSON.stringify(results),
         value.variantId,
         value.expectedRevision,
+        value.kind,
+        value.variantId,
+        value.variantId,
         value.kind,
         value.expectedRevision,
         value.variantId,
@@ -80,6 +104,14 @@ export class D1CatalogOperationRepository {
 
   public async find(id: string): Promise<CatalogOperation | null> {
     const row = await this.db.prepare('SELECT * FROM "CatalogOperation" WHERE id = ?').bind(id).first<Row>();
+    return row ? map(row) : null;
+  }
+
+  public async findUnresolved(variantId: string): Promise<CatalogOperation | null> {
+    const row = await this.db
+      .prepare('SELECT * FROM "CatalogOperation" WHERE variantId = ? AND status <> \'completed\'')
+      .bind(variantId)
+      .first<Row>();
     return row ? map(row) : null;
   }
 
@@ -357,6 +389,123 @@ export class D1CatalogOperationRepository {
     return result[0].meta.changes === 1;
   }
 
+  public async completePriceInitialization(
+    operation: CatalogOperation,
+    snapshot: StoreOfferSnapshotState,
+    now = new Date(),
+  ): Promise<boolean> {
+    if (
+      operation.kind !== 'price_initialize' ||
+      operation.step !== 'default_selected' ||
+      !operation.claimToken ||
+      snapshot.variantId !== operation.variantId ||
+      snapshot.stripePriceId !== operation.results.stripePriceId ||
+      !operation.results.stripeProductId ||
+      !operation.results.initializationInput ||
+      !operation.results.productProjection
+    )
+      throw new Error('Invalid initial price completion.');
+    const timestamp = now.toISOString();
+    const marker = `EXISTS (SELECT 1 FROM "CatalogOperation" WHERE id = ? AND status = 'completed' AND claimToken = ?)`;
+    const result = await this.db.batch([
+      this.db
+        .prepare(
+          `UPDATE "CatalogOperation" SET status = 'completed', step = 'completed', updatedAt = ?
+        WHERE id = ? AND kind = 'price_initialize' AND status = 'pending' AND step = 'default_selected'
+        AND claimToken = ? AND leaseUntil > ? AND variantId = ? AND expectedRevision = ?
+        AND json_extract(results, '$.stripeProductId') = ? AND json_extract(results, '$.stripePriceId') = ?
+        AND EXISTS (SELECT 1 FROM "StoreItemOption" s WHERE s.variantId = "CatalogOperation".variantId
+          AND s.storeItemSlug = ? AND s.catalogRevision = "CatalogOperation".expectedRevision
+          AND s.catalogAvailability = 'withheld'
+          AND (s.cmsSourceId IS NULL OR s.cmsSourceId = json_extract("CatalogOperation".results, '$.cmsSourceId'))
+          AND (s.itemType IS NULL OR s.itemType = json_extract("CatalogOperation".results, '$.initializationInput.itemType'))
+          AND (s.priceKind IS NULL OR s.priceKind = json_extract("CatalogOperation".results, '$.initializationInput.price.kind')))
+        AND NOT EXISTS (SELECT 1 FROM "VariantStripeMapping" WHERE variantId = ? OR stripeProductId = ? OR stripePriceId = ?)`,
+        )
+        .bind(
+          timestamp,
+          operation.id,
+          operation.claimToken,
+          timestamp,
+          operation.variantId,
+          operation.expectedRevision,
+          operation.results.stripeProductId,
+          snapshot.stripePriceId,
+          snapshot.storeItemSlug,
+          operation.variantId,
+          operation.results.stripeProductId,
+          snapshot.stripePriceId,
+        ),
+      this.db
+        .prepare(
+          `UPDATE "StoreItemOption" SET
+        cmsSourceId = (SELECT json_extract(results, '$.cmsSourceId') FROM "CatalogOperation" WHERE id = ?),
+        itemType = (SELECT json_extract(results, '$.initializationInput.itemType') FROM "CatalogOperation" WHERE id = ?),
+        priceKind = (SELECT json_extract(results, '$.initializationInput.price.kind') FROM "CatalogOperation" WHERE id = ?),
+        productProjection = (SELECT json_extract(results, '$.productProjection') FROM "CatalogOperation" WHERE id = ?),
+        catalogRevision = catalogRevision + 1, updatedAt = ? WHERE variantId = ? AND ${marker}`,
+        )
+        .bind(
+          operation.id,
+          operation.id,
+          operation.id,
+          operation.id,
+          timestamp,
+          operation.variantId,
+          operation.id,
+          operation.claimToken,
+        ),
+      this.db
+        .prepare(
+          `INSERT INTO "VariantStripeMapping" (id, variantId, stripeProductId, stripePriceId, createdAt, updatedAt)
+        SELECT ?, ?, ?, ?, ?, ? WHERE ${marker}`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          operation.variantId,
+          operation.results.stripeProductId,
+          snapshot.stripePriceId,
+          timestamp,
+          timestamp,
+          operation.id,
+          operation.claimToken,
+        ),
+      this.db
+        .prepare(
+          `INSERT INTO "StoreOfferSnapshot"
+        (id, storeItemSlug, variantId, stripePriceId, stripeLookupKey, amountMinor, currencyCode, priceActive, productActive, syncedAt, freshUntil, createdAt, updatedAt)
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${marker}
+        ON CONFLICT (variantId) DO UPDATE SET stripePriceId = excluded.stripePriceId, stripeLookupKey = excluded.stripeLookupKey,
+          amountMinor = excluded.amountMinor, currencyCode = excluded.currencyCode, priceActive = excluded.priceActive,
+          productActive = excluded.productActive, syncedAt = excluded.syncedAt, freshUntil = excluded.freshUntil, updatedAt = excluded.updatedAt`,
+        )
+        .bind(
+          crypto.randomUUID(),
+          snapshot.storeItemSlug,
+          operation.variantId,
+          snapshot.stripePriceId,
+          snapshot.stripeLookupKey,
+          snapshot.amountMinor,
+          snapshot.currencyCode,
+          snapshot.priceActive ? 1 : 0,
+          snapshot.productActive ? 1 : 0,
+          snapshot.syncedAt.toISOString(),
+          snapshot.freshUntil.toISOString(),
+          timestamp,
+          timestamp,
+          operation.id,
+          operation.claimToken,
+        ),
+      this.db
+        .prepare(
+          `UPDATE "CatalogOperation" SET claimToken = NULL, leaseUntil = NULL
+        WHERE id = ? AND status = 'completed' AND claimToken = ?`,
+        )
+        .bind(operation.id, operation.claimToken),
+    ]);
+    return result[0].meta.changes === 1;
+  }
+
   public async claim(id: string, now = new Date()): Promise<CatalogOperation | null> {
     const row = await this.db
       .prepare(
@@ -475,7 +624,7 @@ export class D1CatalogOperationRepository {
     now = new Date(),
   ): Promise<CatalogOperation | null> {
     if (
-      (['price_change', 'item_publish'].includes(operation.kind) && nextStep === 'completed') ||
+      (['price_change', 'price_initialize', 'item_publish'].includes(operation.kind) && nextStep === 'completed') ||
       (operation.kind === 'item_setup' && ['stock_initialized', 'completed'].includes(nextStep)) ||
       steps[operation.kind][steps[operation.kind].indexOf(operation.step) + 1] !== nextStep
     ) {

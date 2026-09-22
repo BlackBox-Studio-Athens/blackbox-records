@@ -182,6 +182,17 @@ export type StripeCatalogSetupProductInput = {
   confirmLiveSetup: boolean;
 };
 export type StripeCatalogSetupGateway = {
+  inspectSetupProduct(
+    productId: string,
+    environment: StripeCatalogEnvironment,
+  ): Promise<{
+    active: boolean;
+    deleted: boolean;
+    live: boolean;
+    defaultPriceId: string | null;
+    taxCode: string | null;
+    metadata: Record<string, string>;
+  } | null>;
   ensureSetupProduct(
     input: StripeCatalogSetupProductInput,
     context: StripeCatalogMutationContext,

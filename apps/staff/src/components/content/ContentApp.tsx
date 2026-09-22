@@ -330,7 +330,9 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
             .then((page) => {
               const item = page.items[0];
               if (!item) throw new Error('This catalog entry is unavailable.');
-              window.location.replace(`/content/?collection=${item.collection}&id=${encodeURIComponent(item.id)}`);
+              const destination = new URLSearchParams({ collection: item.collection ?? 'releases', id: item.id });
+              if (selected.get('tab') === 'selling') destination.set('tab', 'selling');
+              window.location.replace(`/content/?${destination}`);
             })
             .catch((error) => setMessage(error.message));
           return;
@@ -1222,7 +1224,20 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                         </div>
                       )}
                       {catalogTab !== 'details' && (
-                        <CatalogSelling item={document.item} base={base} section={catalogTab} />
+                        <CatalogSelling
+                          key={`${document.item.id}:${catalogTab}`}
+                          item={document.item}
+                          base={base}
+                          section={catalogTab}
+                          onDetails={() => setCatalogTab('details')}
+                          onSummary={(summary) =>
+                            setDocument((current) =>
+                              current?.item.id === summary.id
+                                ? { ...current, item: { ...current.item, selling: summary.selling } }
+                                : current,
+                            )
+                          }
+                        />
                       )}
                       <div className="cms-editor-body" hidden={catalogTab !== 'details'}>
                         {validationAttempt > 0 && !validation.valid && (

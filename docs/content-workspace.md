@@ -24,6 +24,16 @@ Existing top-level scalar prose has optional native `_rich` companions: artist `
 
 Present rich content is authoritative, including an empty array (deliberately cleared). Missing/null rich content falls back to the old string. Nested prose accepts either strings or text blocks. Opening an editor does not save a conversion. Old strings and revisions remain untouched; there is no bulk migration or rich/plain synchronization. Shared read-time plain-text conversion serves completeness checks, metadata, search, accessible labels and commerce descriptions.
 
+## Set the first selling price
+
+Open an existing item in **Catalog → Selling**, or follow **Selling** from its selected Stock record. An eligible retained item shows **No price set**, a blank EUR amount and **Set price**. Choose a physical format only when a Release has none; Distro and Merch use their saved group. Comma and point decimal separators are accepted. Save missing editorial details in Details first. Configured items keep **Change price**, even while an unrelated private draft is incomplete.
+
+Initial pricing retains the same item, stock, movement history and pauses. It does not publish content or activate sales. Complete price setup before the separate **Publish item** step; ordinary editorial **Review changes** remains independent.
+
+On a conflict, the entered amount and reviewed version stay in the form. **Refresh** asks before discarding unsaved values. After confirmation, **Price saved** remains visible even if the follow-up read fails; use Refresh rather than submitting again. Unsent amounts are not retained across navigation or reloads.
+
+If initial pricing is interrupted, reopen Selling with the same authorized account and select **Resume**. The server retains the accepted amount and saved presentation under one operation identity, including after browser state is lost. A newer private draft does not replace that accepted input. Other members cannot resume its input. Existing replacement-price and publication operations retain their own recovery controls. For an unsafe legacy binding or an operation marked for review, give its operation reference to a label administrator; do not recreate the item, clear the journal, reseed stock or adopt provider objects. Binding repair and hosted release/live acceptance require their existing separate authorization.
+
 ## Private appearance preview
 
 Authenticated `POST /_emdash/preview` selects unsaved editorial input or exact saved review revisions over the accepted snapshot. It returns a private document URL. The existing `PUBLIC_SITE` service renders the actual public routes, shell, components, assets and hydration; preview content never enters accepted-page caches or changes the accepted snapshot. No draft save, revision or publication is created.
@@ -99,11 +109,12 @@ pnpm build:staff
 node scripts/test-preview-policy.mjs
 node scripts/test-content-workspace.mjs
 node scripts/test-content-workspace.mjs --firefox
+node --import tsx scripts/test-content-workspace.mjs --selling
 ```
 
 This serves the built staff app with in-memory API fixtures on loopback, uses the existing Playwright dependency, and writes screenshots to ignored `.codex-artifacts/content-workspace/`. It never contacts hosted CMS, D1, R2, Stripe or publication workflows. It tests frontend integration; existing backend tests remain responsible for provider and publication contracts.
 
-For manual browser inspection, run `node scripts/test-content-workspace.mjs --serve` and open `http://127.0.0.1:4399/content/`. Fixture writes last only until the process stops.
+For manual browser inspection, run `node scripts/test-content-workspace.mjs --serve` and open `http://127.0.0.1:4399/content/`. Add `--selling` for the retained-item fixture; set `BLACKBOX_FIXTURE_PORT` when another worktree owns 4399. Fixture writes last only until the process stops.
 
 For real-renderer verification, build the CMS and public runtime, run the Local stack, then run `node --import tsx apps/backend/scripts/smoke-content-preview.mjs`. This loopback-only smoke previews every seeded collection, checks protected images, denied writes and released contexts, reports latency/bytes, and verifies drafts and publication history remain unchanged. Add `--browsers` for Chromium/Firefox rendering, paired public/preview screenshots and editor autosave. That UI phase restores its original newsletter draft and never publishes it. The CMS build validates source and generated no-KV configuration. Hosted verification remains separate.
 

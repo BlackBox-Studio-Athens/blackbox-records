@@ -60,6 +60,21 @@ export function createCmsItemPublicationGateway(cms: Pick<Fetcher, 'fetch'>, ope
   const fingerprint = (source: Awaited<ReturnType<typeof read>>) =>
     createStripeCatalogRequestShapeFingerprint({ slug: source.item.slug, data: source.item.data });
   const gateway = {
+    async readSetup(record: RuntimeCatalogRecord) {
+      // Native EmDash lookup accepts an id or a unique slug; always verify the resolved identity.
+      const source = sourceSchema.parse(
+        await request(
+          `/_emdash/api/content/${collection(record)}/${encodeURIComponent(record.cmsSourceId ?? record.sourceId)}`,
+        ),
+      ).data;
+      if (
+        (record.cmsSourceId && source.item.id !== record.cmsSourceId) ||
+        source.item.slug !== record.sourceId ||
+        !['draft', 'published'].includes(source.item.status)
+      )
+        throw new CatalogPriceConflictError('CMS source identity changed.');
+      return { cmsRevision: source._rev, source: source.item, sourceFingerprint: fingerprint(source) };
+    },
     async readPublication(id: string) {
       return z
         .object({ id: z.literal(id), status: z.enum(['pending', 'live', 'failed']) })
@@ -118,6 +133,11 @@ export function createCmsItemPublicationGateway(cms: Pick<Fetcher, 'fetch'>, ope
         .parse(await request('/_emdash/api/blackbox/publications', { id, requestedRevision })).status;
     },
   } satisfies CmsItemPublicationGateway & {
+    readSetup: (record: RuntimeCatalogRecord) => Promise<{
+      cmsRevision: string;
+      source: { id: string; slug: string; data: Record<string, unknown> };
+      sourceFingerprint: string;
+    }>;
     read: (record: RuntimeCatalogRecord) => Promise<unknown>;
     readPublication: (id: string) => Promise<{ id: string; status: 'pending' | 'live' | 'failed' }>;
   };

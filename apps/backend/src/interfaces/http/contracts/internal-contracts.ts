@@ -64,6 +64,8 @@ const internalContractModules = [
   {
     name: 'internal-catalog',
     paths: [
+      '/api/internal/variants/{variantId}/selling',
+      '/api/internal/variants/{variantId}/price/initialize',
       '/api/internal/variants/{variantId}/price',
       '/api/internal/items/setup',
       '/api/internal/variants/{variantId}/publication',

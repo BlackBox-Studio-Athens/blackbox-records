@@ -16,6 +16,53 @@ const command = {
 };
 const headers = { 'content-type': 'application/json', origin: 'http://127.0.0.1', 'x-blackbox-request': '1' };
 
+it('protects initial pricing, rejects injected authority and reports unknown Selling variants without writes', async () => {
+  const network = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Unexpected provider request'));
+  const initial = {
+    ...command,
+    expectedRevision: 0,
+    cmsRevision: 'native-1',
+    itemType: 'CDs',
+    confirmLiveSetup: false,
+  };
+  try {
+    for (const [body, requestHeaders, status] of [
+      [initial, { ...headers, origin: 'https://attacker.example' }, 403],
+      [initial, { 'content-type': 'application/json' }, 403],
+      [{ ...initial, actorEmail: 'forged@example.com' }, headers, 400],
+      [{ ...initial, stripeProductId: 'prod_injected' }, headers, 400],
+      [{ ...initial, openingQuantity: 99 }, headers, 400],
+      [{ ...initial, expectedRevision: -1 }, headers, 400],
+    ] as const) {
+      const response = await createHttpApp().request(
+        url + '/initialize',
+        { method: 'POST', headers: requestHeaders, body: JSON.stringify(body) },
+        env,
+      );
+      expect(response.status).toBe(status);
+      expect(response.headers.get('Cache-Control')).toBe('no-store');
+    }
+    const response = await createHttpApp().request(url.replace('/price', '/selling'), {}, env);
+    expect(response.status).toBe(404);
+    const denied = await createHttpApp().request(
+      url.replace('/price', '/selling'),
+      {},
+      { ...env, PRODUCT_ENVIRONMENT: 'UAT' },
+    );
+    expect(denied.status).toBe(503);
+    expect(network).not.toHaveBeenCalled();
+    for (const [path, method, operationId] of [
+      ['/api/internal/variants/{variantId}/selling', 'get', 'readCatalogSelling'],
+      ['/api/internal/variants/{variantId}/price/initialize', 'post', 'initializeCatalogPrice'],
+    ] as const) {
+      expect(getInternalOpenApiDocument().paths?.[path]?.[method]?.operationId).toBe(operationId);
+      expect(getPublicOpenApiDocument().paths).not.toHaveProperty(path);
+    }
+  } finally {
+    network.mockRestore();
+  }
+});
+
 it('rejects cross-site and malformed commands before provider work and exposes only an internal contract', async () => {
   const network = vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Unexpected provider request'));
   try {

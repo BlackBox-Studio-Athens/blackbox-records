@@ -4,6 +4,33 @@ import { createStripeCatalogMutationContext } from '../../../src/application/com
 import { StripeCatalogGatewayClient } from '../../../src/infrastructure/stripe/stripe-catalog-gateway';
 
 describe('StripeCatalogGatewayClient', () => {
+  it('distinguishes absent Products from deleted or unpriced identities without treating service errors as absence', async () => {
+    const retrieve = vi.fn();
+    const gateway = new StripeCatalogGatewayClient({ products: { retrieve } } as never, false);
+    await expect(gateway.inspectSetupProduct('prod_selected', 'prd')).rejects.toThrow('mode');
+    expect(retrieve).not.toHaveBeenCalled();
+    retrieve.mockRejectedValueOnce({ code: 'resource_missing', statusCode: 404 });
+    await expect(gateway.inspectSetupProduct('prod_selected', 'uat')).resolves.toBeNull();
+    retrieve.mockResolvedValueOnce({ id: 'prod_selected', deleted: true });
+    await expect(gateway.inspectSetupProduct('prod_selected', 'uat')).resolves.toMatchObject({ deleted: true });
+    retrieve.mockResolvedValueOnce({
+      id: 'prod_selected',
+      active: true,
+      livemode: false,
+      default_price: null,
+      tax_code: 'txcd_99999999',
+      metadata: {},
+    });
+    await expect(gateway.inspectSetupProduct('prod_selected', 'uat')).resolves.toMatchObject({
+      active: true,
+      deleted: false,
+      defaultPriceId: null,
+    });
+    retrieve.mockRejectedValueOnce(new Error('provider unavailable'));
+    await expect(gateway.inspectSetupProduct('prod_selected', 'uat')).rejects.toThrow('provider unavailable');
+    retrieve.mockRejectedValueOnce({ statusCode: 404, message: 'wrong API endpoint' });
+    await expect(gateway.inspectSetupProduct('prod_selected', 'uat')).rejects.toMatchObject({ statusCode: 404 });
+  });
   it('resumes an interrupted bootstrap without creating another Product or Price', async () => {
     const metadata = {
       appEnv: 'uat' as const,

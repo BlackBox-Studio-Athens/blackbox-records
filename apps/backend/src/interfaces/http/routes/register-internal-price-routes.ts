@@ -4,9 +4,15 @@ import {
   catalogPriceChangeSchema,
   changeCatalogPrice,
   readCatalogPrice,
+  readCatalogSelling,
+  initializeCatalogPrice,
+  catalogPriceInitializeSchema,
+  CatalogSellingNotFoundError,
+  prepareCmsSetupPresentation,
 } from '../../../application/commerce/catalog-sync';
 import { CatalogOperationConflictError } from '../../../domain/commerce/repositories/spi';
-import { productEnvironmentProfileFromBindings, type AppOpenApi } from '../../../env';
+import { productEnvironmentProfileFromBindings, type AppOpenApi, type AppBindings } from '../../../env';
+import { createCmsItemPublicationGateway } from './cms-item-publication-gateway';
 import {
   createPrismaClient,
   D1CatalogOperationRepository,
@@ -51,6 +57,150 @@ export function registerInternalPriceRoutes(app: AppOpenApi): void {
     })
     .strict()
     .openapi('CatalogPriceDetail');
+  const sellingSchema = z
+    .discriminatedUnion('state', [
+      z.object({ state: z.literal('ready'), detail: detailSchema, ...hypermediaMetadataShape }).strict(),
+      z
+        .object({
+          state: z.literal('setup_required'),
+          variantId: z.string(),
+          expectedRevision: z.number().int().nonnegative(),
+          cmsRevision: z.string(),
+          cmsSourceId: z.string(),
+          itemType: catalogPriceInitializeSchema.shape.itemType.nullable(),
+          priceKind: z.enum(['fixed', 'pay_what_you_want']),
+          requiresLiveConfirmation: z.boolean(),
+          ...hypermediaMetadataShape,
+        })
+        .strict(),
+      z
+        .object({
+          state: z.literal('blocked'),
+          reason: z.string(),
+          action: z.enum(['details', 'resume', 'administrator', 'price_change', 'publication']),
+          operationId: z.string().optional(),
+          pending: catalogPriceInitializeSchema.nullable(),
+          ...hypermediaMetadataShape,
+        })
+        .strict(),
+    ])
+    .openapi('CatalogSellingDetail');
+  const params = z.object({ variantId: z.string().regex(/^variant_[A-Za-z0-9_-]+$/) });
+  const errors = {
+    400: errorResponse('Invalid request.'),
+    404: errorResponse('Item not found.'),
+    409: errorResponse('Reviewed input or catalog state conflicts.'),
+    ...operatorAccessErrorResponses,
+    503: errorResponse('Selling is temporarily unavailable. Retry retained work with the same operation identity.'),
+  };
+  app.openapi(
+    createRoute({
+      method: 'get',
+      path: '/api/internal/variants/{variantId}/selling',
+      operationId: 'readCatalogSelling',
+      tags: ['Internal catalog'],
+      summary: 'Read Selling readiness without catalog or provider writes.',
+      request: { params },
+      responses: {
+        200: {
+          description: 'Selected item Selling readiness.',
+          content: { 'application/json': { schema: sellingSchema } },
+        },
+        ...errors,
+      },
+    }),
+    async (context) => {
+      const { prisma, deps } = sellingDependencies(context.env, context.req.raw);
+      try {
+        const variantId = context.req.valid('param').variantId;
+        const result = sellingSchema.parse(
+          await readCatalogSelling(deps, variantId, context.get('operatorIdentity').email),
+        );
+        return jsonNoStore(
+          context.json(
+            addHypermedia(result, [
+              apiLink({ href: apiPath('api', 'internal', 'variants', variantId, 'selling'), rel: 'self' }),
+            ]),
+            200,
+          ),
+        );
+      } catch (error) {
+        return error instanceof CatalogSellingNotFoundError
+          ? jsonError(context, { code: 'not_found', message: 'Item not found.', status: 404 })
+          : jsonError(context, {
+              code: 'catalog_temporarily_unavailable',
+              message: 'Selling is temporarily unavailable. Refresh to try again.',
+              status: 503,
+            });
+      } finally {
+        await prisma.$disconnect();
+      }
+    },
+  );
+  app.openapi(
+    createRoute({
+      method: 'post',
+      path: '/api/internal/variants/{variantId}/price/initialize',
+      operationId: 'initializeCatalogPrice',
+      tags: ['Internal catalog'],
+      summary: 'Set the first price on an existing withheld item without changing stock or publication.',
+      request: {
+        params,
+        headers: z.object({ origin: z.string().optional(), 'x-blackbox-request': z.string().optional() }),
+        body: { required: true, content: { 'application/json': { schema: catalogPriceInitializeSchema } } },
+      },
+      responses: {
+        200: {
+          description: 'Retained initial price operation status.',
+          content: { 'application/json': { schema: resultSchema } },
+        },
+        ...errors,
+        403: errorResponse('Same-origin operator request required.'),
+      },
+    }),
+    async (context) => {
+      if (
+        context.req.header('origin') !== new URL(context.req.url).origin ||
+        context.req.header('x-blackbox-request') !== '1'
+      )
+        return jsonError(context, {
+          code: 'forbidden',
+          message: 'Same-origin operator request required.',
+          status: 403,
+        });
+      const { prisma, deps } = sellingDependencies(context.env, context.req.raw);
+      try {
+        const variantId = context.req.valid('param').variantId;
+        const result = await initializeCatalogPrice(
+          deps,
+          variantId,
+          context.get('operatorIdentity').email,
+          context.req.valid('json'),
+        );
+        return jsonNoStore(context.json(addHypermedia(resultSchema.parse(result), catalogPriceLinks(variantId)), 200));
+      } catch (error) {
+        if (error instanceof CatalogSellingNotFoundError)
+          return jsonError(context, { code: 'not_found', message: 'Item not found.', status: 404 });
+        if (
+          error instanceof CatalogPriceConflictError ||
+          error instanceof CatalogOperationConflictError ||
+          error instanceof z.ZodError
+        )
+          return jsonError(context, {
+            code: 'catalog_conflict',
+            message: 'Review the saved details, price and current item revision.',
+            status: 409,
+          });
+        return jsonError(context, {
+          code: 'catalog_temporarily_unavailable',
+          message: 'Price setup interrupted. Resume the same operation.',
+          status: 503,
+        });
+      } finally {
+        await prisma.$disconnect();
+      }
+    },
+  );
   app.openapi(
     createRoute({
       method: 'get',
@@ -206,4 +356,26 @@ function catalogPriceLinks(variantId: string) {
       rel: 'publication',
     }),
   ];
+}
+
+function sellingDependencies(env: AppBindings, request: Request) {
+  const prisma = createPrismaClient(env);
+  return {
+    prisma,
+    deps: {
+      environment: productEnvironmentProfileFromBindings(env).workerDeploymentTarget,
+      catalog: new PrismaStoreItemOptionRepository(prisma),
+      mappings: new PrismaVariantStripeMappingRepository(prisma),
+      journal: new D1CatalogOperationRepository(env.COMMERCE_DB),
+      // Build lazily inside the route's error boundary, including configuration failures.
+      get gateway() {
+        return createStripeCatalogGateway(env);
+      },
+      readSource: (record: Parameters<ReturnType<typeof createCmsItemPublicationGateway>['readSetup']>[0]) => {
+        if (!env.CMS_RUNTIME) throw new Error('CMS is unavailable.');
+        return createCmsItemPublicationGateway(env.CMS_RUNTIME.getByName('editorial'), request).readSetup(record);
+      },
+      preparePresentation: prepareCmsSetupPresentation,
+    },
+  };
 }
