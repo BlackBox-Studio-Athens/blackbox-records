@@ -41,7 +41,15 @@ const runtime = {
   ...selected,
   main: localPath('src/cms/index.ts'),
   ...(['uat', 'prd'].includes(target)
-    ? { routes: [...(selected.routes ?? []), { pattern: cms.hostname, custom_domain: true }] }
+    ? {
+        routes: [
+          ...(selected.routes ?? []),
+          { pattern: cms.hostname, custom_domain: true },
+          ...(cms.preview_hostname && cms.preview_access_policy_aud
+            ? [{ pattern: cms.preview_hostname, custom_domain: true }]
+            : []),
+        ],
+      }
     : {}),
   assets: { binding: 'ASSETS', run_worker_first: true, html_handling: 'auto-trailing-slash' },
   vars: {
@@ -51,6 +59,9 @@ const runtime = {
       ? { EMDASH_MIGRATIONS_MODE: 'auto' }
       : {
           CMS_HOSTNAME: cms.hostname,
+          ...(cms.preview_hostname && cms.preview_access_policy_aud
+            ? { CMS_PREVIEW_HOSTNAME: cms.preview_hostname, CMS_PREVIEW_POLICY_AUD: cms.preview_access_policy_aud }
+            : {}),
           CMS_OWNER_EMAIL: cms.owner_email,
           CF_ACCESS_TEAM_DOMAIN: cms.access_team_domain ?? selected.vars.CF_ACCESS_TEAM_DOMAIN,
           CF_ACCESS_POLICY_AUD: cms.access_policy_aud ?? selected.vars.CF_ACCESS_POLICY_AUD,
@@ -80,10 +91,7 @@ export default defineConfig({
   adapter: cloudflare({ configPath: '.emdash/wrangler.build.json', imageService: 'passthrough' }),
   vite: {
     resolve: {
-      alias: [
-        { find: '@/lib/content-reader', replacement: localPath('src/cms/preview-content.ts') },
-        { find: '@', replacement: localPath('../web/src') },
-      ],
+      alias: [{ find: '@', replacement: localPath('../web/src') }],
     },
     plugins: [tailwindcss()],
     define: {
@@ -94,14 +102,6 @@ export default defineConfig({
   },
   integrations: [
     react(),
-    {
-      name: 'blackbox-private-preview',
-      hooks: {
-        'astro:config:setup': ({ injectRoute }) => {
-          injectRoute({ pattern: '/_emdash/preview', entrypoint: localPath('src/pages/_emdash/preview.astro') });
-        },
-      },
-    },
     emdash({
       database: d1({ binding: 'CMS_DB' }),
       storage: r2({ binding: 'MEDIA' }),

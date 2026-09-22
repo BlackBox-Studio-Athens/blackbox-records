@@ -305,6 +305,12 @@ The system MUST place Services inquiry presentation, public HTTP composition, em
 
 CMS integration SHALL use supported CMS interfaces for editorial records, while commerce SHALL retain its existing application and repository entrypoints for catalog, price, stock, checkout, and orders.
 
+#### Scenario: Public components run inside a private editorial preview
+
+- **WHEN** the app shell, player, or public API configuration needs private preview context
+- **THEN** it imports the browser-only `apps/web/src/lib/private-preview.ts` entrypoint owned by `platform-shared`
+- **AND** that helper owns preview URLs and validated parent-frame messages without importing CMS server code or owning commerce authority.
+
 #### Scenario: CMS presents an operational control
 
 - **WHEN** a staff form invokes a price, inventory, or order action

@@ -5,6 +5,7 @@ import { isCmsCollection, type ContentSnapshot } from '@blackbox/content-model';
 import { z } from 'zod';
 import { publishedContext } from './published-reader';
 import { readBoundedText } from './preview-content';
+import { previewRenderContent, previewRenderSchema } from './preview-render-contract';
 import {
   publicationPointerSchema,
   readPublicationPointer,
@@ -75,6 +76,55 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
     const url = new URL(request.url);
     const path = url.pathname.replace(/^\/blackbox-records(?=\/)/, '');
     try {
+      if (path === '/__publication/preview' && request.method === 'POST') {
+        const input = previewRenderSchema.parse(JSON.parse(await readBoundedText(request.body, 4 * 1024 * 1024)));
+        const target = new URL(input.path, url);
+        const targetPath = target.pathname.replace(/^\/blackbox-records(?=\/)/, '');
+        if (
+          target.origin !== url.origin ||
+          target.search ||
+          /^\/(?:api|_emdash|__publication|content|stock|_image|media|assets)(?:\/|$)/.test(targetPath) ||
+          /\/checkout(?:\/|$)/.test(targetPath)
+        )
+          return new Response('Forbidden', { status: 403 });
+        const response = await publishedContext.run(
+          { snapshot: previewRenderContent(input), mediaBase: '', images: input.images },
+          async () => {
+            const state = new FetchState(new Request(target));
+            const asset = await cf(state, this.env, this.ctx as unknown as ExecutionContext);
+            return asset ?? finalize(state, await astro(state));
+          },
+        );
+        const headers = new Headers(response.headers);
+        headers.set('Cache-Control', 'private, no-store');
+        headers.set('X-Release-SHA', PUBLIC_RELEASE_IDENTITY.sha);
+        const config = JSON.stringify({
+          context: input.context,
+          generation: input.generation,
+          parentOrigin: input.parentOrigin,
+          release: PUBLIC_RELEASE_IDENTITY.sha,
+        })
+          .replaceAll('&', '&amp;')
+          .replaceAll('"', '&quot;')
+          .replaceAll('<', '&lt;');
+        return new HTMLRewriter()
+          .on('head', {
+            element(element) {
+              element.prepend(`<meta name="blackbox-preview" content="${config}">`, { html: true });
+            },
+          })
+          .on('script[src*="glancelytics.com"], link[rel="preconnect"], link[rel="dns-prefetch"]', {
+            element(element) {
+              element.remove();
+            },
+          })
+          .transform(
+            new Response(response.body ? await readBoundedText(response.body, 4 * 1024 * 1024) : null, {
+              status: response.status,
+              headers,
+            }),
+          );
+      }
       // Private service-only preparation. The Pages gateway never forwards this namespace.
       if (path === '/__publication/validate' && request.method === 'POST') {
         const pointer = publicationPointerSchema

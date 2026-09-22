@@ -5,28 +5,32 @@ import { fileURLToPath } from 'node:url';
 import { createLocalPublicationClient } from './local-publication-poll.mjs';
 import { startLocalPublicRuntime } from '../../backend/scripts/local-public-runtime.mjs';
 import { captureCmsSnapshot } from '../../../scripts/capture-cms-snapshot.mjs';
-import { createCmsSnapshotReaders } from '../../../scripts/cms-snapshot-readers.mjs';
+import { createCmsSnapshotReaders, cmsSnapshotTarget } from '../../../scripts/cms-snapshot-readers.mjs';
 import { writeCmsSnapshot } from '../../../scripts/export-cms-snapshot.mjs';
 import { importCmsContent } from '../../../scripts/import-cms-content.mjs';
 import { sourceCollectionNames } from '@blackbox/content-model';
 import { setTimeout } from 'node:timers/promises';
 
-export async function publishInitialLocalContent(signal = new AbortController().signal) {
+export async function publishInitialLocalContent(
+  signal = new AbortController().signal,
+  { base = 'http://127.0.0.1:8787' } = {},
+) {
+  base = cmsSnapshotTarget('local', base).origin;
   // Verify source parity before the one-time bootstrap; never promote divergent drafts on restart.
-  await importCmsContent({ verifyOnly: true });
+  await importCmsContent({ base, verifyOnly: true });
   const client = createLocalPublicationClient(signal);
   for (const collection of Object.keys(sourceCollectionNames)) {
     let cursor;
     do {
       const query = new URLSearchParams({ limit: '100', orderBy: 'createdAt', order: 'asc' });
       if (cursor) query.set('cursor', cursor);
-      const list = await client.send(`http://127.0.0.1:8787/_emdash/api/content/${collection}?${query}`);
+      const list = await client.send(`${base}/_emdash/api/content/${collection}?${query}`);
       if (!list.ok) throw new Error('Local CMS is not ready.');
       const { data } = await list.json();
       cursor = data.nextCursor;
       for (const item of data.items) {
         if (item.status === 'published') continue;
-        const url = `http://127.0.0.1:8787/_emdash/api/content/${collection}/${item.id}`;
+        const url = `${base}/_emdash/api/content/${collection}/${item.id}`;
         const saved = await client.send(url);
         if (!saved.ok) throw new Error('Initial Local record is unavailable.');
         const record = (await saved.json()).data;

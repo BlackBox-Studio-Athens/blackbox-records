@@ -5,16 +5,21 @@ import {
   isCmsCollection,
   validateCmsRevisionContent,
   publicationReviewSchema,
-  publishedCollection,
   type PublicationReview,
   type PublicationReviewInput,
   type ContentSnapshot,
 } from '@blackbox/content-model';
 import { readPublicationPointer, readPublishedSnapshot, type PublicationEnvironment } from './published-storage';
-import type { PreviewContext } from './preview-content';
+import { projectPublicationStoreItems, readPublicationMedia } from './publication-projection';
+import { readPublicationCatalog } from './item-publication-recovery';
 
 export class PublicationReviewConflict extends Error {}
-type Dependencies = { runtime: EmDashRuntime; bucket: R2Bucket; environment: PublicationEnvironment };
+type Dependencies = {
+  runtime: EmDashRuntime;
+  bucket: R2Bucket;
+  environment: PublicationEnvironment;
+  commerce: D1Database;
+};
 export function publicationPublicUrl(environment: PublicationEnvironment) {
   return environment === 'local'
     ? 'http://127.0.0.1:4321/blackbox-records/'
@@ -47,6 +52,7 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
     ),
   };
   const candidate: ContentSnapshot = { ...snapshot, records: [...snapshot.records] };
+  let catalog: Awaited<ReturnType<typeof readPublicationCatalog>> | undefined;
   for (const record of selected.records) {
     if (!isCmsCollection(record.collection)) throw new PublicationReviewConflict('Unsupported collection.');
     reads++;
@@ -90,6 +96,14 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
       slug,
       data: z.record(z.string(), z.json()).parse(after),
     });
+    if (['releases', 'distro'].includes(record.collection)) {
+      catalog ??= await readPublicationCatalog(deps.commerce);
+      candidate.storeItems = projectPublicationStoreItems(
+        candidate.storeItems,
+        { collection: record.collection, slug },
+        catalog,
+      );
+    }
   }
   review.destinations = review.entries.map(({ collection, recordId, slug, title }) => ({
     collection,
@@ -142,27 +156,17 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
     const accepted = snapshot.media.find((m) => m.id === id);
     if (accepted) continue;
     reads++;
-    const media = await deps.runtime.handleMediaGet(id);
-    const parsed = media.success
-      ? z
-          .object({
-            storageKey: z.string().regex(/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*\.(?:png|jpe?g|webp)$/i),
-            width: z.number().int().positive(),
-            height: z.number().int().positive(),
-            mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
-          })
-          .safeParse(media.data.item)
-      : null;
-    if (!parsed?.success || /^(snapshots|backups|drafts)\//.test(parsed.data.storageKey)) {
+    const media = await readPublicationMedia(deps.runtime, id).catch(() => null);
+    if (!media) {
       for (const entry of review.entries.filter((e) => contentMediaIds(e.after).includes(id)))
         entry.issues.push('A selected image is unavailable. Choose another image.');
       continue;
     }
     review.media[id] = {
-      src: `/_emdash/api/media/file/${parsed.data.storageKey}`,
-      width: parsed.data.width,
-      height: parsed.data.height,
-      format: parsed.data.mimeType === 'image/jpeg' ? 'jpg' : parsed.data.mimeType.slice(6),
+      src: `/_emdash/api/media/file/${media.storageKey}`,
+      width: media.width,
+      height: media.height,
+      format: media.mimeType === 'image/jpeg' ? 'jpg' : media.mimeType.slice(6),
     };
   }
   for (const media of snapshot.media)
@@ -173,38 +177,4 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
       format: media.mimeType === 'image/jpeg' ? 'jpg' : media.mimeType.slice(6),
     };
   return { review, candidate, reads };
-}
-
-export function publicationPreviewContext(
-  review: PublicationReview,
-  candidate: ContentSnapshot,
-  recordId: string,
-  collection: string,
-): PreviewContext {
-  const destination = review.destinations.find((e) => e.recordId === recordId && e.collection === collection);
-  const entry =
-    destination && candidate.records.find((record) => record.id === recordId && record.collection === collection);
-  if (
-    !entry ||
-    !isCmsCollection(entry.collection) ||
-    review.dependencies.length ||
-    review.entries.some((e) => e.issues.length)
-  )
-    throw new PublicationReviewConflict('Resolve the highlighted publication issues before previewing.');
-  const collections = new Map<string, ReturnType<typeof publishedCollection>>();
-  const get = (name: string) => {
-    if (!collections.has(name))
-      collections.set(name, publishedCollection(candidate, name, '/media/published', review.media));
-    return collections.get(name)!;
-  };
-  return {
-    input: { collection: entry.collection, id: entry.id, slug: entry.slug, data: entry.data },
-    environment: review.environment,
-    async getCollection(name) {
-      return get(name);
-    },
-    async getEntry(name, id) {
-      return get(name).find((e) => e.id === id);
-    },
-  };
 }

@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { cms, orders, fetchCommerce, cmsAsset } = vi.hoisted(() => ({
+const { cms, orders, fetchCommerce, cmsAsset, nativeRuntime } = vi.hoisted(() => ({
   cms: vi.fn(),
   orders: vi.fn(),
   fetchCommerce: vi.fn(),
   cmsAsset: vi.fn(),
+  nativeRuntime: { handleContentGet: vi.fn() },
 }));
 vi.mock('astro/fetch', () => ({ astro: vi.fn(), FetchState: vi.fn() }));
 vi.mock('cloudflare:workers', () => ({
@@ -16,7 +17,10 @@ vi.mock('cloudflare:workers', () => ({
   },
 }));
 vi.mock('@astrojs/cloudflare/fetch', () => ({ cf: cmsAsset, finalize: vi.fn() }));
-vi.mock('emdash/middleware', () => ({ runScheduledTasks: cms }));
+vi.mock('emdash/middleware', () => ({
+  runScheduledTasks: cms,
+  withEmDashRuntime: (callback: (runtime: typeof nativeRuntime) => unknown) => callback(nativeRuntime),
+}));
 vi.mock('../../src/index', () => ({ CommerceRuntime: class {}, default: { scheduled: orders, fetch: fetchCommerce } }));
 vi.mock('../../src/cms/auth', () => ({ authenticate: vi.fn().mockRejectedValue(new Error('Unauthorized')) }));
 
@@ -31,6 +35,55 @@ describe('EmDash checkpoint composition', () => {
   beforeEach(() => {
     vi.mocked(authenticate).mockReset().mockRejectedValue(new Error('Unauthorized'));
     cmsAsset.mockReset();
+    nativeRuntime.handleContentGet.mockReset();
+  });
+
+  it('validates native navigation booleans before publishing newly imported records', async () => {
+    vi.mocked(authenticate).mockResolvedValue({ email: 'member@example.com', name: 'Member', role: 30 });
+    const runtime = new CmsRuntime(
+      {} as DurableObjectState,
+      {
+        PRODUCT_ENVIRONMENT: 'LOCAL',
+      } as unknown as ConstructorParameters<typeof CmsRuntime>[1],
+    );
+    const data = { title: 'About', url: '/about/', order: 5, show_in_header: true, show_in_footer: false };
+    nativeRuntime.handleContentGet.mockResolvedValue({
+      success: true,
+      data: {
+        item: {
+          draftRevisionId: null,
+          liveRevisionId: null,
+          data: { ...data, show_in_header: 1, show_in_footer: 0 },
+        },
+      },
+    });
+    const request = () =>
+      new Request('http://127.0.0.1/_emdash/api/content/navigation/about/publish', {
+        method: 'POST',
+        headers: { Origin: 'http://127.0.0.1', 'X-EmDash-Request': '1' },
+        body: JSON.stringify({ _rev: 'version' }),
+      });
+    cmsAsset.mockResolvedValueOnce(new Response('published'));
+    expect((await runtime.fetch(request())).status).toBe(200);
+
+    nativeRuntime.handleContentGet.mockResolvedValue({
+      success: true,
+      data: { item: { liveRevisionId: 'live', data } },
+    });
+    cmsAsset.mockResolvedValueOnce(new Response('published'));
+    expect((await runtime.fetch(request())).status).toBe(200);
+
+    cmsAsset.mockClear();
+    for (const invalid of [{ show_in_header: 2 }, { show_in_footer: '1' }, { url: 'javascript:alert(1)' }]) {
+      nativeRuntime.handleContentGet.mockResolvedValue({
+        success: true,
+        data: { item: { data: { ...data, ...invalid } } },
+      });
+      expect((await runtime.fetch(request())).status).toBe(422);
+    }
+    nativeRuntime.handleContentGet.mockResolvedValue({ success: false });
+    expect((await runtime.fetch(request())).status).toBe(422);
+    expect(cmsAsset).not.toHaveBeenCalled();
   });
 
   it('rejects member token administration before storage and restricts owner tokens to export reads', async () => {

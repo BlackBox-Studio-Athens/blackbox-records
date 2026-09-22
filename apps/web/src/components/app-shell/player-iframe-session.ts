@@ -1,3 +1,4 @@
+import { privatePreview } from '@/lib/private-preview';
 import type { PlayerEmbedLayout, PlayerProvider, PlayerProviderId } from './player-provider-data';
 
 export const DEFAULT_MAX_CACHED_PLAYER_IFRAMES = 6;
@@ -100,7 +101,7 @@ function createPlayerIframe(provider: PlayerProvider, releaseTitle: string, call
   iframeElement.dataset.musicStreamingServiceEmbeddedPlayerLoadState = 'loading';
   iframeElement.dataset.state = 'inactive';
   iframeElement.loading = 'eager';
-  iframeElement.referrerPolicy = 'strict-origin-when-cross-origin';
+  iframeElement.referrerPolicy = privatePreview() ? 'no-referrer' : 'strict-origin-when-cross-origin';
   iframeElement.title = releaseTitle ? `${releaseTitle} player` : 'Music player';
   iframeElement.src = provider.embedUrl;
 

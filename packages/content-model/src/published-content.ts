@@ -1,6 +1,11 @@
 import { contentMediaIds, sourceCollectionNames } from './emdash-content';
 import { parseContentSnapshot, type ContentSnapshot } from './content-snapshot';
 
+/** Render input can contain transient editor records; only saved snapshots carry revisions. */
+export type PublicContent = Pick<ContentSnapshot, 'media' | 'storeItems'> & {
+  records: Omit<ContentSnapshot['records'][number], 'revisionId'>[];
+};
+
 /** A selected revision replaces only its own public record. Draft inventories are irrelevant. */
 export function replacePublishedRecord(
   previous: ContentSnapshot,
@@ -27,7 +32,7 @@ export function replacePublishedRecord(
 
 /** Shared mapping for runtime rendering; callers supply only an accepted, validated snapshot. */
 export function publishedCollection(
-  snapshot: ContentSnapshot,
+  snapshot: PublicContent,
   collection: string,
   mediaBase: string,
   privateImages: Record<string, { src: string; width: number; height: number; format: string }> = {},

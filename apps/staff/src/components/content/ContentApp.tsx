@@ -141,7 +141,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [ready, setReady] = useState(false);
   const [preview, setPreview] = useState(false);
   const [desktopPreview, setDesktopPreview] = useState(false);
-  const [previewScroll, setPreviewScroll] = useState({ key: '', x: 0, y: 0 });
   useEffect(() => {
     try {
       setDesktopPreview(localStorage.getItem('blackbox-content-preview') !== 'closed');
@@ -150,18 +149,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     }
   }, []);
   function togglePreview() {
-    if (desktopPreview) {
-      const contentWindow = window.document.querySelector<HTMLIFrameElement>(
-        'iframe[title="Private site appearance preview"]',
-      )?.contentWindow;
-      if (contentWindow) {
-        setPreviewScroll({
-          key: document ? `${collection}:${document.item.id || document.item.slug}` : '',
-          x: contentWindow.scrollX,
-          y: contentWindow.scrollY,
-        });
-      }
-    }
     const next = !desktopPreview;
     setDesktopPreview(next);
     try {
@@ -1312,11 +1299,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                     slug={document.item.slug}
                     data={data}
                     base={base}
-                    restoreScroll={
-                      previewScroll.key === `${collection}:${document.item.id || document.item.slug}`
-                        ? previewScroll
-                        : undefined
-                    }
                     dirty={dirty}
                     valid={validation.valid}
                     active={!media && catalogTab === 'details' && (wide ? desktopPreview : preview)}

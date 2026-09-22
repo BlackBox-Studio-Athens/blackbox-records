@@ -1,13 +1,17 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { publishedCollection, type ContentSnapshot } from '@blackbox/content-model';
+import { publishedCollection, type PublicContent } from '@blackbox/content-model';
 
-export const publishedContext = new AsyncLocalStorage<{ snapshot: ContentSnapshot; mediaBase: string }>();
+export const publishedContext = new AsyncLocalStorage<{
+  snapshot: PublicContent;
+  mediaBase: string;
+  images?: Parameters<typeof publishedCollection>[3];
+}>();
 
 type Entry = { id: string; collection: string; data: Record<string, unknown> };
 export async function getCollection(collection: string, filter?: (entry: Entry) => boolean): Promise<Entry[]> {
   const context = publishedContext.getStore();
   if (!context) throw new Error('Published content context required.');
-  const entries = publishedCollection(context.snapshot, collection, context.mediaBase);
+  const entries = publishedCollection(context.snapshot, collection, context.mediaBase, context.images);
   return filter ? entries.filter(filter) : entries;
 }
 

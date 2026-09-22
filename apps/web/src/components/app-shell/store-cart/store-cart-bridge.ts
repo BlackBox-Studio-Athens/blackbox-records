@@ -12,6 +12,17 @@ import {
 } from '@/lib/store-cart';
 
 type StoreCartBrowserStorage = Parameters<typeof readStoreCartState>[0];
+import { privatePreview } from '@/lib/private-preview';
+const previewCart = new Map<string, string>();
+const previewStorage = {
+  getItem: (key: string) => previewCart.get(key) ?? null,
+  setItem: (key: string, value: string) => {
+    previewCart.set(key, value);
+  },
+  removeItem: (key: string) => {
+    previewCart.delete(key);
+  },
+};
 
 type ApplyStoreCartStateOptions = {
   readStorage: () => StoreCartBrowserStorage;
@@ -28,7 +39,8 @@ type StoreCartBridgeOptions = {
   setStoreCartState: (state: StoreCartState) => void;
 };
 
-export function getStoreCartBrowserStorage(): Storage | undefined {
+export function getStoreCartBrowserStorage(): StoreCartBrowserStorage {
+  if (privatePreview()) return previewStorage;
   try {
     return window.localStorage;
   } catch {

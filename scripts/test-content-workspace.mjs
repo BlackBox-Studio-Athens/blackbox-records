@@ -5,6 +5,8 @@ import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { chromium, firefox } from 'playwright';
+import { randomUUID } from 'node:crypto';
+import ts from 'typescript';
 import { exampleOrder } from '../apps/staff/src/components/orders/order-fixtures.test-support.ts';
 import { previewPolicy } from '../apps/backend/src/cms/preview-policy.ts';
 
@@ -201,6 +203,11 @@ const state = {
   requests: [],
 };
 const publications = [];
+const previewDocuments = new Map();
+const previewBridge =
+  ts.transpileModule(await readFile('apps/web/src/lib/private-preview.ts', 'utf8'), {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+  }).outputText + '\nconnectPrivatePreview();';
 const fixtureOrders = Array.from({ length: 51 }, (_, index) => ({
   ...structuredClone(exampleOrder),
   orderReference: `ORDER-${String(index).padStart(3, '0')}`,
@@ -439,14 +446,35 @@ const server = createServer(async (req, res) => {
       if (title === 'expired preview') return json({ error: 'Sign in again.' }, 403);
       if (title === 'unexpected preview') return json({ error: null });
       if (title === 'slow preview') await new Promise((resolve) => setTimeout(resolve, 1500));
-      res.writeHead(200, { 'Content-Type': 'text/html', 'X-Preview-Environment': 'local' });
-      const escaped = title.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-      const description = String(body.data.description ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;');
+      const context = randomUUID();
+      const generation = Number(req.headers['x-preview-generation'] ?? 0);
+      previewDocuments.set(context, { title, description: String(body.data.description ?? ''), generation });
+      res.setHeader('X-Preview-Environment', 'local');
+      return json({ context, url: `http://localhost:${server.address().port}/preview-document?__preview=${context}` });
+    }
+    if (url.pathname === '/_emdash/preview-release') {
+      previewDocuments.delete(body.context);
+      res.writeHead(204);
+      return res.end();
+    }
+    if (url.pathname === '/preview-bridge.js') {
+      res.writeHead(200, { 'Content-Type': 'text/javascript' });
+      return res.end(previewBridge);
+    }
+    if (url.pathname === '/preview-document') {
+      const context = url.searchParams.get('__preview');
+      const item = previewDocuments.get(context);
+      if (!item) return fail(410);
+      const escape = (text) =>
+        text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+      const config = escape(JSON.stringify({ context, generation: item.generation, parentOrigin: origin }));
+      res.writeHead(200, {
+        'Content-Type': 'text/html',
+        'Content-Security-Policy': previewPolicy(origin),
+        'Cache-Control': 'private, no-store',
+      });
       return res.end(
-        `<!doctype html><html><head><meta http-equiv="Content-Security-Policy" content="${previewPolicy(origin)}"><link rel="stylesheet" href="/preview-test.css"></head><body style="min-height:2000px"><h1>${escaped}</h1><p id="newsletter-signup-area">${description}</p><img src="/preview-test.png" alt="Preview fixture" loading="eager"></body></html>`,
+        `<!doctype html><html><head><meta name="blackbox-preview" content="${config}"><link rel="stylesheet" href="/preview-test.css"><script type="module" src="/preview-bridge.js"></script></head><body style="min-height:2000px"><h1>${escape(item.title)}</h1><p id="newsletter-signup-area">${escape(item.description)}</p><img src="/preview-test.png" alt="Preview fixture" loading="eager"></body></html>`,
       );
     }
     if (url.pathname === '/_emdash/api/blackbox/publication-review') {
@@ -669,6 +697,7 @@ else {
   async function assertOptionalFeatures(browser) {
     const historyContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
     const historyPage = await historyContext.newPage();
+    historyPage.on('pageerror', (error) => console.error('History browser error:', error.message));
     const historyRequests = [];
     historyPage.on('request', (request) => historyRequests.push(new URL(request.url()).pathname));
     try {
@@ -690,6 +719,9 @@ else {
       state.historyFailure = false;
       await historyPage.getByRole('button', { name: 'Retry history', exact: true }).click();
       await historyPage.getByText('No publications recorded.', { exact: true }).waitFor();
+    } catch (error) {
+      await historyPage.screenshot({ path: resolve(artifacts, 'history-failure.png') });
+      throw error;
     } finally {
       state.historyFailure = false;
       await historyContext.close();
@@ -874,6 +906,28 @@ else {
     const artistName = page.getByLabel('Artist name', { exact: true });
     await artistName.waitFor();
     const appearance = page.frameLocator('iframe[title="Private site appearance preview"]');
+    await appearance.getByRole('heading', { name: 'Ouranopithecus', exact: true }).waitFor();
+    await page.evaluate(() => {
+      const frame = document.querySelector('iframe[title="Private site appearance preview"]');
+      const url = new URL(frame.src);
+      const data = {
+        type: 'failed',
+        stage: 'image',
+        context: url.searchParams.get('__preview'),
+        generation: Number(frame.dataset.previewGeneration),
+      };
+      for (const forged of [
+        { origin: location.origin, source: frame.contentWindow, data },
+        { origin: url.origin, source: window, data },
+        { origin: url.origin, source: frame.contentWindow, data: { ...data, context: 'forged' } },
+        { origin: url.origin, source: frame.contentWindow, data: { ...data, generation: data.generation + 1 } },
+      ]) {
+        const event = new MessageEvent('message', { origin: forged.origin, data: forged.data });
+        Object.defineProperty(event, 'source', { value: forged.source });
+        window.dispatchEvent(event);
+      }
+    });
+    assert.equal(await page.getByRole('alert').filter({ hasText: 'Preview images could not load' }).count(), 0);
     await appearance.getByRole('heading', { name: 'Ouranopithecus', exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Save draft', exact: true }).count(), 0);
     assert.equal(await page.getByRole('button', { name: 'Refresh preview', exact: true }).count(), 0);

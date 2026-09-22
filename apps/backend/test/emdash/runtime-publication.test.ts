@@ -12,7 +12,9 @@ import { completeSnapshot, storeSnapshotMedia } from '../../src/cms/snapshot-sto
 import { createPrismaClient } from '../../src/infrastructure/persistence/prisma';
 import { readPublication } from '../../src/cms/publication-journal';
 import { readPublicationHistory } from '../../src/cms/publication-journal';
-import { reviewPublication, publicationPreviewContext } from '../../src/cms/publication-review';
+import { reviewPublication } from '../../src/cms/publication-review';
+import { publishedCollection } from '@blackbox/content-model';
+import { selectPreviewContent, previewDestination } from '../../src/cms/preview-selection';
 
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));
 beforeEach(async () => {
@@ -280,6 +282,14 @@ test('publishes selling-linked editorial details without changing price, stock o
     },
   });
   try {
+    const preview = await reviewPublication({ records: [{ collection: 'distro', recordId: 'news' }] }, deps);
+    expect(preview.candidate.storeItems).toContainEqual({
+      sourceKind: 'distro',
+      sourceId: 'news',
+      storeItemSlug: 'review-editorial-only',
+      variantId,
+    });
+    expect(runtime.handleMediaGet).not.toHaveBeenCalled();
     await acceptSelectedPublication({ ...input, collection: 'distro' }, 'editor@example.com', deps);
     await processRuntimePublication(deps);
     expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
@@ -310,7 +320,7 @@ test('concurrent different identities cannot create two pending publications for
 
 test('review and combined preview read saved revisions over the accepted website without mutations', async () => {
   const { deps, runtime, pointer } = await setup();
-  const { review, candidate } = await reviewPublication({ records: [{ collection: 'news', recordId: 'news' }] }, deps);
+  const { review } = await reviewPublication({ records: [{ collection: 'news', recordId: 'news' }] }, deps);
   expect(review.entries[0]).toMatchObject({
     before: { title: 'Published title' },
     after: { title: 'Selected title' },
@@ -324,14 +334,74 @@ test('review and combined preview read saved revisions over the accepted website
     slug: 'news',
     title: 'Selected title',
   });
-  expect(() => publicationPreviewContext(review, candidate, 'other', 'news')).toThrow('highlighted');
-  const context = publicationPreviewContext(review, candidate, 'news', 'news');
-  expect((await context.getEntry('news', 'news'))?.data.title).toBe('Selected title');
-  expect((await context.getEntry('news', 'other'))?.data.title).toBe('Published title');
+  const publication = { records: [{ collection: 'news', recordId: 'news' }], baseline: review.baseline };
+  await expect(selectPreviewContent({ collection: 'news', id: 'other', publication }, deps)).rejects.toThrow(
+    'highlighted',
+  );
+  const selection = await selectPreviewContent({ collection: 'news', id: 'news', publication }, deps);
+  expect(publishedCollection(selection.content, 'news', '/media').find((e) => e.id === 'news')?.data.title).toBe(
+    'Selected title',
+  );
+  expect(publishedCollection(selection.content, 'news', '/media').find((e) => e.id === 'other')?.data.title).toBe(
+    'Published title',
+  );
   expect(review.media.image.src).toContain(`/review-media/${pointer.snapshotSha256}/`);
   expect(runtime.handleContentPublish).not.toHaveBeenCalled();
   expect((await deps.db.prepare('SELECT COUNT(*) AS count FROM _blackbox_publications').first())?.count).toBe(0);
   expect((await readPublicationPointer(deps.bucket, 'local'))?.pointer).toEqual(pointer);
+});
+
+test('unsaved preview overlays only the selection and keeps accepted image bytes without writes', async () => {
+  const { deps, runtime, pointer } = await setup();
+  const baseline = await readPublishedSnapshot(deps.bucket, 'local', pointer.snapshotSha256);
+  const before = await deps.bucket.list();
+  const input = {
+    collection: 'news' as const,
+    id: 'news',
+    slug: 'news',
+    data: { ...baseline.records[0].data, title: 'Unsaved edit' },
+  };
+  const selected = await selectPreviewContent(input, deps);
+  expect(selected.content.records.find((record) => record.id === 'news')).toEqual(input);
+  expect(selected.content.records.find((record) => record.id === 'other')?.data.title).toBe('Published title');
+  expect(selected.media.image.key).toBe(`snapshots/local/media/${baseline.media[0].sha256}`);
+  expect(runtime.handleMediaGet).not.toHaveBeenCalled();
+  expect(runtime.handleRevisionGet).not.toHaveBeenCalled();
+  expect(runtime.handleContentPublish).not.toHaveBeenCalled();
+  expect((await deps.bucket.list()).objects).toEqual(before.objects);
+  expect((await deps.db.prepare('SELECT COUNT(*) AS count FROM _blackbox_publications').first())?.count).toBe(0);
+  await expect(selectPreviewContent({ ...input, data: { ...input.data, title: '' } }, deps)).rejects.toThrow();
+  expect(input.data.title).toBe('Unsaved edit');
+});
+
+test('new transient Distro uses publication fallback identity and canonical detail destination', async () => {
+  const { deps } = await setup();
+  const selection = await selectPreviewContent(
+    {
+      collection: 'distro',
+      slug: 'new-record',
+      data: {
+        title: 'New record',
+        artist_or_label: 'Label',
+        group: 'CDs',
+        image: { id: 'image' },
+        image_alt: 'Sleeve',
+        summary: 'New copy',
+        gallery: [],
+        order: 0,
+      },
+    },
+    deps,
+  );
+  expect(selection.content.storeItems).toContainEqual({
+    sourceKind: 'distro',
+    sourceId: 'new-record',
+    storeItemSlug: 'new-record',
+    variantId: 'variant_new-record_standard',
+  });
+  expect(previewDestination(selection, 'detail', '/blackbox-records/')).toBe('/blackbox-records/store/new-record/');
+  expect(previewDestination(selection, 'listing', '/')).toBe('/store/distro/');
+  expect(selection.content.records.find((record) => record.id === 'new-record')).not.toHaveProperty('revisionId');
 });
 
 test('reviewed publications reject baseline changes before acceptance and processing', async () => {
@@ -490,17 +560,30 @@ test.each(['artist-first', 'release-first'])(
         available: true,
       },
     ]);
-    expect(() => publicationPreviewContext(alone.review, alone.candidate, ids.releases, 'releases')).toThrow('Resolve');
+    await expect(
+      selectPreviewContent(
+        {
+          collection: 'releases',
+          id: ids.releases,
+          publication: { records: [release], baseline: pointer.snapshotSha256 },
+        },
+        deps,
+      ),
+    ).rejects.toThrow('Resolve');
     const selected = order === 'artist-first' ? [artist, release] : [release, artist];
     const { review, candidate } = await reviewPublication({ records: selected }, deps);
     expect(review.entries.map((e) => e.issues)).toEqual([[], []]);
     expect(review.dependencies).toEqual([]);
-    const context = publicationPreviewContext(review, candidate, ids.releases, 'releases');
-    expect((await context.getEntry('releases', 'new-release'))?.data.artist).toEqual({
+    const context = {
+      getEntry: (name: string, id: string) =>
+        publishedCollection(candidate, name, '/media', review.media).find((e) => e.id === id),
+    };
+    expect(context.getEntry('releases', 'new-release')?.data.store_item).toBeNull();
+    expect(context.getEntry('releases', 'new-release')?.data.artist).toEqual({
       collection: 'artists',
       id: 'new-artist',
     });
-    expect((await context.getEntry('artists', 'new-artist'))?.data.title).toBe('New artist');
+    expect(context.getEntry('artists', 'new-artist')?.data.title).toBe('New artist');
     const id = crypto.randomUUID();
     await acceptSelectedPublication(
       { id, baseline: pointer.snapshotSha256, records: selected },
@@ -516,12 +599,8 @@ test.each(['artist-first', 'release-first'])(
     const later = await reviewPublication({ records: [release] }, deps);
     expect(later.review.dependencies).toEqual([]);
     expect(
-      (
-        await publicationPreviewContext(later.review, later.candidate, ids.releases, 'releases').getEntry(
-          'artists',
-          'new-artist',
-        )
-      )?.data.title,
+      publishedCollection(later.candidate, 'artists', '/media', later.review.media).find((e) => e.id === 'new-artist')
+        ?.data.title,
     ).toBe('New artist');
     expect(runtime.handleContentGet.mock.calls.map((call) => call[0])).toEqual(['releases']);
   },

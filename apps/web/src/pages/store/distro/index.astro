@@ -8,5 +8,5 @@ const collectionEntries = await listStoreCollectionEntries('distro');
 ---
 
 <StoreCollectionPage category={getStoreCatalogCategory('distro')} entries={collectionEntries}>
-  <StoreDistroCatalog slot="distro" entries={collectionEntries} appearancePreview={Astro.props.appearancePreview} />
+  <StoreDistroCatalog slot="distro" entries={collectionEntries} />
 </StoreCollectionPage>

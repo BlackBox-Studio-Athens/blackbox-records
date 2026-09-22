@@ -4,7 +4,7 @@ import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
-import { checkPreviewAssets, PreviewAssetError, safePreviewAsset, type PreviewDiagnostic } from './preview-diagnostics';
+import type { PreviewDiagnostic } from './preview-diagnostics';
 import { editorialWriteData } from '../../lib/backend/editorial-api';
 import type { ContentData, ContentSection } from '../../lib/content-sections';
 import type { PublicationReviewInput } from '@blackbox/content-model';
@@ -16,7 +16,6 @@ export default function ContentPreview({
   slug,
   data,
   base,
-  restoreScroll,
   active,
   dirty,
   valid,
@@ -29,7 +28,6 @@ export default function ContentPreview({
   slug: string;
   data: ContentData;
   base: string;
-  restoreScroll?: { x: number; y: number } | undefined;
   active: boolean;
   dirty: boolean;
   valid: boolean;
@@ -39,9 +37,11 @@ export default function ContentPreview({
   type Rendering = {
     generation: number;
     inputKey: string;
-    html: string;
+    url: string;
+    context: string;
     signal: AbortSignal;
     report(error: unknown, stage?: PreviewDiagnostic['stage'], directive?: string): void;
+    identify(release: string): void;
     finish(): void;
   };
   const [rendered, setRendered] = useState<Rendering | null>(null);
@@ -57,11 +57,22 @@ export default function ContentPreview({
   const [visible, setVisible] = useState(true);
   const panel = useRef<HTMLElement>(null);
   const frame = useRef<HTMLIFrameElement>(null);
+  const frames = useRef(new Map<number, HTMLIFrameElement>());
+  const contexts = useRef(new Set<string>());
+  const releaseContext = (context: string) => {
+    if (!contexts.current.delete(context)) return;
+    void fetch(`${base}/_emdash/preview-release`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      keepalive: true,
+      headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1' },
+      body: JSON.stringify({ context }),
+    }).catch(() => {});
+  };
   const expandButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     if (!active || !focusedPath) return;
-    const doc = frame.current?.contentDocument;
-    if (!doc) return;
+    if (!rendered) return;
     const value = focusedPath
       .split('.')
       .reduce<unknown>(
@@ -69,14 +80,16 @@ export default function ContentPreview({
         data,
       );
     const text = typeof value === 'string' ? value.trim() : '';
-    const target = text
-      ? Array.from(doc.querySelectorAll<HTMLElement>('h1,h2,h3,p,figcaption,a')).find(
-          (element) => element.textContent?.trim() === text,
-        )
-      : focusedPath.includes('image')
-        ? doc.querySelector<HTMLElement>('main img')
-        : null;
-    target?.scrollIntoView({ block: 'center', behavior: 'instant' });
+    frame.current?.contentWindow?.postMessage(
+      {
+        type: 'focus',
+        context: rendered.context,
+        generation: rendered.generation,
+        text,
+        image: focusedPath.includes('image'),
+      },
+      new URL(rendered.url).origin,
+    );
   }, [focusedPath, active]);
 
   const scroll = useRef({ x: 0, y: 0 });
@@ -98,28 +111,87 @@ export default function ContentPreview({
   useLayoutEffect(() => {
     currentInput.current = inputKey;
   }, [inputKey]);
-  useLayoutEffect(() => {
-    if (restoreScroll) scroll.current = { x: restoreScroll.x, y: restoreScroll.y };
-  }, [restoreScroll?.x, restoreScroll?.y]);
   useEffect(() => {
-    if (!active || !rendered) return;
-    const restore = () => {
-      frame.current?.contentWindow?.scrollTo(scroll.current.x, scroll.current.y);
+    const receive = (event: MessageEvent) => {
+      const item = [pending, rendered].find(
+        (item) =>
+          item &&
+          event.origin === new URL(item.url).origin &&
+          event.source === frames.current.get(item.generation)?.contentWindow &&
+          event.data?.context === item.context &&
+          event.data?.generation === item.generation,
+      );
+      if (!item || !active || !visible) return;
+      if (
+        item === pending &&
+        (item.signal.aborted || item.generation !== generation.current || item.inputKey !== currentInput.current)
+      )
+        return;
+      if (typeof event.data.release === 'string' && /^[a-f0-9]{40}$/.test(event.data.release))
+        item.identify(event.data.release);
+      if (
+        event.data.type === 'scroll' &&
+        item === rendered &&
+        Number.isFinite(event.data.x) &&
+        Number.isFinite(event.data.y)
+      )
+        scroll.current = { x: event.data.x, y: event.data.y };
+      if (event.data.type === 'action' && item === rendered)
+        setStatus('This action is unavailable in private preview.');
+      if (event.data.type === 'escape') setExpanded(false);
+      if (event.data.type === 'failed') {
+        const stage = event.data.stage === 'style' ? 'style' : event.data.stage === 'font' ? 'font' : 'image';
+        item.report(null, stage);
+        item.finish();
+        setPending(null);
+        setError(
+          `Preview ${stage === 'style' ? 'styles' : stage === 'font' ? 'fonts' : 'images'} could not load. Refresh preview.`,
+        );
+        setStatus('Preview could not update');
+        if (item !== rendered) releaseContext(item.context);
+      }
+      if (event.data.type !== 'ready') return;
+      if (
+        item === pending &&
+        (item.signal.aborted || item.generation !== generation.current || item.inputKey !== currentInput.current)
+      )
+        return;
+      frames.current.get(item.generation)?.contentWindow?.postMessage(
+        {
+          type: 'activate',
+          context: item.context,
+          generation: item.generation,
+          ...(item === rendered || resetScroll.current ? { x: 0, y: 0 } : scroll.current),
+          target:
+            firstRender.current && ['newsletter', 'settings', 'socials'].includes(collection)
+              ? collection === 'newsletter'
+                ? 'newsletter'
+                : 'footer'
+              : undefined,
+        },
+        new URL(item.url).origin,
+      );
+      if (item !== pending) return;
+      if (rendered) releaseContext(rendered.context);
+      firstRender.current = false;
+      resetScroll.current = false;
+      setRendered(item);
+      displayedGeneration.current = item.generation;
+      setPending(null);
+      setError('');
+      setDiagnostic(null);
+      setStatus('Preview up to date');
+      item.finish();
     };
-    restore();
-    const animationFrame = requestAnimationFrame(restore);
-    return () => cancelAnimationFrame(animationFrame);
-  }, [active, rendered?.generation]);
-  useEffect(() => {
-    const contentWindow = frame.current?.contentWindow;
-    if (!contentWindow || !rendered) return;
-    const capture = () => {
-      if (panel.current?.hidden) return;
-      scroll.current = { x: contentWindow.scrollX, y: contentWindow.scrollY };
-    };
-    contentWindow.addEventListener('scroll', capture, { passive: true });
-    return () => contentWindow.removeEventListener('scroll', capture);
-  }, [rendered?.generation]);
+    window.addEventListener('message', receive);
+    return () => window.removeEventListener('message', receive);
+  }, [pending, rendered, active, visible]);
+  useEffect(
+    () => () => {
+      for (const context of contexts.current) releaseContext(context);
+    },
+    [base],
+  );
   useEffect(() => {
     const update = () => setVisible(document.visibilityState === 'visible');
     update();
@@ -130,6 +202,8 @@ export default function ContentPreview({
     if (!active || !visible) {
       previous.current.active = false;
       setPending(null);
+      setRendered(null);
+      for (const context of contexts.current) releaseContext(context);
       return;
     }
     if (!valid) {
@@ -141,11 +215,12 @@ export default function ContentPreview({
       return;
     }
     const controller = new AbortController();
+    let allocated: string | undefined;
     const current = ++generation.current;
     let reported = false;
     let requestId: string | undefined;
     let release = 'unknown';
-    const report = (error: unknown, stage: PreviewDiagnostic['stage'] = 'request', directive?: string) => {
+    const report = (_error: unknown, stage: PreviewDiagnostic['stage'] = 'request', directive?: string) => {
       if (reported || controller.signal.aborted || current !== generation.current) return;
       reported = true;
       const details: PreviewDiagnostic = {
@@ -155,12 +230,11 @@ export default function ContentPreview({
         displayedGeneration: displayedGeneration.current,
         readiness: 'failed',
         ...(directive ? { directive } : {}),
-        stage: error instanceof PreviewAssetError ? error.stage : stage,
-        ...(error instanceof PreviewAssetError ? { asset: safePreviewAsset(error.asset) } : {}),
+        stage,
       };
       setDiagnostic(details);
       setCopied(false);
-      // Parent sends diagnostics; the isolated preview retains connect-src 'none'. No retries.
+      // Diagnostics remain staff-owned and never include draft content.
       void fetch(`${base}/_emdash/preview-diagnostics`, {
         method: 'POST',
         credentials: 'same-origin',
@@ -185,6 +259,7 @@ export default function ContentPreview({
       setError('Preview took too long. Retry preview to try again. Your edits are still here.');
       report(null, 'timeout');
       controller.abort();
+      if (allocated) releaseContext(allocated);
     }, 30_000);
     controller.signal.addEventListener('abort', () => clearTimeout(deadline), { once: true });
     const timeout = setTimeout(
@@ -219,14 +294,31 @@ export default function ContentPreview({
                   : details?.error || 'Preview returned an unexpected response. Retry preview to try again.',
               );
             }
-            const next = await response.text();
-            if (controller.signal.aborted || currentInput.current !== inputKey) return;
+            const next = (await response.json()) as { url: string; context: string };
+            const target = new URL(next.url);
+            if (
+              !/^[a-f0-9-]{36}$/.test(next.context) ||
+              target.origin === window.location.origin ||
+              !['http:', 'https:'].includes(target.protocol) ||
+              target.searchParams.get('__preview') !== next.context
+            )
+              throw new Error('Preview returned an invalid document. Retry preview.');
+            contexts.current.add(next.context);
+            allocated = next.context;
+            if (controller.signal.aborted || currentInput.current !== inputKey) {
+              releaseContext(next.context);
+              return;
+            }
             setPending({
               generation: current,
               inputKey,
-              html: next,
+              url: next.url,
+              context: next.context,
               signal: controller.signal,
               report,
+              identify: (value) => {
+                release = value;
+              },
               finish: () => clearTimeout(deadline),
             });
 
@@ -245,6 +337,7 @@ export default function ContentPreview({
     return () => {
       clearTimeout(timeout);
       controller.abort();
+      if (allocated && displayedGeneration.current !== current) releaseContext(allocated);
     };
   }, [payload, base, active, valid, visible, view, retry, inputKey]);
   useEffect(() => {
@@ -317,8 +410,8 @@ export default function ContentPreview({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="cms-surface text-sm" align="start">
-                Check appearance before publishing. Links and forms are inactive. The live website may look different
-                until its next update.
+                Browse this private version of the website. Checkout and form delivery are blocked. Refresh preview to
+                load changes made elsewhere.
               </PopoverContent>
             </Popover>
           </div>
@@ -445,76 +538,19 @@ export default function ContentPreview({
               key={item.generation}
               data-preview-generation={item.generation}
               data-preview-readiness={item === rendered ? 'ready' : 'loading'}
-              ref={item === rendered ? frame : undefined}
+              ref={(element) => {
+                if (element) frames.current.set(item.generation, element);
+                else frames.current.delete(item.generation);
+                if (item === rendered) frame.current = element;
+              }}
               title={item === rendered ? 'Private site appearance preview' : 'Loading private site appearance preview'}
               className={item === pending ? 'cms-preview-pending' : undefined}
               aria-hidden={item === pending ? true : undefined}
               tabIndex={item === pending ? -1 : 0}
-              sandbox="allow-same-origin"
+              sandbox="allow-same-origin allow-scripts"
               referrerPolicy="no-referrer"
-              srcDoc={item.html}
+              src={item.url}
               style={{ width: width === 'desktop' ? 1280 : width === 'mobile' ? 390 : '100%' }}
-              onLoad={async (event) => {
-                const iframe = event.currentTarget;
-                if (
-                  item !== pending ||
-                  item.signal.aborted ||
-                  item.generation !== generation.current ||
-                  item.inputKey !== currentInput.current
-                )
-                  return;
-                let directive: string | undefined;
-                const recordViolation = (event: SecurityPolicyViolationEvent) => {
-                  if (['style-src', 'style-src-elem', 'img-src', 'font-src'].includes(event.effectiveDirective))
-                    directive = event.effectiveDirective;
-                };
-                const previewDocument = iframe.contentDocument;
-                // Some violations predate load; never invent a directive when the browser did not expose an event.
-                previewDocument?.addEventListener('securitypolicyviolation', recordViolation);
-                try {
-                  const document = previewDocument;
-                  if (!document || document.URL !== 'about:srcdoc') return;
-                  await checkPreviewAssets(document);
-                  if (
-                    item.signal.aborted ||
-                    item.generation !== generation.current ||
-                    item.inputKey !== currentInput.current
-                  )
-                    return;
-                  if (!resetScroll.current)
-                    scroll.current = {
-                      x: frame.current?.contentWindow?.scrollX ?? scroll.current.x,
-                      y: frame.current?.contentWindow?.scrollY ?? scroll.current.y,
-                    };
-                  const target =
-                    firstRender.current && ['newsletter', 'settings', 'socials'].includes(collection)
-                      ? document.querySelector(collection === 'newsletter' ? '#newsletter-signup-area' : 'footer')
-                      : null;
-                  if (target) {
-                    const targetY = target.getBoundingClientRect().top - 96;
-                    scroll.current = { x: 0, y: targetY };
-                    iframe.contentWindow?.scrollTo(0, targetY);
-                  } else iframe.contentWindow?.scrollTo(scroll.current.x, scroll.current.y);
-                  firstRender.current = false;
-                  resetScroll.current = false;
-                  setRendered(item);
-                  displayedGeneration.current = item.generation;
-                  setPending(null);
-                  setError('');
-                  setDiagnostic(null);
-                  setStatus('Preview up to date');
-                  item.finish();
-                } catch (error) {
-                  if (item.signal.aborted || item.generation !== generation.current) return;
-                  item.report(error, 'request', directive);
-                  setPending(null);
-                  setError(error instanceof Error ? error.message : 'Preview assets could not load. Retry preview.');
-                  setStatus('Preview could not update');
-                  item.finish();
-                } finally {
-                  previewDocument?.removeEventListener('securitypolicyviolation', recordViolation);
-                }
-              }}
             />
           ))}
         {!rendered &&

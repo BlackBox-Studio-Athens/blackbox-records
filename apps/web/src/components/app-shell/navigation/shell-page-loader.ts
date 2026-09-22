@@ -1,4 +1,5 @@
 import { normalizeAppPathname, parseShellSectionRoute } from '@/lib/app-shell/routing';
+import { previewUrl } from '@/lib/private-preview';
 
 import { readDocumentShellPageSnapshot, type ShellPageSnapshot } from './shell-page-snapshot';
 
@@ -16,7 +17,7 @@ type ShellPageSnapshotLoaderOptions = {
 export function createShellPageSnapshotLoader({
   cache = new Map<string, ShellPageSnapshot>(),
   currentHref = () => window.location.href,
-  fetchPage = (href, init) => fetch(href, init),
+  fetchPage = (href, init) => fetch(previewUrl(href), init),
   inFlightRequests = new Map<string, Promise<ShellPageSnapshot>>(),
   parseHtml = (html) => new DOMParser().parseFromString(html, 'text/html'),
   readSnapshot = readDocumentShellPageSnapshot,

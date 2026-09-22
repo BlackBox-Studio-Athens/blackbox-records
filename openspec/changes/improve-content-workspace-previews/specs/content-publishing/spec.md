@@ -37,7 +37,7 @@ The content workspace SHALL render the selected unsaved record with the public s
 
 - **WHEN** the member selects Fit, Desktop, Mobile, or Expand
 - **THEN** the preview uses the requested viewport width and preserves edits
-- **AND** preview links, scripts, players, checkout, and form submissions remain inactive.
+- **AND** preview uses the isolated real public renderer described by `make-editorial-preview-one-to-one`; public navigation, scripts and players work within that context while checkout and form delivery remain blocked.
 
 ### Requirement: Content editing prioritizes the selected record and publication state
 
@@ -75,7 +75,7 @@ The workspace SHALL offer searchable content selection, an optional wide editor/
 
 ### Requirement: Preview security and failures work across supported browsers
 
-The workspace SHALL permit validated same-environment preview assets in Firefox and Chromium without weakening script, form, connection, or private media restrictions. Preview failures SHALL have bounded private diagnostics that exclude editorial content and credentials.
+The workspace SHALL permit validated same-environment preview assets in Firefox and Chromium under the isolated-origin script, form, connection and private-media boundary specified by `make-editorial-preview-one-to-one`. Preview failures SHALL have bounded private diagnostics that exclude editorial content and credentials.
 
 #### Scenario: Firefox renders the preview
 

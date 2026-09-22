@@ -20,6 +20,7 @@ import { validateImage } from './media-upload';
 import { readPublicationCatalog } from './item-publication-recovery';
 import { publicationSummary, readPublication } from './publication-journal';
 import { reviewPublication } from './publication-review';
+import { projectPublicationStoreItems, readPublicationMedia } from './publication-projection';
 
 const identifier = publicationRecordSchema.shape.recordId;
 const selectedRecordSchema = publicationRecordSchema;
@@ -69,7 +70,7 @@ function successful<T>(result: { success: true; data: T } | { success: false; er
 export async function acceptSelectedPublication(
   input: z.input<typeof selectedPublicationSchema>,
   actorEmail: string,
-  deps: Pick<Dependencies, 'runtime' | 'db' | 'environment'> & { bucket?: R2Bucket },
+  deps: Pick<Dependencies, 'runtime' | 'db' | 'environment' | 'commerce'> & { bucket?: R2Bucket },
 ) {
   const selected = selectedPublicationSchema.parse(input);
   const existing = await deps.db
@@ -255,7 +256,7 @@ export async function processRuntimePublication(deps: Dependencies) {
         const addedMedia: ContentSnapshot['media'] = [];
         for (const id of contentMediaIds(data)) {
           if (candidate.media.some((item) => item.id === id)) continue;
-          const media = successful(await deps.runtime.handleMediaGet(id)).item;
+          const media = await readPublicationMedia(deps.runtime, id);
           const object = await deps.bucket.get(media.storageKey);
           if (!object || object.size > 20 * 1024 * 1024 || object.size !== media.size) {
             await object?.body.cancel();
@@ -276,22 +277,8 @@ export async function processRuntimePublication(deps: Dependencies) {
         }
         let identities = candidate.storeItems;
         if (['releases', 'distro'].includes(record.collection)) {
-          const kind = record.collection === 'releases' ? 'release' : 'distro';
           publicationCatalog ??= await readPublicationCatalog(deps.commerce);
-          const selected = publicationCatalog.filter(
-            (item) => item.sourceKind === kind && item.sourceId === record.slug,
-          );
-          identities = [
-            ...(identities ?? []).filter((item) => item.sourceKind !== kind || item.sourceId !== record.slug),
-            ...selected,
-          ];
-          if (kind === 'distro' && !selected.length)
-            identities.push({
-              sourceKind: kind,
-              sourceId: record.slug,
-              storeItemSlug: record.slug,
-              variantId: `variant_${record.slug}_standard`,
-            });
+          identities = projectPublicationStoreItems(identities, record, publicationCatalog);
         }
         candidate = replacePublishedRecord(candidate, record, addedMedia, identities);
         changedRecords.push({ collection: record.collection, slug: record.slug });

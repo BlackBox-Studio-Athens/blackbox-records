@@ -1,4 +1,5 @@
 import { buildOverlayFragmentUrl, parseOverlayRoute } from '@/lib/app-shell/routing';
+import { previewUrl } from '@/lib/private-preview';
 
 type OverlayFragmentResponse = Pick<Response, 'ok' | 'text'>;
 
@@ -18,7 +19,7 @@ export function createOverlayFragmentLoader({
   buildFragmentUrl = buildOverlayFragmentUrl,
   cache = new Map<string, string>(),
   currentHref = () => window.location.href,
-  fetchFragment = (href, init) => fetch(href, init),
+  fetchFragment = (href, init) => fetch(previewUrl(href), init),
   inFlightRequests = new Map<string, Promise<string>>(),
 }: OverlayFragmentLoaderOptions = {}) {
   function getCachedHtml(pathname: string) {

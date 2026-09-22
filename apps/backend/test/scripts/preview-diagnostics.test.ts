@@ -29,11 +29,11 @@ describe('private preview diagnostics', () => {
     return { limits, logger, send };
   }
   it('uses explicit trusted origins and retains isolation', () => {
-    expect(previewPolicy(origin)).toContain(`style-src ${origin} 'unsafe-inline'`);
-    expect(previewPolicy('http://127.0.0.1:8787')).toContain('img-src http://127.0.0.1:8787');
-    expect(previewPolicy(origin)).toContain(
-      "script-src 'none'; connect-src 'none'; frame-src 'none'; form-action 'none'",
-    );
+    expect(previewPolicy(origin)).toContain(`frame-ancestors ${origin}`);
+    expect(previewPolicy('http://127.0.0.1:8787')).toContain("img-src 'self'");
+    expect(previewPolicy(origin)).toContain("connect-src 'self'");
+    expect(previewPolicy(origin)).toContain("form-action 'none'");
+    expect(previewPolicy(origin)).toContain('sandbox allow-scripts allow-same-origin');
     expect(() => previewPolicy('http://attacker.test')).toThrow();
     expect(() => previewPolicy('data:text/html,hi')).toThrow();
   });
