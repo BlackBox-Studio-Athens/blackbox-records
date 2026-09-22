@@ -289,6 +289,24 @@ try {
     ),
   );
 
+  // Compare the supported native repository projection with the retained general reader.
+  const legacyOverview = await request('/blackbox/workspace');
+  const overview = await request('/blackbox/workspace?view=overview');
+  assert.equal(overview.status, 200, JSON.stringify(overview));
+  const summary = (result) =>
+    result.body.data.items.map(({ id, slug, collection, data, updatedAt, publicationState, acceptedRevisionId }) => ({
+      id,
+      slug,
+      collection,
+      title: data.title,
+      label: data.label_name,
+      updatedAt,
+      publicationState,
+      acceptedRevisionId,
+    }));
+  assert.deepEqual(summary(overview), summary(legacyOverview));
+  assert.ok(overview.body.data.items.length <= 20);
+
   const publicationInput = { id: crypto.randomUUID(), requestedRevision: snapshot.snapshot.records[0].revisionId };
   const sendPublication = () =>
     fetch('http://127.0.0.1:8799/_emdash/api/blackbox/publications', {

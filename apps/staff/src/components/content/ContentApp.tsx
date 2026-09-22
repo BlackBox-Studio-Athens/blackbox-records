@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, useEffect, useRef, useState } from 'react';
+import '../../styles/content.css';
+import ContentFeature from './ContentFeature';
 import { Button } from '../ui/button';
 import {
   ArrowLeft,
@@ -16,7 +18,7 @@ import { Badge } from '../ui/badge';
 
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
 import { Table, TableBody, TableRow, TableCell } from '../ui/table';
-import CatalogSelling from '../items/CatalogSelling';
+const CatalogSelling = lazy(() => import('../items/CatalogSelling'));
 import FormatFilter, { formatLabel } from '../items/FormatFilter';
 import WebsitePages from '../WebsitePages';
 import { useDraftAutosave } from '../../hooks/use-draft-autosave';
@@ -43,17 +45,17 @@ import {
   AlertDialogAction,
 } from '../ui/alert-dialog';
 
-import MediaLibrary from './MediaLibrary';
-import ContentFields from './ContentFields';
+const MediaLibrary = lazy(() => import('./MediaLibrary'));
+const ContentFields = lazy(() => import('./ContentFields'));
 import {
   contentSections,
   singletonContentSections,
   type ContentSection,
   type ContentData,
 } from '../../lib/content-sections';
-import ContentPreview from './ContentPreview';
+const ContentPreview = lazy(() => import('./ContentPreview'));
 
-import PublicationReviewFlow from './PublicationReviewFlow';
+const PublicationReviewFlow = lazy(() => import('./PublicationReviewFlow'));
 import { requestPublicationHistory } from '../../lib/publication-history-events';
 import PublicationStatus from './PublicationStatus';
 import { getContentValidation, type ContentValidation } from './content-validation';
@@ -81,6 +83,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [landing, setLanding] = useState<'pages' | 'footer' | null>(null);
   const [collection, setCollection] = useState<ContentSection>('artists');
   const [items, setItems] = useState<EditorialRecord[]>([]);
+  const [listLoaded, setListLoaded] = useState(false);
   const listSequence = useRef(0);
   const [cursor, setCursor] = useState<string>();
   const [query, setQuery] = useState('');
@@ -272,6 +275,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       );
       if (sequence !== listSequence.current) return null;
       setItems(page.items);
+      setListLoaded(true);
       pageCursor.current = next;
       const url = new URL(window.location.href);
       if (next) url.searchParams.set('cursor', next);
@@ -765,19 +769,28 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const canDiscardSavedDraft = Boolean(
     document?.item.id && document.item.liveRevisionId && document.item.draftRevisionId,
   );
+  if (!ready)
+    return (
+      <div className="cms-surface staff-page" role="status" aria-label="Loading workspace">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="mt-4 h-14" />
+      </div>
+    );
   if (reviewing && document)
     return (
       <div className="cms-surface staff-page publication-editor">
-        <PublicationReviewFlow
-          base={base}
-          individual
-          records={[{ collection, recordId: document.item.id, expectedRevision: document._rev }]}
-          onPublished={() => void publicationStatus()}
-          onBack={() => {
-            setReviewing(false);
-            requestAnimationFrame(() => editorHeading.current?.focus());
-          }}
-        />
+        <ContentFeature name="Publication review">
+          <PublicationReviewFlow
+            base={base}
+            individual
+            records={[{ collection, recordId: document.item.id, expectedRevision: document._rev }]}
+            onPublished={() => void publicationStatus()}
+            onBack={() => {
+              setReviewing(false);
+              requestAnimationFrame(() => editorHeading.current?.focus());
+            }}
+          />
+        </ContentFeature>
       </div>
     );
   if (landing)
@@ -802,7 +815,9 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           <section className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
             <div className="mx-auto max-w-6xl">
               <h1 className="text-2xl font-semibold">Images</h1>
-              <MediaLibrary base={base} />
+              <ContentFeature name="Images">
+                <MediaLibrary base={base} />
+              </ContentFeature>
             </div>
           </section>
         )}
@@ -827,10 +842,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 <h1 ref={listHeading} tabIndex={-1} className="text-base font-semibold outline-none">
                   {contentSections[collection]}
                 </h1>
-                <Badge variant="secondary">
-                  {items.length}
-                  {cursor ? '+' : ''}
-                </Badge>
+                {listLoaded && (
+                  <Badge variant="secondary">
+                    {items.length}
+                    {cursor ? '+' : ''}
+                  </Badge>
+                )}
               </div>
               <form
                 className="grid gap-2"
@@ -1028,7 +1045,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                   </TableBody>
                 </Table>
               )}
-              {!busy && !items.length && (
+              {listLoaded && !busy && !items.length && (
                 <p className="p-6 text-sm text-muted-foreground">No matching content. Try another search.</p>
               )}
               {(cursor || pageCursor.current) && (
@@ -1224,20 +1241,24 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                         </div>
                       )}
                       {catalogTab !== 'details' && (
-                        <CatalogSelling
+                        <ContentFeature
                           key={`${document.item.id}:${catalogTab}`}
-                          item={document.item}
-                          base={base}
-                          section={catalogTab}
-                          onDetails={() => setCatalogTab('details')}
-                          onSummary={(summary) =>
-                            setDocument((current) =>
-                              current?.item.id === summary.id
-                                ? { ...current, item: { ...current.item, selling: summary.selling } }
-                                : current,
-                            )
-                          }
-                        />
+                          name={catalogTab === 'selling' ? 'Selling' : 'Stock'}
+                        >
+                          <CatalogSelling
+                            item={document.item}
+                            base={base}
+                            section={catalogTab}
+                            onDetails={() => setCatalogTab('details')}
+                            onSummary={(summary) =>
+                              setDocument((current) =>
+                                current?.item.id === summary.id
+                                  ? { ...current, item: { ...current.item, selling: summary.selling } }
+                                  : current,
+                              )
+                            }
+                          />
+                        </ContentFeature>
                       )}
                       <div className="cms-editor-body" hidden={catalogTab !== 'details'}>
                         {validationAttempt > 0 && !validation.valid && (
@@ -1270,19 +1291,20 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                         >
                           <fieldset disabled={busy} className="cms-fields grid min-w-0 gap-6 @2xl:grid-cols-2">
                             <legend className="sr-only">{contentSections[collection]} details</legend>
-                            <ContentFields
-                              key={document.item.slug}
-                              collection={collection}
-                              data={data}
-                              base={base}
-                              disabled={busy}
-                              validation={validation}
-                              validationAttempt={validationAttempt}
-                              onChange={(next) => {
-                                setData(next);
-                                setDirty(true);
-                              }}
-                            />
+                            <ContentFeature key={document.item.slug} name="Editor">
+                              <ContentFields
+                                collection={collection}
+                                data={data}
+                                base={base}
+                                disabled={busy}
+                                validation={validation}
+                                validationAttempt={validationAttempt}
+                                onChange={(next) => {
+                                  setData(next);
+                                  setDirty(true);
+                                }}
+                              />
+                            </ContentFeature>
                           </fieldset>
                         </form>
                       </div>
@@ -1306,18 +1328,20 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
             >
               {document && mobileEditor && (
                 <Tabs.Content value="preview" forceMount className="cms-preview-pane" id="content-preview-pane">
-                  <ContentPreview
-                    key={`${collection}:${document.item.id || document.item.slug}`}
-                    collection={collection}
-                    focusedPath={focusedPath}
-                    id={document.item.id}
-                    slug={document.item.slug}
-                    data={data}
-                    base={base}
-                    dirty={dirty}
-                    valid={validation.valid}
-                    active={!media && catalogTab === 'details' && (wide ? desktopPreview : preview)}
-                  />
+                  <ContentFeature name="Preview">
+                    <ContentPreview
+                      key={`${collection}:${document.item.id || document.item.slug}`}
+                      collection={collection}
+                      focusedPath={focusedPath}
+                      id={document.item.id}
+                      slug={document.item.slug}
+                      data={data}
+                      base={base}
+                      dirty={dirty}
+                      valid={validation.valid}
+                      active={!media && catalogTab === 'details' && (wide ? desktopPreview : preview)}
+                    />
+                  </ContentFeature>
                 </Tabs.Content>
               )}
             </ResizablePanel>

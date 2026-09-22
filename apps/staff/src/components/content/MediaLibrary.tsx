@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import '../../styles/content.css';
+import mediaStyles from '../../styles/content-media.css?inline';
 import { useStaffRead } from '../../lib/staff-query';
 import { Check, ChevronDown, ImageIcon, LayoutGrid, List as ListIcon, Search, Upload } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -146,6 +147,9 @@ export default function MediaLibrary({
 
   return (
     <div className="cms-media grid min-w-0 gap-6">
+      <style href="staff-content-media" precedence="staff-feature">
+        {mediaStyles}
+      </style>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <Field className="min-w-48 flex-1">
           <FieldLabel htmlFor={`${id}-search`}>Search images</FieldLabel>

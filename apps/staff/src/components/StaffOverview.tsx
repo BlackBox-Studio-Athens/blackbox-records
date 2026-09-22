@@ -3,13 +3,14 @@ import { ArrowRight, ClipboardCheck } from 'lucide-react';
 import { editorialRequest, type EditorialList, type EditorialRecord } from '../lib/backend/editorial-api';
 import { readContentPublications, type ContentPublication } from '../lib/backend/content-publication-api';
 import { createInternalOrderApi } from '../lib/backend/internal-order-api';
-import { useStaffRead } from '../lib/staff-query';
+import { readStaffQuery, useStaffRead } from '../lib/staff-query';
 import { Button } from './ui/button';
 import { contentSections, type ContentSection } from '../lib/content-sections';
 
-type PanelState = { status: 'loading' | 'ready' | 'error'; error: string };
+type PanelState = { status: 'loading' | 'ready' | 'error'; error: string; hasLoaded: boolean };
 
-const loadingPanel = (): PanelState => ({ status: 'loading', error: '' });
+const loadingPanel = (): PanelState => ({ status: 'loading', error: '', hasLoaded: false });
+const checkingPanel = (state: PanelState): PanelState => ({ ...state, status: 'loading', error: '' });
 
 function errorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback;
@@ -34,68 +35,87 @@ export default function StaffOverview({ base }: { base: string }) {
 
   async function readDrafts(id: number) {
     const request = ++draftsRequest.current;
+    setDraftsState(checkingPanel);
     try {
-      const page = await editorialRequest<EditorialList<EditorialRecord>>(base, 'blackbox/workspace');
+      const page = await readStaffQuery(['overview-drafts', base], () =>
+        editorialRequest<EditorialList<EditorialRecord>>(base, 'blackbox/workspace?view=overview'),
+      );
       if (!isCurrent(id) || draftsRequest.current !== request) return;
       setDrafts(page.items);
-      setDraftsState({ status: 'ready', error: '' });
+      setDraftsState({ status: 'ready', error: '', hasLoaded: true });
     } catch (error) {
       if (isCurrent(id) && draftsRequest.current === request)
-        setDraftsState({ status: 'error', error: errorMessage(error, 'Recent drafts unavailable.') });
+        setDraftsState((state) => ({
+          ...state,
+          status: 'error',
+          error: errorMessage(error, 'Recent drafts unavailable.'),
+        }));
     }
   }
 
   async function readPublications(id: number) {
     const request = ++publicationsRequest.current;
+    setPublicationsState(checkingPanel);
     try {
-      const page = await readContentPublications(base);
+      const page = await readStaffQuery(['overview-publications', base], () => readContentPublications(base));
       if (!isCurrent(id) || publicationsRequest.current !== request) return;
       setPublications(page.items);
-      setPublicationsState({ status: 'ready', error: '' });
+      setPublicationsState({ status: 'ready', error: '', hasLoaded: true });
     } catch (error) {
       if (isCurrent(id) && publicationsRequest.current === request)
-        setPublicationsState({ status: 'error', error: errorMessage(error, 'Publication status unavailable.') });
+        setPublicationsState((state) => ({
+          ...state,
+          status: 'error',
+          error: errorMessage(error, 'Publication status unavailable.'),
+        }));
     }
   }
 
   async function readOrders(id: number) {
     const request = ++ordersRequest.current;
+    setOrdersState(checkingPanel);
     try {
-      const page = await createInternalOrderApi(base).search({ status: 'needs_review', limit: 1 });
+      const page = await readStaffQuery(['overview-orders', base], () =>
+        createInternalOrderApi(base).search({ status: 'needs_review', limit: 1 }),
+      );
       if (!isCurrent(id) || ordersRequest.current !== request) return;
       setReviewOrders(page.items.length > 0);
-      setOrdersState({ status: 'ready', error: '' });
+      setOrdersState({ status: 'ready', error: '', hasLoaded: true });
     } catch (error) {
       if (isCurrent(id) && ordersRequest.current === request)
-        setOrdersState({ status: 'error', error: errorMessage(error, 'Order review status unavailable.') });
+        setOrdersState((state) => ({
+          ...state,
+          status: 'error',
+          error: errorMessage(error, 'Order review status unavailable.'),
+        }));
     }
   }
 
   async function read() {
     const id = ++generation.current;
-    setDraftsState(loadingPanel());
-    setPublicationsState(loadingPanel());
-    setOrdersState(loadingPanel());
     await Promise.all([readDrafts(id), readPublications(id), readOrders(id)]);
   }
 
   function retryDrafts() {
-    setDraftsState(loadingPanel());
     void readDrafts(generation.current);
   }
 
   function retryPublications() {
-    setPublicationsState(loadingPanel());
     void readPublications(generation.current);
   }
 
   function retryOrders() {
-    setOrdersState(loadingPanel());
     void readOrders(generation.current);
   }
 
   useEffect(() => {
     mounted.current = true;
+    setDrafts([]);
+    setPublications([]);
+    setReviewOrders(false);
+    setDraftsState(loadingPanel());
+    setPublicationsState(loadingPanel());
+    setOrdersState(loadingPanel());
     void read();
     return () => {
       mounted.current = false;
@@ -132,6 +152,16 @@ export default function StaffOverview({ base }: { base: string }) {
           <ArrowRight aria-hidden="true" />
         </a>
       </div>
+      {publicationsState.status === 'loading' && (
+        <p role="status" className="mt-4 text-muted-foreground">
+          {publicationsState.hasLoaded ? 'Checking publication status…' : 'Loading publication status…'}
+        </p>
+      )}
+      {ordersState.status === 'loading' && (
+        <p role="status" className="mt-4 text-muted-foreground">
+          {ordersState.hasLoaded ? 'Checking order status…' : 'Loading order status…'}
+        </p>
+      )}
       {showAttention && (
         <section className="mt-8">
           <h2>Needs attention</h2>
@@ -175,18 +205,25 @@ export default function StaffOverview({ base }: { base: string }) {
             Review changes
           </a>
         </Button>
-        {draftsState.status === 'loading' && !drafts.length ? (
+        {draftsState.status === 'loading' && !draftsState.hasLoaded && (
           <p role="status" className="mt-4 text-muted-foreground">
             Loading recent work…
           </p>
-        ) : draftsState.status === 'error' ? (
+        )}
+        {draftsState.status === 'error' && (
           <div className="mt-4" role="alert">
             <p>{draftsState.error}</p>
             <Button variant="outline" onClick={retryDrafts}>
               Retry recent drafts
             </Button>
           </div>
-        ) : (
+        )}
+        {draftsState.status === 'loading' && draftsState.hasLoaded && (
+          <p role="status" className="mt-4 text-muted-foreground">
+            Checking recent work…
+          </p>
+        )}
+        {draftsState.hasLoaded && (
           <div className="staff-destinations">
             {drafts.length ? (
               drafts.map((draft) => (

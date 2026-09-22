@@ -280,9 +280,9 @@ const server = createServer(async (req, res) => {
       return res.end(pixels);
     }
     if (url.pathname === '/_emdash/api/blackbox/workspace') {
-      if (!url.search && state.overviewDraftDelay)
+      if ((!url.search || url.searchParams.get('view') === 'overview') && state.overviewDraftDelay)
         await new Promise((resolve) => setTimeout(resolve, state.overviewDraftDelay));
-      if (!url.search && state.overviewDraftFailure) return fail(503);
+      if ((!url.search || url.searchParams.get('view') === 'overview') && state.overviewDraftFailure) return fail(503);
       const collection = url.searchParams.get('collection');
       const id = url.searchParams.get('id');
       const q = (url.searchParams.get('q') ?? '').toLowerCase();
@@ -843,17 +843,26 @@ else if (sellingJourney) {
     await new Promise((resolve) => server.close(resolve));
   }
 } else {
-  const optionalChunk = /\/_astro\/(?:PublicationHistory|ContentBodyEditor)[^/]*\.(?:js|css)$/;
+  const optionalChunk =
+    /\/_astro\/(?:PublicationHistory|PublicationReviewFlow|ContentBodyEditor|ContentFields|ContentPreview|MediaLibrary|EditorialPicker|CatalogSelling)[^/]*\.(?:js|css)$/;
   async function assertClosedOptionalFeatures(browser) {
     for (const [label, path, ready] of [
       ['Overview', '/', (probe) => probe.getByRole('heading', { name: 'Overview', exact: true }).waitFor()],
       ['Stock', '/stock/', (probe) => probe.locator('.inventory-row').first().waitFor()],
       ['Orders', '/orders/', (probe) => probe.getByText('Test customer 0', { exact: true }).waitFor()],
+      ['Pages', '/content/', (probe) => probe.getByRole('heading', { name: 'Pages', exact: true }).waitFor()],
+      ['Releases', '/content/?collection=releases', (probe) => probe.locator('.cms-entry-row').first().waitFor()],
+      ['Distro', '/content/?collection=distro', (probe) => probe.locator('.cms-entry-row').first().waitFor()],
     ]) {
       const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
       const probe = await context.newPage();
       const requests = [];
+      const resources = [];
       probe.on('request', (request) => requests.push(new URL(request.url()).pathname));
+      probe.on('response', (response) => {
+        if (['document', 'script', 'stylesheet'].includes(response.request().resourceType()))
+          resources.push(response.text().catch(() => ''));
+      });
       try {
         await probe.goto(`${origin}${path}`);
         await ready(probe);
@@ -862,6 +871,9 @@ else if (sellingJourney) {
           [],
           `${label} must not request closed history/editor chunks`,
         );
+        const source = (await Promise.all(resources)).join('\n');
+        assert.ok(!source.includes('.cms-media-grid'), `${label} must not contain unopened picker CSS`);
+        assert.ok(!source.includes('.tiptap'), `${label} must not contain unopened rich editor CSS`);
       } finally {
         await context.close();
       }
@@ -912,9 +924,12 @@ else if (sellingJourney) {
         editorRequests.some((requestPath) => /\/ContentBodyEditor[^/]*\.js$/.test(requestPath)),
         'Opening an editor must load the editor chunk',
       );
-      assert.ok(
-        editorRequests.some((requestPath) => /\/ContentBodyEditor[^/]*\.css$/.test(requestPath)),
-        'Opening an editor must load editor CSS',
+      await editorPage.locator('style[data-href="staff-content-editor"]').waitFor({ state: 'attached' });
+      assert.match(await editorPage.locator('style[data-href="staff-content-editor"]').textContent(), /@layer emdash/);
+      assert.equal(await editorPage.locator('style[data-href="staff-content-editor"]').count(), 1);
+      assert.equal(
+        editorRequests.some((path) => /ContentBodyEditor[^/]*\.css$/.test(path)),
+        false,
       );
     } finally {
       await editorContext.close();
@@ -948,6 +963,242 @@ else if (sellingJourney) {
     }
   }
 
+  async function assertNavigationStartup(browser) {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const probe = await context.newPage();
+    try {
+      // Hold the selected list and inspect SSR plus the hydrated loading state.
+      for (const collection of ['releases', 'distro']) {
+        const response = await probe.request.get(`${origin}/content/?collection=${collection}`);
+        assert.match(await response.text(), /Loading workspace/);
+        const gate = Promise.withResolvers();
+        await probe.route('**/_emdash/api/blackbox/workspace?*', async (route) => {
+          await gate.promise;
+          await route.continue();
+        });
+        await probe.goto(`${origin}/content/?collection=${collection}`);
+        await probe.getByRole('status', { name: 'Loading content' }).waitFor();
+        assert.equal(await probe.getByRole('heading', { name: 'Artists', exact: true }).count(), 0);
+        assert.equal(await probe.getByText('No matching content. Try another search.', { exact: true }).count(), 0);
+        assert.equal(await probe.locator('.cms-records [data-slot="badge"]').count(), 0);
+        gate.resolve();
+        await probe.locator('.cms-entry-row').first().waitFor();
+        await probe.unroute('**/_emdash/api/blackbox/workspace?*');
+      }
+      await probe.locator('.cms-entry-row').first().click();
+      await probe.locator('#content-editor-form input').first().waitFor();
+      assert.equal(
+        await probe.locator('.cms-editor-toolbar h1').evaluate((element) => element === document.activeElement),
+        true,
+      );
+      await probe
+        .getByRole('button', { name: /(?:Change|Choose) item image/i })
+        .first()
+        .click();
+      await probe.locator('.cms-media').waitFor();
+      await probe.locator('style[data-href="staff-content-media"]').waitFor({ state: 'attached' });
+    } finally {
+      await context.close();
+    }
+    const failureContext = await browser.newContext();
+    const failurePage = await failureContext.newPage();
+    try {
+      await failurePage.route('**/ContentFields*.js', (route) => route.abort());
+      await failurePage.goto(`${origin}/content/?collection=artists&id=artists-1`);
+      await failurePage.getByRole('alert').filter({ hasText: 'Editor could not load.' }).waitFor();
+      await failurePage.route('**/_emdash/api/blackbox/workspace?*', (route) =>
+        route.fulfill({
+          status: 503,
+          json: { success: false, error: { message: 'Unavailable' } },
+        }),
+      );
+      await failurePage.goto(`${origin}/content/?collection=releases`);
+      await failurePage.getByText('We could not load these entries. Try again.', { exact: true }).waitFor();
+      assert.equal(await failurePage.getByText('No matching content. Try another search.', { exact: true }).count(), 0);
+      await failurePage.unroute('**/_emdash/api/blackbox/workspace?*');
+      await failurePage.route('**/_emdash/api/blackbox/workspace?*', (route) =>
+        route.fulfill({
+          json: { success: true, data: { items: [] } },
+        }),
+      );
+      await failurePage.reload();
+      await failurePage.getByText('No matching content. Try another search.', { exact: true }).waitFor();
+      assert.equal(await failurePage.locator('.cms-records [data-slot="badge"]').innerText(), '0');
+    } finally {
+      await failureContext.close();
+    }
+  }
+
+  async function assertOverviewRefresh(browser) {
+    const context = await browser.newContext();
+    const probe = await context.newPage();
+    let empty = false;
+    let fail = false;
+    let gate = Promise.withResolvers();
+    const paths = [];
+    const started = Promise.withResolvers();
+    const overviewApi =
+      /\/(?:_emdash\/api\/blackbox\/(?:workspace|publications)|api\/internal\/orders\/search)(?:\?|$)/;
+    await probe.route(overviewApi, async (route) => {
+      paths.push(new URL(route.request().url()).pathname);
+      if (paths.length === 3) started.resolve();
+      await gate.promise;
+      if (fail)
+        await route.fulfill({ status: 503, json: { success: false, error: { message: 'Refresh unavailable' } } });
+      else if (empty) await route.fulfill({ json: { success: true, data: { items: [] }, items: [] } });
+      else await route.continue();
+    });
+    const refresh = () =>
+      probe.evaluate(() => {
+        window.dispatchEvent(new Event('focus'));
+        document.dispatchEvent(new Event('visibilitychange'));
+        window.dispatchEvent(new Event('online'));
+      });
+    try {
+      await probe.goto(`${origin}/`);
+      await started.promise;
+      await refresh();
+      // Flush queued browser work while all three resources are still pending.
+      await probe.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      assert.equal(paths.length, 3, 'Initial/focus/visibility/reconnect must share the three panel reads');
+      empty = true;
+      gate.resolve();
+      await probe.getByText('No recent drafts to finish.', { exact: true }).waitFor();
+      // The outer refresh wrapper deliberately has a 30-second freshness window.
+      await probe.clock.install();
+      await probe.clock.fastForward(31_000);
+      gate = Promise.withResolvers();
+      await refresh();
+      await probe.getByText('Checking recent work…', { exact: true }).waitFor();
+      assert.equal(await probe.getByText('No recent drafts to finish.', { exact: true }).count(), 1);
+      assert.equal(await probe.getByText('Loading recent work…', { exact: true }).count(), 0);
+      fail = true;
+      gate.resolve();
+      await probe.getByRole('button', { name: 'Retry recent drafts', exact: true }).waitFor();
+      assert.equal(await probe.getByText('No recent drafts to finish.', { exact: true }).count(), 1);
+      fail = false;
+      empty = false;
+      await probe.getByRole('button', { name: 'Retry recent drafts', exact: true }).click();
+      await probe.getByRole('link', { name: /Ouranopithecus/ }).waitFor();
+    } finally {
+      gate.resolve();
+      await context.close();
+    }
+  }
+
+  async function assertStockStartup(browser) {
+    const context = await browser.newContext();
+    const probe = await context.newPage();
+    const now = Date.now();
+    await probe.clock.install({ time: now });
+    await probe.clock.pauseAt(now + 1000);
+    const reads = [];
+    probe.on('request', (request) => {
+      const url = new URL(request.url());
+      if (url.pathname === '/api/internal/inventory') reads.push(url);
+    });
+    try {
+      await probe.goto(`${origin}/stock/?q=shelf&cursor=25`);
+      await probe.locator('.inventory-row').first().waitFor();
+      assert.equal(reads.length, 1);
+      assert.equal(reads[0].searchParams.get('q'), 'shelf');
+      assert.equal(reads[0].searchParams.get('cursor'), '25');
+      await Promise.all([
+        probe.waitForResponse(
+          (response) => response.url().includes('/api/internal/inventory?') && response.url().includes('area=distro'),
+        ),
+        probe.getByLabel('Inventory area', { exact: true }).selectOption('distro'),
+      ]);
+      await Promise.all([
+        probe.waitForResponse(
+          (response) => response.url().includes('/api/internal/inventory?') && response.url().includes('cursor='),
+        ),
+        probe.getByRole('button', { name: 'Next', exact: true }).click(),
+      ]);
+      const beforeTyping = reads.length;
+      await probe.getByLabel('Search items', { exact: true }).fill('shelf-0');
+      await probe.clock.runFor(150);
+      await probe.getByLabel('Search items', { exact: true }).fill('shelf-01');
+      await probe.clock.runFor(150);
+      assert.equal(reads.length, beforeTyping);
+      await Promise.all([
+        probe.waitForResponse(
+          (response) => response.url().includes('/api/internal/inventory?') && response.url().includes('q=shelf-01'),
+        ),
+        probe.clock.runFor(151),
+      ]);
+      assert.equal(reads.length, beforeTyping + 1);
+      await probe
+        .getByRole('status')
+        .filter({ hasText: /items on this page/ })
+        .waitFor();
+      await probe.evaluate(() =>
+        Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' }),
+      );
+      const settledReads = reads.length;
+      await probe.getByLabel('Inventory area', { exact: true }).selectOption('merch');
+      await probe.clock.runFor(61_000);
+      assert.equal(reads.length, settledReads, 'Hidden inventory navigation and polling pause reads');
+      await Promise.all([
+        probe.waitForResponse(
+          (response) => response.url().includes('/api/internal/inventory?') && response.url().includes('area=merch'),
+        ),
+        probe.evaluate(() => {
+          Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+          document.dispatchEvent(new Event('visibilitychange'));
+        }),
+      ]);
+      await probe
+        .getByRole('status')
+        .filter({ hasText: /items on this page/ })
+        .waitFor();
+      await context.setOffline(true);
+      const beforeOffline = reads.length;
+      await probe.getByLabel('Inventory area', { exact: true }).selectOption('distro');
+      await probe.clock.runFor(61_000);
+      assert.equal(reads.length, beforeOffline, 'Offline inventory navigation and polling pause reads');
+      await Promise.all([
+        probe.waitForResponse(
+          (response) => response.url().includes('/api/internal/inventory?') && response.url().includes('area=distro'),
+        ),
+        context.setOffline(false),
+      ]);
+      await probe
+        .getByRole('status')
+        .filter({ hasText: /items on this page/ })
+        .waitFor();
+      const oldRead = Promise.withResolvers();
+      const oldStarted = Promise.withResolvers();
+      await probe.route('**/api/internal/inventory?*', async (route) => {
+        if (new URL(route.request().url()).searchParams.get('q') === 'shelf-02') {
+          oldStarted.resolve();
+          await oldRead.promise;
+        }
+        await route.continue();
+      });
+      try {
+        await probe.getByLabel('Search items', { exact: true }).fill('shelf-02');
+        await probe.clock.runFor(301);
+        await oldStarted.promise;
+        await probe.getByLabel('Search items', { exact: true }).fill('shelf-03');
+        await probe.clock.runFor(301);
+        await probe.locator('.inventory-row').filter({ hasText: 'shelf-03' }).first().waitFor();
+        const obsoleteResponse = probe.waitForResponse((response) => response.url().includes('q=shelf-02'));
+        oldRead.resolve();
+        await obsoleteResponse;
+        await probe.clock.runFor(50);
+        assert.ok(
+          (await probe.locator('.inventory-row').allTextContents()).every((row) => row.includes('shelf-03')),
+          'Obsolete inventory responses never replace the current typed query',
+        );
+      } finally {
+        oldRead.resolve();
+      }
+    } finally {
+      await context.close();
+    }
+  }
+
   const browser = await browserType.launch({ headless: true });
   const initialStockReads = Promise.withResolvers();
   state.initialStockReads = initialStockReads.promise;
@@ -961,6 +1212,9 @@ else if (sellingJourney) {
     await assertClosedOptionalFeatures(browser);
     await assertOptionalFeatures(browser);
     await assertOverviewPanels(browser);
+    await assertNavigationStartup(browser);
+    await assertOverviewRefresh(browser);
+    await assertStockStartup(browser);
     await page.goto(`${origin}/content/?collection=about&id=about-1`);
     const opening = page.getByRole('textbox', { name: 'Opening text', exact: true });
     await opening.waitFor();

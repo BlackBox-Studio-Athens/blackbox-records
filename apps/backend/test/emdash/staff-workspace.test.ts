@@ -1,5 +1,7 @@
 import { applyD1Migrations, env } from 'cloudflare:test';
 import { afterEach, beforeAll, expect, test, vi } from 'vitest';
+import { ContentRepository } from 'emdash';
+import { sourceCollectionNames } from '@blackbox/content-model';
 import type { EmDashRuntime } from 'emdash/middleware';
 import { readStaffWorkspace, type StaffSnapshotCache } from '../../src/cms/staff-workspace';
 import { activatePublication, currentPublicationKey } from '../../src/cms/published-storage';
@@ -7,6 +9,163 @@ import { completeSnapshot } from '../../src/cms/snapshot-storage';
 
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));
 afterEach(() => vi.restoreAllMocks());
+test('Overview keeps bounded recent publication truth without list enrichment or commerce', async () => {
+  await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
+  const sections = Object.keys(sourceCollectionNames);
+  const entries = Array.from({ length: 5 }, (_, i) => ({
+    id: `overview-${i}`,
+    slug: `overview-${i}`,
+    data: i ? { title: `Work ${i}` } : {},
+    updatedAt: `2026-09-22T00:00:0${i}Z`,
+    draftRevisionId: i ? `draft-${i}` : null,
+    liveRevisionId: null,
+  }));
+  const recent = vi.spyOn(ContentRepository.prototype, 'findMany').mockImplementation(
+    async () =>
+      ({
+        items: entries,
+        nextCursor: 'unused',
+      }) as never,
+  );
+  const list = vi.fn(() => {
+    throw new Error('Unused list enrichment');
+  });
+  const commerce = vi.spyOn(env.COMMERCE_DB, 'prepare').mockImplementation(() => {
+    throw new Error('Commerce unavailable');
+  });
+  const deps = {
+    runtime: { db: {}, handleContentList: list } as unknown as EmDashRuntime,
+    db: env.TEST_CMS_DB,
+    commerce: env.COMMERCE_DB,
+    bucket: env.TEST_SNAPSHOTS,
+    environment: 'local' as const,
+    snapshotCache: {} as StaffSnapshotCache,
+  };
+  const publish = async (revisionId: string) => {
+    const snapshot = await completeSnapshot(
+      env.TEST_SNAPSHOTS,
+      'local',
+      JSON.stringify({
+        schemaVersion: 1,
+        environment: 'local',
+        media: [],
+        records: [
+          {
+            collection: 'socials',
+            id: 'overview-1',
+            slug: 'overview-1',
+            revisionId,
+            data: { title: 'Work 1', url: 'https://example.com', order: 1 },
+          },
+        ],
+      }),
+    );
+    await env.TEST_SNAPSHOTS.put(
+      currentPublicationKey('local'),
+      JSON.stringify({
+        id: crypto.randomUUID(),
+        snapshotSha256: snapshot.sha256,
+        generation: 0,
+      }),
+    );
+  };
+  const read = async () => {
+    const response = await readStaffWorkspace(new Request('https://staff.invalid/?view=overview'), deps);
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+    return (
+      (await response.json()) as {
+        data: { items: { id: string; collection: string; publicationState: string; updatedAt: string }[] };
+      }
+    ).data.items;
+  };
+  const full = await read();
+  expect(full).toHaveLength(20);
+  expect(full.map((item) => item.updatedAt)).toEqual(
+    full
+      .map((item) => item.updatedAt)
+      .sort()
+      .reverse(),
+  );
+  expect(recent.mock.calls).toEqual(
+    sections.map((section) => [
+      section,
+      {
+        limit: 5,
+        orderBy: { field: 'updatedAt', direction: 'desc' },
+      },
+    ]),
+  );
+  // Narrow the fixture, not the endpoint: enough room to compare every visible state.
+  recent.mockImplementation(async (section) => ({ items: section === 'socials' ? entries : [] }) as never);
+  await publish('draft-1');
+  const reads = vi.spyOn(env.TEST_SNAPSHOTS, 'get');
+  const accepted = await read();
+  expect(accepted.map((item) => item.id)).toEqual(['overview-4', 'overview-3', 'overview-2', 'overview-0']);
+  expect(accepted.at(-1)?.publicationState).toBe('draft');
+  await env.TEST_CMS_DB.prepare(
+    `INSERT INTO _blackbox_publications
+    (id, environment, actor_email, requested_revision, requested_at, request_json)
+    VALUES (?, 'local', 'fixture@example.com', 'draft-4', 1, ?)`,
+  )
+    .bind(crypto.randomUUID(), JSON.stringify({ collection: 'socials', recordId: 'overview-3' }))
+    .run();
+  await publish('older');
+  const changed = await read();
+  expect(changed.map((item) => item.publicationState)).toEqual(['pending', 'pending', 'draft', 'changes', 'draft']);
+  await read();
+  expect(reads.mock.calls.filter(([key]) => key.endsWith('/current.json'))).toHaveLength(3);
+  expect(reads.mock.calls.filter(([key]) => key.includes('/manifest/'))).toHaveLength(2);
+  recent.mockResolvedValue({ items: [] } as never);
+  expect(await read()).toEqual([]);
+  expect(list).not.toHaveBeenCalled();
+  expect(commerce).not.toHaveBeenCalled();
+  recent.mockRejectedValueOnce(new Error('Recent content unavailable'));
+  await expect(read()).rejects.toThrow('Recent content unavailable');
+  reads.mockRejectedValueOnce(new Error('Pointer unavailable'));
+  await expect(read()).rejects.toThrow('Pointer unavailable');
+});
+
+test('Overview rejects selection, filter and paging combinations before any I/O', async () => {
+  for (const extra of [
+    'collection=artists',
+    'id=a',
+    'variantId=a',
+    'cursor=',
+    'q=',
+    'scope=all',
+    'area=all',
+    'format=Vinyl',
+    'sort=title',
+    'limit=5',
+  ]) {
+    const response = await readStaffWorkspace(
+      new Request(`https://staff.invalid/?view=overview&${extra}`),
+      {} as never,
+    );
+    expect(response.status).toBe(400);
+  }
+});
+
+test('Overview starts native pages and pending lookup while the accepted pointer is pending', async () => {
+  const pointer = Promise.withResolvers<null>();
+  vi.spyOn(env.TEST_SNAPSHOTS, 'get').mockReturnValue(pointer.promise as never);
+  const recent = vi.spyOn(ContentRepository.prototype, 'findMany').mockResolvedValue({ items: [] } as never);
+  const pending = vi.spyOn(env.TEST_CMS_DB, 'prepare');
+  const response = readStaffWorkspace(new Request('https://staff.invalid/?view=overview'), {
+    runtime: { db: {} } as EmDashRuntime,
+    db: env.TEST_CMS_DB,
+    commerce: env.COMMERCE_DB,
+    bucket: env.TEST_SNAPSHOTS,
+    environment: 'local',
+  });
+  try {
+    await vi.waitFor(() => expect(pending).toHaveBeenCalled());
+    expect(recent).toHaveBeenCalledTimes(Object.keys(sourceCollectionNames).length);
+  } finally {
+    pointer.resolve(null);
+  }
+  expect((await response).status).toBe(200);
+});
 test('bounded review continues past 250 published entries without losing later drafts', async () => {
   await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
   const entries = Array.from({ length: 275 }, (_, i) => ({

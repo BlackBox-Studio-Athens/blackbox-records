@@ -100,6 +100,12 @@ MIT notices are retained alongside the copied components. Staff registry configu
 
 Local adaptations: 1440 px navigation breakpoint, no global sidebar keyboard shortcut, staff touch targets, strict TypeScript compatibility and existing dark tokens. EmDash CSS is loaded into a lower-priority cascade layer so its bundled utility classes cannot override the staff app's responsive classes.
 
+Pages and catalog browsing load editing, selling, preview and publication-review features only when opened. Rich-text and image-library styles travel inside their lazy feature, with loading and failure feedback. Initial content navigation shows loading until its destination and results are known; an unavailable first read does not claim an empty collection.
+
+Overview requests `blackbox/workspace?view=overview`. It reads five recent candidates per collection through the native content repository, checks current accepted revisions and pending publications, and returns up to twenty unpublished entries without commerce or general list enrichment. Review changes remains the complete paginated discovery view. Each Overview panel shares concurrent initial/retry/refresh reads and retains settled results, including empty results, while checking for updates or reporting a refresh failure.
+
+Stock resolves URL and recovery state before its first inventory read. Entry, filter and page reads start immediately; only text typing waits for the existing 300 ms debounce. Hidden/offline pauses, stale-response guards and unfinished count protection still apply. Local regression results do not establish hosted navigation latency; UAT smoke and the separately approved PRD sample remain release acceptance.
+
 ## Verification
 
 Run the normal unit, check and build gates. For the focused browser regression:

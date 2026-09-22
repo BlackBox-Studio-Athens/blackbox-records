@@ -4,7 +4,7 @@ import { loadMessages, LocaleDirectionProvider } from '@emdash-cms/admin/locales
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import '../../styles/content-editor.css';
+import editorStyles from '../../styles/content-editor.css?inline';
 
 export default function ContentBodyEditor(
   props: PortableTextEditorProps & {
@@ -55,6 +55,9 @@ export default function ContentBodyEditor(
   if (!ready) return <p role="status">Loading text editor…</p>;
   return (
     <I18nProvider i18n={i18n}>
+      <style href="staff-content-editor" precedence="staff-feature">
+        {editorStyles}
+      </style>
       <LocaleDirectionProvider>
         <QueryClientProvider client={queries}>
           <PortableTextEditor

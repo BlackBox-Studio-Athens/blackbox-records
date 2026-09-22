@@ -51,6 +51,8 @@ type StockSubmittingIntent = 'stockChange' | 'stockCount' | null;
 
 export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAppProps) {
   const [query, setQuery] = useState('');
+  const [ready, setReady] = useState(false);
+  const typing = useRef(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [area, setArea] = useState('all');
   const [format, setFormat] = useState('');
@@ -309,6 +311,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     } catch {
       if (variantId) void loadVariant(variantId, false);
     }
+    setReady(true);
     return () => {
       searchRequest.current++;
       activeStockLoadRequestRef.current++;
@@ -380,6 +383,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
         window.history.replaceState(window.history.state, '', selectionUrl.current);
       protectInput(() => {
         window.history.replaceState(window.history.state, '', target);
+        typing.current = false;
         setQuery(params.get('q') ?? '');
         setArea(params.get('area') ?? 'all');
         setFormat(params.get('format') ?? '');
@@ -591,14 +595,21 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
       if (selectedVariantId) await loadVariant(selectedVariantId, false, 'refresh');
       else await searchVariants();
     },
-    { enabled: !isSubmitting, interval: 60_000 },
+    { enabled: ready && !isSubmitting, interval: 60_000 },
   );
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    if (!ready) return;
+    const read = () => {
+      typing.current = false;
       if (navigator.onLine && window.document.visibilityState === 'visible') void searchVariants(query);
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [query, area, format, pageCursor]);
+    };
+    if (!typing.current) read();
+    const timer = typing.current ? window.setTimeout(read, 300) : undefined;
+    return () => {
+      window.clearTimeout(timer);
+      searchRequest.current++;
+    };
+  }, [ready, query, area, format, pageCursor]);
   const loadingLabel = readStockLoadingLabel(loadingIntent);
 
   return (
@@ -638,6 +649,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               value={query}
               disabled={!!stocktake || startingStocktake}
               onChange={(event) => {
+                typing.current = true;
                 setQuery(event.target.value);
                 setPageCursor('');
                 setPages(['']);
@@ -648,6 +660,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               value={area}
               disabled={!!stocktake || startingStocktake}
               onChange={(event) => {
+                typing.current = false;
                 setArea(event.target.value);
                 setPageCursor('');
                 setPages(['']);
@@ -662,6 +675,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               value={format}
               disabled={!!stocktake || startingStocktake}
               onChange={(value) => {
+                typing.current = false;
                 setFormat(value);
                 setPageCursor('');
                 setPages(['']);
@@ -744,6 +758,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               variant="outline"
               disabled={!pageCursor || isSearchPending}
               onClick={() => {
+                typing.current = false;
                 const previous = pages.slice(0, -1);
                 setPages(previous.length ? previous : ['']);
                 setPageCursor(previous.at(-1) ?? '');
@@ -756,6 +771,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               disabled={!nextCursor || isSearchPending}
               onClick={() => {
                 if (nextCursor) {
+                  typing.current = false;
                   setPages((value) => [...value, nextCursor]);
                   setPageCursor(nextCursor);
                 }
