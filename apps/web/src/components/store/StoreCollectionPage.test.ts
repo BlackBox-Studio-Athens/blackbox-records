@@ -14,7 +14,6 @@ const releasesRouteSource = source('../../pages/store/blackbox-releases/index.as
 const distroRouteSource = source('../../pages/store/distro/index.astro');
 const merchRouteSource = source('../../pages/store/merch/index.astro');
 const storeItemCardSource = source('../cards/StoreItemCard.astro');
-const distroCardSource = source('../cards/DistroCard.astro');
 
 describe('Store collection category surfaces', () => {
   it('renders semantic category navigation with an active ordinary link', () => {
@@ -35,47 +34,18 @@ describe('Store collection category surfaces', () => {
     expect(cssSource).toContain('outline: 2px solid var(--foreground)');
   });
 
-  it('uses one category-aware page for canonical metadata, listings, counts, and Distro discovery', () => {
+  it('shares category metadata, discovery, search and a complete Grid', () => {
     expect(collectionPageSource).toContain('pageTitle={category.title}');
     expect(collectionPageSource).toContain('<InternalPageHero sectionLabel="Store" title={category.heading} />');
-    expect(collectionPageSource).toContain('const itemCountLabel');
-    expect(collectionPageSource).toContain('<StoreItemCard');
+    expect(collectionPageSource).toContain('data-store-result-total');
     expect(collectionPageSource).toContain('aria-label="Browse Distro formats"');
     expect(collectionPageSource).toContain('createStoreDistroGroupHeadingId(group.groupName)');
     expect(collectionPageSource).toContain("selectStoreCollectionEntries(entries, 'distro')");
-    expect(collectionPageSource.indexOf('<StoreCategoryNavigation')).toBeLessThan(
-      collectionPageSource.indexOf('<slot name="distro"'),
-    );
-    expect(collectionPageSource.match(/aria-labelledby="store-(?:distro-discovery|collection)-heading"/g)).toHaveLength(
-      1,
-    );
-    expect(collectionPageSource).toContain('data-store-orientation="all"');
-    expect(collectionPageSource).toContain('data-store-orientation="blackbox-releases"');
-    expect(collectionPageSource).toContain('data-store-orientation="generic"');
-    expect(collectionPageSource).toContain('class="store-all-catalog-total">{itemCountLabel}');
     expect(collectionPageSource).toContain('data-store-search');
-    expect(collectionPageSource).toContain("searchable={category.id === 'all'}");
-    expect(collectionPageSource).toContain('data-store-format-disclosure');
-    expect(collectionPageSource).toContain('<span>{group.entries.length}</span>');
-    expect(collectionPageSource).toContain("category.id === 'blackbox-releases'");
-    expect(collectionPageSource).not.toContain('getDistroPageContent');
-    expect(collectionPageSource).not.toContain('distroPageContent.hero.intro');
-    expect(collectionPageSource).not.toContain('{distroEntries.length} items');
-    expect(collectionPageSource).not.toMatch(/\b(?:81|53|47|03)\b/);
-    expect(cssSource).toContain('.store-orientation-panel--all');
-    expect(cssSource).toContain('.store-orientation-panel--blackbox');
-    expect(cssSource).toContain('min-height: 2.75rem');
-    expect(cssSource).toMatch(/\.store-catalog-chunks\s*\{[^}]*grid-template-columns: minmax\(0, 1fr\)/s);
-    expect(cssSource).toMatch(/\.store-item-card--listing\s*\{[^}]*min-width: 0/s);
-    expect(collectionPageSource).toContain("const coverflowEligible = category.id !== 'distro'");
-    expect(collectionPageSource).toContain(
-      'data-store-coverflow-total={coverflowEligible ? entries.length : undefined}',
-    );
-    expect(collectionPageSource).toContain('const coverflowCatalogId = `${category.id}-store-catalog`');
-    expect(collectionPageSource).toContain('aria-controls={coverflowCatalogId}');
+    expect(collectionPageSource).toContain('<StoreBrowsePane>');
     expect(collectionPageSource.match(/<StoreItemCard/g)).toHaveLength(1);
-    expect(collectionPageSource).toContain('coverflowPreview={coverflowEligible}');
-    expect(collectionPageSource).not.toContain("category.id === 'blackbox-releases' && coverflowEligible");
+    expect(collectionPageSource).toContain('coverflowEnrolled={coverflowEligible}');
+    expect(collectionPageSource).not.toContain('getDistroPageContent');
   });
 
   it('keeps route files thin and selects each of the four category presentations', () => {
@@ -89,63 +59,28 @@ describe('Store collection category surfaces', () => {
   });
 
   it('renders plain listing-price placeholders without per-card Store Offer islands or redundant CTAs', () => {
-    for (const cardSource of [storeItemCardSource, distroCardSource]) {
-      expect(cardSource).toContain('data-store-listing-price');
-      expect(cardSource).toContain('data-store-item-slug={storeItem.slug}');
-      expect(cardSource).not.toContain('StoreOfferPriceDisplay');
-    }
+    expect(storeItemCardSource).toContain('data-store-listing-price');
+    expect(storeItemCardSource).toContain('data-store-item-slug={storeItem.slug}');
+    expect(storeItemCardSource).not.toContain('StoreOfferPriceDisplay');
     expect(storeItemCardSource).not.toContain('View Item');
-    expect(distroCardSource).not.toContain('View in Store');
     expect(storeItemCardSource).toContain('data-store-coverflow-availability');
-    expect(distroCardSource).toContain('data-store-coverflow-availability');
   });
 
-  it('uses one bounded Coverflow image slot while preserving ordinary catalog slots', () => {
-    const coverflowSizes = '(min-width: 40rem) 16rem, 56vw';
-
-    for (const cardSource of [storeItemCardSource, distroCardSource]) {
-      expect(cardSource.split(coverflowSizes)).toHaveLength(2);
-    }
-
-    expect(storeItemCardSource).toContain('(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw');
-    expect(distroCardSource).toContain('(min-width: 1280px) 24vw, (min-width: 768px) 33vw, 100vw');
-    expect(distroCardSource).toContain('(min-width: 1280px) 22vw, (min-width: 768px) 45vw, 100vw');
-    expect(storeItemCardSource).toContain('sizes={storeItemCardImageSizes}');
-    expect(distroCardSource).toContain('sizes={distroCardImageSizes}');
+  it('uses compact Grid image slots and switches sizes only for explicit Coverflow', () => {
+    expect(storeItemCardSource).toContain('(min-width: 1280px) calc((100vw - 356px) / 4)');
+    expect(storeItemCardSource.match(/data-store-grid-sizes={sizes}/g)).toHaveLength(2);
+    expect(source('./StoreCoverflowController.ts')).toContain('(min-width: 40rem) 16rem, 56vw');
+    expect(storeCollectionSource).toContain('createStoreDistroGroupHeadingId');
   });
 
-  it('gives initial high priority only to the first visible Coverflow cover', () => {
-    expect(storeCollectionSource).toContain("export type StoreCardImageLoadingMode = 'priority' | 'eager' | 'lazy';");
-
-    for (const cardSource of [storeItemCardSource, distroCardSource]) {
-      expect(cardSource).toContain('imageLoadingMode?: StoreCardImageLoadingMode;');
-      expect(cardSource).toContain("const imagePriority = imageLoadingMode === 'priority';");
-      expect(cardSource).toContain("loading={imagePriority ? 'eager' : imageLoadingMode}");
-      expect(cardSource).toContain("fetchpriority={imagePriority ? 'high' : 'auto'}");
-      expect(cardSource).not.toContain('imagePriority?: boolean');
-    }
-
+  it('loads at most four leading grid covers eagerly with one high priority image', () => {
     expect(collectionPageSource).toContain(
-      'const getStoreCardImageLoadingMode = (itemIndex: number): StoreCardImageLoadingMode =>',
+      "imageLoadingMode={index === 0 ? 'priority' : index < 4 ? 'eager' : 'lazy'}",
     );
-    expect(collectionPageSource).toContain(
-      "coverflowEligible ? (itemIndex === 0 ? 'priority' : 'lazy') : itemIndex < 3 ? 'eager' : 'lazy';",
-    );
-    expect(collectionPageSource).toContain('imageLoadingMode={getStoreCardImageLoadingMode(itemIndex)}');
-    expect(distroCatalogSource).toContain(
-      'const firstDistroGroupUsesCoverflow = groupedDistroChunks[0]?.coverflowStartsInPreview === true;',
-    );
-    expect(collectionPageSource).toContain(
-      "data-store-coverflow-initial-mode={coverflowEligible ? 'preview' : undefined}",
-    );
-    expect(distroCatalogSource).toContain('const firstDistroCoverflowStoreItemSlug = firstDistroGroupUsesCoverflow');
-    expect(distroCatalogSource).toContain(
-      'const getDistroCardImageLoadingMode = (storeItemSlug: string): StoreCardImageLoadingMode =>',
-    );
-    expect(distroCatalogSource).toContain(
-      "return firstDistroCoverflowStoreItemSlug === storeItemSlug ? 'priority' : 'lazy';",
-    );
-    expect(distroCatalogSource).toContain("return eagerDistroStoreItemSlugs.has(storeItemSlug) ? 'eager' : 'lazy';");
-    expect(distroCatalogSource).toContain('imageLoadingMode={getDistroCardImageLoadingMode(entry.storeItem.slug)}');
+    expect(distroCatalogSource).toContain('groupIndex === 0 && index === 0');
+    expect(distroCatalogSource).toContain('groupIndex === 0 && index < 4');
+    expect(storeItemCardSource).toContain("fetchpriority={priority ? 'high' : 'auto'}");
+    expect(storeItemCardSource).toContain('loading="lazy"');
+    expect(storeItemCardSource).toContain('fetchpriority="low"');
   });
 });

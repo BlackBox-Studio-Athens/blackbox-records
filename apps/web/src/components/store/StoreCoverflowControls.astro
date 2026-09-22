@@ -1,0 +1,44 @@
+---
+interface Props {
+  catalogId: string;
+  total: number;
+}
+const { catalogId, total } = Astro.props;
+---
+
+<div class="store-coverflow-controls" data-store-coverflow-controls hidden>
+  <div class="store-coverflow-actions" role="group" aria-label="Catalogue view">
+    <button type="button" aria-controls={catalogId} aria-pressed="true" data-store-coverflow-toggle>Grid</button>
+    <button type="button" aria-controls={catalogId} aria-pressed="false" data-store-coverflow-preview>Coverflow</button>
+    <button type="button" aria-controls={catalogId} data-store-coverflow-previous>Previous</button>
+    <button type="button" aria-controls={catalogId} data-store-coverflow-next>Next</button>
+  </div>
+  <div class="store-coverflow-depth">
+    <dl class="store-coverflow-stats">
+      <div class="store-coverflow-stat"><dt>On this shelf</dt><dd>{total}</dd></div>
+      <div class="store-coverflow-stat">
+        <dt>Now viewing</dt><dd data-store-coverflow-current-value data-store-coverflow-initial-value="1">1</dd>
+      </div>
+      <div class="store-coverflow-stat">
+        <dt>More</dt><dd data-store-coverflow-remaining-value data-store-coverflow-initial-value={total - 1}>
+          {total - 1}
+        </dd>
+      </div>
+    </dl>
+    <div class="store-coverflow-rail" aria-hidden="true">
+      <span class="store-coverflow-rail__track"></span><span
+        class="store-coverflow-rail__fill"
+        data-store-coverflow-disclosure-rail></span>
+    </div>
+    <p class="store-coverflow-summary" data-store-coverflow-summary data-store-coverflow-initial-label=""></p>
+  </div>
+</div>
+<p
+  class="store-coverflow-status"
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+  data-store-coverflow-status
+  hidden
+>
+</p>

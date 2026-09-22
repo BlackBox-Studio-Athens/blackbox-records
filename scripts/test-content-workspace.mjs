@@ -1608,6 +1608,29 @@ else if (sellingJourney) {
     assert.ok(created.data.summary_rich[0].children.some((span) => span.marks.includes('strong')));
     assert.ok(!created.data.summary, 'Rich edits do not synchronize a legacy summary');
     await page.screenshot({ path: resolve(artifacts, 'staff-add-release-390.png') });
+    await page.goto(`${origin}/content/?collection=releases&id=${created.id}`);
+    await page.getByRole('button', { name: 'Add tracklist', exact: true }).click();
+    await page.getByLabel('Tracklist format', { exact: true }).selectOption('vinyl');
+    await page.getByRole('button', { name: 'Add track', exact: true }).click();
+    await page.getByLabel('Track 1 title', { exact: true }).fill('Opening track');
+    await page.getByLabel('Duration', { exact: true }).fill('3:42');
+    await page.getByRole('button', { name: 'Add side', exact: true }).click();
+    await page.getByRole('button', { name: 'Add track', exact: true }).nth(1).click();
+    await page.getByLabel('Track 1 title', { exact: true }).nth(1).fill('Closing track');
+    await page.getByLabel('Tracklist format', { exact: true }).selectOption('cd');
+    assert.equal(await page.getByLabel('Track 1 title', { exact: true }).inputValue(), 'Opening track');
+    assert.equal(await page.getByLabel('Track 2 title', { exact: true }).inputValue(), 'Closing track');
+    await page.getByRole('button', { name: 'Move track 2 up', exact: true }).click();
+    await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
+    assert.deepEqual(records.releases.find((item) => item.id === created.id).data.tracklist, {
+      format: 'cd',
+      discs: [{ tracks: [{ title: 'Closing track' }, { title: 'Opening track', duration: '3:42' }] }],
+    });
+    await page.screenshot({ path: resolve(artifacts, 'staff-tracklist-390.png') });
+    await page.getByRole('button', { name: 'Remove tracklist', exact: true }).click();
+    await page.getByRole('button', { name: 'Add tracklist', exact: true }).waitFor();
+    await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
+    assert.equal(records.releases.find((item) => item.id === created.id).data.tracklist, null);
     // Complete catalog filtering, pagination and browser navigation with 250 entries.
     const originalDistro = [...records.distro];
     records.distro.push(

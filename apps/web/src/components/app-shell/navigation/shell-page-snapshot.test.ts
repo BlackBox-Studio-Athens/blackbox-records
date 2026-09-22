@@ -126,8 +126,6 @@ describe('shell page snapshots', () => {
     const styleProperties = new Map([['--store-coverflow-position-ratio', String(34 / 53)]]);
     const group = {
       dataset: {
-        storeCoverflowInitialPositionRatio: String(1 / 53),
-        storeCoverflowInitialMode: 'catalog',
         storeCoverflowMode: 'preview',
         storeCoverflowPreviewCount: '6',
         storeCoverflowRemainingCount: '52',
@@ -146,7 +144,6 @@ describe('shell page snapshots', () => {
       },
       style: {
         removeProperty: (name: string) => styleProperties.delete(name),
-        setProperty: (name: string, value: string) => styleProperties.set(name, value),
       },
     };
     const card = {
@@ -156,12 +153,12 @@ describe('shell page snapshots', () => {
     const controls = { hidden: false };
     const previousButton = { removeAttribute: (name: string) => removed.add(name) };
     const nextButton = { removeAttribute: (name: string) => removed.add(name) };
-    let toggleAriaExpanded = 'true';
+    let toggleAriaPressed = 'true';
     const toggle = {
       dataset: { storeCoverflowViewAllLabel: 'View all 53' },
       removeAttribute: (name: string) => removed.add(name),
       setAttribute: (name: string, value: string) => {
-        if (name === 'aria-expanded') toggleAriaExpanded = value;
+        if (name === 'aria-pressed') toggleAriaPressed = value;
       },
       textContent: 'Show Coverflow',
     };
@@ -206,10 +203,6 @@ describe('shell page snapshots', () => {
         selectedFormatLinkCurrent = force;
       },
     };
-    const formatSummary = {
-      dataset: { distroFormatSummaryInitialLabel: 'All formats' },
-      textContent: 'Vinyl 7-inch',
-    };
     let allFormatLinkAriaCurrent: string | null = null;
     let allFormatLinkCurrent = false;
     let selectedFormatLinkAriaCurrent: string | null = 'true';
@@ -220,11 +213,10 @@ describe('shell page snapshots', () => {
         if (selector === '[data-store-coverflow-card]') return [card];
         if (selector === '[data-store-coverflow-initial-value]') return [currentValue, remainingValue];
         if (selector === '[data-store-coverflow-summary]') return [summary];
-        if (selector === '[data-distro-format-disclosure]') return [formatDisclosure];
+        if (selector === '[data-store-browse-disclosure]') return [formatDisclosure];
         if (selector === '[data-distro-selected-format]') return [selectedRoot];
         if (selector === '[data-distro-format-current]') return [currentSection, selectedFormatLink];
         if (selector === '[data-distro-format-link]') return [allFormatLink, selectedFormatLink];
-        if (selector === '[data-distro-format-summary-current]') return [formatSummary];
         return [];
       },
     } as unknown as ParentNode;
@@ -234,7 +226,7 @@ describe('shell page snapshots', () => {
     expect(removed).toEqual(
       new Set([
         'data-store-coverflow-ready',
-        'data-store-coverflow-pending-disclosure',
+        'data-store-coverflow-position',
         'data-store-coverflow-reveal',
         'data-store-coverflow-transitioning',
         'data-store-coverflow-visited',
@@ -252,11 +244,11 @@ describe('shell page snapshots', () => {
       storeCoverflowRemainingCount: '52',
       storeCoverflowTotal: '53',
     });
-    expect(styleProperties.get('--store-coverflow-position-ratio')).toBe(String(1 / 53));
-    expect(card.dataset.storeCoverflowPosition).toBe('active');
+    expect(styleProperties.has('--store-coverflow-position-ratio')).toBe(false);
+    expect(removed.has('data-store-coverflow-position')).toBe(true);
     expect(controls.hidden).toBe(true);
     expect(toggle.textContent).toBe('Show Coverflow');
-    expect(toggleAriaExpanded).toBe('true');
+    expect(toggleAriaPressed).toBe('true');
     expect(status.textContent).toBe('');
     expect(status.hidden).toBe(true);
     expect(currentValue.textContent).toBe('1');
@@ -267,7 +259,6 @@ describe('shell page snapshots', () => {
     expect(allFormatLinkAriaCurrent).toBe('true');
     expect(selectedFormatLinkCurrent).toBe(false);
     expect(selectedFormatLinkAriaCurrent).toBeNull();
-    expect(formatSummary.textContent).toBe('All formats');
   });
 
   it('reads the swappable main payload and route metadata', () => {

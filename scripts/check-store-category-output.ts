@@ -11,7 +11,7 @@ type CategoryOutputExpectation = {
 const expectations: CategoryOutputExpectation[] = [
   { cardClass: 'store-item-card--listing', count: 104, path: '/store/', title: 'Store' },
   { cardClass: 'store-item-card--listing', count: 3, path: '/store/blackbox-releases/', title: 'BlackBox Releases' },
-  { cardClass: 'distro-card--page', count: 101, path: '/store/distro/', title: 'Distro' },
+  { cardClass: 'store-item-card--listing', count: 101, path: '/store/distro/', title: 'Distro' },
 ];
 
 const outputRoot = resolve(process.cwd(), 'apps/web/dist');
@@ -52,34 +52,14 @@ async function run() {
       );
     }
 
-    if (expectation.path === '/store/') {
-      if (countOccurrences(source, 'data-store-orientation="all"') !== 1) {
-        throw new Error('Expected All Store to render one compact shelf ledger.');
-      }
-      if (!source.includes(`${renderedCount} items total`)) {
-        throw new Error(`Expected All Store shelf total to follow its ${renderedCount} rendered cards.`);
-      }
+    if (countOccurrences(source, 'data-store-result-total') !== 1 || !source.includes(renderedCount + ' items')) {
+      throw new Error('Expected one source-derived collection total on ' + expectation.path);
     }
-
-    if (expectation.path === '/store/blackbox-releases/') {
-      if (countOccurrences(source, 'data-store-orientation="blackbox-releases"') !== 1) {
-        throw new Error('Expected BlackBox Releases to render one purpose-specific orientation panel.');
-      }
-      if (!source.includes('Collection total') || !source.includes(`${renderedCount} items`)) {
-        throw new Error('Expected BlackBox Releases to render one source-derived collection total.');
-      }
-    }
-
-    if (expectation.path === '/store/distro/') {
-      if (!source.includes('id="distro-page-top"')) {
-        throw new Error('Expected the Store Distro category to retain the legacy Distro fragment target.');
-      }
-      if (countOccurrences(source, 'data-store-orientation="distro"') !== 1) {
-        throw new Error('Expected Distro to render one purpose-specific orientation panel.');
-      }
-      if (!source.includes('Collection total') || countOccurrences(source, `${renderedCount} items`) !== 1) {
-        throw new Error('Expected Distro to render one source-derived collection total without idle duplication.');
-      }
+    if (
+      !source.includes('data-store-browse-disclosure') ||
+      source.includes('data-store-coverflow-initial-mode="preview"')
+    ) {
+      throw new Error('Expected progressive Grid with one shared Browse panel on ' + expectation.path);
     }
   }
 

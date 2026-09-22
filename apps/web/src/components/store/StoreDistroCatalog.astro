@@ -1,321 +1,108 @@
 ---
 import Prose from '@/components/Prose.astro';
-import DistroCard from '@/components/cards/DistroCard.astro';
-import { buttonVariants } from '@/components/ui/button';
+import StoreItemCard from '@/components/cards/StoreItemCard.astro';
 import { getDistroPageContent } from '@/lib/site-data';
 import {
   createStoreDistroGroupHeadingId,
   groupStoreDistroCollectionEntries,
-  type StoreCardImageLoadingMode,
   type StoreCollectionEntry,
 } from '@/lib/store-collection';
-import { cn } from '@/lib/utils';
-
-import { getStoreCoverflowPosition } from './StoreCoverflowController';
-
+import StoreBrowsePane from './StoreBrowsePane.astro';
+import StoreCoverflowControls from './StoreCoverflowControls.astro';
 interface Props {
   entries: StoreCollectionEntry[];
 }
-
 const { entries } = Astro.props;
-const distroPageContent = await getDistroPageContent();
-const STORE_COVERFLOW_PREVIEW_SIZE = 6;
-const groupedDistroEntries = groupStoreDistroCollectionEntries(entries);
-const groupedDistroChunks = groupedDistroEntries.map((group) => {
-  const totalCount = group.entries.length;
-  const positionedCount = Math.min(STORE_COVERFLOW_PREVIEW_SIZE, totalCount);
-  const initialCurrentPosition = 1;
-  const initialRemainingCount = totalCount - initialCurrentPosition;
-  const initialPositionRatio = initialCurrentPosition / totalCount;
-  const headingId = createStoreDistroGroupHeadingId(group.groupName);
-  const coverflowEnrolled = totalCount >= 2;
-  const coverflowInitialMode = totalCount > STORE_COVERFLOW_PREVIEW_SIZE ? 'preview' : 'catalog';
-  const coverflowStartsInPreview = coverflowInitialMode === 'preview';
-
-  return {
-    ...group,
-    coverflowEnrolled,
-    coverflowInitialMode,
-    coverflowStartsInPreview,
-    totalCount,
-    positionedCount,
-    initialCurrentPosition,
-    initialRemainingCount,
-    initialPositionRatio,
-    formatKey: headingId,
-    headingId,
-    chunks: group.entries.reduce<(typeof group.entries)[]>((chunks, entry, index) => {
-      if (index % STORE_COVERFLOW_PREVIEW_SIZE === 0) chunks.push([]);
-      chunks.at(-1)!.push(entry);
-      return chunks;
-    }, []),
-  };
-});
-const distroFormatNavigationEntries = [
-  { count: entries.length, formatKey: 'all', label: 'All formats', targetId: 'distro-search-results' },
-  ...groupedDistroChunks.map((group) => ({
-    count: group.entries.length,
-    formatKey: group.formatKey,
+const content = await getDistroPageContent();
+const groups = groupStoreDistroCollectionEntries(entries);
+const formats = [
+  { key: 'all', target: 'distro-search-results', label: 'All formats', count: entries.length },
+  ...groups.map((group) => ({
+    key: createStoreDistroGroupHeadingId(group.groupName),
+    target: createStoreDistroGroupHeadingId(group.groupName),
     label: group.groupName,
-    targetId: group.headingId,
+    count: group.entries.length,
   })),
 ];
-const eagerDistroStoreItemSlugs = new Set(entries.slice(0, 3).map((entry) => entry.storeItem.slug));
-const firstDistroGroupUsesCoverflow = groupedDistroChunks[0]?.coverflowStartsInPreview === true;
-const firstDistroCoverflowStoreItemSlug = firstDistroGroupUsesCoverflow
-  ? groupedDistroChunks[0]!.entries[0]!.storeItem.slug
-  : null;
-const getDistroCardImageLoadingMode = (storeItemSlug: string): StoreCardImageLoadingMode => {
-  if (firstDistroGroupUsesCoverflow) {
-    return firstDistroCoverflowStoreItemSlug === storeItemSlug ? 'priority' : 'lazy';
-  }
-
-  return eagerDistroStoreItemSlugs.has(storeItemSlug) ? 'eager' : 'lazy';
-};
-const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'items'}`;
 ---
 
-<section id="distro-page-top" class="layout-container distro-page-intro" aria-labelledby="distro-collection-heading">
-  <div class="store-orientation-panel store-orientation-panel--distro" data-store-orientation="distro">
-    <div class="store-orientation-panel__primary">
-      <p class="store-orientation-panel__eyebrow">Store shelf</p>
-      <h2 class="store-orientation-panel__title" id="distro-collection-heading">{distroPageContent.hero.title}</h2>
-      <Prose
-        class="store-orientation-panel__copy"
-        value={distroPageContent.hero.intro}
-        data-content-path="hero.intro"
-      />
-    </div>
-    <div class="store-orientation-panel__distro-tools">
-      <div class="store-orientation-panel__distro-count">
-        <p class="store-orientation-panel__eyebrow">Collection total</p>
-        <p class="store-orientation-panel__count-value">{itemCountLabel}</p>
-      </div>
-      <div class="distro-page-search" data-distro-search></div>
-    </div>
-  </div>
-</section>
-
-<nav class="distro-format-navigation" aria-labelledby="distro-format-navigation-heading" data-distro-format-navigation>
-  <div class="layout-container distro-format-navigation__inner">
-    <div class="distro-format-navigation__desktop">
-      <h2 id="distro-format-navigation-heading" class="distro-format-navigation__heading">Browse formats</h2>
-      <div class="distro-format-navigation__links">
-        {
-          distroFormatNavigationEntries.map((format) => (
-            <a
-              href={`#${format.targetId}`}
-              data-scroll-to-target={format.targetId}
-              data-distro-format-link
-              data-distro-format-key={format.formatKey}
-              data-distro-format-current={format.formatKey === 'all' ? '' : undefined}
-              aria-current={format.formatKey === 'all' ? 'true' : undefined}
-              class={cn(
-                buttonVariants({ variant: 'outline', size: 'sm' }),
-                'distro-format-navigation__link h-auto rounded-none border-[#3a3a3a] bg-transparent px-3 py-2 text-[11px] tracking-[0.14em] uppercase shadow-none hover:border-[#666666] hover:bg-[#1a1a1a]',
-              )}
+<div class="layout-container store-browse-layout">
+  <StoreBrowsePane distro>
+    <nav aria-label="Browse Distro formats" class="store-format-links" data-distro-format-navigation>
+      <h2>Browse Distro formats</h2>
+      {
+        formats.map((format) => (
+          <a
+            href={'#' + format.target}
+            data-distro-format-link
+            data-distro-format-key={format.key}
+            data-distro-format-current={format.key === 'all' ? '' : undefined}
+            aria-current={format.key === 'all' ? 'true' : undefined}
+          >
+            <>
+              <span>{format.label}</span>
+              <span>{format.count}</span>
+            </>
+          </a>
+        ))
+      }
+    </nav>
+  </StoreBrowsePane>
+  <section class="store-browse-results" aria-label="Distro">
+    <Prose class="store-category-description" value={content.hero.intro} data-content-path="hero.intro" />
+    <div data-distro-search></div>
+    <p data-store-result-total>{entries.length} {entries.length === 1 ? 'item' : 'items'}</p>
+    <div id="distro-search-results" class="distro-page-groups" data-distro-search-root tabindex="-1">
+      {
+        groups.map((group, groupIndex) => {
+          const headingId = createStoreDistroGroupHeadingId(group.groupName);
+          const enrolled = group.entries.length >= 2;
+          return (
+            <section
+              class="distro-group-section"
+              aria-labelledby={headingId}
+              data-distro-search-group
+              data-distro-format-key={headingId}
+              data-store-coverflow-group={enrolled ? '' : undefined}
+              data-store-coverflow-mode={enrolled ? 'catalog' : undefined}
+              data-store-coverflow-total={enrolled ? group.entries.length : undefined}
             >
-              <span class="distro-format-navigation__link-label">{format.label}</span>
-              <span class="text-muted-foreground">({format.count})</span>
-            </a>
-          ))
-        }
-      </div>
-    </div>
-    <details class="distro-format-navigation__mobile" data-distro-format-disclosure>
-      <summary class="distro-format-navigation__summary">
-        <span>Browse formats</span>
-        <span
-          class="distro-format-navigation__current"
-          data-distro-format-summary-current
-          data-distro-format-summary-initial-label="All formats"
-        >
-          All formats
-        </span>
-        <span class="distro-format-navigation__indicator" aria-hidden="true">▾</span>
-      </summary>
-      <div class="distro-format-navigation__panel">
-        {
-          distroFormatNavigationEntries.map((format) => (
-            <a
-              href={`#${format.targetId}`}
-              data-scroll-to-target={format.targetId}
-              data-distro-format-link
-              data-distro-format-key={format.formatKey}
-              data-distro-format-current={format.formatKey === 'all' ? '' : undefined}
-              aria-current={format.formatKey === 'all' ? 'true' : undefined}
-              class="distro-format-navigation__link h-auto rounded-none border border-[#3a3a3a] bg-transparent px-3 py-2 text-[11px] tracking-[0.14em] text-foreground uppercase shadow-none outline-none hover:border-[#666666] hover:bg-[#1a1a1a] focus-visible:ring-[3px] focus-visible:ring-ring/50"
-            >
-              <span class="distro-format-navigation__link-label">{format.label}</span>
-              <span class="text-muted-foreground">({format.count})</span>
-            </a>
-          ))
-        }
-      </div>
-    </details>
-    <a
-      href="#distro-page-top"
-      data-scroll-to-target="distro-page-top"
-      aria-label="Back to Distro page top"
-      class={cn(
-        buttonVariants({ variant: 'outline', size: 'sm' }),
-        'distro-format-navigation__top h-auto rounded-none border-[#666666] bg-[#f5f5f5] px-3 py-2 text-[11px] tracking-[0.14em] text-[#0d0d0d] uppercase shadow-none hover:border-white hover:bg-white',
-      )}
-    >
-      Top <span aria-hidden="true">↑</span>
-    </a>
-  </div>
-</nav>
-
-<section
-  id="distro-search-results"
-  class="layout-container distro-page-groups"
-  aria-label="Distro"
-  data-distro-search-root
-  data-distro-format-target
-  tabindex="-1"
->
-  {
-    groupedDistroChunks.map((group) => (
-      <section
-        class:list={['distro-group-section', group.coverflowEnrolled && 'distro-group-section--coverflow']}
-        aria-labelledby={group.headingId}
-        data-distro-search-group
-        data-distro-format-key={group.formatKey}
-        data-store-coverflow-group={group.coverflowEnrolled ? '' : undefined}
-        data-store-coverflow-mode={group.coverflowEnrolled ? group.coverflowInitialMode : undefined}
-        data-store-coverflow-initial-mode={group.coverflowEnrolled ? group.coverflowInitialMode : undefined}
-        data-store-coverflow-total={group.coverflowEnrolled ? group.totalCount : undefined}
-        data-store-coverflow-preview-count={group.coverflowEnrolled ? group.positionedCount : undefined}
-        data-store-coverflow-remaining-count={group.coverflowEnrolled ? group.initialRemainingCount : undefined}
-        data-store-coverflow-initial-position-ratio={group.coverflowEnrolled ? group.initialPositionRatio : undefined}
-        style={
-          group.coverflowStartsInPreview ? `--store-coverflow-position-ratio: ${group.initialPositionRatio}` : undefined
-        }
-      >
-        <div
-          class:list={[
-            'distro-group-section__overview',
-            group.coverflowEnrolled && 'distro-group-section__overview--coverflow',
-          ]}
-        >
-          <div class="distro-group-section__header">
-            <h2 class="distro-group-section__title" id={group.headingId} data-distro-format-target tabindex="-1">
-              {group.groupName}
-            </h2>
-            <Prose
-              class="distro-group-section__copy"
-              value={distroPageContent.group_intros[group.introKey]}
-              data-content-path={`group_intros.${group.introKey}`}
-            />
-          </div>
-          {group.coverflowEnrolled && (
-            <div
-              class="store-coverflow-controls"
-              data-store-coverflow-controls
-              hidden={!group.coverflowStartsInPreview}
-            >
-              <div class="store-coverflow-depth">
-                <dl class="store-coverflow-stats">
-                  <div class="store-coverflow-stat">
-                    <dt>In this format</dt>
-                    <dd>{group.totalCount}</dd>
-                  </div>
-                  <div class="store-coverflow-stat" data-store-coverflow-current>
-                    <dt>Now viewing</dt>
-                    <dd data-store-coverflow-current-value data-store-coverflow-initial-value="1">
-                      {group.initialCurrentPosition}
-                    </dd>
-                  </div>
-                  <div class="store-coverflow-stat" data-store-coverflow-remaining>
-                    <dt>More</dt>
-                    <dd
-                      data-store-coverflow-remaining-value
-                      data-store-coverflow-initial-value={group.initialRemainingCount}
-                    >
-                      {group.initialRemainingCount}
-                    </dd>
-                  </div>
-                </dl>
-                <div class="store-coverflow-rail" aria-hidden="true">
-                  <span class="store-coverflow-rail__track" />
-                  <span class="store-coverflow-rail__fill" data-store-coverflow-disclosure-rail />
+              <div class="distro-group-section__header">
+                <h2 class="distro-group-section__title" id={headingId} data-distro-format-target tabindex="-1">
+                  {group.groupName}
+                </h2>
+                <Prose
+                  class="distro-group-section__copy"
+                  value={content.group_intros[group.introKey]}
+                  data-content-path={'group_intros.' + group.introKey}
+                />
+              </div>
+              {enrolled && <StoreCoverflowControls catalogId={headingId + '-catalog'} total={group.entries.length} />}
+              <div class="store-coverflow-shell">
+                {enrolled && (
+                  <span class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true" />
+                )}
+                <div
+                  id={headingId + '-catalog'}
+                  class="distro-group-grid"
+                  data-store-coverflow-stage={enrolled ? '' : undefined}
+                >
+                  {group.entries.map((entry, index) => (
+                    <StoreItemCard
+                      entry={entry}
+                      searchable
+                      coverflowEnrolled={enrolled}
+                      imageLoadingMode={
+                        groupIndex === 0 && index === 0 ? 'priority' : groupIndex === 0 && index < 4 ? 'eager' : 'lazy'
+                      }
+                    />
+                  ))}
                 </div>
-                <p
-                  class="store-coverflow-summary"
-                  data-store-coverflow-summary
-                  data-store-coverflow-initial-label={`You're viewing ${group.initialCurrentPosition} of ${group.totalCount}.`}
-                >
-                  You're viewing {group.initialCurrentPosition} of {group.totalCount}.
-                </p>
               </div>
-              <div class="store-coverflow-actions">
-                <button type="button" aria-controls={`${group.headingId}-catalog`} data-store-coverflow-previous>
-                  Previous
-                </button>
-                <button type="button" aria-controls={`${group.headingId}-catalog`} data-store-coverflow-next>
-                  Next
-                </button>
-                <button
-                  class="store-coverflow-actions__toggle"
-                  type="button"
-                  aria-controls={`${group.headingId}-catalog`}
-                  aria-expanded={group.coverflowStartsInPreview ? 'false' : 'true'}
-                  data-store-coverflow-toggle
-                  data-store-coverflow-view-all-label={`View all ${group.totalCount}`}
-                >
-                  {group.coverflowStartsInPreview ? `View all ${group.totalCount}` : 'Show Coverflow'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-        {group.coverflowEnrolled && (
-          <p
-            class="store-coverflow-status"
-            role="status"
-            aria-live="polite"
-            aria-atomic="true"
-            data-store-coverflow-status
-            data-store-coverflow-initial-label={`${group.entries[0]!.storeItem.title} — ${group.entries[0]!.storeItem.subtitle}`}
-            hidden={!group.coverflowStartsInPreview}
-          >
-            {group.entries[0]!.storeItem.title} — {group.entries[0]!.storeItem.subtitle}
-          </p>
-        )}
-        <div class={group.coverflowEnrolled ? 'store-coverflow-shell' : undefined}>
-          {group.coverflowEnrolled && (
-            <span class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true" />
-          )}
-          <div
-            id={group.coverflowEnrolled ? `${group.headingId}-catalog` : undefined}
-            class="distro-group-chunks"
-            data-store-coverflow-stage={group.coverflowEnrolled ? '' : undefined}
-          >
-            {group.chunks.map((chunk, chunkIndex) => (
-              <div class="distro-group-grid distro-group-chunk" data-distro-search-chunk>
-                {chunk.map((entry, itemIndex) => (
-                  <DistroCard
-                    entry={entry}
-                    imageLoadingMode={getDistroCardImageLoadingMode(entry.storeItem.slug)}
-                    coverflowEnrolled={group.coverflowEnrolled}
-                    coverflowPreview={group.coverflowStartsInPreview}
-                    coverflowPosition={
-                      group.coverflowStartsInPreview
-                        ? getStoreCoverflowPosition(
-                            chunkIndex * STORE_COVERFLOW_PREVIEW_SIZE + itemIndex,
-                            0,
-                            group.totalCount,
-                          )
-                        : undefined
-                    }
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    ))
-  }
-</section>
+            </section>
+          );
+        })
+      }
+    </div>
+  </section>
+</div>

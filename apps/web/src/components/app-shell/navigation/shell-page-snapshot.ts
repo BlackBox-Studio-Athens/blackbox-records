@@ -17,15 +17,8 @@ type ShellPageSnapshotCache = {
 
 export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-coverflow-group]').forEach((groupElement) => {
-    const initialMode = groupElement.dataset.storeCoverflowInitialMode === 'catalog' ? 'catalog' : 'preview';
-    groupElement.dataset.storeCoverflowMode = initialMode;
-    const initialPositionRatio = groupElement.dataset.storeCoverflowInitialPositionRatio;
-    if (initialPositionRatio) {
-      groupElement.style.setProperty('--store-coverflow-position-ratio', initialPositionRatio);
-    } else {
-      groupElement.style.removeProperty('--store-coverflow-position-ratio');
-    }
-    groupElement.removeAttribute('data-store-coverflow-pending-disclosure');
+    groupElement.dataset.storeCoverflowMode = 'catalog';
+    groupElement.style.removeProperty('--store-coverflow-position-ratio');
     groupElement.removeAttribute('data-store-coverflow-ready');
     groupElement.removeAttribute('data-store-coverflow-reveal');
     groupElement.removeAttribute('data-store-coverflow-transitioning');
@@ -33,29 +26,22 @@ export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
     groupElement.removeAttribute('aria-roledescription');
 
     const controlsElement = groupElement.querySelector<HTMLElement>('[data-store-coverflow-controls]');
-    if (controlsElement) controlsElement.hidden = initialMode === 'catalog';
+    if (controlsElement) controlsElement.hidden = true;
     groupElement
       .querySelectorAll<HTMLElement>(
-        '[data-store-coverflow-previous], [data-store-coverflow-next], [data-store-coverflow-toggle]',
+        '[data-store-coverflow-previous], [data-store-coverflow-next], [data-store-coverflow-toggle], [data-store-coverflow-preview]',
       )
       .forEach((buttonElement) => buttonElement.removeAttribute('aria-disabled'));
-    const toggleElement = groupElement.querySelector<HTMLElement>('[data-store-coverflow-toggle]');
-    if (toggleElement) {
-      toggleElement.textContent =
-        initialMode === 'preview' ? toggleElement.dataset.storeCoverflowViewAllLabel || '' : 'Show Coverflow';
-      toggleElement.setAttribute('aria-expanded', initialMode === 'catalog' ? 'true' : 'false');
-    }
-    const statusElement = groupElement.querySelector<HTMLElement>('[data-store-coverflow-status]');
-    if (statusElement) {
-      statusElement.textContent =
-        initialMode === 'preview' ? statusElement.dataset.storeCoverflowInitialLabel || '' : '';
-      statusElement.hidden = initialMode === 'catalog';
+    groupElement.querySelector('[data-store-coverflow-toggle]')?.setAttribute('aria-pressed', 'true');
+    groupElement.querySelector('[data-store-coverflow-preview]')?.setAttribute('aria-pressed', 'false');
+    const status = groupElement.querySelector<HTMLElement>('[data-store-coverflow-status]');
+    if (status) {
+      status.textContent = '';
+      status.hidden = true;
     }
   });
   root.querySelectorAll<HTMLElement>('[data-store-coverflow-card]').forEach((cardElement) => {
-    const initialPosition = cardElement.dataset.storeCoverflowInitialPosition;
-    if (initialPosition) cardElement.dataset.storeCoverflowPosition = initialPosition;
-    else cardElement.removeAttribute('data-store-coverflow-position');
+    cardElement.removeAttribute('data-store-coverflow-position');
     cardElement.removeAttribute('data-store-coverflow-selected');
   });
   root.querySelectorAll<HTMLElement>('[data-store-coverflow-initial-value]').forEach((valueElement) => {
@@ -64,7 +50,7 @@ export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-coverflow-summary]').forEach((summaryElement) => {
     summaryElement.textContent = summaryElement.dataset.storeCoverflowInitialLabel || '';
   });
-  root.querySelectorAll<HTMLDetailsElement>('[data-distro-format-disclosure]').forEach((detailsElement) => {
+  root.querySelectorAll<HTMLDetailsElement>('[data-store-browse-disclosure]').forEach((detailsElement) => {
     detailsElement.open = false;
   });
   root.querySelectorAll<HTMLElement>('[data-distro-selected-format]').forEach((element) => {
@@ -79,9 +65,6 @@ export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
     element.toggleAttribute('data-distro-format-current', isAllFormats);
     if (isAllFormats) element.setAttribute('aria-current', 'true');
     else element.removeAttribute('aria-current');
-  });
-  root.querySelectorAll<HTMLElement>('[data-distro-format-summary-current]').forEach((element) => {
-    element.textContent = element.dataset.distroFormatSummaryInitialLabel || 'All formats';
   });
 }
 
@@ -109,8 +92,17 @@ export function readDocumentShellPageSnapshot(
   mainElementClone.querySelectorAll<HTMLElement>('[data-store-search-active]').forEach((element) => {
     element.removeAttribute('data-store-search-active');
   });
-  mainElementClone.querySelectorAll<HTMLDetailsElement>('[data-store-format-disclosure]').forEach((element) => {
-    element.open = true;
+  mainElementClone.querySelectorAll<HTMLElement>('[data-store-artists]').forEach((element) => {
+    element.innerHTML = '';
+  });
+  mainElementClone.querySelectorAll<HTMLElement>('[data-store-result-total]').forEach((element) => {
+    element.hidden = false;
+  });
+  mainElementClone.querySelectorAll<HTMLElement>('[data-store-browse-current]').forEach((element) => {
+    element.textContent = 'All artists';
+  });
+  mainElementClone.querySelectorAll<HTMLImageElement>('img[data-store-grid-sizes]').forEach((image) => {
+    image.sizes = image.dataset.storeGridSizes!;
   });
   mainElementClone.querySelectorAll<HTMLElement>('[data-distro-search-hidden]').forEach((hiddenElement) => {
     hiddenElement.removeAttribute('data-distro-search-hidden');

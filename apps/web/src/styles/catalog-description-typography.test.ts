@@ -8,10 +8,6 @@ const distroCatalog = readFileSync(
   fileURLToPath(new URL('../components/store/StoreDistroCatalog.astro', import.meta.url)),
   'utf8',
 );
-const distroCard = readFileSync(
-  fileURLToPath(new URL('../components/cards/DistroCard.astro', import.meta.url)),
-  'utf8',
-);
 const releaseCard = readFileSync(
   fileURLToPath(new URL('../components/cards/ReleaseCard.astro', import.meta.url)),
   'utf8',
@@ -38,9 +34,9 @@ describe('Catalog description typography', () => {
     const latestReleaseSummary = readClassRule('releases-latest-feature__summary');
     const upcomingReleaseSummary = readClassRule('releases-latest-feature__upcoming-summary');
 
-    expect.soft(distroGroupCopy).toContain('font-family: var(--font-mono);');
-    expect(distroGroupCopy).toContain('font-size: 0.95rem;');
-    expect(distroGroupCopy).toContain('line-height: 1.7;');
+    expect.soft(distroGroupCopy).toContain('font-family: var(--font-sans);');
+    expect(distroGroupCopy).toContain('font-size: 0.875rem;');
+    expect(distroGroupCopy).toContain('line-height: 1.5;');
 
     expect.soft(latestReleaseSummary).toContain('font-family: var(--font-mono);');
     expect(latestReleaseSummary).toContain('font-size: 1rem;');
@@ -55,15 +51,11 @@ describe('Catalog description typography', () => {
       expect(rule).not.toContain('text-transform:');
     }
 
-    expect(readClassRule('store-orientation-panel__copy')).not.toContain('font-family:');
-    expect(readClassRule('distro-card__summary')).not.toContain('font-family:');
     expect(readClassRule('release-card-summary-text')).not.toContain('font-family:');
   });
 
   it('keeps summaries conditional and detail prose on body typography', () => {
-    expect(distroCatalog).toContain('value={distroPageContent.group_intros[group.introKey]}');
-    expect(distroCard).toContain('value={sourceSummary}');
-    expect(distroCard).toContain('rich={storeItem.summaryRich}');
+    expect(distroCatalog).toContain('value={content.group_intros[group.introKey]}');
     expect(releaseCard).toContain('class="release-card-summary-text text-sm leading-relaxed text-muted-foreground"');
 
     expect(releasesPage).toMatch(
@@ -79,8 +71,8 @@ describe('Catalog description typography', () => {
     const storeItemSummaryClass = /storeItem\.summary && \(?\s*<Prose\s+class="([^"]+)"/s.exec(storeItemDetail)?.[1];
 
     expect(releaseDetailSummaryClass).toBe('max-w-2xl text-sm leading-relaxed text-muted-foreground');
-    expect(storeItemSummaryClass).toBe('max-w-2xl text-sm leading-relaxed text-muted-foreground');
+    expect(storeItemDetail).toContain('rich={storeItem.summaryRich}');
     expect(releaseDetailSummaryClass).not.toContain('font-mono');
-    expect(storeItemSummaryClass).not.toContain('font-mono');
+    expect(storeItemSummaryClass || '').not.toContain('font-mono');
   });
 });

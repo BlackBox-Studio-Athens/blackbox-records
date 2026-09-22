@@ -49,20 +49,20 @@
   outline-offset: 3px;
 }
 
-:is(.store-item-card--listing, .distro-card) .prose-card-link {
+.store-item-card--listing .prose-card-link {
   position: static;
   display: block;
 }
-:is(.store-item-card--listing, .distro-card) .prose-card-link::after {
+.store-item-card--listing .prose-card-link::after {
   content: '';
   position: absolute;
   inset: 0;
   z-index: 2;
 }
-:is(.store-item-card--listing, .distro-card) .prose-card-link:focus-visible {
+.store-item-card--listing .prose-card-link:focus-visible {
   outline: none;
 }
-:is(.store-item-card--listing, .distro-card):has(.prose-card-link:focus-visible) {
+.store-item-card--listing:has(.prose-card-link:focus-visible) {
   outline: 2px solid currentColor;
   outline-offset: 3px;
 }

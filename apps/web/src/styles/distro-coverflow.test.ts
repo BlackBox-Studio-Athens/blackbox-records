@@ -8,7 +8,7 @@ const pageSource = readFileSync(
   'utf8',
 );
 const cardSource = readFileSync(
-  fileURLToPath(new URL('../components/cards/DistroCard.astro', import.meta.url)),
+  fileURLToPath(new URL('../components/cards/StoreItemCard.astro', import.meta.url)),
   'utf8',
 );
 const appShellSource = readFileSync(
@@ -28,140 +28,68 @@ const controllerSource = readFileSync(
   'utf8',
 );
 const layoutSource = readFileSync(fileURLToPath(new URL('../layouts/SiteLayout.astro', import.meta.url)), 'utf8');
-const runtimePerformanceSource = readFileSync(
-  fileURLToPath(new URL('../../../../scripts/measure-runtime-performance.ts', import.meta.url)),
-  'utf8',
-);
 const cssSource = readFileSync(fileURLToPath(new URL('./global.css', import.meta.url)), 'utf8');
 
+const controls = readFileSync(
+  fileURLToPath(new URL('../components/store/StoreCoverflowControls.astro', import.meta.url)),
+  'utf8',
+);
 describe('Distro Coverflow progressive enhancement', () => {
-  it('derives full-group position state while retaining one complete card render path', () => {
-    expect(pageSource).toContain('const coverflowEnrolled = totalCount >= 2');
-    expect(pageSource).toContain(
-      "const coverflowInitialMode = totalCount > STORE_COVERFLOW_PREVIEW_SIZE ? 'preview' : 'catalog'",
-    );
-    expect(pageSource).toContain('const totalCount = group.entries.length');
-    expect(pageSource).toContain('const positionedCount = Math.min(STORE_COVERFLOW_PREVIEW_SIZE, totalCount)');
-    expect(pageSource).toContain('const initialCurrentPosition = 1');
-    expect(pageSource).toContain('const initialRemainingCount = totalCount - initialCurrentPosition');
-    expect(pageSource).toContain('const initialPositionRatio = initialCurrentPosition / totalCount');
-    expect(pageSource.match(/<DistroCard/g)).toHaveLength(1);
-    expect(pageSource).toContain('group.chunks.map((chunk, chunkIndex)');
-    expect(pageSource).toContain(
-      'data-store-coverflow-mode={group.coverflowEnrolled ? group.coverflowInitialMode : undefined}',
-    );
-    expect(pageSource).toContain(
-      'data-store-coverflow-initial-mode={group.coverflowEnrolled ? group.coverflowInitialMode : undefined}',
-    );
-    expect(pageSource).toContain('data-store-coverflow-total={group.coverflowEnrolled ? group.totalCount : undefined}');
-    expect(pageSource).toContain('data-store-coverflow-preview-count');
-    expect(pageSource).toContain('data-store-coverflow-remaining-count');
-    expect(pageSource).toContain('data-store-coverflow-initial-position-ratio');
-    expect(pageSource).toContain('--store-coverflow-position-ratio: ${group.initialPositionRatio}');
-    expect(pageSource).toContain("You're viewing {group.initialCurrentPosition} of {group.totalCount}.");
-    expect(pageSource).toContain('<dt>Now viewing</dt>');
-    expect(pageSource).toContain('data-store-coverflow-current-value');
-    expect(pageSource).toContain('data-store-coverflow-remaining-value');
-    expect(pageSource).toContain('data-store-coverflow-summary');
-    expect(pageSource).toContain('class="store-coverflow-rail" aria-hidden="true"');
-    expect(pageSource).toContain('data-store-coverflow-disclosure-rail');
-    expect(pageSource).toContain('class="store-coverflow-actions__toggle"');
-    expect(pageSource).toContain("aria-expanded={group.coverflowStartsInPreview ? 'false' : 'true'}");
-    expect(pageSource).toContain('data-store-coverflow-initial-label');
-    expect(pageSource).toContain('class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true"');
-    expect(pageSource).not.toContain('01 / 06');
-    expect(pageSource).not.toContain('pagination-dot');
-    expect(pageSource).not.toContain('thumbnail');
-    expect(pageSource).not.toMatch(/aria-disabled="true"\s+data-store-coverflow-previous/);
-    expect(cardSource).toContain('data-store-coverflow-initial-position={coverflowPosition}');
+  it('starts complete groups in Grid and offers explicit views only after readiness', () => {
+    expect(pageSource).toContain('const enrolled = group.entries.length >= 2');
+    expect(pageSource).toContain("data-store-coverflow-mode={enrolled ? 'catalog' : undefined}");
+    expect(pageSource).toContain('group.entries.map');
+    expect(pageSource).not.toContain('getStoreCoverflowPosition');
+    expect(controls.indexOf('>Grid</button>')).toBeLessThan(controls.indexOf('>Coverflow</button>'));
+    expect(controls).toContain('data-store-coverflow-controls hidden');
+    for (const hook of [
+      'data-store-coverflow-current-value',
+      'data-store-coverflow-remaining-value',
+      'data-store-coverflow-summary',
+      'data-store-coverflow-disclosure-rail',
+    ])
+      expect(controls).toContain(hook);
     expect(cardSource).toContain('data-store-coverflow-availability');
-    expect(pageSource).toContain('coverflowEnrolled={group.coverflowEnrolled}');
-    expect(pageSource).toContain('coverflowPreview={group.coverflowStartsInPreview}');
-    expect(cardSource).toContain("data-store-coverflow-card={coverflowEnrolled ? '' : undefined}");
-    expect(pageSource.indexOf('data-store-coverflow-toggle')).toBeLessThan(
-      pageSource.indexOf("class={group.coverflowEnrolled ? 'store-coverflow-shell' : undefined}"),
-    );
-  });
-
-  it('fails open for the current route and rechecks capability on later route activation', () => {
-    expect(appShellSource).toContain("storeRoute?.kind !== 'store'");
-    expect(appShellSource).toContain("storeRoute.pathname === '/store/distro/'");
-    expect(appShellSource).toContain("import('@/components/store/StoreCoverflowController')");
-    expect(appShellSource).toContain('ensureStoreCoverflowCapability()');
-    expect(appShellSource).toContain("removeAttribute('data-store-coverflow-capable')");
-    expect(shellOutletsSource).toContain(
-      "onError={() => document.documentElement.removeAttribute('data-store-coverflow-capable')}",
-    );
-    expect(searchSource).toContain('ensureStoreCoverflowCapability()');
-  });
-
-  it('retains one disclosure activation until the shared controller is ready', () => {
-    expect(layoutSource).toContain("closest('[data-store-coverflow-toggle]')");
-    expect(layoutSource).toContain("hasAttribute('data-store-coverflow-ready')");
-    expect(layoutSource).toContain("hasAttribute('data-store-coverflow-pending-disclosure')");
-    expect(layoutSource).toContain("setAttribute('data-store-coverflow-pending-disclosure', '')");
-    expect(controllerSource).toContain("removeAttribute('data-store-coverflow-pending-disclosure')");
-  });
-
-  it('keeps Distro disclosure acceptance in the existing runtime harness', () => {
-    expect(runtimePerformanceSource).toContain("'desktop-distro-disclosure'");
-    expect(runtimePerformanceSource).toContain("'mobile-distro-disclosure'");
-    expect(runtimePerformanceSource).toContain("page.route('**/*StoreDistroSearch*'");
-    expect(runtimePerformanceSource).toContain("getAttribute('data-store-coverflow-pending-disclosure')");
-    expect(runtimePerformanceSource).toContain("getAttribute('aria-expanded')");
-    expect(runtimePerformanceSource).toContain('stateAtNextFrame');
-    expect(runtimePerformanceSource).toContain('getAnimations()');
-  });
-
-  it('uses one Distro orientation panel and exposes search results only for an active query', () => {
-    expect(pageSource).toContain('data-store-orientation="distro"');
-    expect(pageSource).toContain('<p class="store-orientation-panel__eyebrow">Store shelf</p>');
-    expect(pageSource).toContain('<p class="store-orientation-panel__count-value">{itemCountLabel}</p>');
-    expect(pageSource.match(/{itemCountLabel}/g)).toHaveLength(1);
-    expect(pageSource).toContain('class="store-orientation-panel__distro-tools"');
-    expect(pageSource).toContain('class="distro-page-search" data-distro-search');
-    expect(searchSource).toContain('aria-describedby={hasActiveSearch ? `${scope}-search-result-count` : undefined}');
-    expect(searchSource).toContain('{hasActiveSearch ? (');
-    expect(searchSource).toContain('Clear search');
-    expect(searchSource).not.toContain('{totalCount} total');
-  });
-
-  it('keeps artwork links ordinary and statically named in every page mode', () => {
-    expect(cardSource).toContain('aria-label={`${sourceTitle} — ${sourceSubtitle}`}');
     expect(cardSource).toContain('href={storeItem.storePath}');
-    expect(cardSource).toContain('data-store-item-slug={storeItem.slug}');
-    expect(cardSource).not.toContain('preventDefault');
   });
-
+  it('owns one route-lazy controller in the browse component without pre-ready intent capture', () => {
+    expect(appShellSource).not.toContain("import('@/components/store/StoreCoverflowController')");
+    expect(searchSource).toContain('ensureStoreCoverflowCapability()');
+    expect(shellOutletsSource).toContain('StoreDistroSearch');
+    for (const source of [layoutSource, controllerSource, appShellSource])
+      expect(source).not.toContain('data-store-coverflow-pending-disclosure');
+  });
+  it('retains filter controls and one accessible result count', () => {
+    expect(pageSource).toContain('data-distro-search');
+    expect(searchSource).toContain('role="status"');
+    expect(searchSource).toContain('Clear filters');
+    expect(searchSource).toContain('Clear search');
+    expect(searchSource).not.toContain('dom.navigation.hidden =');
+  });
   it('uses one responsive six-position stage across every card with a flat reduced-motion fallback', () => {
-    expect(pageSource).toContain("group.coverflowEnrolled && 'distro-group-section--coverflow'");
     expect(controllerSource).toContain('totalCount < 2');
     expect(controllerSource).toContain('getStoreCoverflowPosition(cardIndex, activeIndex, group.cards.length)');
     expect(pageSource).not.toContain('aria-roledescription');
     expect(controllerSource).toContain("group.element.setAttribute('aria-roledescription', 'carousel')");
     expect(controllerSource).toContain("group.element.removeAttribute('aria-roledescription')");
-    expect(cssSource).toContain('.distro-page-search .distro-search-panel');
     expect(cssSource).toContain('perspective: 52rem');
     expect(cssSource).toContain('@media (min-width: 40rem)');
     expect(cssSource).toContain('perspective: 64rem');
     expect(cssSource).toContain('--store-cover-size: clamp(13.5rem, 20vw, 16rem)');
     expect(cssSource).toContain('--store-cover-near-shift: clamp(7.5rem, 16vw, 11rem)');
-    expect(cssSource).toMatch(/\.distro-group-section--coverflow[\s\S]*?border: 1px solid var\(--border\)/);
-    expect(cssSource).toMatch(
-      /\.distro-group-section__overview--coverflow[\s\S]*?border-bottom: 1px solid var\(--border\)/,
-    );
     expect(cssSource).toContain('transform-style: preserve-3d');
     expect(
       new Set([...cssSource.matchAll(/data-store-coverflow-position='([^']+)'/g)].map((match) => match[1])),
     ).toEqual(new Set(['active', 'right-near', 'right-far', 'back', 'left-far', 'left-near']));
-    expect(cssSource).toMatch(/data-store-coverflow-ready[\s\S]*?\.distro-group-chunk[\s\S]*?display: contents/);
+    expect(pageSource).toContain('class="distro-group-grid"');
+    expect(pageSource).not.toContain('data-distro-search-chunk');
     expect(cssSource).not.toMatch(
       /data-store-coverflow-mode='preview'[^{}]*data-store-coverflow-card\]:not\(\[data-store-coverflow-position\]\)[^{}]*\{[^}]*display: none/,
     );
     expect(cssSource).toMatch(
       /\[data-store-coverflow-card\]:where\(\[data-store-coverflow-position\]\)\s*\{\s*position: absolute/,
     );
-    expect(cssSource).toMatch(/\.distro-card__content[\s\S]*?display: none/);
+    expect(cssSource).toMatch(/\.store-item-card__content[\s\S]*?display: none/);
     expect(cssSource).toContain('animation: store-catalog-reveal 180ms');
     expect(cssSource).toContain('animation: store-coverflow-preview-rail-in 360ms');
     expect(cssSource).not.toContain('animation: store-coverflow-disclosure-fill');
@@ -176,12 +104,11 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(cssSource).toContain('[data-store-coverflow-availability]');
     expect(cssSource).toContain('[data-store-coverflow-position]:is(:hover, :focus-visible)');
     expect(cssSource).toContain('.store-item-card__image');
-    expect(cssSource).not.toMatch(/\.distro-group-chunk[^{}]*\{[^}]*content-visibility/);
+    expect(cssSource).not.toMatch(/\.distro-group-grid[^{}]*\{[^}]*content-visibility/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?transform-style: flat/);
     const reducedMotionCss = cssSource.slice(cssSource.indexOf('@media (prefers-reduced-motion: reduce)'));
     expect(reducedMotionCss).not.toMatch(/\.store-coverflow-controls[^{}]*\{[^}]*display:\s*none/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?position: static/);
-    expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?\.distro-group-chunk[\s\S]*?display: contents/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?\.store-item-card__content[\s\S]*?display: grid/);
     expect(cssSource).toMatch(
       /prefers-reduced-motion: reduce[\s\S]*?store-coverflow-rail__fill[\s\S]*?animation: none/,

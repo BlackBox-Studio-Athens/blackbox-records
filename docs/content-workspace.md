@@ -171,3 +171,9 @@ At 1280px and above, comparisons sit beside the private interactive preview from
 Preparing, Checking website and Confirming publication reflect backend stages. Only confirmed public content says On the website. Check status recovers uncertain outcomes; terminal preparation failures return to review. A failed visual preview can be retried or explicitly bypassed, while mandatory server checks remain. Read-only history supports older pages and entry filtering, with unavailable legacy details labeled honestly.
 
 Price, stock, shop activation and launch approvals keep their existing ownership. There is no scheduling, undo, restoration or approval-role workflow. Hosted rollout requires the existing Cloudflare Free-tier preflight and separately authorized bounded UAT acceptance.
+
+## Optional tracklists
+
+Release and Distro editors offer a structured Tracklist field. Choose the physical edition: vinyl/cassette uses ordered sides with A–Z side letters; CD uses ordered discs. Add tracks with a title and optional minutes:seconds duration, then use the move buttons to order tracks and groups. Track positions are generated (A1/B1 or disc/track numbers). Changing format keeps all tracks in the first side or disc for review. Remove tracklist clears the optional value.
+
+Incomplete tracks can be saved privately; publication requires valid titles, durations and unique side letters. Empty or absent tracklists render no public section. The Store Item displays a tracklist only when its physical format matches. Tracklists are embedded editorial JSON, outside stock, price and checkout authority. Existing content and snapshots remain valid without them. Explicit Local catalogue-schema setup adds the native JSON fields and is safe to repeat; hosted setup follows the existing separately authorized workflow.

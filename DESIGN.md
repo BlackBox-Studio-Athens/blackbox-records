@@ -274,3 +274,9 @@ Editorial publication includes selling-linked entries but does not activate the 
 Count stock and Finish counting replace visible Stocktake wording; internal storage identities remain compatible. Quantities read Available to buy online, with copies for music and units for merchandise. The online quantity is how many customers may buy through the website.
 
 Review discovery uses bounded native EmDash cursor reads and existing accepted-snapshot comparisons, never private CMS table queries. The client follows sparse continuations until its page fills or reaches the end, cancelling stale searches. It does not load the entire library into browser memory or poll a global draft count. Hosted rollout still requires a Free-tier cost preflight.
+
+### Store browsing and item information
+
+Store collections use a 90rem container with 32px desktop and 16px mobile gutters. At 1024px the 13rem Artists pane sits beside the results; below it, one native Browse disclosure contains Artists and Distro formats. Keep Top outside the disclosure. Cards form a continuous Grid by default: four columns from 1280px, three from 640px, two from 360px, and one below. Optional Coverflow requires explicit selection.
+
+Use complete square artwork, Veneer titles, and Inter for artist credits, formats, prices and controls. Cards contain the purchase facts without repeated descriptions or category labels. On item pages, cap artwork at 26rem and place it beside purchase information on desktop; mobile reads identity, artwork, purchase information. Info and populated format-matching Tracklists share the next row. Preserve More views and existing listening actions.

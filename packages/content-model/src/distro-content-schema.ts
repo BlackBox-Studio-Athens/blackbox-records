@@ -1,3 +1,4 @@
+import { tracklistSchema } from './tracklist';
 import { z } from 'zod';
 
 import { DISTRO_GROUP_VALUES } from './validation';
@@ -21,6 +22,7 @@ export function createDistroContentSchema<TImageSchema extends z.ZodType>(image:
         }),
       )
       .optional(),
+    tracklist: tracklistSchema.nullish(),
     summary: requiredText,
     summary_rich: richTextSchema.nullish(),
     eyebrow: z.string().optional(),

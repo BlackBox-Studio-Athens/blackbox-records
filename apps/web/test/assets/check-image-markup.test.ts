@@ -4,16 +4,16 @@ import { checkImageMarkup, getArtistRosterImageTag, getSrcsetCandidateUrl } from
 
 describe('check-image-markup', () => {
   it('flags missing responsive candidates on card images', () => {
-    const html = '<img class="distro-card__image" src="/full.webp" loading="eager" sizes="100vw">';
+    const html = '<img class="store-item-card__image" src="/full.webp" loading="eager" sizes="100vw">';
 
     expect(
       checkImageMarkup(new Map([['store/distro/index.html', html]]), [
         {
           route: 'store/distro/index.html',
-          images: [{ className: 'distro-card__image', firstEagerCount: 1, requireSrcset: true }],
+          images: [{ className: 'store-item-card__image', firstEagerCount: 1, requireSrcset: true }],
         },
       ]),
-    ).toEqual([{ route: 'store/distro/index.html', message: 'distro-card__image #1 lacks srcset/sizes.' }]);
+    ).toEqual([{ route: 'store/distro/index.html', message: 'store-item-card__image #1 lacks srcset/sizes.' }]);
   });
 
   it('flags first-viewport media that is still lazy', () => {
@@ -105,6 +105,29 @@ describe('check-image-markup', () => {
         route: 'store/index.html',
         message: 'store-item-card__image #2 should not have high fetch priority.',
       },
+    ]);
+  });
+
+  it('allows four eager Grid covers while keeping high priority on only the first', () => {
+    const html = Array.from(
+      { length: 5 },
+      (_, index) =>
+        '<img class="cover" loading="' +
+        (index < 4 ? 'eager' : 'lazy') +
+        '" fetchpriority="' +
+        (index === 0 ? 'high' : 'auto') +
+        '">',
+    ).join('');
+    const checks = [
+      {
+        route: 'store',
+        maxHighPriorityImages: 1,
+        images: [{ className: 'cover', firstPriorityCount: 1, firstEagerCount: 4 }],
+      },
+    ];
+    expect(checkImageMarkup(new Map([['store', html]]), checks)).toEqual([]);
+    expect(checkImageMarkup(new Map([['store', html.replace('loading="lazy"', 'loading="eager"')]]), checks)).toEqual([
+      { route: 'store', message: 'cover #5 should stay lazy.' },
     ]);
   });
 

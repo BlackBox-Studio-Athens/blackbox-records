@@ -46,8 +46,9 @@ const routeChecks: RouteCheck[] = [
     maxHighPriorityImages: 1,
     images: [
       {
-        className: 'distro-card__image',
+        className: 'store-item-card__image',
         firstPriorityCount: 1,
+        firstEagerCount: 4,
         minCount: 4,
         minSrcsetCandidates: 2,
         requireDecoding: true,
@@ -62,6 +63,7 @@ const routeChecks: RouteCheck[] = [
       {
         className: 'store-item-card__image',
         firstPriorityCount: 1,
+        firstEagerCount: 4,
         minCount: 4,
         minSrcsetCandidates: 2,
         requireDecoding: true,
@@ -313,7 +315,12 @@ export function checkImageMarkup(routeHtmlByPath: Map<string, string>, checks: R
           });
         }
 
-        if (image.firstPriorityCount && index >= image.firstPriorityCount && !tag.includes('loading="lazy"')) {
+        if (
+          image.firstPriorityCount &&
+          !image.firstEagerCount &&
+          index >= image.firstPriorityCount &&
+          !tag.includes('loading="lazy"')
+        ) {
           diagnostics.push({ route: check.route, message: `${image.className} #${index + 1} should stay lazy.` });
         }
 

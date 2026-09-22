@@ -1,3 +1,4 @@
+import { tracklistSchema } from './tracklist';
 import { z } from 'zod';
 import { proseSchema, requiredProseSchema, richTextSchema } from './prose';
 import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from './music';
@@ -76,6 +77,7 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
     tidal_url: tidalUrl.optional(),
     summary: z.string().optional(),
     summary_rich: richTextSchema.nullish(),
+    tracklist: tracklistSchema.nullish(),
     formats: z.array(requiredText).optional(),
     credits: z
       .array(

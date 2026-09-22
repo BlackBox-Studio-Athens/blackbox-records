@@ -1,4 +1,4 @@
-// Run against pnpm dev:stack:stripe-mock. Mutates and restores two Local artist drafts.
+// Run against pnpm dev:stack:stripe-mock. Mutates and restores Local artist, Release and Distro drafts.
 import assert from 'node:assert/strict';
 import { formattedProse } from './fixtures/prose.ts';
 import { editorialWriteData } from '../apps/staff/src/lib/backend/editorial-api.ts';
@@ -35,7 +35,16 @@ async function api(path, body, method = 'POST') {
 async function save(item, data, collection = 'artists') {
   const path = `content/${collection}/${item.id}`;
   const current = (await api(path)).data;
-  return (await api(path, { _rev: current._rev, data: editorialWriteData({ bio_rich: null, ...data }) }, 'PUT')).data;
+  return (
+    await api(
+      path,
+      {
+        _rev: current._rev,
+        data: editorialWriteData({ ...(collection === 'artists' ? { bio_rich: null } : {}), ...data }),
+      },
+      'PUT',
+    )
+  ).data;
 }
 async function publish(item, saved, extra = [], inspectPreview = async () => {}) {
   const started = performance.now();
@@ -223,6 +232,46 @@ assert.ok(items.length >= 2);
 const [selected, other] = await Promise.all(
   items.slice(0, 2).map(async (item) => (await api(`content/artists/${item.id}`)).data.item),
 );
+const tracklistExamples = [];
+for (const [collection, slug, storeSlug, tracklist] of [
+  [
+    'releases',
+    'disintegration',
+    'disintegration-black-vinyl-lp',
+    {
+      format: 'vinyl',
+      sides: [
+        { label: 'A', tracks: [{ title: 'Local opening track', duration: '3:42' }] },
+        { label: 'B', tracks: [{ title: 'Local closing track' }] },
+      ],
+    },
+  ],
+  [
+    'distro',
+    'stefan-clor-baltica-cd',
+    'stefan-clor-baltica-cd',
+    { format: 'cd', discs: [{ tracks: [{ title: 'Local cello improvisation', duration: '4:05' }] }] },
+  ],
+]) {
+  const item = (await api('content/' + collection + '?limit=100')).data.items.find((item) => item.slug === slug);
+  assert.ok(item, collection + '/' + slug);
+  const original = (await api('content/' + collection + '/' + item.id)).data.item;
+  tracklistExamples.push({ collection, item: original, storeSlug, tracklist });
+}
+// Explicit schema setup on populated Local data must be repeatable and preserve records.
+for (let repeat = 0; repeat < 2; repeat++) {
+  const response = await fetch(staff + '/_emdash/api/blackbox/catalog-schema', {
+    method: 'POST',
+    headers: { Origin: staff, 'X-EmDash-Request': '1' },
+  });
+  assert.equal(response.status, 200, await response.text());
+}
+for (const example of tracklistExamples) {
+  assert.deepEqual(
+    (await api('content/' + example.collection + '/' + example.item.id)).data.item.data,
+    example.item.data,
+  );
+}
 const marker = `Private draft ${randomUUID()}`;
 try {
   await save(other, { ...other.data, genre: marker });
@@ -231,7 +280,34 @@ try {
     bio_rich: formattedProse,
     genre: `Publication check ${randomUUID()}`,
   });
-  const elapsedMs = await publish(selected, saved);
+  const tracklistRecords = [];
+  for (const example of tracklistExamples) {
+    const before = await fetch(site + '/store/' + example.storeSlug + '/').then((response) => response.text());
+    const edited = await save(example.item, { ...example.item.data, tracklist: example.tracklist }, example.collection);
+    tracklistRecords.push({ collection: example.collection, recordId: example.item.id, expectedRevision: edited._rev });
+    const privateHtml = await fetch(site + '/store/' + example.storeSlug + '/').then((response) => response.text());
+    assert.equal(privateHtml.includes('Local opening track'), before.includes('Local opening track'));
+    assert.equal(privateHtml.includes('Local cello improvisation'), before.includes('Local cello improvisation'));
+  }
+  const elapsedMs = await publish(selected, saved, tracklistRecords, async (document) => {
+    for (const example of tracklistExamples) {
+      const response = await fetch(
+        new URL('/blackbox-records/store/' + example.storeSlug + '/?__preview=' + document.context, document.url),
+      );
+      assert.equal(response.status, 200);
+      const html = await response.text();
+      assert.ok(html.includes('Tracklist'));
+      assert.ok(html.includes(example.tracklist.format === 'cd' ? 'Local cello improvisation' : 'Local opening track'));
+      if (example.tracklist.format === 'vinyl') {
+        assert.ok(html.includes('Side B'));
+        assert.ok(html.includes('B1'));
+      }
+    }
+  });
+  for (const example of tracklistExamples) {
+    const html = await fetch(site + '/store/' + example.storeSlug + '/').then((response) => response.text());
+    assert.ok(html.includes(example.tracklist.format === 'cd' ? 'Local cello improvisation' : 'Local opening track'));
+  }
   const unrelated = await fetch(`${site}/artists/${other.slug}/`).then((response) => response.text());
   assert.ok(!unrelated.includes(marker), 'Unrelated draft leaked to the public site.');
   const second = (await api(`content/artists/${other.id}`)).data;
@@ -254,7 +330,17 @@ try {
 } finally {
   const restoredOther = await save(other, other.data);
   const restored = await save(selected, selected.data);
+  const restoredTracks = [];
+  for (const example of tracklistExamples) {
+    const restored = await save(
+      example.item,
+      { ...example.item.data, tracklist: example.item.data.tracklist ?? null },
+      example.collection,
+    );
+    restoredTracks.push({ collection: example.collection, recordId: example.item.id, expectedRevision: restored._rev });
+  }
   await publish(selected, restored, [
     { collection: 'artists', recordId: other.id, expectedRevision: restoredOther._rev },
+    ...restoredTracks,
   ]);
 }

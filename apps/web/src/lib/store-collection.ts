@@ -11,7 +11,6 @@ type StoreDistroFacets = {
   format: string | null;
   group: DistroGroupName;
   order: number;
-  searchText: string;
 };
 
 export type StoreCollectionEntry = {
@@ -112,9 +111,6 @@ export async function listStoreCollectionEntries(
             format: distroEntry.data.format || null,
             group: distroEntry.data.group,
             order: distroEntry.data.order,
-            searchText: [storeItem.title, storeItem.subtitle, distroEntry.data.group, distroEntry.data.format]
-              .filter(Boolean)
-              .join(' '),
           }
         : null;
 

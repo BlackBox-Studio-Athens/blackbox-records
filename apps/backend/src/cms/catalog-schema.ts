@@ -14,6 +14,12 @@ export async function prepareCatalogSchema(runtime: EmDashRuntime) {
       else if (existing.type !== 'portableText') throw new Error(`Unexpected field type: ${collection}.${slug}`);
     }
   }
+  for (const collection of ['releases', 'distro']) {
+    const existing = await registry.getField(collection, 'tracklist');
+    if (!existing)
+      await registry.createField(collection, { slug: 'tracklist', label: 'Tracklist', type: 'json', required: false });
+    else if (existing.type !== 'json') throw new Error(`Unexpected field type: ${collection}.tracklist`);
+  }
   const group = await registry.getField('distro', 'group');
   if (group && !group.indexed) await registry.updateField('distro', 'group', { indexed: true });
   for (const slug of ['artists', 'releases', 'distro', 'news']) {

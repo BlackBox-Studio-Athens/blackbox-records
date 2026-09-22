@@ -1,0 +1,17 @@
+---
+interface Props {
+  distro?: boolean;
+}
+const { distro = false } = Astro.props;
+---
+
+<aside class="store-browse-pane">
+  <details class="store-browse-disclosure" data-store-browse-disclosure>
+    <summary>Browse <span data-store-browse-current>All artists{distro ? ' · All formats' : ''}</span></summary>
+    <div class="store-browse-content">
+      <slot />
+      <div data-store-artists></div>
+    </div>
+  </details>
+  <a class="store-browse-top" href="#store-page-top" data-scroll-to-target="store-page-top">Top ↑</a>
+</aside>

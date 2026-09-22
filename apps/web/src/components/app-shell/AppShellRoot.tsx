@@ -260,61 +260,6 @@ export default function AppShellRoot({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const groups = [...document.querySelectorAll('[data-store-coverflow-group]')];
-    if (groups.length === 0) return;
-    if (typeof CSS !== 'undefined' && CSS.supports('transform-style', 'preserve-3d')) {
-      document.documentElement.setAttribute('data-store-coverflow-capable', '');
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      if (groups.some((group) => !group.hasAttribute('data-store-coverflow-ready'))) {
-        groups.forEach((group) => group.removeAttribute('data-store-coverflow-pending-disclosure'));
-        document.documentElement.removeAttribute('data-store-coverflow-capable');
-      }
-    }, 15000);
-
-    return () => window.clearTimeout(timeoutId);
-  }, [activeShellPathname]);
-
-  useEffect(() => {
-    const storeRoute = parseShellSectionRoute(activeShellPathname);
-    if (
-      storeRoute?.kind !== 'store' ||
-      storeRoute.pathname === '/store/distro/' ||
-      storeRoute.pathname === '/store/' ||
-      typeof window === 'undefined'
-    )
-      return;
-
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
-    void import('@/components/store/StoreCoverflowController')
-      .then(({ createStoreCoverflowController, ensureStoreCoverflowCapability, readStoreCoverflowDom }) => {
-        if (cancelled) return;
-        ensureStoreCoverflowCapability();
-        const dom = readStoreCoverflowDom(document);
-        const controller = dom ? createStoreCoverflowController(dom) : null;
-        if (!controller && document.querySelector('[data-store-coverflow-group]')) {
-          document.documentElement.removeAttribute('data-store-coverflow-capable');
-          return;
-        }
-        cleanup = controller?.cleanup;
-      })
-      .catch(() => {
-        if (!cancelled) {
-          document.documentElement.removeAttribute('data-store-coverflow-capable');
-        }
-      });
-
-    return () => {
-      cancelled = true;
-      cleanup?.();
-    };
-  }, [activeShellPathname]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
     let disconnect: (() => void) | undefined;
     let cancelled = false;
     setStoreCartHeaderContainer(document.querySelector<HTMLElement>('[data-store-cart-header-root]'));
@@ -372,7 +317,7 @@ export default function AppShellRoot({
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    if (activeShellPathname !== '/store/distro/' && activeShellPathname !== '/store/') {
+    if (parseShellSectionRoute(activeShellPathname)?.kind !== 'store') {
       setDistroSearchContainer(null);
       return;
     }
@@ -381,7 +326,7 @@ export default function AppShellRoot({
       activePathname: activeShellPathname,
       queryTarget: () =>
         document.querySelector<HTMLElement>(
-          activeShellPathname === '/store/' ? '[data-store-search]' : '[data-distro-search]',
+          activeShellPathname === '/store/distro/' ? '[data-distro-search]' : '[data-store-search]',
         ),
       scheduler: window,
       setTarget: setDistroSearchContainer,
@@ -440,7 +385,7 @@ export default function AppShellRoot({
     clearStoreLoadingFeedback();
     clearStoreListingPriceActivation(storeListingPriceActivationStateRef.current);
     if (kind !== 'store') return undefined;
-    if (pathname === '/store/distro/' || pathname === '/store/') void preloadStoreDistroSearch().catch(() => undefined);
+    if (parseShellSectionRoute(pathname)?.kind === 'store') void preloadStoreDistroSearch().catch(() => undefined);
 
     const activation = prepareStoreListingPriceActivation({
       pathname,
@@ -506,8 +451,7 @@ export default function AppShellRoot({
   async function prefetchShellSectionHref(href: string) {
     const pagePrefetch = shellPageLoader.prefetchHref(href);
     const route = parseShellSectionRoute(new URL(href, window.location.href).pathname);
-    if (route?.pathname === '/store/distro/' || route?.pathname === '/store/')
-      void preloadStoreDistroSearch().catch(() => undefined);
+    if (route?.kind === 'store') void preloadStoreDistroSearch().catch(() => undefined);
     await pagePrefetch;
   }
 

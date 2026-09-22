@@ -8,7 +8,7 @@ import EditorialList from './EditorialList.astro';
 import EditorialText from './EditorialText.astro';
 
 interface Props {
-  entry: CollectionEntry<'artists'> | CollectionEntry<'news'>;
+  entry: CollectionEntry<'artists'> | CollectionEntry<'news'> | CollectionEntry<'releases'>;
 }
 const { entry } = Astro.props;
 const body = entry.data.editorial_body;

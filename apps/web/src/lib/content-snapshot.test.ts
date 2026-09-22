@@ -6,7 +6,7 @@ import sharp from 'sharp';
 import { afterEach, expect, it, vi } from 'vitest';
 import { readContentSnapshot, snapshotCollection } from './content-snapshot';
 import { contentSnapshotInput } from './content-loader';
-import { parseContentSnapshot } from '@blackbox/content-model';
+import { parseContentSnapshot, publishedCollection } from '@blackbox/content-model';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -88,6 +88,40 @@ it('loads only checksum-bound content, maps stable references and rejects altere
         editorial_body: [],
       },
     });
+    expect(snapshotCollection(loaded, 'releases')[0]!.data.tracklist).toBeUndefined();
+    const tracklist = {
+      format: 'vinyl',
+      sides: [
+        { label: 'A', tracks: [{ title: 'First song', duration: '3:20' }] },
+        { label: 'B', tracks: [{ title: 'Δεύτερο τραγούδι' }] },
+      ],
+    };
+    loaded.snapshot.records.find((record) => record.collection === 'releases')!.data.tracklist = tracklist;
+    expect(parseContentSnapshot(JSON.stringify(loaded.snapshot), 'local').records[1]!.data.tracklist).toEqual(
+      tracklist,
+    );
+    expect(snapshotCollection(loaded, 'releases')[0]!.data.tracklist).toEqual(tracklist);
+    expect(publishedCollection(loaded.snapshot, 'releases', '/media/content')[0]!.data.tracklist).toEqual(tracklist);
+    loaded.snapshot.records.push({
+      collection: 'distro',
+      id: 'distro',
+      revisionId: 'distro-revision',
+      slug: 'distro',
+      data: {
+        title: 'Distro',
+        artist_or_label: 'Band',
+        group: 'CDs',
+        summary: 'Album',
+        image,
+        image_alt: 'Cover',
+        order: 0,
+        tracklist,
+      },
+    });
+    expect(parseContentSnapshot(JSON.stringify(loaded.snapshot), 'local').records[2]!.data.tracklist).toEqual(
+      tracklist,
+    );
+    expect(snapshotCollection(loaded, 'distro')[0]!.data.tracklist).toEqual(tracklist);
     expect(snapshotCollection(loaded, 'releases')[0]!.data.artist).toBe('stable-artist');
     expect(snapshotCollection(loaded, 'releases')[0]!.data.store_item).toEqual({
       storeItemSlug: 'original-store-slug',

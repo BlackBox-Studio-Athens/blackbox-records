@@ -4,28 +4,17 @@ import { describe, expect, it } from 'vitest';
 
 const source = readFileSync(fileURLToPath(new URL('../../pages/store/[slug]/index.astro', import.meta.url)), 'utf8');
 const gallerySource = source.slice(source.indexOf('gallery.length > 0'));
-const distroCard = readFileSync(fileURLToPath(new URL('../cards/DistroCard.astro', import.meta.url)), 'utf8');
 const storeCard = readFileSync(fileURLToPath(new URL('../cards/StoreItemCard.astro', import.meta.url)), 'utf8');
 
 describe('Store Item detail gallery contract', () => {
-  it('contains CD photography without changing non-CD framing or shared projections', () => {
-    expect(source).toContain("const isDistroCd = distroSource?.data.group === 'CDs';");
-    expect(source).toContain('grid items-start');
-    expect(source).toContain("isDistroCd ? 'aspect-square h-auto object-contain' : 'aspect-[4/5] h-auto object-cover'");
-    expect(source).not.toContain('{availabilityLabel}');
+  it('contains complete artwork and preserves alternate-photo nodes in the compact frame', () => {
+    expect(source).toContain('aspect-square h-auto w-full object-contain');
     expect(source.indexOf('data-store-purchase-group')).toBeLessThan(source.indexOf('<Image'));
-    for (const card of [distroCard, storeCard]) {
-      expect(card).toContain('src={previewImage.image}');
-      expect(card).toContain('data-store-preview-image');
-      expect(card).toContain('aria-hidden="true"');
-      expect(card).toContain("style={isDistroCd ? 'object-fit: contain; transform: none;' : undefined}");
-      expect(card).toContain("? '(min-width: 1280px) 24rem, (min-width: 768px) 50vw, 100vw'");
-      expect(card).toContain(': coverflowPreview');
-      expect(card).toContain('[320, 480, 640, 800, 960]');
-    }
-    expect(storeCard).toContain("const isDistroCd = entry.distro?.group === 'CDs';");
-    expect(storeCard).toContain("style={isDistroCd ? 'aspect-ratio: 1;' : undefined}");
-    expect(storeCard).toContain('!isDistroCd && <div class="absolute inset-0 bg-gradient');
+    expect(storeCard).toContain('src={previewImage.image}');
+    expect(storeCard).toContain('data-store-preview-image');
+    expect(storeCard).toContain('aria-hidden="true"');
+    expect(storeCard).toContain('data-store-grid-sizes={sizes}');
+    expect(storeCard).not.toContain('bg-gradient');
   });
 
   it('loads Distro detail media from sourceId and fails when the source is missing', () => {

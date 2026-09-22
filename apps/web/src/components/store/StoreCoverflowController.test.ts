@@ -21,6 +21,7 @@ class FakeElement {
   dataset: Record<string, string> = {};
   focus = vi.fn();
   querySelector = vi.fn<() => FakeElement | null>(() => null);
+  querySelectorAll = vi.fn(() => []);
   hidden = false;
   releasePointerCapture = vi.fn();
   scrollIntoView = vi.fn();
@@ -113,12 +114,7 @@ class FakeElement {
   }
 }
 
-function createHarness(
-  cardCount = 8,
-  initialMode: 'catalog' | 'preview' = 'preview',
-  pendingDisclosure = false,
-  animations = true,
-) {
+function createHarness(cardCount = 8, pendingDisclosure = false, animations = true) {
   vi.stubGlobal('getComputedStyle', () => ({ color: 'white' }));
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
     callback(0);
@@ -137,14 +133,13 @@ function createHarness(
   const status = new FakeElement();
   const summary = new FakeElement();
   const toggleButton = new FakeElement();
+  toggleButton.textContent = 'Grid';
+  const previewButton = new FakeElement();
+  previewButton.addClosestSelector('[data-store-coverflow-preview]');
   const cards = Array.from({ length: cardCount }, (_, index) => {
     const card = new FakeElement();
     card.addClosestSelector('[data-store-coverflow-card]');
     card.setAttribute('aria-label', `Record ${index + 1} — Artist`);
-    if (initialMode === 'preview') {
-      const position = getStoreCoverflowPosition(index, 0, cardCount);
-      if (position) card.dataset.storeCoverflowPosition = position;
-    }
     return card;
   });
   previousButton.addClosestSelector('[data-store-coverflow-previous]');
@@ -167,7 +162,6 @@ function createHarness(
         currentValue,
         disclosureRail,
         element,
-        initialMode,
         lastActiveIndex: 0,
         nextButton,
         positionedCards: new Set(cards.filter((card) => card.dataset.storeCoverflowPosition)),
@@ -176,16 +170,29 @@ function createHarness(
         reveal,
         selectedCard: null,
         stage,
-        state: initialMode === 'preview' ? { mode: 'preview', activeIndex: 0 } : { mode: 'catalog' },
+        state: { mode: 'catalog' },
         status,
         summary,
         toggleButton,
+        previewButton,
       },
     ],
   } as unknown as StoreCoverflowDom;
   const controller = createStoreCoverflowController(dom, documentElement as unknown as HTMLElement)!;
 
-  return { cards, controller, controls, element, nextButton, previousButton, reveal, stage, status, toggleButton };
+  return {
+    cards,
+    controller,
+    controls,
+    element,
+    nextButton,
+    previousButton,
+    previewButton,
+    reveal,
+    stage,
+    status,
+    toggleButton,
+  };
 }
 
 describe('Store Coverflow helpers', () => {
@@ -277,22 +284,24 @@ describe('Store Coverflow helpers', () => {
 });
 
 describe('Store Coverflow controller', () => {
-  it('keeps an untouched preview and clears All search into the complete catalog without moving focus', () => {
-    const { cards, controller, element, toggleButton } = createHarness();
-    controller.setSearchActive(false, 'catalog');
+  it('clears search into the complete catalog without moving focus', () => {
+    const { cards, controller, element, previewButton } = createHarness();
+    element.dispatch('click', previewButton);
     expect(element.dataset.storeCoverflowMode).toBe('preview');
-    controller.setSearchActive(true, 'catalog');
+    controller.setSearchActive(true);
     expect(element.dataset.storeCoverflowMode).toBe('search-results');
     expect(cards.every((card) => !card.hasAttribute('data-store-coverflow-position'))).toBe(true);
-    controller.setSearchActive(false, 'catalog');
+    controller.setSearchActive(false);
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
-    expect(toggleButton.textContent).toBe('Show Coverflow');
     expect(cards.every((card) => card.focus.mock.calls.length === 0)).toBe(true);
     controller.cleanup();
-    expect(element.dataset.storeCoverflowMode).toBe('preview');
+    expect(element.dataset.storeCoverflowMode).toBe('catalog');
   });
   it('applies catalog state immediately but cancels deferred focus when search takes over', async () => {
-    const { cards, controller, element, toggleButton } = createHarness();
+    const { cards, controller, element, previewButton, toggleButton } = createHarness();
+    element.dispatch('click', previewButton);
+    await Promise.resolve();
+    await Promise.resolve();
     let nextFrame: FrameRequestCallback | undefined;
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       nextFrame = callback;
@@ -301,7 +310,7 @@ describe('Store Coverflow controller', () => {
 
     element.dispatch('click', toggleButton);
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
-    expect(toggleButton.getAttribute('aria-expanded')).toBe('true');
+    expect(toggleButton.getAttribute('aria-pressed')).toBe('true');
     expect(cards[0]!.focus).not.toHaveBeenCalled();
     controller.setSearchActive(true);
     nextFrame!(0);
@@ -312,44 +321,48 @@ describe('Store Coverflow controller', () => {
     controller.cleanup();
   });
 
-  it('consumes one retained pre-ready disclosure and clears pending state', async () => {
-    const { cards, controller, element, reveal, toggleButton } = createHarness(8, 'preview', true);
-
-    await Promise.resolve();
-    await Promise.resolve();
-
-    expect(element.hasAttribute('data-store-coverflow-pending-disclosure')).toBe(false);
+  it('starts in Grid, exposes explicit views, and restores Grid on cleanup', async () => {
+    const { controller, element, previewButton, toggleButton, cards, controls } = createHarness();
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
-    expect(toggleButton.getAttribute('aria-expanded')).toBe('true');
-    expect(cards[0]!.focus).toHaveBeenCalledWith({ preventScroll: true });
-    expect(reveal.getAnimations).toHaveBeenCalledOnce();
-
-    element.setAttribute('data-store-coverflow-pending-disclosure');
+    expect(controls.hidden).toBe(false);
+    expect(cards.every((card) => !card.dataset.storeCoverflowPosition)).toBe(true);
+    expect(toggleButton.getAttribute('aria-pressed')).toBe('true');
+    element.dispatch('click', previewButton);
+    expect(element.dataset.storeCoverflowMode).toBe('preview');
+    expect(previewButton.getAttribute('aria-pressed')).toBe('true');
+    await Promise.resolve();
+    await Promise.resolve();
     controller.cleanup();
-    expect(element.hasAttribute('data-store-coverflow-pending-disclosure')).toBe(false);
+    expect(element.dataset.storeCoverflowMode).toBe('catalog');
+    expect(controls.hidden).toBe(true);
   });
 
-  it('opens a retained disclosure when reduced motion yields no animations', async () => {
-    const { element, reveal, toggleButton } = createHarness(8, 'preview', true, false);
-
+  it('returns to Grid without animations under reduced motion', async () => {
+    const { element, previewButton, reveal, toggleButton } = createHarness(8, false, false);
+    element.dispatch('click', previewButton);
+    await Promise.resolve();
+    await Promise.resolve();
+    element.dispatch('click', toggleButton);
     await Promise.resolve();
     await Promise.resolve();
     await Promise.resolve();
-
+    await Promise.resolve();
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
-    expect(toggleButton.getAttribute('aria-expanded')).toBe('true');
+    expect(toggleButton.getAttribute('aria-pressed')).toBe('true');
     expect(element.hasAttribute('data-store-coverflow-transitioning')).toBe(false);
     expect(reveal.getAnimations).toHaveBeenCalledOnce();
   });
 
   it('enrolls a two-card dormant group only while focused and preserves its active index', () => {
-    const { cards, controller, controls, element, nextButton } = createHarness(2, 'catalog');
+    const { cards, controller, controls, element, nextButton, previewButton } = createHarness(2);
 
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
     expect(controls.hidden).toBe(true);
     expect(cards.filter((card) => card.dataset.storeCoverflowPosition === 'active')).toHaveLength(0);
 
     controller.setFocusedGroup(element as unknown as HTMLElement);
+    expect(element.dataset.storeCoverflowMode).toBe('catalog');
+    element.dispatch('click', previewButton);
     expect(element.dataset.storeCoverflowMode).toBe('preview');
     expect(controls.hidden).toBe(false);
     expect(cards.filter((card) => card.dataset.storeCoverflowPosition === 'active')).toHaveLength(1);
@@ -362,19 +375,22 @@ describe('Store Coverflow controller', () => {
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
     expect(controls.hidden).toBe(true);
     controller.setFocusedGroup(element as unknown as HTMLElement);
+    expect(element.dataset.storeCoverflowMode).toBe('catalog');
+    element.dispatch('click', previewButton);
     expect(cards[1]!.dataset.storeCoverflowPosition).toBe('active');
     expect(cards.filter((card) => card.dataset.storeCoverflowPosition === 'active')).toHaveLength(1);
     controller.cleanup();
   });
 
   it('navigates, selects side covers, and cleans up listeners', () => {
-    const { cards, controller, element, nextButton, stage, status, toggleButton } = createHarness();
+    const { cards, controller, element, nextButton, previewButton, stage, status, toggleButton } = createHarness();
 
+    element.dispatch('click', previewButton);
     element.dispatch('click', nextButton);
     expect(cards[1]!.dataset.storeCoverflowPosition).toBe('active');
     expect(cards.filter((card) => card.dataset.storeCoverflowPosition)).toHaveLength(6);
     expect(status.textContent).toBe('Record 2 — Artist');
-    expect(toggleButton.getAttribute('aria-expanded')).toBe('false');
+    expect(toggleButton.getAttribute('aria-pressed')).toBe('false');
 
     stage.dispatch('pointerdown', cards[2]!, { clientX: 10, clientY: 10 });
     const selection = element.dispatch('click', cards[2]!);
@@ -387,8 +403,9 @@ describe('Store Coverflow controller', () => {
   });
 
   it('handles touch and intentional wheel without consuming vertical wheel input', () => {
-    const { cards, controller, element, stage } = createHarness();
+    const { cards, controller, element, previewButton, stage } = createHarness();
 
+    element.dispatch('click', previewButton);
     stage.dispatch('pointerdown', cards[0]!, { clientX: 80, clientY: 20, pointerType: 'touch' });
     stage.dispatch('pointermove', cards[0]!, { clientX: 20, clientY: 25, pointerType: 'touch' });
     const pointerUp = stage.dispatch('pointerup', cards[0]!, { clientX: 20, clientY: 25, pointerType: 'touch' });
@@ -417,8 +434,9 @@ describe('Store Coverflow controller', () => {
   });
 
   it('handles focus-scoped arrow keys, follows card focus, retains control focus, and cleans up', () => {
-    const { cards, controller, element, nextButton } = createHarness();
+    const { cards, controller, element, nextButton, previewButton } = createHarness();
 
+    element.dispatch('click', previewButton);
     const primaryLink = new FakeElement();
     cards[1]!.querySelector.mockReturnValue(primaryLink);
     const rightArrow = element.dispatch('keydown', cards[0]!, { key: 'ArrowRight' });
@@ -457,12 +475,15 @@ describe('Store Coverflow controller', () => {
   });
 
   it('keeps disclosure and search modes exclusive', async () => {
-    const { cards, controller, element, toggleButton } = createHarness();
+    const { cards, controller, element, previewButton, toggleButton } = createHarness();
 
+    element.dispatch('click', previewButton);
+    await Promise.resolve();
+    await Promise.resolve();
     element.dispatch('click', toggleButton);
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
     expect(cards[0]!.hasAttribute('data-store-coverflow-selected')).toBe(true);
-    expect(toggleButton.getAttribute('aria-expanded')).toBe('true');
+    expect(toggleButton.getAttribute('aria-pressed')).toBe('true');
     expect(cards[0]!.focus).not.toHaveBeenCalled();
     await Promise.resolve();
     expect(cards[0]!.focus).toHaveBeenCalledWith({ preventScroll: true });
@@ -472,8 +493,8 @@ describe('Store Coverflow controller', () => {
     controller.setSearchActive(true);
     expect(element.dataset.storeCoverflowMode).toBe('search-results');
     controller.setSearchActive(false);
-    expect(element.dataset.storeCoverflowMode).toBe('preview');
-    expect(cards[0]!.dataset.storeCoverflowPosition).toBe('active');
+    expect(element.dataset.storeCoverflowMode).toBe('catalog');
+    expect(cards.every((card) => !card.dataset.storeCoverflowPosition)).toBe(true);
     controller.cleanup();
   });
 });

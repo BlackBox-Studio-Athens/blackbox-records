@@ -1,3 +1,5 @@
+import TracklistFields from './TracklistFields';
+import { tracklistFormat, type Tracklist } from '@blackbox/content-model';
 import { lazy, Suspense, useState } from 'react';
 import {
   DISTRO_GROUP_VALUES,
@@ -357,6 +359,15 @@ export default function ContentFields({
         {field('release_date', 'Release date', { type: 'date' })}
         {image('cover_image', 'cover_image_alt', 'Cover image')}
         {field('summary', 'Short description', { multiline: true, required: false })}
+        <TracklistFields
+          disabled={disabled}
+          value={(data.tracklist as Tracklist | null) ?? null}
+          formatHint={tracklistFormat(
+            (data.formats as string[] | undefined)?.find((format) => tracklistFormat(format)),
+          )}
+          onChange={(next) => set('tracklist', next)}
+          errors={errors('tracklist')}
+        />
         {field('merch_url', 'Merchandise link', { required: false })}
         {field('bandcamp_embed_url', 'Bandcamp player link', { required: false })}
         {field('tidal_url', 'Tidal link', { required: false })}
@@ -415,6 +426,13 @@ export default function ContentFields({
         })()}
         {image('image', 'image_alt', 'Item image')}
         {field('summary', 'Short description', { multiline: true })}
+        <TracklistFields
+          disabled={disabled}
+          value={(data.tracklist as Tracklist | null) ?? null}
+          formatHint={tracklistFormat(String(data.format || data.group || ''))}
+          onChange={(next) => set('tracklist', next)}
+          errors={errors('tracklist')}
+        />
         {rows('gallery', 'More images', { image: null, image_alt: '' }, (path) =>
           image(`${path}.image`, `${path}.image_alt`, 'Image'),
         )}

@@ -25,15 +25,15 @@ describe('app shell startup closure', () => {
     for (const moduleName of ['ArtistsRosterFilters', 'StoreDistroSearch', 'ServicesInquiryForm', 'StoreCartButton']) {
       expect(portalSource).toContain(`const ${moduleName} = React.lazy(`);
     }
-    expect(source).toContain("activeShellPathname === '/store/' ? '[data-store-search]' : '[data-distro-search]'");
+    expect(source).toContain(
+      "activeShellPathname === '/store/distro/' ? '[data-distro-search]' : '[data-store-search]'",
+    );
     expect(source).toContain("const preloadStoreDistroSearch = () => import('@/components/store/StoreDistroSearch')");
     expect(source.match(/preloadStoreDistroSearch\(\)/g)).toHaveLength(2);
-    expect(source).toContain("if (pathname === '/store/distro/' || pathname === '/store/')");
+    expect(source).toContain("if (parseShellSectionRoute(pathname)?.kind === 'store')");
     expect(source).toContain('parseShellSectionRoute(new URL(href, window.location.href).pathname)');
-    expect(source).toContain("route?.pathname === '/store/distro/'");
     expect(source).not.toContain("document.readyState === 'complete'");
     expect(source).not.toContain("window.addEventListener('load', connect");
-    expect(source).toContain("activeShellPathname !== '/store/distro/'");
     expect(source).toContain('targetPathname: activeShellPathname');
     expect(source).toContain("parseShellSectionRoute(activeShellPathname)?.kind !== 'store'");
     expect(source).toContain('getPreparedStoreListingPriceReader');

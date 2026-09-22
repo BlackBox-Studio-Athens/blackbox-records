@@ -84,7 +84,7 @@ export default function ShellPortalOutlets({
                 <StoreDistroSearch
                   key={activeShellPathname}
                   pageKey={activeShellPathname}
-                  scope={activeShellPathname === '/store/' ? 'all' : 'distro'}
+                  scope={activeShellPathname === '/store/distro/' ? 'distro' : 'all'}
                 />
               </React.Suspense>
             </PortalErrorBoundary>,

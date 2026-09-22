@@ -10,3 +10,5 @@ export * from './published-content';
 
 export * from './purchase-headings';
 export * from './publication-review';
+
+export * from './tracklist';

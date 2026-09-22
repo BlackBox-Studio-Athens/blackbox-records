@@ -1,4 +1,7 @@
 ---
+import { tracklistGroups } from '@blackbox/content-model';
+import EditorialContent from '@/components/detail/EditorialContent.astro';
+import { formatDayMonthYear } from '@/utils/content';
 import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import { getEntry } from '@/lib/content-reader';
@@ -34,7 +37,6 @@ interface Props {
 const entry = Astro.props.entry ?? (await getStorePageEntryBySlug(Astro.params.slug ?? ''));
 if (!entry) return new Response('Not found', { status: 404 });
 const { storeItem, primaryAvailability } = entry;
-const metadataLabel = storeItem.metadata.join(' · ');
 const cartItem = createCartLineItemSnapshotForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const cartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const sourceRelease = storeItem.sourceKind === 'release' ? await getEntry('releases', storeItem.sourceId) : null;
@@ -65,23 +67,35 @@ if (storeItem.sourceKind === 'distro' && !distroSource) {
 }
 
 const gallery = distroSource?.data.gallery ?? [];
-const isDistroCd = distroSource?.data.group === 'CDs';
+const trackGroups = tracklistGroups(
+  sourceRelease?.data.tracklist ?? distroSource?.data.tracklist,
+  primaryAvailability?.optionLabel || distroSource?.data.format || distroSource?.data.group,
+);
+const hasBody =
+  sourceRelease &&
+  (sourceRelease.data.editorial_body
+    ? sourceRelease.data.editorial_body.length > 0
+    : Boolean(sourceRelease.body?.trim()));
+const releaseDate = sourceRelease?.data.release_date ?? distroSource?.data.release_date;
+const credits = sourceRelease?.data.credits ?? [];
+const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 0;
 ---
 
 <SiteLayout
+  mainClass="store-item-page"
   pageTitle={`${storeItem.title} | Store`}
   pageDescription={storeItem.summary || `${storeItem.title} available through the BlackBox native storefront.`}
 >
-  <section class="layout-container pt-14 pb-6">
+  <section class="layout-container pt-6 pb-6">
     <a
       href={createProjectRelativeUrl('/store/')}
       data-astro-prefetch
       class="mb-5 inline-flex min-h-11 items-center text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
       >Back to Store</a
     >
-    <div class="grid items-start gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-      <div class="min-w-0 space-y-5 lg:col-start-2 lg:row-start-1" data-store-purchase-group>
-        <div class="space-y-3">
+    <div class="store-item-composition">
+      <div class="store-item-purchase" data-store-purchase-group>
+        <div class="store-item-identity">
           <h1 class="brand-display-title break-words text-foreground">{storeItem.title}</h1>
           <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">{storeItem.subtitle}</p>
           {
@@ -141,40 +155,68 @@ const isDistroCd = distroSource?.data.group === 'CDs';
         }
         <PurchaseInformation />
       </div>
-      <div class="min-w-0 overflow-hidden border border-border/60 bg-background/55 lg:col-start-1 lg:row-start-1">
+      <div class="store-item-artwork">
         <Image
           src={storeItem.image}
           alt={storeItem.imageAlt}
-          class:list={[
-            'store-item-detail__image w-full',
-            isDistroCd ? 'aspect-square h-auto object-contain' : 'aspect-[4/5] h-auto object-cover',
-          ]}
-          data-store-cd-image={isDistroCd ? '' : undefined}
+          class="store-item-detail__image aspect-square h-auto w-full object-contain"
           priority
           widths={[720, 1080, 1440, 1800]}
-          sizes="(min-width: 1024px) 40vw, 100vw"
+          sizes="(min-width: 768px) 26rem, calc(100vw - 32px)"
         />
       </div>
     </div>
-    <div class="max-w-[70ch] space-y-4 pt-8 text-sm leading-7 text-muted-foreground" data-store-item-description>
+    <div class="store-item-information">
       {
-        metadataLabel && (
-          <p>
-            <span class="font-semibold">
-              {storeItem.sourceKind === 'release' ? 'Release details' : 'Item details'}:{' '}
-            </span>
-            {metadataLabel}
-          </p>
+        hasInfo && (
+          <section aria-labelledby="store-item-info" data-store-item-description>
+            <h2 id="store-item-info">Info</h2>
+            {storeItem.summary && (
+              <Prose value={storeItem.summary} rich={storeItem.summaryRich} data-content-path="summary" />
+            )}
+            {hasBody && sourceRelease && (
+              <div class="prose">
+                <EditorialContent entry={sourceRelease} />
+              </div>
+            )}
+            {(releaseDate || credits.length > 0) && (
+              <dl class="store-item-facts">
+                {releaseDate && (
+                  <div>
+                    <dt>Release date</dt>
+                    <dd>{formatDayMonthYear(releaseDate)}</dd>
+                  </div>
+                )}
+                {credits.map((credit) => (
+                  <div>
+                    <dt>{credit.role}</dt>
+                    <dd>{credit.name}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </section>
         )
       }
       {
-        storeItem.summary && (
-          <Prose
-            class="max-w-2xl text-sm leading-relaxed text-muted-foreground"
-            value={storeItem.summary}
-            rich={storeItem.summaryRich}
-            data-content-path="summary"
-          />
+        trackGroups.length > 0 && (
+          <section aria-labelledby="store-item-tracklist" data-content-path="tracklist">
+            <h2 id="store-item-tracklist">Tracklist</h2>
+            {trackGroups.map((group) => (
+              <div class="store-track-group">
+                {group.heading && <h3>{group.heading}</h3>}
+                <ol role="list" class="store-item-tracklist">
+                  {group.tracks.map((track) => (
+                    <li>
+                      <span class="store-track-position">{track.position}</span>
+                      <span>{track.title}</span>
+                      {track.duration && <span class="store-track-duration">{track.duration}</span>}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </section>
         )
       }
     </div>

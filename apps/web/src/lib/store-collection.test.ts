@@ -154,7 +154,6 @@ describe('store collection entries', () => {
       format: 'Cassette',
       group: 'Tapes',
       order: 1,
-      searchText: 'Afterglow Tape Afterglow Tapes Cassette',
     });
   });
 
@@ -245,7 +244,7 @@ describe('store collection entries', () => {
       title = slug,
     ): StoreCollectionEntry => ({
       categoryIds: group === 'Clothes' ? ['distro', 'merch'] : ['distro'],
-      distro: { format: group, group, order, searchText: `${title} ${group}` },
+      distro: { format: group, group, order },
       previewImage: null,
       primaryAvailability: null,
       storeItem: {

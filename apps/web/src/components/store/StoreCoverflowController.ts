@@ -28,7 +28,6 @@ type StoreCoverflowGroup = {
   currentValue: HTMLElement | null;
   disclosureRail: HTMLElement;
   element: HTMLElement;
-  initialMode: 'catalog' | 'preview';
   lastActiveIndex: number;
   nextButton: HTMLButtonElement;
   positionedCards: Set<HTMLElement>;
@@ -41,6 +40,7 @@ type StoreCoverflowGroup = {
   status: HTMLElement;
   summary: HTMLElement;
   toggleButton: HTMLButtonElement;
+  previewButton: HTMLButtonElement;
 };
 
 export type StoreCoverflowDom = {
@@ -50,7 +50,7 @@ export type StoreCoverflowDom = {
 export type StoreCoverflowController = {
   cleanup: () => void;
   setFocusedGroup: (groupElement: HTMLElement | null) => void;
-  setSearchActive: (isActive: boolean, exitMode?: 'catalog' | 'preview') => void;
+  setSearchActive: (isActive: boolean) => void;
 };
 
 export function ensureStoreCoverflowCapability(
@@ -144,6 +144,7 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
       const previousButton = element.querySelector<HTMLButtonElement>('[data-store-coverflow-previous]');
       const nextButton = element.querySelector<HTMLButtonElement>('[data-store-coverflow-next]');
       const toggleButton = element.querySelector<HTMLButtonElement>('[data-store-coverflow-toggle]');
+      const previewButton = element.querySelector<HTMLButtonElement>('[data-store-coverflow-preview]');
       const disclosureRail = element.querySelector<HTMLElement>('[data-store-coverflow-disclosure-rail]');
       const remainingValue = element.querySelector<HTMLElement>('[data-store-coverflow-remaining-value]');
       const status = element.querySelector<HTMLElement>('[data-store-coverflow-status]');
@@ -152,18 +153,17 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
       const stage = element.querySelector<HTMLElement>('[data-store-coverflow-stage]');
       const cards = [...element.querySelectorAll<HTMLElement>('[data-store-coverflow-card]')];
       const totalCount = Number(element.dataset.storeCoverflowTotal);
-      const initialMode = element.dataset.storeCoverflowInitialMode || element.dataset.storeCoverflowMode;
       if (
         !controls ||
         !previousButton ||
         !nextButton ||
         !toggleButton ||
+        !previewButton ||
         !disclosureRail ||
         !status ||
         !summary ||
         !reveal ||
         !stage ||
-        (initialMode !== 'catalog' && initialMode !== 'preview') ||
         !Number.isInteger(totalCount) ||
         totalCount < 2 ||
         cards.length !== totalCount
@@ -177,7 +177,6 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
         currentValue,
         disclosureRail,
         element,
-        initialMode,
         lastActiveIndex: 0,
         nextButton,
         positionedCards: new Set(cards.filter((card) => card.hasAttribute('data-store-coverflow-position'))),
@@ -186,10 +185,11 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
         reveal,
         selectedCard: null,
         stage,
-        state: initialMode === 'preview' ? { mode: 'preview', activeIndex: 0 } : { mode: 'catalog' },
+        state: { mode: 'catalog' },
         status,
         summary,
         toggleButton,
+        previewButton,
       };
     })
     .filter((group): group is StoreCoverflowGroup => group !== null);
@@ -214,7 +214,15 @@ export function createStoreCoverflowController(
 
   const renderGroup = (group: StoreCoverflowGroup) => {
     group.element.toggleAttribute('data-store-coverflow-ready', true);
-    group.element.setAttribute('aria-roledescription', 'carousel');
+    if (group.state.mode === 'preview') group.element.setAttribute('aria-roledescription', 'carousel');
+    else group.element.removeAttribute('aria-roledescription');
+    if (group.element.dataset.storeCoverflowMode !== group.state.mode) {
+      group.element.querySelectorAll<HTMLImageElement>('img[data-store-grid-sizes]').forEach((image) => {
+        image.sizes = group.state.mode === 'preview' ? '(min-width: 40rem) 16rem, 56vw' : image.dataset.storeGridSizes!;
+      });
+    }
+    group.toggleButton.setAttribute('aria-pressed', String(group.state.mode !== 'preview'));
+    group.previewButton.setAttribute('aria-pressed', String(group.state.mode === 'preview'));
     group.element.dataset.storeCoverflowMode = group.state.mode;
 
     if (group.state.mode === 'preview') {
@@ -248,8 +256,7 @@ export function createStoreCoverflowController(
       group.status.hidden = false;
       group.previousButton.removeAttribute('aria-disabled');
       group.nextButton.removeAttribute('aria-disabled');
-      group.toggleButton.textContent = group.toggleButton.dataset.storeCoverflowViewAllLabel || '';
-      group.toggleButton.setAttribute('aria-expanded', 'false');
+
       if (!group.element.hasAttribute('data-store-coverflow-transitioning')) setAriaDisabled(group.toggleButton, false);
       const currentPosition = group.state.activeIndex + 1;
       if (group.currentValue) group.currentValue.textContent = String(currentPosition);
@@ -266,10 +273,8 @@ export function createStoreCoverflowController(
     group.previousButton.removeAttribute('aria-disabled');
     group.nextButton.removeAttribute('aria-disabled');
     group.controls.hidden =
-      group.state.mode === 'search-results' ||
-      (group.initialMode === 'catalog' && group.element !== focusedGroupElement);
-    group.toggleButton.textContent = 'Show Coverflow';
-    group.toggleButton.setAttribute('aria-expanded', 'true');
+      group.state.mode === 'search-results' || (group.cards.length <= 6 && group.element !== focusedGroupElement);
+
     if (!group.element.hasAttribute('data-store-coverflow-transitioning')) setAriaDisabled(group.toggleButton, false);
   };
 
@@ -281,15 +286,7 @@ export function createStoreCoverflowController(
   };
 
   const restoreGroupPresentations = () => {
-    dom.groups.forEach((group) => {
-      const shouldPreview = group.initialMode === 'preview' || group.element === focusedGroupElement;
-      setGroupState(
-        group,
-        shouldPreview
-          ? { mode: 'preview', activeIndex: group.lastActiveIndex }
-          : { mode: 'catalog', selectedIndex: group.lastActiveIndex },
-      );
-    });
+    dom.groups.forEach((group) => setGroupState(group, { mode: 'catalog', selectedIndex: group.lastActiveIndex }));
   };
 
   const clearTransitionState = () => {
@@ -297,6 +294,7 @@ export function createStoreCoverflowController(
       group.element.removeAttribute('data-store-coverflow-transitioning');
       group.element.removeAttribute('data-store-coverflow-reveal');
       setAriaDisabled(group.toggleButton, false);
+      setAriaDisabled(group.previewButton, false);
     });
   };
 
@@ -322,6 +320,7 @@ export function createStoreCoverflowController(
     dom.groups.forEach((coverflowGroup) => {
       coverflowGroup.element.toggleAttribute('data-store-coverflow-transitioning', true);
       setAriaDisabled(coverflowGroup.toggleButton, true);
+      setAriaDisabled(coverflowGroup.previewButton, true);
     });
     inFlight = [];
 
@@ -478,7 +477,8 @@ export function createStoreCoverflowController(
         return;
       }
       if (
-        target.closest('[data-store-coverflow-toggle]') &&
+        ((target.closest('[data-store-coverflow-toggle]') && group.state.mode === 'preview') ||
+          (target.closest('[data-store-coverflow-preview]') && group.state.mode === 'catalog')) &&
         group.toggleButton.getAttribute('aria-disabled') !== 'true'
       ) {
         void runDisclosure(group);
@@ -576,31 +576,20 @@ export function createStoreCoverflowController(
     };
   });
 
-  queueMicrotask(() => {
-    const pendingDisclosureGroup = dom.groups.find((group) =>
-      group.element.hasAttribute('data-store-coverflow-pending-disclosure'),
-    );
-    if (!pendingDisclosureGroup) return;
-    pendingDisclosureGroup.element.removeAttribute('data-store-coverflow-pending-disclosure');
-    void runDisclosure(pendingDisclosureGroup);
-  });
-
   return {
     setFocusedGroup(groupElement) {
       cancelTransition();
       focusedGroupElement = groupElement;
       if (!searchActive) restoreGroupPresentations();
     },
-    setSearchActive(isActive, exitMode = 'preview') {
+    setSearchActive(isActive) {
       if (searchActive === isActive) return;
       cancelTransition();
       searchActive = isActive;
       if (isActive) {
         dom.groups.forEach((group) => setGroupState(group, { mode: 'search-results' }));
-      } else if (exitMode === 'catalog') {
-        dom.groups.forEach((group) => setGroupState(group, { mode: 'catalog' }));
       } else {
-        restoreGroupPresentations();
+        dom.groups.forEach((group) => setGroupState(group, { mode: 'catalog' }));
       }
     },
     cleanup() {
@@ -632,9 +621,9 @@ export function createStoreCoverflowController(
           group.stage.removeEventListener('pointerup', onPointerUp);
           group.stage.removeEventListener('wheel', onWheel);
           group.lastActiveIndex = 0;
-          group.state = group.initialMode === 'preview' ? { mode: 'preview', activeIndex: 0 } : { mode: 'catalog' };
+          group.state = { mode: 'catalog' };
           renderGroup(group);
-          group.element.removeAttribute('data-store-coverflow-pending-disclosure');
+          group.controls.hidden = true;
           group.element.removeAttribute('data-store-coverflow-ready');
           group.element.removeAttribute('data-store-coverflow-visited');
           group.element.removeAttribute('aria-roledescription');
