@@ -104,3 +104,44 @@ The archived sample used source `7a5f1c342bdcd85713e75c3877428bde729f245b` and S
 Keep the archived implementation history. Prepare the new `reduce-staff-navigation-wait` change for the reproduced Stock startup, browse dependency/loading and Overview read/refresh fixes. Use additional attribution, batching or index benchmarks only if the candidate remains slow. Defer object relocation, a router migration, private-cache policy changes, and bulk derivative repair. The user retired the country-specific acceptance requirement on 2026-09-22; this does not turn diagnostic samples into proof that hosted latency is resolved. [investigation.md](investigation.md) adds causal tests and query-plan findings without changing this PRD baseline.
 
 Evidence: this report preserves the measurements; [normalized samples](../../../.codex-artifacts/staff-latency-round-two/samples.json) and [PRD release log](../../../.codex-artifacts/staff-latency-round-two/prd-release.log) are ignored local artifacts. The capture used the native browser's documented CDP capability and [Chrome performance tooling](https://developer.chrome.com/docs/devtools/performance). Cloudflare documents that [location hints affect first creation and are best effort](https://developers.cloudflare.com/durable-objects/reference/data-location/); neither a Ray suffix nor this pilot proves object placement.
+
+## Post-ticket PRD release sample
+
+Captured 2026-09-22 UTC against source `020204e284a4f655ed2ea1f19c4e73143f59db0f`, candidate `35790151397`, and promotion [35793764756](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35793764756). The PRD Worker version was `94b887c5-b0cf-4202-ac52-c34fa6b4c846` at 100%; Pages hosted verification passed.
+
+The browser was authenticated Chrome 153 on Windows, viewport 2134 × 983. At the final trace read, the connection was Switzerland (`loc=CH`), Cloudflare AMS, HTTP/3, TLS 1.3, WARP off, effective type 4g, estimated RTT 150 ms and downlink 7 Mbps. No CPU/network throttling or cache clearing was used. The trace reflects the final connection, not a per-navigation colo measurement. The previous warm baseline was primarily LHR, so this is not a controlled geographic comparison.
+
+The 16 visits below consist of one initial-resource visit and three normal-cache visits per route. “Payload end” is the relevant route response-end proxy; static Website content uses DOMContentLoaded. The page text was checked in Chrome. Response end is not an exact pixel-paint time. FCP was absent from several warm entries. The exact MutationObserver/next-frame readiness capture used for the earlier baseline was unavailable through this Chrome session, so treat these as diagnostic bounds.
+
+| Route | Visit | HTML TTFB | FCP | DOMContentLoaded | First API start | Payload end / readiness | Resource entries / zero-transfer |
+| ----- | ----- | --------: | --: | --------------: | --------------: | ----------------------: | --------------------------: |
+| Overview | Initial | 753.5 | 1280 | 1079.2 | 2770.9 | 3314.5 | 31 / 1 |
+| Website | Initial | 1436.7 | — | 2979.3 | — | 2979.3, Pages list in HTML | 40 / 2 |
+| Stock | Initial | 772.2 | 12588 | 1771.1 | 26737.6 | 27376, inventory response | 56 / 2 |
+| Distro | Initial | 1406.5 | 1656 | 1601.1 | 3039.2 | 3581, workspace response | 64 / 2 |
+| Overview | Warm 1 | 1134.5 | — | 1326.2 | 2865.5 | 3282.3, workspace response | 30 / 4 |
+| Website | Warm 1 | 72.4 | — | 193.8 | 534.4 | 193.8, Pages list in HTML | 42 / 4 |
+| Stock | Warm 1 | 82.1 | — | 193.6 | 559.1 | 878.2, inventory response | 33 / 4 |
+| Distro | Warm 1 | 80.9 | — | 208.5 | 669.1 | 917.6, workspace response | 66 / 4 |
+| Overview | Warm 2 | 817.4 | — | 1727.4 | — | Still loading at 1778.2; no API yet | 6 / 4 |
+| Website | Warm 2 | 67.8 | — | 178.4 | — | 178.4, Pages list in HTML | 41 / 4 |
+| Stock | Warm 2 | 69.0 | — | 175.5 | 1160.7 | 1598.7, inventory response | 33 / 4 |
+| Distro | Warm 2 | 68.0 | — | 199.7 | 773.2 | 1196.8, workspace response | 43 / 4 |
+| Overview | Warm 3 | 144.7 | — | 343.7 | 1787.0 | 2102.2, workspace response | 30 / 4 |
+| Website | Warm 3 | 72.3 | — | 185.2 | 500.9 | 185.2, Pages list in HTML | 42 / 4 |
+| Stock | Warm 3 | 72.4 | — | 196.4 | 704.4 | 1032.8, inventory response | 37 / 4 |
+| Distro | Warm 3 | 79.7 | — | 257.0 | 6199.6 | 6519.2, workspace response | 43 / 4 |
+
+The relevant API-end medians were 2,692 ms across the two completed Overview warm visits (one of three was still loading at 1,778 ms), 185 ms for the static Website DOM milestone, 1,033 ms for Stock inventory, and 1,197 ms for the Distro workspace response. These resource/DOM milestones do not establish exact visible-content medians. Overview clearly misses the 1,500 ms target; the data-end proxies for other routes are below it, but the Stock DOM observation was coarse and Distro had a 6,519 ms outlier. Keep visible-content acceptance open.
+
+The Overview `view=overview` response durations were 543.6, 416.8 and 315.2 ms (median 416.8 ms), versus 920.3 ms in the prior workspace-read sample, about 55% shorter once the request began. Request start remained late: 1.787–2.866 s in completed warm visits. The accepted synthetic fixture also fell from 58 to 27 SQL statements (56 to 26 `executeQuery` calls); these are not billed D1 row counts or end-to-end latency guarantees.
+
+The Stock initial-resource visit eventually loaded 25/25 thumbnails, with no failures and no original-image requests. The 25 thumbnails totaled 365,324 bytes (largest 20,045 bytes), within the existing 1 MiB contract. Stock inventory did not start until 26.738 s on that first-resource visit; the resource waterfall shows several delayed module groups before the request. Normal-cache inventory response-end values were 878, 1,599 and 1,033 ms. Distro’s 6.519 s outlier had an 80 ms HTML TTFB but did not start the workspace request until 6.200 s, so the delay was before that data response. One Distro DOM confirmation was delayed by the measurement poll; its 918 ms response-end is a proxy, not a precise first-visible timestamp. The Overview initial and warm samples above 2.5 s were also retained.
+
+Three late refresh bursts appeared while the authenticated pages remained open: Overview refreshed workspace/publications/orders, Website requested publications, and Stock refreshed inventory/artwork. Their trigger was not isolated; they are separate from the 16 navigation medians and included in the budget accounting. No deliberate focus-return test or separate three-GET control was run. The control was unnecessary for identifying the pre-request delays. All browser activity was read-only; no content, inventory, catalog or checkout action was submitted.
+
+### PRD Free-tier worksheet
+
+The last pre-sample account snapshot was read at 22:31 UTC on September 22: Workers 7,473 / 100,000 requests today (83.43k requests and 217,380 ms CPU in the current period, $0); D1 425.95k rows read, 1.74k written and 14.97 MB; Durable Objects 49.83k requests and 2.2k GB-sec in the current period; R2 1.96k Class A, 49.38k Class B and 1.46 GB, $0. Period totals are not daily usage.
+
+The fixed sample budget was at most 1,200 browser resource requests, 100 application calls and 300 GB-sec; at most 100,000 D1 rows read with no application data writes; and at most 250 R2 Class B reads with no storage growth. The 16 timing snapshots contain 637 resource entries plus the single `/cdn-cgi/trace` read. Browser timing does not provide exact D1, DO or R2 billing deltas; lazy image and incidental refresh traffic is recorded separately above. No quota warning or paid operation occurred.
