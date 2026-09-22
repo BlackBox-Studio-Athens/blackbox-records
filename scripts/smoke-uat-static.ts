@@ -458,7 +458,7 @@ async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Pr
     [`/news/${representativeNewsSlug}/`, ['Chronoboros', 'Caregivers']],
     ['/store/', ['Store']],
     ['/store/blackbox-releases/', ['BlackBox Releases']],
-    ['/store/distro/', ['Distro', 'Browse formats']],
+    ['/store/distro/', ['Distro', 'Browse Distro formats']],
     [`/store/${representativeStoreItemSlug}/`, ['Disintegration', 'Add it to the cart']],
     ['/services/', ['Services']],
     ['/about/', ['About']],
