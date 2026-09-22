@@ -113,24 +113,24 @@ The browser was authenticated Chrome 153 on Windows, viewport 2134 × 983. At th
 
 The 16 visits below consist of one initial-resource visit and three normal-cache visits per route. “Payload end” is the relevant route response-end proxy; static Website content uses DOMContentLoaded. The page text was checked in Chrome. Response end is not an exact pixel-paint time. FCP was absent from several warm entries. The exact MutationObserver/next-frame readiness capture used for the earlier baseline was unavailable through this Chrome session, so treat these as diagnostic bounds.
 
-| Route | Visit | HTML TTFB | FCP | DOMContentLoaded | First API start | Payload end / readiness | Resource entries / zero-transfer |
-| ----- | ----- | --------: | --: | --------------: | --------------: | ----------------------: | --------------------------: |
-| Overview | Initial | 753.5 | 1280 | 1079.2 | 2770.9 | 3314.5 | 31 / 1 |
-| Website | Initial | 1436.7 | — | 2979.3 | — | 2979.3, Pages list in HTML | 40 / 2 |
-| Stock | Initial | 772.2 | 12588 | 1771.1 | 26737.6 | 27376, inventory response | 56 / 2 |
-| Distro | Initial | 1406.5 | 1656 | 1601.1 | 3039.2 | 3581, workspace response | 64 / 2 |
-| Overview | Warm 1 | 1134.5 | — | 1326.2 | 2865.5 | 3282.3, workspace response | 30 / 4 |
-| Website | Warm 1 | 72.4 | — | 193.8 | 534.4 | 193.8, Pages list in HTML | 42 / 4 |
-| Stock | Warm 1 | 82.1 | — | 193.6 | 559.1 | 878.2, inventory response | 33 / 4 |
-| Distro | Warm 1 | 80.9 | — | 208.5 | 669.1 | 917.6, workspace response | 66 / 4 |
-| Overview | Warm 2 | 817.4 | — | 1727.4 | — | Still loading at 1778.2; no API yet | 6 / 4 |
-| Website | Warm 2 | 67.8 | — | 178.4 | — | 178.4, Pages list in HTML | 41 / 4 |
-| Stock | Warm 2 | 69.0 | — | 175.5 | 1160.7 | 1598.7, inventory response | 33 / 4 |
-| Distro | Warm 2 | 68.0 | — | 199.7 | 773.2 | 1196.8, workspace response | 43 / 4 |
-| Overview | Warm 3 | 144.7 | — | 343.7 | 1787.0 | 2102.2, workspace response | 30 / 4 |
-| Website | Warm 3 | 72.3 | — | 185.2 | 500.9 | 185.2, Pages list in HTML | 42 / 4 |
-| Stock | Warm 3 | 72.4 | — | 196.4 | 704.4 | 1032.8, inventory response | 37 / 4 |
-| Distro | Warm 3 | 79.7 | — | 257.0 | 6199.6 | 6519.2, workspace response | 43 / 4 |
+| Route    | Visit   | HTML TTFB |   FCP | DOMContentLoaded | First API start |             Payload end / readiness | Resource entries / zero-transfer |
+| -------- | ------- | --------: | ----: | ---------------: | --------------: | ----------------------------------: | -------------------------------: |
+| Overview | Initial |     753.5 |  1280 |           1079.2 |          2770.9 |                              3314.5 |                           31 / 1 |
+| Website  | Initial |    1436.7 |     — |           2979.3 |               — |          2979.3, Pages list in HTML |                           40 / 2 |
+| Stock    | Initial |     772.2 | 12588 |           1771.1 |         26737.6 |           27376, inventory response |                           56 / 2 |
+| Distro   | Initial |    1406.5 |  1656 |           1601.1 |          3039.2 |            3581, workspace response |                           64 / 2 |
+| Overview | Warm 1  |    1134.5 |     — |           1326.2 |          2865.5 |          3282.3, workspace response |                           30 / 4 |
+| Website  | Warm 1  |      72.4 |     — |            193.8 |           534.4 |           193.8, Pages list in HTML |                           42 / 4 |
+| Stock    | Warm 1  |      82.1 |     — |            193.6 |           559.1 |           878.2, inventory response |                           33 / 4 |
+| Distro   | Warm 1  |      80.9 |     — |            208.5 |           669.1 |           917.6, workspace response |                           66 / 4 |
+| Overview | Warm 2  |     817.4 |     — |           1727.4 |               — | Still loading at 1778.2; no API yet |                            6 / 4 |
+| Website  | Warm 2  |      67.8 |     — |            178.4 |               — |           178.4, Pages list in HTML |                           41 / 4 |
+| Stock    | Warm 2  |      69.0 |     — |            175.5 |          1160.7 |          1598.7, inventory response |                           33 / 4 |
+| Distro   | Warm 2  |      68.0 |     — |            199.7 |           773.2 |          1196.8, workspace response |                           43 / 4 |
+| Overview | Warm 3  |     144.7 |     — |            343.7 |          1787.0 |          2102.2, workspace response |                           30 / 4 |
+| Website  | Warm 3  |      72.3 |     — |            185.2 |           500.9 |           185.2, Pages list in HTML |                           42 / 4 |
+| Stock    | Warm 3  |      72.4 |     — |            196.4 |           704.4 |          1032.8, inventory response |                           37 / 4 |
+| Distro   | Warm 3  |      79.7 |     — |            257.0 |          6199.6 |          6519.2, workspace response |                           43 / 4 |
 
 The relevant API-end medians were 2,692 ms across the two completed Overview warm visits (one of three was still loading at 1,778 ms), 185 ms for the static Website DOM milestone, 1,033 ms for Stock inventory, and 1,197 ms for the Distro workspace response. These resource/DOM milestones do not establish exact visible-content medians. Overview clearly misses the 1,500 ms target; the data-end proxies for other routes are below it, but the Stock DOM observation was coarse and Distro had a 6,519 ms outlier. Keep visible-content acceptance open.
 
