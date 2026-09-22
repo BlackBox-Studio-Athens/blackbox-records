@@ -1,4 +1,5 @@
 ---
+import Prose from '@/components/Prose.astro';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import NewsletterSignupForm from '@/components/NewsletterSignupForm';
 import { getNewsletterContent } from '@/lib/site-data';
@@ -22,12 +23,17 @@ const newsletterContent = await getNewsletterContent();
         >
       </CardHeader>
       <CardContent className="pb-8">
-        <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{newsletterContent.description}</p>
+        <Prose
+          class="max-w-2xl text-sm leading-relaxed text-muted-foreground"
+          value={newsletterContent.description}
+          rich={newsletterContent.description_rich}
+          data-content-path="description"
+        />
         <NewsletterSignupForm
           client:load
           buttonLabel={newsletterContent.button_label}
           formId={formId}
-          note={newsletterContent.note}
+          note={newsletterContent.note_rich ?? newsletterContent.note}
           placeholder={newsletterContent.placeholder}
         />
       </CardContent>

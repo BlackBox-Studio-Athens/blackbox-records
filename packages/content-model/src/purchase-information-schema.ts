@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { requiredProseSchema } from './prose';
 
 const text = z.string().trim().min(1);
-const section = z.object({ summary: text, paragraphs: z.array(text).min(1) }).strict();
+const section = z.object({ summary: requiredProseSchema, paragraphs: z.array(requiredProseSchema).min(1) }).strict();
 
 export const approvedPurchaseInformationSchema = z
   .object({

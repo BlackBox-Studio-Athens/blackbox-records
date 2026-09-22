@@ -12,6 +12,16 @@ At widths of at least 1280 px, editors initially show a resizable public appeara
 
 The [backoffice design reference](backoffice-design.md) and [staff glossary](../UBIQUITOUS_LANGUAGE.md) own the shared vocabulary and update policy. Implementation acceptance is tracked in [the redesign checklist](../openspec/changes/redesign-staff-workspace/tasks.md).
 
+## Editorial text formatting
+
+Descriptions, biographies, video descriptions, page introductions and stories, quotations, service details/contact notes, newsletter copy and purchase/privacy wording use the existing EmDash Portable Text editor. Paragraphs, line breaks, inline marks, lists, quotations, alignment and safe links survive preview, publication and cards. Unsupported blocks receive validation feedback.
+
+Names, headings, labels, identifiers, URLs, contact details, image alternatives and operational notes remain plain strings. Multiline plain fields retain their line breaks.
+
+Existing top-level scalar prose has optional native `_rich` companions: artist `bio`, release/distro/news `summary`, and newsletter `description`/`note`. The seed generator and explicit native SchemaRegistry setup add these fields without changing old field types. Hosted setup remains part of the existing release process; local implementation does not prepare hosted schemas.
+
+Present rich content is authoritative, including an empty array (deliberately cleared). Missing/null rich content falls back to the old string. Nested prose accepts either strings or text blocks. Opening an editor does not save a conversion. Old strings and revisions remain untouched; there is no bulk migration or rich/plain synchronization. Shared read-time plain-text conversion serves completeness checks, metadata, search, accessible labels and commerce descriptions.
+
 ## Private appearance preview
 
 Authenticated `POST /_emdash/preview` selects unsaved editorial input or exact saved review revisions over the accepted snapshot. It returns a private document URL. The existing `PUBLIC_SITE` service renders the actual public routes, shell, components, assets and hydration; preview content never enters accepted-page caches or changes the accepted snapshot. No draft save, revision or publication is created.

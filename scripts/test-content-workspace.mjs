@@ -1,6 +1,7 @@
 // Local-only browser regression: pnpm build:staff && node scripts/test-content-workspace.mjs
 // Pass --serve for a fixture workspace at http://127.0.0.1:4399/content/.
 import assert from 'node:assert/strict';
+import { proseText, resolveProse } from '../packages/content-model/src/prose.ts';
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
@@ -448,7 +449,11 @@ const server = createServer(async (req, res) => {
       if (title === 'slow preview') await new Promise((resolve) => setTimeout(resolve, 1500));
       const context = randomUUID();
       const generation = Number(req.headers['x-preview-generation'] ?? 0);
-      previewDocuments.set(context, { title, description: String(body.data.description ?? ''), generation });
+      previewDocuments.set(context, {
+        title,
+        description: proseText(resolveProse(body.data.description ?? body.data.lead?.text, body.data.description_rich)),
+        generation,
+      });
       res.setHeader('X-Preview-Environment', 'local');
       return json({ context, url: `http://localhost:${server.address().port}/preview-document?__preview=${context}` });
     }
@@ -787,6 +792,51 @@ else {
     await assertClosedOptionalFeatures(browser);
     await assertOptionalFeatures(browser);
     await assertOverviewPanels(browser);
+    await page.goto(`${origin}/content/?collection=about&id=about-1`);
+    const opening = page.getByRole('textbox', { name: 'Opening text', exact: true });
+    await opening.waitFor();
+    await page.waitForTimeout(1800);
+    assert.equal(records.about[0]._rev, '1', 'Opening rich editors does not convert or save legacy prose');
+    assert.equal(records.about[0].data.lead.text, 'A collective in Athens.');
+    const nestedSaved = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        response
+          .request()
+          .postDataJSON()
+          ?.data?.lead?.text?.[0]?.children?.some((span) => span.marks?.includes('strong')),
+    );
+    await opening.press('ControlOrMeta+a');
+    await opening.press('Backspace');
+    await opening.pressSequentially('Formatted nested introduction');
+    await opening.press('ControlOrMeta+a');
+    await opening.press('ControlOrMeta+b');
+    assert.equal((await nestedSaved).status(), 200);
+    await page
+      .frameLocator('iframe[title="Private site appearance preview"]')
+      .getByText('Formatted nested introduction', { exact: true })
+      .waitFor();
+    assert.equal(proseText(records.about[0].data.lead.text), 'Formatted nested introduction');
+    const richFrame = page.frames().find((frame) => frame.url().includes('/preview-document'));
+    const focusConfig = await richFrame.evaluate(() => {
+      const prose = document.createElement('div');
+      prose.className = 'editorial-prose';
+      prose.style.marginTop = '1500px';
+      prose.innerHTML = '<p>First paragraph</p><ul><li>List item</li></ul>';
+      document.body.append(prose);
+      return JSON.parse(document.querySelector('meta[name="blackbox-preview"]').content);
+    });
+    await page.evaluate((config) => {
+      const frame = document.querySelector('iframe[title="Private site appearance preview"]');
+      frame.contentWindow.postMessage(
+        { ...config, type: 'focus', text: 'First paragraph\n\nList item' },
+        new URL(frame.src).origin,
+      );
+    }, focusConfig);
+    await richFrame.waitForFunction(() => {
+      const box = document.querySelector('.editorial-prose').getBoundingClientRect();
+      return box.top >= 0 && box.bottom <= innerHeight;
+    });
     await page.goto(`${origin}/content/?collection=releases`);
     await page.getByRole('button', { name: 'Hide navigation', exact: true }).waitFor();
     const topNavigation = page.locator('.staff-top-navigation');
@@ -1117,6 +1167,23 @@ else {
       false,
       'No price or stock before confirmation',
     );
+    const descriptionEditor = page.getByRole('textbox', { name: 'Short description', exact: true });
+    const richSaved = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        response
+          .request()
+          .postDataJSON()
+          ?.data?.summary_rich?.some((block) => block.children?.some((span) => span.marks?.includes('strong'))),
+    );
+    await descriptionEditor.fill('Formatted item description');
+    await descriptionEditor.press('ControlOrMeta+a');
+    await descriptionEditor.press('ControlOrMeta+b');
+    assert.equal((await richSaved).status(), 200);
+    const created = records.releases.find((item) => item.data.title === 'Unfinished release');
+    assert.equal(proseText(created.data.summary_rich), 'Formatted item description');
+    assert.ok(created.data.summary_rich[0].children.some((span) => span.marks.includes('strong')));
+    assert.ok(!created.data.summary, 'Rich edits do not synchronize a legacy summary');
     await page.screenshot({ path: resolve(artifacts, 'staff-add-release-390.png') });
     // Complete catalog filtering, pagination and browser navigation with 250 entries.
     const originalDistro = [...records.distro];

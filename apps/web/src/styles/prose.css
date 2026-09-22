@@ -1,0 +1,50 @@
+.editorial-prose {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.editorial-prose > * + *,
+.editorial-prose blockquote > * + * {
+  margin-top: 0.75em;
+}
+.editorial-prose :where(p:empty) {
+  min-height: 1em;
+}
+.editorial-prose :where(ul, ol) {
+  padding-left: 1.5em;
+}
+.editorial-prose :where(ul) {
+  list-style-type: disc;
+}
+.editorial-prose :where(ol) {
+  list-style-type: decimal;
+}
+.editorial-prose :where(blockquote) {
+  border-left: 2px solid currentColor;
+  padding-left: 1em;
+}
+.editorial-prose :where(a) {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.prose-link-card {
+  position: relative;
+}
+.prose-card-link {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+.prose-link-card :is(.editorial-prose, button) {
+  position: relative;
+  z-index: 3;
+}
+.prose-link-card .editorial-prose {
+  pointer-events: none;
+}
+.prose-link-card .editorial-prose a {
+  pointer-events: auto;
+}
+.prose-card-link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}

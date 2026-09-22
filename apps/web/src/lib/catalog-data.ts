@@ -1,4 +1,5 @@
 import type { CollectionEntry } from 'astro:content';
+import { proseText, resolveProse, type RichText } from '@blackbox/content-model';
 import { getCollection, getEntry } from '@/lib/content-reader';
 
 import { createProjectRelativeUrl } from '../config/site';
@@ -24,6 +25,7 @@ export type StoreItem = {
   title: string;
   subtitle: string;
   summary: string | null;
+  summaryRich?: RichText | null;
   image: ReleaseCatalogEntry['data']['cover_image'];
   imageAlt: string;
   eyebrow: string | null;
@@ -188,7 +190,8 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
     sourceId: releaseEntry.id,
     title: releaseEntry.data.title,
     subtitle: artistDisplayName,
-    summary: releaseEntry.data.summary || null,
+    summary: proseText(resolveProse(releaseEntry.data.summary, releaseEntry.data.summary_rich)) || null,
+    summaryRich: releaseEntry.data.summary_rich ?? null,
     image: releaseEntry.data.store_item ? releaseEntry.data.cover_image : resolveStoreItemImageForRelease(releaseEntry),
     imageAlt: normalizeStoreItemImageAlt(releaseEntry.data.cover_image_alt, releaseEntry.data.title),
     eyebrow: 'Release',
@@ -210,7 +213,8 @@ export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry):
     sourceId: distroEntry.id,
     title: distroEntry.data.title,
     subtitle: distroEntry.data.artist_or_label,
-    summary: distroEntry.data.summary || null,
+    summary: proseText(resolveProse(distroEntry.data.summary, distroEntry.data.summary_rich)) || null,
+    summaryRich: distroEntry.data.summary_rich ?? null,
     image: distroEntry.data.image,
     imageAlt: normalizeStoreItemImageAlt(distroEntry.data.image_alt, distroEntry.data.title),
     eyebrow: distroEntry.data.eyebrow || null,

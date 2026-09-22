@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { DISTRO_GROUP_VALUES } from '@blackbox/content-model';
+import { DISTRO_GROUP_VALUES, projectProseFields, richTextSchema } from '@blackbox/content-model';
 import { createStockQuantity, parseStoreItemSlug, parseStripePriceId, parseVariantId } from '../../../domain/commerce';
 import {
   CatalogOperationConflictError,
@@ -78,6 +78,25 @@ type Dependencies = {
   stock: Pick<OperatorStockRepository, 'initializeOpeningStock'>;
   now?: () => Date;
 };
+
+export async function prepareCmsSetupPresentation(source: CmsItemSource): Promise<StripeCatalogProductProjection> {
+  const content = z
+    .object({
+      title: z.string().trim().min(1).max(250),
+      summary: z.string().max(20_000).nullish(),
+      summary_rich: richTextSchema.nullish(),
+    })
+    .safeParse(projectProseFields('distro', source.data));
+  if (!content.success) throw new CatalogOperationConflictError('CMS title or summary is invalid for item setup.');
+  return {
+    name: content.data.title,
+    description: content.data.summary ?? '',
+    // Initial draft setup omits artwork. Publication approves and applies the public image.
+    imageUrls: [],
+    metadata: {},
+    taxCode: 'txcd_99999999',
+  };
+}
 
 export async function setupCatalogItem(deps: Dependencies, actorEmail: string, input: unknown) {
   const command = catalogItemSetupSchema.parse(input);

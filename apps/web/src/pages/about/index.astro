@@ -1,4 +1,5 @@
 ---
+import Prose from '@/components/Prose.astro';
 import InternalPageHero from '@/components/InternalPageHero.astro';
 import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,7 +38,11 @@ const {
         <div class="rich-text-content">
           {
             aboutLead && (
-              <p class="font-display text-3xl tracking-[0.06em] uppercase text-foreground">{aboutLead.text}</p>
+              <Prose
+                class="font-display text-3xl tracking-[0.06em] uppercase text-foreground"
+                value={aboutLead.text}
+                data-content-path="lead.text"
+              />
             )
           }
 
@@ -46,7 +51,7 @@ const {
               <>
                 <h2>{aboutStory.title.toUpperCase()}</h2>
                 {aboutStory.paragraphs.map((paragraph) => (
-                  <p>{paragraph}</p>
+                  <Prose value={paragraph} />
                 ))}
               </>
             )
@@ -55,7 +60,7 @@ const {
           {
             aboutQuote && (
               <blockquote>
-                <p>&quot;{aboutQuote.text}&quot;</p>
+                <Prose value={aboutQuote.text} data-content-path="quote.text" />
                 <cite>{aboutQuote.cite}</cite>
               </blockquote>
             )
@@ -65,7 +70,7 @@ const {
             aboutContact && (
               <section class="about-contact" aria-labelledby="about-contact-title">
                 <h2 id="about-contact-title">{aboutContact.title.toUpperCase()}</h2>
-                <p class="about-contact__intro">{aboutContact.intro}</p>
+                <Prose class="about-contact__intro" value={aboutContact.intro} data-content-path="contact.intro" />
                 <ul class="about-contact__list">
                   {aboutContact.items.map((item, itemIndex) => (
                     <li

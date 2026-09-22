@@ -14,7 +14,11 @@ const publicationFieldLabel = (key: string) =>
     group: 'Format',
     profile_links: 'Profile links',
     slug: 'URL name',
-  })[key] ?? key.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  })[key.replace(/_rich$/, '')] ??
+  key
+    .replace(/_rich$/, '')
+    .replaceAll('_', ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 function Value({
   value,
@@ -74,7 +78,10 @@ function Value({
   }
   if (object._type === 'block' && Array.isArray(object.children))
     return (
-      <div className="publication-rich-text">
+      <div
+        className="publication-rich-text whitespace-pre-wrap"
+        style={{ textAlign: object.textAlign as 'left' | 'center' | 'right' | 'justify' | undefined }}
+      >
         {typeof object.style === 'string' && object.style !== 'normal' && (
           <span className="text-xs text-muted-foreground">{String(object.style)}</span>
         )}
@@ -138,7 +145,7 @@ export default function PublicationComparison({
         : { value: activeEntry, onValueChange: onActiveEntryChange ?? (() => {}) })}
     >
       {review.entries.map((entry) => {
-        const fields = changedPublicationFields(entry);
+        const fields = [...new Set(changedPublicationFields(entry).map((field) => field.replace(/_rich$/, '')))];
         return (
           <AccordionItem
             key={`${entry.collection}/${entry.recordId}`}
@@ -180,7 +187,7 @@ export default function PublicationComparison({
                         </p>
                         {entry[side] ? (
                           <Value
-                            value={entry[side][field]}
+                            value={entry[side][`${field}_rich`] ?? entry[side][field]}
                             field={field}
                             media={review.media}
                             references={side === 'before' ? review.baselineReferenceTitles : review.referenceTitles}

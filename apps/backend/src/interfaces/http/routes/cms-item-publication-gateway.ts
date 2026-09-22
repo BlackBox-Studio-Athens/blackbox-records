@@ -5,7 +5,7 @@ import {
 } from '../../../application/commerce/catalog-sync';
 import type { CmsItemPublicationGateway } from '../../../application/commerce/catalog-sync';
 import type { RuntimeCatalogRecord } from '../../../domain/commerce/repositories/spi';
-import { prepareCmsSetupPresentation } from './cms-item-source-gateway';
+import { prepareCmsSetupPresentation } from '../../../application/commerce/catalog-sync';
 
 const sourceSchema = z.object({
   data: z.object({

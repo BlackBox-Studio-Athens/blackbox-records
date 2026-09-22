@@ -1,5 +1,6 @@
 import { isPurchaseInformationDraft, purchasePrivacyHeadings, purchaseTermsHeadings } from '@/lib/purchase-information';
 import type { ApprovedPurchaseInformation } from '@blackbox/content-model';
+import Prose from './Prose';
 
 export default function PurchaseDocument({
   kind,
@@ -53,7 +54,7 @@ export default function PurchaseDocument({
         <section id={id.replaceAll('_', '-')} key={id} className="scroll-mt-28 space-y-3">
           <h2 className="font-display text-3xl">{headings[id]}</h2>
           {section.paragraphs.map((paragraph, index) => (
-            <p key={index}>{paragraph}</p>
+            <Prose key={index} value={paragraph} />
           ))}
         </section>
       ))}

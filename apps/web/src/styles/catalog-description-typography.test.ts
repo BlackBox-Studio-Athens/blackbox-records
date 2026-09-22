@@ -61,21 +61,22 @@ describe('Catalog description typography', () => {
   });
 
   it('keeps summaries conditional and detail prose on body typography', () => {
-    expect(distroCatalog).toContain(
-      '<p class="distro-group-section__copy">{distroPageContent.group_intros[group.introKey]}</p>',
-    );
-    expect(distroCard).toContain('<p class="distro-card__summary">{sourceSummary}</p>');
+    expect(distroCatalog).toContain('value={distroPageContent.group_intros[group.introKey]}');
+    expect(distroCard).toContain('value={sourceSummary}');
+    expect(distroCard).toContain('rich={storeItem.summaryRich}');
     expect(releaseCard).toContain('class="release-card-summary-text text-sm leading-relaxed text-muted-foreground"');
 
     expect(releasesPage).toMatch(
-      /latestReleaseEntry\.data\.summary && \(\s*<p class="releases-latest-feature__summary">/s,
+      /latestReleaseEntry\.data\.summary && \(\s*<Prose\s+class="releases-latest-feature__summary"/s,
     );
     expect(releasesPage).toMatch(
-      /upcomingReleaseEntry\.data\.summary && \(\s*<p class="releases-latest-feature__upcoming-summary">/s,
+      /upcomingReleaseEntry\.data\.summary && \(\s*<Prose\s+class="releases-latest-feature__upcoming-summary"/s,
     );
 
-    const releaseDetailSummaryClass = /release\.data\.summary && \(\s*<p class="([^"]+)">/s.exec(releaseDetail)?.[1];
-    const storeItemSummaryClass = /storeItem\.summary && \(?\s*<p class="([^"]+)">/s.exec(storeItemDetail)?.[1];
+    const releaseDetailSummaryClass = /release\.data\.summary && \(\s*<Prose\s+class="([^"]+)"/s.exec(
+      releaseDetail,
+    )?.[1];
+    const storeItemSummaryClass = /storeItem\.summary && \(?\s*<Prose\s+class="([^"]+)"/s.exec(storeItemDetail)?.[1];
 
     expect(releaseDetailSummaryClass).toBe('max-w-2xl text-sm leading-relaxed text-muted-foreground');
     expect(storeItemSummaryClass).toBe('max-w-2xl text-sm leading-relaxed text-muted-foreground');

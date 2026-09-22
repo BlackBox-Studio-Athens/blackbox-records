@@ -127,7 +127,7 @@ describe('Distro Coverflow progressive enhancement', () => {
   });
 
   it('keeps artwork links ordinary and statically named in every page mode', () => {
-    expect(cardSource).toContain('aria-label={isHomeVariant ? undefined : `${sourceTitle} — ${sourceSubtitle}`}');
+    expect(cardSource).toContain('aria-label={`${sourceTitle} — ${sourceSubtitle}`}');
     expect(cardSource).toContain('href={storeItem.storePath}');
     expect(cardSource).toContain('data-store-item-slug={storeItem.slug}');
     expect(cardSource).not.toContain('preventDefault');

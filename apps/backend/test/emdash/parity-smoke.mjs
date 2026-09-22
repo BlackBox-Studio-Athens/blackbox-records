@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { formattedProse } from '../../../../scripts/fixtures/prose.ts';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { unstable_dev } from 'wrangler';
@@ -35,28 +36,50 @@ const root = new URL('./', import.meta.url);
 const worker = await unstable_dev(fileURLToPath(new URL('dist/server/entry.mjs', root)), {
   config: fileURLToPath(new URL('dist/server/wrangler.json', root)),
   ip: '127.0.0.1',
-  port: 8799,
+  port: 0,
   local: true,
   persist: false,
   logLevel: 'error',
-  experimental: { disableExperimentalWarning: true },
+  experimental: { disableExperimentalWarning: true, disableDevRegistry: true },
 });
 try {
+  const base = `http://127.0.0.1:${worker.port}`;
   const manifest = await inventory();
   const records = manifest.records.filter((record) => record.body.trim());
   assert.equal(records.length, 4, 'Reconcile newly introduced Markdown bodies explicitly.');
   for (const record of records) {
     const value = markdownToPortableText(record.body);
-    const response = await fetch('http://127.0.0.1:8799/_emdash/api/content/parity/render', {
+    const response = await fetch(base + '/_emdash/api/schema/render-parity', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-EmDash-Request': '1',
+        Origin: base,
+      },
       body: JSON.stringify(value),
     });
-    assert.equal(response.status, 200, record.source);
+    assert.equal(response.status, 200, `${record.source}: ${response.status === 200 ? '' : await response.text()}`);
     const actual = await response.text();
     const expected = (await markdown.render(record.body)).code;
     assert.deepEqual(meaning(parse(actual)), meaning(parse(expected)), record.source);
   }
+  const proseResponse = await fetch(base + '/_emdash/api/schema/render-parity?prose', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-EmDash-Request': '1',
+      Origin: base,
+    },
+    body: JSON.stringify(formattedProse),
+  });
+  assert.equal(proseResponse.status, 200);
+  const prose = await proseResponse.text();
+  assert.match(prose, /<strong>Bold description<\/strong>/);
+  assert.match(prose, /text-align:\s*right/);
+  assert.match(prose, /<br\s*\/?\s*>/);
+  assert.match(prose, /href="https:\/\/example.com\/band"/);
+  assert.match(prose, /start="3"/);
+  assert.equal((prose.match(/<ol\b/g) ?? []).length, 2);
   console.log(
     `Rendered parity passed for all ${records.length} nonempty source Markdown bodies using EmDash PortableText and Astro Markdown.`,
   );

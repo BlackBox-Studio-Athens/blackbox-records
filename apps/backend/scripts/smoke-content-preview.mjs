@@ -3,7 +3,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
 import { editorialWriteData } from '../../staff/src/lib/backend/editorial-api.ts';
-import { sourceCollectionNames } from '@blackbox/content-model';
+import { formattedProse } from '../../../scripts/fixtures/prose.ts';
+import { proseText, sourceCollectionNames } from '@blackbox/content-model';
 
 const fetch = async (input, init = {}) => {
   try {
@@ -30,6 +31,11 @@ function clean(value) {
 }
 const headers = { Origin: base, 'X-EmDash-Request': '1', 'Content-Type': 'application/json' };
 const history = await get('blackbox/publications');
+for (let attempt = 0; attempt < 2; attempt++) {
+  const response = await fetch(`${base}/_emdash/api/blackbox/catalog-schema`, { method: 'POST', headers });
+  assert.equal(response.status, 200, 'Native additive schema setup is repeatable');
+  await response.body?.cancel();
+}
 const results = [];
 const browsers = [];
 async function showPreview(page, url) {
@@ -366,6 +372,20 @@ try {
     const item = before.item;
     const data = editorialWriteData(item.data);
     if (typeof data.title === 'string') data.title += ' — unsaved preview smoke';
+    if (collection === 'artists') data.bio_rich = formattedProse;
+    if (collection === 'releases' || collection === 'distro') data.summary_rich = formattedProse;
+    if (collection === 'about') data.lead.text = formattedProse;
+    if (collection === 'purchase_information') {
+      // Preview-only fixture: exercise the approved public document without saving approval or wording.
+      data.publication = 'approved';
+      data.content = JSON.parse(
+        JSON.stringify(data.content)
+          .replaceAll(/to be confirmed/gi, 'Local test fixture')
+          .replaceAll('example.invalid', 'example.com'),
+      );
+      data.content.terms.dispatch.summary = formattedProse;
+      data.content.terms.dispatch.paragraphs[0] = formattedProse;
+    }
     const body = JSON.stringify({ collection, id: item.id, slug: item.slug, data });
     for (const view of [
       'detail',
@@ -381,6 +401,9 @@ try {
       assert.equal(rendered.status, 200, collection + '/' + view + ': ' + html.slice(0, 500));
       assert.match(rendered.headers.get('Content-Security-Policy'), /script-src 'self'/);
       assert.match(html, /<!DOCTYPE html>/i);
+      if (['artists', 'releases', 'distro', 'about', 'purchase_information'].includes(collection)) {
+        assert.match(html, /<strong>Bold description<\/strong>/, `${collection}/${view}: rich prose`);
+      }
       assert.match(html, /blackbox-preview/);
       assert.ok(!html.includes('srcdoc='));
       if (collection === 'artists') assert.ok(html.includes('unsaved preview smoke'));
@@ -493,27 +516,37 @@ try {
   if (browsers.length) await comparePublicPreviews();
   const newsletter = (await get('content/newsletter?limit=1')).items[0];
   const newsletterBefore = await get(`content/newsletter/${newsletter.id}`);
-  restoreNewsletter = { id: newsletter.id, data: clean(newsletterBefore.item.data) };
+  restoreNewsletter = {
+    id: newsletter.id,
+    data: {
+      ...clean(newsletterBefore.item.data),
+      description_rich: newsletterBefore.item.data.description_rich ?? null,
+    },
+  };
   for (const { name, page } of browsers) {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(`${base}/content/?collection=newsletter&id=${encodeURIComponent(newsletter.id)}`);
     await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
     await page.getByRole('button', { name: 'Mobile', exact: true }).click();
-    const description = page.getByLabel('Description', { exact: true });
+    const description = page.getByRole('textbox', { name: 'Description', exact: true });
     const preview = page.frameLocator('iframe[title="Private site appearance preview"]');
-    await description.fill('');
+    await description.press('ControlOrMeta+a');
+    await description.press('Backspace');
     await description.pressSequentially(`${name} unsaved newsletter description A`, { delay: 15 });
     await preview.getByText(`${name} unsaved newsletter description A`, { exact: true }).waitFor();
     const saved = page.waitForResponse(
       (response) =>
         response.request().method() === 'PUT' &&
-        response.request().postDataJSON()?.data?.description === `${name} unsaved newsletter description B`,
+        proseText(response.request().postDataJSON()?.data?.description_rich) ===
+          `${name} unsaved newsletter description B`,
     );
-    await description.fill(`${name} unsaved newsletter description B`);
+    await description.press('ControlOrMeta+a');
+    await description.press('Backspace');
+    await description.pressSequentially(`${name} unsaved newsletter description B`);
     await preview.getByText(`${name} unsaved newsletter description B`, { exact: true }).waitFor();
     assert.equal((await saved).status(), 200);
     assert.equal(
-      (await get(`content/newsletter/${newsletter.id}`)).item.data.description,
+      proseText((await get(`content/newsletter/${newsletter.id}`)).item.data.description_rich),
       `${name} unsaved newsletter description B`,
     );
     await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
@@ -521,7 +554,29 @@ try {
       await preview.getByText(`${name} unsaved newsletter description B`, { exact: true }).isVisible(),
       true,
     );
-    console.error(`Passed ${name} real newsletter successive unsaved edits`);
+    const wasBold = (await description.locator('strong').count()) > 0;
+    await description.press('ControlOrMeta+a');
+    const formattingSaved = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        response
+          .request()
+          .postDataJSON()
+          ?.data?.description_rich?.some((block) => block.children?.some((span) => span.marks?.includes('strong'))) ===
+          !wasBold,
+    );
+    await description.press('ControlOrMeta+b');
+    assert.equal((await formattingSaved).status(), 200);
+    await preview
+      .locator('strong')
+      .filter({ hasText: `${name} unsaved newsletter description B` })
+      .waitFor({ state: wasBold ? 'detached' : 'visible' });
+    assert.equal(
+      (await get(`content/newsletter/${newsletter.id}`)).item.data.description,
+      newsletterBefore.item.data.description,
+      'Rich edits leave the legacy string unchanged',
+    );
+    console.error(`Passed ${name} real newsletter edits and formatting-only autosave`);
   }
   // Editor typing autosaves privately; preview POSTs above never save or publish.
   assert.deepEqual(await get('blackbox/publications'), history, 'UI previews must not publish');

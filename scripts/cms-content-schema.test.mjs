@@ -1,5 +1,38 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { formattedProse } from './fixtures/prose.ts';
+import {
+  projectProseFields,
+  proseText,
+  proseBlocks,
+  resolveProse,
+  validateCmsDraft,
+  changedPublicationFields,
+} from '@blackbox/content-model';
+
+test('formatted prose stays authored data while native legacy fields remain read-only fallbacks', () => {
+  const legacy = { title: 'Artist', genre: 'Rock', image: { id: 'existing' }, image_alt: 'Band', bio: 'Old biography' };
+  const data = { ...legacy, bio_rich: structuredClone(formattedProse) };
+  assert.deepEqual(validateCmsContent('artists', data), []);
+  const withoutLegacy = { ...data, bio: undefined };
+  assert.deepEqual(validateCmsContent('artists', withoutLegacy), []);
+  assert.equal(projectProseFields('artists', data).bio, proseText(formattedProse));
+  assert.equal(data.bio, 'Old biography');
+  assert.deepEqual(data.bio_rich, formattedProse);
+  const formattingOnly = structuredClone(data);
+  formattingOnly.bio_rich[0].children[0].marks = ['em'];
+  assert.equal(proseText(formattingOnly.bio_rich), proseText(data.bio_rich));
+  assert.deepEqual(changedPublicationFields({ before: data, after: formattingOnly }), ['bio_rich']);
+  assert.equal(resolveProse('Old biography', null), 'Old biography');
+  assert.deepEqual(resolveProse('Old biography', []), []);
+  assert.ok(validateCmsContent('artists', { ...data, bio_rich: [] }).length);
+  assert.deepEqual(validateCmsDraft('artists', { bio_rich: [] }), []);
+  assert.equal(proseText(proseBlocks('First\nline\n\nSecond')), 'First\nline\n\nSecond');
+  const unsafe = structuredClone(formattedProse);
+  unsafe[0].markDefs[0].href = 'javascript:alert(1)';
+  assert.ok(validateCmsDraft('artists', { bio_rich: unsafe }).length);
+  assert.ok(validateCmsDraft('artists', { bio_rich: [{ _type: 'html', html: '<script>bad()</script>' }] }).length);
+});
 import { inventory, parseMarkdown } from './inventory-cms-content.mjs';
 import { markdownTreeToPortableText } from './cms-markdown.mjs';
 import {

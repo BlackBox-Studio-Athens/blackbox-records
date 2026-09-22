@@ -1,5 +1,13 @@
 import { lazy, Suspense, useState } from 'react';
-import { DISTRO_GROUP_VALUES, DISTRO_INTRO_FIELDS } from '@blackbox/content-model';
+import {
+  DISTRO_GROUP_VALUES,
+  DISTRO_INTRO_FIELDS,
+  proseBlocks,
+  resolveProse,
+  scalarProseFields,
+  type Prose,
+  type RichText,
+} from '@blackbox/content-model';
 import { ArrowUp, Plus, Trash2 } from 'lucide-react';
 import EditorialPicker from '../items/EditorialPicker';
 import { Button } from '../ui/button';
@@ -63,6 +71,7 @@ export default function ContentFields({
   const fieldClass = 'min-h-11 w-full min-w-0';
   type FieldOptions = {
     multiline?: boolean;
+    prose?: boolean;
     type?: string;
     required?: boolean;
     min?: number;
@@ -70,6 +79,38 @@ export default function ContentFields({
     step?: number;
   };
   function field(path: string, label: string, options: FieldOptions = {}) {
+    if (options.prose || (options.multiline && path !== 'content.seller.address')) {
+      const scalarFields: readonly string[] = scalarProseFields[collection as keyof typeof scalarProseFields] ?? [];
+      const storagePath = scalarFields.includes(path) ? `${path}_rich` : path;
+      const content =
+        storagePath === path
+          ? (value(path) as Prose | undefined)
+          : resolveProse(value(path) as Prose | undefined, value(storagePath) as RichText | null | undefined);
+      const id = `content-${path}`;
+      const fieldErrors = errors(path);
+      return (
+        <Field className="col-span-full min-w-0" key={path} data-invalid={fieldErrors.length > 0}>
+          <FieldLabel id={`${id}-label`}>{label}</FieldLabel>
+          <Suspense fallback={<p role="status">Loading text editor…</p>}>
+            <ContentBodyEditor
+              aria-labelledby={`${id}-label`}
+              aria-describedby={`${id}-error`}
+              aria-invalid={fieldErrors.length > 0}
+              data-content-path={path}
+              editable={!disabled}
+              value={proseBlocks(content) as never}
+              onBlur={() => touch(path)}
+              onChange={(next) => {
+                touch(path);
+                set(storagePath, next);
+              }}
+            />
+          </Suspense>
+          {options.required === false && <FieldDescription>Optional</FieldDescription>}
+          <FieldError id={`${id}-error`}>{fieldErrors.join(' ')}</FieldError>
+        </Field>
+      );
+    }
     const id = `content-${path}`;
     const errorId = `${id}-error`;
     const descriptionId = `${id}-description`;
@@ -455,8 +496,8 @@ export default function ContentFields({
               {field(`${path}.title`, 'Service title')}
               {image(`${path}.image`, `${path}.image_alt`, 'Service image')}
               {field(`${path}.summary`, 'Summary', { multiline: true })}
-              {rows(`${path}.bullets`, 'Service details', '', (item) => field(item, 'Detail'))}
-              {field(`${path}.contact_note`, 'Contact note')}
+              {rows(`${path}.bullets`, 'Service details', '', (item) => field(item, 'Detail', { prose: true }))}
+              {field(`${path}.contact_note`, 'Contact note', { prose: true })}
               {field(`${path}.partner_name`, 'Partner name', { required: false })}
               {field(`${path}.partner_url`, 'Partner website', { type: 'url', required: false })}
             </>

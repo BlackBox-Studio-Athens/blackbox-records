@@ -38,7 +38,7 @@ export default defineConfig({
             prerender: false,
           });
           injectRoute({
-            pattern: '/_emdash/api/content/parity/render',
+            pattern: '/_emdash/api/schema/render-parity',
             entrypoint: localPath('render-parity.astro'),
             prerender: false,
           });

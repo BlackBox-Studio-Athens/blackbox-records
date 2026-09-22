@@ -488,6 +488,7 @@
     "platform-shared": {
       "status": "closed",
       "roots": [
+        "apps/web/src/components/Prose.tsx",
         "apps/web/src/components/PurchaseInformation.tsx",
         "apps/web/src/components/PurchaseDocument.tsx",
         "apps/web/src/lib/purchase-information.ts",
@@ -505,6 +506,7 @@
       ],
       "providedEntrypoints": [
         "apps/web/src/config/site.ts",
+        "apps/web/src/components/Prose.tsx",
         "apps/web/src/components/PurchaseInformation.tsx",
         "apps/web/src/components/PurchaseDocument.tsx",
         "apps/web/src/lib/purchase-information.ts",

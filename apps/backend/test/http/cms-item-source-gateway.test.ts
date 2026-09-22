@@ -1,8 +1,8 @@
 import { expect, it, vi } from 'vitest';
-import {
-  createCmsItemSourceGateway,
-  prepareCmsSetupPresentation,
-} from '../../src/interfaces/http/routes/cms-item-source-gateway';
+import { prepareCmsSetupPresentation } from '../../src/application/commerce/catalog-sync';
+import { formattedProse } from '../../../../scripts/fixtures/prose';
+import { proseText } from '@blackbox/content-model';
+import { createCmsItemSourceGateway } from '../../src/interfaces/http/routes/cms-item-source-gateway';
 
 const selection = {
   mode: 'create' as const,
@@ -45,6 +45,20 @@ it('projects only CMS copy during draft setup and leaves private artwork for pub
   await expect(prepareCmsSetupPresentation({ ...source, data: { title: ' ' } })).rejects.toThrow('invalid');
   await expect(
     prepareCmsSetupPresentation({ ...source, data: { title: 'Record', summary: { text: 'Invalid' } } }),
+  ).rejects.toThrow('invalid');
+});
+
+it('derives Stripe descriptions from authoritative rich prose without changing saved content', async () => {
+  const data = { title: 'Record', summary: 'Legacy description', summary_rich: formattedProse };
+  await expect(prepareCmsSetupPresentation({ ...source, data })).resolves.toMatchObject({
+    description: proseText(formattedProse),
+  });
+  expect(data.summary).toBe('Legacy description');
+  await expect(prepareCmsSetupPresentation({ ...source, data: { ...data, summary_rich: [] } })).resolves.toMatchObject({
+    description: '',
+  });
+  await expect(
+    prepareCmsSetupPresentation({ ...source, data: { ...data, summary_rich: [{ _type: 'html' }] } }),
   ).rejects.toThrow('invalid');
 });
 

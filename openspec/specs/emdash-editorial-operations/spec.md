@@ -31,6 +31,28 @@ Label members SHALL manage content, Store Items, stock, and orders from one Blac
 
 CMS editing SHALL cover every existing public content collection and fixed page structure while preserving references, stable slugs, rich-text meaning, validation, media descriptions, and deletion restrictions.
 
+#### Scenario: Member formats editorial prose
+
+- **WHEN** a member formats descriptions, biographies, video descriptions, introductions, stories, quotations, service details/contact notes, newsletter copy or purchase/privacy wording
+- **THEN** the native EmDash editor retains supported paragraphs, breaks, inline marks, lists, quotations, alignment and safe links through autosave, preview, publication, cards and related-item displays
+- **AND** formatting-only edits are visible in publication review
+- **AND** unsupported blocks and unsafe links receive validation feedback
+- **AND** card navigation and description links remain independently keyboard accessible.
+
+#### Scenario: Legacy prose is edited or cleared
+
+- **WHEN** an existing scalar prose field has a native optional `_rich` companion
+- **THEN** present rich content is authoritative, including an empty array for deliberate clearing
+- **AND** missing or null rich content uses the legacy string
+- **AND** opening the editor does not save a conversion or synchronize two stored representations
+- **AND** nested prose accepts legacy strings or Portable Text without a bulk migration.
+
+#### Scenario: A plain-text consumer reads formatted prose
+
+- **WHEN** completeness checks, metadata, search, accessible labels or commerce integrations require text
+- **THEN** they derive plain text from the authoritative prose at read time
+- **AND** names, headings, labels, identifiers, URLs, contact details, image alternatives and operational audit notes remain strings, preserving line breaks where applicable.
+
 #### Scenario: Existing content migrates
 
 - **WHEN** Artists, Releases, Distro, News, page copy, purchase information, navigation, social links, newsletter copy, and settings are imported

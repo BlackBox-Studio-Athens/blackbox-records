@@ -1,8 +1,9 @@
 ---
+import Prose from '@/components/Prose.astro';
 import type { ImageMetadata } from 'astro';
 import { Image } from 'astro:assets';
 interface Props {
-  tagline: string;
+  tagline: import('@blackbox/content-model').Prose;
   image: ImageMetadata;
   imageAlt: string;
   scrollIndicatorText?: string;
@@ -26,7 +27,7 @@ const { tagline, image, imageAlt, scrollIndicatorText = 'Scroll' } = Astro.props
 
   <div class="homepage-hero-section__content-block page-content-width-constrained-container">
     <h1 class="sr-only">BlackBox Records</h1>
-    <p class="homepage-hero-section__tagline-text">{tagline}</p>
+    <Prose class="homepage-hero-section__tagline-text" value={tagline} data-content-path="hero.tagline" />
   </div>
 
   <div class="homepage-hero-section__scroll-indicator" aria-hidden="true">

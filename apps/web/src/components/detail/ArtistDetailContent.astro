@@ -1,4 +1,5 @@
 ---
+import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import EditorialContent from './EditorialContent.astro';
@@ -91,7 +92,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
         ) : (
           artist.data.bio && (
             <div class="artist-detail-prose artist-detail-prose--story">
-              <p>{artist.data.bio}</p>
+              <Prose value={artist.data.bio} rich={artist.data.bio_rich} data-content-path="bio" />
             </div>
           )
         )
@@ -158,7 +159,11 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
             )}
           </p>
           {latestRelease.data.summary && (
-            <p class="artist-latest-release-panel__summary">{latestRelease.data.summary}</p>
+            <Prose
+              class="artist-latest-release-panel__summary"
+              value={latestRelease.data.summary}
+              rich={latestRelease.data.summary_rich}
+            />
           )}
         </div>
         <div class="artist-detail-actions artist-detail-actions--latest">
@@ -245,7 +250,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
             />
             <div class="artist-video-card__copy">
               <h3 class="artist-video-card__title">{video.title}</h3>
-              {video.description && <p class="artist-video-card__description">{video.description}</p>}
+              {video.description && <Prose class="artist-video-card__description" value={video.description} />}
             </div>
           </article>
         ))}

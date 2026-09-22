@@ -1,4 +1,5 @@
 ---
+import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
@@ -39,12 +40,10 @@ const dataAttributes = embeddedPlayerData
   : {};
 ---
 
-<a
-  class="release-card-link group block h-full"
-  href={createReleaseDetailPath(release)}
-  data-astro-prefetch
-  {...dataAttributes}
->
+<div class="release-card-link prose-link-card group block h-full" {...dataAttributes}>
+  <a class="prose-card-link" href={createReleaseDetailPath(release)} data-astro-prefetch
+    ><span class="sr-only">{releaseCardTitle}</span></a
+  >
   <Card
     className={usesFramedArtworkLayout
       ? `rounded-none border-0 bg-transparent shadow-none ${isArtistDiscography ? 'release-card-tile--artist-discography' : 'release-card-tile--framed'}`
@@ -74,11 +73,7 @@ const dataAttributes = embeddedPlayerData
         <div class="release-card-meta-row absolute inset-x-0 bottom-0 px-2.5 py-3">
           {
             embeddedPlayerData && (
-              <MusicStreamingServiceListenTrigger
-                as="span"
-                embeddedPlayerData={embeddedPlayerData}
-                includePlayerData={false}
-              />
+              <MusicStreamingServiceListenTrigger embeddedPlayerData={embeddedPlayerData} includePlayerData={false} />
             )
           }
           <span
@@ -103,9 +98,12 @@ const dataAttributes = embeddedPlayerData
       {
         isArtistDiscography ? (
           release.data.summary ? (
-            <p class="release-card-summary-text text-sm leading-relaxed text-muted-foreground">
-              {release.data.summary}
-            </p>
+            <Prose
+              class="release-card-summary-text text-sm leading-relaxed text-muted-foreground"
+              value={release.data.summary}
+              rich={release.data.summary_rich}
+              data-content-path="summary"
+            />
           ) : null
         ) : (
           <p class="release-card-artist-text text-sm tracking-[0.03em] text-muted-foreground">{artistName}</p>
@@ -113,4 +111,4 @@ const dataAttributes = embeddedPlayerData
       }
     </CardContent>
   </Card>
-</a>
+</div>

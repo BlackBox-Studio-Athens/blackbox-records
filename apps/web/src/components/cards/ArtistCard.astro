@@ -1,4 +1,5 @@
 ---
+import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import { createProjectRelativeUrl } from '@/config/site';
@@ -25,7 +26,8 @@ const hasLatestRelease = Boolean(releaseContext?.latestReleaseTitle);
 const artistCardImageWidths = [480, 720, 960, 1200, 1440];
 ---
 
-<a class="group block h-full" href={artistUrl} data-astro-prefetch>
+<div class="prose-link-card group block h-full">
+  <a class="prose-card-link" href={artistUrl} data-astro-prefetch><span class="sr-only">{artistName}</span></a>
   {
     isFeaturedRosterVariant ? (
       <Card className="catalog-tile-card catalog-tile-card--featured-roster relative rounded-none border-[#2b2b2b] bg-[#141414] shadow-none">
@@ -72,7 +74,12 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
         </div>
         <CardContent className="artist-roster-card__body space-y-4 p-5 pt-5">
           {artist.data.bio && (
-            <p class="artist-roster-card__bio text-sm leading-relaxed text-muted-foreground">{artist.data.bio}</p>
+            <Prose
+              class="artist-roster-card__bio text-sm leading-relaxed text-muted-foreground"
+              value={artist.data.bio}
+              rich={artist.data.bio_rich}
+              data-content-path="bio"
+            />
           )}
           <div class="artist-roster-card__context border-t border-[#2b2b2b] pt-4">
             <div class="artist-release-stat artist-release-stat--roster">
@@ -116,10 +123,10 @@ const artistCardImageWidths = [480, 720, 960, 1200, 1440];
         </div>
         {artist.data.bio && (
           <CardContent className="p-5 pt-4 text-sm leading-relaxed text-muted-foreground">
-            {artist.data.bio}
+            <Prose value={artist.data.bio} rich={artist.data.bio_rich} data-content-path="bio" />
           </CardContent>
         )}
       </Card>
     )
   }
-</a>
+</div>

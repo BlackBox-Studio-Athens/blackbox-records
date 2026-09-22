@@ -14,67 +14,17 @@ import {
 } from './schemas';
 import { createDistroContentSchema } from './distro-content-schema';
 import { purchaseInformationSchema } from './purchase-information-schema';
+import { textBlockSchema, richTextSchema, proseSchema, requiredProseSchema, projectProseFields } from './prose';
 
 const mediaId = z.string().min(1).max(128);
 const image = () => z.object({ id: mediaId }).strict();
-export const cmsLinkSchema = z.string().refine((value) => {
-  try {
-    return (
-      ![...value].some((character) => character <= ' ' || character === '\\') &&
-      ['https:', 'http:', 'mailto:'].includes(new URL(value, 'https://content.invalid/').protocol)
-    );
-  } catch {
-    return false;
-  }
-}, 'Use a safe web, email, or relative link.');
 const key = z.string().min(1).max(128);
 const bodyError =
   'Unsupported full-text formatting. Undo or remove the last block or formatting change. Use paragraphs, headings, lists, quotes, links, images with descriptions, or code; HTML, tables and galleries are not supported.';
-const textBlock = z
-  .object(
-    {
-      _type: z.literal('block'),
-      _key: key,
-      style: z.enum(['normal', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote']).optional(),
-      textAlign: z.enum(['left', 'center', 'right', 'justify']).optional(),
-      children: z.array(
-        z
-          .object({ _type: z.literal('span'), _key: key, text: z.string(), marks: z.array(z.string()).optional() })
-          .strict(),
-      ),
-      markDefs: z
-        .array(
-          z
-            .object({ _type: z.literal('link'), _key: key, href: cmsLinkSchema, blank: z.boolean().optional() })
-            .strict(),
-        )
-        .optional(),
-      listItem: z.enum(['bullet', 'number']).optional(),
-      level: z.number().int().min(1).max(10).optional(),
-      listId: key.optional(),
-      listStart: z.number().int().min(1).optional(),
-    },
-    { error: bodyError },
-  )
-  .strict()
-  .superRefine((block, ctx) => {
-    const marks = new Set([
-      'em',
-      'strong',
-      'code',
-      'underline',
-      'strike-through',
-      ...(block.markDefs ?? []).map((mark) => mark._key),
-    ]);
-    for (const [index, span] of block.children.entries()) {
-      if (span.marks?.some((mark) => !marks.has(mark)))
-        ctx.addIssue({ code: 'custom', path: ['children', index, 'marks'], message: 'Unknown text mark.' });
-    }
-  });
 export const cmsBodySchema = z.array(
   z.union(
     [
-      textBlock,
+      textBlockSchema,
       z
         .object({
           _type: z.literal('image'),
@@ -150,7 +100,9 @@ export function getCmsContentIssues(collection: CmsCollection, data: Record<stri
   const known =
     collection === 'purchase_information' ? ['publication', 'content'] : Object.keys((schema as z.ZodObject).shape);
   const normalized = Object.fromEntries(
-    Object.entries(data).filter(([field, value]) => value !== null || !known.includes(field)),
+    Object.entries(projectProseFields(collection, data)).filter(
+      ([field, value]) => value !== null || !known.includes(field),
+    ),
   );
   const result = schema.safeParse(normalized);
   if (!result.success)
@@ -180,6 +132,8 @@ export function validateCmsContent(collection: CmsCollection, data: Record<strin
 // complete schemas above, including their cross-field refinements.
 function draftSchema(schema: z.ZodType): z.ZodType {
   if (schema === cmsBodySchema) return cmsBodySchema.optional().nullable();
+  if (schema === richTextSchema) return richTextSchema.optional().nullable();
+  if (schema === proseSchema || schema === requiredProseSchema) return proseSchema.optional().nullable();
   if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable || schema instanceof z.ZodDefault)
     return draftSchema(schema.unwrap() as z.ZodType);
   if (schema instanceof z.ZodObject)

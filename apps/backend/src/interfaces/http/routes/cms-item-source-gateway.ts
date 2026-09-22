@@ -1,10 +1,5 @@
 import { z } from 'zod';
-import type {
-  CmsItemSource,
-  CmsItemSourceGateway,
-  CmsItemSourceSelection,
-  StripeCatalogProductProjection,
-} from '../../../application/commerce/catalog-sync';
+import type { CmsItemSourceGateway, CmsItemSourceSelection } from '../../../application/commerce/catalog-sync';
 import { createStripeCatalogRequestShapeFingerprint } from '../../../application/commerce/catalog-sync';
 import { CatalogOperationConflictError } from '../../../domain/commerce/repositories/spi';
 
@@ -23,21 +18,6 @@ const selectionSchema = z.discriminatedUnion('mode', [
   z.object({ mode: z.literal('create'), sourceKind, slug, data: z.record(z.string(), z.json()) }).strict(),
 ]);
 const sourceSchema = z.object({ id: identifier, slug, data: z.record(z.string(), z.unknown()) });
-
-export async function prepareCmsSetupPresentation(source: CmsItemSource): Promise<StripeCatalogProductProjection> {
-  const content = z
-    .object({ title: z.string().trim().min(1).max(250), summary: z.string().max(20_000).nullish() })
-    .safeParse(source.data);
-  if (!content.success) throw new CatalogOperationConflictError('CMS title or summary is invalid for item setup.');
-  return {
-    name: content.data.title,
-    description: content.data.summary ?? '',
-    // Initial draft setup omits artwork. Publication approves and applies the public image.
-    imageUrls: [],
-    metadata: {},
-    taxCode: 'txcd_99999999',
-  };
-}
 
 // CMS reads expand media and may serialize booleans as integers. Never rewrite a source to match a retry.
 function normalize(value: unknown, expected: unknown): unknown {

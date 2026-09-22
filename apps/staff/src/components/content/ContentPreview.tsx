@@ -7,7 +7,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import type { PreviewDiagnostic } from './preview-diagnostics';
 import { editorialWriteData } from '../../lib/backend/editorial-api';
 import type { ContentData, ContentSection } from '../../lib/content-sections';
-import type { PublicationReviewInput } from '@blackbox/content-model';
+import { proseSchema, proseText, type PublicationReviewInput } from '@blackbox/content-model';
 
 export default function ContentPreview({
   collection,
@@ -79,7 +79,8 @@ export default function ContentPreview({
         (value, key) => (value && typeof value === 'object' ? (value as Record<string, unknown>)[key] : undefined),
         data,
       );
-    const text = typeof value === 'string' ? value.trim() : '';
+    const prose = proseSchema.safeParse(data[`${focusedPath}_rich`] ?? value);
+    const text = prose.success ? proseText(prose.data).trim() : '';
     frame.current?.contentWindow?.postMessage(
       {
         type: 'focus',

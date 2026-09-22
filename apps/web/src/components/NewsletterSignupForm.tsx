@@ -1,4 +1,6 @@
 import * as React from 'react';
+import Prose from './Prose';
+import type { Prose as ProseValue } from '@blackbox/content-model';
 import { PrivacyLink } from '@/components/PurchaseInformation';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +16,7 @@ type NewsletterSignupFormProps = {
   api?: PublicCheckoutApi;
   buttonLabel: string;
   formId: string;
-  note: string;
+  note: ProseValue;
   placeholder: string;
 };
 
@@ -149,7 +151,7 @@ export default function NewsletterSignupForm({
         <span>{NEWSLETTER_CONSENT_LABEL}</span>
       </label>
 
-      <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">{note}</p>
+      <Prose className="text-xs uppercase tracking-[0.08em] text-muted-foreground" value={note} />
       <div className="text-xs text-muted-foreground">
         <PrivacyLink />
       </div>

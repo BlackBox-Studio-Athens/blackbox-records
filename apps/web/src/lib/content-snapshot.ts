@@ -4,6 +4,7 @@ import { dirname, join, sep } from 'node:path';
 import sharp from 'sharp';
 import {
   contentMediaIds,
+  projectProseFields,
   parseContentSnapshot,
   sourceCollectionNames,
   type ContentSnapshot,
@@ -64,7 +65,7 @@ export function snapshotCollection(loaded: LoadedSnapshot, collection: string) {
   return loaded.snapshot.records
     .filter((record) => sourceCollectionNames[record.collection as keyof typeof sourceCollectionNames] === collection)
     .map((record) => {
-      const { body, ...editorial } = record.data;
+      const { body, ...editorial } = projectProseFields(record.collection, record.data);
       const data = field(editorial) as Record<string, unknown>;
       if (loaded.snapshot.storeItems && ['releases', 'distro'].includes(record.collection)) {
         const item = loaded.snapshot.storeItems.find(

@@ -1,9 +1,19 @@
 import { SchemaRegistry } from 'emdash';
+import { scalarProseFields } from '@blackbox/content-model';
 import type { EmDashRuntime } from 'emdash/middleware';
 
 // Explicit setup operation, never run as a side effect of browsing.
 export async function prepareCatalogSchema(runtime: EmDashRuntime) {
   const registry = new SchemaRegistry(runtime.db);
+  for (const [collection, fields] of Object.entries(scalarProseFields)) {
+    for (const field of fields) {
+      const slug = `${field}_rich`;
+      const existing = await registry.getField(collection, slug);
+      if (!existing)
+        await registry.createField(collection, { slug, label: field, type: 'portableText', required: false });
+      else if (existing.type !== 'portableText') throw new Error(`Unexpected field type: ${collection}.${slug}`);
+    }
+  }
   const group = await registry.getField('distro', 'group');
   if (group && !group.indexed) await registry.updateField('distro', 'group', { indexed: true });
   for (const slug of ['artists', 'releases', 'distro', 'news']) {

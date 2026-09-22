@@ -1,4 +1,5 @@
 ---
+import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import ReleaseCard from '@/components/cards/ReleaseCard.astro';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
@@ -102,7 +103,11 @@ function formatReleaseFormats(formats: string[] | undefined) {
                   / {formatReleaseFormats(latestReleaseEntry.data.formats)}
                 </p>
                 {latestReleaseEntry.data.summary && (
-                  <p class="releases-latest-feature__summary">{latestReleaseEntry.data.summary}</p>
+                  <Prose
+                    class="releases-latest-feature__summary"
+                    value={latestReleaseEntry.data.summary}
+                    rich={latestReleaseEntry.data.summary_rich}
+                  />
                 )}
                 {hasLatestReleaseActions && (
                   <div class="releases-latest-feature__actions">
@@ -165,7 +170,11 @@ function formatReleaseFormats(formats: string[] | undefined) {
                   <time datetime={upcomingReleaseDateMachineValue}>{upcomingReleaseDate}</time>
                 </p>
                 {upcomingReleaseEntry.data.summary && (
-                  <p class="releases-latest-feature__upcoming-summary">{upcomingReleaseEntry.data.summary}</p>
+                  <Prose
+                    class="releases-latest-feature__upcoming-summary"
+                    value={upcomingReleaseEntry.data.summary}
+                    rich={upcomingReleaseEntry.data.summary_rich}
+                  />
                 )}
                 {upcomingReleaseEntry.data.formats?.length && (
                   <p class="releases-latest-feature__upcoming-formats">

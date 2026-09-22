@@ -20,6 +20,7 @@ class FakeElement {
   clientWidth = 320;
   dataset: Record<string, string> = {};
   focus = vi.fn();
+  querySelector = vi.fn<() => FakeElement | null>(() => null);
   hidden = false;
   releasePointerCapture = vi.fn();
   scrollIntoView = vi.fn();
@@ -418,10 +419,13 @@ describe('Store Coverflow controller', () => {
   it('handles focus-scoped arrow keys, follows card focus, retains control focus, and cleans up', () => {
     const { cards, controller, element, nextButton } = createHarness();
 
+    const primaryLink = new FakeElement();
+    cards[1]!.querySelector.mockReturnValue(primaryLink);
     const rightArrow = element.dispatch('keydown', cards[0]!, { key: 'ArrowRight' });
     expect(rightArrow.preventDefault).toHaveBeenCalledOnce();
     expect(cards[1]!.dataset.storeCoverflowPosition).toBe('active');
-    expect(cards[1]!.focus).toHaveBeenCalledWith({ preventScroll: true });
+    expect(primaryLink.focus).toHaveBeenCalledWith({ preventScroll: true });
+    expect(cards[1]!.focus).not.toHaveBeenCalled();
 
     const leftArrow = element.dispatch('keydown', cards[1]!, { key: 'ArrowLeft' });
     expect(leftArrow.preventDefault).toHaveBeenCalledOnce();

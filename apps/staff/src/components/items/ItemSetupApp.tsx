@@ -1,7 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useDraftAutosave } from '../../hooks/use-draft-autosave';
 import { Progress } from 'radix-ui';
-import { DISTRO_GROUP_VALUES } from '@blackbox/content-model';
+import {
+  DISTRO_GROUP_VALUES,
+  proseBlocks,
+  proseText,
+  resolveProse,
+  type Prose,
+  type RichText,
+} from '@blackbox/content-model';
 import { CheckCircle2, CircleAlert } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -16,11 +23,17 @@ import {
   type EditorialRecord,
 } from '../../lib/backend/editorial-api';
 
+const ContentBodyEditor = lazy(() => import('../content/ContentBodyEditor'));
+
+function descriptionFields(summary: Prose) {
+  return Array.isArray(summary) ? { summary_rich: summary } : { summary: summary.trim() };
+}
+
 export function releaseDetails(input: {
   title: string;
   artist: string;
   date: string;
-  summary: string;
+  summary: Prose;
   image: string;
   alt: string;
   format: string;
@@ -31,7 +44,7 @@ export function releaseDetails(input: {
     title: input.title.trim(),
     artist: input.artist,
     release_date: input.date,
-    summary: input.summary.trim(),
+    ...descriptionFields(input.summary),
     cover_image: { id: input.image },
     cover_image_alt: input.alt.trim(),
     formats: [input.format],
@@ -46,7 +59,7 @@ export function setupCommand(input: {
   artist: string;
   artistOrLabel: string;
   date: string;
-  summary: string;
+  summary: Prose;
   image: string;
   alt: string;
   format: CatalogSetupCommand['itemType'];
@@ -100,7 +113,7 @@ export function setupCommand(input: {
               : {
                   title,
                   artist_or_label: input.artistOrLabel.trim(),
-                  summary: input.summary.trim(),
+                  ...descriptionFields(input.summary),
                   image: { id: input.image },
                   image_alt: input.alt.trim(),
                   group: itemType,
@@ -129,7 +142,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   const [artistName, setArtistName] = useState('');
   const [artistOrLabel, setArtistOrLabel] = useState('');
   const [date, setDate] = useState('');
-  const [summary, setSummary] = useState('');
+  const [summary, setSummary] = useState<Prose>('');
   const [image, setImage] = useState('');
   const [alt, setAlt] = useState('');
   const [format, setFormat] = useState<CatalogSetupCommand['itemType']>('Vinyl 12-inch');
@@ -153,7 +166,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   const setupReadiness = [
     {
       label: 'Details',
-      ready: mode === 'existing' ? !!existing : !!title.trim() && (kind !== 'release' || (!!artist && !!date)),
+      ready:
+        mode === 'existing'
+          ? !!existing
+          : !!title.trim() && !!proseText(summary).trim() && (kind !== 'release' || (!!artist && !!date)),
     },
     { label: 'Artwork', ready: mode === 'existing' || (!!image && !!alt.trim()) },
     {
@@ -168,7 +184,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           title,
           artist,
           release_date: date,
-          summary,
+          ...descriptionFields(summary),
           cover_image: image ? { id: image } : null,
           cover_image_alt: alt,
           formats: [format],
@@ -176,7 +192,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
       : {
           title,
           artist_or_label: artistOrLabel,
-          summary,
+          ...descriptionFields(summary),
           image: image ? { id: image } : null,
           image_alt: alt,
           group: format,
@@ -289,7 +305,9 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 setArtist(String(data.artist ?? ''));
                 setArtistOrLabel(String(data.artist_or_label ?? ''));
                 setDate(String(data.release_date ?? ''));
-                setSummary(String(data.summary ?? ''));
+                setSummary(
+                  resolveProse(data.summary as string | undefined, data.summary_rich as RichText | null | undefined),
+                );
                 const artwork = (data.cover_image ?? data.image) as { id?: string } | null;
                 setImage(artwork?.id ?? '');
                 setAlt(String(data.cover_image_alt ?? data.image_alt ?? ''));
@@ -335,7 +353,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
     if (busy || needsReview || completed || draftSaved) return;
     if (!pending && !draftPending && step < 2) {
       if (step === 0 && !setupReadiness.slice(0, 2).every((item) => item.ready)) {
-        setMessage('Complete the title, artist, date and artwork before continuing.');
+        setMessage('Complete the title, description, artist, date and artwork before continuing.');
         return;
       }
       if (mode === 'new' && !(await autosave.flush())) return;
@@ -498,16 +516,17 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                   <Input required value={artistOrLabel} onChange={(event) => setArtistOrLabel(event.target.value)} />
                 </label>
               )}
-              <label className="grid gap-2">
-                Short description
-                <textarea
-                  className={inputClass}
-                  rows={4}
-                  required
-                  value={summary}
-                  onChange={(event) => setSummary(event.target.value)}
-                />
-              </label>
+              <div className="grid gap-2">
+                <span id="item-summary-label">Short description</span>
+                <Suspense fallback={<p role="status">Loading text editor…</p>}>
+                  <ContentBodyEditor
+                    aria-labelledby="item-summary-label"
+                    editable={!locked}
+                    value={proseBlocks(summary) as never}
+                    onChange={(value) => setSummary(value as RichText)}
+                  />
+                </Suspense>
+              </div>
               <EditorialPicker
                 base={backendBaseUrl}
                 collection="media"

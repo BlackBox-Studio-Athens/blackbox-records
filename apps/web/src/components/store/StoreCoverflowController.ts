@@ -337,7 +337,7 @@ export function createStoreCoverflowController(
         void getComputedStyle(group.element).color;
         await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
         if (revision !== token) return;
-        activeCard.focus({ preventScroll: true });
+        (activeCard.querySelector<HTMLElement>('.prose-card-link') ?? activeCard).focus({ preventScroll: true });
         activeCard.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'nearest', inline: 'nearest' });
       }
 
@@ -500,7 +500,7 @@ export function createStoreCoverflowController(
           group,
           reduceStoreCoverflowState(group.state, { type: 'focus', activeIndex }, group.cards.length),
         );
-        card.focus({ preventScroll: true });
+        (card.querySelector<HTMLElement>('.prose-card-link') ?? card).focus({ preventScroll: true });
       }
     };
     const onFocusIn = (event: FocusEvent) => {
@@ -531,7 +531,8 @@ export function createStoreCoverflowController(
       const nextState = reduceStoreCoverflowState(group.state, { type: 'move', delta }, group.cards.length);
       setGroupState(group, nextState);
       if (focusedCard && nextState.mode === 'preview') {
-        group.cards[nextState.activeIndex]?.focus({ preventScroll: true });
+        const activeCard = group.cards[nextState.activeIndex];
+        (activeCard?.querySelector<HTMLElement>('.prose-card-link') ?? activeCard)?.focus({ preventScroll: true });
       }
     };
     const onWheel = (event: WheelEvent) => {

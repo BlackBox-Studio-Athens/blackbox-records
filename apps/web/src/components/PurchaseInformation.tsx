@@ -1,5 +1,6 @@
 import { getPurchaseInformation, isPurchaseInformationDraft } from '@/lib/purchase-information';
 import type { ApprovedPurchaseInformation } from '@blackbox/content-model';
+import Prose from './Prose';
 
 const linkClass = 'inline-flex min-h-11 items-center underline underline-offset-4';
 
@@ -26,11 +27,13 @@ export default function PurchaseInformation({
       {import.meta.env.DEV && information && isPurchaseInformationDraft && (
         <p className="font-semibold">Draft purchase information. Details awaiting confirmation.</p>
       )}
-      {information && <p>{information.terms.dispatch.summary}</p>}
-      <p>
-        {information?.terms.delivery.summary ??
-          'Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.'}
-      </p>
+      {information && <Prose value={information.terms.dispatch.summary} />}
+      <Prose
+        value={
+          information?.terms.delivery.summary ??
+          'Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.'
+        }
+      />
       <div className="flex flex-wrap gap-x-5">
         <a className={linkClass} href={`${termsHref}#delivery`}>
           Delivery information

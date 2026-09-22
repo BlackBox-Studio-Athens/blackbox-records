@@ -208,6 +208,7 @@ describe('StoreItem projection contract', () => {
       title: 'Caregivers',
       subtitle: 'Afterwise',
       summary: 'Release summary',
+      summaryRich: null,
       image: { src: '/cover.jpg', width: 100, height: 100, format: 'jpg' },
       imageAlt: 'Caregivers cover',
       eyebrow: 'Release',

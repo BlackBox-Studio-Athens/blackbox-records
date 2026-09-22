@@ -13,7 +13,10 @@ function contentPath(path: string | Array<string | number>): string {
 }
 
 export function getContentValidation(collection: CmsCollection, data: Record<string, unknown>): ContentValidation {
-  const issues = getCmsContentIssues(collection, editorialWriteData(data));
+  const issues = getCmsContentIssues(collection, editorialWriteData(data)).map((issue) => ({
+    ...issue,
+    path: issue.path.map((part) => (typeof part === 'string' ? part.replace(/_rich$/, '') : part)),
+  }));
   const byPath: Record<string, string[]> = {};
   for (const issue of issues) {
     const key = contentPath(issue.path);

@@ -1,4 +1,5 @@
 ---
+import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 
@@ -67,7 +68,12 @@ const commerceLink = await getReleaseCommerceLink(release);
         </p>
         {
           release.data.summary && (
-            <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">{release.data.summary}</p>
+            <Prose
+              class="max-w-2xl text-sm leading-relaxed text-muted-foreground"
+              value={release.data.summary}
+              rich={release.data.summary_rich}
+              data-content-path="summary"
+            />
           )
         }
         {

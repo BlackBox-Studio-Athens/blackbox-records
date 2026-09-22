@@ -1,0 +1,36 @@
+---
+import { PortableText } from 'astro-portabletext';
+import { groupEditorialBlocks, proseBlocks, resolveProse, type Prose, type RichText } from '@blackbox/content-model';
+import EditorialText from './detail/EditorialText.astro';
+import EditorialList from './detail/EditorialList.astro';
+import EditorialLink from './detail/EditorialLink.astro';
+
+interface Props {
+  value?: Prose | null | undefined;
+  rich?: RichText | null | undefined;
+  class?: string;
+  'data-content-path'?: string;
+}
+const { value, rich, class: className, 'data-content-path': path } = Astro.props;
+const groups = groupEditorialBlocks(proseBlocks(resolveProse(value, rich)));
+const components = {
+  block: EditorialText,
+  listItem: EditorialText,
+  mark: { link: EditorialLink },
+  list: { number: EditorialList },
+};
+---
+
+<div class:list={['editorial-prose', className]} data-content-path={path}>
+  {
+    groups.map((group) =>
+      group.quote ? (
+        <blockquote>
+          <PortableText value={group.value} components={components} />
+        </blockquote>
+      ) : (
+        <PortableText value={group.value} components={components} />
+      ),
+    )
+  }
+</div>

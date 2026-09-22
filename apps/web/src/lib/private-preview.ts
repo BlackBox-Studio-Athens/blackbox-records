@@ -57,8 +57,8 @@ export function connectPrivatePreview() {
     if (event.data.type === 'focus' && typeof event.data.text === 'string') {
       const target = event.data.image
         ? document.querySelector('main img')
-        : [...document.querySelectorAll('h1,h2,h3,p,figcaption,a')].find(
-            (item) => item.textContent?.trim() === event.data.text,
+        : [...document.querySelectorAll('.editorial-prose,h1,h2,h3,p,figcaption,a')].find(
+            (item) => item.textContent?.replace(/\s/g, '') === event.data.text.replace(/\s/g, ''),
           );
       target?.scrollIntoView({ block: 'center', behavior: 'instant' });
     }

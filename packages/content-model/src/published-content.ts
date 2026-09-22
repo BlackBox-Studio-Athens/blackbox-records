@@ -1,5 +1,6 @@
 import { contentMediaIds, sourceCollectionNames } from './emdash-content';
 import { parseContentSnapshot, type ContentSnapshot } from './content-snapshot';
+import { projectProseFields } from './prose';
 
 /** Render input can contain transient editor records; only saved snapshots carry revisions. */
 export type PublicContent = Pick<ContentSnapshot, 'media' | 'storeItems'> & {
@@ -64,7 +65,7 @@ export function publishedCollection(
   return snapshot.records
     .filter((record) => sourceCollectionNames[record.collection as keyof typeof sourceCollectionNames] === collection)
     .map((record) => {
-      const { body, ...editorial } = record.data;
+      const { body, ...editorial } = projectProseFields(record.collection, record.data);
       const data = field(editorial) as Record<string, unknown>;
       if (record.collection === 'artists') data.slug = record.slug;
       if (record.collection === 'releases') {

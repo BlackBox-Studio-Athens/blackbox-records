@@ -5,6 +5,36 @@ import PurchaseInformation, { PrivacyLink } from '@/components/PurchaseInformati
 import PurchaseDocument from '@/components/PurchaseDocument';
 import { getPurchaseInformation, purchasePrivacyHeadings, purchaseTermsHeadings } from './purchase-information';
 import { purchaseInformationSchema } from '@blackbox/content-model';
+import { formattedProse } from '../../../../scripts/fixtures/prose';
+import Prose from '@/components/Prose';
+
+it('renders the shared formatted fixture in React prose and purchase wording', () => {
+  const markup = renderToStaticMarkup(<Prose value={formattedProse} />);
+  expect(markup).toContain('<strong>Bold description</strong>');
+  expect(markup).toContain('text-align:right');
+  expect(markup).toContain('<br/>');
+  expect(markup).toContain('href="https://example.com/band"');
+  expect(markup).toContain('rel="noopener noreferrer"');
+  expect(markup).toContain('<ol start="3">');
+  expect(markup.match(/<ol/g)).toHaveLength(2);
+  const information = structuredClone(source.content);
+  const richInformation = {
+    ...information,
+    terms: {
+      ...information.terms,
+      dispatch: { summary: formattedProse, paragraphs: [formattedProse] },
+    },
+  };
+  expect(renderToStaticMarkup(<PurchaseInformation information={richInformation} />)).toContain(
+    '<strong>Bold description</strong>',
+  );
+  expect(renderToStaticMarkup(<PurchaseDocument kind="terms" information={richInformation} />)).toContain(
+    '<strong>Bold description</strong>',
+  );
+  expect(renderToStaticMarkup(<Prose value={'<script>literal</script>'} />)).toContain(
+    '&lt;script&gt;literal&lt;/script&gt;',
+  );
+});
 
 afterEach(() => vi.unstubAllEnvs());
 

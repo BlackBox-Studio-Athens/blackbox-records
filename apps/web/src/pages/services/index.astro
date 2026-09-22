@@ -1,4 +1,5 @@
 ---
+import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import { SERVICES_INQUIRY_RECIPIENT_ALIAS_BY_SERVICE } from '@/components/services/services-inquiry';
 import GridPattern from '@/components/ui/grid-pattern.astro';
@@ -20,7 +21,7 @@ const noJavaScriptInquiryRecipients = Object.entries(SERVICES_INQUIRY_RECIPIENT_
       <div class="services-page-intro__stack">
         <p class="services-page-intro__eyebrow">What We Do</p>
         <h1 class="services-page-intro__title internal-page-hero__title">{servicesContent.hero.title}</h1>
-        <p class="services-page-intro__copy">{servicesContent.hero.intro}</p>
+        <Prose class="services-page-intro__copy" value={servicesContent.hero.intro} data-content-path="hero.intro" />
         <a
           href="#services-inquiry"
           data-services-inquiry-target-service="General"
@@ -62,8 +63,8 @@ const noJavaScriptInquiryRecipients = Object.entries(SERVICES_INQUIRY_RECIPIENT_
                 </div>
               </div>
               <div class="services-service-section__panel">
-                <p class="services-service-section__summary">
-                  {service.summary}{' '}
+                <div class="services-service-section__summary">
+                  <Prose value={service.summary} />
                   {service.partner_name && partnerLinkAttributes && (
                     <>
                       In partnership with{' '}
@@ -78,15 +79,17 @@ const noJavaScriptInquiryRecipients = Object.entries(SERVICES_INQUIRY_RECIPIENT_
                       .
                     </>
                   )}
-                </p>
+                </div>
                 <p class="services-service-section__eyebrow">What this covers</p>
                 <ul class="services-service-section__bullets">
                   {service.bullets.map((bullet) => (
-                    <li>{bullet}</li>
+                    <li>
+                      <Prose value={bullet} />
+                    </li>
                   ))}
                 </ul>
-                <p class="services-service-section__contact-note">
-                  {service.contact_note}{' '}
+                <div class="services-service-section__contact-note">
+                  <Prose value={service.contact_note} />
                   <a
                     href="#services-inquiry"
                     data-services-inquiry-target-service={service.title}
@@ -95,7 +98,7 @@ const noJavaScriptInquiryRecipients = Object.entries(SERVICES_INQUIRY_RECIPIENT_
                   >
                     Mention {service.title} in your inquiry.
                   </a>
-                </p>
+                </div>
               </div>
             </article>
           );
@@ -112,14 +115,18 @@ const noJavaScriptInquiryRecipients = Object.entries(SERVICES_INQUIRY_RECIPIENT_
           <h2 class="services-process-section__title" id="services-process-title">
             {processSection.title}
           </h2>
-          <p class="services-process-section__copy">{processSection.intro}</p>
+          <Prose
+            class="services-process-section__copy"
+            value={processSection.intro}
+            data-content-path="process.intro"
+          />
         </div>
         <div class="services-process-grid">
           {processSection.steps.map((step, index) => (
             <article class="services-process-card">
               <p class="services-process-card__index">{String(index + 1).padStart(2, '0')}</p>
               <h3 class="services-process-card__title">{step.title}</h3>
-              <p class="services-process-card__body">{step.body}</p>
+              <Prose class="services-process-card__body" value={step.body} />
             </article>
           ))}
         </div>
@@ -133,7 +140,11 @@ const noJavaScriptInquiryRecipients = Object.entries(SERVICES_INQUIRY_RECIPIENT_
         <div class="services-inquiry-section__header">
           <p class="services-inquiry-section__kicker">Inquiry</p>
           <h2 class="services-inquiry-section__title">{inquirySection.title}</h2>
-          <p class="services-inquiry-section__copy">{inquirySection.intro}</p>
+          <Prose
+            class="services-inquiry-section__copy"
+            value={inquirySection.intro}
+            data-content-path="inquiry.intro"
+          />
         </div>
         <div data-services-inquiry-form />
         <noscript>

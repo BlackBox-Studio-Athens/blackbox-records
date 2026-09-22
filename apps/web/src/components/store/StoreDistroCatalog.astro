@@ -1,4 +1,5 @@
 ---
+import Prose from '@/components/Prose.astro';
 import DistroCard from '@/components/cards/DistroCard.astro';
 import { buttonVariants } from '@/components/ui/button';
 import { getDistroPageContent } from '@/lib/site-data';
@@ -79,7 +80,11 @@ const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'ite
     <div class="store-orientation-panel__primary">
       <p class="store-orientation-panel__eyebrow">Store shelf</p>
       <h2 class="store-orientation-panel__title" id="distro-collection-heading">{distroPageContent.hero.title}</h2>
-      <p class="store-orientation-panel__copy">{distroPageContent.hero.intro}</p>
+      <Prose
+        class="store-orientation-panel__copy"
+        value={distroPageContent.hero.intro}
+        data-content-path="hero.intro"
+      />
     </div>
     <div class="store-orientation-panel__distro-tools">
       <div class="store-orientation-panel__distro-count">
@@ -198,7 +203,11 @@ const itemCountLabel = `${entries.length} ${entries.length === 1 ? 'item' : 'ite
             <h2 class="distro-group-section__title" id={group.headingId} data-distro-format-target tabindex="-1">
               {group.groupName}
             </h2>
-            <p class="distro-group-section__copy">{distroPageContent.group_intros[group.introKey]}</p>
+            <Prose
+              class="distro-group-section__copy"
+              value={distroPageContent.group_intros[group.introKey]}
+              data-content-path={`group_intros.${group.introKey}`}
+            />
           </div>
           {group.coverflowEnrolled && (
             <div

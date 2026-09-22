@@ -1,9 +1,10 @@
-import { createCmsItemSourceGateway, prepareCmsSetupPresentation } from './cms-item-source-gateway';
+import { createCmsItemSourceGateway } from './cms-item-source-gateway';
 import { createRoute, z } from '@hono/zod-openapi';
 import {
   CatalogPriceConflictError,
   catalogItemSetupSchema,
   setupCatalogItem,
+  prepareCmsSetupPresentation,
 } from '../../../application/commerce/catalog-sync';
 import { CatalogOperationConflictError } from '../../../domain/commerce/repositories/spi';
 import { productEnvironmentProfileFromBindings, type AppOpenApi } from '../../../env';

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { proseSchema, requiredProseSchema, richTextSchema } from './prose';
 import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from './music';
 import {
   DISTRO_INTRO_FIELDS,
@@ -38,6 +39,7 @@ export function createArtistsContentSchema<TImage extends z.ZodType>(image: () =
     image: image(),
     image_alt: requiredAltText,
     bio: requiredText,
+    bio_rich: richTextSchema.nullish(),
     profile_links: z
       .array(
         z.object({
@@ -51,7 +53,7 @@ export function createArtistsContentSchema<TImage extends z.ZodType>(image: () =
         z.object({
           title: requiredText,
           youtube_video_id: z.string().regex(new RegExp(youtubeVideoIdPatternSource)),
-          description: z.string().optional(),
+          description: proseSchema.optional(),
         }),
       )
       .optional(),
@@ -73,6 +75,7 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
     bandcamp_embed_url: bandcampEmbedUrl.optional(),
     tidal_url: tidalUrl.optional(),
     summary: z.string().optional(),
+    summary_rich: richTextSchema.nullish(),
     formats: z.array(requiredText).optional(),
     credits: z
       .array(
@@ -90,6 +93,7 @@ export function createNewsContentSchema<TImage extends z.ZodType>(image: () => T
     title: requiredText,
     date: z.coerce.date(),
     summary: requiredText,
+    summary_rich: richTextSchema.nullish(),
     image: image(),
     image_alt: requiredAltText,
     section_label: z.string().optional(),
@@ -99,9 +103,9 @@ export function createNewsContentSchema<TImage extends z.ZodType>(image: () => T
 export const distroPageContentSchema = z.object({
   hero: z.object({
     title: requiredText,
-    intro: requiredText,
+    intro: requiredProseSchema,
   }),
-  group_intros: z.record(z.enum(DISTRO_INTRO_FIELDS.map(({ name }) => name)), requiredText),
+  group_intros: z.record(z.enum(DISTRO_INTRO_FIELDS.map(({ name }) => name)), requiredProseSchema),
 });
 
 export const navigationContentSchema = z.object({
@@ -133,15 +137,17 @@ export const newsletterContentSchema = z.object({
   section_label: requiredText,
   title: requiredText,
   description: requiredText,
+  description_rich: richTextSchema.nullish(),
   placeholder: z.email(),
   button_label: requiredText,
   note: requiredText,
+  note_rich: richTextSchema.nullish(),
 });
 
 export function createHomeContentSchema<TImage extends z.ZodType>(image: () => TImage) {
   return z.object({
     hero: z.object({
-      tagline: requiredText,
+      tagline: requiredProseSchema,
       image: image(),
       image_alt: requiredAltText,
       scroll_indicator_text: requiredText,
@@ -167,20 +173,20 @@ export function createAboutContentSchema<TImage extends z.ZodType>(image: () => 
       image: image(),
       image_alt: requiredAltText,
     }),
-    lead: z.object({ text: requiredText }),
+    lead: z.object({ text: requiredProseSchema }),
     story: z.object({
       title: requiredText,
-      paragraphs: z.array(requiredText),
+      paragraphs: z.array(requiredProseSchema),
     }),
     quote: z
       .object({
-        text: requiredText,
+        text: requiredProseSchema,
         cite: requiredText,
       })
       .optional(),
     contact: z.object({
       title: requiredText,
-      intro: requiredText,
+      intro: requiredProseSchema,
       items: z.array(
         z.object({
           label: requiredText,
@@ -203,7 +209,7 @@ export function createServicesContentSchema<TImage extends z.ZodType>(image: () 
   return z.object({
     hero: z.object({
       title: requiredText,
-      intro: requiredText,
+      intro: requiredProseSchema,
       cta_text: requiredText,
     }),
     services: z.object({
@@ -213,9 +219,9 @@ export function createServicesContentSchema<TImage extends z.ZodType>(image: () 
           title: requiredText,
           image: image(),
           image_alt: requiredAltText,
-          summary: requiredText,
-          bullets: z.array(requiredText).min(2).max(12),
-          contact_note: requiredText,
+          summary: requiredProseSchema,
+          bullets: z.array(requiredProseSchema).min(2).max(12),
+          contact_note: requiredProseSchema,
           partner_name: z.string().optional(),
           partner_url: httpsUrl.optional(),
         }),
@@ -223,12 +229,12 @@ export function createServicesContentSchema<TImage extends z.ZodType>(image: () 
     }),
     process: z.object({
       title: requiredText,
-      intro: requiredText,
+      intro: requiredProseSchema,
       steps: z
         .array(
           z.object({
             title: requiredText,
-            body: requiredText,
+            body: requiredProseSchema,
           }),
         )
         .min(3)
@@ -236,7 +242,7 @@ export function createServicesContentSchema<TImage extends z.ZodType>(image: () 
     }),
     inquiry: z.object({
       title: requiredText,
-      intro: requiredText,
+      intro: requiredProseSchema,
       email: z.email(),
       submit_text: requiredText,
     }),

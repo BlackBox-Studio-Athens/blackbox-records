@@ -1,5 +1,6 @@
 // Run against pnpm dev:stack:stripe-mock. Mutates and restores two Local artist drafts.
 import assert from 'node:assert/strict';
+import { formattedProse } from './fixtures/prose.ts';
 import { editorialWriteData } from '../apps/staff/src/lib/backend/editorial-api.ts';
 import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
@@ -34,7 +35,7 @@ async function api(path, body, method = 'POST') {
 async function save(item, data, collection = 'artists') {
   const path = `content/${collection}/${item.id}`;
   const current = (await api(path)).data;
-  return (await api(path, { _rev: current._rev, data: editorialWriteData(data) }, 'PUT')).data;
+  return (await api(path, { _rev: current._rev, data: editorialWriteData({ bio_rich: null, ...data }) }, 'PUT')).data;
 }
 async function publish(item, saved, extra = [], inspectPreview = async () => {}) {
   const started = performance.now();
@@ -63,6 +64,10 @@ async function publish(item, saved, extra = [], inspectPreview = async () => {})
   assert.equal(rendered.status, 200);
   const html = await rendered.text();
   assert.ok(html.includes(saved.item.data.genre), 'Shared-template publication preview shows selected saved content.');
+  if (saved.item.data.bio_rich) {
+    assert.match(html, /<strong>Bold description<\/strong>/);
+    assert.ok(html.includes('Band website'));
+  }
   assert.equal(preview.headers.get('X-Preview-Environment'), 'local');
   const imagePath = html
     .match(/src="([^" ]*(?:\/_preview\/media\/|href=%2F_preview%2Fmedia%2F)[^" ]+)"/)?.[1]
@@ -89,6 +94,10 @@ async function publish(item, saved, extra = [], inspectPreview = async () => {})
     if (publication?.status === 'live') {
       const html = await fetch(`${site}/artists/${item.slug}/`).then((response) => response.text());
       assert.ok(html.includes(saved.item.data.genre));
+      if (saved.item.data.bio_rich) {
+        assert.match(html, /<strong>Bold description<\/strong>/);
+        assert.match(html, /href="https:\/\/example.com\/band"/);
+      }
       return Math.round(performance.now() - started);
     }
     await setTimeout(500);
@@ -217,7 +226,11 @@ const [selected, other] = await Promise.all(
 const marker = `Private draft ${randomUUID()}`;
 try {
   await save(other, { ...other.data, genre: marker });
-  const saved = await save(selected, { ...selected.data, genre: `Publication check ${randomUUID()}` });
+  const saved = await save(selected, {
+    ...selected.data,
+    bio_rich: formattedProse,
+    genre: `Publication check ${randomUUID()}`,
+  });
   const elapsedMs = await publish(selected, saved);
   const unrelated = await fetch(`${site}/artists/${other.slug}/`).then((response) => response.text());
   assert.ok(!unrelated.includes(marker), 'Unrelated draft leaked to the public site.');
