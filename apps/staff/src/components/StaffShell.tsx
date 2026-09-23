@@ -19,6 +19,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { getInternalStockApiBaseUrl } from '../lib/backend/internal-stock-api';
 import { publicationHistoryEvent, type PublicationHistoryFilter } from '../lib/publication-history-events';
+import StaffBack from './StaffBack';
+import { staffEntry, staffLink, staffTarget } from '../lib/staff-navigation';
+import { singletonContentSections, type ContentSection } from '../lib/content-sections';
 
 const PublicationHistory = lazy(() => import('./content/PublicationHistory'));
 
@@ -75,6 +78,33 @@ export default function StaffShell({
   const historyFocus = useRef<HTMLElement | null>(null);
   const historyUrl = useRef('');
   const base = getInternalStockApiBaseUrl();
+  useEffect(() => {
+    staffEntry();
+    const links = (event: MouseEvent) => {
+      const link = (event.target as Element)?.closest<HTMLAnchorElement>('a[href]');
+      if (
+        !link ||
+        event.defaultPrevented ||
+        link.hasAttribute('data-staff-back') ||
+        link.target ||
+        event.button !== 0 ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        event.altKey ||
+        !staffTarget(link.href, window.location.origin)
+      )
+        return;
+      link.href = staffLink(link.href);
+    };
+    const preserveEntry = () => void staffEntry();
+    window.document.addEventListener('click', links);
+    window.addEventListener('beforeunload', preserveEntry);
+    return () => {
+      window.document.removeEventListener('click', links);
+      window.removeEventListener('beforeunload', preserveEntry);
+    };
+  }, []);
   useEffect(() => {
     const update = () => setLocation(window.location.pathname + window.location.search);
     update();
@@ -292,6 +322,18 @@ export default function StaffShell({
           </aside>
         )}
         <div className="staff-shell-main">
+          {location &&
+            url.pathname !== '/' &&
+            !url.searchParams.has('id') &&
+            !url.searchParams.has('new') &&
+            !url.searchParams.has('variantId') &&
+            !url.searchParams.has('checkoutSessionId') &&
+            url.pathname !== '/items/new/' &&
+            !singletonContentSections.includes(section as ContentSection) && (
+              <div className="px-4">
+                <StaffBack />
+              </div>
+            )}
           <main id="main" tabIndex={-1} aria-label={title}>
             {children}
           </main>

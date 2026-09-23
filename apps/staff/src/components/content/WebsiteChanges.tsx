@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { staffPages, writeStaffLocation } from '../../lib/staff-navigation';
 import { Button } from '../ui/button';
 import { Checkbox } from '../ui/checkbox';
 import { Input } from '../ui/input';
@@ -86,7 +87,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
       setQuery(params.get('q') ?? '');
       setScope(params.get('scope') ?? 'all');
       setCursor(params.get('cursor') ?? '');
-      setPages(history.state?.reviewPages ?? ['']);
+      setPages(staffPages(params.get('cursor') ?? ''));
       restorePosition.current = true;
     };
     restore();
@@ -131,7 +132,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
     setPages(trail);
     const params = new URLSearchParams({ q, scope: area });
     if (page) params.set('cursor', page);
-    history.pushState({ reviewPages: trail }, '', `/review/?${params}`);
+    writeStaffLocation(`/review/?${params}`, { push: true, pages: trail });
   }
   function add(entries: EditorialRecord[]) {
     select([
@@ -150,6 +151,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
   return (
     <div
       ref={root}
+      data-staff-scroll
       className="staff-page website-changes"
       onClickCapture={(event) => {
         const link = (event.target as HTMLElement).closest('a');

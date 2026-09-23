@@ -5,6 +5,11 @@ import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import editorStyles from '../../styles/content-editor.css?inline';
+import { staffEntry } from '../../lib/staff-navigation';
+
+// EmDash's public admin entrypoint initializes router history while loading.
+// Restore our current entry even if this lazy module resolves after leaving the editor.
+if (typeof window !== 'undefined') staffEntry();
 
 export default function ContentBodyEditor(
   props: PortableTextEditorProps & {

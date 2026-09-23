@@ -49,6 +49,18 @@ async function showPreview(page, url) {
     previous.replaceWith(frame);
   }, url);
 }
+async function publishedItem(collection) {
+  let cursor;
+  do {
+    const params = new URLSearchParams({ collection, limit: '25', sort: 'title' });
+    if (cursor) params.set('cursor', cursor);
+    const page = await get(`blackbox/workspace?${params}`);
+    const item = page.items.find((item) => item.publicationState === 'published');
+    if (item) return (await get(`content/${collection}/${item.id}`)).item;
+    cursor = page.nextCursor;
+  } while (cursor);
+  throw new Error(`Public comparison requires an unchanged published Local ${collection} entry`);
+}
 async function comparePublicPreviews() {
   const site = process.env.PREVIEW_PUBLIC_ORIGIN || 'http://127.0.0.1:4321';
   assert.ok(['http://127.0.0.1:4321', 'http://127.0.0.1:4339'].includes(site), 'Local public fixture only');
@@ -74,8 +86,7 @@ async function comparePublicPreviews() {
         ['store-listing', 'distro', 'listing', false],
         ['store-detail', 'distro', 'detail', false],
       ]) {
-        const listed = (await get(`content/${collection}?limit=1`)).items[0];
-        const item = (await get(`content/${collection}/${listed.id}`)).item;
+        const item = await publishedItem(collection);
         const response = await fetch(`${base}/_emdash/preview?view=${view}`, {
           method: 'POST',
           headers,
@@ -114,11 +125,16 @@ async function comparePublicPreviews() {
             if (label === 'store-listing') {
               for (const target of [frame, publicPage]) {
                 await target.locator('[data-distro-search]').scrollIntoViewIfNeeded();
-                await target.getByRole('searchbox', { name: 'Search distro', exact: true }).waitFor();
+                await target.getByRole('searchbox', { name: 'Search Store', exact: true }).waitFor();
                 await target.evaluate(() => scrollTo(0, 0));
               }
             }
-            for (const target of [frame, publicPage])
+            for (const target of [frame, publicPage]) {
+              await target.waitForFunction(() =>
+                [...document.querySelectorAll('link[href^="https://fonts.googleapis.com/css"]')].every(
+                  (link) => link.sheet,
+                ),
+              );
               await target.evaluate(async () => {
                 await document.fonts.ready;
                 await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
@@ -131,6 +147,7 @@ async function comparePublicPreviews() {
                     .map((image) => image.decode()),
                 );
               });
+            }
             const scope = overlay ? '[role="dialog"]' : 'main';
             assert.equal(
               await frame.locator(scope).innerText(),
@@ -231,8 +248,7 @@ async function comparePublicPreviews() {
   console.log('Paired public/preview screenshots:', pairs);
 }
 async function checkInteractions(page, name) {
-  const listed = (await get('content/releases?limit=1')).items[0];
-  const item = (await get(`content/releases/${listed.id}`)).item;
+  const item = await publishedItem('releases');
   const response = await fetch(`${base}/_emdash/preview?view=listing`, {
     method: 'POST',
     headers,
@@ -401,7 +417,10 @@ try {
       assert.equal(rendered.status, 200, collection + '/' + view + ': ' + html.slice(0, 500));
       assert.match(rendered.headers.get('Content-Security-Policy'), /script-src 'self'/);
       assert.match(html, /<!DOCTYPE html>/i);
-      if (['artists', 'releases', 'distro', 'about', 'purchase_information'].includes(collection)) {
+      if (collection === 'distro' && view === 'listing') {
+        // Store listing cards show the projected title; rich description belongs to detail.
+        assert.match(html, /<h2\b[^>]*>[^<]*unsaved preview smoke<\/h2>/, 'distro/listing: projected card title');
+      } else if (['artists', 'releases', 'distro', 'about', 'purchase_information'].includes(collection)) {
         assert.match(html, /<strong>Bold description<\/strong>/, `${collection}/${view}: rich prose`);
       }
       assert.match(html, /blackbox-preview/);
@@ -585,7 +604,12 @@ try {
   console.error(error);
   throw error;
 } finally {
-  await Promise.all(browsers.map(({ browser }) => browser.close()));
+  await Promise.all(
+    browsers.map(async ({ browser, page }) => {
+      await page.context().unrouteAll({ behavior: 'ignoreErrors' });
+      await browser.close();
+    }),
+  );
   if (restoreNewsletter) {
     const path = `content/newsletter/${restoreNewsletter.id}`;
     const current = await get(path);

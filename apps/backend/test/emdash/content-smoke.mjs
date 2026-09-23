@@ -8,7 +8,7 @@ import { getPlatformProxy, unstable_dev } from 'wrangler';
 import sharp from 'sharp';
 import { inventory, parseMarkdown } from '../../../../scripts/inventory-cms-content.mjs';
 import { markdownTreeToPortableText } from '../../../../scripts/cms-markdown.mjs';
-import { sourceCollectionNames } from '@blackbox/content-model';
+import { DISTRO_GROUP_VALUES, sourceCollectionNames } from '@blackbox/content-model';
 import { createCmsSnapshotReaders } from '../../../../scripts/cms-snapshot-readers.mjs';
 import { captureCmsSnapshot } from '../../../../scripts/capture-cms-snapshot.mjs';
 import { stageCmsSnapshot } from '../../../../scripts/stage-cms-snapshot.mjs';
@@ -409,6 +409,97 @@ try {
   }
   console.log(
     'All 13 compiled CMS collections passed valid saves, rejected invalid writes, stale saves, references and deletion restrictions.',
+  );
+  // Real installed EmDash runtime: fixed private drafts, native opaque cursors,
+  // duplicate titles and timestamp ties. Browser fixtures cannot prove this contract.
+  const catalog = [];
+  for (let index = 0; index < 251; index++) {
+    const data = {
+      title: `Pagination fixture ${String(Math.floor(index / 3)).padStart(3, '0')}`,
+      artist_or_label: 'Local fixture',
+      group: DISTRO_GROUP_VALUES[index % DISTRO_GROUP_VALUES.length],
+      image: { id: media.body.data.item.id },
+      image_alt: 'Fixture',
+      summary: '',
+      gallery: [],
+      order: index,
+    };
+    const created = await request('/content/distro', 'POST', { slug: `pagination-${index}`, data });
+    assert.equal(created.status, 201, JSON.stringify(created));
+    catalog.push(created.body.data.item);
+  }
+  // Seed timestamp ties directly in this disposable 0.38.0 native database.
+  // Sequential HTTP creates otherwise receive distinct millisecond timestamps.
+  const nativeFixture = await getPlatformProxy({
+    configPath: fileURLToPath(new URL('.emdash/wrangler.application-local.json', root)),
+    persist: { path: join(localState, 'v3') },
+    remoteBindings: false,
+    envFiles: [],
+  });
+  try {
+    const result = await nativeFixture.env.CMS_DB.prepare(
+      "UPDATE ec_distro SET updated_at = ? WHERE slug LIKE 'pagination-%'",
+    )
+      .bind('2026-09-23T00:00:00.000Z')
+      .run();
+    assert.equal(result.success, true);
+  } finally {
+    await nativeFixture.dispose();
+  }
+  for (const sort of ['title', 'updated']) {
+    for (const [area, format] of [
+      ['all', ''],
+      ['merch', ''],
+      ['distro', ''],
+      ...DISTRO_GROUP_VALUES.map((format) => ['all', format]),
+    ]) {
+      const expected = catalog.filter(
+        (item) =>
+          (!format || item.data.group === format) &&
+          (area === 'all' || (area === 'merch') === (item.data.group === 'Clothes')),
+      );
+      const ids = [];
+      const values = [];
+      const cursors = new Set();
+      let cursor;
+      do {
+        const params = new URLSearchParams({ collection: 'distro', q: 'Pagination fixture', limit: '25', sort, area });
+        if (format) params.set('format', format);
+        if (cursor) params.set('cursor', cursor);
+        const response = await request(`/blackbox/workspace?${params}`);
+        assert.equal(response.status, 200, JSON.stringify(response));
+        const page = response.body.data;
+        assert.ok(page.items.length <= 25);
+        assert.ok(page.items.every((item) => item.selling === null));
+        ids.push(...page.items.map((item) => item.id));
+        values.push(...page.items.map((item) => (sort === 'title' ? item.data.title : item.updatedAt)));
+        cursor = page.nextCursor;
+        if (cursor) {
+          assert.ok(!cursors.has(cursor), 'Native continuation must progress');
+          cursors.add(cursor);
+        }
+      } while (cursor);
+      assert.equal(new Set(ids).size, ids.length, `No duplicates: ${sort}/${area}/${format}`);
+      assert.ok(
+        values.every((value) => typeof value === 'string'),
+        'Native sort values must be present',
+      );
+      if (area === 'all' && !format)
+        assert.ok(new Set(values).size < values.length, `The native fixture exercises duplicate ${sort} values`);
+      assert.deepEqual(
+        ids.toSorted(),
+        expected.map((item) => item.id).toSorted(),
+        `Complete native traversal: ${sort}/${area}/${format}`,
+      );
+      assert.deepEqual(
+        values,
+        sort === 'title' ? values.toSorted() : values.toSorted().reverse(),
+        `Native ordering: ${sort}/${area}/${format}`,
+      );
+    }
+  }
+  console.log(
+    'Native EmDash catalog pagination: 251 mixed drafts, both sorts, duplicate titles, filters and final pages passed.',
   );
 } finally {
   await worker?.stop();

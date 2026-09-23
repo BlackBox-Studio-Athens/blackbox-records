@@ -1,19 +1,20 @@
 import { lazy, useEffect, useRef, useState } from 'react';
 import '../../styles/content.css';
 import ContentFeature from './ContentFeature';
-import { Button } from '../ui/button';
 import {
-  ArrowLeft,
-  ClipboardCheck,
-  Eye,
-  EyeOff,
-  FileText,
-  History,
-  MoreHorizontal,
-  Plus,
-  Search,
-  Trash2,
-} from 'lucide-react';
+  followStaffHistory,
+  rememberStaffPosition,
+  restoreStaffPosition,
+  staffPages,
+  writeStaffLocation,
+  staffEntry,
+  staffLink,
+  returnStaffTask,
+  replaceStaffTask,
+} from '../../lib/staff-navigation';
+import StaffBack from '../StaffBack';
+import { Button } from '../ui/button';
+import { ClipboardCheck, Eye, EyeOff, FileText, History, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
@@ -77,6 +78,41 @@ function contentSave(document: Document, data: ContentData) {
   return { _rev: document._rev, data: editorialWriteData(data) };
 }
 
+function CatalogPager({
+  placement,
+  busy,
+  previous,
+  next,
+  first,
+  position,
+  turn,
+}: {
+  placement: 'top' | 'bottom';
+  busy: boolean;
+  previous: boolean;
+  next: boolean;
+  first: boolean;
+  position: string;
+  turn(direction: 'previous' | 'next' | 'first'): void;
+}) {
+  return (
+    <nav aria-label={`Catalog pages, ${placement}`} className="flex flex-wrap items-center gap-2 p-4">
+      <p className="w-full text-sm text-muted-foreground">{position}</p>
+      <Button variant="outline" className="min-h-11" disabled={busy || !previous} onClick={() => turn('previous')}>
+        Previous
+      </Button>
+      <Button variant="outline" className="min-h-11" disabled={busy || !next} onClick={() => turn('next')}>
+        Next
+      </Button>
+      {first && (
+        <Button variant="ghost" className="min-h-11" disabled={busy} onClick={() => turn('first')}>
+          First page
+        </Button>
+      )}
+    </nav>
+  );
+}
+
 export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: string }) {
   const [focusedPath, setFocusedPath] = useState('');
   const [catalogTab, setCatalogTab] = useState<'details' | 'selling' | 'stock'>('details');
@@ -85,6 +121,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [items, setItems] = useState<EditorialRecord[]>([]);
   const [listLoaded, setListLoaded] = useState(false);
   const listSequence = useRef(0);
+  const editorSequence = useRef(0);
   const [cursor, setCursor] = useState<string>();
   const [query, setQuery] = useState('');
   const [catalogArea, setCatalogArea] = useState('all');
@@ -93,6 +130,42 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [pageCursors, setPageCursors] = useState<string[]>(['']);
   const pageCursor = useRef('');
   const browseKey = useRef('');
+  const listPending = useRef(false);
+  const [listError, setListError] = useState('');
+  const retryList = useRef<() => void>(() => {});
+  const [pagePosition, setPagePosition] = useState('');
+  const rows = useRef<HTMLDivElement>(null);
+  const leaving = useRef(false);
+  function turnPage(direction: 'previous' | 'next' | 'first') {
+    if (listPending.current || busy) return;
+    const trail =
+      direction === 'first' ? [''] : direction === 'previous' ? pageCursors.slice(0, -1) : [...pageCursors, cursor!];
+    if (!trail.length || (direction === 'next' && !cursor)) return;
+    rememberStaffPosition();
+    const params = new URLSearchParams(location.search);
+    void list(collection, trail.at(-1)!, params.get('q') ?? '', {
+      mode: 'page',
+      trail,
+      criteria: {
+        area: params.get('area') ?? 'all',
+        format: params.get('format') ?? '',
+        sort: params.get('sort') ?? 'title',
+      },
+    });
+  }
+  function pager(placement: 'top' | 'bottom') {
+    return cursor || pageCursor.current ? (
+      <CatalogPager
+        placement={placement}
+        busy={busy}
+        previous={pageCursors.length > 1}
+        next={!!cursor}
+        first={!!pageCursor.current}
+        position={pagePosition}
+        turn={turnPage}
+      />
+    ) : null;
+  }
   const [media, setMedia] = useState(false);
   const [failedArtwork, setFailedArtwork] = useState<Record<string, string>>({});
   const [mobileEditor, setMobileEditor] = useState(false);
@@ -100,9 +173,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [confirmDraftDiscard, setConfirmDraftDiscard] = useState(false);
   const reloadFocus = useRef<HTMLElement | null>(null);
   const editorHeading = useRef<HTMLHeadingElement>(null);
-  const listFocus = useRef<HTMLElement | null>(null);
   const listHeading = useRef<HTMLHeadingElement>(null);
-  function updateUrl(section: ContentSection, id?: string, mediaView = false) {
+  function updateUrl(section: ContentSection, id?: string, mediaView = false, replace = false) {
     const params = new URLSearchParams({ collection: section });
     if (section === collection) {
       if (query) params.set('q', query);
@@ -113,10 +185,13 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     }
     if (id) params.set('id', id);
     if (mediaView) params.set('view', 'media');
+    const returnTo = new URLSearchParams(location.search).get('returnTo');
+    if (returnTo) params.set('returnTo', returnTo);
     const next = `${window.location.pathname}?${params}`;
-    if (next !== window.location.pathname + window.location.search)
-      window.history.pushState({ catalogPages: pageCursors }, '', next);
-    window.dispatchEvent(new Event('staff:navigation'));
+    if (next !== window.location.pathname + window.location.search) {
+      rememberStaffPosition();
+      writeStaffLocation(next, { push: !replace, task: !replace && !!id, pages: pageCursors });
+    }
   }
   useEffect(() => {
     if (mobileEditor && !media) editorHeading.current?.focus();
@@ -252,23 +327,43 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setPublicationStatusError('Publication status is unavailable. Check again before assuming a change is live.');
     }
   }
-  async function list(section = collection, next = pageCursor.current, search = query) {
+  async function list(
+    section = collection,
+    next = pageCursor.current,
+    search = query,
+    options: {
+      mode?: 'page' | 'criteria' | 'restore';
+      trail?: string[];
+      criteria?: { area: string; format: string; sort: string };
+    } = {},
+  ) {
+    if (listPending.current && (!options.mode || options.mode === 'page')) return null;
     const sequence = ++listSequence.current;
+    listPending.current = true;
     if (!document) setBusy(true);
+    setListError('');
+    const mode = options.mode;
+    const locationParams = new URLSearchParams(window.location.search);
+    const criteria =
+      options.criteria ??
+      (!ready || !mode
+        ? {
+            area: locationParams.get('area') ?? 'all',
+            format: locationParams.get('format') ?? '',
+            sort: locationParams.get('sort') ?? 'title',
+          }
+        : { area: catalogArea, format, sort });
+    const searchValue = !ready || !mode ? (locationParams.get('q') ?? '') : search.trim();
+    const trail = options.trail ?? staffPages(next);
+    retryList.current = () => void list(section, next, searchValue, { ...options, criteria, trail });
     try {
       const params = new URLSearchParams({ limit: '25' });
-      if (search.trim()) params.set('q', search.trim());
+      if (searchValue) params.set('q', searchValue);
       if (next) params.set('cursor', next);
-      const locationParams = new URLSearchParams(window.location.search);
-      const initial = !ready;
-      if (initial && locationParams.get('q')) params.set('q', locationParams.get('q')!);
-      const areaValue = initial ? (locationParams.get('area') ?? 'all') : catalogArea;
-      const formatValue = initial ? (locationParams.get('format') ?? '') : format;
-      const sortValue = initial ? (locationParams.get('sort') ?? 'title') : sort;
-      params.set('sort', sortValue);
+      params.set('sort', criteria.sort);
       if (section === 'distro') {
-        params.set('area', areaValue);
-        if (formatValue) params.set('format', formatValue);
+        params.set('area', criteria.area);
+        if (criteria.format) params.set('format', criteria.format);
       }
       const page = await readStaffQuery(['catalog-page', base, section, params.toString()], () =>
         editorialRequest<EditorialList<EditorialRecord>>(base, `blackbox/workspace?collection=${section}&${params}`),
@@ -277,17 +372,56 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setItems(page.items);
       setListLoaded(true);
       pageCursor.current = next;
-      const url = new URL(window.location.href);
-      if (next) url.searchParams.set('cursor', next);
-      else url.searchParams.delete('cursor');
-      window.history.replaceState(window.history.state, '', url);
-      setCursor(page.nextCursor);
+      setPageCursors(trail);
+      const repeated = !!page.nextCursor && trail.includes(page.nextCursor);
+      setCursor(repeated ? undefined : page.nextCursor);
+      if (repeated) setListError('This page did not advance. Return to the first page to continue.');
+      const position = `${trail[0] === '' ? `Page ${trail.length} · ` : ''}${page.items.length} items on this page`;
+      setPagePosition(position);
+      if (mode === 'page') {
+        browseKey.current = JSON.stringify([searchValue, criteria.area, criteria.format, criteria.sort]);
+        setQuery(searchValue);
+        setCatalogArea(criteria.area);
+        setFormat(criteria.format);
+        setSort(criteria.sort);
+      }
+      if (mode !== 'restore') {
+        const url = new URL(window.location.href);
+        for (const [key, value] of Object.entries({ collection: section, q: searchValue, ...criteria, cursor: next })) {
+          if (value) url.searchParams.set(key, value);
+          else url.searchParams.delete(key);
+        }
+        writeStaffLocation(url.pathname + url.search, { push: mode === 'page', pages: trail });
+      }
+      if (mode === 'page')
+        requestAnimationFrame(() => {
+          rows.current?.scrollTo(0, 0);
+          listHeading.current?.focus({ preventScroll: true });
+          listHeading.current?.scrollIntoView({ block: 'start' });
+        });
+      else if (mode === 'restore') restoreStaffPosition(listHeading.current);
       return page;
-    } catch {
-      setMessage('We could not load these entries. Try again.');
+    } catch (error) {
+      if (sequence !== listSequence.current) return null;
+      if (error instanceof EditorialApiError && [401, 403].includes(error.status)) {
+        setItems([]);
+        setDocument(null);
+        setCursor(undefined);
+        setListLoaded(false);
+        setPagePosition('');
+        setListError('Access required. Sign in with an allowed staff account and reload.');
+      } else
+        setListError(
+          listLoaded
+            ? 'We could not load these entries. Your previous page is still shown.'
+            : 'We could not load these entries. Try again.',
+        );
       return null;
     } finally {
-      setBusy(false);
+      if (sequence === listSequence.current) {
+        listPending.current = false;
+        setBusy(false);
+      }
     }
   }
   useEffect(() => {
@@ -298,7 +432,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     setFormat(listParams.get('format') ?? '');
     setSort(listParams.get('sort') ?? 'title');
     pageCursor.current = listParams.get('cursor') ?? '';
-    if (Array.isArray(window.history.state?.catalogPages)) setPageCursors(window.history.state.catalogPages);
+    staffEntry();
+    setPageCursors(staffPages(pageCursor.current));
     browseKey.current = JSON.stringify([
       listParams.get('q') ?? '',
       listParams.get('area') ?? 'all',
@@ -306,7 +441,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       listParams.get('sort') ?? 'title',
     ]);
     void publicationStatus();
-    const pending = sessionStorage.getItem(pendingKey);
+    let pending: string | null = null;
+    try {
+      pending = sessionStorage.getItem(pendingKey);
+    } catch {
+      setMessage('This browser cannot restore pending draft creation. Allow session storage before creating entries.');
+    }
     if (pending) {
       try {
         const saved = JSON.parse(pending) as { collection: ContentSection; slug: string; data: ContentData };
@@ -336,7 +476,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               if (!item) throw new Error('This catalog entry is unavailable.');
               const destination = new URLSearchParams({ collection: item.collection ?? 'releases', id: item.id });
               if (selected.get('tab') === 'selling') destination.set('tab', 'selling');
-              window.location.replace(`/content/?${destination}`);
+              if (selected.get('returnTo')) destination.set('returnTo', selected.get('returnTo')!);
+              replaceStaffTask(`/content/?${destination}`);
             })
             .catch((error) => setMessage(error.message));
           return;
@@ -351,7 +492,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setMedia(mediaView);
       const section = selected.get('collection');
       const id = selected.get('id');
-      if (selected.get('tab') === 'selling') setCatalogTab('selling');
+      if (selected.get('tab') === 'selling' || selected.get('tab') === 'stock')
+        setCatalogTab(selected.get('tab') as 'selling' | 'stock');
       if (section && Object.hasOwn(contentSections, section)) {
         const contentSection = section as ContentSection;
         setCollection(contentSection);
@@ -360,34 +502,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           void create('artists');
           return;
         }
-        if (id)
-          void editorialRequest<Document>(base, `content/${section}/${encodeURIComponent(id)}`)
-            .then((loaded) => {
-              void editorialRequest<EditorialList<EditorialRecord>>(
-                base,
-                `blackbox/workspace?collection=${section}&id=${encodeURIComponent(id)}`,
-              )
-                .then((page) =>
-                  setDocument((current) =>
-                    current?.item.id === id
-                      ? {
-                          ...current,
-                          item: {
-                            ...current.item,
-                            selling: page.items[0]?.selling,
-                            publicationState: page.items[0]?.publicationState,
-                            collection: section,
-                          },
-                        }
-                      : current,
-                  ),
-                )
-                .catch(() => setMessage('Website status is unavailable. Reopen this entry to try again.'));
-              setDocument(loaded);
-              setData(loaded.item.data);
-              setMobileEditor(true);
-            })
-            .catch(() => setMessage('The selected content could not be loaded. Search to try again.'));
+        if (id) void loadEditor(id, contentSection);
         else if (!mediaView)
           void listed.then((page) => {
             openSingletonFromPage(contentSection, page);
@@ -495,33 +610,75 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setBusy(false);
     }
   }
-  async function open(item: EditorialRecord, replace = false, section = collection) {
-    if (!replace && !(await autosave.flush())) {
-      setConfirmReload(true);
-      return;
-    }
-    if (!replace) listFocus.current = window.document.activeElement as HTMLElement;
+  async function loadEditor(
+    id: string,
+    section: ContentSection,
+    item?: EditorialRecord,
+    sequence = ++editorSequence.current,
+  ) {
     setBusy(true);
     setMessage('');
     try {
-      const loaded = await editorialRequest<Document>(base, `content/${section}/${encodeURIComponent(item.id)}`);
+      const loaded = await editorialRequest<Document>(base, `content/${section}/${encodeURIComponent(id)}`);
+      if (sequence !== editorSequence.current) return false;
       setDocument({
         ...loaded,
-        item: { ...loaded.item, selling: item.selling, publicationState: item.publicationState, collection: section },
+        item: {
+          ...loaded.item,
+          ...(item ? { selling: item.selling, publicationState: item.publicationState } : {}),
+          collection: section,
+        },
       });
-      setCatalogTab('details');
       setData(loaded.item.data);
       setDirty(false);
       setValidationAttempt(0);
       setConflict(false);
       setMobileEditor(true);
-      updateUrl(section, loaded.item.id);
-      editorHeading.current?.focus();
+      if (!item) {
+        void editorialRequest<EditorialList<EditorialRecord>>(
+          base,
+          `blackbox/workspace?collection=${section}&id=${encodeURIComponent(loaded.item.id)}`,
+        )
+          .then((page) => {
+            if (sequence !== editorSequence.current) return;
+            setDocument((current) =>
+              current?.item.id === loaded.item.id
+                ? {
+                    ...current,
+                    item: {
+                      ...current.item,
+                      selling: page.items[0]?.selling,
+                      publicationState: page.items[0]?.publicationState,
+                    },
+                  }
+                : current,
+            );
+          })
+          .catch(() => {
+            if (sequence === editorSequence.current)
+              setMessage('Website status is unavailable. Reopen this entry to try again.');
+          });
+      }
+      return true;
     } catch {
-      setMessage('We could not load this entry. Try again.');
+      if (sequence === editorSequence.current) setMessage('We could not load this entry. Try again.');
+      return false;
     } finally {
-      setBusy(false);
+      if (sequence === editorSequence.current) setBusy(false);
     }
+  }
+  async function open(item: EditorialRecord, replace = false, section = collection, navigate = true) {
+    if (!replace && !(await autosave.flush())) {
+      setConfirmReload(true);
+      return;
+    }
+    if (!replace) {
+      rememberStaffPosition();
+    }
+    if (!(await loadEditor(item.id, section, item))) return;
+    setCatalogTab('details');
+    if (navigate) updateUrl(section, item.id, false, replace);
+    editorHeading.current?.focus();
   }
   function openSingletonFromPage(section: ContentSection, page: EditorialList<EditorialRecord> | null) {
     if (!singletonContentSections.includes(section) || page?.items.length !== 1) return;
@@ -532,6 +689,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   currentDocument.current = document;
   const latestData = useRef(data);
   latestData.current = data;
+  const needsSave = useRef(dirty);
+  needsSave.current = dirty;
   const autosave = useDraftAutosave({
     identity: `${collection}:${document?.item.slug || ''}`,
     value: data,
@@ -587,7 +746,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         };
         setDocument(result);
         setItems((previous) => [result.item, ...previous.filter((item) => item.id !== result.item.id)]);
-        updateUrl(collection, result.item.id);
+        updateUrl(collection, result.item.id, false, true);
       } catch (error) {
         if (error instanceof EditorialApiError && error.status === 409) setConflict(true);
         throw error;
@@ -612,55 +771,73 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         event.metaKey ||
         event.shiftKey ||
         event.button !== 0 ||
-        !dirty
+        !needsSave.current
       )
         return;
       event.preventDefault();
+      if (leaving.current) return;
+      leaving.current = true;
       void autosave.flush().then((saved) => {
-        if (saved) location.assign(link.href);
-        else setConfirmReload(true);
+        if (saved) {
+          if (link.hasAttribute('data-staff-back')) returnStaffTask();
+          else location.assign(staffLink(link.href));
+        } else setConfirmReload(true);
+        leaving.current = false;
       });
     };
     window.document.addEventListener('click', leave, true);
     return () => window.document.removeEventListener('click', leave, true);
-  }, [dirty, autosave.flush]);
+  }, [autosave.flush]);
   useEffect(() => {
     const followHistory = () => {
-      void autosave.flush().then(async (saved) => {
-        if (!saved) {
-          setConfirmReload(true);
-          return;
-        }
+      void (async () => {
         const params = new URLSearchParams(window.location.search);
+        const navigation = ++editorSequence.current;
+        listSequence.current++;
+        listPending.current = false;
+        const criteria = {
+          area: params.get('area') ?? 'all',
+          format: params.get('format') ?? '',
+          sort: params.get('sort') ?? 'title',
+        };
+        const search = params.get('q') ?? '';
+        const currentCursor = params.get('cursor') ?? '';
+        browseKey.current = JSON.stringify([search, criteria.area, criteria.format, criteria.sort]);
+        setQuery(search);
+        setCatalogArea(criteria.area);
+        setFormat(criteria.format);
+        setSort(criteria.sort);
+        pageCursor.current = currentCursor;
+        setPageCursors(staffPages(currentCursor));
+        setMedia(params.get('view') === 'media');
+        setReviewing(false);
+        setDocument(null);
+        setData({});
+        setMobileEditor(false);
+        const tab = params.get('tab');
+        setCatalogTab(tab === 'selling' || tab === 'stock' ? tab : 'details');
         const section = params.get('collection') as ContentSection;
         if (!section || !Object.hasOwn(contentSections, section)) {
-          setLanding(params.get('view') === 'footer' ? 'footer' : 'pages');
+          setLanding(params.get('view') === 'media' ? null : params.get('view') === 'footer' ? 'footer' : 'pages');
           return;
         }
         setLanding(null);
         setCollection(section);
         const id = params.get('id');
         if (!id) {
-          setDocument(null);
-          setMobileEditor(false);
-          requestAnimationFrame(() =>
-            (listFocus.current?.isConnected ? listFocus.current : listHeading.current)?.focus(),
-          );
+          await list(section, currentCursor, search, { mode: 'restore', criteria, trail: staffPages(currentCursor) });
           return;
         }
-        try {
-          const page = await editorialRequest<EditorialList<EditorialRecord>>(
-            base,
-            `blackbox/workspace?collection=${section}&id=${encodeURIComponent(id)}`,
-          );
-          if (page.items[0]) await open(page.items[0], true, section);
-        } catch {
-          setMessage('This entry could not be loaded. Your saved draft is retained.');
-        }
-      });
+        await loadEditor(id, section, undefined, navigation);
+      })();
     };
-    window.addEventListener('popstate', followHistory);
-    return () => window.removeEventListener('popstate', followHistory);
+    return followStaffHistory(followHistory, () => {
+      if (!needsSave.current) return true;
+      return autosave.flush().then((saved) => {
+        if (!saved) setConfirmReload(true);
+        return saved;
+      });
+    });
   }, [autosave.flush, collection]);
   useStaffRead(['content', base, collection, query, catalogArea, format, sort], () => list(), {
     enabled: ready && !dirty && !media && !landing && !document && !busy,
@@ -669,25 +846,14 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     if (!ready || dirty || landing || media) return;
     const key = JSON.stringify([query, catalogArea, format, sort]);
     if (key === browseKey.current) return;
+    listSequence.current++;
+    listPending.current = false;
     const timer = window.setTimeout(() => {
       browseKey.current = key;
-      pageCursor.current = '';
-      setPageCursors(['']);
-      const url = new URL(window.location.href);
-      for (const [key, value] of Object.entries({ q: query, area: catalogArea, format, sort })) {
-        if (value) url.searchParams.set(key, value);
-        else url.searchParams.delete(key);
-      }
-      url.searchParams.delete('cursor');
-      window.history.replaceState(window.history.state, '', url);
-      void list(collection, '');
+      void list(collection, '', query, { mode: 'criteria', trail: [''] });
     }, 300);
     return () => window.clearTimeout(timer);
   }, [query, catalogArea, format, sort]);
-  useEffect(() => {
-    if (ready)
-      window.history.replaceState({ ...window.history.state, catalogPages: pageCursors }, '', window.location.href);
-  }, [pageCursors, ready]);
   async function create(section = collection) {
     if (!mayLeave() || !['news', 'socials', 'artists'].includes(section)) return;
     // Start locally; incomplete editorial work is saved privately.
@@ -704,7 +870,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     setConflict(false);
     setMessage('');
     setMobileEditor(true);
-    updateUrl(section);
+    rememberStaffPosition();
+    const params = new URLSearchParams(location.search);
+    params.set('collection', section);
+    params.set('new', '1');
+    params.delete('id');
+    writeStaffLocation(`/content/?${params}`, { push: true, task: true, pages: pageCursors });
   }
   async function remove() {
     if (!document?.item.id || busy || !['news', 'socials'].includes(collection)) return;
@@ -764,7 +935,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
   const canCreate = ['news', 'socials', 'artists'].includes(collection);
 
-  const singleton = singletonContentSections.includes(collection);
   const title = String(data.title || data.label_name || contentSections[collection]);
   const canDiscardSavedDraft = Boolean(
     document?.item.id && document.item.liveRevisionId && document.item.draftRevisionId,
@@ -842,12 +1012,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 <h1 ref={listHeading} tabIndex={-1} className="text-base font-semibold outline-none">
                   {contentSections[collection]}
                 </h1>
-                {listLoaded && (
-                  <Badge variant="secondary">
-                    {items.length}
-                    {cursor ? '+' : ''}
-                  </Badge>
-                )}
+                {listLoaded && <Badge variant="secondary">{items.length}</Badge>}
               </div>
               <form
                 className="grid gap-2"
@@ -922,7 +1087,19 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 </Button>
               )}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            {pager('top')}
+            <p role="status" className={busy ? 'px-4 py-2 text-sm text-muted-foreground' : 'sr-only'}>
+              {busy ? 'Loading requested page. Previous results remain until it is ready.' : pagePosition}
+            </p>
+            {listError && (
+              <div role="alert" className="p-4">
+                {listError}{' '}
+                <Button variant="outline" disabled={busy} onClick={() => retryList.current()}>
+                  Retry page
+                </Button>
+              </div>
+            )}
+            <div ref={rows} data-staff-scroll className="min-h-0 flex-1 overflow-y-auto">
               {!mobileEditor && message && (
                 <Alert role={conflict ? 'alert' : 'status'} className="m-4 w-auto">
                   <AlertDescription>{message}</AlertDescription>
@@ -949,6 +1126,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                             className="cms-entry-row h-auto min-h-16 w-full justify-start rounded-none px-4 py-3 text-left whitespace-normal"
                             disabled={!ready || busy || !!pendingNew}
                             aria-current={document?.item.id === item.id ? 'true' : undefined}
+                            data-staff-row={item.id}
                             onClick={() => void open(item)}
                           >
                             {(() => {
@@ -1046,38 +1224,27 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 </Table>
               )}
               {listLoaded && !busy && !items.length && (
-                <p className="p-6 text-sm text-muted-foreground">No matching content. Try another search.</p>
-              )}
-              {(cursor || pageCursor.current) && (
-                <div className="p-4">
+                <div className="p-6 text-sm text-muted-foreground">
+                  <p>No matching content. Try another search.</p>
                   <Button
-                    type="button"
                     variant="outline"
-                    disabled={busy || !pageCursor.current}
                     onClick={() => {
-                      const previous = pageCursors.slice(0, -1);
-                      setPageCursors(previous.length ? previous : ['']);
-                      void list(collection, previous.at(-1) ?? '');
+                      setQuery('');
+                      setCatalogArea('all');
+                      setFormat('');
+                      setSort('title');
                     }}
                   >
-                    Previous
+                    Reset filters
                   </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    disabled={busy || !cursor}
-                    onClick={() => {
-                      if (cursor) {
-                        setPageCursors((pages) => [...pages, cursor]);
-                        void list(collection, cursor);
-                      }
-                    }}
-                  >
-                    Next
-                  </Button>
+                  {pageCursor.current && (
+                    <Button variant="outline" onClick={() => turnPage('first')}>
+                      First page
+                    </Button>
+                  )}
                 </div>
               )}
+              {pager('bottom')}
             </div>
           </section>
           <ResizablePanelGroup
@@ -1102,31 +1269,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                           <h1 ref={editorHeading} tabIndex={-1}>
                             {title}
                           </h1>
-                          {!singleton && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label="Back to list"
-                              onClick={() => {
-                                void autosave.flush().then((saved) => {
-                                  if (!saved) {
-                                    setConfirmReload(true);
-                                    return;
-                                  }
-                                  setMobileEditor(false);
-                                  setDocument(null);
-                                  updateUrl(collection);
-                                  requestAnimationFrame(() =>
-                                    (listFocus.current?.isConnected ? listFocus.current : listHeading.current)?.focus({
-                                      preventScroll: true,
-                                    }),
-                                  );
-                                });
-                              }}
-                            >
-                              <ArrowLeft />
-                            </Button>
-                          )}
+                          <StaffBack />
                         </div>
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <p role="status" className="text-sm text-muted-foreground">
@@ -1233,7 +1376,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                               key={section}
                               variant={catalogTab === section ? 'secondary' : 'ghost'}
                               aria-pressed={catalogTab === section}
-                              onClick={() => setCatalogTab(section)}
+                              onClick={() => {
+                                setCatalogTab(section);
+                                const url = new URL(location.href);
+                                url.searchParams.set('tab', section);
+                                writeStaffLocation(url.pathname + url.search);
+                              }}
                             >
                               {section === 'details' ? 'Details' : section === 'selling' ? 'Selling' : 'Stock'}
                             </Button>
@@ -1249,7 +1397,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                             item={document.item}
                             base={base}
                             section={catalogTab}
-                            onDetails={() => setCatalogTab('details')}
+                            onDetails={() => {
+                              setCatalogTab('details');
+                              const url = new URL(location.href);
+                              url.searchParams.set('tab', 'details');
+                              writeStaffLocation(url.pathname + url.search);
+                            }}
                             onSummary={(summary) =>
                               setDocument((current) =>
                                 current?.item.id === summary.id

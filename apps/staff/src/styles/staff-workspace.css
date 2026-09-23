@@ -226,8 +226,8 @@ body[data-workspace='content'] {
 }
 
 .staff-item-setup {
-  gap: 12px;
-  padding-top: 16px;
+  gap: 8px;
+  padding-top: 12px;
 }
 .staff-item-setup header {
   gap: 4px;

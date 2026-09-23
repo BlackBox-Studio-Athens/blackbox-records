@@ -161,6 +161,19 @@ const records = Object.fromEntries(
     [{ id: `${collection}-1`, slug: `${collection}-slug`, data, _rev: '1' }],
   ]),
 );
+if (process.argv.includes('--serve') && process.argv.includes('--catalog-navigation'))
+  records.distro.push(
+    ...Array.from({ length: 250 }, (_, index) => ({
+      ...records.distro[0],
+      id: `browse-${index}`,
+      slug: `browse-${index}`,
+      data: {
+        ...records.distro[0].data,
+        title: `Browse ${String(index).padStart(3, '0')}`,
+        group: index % 2 ? 'Tapes' : 'Clothes',
+      },
+    })),
+  );
 const sellingJourney = process.argv.includes('--selling');
 if (sellingJourney)
   records.releases.push({
@@ -1013,7 +1026,7 @@ else if (sellingJourney) {
         }),
       );
       await failurePage.goto(`${origin}/content/?collection=releases`);
-      await failurePage.getByText('We could not load these entries. Try again.', { exact: true }).waitFor();
+      await failurePage.getByText('We could not load these entries. Try again.').waitFor();
       assert.equal(await failurePage.getByText('No matching content. Try another search.', { exact: true }).count(), 0);
       await failurePage.unroute('**/_emdash/api/blackbox/workspace?*');
       await failurePage.route('**/_emdash/api/blackbox/workspace?*', (route) =>
@@ -1209,6 +1222,356 @@ else if (sellingJourney) {
     if (process.env.BLACKBOX_VALIDATION_TRACE === '1')
       await page.context().tracing.start({ screenshots: true, snapshots: true, sources: true });
     initialStockReads.resolve();
+    {
+      const original = [...records.distro];
+      records.distro.push(
+        ...Array.from({ length: 250 }, (_, index) => ({
+          ...original[0],
+          id: `browse-${index}`,
+          slug: `browse-${index}`,
+          data: {
+            ...original[0].data,
+            title: `Browse ${String(index).padStart(3, '0')}`,
+            group: index % 2 ? 'Tapes' : 'Clothes',
+          },
+        })),
+      );
+      const failures = [];
+      await page.goto(`${origin}/content/?collection=distro`);
+      await page.getByRole('button', { name: /Browse 000/ }).waitFor();
+      await page
+        .getByRole('navigation', { name: 'Catalog pages, top', exact: true })
+        .getByRole('button', { name: 'Next', exact: true })
+        .click();
+      await page.getByRole('button', { name: /Browse 024/ }).click();
+      await page.locator('#content-title').waitFor();
+      await page.reload();
+      await page.locator('#content-title').waitFor();
+      await page.getByRole('button', { name: 'Selling', exact: true }).click();
+      await page.waitForURL((url) => url.searchParams.get('tab') === 'selling');
+      await page.reload();
+      await page.locator('button[aria-pressed="true"]').filter({ hasText: 'Selling' }).waitFor();
+      await page.getByRole('link', { name: 'Back to Distro and merch', exact: true }).click();
+      await page.getByRole('button', { name: /Browse 024/ }).waitFor();
+      assert.equal(new URL(page.url()).searchParams.get('cursor'), '25');
+      const check = (condition, message) => {
+        if (!condition) failures.push(message);
+      };
+      await page.goto(`${origin}/content/?collection=distro&q=Browse&area=merch`);
+      await page.getByRole('button', { name: /Browse 000/ }).waitFor();
+      const next = page.getByRole('button', { name: 'Next', exact: true });
+      const box = await next.first().boundingBox();
+      check(box.y >= 0 && box.y + box.height <= 1000, 'Next must be visible in the first viewport');
+      await next.last().click();
+      await page.getByRole('button', { name: /Browse 050/ }).waitFor();
+      const heading = page.locator('.cms-records h1');
+      const arrival = await heading.boundingBox();
+      check(arrival.y >= 0 && arrival.y < 400, 'Next must bring the results heading into view');
+      check(await heading.evaluate((node) => node === document.activeElement), 'Next must focus the results heading');
+      await page.getByRole('button', { name: /Browse 050/ }).click();
+      await page.locator('#content-title').waitFor();
+      await page.goBack();
+      await page.getByRole('button', { name: /Browse 050/ }).waitFor();
+      await page.goBack();
+      check(
+        new URL(page.url()).searchParams.get('cursor') === null &&
+          new URL(page.url()).searchParams.get('q') === 'Browse',
+        `Browser Back must restore the first filtered page: ${page.url()}`,
+      );
+      assert.deepEqual(failures, [], 'Catalog navigation regressions');
+      const top = page.getByRole('navigation', { name: 'Catalog pages, top', exact: true });
+      const bottom = page.getByRole('navigation', { name: 'Catalog pages, bottom', exact: true });
+      const row = (number) =>
+        page.getByRole('button', { name: new RegExp(`Browse ${String(number).padStart(3, '0')}`) });
+      await row(0).waitFor();
+      for (const number of [50, 100]) {
+        await top.getByRole('button', { name: 'Next', exact: true }).click();
+        await row(number).waitFor();
+      }
+      await page.goBack();
+      await row(50).waitFor();
+      await page.goBack();
+      await row(0).waitFor();
+      await page.goForward();
+      await row(50).waitFor();
+      await page.reload();
+      await row(50).waitFor();
+      assert.equal(await top.getByRole('button', { name: 'Previous', exact: true }).isEnabled(), true);
+      await row(50).click();
+      await page.locator('#content-title').waitFor();
+      await page.reload();
+      await page.getByRole('link', { name: 'Back to Distro and merch', exact: true }).click();
+      await row(50).waitFor();
+      await page.waitForFunction(() => document.activeElement?.getAttribute('data-staff-row') === 'browse-50');
+      assert.equal(
+        await row(50).evaluate((node) => node === document.activeElement),
+        true,
+        'Reloaded detail restores stable row focus',
+      );
+      await page.goBack();
+      await row(0).waitFor();
+      await page.goto(`${origin}/content/?collection=distro&q=Browse&area=merch&cursor=25`);
+      await row(50).waitFor();
+      assert.equal(await top.getByRole('button', { name: 'Previous', exact: true }).isEnabled(), false);
+      assert.equal((await top.innerText()).includes('Page 2'), false);
+      await top.getByRole('button', { name: 'First page', exact: true }).click();
+      await row(0).waitFor();
+
+      // A failed read must not commit a cursor or trail; retry commits once.
+      const workspaceRoute = '**/_emdash/api/blackbox/workspace?*';
+      let rejectCursor = '25';
+      await page.route(workspaceRoute, (route) =>
+        new URL(route.request().url()).searchParams.get('cursor') === rejectCursor
+          ? route.fulfill({ status: 503, json: { success: false } })
+          : route.continue(),
+      );
+      const firstUrl = page.url();
+      await top.getByRole('button', { name: 'Next', exact: true }).click();
+      await page.getByRole('button', { name: 'Retry page', exact: true }).waitFor();
+      assert.equal(page.url(), firstUrl);
+      assert.equal(await row(0).count(), 1);
+      rejectCursor = 'never';
+      await page.getByRole('button', { name: 'Retry page', exact: true }).click();
+      await row(50).waitFor();
+      const secondUrl = page.url();
+      rejectCursor = null;
+      await top.getByRole('button', { name: 'Previous', exact: true }).click();
+      await page.getByRole('button', { name: 'Retry page', exact: true }).waitFor();
+      assert.equal(page.url(), secondUrl);
+      assert.equal(await row(50).count(), 1);
+      rejectCursor = 'never';
+      await page.getByRole('button', { name: 'Retry page', exact: true }).click();
+      await row(0).waitFor();
+      await page.goBack();
+      await row(50).waitFor();
+      await page.goBack();
+      await row(0).waitFor();
+      await page.unroute(workspaceRoute);
+
+      for (const staleStatus of [200, 503]) {
+        await page.goto(`${origin}/content/?collection=distro&q=Browse&area=merch`);
+        await row(0).waitFor();
+        const gate = Promise.withResolvers();
+        const started = Promise.withResolvers();
+        let pageRequests = 0;
+        await page.route(workspaceRoute, async (route) => {
+          if (new URL(route.request().url()).searchParams.get('cursor') !== '25') return route.continue();
+          pageRequests++;
+          const response = staleStatus === 200 ? await route.fetch() : null;
+          started.resolve();
+          await gate.promise;
+          if (response) await route.fulfill({ response });
+          else await route.fulfill({ status: 503, json: { success: false } });
+        });
+        await top.getByRole('button', { name: 'Next', exact: true }).evaluate((button) => {
+          button.click();
+          button.click();
+        });
+        await started.promise;
+        await page.evaluate(() => {
+          window.dispatchEvent(new Event('focus'));
+          window.dispatchEvent(new Event('online'));
+        });
+        assert.equal(pageRequests, 1, 'Double activation and background refresh share one page intent');
+        await page.getByRole('textbox', { name: 'Search distro and merch', exact: true }).fill('Browse 1');
+        await row(100).waitFor();
+        gate.resolve();
+        await page.unrouteAll({ behavior: 'wait' });
+        await page.evaluate(
+          () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+        );
+        assert.equal(await row(100).count(), 1);
+        assert.equal(new URL(page.url()).searchParams.get('q'), 'Browse 1');
+        assert.equal(
+          await page.getByRole('button', { name: 'Retry page', exact: true }).count(),
+          0,
+          'Stale errors cannot replace current results',
+        );
+      }
+      await page.goto(`${origin}/content/?collection=distro&q=Browse&area=merch`);
+      await row(0).waitFor();
+
+      await page.route(workspaceRoute, async (route) => {
+        if (new URL(route.request().url()).searchParams.get('cursor') !== '25') return route.continue();
+        const response = await route.fetch();
+        const body = await response.json();
+        body.data.nextCursor = '25';
+        await route.fulfill({ response, json: body });
+      });
+      await top.getByRole('button', { name: 'Next', exact: true }).click();
+      await page.getByText('This page did not advance. Return to the first page to continue.').waitFor();
+      assert.equal(await top.getByRole('button', { name: 'Next', exact: true }).isEnabled(), false);
+      await page.unroute(workspaceRoute);
+      await top.getByRole('button', { name: 'First page', exact: true }).click();
+      await row(0).waitFor();
+      await page.route(workspaceRoute, (route) => route.fulfill({ status: 403, json: { success: false } }));
+      await top.getByRole('button', { name: 'Next', exact: true }).click();
+      await page.getByText('Access required. Sign in with an allowed staff account and reload.').waitFor();
+      assert.equal(await row(0).count(), 0, 'Access denial removes previously visible protected rows');
+      await page.unroute(workspaceRoute);
+      await page.reload();
+      await row(0).waitFor();
+
+      for (const width of [390, 768, 1280, 1600]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        const button = top.getByRole('button', { name: 'Next', exact: true });
+        const bounds = await button.boundingBox();
+        assert.ok(bounds.y >= 0 && bounds.y + bounds.height <= 900, `Top pager visible at ${width}`);
+        // Firefox reports 44px as 43.999969px at fractional layout positions.
+        assert.ok(bounds.height >= 44 - 0.001, `Pager target at ${width}px is ${bounds.height}px high`);
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        await button.focus();
+        await page.keyboard.press('Enter');
+        await row(50).waitFor();
+        assert.equal(await heading.evaluate((node) => node === document.activeElement), true);
+        assert.equal(await bottom.getByRole('button', { name: 'Previous', exact: true }).isEnabled(), true);
+        await top.getByRole('button', { name: 'Previous', exact: true }).click();
+        await row(0).waitFor();
+        await page.screenshot({ path: resolve(artifacts, `catalog-pager-${width}.png`) });
+      }
+      await page.setViewportSize({ width: 1280, height: 1000 });
+      await page.evaluate(() => {
+        document.documentElement.style.zoom = '2';
+      });
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+        false,
+        '200% layout zoom fits',
+      );
+      assert.ok((await top.getByRole('button', { name: 'Next', exact: true }).boundingBox()).y < 1000);
+      await page.evaluate(() => {
+        document.documentElement.style.zoom = '';
+      });
+      const fixtures = records.distro.filter((item) => item.id.startsWith('browse-'));
+      for (const count of [0, 1, 25, 26, 50, 51]) {
+        records.distro = fixtures.slice(0, count);
+        await page.goto(`${origin}/content/?collection=distro`);
+        await page.locator('.cms-records [data-slot="badge"]').waitFor();
+        assert.equal(await page.locator('.cms-entry-row').count(), Math.min(count, 25));
+        if (count > 25) {
+          assert.equal(await top.getByRole('button', { name: 'Previous', exact: true }).isEnabled(), false);
+          while (await top.getByRole('button', { name: 'Next', exact: true }).isEnabled()) {
+            await top.getByRole('button', { name: 'Next', exact: true }).click();
+            await page.waitForFunction(
+              () => !document.querySelector('nav[aria-label="Catalog pages, top"] button')?.disabled,
+            );
+          }
+          assert.equal(await page.locator('.cms-entry-row').count(), count % 25 || 25);
+        } else assert.equal(await top.count(), 0);
+        if (!count) assert.equal(await page.getByRole('button', { name: 'Reset filters', exact: true }).count(), 1);
+      }
+      records.distro = original;
+      await page.setViewportSize({ width: 1600, height: 1000 });
+      for (const path of [
+        '/content/',
+        '/content/?view=footer',
+        '/content/?view=media',
+        '/review/',
+        '/stock/',
+        '/orders/',
+      ]) {
+        await page.goto(origin + path);
+        await page.getByRole('link', { name: 'Back to Overview', exact: true }).waitFor();
+        assert.equal(await page.locator('[data-staff-back]').count(), 1, `One root return: ${path}`);
+      }
+      for (const collection of [
+        'artists',
+        'releases',
+        'distro',
+        'news',
+        'home',
+        'about',
+        'services',
+        'distro_page',
+        'purchase_information',
+        'settings',
+        'newsletter',
+        'navigation',
+        'socials',
+      ]) {
+        const parent = ['newsletter', 'navigation', 'socials'].includes(collection)
+          ? 'Navigation & footer'
+          : ['home', 'about', 'services', 'distro_page', 'purchase_information', 'settings'].includes(collection)
+            ? 'Pages'
+            : { artists: 'Artists', releases: 'Releases', distro: 'Distro and merch', news: 'News' }[collection];
+        await page.goto(`${origin}/content/?collection=${collection}&id=${records[collection][0].id}`);
+        await page.locator('.cms-editor-toolbar h1').waitFor();
+        await page.getByRole('link', { name: `Back to ${parent}`, exact: true }).waitFor();
+        assert.equal(await page.locator('[data-staff-back]').count(), 1, `One editor return: ${collection}`);
+      }
+      for (const kind of ['release', 'distro', 'merch']) {
+        await page.goto(`${origin}/items/new/?kind=${kind}`);
+        await page
+          .getByRole('link', { name: `Back to ${kind === 'release' ? 'Releases' : 'Distro and merch'}`, exact: true })
+          .waitFor();
+        assert.equal(await page.locator('[data-staff-back]').count(), 1);
+      }
+      await page.goto(`${origin}/content/?collection=distro&area=merch`);
+      await page.getByRole('link', { name: 'Add merch', exact: true }).click();
+      await page.getByRole('link', { name: 'Back to Distro and merch', exact: true }).click();
+      await page.waitForURL((url) => url.pathname === '/content/' && url.searchParams.get('area') === 'merch');
+      await page.goto(`${origin}/review/?scope=catalog`);
+      await page.locator('.website-change-list a[href*="/content/"]').first().click();
+      await page.getByRole('link', { name: 'Back to Review changes', exact: true }).click();
+      await page.waitForURL((url) => url.pathname === '/review/' && url.searchParams.get('scope') === 'catalog');
+      await page.goto(`${origin}/content/?collection=artists&id=artists-1`);
+      await page.getByLabel('Artist name', { exact: true }).waitFor();
+      await page
+        .getByRole('navigation', { name: 'Staff workspace', exact: true })
+        .getByRole('link', { name: 'Images', exact: true })
+        .click();
+      await page.getByRole('heading', { name: 'Images', exact: true }).waitFor();
+      await page.getByRole('link', { name: 'Back to Artists', exact: true }).click();
+      await page.getByLabel('Artist name', { exact: true }).waitFor();
+      assert.equal(new URL(page.url()).searchParams.get('id'), 'artists-1');
+      await page.goto(`${origin}/stock/?q=shelf&area=distro&cursor=25`);
+      const stockRow = page.locator('.inventory-row').first();
+      await stockRow.waitFor();
+      const stockId = await stockRow.getAttribute('data-staff-row');
+      await stockRow.click();
+      await page.getByLabel('How many?', { exact: true }).waitFor();
+      await page.reload();
+      await page.getByLabel('How many?', { exact: true }).fill('3');
+      assert.equal(
+        await page.getByLabel('How many?', { exact: true }).inputValue(),
+        '3',
+        'Stock arrival cannot steal input focus',
+      );
+      await page.goBack();
+      await page.getByRole('alertdialog').getByRole('button', { name: 'Keep editing', exact: true }).click();
+      await page.waitForURL((url) => url.searchParams.get('variantId') === stockId);
+      assert.equal(await page.getByLabel('How many?', { exact: true }).inputValue(), '3');
+      await page.getByRole('link', { name: 'Back to Inventory', exact: true }).click();
+      await page.getByRole('alertdialog').getByRole('button', { name: 'Discard and continue', exact: true }).click();
+      await page.waitForURL((url) => !url.searchParams.has('variantId') && url.searchParams.get('cursor') === '25');
+      await stockRow.waitFor();
+      assert.equal(await page.getByLabel('Search items', { exact: true }).inputValue(), 'shelf');
+      await page.waitForFunction((id) => document.activeElement?.getAttribute('data-staff-row') === id, stockId);
+      assert.equal(await stockRow.evaluate((node) => node === document.activeElement), true);
+      await page.goto(`${origin}/orders/?q=ORDER&status=paid&notification=pending&cursor=25`);
+      const orderRow = page.locator('.order-row').first();
+      await orderRow.waitFor();
+      await orderRow.click();
+      await page.getByRole('heading', { name: 'Order detail', exact: true }).waitFor();
+      await page.reload();
+      await page.getByRole('link', { name: 'Back to Orders', exact: true }).click();
+      await page.waitForURL((url) => url.searchParams.get('cursor') === '25');
+      await orderRow.waitFor();
+      assert.equal(await page.getByLabel('Search orders', { exact: true }).inputValue(), 'ORDER');
+      assert.equal(await page.getByRole('combobox', { name: /Email status/ }).inputValue(), 'pending');
+      await page.waitForFunction(
+        (id) => document.activeElement?.getAttribute('data-staff-row') === id,
+        await orderRow.getAttribute('data-staff-row'),
+      );
+      assert.equal(await orderRow.evaluate((node) => node === document.activeElement), true);
+      console.log('Catalog navigation regressions passed');
+      if (process.argv.includes('--catalog-navigation')) {
+        await browser.close();
+        server.close();
+        process.exit(0);
+      }
+    }
     await assertClosedOptionalFeatures(browser);
     await assertOptionalFeatures(browser);
     await assertOverviewPanels(browser);
@@ -1279,7 +1642,13 @@ else if (sellingJourney) {
       if (name === 'Stock')
         state.compactProbe = { originalRequests: 0, thumbnailRequests: 0, thumbnailBytes: 0, byKey: {} };
       await topNavigation.getByRole('link', { name, exact: true }).click();
-      await page.waitForURL(`${origin}${path}`);
+      const destination = new URL(path, origin);
+      await page.waitForURL(
+        (url) =>
+          url.pathname === destination.pathname &&
+          ['collection', 'view'].every((key) => url.searchParams.get(key) === destination.searchParams.get(key)),
+      );
+      await page.waitForFunction(() => !document.querySelector('astro-island[ssr]'));
       await topNavigation.locator(`a[aria-current="page"]`).filter({ hasText: name }).waitFor();
       if (name === 'Stock') {
         await page.locator('.inventory-row').first().waitFor();
@@ -1367,7 +1736,7 @@ else if (sellingJourney) {
       .getByRole('dialog', { name: 'Staff workspace', exact: true })
       .getByRole('link', { name: 'Stock', exact: true })
       .click();
-    await page.waitForURL(`${origin}/stock/`);
+    await page.waitForURL((url) => url.pathname === '/stock/');
     assert.ok(records.artists.some((item) => item.data.title === 'Saved before switching area'));
     state.saveDelay = 0;
     await page.goBack();
@@ -1462,10 +1831,10 @@ else if (sellingJourney) {
     await artistName.fill('Save before leaving');
     await Promise.all([
       page.waitForRequest((request) => request.method() === 'PUT' && request.url().includes('/content/artists/')),
-      page.getByRole('button', { name: 'Back to list', exact: true }).click(),
+      page.getByRole('link', { name: 'Back to Artists', exact: true }).click(),
     ]);
     await artistName.fill('Last typing before leaving');
-    await page.getByRole('button', { name: 'Back to list', exact: true }).waitFor({ state: 'hidden' });
+    await page.getByRole('link', { name: 'Back to Artists', exact: true }).waitFor({ state: 'hidden' });
     assert.equal(
       records.artists[0].data.title,
       'Last typing before leaving',
@@ -1650,13 +2019,19 @@ else if (sellingJourney) {
     await page.getByRole('textbox', { name: 'Search distro and merch', exact: true }).fill('Browse');
     await page.getByRole('button', { name: /Browse 000/ }).waitFor();
     await page.getByRole('button', { name: /Browse 001/ }).waitFor({ state: 'hidden' });
-    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    await page
+      .getByRole('navigation', { name: 'Catalog pages, top', exact: true })
+      .getByRole('button', { name: 'Next', exact: true })
+      .click();
     await page.getByRole('button', { name: /Browse 050/ }).waitFor();
     await page.getByRole('button', { name: /Browse 050/ }).click();
     await page.locator('#content-title').waitFor();
     await page.goBack();
     await page.getByRole('button', { name: /Browse 050/ }).waitFor();
-    await page.getByRole('button', { name: 'Previous', exact: true }).click();
+    await page
+      .getByRole('navigation', { name: 'Catalog pages, top', exact: true })
+      .getByRole('button', { name: 'Previous', exact: true })
+      .click();
     await page.getByRole('button', { name: /Browse 000/ }).waitFor();
     // Shared review retains selections across pages and publishes a mixed batch once.
     await page.goto(`${origin}/review/?scope=catalog`);

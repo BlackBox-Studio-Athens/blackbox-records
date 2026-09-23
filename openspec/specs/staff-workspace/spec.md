@@ -118,7 +118,7 @@ Catalog and stock rows displaying small artwork SHALL request private display th
 
 ### Requirement: Staff performance acceptance distinguishes local proof from hosted results
 
-Performance acceptance SHALL record repeatable request, rendering, and resource evidence for the same deployed revision. Greek-network measurements SHALL establish the target-user result; measurements made through another country's network SHALL be labeled accordingly. Local checks alone SHALL NOT establish that the hosted latency issue is resolved.
+Performance acceptance SHALL record repeatable request, rendering, and resource evidence for the same deployed revision and documented network conditions. Acceptance SHALL NOT require measurements from a specific country. Local checks alone SHALL NOT establish that the hosted latency issue is resolved.
 
 #### Scenario: An optimized candidate is assessed
 
@@ -127,9 +127,9 @@ Performance acceptance SHALL record repeatable request, rendering, and resource 
 - **AND** the evidence includes browser/network conditions, connection location, cache state, revision, sample count, and the median and range for small samples
 - **AND** slow or incomplete results remain visible instead of being converted into a performance pass.
 
-#### Scenario: Free-tier operation or geographic assumptions are unproven
+#### Scenario: Free-tier operation or infrastructure assumptions are unproven
 
-- **WHEN** a pilot would exceed reviewed account allowance or further location investigation is needed
+- **WHEN** a pilot would exceed reviewed account allowance or the proposed infrastructure change lacks request attribution
 - **THEN** affected hosted probing stops and local work or retained evidence is used
 - **AND** no paid plan, new resource, or existing database/object relocation is inferred from the performance task
-- **AND** an edge location or a best-effort location hint is not reported as proof of Greek execution or data placement.
+- **AND** an edge location or a best-effort location hint is not reported as proof of application or data placement.

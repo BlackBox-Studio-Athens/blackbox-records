@@ -1,5 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useDraftAutosave } from '../../hooks/use-draft-autosave';
+import StaffBack from '../StaffBack';
+import { returnStaffTask, staffLink } from '../../lib/staff-navigation';
 import { Progress } from 'radix-ui';
 import {
   DISTRO_GROUP_VALUES,
@@ -131,6 +133,7 @@ export function setupCommand(input: {
 export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: string }) {
   const [step, setStep] = useState(0);
   const draftDocument = useRef<{ item: EditorialRecord; _rev: string } | null>(null);
+  const leaving = useRef(false);
   const [savedData, setSavedData] = useState('');
   const draftSlug = useRef('');
   const [ready, setReady] = useState(false);
@@ -233,9 +236,12 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
     },
     saved: (data) => setSavedData(JSON.stringify(data)),
   });
+  const unsaved = useRef(false);
+  unsaved.current = mode === 'new' && !!title && savedData !== editorialJson;
   useEffect(() => {
-    if (mode !== 'new' || !title || savedData === editorialJson) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    const warn = (event: BeforeUnloadEvent) => {
+      if (unsaved.current) event.preventDefault();
+    };
     const leave = (event: MouseEvent) => {
       const link = (event.target as Element)?.closest<HTMLAnchorElement>('a[href]');
       if (
@@ -245,12 +251,19 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
         event.ctrlKey ||
         event.metaKey ||
         event.shiftKey ||
-        event.button !== 0
+        event.button !== 0 ||
+        !unsaved.current
       )
         return;
       event.preventDefault();
+      if (leaving.current) return;
+      leaving.current = true;
       void autosave.flush().then((saved) => {
-        if (saved) location.assign(link.href);
+        if (saved) {
+          if (link.hasAttribute('data-staff-back')) returnStaffTask();
+          else location.assign(staffLink(link.href));
+        }
+        leaving.current = false;
       });
     };
     window.addEventListener('beforeunload', warn);
@@ -259,7 +272,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
       window.removeEventListener('beforeunload', warn);
       document.removeEventListener('click', leave, true);
     };
-  }, [mode, title, savedData, editorialJson]);
+  }, [autosave.flush]);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const requestedKind = params.get('kind');
@@ -431,9 +444,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   return (
     <div className="staff-workspace staff-item-setup mx-auto grid max-w-3xl gap-8 px-4 py-8 sm:px-8">
       <header className="staff-workspace-hero grid gap-3">
-        <a href="/items/" className="underline">
-          Back to catalog
-        </a>
+        <StaffBack />
         <h1 className="text-3xl font-semibold tracking-tight">
           Add {kind === 'release' ? 'release' : kind === 'merch' ? 'merch' : 'distro'}
         </h1>
@@ -663,7 +674,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
             disabled={busy}
             onClick={() => setStep(step === 2 && !sell ? 0 : step - 1)}
           >
-            Back
+            {step === 1 || !sell ? 'Back to details' : 'Back to price & starting stock'}
           </Button>
         )}
         {!completed && !draftSaved && (

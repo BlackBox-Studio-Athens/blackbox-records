@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { ArrowLeft, ArrowRight, ChevronRight, Inbox, LockKeyhole, Mail, TriangleAlert } from 'lucide-react';
+import { ArrowRight, ChevronRight, Inbox, LockKeyhole, Mail, TriangleAlert } from 'lucide-react';
+import StaffBack from '../StaffBack';
+import {
+  rememberStaffPosition,
+  restoreStaffPosition,
+  returnStaffTask,
+  staffPages,
+  writeStaffLocation,
+} from '../../lib/staff-navigation';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { createInternalOrderApi, type InternalOrder, type OrderStatus } from '../../lib/backend/internal-order-api';
@@ -15,20 +23,20 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
   const [previousCursors, setPreviousCursors] = useState<(string | undefined)[]>([]);
   const heading = useRef<HTMLHeadingElement>(null);
   const focusPending = useRef(false);
-  const listScrollTop = useRef(0);
-  const listFocusIndex = useRef<number | null>(null);
-  const listElement = useRef<HTMLUListElement>(null);
+  const restoreListPosition = useRef(false);
 
   useEffect(() => {
     const followUrl = () => {
       focusPending.current = true;
       const params = new URLSearchParams(window.location.search);
+      setPreviousCursors(staffPages(params.get('cursor') ?? '').slice(0, -1));
       const session = params.get('checkoutSessionId')?.trim();
       if (session) {
         void workspace.lookup(session);
         return;
       }
       workspace.back();
+      restoreListPosition.current = true;
       const requested = params.get('status') as OrderStatus;
       const status = ['paid', 'not_paid', 'needs_review', 'pending_payment'].includes(requested) ? requested : '';
       const q = params.get('q') ?? '';
@@ -51,51 +59,59 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
       setSearch('');
       setNotification('');
       setPreviousCursors([]);
-      window.history.replaceState(null, '', '/orders/');
+      writeStaffLocation('/orders/');
       heading.current?.focus();
     } else if (focusPending.current) {
       focusPending.current = false;
-      if (!state.selected && listFocusIndex.current !== null) {
-        listElement.current
-          ?.querySelectorAll<HTMLButtonElement>('button')
-          [listFocusIndex.current]?.focus({ preventScroll: true });
-        const main = document.getElementById('main');
-        if (main) main.scrollTop = listScrollTop.current;
-      } else heading.current?.focus();
+      heading.current?.focus();
     }
   }, [state.selected, state.session, state.denied]);
 
   function openSession(session: string) {
     focusPending.current = true;
-    window.history.pushState(null, '', `/orders/?${new URLSearchParams({ checkoutSessionId: session })}`);
+    rememberStaffPosition();
+    writeStaffLocation(`/orders/?${new URLSearchParams({ checkoutSessionId: session })}`, { push: true, task: true });
     void workspace.lookup(session);
     document.getElementById('main')?.scrollTo(0, 0);
   }
-  function inspect(order: InternalOrder, index: number) {
-    listFocusIndex.current = index;
-    listScrollTop.current = document.getElementById('main')?.scrollTop ?? 0;
+  function inspect(order: InternalOrder) {
     if (order.checkoutSessionId) openSession(order.checkoutSessionId);
     else {
       focusPending.current = true;
-      window.history.pushState(null, '', '/orders/');
+      rememberStaffPosition();
       workspace.inspectUnbound(order);
       document.getElementById('main')?.scrollTo(0, 0);
     }
   }
   function back() {
     focusPending.current = true;
-    window.history.pushState(null, '', '/orders/');
-    workspace.back();
+    if (state.session) returnStaffTask();
+    else workspace.back();
   }
   useEffect(() => {
-    if (state.selected || state.denied || !state.list.data) return;
+    if (state.selected || state.denied || state.list.loading || !state.list.data) return;
     const params = new URLSearchParams();
     if (state.status) params.set('status', state.status);
     if (state.query) params.set('q', state.query);
     if (state.notification) params.set('notification', state.notification);
     if (state.cursor) params.set('cursor', state.cursor);
-    window.history.replaceState(null, '', `/orders/${params.size ? `?${params}` : ''}`);
-  }, [state.selected, state.denied, state.status, state.query, state.notification, state.cursor, state.list.data]);
+    writeStaffLocation(`/orders/${params.size ? `?${params}` : ''}`, {
+      pages: [...previousCursors.map((cursor) => cursor ?? ''), state.cursor ?? ''],
+    });
+    if (restoreListPosition.current) {
+      restoreListPosition.current = false;
+      restoreStaffPosition(heading.current);
+    }
+  }, [
+    state.selected,
+    state.denied,
+    state.status,
+    state.query,
+    state.notification,
+    state.cursor,
+    state.list.data,
+    state.list.loading,
+  ]);
   const read = state.selected ? state.detail : state.list;
   const orders = state.list.data ?? [];
   useStaffRead(
@@ -139,19 +155,14 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
 
   return (
     <div className="staff-workspace order-workspace">
-      {state.selected && (
-        <a
-          className="order-back"
-          href="/orders/"
-          onClick={(event) => {
-            event.preventDefault();
-            back();
-          }}
-        >
-          <ArrowLeft size={18} aria-hidden="true" />
-          Back to orders
-        </a>
-      )}
+      {state.selected &&
+        (state.session ? (
+          <StaffBack />
+        ) : (
+          <Button variant="ghost" onClick={back}>
+            Back to Orders
+          </Button>
+        ))}
       <header className="order-heading">
         <div>
           <h1 ref={heading} tabIndex={-1}>
@@ -289,15 +300,16 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                 <span>Notifications</span>
                 <span />
               </div>
-              <ul className="order-list" ref={listElement}>
+              <ul className="order-list">
                 {orders.map((order, index) => {
                   const attention = notificationStatus(order);
                   return (
                     <li key={`${order.checkoutSessionId ?? order.variantId}-${order.createdAt}-${index}`}>
                       <button
                         type="button"
-                        onClick={() => inspect(order, index)}
+                        onClick={() => inspect(order)}
                         className="order-row"
+                        data-staff-row={order.checkoutSessionId ?? `${order.variantId}:${order.createdAt}`}
                         aria-label={`Open order: ${order.storeItemSlug}, ${formatOrderTime(order.createdAt)}, ${paymentLabels[order.status]}`}
                       >
                         <span className="order-row-created">

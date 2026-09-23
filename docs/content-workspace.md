@@ -142,6 +142,12 @@ The [living backoffice design reference](backoffice-design.md) owns shared patte
 
 Distro & merch uses EmDash field filtering and cursor pagination: All, Distro, Merch and existing format groups, with title/recently edited sorting and 25-entry pages. Filters apply before pagination. No new taxonomy or public category is created.
 
+Catalog paging appears above and below the results. Previous and Next change the batch; `Back to <destination>` leaves the task. A successful page change brings the results heading into view and focuses it. Position text describes the current page, never a scanned total. A copied cursor URL cannot establish its page number or predecessor, so it offers First page instead of an invented Previous destination. Failed reads retain the last successful batch and offer Retry page; empty filters offer Reset filters.
+
+Browser Back/Forward and same-tab reload retain the addressable criteria and known cursor trail. Editor Back prefers the originating list or Review changes and restores its row and scroll position. Direct editor links have named collection or Website parents; workspace roots fall back to Overview. Return metadata is navigation-only, same-origin, bounded, and optional. It is not forwarded to workspace APIs or used as content, stock, or order authority.
+
+Back waits for the latest editorial autosave, including typing made during a save. Failed or conflicting saves retain the editor and recovery options. Unfinished stock inputs still use their existing leave prompt; uncertain operations keep their recovery identities. Closing Images or Publication history panels and moving to the previous setup step remain local actions, separate from leaving the task.
+
 Stock uses the available width for thumbnail rows and quantities. Selection opens a 420 px task panel at 1280 px and above; smaller screens open a focused task with Back to inventory. Search and filters operate on the complete operational result set. Legacy CD/Tape labels remain stored unchanged and match CDs/Tapes filters.
 
 Start stocktake captures a fixed sequence from the selected group using bounded inventory pages. Record count and next confirms one existing revision-protected stock count at a time. Previous, Skip for now and Finish stocktake retain explicit control. Same-tab session storage remembers progress, not authoritative stock. Unconfirmed counts preserve their baseline and entered values for recovery; a changed baseline requires reassessment. New arrivals enter the next stocktake.

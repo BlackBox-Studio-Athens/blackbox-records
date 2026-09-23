@@ -1,6 +1,16 @@
 import { ArrowDownUp, ClipboardCheck, Disc3 } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
+import StaffBack from '../StaffBack';
+import {
+  followStaffHistory,
+  rememberStaffPosition,
+  restoreStaffPosition,
+  returnStaffTask,
+  staffLink,
+  staffPages,
+  writeStaffLocation,
+} from '../../lib/staff-navigation';
 
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -63,13 +73,12 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   const [stocktake, setStocktake] = useState<Stocktake | null>(null);
   const [startingStocktake, setStartingStocktake] = useState(false);
   const [leaveAction, setLeaveAction] = useState<(() => void) | null>(null);
+  const resolveHistoryLeave = useRef<((allowed: boolean) => void) | null>(null);
+  const restorePosition = useRef(true);
   const [countEdited, setCountEdited] = useState(false);
   const [countUnconfirmed, setCountUnconfirmed] = useState(false);
   const focusedVariant = useRef('');
-  const selectionUrl = useRef('');
   const inventoryRef = useRef<HTMLElement>(null);
-  const inventoryScroll = useRef(0);
-  const pageScroll = useRef(0);
   const [variants, setVariants] = useState<InternalVariantSummary[]>([]);
   const [selectedVariantId, setSelectedVariantId] = useState('');
   const [stockDetail, setStockDetail] = useState<InternalStockDetail | null>(null);
@@ -135,8 +144,11 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
         if (value) url.searchParams.set(key, value);
         else url.searchParams.delete(key);
       }
-      window.history.replaceState(window.history.state, '', url);
-      selectionUrl.current = url.href;
+      writeStaffLocation(url.pathname + url.search, { pages });
+      if (restorePosition.current && !selectedVariantId) {
+        restorePosition.current = false;
+        restoreStaffPosition(inventoryRef.current);
+      }
       void editorialRequest<{ items: { variantId: string; image: EditorialMedia | null }[] }>(
         backendBaseUrl,
         `blackbox/inventory-artwork?items=${encodeURIComponent(
@@ -248,9 +260,8 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
       if (shouldUpdateUrl) {
         const url = new URL(window.location.href);
         url.searchParams.set('variantId', variantId);
-        window.history.pushState({ inventoryPages: pages }, '', url);
+        writeStaffLocation(url.pathname + url.search, { push: true, task: true, pages });
       }
-      selectionUrl.current = window.location.href;
     } catch (error) {
       if (activeStockLoadRequestRef.current === requestId) {
         setErrorMessage(readErrorMessage(error));
@@ -271,7 +282,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     setArea(params.get('area') ?? 'all');
     setFormat(params.get('format') ?? '');
     setPageCursor(params.get('cursor') ?? '');
-    if (Array.isArray(window.history.state?.inventoryPages)) setPages(window.history.state.inventoryPages);
+    setPages(staffPages(params.get('cursor') ?? ''));
     try {
       const pending = pendingCountSchema.safeParse(JSON.parse(sessionStorage.getItem(pendingCountKey) ?? 'null'));
       const pendingChange = pendingChangeSchema.safeParse(
@@ -318,10 +329,6 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     };
   }, []);
 
-  useEffect(() => {
-    window.history.replaceState({ ...window.history.state, inventoryPages: pages }, '', window.location.href);
-  }, [pages]);
-
   function protectInput(action: () => void) {
     if (isSubmitting || changeUnconfirmed || countUnconfirmed) return;
     if (changeDelta || changeNotes || countEdited || countNotes) setLeaveAction(() => action);
@@ -329,26 +336,29 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   }
 
   function chooseVariant(id: string) {
+    rememberStaffPosition();
     setChangeDelta('');
     setChangeNotes('');
     setCountEdited(false);
     setCountNotes('');
     countVariantRef.current = '';
-    inventoryScroll.current = inventoryRef.current?.scrollTop ?? 0;
-    pageScroll.current = window.scrollY;
     void loadVariant(id);
   }
 
   useEffect(() => {
     if (isLoading || !selectedVariantId || inventoryOpen || focusedVariant.current === selectedVariantId) return;
     focusedVariant.current = selectedVariantId;
+    if (window.document.activeElement?.closest('.staff-stock-controls')) return;
     window.document
       .querySelector<HTMLElement>(stockMode === 'count' ? '#stock-count-counted-quantity' : '#stock-change-direction')
       ?.focus();
   }, [selectedVariantId, isLoading, inventoryOpen]);
 
-  useEffect(() => {
-    const unfinished = !!(
+  const navigation = useRef({ protectInput, loadVariant, unfinished: false, blocked: false });
+  navigation.current = {
+    protectInput,
+    loadVariant,
+    unfinished: !!(
       changeDelta ||
       changeNotes ||
       countEdited ||
@@ -356,9 +366,12 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
       changeUnconfirmed ||
       countUnconfirmed ||
       isSubmitting
-    );
+    ),
+    blocked: isSubmitting || changeUnconfirmed || countUnconfirmed,
+  };
+  useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
-      if (unfinished) event.preventDefault();
+      if (navigation.current.unfinished) event.preventDefault();
     };
     const leave = (event: MouseEvent) => {
       const link = (event.target as Element).closest('a[href]');
@@ -370,41 +383,51 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
         event.shiftKey ||
         event.altKey ||
         event.button !== 0 ||
-        !unfinished
+        !navigation.current.unfinished
       )
         return;
       event.preventDefault();
-      protectInput(() => window.location.assign(link.href));
+      navigation.current.protectInput(() => {
+        if (link.hasAttribute('data-staff-back')) returnStaffTask();
+        else window.location.assign(staffLink(link.href));
+      });
     };
     const back = () => {
-      const target = window.location.href;
       const params = new URLSearchParams(window.location.search);
-      if (unfinished && selectionUrl.current)
-        window.history.replaceState(window.history.state, '', selectionUrl.current);
-      protectInput(() => {
-        window.history.replaceState(window.history.state, '', target);
-        typing.current = false;
-        setQuery(params.get('q') ?? '');
-        setArea(params.get('area') ?? 'all');
-        setFormat(params.get('format') ?? '');
-        setPageCursor(params.get('cursor') ?? '');
-        const id = params.get('variantId');
-        if (id) void loadVariant(id, false);
-        else {
-          setSelectedVariantId('');
-          setInventoryOpen(true);
-        }
-      });
+      typing.current = false;
+      setQuery(params.get('q') ?? '');
+      setArea(params.get('area') ?? 'all');
+      setFormat(params.get('format') ?? '');
+      setPageCursor(params.get('cursor') ?? '');
+      setPages(staffPages(params.get('cursor') ?? ''));
+      const id = params.get('variantId');
+      if (id) void navigation.current.loadVariant(id, false);
+      else {
+        setSelectedVariantId('');
+        setInventoryOpen(true);
+        restorePosition.current = true;
+        restoreStaffPosition(inventoryRef.current);
+      }
     };
     window.addEventListener('beforeunload', beforeUnload);
     window.document.addEventListener('click', leave, true);
-    window.addEventListener('popstate', back);
+    const stopHistory = followStaffHistory(back, () => {
+      if (navigation.current.blocked) return false;
+      if (!navigation.current.unfinished) return true;
+      return new Promise<boolean>((resolve) => {
+        resolveHistoryLeave.current = resolve;
+        navigation.current.protectInput(() => {
+          resolveHistoryLeave.current = null;
+          resolve(true);
+        });
+      });
+    });
     return () => {
       window.removeEventListener('beforeunload', beforeUnload);
       window.document.removeEventListener('click', leave, true);
-      window.removeEventListener('popstate', back);
+      stopHistory();
     };
-  }, [changeDelta, changeNotes, countEdited, countNotes, changeUnconfirmed, countUnconfirmed, isSubmitting]);
+  }, []);
 
   function saveStocktake(value: Stocktake | null) {
     setStocktake(value);
@@ -618,21 +641,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
         <h1>
           {selectedStockDetail?.displayName ?? selectedStockDetail?.storeItemSlug.replaceAll('-', ' ') ?? 'Stock'}
         </h1>
-        {selectedVariantId && (
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setInventoryOpen(!inventoryOpen);
-              requestAnimationFrame(() => {
-                if (inventoryRef.current) inventoryRef.current.scrollTop = inventoryScroll.current;
-                window.scrollTo(0, pageScroll.current);
-                window.document.getElementById(`inventory-${selectedVariantId}`)?.focus();
-              });
-            }}
-          >
-            {inventoryOpen ? 'Return to stock task' : 'Back to inventory'}
-          </Button>
-        )}
+        {selectedVariantId && <StaffBack />}
       </header>
       <section
         className={cn(
@@ -641,7 +650,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
           inventoryOpen && 'inventory-browsing',
         )}
       >
-        <aside ref={inventoryRef} className="inventory-list" aria-label="Inventory">
+        <aside ref={inventoryRef} data-staff-scroll tabIndex={-1} className="inventory-list" aria-label="Inventory">
           <div className="inventory-toolbar">
             <Input
               aria-label="Search items"
@@ -714,6 +723,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               key={variant.variantId}
               id={`inventory-${variant.variantId}`}
               className="inventory-row"
+              data-staff-row={variant.variantId}
               aria-pressed={selectedVariantId === variant.variantId}
               disabled={isSubmitting || !!stocktake}
               onClick={() => protectInput(() => chooseVariant(variant.variantId))}
@@ -852,7 +862,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                         event.preventDefault();
                         const href = event.currentTarget.href;
                         protectInput(() => {
-                          window.location.href = href;
+                          window.location.href = staffLink(href);
                         });
                       }}
                     >
@@ -1166,7 +1176,11 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
       <AlertDialog
         open={!!leaveAction}
         onOpenChange={(open) => {
-          if (!open) setLeaveAction(null);
+          if (!open) {
+            setLeaveAction(null);
+            resolveHistoryLeave.current?.(false);
+            resolveHistoryLeave.current = null;
+          }
         }}
       >
         <AlertDialogContent>

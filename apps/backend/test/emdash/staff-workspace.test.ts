@@ -1,7 +1,7 @@
 import { applyD1Migrations, env } from 'cloudflare:test';
 import { afterEach, beforeAll, expect, test, vi } from 'vitest';
 import { ContentRepository } from 'emdash';
-import { sourceCollectionNames } from '@blackbox/content-model';
+import { DISTRO_GROUP_VALUES, sourceCollectionNames } from '@blackbox/content-model';
 import type { EmDashRuntime } from 'emdash/middleware';
 import { readStaffWorkspace, type StaffSnapshotCache } from '../../src/cms/staff-workspace';
 import { activatePublication, currentPublicationKey } from '../../src/cms/published-storage';
@@ -9,6 +9,69 @@ import { completeSnapshot } from '../../src/cms/snapshot-storage';
 
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));
 afterEach(() => vi.restoreAllMocks());
+test('catalog forwards native filters, ordering and opaque cursors without truncating editorial entries', async () => {
+  await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
+  const entries = Array.from({ length: 251 }, (_, index) => ({
+    id: `paging-${index}`,
+    slug: `paging-${index}`,
+    data: { title: `Title ${Math.floor(index / 3)}`, group: DISTRO_GROUP_VALUES[index % DISTRO_GROUP_VALUES.length] },
+    updatedAt: '2026-09-22T00:00:00Z',
+  }));
+  // This proves adapter forwarding only. content-smoke exercises real native cursors.
+  const list = vi.fn();
+  const deps = {
+    runtime: { handleContentList: list } as unknown as EmDashRuntime,
+    db: env.TEST_CMS_DB,
+    commerce: env.COMMERCE_DB,
+    bucket: env.TEST_SNAPSHOTS,
+    environment: 'local' as const,
+  };
+  for (const sort of ['title', 'updated']) {
+    for (const area of ['all', 'distro', 'merch']) {
+      for (const format of ['', ...DISTRO_GROUP_VALUES]) {
+        const groups = DISTRO_GROUP_VALUES.filter(
+          (group) => (!format || group === format) && (area === 'all' || (area === 'merch') === (group === 'Clothes')),
+        );
+        const matching = entries.filter((item) => groups.includes(item.data.group));
+        const seen: string[] = [];
+        let cursor: string | undefined;
+        let offset = 0;
+        do {
+          const nextCursor = offset + 25 < matching.length ? `opaque/+${offset + 25}==` : undefined;
+          list.mockResolvedValueOnce({
+            success: true,
+            data: { items: matching.slice(offset, offset + 25), nextCursor },
+          });
+          const params = new URLSearchParams({ collection: 'distro', q: 'Title', area, sort, limit: '25' });
+          if (format) params.set('format', format);
+          if (cursor) params.set('cursor', cursor);
+          const response = await readStaffWorkspace(new Request(`https://staff.invalid/?${params}`), deps);
+          const page = (await response.json()) as {
+            data: { items: { id: string; selling: unknown }[]; nextCursor?: string };
+          };
+          expect(response.status).toBe(200);
+          if (groups.length) {
+            expect(list).toHaveBeenLastCalledWith('distro', {
+              limit: 25,
+              cursor,
+              q: 'Title',
+              orderBy: sort === 'title' ? 'title' : 'updatedAt',
+              order: sort === 'title' ? 'asc' : 'desc',
+              ...(format || area !== 'all' ? { fieldFilters: { group: { in: groups } } } : {}),
+            });
+            expect(page.data.nextCursor).toBe(nextCursor);
+          } else list.mockReset();
+          expect(page.data.items.every((item) => item.selling === null)).toBe(true);
+          seen.push(...page.data.items.map((item) => item.id));
+          cursor = page.data.nextCursor;
+          offset += 25;
+        } while (cursor);
+        expect(seen).toEqual(matching.map((item) => item.id));
+        expect(new Set(seen).size).toBe(seen.length);
+      }
+    }
+  }
+});
 test('Overview keeps bounded recent publication truth without list enrichment or commerce', async () => {
   await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
   const sections = Object.keys(sourceCollectionNames);
