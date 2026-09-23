@@ -415,6 +415,7 @@ This is an iframe boundary, not an app bug.
 - Do not use Serena for routine/simple work, and do not use `rtk rg` as a substitute when the task genuinely needs Serena symbol navigation.
 - Keep Serena shell execution unfavored; run shell commands through Codex PowerShell with RTK when output may be noisy.
 - Keep Serena on the default LSP backend unless the paid Serena JetBrains plugin is installed and verified. JetBrains IDE MCP is separate and must not be treated as Serena's semantic backend.
+- When JetBrains MCP tools are Router-only, call them through `execute_tool` with a command beginning with the exact tool name and its arguments. The workflow hook tracks routed renames and run configurations.
 - Browser Use is mandatory for local or hosted rendered UI checks.
 - DevTools MCP is fallback-only for browser validation. Use it only when Browser Use is unavailable, fails to initialize, or lacks a needed inspection capability, and record the Browser Use failure reason in validation notes.
 
