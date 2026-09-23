@@ -312,3 +312,92 @@ The system SHALL expose validated paid fulfillment and delivery status to authen
 
 - **WHEN** a public checkout response is generated
 - **THEN** it omits shopper contact, delivery address, delivery attempts, provider identifiers, and safe failure reasons.
+
+### Requirement: Paid webhook acknowledgement follows a durable outcome
+
+The system MUST acknowledge an app-owned paid checkout event successfully only after a durable paid or needs-review outcome, or a verified terminal replay; recoverable failures before that boundary MUST receive a retryable non-success response.
+
+#### Scenario: Order cannot yet be recovered
+
+- **WHEN** a verified app-owned paid event still has no matching order after session and metadata recovery
+- **THEN** the Worker returns a retryable non-2xx response
+- **AND** no stock mutation or normal paid delivery occurs
+- **AND** the failed outcome is available for operator investigation and provider resend.
+
+#### Scenario: Stock cannot satisfy a paid order
+
+- **WHEN** verified payment is received but the pending order's required stock is unavailable
+- **THEN** the Worker atomically records `needs_review` and a safe shortage reason before acknowledging success
+- **AND** retains the order/payment correlation for protected operator investigation
+- **AND** no partial stock mutation or normal paid delivery occurs.
+
+#### Scenario: Review reason is retained
+
+- **WHEN** a new shortage, line-mismatch, or incomplete-fulfillment review outcome commits
+- **THEN** its bounded `needsReviewReason` code and verified payment correlation commit with the order status
+- **AND** replay preserves the reason while legacy review rows can retain an unknown reason.
+
+#### Scenario: Another reconciliation wins the transition
+
+- **WHEN** a guarded review write changes zero rows because another event already made the order terminal
+- **THEN** the Worker reads and preserves the winning outcome before acknowledging
+- **AND** it does not report an unsaved review transition or mutate stock/delivery for the losing event.
+
+#### Scenario: Durable outcome cannot be saved
+
+- **WHEN** the paid or review transaction fails
+- **THEN** the Worker returns a retryable non-2xx response
+- **AND** transaction writes roll back together
+- **AND** a later successful delivery can complete the same order without duplicate stock consumption.
+
+#### Scenario: Paid outcome is replayed or email fails afterward
+
+- **WHEN** an already committed paid/review outcome is replayed or delivery fails after a paid commit
+- **THEN** the Worker acknowledges the durable order outcome
+- **AND** stock remains idempotent
+- **AND** post-payment delivery retries remain owned by the existing delivery outbox.
+
+#### Scenario: Terminal shortage is operated manually
+
+- **WHEN** an authorized operator investigates a needs-review shortage
+- **THEN** the protected order read identifies the order, review reason, and payment correlation without exposing them publicly
+- **AND** the operational procedure covers customer contact and manual refund or other verified resolution without automatically reopening the order or charging again.
+
+### Requirement: Keyed operator stock retries apply one ledger effect
+
+The system SHALL commit each keyed StockChange or StockCount and its request identity atomically, scoped to the verified actor, operation, and Product Environment, so a recognized retry does not repeat stock or ledger effects. Existing item/price/publication journals and paid-order stock/outbox deduplication SHALL retain their current contracts rather than being moved into a generic request journal.
+
+#### Scenario: A stock adjustment acknowledgement is lost
+
+- **WHEN** an operator retries the same key and normalized delta input
+- **THEN** the original committed StockChange is identified without applying the delta again
+- **AND** the UI refreshes current authoritative stock rather than treating the old result as current stock.
+
+#### Scenario: A committed recount is retried
+
+- **WHEN** the same key and original recount input identify an already committed StockCount
+- **THEN** the system recognizes that result before rejecting its now-old revision
+- **AND** no second recount or revision increment occurs.
+
+#### Scenario: An uncommitted recount is stale
+
+- **WHEN** the key does not identify a committed recount and its expected revision is stale
+- **THEN** existing conflict behavior rejects the write without stock or ledger changes
+- **AND** reassessment retains explicit operator intent and uses a new request identity.
+
+#### Scenario: A key is reused for different input
+
+- **WHEN** an operator reuses a scoped key with a different variant, delta/count, revision, reason, or notes
+- **THEN** the system rejects the conflict without a write.
+
+#### Scenario: Separate operations have identical quantities
+
+- **WHEN** independently intentional stock operations use distinct keys
+- **THEN** each is validated and may commit independently
+- **AND** quantity equality is not used as deduplication identity.
+
+#### Scenario: A concurrent write or restart occurs
+
+- **WHEN** duplicate stock requests race or the process restarts after commit
+- **THEN** durable transaction constraints retain one effect and its matching audit identity
+- **AND** protected authorization is verified for every replay.

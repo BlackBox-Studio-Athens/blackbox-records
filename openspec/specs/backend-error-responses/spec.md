@@ -6,54 +6,91 @@ Specify shared Worker API error response contracts, schemas, and browser-safe er
 
 ### Requirement: Worker API errors use a shared JSON contract
 
-The system MUST return standardized JSON error bodies for Worker API routes.
+The system MUST return RFC 9457 problem details with `application/problem+json` for migrated BlackBox-owned JSON API error responses, preserving existing safe codes and each route family's legacy error representation.
 
 #### Scenario: Public API returns an expected error
 
 - **GIVEN** a request targets a public Worker API route
-- **WHEN** the route returns an expected error such as invalid input, unavailable checkout, catalog drift, or newsletter unavailability
-- **THEN** the response body includes a non-empty `error` message string
-- **AND** the response body includes a stable lower-snake-case `code`
-- **AND** the response body includes the request-scoped `requestId` when one exists
-- **AND** the HTTP status remains the authoritative transport status.
+- **WHEN** the route returns invalid input, unavailable checkout, catalog drift, newsletter unavailability, or another expected error
+- **THEN** the body includes a stable problem `type` URI reference, non-empty `title` and `detail`, and numeric `status` equal to the actual HTTP status
+- **AND** it includes a stable lower-snake-case `code`, legacy `error` equal to `detail`, and request-scoped `requestId` when one exists
+- **AND** the HTTP status remains authoritative and the response is `no-store`.
 
 #### Scenario: Internal API returns an expected error
 
 - **GIVEN** a request targets a protected internal Worker API route
-- **WHEN** the route returns an expected error such as missing operator identity, invalid stock input, variant not found, or order not found
-- **THEN** the response body uses the same `error`, `code`, and `requestId` fields
-- **AND** the body does not expose Cloudflare Access tokens, raw authenticated-user headers, or internal binding details.
+- **WHEN** the route returns missing identity, invalid stock input, variant not found, order not found, or another expected error
+- **THEN** it uses the same problem-details contract
+- **AND** no Access token, raw authenticated-user header, or binding detail is exposed.
 
 #### Scenario: Fallback handler returns an unexpected error
 
-- **GIVEN** a Worker API request throws an unexpected error
-- **WHEN** the global Hono error handler creates the response
-- **THEN** the body uses the shared error contract with `code` set to `internal_server_error`
-- **AND** the browser-visible `error` message is generic
-- **AND** stack traces, provider payloads, secrets, D1 binding names, and raw validation details are omitted.
+- **WHEN** a Worker API request throws an unexpected error
+- **THEN** the response uses the shared problem contract with `code` equal to `internal_server_error`
+- **AND** both `detail` and legacy `error` are generic safe text
+- **AND** stack traces, provider payloads, secrets, bindings, and raw validation issues are omitted.
 
 #### Scenario: Unknown route returns not found
 
-- **GIVEN** a request targets an unknown route
-- **WHEN** the Hono not-found handler creates the response
-- **THEN** the body uses the shared error contract with `code` set to `not_found`
-- **AND** the status is `404`.
+- **WHEN** the app-owned JSON API not-found boundary handles an unknown route
+- **THEN** it returns the shared problem contract with status `404` and `code` equal to `not_found`.
+
+#### Scenario: Response belongs to an upstream protocol
+
+- **WHEN** Cloudflare Access/edge, supported upstream EmDash, or a provider produces its own response
+- **THEN** the upstream contract is preserved and documented as outside app-owned problem generation
+- **AND** consumers safely handle that response without exposing its raw body as an application error message.
+
+#### Scenario: App-owned CMS uses a legacy error variant
+
+- **WHEN** a migrated app-owned CMS route previously returned a safe string error code or a nested error object
+- **THEN** standard problem members are added alongside the unchanged legacy error representation and required discriminators
+- **AND** Hono's `error === detail` convention is not imposed on that CMS representation
+- **AND** private/no-store, authentication and runtime-publication recovery semantics remain intact.
+
+#### Scenario: Public renderer returns a document failure
+
+- **WHEN** the public gateway or renderer returns an HTML or plain-text error rather than an app-owned JSON API response
+- **THEN** that representation remains outside problem-details generation
+- **AND** no commerce API envelope is imposed on public documents or media.
 
 ### Requirement: Error schemas are shared across route contracts
 
-The system SHALL define backend error OpenAPI schemas once and reuse them across route families.
+The system SHALL define its problem-details base schema once, extend it only with explicit typed legacy representations for migrated route families, and preserve compatibility with independently deployed browser clients.
 
 #### Scenario: Route documents an error response
 
-- **WHEN** a backend route declares an OpenAPI error response
-- **THEN** it reuses the shared backend error schema
-- **AND** it does not define a separate `{ error: string }` schema for that route family.
+- **WHEN** a migrated backend route declares an OpenAPI error response
+- **THEN** it references the shared problem schema under the media type actually returned
+- **AND** it does not define an independent error envelope for that family.
 
 #### Scenario: Generated clients consume errors
 
-- **WHEN** backend OpenAPI contracts change for standardized errors
-- **THEN** the generated API client package is regenerated
-- **AND** browser consumers continue to read the existing `error` message during deploy skew.
+- **WHEN** the error contract changes
+- **THEN** public/internal API descriptions and generated clients are regenerated and verified separately
+- **AND** legacy readers retain their existing `error` representation while new readers prefer safe `detail` with family-specific legacy fallback.
+
+#### Scenario: Native CMS is outside the generated Hono descriptions
+
+- **WHEN** a native app-owned CMS route changes its error representation
+- **THEN** existing CMS client fixtures verify its media type and legacy compatibility separately
+- **AND** generating the public/internal Hono documents is not presented as CMS schema coverage.
+
+#### Scenario: A response is outside the known schema
+
+- **WHEN** a consumer receives an unknown problem type, extension, or non-JSON edge/auth error
+- **THEN** it preserves HTTP-status handling and safe fallback text
+- **AND** it does not require parsing message text or arbitrary remote problem documentation to decide the next action.
+
+### Requirement: Problem types are stable and safe to identify
+
+The system SHALL maintain documented stable problem type URI references and titles, with occurrence-specific safe details and no sensitive identifiers embedded in type or instance references.
+
+#### Scenario: The same failure type recurs
+
+- **WHEN** two requests fail for the same documented problem type
+- **THEN** their `type` and `title` remain stable while safe details and correlation IDs may differ
+- **AND** any optional `instance` is an occurrence reference rather than a leaked request query or provider identifier.
 
 ### Requirement: Hono exceptions use the shared error contract
 

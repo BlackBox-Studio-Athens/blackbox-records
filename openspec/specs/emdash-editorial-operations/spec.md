@@ -29,7 +29,7 @@ Label members SHALL manage content, Store Items, stock, and orders from one Blac
 
 ### Requirement: Editorial fields retain their supported meaning
 
-CMS editing SHALL cover every existing public content collection and fixed page structure while preserving references, stable slugs, rich-text meaning, validation, media descriptions, and deletion restrictions.
+CMS editing SHALL cover every existing public content collection and fixed page structure while preserving references, stable slugs, rich-text meaning, validation, media descriptions, and deletion restrictions. The editor SHALL expose actionable validation beside the affected field before a save or publication request, while the server SHALL remain the final authority for content validity and reference/media existence.
 
 #### Scenario: Member formats editorial prose
 
@@ -78,9 +78,22 @@ CMS editing SHALL cover every existing public content collection and fixed page 
 - **THEN** server validation rejects it with actionable field errors
 - **AND** arbitrary scripts, executable markup, unsafe embeds, and unsupported fields cannot enter rendered content.
 
+#### Scenario: Member enters invalid content in the editor
+
+- **WHEN** a required value is blank, a constrained value is malformed, or a nested row is invalid
+- **THEN** the affected field exposes an associated error and invalid state
+- **AND** Save and Publish do not send a mutation until all current fields pass the shared content validation rules.
+
+#### Scenario: Member discards edits
+
+- **WHEN** a member has unsaved changes and selects Discard changes
+- **THEN** the workspace asks for confirmation before replacing or clearing the edited values
+- **AND** canceling preserves values and focus
+- **AND** confirming a saved record reloads its saved revision while confirming a new record returns to the collection list without saving.
+
 ### Requirement: Staff editing remains accessible and task-first
 
-The workspace SHALL provide content lists, forms, media selection, draft preview, publication status, and actionable errors using current BlackBox terminology and branding.
+The workspace SHALL provide content lists, forms, media selection, full-page interactive draft preview, publication status, and actionable errors using current BlackBox terminology and branding. Content, Images, Items, Stock, and Orders SHALL use a consistent staff workspace hierarchy with task-specific headings, compact operational controls, semantic status treatments, and responsive layouts. Every editable Content field SHALL expose semantic labels, associated validation messages, visible invalid state, and keyboard-reachable focus. Preview SHALL preserve the public page's presentation and safe behavior without giving that page staff or publication authority.
 
 #### Scenario: Member uses a narrow screen or keyboard
 
@@ -91,8 +104,199 @@ The workspace SHALL provide content lists, forms, media selection, draft preview
 #### Scenario: Member previews a draft
 
 - **WHEN** a member previews Home, About, Services, Artist, Release, Store Item, or News content
-- **THEN** the preview shows the pending content and media clearly marked as a draft
-- **AND** preview does not publish it or expose draft content through public routes.
+- **THEN** the complete public page shows the selected content and media with safe navigation, overlays, and player behavior
+- **AND** staff controls identify it as private without changing the public page layout
+- **AND** preview does not save, publish, deliver forms, or create checkout.
+
+#### Scenario: Member fixes an invalid field
+
+- **WHEN** a member corrects the field associated with a validation error
+- **THEN** the field error clears when the current content is valid
+- **AND** the first invalid field can be reached by the form's validation focus behavior without losing other edits.
+
+#### Scenario: Member moves between staff workspaces
+
+- **WHEN** a member moves between Content, Images, Items, Stock, and Orders
+- **THEN** the workspace keeps consistent heading hierarchy, spacing, action placement, status language, loading feedback, and focus treatment
+- **AND** each workspace retains its current data ownership, permissions, and direct links.
+
+#### Scenario: A workspace read or operation is pending
+
+- **WHEN** a member opens, refreshes, searches, or submits an operation in a staff workspace
+- **THEN** the affected region shows a named loading or pending state without hiding unrelated usable data
+- **AND** duplicate unsafe actions are disabled until the operation settles.
+
+#### Scenario: A workspace read or operation fails
+
+- **WHEN** a staff read or operation fails
+- **THEN** the workspace preserves safe last-known context where applicable, shows an actionable error with text and an icon or status treatment, and leaves an accessible retry or recovery action available
+- **AND** it does not invent identifiers, statuses, quantities, order facts, or publication results.
+
+### Requirement: Distro galleries remain schema-backed editorial content
+
+The EmDash Distro editing surface SHALL expose the optional ordered secondary-image list as CMS-owned editorial media and SHALL require alt text for every secondary image.
+
+#### Scenario: Editor adds a secondary Distro image
+
+- **WHEN** an editor adds a gallery entry to a Distro Store Item
+- **THEN** the editor supplies one CMS-owned image and required image alt text
+- **AND** the saved object matches the shared content-model schema
+- **AND** the primary `image` field remains separate and required.
+
+#### Scenario: Editor leaves the gallery empty
+
+- **WHEN** a Distro item has no secondary images
+- **THEN** the optional gallery field may be omitted
+- **AND** the saved entry remains valid without an empty placeholder object.
+
+#### Scenario: Editor manages gallery media
+
+- **WHEN** the editor reorders or removes secondary images
+- **THEN** the stored order controls detail-page presentation
+- **AND** the controls do not expose remote runtime image URLs, Stripe fields, stock fields, or provider mutation settings.
+
+#### Scenario: Gallery edits are saved before publication
+
+- **WHEN** an editor saves or previews changed Distro media
+- **THEN** public gallery output retains the accepted snapshot until selected publication through Items succeeds
+- **AND** failed publication preserves that snapshot without promoting unrelated drafts.
+
+### Requirement: Preview uses native editorial selection and publication mapping
+
+Preview SHALL use existing CMS identity, content, revision, reference, and media contracts. It SHALL compose the accepted same-environment snapshot with only the selected unsaved record or exact saved review selection of up to twenty entries. Media and Store Item identities SHALL follow publication's existing mapping rules. It SHALL NOT create another persistent draft store or publication protocol.
+
+#### Scenario: Member previews unsaved input
+
+- **WHEN** a member requests preview of validated browser input
+- **THEN** that input replaces only the selected record over the accepted baseline
+- **AND** unrelated drafts and native live revisions not accepted on the website remain excluded
+- **AND** preview creates no saved revision, publication, or public media object.
+
+#### Scenario: Member reviews a related batch
+
+- **WHEN** saved related entries are selected for review
+- **THEN** preview resolves those exact revisions, references, media, and canonical Store Item identities, including existing new-item fallback rules
+- **AND** accepted media IDs retain the accepted immutable bytes while newly selected IDs use their native media
+- **AND** existing saved-revision and baseline conflict checks remain enforced when publishing.
+
+#### Scenario: Inputs change after rendering
+
+- **WHEN** media, catalog setup, code, or surrounding content changes after a preview was rendered
+- **THEN** refreshing or reopening preview loads the new inputs
+- **AND** the earlier rendering represents its loaded selection rather than a guarantee about future publication with different inputs
+- **AND** this does not disable existing publication conflict checks or transfer commerce authority to preview.
+
+#### Scenario: Selected content cannot render
+
+- **WHEN** required content, references, or media are missing or invalid
+- **THEN** the existing error/retry flow explains the blocker and retains editor input
+- **AND** preview does not invent missing data, fall back to repository fixtures, or save to obtain a rendering.
+
+### Requirement: Preview uses the public page and navigation
+
+For the same loaded content, code, viewport, and runtime data, preview SHALL match the public page's layout, typography, media, and safe interactions. It SHALL use public destinations for all editorial collections, including singleton/global content, listings, details, and overlays.
+
+#### Scenario: Compare public and preview
+
+- **WHEN** unchanged accepted content is rendered in both surfaces with matching inputs
+- **THEN** the page presentation, hydrated controls, and supported interaction results agree
+- **AND** missing regions, incorrect active navigation, wrong media/crops, and preview-only substitute widgets fail acceptance.
+
+#### Scenario: Navigate within preview
+
+- **WHEN** a member follows sections, detail overlays, search/filter controls, and Back/Forward
+- **THEN** navigation retains that preview selection and the public shell's focus/scroll/player behavior
+- **AND** Distro detail uses its canonical Store Item URL rather than the Distro listing pathname.
+
+#### Scenario: Open a new rendering
+
+- **WHEN** the member changes the selected input or opens a fresh preview
+- **THEN** the new document uses the target's public renderer and matching assets
+- **AND** page/overlay caches from a different selection are not reused.
+
+### Requirement: Interactive preview remains private and read-only
+
+Interactive preview SHALL run on a protected origin separate from staff and public origins. Private requests SHALL retain exact-host, verified-identity, and owner checks. The preview document SHALL NOT access staff DOM/storage, privileged APIs, or real checkout/delivery/publication operations.
+
+#### Scenario: Use safe controls
+
+- **WHEN** a member opens navigation, an overlay, search/filtering, a gallery, an approved music player, or the preview cart
+- **THEN** the existing public controls work within the preview
+- **AND** cart data remains in memory outside shopper storage and music begins only through ordinary user intent
+- **AND** approved providers receive no preview credentials, context parameters, or referrer.
+
+#### Scenario: Attempt a prohibited action
+
+- **WHEN** preview attempts checkout, form delivery, CMS/publication/operational writes, BlackBox analytics, or unapproved external navigation
+- **THEN** the action is blocked at the relevant client and server/network boundaries
+- **AND** a user-triggered blocked action is explained without changing the settled page layout.
+
+#### Scenario: Request private content without authority
+
+- **WHEN** a request lacks the correct identity/hostname or uses another member's context
+- **THEN** private output is denied before bytes or conditional-cache success
+- **AND** draft responses are not stored in public, shared, or persistent offline caches.
+
+#### Scenario: Send an unrelated frame message
+
+- **WHEN** a message has the wrong origin, source window, context, or generation
+- **THEN** it is ignored without disclosing content, changing readiness, or performing an operation.
+
+### Requirement: Preview readiness tracks the loaded editor selection
+
+Preview SHALL report ready only when the displayed generation matches the selected input and its required initial assets and interactions have initialized. It SHALL preserve existing responsive controls, accessible recovery, and suppression of superseded responses. Readiness SHALL describe the loaded selection without implying continuous verification of all external state.
+
+#### Scenario: Edit or replace a rendering
+
+- **WHEN** visible editing pauses for 750 ms, or the member opens, changes context, or retries preview
+- **THEN** typing uses the existing debounce while open/context/retry begin immediately
+- **AND** failed or late replacements cannot overwrite a newer generation or discard editor input
+- **AND** the last good rendering remains available with an outdated/error indication when replacement fails.
+
+#### Scenario: Resize or hide preview
+
+- **WHEN** the member uses Fit, Desktop, Mobile, Expand, or visibility controls
+- **THEN** actual viewport sizes and accessible focus behavior are preserved
+- **AND** same-context edits retain scroll, destination changes follow public navigation behavior, and hidden previews stop background work/player activity
+- **AND** reopening regenerates from the current editor selection.
+
+#### Scenario: Restore cached navigation
+
+- **WHEN** a member returns to a cached page within the same preview document
+- **THEN** it retains that document's loaded selection without an additional global-freshness check
+- **AND** any subsequent private request still validates identity and context lifetime.
+
+### Requirement: Preview uses bounded temporary resources
+
+Preview SHALL preserve existing input/output/read/deadline limits and use bounded expiring temporary state on existing hosting resources. It SHALL NOT require persistent preview sessions, background keepalive, automatic recovery loops, or paid capacity.
+
+#### Scenario: Temporary state is lost or a bound is reached
+
+- **WHEN** a context expires, its process restarts, authentication fails, or a request exceeds a configured bound
+- **THEN** the next affected operation offers sign-in/regeneration/retry through the existing error flow
+- **AND** editor input is retained and no public-content fallback, save, publication, or unbounded retry occurs.
+
+### Requirement: Preview acceptance covers representative real behavior
+
+Acceptance SHALL cover rendering for every supported collection and public-versus-preview comparisons for representative homepage, rich-text detail/overlay, and Store listing/detail views at mobile and desktop widths in Chromium and Firefox. Existing required editor viewport/accessibility checks SHALL remain in force. Validation SHALL reuse current tests and browser tooling.
+
+#### Scenario: Verify parity and isolation
+
+- **WHEN** the focused Local checks run with matching inputs
+- **THEN** paired screenshots and content/interaction assertions detect layout, media, hydration, and selection differences
+- **AND** focused boundary/failure checks establish draft privacy, denied writes, and usable recovery without repeating every case for every collection.
+
+#### Scenario: Compare with actual publication
+
+- **WHEN** an isolated Local fixture publishes a related reviewed batch containing media and Store Item identity changes while inputs remain unchanged
+- **THEN** public output matches the reviewed preview
+- **AND** explicit saves/publication are distinguished from preview-only operations, which do not mutate domain state.
+
+#### Scenario: Prepare hosted rollout
+
+- **WHEN** Local and repository/editor gates pass
+- **THEN** UAT follows the existing Free-tier preflight and bounded smoke procedure
+- **AND** PRD follows existing explicit promotion/configuration approval with catalog and checkout-launch gates intact.
 
 ### Requirement: Content and media survive application replacement
 
