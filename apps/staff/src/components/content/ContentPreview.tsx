@@ -130,7 +130,7 @@ export default function ContentPreview({
   useLayoutEffect(() => {
     currentInput.current = inputKey;
   }, [inputKey]);
-  useEffect(() => {
+  useLayoutEffect(() => {
     const receive = (event: MessageEvent) => {
       const item = [pending, rendered].find(
         (item) =>

@@ -46,4 +46,5 @@
 - [x] 7.2 Preserve the last successful iframe across short hidden-tab intervals, cancel unfinished requests safely, and request a new preview on return only when inputs changed or its context expired.
 - [x] 7.3 Add the compact React Bits Lattice Loader beside Updating preview, keep the last successful preview visible, and honor reduced motion.
 - [x] 7.4 Verify the Band in the Pit Distro detail and listing views show the expected shared identity and distinct detail content; change content only if a mismatch is reproduced.
-- [ ] 7.5 Verify exact-record preview, retry, and tab switching in Firefox and Chromium, verify the hosted behavior in UAT, run required repository gates, sync the delta requirements, and archive this change.
+- [x] 7.5 Persist bounded private preview contexts across Durable Object restarts, correlate context IDs with preview request IDs, and record sanitized resource type/failure phase diagnostics; verify multi-chunk context recovery and expiry after simulated eviction.
+- [ ] 7.6 Verify exact-record frame and gallery loading, retry, and tab switching in Firefox and Chromium, verify the hosted behavior in UAT, run required repository gates, sync delta requirements, and archive this change.

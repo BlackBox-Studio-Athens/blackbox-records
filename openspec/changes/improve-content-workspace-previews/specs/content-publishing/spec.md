@@ -28,6 +28,12 @@ The content workspace SHALL render the selected unsaved record with the public s
 - **THEN** the workspace keeps the last successful preview visible and provides a copyable failure reference
 - **AND** the existing redacted Worker report correlates the request and release with the last readiness phase, without editorial content or credentials.
 
+#### Scenario: Frame and gallery images load after a preview-service restart
+
+- **WHEN** the preview service restarts after a valid preview is created but before its frame or a lazy image is requested
+- **THEN** the preview remains available to the same authenticated editor until its 15-minute expiry
+- **AND** failure logs correlate with the browser's request ID and record resource type, failure phase, response status, and elapsed time without draft content or private media paths.
+
 #### Scenario: Member returns to a hidden editor tab
 
 - **WHEN** a member switches away from the editor and returns while its preview inputs are unchanged

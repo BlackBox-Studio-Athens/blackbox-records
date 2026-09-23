@@ -1,5 +1,23 @@
 import { expect, test } from 'vitest';
-import { ownedPreviewContext, retainPreviewContext, type RetainedPreview } from '../../src/cms/preview-contexts';
+import {
+  ownedPreviewContext,
+  releasePreviewContext,
+  retainPreviewContext,
+  type PreviewContextStorage,
+  type RetainedPreview,
+} from '../../src/cms/preview-contexts';
+
+function createStorage(): PreviewContextStorage {
+  const values = new Map<string, unknown>();
+  return {
+    get: (key) => values.get(key),
+    put: (key, value) => {
+      values.set(key, value);
+    },
+    delete: (key) => values.delete(key),
+    list: ({ prefix }) => [...values.entries()].filter(([key]) => key.startsWith(prefix)),
+  };
+}
 
 test('contexts require ownership, expire, enforce capacity and retain independent input', () => {
   const contexts = new Map<string, RetainedPreview>();
@@ -35,4 +53,34 @@ test('contexts require ownership, expire, enforce capacity and retain independen
       900_003,
     ),
   ).toThrow('capacity');
+});
+
+test('preview context survives object memory loss, restores chunked data and expires from storage', () => {
+  const storage = createStorage();
+  const owner = 'editor@example.com';
+  const input = {
+    owner,
+    parentOrigin: 'http://127.0.0.1:8787',
+    generation: 2,
+    requestId: '61702d60-d2c0-4880-8f6d-6f288b6a99fd',
+    selection: {
+      content: { records: [], media: [] },
+      input: { collection: 'distro' as const, slug: 'draft', data: { title: 'x'.repeat(1_100_000) } },
+      media: {},
+    },
+  };
+  const id = retainPreviewContext(new Map(), input, 0, storage);
+  expect(id).toBe(input.requestId);
+
+  const afterEviction = new Map<string, RetainedPreview>();
+  const restored = ownedPreviewContext(afterEviction, id, owner, 1, storage);
+  expect(restored.selection.input.data.title).toHaveLength(1_100_000);
+  expect(afterEviction.size).toBe(1);
+
+  releasePreviewContext(afterEviction, id, storage);
+  expect([...storage.list({ prefix: 'cms-preview:v1:manifest:' })]).toHaveLength(0);
+
+  const expiredId = retainPreviewContext(new Map(), input, 0, storage);
+  expect(() => ownedPreviewContext(new Map(), expiredId, owner, 900_000, storage)).toThrow('expired');
+  expect([...storage.list({ prefix: 'cms-preview:v1:manifest:' })]).toHaveLength(0);
 });

@@ -128,3 +128,23 @@ The readiness-stage diagnostic schema test passed in the full unit suite. The up
 After syncing the delta into openspec/specs/content-publishing/spec.md, strict OpenSpec spec validation passed all 52 specs with zero failures. The full repository gate will be rerun on the final archived tree before completion.
 
 The exact PRD Distro item was checked read-only in Chrome. Detail and Listing showed the same identity fields, while Detail added the description, purchase state, release date, and gallery. The preview selector was restored to Detail; no content was saved or published. UAT hosted verification and the user's Firefox check remain pending. PRD was not promoted.
+
+## Exact Distro follow-up — UAT verification (2026-09-23)
+
+Release run [35905496893](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35905496893) completed successfully. The UAT Worker, Pages deployment, hosted Chromium/Firefox preview checks, and UAT smoke passed. PRD deployment and catalog jobs were skipped.
+
+The PRD record ID is not present in UAT. The matching UAT entry, 2016 / Band in the pit / Cassette, has UAT-local ID 01M2DC34K83K3Y03CF6M2X7BZ5. Its preview reached Preview up to date in Chrome. Detail showed the description, purchase information, release date, and three gallery images; Listing showed the same title, artist, and format. Reloading unchanged content produced a fresh successful preview. Switching to a second Chrome tab and back retained the current preview context. No content was edited, saved, or published.
+
+The user’s Firefox Alt+Tab verification is pending. PRD was not promoted.
+
+## Durable preview-context follow-up — local verification (2026-09-24)
+
+The failure pattern is consistent with the preview context being stored only in a `CmsRuntime` instance's in-memory map: the initial request could render, but a later iframe or lazy-image request handled after Durable Object eviction had no context and returned 410. Context data now lives in the existing SQLite-backed Durable Object storage, split into bounded 1 MiB chunks with a manifest. Access remains limited to the creating staff identity and 15-minute lifetime, with the existing 16-context / 8 MiB caps. The context ID is also the browser request ID. The preview-creation response carries the build's existing `X-Release-SHA`, so timeout diagnostics can identify the Worker release even if the frame never loads. Failure logs include that release, correlation ID, resource type, failure phase, status, and elapsed time; successful frame logs retain the public renderer's release SHA. Logs exclude editorial content and private media paths.
+
+The regression test simulates lost object memory, restores a context larger than one storage chunk, checks request-ID identity, then verifies release and expiry cleanup. It passed in the full unit suite. The first full `pnpm validate` run passed format, lint, types, dependency boundaries, unit tests, and build before the final OpenSpec notes and release-header follow-up. The canonical CMS build/no-KV guard and CMS content smoke also passed.
+
+The staff/editor acceptance run was attempted twice but did not complete: one Firefox run timed out on the Distro-list keyboard-focus assertion after detail navigation; a rerun timed out in Chromium waiting for the stock-detail “How many?” field after reload, so Firefox was skipped. Neither failure was in the preview path, and no unrelated editor or stock behavior was changed. The exact preview still needs full hosted verification.
+
+Read-only Chrome inspection of the existing PRD staff page found that it said “Preview up to date” while at least one gallery image displayed its broken-image fallback. This is the pre-deployment build and confirms the reported symptom remains. No content was changed or published. The PRD was not promoted. The matching UAT release and exact-record browser checks remain pending; Firefox requires the user's manual confirmation after the UAT deployment.
+
+The full-gate rerun before the release-header follow-up passed all unit tests, but its repository-wide format phase failed on `openspec/changes/clarify-store-sold-out-presentation/design.md`, an unrelated untracked change that appeared during the run. The validator marked that run invalidated and skipped lint, types, boundaries, and build. I left that separate change untouched. After the release-header follow-up, targeted Prettier and ESLint checks for `apps/backend/src/cms/index.ts`, the full unit suite, the web/staff build, and the canonical CMS build all passed. Strict validation of this change passes; strict validation of all 52 main specs reports 19 pre-existing placeholder-purpose failures outside `content-publishing`, which passes.

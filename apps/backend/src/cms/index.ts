@@ -14,7 +14,13 @@ import { readInventoryArtwork } from './inventory-artwork';
 import { prepareCatalogSchema } from './catalog-schema';
 import { createBindingLogger } from '../observability';
 import { authenticatePreview, isPreviewHost, previewOrigin } from './preview-host';
-import { ownedPreviewContext, retainPreviewContext, type RetainedPreview } from './preview-contexts';
+import {
+  ownedPreviewContext,
+  pruneStoredPreviewContexts,
+  releasePreviewContext,
+  retainPreviewContext,
+  type RetainedPreview,
+} from './preview-contexts';
 import { previewDestination, selectPreviewContent } from './preview-selection';
 import { privatePreviewHeaders, renderPreviewPage } from './preview-response';
 import { previewDiagnosticsPath, reportPreviewFailure } from './preview-diagnostics';
@@ -54,6 +60,9 @@ import {
   problemResponse,
 } from '../interfaces/http/responses';
 import { previewInputSchema, previewPath, readBoundedText } from './preview-content';
+
+declare const RELEASE_SOURCE_SHA: string;
+const releaseSourceSha = typeof RELEASE_SOURCE_SHA === 'undefined' ? undefined : RELEASE_SOURCE_SHA;
 
 export { CommerceRuntime };
 
@@ -188,6 +197,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     });
     return this.publicationTask;
   }
+
   private previewContexts = new Map<string, RetainedPreview>();
   private diagnosticLimits = new Map<string, { count: number; expires: number }>();
 
@@ -200,6 +210,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       'X-Preview-Request-Id': requestId,
       'X-Preview-Generation': String(generation),
       'X-Preview-Environment': this.env.PRODUCT_ENVIRONMENT.toLowerCase(),
+      ...(releaseSourceSha ? { 'X-Release-SHA': releaseSourceSha } : {}),
     };
     if (
       request.method !== 'POST' ||
@@ -218,8 +229,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     try {
       const body = JSON.parse(await readBoundedText(request.body, 256 * 1024));
       if (url.pathname === '/_emdash/preview-release') {
-        ownedPreviewContext(this.previewContexts, body.context, identity.email);
-        this.previewContexts.delete(body.context);
+        ownedPreviewContext(this.previewContexts, body.context, identity.email, Date.now(), this.ctx.storage.kv);
+        releasePreviewContext(this.previewContexts, body.context, this.ctx.storage.kv);
         return new Response(null, { status: 204, headers });
       }
       if (!this.env.PUBLIC_SITE) throw new Error('The public renderer is unavailable. Retry preview.');
@@ -238,19 +249,24 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           environment,
         }),
       );
-      retainedId = retainPreviewContext(this.previewContexts, {
-        owner: identity.email,
-        parentOrigin: url.origin,
-        generation,
-        requestId,
-        selection,
-      });
+      retainedId = retainPreviewContext(
+        this.previewContexts,
+        {
+          owner: identity.email,
+          parentOrigin: url.origin,
+          generation,
+          requestId,
+          selection,
+        },
+        Date.now(),
+        this.ctx.storage.kv,
+      );
       const base = environment === 'local' ? '/blackbox-records/' : '/';
       const frame = new URL(previewDestination(selection, url.searchParams.get('view') ?? 'detail', base), origin);
       frame.searchParams.set('__preview', retainedId);
       return Response.json({ context: retainedId, url: frame.href }, { headers });
     } catch (error) {
-      if (retainedId) this.previewContexts.delete(retainedId);
+      if (retainedId) releasePreviewContext(this.previewContexts, retainedId, this.ctx.storage.kv);
       return Response.json(
         { error: error instanceof Error ? error.message : 'Preview could not update. Retry.' },
         { status: 422, headers },
@@ -262,8 +278,15 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     const url = new URL(request.url);
     const started = performance.now();
     let requestId: string | undefined;
+    let failurePhase = 'authentication';
+    let resourceType = 'frame';
+    const directContext =
+      /^\/_preview\/(?:media|api)\/([a-f0-9-]{36})(?:\/|$)/.exec(url.pathname)?.[1] ??
+      url.searchParams.get('__preview');
+    if (directContext && /^[a-f0-9-]{36}$/.test(directContext)) requestId = directContext;
     try {
       const identity = await authenticatePreview(request, this.env);
+      failurePhase = 'routing';
       if (!['GET', 'HEAD'].includes(request.method) || !this.env.PUBLIC_SITE) {
         if (request.body) await readBoundedText(request.body, 256 * 1024).catch(() => {});
         return new Response('Forbidden', { status: 403, headers: privatePreviewHeaders });
@@ -285,6 +308,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         // The public runtime's passthrough image service also returns the original bytes.
         path = sourcePath;
         resourcePath = source.pathname;
+        const sourceContext = /^\/_preview\/media\/([a-f0-9-]{36})\//.exec(sourcePath)?.[1];
+        if (sourceContext) requestId = sourceContext;
       }
       // Only compiled public code and fixed branding can be read without a selection.
       if (
@@ -293,6 +318,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         /^\/assets\/fonts\/brand\/[A-Za-z0-9_.-]+\.(?:woff2|css)$/.test(path) ||
         /^\/favicon(?:-96x96)?\.(?:svg|png|ico)$/.test(path)
       ) {
+        resourceType = 'static_asset';
+        failurePhase = 'static_asset';
         const asset = await this.env.PUBLIC_SITE.fetch(
           new Request(
             new URL(
@@ -312,8 +339,11 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           path,
         );
       const id = media?.[1] ?? api?.[1] ?? url.searchParams.get('__preview') ?? '';
-      const context = ownedPreviewContext(this.previewContexts, id, identity.email);
-      requestId = context.requestId;
+      if (id && /^[a-f0-9-]{36}$/.test(id)) requestId = id;
+      resourceType = media ? 'media' : api ? 'store_api' : 'frame';
+      failurePhase = 'context';
+      const context = ownedPreviewContext(this.previewContexts, id, identity.email, Date.now(), this.ctx.storage.kv);
+      requestId = context.requestId ?? requestId;
       const alias = /^\/assets\/catalog\/(artists|releases|news|distro)\/([^/]+)$/.exec(path);
       const aliasId =
         alias &&
@@ -322,6 +352,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           .flatMap((record) => contentMediaIds(record.data))
           .find((id) => context.selection.media[id]?.filename === decodeURIComponent(alias[2]));
       if (media || alias) {
+        resourceType = 'media';
+        failurePhase = 'media';
         const item = context.selection.media[media?.[2] ?? aliasId ?? ''];
         if (!item) throw new Error('Selected image is unavailable.');
         const object = await this.env.MEDIA.get(item.key);
@@ -335,6 +367,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         });
       }
       if (api) {
+        resourceType = 'store_api';
+        failurePhase = 'store_api';
         const response = await this.env.COMMERCE_RUNTIME.getByName('store').fetch(
           new Request(
             new URL(
@@ -355,6 +389,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         /\/checkout(?:\/|$)/.test(path)
       )
         return new Response('Forbidden', { status: 403, headers: privatePreviewHeaders });
+      failurePhase = 'render';
       const response = await renderPreviewPage(
         request,
         id,
@@ -362,14 +397,18 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         this.env.PUBLIC_SITE,
         productEnvironmentProfileFromBindings(this.env).workerDeploymentTarget,
       );
-      createBindingLogger(this.env).info({
+      const logger = createBindingLogger(this.env);
+      const renderLog = {
         event: 'preview_render',
         requestId,
         status: response.status,
         ms: Math.round(performance.now() - started),
         generation: context.generation,
-        release: response.headers.get('X-Release-SHA'),
-      });
+        release: response.headers.get('X-Release-SHA') ?? releaseSourceSha,
+        resourceType: 'frame',
+      };
+      if (response.status >= 400) logger.warn({ ...renderLog, failurePhase: 'render' });
+      else logger.info(renderLog);
       if (request.method === 'HEAD') {
         await response.body?.cancel();
         return new Response(null, { status: response.status, headers: response.headers });
@@ -381,6 +420,9 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         requestId,
         status: 410,
         ms: Math.round(performance.now() - started),
+        release: releaseSourceSha,
+        failurePhase,
+        resourceType,
       });
       return new Response('Preview is unavailable. Sign in or refresh preview.', {
         status: 410,
@@ -388,6 +430,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       });
     }
   }
+
   async dispatchPublication() {
     if (this.env.CONTENT_PUBLICATION_MODE === 'runtime') {
       await this.processPublications();
@@ -411,6 +454,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
 
   async runMaintenance() {
     if (!(await this.isInitialized())) throw new Error('CMS requires explicit initialization');
+    pruneStoredPreviewContexts(this.ctx.storage.kv);
     const { runScheduledTasks } = await import('emdash/middleware');
     await runScheduledTasks();
     if (this.env.CONTENT_PUBLICATION_MODE === 'runtime') await this.processPublications();
