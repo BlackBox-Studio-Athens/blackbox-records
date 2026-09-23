@@ -14,7 +14,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "^(Bash|apply_patch|mcp__intellij__(apply_patch|create_new_file|reformat_file|execute_run_configuration|execute_tool))$",
+        "matcher": "^(Bash|apply_patch|mcp__(webstorm|intellij)__(apply_patch|create_new_file|reformat_file|rename_refactoring)|mcp__webstorm__execute_tool)$",
         "hooks": [
           {
             "type": "command",
@@ -28,25 +28,13 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "^(Bash|apply_patch|mcp__intellij__(apply_patch|create_new_file|reformat_file|rename_refactoring|execute_run_configuration|execute_tool))$",
+        "matcher": "^(mcp__(webstorm|intellij)__rename_refactoring|mcp__webstorm__execute_tool)$",
         "hooks": [
           {
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/webstorm-workflow.mjs\"",
             "commandWindows": "node .codex/hooks/webstorm-workflow.mjs",
             "timeout": 3
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/webstorm-workflow.mjs\"",
-            "commandWindows": "node .codex/hooks/webstorm-workflow.mjs",
-            "timeout": 300
           }
         ]
       }
