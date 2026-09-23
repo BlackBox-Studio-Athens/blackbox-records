@@ -13,22 +13,27 @@ The store content source contains four cassette Store Items. Each has one `stand
 
 The reusable manifest is `tools/artwork-fetcher/cassette_store_artwork_manifest.csv`. It contains matched products only; unmatched items are deliberately absent so reruns cannot overwrite their fallbacks.
 
-## Gallery selections, September 22, 2026
+## Gallery selections, September 23, 2026
 
 For `add-store-product-photo-hover`, the user confirmed “we have full permissions, proceed” for the product photography. This is the reuse evidence for these selections. Band in the Pit's official page currently displays “all rights reserved”; the older research ledger's `cc-by-nd-4.0` annotation is not evidence of the page's current license. The explicit permission resolves acceptance for this task without changing the public license declaration or claiming Bandcamp grants a Creative Commons license.
 
-Keep the current primary images. Use these unaltered official photos, in the listed gallery order, through each environment's own EmDash media records:
+Keep the current primary images. Band in the Pit's existing primary remains the BlackBox mockup sourced from `0013073977`; do not add that source photo again as a gallery duplicate. Upload these three unaltered official alternatives through each environment's own EmDash media records, in this order:
 
-| Item                  | Official photo and dimensions                                        | Placement description                                                                     |
-| --------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Band in the Pit, 2016 | [0013073977](https://f4.bcbits.com/img/0013073977_10.jpg), 1200×1032 | 2016 cassette cases, yellow printed inserts and white cassette shells arranged together   |
-| Band in the Pit, 2016 | [0013056306](https://f4.bcbits.com/img/0013056306_10.jpg), 900×1200  | Both sides of the white 2016 cassette with handwritten track labels on a green background |
-| Band in the Pit, 2016 | [0013056277](https://f4.bcbits.com/img/0013056277_10.jpg), 900×1200  | Back of the clear 2016 cassette case showing the white tape and printed track list        |
-| Broken Fingers, EGO   | [0017949436](https://f4.bcbits.com/img/0017949436_10.jpg), 900×1200  | EGO cassette cases, black tapes and printed inserts arranged together                     |
-| Broken Fingers, EGO   | [0017949440](https://f4.bcbits.com/img/0017949440_10.jpg), 1200×900  | EGO cassette beside its illustrated case and a row of labeled case spines                 |
+| Item                  | Official photo and dimensions                                        | Placement description                                                                                                            |
+| --------------------- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Band in the Pit, 2016 | [0013073977](https://f4.bcbits.com/img/0013073977_10.jpg), 1200×1032 | Source for the existing primary mockup; not a gallery entry                                                                      |
+| Band in the Pit, 2016 | [0013056306](https://f4.bcbits.com/img/0013056306_10.jpg), 900×1200  | Both sides of the white 2016 cassette with handwritten labels beside the J-card on green; first alternate and Distro hover image |
+| Band in the Pit, 2016 | [0013056277](https://f4.bcbits.com/img/0013056277_10.jpg), 900×1200  | Back of the clear 2016 cassette case showing the white tape and printed track list                                               |
+| Band in the Pit, 2016 | [0013056307](https://f4.bcbits.com/img/0013056307_10.jpg), 1200×900  | A stack of white 2016 cassette copies with yellow and green J-cards                                                              |
+| Broken Fingers, EGO   | [0017949436](https://f4.bcbits.com/img/0017949436_10.jpg), 900×1200  | EGO cassette cases, black tapes and printed inserts arranged together                                                            |
+| Broken Fingers, EGO   | [0017949440](https://f4.bcbits.com/img/0017949440_10.jpg), 1200×900  | EGO cassette beside its illustrated case and a row of labeled case spines                                                        |
 
-The [2016 release page](https://bandinthepit.bandcamp.com/album/2016) identifies the 50-copy high-bias cassette; its yellow artwork and track labels match the retained source. The [EGO release page](https://broken-fingers.bandcamp.com/album/ego) identifies the November 2019 EGO LP cassette and supplies both selected views. No crops, generated pixels, enlargement or additional derivatives are needed.
+The [2016 release page](https://bandinthepit.bandcamp.com/album/2016) identifies the 50-copy high-bias cassette; its yellow artwork and track labels match the retained source. The [EGO release page](https://broken-fingers.bandcamp.com/album/ego) identifies the November 2019 EGO LP cassette and supplies both selected views. The Broken Fingers pair remains separate research; this publication changed only Band in the Pit. No new gallery photos were cropped, generated, enlarged or otherwise transformed.
 
-Exclude Band in the Pit's `0013056307` pile photograph as redundant with the clearer side view and `0013056278` car-stereo photograph because it mainly shows the dashboard. Magmarus remains excluded without verified cassette-product photography; The Vagina Lips remains excluded because the recorded edition/title mismatch is unresolved. Existing accepted Distro CD galleries need no replacement or additional upload to gain the preview.
+Include Band in the Pit's `0013056307` pile photograph as a distinct view of multiple copies. Exclude `0013056278` because the cassette is small in the car-stereo scene, and leave `0013073977` represented only by the existing primary mockup. Magmarus remains excluded without verified cassette-product photography; The Vagina Lips remains excluded because the recorded edition/title mismatch is unresolved. Existing accepted Distro CD galleries need no replacement or additional upload to gain the preview.
 
-These are editorial selections, not evidence of UAT or PRD publication. Repository catalog JSON remains unchanged; hosted release/publication gates still apply.
+## Hosted verification, September 23, 2026
+
+EmDash confirmed the Band in the Pit gallery on the website in both UAT and PRD. Each environment received its own three media records; the primary image, price and stock were unchanged. Both public detail pages rendered the primary plus all three alternatives, with every product image loaded and no console errors. UAT and PRD Distro cards reveal `0013056306` on pointer hover. PRD run [35802770602](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35802770602) successfully deployed source SHA `30695145ffa20d4c5a3287ab19174238fb68aca5` from candidate run [35801342154](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35801342154), which includes the feature. The separately reviewed older candidate `4f3e0ef09dc70aeec619ac9d59f5c8379be94a17` was stale against current main; attempted run [35845296569](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35845296569) stopped at its configuration precondition before migrations or deployment. Both CMS previews were unavailable because the protected preview origin is not configured; the documented server-validated **Publish without preview** workflow completed successfully.
+
+Cloudflare usage and release evidence are recorded in the change's `tasks.md`. Repository catalog JSON remains unchanged.
