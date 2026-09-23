@@ -1,5 +1,6 @@
 type Preview = { context: string; generation: number; parentOrigin: string; release?: string };
 let loaded: Preview | undefined;
+
 export function privatePreview(): Preview | undefined {
   if (typeof document === 'undefined') return;
   if (loaded) return loaded;
@@ -38,6 +39,7 @@ export function connectPrivatePreview() {
   let active = false;
   const send = (type: string, extra: Record<string, unknown> = {}) =>
     window.parent.postMessage({ ...preview, type, ...extra }, preview.parentOrigin);
+  send('readiness', { readinessStage: 'script' });
   window.addEventListener('message', (event) => {
     if (
       event.origin !== preview.parentOrigin ||
@@ -111,6 +113,7 @@ export function connectPrivatePreview() {
   const ready = async () => {
     let stage: 'style' | 'image' | 'font' = 'style';
     try {
+      send('readiness', { readinessStage: 'hydration' });
       await Promise.all(
         [...document.querySelectorAll('astro-island[client="load"][ssr]')].map(
           (island) =>
@@ -120,6 +123,7 @@ export function connectPrivatePreview() {
             }),
         ),
       );
+      send('readiness', { readinessStage: 'styles' });
       for (const link of document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')) {
         if (!link.sheet) throw new Error('Preview styles could not load.');
         // Chromium may attach an empty sheet after a failed stylesheet request.
@@ -132,6 +136,7 @@ export function connectPrivatePreview() {
         if (empty) throw new Error('Preview styles could not load.');
       }
       stage = 'image';
+      send('readiness', { readinessStage: 'images' });
       await Promise.all(
         [...document.images]
           .filter((image) => {
@@ -144,6 +149,7 @@ export function connectPrivatePreview() {
           .map((image) => image.decode()),
       );
       stage = 'font';
+      send('readiness', { readinessStage: 'fonts' });
       await document.fonts.ready;
       if ([...document.fonts].some((font) => font.status === 'error' && font.display !== 'optional'))
         throw new Error('Preview fonts could not load.');

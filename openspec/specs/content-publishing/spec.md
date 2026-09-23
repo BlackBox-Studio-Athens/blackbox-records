@@ -145,13 +145,37 @@ The content workspace SHALL render the selected unsaved record with the public s
 
 - **WHEN** content is valid but media or references are unavailable, or authentication expires
 - **THEN** the workspace explains that preview could not update
-- **AND** any previous rendering is marked outdated and no changes are saved or published.
+- **AND** any previous rendering remains visible, is marked outdated, and no changes are saved or published.
 
 #### Scenario: Member retries failed preview assets
 
 - **WHEN** a stylesheet or image fails and the member refreshes unchanged content
 - **THEN** the workspace reloads the preview assets and reports success only after they load
 - **AND** failed or superseded replacements cannot remove the last successful preview or lose edits.
+
+#### Scenario: Firefox Distro preview times out
+
+- **WHEN** the Band in the Pit Distro record 01M2J1EK7DF73T79TJRN083EP6 times out in Firefox
+- **THEN** the workspace keeps the last successful preview visible and provides a copyable failure reference
+- **AND** the existing redacted Worker report correlates the request and release with the last readiness phase, without editorial content or credentials.
+
+#### Scenario: Member returns to a hidden editor tab
+
+- **WHEN** a member switches away from the editor and returns while its preview inputs are unchanged
+- **THEN** the last successful iframe remains visible and no new preview request is made while its context is valid
+- **AND** returning after the preview context expires starts a fresh request.
+
+#### Scenario: Member waits for a preview update
+
+- **WHEN** the workspace is updating a preview
+- **THEN** a compact inline Lattice Loader appears beside the status while the last successful preview remains visible
+- **AND** reduced-motion preferences disable its animation.
+
+#### Scenario: Member checks Distro listing and detail
+
+- **WHEN** the member views the Band in the Pit Distro record in Detail page and Listing modes
+- **THEN** both views show the same title, artist, and format
+- **AND** Detail page additionally shows the record description, purchase information, release date, and gallery.
 
 #### Scenario: Member opens or refreshes a preview
 
@@ -168,7 +192,7 @@ The content workspace SHALL render the selected unsaved record with the public s
 
 - **WHEN** the member selects Fit, Desktop, Mobile, or Expand
 - **THEN** the preview uses the requested viewport width and preserves edits
-- **AND** preview links, scripts, players, checkout, and form submissions remain inactive.
+- **AND** it uses the isolated real public renderer described by make-editorial-preview-one-to-one; public navigation, scripts, and players work within that context while checkout and form delivery remain blocked.
 
 #### Scenario: Member edits invalid content
 

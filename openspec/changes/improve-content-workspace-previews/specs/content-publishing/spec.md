@@ -1,20 +1,20 @@
-## ADDED Requirements
+## MODIFIED Requirements
 
 ### Requirement: Private previews faithfully render unsaved editorial content
 
-The content workspace SHALL render the selected unsaved record with the public site's presentation and same-environment published surrounding content. Preview SHALL remain authenticated, uncached, bounded, and free of save, publication, commerce, or submission side effects. It SHALL identify its environment and code basis.
+The content workspace SHALL render the selected unsaved record with the public site''s presentation and same-environment published surrounding content. Preview SHALL remain authenticated, uncached, bounded, and free of save, publication, commerce, or submission side effects. It SHALL identify its environment and code basis. Preview SHALL not request or display a new render while the current editorial data fails shared Content validation.
 
 #### Scenario: Member edits while preview is visible
 
-- **WHEN** an authorized member pauses editing for 750 ms
+- **WHEN** an authorized member pauses editing for 750 ms with valid editorial data
 - **THEN** the visible preview updates with those unsaved changes and actual public typography, images, rich text, and layout
 - **AND** superseded responses cannot replace newer output and scroll position is retained.
 
 #### Scenario: Preview cannot render
 
-- **WHEN** content is invalid, media or references are unavailable, or authentication expires
+- **WHEN** content is valid but media or references are unavailable, or authentication expires
 - **THEN** the workspace explains that preview could not update
-- **AND** any previous rendering is marked outdated and no changes are saved or published.
+- **AND** any previous rendering remains visible, is marked outdated, and no changes are saved or published.
 
 #### Scenario: Member retries failed preview assets
 
@@ -22,9 +22,33 @@ The content workspace SHALL render the selected unsaved record with the public s
 - **THEN** the workspace reloads the preview assets and reports success only after they load
 - **AND** failed or superseded replacements cannot remove the last successful preview or lose edits.
 
+#### Scenario: Firefox Distro preview times out
+
+- **WHEN** the Band in the Pit Distro record 01M2J1EK7DF73T79TJRN083EP6 times out in Firefox
+- **THEN** the workspace keeps the last successful preview visible and provides a copyable failure reference
+- **AND** the existing redacted Worker report correlates the request and release with the last readiness phase, without editorial content or credentials.
+
+#### Scenario: Member returns to a hidden editor tab
+
+- **WHEN** a member switches away from the editor and returns while its preview inputs are unchanged
+- **THEN** the last successful iframe remains visible and no new preview request is made while its context is valid
+- **AND** returning after the preview context expires starts a fresh request.
+
+#### Scenario: Member waits for a preview update
+
+- **WHEN** the workspace is updating a preview
+- **THEN** a compact inline Lattice Loader appears beside the status while the last successful preview remains visible
+- **AND** reduced-motion preferences disable its animation.
+
+#### Scenario: Member checks Distro listing and detail
+
+- **WHEN** the member views the Band in the Pit Distro record in Detail page and Listing modes
+- **THEN** both views show the same title, artist, and format
+- **AND** Detail page additionally shows the record description, purchase information, release date, and gallery.
+
 #### Scenario: Member opens or refreshes a preview
 
-- **WHEN** a member opens the preview, changes preview context, or manually refreshes
+- **WHEN** a member opens the preview, changes preview context, or manually refreshes valid content
 - **THEN** preview requests start without an editing debounce
 - **AND** independent published reads overlap with no more than four active CMS reads per request and repeated reads are deduplicated.
 
@@ -37,7 +61,16 @@ The content workspace SHALL render the selected unsaved record with the public s
 
 - **WHEN** the member selects Fit, Desktop, Mobile, or Expand
 - **THEN** the preview uses the requested viewport width and preserves edits
-- **AND** preview uses the isolated real public renderer described by `make-editorial-preview-one-to-one`; public navigation, scripts and players work within that context while checkout and form delivery remain blocked.
+- **AND** it uses the isolated real public renderer described by make-editorial-preview-one-to-one; public navigation, scripts, and players work within that context while checkout and form delivery remain blocked.
+
+#### Scenario: Member edits invalid content
+
+- **WHEN** a current field, relationship, image, or nested row fails shared Content validation
+- **THEN** the affected editor field shows its validation message
+- **AND** no preview request is sent for the invalid data
+- **AND** the last successful preview remains visible and is labeled outdated when one exists.
+
+## ADDED Requirements
 
 ### Requirement: Content editing prioritizes the selected record and publication state
 
@@ -69,13 +102,13 @@ The workspace SHALL offer searchable content selection, an optional wide editor/
 
 #### Scenario: An older preview is still displayed
 
-- **WHEN** the current editor inputs differ from the displayed frame's inputs
+- **WHEN** the current editor inputs differ from the displayed frame''s inputs
 - **THEN** the frame is labelled outdated, never up to date
 - **AND** diagnostic evidence may contain numeric request/display generations and readiness outcomes but no editorial text.
 
 ### Requirement: Preview security and failures work across supported browsers
 
-The workspace SHALL permit validated same-environment preview assets in Firefox and Chromium under the isolated-origin script, form, connection and private-media boundary specified by `make-editorial-preview-one-to-one`. Preview failures SHALL have bounded private diagnostics that exclude editorial content and credentials.
+The workspace SHALL permit validated same-environment preview assets in Firefox and Chromium under the isolated-origin script, form, connection and private-media boundary specified by make-editorial-preview-one-to-one. Preview failures SHALL have bounded private diagnostics that exclude editorial content and credentials.
 
 #### Scenario: Firefox renders the preview
 

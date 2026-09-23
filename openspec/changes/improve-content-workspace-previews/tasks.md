@@ -39,3 +39,11 @@
 - [x] 6.5 Pass required checks and browser review; verify release acceptance, recover the existing publication, and deploy/verify UAT only when gates permit.
 
 6.5 completed with the successful UAT release run 35071291241 for code commit 923251cc4b99d83db1049ccf9475c03581dacdf0. The failed publication status correction and UAT verification are recorded in validation.md. PRD was not promoted.
+
+## 7. Exact Firefox preview recovery follow-up
+
+- [x] 7.1 Add a redacted readiness phase to the existing timeout report and Worker log, preserving request and release correlation; verify the schema rejects editorial data.
+- [x] 7.2 Preserve the last successful iframe across short hidden-tab intervals, cancel unfinished requests safely, and request a new preview on return only when inputs changed or its context expired.
+- [x] 7.3 Add the compact React Bits Lattice Loader beside Updating preview, keep the last successful preview visible, and honor reduced motion.
+- [x] 7.4 Verify the Band in the Pit Distro detail and listing views show the expected shared identity and distinct detail content; change content only if a mismatch is reproduced.
+- [ ] 7.5 Verify exact-record preview, retry, and tab switching in Firefox and Chromium, verify the hosted behavior in UAT, run required repository gates, sync the delta requirements, and archive this change.

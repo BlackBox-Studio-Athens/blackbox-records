@@ -9,6 +9,22 @@ import { editorialWriteData } from '../../lib/backend/editorial-api';
 import type { ContentData, ContentSection } from '../../lib/content-sections';
 import { proseSchema, proseText, type PublicationReviewInput } from '@blackbox/content-model';
 
+const latticeSteps = [0, 1, 2, 7, null, 3, 6, 5, 4] as const;
+
+function LatticeLoader() {
+  return (
+    <span className="cms-lattice-loader" aria-hidden="true">
+      {latticeSteps.map((step) => (
+        <span
+          key={step ?? 'center'}
+          className={step === null ? 'cms-lattice-empty' : 'cms-lattice-dot'}
+          style={step === null ? undefined : { animationDelay: step * 90 + 'ms' }}
+        />
+      ))}
+    </span>
+  );
+}
+
 export default function ContentPreview({
   collection,
   focusedPath = '',
@@ -40,6 +56,8 @@ export default function ContentPreview({
     url: string;
     context: string;
     signal: AbortSignal;
+    refreshAt: number;
+    progress(stage: NonNullable<PreviewDiagnostic['readinessStage']>): void;
     report(error: unknown, stage?: PreviewDiagnostic['stage'], directive?: string): void;
     identify(release: string): void;
     finish(): void;
@@ -137,6 +155,18 @@ export default function ContentPreview({
         Number.isFinite(event.data.y)
       )
         scroll.current = { x: event.data.x, y: event.data.y };
+      if (event.data.type === 'readiness') {
+        const stage = event.data.readinessStage;
+        if (
+          stage === 'script' ||
+          stage === 'hydration' ||
+          stage === 'styles' ||
+          stage === 'images' ||
+          stage === 'fonts'
+        )
+          item.progress(stage);
+        return;
+      }
       if (event.data.type === 'action' && item === rendered)
         setStatus('This action is unavailable in private preview.');
       if (event.data.type === 'escape') setExpanded(false);
@@ -200,11 +230,15 @@ export default function ContentPreview({
     return () => document.removeEventListener('visibilitychange', update);
   }, []);
   useEffect(() => {
-    if (!active || !visible) {
+    if (!active) {
       previous.current.active = false;
       setPending(null);
       setRendered(null);
       for (const context of contexts.current) releaseContext(context);
+      return;
+    }
+    if (!visible) {
+      setPending(null);
       return;
     }
     if (!valid) {
@@ -215,12 +249,17 @@ export default function ContentPreview({
       setStatus('Fix the highlighted fields to update preview');
       return;
     }
+    if (rendered?.inputKey === inputKey && Date.now() < rendered.refreshAt) {
+      previous.current = { payload, view, retry, active: true };
+      return;
+    }
     const controller = new AbortController();
     let allocated: string | undefined;
     const current = ++generation.current;
     let reported = false;
     let requestId: string | undefined;
     let release = 'unknown';
+    let readinessStage: PreviewDiagnostic['readinessStage'] = 'frame';
     const report = (_error: unknown, stage: PreviewDiagnostic['stage'] = 'request', directive?: string) => {
       if (reported || controller.signal.aborted || current !== generation.current) return;
       reported = true;
@@ -230,6 +269,7 @@ export default function ContentPreview({
         requestedGeneration: current,
         displayedGeneration: displayedGeneration.current,
         readiness: 'failed',
+        ...(readinessStage ? { readinessStage } : {}),
         ...(directive ? { directive } : {}),
         stage,
       };
@@ -316,6 +356,10 @@ export default function ContentPreview({
               url: next.url,
               context: next.context,
               signal: controller.signal,
+              refreshAt: Date.now() + 14 * 60_000,
+              progress: (stage) => {
+                readinessStage = stage;
+              },
               report,
               identify: (value) => {
                 release = value;
@@ -340,7 +384,7 @@ export default function ContentPreview({
       controller.abort();
       if (allocated && displayedGeneration.current !== current) releaseContext(allocated);
     };
-  }, [payload, base, active, valid, visible, view, retry, inputKey]);
+  }, [payload, base, active, valid, visible, view, retry, inputKey, rendered]);
   useEffect(() => {
     if (!active) setExpanded(false);
   }, [active]);
@@ -387,6 +431,8 @@ export default function ContentPreview({
     };
   }, [expanded]);
   const hasListing = ['artists', 'releases', 'news', 'distro'].includes(collection);
+  const updating =
+    status === 'Updating preview' || (status === 'Preview up to date' && rendered?.inputKey !== inputKey);
   return (
     <section
       ref={panel}
@@ -483,9 +529,17 @@ export default function ContentPreview({
         </div>
         <p
           role="status"
+          aria-busy={updating}
           className={`text-xs ${error ? 'cms-state-error' : dirty ? 'cms-state-warning' : 'text-muted-foreground'}`}
         >
-          {status === 'Preview up to date' && rendered?.inputKey !== inputKey ? 'Updating preview' : status}
+          {updating ? (
+            <span className="inline-flex items-center gap-2">
+              <LatticeLoader />
+              Updating preview
+            </span>
+          ) : (
+            status
+          )}
           {rendered && (error || rendered.inputKey !== inputKey)
             ? ' · Showing the last successful preview (outdated)'
             : ''}
@@ -511,6 +565,7 @@ export default function ContentPreview({
                 <summary className="cursor-pointer">Diagnostic details</summary>
                 <p className="mt-2 break-all">
                   Reference: {diagnostic.requestId ?? 'Request did not reach the preview service'} · {diagnostic.stage}
+                  {diagnostic.readinessStage && <> · waiting on {diagnostic.readinessStage}</>}
                 </p>
                 <Button
                   type="button"

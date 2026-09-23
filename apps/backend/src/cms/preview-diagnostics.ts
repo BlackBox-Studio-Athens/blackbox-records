@@ -11,6 +11,7 @@ const reportSchema = z
     requestedGeneration: z.number().int().nonnegative().max(2147483647).optional(),
     displayedGeneration: z.number().int().nonnegative().max(2147483647).optional(),
     readiness: z.literal('failed').optional(),
+    readinessStage: z.enum(['frame', 'script', 'hydration', 'styles', 'images', 'fonts']).optional(),
     asset: z.string().max(1024).optional(),
     directive: z.enum(['style-src', 'style-src-elem', 'img-src', 'font-src']).optional(),
   })
@@ -73,6 +74,7 @@ export async function reportPreviewFailure(
     ...(report.requestedGeneration !== undefined ? { requestedGeneration: report.requestedGeneration } : {}),
     ...(report.displayedGeneration !== undefined ? { displayedGeneration: report.displayedGeneration } : {}),
     ...(report.readiness ? { readiness: report.readiness } : {}),
+    ...(report.readinessStage ? { readinessStage: report.readinessStage } : {}),
   });
   return new Response(null, { status: 204, headers });
 }

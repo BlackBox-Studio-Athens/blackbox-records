@@ -12,6 +12,7 @@ describe('private preview diagnostics', () => {
     asset: `${origin}/_astro/preview.abc.css?secret=hidden`,
     directive: 'style-src-elem',
   };
+
   function setup() {
     const limits = new Map<string, { count: number; expires: number }>();
     const logger = { info: vi.fn(), warn: vi.fn(), error: vi.fn() };
@@ -28,6 +29,7 @@ describe('private preview diagnostics', () => {
       );
     return { limits, logger, send };
   }
+
   it('uses explicit trusted origins and retains isolation', () => {
     expect(previewPolicy(origin)).toContain(`frame-ancestors ${origin}`);
     expect(previewPolicy('http://127.0.0.1:8787')).toContain("img-src 'self'");
@@ -77,6 +79,20 @@ describe('private preview diagnostics', () => {
     });
     expect((await send({ ...body, requestedGeneration: 'private text' })).status).toBe(400);
     expect((await send({ ...body, requestedGeneration: -1 })).status).toBe(400);
+  });
+  it('correlates timeout reports with the last readiness phase', async () => {
+    const { send, logger } = setup();
+    const report = { ...body, stage: 'timeout', readinessStage: 'images' };
+    expect((await send(report)).status).toBe(204);
+    expect(logger.warn.mock.calls[0][0]).toMatchObject({
+      event: 'preview_browser_failure',
+      requestId: body.requestId,
+      release: 'local',
+      stage: 'timeout',
+      readinessStage: 'images',
+    });
+    expect((await send({ ...report, readinessStage: 'editorial text' })).status).toBe(400);
+    expect(JSON.stringify(logger.warn.mock.calls)).not.toMatch(/editorial text/);
   });
   it('caps reports and bounds the in-memory identity map', async () => {
     const { send, logger, limits } = setup();

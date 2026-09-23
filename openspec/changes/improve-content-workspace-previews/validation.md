@@ -77,6 +77,14 @@ The user independently refreshed UAT in their Firefox and confirmed: “Yes, pre
 
 The workflow's final provider smoke failed only its five retired public `/admin/*` URL checks (expected 404, received 200). Stripe scenarios, Resend checks, public assets, checkout shell, current public routes, and both deployment jobs passed. A bounded read of `/admin/config.yml` confirmed `CF-Cache-Status: HIT`, age 74056 seconds, and `public, s-maxage=604800`; this is the previously tracked public Pages retirement-cache issue. The source/artifact checks and preview gates passed. The one-commit retirement exception was not reused, no broad cache purge was performed, and the failed workflow must not be represented as a green PRD promotion candidate.
 
+## Exact Distro preview follow-up — 2026-09-23
+
+The historical Firefox request reference `66d3e12-36d4-412b-afe0-379c53694e8d` is not searchable in the account's Cloudflare Free dashboard, so its exact stalled phase remains unknown. The next redacted failure report now includes the last preview readiness phase alongside request and release correlation; a backend test checks the field and rejects extra editorial data.
+
+The editor acceptance run completed all phases: `build:staff` (16.7 s), preview policy (6.7 s), Chromium (106.7 s), and Firefox (176.6 s). Both browser runs passed the delayed-update loader, reduced-motion, last-successful-frame, short hidden-tab reuse, and expired-context refresh checks. The run summary is `.codex-artifacts/validation/2026-09-23T18-07-42-719Z-4820/summary.json`; its source fingerprint matches the current tree. The first Firefox run had stopped earlier at a navigation-focus assertion; the complete rerun passed that assertion and the preview checks.
+
+Read-only inspection of the exact staff URL showed that it is the PRD host. The Band in the Pit item appeared as `2016` / `Band in the pit` / `Cassette` in both Detail and Listing modes. Detail additionally showed the description, purchase state, release date, and three gallery images. I changed only the preview selector from Detail to Listing and back; I did not edit or publish content. The planned UAT release verification and full repository validation remain pending; PRD was not promoted.
+
 ## Superseding UAT release verification — 2026-09-16
 
 Release run [35071291241](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/35071291241) completed successfully for commit `923251cc4b99d83db1049ccf9475c03581dacdf0`. The UAT Worker, Pages artifact, browser preview gates, release identity checks and UAT smoke passed. This closes task 6.5; PRD remains unpromoted.
@@ -112,3 +120,11 @@ Required checks passed after the optional-font fix: `pnpm test:unit`, `pnpm chec
 Two verification infrastructure collisions were resolved without source workarounds: a CMS rebuild initially hit a Windows file lock while the local server used its artifact (stopping the server allowed the canonical build to pass), and a workspace run overlapped the root build rewriting staff assets (rerun only after build completion). Do not run a browser against an artifact being rebuilt.
 
 Logs and screenshots remain in ignored `.codex-artifacts/reliability-*` and `.codex-artifacts/content-workspace/`. The living [backoffice design reference](../../../docs/backoffice-design.md) records twelve sources, shared rules and fifteen Proposed improvements. Hosted deployment/republication remain explicitly unfinished under task 6.5.
+
+## Exact Distro follow-up — local checks (2026-09-23)
+
+The readiness-stage diagnostic schema test passed in the full unit suite. The updated full repository run at .codex-artifacts/validation/2026-09-23T18-17-37-901Z-59380/summary.json passed formatting, lint, type checks, dependency boundaries, unit tests, and production build. The editor acceptance run at .codex-artifacts/validation/2026-09-23T18-07-42-719Z-4820/summary.json passed its staff build and preview policy checks in Chromium and Firefox, including delayed updates, reduced motion, last-successful-frame retention, short hidden-tab reuse, and expired-context refresh.
+
+After syncing the delta into openspec/specs/content-publishing/spec.md, strict OpenSpec spec validation passed all 52 specs with zero failures. The full repository gate will be rerun on the final archived tree before completion.
+
+The exact PRD Distro item was checked read-only in Chrome. Detail and Listing showed the same identity fields, while Detail added the description, purchase state, release date, and gallery. The preview selector was restored to Detail; no content was saved or published. UAT hosted verification and the user's Firefox check remain pending. PRD was not promoted.

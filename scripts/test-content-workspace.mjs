@@ -858,6 +858,7 @@ else if (sellingJourney) {
 } else {
   const optionalChunk =
     /\/_astro\/(?:PublicationHistory|PublicationReviewFlow|ContentBodyEditor|ContentFields|ContentPreview|MediaLibrary|EditorialPicker|CatalogSelling)[^/]*\.(?:js|css)$/;
+
   async function assertClosedOptionalFeatures(browser) {
     for (const [label, path, ready] of [
       ['Overview', '/', (probe) => probe.getByRole('heading', { name: 'Overview', exact: true }).waitFor()],
@@ -1933,6 +1934,74 @@ else if (sellingJourney) {
     state.previewStyleFailure = false;
     await page.getByRole('button', { name: 'Retry preview', exact: true }).click();
     await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    const slowPreviewReads = state.previewRequests.length;
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await artistName.fill('slow preview');
+    await page.locator('.cms-lattice-loader').waitFor();
+    await page.getByRole('status').filter({ hasText: 'Updating preview' }).waitFor();
+    assert.equal(
+      await page
+        .locator('.cms-lattice-dot')
+        .first()
+        .evaluate((dot) => getComputedStyle(dot).animationName),
+      'none',
+    );
+    assert.equal(
+      await page.locator('iframe[data-preview-readiness="ready"]').count(),
+      1,
+      'The prior preview stays visible while updating',
+    );
+    await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    assert.equal(state.previewRequests.length, slowPreviewReads + 1, 'The slow preview request completes once');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const successfulGeneration = await page
+      .locator('iframe[data-preview-readiness="ready"]')
+      .getAttribute('data-preview-generation');
+    const beforeShortSwitch = state.previewRequests.length;
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForTimeout(50);
+    assert.equal(
+      await page.locator('iframe[data-preview-readiness="ready"]').getAttribute('data-preview-generation'),
+      successfulGeneration,
+      'A short tab switch retains the current preview frame',
+    );
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForTimeout(50);
+    assert.equal(
+      state.previewRequests.length,
+      beforeShortSwitch,
+      'Returning with unchanged inputs reuses the current context',
+    );
+    const expiredRefresh = page.waitForRequest((request) => request.url().includes('/_emdash/preview?'));
+    await page.evaluate(() => {
+      window.__previewOriginalDateNow = Date.now;
+      Date.now = () => window.__previewOriginalDateNow() + 16 * 60 * 1000;
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForTimeout(50);
+    const beforeExpiredSwitch = state.previewRequests.length;
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await expiredRefresh;
+    await page.evaluate(() => {
+      Date.now = window.__previewOriginalDateNow;
+      delete window.__previewOriginalDateNow;
+    });
+    await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    assert.equal(
+      state.previewRequests.length,
+      beforeExpiredSwitch + 1,
+      'Returning after the server context lifetime creates one fresh preview',
+    );
     await page.getByRole('button', { name: 'Preview', exact: true }).click();
     const previewReads = state.previewRequests.length;
     await artistName.fill('Hidden preview');

@@ -5,6 +5,7 @@ export type PreviewDiagnostic = {
   requestedGeneration?: number;
   displayedGeneration?: number;
   readiness?: 'failed';
+  readinessStage?: 'frame' | 'script' | 'hydration' | 'styles' | 'images' | 'fonts';
   asset?: string | undefined;
   directive?: string | undefined;
 };
