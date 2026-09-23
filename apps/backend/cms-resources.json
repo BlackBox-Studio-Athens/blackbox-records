@@ -9,17 +9,21 @@
     "database_id": "e466f52b-46aa-4a76-9a09-0e304a3800b4",
     "bucket_name": "blackbox-records-cms-prd",
     "hostname": "staff.blackboxrecordsathens.com",
+    "preview_hostname": "preview.blackboxrecordsathens.com",
     "owner_email": "blackboxrecordsathens@gmail.com",
     "access_team_domain": "https://blackboxrecords.cloudflareaccess.com",
-    "access_policy_aud": "5a22cda7495280a630a8c14c3ef4fc37168edb776b3bab83a74c9d064a1db202"
+    "access_policy_aud": "5a22cda7495280a630a8c14c3ef4fc37168edb776b3bab83a74c9d064a1db202",
+    "preview_access_policy_aud": "419f92dc3642a683ad75a17dfb4e8b74294e417c9285ea6fd3da33a973d2cb45"
   },
   "uat": {
     "database_name": "blackbox-emdash-m1-uat",
     "database_id": "1e308981-165d-4ce3-bd43-9c2e2ece2868",
     "bucket_name": "blackbox-emdash-m1-uat",
     "hostname": "staff-uat.blackboxrecordsathens.com",
+    "preview_hostname": "preview-uat.blackboxrecordsathens.com",
     "owner_email": "blackboxrecordsathens@gmail.com",
     "access_team_domain": "https://blackboxrecords.cloudflareaccess.com",
-    "access_policy_aud": "fdb43a80812cec4c151e8bff2d9a0245b3fda2437ff23a51b68f6d1256dba92d"
+    "access_policy_aud": "fdb43a80812cec4c151e8bff2d9a0245b3fda2437ff23a51b68f6d1256dba92d",
+    "preview_access_policy_aud": "18dce67c743d7be547efcc0acd52a59e8afcb51b256c8b3afb057aabee673841"
   }
 }
