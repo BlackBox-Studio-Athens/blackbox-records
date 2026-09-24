@@ -25,7 +25,7 @@ export function validationPlan({ fast = false, scope = 'all', editor = false, ch
     ];
   }
   if (checks) {
-    return ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:types', 'check:boundaries'].map(
+    return ['test:unit', 'environment:model:verify', 'check:boundaries', 'check:types', 'format:check', 'lint'].map(
       (name) => phase(name, [name]),
     );
   }
@@ -33,10 +33,10 @@ export function validationPlan({ fast = false, scope = 'all', editor = false, ch
     return [
       'test:unit',
       'environment:model:verify',
+      'check:boundaries',
+      'check:types',
       'format:check',
       'lint',
-      'check:types',
-      'check:boundaries',
       'build',
     ].map((name) => phase(name, [name]));
   }
@@ -167,7 +167,12 @@ export async function runValidation({
   const evidenceDir = path.join(root, runId);
   const started = performance.now();
   const controller = new AbortController();
-  const cancel = () => controller.abort();
+  let externallyCancelled = false;
+  let firstFailure;
+  const cancel = () => {
+    externallyCancelled = true;
+    controller.abort();
+  };
   signal?.addEventListener('abort', cancel, { once: true });
   if (signal?.aborted) cancel();
   const summary = {
@@ -199,6 +204,7 @@ export async function runValidation({
     if (process.version !== 'v24.21.0' || summary.pnpm !== '12.0.0')
       throw new Error('Validation requires Node 24.21.0 and pnpm 12.0.0.');
     if (fast || editor) log('PARTIAL validation: this does not establish implementation completion.');
+    const canOverlap = jobs === 2 && !fast && !editor && phases.length > 1 && phases[0].name === 'test:unit';
     async function execute(phase) {
       const phaseStart = performance.now();
       const logPath = path.join(evidenceDir, `${summary.phases.length}-${phase.name.replaceAll(':', '-')}.log`);
@@ -247,7 +253,11 @@ export async function runValidation({
       } catch (error) {
         entry.exitCode = error.exitCode || 1;
         entry.error = error.message;
-        entry.status = controller.signal.aborted ? 'cancelled' : 'failed';
+        entry.status = externallyCancelled || controller.signal.aborted ? 'cancelled' : 'failed';
+        if (entry.status === 'failed') {
+          firstFailure ??= entry;
+          if (canOverlap) controller.abort();
+        }
       } finally {
         await output.close();
       }
@@ -288,7 +298,6 @@ export async function runValidation({
       return true;
     }
     let passed;
-    const canOverlap = jobs === 2 && !fast && !editor && phases.length > 1 && phases[0].name === 'test:unit';
     if (canOverlap) {
       const hasBuild = phases.at(-1)?.name === 'build';
       const middle = phases.slice(1, hasBuild ? -1 : undefined);
@@ -305,7 +314,7 @@ export async function runValidation({
     stopMonitoring = null;
     const unchanged =
       !summary.sourceChanges.length && JSON.stringify(summary.sourceBefore) === JSON.stringify(summary.sourceAfter);
-    summary.status = controller.signal.aborted
+    summary.status = externallyCancelled
       ? 'cancelled'
       : !unchanged
         ? 'invalidated'
@@ -315,9 +324,9 @@ export async function runValidation({
             : 'passed'
           : 'failed';
     summary.exitCode =
-      passed && unchanged && !controller.signal.aborted
+      passed && unchanged && !externallyCancelled
         ? 0
-        : summary.phases.find((entry) => entry.exitCode)?.exitCode || 1;
+        : firstFailure?.exitCode || summary.phases.find((entry) => entry.exitCode)?.exitCode || 1;
   } catch (error) {
     summary.error = error.message;
     log(`INCOMPLETE: ${error.message}`);

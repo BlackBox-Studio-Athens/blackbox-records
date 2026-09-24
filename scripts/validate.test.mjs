@@ -23,7 +23,7 @@ test('full plan preserves current gates without retired catalog preparation', as
   const plan = validationPlan();
   assert.deepEqual(
     plan.map((phase) => phase.args[0]),
-    ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:types', 'check:boundaries', 'build'],
+    ['test:unit', 'environment:model:verify', 'check:boundaries', 'check:types', 'format:check', 'lint', 'build'],
   );
   assert.equal(scripts.build, 'node --import tsx scripts/run-release-preparation.mjs builds');
   assert.equal(
@@ -48,7 +48,7 @@ test('full plan preserves current gates without retired catalog preparation', as
   assert.throws(() => validationPlan({ editor: true, fast: true }));
   assert.deepEqual(
     validationPlan({ checks: true }).map((phase) => phase.name),
-    ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:types', 'check:boundaries'],
+    ['test:unit', 'environment:model:verify', 'check:boundaries', 'check:types', 'format:check', 'lint'],
   );
   assert.throws(() => validationPlan({ checks: true, fast: true }));
   assert.throws(() => validationPlan({ checks: true, scope: 'web' }));
@@ -195,7 +195,7 @@ test('diagnostics retain failure context within a fixed output bound', () => {
 
 test('parallel groups finish before build and failures cannot reach build', async (t) => {
   const cwd = await fixture(t);
-  const phases = [command('tests', 'setTimeout(() => {}, 200)')];
+  const phases = [command('test:unit', 'setTimeout(() => {}, 200)')];
   for (let i = 0; i < 5; i++) phases.push(command(`check-${i}`, 'process.exit(0)'));
   phases.push(command('build', 'process.exit(0)'));
   const summary = await runValidation({ cwd, phases, jobs: 2, ...testOptions });
@@ -208,6 +208,36 @@ test('parallel groups finish before build and failures cannot reach build', asyn
   assert.ok(!failed.phases.some(({ name }) => name === 'build'));
   assert.deepEqual(failed.skippedPhases, ['check-2', 'check-3', 'check-4', 'build']);
 });
+
+for (const failure of ['unit', 'check']) {
+  test(`parallel validation cancels the other lane after a ${failure} failure`, async (t) => {
+    const cwd = await fixture(t);
+    const phases = [
+      command(
+        'test:unit',
+        failure === 'unit' ? 'console.error("UNIT sentinel"); process.exit(7)' : 'setInterval(() => {}, 10000)',
+      ),
+      command(
+        'environment:model:verify',
+        failure === 'check' ? 'console.error("CHECK sentinel"); process.exit(9)' : 'setInterval(() => {}, 10000)',
+      ),
+      command('check:types', 'process.exit(0)'),
+      command('build', 'process.exit(0)'),
+    ];
+    const summary = await runValidation({ cwd, phases, jobs: 2, ...testOptions });
+    const failedName = failure === 'unit' ? 'test:unit' : 'environment:model:verify';
+    const cancelledName = failure === 'unit' ? 'environment:model:verify' : 'test:unit';
+    const failed = summary.phases.find(({ name }) => name === failedName);
+    const cancelled = summary.phases.find(({ name }) => name === cancelledName);
+    assert.equal(summary.status, 'failed');
+    assert.equal(summary.exitCode, failure === 'unit' ? 7 : 9);
+    assert.equal(failed.status, 'failed');
+    assert.equal(failed.exitCode, failure === 'unit' ? 7 : 9);
+    assert.equal(cancelled.status, 'cancelled');
+    assert.deepEqual(summary.skippedPhases, ['check:types', 'build']);
+    assert.match(await readFile(failed.logPath, 'utf8'), failure === 'unit' ? /UNIT sentinel/ : /CHECK sentinel/);
+  });
+}
 
 test('checks mode is partial and never schedules a build', async (t) => {
   const cwd = await fixture(t);
