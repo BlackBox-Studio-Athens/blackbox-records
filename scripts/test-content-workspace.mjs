@@ -537,6 +537,18 @@ const server = createServer(async (req, res) => {
         },
       });
     }
+    if (url.pathname === '/preview-login') {
+      res.writeHead(200, { 'Content-Type': 'text/html', 'Content-Security-Policy': "frame-ancestors 'none'" });
+      return res.end('<h1>Sign in</h1>');
+    }
+    if (state.previewSessionDenied && ['/_preview/session', '/preview-document'].includes(url.pathname)) {
+      res.writeHead(302, { Location: '/preview-login' });
+      return res.end();
+    }
+    if (url.pathname === '/_preview/session') {
+      res.writeHead(204, { 'Access-Control-Allow-Origin': origin, 'Access-Control-Allow-Credentials': 'true' });
+      return res.end();
+    }
     if (url.pathname === '/_emdash/preview-diagnostics') {
       state.diagnostics.push(body);
       res.writeHead(204);
@@ -1223,6 +1235,47 @@ else if (sellingJourney) {
     if (process.env.BLACKBOX_VALIDATION_TRACE === '1')
       await page.context().tracing.start({ screenshots: true, snapshots: true, sources: true });
     initialStockReads.resolve();
+    {
+      const probe = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+      const originalGroup = records.distro[0].data.group;
+      try {
+        records.distro[0].data.group = 'Tapes';
+        state.previewSessionDenied = true;
+        await probe.goto(`${origin}/content/?collection=distro&id=distro-1`);
+        const toggle = probe.getByRole('button', { name: 'Preview', exact: true });
+        await toggle.waitFor();
+        if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
+        const signIn = probe.getByRole('link', { name: 'Sign in to preview (new tab)', exact: true });
+        await signIn.waitFor({ timeout: 10_000 });
+        assert.equal(await signIn.getAttribute('target'), '_blank');
+        assert.equal(await probe.locator('.cms-preview iframe').count(), 0, 'No blocked login frame is mounted');
+        assert.equal(state.diagnostics.at(-1)?.stage, 'access');
+        state.previewSessionDenied = false;
+        await probe.getByRole('button', { name: 'Retry preview', exact: true }).click();
+        await probe.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+        state.previewSessionDenied = true;
+        await probe.getByRole('combobox', { name: 'View', exact: true }).selectOption('listing');
+        await signIn.waitFor({ timeout: 10_000 });
+        assert.equal(await probe.locator('iframe[data-preview-readiness="ready"]').count(), 1);
+        state.previewSessionDenied = false;
+        await probe.getByRole('button', { name: 'Retry preview', exact: true }).click();
+        await probe.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+        console.log('Preview Access redirect regression passed: sign-in recovery and previous frame retention.');
+      } catch (error) {
+        console.error('Preview Access regression state:', {
+          text: await probe.locator('.cms-preview').innerText(),
+          visibility: await probe.evaluate(() => document.visibilityState),
+          requests: state.previewRequests.length,
+          diagnostics: state.diagnostics,
+          frames: await probe.locator('.cms-preview iframe').count(),
+        });
+        throw error;
+      } finally {
+        state.previewSessionDenied = false;
+        records.distro[0].data.group = originalGroup;
+        await probe.close();
+      }
+    }
     {
       const original = [...records.distro];
       records.distro.push(

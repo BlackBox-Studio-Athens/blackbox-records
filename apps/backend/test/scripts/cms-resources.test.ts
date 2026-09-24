@@ -4,6 +4,13 @@ import { validateCmsFreeTier, validateCmsResources } from '../../scripts/cms-res
 
 const resources = JSON.parse(readFileSync(new URL('../../cms-resources.json', import.meta.url), 'utf8'));
 describe('CMS resource isolation', () => {
+  it('shares UAT Staff and Preview login while keeping browser origins and PRD authorization separate', () => {
+    expect(resources.uat.preview_access_policy_aud).toBe(resources.uat.access_policy_aud);
+    expect(resources.uat.preview_hostname).not.toBe(resources.uat.hostname);
+    expect(resources.uat.access_policy_aud).not.toBe(resources.prd.access_policy_aud);
+    expect(resources.uat.access_policy_aud).not.toBe(resources.prd.preview_access_policy_aud);
+  });
+
   it('rejects KV introduced by source configuration or adapter output, including environment and unsafe bindings', () => {
     expect(() => validateCmsFreeTier({ kv_namespaces: [], env: { uat: {} } })).not.toThrow();
     for (const config of [

@@ -66,6 +66,7 @@ export default function ContentPreview({
   const [pending, setPending] = useState<Rendering | null>(null);
   const [status, setStatus] = useState('Updating preview');
   const [error, setError] = useState('');
+  const [signInUrl, setSignInUrl] = useState('');
   const [diagnostic, setDiagnostic] = useState<PreviewDiagnostic | null>(null);
   const [copied, setCopied] = useState(false);
   const [width, setWidth] = useState('fit');
@@ -292,6 +293,7 @@ export default function ContentPreview({
       previous.current.active;
     previous.current = { payload, view, retry, active: true };
     setStatus('Updating preview');
+    setSignInUrl('');
     setPending(null);
     const deadline = setTimeout(() => {
       if (controller.signal.aborted) return;
@@ -346,6 +348,31 @@ export default function ContentPreview({
               throw new Error('Preview returned an invalid document. Retry preview.');
             contexts.current.add(next.context);
             allocated = next.context;
+            if (controller.signal.aborted || currentInput.current !== inputKey) {
+              releaseContext(next.context);
+              return;
+            }
+            // Access may redirect an unauthenticated frame to a login page that forbids embedding.
+            // Check the separate origin before mounting it; sign-in must happen in a top-level tab.
+            const sessionUrl = new URL('/_preview/session', target).href;
+            try {
+              const session = await fetch(sessionUrl, {
+                credentials: 'include',
+                cache: 'no-store',
+                redirect: 'error',
+                headers: { Accept: 'application/json' },
+                signal: AbortSignal.any([controller.signal, AbortSignal.timeout(8000)]),
+              });
+              if (session.status !== 204) throw new Error('Preview access unavailable');
+            } catch {
+              if (controller.signal.aborted) return;
+              setSignInUrl(sessionUrl);
+              report(null, 'access');
+              releaseContext(next.context);
+              throw new Error(
+                'Could not connect to preview. Open preview sign-in in a new tab, then return and retry. Your edits are still here.',
+              );
+            }
             if (controller.signal.aborted || currentInput.current !== inputKey) {
               releaseContext(next.context);
               return;
@@ -560,6 +587,13 @@ export default function ContentPreview({
         <Alert variant="destructive" className="m-3 w-auto">
           <AlertDescription>
             {error}
+            {signInUrl && (
+              <Button asChild variant="outline" size="sm" className="mt-2">
+                <a href={signInUrl} target="_blank" rel="noopener noreferrer">
+                  Sign in to preview (new tab)
+                </a>
+              </Button>
+            )}
             {diagnostic && (
               <details className="mt-2 text-xs">
                 <summary className="cursor-pointer">Diagnostic details</summary>

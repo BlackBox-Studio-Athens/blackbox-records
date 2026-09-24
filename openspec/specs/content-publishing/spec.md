@@ -153,6 +153,19 @@ The content workspace SHALL render the selected unsaved record with the public s
 - **THEN** the workspace reloads the preview assets and reports success only after they load
 - **AND** failed or superseded replacements cannot remove the last successful preview or lose edits.
 
+#### Scenario: Initial Staff sign-in also authorizes Preview
+
+- **WHEN** a member signs into Staff through Google in an environment configured for shared preview sign-in
+- **THEN** its Access application issues authorization cookies for both exact Staff and Preview hostnames before returning to the editor, without a second interactive sign-in
+- **AND** both hosts validate that environment's application audience while keeping separate browser origins and verified identity/context ownership checks.
+
+#### Scenario: Preview session needs recovery
+
+- **WHEN** the member is signed into the editor but the isolated preview hostname requires authentication
+- **THEN** a bounded credentialed connection check fails before the preview iframe is mounted and offers sign-in in a separate top-level tab followed by retry
+- **AND** current edits and the previous successful preview remain available, diagnostics identify the access phase, and only the configured staff origin can read the authenticated connection response
+- **AND** login frame restrictions and preview authentication remain enforced.
+
 #### Scenario: Firefox Distro preview times out
 
 - **WHEN** the Band in the Pit Distro record 01M2J1EK7DF73T79TJRN083EP6 times out in Firefox

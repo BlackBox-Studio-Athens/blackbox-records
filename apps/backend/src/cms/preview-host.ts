@@ -37,3 +37,31 @@ export async function authenticatePreview(request: Request, bindings: PreviewBin
   if (result.status !== 'verified') throw new Error('Sign in again to preview.');
   return result.identity;
 }
+
+export async function previewSessionResponse(request: Request, bindings: PreviewBindings) {
+  await authenticatePreview(request, bindings);
+  const url = new URL(request.url);
+  const staffOrigin =
+    bindings.PRODUCT_ENVIRONMENT === 'LOCAL'
+      ? `http://127.0.0.1:${url.port || '8787'}`
+      : `https://${bindings.CMS_HOSTNAME}`;
+  const origin = request.headers.get('Origin');
+  const headers = {
+    'Cache-Control': 'private, no-store',
+    Vary: 'Origin, Accept',
+    'Content-Security-Policy': "default-src 'none'; frame-ancestors 'none'",
+    'Referrer-Policy': 'no-referrer',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Robots-Tag': 'noindex, nofollow',
+    ...(origin === staffOrigin
+      ? { 'Access-Control-Allow-Origin': staffOrigin, 'Access-Control-Allow-Credentials': 'true' }
+      : {}),
+  };
+  if (request.method !== 'GET' || url.search || (origin && origin !== staffOrigin))
+    return new Response('Forbidden', { status: 403, headers });
+  if (request.headers.get('Accept') === 'application/json') return new Response(null, { status: 204, headers });
+  return new Response(
+    '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Preview sign-in complete</title><h1>Preview sign-in complete</h1><p>Return to the editor tab and choose Retry preview. You can close this tab.</p></html>',
+    { headers: { ...headers, 'Content-Type': 'text/html; charset=utf-8' } },
+  );
+}

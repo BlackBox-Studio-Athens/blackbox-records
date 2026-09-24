@@ -13,7 +13,7 @@ import { staffAssetResponse } from './staff-assets';
 import { readInventoryArtwork } from './inventory-artwork';
 import { prepareCatalogSchema } from './catalog-schema';
 import { createBindingLogger } from '../observability';
-import { authenticatePreview, isPreviewHost, previewOrigin } from './preview-host';
+import { authenticatePreview, isPreviewHost, previewOrigin, previewSessionResponse } from './preview-host';
 import {
   ownedPreviewContext,
   pruneStoredPreviewContexts,
@@ -285,6 +285,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       url.searchParams.get('__preview');
     if (directContext && /^[a-f0-9-]{36}$/.test(directContext)) requestId = directContext;
     try {
+      if (url.pathname === '/_preview/session') return await previewSessionResponse(request, this.env);
       const identity = await authenticatePreview(request, this.env);
       failurePhase = 'routing';
       if (!['GET', 'HEAD'].includes(request.method) || !this.env.PUBLIC_SITE) {

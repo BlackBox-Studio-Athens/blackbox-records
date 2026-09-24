@@ -7,7 +7,7 @@ const reportSchema = z
   .object({
     requestId: z.string().uuid().optional(),
     release: z.string().regex(/^(?:[a-f0-9]{40}|local|unknown)$/),
-    stage: z.enum(['request', 'timeout', 'style', 'image', 'font', 'freshness']),
+    stage: z.enum(['request', 'access', 'timeout', 'style', 'image', 'font', 'freshness']),
     requestedGeneration: z.number().int().nonnegative().max(2147483647).optional(),
     displayedGeneration: z.number().int().nonnegative().max(2147483647).optional(),
     readiness: z.literal('failed').optional(),
