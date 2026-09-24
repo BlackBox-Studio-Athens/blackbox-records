@@ -35,7 +35,7 @@ export async function formatCacheIdentity(cwd = root) {
     hash.update(bytes);
     hash.update('\0');
   }
-  hash.update(`${process.version}\0${process.platform}\0${process.arch}`);
+  hash.update(`experimental-cli\0${process.version}\0${process.platform}\0${process.arch}`);
   return hash.digest('hex');
 }
 
@@ -45,7 +45,7 @@ export async function formatCacheLocation(cwd = root) {
 }
 
 async function runPrettier(cwd, args) {
-  return execa('pnpm', ['exec', 'prettier', '.', '--check', ...args], { cwd, stdio: 'inherit' });
+  return execa('pnpm', ['exec', 'prettier', '.', '--check', '--experimental-cli', ...args], { cwd, stdio: 'inherit' });
 }
 
 export async function runFormatCheck({ cwd = root, uncached = false } = {}) {
@@ -56,7 +56,7 @@ export async function runFormatCheck({ cwd = root, uncached = false } = {}) {
     await mkdir(path.dirname(cache), { recursive: true });
   });
   try {
-    return await runPrettier(cwd, ['--cache', '--cache-strategy', 'content', '--cache-location', cache]);
+    return await runPrettier(cwd, ['--cache', '--cache-location', cache]);
   } catch (error) {
     const output = String(error?.stderr ?? '');
     if (!/(?:cache.*(?:invalid|corrupt|parse|json|read)|(?:invalid|corrupt|parse|json|read).*cache)/i.test(output))
