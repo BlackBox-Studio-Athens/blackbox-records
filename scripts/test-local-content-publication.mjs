@@ -20,6 +20,7 @@ if (process.env.PREVIEW_FIXTURE_PERSIST_TO) {
   const home = (await api('content/home?limit=1')).data.items[0];
   assert.equal(home.id, identity.homeId, 'Refuse publication through another worktree’s Worker registry entry.');
 }
+
 async function api(path, body, method = 'POST') {
   const response = await fetch(`${staff}/_emdash/api/${path}`, {
     method: body ? method : 'GET',
@@ -27,11 +28,15 @@ async function api(path, body, method = 'POST') {
     body: body && JSON.stringify(body),
     signal: AbortSignal.timeout(15000),
   });
-  assert.ok(response.ok, `${path}: ${response.status}`);
+  if (!response.ok) {
+    const detail = await response.text();
+    assert.fail(`${path}: ${response.status}${detail ? ` ${detail.slice(0, 800)}` : ''}`);
+  }
   if (path === 'blackbox/publication-review')
     reviewCosts.push(Number(response.headers.get('X-Publication-Review-Reads')));
   return response.json();
 }
+
 async function save(item, data, collection = 'artists') {
   const path = `content/${collection}/${item.id}`;
   const current = (await api(path)).data;
@@ -46,6 +51,7 @@ async function save(item, data, collection = 'artists') {
     )
   ).data;
 }
+
 async function findBySlug(collection, slug) {
   let cursor;
   do {
@@ -57,6 +63,7 @@ async function findBySlug(collection, slug) {
     cursor = nextCursor;
   } while (cursor);
 }
+
 async function publish(item, saved, extra = [], inspectPreview = async () => {}) {
   const started = performance.now();
   const input = {
@@ -284,6 +291,7 @@ for (const example of tracklistExamples) {
   );
 }
 const marker = `Private draft ${randomUUID()}`;
+let primaryError;
 try {
   await save(other, { ...other.data, genre: marker });
   const saved = await save(selected, {
@@ -310,11 +318,17 @@ try {
       assert.ok(html.includes('Tracklist'));
       assert.ok(html.includes(example.tracklist.format === 'cd' ? 'Local cello improvisation' : 'Local opening track'));
       if (example.collection === 'distro') {
-        assert.ok(
-          html.includes(`data-music-streaming-service-embedded-player-release-id="distro:${example.item.slug}"`),
-        );
-        assert.ok(html.includes('data-music-streaming-service-embedded-player-bandcamp-embed-url='));
-        assert.ok(html.includes('data-music-streaming-service-embedded-player-tidal-embed-url='));
+        const hasBandcamp = Boolean(example.item.data.bandcamp_embed_url);
+        const hasTidal = Boolean(example.item.data.tidal_url);
+        if (hasBandcamp || hasTidal) {
+          assert.ok(
+            html.includes(`data-music-streaming-service-embedded-player-release-id="distro:${example.item.slug}"`),
+          );
+          if (hasBandcamp) assert.ok(html.includes('data-music-streaming-service-embedded-player-bandcamp-embed-url='));
+          if (hasTidal) assert.ok(html.includes('data-music-streaming-service-embedded-player-tidal-embed-url='));
+        } else {
+          assert.doesNotMatch(html, /data-music-streaming-service-embedded-player-release-id="distro:/);
+        }
         assert.doesNotMatch(html, /<iframe\b/i, 'Preview keeps provider players inert until Listen is activated.');
       }
       if (example.tracklist.format === 'vinyl') {
@@ -330,7 +344,13 @@ try {
       const reloaded = (await api(`content/distro/${example.item.id}`)).data.item;
       assert.equal(reloaded.data.bandcamp_embed_url, example.item.data.bandcamp_embed_url);
       assert.equal(reloaded.data.tidal_url, example.item.data.tidal_url);
-      assert.ok(html.includes(`data-music-streaming-service-embedded-player-release-id="distro:${example.item.slug}"`));
+      if (example.item.data.bandcamp_embed_url || example.item.data.tidal_url) {
+        assert.ok(
+          html.includes(`data-music-streaming-service-embedded-player-release-id="distro:${example.item.slug}"`),
+        );
+      } else {
+        assert.doesNotMatch(html, /data-music-streaming-service-embedded-player-release-id="distro:/);
+      }
       assert.doesNotMatch(html, /<iframe\b/i, 'Published player remains inert until Listen is activated.');
     }
   }
@@ -353,7 +373,12 @@ try {
       combinedPreview: true,
     }),
   );
-} finally {
+} catch (error) {
+  primaryError = error;
+}
+
+let cleanupError;
+try {
   const restoredOther = await save(other, other.data);
   const restored = await save(selected, selected.data);
   const restoredTracks = [];
@@ -363,10 +388,26 @@ try {
       { ...example.item.data, tracklist: example.item.data.tracklist ?? null },
       example.collection,
     );
-    restoredTracks.push({ collection: example.collection, recordId: example.item.id, expectedRevision: restored._rev });
+    restoredTracks.push({
+      collection: example.collection,
+      recordId: example.item.id,
+      expectedRevision: restored._rev,
+    });
   }
   await publish(selected, restored, [
     { collection: 'artists', recordId: other.id, expectedRevision: restoredOther._rev },
     ...restoredTracks,
   ]);
+} catch (error) {
+  cleanupError = error;
+}
+
+if (primaryError) {
+  if (cleanupError) {
+    console.error('Local publication smoke cleanup failed after the original failure:', cleanupError);
+  }
+  throw primaryError;
+}
+if (cleanupError) {
+  throw cleanupError;
 }

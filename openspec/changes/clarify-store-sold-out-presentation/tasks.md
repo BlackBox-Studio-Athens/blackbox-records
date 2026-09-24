@@ -19,4 +19,4 @@
 ## 4. Acceptance
 
 - [x] 4.1 Use native Browser Use after the repository probe to check changed public/staff flows on desktop/mobile, with keyboard and 200% zoom. Verify contrast, the restock switch and zero-stock labels, functional disabled controls, discard confirmation/cancellation, thumbnail loading, and listening/navigation. Use Local fixtures for mutations; distinguish hosted sign-in/derivative limitations.
-- [ ] 4.2 Run `pnpm validate`, `pnpm validate:editor`, relevant local content-workspace/publication checks, and strict OpenSpec validation on the final implementation. Record compact evidence; follow existing Free-tier rules before hosted derivative preparation.
+- [x] 4.2 Run `pnpm validate`, `pnpm validate:editor`, relevant local content-workspace/publication checks, and strict OpenSpec validation on the final implementation. Record compact evidence; follow existing Free-tier rules before hosted derivative preparation.
