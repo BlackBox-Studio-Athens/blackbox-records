@@ -30,6 +30,14 @@ All three runs used source SHA `a66f6755b3f5ca804cc59ae557c4e8b60087d2af`, finge
 
 These are three comparable warm candidate runs, not a matched baseline/candidate campaign. The retained pilot controls use different source and test inventories, so the required 20% warm-median improvement is not claimed and task 5.1 remains open. The final ordinary validation is rerun after this report is finalized; its summary records the final source identity.
 
+## Validation phase profiling (2026-09-24)
+
+The previous custom `format:check` wrapper had a five-run warm median of 9.75s. Enabling Prettier's experimental CLI with its native content cache reduced the wrapper median to 1.36s across five runs, an 86% reduction. The standalone fast CLI trial had a 0.81s median. The full `pnpm validate` run recorded a 2.67s format phase, but overlapped another validation run and is not a comparable full-run timing sample.
+
+Types and lint were left unchanged. Astro's `--noSync` option saved 2.8s for web and 3.9s for staff in isolated checks, while omitting sync erased much of that gain; Astro watch mode remains useful for incremental edits. Warm ESLint caching appeared about 78% faster in a local trial, but it was not adopted because cached cross-file results can be stale and the warm JSON report lacked per-file rule timings. ESLint concurrency and heap-size tuning showed no repeatable improvement.
+
+The WebStorm full validation run completed with exit code 0. Its phase times were affected by the overlapping validation process and do not establish Types or Lint speed improvements.
+
 ## Hosted UAT pilot
 
 The first activated run failed in the parallel Chromium editor check while Firefox passed. Rerunning the failed candidate on the same source revision passed both browsers and the full UAT path. This is one successful post-change attempt, not the required five-sample cohort.
