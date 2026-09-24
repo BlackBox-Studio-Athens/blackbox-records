@@ -47,16 +47,28 @@ export function DeliverySummary({ loading, quote }: ReturnType<typeof useDeliver
           <div className="flex justify-between gap-4">
             <dt>Merchandise</dt>
             <dd>
-              {quote.merchandiseGrossMinor === null ? 'Choose amount at payment' : money(quote.merchandiseGrossMinor)}
+              {quote.merchandiseGrossMinor === null ? (
+                'Choose amount at payment'
+              ) : (
+                <span className="font-display">{money(quote.merchandiseGrossMinor)}</span>
+              )}
             </dd>
           </div>
           <div className="flex justify-between gap-4">
             <dt>Shipping — BOX NOW {quote.tier === 'small' ? 'Small' : 'Medium'}</dt>
-            <dd>{money(quote.amountMinor)}</dd>
+            <dd>
+              <span className="font-display">{money(quote.amountMinor)}</span>
+            </dd>
           </div>
           <div className="flex justify-between gap-4 font-semibold">
             <dt>Total, VAT included</dt>
-            <dd>{quote.totalAmountMinor === null ? 'Shown before payment' : money(quote.totalAmountMinor)}</dd>
+            <dd>
+              {quote.totalAmountMinor === null ? (
+                'Shown before payment'
+              ) : (
+                <span className="font-display">{money(quote.totalAmountMinor)}</span>
+              )}
+            </dd>
           </div>
         </dl>
       )}

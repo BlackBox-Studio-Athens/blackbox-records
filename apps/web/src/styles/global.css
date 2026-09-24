@@ -5185,7 +5185,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   background: var(--store-accent-surface);
 }
 
-.store-item-purchase .font-display {
+.store-item-purchase .font-display:not([data-store-offer-price]) {
   font-family: var(--font-sans);
   letter-spacing: normal;
   text-transform: none;

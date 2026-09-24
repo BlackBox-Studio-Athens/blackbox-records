@@ -150,7 +150,7 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
                     </p>
                     {line.quantity > 1 && (
                       <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                        {line.priceDisplay} each
+                        <span className="font-display">{line.priceDisplay}</span> each
                       </p>
                     )}
                   </div>

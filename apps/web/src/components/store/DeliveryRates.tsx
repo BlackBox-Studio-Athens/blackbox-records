@@ -24,8 +24,8 @@ export default function DeliveryRates() {
     <div className="space-y-2">
       <p>{pricing.vatDisclosure}</p>
       <p>
-        BOX NOW Small: {format(pricing.deliveryCharges.small)}. BOX NOW Medium: {format(pricing.deliveryCharges.medium)}
-        .
+        BOX NOW Small: <span className="font-display">{format(pricing.deliveryCharges.small)}</span>. BOX NOW Medium:{' '}
+        <span className="font-display">{format(pricing.deliveryCharges.medium)}</span>.
       </p>
       <p>One VAT-inclusive delivery charge per eligible order. Your complete cart determines the parcel size.</p>
     </div>
