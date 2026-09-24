@@ -60,6 +60,9 @@ describe('OpenAPI documents', () => {
     expect(JSON.stringify(document).toLowerCase()).not.toContain('cache-control');
     expect(document.paths?.['/api/internal/']?.get?.operationId).toBe('getInternalApiDiscovery');
     expect(document.paths?.['/api/internal/variants/{variantId}/stock']?.get?.operationId).toBe('readVariantStock');
+    expect(document.paths?.['/api/internal/variants/{variantId}/stock/restock-plan']?.patch?.operationId).toBe(
+      'setRestockPlanned',
+    );
     expect(document.paths?.['/api/internal/variants/{variantId}/price']?.post?.operationId).toBe('changeCatalogPrice');
     expect(document.paths?.['/api/internal/variants/{variantId}/publication']?.post?.operationId).toBe(
       'publishCatalogItem',

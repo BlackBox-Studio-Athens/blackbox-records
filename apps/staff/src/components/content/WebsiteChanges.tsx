@@ -5,12 +5,23 @@ import { Checkbox } from '../ui/checkbox';
 import { Input } from '../ui/input';
 import { Skeleton } from '../ui/skeleton';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
+import {
   editorialRequest,
   EditorialApiError,
   type EditorialList,
   type EditorialRecord,
 } from '../../lib/backend/editorial-api';
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
+import { refreshReviewChangesPresence } from '../../lib/review-changes';
 import { contentSections, type ContentSection } from '../../lib/content-sections';
 import { getContentValidation } from './content-validation';
 import {
@@ -25,6 +36,10 @@ const key = (item: { collection?: string; id?: string; recordId?: string }) =>
   `${item.collection}/${item.recordId ?? item.id}`;
 const title = (item: EditorialRecord) =>
   String(item.data.title || item.data.label_name || contentSections[item.collection as ContentSection] || 'Untitled');
+const canDiscardSavedChanges = (item: EditorialRecord) =>
+  Boolean(item.collection && item.liveRevisionId && item.draftRevisionId && item.publicationState === 'changes');
+type CurrentEditorialDocument = { item: EditorialRecord; _rev: string };
+type DiscardCandidate = { document: CurrentEditorialDocument; record: EditorialRecord };
 
 export default function WebsiteChanges({ base }: { base: string }) {
   const [items, setItems] = useState<EditorialRecord[]>([]);
@@ -38,6 +53,9 @@ export default function WebsiteChanges({ base }: { base: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reviewing, setReviewing] = useState(false);
+  const [discardCandidate, setDiscardCandidate] = useState<DiscardCandidate | null>(null);
+  const [discardBusyKey, setDiscardBusyKey] = useState('');
+  const discardBusy = useRef(false);
   const sequence = useRef(0);
   const heading = useRef<HTMLHeadingElement>(null);
   const root = useRef<HTMLDivElement>(null);
@@ -79,6 +97,68 @@ export default function WebsiteChanges({ base }: { base: string }) {
       setError('Website changes could not be loaded. Retry to continue.');
     } finally {
       if (request === sequence.current) setLoading(false);
+    }
+  }
+  async function prepareDiscard(item: EditorialRecord) {
+    if (discardBusy.current || discardCandidate || !item.collection || item.publicationState !== 'changes') return;
+    discardBusy.current = true;
+    setDiscardBusyKey(key(item));
+    try {
+      const [document, workspace] = await Promise.all([
+        editorialRequest<CurrentEditorialDocument>(base, `content/${item.collection}/${encodeURIComponent(item.id)}`),
+        editorialRequest<EditorialList<EditorialRecord>>(
+          base,
+          `blackbox/workspace?collection=${encodeURIComponent(item.collection)}&id=${encodeURIComponent(item.id)}`,
+        ),
+      ]);
+      const current = workspace.items[0];
+      if (
+        !current ||
+        current.publicationState !== 'changes' ||
+        !document.item.liveRevisionId ||
+        !document.item.draftRevisionId
+      ) {
+        await list();
+        setError('This entry is no longer eligible for discard. The review list was refreshed.');
+        return;
+      }
+      setDiscardCandidate({ document, record: current });
+    } catch {
+      await list();
+      setError('We could not load the latest saved version. The review list was refreshed.');
+    } finally {
+      discardBusy.current = false;
+      setDiscardBusyKey('');
+    }
+  }
+  async function discardSavedChanges() {
+    const candidate = discardCandidate;
+    const collection = candidate?.record.collection;
+    if (!candidate || !collection || discardBusy.current) return;
+    discardBusy.current = true;
+    setDiscardBusyKey(key(candidate.record));
+    try {
+      await editorialRequest(
+        base,
+        `content/${collection}/${encodeURIComponent(candidate.record.id)}/discard-draft`,
+        { _rev: candidate.document._rev },
+        'POST',
+      );
+      setDiscardCandidate(null);
+      select(selection.filter((entry) => key(entry) !== key(candidate.record)));
+      void refreshReviewChangesPresence(base).catch(() => {});
+      await list();
+    } catch (error) {
+      setDiscardCandidate(null);
+      await list();
+      setError(
+        error instanceof EditorialApiError && error.status === 409
+          ? 'This saved version changed before it could be discarded. The review list was refreshed.'
+          : 'We could not discard the saved changes. The review list was refreshed.',
+      );
+    } finally {
+      discardBusy.current = false;
+      setDiscardBusyKey('');
     }
   }
   useEffect(() => {
@@ -171,9 +251,10 @@ export default function WebsiteChanges({ base }: { base: string }) {
           base={base}
           records={selection}
           onReviewed={(review) => select(review.entries)}
-          onPublished={(published) =>
-            select(selection.filter((entry) => !published.some((record) => key(record) === key(entry))))
-          }
+          onPublished={(published) => {
+            select(selection.filter((entry) => !published.some((record) => key(record) === key(entry))));
+            void refreshReviewChangesPresence(base).catch(() => {});
+          }}
           onBack={() => {
             setReviewing(false);
             requestAnimationFrame(() => heading.current?.focus());
@@ -195,7 +276,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
           {error && (
             <div role="alert" className="publication-issues">
               <p>{error}</p>
-              <Button variant="outline" onClick={() => void list()}>
+              <Button variant="outline" disabled={Boolean(discardBusyKey)} onClick={() => void list()}>
                 Retry
               </Button>
             </div>
@@ -203,11 +284,20 @@ export default function WebsiteChanges({ base }: { base: string }) {
           <div className="website-changes-toolbar">
             <label>
               Find a change
-              <Input type="search" value={query} onChange={(event) => browse(event.target.value, scope)} />
+              <Input
+                type="search"
+                value={query}
+                disabled={Boolean(discardBusyKey)}
+                onChange={(event) => browse(event.target.value, scope)}
+              />
             </label>
             <label>
               Area
-              <select value={scope} onChange={(event) => browse(query, event.target.value)}>
+              <select
+                value={scope}
+                disabled={Boolean(discardBusyKey)}
+                onChange={(event) => browse(query, event.target.value)}
+              >
                 <option value="all">Website and catalog</option>
                 <option value="website">Website</option>
                 <option value="catalog">Catalog</option>
@@ -215,7 +305,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
             </label>
             <Button
               variant="outline"
-              disabled={loading || selection.length === 20}
+              disabled={loading || Boolean(discardBusyKey) || selection.length === 20}
               onClick={() =>
                 add(
                   items.filter(
@@ -239,6 +329,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
                     <Button
                       variant="ghost"
                       aria-label={`Remove ${entry.title} from publication`}
+                      disabled={Boolean(discardBusyKey)}
                       onClick={() => select(selection.filter((item) => key(item) !== key(entry)))}
                     >
                       Remove
@@ -265,7 +356,13 @@ export default function WebsiteChanges({ base }: { base: string }) {
                   <Checkbox
                     aria-label={`Select ${title(item)} for publication`}
                     checked={selected}
-                    disabled={loading || updating || !validation.valid || (!selected && selection.length === 20)}
+                    disabled={
+                      loading ||
+                      Boolean(discardBusyKey) ||
+                      updating ||
+                      !validation.valid ||
+                      (!selected && selection.length === 20)
+                    }
                     onCheckedChange={() =>
                       selected ? select(selection.filter((entry) => key(entry) !== key(item))) : add([item])
                     }
@@ -288,6 +385,15 @@ export default function WebsiteChanges({ base }: { base: string }) {
                       </p>
                     )}
                     {!validation.valid && <a href={href}>Finish editing</a>}
+                    {canDiscardSavedChanges(item) && (
+                      <Button
+                        variant="outline"
+                        disabled={loading || Boolean(discardBusyKey)}
+                        onClick={() => void prepareDiscard(item)}
+                      >
+                        {discardBusyKey === key(item) ? 'Loading saved version…' : 'Discard saved changes'}
+                      </Button>
+                    )}
                     {!validation.valid && (
                       <ul>
                         {validation.issues.map((issue, index) => (
@@ -306,14 +412,14 @@ export default function WebsiteChanges({ base }: { base: string }) {
           <nav aria-label="Changes pages" className="flex gap-2">
             <Button
               variant="outline"
-              disabled={loading || pages.length < 2}
+              disabled={loading || Boolean(discardBusyKey) || pages.length < 2}
               onClick={() => browse(query, scope, pages.at(-2), pages.slice(0, -1))}
             >
               Previous
             </Button>
             <Button
               variant="outline"
-              disabled={loading || !next}
+              disabled={loading || Boolean(discardBusyKey) || !next}
               onClick={() => browse(query, scope, next, [...pages, next!])}
             >
               Next
@@ -324,12 +430,36 @@ export default function WebsiteChanges({ base }: { base: string }) {
               <strong>{selection.length}/20 changes selected</strong>
               <p className="text-sm text-muted-foreground">Review the differences before publishing.</p>
             </div>
-            <Button disabled={!selection.length} onClick={() => setReviewing(true)}>
+            <Button disabled={!selection.length || Boolean(discardBusyKey)} onClick={() => setReviewing(true)}>
               Review selected changes
             </Button>
           </footer>
         </>
       )}
+      <AlertDialog
+        open={Boolean(discardCandidate)}
+        onOpenChange={(open) => {
+          if (!open && !discardBusy.current) setDiscardCandidate(null);
+        }}
+      >
+        <AlertDialogContent className="cms-surface">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Discard saved changes to {discardCandidate ? title(discardCandidate.record) : 'this entry'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              The current private draft will be removed and the live version will be shown. The public site will not
+              change.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={Boolean(discardBusyKey)}>Keep saved changes</AlertDialogCancel>
+            <AlertDialogAction disabled={Boolean(discardBusyKey)} onClick={() => void discardSavedChanges()}>
+              Discard saved changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

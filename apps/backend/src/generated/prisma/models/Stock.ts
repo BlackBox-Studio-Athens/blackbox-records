@@ -44,6 +44,7 @@ export type StockMinAggregateOutputType = {
   variantId: string | null
   quantity: number | null
   onlineQuantity: number | null
+  restockPlanned: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -54,6 +55,7 @@ export type StockMaxAggregateOutputType = {
   variantId: string | null
   quantity: number | null
   onlineQuantity: number | null
+  restockPlanned: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -64,6 +66,7 @@ export type StockCountAggregateOutputType = {
   variantId: number
   quantity: number
   onlineQuantity: number
+  restockPlanned: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -88,6 +91,7 @@ export type StockMinAggregateInputType = {
   variantId?: true
   quantity?: true
   onlineQuantity?: true
+  restockPlanned?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -98,6 +102,7 @@ export type StockMaxAggregateInputType = {
   variantId?: true
   quantity?: true
   onlineQuantity?: true
+  restockPlanned?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -108,6 +113,7 @@ export type StockCountAggregateInputType = {
   variantId?: true
   quantity?: true
   onlineQuantity?: true
+  restockPlanned?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -205,6 +211,7 @@ export type StockGroupByOutputType = {
   variantId: string
   quantity: number
   onlineQuantity: number
+  restockPlanned: boolean
   createdAt: Date
   updatedAt: Date
   _count: StockCountAggregateOutputType | null
@@ -238,6 +245,7 @@ export type StockWhereInput = {
   variantId?: Prisma.StringFilter<"Stock"> | string
   quantity?: Prisma.IntFilter<"Stock"> | number
   onlineQuantity?: Prisma.IntFilter<"Stock"> | number
+  restockPlanned?: Prisma.BoolFilter<"Stock"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Stock"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Stock"> | Date | string
 }
@@ -248,6 +256,7 @@ export type StockOrderByWithRelationInput = {
   variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   onlineQuantity?: Prisma.SortOrder
+  restockPlanned?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -261,6 +270,7 @@ export type StockWhereUniqueInput = Prisma.AtLeast<{
   revision?: Prisma.IntFilter<"Stock"> | number
   quantity?: Prisma.IntFilter<"Stock"> | number
   onlineQuantity?: Prisma.IntFilter<"Stock"> | number
+  restockPlanned?: Prisma.BoolFilter<"Stock"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Stock"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Stock"> | Date | string
 }, "id" | "variantId">
@@ -271,6 +281,7 @@ export type StockOrderByWithAggregationInput = {
   variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   onlineQuantity?: Prisma.SortOrder
+  restockPlanned?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.StockCountOrderByAggregateInput
@@ -289,6 +300,7 @@ export type StockScalarWhereWithAggregatesInput = {
   variantId?: Prisma.StringWithAggregatesFilter<"Stock"> | string
   quantity?: Prisma.IntWithAggregatesFilter<"Stock"> | number
   onlineQuantity?: Prisma.IntWithAggregatesFilter<"Stock"> | number
+  restockPlanned?: Prisma.BoolWithAggregatesFilter<"Stock"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Stock"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Stock"> | Date | string
 }
@@ -299,6 +311,7 @@ export type StockCreateInput = {
   variantId: string
   quantity: number
   onlineQuantity: number
+  restockPlanned?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -309,6 +322,7 @@ export type StockUncheckedCreateInput = {
   variantId: string
   quantity: number
   onlineQuantity: number
+  restockPlanned?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -319,6 +333,7 @@ export type StockUpdateInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  restockPlanned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -329,6 +344,7 @@ export type StockUncheckedUpdateInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  restockPlanned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -339,6 +355,7 @@ export type StockCreateManyInput = {
   variantId: string
   quantity: number
   onlineQuantity: number
+  restockPlanned?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -349,6 +366,7 @@ export type StockUpdateManyMutationInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  restockPlanned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -359,6 +377,7 @@ export type StockUncheckedUpdateManyInput = {
   variantId?: Prisma.StringFieldUpdateOperationsInput | string
   quantity?: Prisma.IntFieldUpdateOperationsInput | number
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
+  restockPlanned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -369,6 +388,7 @@ export type StockCountOrderByAggregateInput = {
   variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   onlineQuantity?: Prisma.SortOrder
+  restockPlanned?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -385,6 +405,7 @@ export type StockMaxOrderByAggregateInput = {
   variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   onlineQuantity?: Prisma.SortOrder
+  restockPlanned?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -395,6 +416,7 @@ export type StockMinOrderByAggregateInput = {
   variantId?: Prisma.SortOrder
   quantity?: Prisma.SortOrder
   onlineQuantity?: Prisma.SortOrder
+  restockPlanned?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -413,6 +435,7 @@ export type StockSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   variantId?: boolean
   quantity?: boolean
   onlineQuantity?: boolean
+  restockPlanned?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["stock"]>
@@ -423,6 +446,7 @@ export type StockSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   variantId?: boolean
   quantity?: boolean
   onlineQuantity?: boolean
+  restockPlanned?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["stock"]>
@@ -433,6 +457,7 @@ export type StockSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   variantId?: boolean
   quantity?: boolean
   onlineQuantity?: boolean
+  restockPlanned?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["stock"]>
@@ -443,11 +468,12 @@ export type StockSelectScalar = {
   variantId?: boolean
   quantity?: boolean
   onlineQuantity?: boolean
+  restockPlanned?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type StockOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"revision" | "id" | "variantId" | "quantity" | "onlineQuantity" | "createdAt" | "updatedAt", ExtArgs["result"]["stock"]>
+export type StockOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"revision" | "id" | "variantId" | "quantity" | "onlineQuantity" | "restockPlanned" | "createdAt" | "updatedAt", ExtArgs["result"]["stock"]>
 
 export type $StockPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Stock"
@@ -458,6 +484,7 @@ export type $StockPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     variantId: string
     quantity: number
     onlineQuantity: number
+    restockPlanned: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["stock"]>
@@ -888,6 +915,7 @@ export interface StockFieldRefs {
   readonly variantId: Prisma.FieldRef<"Stock", 'String'>
   readonly quantity: Prisma.FieldRef<"Stock", 'Int'>
   readonly onlineQuantity: Prisma.FieldRef<"Stock", 'Int'>
+  readonly restockPlanned: Prisma.FieldRef<"Stock", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Stock", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Stock", 'DateTime'>
 }

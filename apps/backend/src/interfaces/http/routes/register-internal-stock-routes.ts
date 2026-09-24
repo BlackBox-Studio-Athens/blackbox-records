@@ -30,7 +30,7 @@ function logStockOutcome(
   logger: Pick<AppLogger, 'error' | 'info' | 'warn'>,
   severity: 'error' | 'info' | 'warn',
   record: {
-    operation: 'count' | 'history' | 'read' | 'search' | 'change';
+    operation: 'count' | 'history' | 'read' | 'search' | 'change' | 'restock_plan';
     outcome: string;
     safeReason?: string;
     variantId?: string;
@@ -107,6 +107,7 @@ const stockStateSchema = z
     revision: z.number().int().min(0).nullable(),
     onlineQuantity: z.number().int().min(0),
     quantity: z.number().int().min(0),
+    restockPlanned: z.boolean(),
     updatedAt: z.string().datetime().nullable(),
   })
   .openapi('InternalStockState');
@@ -173,6 +174,13 @@ const stockCountBodySchema = z
     onlineQuantity: z.number().int().min(0),
   })
   .openapi('InternalStockCountBody');
+
+const setRestockPlannedBodySchema = z
+  .object({
+    expectedRevision: z.number().int().min(0).nullable(),
+    restockPlanned: z.boolean(),
+  })
+  .openapi('SetRestockPlannedBody');
 
 const recordedStockChangeResponseSchema = z
   .object({
@@ -381,6 +389,46 @@ const postStockCountRoute = createRoute({
   tags: ['Internal Stock'],
 });
 
+const patchRestockPlannedRoute = createRoute({
+  method: 'patch',
+  path: '/api/internal/variants/{variantId}/stock/restock-plan',
+  operationId: 'setRestockPlanned',
+  request: {
+    body: {
+      content: {
+        'application/json': {
+          schema: setRestockPlannedBodySchema,
+        },
+      },
+    },
+    params: variantParamsSchema,
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: stockDetailSchema,
+        },
+      },
+      description: 'Updated the item restock plan.',
+    },
+    400: {
+      content: problemContent,
+      description: 'Invalid restock plan.',
+    },
+    404: {
+      content: problemContent,
+      description: 'Variant not found.',
+    },
+    409: {
+      content: problemContent,
+      description: 'Stock changed since the current revision was read.',
+    },
+    ...operatorAccessErrorResponses,
+  },
+  tags: ['Internal Stock'],
+});
+
 export function registerInternalStockRoutes(app: AppOpenApi): void {
   app.openapi(inventoryRoute, async (context) =>
     withInternalStockServices(context.env, async (services) =>
@@ -455,6 +503,67 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
           });
         }
 
+        throw error;
+      }
+    });
+  });
+
+  app.openapi(patchRestockPlannedRoute, async (context) => {
+    const logger = requestLogger(context);
+
+    return withInternalStockServices(context.env, async (services) => {
+      const { variantId } = context.req.valid('param');
+      try {
+        const body = context.req.valid('json');
+        await runWithTraceSpan(
+          traceContextFromHono(context),
+          'stock.mutate',
+          {
+            operation: 'stock_restock_plan',
+            productEnvironment: context.env.PRODUCT_ENVIRONMENT,
+            variantId,
+          },
+          () => services.setRestockPlanned({ ...body, variantId }),
+        );
+        const detail = await services.readVariantStock(variantId);
+        logStockOutcome(logger, 'info', { operation: 'restock_plan', outcome: 'ok', variantId });
+        return jsonNoStore(
+          context.json(
+            addHypermedia(
+              toStockDetailResponse(detail),
+              variantLinks(variantId),
+              variantActions(variantId, detail.stock.revision),
+            ),
+            200,
+          ),
+        );
+      } catch (error) {
+        if (error instanceof services.errors.StockConflictError) {
+          logStockOutcome(logger, 'warn', {
+            operation: 'restock_plan',
+            outcome: 'conflict',
+            safeReason: 'stock_changed',
+            variantId,
+          });
+          return jsonError(context, { code: 'stock_conflict', message: error.message, status: 409 });
+        }
+        const routeError = toInternalStockRouteError(services, error, {
+          includeInvalidStockOperation: true,
+          invalidRequestMessage: 'Invalid restock plan request.',
+        });
+        if (routeError) {
+          logStockOutcome(logger, 'warn', {
+            operation: 'restock_plan',
+            outcome: 'failed',
+            safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
+            variantId,
+          });
+          return jsonError(context, {
+            code: routeError.code,
+            message: routeError.message,
+            status: routeError.status,
+          });
+        }
         throw error;
       }
     });
@@ -698,7 +807,13 @@ function toStockDetailResponse(detail: {
   displayName?: string;
   sourceId: string;
   sourceKind: 'release' | 'distro';
-  stock: { revision: number | null; onlineQuantity: number; quantity: number; updatedAt: Date | null };
+  stock: {
+    revision: number | null;
+    onlineQuantity: number;
+    quantity: number;
+    restockPlanned: boolean;
+    updatedAt: Date | null;
+  };
   storeItemSlug: string;
   variantId: string;
 }) {
@@ -761,6 +876,13 @@ function variantActions(variantId: string, revision: number | null) {
       parameters: { body: { expectedRevision: revision }, path: { variantId } },
       rel: 'record-stock-count',
     }),
+    apiAction({
+      href: apiPath('api', 'internal', 'variants', variantId, 'stock', 'restock-plan'),
+      method: 'PATCH',
+      operationRef: 'setRestockPlanned',
+      parameters: { body: { expectedRevision: revision }, path: { variantId } },
+      rel: 'set-restock-planned',
+    }),
   ];
 }
 
@@ -768,12 +890,14 @@ function toStockStateResponse(stock: {
   revision: number | null;
   onlineQuantity: number;
   quantity: number;
+  restockPlanned: boolean;
   updatedAt: Date | null;
 }) {
   return {
     revision: stock.revision,
     onlineQuantity: stock.onlineQuantity,
     quantity: stock.quantity,
+    restockPlanned: stock.restockPlanned,
     updatedAt: stock.updatedAt?.toISOString() ?? null,
   };
 }

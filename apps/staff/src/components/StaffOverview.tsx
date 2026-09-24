@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, ClipboardCheck } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { editorialRequest, type EditorialList, type EditorialRecord } from '../lib/backend/editorial-api';
 import { readContentPublications, type ContentPublication } from '../lib/backend/content-publication-api';
 import { createInternalOrderApi } from '../lib/backend/internal-order-api';
 import { readStaffQuery, useStaffRead } from '../lib/staff-query';
 import { Button } from './ui/button';
 import { contentSections, type ContentSection } from '../lib/content-sections';
+import ReviewChangesControl from './ReviewChangesControl';
 
 type PanelState = { status: 'loading' | 'ready' | 'error'; error: string; hasLoaded: boolean };
 
@@ -199,12 +200,7 @@ export default function StaffOverview({ base }: { base: string }) {
       )}
       <section className="mt-8">
         <h2>Recent drafts</h2>
-        <Button asChild className="staff-overview-review">
-          <a href="/review/">
-            <ClipboardCheck aria-hidden="true" />
-            Review changes
-          </a>
-        </Button>
+        <ReviewChangesControl base={base} className="staff-overview-review" />
         {draftsState.status === 'loading' && !draftsState.hasLoaded && (
           <p role="status" className="mt-4 text-muted-foreground">
             Loading recent work…

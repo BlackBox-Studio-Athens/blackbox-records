@@ -29,6 +29,7 @@ export function parsePreparationArgs(argv = process.argv.slice(2)) {
       env: { type: 'string' },
       limit: { type: 'string', default: String(defaultLimit) },
       cursor: { type: 'string' },
+      'source-key': { type: 'string' },
       'max-bytes': { type: 'string', default: String(maxInvocationBytes) },
       apply: { type: 'boolean', default: false },
       'hosted-budget-reviewed': { type: 'boolean', default: false },
@@ -42,6 +43,14 @@ export function parsePreparationArgs(argv = process.argv.slice(2)) {
   assert.ok(['local', 'uat', 'prd'].includes(environment ?? ''), 'Select --env local, --env uat, or --env prd.');
   const limit = parseBoundedInteger(values.limit, 'limit', 1, defaultLimit);
   const maxBytes = parseBoundedInteger(values['max-bytes'], 'max-bytes', 1, maxInvocationBytes);
+  const sourceKey = values['source-key'];
+  if (sourceKey !== undefined)
+    assert.match(
+      sourceKey,
+      /^[A-Za-z0-9][A-Za-z0-9_-]{0,159}\.(?:png|jpe?g|webp)$/i,
+      '--source-key must be one native image object key.',
+    );
+  assert.ok(sourceKey === undefined || !values.cursor, '--source-key cannot be combined with --cursor.');
   assert.ok(
     environment === 'local' || values['hosted-budget-reviewed'],
     'Review account-wide Free-tier budget before hosted preparation.',
@@ -50,6 +59,7 @@ export function parsePreparationArgs(argv = process.argv.slice(2)) {
     environment,
     limit,
     cursor: values.cursor,
+    sourceKey,
     maxBytes,
     apply: values.apply,
     hostedBudgetReviewed: values['hosted-budget-reviewed'],
@@ -99,6 +109,7 @@ export async function prepareStaffThumbnailPage({
   environment,
   limit = defaultLimit,
   cursor,
+  sourceKey,
   maxBytes = maxInvocationBytes,
   apply = false,
 }) {
@@ -113,10 +124,22 @@ export async function prepareStaffThumbnailPage({
     bytes: { original: 0, output: 0 },
     r2: { list: 0, head: 0, get: 0, put: 0 },
   };
-  const page = await bucket.list({ cursor, limit, include: ['httpMetadata', 'customMetadata'] });
+  const exactSource = sourceKey !== undefined;
+  const page = await bucket.list({
+    cursor,
+    limit: exactSource ? 1 : limit,
+    ...(exactSource ? { prefix: sourceKey } : {}),
+    include: ['httpMetadata', 'customMetadata'],
+  });
   report.r2.list = 1;
   let interrupted = false;
-  for (const listed of page.objects) {
+  const objects = exactSource ? page.objects.filter((object) => object.key === sourceKey) : page.objects;
+  if (exactSource && !objects.length) {
+    report.counts.errors++;
+    report.stopped = 'source-not-found';
+    return report;
+  }
+  for (const listed of objects) {
     report.counts.listed++;
     const reason = skipReason(listed.key);
     const derivativeKey = staffThumbnailStorageKey(listed.key);
@@ -182,13 +205,19 @@ export async function prepareStaffThumbnailPage({
       }
     }
   }
-  report.nextCursor = interrupted ? (cursor ?? null) : page.truncated ? (page.cursor ?? null) : null;
+  report.nextCursor = interrupted
+    ? (cursor ?? null)
+    : exactSource
+      ? null
+      : page.truncated
+        ? (page.cursor ?? null)
+        : null;
   return report;
 }
 
 function usage() {
   return [
-    'Usage: prepare-staff-thumbnails.mjs --env local|uat|prd [--limit 1..25] [--cursor value] [--max-bytes bytes] [--apply]',
+    'Usage: prepare-staff-thumbnails.mjs --env local|uat|prd [--limit 1..25] [--cursor value | --source-key key] [--max-bytes bytes] [--apply]',
     'Hosted UAT/PRD runs also require --hosted-budget-reviewed.',
   ].join('\n');
 }
@@ -228,6 +257,7 @@ async function main() {
       environment: args.environment,
       limit: args.limit,
       cursor: args.cursor,
+      sourceKey: args.sourceKey,
       maxBytes: args.maxBytes,
       apply: args.apply,
     });

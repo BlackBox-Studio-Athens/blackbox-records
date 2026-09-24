@@ -71,12 +71,22 @@ test('parses bounded local arguments and creates an R2-only config', () => {
     environment: 'local',
     limit: 25,
     cursor: undefined,
+    sourceKey: undefined,
     maxBytes: 64 * 1024 * 1024,
     apply: false,
     hostedBudgetReviewed: false,
   });
   assert.deepEqual(parsePreparationArgs(['--help']), { help: true });
   assert.throws(() => parsePreparationArgs(['--env', 'uat']), /hosted preparation/);
+  assert.throws(
+    () => parsePreparationArgs(['--env', 'local', '--source-key', '../cover.jpg']),
+    /native image object key/,
+  );
+  assert.throws(() => parsePreparationArgs(['--env', 'local', '--source-key', '']), /native image object key/);
+  assert.throws(
+    () => parsePreparationArgs(['--env', 'local', '--source-key', 'cover.jpg', '--cursor', 'page-2']),
+    /cannot be combined/,
+  );
   assert.throws(() => parsePreparationArgs(['--env', 'local', '--dry-run']), /Unknown option/);
 
   const config = createMediaOnlyConfig({ environment: 'uat', bucketName: 'cms-media-uat', remote: true });
@@ -124,6 +134,42 @@ test('prepares bounded PNGs, skips non-source objects, and keeps dry runs write-
   const replay = await prepareStaffThumbnailPage({ bucket: fixture, environment: 'local', apply: true });
   assert.equal(replay.counts.validExisting, 2);
   assert.equal(replay.counts.written, 0);
+});
+
+test('prepares only an explicitly selected source key', async () => {
+  const target = makeObject('focus.jpg', await image({ width: 1440, height: 1440 }));
+  const sibling = makeObject('focus.jpg.backup', await image());
+  const unrelated = makeObject('other.jpg', await image());
+  const fixture = bucket({ objects: [sibling, unrelated, target], files: [target, sibling, unrelated] });
+  const derivativeKey = staffThumbnailStorageKey(target.key);
+
+  const dryRun = await prepareStaffThumbnailPage({ bucket: fixture, environment: 'local', sourceKey: target.key });
+  assert.deepEqual(fixture.calls.list[0], {
+    cursor: undefined,
+    limit: 1,
+    prefix: target.key,
+    include: ['httpMetadata', 'customMetadata'],
+  });
+  assert.equal(dryRun.counts.listed, 1);
+  assert.equal(dryRun.counts.prepared, 1);
+  assert.equal(dryRun.counts.written, 0);
+  assert.deepEqual(fixture.calls.head, [derivativeKey]);
+  assert.deepEqual(fixture.calls.get, [target.key]);
+  assert.equal(fixture.calls.put.length, 0);
+
+  const applied = await prepareStaffThumbnailPage({
+    bucket: fixture,
+    environment: 'local',
+    sourceKey: target.key,
+    apply: true,
+  });
+  assert.equal(applied.counts.written, 1);
+  assert.deepEqual(
+    fixture.calls.put.map(({ key }) => key),
+    [derivativeKey],
+  );
+  assert.equal(fixture.stored.has(staffThumbnailStorageKey(sibling.key)), false);
+  assert.equal(fixture.stored.has(staffThumbnailStorageKey(unrelated.key)), false);
 });
 
 test('retains the input cursor on interruption and resumes an interrupted page', async () => {

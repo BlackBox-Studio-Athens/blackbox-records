@@ -104,6 +104,7 @@ type StockRow = {
   createdAt: string;
   onlineQuantity: number;
   quantity: number;
+  restockPlanned: number;
   updatedAt: string;
   variantId: string;
 };
@@ -177,7 +178,7 @@ const checkoutOrderLinesSql = [
 ].join('\n');
 
 const stockSelectSql = [
-  'SELECT "variantId", "quantity", "onlineQuantity", "revision", "createdAt", "updatedAt"',
+  'SELECT "variantId", "quantity", "onlineQuantity", "restockPlanned", "revision", "createdAt", "updatedAt"',
   'FROM "Stock"',
   'WHERE "variantId" = ?',
 ].join('\n');
@@ -697,6 +698,7 @@ function mapStock(row: StockRow): StockRecord {
     createdAt: new Date(row.createdAt),
     onlineQuantity: createStockQuantity(row.onlineQuantity),
     quantity: createStockQuantity(row.quantity),
+    restockPlanned: row.restockPlanned === 1,
     updatedAt: new Date(row.updatedAt),
     variantId: parseVariantId(row.variantId),
   };

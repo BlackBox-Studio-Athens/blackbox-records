@@ -134,6 +134,7 @@ model Stock {
   variantId      String   @unique
   quantity       Int
   onlineQuantity Int
+  restockPlanned Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }

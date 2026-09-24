@@ -850,6 +850,9 @@
             "type": "integer",
             "minimum": 0
           },
+          "restockPlanned": {
+            "type": "boolean"
+          },
           "updatedAt": {
             "type": [
               "string",
@@ -862,7 +865,27 @@
           "revision",
           "onlineQuantity",
           "quantity",
+          "restockPlanned",
           "updatedAt"
+        ]
+      },
+      "SetRestockPlannedBody": {
+        "type": "object",
+        "properties": {
+          "expectedRevision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "restockPlanned": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "restockPlanned"
         ]
       },
       "InternalStockHistoryResponse": {
@@ -2328,6 +2351,96 @@
         }
       }
     },
+    "/api/internal/variants/{variantId}/stock/restock-plan": {
+      "patch": {
+        "operationId": "setRestockPlanned",
+        "tags": [
+          "Internal Stock"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetRestockPlannedBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated the item restock plan.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid restock plan.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Variant not found.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stock changed since the current revision was read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/internal/variants/{variantId}/stock/history": {
       "get": {
         "operationId": "readVariantStockHistory",
@@ -3378,6 +3491,10 @@
                     "minimum": 0,
                     "maximum": 2147483647,
                     "default": 0
+                  },
+                  "restockPlanned": {
+                    "type": "boolean",
+                    "default": false
                   },
                   "confirmLiveSetup": {
                     "type": "boolean",

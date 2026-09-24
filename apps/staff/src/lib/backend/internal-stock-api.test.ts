@@ -76,6 +76,24 @@ describe('createInternalStockApi', () => {
     );
   });
 
+  it('updates the per-item restock plan with the revision from stock detail', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ ...variant, stock: {} }), { status: 200 }));
+    const api = createInternalStockApi({ fetcher });
+
+    await api.setRestockPlanned(variant.variantId, { expectedRevision: null, restockPlanned: true });
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/restock-plan',
+      {
+        body: JSON.stringify({ expectedRevision: null, restockPlanned: true }),
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        method: 'PATCH',
+      },
+    );
+  });
+
   it('surfaces JSON and status-based API errors', async () => {
     const jsonErrorApi = createInternalStockApi({
       fetcher: async () => new Response(JSON.stringify({ error: 'Missing operator identity.' }), { status: 401 }),

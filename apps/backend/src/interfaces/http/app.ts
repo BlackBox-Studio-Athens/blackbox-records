@@ -38,7 +38,7 @@ export function createHttpApp(): AppOpenApi {
     '/api/*',
     cors({
       allowHeaders: ['Content-Type', 'Idempotency-Key'],
-      allowMethods: ['GET', 'POST', 'OPTIONS'],
+      allowMethods: ['GET', 'PATCH', 'POST', 'OPTIONS'],
       exposeHeaders: ['Link', 'X-Request-Id'],
       maxAge: 600,
       origin: (origin, context) => {

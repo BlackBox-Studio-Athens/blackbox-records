@@ -115,19 +115,13 @@ const summaryItem = {
           />
 
           <div class="grid gap-3 border border-border/70 bg-background/55 p-4">
-            <p class="text-sm leading-relaxed text-muted-foreground">
-              Recover this item by adding it to the cart, then continue through cart checkout.
-            </p>
-            <StoreItemPurchaseActions client:load cartItem={null} cartSeed={fallbackCartSeed} />
+            <StoreItemPurchaseActions
+              client:load
+              cartItem={null}
+              cartSeed={fallbackCartSeed}
+              purchaseHint="Recover this item by adding it to the cart, then continue through cart checkout."
+            />
           </div>
-
-          {
-            !canBuy && (
-              <p class="border border-border/70 bg-background/55 p-4 text-sm leading-relaxed text-muted-foreground">
-                This item stays viewable, but checkout stays closed while it is unavailable.
-              </p>
-            )
-          }
         </CardContent>
       </Card>
 

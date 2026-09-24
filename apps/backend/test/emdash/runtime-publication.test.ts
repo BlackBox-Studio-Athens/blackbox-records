@@ -228,6 +228,26 @@ test('rejects an incomplete selected draft before publication or native transiti
   expect(await readPublication(deps.db, 'local', input.id)).toBeNull();
 });
 
+test('rejects a reviewed selection whose publishable values match the accepted website', async () => {
+  const { deps, runtime, input, pointer } = await setup();
+  const { id, ...record } = input;
+  const revision = await runtime.handleRevisionGet();
+  runtime.handleRevisionGet.mockResolvedValue({
+    ...revision,
+    data: {
+      item: {
+        ...revision.data.item,
+        data: { ...revision.data.item.data, title: 'Published title' },
+      },
+    },
+  });
+  await expect(
+    acceptSelectedPublication({ id, records: [record], baseline: pointer.snapshotSha256 }, 'editor@example.com', deps),
+  ).rejects.toThrow('No publishable differences remain.');
+  expect(runtime.handleContentPublish).not.toHaveBeenCalled();
+  expect(await readPublication(deps.db, 'local', id)).toBeNull();
+});
+
 test('a different operation cannot publish an entry already pending', async () => {
   const { deps, input } = await setup();
   await acceptSelectedPublication(input, 'editor@example.com', deps);

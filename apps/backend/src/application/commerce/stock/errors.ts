@@ -13,8 +13,8 @@ export class InvalidStockOperationError extends Error {
 }
 
 export class StockConflictError extends Error {
-  public constructor() {
-    super('Stock changed. Refresh and reassess the count before submitting again.');
+  public constructor(message = 'Stock changed. Refresh and reassess the count before submitting again.') {
+    super(message);
     this.name = 'StockConflictError';
   }
 }

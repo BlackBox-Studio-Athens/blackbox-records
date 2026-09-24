@@ -22,6 +22,7 @@ it('protects setup and completes one draft through the bound CMS service', async
     },
     itemType: 'Vinyl 12-inch',
     openingQuantity: 10,
+    restockPlanned: true,
     price: { kind: 'fixed', currencyCode: 'EUR', amountMinor: 2200 },
   };
   let source: unknown = null;
@@ -87,6 +88,7 @@ it('protects setup and completes one draft through the bound CMS service', async
     expect(await db.stock.findUnique({ where: { variantId: result.variantId } })).toMatchObject({
       quantity: 10,
       onlineQuantity: 10,
+      restockPlanned: true,
     });
     expect(await db.storeItemOption.findUnique({ where: { variantId: result.variantId } })).toMatchObject({
       catalogAvailability: 'withheld',

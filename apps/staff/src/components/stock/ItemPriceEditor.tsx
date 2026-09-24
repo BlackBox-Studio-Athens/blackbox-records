@@ -249,7 +249,9 @@ export default function ItemPriceEditor({
                   checked={confirmed}
                   onChange={(event) => setConfirmed(event.target.checked)}
                 />
-                I confirm this price in the live shop
+                {kind === 'pay_what_you_want'
+                  ? 'Apply these pricing settings to the live shop'
+                  : 'Apply this price to the live shop'}
               </label>
             )}
           </fieldset>

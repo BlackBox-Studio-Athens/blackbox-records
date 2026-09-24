@@ -1,10 +1,13 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
+import type { PublicCheckoutApi, PublicStoreOffer } from '@/lib/backend/public-checkout-api';
 import { STORE_CART_ADD_ITEM_EVENT, type CartLineItemSnapshot } from '@/lib/store-cart';
 import StoreItemPurchaseActions, {
   createCartLineItemSnapshotFromWorkerOffer,
+  getStoreItemPurchaseStatusTone,
+  loadStoreItemPurchaseActionState,
   requestStoreCartAddItem,
   STORE_ITEM_PURCHASE_ACTION_COPY,
   type StoreItemCartSeed,
@@ -36,14 +39,58 @@ const cartSeed: StoreItemCartSeed = {
   variantId: null,
 };
 
+const readyOffer: PublicStoreOffer = {
+  availability: { label: 'Available', status: 'available' },
+  canCheckout: true,
+  catalogStatus: 'ready',
+  price: { amountMinor: 2800, currencyCode: 'EUR', display: '€28.00', kind: 'fixed' },
+  storeItemSlug: 'disintegration-black-vinyl-lp',
+  variantId: 'variant_disintegration-black-vinyl-lp_standard',
+};
+
+const soldOutOffer: PublicStoreOffer = {
+  availability: { label: 'Sold Out', status: 'sold_out' },
+  canCheckout: false,
+  catalogStatus: 'sold_out',
+  price: null,
+  storeItemSlug: 'disintegration-black-vinyl-lp',
+  variantId: 'variant_disintegration-black-vinyl-lp_standard',
+};
+
+const outOfStockOffer: PublicStoreOffer = {
+  ...soldOutOffer,
+  availability: { label: 'Out of Stock', status: 'sold_out' },
+};
+
+const checkoutPausedOffer: PublicStoreOffer = {
+  availability: { label: 'Checkout Paused', status: 'unavailable' },
+  canCheckout: false,
+  catalogStatus: 'catalog_drift',
+  price: null,
+  storeItemSlug: 'disintegration-black-vinyl-lp',
+  variantId: 'variant_disintegration-black-vinyl-lp_standard',
+};
+
 describe('StoreItemPurchaseActions', () => {
   it('renders Add To Cart for eligible items without direct checkout copy', () => {
-    const html = renderToStaticMarkup(<StoreItemPurchaseActions cartItem={cartItem} cartSeed={cartSeed} />);
+    const html = renderToStaticMarkup(<StoreItemPurchaseActions cartItem={cartItem} cartSeed={null} />);
 
     expect(html).toContain(STORE_ITEM_PURCHASE_ACTION_COPY.addToCart);
     expect(html).toContain('data-store-item-add-to-cart="true"');
+    expect(html).toContain('h-[54px]');
+    expect(html).toContain('sm:w-56');
+    expect(html).toContain('w-full');
     expect(html).not.toContain('Buy Now');
     expect(html).not.toContain('href=');
+  });
+
+  it('keeps an older cart snapshot disabled while a fresh Worker offer is pending', () => {
+    const html = renderToStaticMarkup(<StoreItemPurchaseActions cartItem={cartItem} cartSeed={cartSeed} />);
+
+    expect(html).toContain(STORE_ITEM_PURCHASE_ACTION_COPY.checking);
+    expect(html).toContain('disabled=""');
+    expect(html).not.toContain(STORE_ITEM_PURCHASE_ACTION_COPY.addToCart);
+    expect(html).not.toContain('data-store-item-add-to-cart');
   });
 
   it('renders pending availability as disabled, busy, and non-actionable', () => {
@@ -62,6 +109,9 @@ describe('StoreItemPurchaseActions', () => {
 
     expect(html).toContain(STORE_ITEM_PURCHASE_ACTION_COPY.unavailable);
     expect(html).toContain('disabled=""');
+    expect(html).toContain('h-[54px]');
+    expect(html).toContain('sm:w-56');
+    expect(html).toContain('data-store-item-purchase-tone="neutral"');
     expect(html).not.toContain('aria-busy="true"');
     expect(html).not.toContain('animate-spin');
     expect(html).not.toContain('data-store-item-add-to-cart');
@@ -141,7 +191,7 @@ describe('StoreItemPurchaseActions', () => {
     expect(
       createCartLineItemSnapshotFromWorkerOffer(cartSeed, {
         availability: {
-          label: 'Unavailable',
+          label: 'Sold Out',
           status: 'sold_out',
         },
         canCheckout: false,
@@ -151,6 +201,63 @@ describe('StoreItemPurchaseActions', () => {
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       }),
     ).toBeNull();
+  });
+
+  it('uses the resolved Worker label, then accepts a later ready offer without restoring the stale snapshot', async () => {
+    const readStoreOffer = vi
+      .fn<PublicCheckoutApi['readStoreOffer']>()
+      .mockResolvedValueOnce(soldOutOffer)
+      .mockResolvedValueOnce(readyOffer);
+    const api = createApi({ readStoreOffer });
+
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toEqual({
+      cartItem: null,
+      label: 'Sold Out',
+      statusTone: 'sold-out',
+    });
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toMatchObject({
+      cartItem: { priceDisplay: '€28.00', variantId: readyOffer.variantId },
+      label: null,
+      statusTone: 'neutral',
+    });
+  });
+
+  it('uses neutral tone for planned restock and checkout pauses', async () => {
+    const readStoreOffer = vi
+      .fn<PublicCheckoutApi['readStoreOffer']>()
+      .mockResolvedValueOnce(outOfStockOffer)
+      .mockResolvedValueOnce(checkoutPausedOffer);
+    const api = createApi({ readStoreOffer });
+
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toMatchObject({
+      label: 'Out of Stock',
+      statusTone: 'neutral',
+    });
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toMatchObject({
+      label: 'Checkout Paused',
+      statusTone: 'neutral',
+    });
+  });
+
+  it('maps only Sold Out copy to the brand red status tone', () => {
+    expect(getStoreItemPurchaseStatusTone('Sold Out')).toBe('sold-out');
+    expect(getStoreItemPurchaseStatusTone('Out of Stock')).toBe('neutral');
+    expect(getStoreItemPurchaseStatusTone('Checkout Paused')).toBe('neutral');
+    expect(getStoreItemPurchaseStatusTone(STORE_ITEM_PURCHASE_ACTION_COPY.unavailable)).toBe('neutral');
+  });
+
+  it('uses neutral unavailable copy after a failed Worker read', async () => {
+    const api = createApi({
+      readStoreOffer: vi.fn(async () => {
+        throw new Error('Worker unavailable');
+      }),
+    });
+
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toEqual({
+      cartItem: null,
+      label: STORE_ITEM_PURCHASE_ACTION_COPY.unavailable,
+      statusTone: 'neutral',
+    });
   });
 
   it('does not create a CartLineItemSnapshot when the static page has no priced seed', () => {
@@ -174,3 +281,15 @@ describe('StoreItemPurchaseActions', () => {
     ).toBeNull();
   });
 });
+
+function createApi(overrides: Partial<PublicCheckoutApi>): PublicCheckoutApi {
+  return {
+    readCheckoutState: vi.fn(),
+    readStoreCapabilities: vi.fn(),
+    readStoreOffer: vi.fn(),
+    readStoreOfferVariants: vi.fn(),
+    registerNewsletterSignup: vi.fn(),
+    startCheckout: vi.fn(),
+    ...overrides,
+  };
+}

@@ -181,24 +181,26 @@ export function rememberStaffPosition() {
 export function restoreStaffPosition(fallback?: HTMLElement | null) {
   const entry = staffEntry();
   requestAnimationFrame(() => {
-    const row =
-      typeof entry.row === 'string' && entry.row.length <= 256
-        ? [...document.querySelectorAll<HTMLElement>('[data-staff-row]')].find(
-            (node) => node.dataset.staffRow === entry.row,
-          )
-        : null;
-    (row ?? fallback)?.focus({ preventScroll: true });
-    if (
-      !Array.isArray(entry.scroll) ||
-      entry.scroll.length > 10 ||
-      !entry.scroll.every((n) => Number.isFinite(n) && n >= 0)
-    )
-      return;
-    const nodes = scrollSelectors.flatMap((selector) => [...document.querySelectorAll(selector)]);
-    nodes.forEach((node, index) => {
-      node.scrollTop = entry.scroll![index] ?? 0;
+    requestAnimationFrame(() => {
+      const row =
+        typeof entry.row === 'string' && entry.row.length <= 256
+          ? [...document.querySelectorAll<HTMLElement>('[data-staff-row]')].find(
+              (node) => node.dataset.staffRow === entry.row,
+            )
+          : null;
+      (row ?? fallback)?.focus({ preventScroll: true });
+      if (
+        !Array.isArray(entry.scroll) ||
+        entry.scroll.length > 10 ||
+        !entry.scroll.every((n) => Number.isFinite(n) && n >= 0)
+      )
+        return;
+      const nodes = scrollSelectors.flatMap((selector) => [...document.querySelectorAll(selector)]);
+      nodes.forEach((node, index) => {
+        node.scrollTop = entry.scroll![index] ?? 0;
+      });
+      window.scrollTo(0, entry.scroll.at(-1) ?? 0);
     });
-    window.scrollTo(0, entry.scroll.at(-1) ?? 0);
   });
 }
 

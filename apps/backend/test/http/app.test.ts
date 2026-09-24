@@ -68,6 +68,25 @@ describe('createHttpApp', () => {
     expect(response.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:4321');
   });
 
+  it('allows browser preflight for the protected stock restock-plan update', async () => {
+    const app = createHttpApp();
+
+    const response = await app.request(
+      'http://backend.test/api/internal/variants/variant-1/stock/restock-plan',
+      {
+        method: 'OPTIONS',
+        headers: {
+          Origin: 'http://127.0.0.1:4321',
+          'Access-Control-Request-Method': 'PATCH',
+        },
+      },
+      testBindings,
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get('access-control-allow-methods')).toContain('PATCH');
+  });
+
   it('allows browser origins when checkout return config includes a base path', async () => {
     const app = createHttpApp();
 

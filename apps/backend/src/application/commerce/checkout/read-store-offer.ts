@@ -83,17 +83,29 @@ export async function readStoreOffer(
   const availability = await itemAvailability.findByVariantId(storeItem.variantId);
 
   if (!availability) {
-    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Unavailable');
+    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Currently Unavailable');
   }
 
-  if (availability.status !== 'available' || !availability.canBuy) {
-    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Sold Out');
+  if (availability.status === 'available' && !availability.canBuy) {
+    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Currently Unavailable');
   }
 
   const currentStock = await stock.findByVariantId(storeItem.variantId);
 
-  if (!currentStock || currentStock.onlineQuantity <= 0) {
-    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Sold Out');
+  if (!currentStock) {
+    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Currently Unavailable');
+  }
+
+  if (currentStock.onlineQuantity <= 0) {
+    return soldOutOffer(
+      storeItem.storeItemSlug,
+      storeItem.variantId,
+      currentStock.restockPlanned ? 'Out of Stock' : 'Sold Out',
+    );
+  }
+
+  if (availability.status !== 'available' || !availability.canBuy) {
+    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Currently Unavailable');
   }
 
   const productProjection = await productProjections.findByStoreItem(storeItem);

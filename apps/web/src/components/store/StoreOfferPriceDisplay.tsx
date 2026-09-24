@@ -12,7 +12,7 @@ export const STORE_OFFER_PRICE_DISPLAY_COPY = {
   unavailable: 'Checkout unavailable',
 } as const;
 
-type StoreOfferPriceDisplayTone = 'loading' | 'ready' | 'unavailable';
+type StoreOfferPriceDisplayTone = 'loading' | 'ready' | 'unavailable' | 'error';
 
 export type StoreOfferPriceDisplayView = {
   isLoading: boolean;
@@ -23,6 +23,7 @@ export type StoreOfferPriceDisplayView = {
 type StoreOfferPriceDisplayProps = {
   api?: PublicCheckoutApi;
   className?: string;
+  suppressUnavailableHeadline?: boolean;
   storeItemSlug: string;
 };
 
@@ -57,12 +58,21 @@ export async function loadStoreOfferPriceDisplayView(
   try {
     return createStoreOfferPriceDisplayView(await api.readStoreOffer(storeItemSlug));
   } catch {
-    return createStoreOfferPriceDisplayView(null);
+    return {
+      ...createStoreOfferPriceDisplayView(null),
+      tone: 'error',
+    };
   }
 }
 
-export default function StoreOfferPriceDisplay({ api, className, storeItemSlug }: StoreOfferPriceDisplayProps) {
+export default function StoreOfferPriceDisplay({
+  api,
+  className,
+  storeItemSlug,
+  suppressUnavailableHeadline = false,
+}: StoreOfferPriceDisplayProps) {
   const [view, setView] = React.useState<StoreOfferPriceDisplayView>(loadingView);
+  const hideUnavailableHeadline = suppressUnavailableHeadline && view.tone === 'unavailable';
 
   React.useEffect(() => {
     let isActive = true;
@@ -85,10 +95,12 @@ export default function StoreOfferPriceDisplay({ api, className, storeItemSlug }
     <span>
       <span
         aria-busy={view.isLoading ? 'true' : undefined}
+        aria-hidden={hideUnavailableHeadline ? 'true' : undefined}
         className={cn(
           className,
           view.tone === 'loading' && 'text-muted-foreground',
-          view.tone === 'unavailable' && 'text-muted-foreground',
+          (view.tone === 'unavailable' || view.tone === 'error') && 'text-muted-foreground',
+          hideUnavailableHeadline && 'invisible',
         )}
         data-store-offer-price
         data-store-offer-price-state={view.tone}

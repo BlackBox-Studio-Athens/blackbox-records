@@ -17,6 +17,7 @@ type StockRow = {
   variantId: string;
   quantity: number;
   onlineQuantity: number;
+  restockPlanned: number;
   revision: number;
   createdAt: string;
   updatedAt: string;
@@ -47,9 +48,40 @@ type StockCountRow = {
 export class D1OperatorStockRepository implements OperatorStockRepository {
   public constructor(private readonly db: D1Database) {}
 
+  public async setRestockPlanned(input: {
+    expectedRevision: number | null;
+    restockPlanned: boolean;
+    variantId: StockRecord['variantId'];
+  }): Promise<StockRecord | null> {
+    const timestamp = new Date().toISOString();
+    const row = await this.db
+      .prepare(
+        [
+          `INSERT INTO "Stock" ("id", "variantId", "quantity", "onlineQuantity", "restockPlanned", "revision", "createdAt", "updatedAt")`,
+          `SELECT ?, ?, 0, 0, ?, 0, ?, ? WHERE ? IS NULL OR EXISTS (SELECT 1 FROM "Stock" WHERE "variantId" = ?)`,
+          `ON CONFLICT ("variantId") DO UPDATE SET "restockPlanned" = excluded."restockPlanned", "revision" = "Stock"."revision" + 1, "updatedAt" = excluded."updatedAt"`,
+          `WHERE "Stock"."revision" = ? RETURNING *`,
+        ].join('\n'),
+      )
+      .bind(
+        crypto.randomUUID(),
+        input.variantId,
+        input.restockPlanned ? 1 : 0,
+        timestamp,
+        timestamp,
+        input.expectedRevision,
+        input.variantId,
+        input.expectedRevision,
+      )
+      .first<StockRow>();
+
+    return row ? mapStock(row) : null;
+  }
+
   public async initializeOpeningStock(
     operation: CatalogOperation,
     quantity: ReturnType<typeof createStockQuantity>,
+    restockPlanned = false,
     now = new Date(),
   ): Promise<boolean> {
     const opening = createStockQuantity(quantity);
@@ -86,10 +118,10 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
         ),
       this.db
         .prepare(
-          `INSERT INTO "Stock" (id, variantId, quantity, onlineQuantity, revision, createdAt, updatedAt)
-           SELECT ?, ?, ?, ?, 0, ?, ? WHERE changes() = 1`,
+          `INSERT INTO "Stock" (id, variantId, quantity, onlineQuantity, restockPlanned, revision, createdAt, updatedAt)
+           SELECT ?, ?, ?, ?, ?, 0, ?, ? WHERE changes() = 1`,
         )
-        .bind(crypto.randomUUID(), operation.variantId, opening, opening, timestamp, timestamp),
+        .bind(crypto.randomUUID(), operation.variantId, opening, opening, restockPlanned ? 1 : 0, timestamp, timestamp),
       this.db
         .prepare(
           `INSERT INTO "StockChange" (id, variantId, quantityDelta, reason, notes, actorEmail, recordedAt)
@@ -413,6 +445,7 @@ function mapStock(row: StockRow): StockRecord {
     variantId: parseVariantId(row.variantId),
     quantity: createStockQuantity(row.quantity),
     onlineQuantity: createStockQuantity(row.onlineQuantity),
+    restockPlanned: row.restockPlanned === 1,
     revision: row.revision,
     createdAt: new Date(row.createdAt),
     updatedAt: new Date(row.updatedAt),

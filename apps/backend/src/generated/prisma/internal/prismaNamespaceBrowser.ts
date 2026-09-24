@@ -181,6 +181,7 @@ export const StockScalarFieldEnum = {
   variantId: 'variantId',
   quantity: 'quantity',
   onlineQuantity: 'onlineQuantity',
+  restockPlanned: 'restockPlanned',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

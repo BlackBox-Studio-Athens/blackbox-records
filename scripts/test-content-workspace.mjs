@@ -1066,8 +1066,9 @@ else if (sellingJourney) {
     const overviewApi =
       /\/(?:_emdash\/api\/blackbox\/(?:workspace|publications)|api\/internal\/orders\/search)(?:\?|$)/;
     await probe.route(overviewApi, async (route) => {
-      paths.push(new URL(route.request().url()).pathname);
-      if (paths.length === 3) started.resolve();
+      const url = new URL(route.request().url());
+      paths.push({ pathname: url.pathname, search: url.search });
+      if (paths.length === 4) started.resolve();
       await gate.promise;
       if (fail)
         await route.fulfill({ status: 503, json: { success: false, error: { message: 'Refresh unavailable' } } });
@@ -1084,9 +1085,23 @@ else if (sellingJourney) {
       await probe.goto(`${origin}/`);
       await started.promise;
       await refresh();
-      // Flush queued browser work while all three resources are still pending.
+      // Flush queued browser work while the three Overview panels and shared review read are pending.
       await probe.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      assert.equal(paths.length, 3, 'Initial/focus/visibility/reconnect must share the three panel reads');
+      assert.equal(paths.length, 4, 'Initial/focus/visibility/reconnect must share the Overview and review reads');
+      assert.equal(
+        paths.filter(({ pathname, search }) => pathname.endsWith('/workspace') && search.includes('view=overview'))
+          .length,
+        1,
+        'Overview draft read is shared across refresh triggers',
+      );
+      assert.equal(
+        paths.filter(({ pathname, search }) => pathname.endsWith('/workspace') && search.includes('view=changes'))
+          .length,
+        1,
+        'Shell and Overview share global change discovery',
+      );
+      assert.equal(paths.filter(({ pathname }) => pathname.endsWith('/publications')).length, 1);
+      assert.equal(paths.filter(({ pathname }) => pathname.endsWith('/orders/search')).length, 1);
       empty = true;
       gate.resolve();
       await probe.getByText('No recent drafts to finish.', { exact: true }).waitFor();
@@ -1584,8 +1599,11 @@ else if (sellingJourney) {
       await stockRow.waitFor();
       const stockId = await stockRow.getAttribute('data-staff-row');
       await stockRow.click();
+      await page.waitForURL((url) => url.searchParams.get('variantId') === stockId);
       await page.getByLabel('How many?', { exact: true }).waitFor();
       await page.reload();
+      await page.waitForURL((url) => url.searchParams.get('variantId') === stockId);
+      await page.getByLabel('How many?', { exact: true }).waitFor();
       await page.getByLabel('How many?', { exact: true }).fill('3');
       assert.equal(
         await page.getByLabel('How many?', { exact: true }).inputValue(),

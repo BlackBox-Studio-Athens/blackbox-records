@@ -53,12 +53,17 @@ describe('Store Item listening context contract', () => {
   });
 
   it('keeps provider and editorial actions independently conditional', () => {
+    const purchaseActions = /<StoreItemPurchaseActions\b[\s\S]*?\/>/.exec(source)?.[0];
     expect(source).toContain('(embeddedPlayerData || sourceReleaseUrl || sourceReleaseArtistUrl)');
     expect(source).toContain('embeddedPlayerData && (');
     expect(source).toContain('sourceReleaseUrl && (');
     expect(source).toContain('sourceReleaseArtistUrl && (');
     expect(source).toContain("storeItem.sourceKind === 'distro' ? await getEntry('distro', storeItem.sourceId) : null");
-    expect(source).toContain('<StoreItemPurchaseActions client:load cartItem={cartItem} cartSeed={cartSeed} />');
+    expect(purchaseActions).toBeDefined();
+    expect(purchaseActions).toContain('client:load');
+    expect(purchaseActions).toContain('cartItem={cartItem}');
+    expect(purchaseActions).toContain('cartSeed={cartSeed}');
+    expect(purchaseActions).toContain('purchaseHint=');
     expect(source).toContain('embeddedPlayerData={embeddedPlayerData}');
     expect(storeCard).toContain('storeItem.embeddedPlayerData && (');
     expect(storeCard).toContain(

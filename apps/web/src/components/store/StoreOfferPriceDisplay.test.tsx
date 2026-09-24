@@ -78,7 +78,7 @@ describe('StoreOfferPriceDisplay', () => {
     await expect(loadStoreOfferPriceDisplayView(api, 'disintegration-black-vinyl-lp')).resolves.toEqual({
       isLoading: false,
       label: STORE_OFFER_PRICE_DISPLAY_COPY.unavailable,
-      tone: 'unavailable',
+      tone: 'error',
     });
   });
 });

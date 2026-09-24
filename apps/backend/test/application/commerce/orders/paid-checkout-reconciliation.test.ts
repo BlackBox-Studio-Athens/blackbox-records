@@ -141,6 +141,7 @@ class InMemoryStockRepository implements StockRepository {
       createdAt: new Date('2026-04-24T10:00:00.000Z'),
       onlineQuantity: stockQuantity(state.onlineQuantity),
       quantity: stockQuantity(state.quantity),
+      restockPlanned: this.records.get(variantId)?.restockPlanned ?? false,
       updatedAt: new Date('2026-04-25T11:00:00.000Z'),
       variantId: toVariantId(variantId),
     };

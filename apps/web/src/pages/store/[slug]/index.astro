@@ -136,16 +136,15 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
         <StoreOfferPriceDisplay
           client:load
           storeItemSlug={storeItem.slug}
+          suppressUnavailableHeadline
           className="block font-display text-3xl tracking-[0.08em] uppercase text-foreground"
         />
-        <StoreItemPurchaseActions client:load cartItem={cartItem} cartSeed={cartSeed} />
-        {
-          primaryAvailability?.canBuy && (
-            <p class="text-sm leading-relaxed text-muted-foreground">
-              Add it to the cart to review this item before checkout.
-            </p>
-          )
-        }
+        <StoreItemPurchaseActions
+          client:load
+          cartItem={cartItem}
+          cartSeed={cartSeed}
+          purchaseHint="Add it to the cart to review this item before checkout."
+        />
         <PurchaseInformation />
       </div>
       <div class="store-item-artwork">

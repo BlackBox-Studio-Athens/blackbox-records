@@ -12,6 +12,7 @@ export type VariantStockDetail = VariantSummary & {
     revision: number | null;
     quantity: number;
     onlineQuantity: number;
+    restockPlanned: boolean;
     updatedAt: Date | null;
   };
 };

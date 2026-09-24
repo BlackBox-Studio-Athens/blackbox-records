@@ -57,7 +57,7 @@ interface StockOperationsAppProps {
 
 type HistoryEntry = InternalStockHistoryResponse['entries'][number];
 export type StockLoadingIntent = 'refresh' | 'search' | 'variant' | 'workspace' | null;
-type StockSubmittingIntent = 'stockChange' | 'stockCount' | null;
+type StockSubmittingIntent = 'stockChange' | 'stockCount' | 'restockPlan' | null;
 
 export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAppProps) {
   const [query, setQuery] = useState('');
@@ -612,6 +612,34 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     }
   }
 
+  async function handleRestockPlannedChange(restockPlanned: boolean) {
+    const detail = selectedStockDetail;
+    if (!detail || !canMutateSelectedStock || isSubmitting) return;
+
+    const variantId = selectedVariantId;
+    setSubmittingIntent('restockPlan');
+    setErrorMessage(null);
+    setStatusMessage('Saving restock plan.');
+    try {
+      await api.setRestockPlanned(variantId, {
+        expectedRevision: detail.stock.revision,
+        restockPlanned,
+      });
+      await loadVariant(variantId, false, 'refresh');
+      setStatusMessage('Restock plan saved.');
+    } catch (error) {
+      await loadVariant(variantId, false, 'refresh');
+      setStatusMessage(
+        error instanceof InternalStockApiError && error.status === 409
+          ? 'Stock changed. Review the current item before retrying the restock plan.'
+          : 'Restock plan was not confirmed. Refresh the item before trying again.',
+      );
+      setErrorMessage(readErrorMessage(error));
+    } finally {
+      setSubmittingIntent(null);
+    }
+  }
+
   useStaffRead(
     ['stock', backendBaseUrl, selectedVariantId],
     async () => {
@@ -888,13 +916,43 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                     description="Getting the latest stock count."
                   />
                 ) : (
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <StockMetric
-                      label={selectedStockDetail?.itemType === 'Clothes' ? 'Units on hand' : 'Copies on hand'}
-                      value={selectedStockDetail?.stock.quantity}
-                    />
-                    <StockMetric label="Available to buy online" value={selectedStockDetail?.stock.onlineQuantity} />
-                    <StockMetric label="Updated" value={formatDate(selectedStockDetail?.stock.updatedAt)} isText />
+                  <div className="grid gap-4">
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      <StockMetric
+                        label={selectedStockDetail?.itemType === 'Clothes' ? 'Units on hand' : 'Copies on hand'}
+                        value={selectedStockDetail?.stock.quantity}
+                      />
+                      <StockMetric label="Available to buy online" value={selectedStockDetail?.stock.onlineQuantity} />
+                      <StockMetric label="Updated" value={formatDate(selectedStockDetail?.stock.updatedAt)} isText />
+                    </div>
+                    <label
+                      className={cn(
+                        'flex items-center justify-between gap-4 border-t border-border pt-4',
+                        canMutateSelectedStock && !isSubmitting ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
+                      )}
+                      aria-busy={submittingIntent === 'restockPlan' ? 'true' : undefined}
+                    >
+                      <span className="grid gap-1">
+                        <span className="font-medium">Restock planned</span>
+                        <span id="restock-planned-description" className="text-sm text-muted-foreground">
+                          At zero online stock, shoppers see{' '}
+                          {selectedStockDetail?.stock.restockPlanned ? 'Out of Stock.' : 'Sold Out.'}
+                        </span>
+                      </span>
+                      <input
+                        checked={selectedStockDetail?.stock.restockPlanned ?? false}
+                        className="peer sr-only"
+                        disabled={!canMutateSelectedStock || isSubmitting}
+                        onChange={(event) => void handleRestockPlannedChange(event.currentTarget.checked)}
+                        role="switch"
+                        aria-describedby="restock-planned-description"
+                        type="checkbox"
+                      />
+                      <span
+                        aria-hidden="true"
+                        className="relative inline-flex h-6 w-11 shrink-0 rounded-full border border-border bg-muted transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-background after:content-[''] after:transition-transform peer-checked:border-primary peer-checked:bg-primary peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background peer-disabled:opacity-50"
+                      />
+                    </label>
                   </div>
                 )}
               </CardContent>

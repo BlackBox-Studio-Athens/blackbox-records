@@ -47,6 +47,7 @@ export const catalogItemSetupSchema = z
     itemType: z.enum(DISTRO_GROUP_VALUES),
     price: catalogPriceChangeSchema.shape.price,
     openingQuantity: z.number().int().nonnegative().max(2_147_483_647).default(0),
+    restockPlanned: z.boolean().default(false),
     confirmLiveSetup: z.boolean().default(false),
   })
   .strict()
@@ -105,12 +106,17 @@ export async function setupCatalogItem(deps: Dependencies, actorEmail: string, i
   const variantId = parseVariantId(
     `variant_${createStripeCatalogRequestShapeFingerprint(command.operationId).slice(6)}`,
   );
+  const { restockPlanned, ...requestShape } = command;
   const context = createStripeCatalogMutationContext({
     action: 'create_catalog_price',
     environment: deps.environment,
     variantId,
     identity: command.operationId,
-    requestShape: { ...command, environment: deps.environment },
+    requestShape: {
+      ...requestShape,
+      ...(restockPlanned ? { restockPlanned: true } : {}),
+      environment: deps.environment,
+    },
   });
   const existing = await deps.journal.begin({
     id: command.operationId,
@@ -211,7 +217,14 @@ export async function setupCatalogItem(deps: Dependencies, actorEmail: string, i
       );
     }
     if (operation.step === 'price_bound') {
-      if (!(await deps.stock.initializeOpeningStock(operation, createStockQuantity(command.openingQuantity), now()))) {
+      if (
+        !(await deps.stock.initializeOpeningStock(
+          operation,
+          createStockQuantity(command.openingQuantity),
+          command.restockPlanned,
+          now(),
+        ))
+      ) {
         await deps.journal.markNeedsReview(operation, 'identity_conflict', now());
         return current();
       }

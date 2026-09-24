@@ -45,7 +45,12 @@ it.each([0, 10])('initializes %i opening units once and preserves later movement
       await stock.initializeOpeningStock({ ...operation, claimToken: 'stale' }, createStockQuantity(quantity)),
     ).toBe(false);
     expect(
-      await stock.initializeOpeningStock(operation, createStockQuantity(quantity), new Date(Date.now() + 120_000)),
+      await stock.initializeOpeningStock(
+        operation,
+        createStockQuantity(quantity),
+        false,
+        new Date(Date.now() + 120_000),
+      ),
     ).toBe(false);
     await expect(stock.initializeOpeningStock(operation, -1 as never)).rejects.toThrow();
     await db.stock.create({ data: { variantId, quantity: 7, onlineQuantity: 5 } });
@@ -76,6 +81,7 @@ it.each([0, 10])('initializes %i opening units once and preserves later movement
     expect(await db.stock.findUnique({ where: { variantId } })).toMatchObject({
       quantity,
       onlineQuantity: quantity,
+      restockPlanned: false,
       revision: 0,
     });
     const history = await db.stockChange.findMany({ where: { variantId } });

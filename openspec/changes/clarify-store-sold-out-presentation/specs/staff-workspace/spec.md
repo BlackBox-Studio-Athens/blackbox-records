@@ -76,3 +76,30 @@ Staff catalog rows with valid artwork and a prepared derivative SHALL render tha
 - **WHEN** artwork is absent, a derivative is missing, or its request fails
 - **THEN** the row retains a stable placeholder without retry loops or original-image fallback
 - **AND** existing private-access and derivative size limits remain enforced.
+
+### Requirement: Staff control per-item restock intent
+
+The protected stock detail SHALL provide a per-variant Restock planned switch backed by the stock record. The switch SHALL use revision-checked writes and SHALL not alter physical or online quantities.
+
+#### Scenario: Set a restock plan
+
+- **WHEN** staff changes Restock planned for the selected item
+- **THEN** the stock record persists the flag and advances its revision
+- **AND** the displayed switch reflects the saved value without changing stock quantities or ledger entries.
+
+#### Scenario: Stock has not been recorded
+
+- **WHEN** staff marks an item Restock planned before its first stock count
+- **THEN** the system creates a zero-quantity stock record with the planned flag set.
+
+#### Scenario: Choose restock intent during Store Item setup
+
+- **WHEN** staff sets up a new Store Item and chooses Restock planned
+- **THEN** the selected value is saved on the opening Stock row
+- **AND** an omitted selection defaults to false for new items, matching existing rows.
+
+#### Scenario: A concurrent stock update occurs
+
+- **WHEN** the submitted stock revision is stale
+- **THEN** the update is rejected and existing stock and restock intent remain intact
+- **AND** staff can refresh the selected item before retrying.

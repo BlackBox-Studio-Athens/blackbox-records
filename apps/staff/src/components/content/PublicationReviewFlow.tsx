@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { CheckCircle2, CircleAlert, ArrowLeft } from 'lucide-react';
 import type { PublicationReview, PublicationReviewInput } from '@blackbox/content-model';
+import { changedPublicationFields } from '@blackbox/content-model';
 import { Button } from '../ui/button';
 import { Tabs } from 'radix-ui';
 import { Skeleton } from '../ui/skeleton';
@@ -166,7 +167,13 @@ export default function PublicationReviewFlow({
     };
   }, [pending]);
 
-  const blocked = !review || stale || review.dependencies.length > 0 || review.entries.some((e) => e.issues.length);
+  const reviewHasChanges = Boolean(review?.entries.some((entry) => changedPublicationFields(entry).length > 0));
+  const blocked =
+    !review ||
+    !reviewHasChanges ||
+    stale ||
+    review.dependencies.length > 0 ||
+    review.entries.some((e) => e.issues.length);
   const reviewedSelection = review
     ? {
         baseline: review.baseline,
@@ -249,6 +256,11 @@ export default function PublicationReviewFlow({
         <div role="status" className="publication-loading">
           <span>Loading saved changes…</span>
           <Skeleton className="h-48 w-full" />
+        </div>
+      )}
+      {review && !reviewHasChanges && !busy && !pending && (
+        <div role="status" className="publication-issues">
+          <p>No publishable differences remain. Return to selection.</p>
         </div>
       )}
       {pending ? (
@@ -400,12 +412,18 @@ export default function PublicationReviewFlow({
           <div>
             <strong>
               {review
-                ? `${review.entries.length} ${review.entries.length === 1 ? 'change' : 'changes'} selected`
+                ? reviewHasChanges
+                  ? `${review.entries.length} ${review.entries.length === 1 ? 'change' : 'changes'} selected`
+                  : 'No changes to publish'
                 : 'Review changes'}
             </strong>
             <p className="text-sm text-muted-foreground">
-              {review ? `${review.environment.toUpperCase()} website` : 'Saved drafts stay private'} · Price and stock
-              stay unchanged.
+              {review && !reviewHasChanges
+                ? 'Select a saved change before publishing.'
+                : review
+                  ? `${review.environment.toUpperCase()} website`
+                  : 'Saved drafts stay private'}{' '}
+              · Price and stock stay unchanged.
             </p>
           </div>
           <div className="publication-actions">

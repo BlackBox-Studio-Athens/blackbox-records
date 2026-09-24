@@ -16,6 +16,7 @@ import StaffBack from '../StaffBack';
 import { Button } from '../ui/button';
 import { ClipboardCheck, Eye, EyeOff, FileText, History, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
+import { changedPublicationFields } from '@blackbox/content-model';
 
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
 import { Table, TableBody, TableRow, TableCell } from '../ui/table';
@@ -23,7 +24,7 @@ const CatalogSelling = lazy(() => import('../items/CatalogSelling'));
 import FormatFilter, { formatLabel } from '../items/FormatFilter';
 import WebsitePages from '../WebsitePages';
 import { useDraftAutosave } from '../../hooks/use-draft-autosave';
-import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
+import { readStaffQuery, setStaffQueryData, useStaffRead } from '../../lib/staff-query';
 
 import { Skeleton } from '../ui/skeleton';
 
@@ -61,6 +62,7 @@ import { requestPublicationHistory } from '../../lib/publication-history-events'
 import PublicationStatus from './PublicationStatus';
 import { getContentValidation, type ContentValidation } from './content-validation';
 import { readContentPublications, type ContentPublication } from '../../lib/backend/content-publication-api';
+import { refreshReviewChangesPresence, reviewChangesKey } from '../../lib/review-changes';
 import {
   EditorialApiError,
   editorialRequest,
@@ -72,10 +74,22 @@ import {
 } from '../../lib/backend/editorial-api';
 
 type Document = { item: EditorialRecord; _rev: string };
+type EditorComparison = {
+  identity: string;
+  status: 'checking' | 'ready' | 'error';
+  before: Record<string, unknown> | null;
+};
 function contentSave(document: Document, data: ContentData) {
   if (!document._rev) throw new Error('Load the saved version before publishing.');
   // The saved slug and identity remain unchanged when the member renames a title.
   return { _rev: document._rev, data: editorialWriteData(data) };
+}
+function publicationAfter(collection: ContentSection, item: EditorialRecord, data: ContentData) {
+  const { _slug, ...after } = editorialWriteData(data);
+  if (collection === 'navigation')
+    for (const key of ['show_in_header', 'show_in_footer'])
+      if (after[key] === 0 || after[key] === 1) after[key] = after[key] === 1;
+  return { ...after, slug: String(_slug ?? item.slug) };
 }
 
 function CatalogPager({
@@ -217,6 +231,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [message, setMessage] = useState('');
   const [conflict, setConflict] = useState(false);
   const [ready, setReady] = useState(false);
+  const [editorComparison, setEditorComparison] = useState<EditorComparison>();
+  const [comparisonRetry, setComparisonRetry] = useState(0);
   const [preview, setPreview] = useState(false);
   const [desktopPreview, setDesktopPreview] = useState(false);
   useEffect(() => {
@@ -262,6 +278,62 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     });
   }
   const validation: ContentValidation = getContentValidation(collection, data);
+  const editorComparisonIdentity = document ? `${collection}/${document.item.id || 'new'}` : '';
+  const currentEditorComparison =
+    editorComparison?.identity === editorComparisonIdentity ? editorComparison : undefined;
+  const editorHasChanges = Boolean(
+    document &&
+    currentEditorComparison?.status === 'ready' &&
+    changedPublicationFields({
+      before: currentEditorComparison.before,
+      after: publicationAfter(collection, document.item, data),
+    }).length,
+  );
+
+  useEffect(() => {
+    if (!document) {
+      setEditorComparison(undefined);
+      return;
+    }
+    const identity = `${collection}/${document.item.id || 'new'}`;
+    if (!document.item.id) {
+      setEditorComparison({ identity, status: 'ready', before: null });
+      return;
+    }
+    let active = true;
+    const id = document.item.id;
+    setEditorComparison({ identity, status: 'checking', before: null });
+    void editorialRequest<EditorialList<EditorialRecord>>(
+      base,
+      `blackbox/workspace?collection=${collection}&id=${encodeURIComponent(id)}`,
+    )
+      .then((page) => {
+        const item = page.items[0];
+        if (!item) throw new Error('The accepted version is unavailable.');
+        if (active) {
+          setEditorComparison({ identity, status: 'ready', before: item.acceptedData ?? null });
+          setDocument((current) =>
+            current?.item.id === id
+              ? {
+                  ...current,
+                  item: {
+                    ...current.item,
+                    publicationState: item.publicationState,
+                    selling: item.selling,
+                    acceptedData: item.acceptedData ?? null,
+                  },
+                }
+              : current,
+          );
+        }
+      })
+      .catch(() => {
+        if (active) setEditorComparison({ identity, status: 'error', before: null });
+      });
+    return () => {
+      active = false;
+    };
+  }, [base, collection, document?.item.id, comparisonRetry]);
 
   function focusFirstInvalid(result = validation) {
     const path = result.firstPath;
@@ -316,6 +388,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                   ...current.item,
                   publicationState: summary.items[0]?.publicationState,
                   selling: summary.items[0]?.selling,
+                  acceptedData: summary.items[0]?.acceptedData ?? null,
                 },
               }
             : current,
@@ -592,12 +665,18 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         ...loaded.item,
         selling: summary.items[0]?.selling,
         publicationState: summary.items[0]?.publicationState,
+        acceptedData: summary.items[0]?.acceptedData ?? null,
         collection,
       };
       const nextDocument = { ...loaded, item: nextItem };
       currentDocument.current = nextDocument;
       setDocument(nextDocument);
       setData(loaded.item.data);
+      setEditorComparison({
+        identity: `${collection}/${nextItem.id}`,
+        status: 'ready',
+        before: nextItem.acceptedData ?? null,
+      });
       setItems((items) => items.map((item) => (item.id === nextItem.id ? nextItem : item)));
       setDirty(false);
       setValidationAttempt(0);
@@ -634,31 +713,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setValidationAttempt(0);
       setConflict(false);
       setMobileEditor(true);
-      if (!item) {
-        void editorialRequest<EditorialList<EditorialRecord>>(
-          base,
-          `blackbox/workspace?collection=${section}&id=${encodeURIComponent(loaded.item.id)}`,
-        )
-          .then((page) => {
-            if (sequence !== editorSequence.current) return;
-            setDocument((current) =>
-              current?.item.id === loaded.item.id
-                ? {
-                    ...current,
-                    item: {
-                      ...current.item,
-                      selling: page.items[0]?.selling,
-                      publicationState: page.items[0]?.publicationState,
-                    },
-                  }
-                : current,
-            );
-          })
-          .catch(() => {
-            if (sequence === editorSequence.current)
-              setMessage('Website status is unavailable. Reopen this entry to try again.');
-          });
-      }
       return true;
     } catch {
       if (sequence === editorSequence.current) setMessage('We could not load this entry. Try again.');
@@ -687,6 +741,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
   const currentDocument = useRef(document);
   currentDocument.current = document;
+  const editorComparisonRef = useRef(editorComparison);
+  editorComparisonRef.current = editorComparison;
   const latestData = useRef(data);
   latestData.current = data;
   const needsSave = useRef(dirty);
@@ -744,6 +800,15 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               ? 'changes'
               : 'draft',
         };
+        const comparison = editorComparisonRef.current;
+        const after = publicationAfter(collection, result.item, snapshot);
+        if (
+          !current.item.liveRevisionId ||
+          (comparison?.identity === `${collection}/${result.item.id}` &&
+            comparison.status === 'ready' &&
+            changedPublicationFields({ before: comparison.before, after }).length > 0)
+        )
+          setStaffQueryData(reviewChangesKey(base), true);
         setDocument(result);
         setItems((previous) => [result.item, ...previous.filter((item) => item.id !== result.item.id)]);
         updateUrl(collection, result.item.id, false, true);
@@ -954,7 +1019,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
             base={base}
             individual
             records={[{ collection, recordId: document.item.id, expectedRevision: document._rev }]}
-            onPublished={() => void publicationStatus()}
+            onPublished={() => {
+              setComparisonRetry((attempt) => attempt + 1);
+              void refreshReviewChangesPresence(base).catch(() => {});
+              void publicationStatus();
+            }}
             onBack={() => {
               setReviewing(false);
               requestAnimationFrame(() => editorHeading.current?.focus());
@@ -1300,8 +1369,19 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                               </Button>
                             )}
                             <Button
-                              disabled={busy || conflict || autosave.saving}
+                              disabled={
+                                busy ||
+                                conflict ||
+                                !currentEditorComparison ||
+                                currentEditorComparison?.status === 'checking' ||
+                                (currentEditorComparison?.status === 'ready' && !editorHasChanges)
+                              }
                               onClick={() => {
+                                if (currentEditorComparison?.status === 'error') {
+                                  setComparisonRetry((attempt) => attempt + 1);
+                                  return;
+                                }
+                                if (!editorHasChanges) return;
                                 if (!requireValidContent()) return;
                                 void autosave
                                   .flush()
@@ -1318,7 +1398,13 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                               }}
                             >
                               <ClipboardCheck aria-hidden="true" />
-                              Review changes
+                              {!currentEditorComparison || currentEditorComparison.status === 'checking'
+                                ? 'Checking changes…'
+                                : currentEditorComparison?.status === 'error'
+                                  ? 'Retry change check'
+                                  : editorHasChanges
+                                    ? 'Review changes'
+                                    : 'No changes to review'}
                             </Button>
                             <DropdownMenu open={draftActionsOpen} onOpenChange={setDraftActionsOpen}>
                               <DropdownMenuTrigger asChild>

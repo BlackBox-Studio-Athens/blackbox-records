@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'rea
 import {
   ArrowUpRight,
   Boxes,
-  ClipboardCheck,
   ChevronLeft,
   Disc3,
   Globe,
@@ -20,6 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { getInternalStockApiBaseUrl } from '../lib/backend/internal-stock-api';
 import { publicationHistoryEvent, type PublicationHistoryFilter } from '../lib/publication-history-events';
 import StaffBack from './StaffBack';
+import ReviewChangesControl from './ReviewChangesControl';
 import { staffEntry, staffLink, staffTarget } from '../lib/staff-navigation';
 import { singletonContentSections, type ContentSection } from '../lib/content-sections';
 
@@ -224,12 +224,7 @@ export default function StaffShell({
   function utilities() {
     return (
       <>
-        <Button asChild className="staff-review-link">
-          <a href="/review/" aria-current={url.pathname.startsWith('/review/') ? 'page' : undefined}>
-            <ClipboardCheck aria-hidden="true" />
-            Review changes
-          </a>
-        </Button>
+        <ReviewChangesControl base={base} className="staff-review-link" current={url.pathname.startsWith('/review/')} />
         <Button
           type="button"
           variant="outline"

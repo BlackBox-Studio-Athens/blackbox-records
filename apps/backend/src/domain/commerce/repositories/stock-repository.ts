@@ -6,6 +6,7 @@ export type StockRecord = {
   variantId: VariantId;
   quantity: StockQuantity;
   onlineQuantity: StockQuantity;
+  restockPlanned: boolean;
   createdAt: Date;
   updatedAt: Date;
 };

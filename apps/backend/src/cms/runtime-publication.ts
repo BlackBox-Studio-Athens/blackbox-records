@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { changedPublicationFields } from '@blackbox/content-model';
 import type { EmDashRuntime } from 'emdash/middleware';
 import {
   contentMediaIds,
@@ -105,6 +106,8 @@ export async function acceptSelectedPublication(
         { records: selected.records, baseline: reviewedBaseline },
         { ...deps, bucket: deps.bucket },
       );
+      if (!review.entries.some((entry) => changedPublicationFields(entry).length > 0))
+        throw new Error('No publishable differences remain.');
       if (review.dependencies.length || review.entries.some((entry) => entry.issues.length))
         throw new Error('Resolve publication issues and required drafts before publishing.');
     } catch (error) {

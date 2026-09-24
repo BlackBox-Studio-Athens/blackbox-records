@@ -23,6 +23,7 @@ export async function readVariantStock(
       revision: currentStock?.revision ?? null,
       quantity: currentStock?.quantity ?? 0,
       onlineQuantity: currentStock?.onlineQuantity ?? 0,
+      restockPlanned: currentStock?.restockPlanned ?? false,
       updatedAt: currentStock?.updatedAt ?? null,
     },
   };

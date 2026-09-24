@@ -98,6 +98,44 @@ describe('D1OperatorStockRepository idempotency', () => {
     ).resolves.toBeNull();
     await expect(countRows('StockCount', variantId)).resolves.toBe(1);
   });
+
+  it('persists restock intent without changing quantities or stock history', async () => {
+    const variantId = parseVariantId(`variant_restock_plan_${crypto.randomUUID()}`);
+    await seedStock(variantId, 5);
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+
+    const planned = await repository.setRestockPlanned({ expectedRevision: 0, restockPlanned: true, variantId });
+    expect(planned).toMatchObject({
+      onlineQuantity: 5,
+      quantity: 5,
+      restockPlanned: true,
+      revision: 1,
+    });
+    await expect(
+      repository.setRestockPlanned({ expectedRevision: 0, restockPlanned: false, variantId }),
+    ).resolves.toBeNull();
+    const cleared = await repository.setRestockPlanned({ expectedRevision: 1, restockPlanned: false, variantId });
+    expect(cleared).toMatchObject({ restockPlanned: false, revision: 2 });
+    await expect(countRows('StockChange', variantId)).resolves.toBe(0);
+    await expect(countRows('StockCount', variantId)).resolves.toBe(0);
+  });
+
+  it('creates an empty stock row when restock is planned before the first count', async () => {
+    const variantId = parseVariantId(`variant_restock_plan_initial_${crypto.randomUUID()}`);
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+
+    const planned = await repository.setRestockPlanned({ expectedRevision: null, restockPlanned: true, variantId });
+
+    expect(planned).toMatchObject({
+      onlineQuantity: 0,
+      quantity: 0,
+      restockPlanned: true,
+      revision: 0,
+    });
+    await expect(
+      repository.setRestockPlanned({ expectedRevision: null, restockPlanned: false, variantId }),
+    ).resolves.toBeNull();
+  });
 });
 
 function identity(key: string, fingerprint: string): RequestIdentity {

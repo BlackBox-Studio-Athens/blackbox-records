@@ -108,11 +108,13 @@ class InMemoryStockRepository implements StockRepository {
   }
 
   public async save(variantId: string, state: { onlineQuantity: number; quantity: number }): Promise<StockRecord> {
+    const current = this.records.get(variantId);
     const record: StockRecord = {
       revision: (this.records.get(variantId)?.revision ?? -1) + 1,
       createdAt: new Date('2026-04-24T10:00:00.000Z'),
       onlineQuantity: stockQuantity(state.onlineQuantity),
       quantity: stockQuantity(state.quantity),
+      restockPlanned: current?.restockPlanned ?? false,
       updatedAt: new Date('2026-04-24T10:00:00.000Z'),
       variantId: toVariantId(variantId),
     };
@@ -905,32 +907,126 @@ describe('checkout use cases', () => {
     ).rejects.toBeInstanceOf(CatalogDriftError);
   });
 
-  it('returns a coherent sold-out Store Offer when OnlineStock is exhausted', async () => {
-    await stock.save(storeItem.variantId, {
+  it.each([
+    {
+      name: 'availability is missing',
+      availability: null,
+      onlineQuantity: 2,
+      expectedLabel: 'Currently Unavailable',
+      stockReads: 0,
+    },
+    {
+      name: 'stock is missing',
+      availability: { canBuy: true, status: 'available' as const },
+      onlineQuantity: null,
+      expectedLabel: 'Currently Unavailable',
+      stockReads: 1,
+    },
+    {
+      name: 'selling is paused at zero stock',
+      availability: { canBuy: false, status: 'available' as const },
       onlineQuantity: 0,
-      quantity: 3,
-    });
+      expectedLabel: 'Currently Unavailable',
+      stockReads: 0,
+    },
+    {
+      name: 'selling is paused at positive stock',
+      availability: { canBuy: false, status: 'available' as const },
+      onlineQuantity: 2,
+      expectedLabel: 'Currently Unavailable',
+      stockReads: 0,
+    },
+    {
+      name: 'a non-buyable status has positive stock',
+      availability: { canBuy: false, status: 'sold_out' as const },
+      onlineQuantity: 2,
+      expectedLabel: 'Currently Unavailable',
+      stockReads: 1,
+    },
+    {
+      name: 'effective stock is depleted for a sold-out status',
+      availability: { canBuy: false, status: 'sold_out' as const },
+      onlineQuantity: 0,
+      expectedLabel: 'Sold Out',
+      stockReads: 1,
+    },
+    {
+      name: 'effective stock is depleted for an available status',
+      availability: { canBuy: true, status: 'available' as const },
+      onlineQuantity: 0,
+      expectedLabel: 'Sold Out',
+      stockReads: 1,
+    },
+    {
+      name: 'effective stock is depleted with a planned restock',
+      availability: { canBuy: false, status: 'sold_out' as const },
+      onlineQuantity: 0,
+      restockPlanned: true,
+      expectedLabel: 'Out of Stock',
+      stockReads: 1,
+    },
+  ])(
+    'returns the correct Store Offer label when $name',
+    async ({ availability, onlineQuantity, restockPlanned, expectedLabel, stockReads }) => {
+      if (availability) {
+        itemAvailability.records.set(storeItem.variantId, {
+          ...availability,
+          updatedAt: new Date('2026-04-24T10:00:00.000Z'),
+          variantId: storeItem.variantId,
+        });
+      } else {
+        itemAvailability.records.delete(storeItem.variantId);
+      }
 
-    await expect(
-      readStoreOffer(
+      if (onlineQuantity === null) {
+        stock.records.delete(storeItem.variantId);
+      } else {
+        await stock.save(storeItem.variantId, { onlineQuantity, quantity: 3 });
+        if (restockPlanned) {
+          const saved = stock.records.get(storeItem.variantId);
+          if (saved) stock.records.set(storeItem.variantId, { ...saved, restockPlanned: true });
+        }
+      }
+
+      const findStock = vi.spyOn(stock, 'findByVariantId');
+      const offer = await readStoreOffer(
         storeItems,
         itemAvailability,
         stock,
         catalogReconciler,
         productProjections,
         storeItem.storeItemSlug,
-      ),
-    ).resolves.toEqual({
-      availability: {
-        label: 'Sold Out',
-        status: 'sold_out',
-      },
-      canCheckout: false,
-      catalogStatus: 'sold_out',
-      price: null,
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      );
+
+      expect(offer).toMatchObject({
+        availability: { label: expectedLabel, status: 'sold_out' },
+        canCheckout: false,
+        catalogStatus: 'sold_out',
+        price: null,
+      });
+      expect(findStock).toHaveBeenCalledTimes(stockReads);
+    },
+  );
+
+  it('keeps positive-stock availability when a restock plan is set', async () => {
+    const saved = await stock.save(storeItem.variantId, { onlineQuantity: 2, quantity: 3 });
+    stock.records.set(storeItem.variantId, { ...saved, restockPlanned: true });
+
+    const offer = await readStoreOffer(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      storeItem.storeItemSlug,
+    );
+
+    expect(offer).toMatchObject({
+      availability: { label: 'Available', status: 'available' },
+      canCheckout: true,
+      catalogStatus: 'ready',
     });
+    expect(offer?.price).not.toBeNull();
   });
 
   it('pauses Store Offer checkout when Product Projection cannot be confirmed', async () => {

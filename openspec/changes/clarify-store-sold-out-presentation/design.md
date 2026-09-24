@@ -21,17 +21,25 @@
 
 Keep response shape, existing status fields, null-price behavior, and eligibility. Correct label selection:
 
-| Evidence                                                                                | Label                                |
-| --------------------------------------------------------------------------------------- | ------------------------------------ |
-| Missing availability                                                                    | Currently Unavailable                |
-| Availability available with canBuy false                                                | Currently Unavailable                |
-| Existing effective stock exhausted, with availability sold_out or available/canBuy true | Sold Out                             |
-| Missing stock, or non-buyable availability with positive effective stock                | Currently Unavailable                |
-| Catalog drift / ready                                                                   | Existing Checkout Paused / Available |
+| Evidence                                                           | Label                                |
+| ------------------------------------------------------------------ | ------------------------------------ |
+| Missing availability                                               | Currently Unavailable                |
+| Availability available with canBuy false                           | Currently Unavailable                |
+| Missing stock                                                      | Currently Unavailable                |
+| Effective online stock exhausted, no pause, `restockPlanned` false | Sold Out                             |
+| Effective online stock exhausted, no pause, `restockPlanned` true  | Out of Stock                         |
+| Non-buyable availability with positive effective stock             | Currently Unavailable                |
+| Catalog drift / ready                                              | Existing Checkout Paused / Available |
 
 An available/canBuy-false record is a pause and takes precedence. Reuse the effective-stock adapter already injected by `public-commerce-services.ts`, including hold accounting. Read it once when classification needs it; retain early exits for missing availability or an explicit pause.
 
-Render the returned label as text, without comparing English strings to decide eligibility or style. All resolved non-buyable labels use the same inactive treatment. Network failures retain neutral local copy. No new reason enum or generated-client changes are needed because Sold Out adds no distinct behavior.
+### 1.1 Per-item restock intent
+
+Persist `restockPlanned` on each `Stock` row, defaulting to false for existing and new rows. Staff choose it during Store Item setup, alongside opening stock; the API and setup form also default it to false. The selected variant's protected `/stock/` detail retains the Restock planned switch for later changes. The internal mutation requires the currently read stock revision, increments that revision, and creates a zero-quantity row when stock has not yet been recorded. A conflict requires refreshing before another stock operation. Changing the flag does not change physical or online quantity and does not create a stock count/change entry.
+
+The flag persists through positive stock and only changes the shopper label when effective OnlineStock reaches zero. Staff clear it when restocking is no longer planned. Positive stock retains the existing availability behavior. Both Releases and Distro use the same Worker classification because both flow through `readStoreOffer`.
+
+Render the returned label as text; eligibility continues to use the typed offer and cart state, never the label or its visual tone. Since the current public offer contract carries the user-facing label as its only distinction between Sold Out and Out of Stock, map those known labels to presentation tone in one local helper: Sold Out uses the subtle Store Blood outline; Out of Stock uses the neutral gray outline. Checkout Paused and generic unavailable/failure states also use the neutral gray outline. Tone never changes purchase eligibility. Keep the public response shape unchanged; regenerate the internal setup client contract for the new creation field.
 
 ### 2. One purchase message
 
@@ -39,9 +47,9 @@ The purchase action owns the non-buyable message in the detail purchase area. Su
 
 Use the shared components on detail and compatibility routes. Existing checkout consumers of the Worker label inherit corrected text; do not redesign cart checkout. Reuse Back to Store / Continue Shopping instead of adding Browse records.
 
-Use square geometry, a thin full border, charcoal fill, existing compact UI display type, off-white text, and a minimum 44px height. Keep resolved disabled text at 4.5:1 contrast and announce it politely from the purchase region. Artwork and listening stay visible. No motion or image generation is needed; satisfy applicable Impeccable shape approval before UI implementation.
+Use the supplied screenshot's compact, left-aligned control frame: 14rem wide and 54px high on desktop, with square corners. On mobile, use the full available action width for every state. Keep this same geometry for Checking availability, Add To Cart, Sold Out, Out of Stock, Checkout Paused, and generic unavailable states to prevent layout shifts. Add To Cart keeps the existing filled primary treatment; disabled statuses remain transparent near-black with subtle outlines. Use Store Blood for Sold Out and neutral gray for Out of Stock, Checkout Paused, and generic unavailable states. Keep title-case status copy at 4.5:1 contrast and announce it politely. Artwork and listening stay visible. No motion or image generation is needed.
 
-The supplied `C:/Users/SVall/.codex/worktrees/catalog-wide-listening/blackbox-records/docs/design-inspiration.md` informs the treatment: PW's artwork-first restraint, LISTEN-2/5's border/charcoal studies, and the selected In player control's readable disabled state. Keep amber and equalizer bars music-only. These references do not approve an entire button family.
+The supplied `C:/Users/SVall/WebstormProjects/blackbox-records/docs/design-inspiration.md` informs the treatment: PW's artwork-first restraint and the project's compact, low-contrast controls. Keep amber and equalizer bars music-only. These references do not approve an entire button family.
 
 ### 3. Discard from the global list
 
@@ -78,10 +86,10 @@ Use `Apply this price to the live shop` for fixed prices and `Apply these pricin
 ## Risks / Trade-offs
 
 - The legacy offer status remains broad; display the corrected label without treating its text as authority. Deploy corrected Worker labels before the consuming frontend.
-- Holds can temporarily exhaust effective stock; Sold Out does not mean permanently out of print.
+- Holds can temporarily exhaust effective stock; Out of Stock means staff has marked restocking as planned, while Sold Out means they have not.
 - Proving no global changes can take longer than finding one draft. Use the existing request bounds and cancel superseded reads; incomplete discovery must not report empty.
 - The hosted thumbnail cause is unverified behind sign-in. Record whether the remedy is code or derivative preparation before implementation.
 
 ## Migration Plan
 
-No schema/data migration. Verify each slice locally and use normal code promotion. Any derivative preparation is separate from code deployment. Preserve unrelated ongoing preview work.
+Apply one additive D1 migration for `Stock.restockPlanned` with a false default, then regenerate Prisma and internal API client types. Verify each slice locally and use normal code promotion. Any derivative preparation is separate from code deployment. Preserve unrelated ongoing preview work.

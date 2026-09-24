@@ -9,6 +9,7 @@ function mapStock(record: {
   createdAt: Date;
   onlineQuantity: number;
   quantity: number;
+  restockPlanned: boolean;
   updatedAt: Date;
   variantId: string;
 }): StockRecord {
@@ -17,6 +18,7 @@ function mapStock(record: {
     createdAt: record.createdAt,
     onlineQuantity: createStockQuantity(record.onlineQuantity),
     quantity: createStockQuantity(record.quantity),
+    restockPlanned: record.restockPlanned,
     updatedAt: record.updatedAt,
     variantId: parseVariantId(record.variantId),
   };

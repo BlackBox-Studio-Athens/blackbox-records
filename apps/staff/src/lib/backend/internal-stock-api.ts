@@ -6,6 +6,9 @@ export type InternalStockDetail = InternalApiComponents['schemas']['InternalStoc
 export type InternalStockHistoryResponse = InternalApiComponents['schemas']['InternalStockHistoryResponse'];
 export type InternalStockChangeBody = InternalApiComponents['schemas']['InternalStockChangeBody'];
 export type InternalStockCountBody = InternalApiComponents['schemas']['InternalStockCountBody'];
+export type SetRestockPlannedBody = NonNullable<
+  InternalApiOperations['setRestockPlanned']['requestBody']
+>['content']['application/json'];
 export type RecordedStockChangeResponse = InternalApiComponents['schemas']['RecordedStockChangeResponse'];
 export type RecordedStockCountResponse = InternalApiComponents['schemas']['RecordedStockCountResponse'];
 export type CatalogPriceDetail = InternalApiComponents['schemas']['CatalogPriceDetail'];
@@ -140,6 +143,12 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
     },
     readStock(variantId: string) {
       return fetchJson<InternalStockDetail>(`/api/internal/variants/${encodeURIComponent(variantId)}/stock`);
+    },
+    setRestockPlanned(variantId: string, body: SetRestockPlannedBody) {
+      return fetchJson<InternalStockDetail>(
+        `/api/internal/variants/${encodeURIComponent(variantId)}/stock/restock-plan`,
+        { method: 'PATCH', body: JSON.stringify(body) },
+      );
     },
     readStockHistory(variantId: string, limit = 25) {
       return fetchJson<InternalStockHistoryResponse>(

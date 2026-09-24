@@ -305,6 +305,7 @@ test('workspace reuse follows fresh pointers, isolates targets, and never hides 
   };
   const runtime = {
     handleContentList: vi.fn(async () => ({ success: true, data: { items: [item] } })),
+    handleContentGet: vi.fn(async () => ({ success: true, data: { _rev: 'version', item } })),
   } as unknown as EmDashRuntime;
   const snapshotCache: StaffSnapshotCache = {};
   const deps = {
@@ -341,6 +342,11 @@ test('workspace reuse follows fresh pointers, isolates targets, and never hides 
   };
   await publish('one');
   const reads = vi.spyOn(env.TEST_SNAPSHOTS, 'get');
+  const comparison = await readStaffWorkspace(new Request('https://staff.invalid/?collection=socials&id=link'), deps);
+  const comparisonData = (await comparison.json()) as {
+    data: { items: { acceptedData: Record<string, unknown> | null }[] };
+  };
+  expect(comparisonData.data.items[0]?.acceptedData).toEqual({ ...item.data, slug: item.slug });
   expect(await state()).toBe('published');
   expect(await state()).toBe('published');
   expect(reads.mock.calls.filter(([key]) => key.includes('/manifest/'))).toHaveLength(1);
@@ -374,4 +380,73 @@ test('workspace reuse follows fresh pointers, isolates targets, and never hides 
   await env.TEST_SNAPSHOTS.put(`snapshots/local/manifest/${next}`, '{}');
   await expect(state()).rejects.toThrow('unavailable');
   expect(snapshotCache.current).toBeUndefined();
+});
+
+test('review discovery compares publishable values and includes new incomplete entries', async () => {
+  await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
+  const entries = [
+    {
+      id: 'unchanged',
+      slug: 'unchanged',
+      data: { title: 'Unchanged', url: 'https://example.com', order: 1 },
+      draftRevisionId: 'unchanged-draft',
+      liveRevisionId: 'unchanged-live',
+    },
+    {
+      id: 'changed',
+      slug: 'changed',
+      data: { title: 'Changed', url: 'https://new.example.com', order: 2 },
+      draftRevisionId: 'changed-draft',
+      liveRevisionId: 'changed-live',
+    },
+    {
+      id: 'incomplete',
+      slug: 'incomplete',
+      data: {},
+      draftRevisionId: 'incomplete-draft',
+      liveRevisionId: null,
+    },
+  ];
+  const snapshot = await completeSnapshot(
+    env.TEST_SNAPSHOTS,
+    'local',
+    JSON.stringify({
+      schemaVersion: 1,
+      environment: 'local',
+      records: [
+        {
+          collection: 'socials',
+          id: 'unchanged',
+          slug: 'unchanged',
+          revisionId: 'unchanged-live',
+          data: entries[0]!.data,
+        },
+        {
+          collection: 'socials',
+          id: 'changed',
+          slug: 'changed',
+          revisionId: 'changed-live',
+          data: { title: 'Changed', url: 'https://example.com', order: 2 },
+        },
+      ],
+      media: [],
+    }),
+  );
+  await activatePublication(env.TEST_SNAPSHOTS, 'local', {
+    id: crypto.randomUUID(),
+    snapshotSha256: snapshot.sha256,
+    generation: 0,
+  });
+  const response = await readStaffWorkspace(new Request('https://staff.invalid/?view=changes&collection=socials'), {
+    runtime: {
+      handleContentList: vi.fn(async () => ({ success: true, data: { items: entries } })),
+    } as unknown as EmDashRuntime,
+    db: env.TEST_CMS_DB,
+    commerce: env.COMMERCE_DB,
+    bucket: env.TEST_SNAPSHOTS,
+    environment: 'local',
+  });
+  expect(response.status).toBe(200);
+  const { data } = (await response.json()) as { data: { items: { id: string }[] } };
+  expect(data.items.map((item) => item.id)).toEqual(['changed', 'incomplete']);
 });

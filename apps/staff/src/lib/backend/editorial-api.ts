@@ -9,6 +9,7 @@ export type EditorialRecord = {
   collection?: string;
   artistTitle?: string | null;
   publicationState?: 'draft' | 'changes' | 'pending' | 'published' | undefined;
+  acceptedData?: Record<string, unknown> | null;
   selling?:
     | {
         variantId: string;

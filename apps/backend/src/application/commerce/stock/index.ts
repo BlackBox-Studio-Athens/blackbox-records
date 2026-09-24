@@ -8,6 +8,7 @@ export { readVariantStock } from './read-variant-stock';
 export { readVariantStockHistory } from './read-variant-stock-history';
 export { recordStockChange } from './record-stock-change';
 export { recordStockCount } from './record-stock-count';
+export { setRestockPlanned } from './set-restock-planned';
 export { searchVariants } from './search-variants';
 export { inventoryQuerySchema } from './inventory';
 export type { InventoryQuery } from '../../../domain/commerce/repositories/spi';

@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { ContentRepository } from 'emdash';
-import { DISTRO_GROUP_VALUES, isCmsCollection, sourceCollectionNames } from '@blackbox/content-model';
+import {
+  changedPublicationFields,
+  DISTRO_GROUP_VALUES,
+  isCmsCollection,
+  sourceCollectionNames,
+} from '@blackbox/content-model';
 import type { EmDashRuntime } from 'emdash/middleware';
 import { readPublicationPointer, readPublishedSnapshot, type PublicationEnvironment } from './published-storage';
 import { createCmsNestedProblemBody, problemResponse } from '../interfaces/http/responses';
@@ -167,7 +172,18 @@ export async function readStaffWorkspace(
       if (!result.success) throw new Error('Changes could not be loaded.');
       const items = result.data.items.filter((item) => {
         const accepted = snapshot?.records.find((entry) => entry.collection === section && entry.id === item.id);
-        return !accepted || accepted.revisionId !== (item.draftRevisionId ?? item.liveRevisionId);
+        if (!accepted) return true;
+        if (accepted.revisionId === (item.draftRevisionId ?? item.liveRevisionId)) return false;
+        const { _slug, ...after } = item.data;
+        if (section === 'navigation')
+          for (const key of ['show_in_header', 'show_in_footer'])
+            if (after[key] === 0 || after[key] === 1) after[key] = after[key] === 1;
+        return (
+          changedPublicationFields({
+            before: { ...accepted.data, slug: accepted.slug },
+            after: { ...after, slug: String(_slug ?? item.slug) },
+          }).length > 0
+        );
       });
       pages.push({ section, items, nextCursor: undefined });
       found += items.length;
@@ -279,6 +295,7 @@ export async function readStaffWorkspace(
         artistTitle: page.section === 'releases' ? (artistNames.get(String(item.data.artist)) ?? null) : null,
         publicationState,
         acceptedRevisionId: accepted?.revisionId ?? null,
+        ...(id ? { acceptedData: accepted ? { ...accepted.data, slug: accepted.slug } : null } : {}),
         selling:
           catalog.results.find(
             (entry) => entry.sourceKind === kind && (entry.cmsSourceId === item.id || entry.sourceId === item.slug),
