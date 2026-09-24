@@ -27,6 +27,20 @@ function createOptions(providers: PlayerProvider[] = []) {
 }
 
 describe('shell document click intent', () => {
+  it('ignores the disabled status for a recording already in the player', () => {
+    const options = createOptions();
+    expect(
+      resolveShellDocumentClickIntent(
+        createClosestTarget({
+          [selectors.playerTrigger]: {},
+          [`${selectors.playerTrigger}[disabled]`]: {},
+        }),
+        options,
+      ),
+    ).toEqual({ kind: 'none' });
+    expect(options.readPlayerProvidersFromElement).not.toHaveBeenCalled();
+  });
+
   it('ignores targets that cannot resolve closest shell elements', () => {
     const options = createOptions();
 

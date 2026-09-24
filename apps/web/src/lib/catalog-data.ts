@@ -1,6 +1,7 @@
 import type { CollectionEntry } from 'astro:content';
 import { proseText, resolveProse, type RichText } from '@blackbox/content-model';
 import { getCollection, getEntry } from '@/lib/content-reader';
+import { buildEmbeddedPlayerData, type EmbeddedPlayerData } from '@/utils/music';
 
 import { createProjectRelativeUrl } from '../config/site';
 import { assertNoSlugCollisions, createSlugSuggestion } from './slugs';
@@ -22,6 +23,7 @@ export type StoreItem = {
   taxCategory: StoreItemTaxCategory;
   sourceKind: StoreItemSourceKind;
   sourceId: string;
+  embeddedPlayerData: EmbeddedPlayerData | null;
   title: string;
   subtitle: string;
   summary: string | null;
@@ -188,6 +190,11 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
     taxCategory: 'physical_goods',
     sourceKind: 'release',
     sourceId: releaseEntry.id,
+    embeddedPlayerData: buildEmbeddedPlayerData(
+      releaseEntry.id,
+      releaseEntry.data,
+      `${releaseEntry.data.title} — ${artistDisplayName}`,
+    ),
     title: releaseEntry.data.title,
     subtitle: artistDisplayName,
     summary: proseText(resolveProse(releaseEntry.data.summary, releaseEntry.data.summary_rich)) || null,
@@ -211,6 +218,11 @@ export function createStoreItemFromDistroEntry(distroEntry: DistroCatalogEntry):
     taxCategory: 'physical_goods',
     sourceKind: 'distro',
     sourceId: distroEntry.id,
+    embeddedPlayerData: buildEmbeddedPlayerData(
+      `distro:${distroEntry.id}`,
+      distroEntry.data,
+      `${distroEntry.data.title} — ${distroEntry.data.artist_or_label}`,
+    ),
     title: distroEntry.data.title,
     subtitle: distroEntry.data.artist_or_label,
     summary: proseText(resolveProse(distroEntry.data.summary, distroEntry.data.summary_rich)) || null,

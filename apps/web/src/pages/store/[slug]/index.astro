@@ -24,7 +24,6 @@ import {
   type StorePageEntry,
   createStorePageStaticPaths,
 } from '@/lib/store-page-data';
-import { buildEmbeddedPlayerData } from '@/utils/music';
 
 export async function getStaticPaths() {
   return createStorePageStaticPaths();
@@ -49,13 +48,7 @@ const sourceReleaseArtist = sourceRelease ? await resolveArtistProfileForRelease
 const sourceReleaseArtistName = sourceRelease
   ? resolveReleaseArtistDisplayName(sourceRelease, sourceReleaseArtist)
   : undefined;
-const sourceReleasePlayerData = sourceRelease
-  ? buildEmbeddedPlayerData(
-      sourceRelease.id,
-      sourceRelease.data,
-      `${sourceRelease.data.title} — ${sourceReleaseArtistName}`,
-    )
-  : null;
+const embeddedPlayerData = storeItem.embeddedPlayerData;
 const sourceReleaseUrl = sourceRelease ? createReleaseDetailPath(sourceRelease) : null;
 const sourceReleaseArtistUrl = sourceReleaseArtist
   ? createProjectRelativeUrl(`/artists/${sourceReleaseArtist.data.slug}/`)
@@ -106,11 +99,11 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
             )
           }
           {
-            (sourceReleasePlayerData || sourceReleaseUrl || sourceReleaseArtistUrl) && (
+            (embeddedPlayerData || sourceReleaseUrl || sourceReleaseArtistUrl) && (
               <div class="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1" data-store-item-listening-context>
-                {sourceReleasePlayerData && (
+                {embeddedPlayerData && (
                   <MusicStreamingServiceListenTrigger
-                    embeddedPlayerData={sourceReleasePlayerData}
+                    embeddedPlayerData={embeddedPlayerData}
                     includeCardAttribute
                     tone="accent"
                     variant="standalone"

@@ -13,6 +13,10 @@ Listeners can audition BlackBox releases, but Distro items and Store collection 
 
 ## Capabilities
 
+September 24 approved follow-up: the user selected the animated Fluid five design after contextual prototypes. Refine the shared Listen appearance and carry the same decorative mark into the existing modal and mini player. Keep the current player lifecycle and truthful status labels.
+
+The user then selected Below the artwork for Store and requested that the active recording's button become inactive while the floating player owns its controls. Store uses a 112 × 44px action row. Matching controls across Store and Releases show amber In player; this indicates an existing session, not verified playback. Open and Stop remain in the floating player on desktop and mobile.
+
 ### New Capabilities
 
 - `catalog-listening`: Catalog coverage, planning evidence, Distro provider fields, and consistent Listen actions across public music-item surfaces.

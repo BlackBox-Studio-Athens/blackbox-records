@@ -1,0 +1,1167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Five Listen refinements · BlackBox Records</title>
+    <style>
+      @font-face {
+        font-family: Veneer;
+        src: url('../../apps/web/public/assets/fonts/brand/veneer_regular.woff2') format('woff2');
+        font-display: swap;
+      }
+      :root {
+        color-scheme: dark;
+        --bg: #0d0d0d;
+        --surface: #141414;
+        --ink: #f5f5f5;
+        --muted: #b3b3b3;
+        --line: #2b2b2b;
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          14px/1.5 Inter,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+      }
+      main {
+        max-width: 1600px;
+        margin: auto;
+        padding: 28px 32px 40px;
+      }
+      a {
+        color: inherit;
+        text-underline-offset: 4px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        gap: 20px;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 18px;
+      }
+      .brand,
+      h1,
+      h2,
+      h3 {
+        font-family: Veneer, Impact, sans-serif;
+        font-weight: 400;
+      }
+      .brand {
+        font-size: 26px;
+      }
+      h1 {
+        font-size: clamp(34px, 4vw, 58px);
+        margin: 20px 0 4px;
+        line-height: 1.05;
+      }
+      .intro {
+        margin: 0 0 22px;
+        color: var(--muted);
+        max-width: 82ch;
+      }
+      .eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .reference {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        padding: 18px 0;
+        border-block: 1px solid var(--line);
+      }
+      .reference p {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0;
+        max-width: 64ch;
+      }
+      .reference strong {
+        display: block;
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .baseline {
+        flex: none;
+        min-width: 130px;
+      }
+      .baseline button {
+        display: inline-flex;
+        align-items: center;
+        border-style: solid;
+        border-width: 1px;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 28px;
+        padding: 18px 0 26px;
+      }
+      .toolbar label,
+      .choose {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        font-size: 12px;
+        min-height: 32px;
+      }
+      input {
+        accent-color: var(--ink);
+        width: 16px;
+        height: 16px;
+        margin: 0;
+      }
+      .studies {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 24px;
+      }
+      .study {
+        min-width: 0;
+      }
+      h2 {
+        font-size: 25px;
+        margin: 0 0 3px;
+        line-height: 1.2;
+      }
+      .caption {
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 16px;
+        min-height: 33px;
+      }
+      .art {
+        position: relative;
+        aspect-ratio: 1;
+      }
+      .art img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .art .listen {
+        position: absolute;
+        left: 10px;
+        bottom: 4px;
+      }
+      h3 {
+        font-size: 22px;
+        margin: 12px 0 1px;
+      }
+      .metadata {
+        color: var(--muted);
+        font-size: 11px;
+        margin: 0 0 16px;
+      }
+      .listen {
+        position: relative;
+        display: inline-flex;
+        border: 0;
+        background: transparent;
+        padding: 6px 0;
+        height: 44px;
+        min-width: 116px;
+        cursor: pointer;
+        color: var(--ink);
+        font:
+          600 10.4px/1 Inter,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+      }
+      .face {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+        height: 32px;
+        padding: 0 14px;
+        white-space: nowrap;
+        background: rgba(9, 9, 9, 0.94);
+        border: 1px solid rgba(245, 245, 245, 0.62);
+        position: relative;
+      }
+      .orb {
+        display: inline-grid;
+        place-items: center;
+        flex: none;
+        position: relative;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        border: 1px solid rgba(245, 245, 245, 0.23);
+        background: radial-gradient(circle, rgba(245, 245, 245, 0.12), transparent 70%);
+      }
+      .orb::before {
+        content: '';
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--ink);
+        box-shadow: 0 0 5px rgba(245, 245, 245, 0.25);
+      }
+      .orb::after {
+        content: '';
+        position: absolute;
+        inset: 1px;
+        border: 1px solid rgba(245, 245, 245, 0.34);
+        border-radius: 50%;
+        opacity: 0;
+      }
+      .listen.large {
+        height: 48px;
+        min-width: 150px;
+        padding: 2px 0;
+        font-size: 11px;
+      }
+      .large .face {
+        height: 44px;
+        gap: 12px;
+      }
+      .family {
+        border-top: 1px solid var(--line);
+        padding-top: 16px;
+        margin-top: 10px;
+      }
+      .family > p {
+        margin: 0 0 12px;
+      }
+      .family-buttons {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .action {
+        font:
+          500 12px/1 Inter,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+        min-height: 40px;
+        padding: 0 13px;
+        border: 1px solid #777;
+        background: #151515;
+        color: var(--ink);
+        border-radius: 0;
+        cursor: pointer;
+      }
+      .primary {
+        background: var(--ink);
+        color: #090909;
+        border-color: var(--ink);
+      }
+      .quiet {
+        background: transparent;
+        border-color: transparent;
+        padding-inline: 4px;
+      }
+      .action:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .description {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 16px 0;
+        min-height: 72px;
+      }
+      .choose {
+        border-top: 1px solid var(--line);
+        padding: 12px 0;
+        font-weight: 600;
+        margin-top: 12px;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 3px;
+      }
+      .listen:is(:hover, :focus-visible) .face,
+      body:has(#hold:checked) .listen .face {
+        border-color: #f5f5f5;
+        background: #262626;
+      }
+      .listen:active .face {
+        background: #333;
+      }
+      .action:not(:disabled):is(:hover, :focus-visible) {
+        background: #303030;
+        border-color: #aaa;
+      }
+      .action.primary:not(:disabled):is(:hover, :focus-visible) {
+        background: #d8d8d8;
+        color: #090909;
+      }
+      .action.quiet:not(:disabled):is(:hover, :focus-visible) {
+        background: transparent;
+        border-color: transparent;
+        text-decoration: underline;
+        text-underline-offset: 4px;
+      }
+      .v1 .face {
+        background: linear-gradient(180deg, rgba(245, 245, 245, 0.055), rgba(245, 245, 245, 0.01)), rgba(9, 9, 9, 0.94);
+        box-shadow: inset 0 -8px 14px rgba(0, 0, 0, 0.22);
+      }
+      .v1 .listen:is(:hover, :focus-visible) .face,
+      body:has(#hold:checked) .v1 .face {
+        box-shadow:
+          inset 0 0 0 1px rgba(245, 245, 245, 0.05),
+          0 0 8px rgba(245, 245, 245, 0.08);
+      }
+      .v2 .face {
+        border-color: #888;
+        background: #101010;
+      }
+      .v2 .orb {
+        border-color: #aaa;
+        background: none;
+      }
+      .v2 .orb::before {
+        width: 4px;
+        height: 4px;
+        box-shadow: none;
+      }
+      .v2 .action {
+        border-color: #888;
+      }
+      .v2 .quiet {
+        border-color: transparent;
+      }
+      .v3 .face {
+        border-color: #666;
+        background: #181818;
+        box-shadow:
+          inset 0 1px 0 rgba(245, 245, 245, 0.12),
+          inset 0 -2px 0 rgba(0, 0, 0, 0.6);
+      }
+      .v3 .orb {
+        background: #090909;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+      }
+      .v3 .action:not(.quiet) {
+        box-shadow:
+          inset 0 1px 0 rgba(245, 245, 245, 0.13),
+          inset 0 -2px 0 rgba(0, 0, 0, 0.25);
+      }
+      .v3 .listen:active .face,
+      .v3 .action:not(.quiet):active {
+        box-shadow: inset 0 2px 2px rgba(0, 0, 0, 0.4);
+      }
+      .v4 .face {
+        padding-left: 0;
+        justify-content: flex-start;
+        gap: 11px;
+        border-color: #777;
+      }
+      .v4 .orb {
+        border: 0;
+        border-radius: 0;
+        width: 33px;
+        height: 30px;
+        border-right: 1px solid #505050;
+        background: #202020;
+      }
+      .v4 .orb::before {
+        width: 5px;
+        height: 5px;
+        box-shadow: 0 0 5px rgba(245, 245, 245, 0.25);
+      }
+      .v4 .orb::after {
+        display: none;
+      }
+      .v4 .large .orb {
+        height: 42px;
+        width: 39px;
+      }
+      .v4 .action {
+        letter-spacing: 0.04em;
+      }
+      .v4 .primary {
+        box-shadow: inset 0 -2px 0 #b3b3b3;
+      }
+      .v5 .face {
+        border-color: #555;
+        background: #1d1d1d;
+        gap: 9px;
+      }
+      .v5 .orb {
+        border-color: transparent;
+        background: transparent;
+      }
+      .v5 .orb::before {
+        width: 5px;
+        height: 5px;
+        box-shadow: 0 0 0 3px rgba(245, 245, 245, 0.06);
+      }
+      .v5 .action:not(.primary):not(.quiet) {
+        border-color: #555;
+        background: #1d1d1d;
+      }
+      .v5 .listen {
+        letter-spacing: 0.13em;
+      }
+      .v5 .listen:is(:hover, :focus-visible) .face,
+      body:has(#hold:checked) .v5 .face {
+        background: #2c2c2c;
+        border-color: #aaa;
+      }
+      .status {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+        border-top: 1px solid var(--line);
+        padding-top: 20px;
+        margin-top: 12px;
+        font-size: 13px;
+      }
+      .status span {
+        color: var(--muted);
+      }
+      footer {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 18px;
+        max-width: 100ch;
+      }
+      body:not(:has(#motion:checked)) :is(.studies, .baseline) *,
+      body:not(:has(#motion:checked)) :is(.studies, .baseline) *::before,
+      body:not(:has(#motion:checked)) :is(.studies, .baseline) *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+      body:has(#motion:checked) .face,
+      body:has(#motion:checked) .action {
+        transition:
+          background-color 160ms var(--ease),
+          border-color 160ms var(--ease),
+          box-shadow 160ms var(--ease);
+      }
+      body:has(#motion:checked) .v1 .listen:is(:hover, :focus-visible) .orb::after,
+      body:has(#motion:checked):has(#hold:checked) .v1 .orb::after {
+        animation: halo 900ms var(--ease) 1;
+      }
+      body:has(#motion:checked) .v4 .listen:is(:hover, :focus-visible) .orb::before {
+        animation: lamp 450ms var(--ease) 1;
+      }
+      @keyframes halo {
+        0% {
+          opacity: 0;
+          transform: scale(0.85);
+        }
+        25% {
+          opacity: 0.35;
+        }
+        100% {
+          opacity: 0;
+          transform: scale(1.4);
+        }
+      }
+      @keyframes lamp {
+        50% {
+          opacity: 0.6;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+      body:has(#narrow:checked) .studies {
+        grid-template-columns: 1fr;
+        max-width: 340px;
+        margin: auto;
+      }
+      @media (max-width: 1240px) {
+        .studies {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          row-gap: 32px;
+        }
+      }
+      @media (max-width: 760px) {
+        main {
+          padding: 22px 18px;
+        }
+        .studies {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .reference {
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .description {
+          min-height: 90px;
+        }
+      }
+      @media (max-width: 480px) {
+        .studies {
+          grid-template-columns: 1fr;
+          max-width: 340px;
+          margin: auto;
+        }
+        .description {
+          min-height: 0;
+        }
+        h1 {
+          font-size: 36px;
+        }
+        header a {
+          font-size: 12px;
+        }
+      }
+      @scope (.baseline) {
+        .music-listen-trigger {
+          --music-listen-border-color: rgba(245, 245, 245, 0.7);
+          --music-listen-border-color-hover: rgba(245, 245, 245, 0.92);
+          --music-listen-chamber-size: 0.9rem;
+          --music-listen-core-color: rgba(245, 245, 245, 0.92);
+          --music-listen-core-shadow: 0 0 0.34rem rgba(245, 245, 245, 0.14);
+          --music-listen-core-size: 0.42rem;
+          --music-listen-font-size: 0.65rem;
+          --music-listen-gap: 0.375rem;
+          --music-listen-height: 1.48rem;
+          --music-listen-padding: 0.35rem 0.85rem;
+          --music-listen-ring-color: rgba(245, 245, 245, 0.24);
+          --music-listen-text-color: rgba(245, 245, 245, 0.86);
+          --music-listen-width: 7rem;
+          position: relative;
+          isolation: isolate;
+          overflow: hidden;
+          gap: var(--music-listen-gap);
+          min-width: var(--music-listen-width);
+          min-height: var(--music-listen-height);
+          justify-content: center;
+          padding: var(--music-listen-padding);
+          font-size: var(--music-listen-font-size);
+          font-weight: 600;
+          line-height: 1;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          border-radius: 0;
+          color: var(--music-listen-text-color);
+          border-color: var(--music-listen-border-color);
+          background:
+            linear-gradient(180deg, rgba(245, 245, 245, 0.035), rgba(245, 245, 245, 0.005)), rgba(9, 9, 9, 0.74);
+          box-shadow:
+            inset 0 0 0 1px rgba(245, 245, 245, 0.035),
+            inset 0 -0.65rem 1.2rem rgba(0, 0, 0, 0.28);
+          white-space: nowrap;
+        }
+
+        .music-listen-trigger--standalone,
+        .release-card-listen-trigger--standalone {
+          --music-listen-chamber-size: 1.12rem;
+          --music-listen-core-size: 0.46rem;
+          --music-listen-font-size: 0.76rem;
+          --music-listen-gap: 0.95rem;
+          --music-listen-height: 2.35rem;
+          --music-listen-padding: 0.62rem 1.15rem;
+          --music-listen-width: 9.5rem;
+          min-width: 9.5rem;
+          min-height: 2.35rem;
+          padding: var(--music-listen-padding);
+          cursor: pointer;
+        }
+
+        .music-listen-trigger--tone-accent {
+          --music-listen-border-color: color-mix(in srgb, var(--store-accent) 44%, rgba(245, 245, 245, 0.56));
+          --music-listen-border-color-hover: color-mix(
+            in srgb,
+            var(--store-accent-hover) 72%,
+            rgba(245, 245, 245, 0.28)
+          );
+          --music-listen-core-color: #ff513f;
+          --music-listen-core-shadow: 0 0 0.4rem rgba(255, 81, 63, 0.3);
+          --music-listen-ring-color: rgba(255, 81, 63, 0.3);
+          --music-listen-text-color: rgba(245, 245, 245, 0.9);
+        }
+
+        .music-listen-trigger--tone-accent .music-listen-trigger__indicator {
+          border-color: color-mix(in srgb, var(--music-listen-ring-color) 54%, rgba(245, 245, 245, 0.16));
+        }
+
+        .music-listen-trigger:focus-visible {
+          outline: 1px solid var(--music-listen-border-color-hover);
+          outline-offset: 3px;
+        }
+
+        .music-listen-trigger__indicator {
+          position: relative;
+          display: inline-grid;
+          flex: none;
+          box-sizing: border-box;
+          width: var(--music-listen-chamber-size);
+          height: var(--music-listen-chamber-size);
+          place-items: center;
+          line-height: 0;
+          border: 1px solid rgba(245, 245, 245, 0.18);
+          border-radius: 999px;
+          background:
+            radial-gradient(circle at center, rgba(245, 245, 245, 0.1), rgba(245, 245, 245, 0.02) 42%, transparent 68%),
+            rgba(0, 0, 0, 0.24);
+          box-shadow:
+            inset 0 0 0 1px rgba(0, 0, 0, 0.28),
+            0 0 0 0.5px rgba(245, 245, 245, 0.06);
+          transition:
+            transform 0.18s ease,
+            opacity 0.18s ease,
+            box-shadow 0.18s ease,
+            background 0.18s ease;
+        }
+
+        .music-listen-trigger__indicator::before,
+        .music-listen-trigger__indicator::after {
+          box-sizing: border-box;
+          content: '';
+          border-radius: inherit;
+          pointer-events: none;
+        }
+
+        .music-listen-trigger__indicator::before {
+          position: relative;
+          z-index: 1;
+          grid-area: 1 / 1;
+          width: var(--music-listen-core-size);
+          height: var(--music-listen-core-size);
+          background: radial-gradient(
+            circle at center,
+            color-mix(in srgb, var(--music-listen-core-color) 92%, rgba(245, 245, 245, 0.42)) 0 18%,
+            var(--music-listen-core-color) 19% 40%,
+            color-mix(in srgb, var(--music-listen-core-color) 72%, transparent) 68%,
+            color-mix(in srgb, var(--music-listen-core-color) 22%, transparent) 100%
+          );
+          box-shadow: var(--music-listen-core-shadow);
+        }
+
+        .music-listen-trigger__indicator::after {
+          position: absolute;
+          inset: 1px;
+          border: 1px solid var(--music-listen-ring-color);
+          opacity: 0;
+          transform-origin: center;
+          transform: scale(0.82);
+          animation: release-listen-halo-primary 1.9s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+        }
+      }
+      .color-lab {
+        border-top: 1px solid var(--line);
+        margin-top: 36px;
+        padding-top: 28px;
+        scroll-margin-top: 24px;
+      }
+      .color-lab > h2 {
+        font-size: 36px;
+        margin-bottom: 10px;
+      }
+      .color-lab > p {
+        color: var(--muted);
+        max-width: 90ch;
+      }
+      .color-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 24px;
+      }
+      .color-study {
+        --signal: #eee4d2;
+        min-width: 0;
+      }
+      .color-study.ember {
+        --signal: #ed806c;
+      }
+      .color-study.amber {
+        --signal: #e3b56c;
+      }
+      .color-study.sage {
+        --signal: #91c5ad;
+      }
+      .color-study h3 {
+        font-size: 25px;
+      }
+      .color-study > p {
+        font-size: 12px;
+        color: var(--muted);
+        min-height: 54px;
+      }
+      .color-stage {
+        background: #141414;
+        border-block: 1px solid var(--line);
+        padding: 20px;
+      }
+      .color-stage > .eyebrow {
+        display: block;
+        margin-bottom: 6px;
+      }
+      .color-stage > .eyebrow:not(:first-child) {
+        margin-top: 22px;
+      }
+      .color-stage .listen {
+        min-width: 152px;
+      }
+      .color-stage .face {
+        gap: 13px;
+        background: #101010;
+        border-color: #686868;
+      }
+      .color-stage .active-sample .face {
+        border-color: color-mix(in srgb, var(--signal) 60%, #383838);
+      }
+      .color-stage .active-sample .orb {
+        color: var(--signal);
+        border-color: color-mix(in srgb, var(--signal) 38%, transparent);
+      }
+      .color-stage .active-sample .orb::before {
+        background: var(--signal);
+        box-shadow: 0 0 7px color-mix(in srgb, var(--signal) 35%, transparent);
+      }
+      .color-stage .active-sample .orb::after {
+        border-color: var(--signal);
+      }
+      .color-stage .listen:focus-visible {
+        outline-color: var(--ink);
+      }
+      .color-study .motion-name {
+        color: var(--ink);
+        min-height: 0;
+        margin-bottom: 4px;
+      }
+      .color-study .meaning {
+        min-height: 0;
+        margin-top: 0;
+      }
+      .color-lab label {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        cursor: pointer;
+        min-height: 44px;
+      }
+      .color-lab .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 28px;
+        margin: 10px 0 20px;
+      }
+      .color-lab .controls p {
+        margin: auto 0;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      body:has(#color-motion-toggle:checked) .ivory .active-sample .orb::before {
+        animation: audio-breathe 2.4s ease-in-out infinite;
+      }
+      body:has(#color-motion-toggle:checked) .ember .active-sample .orb::after {
+        animation: audio-ring 1.7s var(--ease) infinite;
+      }
+      body:has(#color-motion-toggle:checked) .ember .active-sample .orb::before {
+        animation: audio-breathe 1.7s ease-in-out infinite;
+      }
+      .meter {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        width: 17px;
+        height: 17px;
+        color: var(--signal);
+      }
+      .meter i {
+        display: block;
+        background: currentColor;
+        width: 2px;
+        height: 14px;
+        transform: scaleY(0.4);
+      }
+      .meter i:nth-child(2),
+      .meter i:nth-child(4) {
+        transform: scaleY(0.7);
+      }
+      .meter i:nth-child(3) {
+        transform: scaleY(1);
+      }
+      body:has(#color-motion-toggle:checked) .meter i {
+        animation: audio-level 1.15s ease-in-out infinite alternate;
+      }
+      .meter i:nth-child(2) {
+        animation-delay: -0.35s !important;
+      }
+      .meter i:nth-child(3) {
+        animation-delay: -0.65s !important;
+      }
+      .meter i:nth-child(4) {
+        animation-delay: -0.9s !important;
+      }
+      .meter i:nth-child(5) {
+        animation-delay: -0.15s !important;
+      }
+      .sage .active-sample .orb {
+        background: transparent;
+        border-color: var(--signal);
+      }
+      body:has(#color-motion-toggle:checked) .sage .active-sample .orb::after {
+        animation: audio-ring 2s var(--ease) infinite;
+      }
+      body:has(#color-motion-toggle:checked) .sage .active-sample .orb {
+        animation: audio-breathe 2s ease-in-out infinite;
+      }
+      @keyframes audio-breathe {
+        0%,
+        100% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+      @keyframes audio-ring {
+        0% {
+          opacity: 0.65;
+          transform: scale(0.9);
+        }
+        100% {
+          opacity: 0;
+          transform: scale(2);
+        }
+      }
+      @keyframes audio-level {
+        0% {
+          transform: scaleY(0.3);
+        }
+        60% {
+          transform: scaleY(1);
+        }
+        100% {
+          transform: scaleY(0.55);
+        }
+      }
+      @media (max-width: 1100px) {
+        .color-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 580px) {
+        .color-grid {
+          grid-template-columns: 1fr;
+        }
+        .color-study > p {
+          min-height: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="brand">BlackBox Records</span><a href="../design-inspiration.md">Design inspiration library ↗</a>
+      </header>
+      <h1>The same Listen. Better resolved.</h1>
+      <p class="intro">
+        Five refinements of the existing button, with matching button-family sketches. Same square edges, typography and
+        dark palette. Motion is optional and starts off.
+      </p>
+      <div class="reference">
+        <span class="eyebrow">Original appearance</span>
+        <div class="baseline">
+          <button type="button" class="music-listen-trigger" data-demo="Original reference">
+            <span class="music-listen-trigger__indicator" aria-hidden="true"></span>Listen
+          </button>
+        </div>
+        <p>
+          <strong>The reference, shown at rest.</strong>Keep the dark face, circular light and compact label. Proposals
+          use a 32px visible face inside a 44px click target.
+        </p>
+      </div>
+      <div class="toolbar" aria-label="Comparison controls">
+        <label><input type="checkbox" id="hold" /> Hold hover states</label
+        ><label><input type="checkbox" id="motion" /> Enable subtle motion</label
+        ><label><input type="checkbox" id="narrow" /> Narrow comparison</label>
+      </div>
+      <div class="studies">
+        <section class="study v1" aria-labelledby="title-1">
+          <h2 id="title-1">1 / Original, refined</h2>
+          <p class="caption">Closest to the original · Recommended</p>
+          <div class="art">
+            <img
+              src="../../apps/web/src/content/releases/656856327_18427527979186423_8617747121554203403_n.jpg"
+              alt="Disintegration, Afterwise: distressed red and black artwork"
+            /><button type="button" class="listen" data-demo="1 / Original, refined">
+              <span class="face"><span class="orb" aria-hidden="true"></span><span>Listen</span></span>
+            </button>
+          </div>
+          <h3>Disintegration</h3>
+          <p class="metadata">Afterwise · Black Vinyl LP</p>
+          <button type="button" class="listen large" data-demo="1 / Original, refined">
+            <span class="face"><span class="orb" aria-hidden="true"></span><span>Listen</span></span>
+          </button>
+          <p class="description">
+            Keep the luminous chamber and dark face. Balance spacing, soften the border and reserve the halo for intent.
+          </p>
+          <p class="caption">Optional: one quiet halo on hover.</p>
+          <div class="family">
+            <p class="eyebrow">Button family sketch</p>
+            <div class="family-buttons">
+              <button type="button" class="action primary" data-demo="Primary action">Add to cart</button
+              ><button type="button" class="action" data-demo="Secondary action">View release</button
+              ><button type="button" class="action quiet" data-demo="Quiet action">Back</button
+              ><button type="button" class="action" disabled>Unavailable</button>
+            </div>
+          </div>
+          <label class="choose"><input type="radio" name="direction" value="1 / Original, refined" /> Choose 1</label>
+        </section>
+        <section class="study v2" aria-labelledby="title-2">
+          <h2 id="title-2">2 / Fine line</h2>
+          <p class="caption">Cleaner outline, same identity</p>
+          <div class="art">
+            <img
+              src="../../apps/web/src/content/releases/656856327_18427527979186423_8617747121554203403_n.jpg"
+              alt="Disintegration, Afterwise: distressed red and black artwork"
+            /><button type="button" class="listen" data-demo="2 / Fine line">
+              <span class="face"><span class="orb" aria-hidden="true"></span><span>Listen</span></span>
+            </button>
+          </div>
+          <h3>Disintegration</h3>
+          <p class="metadata">Afterwise · Black Vinyl LP</p>
+          <button type="button" class="listen large" data-demo="2 / Fine line">
+            <span class="face"><span class="orb" aria-hidden="true"></span><span>Listen</span></span>
+          </button>
+          <p class="description">
+            A crisp ring and pin-sized light replace the bloom. The sharpest, flattest member of the family.
+          </p>
+          <p class="caption">Works entirely without animation.</p>
+          <div class="family">
+            <p class="eyebrow">Button family sketch</p>
+            <div class="family-buttons">
+              <button type="button" class="action primary" data-demo="Primary action">Add to cart</button
+              ><button type="button" class="action" data-demo="Secondary action">View release</button
+              ><button type="button" class="action quiet" data-demo="Quiet action">Back</button
+              ><button type="button" class="action" disabled>Unavailable</button>
+            </div>
+          </div>
+          <label class="choose"><input type="radio" name="direction" value="2 / Fine line" /> Choose 2</label>
+        </section>
+        <section class="study v3" aria-labelledby="title-3">
+          <h2 id="title-3">3 / Inset</h2>
+          <p class="caption">Subtle depth, no ornament</p>
+          <div class="art">
+            <img
+              src="../../apps/web/src/content/releases/656856327_18427527979186423_8617747121554203403_n.jpg"
+              alt="Disintegration, Afterwise: distressed red and black artwork"
+            /><button type="button" class="listen" data-demo="3 / Inset">
+              <span class="face"><span class="orb" aria-hidden="true"></span><span>Listen</span></span>
+            </button>
+          </div>
+          <h3>Disintegration</h3>
+          <p class="metadata">Afterwise · Black Vinyl LP</p>
+          <button type="button" class="listen large" data-demo="3 / Inset">
+            <span class="face"><span class="orb" aria-hidden="true"></span><span>Listen</span></span>
+          </button>
+          <p class="description">
+            A shallow recessed face adds a physical press feel. The familiar light stays small and contained.
+          </p>
+          <p class="caption">Press feedback through shading only.</p>
+          <div class="family">
+            <p class="eyebrow">Button family sketch</p>
+            <div class="family-buttons">
+              <button type="button" class="action primary" data-demo="Primary action">Add to cart</button
+              ><button type="button" class="action" data-demo="Secondary action">View release</button
+              ><button type="button" class="action quiet" data-demo="Quiet action">Back</button
+              ><button type="button" class="action" disabled>Unavailable</button>
+            </div>
+          </div>
+          <label class="choose"><input type="radio" name="direction" value="3 / Inset" /> Choose 3</label>
+        </section>
+        <section class="study v4" aria-labelledby="title-4">
+          <h2 id="title-4">4 / Instrument</h2>
+          <p class="caption">A more structured control</p>
+          <div class="art">
+            <img
+              src="../../apps/web/src/content/releases/656856327_18427527979186423_8617747121554203403_n.jpg"
+              alt="Disintegration, Afterwise: distressed red and black artwork"
+            /><button type="button" class="listen" data-demo="4 / Instrument">
+              <span class="face"><span class="orb" aria-hidden="true"></span><span>Listen</span></span>
+            </button>
+          </div>
+          <h3>Disintegration</h3>
+          <p class="metadata">Afterwise · Black Vinyl LP</p>
+          <button type="button" class="listen large" data-demo="4 / Instrument">
+            <span class="face"><span class="orb" aria-hidden="true"></span><span>Listen</span></span>
+          </button>
+          <p class="description">
+            Give the light its own narrow compartment. A restrained equipment-panel detail, carried into firmer button
+            edges.
+          </p>
+          <p class="caption">Optional: a single gentle light response.</p>
+          <div class="family">
+            <p class="eyebrow">Button family sketch</p>
+            <div class="family-buttons">
+              <button type="button" class="action primary" data-demo="Primary action">Add to cart</button
+              ><button type="button" class="action" data-demo="Secondary action">View release</button
+              ><button type="button" class="action quiet" data-demo="Quiet action">Back</button
+              ><button type="button" class="action" disabled>Unavailable</button>
+            </div>
+          </div>
+          <label class="choose"><input type="radio" name="direction" value="4 / Instrument" /> Choose 4</label>
+        </section>
+        <section class="study v5" aria-labelledby="title-5">
+          <h2 id="title-5">5 / Soft contrast</h2>
+          <p class="caption">Quietest frame · Cosmos influence</p>
+          <div class="art">
+            <img
+              src="../../apps/web/src/content/releases/656856327_18427527979186423_8617747121554203403_n.jpg"
+              alt="Disintegration, Afterwise: distressed red and black artwork"
+            /><button type="button" class="listen" data-demo="5 / Soft contrast">
+              <span class="face"><span class="orb" aria-hidden="true"></span><span>Listen</span></span>
+            </button>
+          </div>
+          <h3>Disintegration</h3>
+          <p class="metadata">Afterwise · Black Vinyl LP</p>
+          <button type="button" class="listen large" data-demo="5 / Soft contrast">
+            <span class="face"><span class="orb" aria-hidden="true"></span><span>Listen</span></span>
+          </button>
+          <p class="description">
+            Reduce the chamber to a soft point and lower the frame contrast. A calm charcoal face lets the sleeve lead.
+          </p>
+          <p class="caption">Still by default; tonal hover is enough.</p>
+          <div class="family">
+            <p class="eyebrow">Button family sketch</p>
+            <div class="family-buttons">
+              <button type="button" class="action primary" data-demo="Primary action">Add to cart</button
+              ><button type="button" class="action" data-demo="Secondary action">View release</button
+              ><button type="button" class="action quiet" data-demo="Quiet action">Back</button
+              ><button type="button" class="action" disabled>Unavailable</button>
+            </div>
+          </div>
+          <label class="choose"><input type="radio" name="direction" value="5 / Soft contrast" /> Choose 5</label>
+        </section>
+      </div>
+      <section class="color-lab" id="color-motion" aria-labelledby="color-title">
+        <h2 id="color-title">What does music look like?</h2>
+        <p>
+          Four indicator colors on the familiar dark button. Compare the neutral Listen state with a simulated active
+          state. Color stays in the light and frame; the text remains off-white.
+        </p>
+        <div class="controls">
+          <label><input type="checkbox" id="color-motion-toggle" checked /> Animate color studies</label>
+          <p>Active-state simulations only. No audio is playing; the meter is decorative.</p>
+        </div>
+        <div class="color-grid">
+          <article class="color-study ivory">
+            <h3>Warm white</h3>
+            <p>The closest to the original. Suggests an illuminated piece of audio equipment.</p>
+            <div class="color-stage">
+              <span class="eyebrow">At rest</span
+              ><button type="button" class="listen large" data-demo="Warm white idle">
+                <span class="face"><span class="orb" aria-hidden="true"></span>Listen</span></button
+              ><span class="eyebrow">Active simulation</span
+              ><button type="button" class="listen large active-sample" data-demo="Warm white simulation">
+                <span class="face"><span class="orb" aria-hidden="true"></span>Playing</span>
+              </button>
+            </div>
+            <p class="motion-name">Soft glow · restrained</p>
+            <p class="meaning">Lowest visual disruption. Needs a text or icon change to make state clear.</p>
+          </article>
+          <article class="color-study ember">
+            <h3>Ember</h3>
+            <p>Warm energy, close to the existing accent indicator. The most assertive option.</p>
+            <div class="color-stage">
+              <span class="eyebrow">At rest</span
+              ><button type="button" class="listen large" data-demo="Ember idle">
+                <span class="face"><span class="orb" aria-hidden="true"></span>Listen</span></button
+              ><span class="eyebrow">Active simulation</span
+              ><button type="button" class="listen large active-sample" data-demo="Ember simulation">
+                <span class="face"><span class="orb" aria-hidden="true"></span>Playing</span>
+              </button>
+            </div>
+            <p class="motion-name">Radiating pulse · expressive</p>
+            <p class="meaning">A bright center and outgoing ring. Could be read as recording or live broadcast.</p>
+          </article>
+          <article class="color-study amber">
+            <h3>Amber</h3>
+            <p>Amplifier lamps and level meters. My strongest candidate for BlackBox.</p>
+            <div class="color-stage">
+              <span class="eyebrow">At rest</span
+              ><button type="button" class="listen large" data-demo="Amber idle">
+                <span class="face"><span class="orb" aria-hidden="true"></span>Listen</span></button
+              ><span class="eyebrow">Active simulation</span
+              ><button type="button" class="listen large active-sample" data-demo="Amber simulation">
+                <span class="face"
+                  ><span class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>Playing</span
+                >
+              </button>
+            </div>
+            <p class="motion-name">Equalizer · expressive</p>
+            <p class="meaning">The clearest music metaphor. Color and motion can be mixed with any other option.</p>
+          </article>
+          <article class="color-study sage">
+            <h3>Muted green</h3>
+            <p>A familiar active-status cue, softened to sit beside the monochrome site.</p>
+            <div class="color-stage">
+              <span class="eyebrow">At rest</span
+              ><button type="button" class="listen large" data-demo="Green idle">
+                <span class="face"><span class="orb" aria-hidden="true"></span>Listen</span></button
+              ><span class="eyebrow">Active simulation</span
+              ><button type="button" class="listen large active-sample" data-demo="Green simulation">
+                <span class="face"><span class="orb" aria-hidden="true"></span>Playing</span>
+              </button>
+            </div>
+            <p class="motion-name">Expanding ring · medium</p>
+            <p class="meaning">Readable as activity, though it may suggest connection or availability.</p>
+          </article>
+        </div>
+        <p>
+          These are design associations, not universal color meanings. A shipped player must pair color with a truthful
+          label. Until playback can be verified, the shell should retain “Player Ready” rather than claim “Playing.”
+        </p>
+      </section>
+      <div class="status">
+        <output id="choice" aria-live="polite">Choose a number, then tell Codex.</output
+        ><span id="feedback" role="status">Design preview. These controls do not play audio or add items.</span>
+      </div>
+      <footer>
+        <p>
+          <a href="equalizer-player-review.html"
+            >Next study: three equalizer iterations with the real Bandcamp modal ↗</a
+          >
+        </p>
+        <a href="https://www.cosmos.so/public-work">Cosmos Public Work</a> informs the quiet hierarchy and image-first
+        restraint, especially option 5. BlackBox's existing design remains the anchor. These family sketches explore a
+        future public-site button system; a choice here does not apply changes across the site.
+      </footer>
+    </main>
+    <script>
+      document.addEventListener('change', (event) => {
+        if (event.target.name === 'direction')
+          document.querySelector('#choice').textContent =
+            'Selected ' + event.target.value + '. Tell Codex this number.';
+      });
+      document.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-demo]');
+        if (button)
+          document.querySelector('#feedback').textContent = button.dataset.demo + ': interaction preview only.';
+      });
+    </script>
+  </body>
+</html>

@@ -64,6 +64,9 @@ describe('Store collection category surfaces', () => {
     expect(storeItemCardSource).not.toContain('StoreOfferPriceDisplay');
     expect(storeItemCardSource).not.toContain('View Item');
     expect(storeItemCardSource).toContain('data-store-coverflow-availability');
+    expect(storeItemCardSource).toContain('storeItem.embeddedPlayerData && (');
+    expect(storeItemCardSource).toContain('<MusicStreamingServiceListenTrigger');
+    expect(storeItemCardSource).not.toContain('iframe');
   });
 
   it('uses compact Grid image slots and switches sizes only for explicit Coverflow', () => {

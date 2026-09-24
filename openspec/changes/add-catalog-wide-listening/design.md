@@ -12,6 +12,14 @@ The catalog research baseline is 101 Distro records plus 3 Releases. [research.m
 
 ## Decisions
 
+### Selected placement and session status
+
+Store listing controls sit in a 52px row below artwork, using a 112 × 44px button. Empty rows align source-less cards without inventing a disabled Listen action. Coverflow reserves the action row below its active cover. Releases retains its current placement. The shell projects active editorial source identity into shared triggers as disabled amber In player status, resets them on Stop or source replacement, and resynchronizes newly rendered/cached routes and overlays. This is a view of the existing session, with no new playback state, iframe, observer or store. Open and Stop remain available in the floating player. Disabled status is static and readable.
+
+Grid actions align with card copy; the active Coverflow action centers below the record, following the selected mode-aware alignment.
+
+Mobile navigation acceptance also requires clean cached pages. If a dialog temporarily marks descendants with `data-aria-hidden`, snapshot capture keeps the previous clean cache rather than persisting the dialog's accessibility mask. It does not remove authored hidden attributes.
+
 ### 1. Reuse the two existing editorial fields
 
 Add optional `bandcamp_embed_url` and `tidal_url` to `createDistroContentSchema`. Export/reuse the existing validators from `schemas.ts`, rather than copying regexes or inventing another provider model. The EmDash schema already consumes the shared Distro schema. Add the two existing-style fields to the Distro branch of `ContentFields.tsx` and retain normal empty-field handling and error messages.
@@ -47,6 +55,10 @@ Repository content may be updated for bootstrap/static fixtures, but hosted cont
 Unresolved items remain named gaps. Do not invent a Bandcamp embed from an artist URL, substitute another recording, or claim universal coverage while those gaps remain. Their resolution is content research outside the implementation checklist; it does not require a more elaborate player or schema.
 
 ## Risks / Trade-offs
+
+### Approved visual refinement: Fluid five
+
+The user selected the animated five-bar design on September 24. Use the amber treatment shown in the selected prototype, the existing dark face and square geometry, and a minimum 44px compact action. Reuse one static SVG mark across Astro Listen triggers and the React player surface; no hydrated per-card client, timer, dependency or playback detector is needed. CSS runs two short cycles on hover/focus, modal opening and mini-player interaction, then returns to a static silhouette. Reduced-motion preferences disable bar animation. Preserve provider data, current labels, loading feedback, focus and session ownership. Prototype timeout/retry and trigger-label experiments are not part of this visual-only selection.
 
 - **Third-party catalogs differ by edition, region, or time** → Retain exact source evidence and check both artist and recording title. An unsuccessful search is not proof of absence. Recheck only a changed or broken link; no monitoring service.
 - **Full-card links conflict with a new button and coverflow** → Use sibling native controls and one focused interaction regression covering click, keyboard, inactive cards, and drag suppression.

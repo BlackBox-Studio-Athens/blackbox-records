@@ -121,6 +121,24 @@ function createSnapshotDocument() {
 }
 
 describe('shell page snapshots', () => {
+  it('keeps the previous snapshot when a dialog temporarily hides page descendants', () => {
+    const cloneNode = vi.fn();
+    const cacheSnapshot = vi.fn();
+    const targetDocument = {
+      querySelector: () => ({ querySelectorAll: () => [{}], cloneNode }),
+    } as unknown as Document;
+    expect(
+      cacheDocumentShellPageSnapshot({
+        targetDocument,
+        href: 'https://example.test/store/',
+        currentHref: 'https://example.test/store/',
+        shellPageCache: { cacheSnapshot },
+      }),
+    ).toBeNull();
+    expect(cloneNode).not.toHaveBeenCalled();
+    expect(cacheSnapshot).not.toHaveBeenCalled();
+  });
+
   it('restores the server-authored Coverflow state before caching a document snapshot', () => {
     const removed = new Set<string>();
     const styleProperties = new Map([['--store-coverflow-position-ratio', String(34 / 53)]]);

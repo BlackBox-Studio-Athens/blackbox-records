@@ -47,30 +47,29 @@ function readCssBlockWith(marker: string, requiredContent?: string) {
 }
 
 describe('Listen trigger CSS', () => {
-  it('centers the animated indicator halo without fractional auto margins', () => {
-    const haloRule = readCssBlockWith('.music-listen-trigger__indicator::after {', 'position: absolute;');
+  it('keeps musical motion finite and disables it for reduced motion', () => {
+    const intentRule = readCssBlock('.music-listen-trigger:is(:hover, :focus-visible, :active)');
+    const reducedRule = readCssBlockWith('@media (prefers-reduced-motion: reduce)', '.music-equalizer__bar');
 
-    expect(haloRule).toContain('inset: 1px;');
-    expect(haloRule).toContain('transform-origin: center;');
-    expect(haloRule).not.toContain('margin: auto;');
-    expect(haloRule).not.toContain('width: calc(var(--music-listen-chamber-size) - 2px);');
-    expect(haloRule).not.toContain('height: calc(var(--music-listen-chamber-size) - 2px);');
+    expect(intentRule).toContain('animation-iteration-count: 2;');
+    expect(intentRule).not.toContain('infinite');
+    expect(reducedRule).toContain('animation: none !important;');
+    expect(readCssBlockWith('.music-equalizer__bar {', 'fill: currentColor;')).not.toContain('animation-name:');
   });
 
   it('keeps hover and focus states position-stable', () => {
     const triggerHoverRule = readCssBlock('.music-listen-trigger:hover,');
-    const indicatorHoverRule = readCssBlock('.music-listen-trigger:hover .music-listen-trigger__indicator,');
 
     expect(triggerHoverRule).toContain('transform: none;');
     expect(triggerHoverRule).not.toContain('translateY');
-    expect(indicatorHoverRule).toContain('transform: none;');
-    expect(indicatorHoverRule).not.toContain('scale(1.04)');
+    expect(triggerHoverRule).not.toContain('outline: none;');
+    expect(readCssBlock('.music-listen-trigger:focus-visible {')).toContain('outline: 2px solid');
   });
 
-  it('keeps the core dot visually centered', () => {
-    const coreRule = readCssBlock('.music-listen-trigger__indicator::before {');
-
-    expect(coreRule).toContain('circle at center');
-    expect(coreRule).not.toContain('circle at 35% 35%');
+  it('keeps bar scaling centered and the compact action touch-sized', () => {
+    const barRule = readCssBlockWith('.music-equalizer__bar {', 'fill: currentColor;');
+    expect(barRule).toContain('transform-origin: center;');
+    expect(barRule).toContain('transform-box: fill-box;');
+    expect(readCssBlock('.music-listen-trigger {')).toContain('min-height: 2.75rem;');
   });
 });

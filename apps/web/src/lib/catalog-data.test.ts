@@ -130,6 +130,7 @@ function createStoreItemCollisionRecord(
     taxCategory: 'physical_goods',
     sourceKind,
     sourceId,
+    embeddedPlayerData: null,
     title: sourceId,
     subtitle: 'Fixture artist',
     summary: null,
@@ -205,6 +206,7 @@ describe('StoreItem projection contract', () => {
       taxCategory: 'physical_goods',
       sourceKind: 'release',
       sourceId: 'caregivers-control',
+      embeddedPlayerData: null,
       title: 'Caregivers',
       subtitle: 'Afterwise',
       summary: 'Release summary',
@@ -216,6 +218,46 @@ describe('StoreItem projection contract', () => {
       storePath: '/blackbox-records/store/caregivers-vinyl/',
     });
     expect(storeItem).not.toHaveProperty('checkoutPath');
+  });
+
+  it('keeps Release IDs and namespaces Distro player IDs for the same source ID', async () => {
+    const bandcamp_embed_url =
+      'https://bandcamp.com/EmbeddedPlayer/album=123456789/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/';
+    const tidal_url = 'https://tidal.com/album/123456789';
+    const releaseEntry = createReleaseEntry('shared-id', {
+      artist: { collection: 'artists', id: 'afterwise' },
+      bandcamp_embed_url,
+      cover_image: createTestImage('/shared.jpg'),
+      cover_image_alt: 'Shared release cover',
+      formats: ['CD'],
+      release_date: new Date('2024-11-02T00:00:00.000Z'),
+      tidal_url,
+      title: 'Shared release',
+    });
+    const distroEntry = createDistroEntry('shared-id', {
+      artist_or_label: 'Afterwise',
+      bandcamp_embed_url,
+      eyebrow: 'Distro',
+      format: 'CD',
+      group: 'CDs',
+      image: createTestImage('/shared.jpg'),
+      image_alt: 'Shared Distro cover',
+      order: 1,
+      summary: 'Shared Distro summary.',
+      tidal_url,
+      title: 'Shared Distro item',
+    });
+
+    const releaseItem = await createStoreItemFromRelease(releaseEntry);
+    const distroItem = createStoreItemFromDistroEntry(distroEntry);
+
+    expect(releaseItem.embeddedPlayerData).toMatchObject({
+      releaseId: 'shared-id',
+      title: 'Shared release — Afterwise',
+    });
+    expect(releaseItem.embeddedPlayerData?.providers).toHaveLength(2);
+    expect(distroItem.embeddedPlayerData).toMatchObject({ releaseId: 'distro:shared-id' });
+    expect(distroItem.embeddedPlayerData?.providers).toHaveLength(2);
   });
 
   it('uses the disintegration mockup cover override only for the store item', async () => {
@@ -318,6 +360,7 @@ describe('StoreItem projection contract', () => {
     expect(storeItem).not.toHaveProperty('merch_url');
     expect(storeItem).not.toHaveProperty('checkoutPath');
     expect(storeItem).not.toHaveProperty('gallery');
+    expect(storeItem.embeddedPlayerData).toBeNull();
   });
 
   it('omits unknown distro release dates from store item metadata', () => {

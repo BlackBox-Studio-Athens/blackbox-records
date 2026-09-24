@@ -489,11 +489,15 @@ export function createStoreCoverflowController(
       if (group.state.mode !== 'preview' || !card || event.detail === 0 || pointerIntent?.card !== card) return;
       const intent = pointerIntent;
       pointerIntent = null;
-      if (!intent.moved && intent.wasActive) return;
+      if (intent.moved) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      if (target.closest('[data-music-streaming-service-embedded-player-trigger]') || intent.wasActive) return;
 
       event.preventDefault();
       event.stopPropagation();
-      if (intent.moved) return;
       const activeIndex = group.cards.indexOf(card);
       if (activeIndex >= 0) {
         setGroupState(

@@ -46,6 +46,17 @@ async function save(item, data, collection = 'artists') {
     )
   ).data;
 }
+async function findBySlug(collection, slug) {
+  let cursor;
+  do {
+    const query = new URLSearchParams({ limit: '100' });
+    if (cursor) query.set('cursor', cursor);
+    const { items, nextCursor } = (await api(`content/${collection}?${query}`)).data;
+    const item = items.find((entry) => entry.slug === slug);
+    if (item) return item;
+    cursor = nextCursor;
+  } while (cursor);
+}
 async function publish(item, saved, extra = [], inspectPreview = async () => {}) {
   const started = performance.now();
   const input = {
@@ -248,12 +259,12 @@ for (const [collection, slug, storeSlug, tracklist] of [
   ],
   [
     'distro',
-    'stefan-clor-baltica-cd',
-    'stefan-clor-baltica-cd',
+    'adolf-plays-the-jazz-form-follows-function-cd',
+    'adolf-plays-the-jazz-form-follows-function-cd',
     { format: 'cd', discs: [{ tracks: [{ title: 'Local cello improvisation', duration: '4:05' }] }] },
   ],
 ]) {
-  const item = (await api('content/' + collection + '?limit=100')).data.items.find((item) => item.slug === slug);
+  const item = await findBySlug(collection, slug);
   assert.ok(item, collection + '/' + slug);
   const original = (await api('content/' + collection + '/' + item.id)).data.item;
   tracklistExamples.push({ collection, item: original, storeSlug, tracklist });
@@ -298,6 +309,14 @@ try {
       const html = await response.text();
       assert.ok(html.includes('Tracklist'));
       assert.ok(html.includes(example.tracklist.format === 'cd' ? 'Local cello improvisation' : 'Local opening track'));
+      if (example.collection === 'distro') {
+        assert.ok(
+          html.includes(`data-music-streaming-service-embedded-player-release-id="distro:${example.item.slug}"`),
+        );
+        assert.ok(html.includes('data-music-streaming-service-embedded-player-bandcamp-embed-url='));
+        assert.ok(html.includes('data-music-streaming-service-embedded-player-tidal-embed-url='));
+        assert.doesNotMatch(html, /<iframe\b/i, 'Preview keeps provider players inert until Listen is activated.');
+      }
       if (example.tracklist.format === 'vinyl') {
         assert.ok(html.includes('Side B'));
         assert.ok(html.includes('B1'));
@@ -307,6 +326,13 @@ try {
   for (const example of tracklistExamples) {
     const html = await fetch(site + '/store/' + example.storeSlug + '/').then((response) => response.text());
     assert.ok(html.includes(example.tracklist.format === 'cd' ? 'Local cello improvisation' : 'Local opening track'));
+    if (example.collection === 'distro') {
+      const reloaded = (await api(`content/distro/${example.item.id}`)).data.item;
+      assert.equal(reloaded.data.bandcamp_embed_url, example.item.data.bandcamp_embed_url);
+      assert.equal(reloaded.data.tidal_url, example.item.data.tidal_url);
+      assert.ok(html.includes(`data-music-streaming-service-embedded-player-release-id="distro:${example.item.slug}"`));
+      assert.doesNotMatch(html, /<iframe\b/i, 'Published player remains inert until Listen is activated.');
+    }
   }
   const unrelated = await fetch(`${site}/artists/${other.slug}/`).then((response) => response.text());
   assert.ok(!unrelated.includes(marker), 'Unrelated draft leaked to the public site.');

@@ -79,6 +79,10 @@ export function readDocumentShellPageSnapshot(
 
   if (!mainElement) return null;
 
+  // A dialog can temporarily hide descendants. Keep the existing clean snapshot
+  // instead of persisting its accessibility mask into the next visit.
+  if (mainElement.querySelectorAll('[data-aria-hidden]').length > 0) return null;
+
   const mainElementClone = mainElement.cloneNode(true) as HTMLElement;
   mainElementClone.querySelectorAll<HTMLElement>('[data-artists-roster-filters]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';

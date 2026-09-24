@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Equalizer + Bandcamp · BlackBox Records</title>
+    <style>
+      @font-face {
+        font-family: Veneer;
+        src: url('../../apps/web/public/assets/fonts/brand/veneer_regular.woff2') format('woff2');
+        font-display: swap;
+      }
+      :root {
+        color-scheme: dark;
+        --ink: #f5f5f5;
+        --muted: #b3b3b3;
+        --line: #2b2b2b;
+        --signal: #e3b56c;
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      body {
+        margin: 0;
+        background: #0d0d0d;
+        color: var(--ink);
+        font:
+          14px/1.5 Inter,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+      }
+      body:has(dialog[open]) {
+        overflow: hidden;
+      }
+      body:has(#white:checked) {
+        --signal: #eee4d2;
+      }
+      main {
+        max-width: 1240px;
+        margin: auto;
+        padding: 32px 28px 160px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+      .brand,
+      h1,
+      h2,
+      h3 {
+        font-family: Veneer, Impact, sans-serif;
+        font-weight: 400;
+      }
+      .brand {
+        font-size: 26px;
+      }
+      h1 {
+        font-size: clamp(38px, 5vw, 62px);
+        line-height: 1;
+        margin: 30px 0 14px;
+      }
+      h2 {
+        font-size: 28px;
+        margin: 0 0 6px;
+      }
+      h3 {
+        font-size: 24px;
+        margin: 12px 0 2px;
+      }
+      p {
+        max-width: 78ch;
+      }
+      .intro,
+      .muted {
+        color: var(--muted);
+      }
+      a {
+        color: inherit;
+        text-underline-offset: 4px;
+      }
+      button,
+      select {
+        font: inherit;
+        color: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+      }
+      button:focus-visible,
+      a:focus-visible,
+      input:focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 4px;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 24px;
+        padding: 18px 0;
+        margin: 24px 0;
+        border-block: 1px solid var(--line);
+      }
+      .controls label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 32px;
+      }
+      input {
+        accent-color: var(--ink);
+      }
+      .eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .options {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 32px;
+      }
+      .option > p {
+        font-size: 13px;
+        color: var(--muted);
+        min-height: 58px;
+      }
+      .art {
+        position: relative;
+        aspect-ratio: 1;
+      }
+      .art img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+      .art .listen {
+        position: absolute;
+        bottom: 8px;
+        left: 12px;
+      }
+      .listen {
+        display: inline-flex;
+        align-items: center;
+        gap: 11px;
+        min-height: 44px;
+        padding: 0 16px;
+        border: 1px solid #777;
+        background: rgba(13, 13, 13, 0.95);
+        color: var(--ink);
+        font:
+          600 11px/1 Inter,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .listen:is(:hover, :focus-visible) {
+        border-color: var(--signal);
+        background: #232323;
+      }
+      .listen[data-session] {
+        border-color: color-mix(in srgb, var(--signal) 60%, #444);
+      }
+      .listen:active {
+        background: #303030;
+      }
+      .eq {
+        display: inline-flex;
+        height: 18px;
+        width: 22px;
+        justify-content: center;
+        align-items: center;
+        gap: 2px;
+        flex: none;
+        color: var(--signal);
+      }
+      .eq i {
+        display: block;
+        width: 2px;
+        height: 16px;
+        background: currentColor;
+        transform: scaleY(0.35);
+        transform-origin: center;
+      }
+      .eq i:nth-child(2),
+      .eq i:nth-child(4),
+      .eq i:nth-child(6) {
+        transform: scaleY(0.65);
+      }
+      .eq i:nth-child(3) {
+        transform: scaleY(1);
+      }
+      .eq i:nth-child(2) {
+        animation-delay: -0.23s !important;
+      }
+      .eq i:nth-child(3) {
+        animation-delay: -0.57s !important;
+      }
+      .eq i:nth-child(4) {
+        animation-delay: -0.41s !important;
+      }
+      .eq i:nth-child(5) {
+        animation-delay: -0.11s !important;
+      }
+      .eq i:nth-child(6) {
+        animation-delay: -0.67s !important;
+      }
+      .eq i:nth-child(7) {
+        animation-delay: -0.35s !important;
+      }
+      .eq[data-variant='bold'] i {
+        width: 3px;
+      }
+      .eq[data-variant='bold'] i:nth-child(n + 4) {
+        display: none;
+      }
+      .eq[data-variant='fluid'] i:nth-child(n + 6) {
+        display: none;
+      }
+      .eq[data-variant='stepped'] {
+        width: 26px;
+      }
+      .eq[data-variant='stepped'] i {
+        background: repeating-linear-gradient(to top, currentColor 0 2px, transparent 2px 3px);
+      }
+      :is(.listen:hover, .listen:focus-visible, .mini:hover, .mini:focus-within, .handoff) .eq i {
+        animation: levels 820ms ease-in-out 2 alternate;
+      }
+      :is(.listen:hover, .listen:focus-visible, .mini:hover, .mini:focus-within, .handoff) .eq[data-variant='bold'] i {
+        animation-duration: 650ms;
+      }
+      :is(.listen:hover, .listen:focus-visible, .mini:hover, .mini:focus-within, .handoff)
+        .eq[data-variant='stepped']
+        i {
+        animation-timing-function: steps(4, end);
+        animation-duration: 950ms;
+      }
+      @keyframes levels {
+        0% {
+          transform: scaleY(0.3);
+        }
+        55% {
+          transform: scaleY(1);
+        }
+        100% {
+          transform: scaleY(0.55);
+        }
+      }
+      body:has(#still:checked) *,
+      body:has(#still:checked) *::before {
+        animation: none !important;
+        transition: none !important;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+      .flow {
+        margin-top: 32px;
+        padding-top: 24px;
+        border-top: 1px solid var(--line);
+      }
+      .flow-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+        margin-top: 18px;
+      }
+      .flow-grid p {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 8px;
+      }
+      .flow-grid strong {
+        font-size: 13px;
+      }
+      .trace {
+        margin-top: 22px;
+        padding: 14px 0;
+        border-block: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .note {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      dialog {
+        width: min(480px, calc(100vw - 32px));
+        max-height: calc(100dvh - 32px);
+        margin: auto;
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: #0d0d0d;
+        color: var(--ink);
+        overflow: auto;
+      }
+      dialog::backdrop {
+        background: rgba(0, 0, 0, 0.86);
+      }
+      .modal-top {
+        padding: 16px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .modal-identity {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .modal-identity p {
+        margin: 0;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .modal-identity strong {
+        display: block;
+        font-size: 13px;
+      }
+      .plain {
+        min-height: 44px;
+        border: 1px solid #555;
+        background: transparent;
+        padding: 0 12px;
+        color: var(--ink);
+        font-size: 12px;
+      }
+      .plain:hover {
+        background: #232323;
+      }
+      #embed-host {
+        position: relative;
+        margin: 0 auto;
+        width: min(350px, calc(100% - 24px));
+        min-height: 300px;
+      }
+      iframe {
+        display: block;
+        width: 100%;
+        height: clamp(460px, 65vh, 600px);
+        border: 0;
+      }
+      .message {
+        padding: 50px 18px;
+        text-align: center;
+        color: var(--muted);
+      }
+      .message strong {
+        display: block;
+        color: var(--ink);
+        margin-bottom: 10px;
+      }
+      #loading {
+        position: absolute;
+        inset: 0;
+        background: #141414;
+        display: grid;
+        place-content: center;
+      }
+      .load-line {
+        width: 80px;
+        height: 2px;
+        background: #777;
+        margin: 12px auto;
+      }
+      .load-line::before {
+        content: '';
+        display: block;
+        width: 25px;
+        height: 2px;
+        background: var(--ink);
+        animation: loading 1s var(--ease) infinite alternate;
+      }
+      @keyframes loading {
+        to {
+          transform: translateX(55px);
+        }
+      }
+      .lab-tools {
+        border-top: 1px solid var(--line);
+        padding: 14px 16px;
+        margin-top: 14px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .lab-tools p {
+        margin: 0 0 8px;
+      }
+      .lab-tools .plain {
+        min-height: 36px;
+        font-size: 11px;
+        margin: 3px 3px 3px 0;
+      }
+      .mini {
+        position: fixed;
+        bottom: 22px;
+        right: 22px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        max-width: calc(100vw - 32px);
+        padding: 14px 16px;
+        border: 1px solid #555;
+        background: #151515;
+        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.32);
+        border-radius: 12px;
+      }
+      .mini p {
+        margin: 0;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .mini strong {
+        font-size: 13px;
+      }
+      .mini .actions {
+        display: flex;
+        gap: 6px;
+      }
+      @media (max-width: 760px) {
+        .options {
+          grid-template-columns: 1fr;
+          max-width: 360px;
+          margin: auto;
+        }
+        .option > p {
+          min-height: 0;
+        }
+        .flow-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+        main {
+          padding-inline: 18px;
+        }
+      }
+      @media (max-width: 480px) {
+        dialog {
+          width: 100vw;
+          max-width: none;
+          height: 100dvh;
+          max-height: 100dvh;
+          border: 0;
+          border-radius: 0;
+        }
+        .modal-top {
+          position: sticky;
+          top: 0;
+          background: #0d0d0d;
+          z-index: 2;
+        }
+        .mini {
+          right: 16px;
+          bottom: 16px;
+          padding: 12px;
+          gap: 9px;
+          flex-wrap: wrap;
+        }
+        .mini .actions {
+          margin-left: auto;
+        }
+        .flow-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="brand">BlackBox Records</span><a href="listen-button-review.html">Earlier studies ↗</a>
+      </header>
+      <h1>A little movement.<br />Then the music takes over.</h1>
+      <p class="intro">
+        Three equalizer iterations, each opening the same real Bandcamp embed. Hover or Tab to compare motion, then
+        click Listen to try the complete flow.
+      </p>
+      <div class="controls" aria-label="Study controls">
+        <span class="eyebrow">Indicator color</span
+        ><label><input type="radio" name="color" id="amber" checked /> Amber</label
+        ><label><input type="radio" name="color" id="white" /> Warm white</label
+        ><label><input type="checkbox" id="still" /> Disable animation</label>
+      </div>
+      <div class="options">
+        <section class="option">
+          <h2>1 / Fluid five</h2>
+          <p>Five fine bars with staggered movement. Musical without becoming a second focal point. Recommended.</p>
+          <div class="art">
+            <img
+              src="../../apps/web/src/content/releases/656856327_18427527979186423_8617747121554203403_n.jpg"
+              alt="Disintegration by Afterwise"
+            /><button type="button" class="listen" data-open="fluid" aria-haspopup="dialog">
+              <span class="eq" data-variant="fluid" aria-hidden="true"
+                ><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span
+              ><span class="trigger-label">Listen</span>
+            </button>
+          </div>
+          <h3>Disintegration</h3>
+          <span class="muted">Afterwise · Black Vinyl LP</span>
+        </section>
+        <section class="option">
+          <h2>2 / Bold three</h2>
+          <p>Three thicker bars, a quicker beat. The clearest mark at compact card sizes and on mobile.</p>
+          <div class="art">
+            <img
+              src="../../apps/web/src/content/releases/656856327_18427527979186423_8617747121554203403_n.jpg"
+              alt="Disintegration by Afterwise"
+            /><button type="button" class="listen" data-open="bold" aria-haspopup="dialog">
+              <span class="eq" data-variant="bold" aria-hidden="true"
+                ><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span
+              ><span class="trigger-label">Listen</span>
+            </button>
+          </div>
+          <h3>Disintegration</h3>
+          <span class="muted">Afterwise · Black Vinyl LP</span>
+        </section>
+        <section class="option">
+          <h2>3 / Stepped seven</h2>
+          <p>A small segmented meter with more pronounced steps. The most expressive, hardware-inspired option.</p>
+          <div class="art">
+            <img
+              src="../../apps/web/src/content/releases/656856327_18427527979186423_8617747121554203403_n.jpg"
+              alt="Disintegration by Afterwise"
+            /><button type="button" class="listen" data-open="stepped" aria-haspopup="dialog">
+              <span class="eq" data-variant="stepped" aria-hidden="true"
+                ><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span
+              ><span class="trigger-label">Listen</span>
+            </button>
+          </div>
+          <h3>Disintegration</h3>
+          <span class="muted">Afterwise · Black Vinyl LP</span>
+        </section>
+      </div>
+      <section class="flow" aria-labelledby="flow-title">
+        <h2 id="flow-title">One visual thread through the player.</h2>
+        <div class="flow-grid">
+          <div>
+            <strong>01 / Invitation</strong>
+            <p>
+              Still at rest. Hover or keyboard focus starts two short motion cycles. Clicking opens the modal
+              immediately.
+            </p>
+          </div>
+          <div>
+            <strong>02 / Handoff</strong>
+            <p>
+              The same mark appears in the modal header, then settles. A separate loading line says Loading Bandcamp.
+            </p>
+          </div>
+          <div>
+            <strong>03 / Provider control</strong>
+            <p>Bandcamp owns Play, Pause, tracks and progress. Our mark stays still and never claims playback.</p>
+          </div>
+          <div>
+            <strong>04 / Continuity</strong>
+            <p>
+              After embed interaction, Minimize keeps the frame. Open Player restores it; Stop removes it. The mini
+              player says Player Ready.
+            </p>
+          </div>
+        </div>
+      </section>
+      <div class="trace"><output id="trace" aria-live="polite">Idle. No Bandcamp iframe has been created.</output></div>
+      <p class="note">
+        Working design prototype, not the production shell. No autoplay is requested. In the modal, use “Simulate embed
+        interaction” to try minimizing without playing audio. The same album appears three times only to compare
+        equalizer designs.
+      </p>
+    </main>
+    <dialog id="player" aria-labelledby="player-title">
+      <div class="modal-top">
+        <div class="modal-identity">
+          <span id="modal-eq" class="eq" data-variant="fluid" aria-hidden="true"
+            ><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+          ></span>
+          <div>
+            <strong id="player-title">Disintegration · Afterwise</strong>
+            <p id="player-status" role="status">Loading Bandcamp</p>
+          </div>
+        </div>
+        <button type="button" class="plain" id="dismiss" autofocus>Close</button>
+      </div>
+      <div id="embed-host">
+        <div class="message" id="loading">
+          <strong>Loading Bandcamp</strong><span class="load-line" aria-hidden="true"></span
+          ><span>Use Play inside the embed to start listening.</span>
+        </div>
+        <div class="message" id="error" hidden>
+          <strong>The player is taking longer than expected.</strong>
+          <p>Retry, or open the album on Bandcamp.</p>
+          <button type="button" class="plain" id="retry">Retry</button>
+          <p>
+            <a href="https://afterwise.bandcamp.com/album/disintegration" target="_blank" rel="noopener"
+              >Open on Bandcamp ↗</a
+            >
+          </p>
+        </div>
+      </div>
+      <div class="lab-tools">
+        <p>Prototype controls, not part of the proposed player.</p>
+        <button type="button" class="plain" id="simulate" disabled>Simulate embed interaction</button
+        ><button type="button" class="plain" id="fail">Preview unavailable embed</button>
+      </div>
+    </dialog>
+    <aside class="mini" id="mini" aria-label="Minimized Bandcamp player" hidden>
+      <span class="eq" id="mini-eq" data-variant="fluid" aria-hidden="true"
+        ><i></i><i></i><i></i><i></i><i></i><i></i><i></i
+      ></span>
+      <div>
+        <p>Player Ready · Bandcamp</p>
+        <strong>Disintegration · Afterwise</strong>
+      </div>
+      <div class="actions">
+        <button type="button" class="plain" id="reopen">Open Player</button
+        ><button type="button" class="plain" id="stop">Stop</button>
+      </div>
+    </aside>
+    <script>
+      const dialog = document.querySelector('#player');
+      const host = document.querySelector('#embed-host');
+      const mini = document.querySelector('#mini');
+      const dismiss = document.querySelector('#dismiss');
+      const loading = document.querySelector('#loading');
+      const error = document.querySelector('#error');
+      const simulate = document.querySelector('#simulate');
+      const status = document.querySelector('#player-status');
+      const trace = document.querySelector('#trace');
+      const triggers = [...document.querySelectorAll('[data-open]')];
+      let frame = null;
+      let loaded = false;
+      let interacted = false;
+      let timeout;
+      let origin;
+      let generation = 0;
+      function update() {
+        dismiss.textContent = loaded && interacted ? 'Minimize' : 'Close';
+        dismiss.setAttribute('aria-label', loaded && interacted ? 'Minimize player' : 'Close player');
+        simulate.disabled = !loaded;
+        for (const trigger of triggers) {
+          trigger.querySelector('.trigger-label').textContent = frame ? 'Open Player' : 'Listen';
+          trigger.toggleAttribute('data-session', Boolean(frame));
+        }
+      }
+      function clearFrame() {
+        clearTimeout(timeout);
+        frame?.remove();
+        frame = null;
+        loaded = false;
+        interacted = false;
+      }
+      function unavailable() {
+        clearFrame();
+        loading.hidden = true;
+        error.hidden = false;
+        status.textContent = 'Player unavailable';
+        trace.textContent = 'Unavailable preview. Retry creates a fresh embed; Close leaves no session.';
+        update();
+      }
+      function createFrame() {
+        clearFrame();
+        loading.hidden = false;
+        error.hidden = true;
+        status.textContent = 'Loading Bandcamp';
+        const current = document.createElement('iframe');
+        frame = current;
+        current.dataset.instance = String(++generation);
+        current.title = 'Disintegration by Afterwise, Bandcamp player';
+        current.allow = 'encrypted-media; fullscreen';
+        current.src =
+          'https://bandcamp.com/EmbeddedPlayer/album=3481803854/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/';
+        current.addEventListener('load', () => {
+          if (frame !== current) return;
+          clearTimeout(timeout);
+          loaded = true;
+          loading.hidden = true;
+          status.textContent = 'Bandcamp · Player Ready';
+          trace.textContent =
+            'Embed loaded. Playback remains controlled by Bandcamp; Close removes the untouched session.';
+          update();
+        });
+        current.addEventListener('error', () => {
+          if (frame === current) unavailable();
+        });
+        host.append(current);
+        timeout = setTimeout(() => {
+          if (frame === current && !loaded) unavailable();
+        }, 15000);
+        trace.textContent = 'Loading a new Bandcamp iframe after explicit Listen intent.';
+        update();
+      }
+      function open(trigger) {
+        if (trigger) {
+          origin = trigger;
+          document.querySelector('#modal-eq').dataset.variant = trigger.dataset.open;
+          document.querySelector('#mini-eq').dataset.variant = trigger.dataset.open;
+        }
+        const reuse = Boolean(frame);
+        if (!frame) createFrame();
+        mini.hidden = true;
+        if (!dialog.open) dialog.showModal();
+        dialog.classList.remove('handoff');
+        requestAnimationFrame(() => {
+          if (dialog.open) dialog.classList.add('handoff');
+        });
+        dismiss.focus();
+        if (reuse) trace.textContent = 'Reopened the existing iframe. No provider reload or playback claim.';
+      }
+      function stop() {
+        clearFrame();
+        if (dialog.open) dialog.close();
+        mini.hidden = true;
+        update();
+        origin?.focus();
+        trace.textContent = 'Stopped. Iframe removed; all Listen buttons reset.';
+      }
+      function close() {
+        if (loaded && interacted) {
+          dialog.close();
+          mini.hidden = false;
+          origin?.focus();
+          trace.textContent = 'Minimized. The same iframe stays mounted. Audio state is unknown.';
+        } else stop();
+      }
+      function markInteraction() {
+        if (!frame || !loaded) return;
+        interacted = true;
+        update();
+        trace.textContent = 'Embed interaction registered. Minimize is available; this does not confirm playback.';
+      }
+      triggers.forEach((trigger) => trigger.addEventListener('click', () => open(trigger)));
+      dismiss.addEventListener('click', close);
+      dialog.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        close();
+      });
+      dialog.addEventListener('click', (event) => {
+        if (event.target !== dialog) return;
+        const rect = dialog.getBoundingClientRect();
+        if (
+          event.clientX < rect.left ||
+          event.clientX > rect.right ||
+          event.clientY < rect.top ||
+          event.clientY > rect.bottom
+        )
+          close();
+      });
+      window.addEventListener('blur', () =>
+        setTimeout(() => {
+          if (document.activeElement === frame && dialog.open) markInteraction();
+        }, 0),
+      );
+      simulate.addEventListener('click', markInteraction);
+      document.querySelector('#fail').addEventListener('click', unavailable);
+      document.querySelector('#retry').addEventListener('click', createFrame);
+      document.querySelector('#reopen').addEventListener('click', () => open());
+      document.querySelector('#stop').addEventListener('click', stop);
+    </script>
+  </body>
+</html>

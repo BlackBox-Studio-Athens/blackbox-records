@@ -61,6 +61,12 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **THEN** the primitive is listed as a provided `ui-foundation` entrypoint in `module-boundaries.manifest.json`
 - **AND** feature modules import that entrypoint directly instead of deep-importing private UI foundation implementation.
 
+#### Scenario: Shell renders the shared music mark
+
+- **WHEN** the app shell renders the modal or minimized player heading
+- **THEN** it consumes the player's provided `apps/web/src/components/music/MusicEqualizer.tsx` entrypoint
+- **AND** the decorative mark owns no playback state or iframe lifecycle.
+
 #### Scenario: Route-local HTTP helper is added
 
 - **GIVEN** public commerce HTTP route code needs a helper that is not a cross-module interface

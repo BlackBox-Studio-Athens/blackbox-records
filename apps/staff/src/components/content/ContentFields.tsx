@@ -433,6 +433,8 @@ export default function ContentFields({
           onChange={(next) => set('tracklist', next)}
           errors={errors('tracklist')}
         />
+        {field('bandcamp_embed_url', 'Bandcamp player link', { required: false })}
+        {field('tidal_url', 'Tidal link', { required: false })}
         {rows('gallery', 'More images', { image: null, image_alt: '' }, (path) =>
           image(`${path}.image`, `${path}.image_alt`, 'Image'),
         )}

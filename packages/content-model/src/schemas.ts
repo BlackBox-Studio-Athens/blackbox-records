@@ -23,11 +23,11 @@ const internalOrHttpsUrl = z.string().refine(isInternalOrHttpsUrl, {
   message: 'Use a safe internal path beginning with / or a full HTTPS URL.',
 });
 
-const bandcampEmbedUrl = z.string().refine((value) => buildBandcampEmbedUrl(value) === value, {
+export const bandcampEmbedUrlSchema = z.string().refine((value) => buildBandcampEmbedUrl(value) === value, {
   message: 'Use the official Bandcamp iframe src from Share/Embed. Public album or track URLs are not valid embeds.',
 });
 
-const tidalUrl = z.string().refine((value) => buildTidalEmbedUrl(value) !== '', {
+export const tidalUrlSchema = z.string().refine((value) => buildTidalEmbedUrl(value) !== '', {
   message: 'Use a Tidal album, track, playlist, or video URL. Artist profile URLs are not embedded players.',
 });
 
@@ -73,8 +73,8 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
     cover_image: image(),
     cover_image_alt: requiredAltText,
     merch_url: internalOrHttpsUrl.optional(),
-    bandcamp_embed_url: bandcampEmbedUrl.optional(),
-    tidal_url: tidalUrl.optional(),
+    bandcamp_embed_url: bandcampEmbedUrlSchema.optional(),
+    tidal_url: tidalUrlSchema.optional(),
     summary: z.string().optional(),
     summary_rich: richTextSchema.nullish(),
     tracklist: tracklistSchema.nullish(),

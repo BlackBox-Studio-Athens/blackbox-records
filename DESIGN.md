@@ -263,6 +263,12 @@ Editors autosave private drafts and publish explicitly. Real shared-template pre
 
 # Backoffice guidance
 
+## Design inspiration and component studies
+
+For future design work, start with the living [design inspiration library](docs/design-inspiration.md). It indexes visual repositories, code entry points, AI guidance, adoption notes and component decisions. The [UI pattern dataset guide](docs/ui-design-patterns-guide.md) remains the entry to shared pattern evidence.
+
+Listen refinement selected September 24, 2026: **Fluid five with animation**. Preserve the familiar dark face, square edges and compact label; replace the circular indicator with five amber (`#e3b56c`) bars. Use the same mark in the modal heading and minimized player. Hover/focus and modal entry run two brief cycles, then settle; reduced motion disables the animation. The mark identifies listening and never claims verified playback. Retain `Player Ready` and the existing shell-owned lifecycle. Future button studies should extend this restrained family. Cosmos Public Work remains an aesthetic reference for quiet hierarchy and image-first restraint; amber is a music accent, not a replacement global action color.
+
 For Content, Images, Items, Stock and Orders, use the living [backoffice design reference](docs/backoffice-design.md). It records shared staff patterns, research, proposal status and validation separately from the public site's visual direction.
 
 ## Website changes review (September 2026 refinement)
@@ -276,6 +282,8 @@ Count stock and Finish counting replace visible Stocktake wording; internal stor
 Review discovery uses bounded native EmDash cursor reads and existing accepted-snapshot comparisons, never private CMS table queries. The client follows sparse continuations until its page fills or reaches the end, cancelling stale searches. It does not load the entire library into browser memory or poll a global draft count. Hosted rollout still requires a Free-tier cost preflight.
 
 ### Store browsing and item information
+
+Store Listen actions use the selected Below the artwork placement: a 112 × 44px button in a 52px row before the item title. Source-less items keep the row alignment without a button. The active recording shows disabled amber **In player** status across Store, Releases and details. This denotes the shell's existing session, including a paused provider, rather than verified playback. Reopen and Stop belong to the floating player, with 44px controls on mobile. Stop or switching recordings resets the previous source's Listen controls. Keep Releases' existing placements.
 
 Store collections use a 90rem container with 32px desktop and 16px mobile gutters. At 1024px the 13rem Artists pane sits beside the results; below it, one native Browse disclosure contains Artists and Distro formats. Keep Top outside the disclosure. Cards form a continuous Grid by default: four columns from 1280px, three from 640px, two from 360px, and one below. Optional Coverflow requires explicit selection.
 

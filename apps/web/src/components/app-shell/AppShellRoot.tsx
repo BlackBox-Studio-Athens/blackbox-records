@@ -419,6 +419,7 @@ export default function AppShellRoot({
     openPlayerModal,
     reopenPlayerModal,
     stopPlayerSession,
+    syncPlayerTriggers,
     warmProviderOrigins,
   } = createShellPlayerSessionController({
     activePlayerSessionRef,
@@ -443,6 +444,10 @@ export default function AppShellRoot({
     setPlayerProviders,
     warmedOriginsRef,
   });
+
+  useEffect(() => {
+    syncPlayerTriggers();
+  }, [activeShellPathname, overlayState]);
 
   async function prefetchOverlayHref(href: string) {
     await overlayFragmentLoader.prefetchHref(href);
@@ -720,6 +725,7 @@ export default function AppShellRoot({
             closeButtonRef={overlayCloseButtonRef}
             onClose={closeOverlayWithHistoryBack}
             onReady={() => {
+              syncPlayerTriggers();
               scheduleOverlayContentFocus({
                 getCloseButton: () => overlayCloseButtonRef.current,
                 getScrollContainer: () => overlayScrollContainerRef.current,

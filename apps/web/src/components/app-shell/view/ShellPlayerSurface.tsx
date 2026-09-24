@@ -3,6 +3,7 @@ import * as React from 'react';
 import type { MouseEvent } from 'react';
 
 import { LoadingStateBlock } from '@/components/ui/loading-feedback';
+import MusicEqualizer from '@/components/music/MusicEqualizer';
 import { type PlayerEmbedLayout, type PlayerProvider, type PlayerProviderId } from '../player-provider-data';
 import { OPEN_PLAYER_ACTION_LABEL } from '../player-session-ui';
 import { PLAYER_PROVIDER_LABELS } from '../player-shell/shell-player-view-state';
@@ -77,6 +78,15 @@ export default function ShellPlayerSurface({
           </h2>
           <div className="music-streaming-service-embedded-player-modal-header">
             <div className="music-streaming-service-embedded-player-modal-topbar">
+              <div className="music-player-heading">
+                <MusicEqualizer />
+                <div className="music-player-heading__copy">
+                  <p className="music-player-heading__title">{activePlayerTitle}</p>
+                  <p className="music-player-heading__status">
+                    {isPlayerLoading ? 'Loading player' : miniPlayerStatusLabel}
+                  </p>
+                </div>
+              </div>
               <button
                 ref={modalCloseButtonRef}
                 aria-label={playerModalDismissAriaLabel}
@@ -147,7 +157,8 @@ export default function ShellPlayerSurface({
       >
         <div className="music-streaming-service-embedded-player-mini-player-copy">
           <p className="music-streaming-service-embedded-player-mini-player-provider uppercase text-muted-foreground">
-            {miniPlayerStatusLabel}
+            <MusicEqualizer />
+            <span>{miniPlayerStatusLabel}</span>
           </p>
           <p className="music-streaming-service-embedded-player-mini-player-title text-foreground/92">
             {activePlayerTitle}
@@ -156,7 +167,7 @@ export default function ShellPlayerSurface({
         <div className="music-streaming-service-embedded-player-mini-player-actions">
           <button
             aria-label="Open player"
-            className="music-streaming-service-embedded-player-mini-player-action inline-flex min-h-9 items-center whitespace-nowrap rounded-full border border-border/80 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/78 transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="music-streaming-service-embedded-player-mini-player-action inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-border/80 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/78 transition-colors hover:bg-accent hover:text-accent-foreground"
             data-music-streaming-service-embedded-player-mini-player-open
             type="button"
           >
@@ -164,7 +175,7 @@ export default function ShellPlayerSurface({
           </button>
           <button
             aria-label="Stop player"
-            className="music-streaming-service-embedded-player-mini-player-action music-streaming-service-embedded-player-mini-player-action--icon inline-flex min-h-9 items-center whitespace-nowrap rounded-full border border-border/80 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+            className="music-streaming-service-embedded-player-mini-player-action music-streaming-service-embedded-player-mini-player-action--icon inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-border/80 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             data-music-streaming-service-embedded-player-mini-player-stop
             type="button"
           >

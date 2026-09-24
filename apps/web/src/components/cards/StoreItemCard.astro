@@ -1,6 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import { Card, CardContent } from '@/components/ui/card';
+import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import type { StoreCardImageLoadingMode, StoreCollectionEntry } from '@/lib/store-collection';
 interface Props {
   coverflowEnrolled?: boolean;
@@ -29,13 +30,13 @@ const widths = [240, 320, 480, 640, 800, 960];
   data-store-coverflow-card={coverflowEnrolled ? '' : undefined}
 >
   <Card className="store-item-card__surface flex flex-1 flex-col rounded-none border-border bg-card shadow-none">
-    <a
-      class="prose-card-link"
-      href={storeItem.storePath}
-      aria-label={storeItem.title + ' — ' + storeItem.subtitle}
-      data-astro-prefetch
-    >
-      <div class="store-item-card__image-frame">
+    <div class="store-item-card__image-frame">
+      <a
+        class="prose-card-link"
+        href={storeItem.storePath}
+        aria-label={storeItem.title + ' — ' + storeItem.subtitle}
+        data-astro-prefetch
+      >
         <Image
           src={storeItem.image}
           alt={storeItem.imageAlt}
@@ -62,8 +63,15 @@ const widths = [240, 320, 480, 640, 800, 960];
             />
           )
         }
-      </div>
-    </a>
+      </a>
+    </div>
+    <div class="store-item-card__listen">
+      {
+        storeItem.embeddedPlayerData && (
+          <MusicStreamingServiceListenTrigger embeddedPlayerData={storeItem.embeddedPlayerData} />
+        )
+      }
+    </div>
     <CardContent className="store-item-card__content">
       <h2 class="brand-card-title">{storeItem.title}</h2>
       <p class="store-item-card__artist">{storeItem.subtitle}</p>

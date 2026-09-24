@@ -1,0 +1,828 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Listen placement and session states | BlackBox</title>
+    <style>
+      @font-face {
+        font-family: Veneer;
+        src: url('../../apps/web/public/assets/fonts/brand/veneer_regular.woff2');
+        font-display: swap;
+      }
+      :root {
+        color-scheme: dark;
+        --bg: #0d0d0d;
+        --ink: #eee;
+        --muted: #a4a4a4;
+        --line: #303030;
+        --amber: #e3b56c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          14px/1.5 Inter,
+          Arial,
+          sans-serif;
+      }
+      body:has(dialog[open]) {
+        overflow: hidden;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      button {
+        color: inherit;
+        cursor: pointer;
+      }
+      button:focus-visible,
+      input:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--amber);
+        outline-offset: 4px;
+      }
+      a {
+        color: inherit;
+        text-underline-offset: 4px;
+      }
+      main {
+        max-width: 1320px;
+        margin: auto;
+        padding: 24px 32px 180px;
+      }
+      header {
+        display: flex;
+        gap: 20px;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 16px;
+      }
+      .brand,
+      h1,
+      h2,
+      h3 {
+        font-family: Veneer, Impact, sans-serif;
+        font-weight: 400;
+      }
+      .brand {
+        font-size: 26px;
+      }
+      h1 {
+        font-size: clamp(36px, 5vw, 58px);
+        line-height: 1.05;
+        margin: 30px 0 12px;
+      }
+      h2 {
+        font-size: 30px;
+        margin: 0 0 6px;
+      }
+      h3 {
+        font-size: 23px;
+        line-height: 1.15;
+        margin: 0;
+      }
+      p {
+        max-width: 76ch;
+      }
+      .muted,
+      .note,
+      .artist,
+      .format {
+        color: var(--muted);
+      }
+      .eyebrow {
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        font-size: 10px;
+      }
+      .tools {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+        padding: 14px 0;
+      }
+      .control {
+        min-height: 44px;
+        border: 1px solid var(--line);
+        background: transparent;
+        padding: 8px 14px;
+      }
+      .control[aria-pressed='true'] {
+        background: #ddd;
+        color: #171717;
+        border-color: #ddd;
+      }
+      .tools label {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        min-height: 44px;
+      }
+      input {
+        accent-color: var(--amber);
+      }
+      .comparison {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 270px));
+        justify-content: space-between;
+        gap: 32px;
+        max-width: 980px;
+        margin: 28px auto 42px;
+      }
+      .choice .eyebrow {
+        color: var(--amber);
+      }
+      .choice > p {
+        min-height: 42px;
+        margin: 8px 0 16px;
+      }
+      .choice > .control {
+        width: 100%;
+        margin-top: 12px;
+      }
+      .card {
+        border: 1px solid #292929;
+        min-width: 0;
+        background: #0f0f0f;
+      }
+      .art {
+        position: relative;
+        aspect-ratio: 1;
+        background: #111;
+      }
+      .art > img {
+        width: 100%;
+        height: 100%;
+        display: block;
+        object-fit: contain;
+      }
+      .facts {
+        padding: 12px;
+      }
+      .artist {
+        margin: 5px 0;
+      }
+      .format {
+        font-size: 12px;
+        margin: 7px 0 14px;
+      }
+      .price {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        gap: 8px;
+      }
+      .price span:last-child {
+        color: var(--muted);
+      }
+      .listen {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        width: 104px;
+        height: 44px;
+        padding: 0 8px;
+        border: 1px solid #666;
+        border-radius: 0;
+        background: #101010f5;
+        color: #eee;
+        font-size: 10px;
+        line-height: 1;
+        font-weight: 600;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .listen:hover {
+        border-color: var(--amber);
+      }
+      .listen[data-session='true'] {
+        border-color: var(--amber);
+        background: #211c14;
+      }
+      .listen[data-session='true'] .label {
+        color: #f2d4a5;
+      }
+      .a .art > .listen {
+        position: absolute;
+        bottom: 12px;
+        left: 12px;
+      }
+      .b .below {
+        padding: 8px 12px 0;
+      }
+      .b .below .listen {
+        width: 112px;
+      }
+      .c .art > .listen {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 44px;
+        padding: 0;
+      }
+      .c .art > .listen .label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+      }
+      .c .art > .listen::after {
+        content: attr(data-hint);
+        position: absolute;
+        right: 0;
+        top: calc(100% + 6px);
+        background: #161616;
+        border: 1px solid #666;
+        padding: 10px;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .c .art > .listen:is(:hover, :focus-visible)::after {
+        opacity: 1;
+      }
+      .eq {
+        width: 18px;
+        height: 18px;
+        flex: none;
+        color: var(--amber);
+      }
+      .bar {
+        fill: currentColor;
+        transform-box: fill-box;
+        transform-origin: center;
+        transform: scaleY(0.35);
+      }
+      .bar:nth-child(2),
+      .bar:nth-child(4) {
+        transform: scaleY(0.65);
+      }
+      .bar:nth-child(3) {
+        transform: scaleY(1);
+      }
+      .bar:nth-child(2) {
+        animation-delay: -0.23s;
+      }
+      .bar:nth-child(3) {
+        animation-delay: -0.57s;
+      }
+      .bar:nth-child(4) {
+        animation-delay: -0.41s;
+      }
+      .bar:nth-child(5) {
+        animation-delay: -0.11s;
+      }
+      .listen:is(:hover, :focus-visible) .bar,
+      .burst .bar {
+        animation-name: levels;
+        animation-duration: 820ms;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: 2;
+        animation-direction: alternate;
+      }
+      @keyframes levels {
+        0% {
+          transform: scaleY(0.3);
+        }
+        55% {
+          transform: scaleY(1);
+        }
+        100% {
+          transform: scaleY(0.55);
+        }
+      }
+      section.context {
+        border-top: 1px solid var(--line);
+        padding-top: 28px;
+      }
+      .preview {
+        margin-top: 20px;
+      }
+      .preview.narrow {
+        max-width: 390px;
+        margin-inline: auto;
+        border: 1px solid var(--line);
+        padding: 16px;
+      }
+      .preview-nav {
+        display: flex;
+        gap: 24px;
+        padding: 12px 0;
+        margin-bottom: 20px;
+        border-bottom: 1px solid var(--line);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+      }
+      .preview-nav strong {
+        color: var(--amber);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 20px;
+      }
+      .narrow .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+      }
+      .narrow h3 {
+        font-size: 20px;
+      }
+      .narrow .facts {
+        padding: 10px;
+      }
+      .narrow .a .art > .listen {
+        left: 8px;
+        bottom: 8px;
+      }
+      .narrow .c .art > .listen {
+        top: 8px;
+        right: 8px;
+      }
+      .narrow .price {
+        align-items: start;
+        flex-direction: column;
+      }
+      .release-feature {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        padding: 24px;
+        border: 1px solid var(--line);
+        align-items: center;
+      }
+      .release-feature img {
+        display: block;
+        width: 100%;
+      }
+      .release-feature h2 {
+        font-size: clamp(32px, 4vw, 54px);
+      }
+      .release-feature .listen {
+        width: 152px;
+        height: 48px;
+        font-size: 11px;
+        gap: 10px;
+      }
+      .release-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 24px;
+      }
+      .release-actions a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 44px;
+        padding: 8px 14px;
+        border: 1px solid #666;
+        text-decoration: none;
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+      .narrow .release-feature {
+        grid-template-columns: 1fr;
+        padding: 0;
+        gap: 16px;
+        border: 0;
+      }
+      .rules {
+        margin-top: 40px;
+        border-top: 1px solid var(--line);
+        padding-top: 22px;
+      }
+      .rules table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+        text-align: left;
+      }
+      th,
+      td {
+        padding: 12px 14px 12px 0;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+      .mini {
+        position: fixed;
+        right: 20px;
+        bottom: 18px;
+        z-index: 5;
+        width: 370px;
+        max-width: calc(100% - 32px);
+        padding: 14px;
+        background: #101010;
+        border: 1px solid #444;
+        border-radius: 16px;
+        box-shadow: 0 8px 30px #0008;
+      }
+      .mini-status {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .mini-title {
+        margin: 6px 0 12px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .mini-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+      .mini button {
+        min-height: 44px;
+        padding: 8px 14px;
+        border: 1px solid #444;
+        border-radius: 24px;
+        background: #111;
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+      dialog {
+        width: min(460px, calc(100% - 24px));
+        padding: 20px;
+        color: var(--ink);
+        background: #111;
+        border: 1px solid #555;
+      }
+      dialog::backdrop {
+        background: #000c;
+      }
+      .dialog-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+      }
+      .provider-preview {
+        margin: 18px 0;
+        border: 1px solid var(--line);
+      }
+      .provider-preview img {
+        width: 100%;
+        max-height: 270px;
+        object-fit: contain;
+        background: #171717;
+        display: block;
+      }
+      .provider-preview p {
+        margin: 14px;
+      }
+      #announcement {
+        min-height: 21px;
+        color: var(--muted);
+      }
+      body.no-motion .bar {
+        animation: none !important;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .bar {
+          animation: none !important;
+        }
+      }
+      @media (max-width: 700px) {
+        main {
+          padding: 20px 16px 180px;
+        }
+        header {
+          align-items: start;
+        }
+        .comparison {
+          grid-template-columns: minmax(0, 270px);
+          justify-content: center;
+          gap: 36px;
+        }
+        .choice > p {
+          min-height: 0;
+        }
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .release-feature {
+          grid-template-columns: 1fr;
+          padding: 16px;
+          gap: 20px;
+        }
+        .price {
+          align-items: start;
+          flex-direction: column;
+        }
+        .mini {
+          right: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <span class="brand">BLACKBOX RECORDS</span><span class="eyebrow muted">Design review / Store listening</span>
+      </header>
+      <h1>Same signal. Three placements.</h1>
+      <p>
+        <strong>Selected: B, Below the artwork.</strong> The later decision uses an inactive “In player” status on the
+        active recording, with Open and Stop in the floating player. This page preserves the earlier options.
+        <a href="http://127.0.0.1:4321/blackbox-records/store/">Review the live implementation</a>.
+      </p>
+      <p class="muted">
+        Compare the selected Fluid five in the Store card. The current button is about 122 × 44px. These options keep a
+        44px target. This is an interactive design study with simulated player state; no audio is loaded.
+      </p>
+      <div class="tools" aria-label="Player state preview">
+        <button class="control" id="idle" aria-pressed="true">No player</button>
+        <button class="control" id="minimized" aria-pressed="false">Player minimized</button>
+        <label><input id="motion" type="checkbox" checked /> Animation</label>
+      </div>
+      <p id="announcement" role="status" aria-live="polite">
+        All records show Listen. Hover or focus a button to see the animation.
+      </p>
+      <div class="comparison" id="comparison"></div>
+      <section class="context" id="context">
+        <p class="eyebrow muted">See the whole shelf</p>
+        <h2 id="context-title">A / Compact overlay</h2>
+        <div class="tools" aria-label="Preview context">
+          <button class="control" data-surface="store" aria-pressed="true">Store grid</button>
+          <button class="control" data-surface="releases" aria-pressed="false">Releases</button>
+          <label><input id="narrow" type="checkbox" /> Narrow preview</label>
+        </div>
+        <p class="note" id="surface-note">
+          Compare the repeated buttons and artwork coverage. Prices here are placeholders.
+        </p>
+        <div class="preview" id="preview"></div>
+      </section>
+      <section class="rules">
+        <h2>When the player is minimized</h2>
+        <p class="muted">
+          The same recording gets the same state everywhere. Amber means an existing player session, whether Bandcamp is
+          playing or paused. Click another record to preview switching the active session.
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Where</th>
+              <th>Button</th>
+              <th>Click does</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>The active record in Store or Releases</td>
+              <td>
+                Open player, amber border and quiet tint. Option C keeps its icon and gains the same border plus an
+                accessible Open player label.
+              </td>
+              <td>Reopens the same player. Does not restart the track.</td>
+            </tr>
+            <tr>
+              <td>Other records</td>
+              <td>Listen, neutral frame.</td>
+              <td>Opens that recording and replaces the existing session.</td>
+            </tr>
+            <tr>
+              <td>The minimized player</td>
+              <td>Player Ready, recording title, Open player and Stop.</td>
+              <td>Open restores it; Stop ends the session and resets matching buttons.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">
+          Motion: two short cycles on hover/focus and when a session becomes active, then static bars. No continuous
+          meter or “Playing” claim while playback is unknown. Button widths remain fixed when the label changes.
+        </p>
+        <p class="note">
+          Recommendation: A is the closest refinement. B protects the artwork but makes each card 52px taller. C is
+          compact but depends on an icon and tooltip. Releases retains its existing placement and larger primary button.
+        </p>
+        <p>
+          <a href="equalizer-player-review.html">Earlier Bandcamp flow study</a> ·
+          <a href="../design-inspiration.md">Living design library</a>
+        </p>
+      </section>
+    </main>
+    <aside class="mini" id="mini" aria-label="Minimized player preview" hidden>
+      <div class="mini-status"><span id="mini-mark"></span><span>Player Ready · Bandcamp</span></div>
+      <p class="mini-title" id="mini-title"></p>
+      <div class="mini-actions"><button id="reopen">Open player</button><button id="stop">Stop</button></div>
+    </aside>
+    <dialog id="player" aria-labelledby="player-title">
+      <div class="dialog-head">
+        <h2 id="player-title">Player preview</h2>
+        <button class="control" id="dismiss">Minimize</button>
+      </div>
+      <p class="muted">Simulated existing session. Audio remains controlled by Bandcamp in the actual site.</p>
+      <div class="provider-preview">
+        <img id="player-art" alt="" />
+        <p id="player-record"></p>
+        <p class="muted">Bandcamp embed appears here.</p>
+      </div>
+      <p class="note">
+        Minimize to compare the matching button across Store and Releases. Reopening preserves the session.
+      </p>
+    </dialog>
+    <script>
+      const assets = '../../apps/web/src/content/releases/';
+      const records = [
+        {
+          id: 'disintegration',
+          title: 'Disintegration',
+          artist: 'Afterwise',
+          format: 'Black Vinyl LP',
+          image: assets + 'afterwise-album-cover-distro-mockup.webp',
+        },
+        {
+          id: 'anarchotribal',
+          title: 'Anarchotribal',
+          artist: 'Ouranopithecus',
+          format: 'Vinyl',
+          image: assets + 'ouranopithecus-album-cover-distro-mockup.webp',
+        },
+        {
+          id: 'caregivers',
+          title: 'Caregivers',
+          artist: 'Chronoboros',
+          format: 'Vinyl',
+          image: assets + 'chronoboros-album-cover-distro-mockup.webp',
+        },
+        {
+          id: 'aftermaths',
+          title: 'Aftermaths',
+          artist: 'Indoctrinate',
+          format: 'Vinyl',
+          image: '../../apps/web/src/content/distro/indoctrinate-aftermaths.jpg',
+        },
+      ];
+      const options = [
+        {
+          id: 'a',
+          name: 'Compact overlay',
+          size: '104 × 44px',
+          note: 'Bottom-left. Familiar position, narrower frame. Recommended.',
+        },
+        {
+          id: 'b',
+          name: 'Below the artwork',
+          size: '112 × 44px',
+          note: 'A dedicated row before the title. No artwork covered.',
+        },
+        {
+          id: 'c',
+          name: 'Equalizer corner',
+          size: '44 × 44px',
+          note: 'Top-right. Icon only, with a tooltip and accessible label.',
+        },
+      ];
+      const eq =
+        '<svg class="eq" viewBox="0 0 18 18" aria-hidden="true" focusable="false">' +
+        [0, 4, 8, 12, 16].map((x) => `<rect class="bar" x="${x}" y="1" width="2" height="16" />`).join('') +
+        '</svg>';
+      const preview = document.querySelector('#preview');
+      const dialog = document.querySelector('#player');
+      const mini = document.querySelector('#mini');
+      let variant = 'a';
+      let surface = 'store';
+      let activeId = null;
+      let origin = null;
+      function button(record) {
+        return `<button class="listen" data-record="${record.id}" data-hint="Listen" aria-label="Listen to ${record.title}">${eq}<span class="label">Listen</span></button>`;
+      }
+      function card(record, placement) {
+        return `<article class="card ${placement}"><div class="art"><img src="${record.image}" alt="${record.title} sleeve" />${placement === 'b' ? '' : button(record)}</div>${placement === 'b' ? `<div class="below">${button(record)}</div>` : ''}<div class="facts"><h3>${record.title}</h3><p class="artist">${record.artist}</p><p class="format">${record.format}</p><div class="price"><span>€ —</span><span>Available</span></div></div></article>`;
+      }
+      document.querySelector('#comparison').innerHTML = options
+        .map(
+          (o) =>
+            `<section class="choice"><span class="eyebrow">${o.id.toUpperCase()} / ${o.size}</span><h2>${o.name}</h2><p class="note">${o.note}</p>${card(records[0], o.id)}<button class="control" data-option="${o.id}" aria-pressed="${o.id === variant}">Preview ${o.id.toUpperCase()} in context</button></section>`,
+        )
+        .join('');
+      document.querySelector('#mini-mark').innerHTML = eq;
+      function renderPreview() {
+        const record = records[0];
+        preview.innerHTML =
+          surface === 'store'
+            ? '<div class="preview-nav"><strong>ALL</strong><span>BLACKBOX RELEASES</span><span>DISTRO</span></div><div class="grid">' +
+              records.map((r) => card(r, variant)).join('') +
+              '</div>'
+            : `<div class="preview-nav"><strong>RELEASES</strong><span>Latest out now</span></div><div class="release-feature"><img src="${record.image}" alt="Disintegration sleeve" /><div><span class="eyebrow muted">Latest out now</span><h2>${record.title}</h2><p class="artist">${record.artist} / Jun 2026 / Black Vinyl LP / CD / Digital</p><p class="muted">Instrumental post-rock atmosphere with post-metal weight. Recorded and mixed at BlackBox Studio, Athens.</p><div class="release-actions">${button(record)}<a href="http://127.0.0.1:4321/blackbox-records/releases/disintegration/" target="_blank" rel="noopener">View release</a></div></div></div>`;
+        document.querySelector('#surface-note').textContent =
+          surface === 'store'
+            ? 'Compare the repeated buttons and artwork coverage. Prices here are placeholders.'
+            : 'Releases keeps its existing placement and 152 × 48px primary action. The selected record shares its session state with Store.';
+        update();
+      }
+      function update() {
+        document.querySelectorAll('.listen').forEach((el) => {
+          const record = records.find((r) => r.id === el.dataset.record);
+          const selected = record.id === activeId;
+          const label = selected ? 'Open player' : 'Listen';
+          el.dataset.session = String(selected);
+          el.dataset.hint = label;
+          el.querySelector('.label').textContent = label;
+          el.setAttribute('aria-label', selected ? `Open player for ${record.title}` : `Listen to ${record.title}`);
+          el.setAttribute('aria-haspopup', 'dialog');
+        });
+        const record = records.find((r) => r.id === activeId);
+        mini.hidden = !record || dialog.open;
+        document.querySelector('#mini-title').textContent = record ? `${record.title} · ${record.artist}` : '';
+        document.querySelector('#idle').setAttribute('aria-pressed', String(!record));
+        document.querySelector('#minimized').setAttribute('aria-pressed', String(Boolean(record)));
+      }
+      function burst() {
+        const marks = [...document.querySelectorAll('.listen[data-session="true"], #mini')];
+        marks.forEach((el) => el.classList.remove('burst'));
+        requestAnimationFrame(() => requestAnimationFrame(() => marks.forEach((el) => el.classList.add('burst'))));
+      }
+      function setMinimized() {
+        activeId ||= records[0].id;
+        if (dialog.open) dialog.close();
+        update();
+        burst();
+        document.querySelector('#announcement').textContent =
+          'Minimized session: matching records show Open player on both surfaces. Other records still show Listen.';
+      }
+      function openPlayer(id, trigger) {
+        const reuse = id === activeId;
+        activeId = id;
+        origin = trigger;
+        const record = records.find((r) => r.id === id);
+        document.querySelector('#player-art').src = record.image;
+        document.querySelector('#player-record').textContent = `${record.title} · ${record.artist}`;
+        dialog.showModal();
+        update();
+        document.querySelector('#announcement').textContent = reuse
+          ? 'Existing player reopened. The recording does not restart.'
+          : 'A different recording is selected. The previous session is replaced.';
+      }
+      function stop() {
+        activeId = null;
+        if (dialog.open) dialog.close();
+        update();
+        document.querySelector('#announcement').textContent =
+          'Session ended. Matching Store and Releases buttons return to Listen.';
+      }
+      document.addEventListener('click', (event) => {
+        const listen = event.target.closest('.listen');
+        if (listen) openPlayer(listen.dataset.record, listen);
+        const choice = event.target.closest('[data-option]');
+        if (choice) {
+          variant = choice.dataset.option;
+          document
+            .querySelectorAll('[data-option]')
+            .forEach((el) => el.setAttribute('aria-pressed', String(el === choice)));
+          document.querySelector('#context-title').textContent =
+            variant.toUpperCase() + ' / ' + options.find((o) => o.id === variant).name;
+          renderPreview();
+          document.querySelector('#context').scrollIntoView({ block: 'start' });
+        }
+        const tab = event.target.closest('[data-surface]');
+        if (tab) {
+          surface = tab.dataset.surface;
+          document
+            .querySelectorAll('[data-surface]')
+            .forEach((el) => el.setAttribute('aria-pressed', String(el === tab)));
+          renderPreview();
+        }
+      });
+      document.querySelector('#idle').addEventListener('click', stop);
+      document.querySelector('#minimized').addEventListener('click', setMinimized);
+      document.querySelector('#stop').addEventListener('click', stop);
+      document.querySelector('#reopen').addEventListener('click', (event) => openPlayer(activeId, event.currentTarget));
+      document.querySelector('#dismiss').addEventListener('click', setMinimized);
+      dialog.addEventListener('cancel', (event) => {
+        event.preventDefault();
+        setMinimized();
+      });
+      dialog.addEventListener('close', () => {
+        update();
+        if (origin?.isConnected) origin.focus();
+      });
+      document
+        .querySelector('#motion')
+        .addEventListener('change', (event) => document.body.classList.toggle('no-motion', !event.target.checked));
+      document
+        .querySelector('#narrow')
+        .addEventListener('change', (event) => preview.classList.toggle('narrow', event.target.checked));
+      renderPreview();
+    </script>
+  </body>
+</html>

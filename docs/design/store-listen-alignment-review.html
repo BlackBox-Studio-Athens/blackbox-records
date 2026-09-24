@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Listen button alignment | BlackBox Records</title>
+    <style>
+      @font-face {
+        font-family: Veneer;
+        src: url('../../apps/web/public/assets/fonts/brand/veneer_regular.woff2');
+        font-display: swap;
+      }
+      :root {
+        color-scheme: dark;
+        --bg: #0d0d0d;
+        --panel: #111;
+        --ink: #eee;
+        --muted: #a4a4a4;
+        --line: #303030;
+        --amber: #e3b56c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          14px/1.5 Inter,
+          Arial,
+          sans-serif;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      button {
+        color: inherit;
+        cursor: pointer;
+      }
+      button:focus-visible,
+      a:focus-visible {
+        outline: 2px solid var(--amber);
+        outline-offset: 4px;
+      }
+      a {
+        color: inherit;
+        text-underline-offset: 4px;
+      }
+      main {
+        width: min(1120px, 100%);
+        margin: auto;
+        padding: 24px 28px 72px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--line);
+      }
+      .brand,
+      h1,
+      h2,
+      h3 {
+        font-family: Veneer, Impact, sans-serif;
+        font-weight: 400;
+      }
+      .brand {
+        font-size: 24px;
+        line-height: 1;
+      }
+      .eyebrow {
+        color: var(--muted);
+        font-size: 10px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 28px 0 8px;
+        font-size: clamp(36px, 6vw, 56px);
+        line-height: 1;
+      }
+      h2 {
+        margin: 0;
+        font-size: 26px;
+        line-height: 1.1;
+      }
+      h3 {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.1;
+      }
+      p {
+        max-width: 70ch;
+      }
+      .intro {
+        color: var(--muted);
+        margin: 8px 0 24px;
+      }
+      .intro strong {
+        color: var(--ink);
+      }
+      .top-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin: 20px 0 24px;
+        font-size: 12px;
+      }
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 18px;
+      }
+      .choices {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        margin: 18px 0;
+      }
+      .choice {
+        min-height: 116px;
+        padding: 14px;
+        text-align: left;
+        background: #101010;
+        border: 1px solid #333;
+      }
+      .choice[aria-pressed='true'] {
+        border-color: var(--amber);
+        background: #17140f;
+      }
+      .choice .choice-title {
+        display: block;
+        margin: 5px 0 4px;
+        font-weight: 700;
+      }
+      .choice .choice-note {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 18px;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        padding: 12px 0;
+      }
+      .control-group {
+        display: inline-flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .control-label {
+        align-self: center;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .control {
+        min-height: 40px;
+        padding: 7px 12px;
+        color: var(--ink);
+        background: transparent;
+        border: 1px solid #444;
+      }
+      .control[aria-pressed='true'] {
+        color: #171717;
+        background: #ddd;
+        border-color: #ddd;
+      }
+      .preview-note {
+        min-height: 24px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .store-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .store-card {
+        min-width: 0;
+        border: 1px solid #303030;
+        background: var(--panel);
+      }
+      .art {
+        aspect-ratio: 1;
+        background: #101010;
+      }
+      .art img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .listen-row {
+        display: flex;
+        align-items: center;
+        min-height: 52px;
+        padding: 8px 12px 0;
+      }
+      .listen {
+        display: inline-flex;
+        flex: 0 0 112px;
+        width: 112px;
+        height: 44px;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        padding: 0 8px;
+        color: #eee;
+        background: #101010;
+        border: 1px solid #666;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .eq {
+        width: 18px;
+        height: 18px;
+        flex: none;
+        color: var(--amber);
+      }
+      .facts {
+        padding: 9px 12px 13px;
+      }
+      .artist,
+      .format {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .availability {
+        margin: 12px 0 0;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      .listen[aria-disabled='true'] {
+        color: #f2d4a5;
+        background: #211c14;
+        border-color: var(--amber);
+        cursor: default;
+      }
+      .coverflow {
+        display: none;
+        min-height: 460px;
+        margin-top: 16px;
+        padding: 24px;
+        border: 1px solid var(--line);
+        background: radial-gradient(ellipse at 50% 52%, #191919 0, #0d0d0d 68%);
+      }
+      .review[data-view='coverflow'] .store-grid {
+        display: none;
+      }
+      .review[data-view='coverflow'] .coverflow {
+        display: block;
+      }
+      .coverflow-title {
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .coverflow-card {
+        width: min(320px, 100%);
+        margin: 0 auto;
+        border: 1px solid #303030;
+        background: #111;
+      }
+      .coverflow-card .art {
+        padding: 10px;
+      }
+      .coverflow-card .art img {
+        object-fit: contain;
+      }
+      .coverflow-card .facts {
+        padding-top: 5px;
+        text-align: center;
+      }
+      .coverflow-card .listen-row {
+        padding-top: 8px;
+      }
+      .coverflow-card .availability {
+        margin-bottom: 4px;
+      }
+      .review[data-alignment='left'] .listen-row {
+        justify-content: flex-start;
+      }
+      .review[data-alignment='center'] .listen-row {
+        justify-content: center;
+      }
+      .review[data-alignment='contextual'][data-view='grid'] .listen-row {
+        justify-content: flex-start;
+      }
+      .review[data-alignment='contextual'][data-view='coverflow'] .listen-row {
+        justify-content: center;
+      }
+      .rationale {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+      }
+      .rationale p {
+        margin: 6px 0 0;
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .rationale strong {
+        color: var(--ink);
+      }
+      @media (max-width: 760px) {
+        main {
+          padding: 18px 16px 60px;
+        }
+        .store-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+        }
+        .choices {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+        .choice {
+          min-height: 0;
+        }
+        .coverflow {
+          min-height: 0;
+          padding: 18px 12px;
+        }
+        .coverflow-card {
+          width: min(245px, 100%);
+        }
+        .rationale {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+        .brand {
+          font-size: 19px;
+        }
+        header .eyebrow {
+          max-width: 110px;
+          text-align: right;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="review" data-alignment="contextual" data-view="grid" data-state="listen">
+      <header>
+        <span class="brand">BLACKBOX RECORDS</span>
+        <span class="eyebrow">Design review / Store listening</span>
+      </header>
+      <h1>Align to the way you browse</h1>
+      <p class="intro">
+        Same <strong>112 × 44px</strong> control, below the artwork. Compare only its horizontal anchor in Grid and
+        Coverflow. The preview includes the selected <strong>In player</strong> status.
+      </p>
+      <nav class="top-links" aria-label="Related pages">
+        <a href="http://127.0.0.1:4321/blackbox-records/store/">Open live Store</a>
+        <a href="./store-listen-placement-review.html">Previous placement study</a>
+      </nav>
+      <section aria-labelledby="alignment-heading">
+        <div class="section-head">
+          <div>
+            <span class="eyebrow">Three alignment strategies</span>
+            <h2 id="alignment-heading">Where should the action sit?</h2>
+          </div>
+        </div>
+        <div class="choices" role="group" aria-label="Choose button alignment">
+          <button class="choice" type="button" data-alignment="left" aria-pressed="false">
+            <span class="eyebrow">A / Current</span>
+            <span class="choice-title">Left in both</span>
+            <span class="choice-note"
+              >Keeps one consistent edge; Coverflow’s centered record gets a left-set action.</span
+            >
+          </button>
+          <button class="choice" type="button" data-alignment="center" aria-pressed="false">
+            <span class="eyebrow">B</span>
+            <span class="choice-title">Centered in both</span>
+            <span class="choice-note"
+              >Balances the sleeves; Grid actions separate from the title and artist text edge.</span
+            >
+          </button>
+          <button class="choice" type="button" data-alignment="contextual" aria-pressed="true">
+            <span class="eyebrow">C / Selected</span>
+            <span class="choice-title">Follow the view</span>
+            <span class="choice-note">Grid follows its text gutter; Coverflow centers with the active record.</span>
+          </button>
+        </div>
+        <div class="controls">
+          <span class="control-label">View</span>
+          <div class="control-group" role="group" aria-label="Store view">
+            <button class="control" type="button" data-view="grid" aria-pressed="true">Grid</button>
+            <button class="control" type="button" data-view="coverflow" aria-pressed="false">Coverflow</button>
+          </div>
+          <span class="control-label">Record state</span>
+          <div class="control-group" role="group" aria-label="Listen button state">
+            <button class="control" type="button" data-state="listen" aria-pressed="true">Listen</button>
+            <button class="control" type="button" data-state="active" aria-pressed="false">In player</button>
+          </div>
+        </div>
+        <p class="preview-note" id="preview-note" role="status" aria-live="polite">
+          Grid: action follows each card’s title and artist gutter.
+        </p>
+        <div class="store-grid" aria-label="Store Grid preview"></div>
+        <section class="coverflow" aria-label="Store Coverflow preview">
+          <p class="eyebrow coverflow-title">Now viewing / 1 of 104</p>
+          <article class="coverflow-card"></article>
+        </section>
+      </section>
+      <div class="rationale">
+        <div>
+          <span class="eyebrow">Grid</span>
+          <p>
+            <strong>Left alignment</strong> creates a repeatable scan line with the title, artist and format on every
+            card.
+          </p>
+        </div>
+        <div>
+          <span class="eyebrow">Coverflow</span>
+          <p>
+            <strong>Center alignment</strong> connects the action to the single active sleeve and centered record
+            heading.
+          </p>
+        </div>
+      </div>
+    </main>
+    <script>
+      const records = [
+        {
+          id: 'disintegration',
+          title: 'Disintegration',
+          artist: 'Afterwise',
+          format: 'Black Vinyl LP',
+          image: '../../apps/web/src/content/releases/afterwise-album-cover-distro-mockup.webp',
+        },
+        {
+          id: 'anarchotribal',
+          title: 'Anarchotribal',
+          artist: 'Ouranopithecus',
+          format: 'Vinyl',
+          image: '../../apps/web/src/content/releases/ouranopithecus-album-cover-distro-mockup.webp',
+        },
+        {
+          id: 'caregivers',
+          title: 'Caregivers',
+          artist: 'Chronoboros',
+          format: 'Vinyl',
+          image: '../../apps/web/src/content/releases/chronoboros-album-cover-distro-mockup.webp',
+        },
+        {
+          id: 'aftermaths',
+          title: 'Aftermaths',
+          artist: 'Indoctrinate',
+          format: 'Vinyl',
+          image: '../../apps/web/src/content/distro/indoctrinate-aftermaths.jpg',
+        },
+      ];
+      const review = document.querySelector('.review');
+      const grid = document.querySelector('.store-grid');
+      const coverflowCard = document.querySelector('.coverflow-card');
+      const eq =
+        '<svg class="eq" viewBox="0 0 18 18" aria-hidden="true" focusable="false"><rect x="0" y="5" width="2" height="8" fill="currentColor"/><rect x="4" y="2" width="2" height="14" fill="currentColor"/><rect x="8" y="1" width="2" height="16" fill="currentColor"/><rect x="12" y="3" width="2" height="12" fill="currentColor"/><rect x="16" y="6" width="2" height="6" fill="currentColor"/></svg>';
+      function listen(record) {
+        const active = review.dataset.state === 'active' && record.id === 'disintegration';
+        const label = active ? 'In player' : 'Listen';
+        return (
+          '<div class="listen-row"><span class="listen" role="img" aria-label="' +
+          label +
+          (active ? ', disabled status' : ' button preview') +
+          '" aria-disabled="' +
+          active +
+          '" data-record="' +
+          record.id +
+          '">' +
+          eq +
+          '<span>' +
+          label +
+          '</span></span></div>'
+        );
+      }
+      function card(record) {
+        return (
+          '<article class="store-card"><div class="art"><img src="' +
+          record.image +
+          '" alt="' +
+          record.title +
+          ' sleeve" /></div>' +
+          listen(record) +
+          '<div class="facts"><h3>' +
+          record.title +
+          '</h3><p class="artist">' +
+          record.artist +
+          '</p><p class="format">' +
+          record.format +
+          '</p><p class="availability">Available</p></div></article>'
+        );
+      }
+      function render() {
+        grid.innerHTML = records.map(card).join('');
+        const record = records[0];
+        coverflowCard.innerHTML =
+          '<div class="art"><img src="' +
+          record.image +
+          '" alt="' +
+          record.title +
+          ' sleeve" /></div>' +
+          listen(record) +
+          '<div class="facts"><h3>' +
+          record.title +
+          '</h3><p class="artist">' +
+          record.artist +
+          '</p><p class="format">' +
+          record.format +
+          '</p><p class="availability">Available</p></div>';
+        const isGrid = review.dataset.view === 'grid';
+        document.querySelector('#preview-note').textContent = isGrid
+          ? 'Grid: action follows each card’s title and artist gutter.'
+          : 'Coverflow: the action sits under the centered active record.';
+        document.querySelectorAll('[data-alignment]').forEach((button) => {
+          if (button.matches('button'))
+            button.setAttribute('aria-pressed', String(button.dataset.alignment === review.dataset.alignment));
+        });
+        document.querySelectorAll('button[data-view], button[data-state]').forEach((button) => {
+          const key = button.hasAttribute('data-view') ? 'view' : 'state';
+          button.setAttribute('aria-pressed', String(button.dataset[key] === review.dataset[key]));
+        });
+      }
+      document.addEventListener('click', (event) => {
+        const target = event.target.closest('[data-alignment], [data-view], [data-state]');
+        if (!target) return;
+        if (target.dataset.alignment) review.dataset.alignment = target.dataset.alignment;
+        if (target.dataset.view) review.dataset.view = target.dataset.view;
+        if (target.dataset.state) review.dataset.state = target.dataset.state;
+        render();
+      });
+      render();
+    </script>
+  </body>
+</html>

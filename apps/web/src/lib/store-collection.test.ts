@@ -255,6 +255,7 @@ describe('store collection entries', () => {
         slug,
         sourceId: slug,
         sourceKind: 'distro',
+        embeddedPlayerData: null,
         storePath: `/store/${slug}/`,
         subtitle: 'Fixture',
         summary: null,

@@ -86,7 +86,19 @@ export function createShellPlayerSessionController({
     retirePlayerSession(iframeCacheByEmbedUrlRef.current, activeSession);
   }
 
+  function syncPlayerTriggers() {
+    const activeId = activePlayerSessionRef.current?.releaseId;
+    for (const trigger of getTargetDocument().querySelectorAll<HTMLElement>('[data-music-listen-source-id]')) {
+      const selected = Boolean(activeId && trigger.dataset.musicListenSourceId === activeId);
+      trigger.dataset.musicListenSession = selected ? 'active' : 'idle';
+      trigger.toggleAttribute('disabled', selected);
+      const label = trigger.querySelector<HTMLElement>('[data-music-listen-label]');
+      if (label) label.textContent = selected ? 'In player' : trigger.dataset.musicListenDefaultLabel || 'Listen';
+    }
+  }
+
   function updatePlayerUiFromSession(activeSession: ActivePlayerSession | null) {
+    syncPlayerTriggers();
     if (!activeSession) {
       setPlayerProviders([]);
     }
@@ -309,6 +321,7 @@ export function createShellPlayerSessionController({
     openPlayerModal,
     reopenPlayerModal,
     stopPlayerSession,
+    syncPlayerTriggers,
     warmProviderOrigins,
   };
 }

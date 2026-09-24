@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { DISTRO_GROUP_VALUES } from './validation';
 import { richTextSchema } from './prose';
+import { bandcampEmbedUrlSchema, tidalUrlSchema } from './schemas';
 
 const requiredAltText = z.string().trim().min(1, 'Describe the visible image for people who cannot see it.');
 const requiredText = z.string().trim().min(1, 'Enter a value.');
@@ -25,6 +26,8 @@ export function createDistroContentSchema<TImageSchema extends z.ZodType>(image:
     tracklist: tracklistSchema.nullish(),
     summary: requiredText,
     summary_rich: richTextSchema.nullish(),
+    bandcamp_embed_url: bandcampEmbedUrlSchema.optional(),
+    tidal_url: tidalUrlSchema.optional(),
     eyebrow: z.string().optional(),
     format: z.string().optional(),
     release_date: z.coerce.date().optional(),

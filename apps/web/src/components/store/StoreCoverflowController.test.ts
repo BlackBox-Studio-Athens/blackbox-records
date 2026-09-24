@@ -397,6 +397,19 @@ describe('Store Coverflow controller', () => {
     expect(selection.preventDefault).toHaveBeenCalledOnce();
     expect(cards[2]!.dataset.storeCoverflowPosition).toBe('active');
 
+    cards[2]!.addClosestSelector('[data-music-streaming-service-embedded-player-trigger]');
+    stage.dispatch('pointerdown', cards[2]!, { clientX: 10, clientY: 10 });
+    const listenClick = element.dispatch('click', cards[2]!);
+    expect(listenClick.preventDefault).not.toHaveBeenCalled();
+    expect(listenClick.stopPropagation).not.toHaveBeenCalled();
+
+    cards[3]!.addClosestSelector('[data-music-streaming-service-embedded-player-trigger]');
+    stage.dispatch('pointerdown', cards[3]!, { clientX: 10, clientY: 10 });
+    stage.dispatch('pointermove', cards[3]!, { clientX: 30, clientY: 10 });
+    const draggedListenClick = element.dispatch('click', cards[3]!);
+    expect(draggedListenClick.preventDefault).toHaveBeenCalledOnce();
+    expect(draggedListenClick.stopPropagation).toHaveBeenCalledOnce();
+
     controller.cleanup();
     expect(element.listenerCount('click')).toBe(0);
     expect(stage.listenerCount('wheel')).toBe(0);

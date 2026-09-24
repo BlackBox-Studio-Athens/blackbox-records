@@ -52,6 +52,7 @@ export function resolveShellDocumentClickIntent(
 
   const playerTriggerElement = eventTarget.closest<HTMLElement>(PLAYER_TRIGGER_SELECTOR);
   if (playerTriggerElement) {
+    if (eventTarget.closest(`${PLAYER_TRIGGER_SELECTOR}[disabled]`)) return { kind: 'none' };
     const playerElement = playerTriggerElement.closest<HTMLElement>(PLAYER_CARD_SELECTOR) || playerTriggerElement;
     if (readPlayerProvidersFromElement(playerElement).length > 0) {
       return {

@@ -68,6 +68,10 @@ describe('ShellPlayerSurface', () => {
     expect(html).toContain('data-state="open"');
     expect(html).toContain('aria-label="Minimize player"');
     expect(html).toContain('Player Ready · Bandcamp');
+    expect(html.match(/class="music-equalizer"/g)).toHaveLength(2);
+    expect(html.match(/class="music-equalizer__bar"/g)).toHaveLength(10);
+    expect(html).toContain('aria-hidden="true" focusable="false"');
+    expect(html).not.toContain('Playing');
     expect(html).toContain('Disintegration');
     expect(html).toContain('aria-label="Stop player"');
   });

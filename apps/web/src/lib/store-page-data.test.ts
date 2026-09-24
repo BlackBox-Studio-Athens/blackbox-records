@@ -6,6 +6,7 @@ import {
   createStorePageStaticPaths,
   getStorePageEntryBySlug,
 } from './store-page-data';
+import { buildEmbeddedPlayerData } from '../utils/music';
 
 const mockCatalogData = vi.hoisted(() => ({
   getStoreItemBySlug: vi.fn(),
@@ -45,6 +46,7 @@ describe('store page data helper', () => {
       slug: 'disintegration-black-vinyl-lp',
       sourceKind: 'release',
       sourceId: 'disintegration',
+      embeddedPlayerData: null,
       title: 'Disintegration',
       subtitle: 'Afterwise',
       summary: 'BlackBox release.',
@@ -97,6 +99,7 @@ describe('store page data helper', () => {
         taxCategory: 'physical_goods',
         sourceKind: 'release',
         sourceId: 'disintegration',
+        embeddedPlayerData: null,
         title: 'Disintegration',
         subtitle: 'Afterwise',
         summary: 'BlackBox release.',
@@ -111,6 +114,7 @@ describe('store page data helper', () => {
         taxCategory: 'physical_goods',
         sourceKind: 'distro',
         sourceId: 'afterglow-tape',
+        embeddedPlayerData: null,
         title: 'Afterglow Tape',
         subtitle: 'Various Artists',
         summary: 'Distributed release.',
@@ -125,6 +129,7 @@ describe('store page data helper', () => {
         taxCategory: 'physical_goods',
         sourceKind: 'release',
         sourceId: 'caregivers',
+        embeddedPlayerData: null,
         title: 'Caregivers',
         subtitle: 'Chronoboros',
         summary: 'BlackBox release.',
@@ -216,6 +221,7 @@ describe('store page data helper', () => {
         taxCategory: 'physical_goods',
         sourceKind: 'release',
         sourceId: 'disintegration',
+        embeddedPlayerData: null,
         title: 'Disintegration',
         subtitle: 'Afterwise',
         summary: 'BlackBox release.',
@@ -250,6 +256,7 @@ describe('store page data helper', () => {
         taxCategory: 'physical_goods',
         sourceKind: 'distro',
         sourceId: 'afterglow-tape',
+        embeddedPlayerData: null,
         title: 'Afterglow Tape',
         subtitle: 'Various Artists',
         summary: 'Distributed release.',
@@ -279,6 +286,14 @@ describe('store page data helper', () => {
       taxCategory: 'physical_goods' as const,
       sourceKind: 'distro' as const,
       sourceId: 'afterglow-tape',
+      embeddedPlayerData: buildEmbeddedPlayerData(
+        'distro:afterglow-tape',
+        {
+          bandcamp_embed_url:
+            'https://bandcamp.com/EmbeddedPlayer/album=123456789/size=large/bgcol=0d0d0d/linkcol=f5f5f5/artwork=big/transparent=true/',
+        },
+        'Afterglow Tape — Various Artists',
+      ),
       title: 'Afterglow Tape',
       subtitle: 'Various Artists',
       summary: 'Distributed release.',
@@ -310,6 +325,7 @@ describe('store page data helper', () => {
     expect(seed).not.toHaveProperty('priceAmountMinor');
     expect(seed).not.toHaveProperty('priceCurrencyCode');
     expect(seed).not.toHaveProperty('priceDisplay');
+    expect(seed).not.toHaveProperty('embeddedPlayerData');
   });
 
   it('creates a metadata cart seed for Price soon store pages when a variant is known', () => {
@@ -318,6 +334,7 @@ describe('store page data helper', () => {
       taxCategory: 'physical_goods' as const,
       sourceKind: 'distro' as const,
       sourceId: 'aftermaths',
+      embeddedPlayerData: null,
       title: 'Aftermaths',
       subtitle: 'Indoctrinate',
       summary: 'Distributed release.',

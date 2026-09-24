@@ -47,21 +47,23 @@ describe('Store Item listening context contract', () => {
     expect(source).toContain('throw new Error(`Missing Release source entry');
     expect(source).toContain('resolveArtistProfileForRelease(sourceRelease)');
     expect(source).toContain('resolveReleaseArtistDisplayName(sourceRelease, sourceReleaseArtist)');
-    expect(source).toContain('buildEmbeddedPlayerData(');
-    expect(source).toContain('sourceRelease.id');
-    expect(source).toContain('sourceRelease.data');
-    expect(source).toContain('`${sourceRelease.data.title} — ${sourceReleaseArtistName}`');
+    expect(source).toContain('const embeddedPlayerData = storeItem.embeddedPlayerData;');
+    expect(source).not.toContain('buildEmbeddedPlayerData(');
     expect(source).not.toContain("getEntry('releases', storeItem.title)");
   });
 
   it('keeps provider and editorial actions independently conditional', () => {
-    expect(source).toContain('(sourceReleasePlayerData || sourceReleaseUrl || sourceReleaseArtistUrl)');
-    expect(source).toContain('sourceReleasePlayerData && (');
+    expect(source).toContain('(embeddedPlayerData || sourceReleaseUrl || sourceReleaseArtistUrl)');
+    expect(source).toContain('embeddedPlayerData && (');
     expect(source).toContain('sourceReleaseUrl && (');
     expect(source).toContain('sourceReleaseArtistUrl && (');
     expect(source).toContain("storeItem.sourceKind === 'distro' ? await getEntry('distro', storeItem.sourceId) : null");
     expect(source).toContain('<StoreItemPurchaseActions client:load cartItem={cartItem} cartSeed={cartSeed} />');
-    expect(source).toContain('embeddedPlayerData={sourceReleasePlayerData}');
+    expect(source).toContain('embeddedPlayerData={embeddedPlayerData}');
+    expect(storeCard).toContain('storeItem.embeddedPlayerData && (');
+    expect(storeCard).toContain(
+      '<MusicStreamingServiceListenTrigger embeddedPlayerData={storeItem.embeddedPlayerData} />',
+    );
     expect(source).not.toContain('embeddedPlayerData={cartItem}');
     expect(source).not.toContain("getEntry('artists', storeItem.sourceId)");
   });

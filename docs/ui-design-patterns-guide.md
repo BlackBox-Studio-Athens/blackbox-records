@@ -2,6 +2,8 @@
 
 `docs/ui-design-patterns.csv` is the repository's shared design-research evidence library. Keep one canonical dataset; future tasks should reference pattern IDs instead of copying rows into new datasets.
 
+For reusable visual/code repositories and component studies, see the living [design inspiration library](design-inspiration.md). It complements this dataset with source entry points, adoption notes and decisions.
+
 ## Reuse workflow
 
 1. Define the target surface, audience, task, product constraints, and aesthetic before filtering.

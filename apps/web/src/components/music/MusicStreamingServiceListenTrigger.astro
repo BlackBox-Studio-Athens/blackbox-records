@@ -1,5 +1,6 @@
 ---
 import { cn } from '@/lib/utils';
+import MusicEqualizer from './MusicEqualizer';
 import type { EmbeddedPlayerData } from '@/utils/music';
 
 interface Props {
@@ -47,11 +48,13 @@ const playerDataAttributes = includePlayerData
   )}
   data-music-listen-trigger-variant={variant}
   data-music-listen-trigger-tone={tone}
+  data-music-listen-source-id={embeddedPlayerData.releaseId}
+  data-music-listen-default-label={label}
   data-music-streaming-service-embedded-player-trigger
   data-music-streaming-service-embedded-player-card={includeCardAttribute ? true : undefined}
   {...elementAttributes}
   {...playerDataAttributes}
 >
-  <span class="music-listen-trigger__indicator release-card-listen-trigger__indicator" aria-hidden="true"></span>
-  {label}
+  <MusicEqualizer />
+  <span data-music-listen-label>{label}</span>
 </Tag>

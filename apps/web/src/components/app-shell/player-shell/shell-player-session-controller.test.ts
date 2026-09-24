@@ -28,6 +28,7 @@ function createFrameHost(iframeElement = createIframe()) {
 
 function createTargetDocument() {
   return {
+    querySelectorAll: vi.fn(() => []),
     createElement: vi.fn(() => ({}) as HTMLLinkElement),
     head: {
       appendChild: vi.fn(),
@@ -115,6 +116,33 @@ function createActiveSession(iframeElement = createIframe()): ActivePlayerSessio
 }
 
 describe('shell player session controller', () => {
+  it('marks matching sources across surfaces and resets stale cached labels on sync and Stop', () => {
+    const labels = [{ textContent: 'Listen' }, { textContent: 'Listen' }, { textContent: 'Listen' }];
+    const triggers = ['disintegration', 'disintegration', 'distro:disintegration'].map((id, index) => ({
+      dataset: { musicListenSourceId: id, musicListenDefaultLabel: 'Listen', musicListenSession: 'idle' },
+      querySelector: vi.fn(() => labels[index]),
+      toggleAttribute: vi.fn(),
+    }));
+    const targetDocument = {
+      ...createTargetDocument(),
+      querySelectorAll: vi.fn(() => triggers),
+    } as unknown as Document;
+    const { controller, options } = createController({ getTargetDocument: () => targetDocument });
+    options.activePlayerSessionRef.current = createActiveSession();
+    controller.syncPlayerTriggers();
+    expect(labels.map((label) => label.textContent)).toEqual(['In player', 'In player', 'Listen']);
+    expect(triggers[0]?.toggleAttribute).toHaveBeenLastCalledWith('disabled', true);
+    expect(triggers[2]?.toggleAttribute).toHaveBeenLastCalledWith('disabled', false);
+
+    options.activePlayerSessionRef.current.releaseId = 'distro:disintegration';
+    controller.syncPlayerTriggers();
+    expect(labels.map((label) => label.textContent)).toEqual(['Listen', 'Listen', 'In player']);
+    controller.stopPlayerSession();
+    expect(labels.map((label) => label.textContent)).toEqual(['Listen', 'Listen', 'Listen']);
+    expect(triggers.every((trigger) => trigger.dataset.musicListenSession === 'idle')).toBe(true);
+    expect(triggers[2]?.toggleAttribute).toHaveBeenLastCalledWith('disabled', false);
+  });
+
   it('opens a player modal with the preferred provider and cached iframe', () => {
     const { controller, iframeElement, options, provider } = createController();
     const triggerElement = createTriggerElement();
