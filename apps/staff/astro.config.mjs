@@ -8,6 +8,7 @@ export default defineConfig({
   site: 'https://staff.blackboxrecordsathens.com',
   base: '/',
   output: 'static',
+  build: { inlineStylesheets: 'always' },
   integrations: [react()],
   vite: {
     plugins: [tailwindcss()],

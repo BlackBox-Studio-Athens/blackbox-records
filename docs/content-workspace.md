@@ -12,6 +12,10 @@ At widths of at least 1280 px, editors initially show a resizable public appeara
 
 The [backoffice design reference](backoffice-design.md) and [staff glossary](../UBIQUITOUS_LANGUAGE.md) own the shared vocabulary and update policy. Implementation acceptance is tracked in [the redesign checklist](../openspec/changes/redesign-staff-workspace/tasks.md).
 
+## Staff startup assets
+
+`pnpm build:staff` runs the route-isolation check and `pnpm performance:bundles --scope=staff`. The performance check bounds eager JavaScript and compressed HTML for Overview, Website, Stock and Orders, and rejects initial project stylesheet requests. Initial project CSS is included in authenticated HTML, which remains private and `no-store`; full document navigations therefore retransmit the extra 12–13 KiB of compressed HTML. With warmed assets, private asset responses near 100 ms and throughput of at least 10 Mbps, the conditional estimate is 50–200 ms faster primary content on routine visits. Hosted results can differ, and this estimate does not cover slow first HTML or API responses.
+
 For Distro items, order **More images** with the existing Move up/Move down controls. The first extra photo different from the main image appears on hover or keyboard focus. All gallery photos appear on the item page. Save and preview privately, then review and publish to update the public order; the main image stays unchanged.
 
 ## Editorial text formatting

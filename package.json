@@ -63,7 +63,7 @@
     "build:web": "pnpm --filter @blackbox/web build && tsx scripts/check-frontend-route-isolation.ts web",
     "build:content-snapshot": "node scripts/build-content-snapshot.mjs",
     "cms:snapshot:export": "node --import tsx scripts/export-cms-snapshot.mjs",
-    "build:staff": "pnpm --filter @blackbox/staff build && tsx scripts/check-frontend-route-isolation.ts staff",
+    "build:staff": "pnpm --filter @blackbox/staff build && tsx scripts/check-frontend-route-isolation.ts staff && pnpm performance:bundles --scope=staff",
     "cache:policy:check": "pnpm --filter @blackbox/web cache:policy:check",
     "cache:policy:hosted-audit": "pnpm --filter @blackbox/web cache:policy:hosted-audit",
     "brand-font:check": "pnpm --filter @blackbox/web brand-font:check",
