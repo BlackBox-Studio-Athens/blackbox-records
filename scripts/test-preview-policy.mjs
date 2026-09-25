@@ -2,14 +2,29 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { stripTypeScriptTypes } from 'node:module';
 import { chromium, firefox } from 'playwright';
 import { previewPolicy } from '../apps/backend/src/cms/preview-policy.ts';
 
 const image = await readFile('apps/staff/public/favicon-96x96.png');
+const readiness = stripTypeScriptTypes(await readFile('apps/web/src/lib/private-preview.ts', 'utf8'));
 const hits = [];
 const server = createServer((request, response) => {
   hits.push(request.url);
-  if (request.url === '/style.css') {
+  if (request.url === '/readiness') {
+    response.setHeader('Content-Type', 'text/html');
+    const preview = { context: '00000000-0000-0000-0000-000000000001', generation: 1, parentOrigin: origin };
+    response.end(`<!doctype html><meta name="blackbox-preview" content='${JSON.stringify(preview)}'>
+      <img loading="lazy" src="/image.png" width="96" height="96">
+      <img loading="lazy" src="/offscreen.png" style="position:absolute;top:10000px" width="96" height="96">
+      <script type="module">${readiness}\nconnectPrivatePreview();</script>`);
+  } else if (request.url === '/readiness-host') {
+    response.setHeader('Content-Type', 'text/html');
+    response.end(`<!doctype html><script>addEventListener('message', event => {
+      if (event.data.type === 'ready') document.documentElement.dataset.ready = 'true';
+      if (event.data.type === 'failed') document.documentElement.dataset.failed = event.data.stage;
+    });</script><iframe style="visibility:hidden;width:600px;height:400px" src="/readiness"></iframe>`);
+  } else if (request.url === '/style.css') {
     response.setHeader('Content-Type', 'text/css');
     response.end('body { background-color: rgb(12, 34, 56); }');
   } else if (request.url === '/image.png') {
@@ -54,6 +69,10 @@ try {
       assert.equal(await page.evaluate(() => document.body.dataset.leaked), undefined);
       assert.equal(forbidden.length, 0);
       assert.ok(!hits.includes('/submitted'));
+      await page.goto(origin + '/readiness-host');
+      await page.waitForFunction(() => document.documentElement.dataset.ready === 'true');
+      assert.equal(await page.evaluate(() => document.documentElement.dataset.failed), undefined);
+      assert.ok(!hits.includes('/offscreen.png'), 'Offscreen preview images remain lazy');
       console.log(
         `${browserType.name()}: public scripts and assets work; staff DOM, external requests and form delivery are blocked`,
       );

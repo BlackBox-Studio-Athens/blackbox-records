@@ -22,15 +22,15 @@ minimumReleaseAgeExclude:
   - '@cloudflare/workers-types@5.20260831.1'
   - lucide-react@1.38.0
   - shadcn@4.19.1
-  - '@emdash-cms/admin@0.38.0'
-  - '@emdash-cms/auth@0.38.0'
-  - '@emdash-cms/blocks@0.38.0'
-  - '@emdash-cms/cloudflare@0.38.0'
-  - '@emdash-cms/gutenberg-to-portable-text@0.38.0'
+  - '@emdash-cms/admin@0.40.1'
+  - '@emdash-cms/auth@0.40.1'
+  - '@emdash-cms/blocks@0.40.1'
+  - '@emdash-cms/cloudflare@0.40.1'
+  - '@emdash-cms/gutenberg-to-portable-text@0.40.1'
   - '@emdash-cms/registry-client@0.6.0'
   - '@emdash-cms/registry-lexicons@0.5.0'
   - '@emdash-cms/registry-moderation@0.2.0'
   - '@emdash-cms/registry-verification@0.3.1'
-  - emdash@0.38.0
+  - emdash@0.40.1
 patchedDependencies:
-  emdash@0.38.0: patches/emdash@0.38.0.patch
+  emdash@0.40.1: patches/emdash@0.40.1.patch

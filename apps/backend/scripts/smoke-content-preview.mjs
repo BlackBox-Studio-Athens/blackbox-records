@@ -305,6 +305,7 @@ async function checkInteractions(page, name) {
     await frame.goto(
       new URL(`/blackbox-records/store/disintegration-black-vinyl-lp/?__preview=${document.context}`, document.url)
         .href,
+      { waitUntil: 'domcontentloaded' },
     );
     await frame.getByRole('button', { name: 'Add To Cart', exact: true }).click();
     await frame.getByRole('dialog').getByRole('link', { name: 'Checkout', exact: true }).click();

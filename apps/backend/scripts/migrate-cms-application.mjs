@@ -54,6 +54,7 @@ const proxy = await getPlatformProxy({
 });
 let pending;
 let privateDraftFieldsToUpdate = 0;
+let calendarDateFieldsToUpdate = 0;
 try {
   const db = proxy.env.CMS_DB;
   const exists = await db
@@ -63,6 +64,16 @@ try {
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='_emdash_fields'")
     .first();
   if (fieldsExist) {
+    // Run before EmDash 079_datetime_normalization, including before Local auto migrations.
+    const calendarDates = `type = 'datetime' AND (
+      (slug = 'release_date' AND collection_id IN (SELECT id FROM _emdash_collections WHERE slug IN ('releases', 'distro')))
+      OR (slug = 'date' AND collection_id IN (SELECT id FROM _emdash_collections WHERE slug = 'news'))
+    )`;
+    calendarDateFieldsToUpdate = (
+      await db.prepare(`SELECT count(*) AS total FROM _emdash_fields WHERE ${calendarDates}`).first()
+    ).total;
+    if (values.apply && calendarDateFieldsToUpdate)
+      await db.prepare(`UPDATE _emdash_fields SET type = 'string' WHERE ${calendarDates}`).run();
     const collections = [
       'artists',
       'releases',
@@ -99,7 +110,14 @@ try {
     .sort();
   console.log(
     JSON.stringify(
-      { environment: values.env, database: resource.database_name, applied, pending, privateDraftFieldsToUpdate },
+      {
+        environment: values.env,
+        database: resource.database_name,
+        applied,
+        pending,
+        privateDraftFieldsToUpdate,
+        calendarDateFieldsToUpdate,
+      },
       null,
       2,
     ),

@@ -12,7 +12,8 @@ const collections: NonNullable<SeedFile['collections']> = Object.entries(cmsCont
   >;
   const fields: SeedField[] = Object.entries(properties).map(([name, property]) => {
     let type: SeedField['type'] = 'json';
-    if (property.type === 'string') type = property.format === 'date' ? 'datetime' : 'string';
+    // Editorial dates are calendar days, not instants subject to timezone normalization.
+    if (property.type === 'string') type = 'string';
     if (property.type === 'integer' || property.type === 'number' || property.type === 'boolean') type = property.type;
     if (name === 'image' || name === 'cover_image') type = 'image';
     if (name === 'tracklist') type = 'json';

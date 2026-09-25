@@ -9,6 +9,7 @@ Astro site for the BlackBox Records label. Public pages render from accepted imm
 - Tailwind CSS v4 + shadcn-ui setup (design implemented in Astro templates + `apps/web/src/styles/global.css`)
 - Type-safe content collections (`apps/web/src/content`)
 - Separate Cloudflare Worker backend scaffold (`apps/backend/src/index.ts`) using TypeScript + Hono
+- EmDash 0.40.1 powers the protected editorial APIs; follow the [CMS upgrade ordering](apps/backend/cms-migrations/README.md) before core migrations.
 - Code-first OpenAPI documents and a generated `@blackbox/api-client` workspace package
 
 ## URL model

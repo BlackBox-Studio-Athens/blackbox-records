@@ -146,7 +146,11 @@ export function connectPrivatePreview() {
               (box.top < innerHeight && box.bottom > 0 && box.left < innerWidth && box.right > 0)
             );
           })
-          .map((image) => image.decode()),
+          .map((image) => {
+            // A pending preview is hidden until ready; lazy images must start before that reveal.
+            image.loading = 'eager';
+            return image.decode();
+          }),
       );
       stage = 'font';
       send('readiness', { readinessStage: 'fonts' });

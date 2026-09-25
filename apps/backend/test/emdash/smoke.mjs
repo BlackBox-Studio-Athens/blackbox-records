@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, mkdtemp, rm } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
@@ -20,10 +21,7 @@ assert.deepEqual(config.migrations, [
   { tag: 'cms-runtime-v1', new_sqlite_classes: ['CmsRuntime'] },
   { tag: 'commerce-runtime-v1', new_sqlite_classes: ['CommerceRuntime'] },
 ]);
-assert.deepEqual(
-  config.kv_namespaces.map(({ binding }) => binding),
-  ['SESSION'],
-);
+assert.deepEqual(config.kv_namespaces, []);
 
 let entered;
 const barrier = createServer((_request, response) => {
@@ -33,16 +31,24 @@ const barrier = createServer((_request, response) => {
 barrier.listen(8800, '127.0.0.1');
 await once(barrier, 'listening');
 let worker;
+const localState = await mkdtemp(fileURLToPath(new URL('.emdash/race-', root)));
 try {
+  const migration = spawnSync(
+    process.execPath,
+    [fileURLToPath(new URL('../../scripts/migrate-cms-application.mjs', root)), '--persist-to', localState, '--apply'],
+    { encoding: 'utf8', windowsHide: true },
+  );
+  assert.equal(migration.status, 0, migration.stdout + migration.stderr);
   worker = await unstable_dev(fileURLToPath(new URL('dist/server/entry.mjs', root)), {
     config: fileURLToPath(new URL('dist/server/wrangler.json', root)),
     ip: '127.0.0.1',
-    port: 8799,
+    port: 8798,
     local: true,
+    persistTo: localState,
     logLevel: 'error',
     experimental: { disableExperimentalWarning: true },
   });
-  const base = 'http://127.0.0.1:8799';
+  const base = 'http://127.0.0.1:8798';
   const page = await fetch(base + '/checkpoint.html');
   assert.equal(page.status, 200);
   assert.equal(page.headers.get('cache-control'), 'private, no-store');
@@ -51,7 +57,7 @@ try {
     const response = await fetch(base + '/_emdash/api' + path, {
       method,
       headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1' },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : JSON.stringify(method === 'DELETE' ? { ...body, confirm: true } : body),
     });
     const payload = await response.json();
     return { status: response.status, ...payload };
@@ -60,12 +66,12 @@ try {
   const contract = await request('/openapi.json');
   assert.equal(contract.status, 200);
   assert.ok(contract.paths['/_emdash/api/content/{collection}/{id}'].put);
-  const created = await request('/content/posts', 'POST', {
+  const created = await request('/content/socials', 'POST', {
     slug: `revision-check-${Date.now()}`,
-    data: { title: 'Initial' },
+    data: { title: 'Initial', url: 'https://example.com', order: 1 },
   });
-  assert.equal(created.status, 201);
-  const path = '/content/posts/' + created.data.item.id;
+  assert.equal(created.status, 201, JSON.stringify(created));
+  const path = '/content/socials/' + created.data.item.id;
   const lockPath = path + '/lock';
   assert.equal((await request(lockPath, 'POST', {})).status, 200);
   assert.equal((await request(lockPath)).status, 200);
@@ -185,4 +191,5 @@ try {
 } finally {
   await worker?.stop();
   barrier.close();
+  await rm(localState, { recursive: true, force: true });
 }

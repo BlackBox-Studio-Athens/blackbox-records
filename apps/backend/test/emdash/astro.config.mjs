@@ -4,11 +4,15 @@ import { d1, r2 } from '@emdash-cms/cloudflare';
 import { defineConfig } from 'astro/config';
 import emdash from 'emdash/astro';
 import { fileURLToPath } from 'node:url';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 
 const localPath = (name) => fileURLToPath(new URL(name, import.meta.url)).replaceAll('\\', '/');
+mkdirSync(localPath('.emdash'), { recursive: true });
+writeFileSync(localPath('.emdash/seed.json'), readFileSync(localPath('../../.emdash/seed.json')));
 
 export default defineConfig({
   output: 'server',
+  session: false,
   adapter: cloudflare({ imageService: 'passthrough' }),
   vite: { build: { rolldownOptions: { output: { strictExecutionOrder: true } } } },
   integrations: [
@@ -31,12 +35,8 @@ export default defineConfig({
     {
       name: 'emdash-rest-contract',
       hooks: {
-        'astro:config:setup': ({ injectRoute }) => {
-          injectRoute({
-            pattern: '/_emdash/api/openapi.json',
-            entrypoint: 'emdash/routes/api/openapi.json',
-            prerender: false,
-          });
+        'astro:config:setup': ({ injectRoute, addMiddleware }) => {
+          addMiddleware({ entrypoint: localPath('../../src/middleware.ts'), order: 'pre' });
           injectRoute({
             pattern: '/_emdash/api/schema/render-parity',
             entrypoint: localPath('render-parity.astro'),

@@ -283,6 +283,8 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 
 ## Content model notes
 
+- EmDash 0.40.1 stores editorial calendar dates as validated `YYYY-MM-DD` strings. Run CMS application migrations before native core migrations; see `apps/backend/cms-migrations/README.md`. Preserve the dependency patch's concurrent-save/delete protection until upstream passes the existing race smoke.
+
 - `releases.artist` is an Astro `reference('artists')`
 - Collection-owned images for artists/releases/news use Astro `image()`
 - Home/about decorative images also use Astro `image()`

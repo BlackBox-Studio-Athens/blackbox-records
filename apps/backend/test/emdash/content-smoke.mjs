@@ -284,6 +284,34 @@ try {
     '0003_local_publication_receipt.sql',
     '0004_runtime_publication.sql',
   ]);
+  const dateState = await getPlatformProxy({
+    configPath: fileURLToPath(new URL('.emdash/wrangler.application-local.json', root)),
+    persist: { path: join(localState, 'v3') },
+    envFiles: [],
+  });
+  try {
+    const db = dateState.env.CMS_DB;
+    const dates = `SELECT f.id, f.type FROM _emdash_fields f JOIN _emdash_collections c ON c.id = f.collection_id
+      WHERE (c.slug IN ('releases', 'distro') AND f.slug = 'release_date') OR (c.slug = 'news' AND f.slug = 'date')`;
+    const fields = (await db.prepare(dates).all()).results;
+    assert.equal(fields.length, 3);
+    assert.ok(
+      fields.every((field) => field.type === 'string'),
+      'Fresh schemas must store calendar days as strings',
+    );
+    const revisionsBefore = (await db.prepare('SELECT * FROM revisions ORDER BY id').all()).results;
+    // Reproduce 0.38 schema metadata without touching authored content or revision values.
+    for (const field of fields)
+      await db.prepare("UPDATE _emdash_fields SET type = 'datetime' WHERE id = ?").bind(field.id).run();
+    assert.equal(JSON.parse(migrate()).calendarDateFieldsToUpdate, 3, 'Check must report without applying');
+    assert.ok((await db.prepare(dates).all()).results.every((field) => field.type === 'datetime'));
+    migrate('--apply');
+    assert.equal(JSON.parse(migrate()).calendarDateFieldsToUpdate, 0, 'Calendar migration is idempotent');
+    assert.ok((await db.prepare(dates).all()).results.every((field) => field.type === 'string'));
+    assert.deepEqual((await db.prepare('SELECT * FROM revisions ORDER BY id').all()).results, revisionsBefore);
+  } finally {
+    await dateState.dispose();
+  }
   migrate('--apply');
   assert.deepEqual(JSON.parse(migrate()).pending, []);
   const workspaceSummary = await request('/blackbox/workspace?collection=artists');
