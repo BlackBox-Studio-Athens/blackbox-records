@@ -20,7 +20,7 @@
 | Privacy                | `/privacy/` is a static document when approved, or a labeled local draft. It is omitted from normal builds while pending.                                                                                                  |
 | Footer and sitemap     | Privacy link and sitemap inclusion follow the same publication decision. Existing terms URL remains stable.                                                                                                                |
 | Newsletter             | Privacy link adjacent to the existing explicit consent; checkbox copy, default and submission behavior unchanged.                                                                                                          |
-| Services inquiry       | Privacy link next to submission, including the email fallback flow; no new consent requirement.                                                                                                                            |
+| Services inquiry       | Privacy link next to submission; no new consent requirement.                                                                                                                                                               |
 
 ## Required public inputs and data-flow inventory
 

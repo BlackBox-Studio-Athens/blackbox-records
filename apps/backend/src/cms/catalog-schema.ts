@@ -20,6 +20,17 @@ export async function prepareCatalogSchema(runtime: EmDashRuntime) {
       await registry.createField(collection, { slug: 'tracklist', label: 'Tracklist', type: 'json', required: false });
     else if (existing.type !== 'json') throw new Error(`Unexpected field type: ${collection}.tracklist`);
   }
+  for (const slug of ['bandcamp_embed_url', 'tidal_url']) {
+    const existing = await registry.getField('distro', slug);
+    if (!existing)
+      await registry.createField('distro', {
+        slug,
+        label: slug === 'bandcamp_embed_url' ? 'Bandcamp embed URL' : 'Tidal URL',
+        type: 'url',
+        required: false,
+      });
+    else if (existing.type !== 'url') throw new Error(`Unexpected field type: distro.${slug}`);
+  }
   const group = await registry.getField('distro', 'group');
   if (group && !group.indexed) await registry.updateField('distro', 'group', { indexed: true });
   for (const slug of ['artists', 'releases', 'distro', 'news']) {

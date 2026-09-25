@@ -41,7 +41,6 @@ type ShellPortalOutletsProps = {
   distroSearchContainer: HTMLElement | null;
   onOpenStoreCart: () => void;
   servicesInquiryContainer: HTMLElement | null;
-  servicesInquiryEmail: string;
   servicesInquirySubmitText: string;
   storeCartHeaderContainer: HTMLElement | null;
   storeCartBridgeFailed: boolean;
@@ -54,7 +53,6 @@ export default function ShellPortalOutlets({
   distroSearchContainer,
   onOpenStoreCart,
   servicesInquiryContainer,
-  servicesInquiryEmail,
   servicesInquirySubmitText,
   storeCartHeaderContainer,
   storeCartBridgeFailed,
@@ -95,19 +93,10 @@ export default function ShellPortalOutlets({
       {servicesInquiryContainer
         ? createPortal(
             <PortalErrorBoundary
-              fallback={
-                <p role="alert">
-                  The inquiry form is unavailable. Use the email link or copy this address:{' '}
-                  <a href={`mailto:${servicesInquiryEmail}`}>{servicesInquiryEmail}</a>
-                </p>
-              }
+              fallback={<p role="alert">The inquiry form is unavailable. Reload the page and try again.</p>}
             >
               <React.Suspense fallback={loadingStatus('inquiry form')}>
-                <ServicesInquiryForm
-                  key={activeShellPathname}
-                  email={servicesInquiryEmail}
-                  submitText={servicesInquirySubmitText}
-                />
+                <ServicesInquiryForm key={activeShellPathname} submitText={servicesInquirySubmitText} />
               </React.Suspense>
             </PortalErrorBoundary>,
             servicesInquiryContainer,

@@ -70,7 +70,7 @@
   },
   "inquiry": {
     "title": "Start an Inquiry",
-    "intro": "Send your inquiry through the site. Confirmation appears here, and no receipt is emailed to you. If needed, use the selected address or email-app fallback below.",
+    "intro": "Send your inquiry through the site. We'll follow up at the email address you provide.",
     "email": "info@blackboxrecordsathens.com",
     "submit_text": "Send Inquiry"
   }

@@ -16,6 +16,7 @@ const collections: NonNullable<SeedFile['collections']> = Object.entries(cmsCont
     if (property.type === 'integer' || property.type === 'number' || property.type === 'boolean') type = property.type;
     if (name === 'image' || name === 'cover_image') type = 'image';
     if (name === 'tracklist') type = 'json';
+    if (name === 'bandcamp_embed_url' || name === 'tidal_url') type = 'url';
     if (name === 'body' || name.endsWith('_rich')) type = 'portableText';
     if (slug === 'releases' && name === 'artist') type = 'reference';
     return {

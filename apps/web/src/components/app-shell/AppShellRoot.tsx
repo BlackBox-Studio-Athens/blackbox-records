@@ -78,7 +78,6 @@ type OverlayState = ShellOverlayState;
 type AppShellRootProps = {
   initialPathname: string;
   mobileNavigationItems: SiteNavigationItem[];
-  servicesInquiryEmail: string;
   servicesInquirySubmitText: string;
   siteTitle: string;
 };
@@ -86,7 +85,6 @@ type AppShellRootProps = {
 export default function AppShellRoot({
   initialPathname,
   mobileNavigationItems,
-  servicesInquiryEmail,
   servicesInquirySubmitText,
   siteTitle,
 }: AppShellRootProps) {
@@ -785,7 +783,6 @@ export default function AppShellRoot({
           setIsStoreCartDrawerOpen(true);
         }}
         servicesInquiryContainer={servicesInquiryContainer}
-        servicesInquiryEmail={servicesInquiryEmail}
         servicesInquirySubmitText={servicesInquirySubmitText}
         storeCartHeaderContainer={storeCartHeaderContainer}
         storeCartBridgeFailed={storeCartBridgeFailed}

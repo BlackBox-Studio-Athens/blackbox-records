@@ -153,29 +153,6 @@ The system SHALL send one BlackBox-styled HTML email with an equivalent plain-te
 - **AND** it applies a Worker-owned idempotency entity and provider-safe purpose/environment tags
 - **AND** logs exclude the visitor message body.
 
-### Requirement: Services inquiry has mail-app-independent fallback
-
-The system SHALL keep native email composition secondary and provide visible copyable information when no device mail handler is available.
-
-#### Scenario: Visitor chooses email app fallback
-
-- **WHEN** the visitor activates `Open in email app`
-- **THEN** a normal `mailto:` link targets the alias for the selected service
-- **AND** its UTF-8 subject and plain-text body use CRLF line endings
-- **AND** the site does not force a new tab or script a popup fallback.
-
-#### Scenario: Device cannot open mailto
-
-- **WHEN** the device has no usable mail handler or clipboard access fails
-- **THEN** the selected recipient and plain-text inquiry summary remain visible and selectable
-- **AND** the visitor can copy them manually without leaving the page.
-
-#### Scenario: JavaScript is unavailable
-
-- **WHEN** the Services page renders without JavaScript
-- **THEN** it exposes the public inquiry recipient as selectable text
-- **AND** it offers a normal `mailto:` link without claiming that a mail client will open.
-
 ### Requirement: Services inquiry delivery remains stateless and friction-free
 
 The system SHALL deliver v1 inquiries without visitor confirmation mail, file handling, application persistence, or anti-abuse interaction and throttling.
@@ -195,7 +172,7 @@ The system SHALL deliver v1 inquiries without visitor confirmation mail, file ha
 
 ### Requirement: Services inquiry is locally and remotely verifiable
 
-The system SHALL provide automated and rendered checks for the public contract, routing, email content, status UX, and fallback behavior.
+The system SHALL provide automated and rendered checks for the public contract, routing, email content, and status UX.
 
 #### Scenario: Repository verification runs
 
@@ -206,7 +183,7 @@ The system SHALL provide automated and rendered checks for the public contract, 
 #### Scenario: Browser verification runs
 
 - **WHEN** the rendered Services flow is validated with Browser Use
-- **THEN** mobile and desktop checks cover required fields, each adaptive prompt, pending state, success panel, error preservation, send-another reset, mail-app fallback, and copy fallback
+- **THEN** mobile and desktop checks cover required fields, each adaptive prompt, pending state, success panel, error preservation, and send-another reset
 - **AND** no tested state causes horizontal overflow, unintended navigation, or a forced new tab.
 
 #### Scenario: UAT provider acceptance is verified
