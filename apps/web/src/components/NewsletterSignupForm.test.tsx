@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
+import type { RichText } from '@blackbox/content-model';
 
 import NewsletterSignupForm, {
   NEWSLETTER_CONSENT_LABEL,
@@ -35,6 +36,79 @@ describe('NewsletterSignupForm', () => {
     expect(html).toContain('role="alert"');
     expect(html).toContain('aria-live="assertive"');
     expect(html).toContain('aria-atomic="true"');
+  });
+
+  it('renders rich note formatting and omits unsafe or non-string links', () => {
+    const note: RichText = [
+      {
+        _type: 'block',
+        _key: 'intro',
+        style: 'normal',
+        children: [
+          { _type: 'span', _key: 'bold', text: 'Formatted', marks: ['strong'] },
+          { _type: 'span', _key: 'safe', text: ' safe link', marks: ['safe'] },
+          { _type: 'span', _key: 'unsafe', text: ' unsafe link', marks: ['unsafe'] },
+          { _type: 'span', _key: 'non-string', text: ' non-string link', marks: ['non-string'] },
+        ],
+        markDefs: [
+          { _type: 'link', _key: 'safe', href: 'https://example.com/privacy', blank: true },
+          { _type: 'link', _key: 'unsafe', href: 'javascript:alert(1)' },
+          { _type: 'link', _key: 'non-string', href: 42 as unknown as string },
+        ],
+      },
+      {
+        _type: 'block',
+        _key: 'quote-one',
+        style: 'blockquote',
+        children: [{ _type: 'span', _key: 'quote-one-text', text: 'First quote.', marks: [] }],
+        markDefs: [],
+      },
+      {
+        _type: 'block',
+        _key: 'quote-two',
+        style: 'blockquote',
+        children: [{ _type: 'span', _key: 'quote-two-text', text: 'Second quote.', marks: [] }],
+        markDefs: [],
+      },
+      {
+        _type: 'block',
+        _key: 'list-one',
+        style: 'normal',
+        listItem: 'number',
+        level: 1,
+        listId: 'pressings',
+        listStart: 4,
+        children: [{ _type: 'span', _key: 'list-one-text', text: 'Fourth pressing.', marks: [] }],
+        markDefs: [],
+      },
+      {
+        _type: 'block',
+        _key: 'list-two',
+        style: 'normal',
+        listItem: 'number',
+        level: 1,
+        listId: 'pressings',
+        children: [{ _type: 'span', _key: 'list-two-text', text: 'Fifth pressing.', marks: [] }],
+        markDefs: [],
+      },
+    ];
+    const html = renderToStaticMarkup(
+      <NewsletterSignupForm
+        buttonLabel="Subscribe"
+        formId="newsletter-rich-email"
+        note={note}
+        placeholder="your@email.com"
+      />,
+    );
+
+    expect(html).toContain('<strong>Formatted</strong>');
+    expect(html).toContain('href="https://example.com/privacy" target="_blank" rel="noopener noreferrer"');
+    expect(html).toContain('unsafe link');
+    expect(html).toContain('non-string link');
+    expect(html).not.toContain('javascript:alert(1)');
+    expect(html).not.toContain('href="42"');
+    expect(html.match(/<blockquote>/g) ?? []).toHaveLength(1);
+    expect(html).toContain('<ol start="4">');
   });
 
   it('maps submitting and success states to polite status copy', () => {

@@ -8,11 +8,15 @@ Shared navigation also imports format constants through `@blackbox/content-model
 
 A second pass validates the direction: 48 controlled foreground loads show median gains of 61–217 ms in the ordinary scenario and about one second with an injected one-second stylesheet delay. Eight new PRD visits also expose a 4,491 ms first Overview visit, including 1,516 ms to the first HTML byte and a 1,042 ms workspace request. These frontend changes do not remove those waits. Treat this as a measured startup improvement, not a complete remedy for every slow first visit; see [the revalidation and estimates](design.md#revalidation-and-improvement-estimate).
 
+A fresh public build also exposes an existing Home bundle-gate failure: 110,118 Brotli bytes against the unchanged 97,280-byte budget. The eager path reaches Zod because the browser prose renderer imports its link schema from a module that also owns rendering helpers. A controlled diagnostic retained the renderer and safe-link decisions while removing that schema dependency, bringing Home below budget. This change now includes that focused public-web correction.
+
 ## What Changes
 
 - Mark the audited, import-side-effect-free content-model package with `sideEffects: false`, retaining its existing public exports and all validation behavior.
 - Use Astro's native `build.inlineStylesheets: 'always'` for the staff app so initial project CSS arrives inside authenticated HTML. Preserve lazy editor and picker styles.
 - Extend the existing bundle checker with a staff profile and run it from `build:staff`. Check initial JavaScript size, compressed HTML size, and absence of external initial project stylesheets.
+- Separate browser prose helpers and the shared safe-link predicate from Zod schema construction. Keep Zod validation at existing CMS and content boundaries, and preserve rich-text rendering and the package root entrypoint.
+- Run the existing default public bundle gate from `build:web`; keep the 97,280-byte Home budget unchanged.
 - Reuse existing staff functional checks, then collect a bounded, foreground-controlled hosted comparison through the normal release process. Report first visits separately from repeats, persist each navigation's timing evidence promptly, and distinguish rendering, artwork completion, and provider request timing.
 
 ## Capabilities
@@ -24,9 +28,10 @@ None.
 ### Modified Capabilities
 
 - `staff-workspace`: Constants-only startup must exclude unrelated content-schema initialization; initial project styles must not require another authenticated request; performance acceptance must control foreground/frame scheduling and retain slow or incomplete samples.
+- `frontend-runtime-performance`: Standard public builds enforce the existing route-specific eager JavaScript budget, and browser prose retains safe links and supported formatting without loading content-schema initialization into the eager Home graph.
 
 ## Impact
 
-Implementation touches two existing configuration files, the existing bundle checker, and its root build command. Content-model metadata affects all package consumers, so full repository and editor validation remains required. There are no new dependencies, exports, bindings, migrations, background jobs, or changes to authorization, private caching, data placement, navigation, or Cloudflare Free.
+Implementation touches the content-model package metadata and prose modules, the public Prose renderer, the staff Astro configuration, the existing bundle checker, and the root web/staff build commands. Content-model metadata and prose helpers affect all package consumers, so full repository, CMS, content, and editor validation remains required. There are no new dependencies, public subpaths, bindings, migrations, background jobs, or changes to authorization, private caching, data placement, navigation, or Cloudflare Free.
 
-The local experiment increases compressed staff HTML by about 12–13 KB to remove one or two critical stylesheet requests. For warmed visits with roughly 100 ms private-asset responses and at least 10 Mbps throughput, the planning estimate is approximately 50–200 ms saved; CSS-caused stalls can yield much larger gains. Website JavaScript does not materially shrink, and an optimized hosted candidate has not been measured. Implementation, deployment, and hosted acceptance remain unchecked work in this change.
+The local experiment increases compressed staff HTML by about 12–13 KB to remove one or two critical stylesheet requests. For warmed visits with roughly 100 ms private-asset responses and at least 10 Mbps throughput, the planning estimate is approximately 50–200 ms saved; CSS-caused stalls can yield much larger gains. Website JavaScript does not materially shrink, and an optimized hosted candidate has not been measured. Local implementation is recorded in the task checklist; full repository validation and hosted acceptance remain open.

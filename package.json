@@ -60,7 +60,7 @@
     "validate:fast": "pnpm validate --fast",
     "benchmark:validation": "node --import tsx scripts/benchmark-validation.mjs",
     "ci:speed": "node scripts/ci-speed-measurement.mjs",
-    "build:web": "pnpm --filter @blackbox/web build && tsx scripts/check-frontend-route-isolation.ts web",
+    "build:web": "pnpm --filter @blackbox/web build && tsx scripts/check-frontend-route-isolation.ts web && pnpm performance:bundles",
     "build:content-snapshot": "node scripts/build-content-snapshot.mjs",
     "cms:snapshot:export": "node --import tsx scripts/export-cms-snapshot.mjs",
     "build:staff": "pnpm --filter @blackbox/staff build && tsx scripts/check-frontend-route-isolation.ts staff && pnpm performance:bundles --scope=staff",

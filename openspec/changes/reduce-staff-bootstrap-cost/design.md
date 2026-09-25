@@ -8,11 +8,13 @@ The staff app is a static Astro build embedded in the combined CMS Worker. `Stoc
 
 `staff-navigation.ts` and `FormatFilter.tsx` import `DISTRO_GROUP_VALUES` from the content-model root. Its barrel reexports modules that construct schemas. Without side-effect metadata, bundling retains those constructions even when only constants are needed. The native experiment proves this on the current build, independently of the separate esbuild probe.
 
+The public Home eager graph also fails its existing 95 KiB gate. `NewsletterSignupForm` eagerly renders `Prose` and `PrivacyLink`; the React `Prose` renderer imports `cmsLinkSchema` from `prose.ts`, which co-locates Zod schema construction and rendering helpers. A fresh build contains an 18-module Zod chunk of 20,002 Brotli bytes. A controlled rendering-only experiment keeps Portable Text and the current URL acceptance policy, removes the browser's schema import, and passes the unchanged gate. The experiment is feasibility evidence; production builds and behavior checks remain required.
+
 ## Goals / Non-Goals
 
-**Goals:** Remove the measured project-CSS startup dependency, eliminate unrelated schema work from constants-only consumers, and make those gains verifiable in the standard build.
+**Goals:** Remove the measured project-CSS startup dependency, eliminate unrelated schema initialization from staff constants and public prose rendering, preserve schema/link validation and rich-text output, and enforce the public and staff bundle budgets in their standard builds.
 
-**Non-goals:** A router or shell rewrite, prefetch/preload machinery, API response caches, new timing infrastructure, font/logo redesign, thumbnail backfills, backend query changes, or Cloudflare plan/region/resource changes. Keep the current navigation, freshness, Access verification, private 200/304 rules, no-session/no-KV guarantees, and commerce authority.
+**Non-goals:** A router or shell rewrite, prefetch/preload machinery, API response caches, new timing infrastructure, font/logo redesign, thumbnail backfills, backend query changes, link-policy changes, removal of trust-boundary validation, budget increases, or Cloudflare plan/region/resource changes. Keep the current navigation, freshness, Access verification, private 200/304 rules, no-session/no-KV guarantees, and commerce authority.
 
 ## Decisions
 
@@ -55,13 +57,25 @@ Each staff route additionally must:
 
 These ceilings allow modest build variation above the successful native experiment; baseline Overview and Orders fail their new JS budgets, and all four baseline documents fail the stylesheet rule. Verify that distinction against before/after artifacts instead of asserting configuration text alone. Do not raise budgets to make a regression pass. Existing `assertClosedOptionalFeatures` in `scripts/test-content-workspace.mjs` already checks initial scripts, stylesheet/HTML bodies, `.tiptap`, and `.cms-media-grid`; reuse it instead of adding a second browser suite.
 
-Append `pnpm performance:bundles --scope=staff` to the existing root `build:staff` command after route isolation. `run-release-preparation.mjs` already invokes `build:staff`, so full validation and release builds inherit the check. Leave the existing `performance:bundles` script and default web checks usable. This yields four implementation edit points: two config files, one existing checker, and root `package.json`.
+Append `pnpm performance:bundles --scope=staff` to the existing root `build:staff` command after route isolation. Append the default `pnpm performance:bundles` check to root `build:web` after its Astro build and route-isolation check. `run-release-preparation.mjs` already invokes these root build commands, so full validation and release builds inherit both checks. Keep the existing checker and budgets; do not add a second budget system.
 
 ### 4. Separate local correctness from hosted outcome
 
-Local evidence must use standard project builds after the actual two changes, not the ignored diagnostic alias/config. Record the final source fingerprint, build sizes, and existing closed/open optional-feature checks. Full `pnpm validate` and `pnpm validate:editor` are required because package metadata affects public, staff, and backend consumers. Complete applicable content-workspace/publication checks, especially incomplete-draft validation, autosave/conflict handling, private previews, and publication validation. Preserve the canonical CMS build's source/generated KV guards and the authenticated no-session-cookie regression.
+Local evidence must use fresh standard `build:web` and `build:staff` builds after all changes, not the ignored diagnostic alias/config. Record both route reports, the final source fingerprint, and the existing closed/open optional-feature checks. Full `pnpm validate` and `pnpm validate:editor` are required because package metadata and prose helpers affect public, staff, and backend consumers. Re-run applicable CMS, content-schema, and publication checks, especially incomplete-draft validation, autosave/conflict handling, private previews, and publication validation. Preserve the canonical CMS build's source/generated KV guards and the authenticated no-session-cookie regression. Use the native browser interface to check newsletter and purchase-information rendering, formatted links/lists/quotes, form behavior, and console cleanliness.
 
 The old 1,500 ms primary-content median threshold remains the hosted ceiling for comparable repeat visits on each measured route; the original clean sample already meets it. The new deterministic acceptance is removal of initial project CSS requests and the explicit bundle/HTML budgets. First-after-deployment visits remain a separate reported cohort. A passing repeat median does not establish that first-visit latency is fixed. If a median exceeds 1,500 ms, required data is absent, or first-view styling fails, keep hosted acceptance open. A first visit above two seconds requires the bounded attribution in the migration plan before claiming the broader startup issue resolved.
+
+### 5. Keep browser prose helpers separate from schema initialization
+
+Move `resolveProse`, `proseBlocks`, `groupEditorialBlocks`, `proseText`, and a new `isSafeCmsLink` predicate into an internal `prose-rendering.ts` module. Keep the existing helper names available through the content-model root entrypoint; do not add a package, public subpath, alias, or copied implementation.
+
+Keep `cmsLinkSchema` and the other Zod schemas in `prose.ts`. The schema refines `z.string()` with the same predicate, preserving type checks and rejection of unsafe protocols, whitespace, backslashes, and malformed URLs. `Prose.tsx` calls the predicate directly and renders children without an anchor when a link value is unsafe or non-string. All CMS, content snapshot, and purchase-information validation continues through the existing schemas.
+
+Use type-only imports for schema-derived prose types in the rendering module. Preserve Portable Text, headings, emphasis, underlines, strike-through, alignment, link target/rel attributes, numbered-list starts and grouping, quote grouping, legacy plain-text conversion, and null-versus-empty precedence. The web component's existing imports stay on the package root.
+
+### 6. Enforce the public web graph in its standard build
+
+Append `pnpm performance:bundles` to root `build:web` after the fresh Astro build and route-isolation check. This selects the existing default web profile and the unchanged 97,280-byte Home budget. The baseline overrun must fail the standard command; the corrected fresh output must pass without changing the budget.
 
 ## Revalidation and improvement estimate
 

@@ -1,7 +1,7 @@
 import { PortableText, type PortableTextComponents, type PortableTextBlockComponent } from '@portabletext/react';
 import {
-  cmsLinkSchema,
   groupEditorialBlocks,
+  isSafeCmsLink,
   proseBlocks,
   resolveProse,
   type Prose as ProseValue,
@@ -42,7 +42,8 @@ const components: Partial<PortableTextComponents> = {
     underline: ({ children }) => <u>{children}</u>,
     'strike-through': ({ children }) => <s>{children}</s>,
     link: ({ value, children }) => {
-      const href = cmsLinkSchema.parse(value?.href);
+      const href = value?.href;
+      if (!isSafeCmsLink(href)) return children;
       const blank = !href.startsWith('#') && value?.blank;
       return (
         <a href={href} target={blank ? '_blank' : undefined} rel={blank ? 'noopener noreferrer' : undefined}>

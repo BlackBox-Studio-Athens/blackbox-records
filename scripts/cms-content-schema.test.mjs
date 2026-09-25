@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { formattedProse } from './fixtures/prose.ts';
 import {
+  cmsLinkSchema,
+  isSafeCmsLink,
   projectProseFields,
   proseText,
   proseBlocks,
@@ -33,6 +35,41 @@ test('formatted prose stays authored data while native legacy fields remain read
   assert.ok(validateCmsDraft('artists', { bio_rich: unsafe }).length);
   assert.ok(validateCmsDraft('artists', { bio_rich: [{ _type: 'html', html: '<script>bad()</script>' }] }).length);
 });
+
+test('browser and CMS prose link validation share the same type-aware URL policy', () => {
+  const accepted = [
+    'https://example.com/band',
+    'http://example.com/',
+    'mailto:press@example.com',
+    '/store/distribution/',
+    '#returns',
+    '../privacy/',
+    '//example.com/path',
+  ];
+  const rejected = [
+    'javascript:alert(1)',
+    'data:text/html,hello',
+    'ftp://example.com/',
+    'https://example.com/a b',
+    ' /store/',
+    'https://example.com/a\\b',
+    'https://[',
+    null,
+    undefined,
+    42,
+    {},
+  ];
+
+  for (const value of accepted) {
+    assert.equal(isSafeCmsLink(value), true, String(value));
+    assert.equal(cmsLinkSchema.safeParse(value).success, true, String(value));
+  }
+  for (const value of rejected) {
+    assert.equal(isSafeCmsLink(value), false, String(value));
+    assert.equal(cmsLinkSchema.safeParse(value).success, false, String(value));
+  }
+});
+
 import { inventory, parseMarkdown } from './inventory-cms-content.mjs';
 import { markdownTreeToPortableText } from './cms-markdown.mjs';
 import {
