@@ -876,7 +876,8 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         const storageKey = payload?.data?.item?.storageKey;
         const candidate =
           typeof storageKey === 'string' ? createStaffThumbnailCandidate(storageKey, validatedThumbnail.bytes) : null;
-        if (candidate) await bindings.MEDIA.put(candidate.key, candidate.bytes, staffThumbnailPutOptions(candidate));
+        if (!candidate) throw new Error('Staff thumbnail candidate is invalid.');
+        await bindings.MEDIA.put(candidate.key, candidate.bytes, staffThumbnailPutOptions(candidate));
       } catch {
         createBindingLogger(bindings).warn({ event: 'staff_thumbnail_store_failed', status: response.status });
       }

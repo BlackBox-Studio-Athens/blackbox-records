@@ -1,8 +1,14 @@
 import { enrichImageMetadata } from 'emdash/media';
 import { cmsNestedProblemResponse } from '../interfaces/http/responses';
+import {
+  isStaffThumbnailOriginalKey,
+  readStaffThumbnailPng,
+  staffThumbnailMaxBytes,
+  staffThumbnailMaxDimension,
+} from './staff-thumbnails';
 
 const maxImageBytes = 20 * 1024 * 1024;
-const maxThumbnailBytes = 1024 * 1024;
+const maxThumbnailBytes = staffThumbnailMaxBytes;
 
 type ValidatedImage = {
   bytes: Uint8Array;
@@ -17,13 +23,7 @@ export type ValidatedUploadThumbnail = {
 };
 
 async function readValidatedImage(file: File, limit: number): Promise<ValidatedImage> {
-  if (
-    !file.size ||
-    file.size > limit ||
-    file.name.length > 200 ||
-    [...file.name].some((character) => character < ' ' || character === '/' || character === '\\')
-  )
-    throw new Error('INVALID_IMAGE');
+  if (!file.size || file.size > limit || !isStaffThumbnailOriginalKey(file.name)) throw new Error('INVALID_IMAGE');
   const bytes = new Uint8Array(await file.arrayBuffer());
   const prefix = Array.from(bytes.subarray(0, 12));
   const png = prefix.slice(0, 8).join() === '137,80,78,71,13,10,26,10';
@@ -93,19 +93,22 @@ export async function validateImageUpload(
     const file = form.get('file');
     if (!(file instanceof File)) throw new Error('INVALID_IMAGE');
     const dimensions = await readValidatedImage(file, maxImageBytes);
-    let validatedThumbnail: ValidatedUploadThumbnail | undefined;
     const thumbnail = form.get('thumbnail');
-    if (thumbnail !== null) {
-      if (!(thumbnail instanceof File)) throw new Error('INVALID_IMAGE');
-      const preview = await readValidatedImage(thumbnail, maxThumbnailBytes);
-      if (preview.metadata.width! * preview.metadata.height! > 1_000_000) throw new Error('INVALID_IMAGE');
-      validatedThumbnail = {
-        bytes: preview.bytes,
-        contentType: thumbnail.type,
-        width: preview.metadata.width!,
-        height: preview.metadata.height!,
-      };
-    }
+    if (!(thumbnail instanceof File) || thumbnail.type !== 'image/png' || !isStaffThumbnailOriginalKey(thumbnail.name))
+      throw new Error('INVALID_IMAGE');
+    const preview = await readValidatedImage(thumbnail, maxThumbnailBytes);
+    const thumbnailDimensions = readStaffThumbnailPng(preview.bytes);
+    if (
+      !thumbnailDimensions ||
+      thumbnailDimensions.width > staffThumbnailMaxDimension ||
+      thumbnailDimensions.height > staffThumbnailMaxDimension
+    )
+      throw new Error('INVALID_IMAGE');
+    const validatedThumbnail: ValidatedUploadThumbnail = {
+      bytes: preview.bytes,
+      contentType: thumbnail.type,
+      ...thumbnailDimensions,
+    };
     for (const dimension of ['width', 'height'] as const) {
       const supplied = form.get(dimension);
       if (supplied !== null && supplied !== String(dimensions.metadata[dimension])) throw new Error('INVALID_IMAGE');

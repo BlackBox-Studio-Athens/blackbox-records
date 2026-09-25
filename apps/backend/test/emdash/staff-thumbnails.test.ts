@@ -13,8 +13,15 @@ const onePixelPng = Uint8Array.from(
   Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64'),
 );
 
-test('accepts current flat native keys and rejects path or encoding tricks', () => {
-  for (const key of ['01JABC1234567890ABCDEF.png', 'record-cover-2.JPEG', 'artist_photo.webp']) {
+test('accepts native flat filenames and rejects paths, controls, and unsupported formats', () => {
+  for (const key of [
+    '01JABC1234567890ABCDEF.png',
+    'record-cover-2.JPEG',
+    'artist_photo.webp',
+    'café cover (live) 2.png',
+    `cover-${'x'.repeat(185)}.webp`,
+    'cover%2Fother.png',
+  ]) {
     expect(isStaffThumbnailOriginalKey(key)).toBe(true);
     expect(staffThumbnailStorageKey(key)).toBe(`staff-thumbnails/v1/${key}.png`);
     expect(decodeStaffThumbnailOriginalKey(staffThumbnailUrl(key))).toBe(key);
@@ -22,11 +29,11 @@ test('accepts current flat native keys and rejects path or encoding tricks', () 
   for (const key of [
     '../cover.png',
     'folder/cover.png',
-    'cover%2Fother.png',
-    'cover%252Fother.png',
     'cover.gif',
     '.png',
     'cover.png/other',
+    `cover-${'x'.repeat(196)}.png`,
+    'cover\u0000.png',
   ]) {
     expect(isStaffThumbnailOriginalKey(key)).toBe(false);
     expect(staffThumbnailStorageKey(key)).toBeNull();

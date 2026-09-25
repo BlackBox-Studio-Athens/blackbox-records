@@ -293,9 +293,11 @@ describe('EmDash checkpoint composition', () => {
     incompatible[19] = 97;
     cmsAsset.mockResolvedValueOnce(native(201));
     const incompatibleResponse = await runtime().fetch(uploadRequest(incompatible));
-    expect(incompatibleResponse.status).toBe(201);
+    expect(incompatibleResponse.status).toBe(400);
+    expect(cmsAsset).not.toHaveBeenCalled();
     expect(put).not.toHaveBeenCalled();
 
+    cmsAsset.mockReset();
     put.mockRejectedValueOnce(new Error('MEDIA unavailable'));
     cmsAsset.mockResolvedValueOnce(native(201));
     const derivativeFailure = await runtime().fetch(uploadRequest());

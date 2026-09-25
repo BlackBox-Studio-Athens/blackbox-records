@@ -1,4 +1,4 @@
-import { DurableObject } from 'cloudflare:workers';
+import { DurableObject, WorkerEntrypoint } from 'cloudflare:workers';
 import { astro, FetchState } from 'astro/fetch';
 import { cf, finalize } from '@astrojs/cloudflare/fetch';
 import { isCmsCollection, type ContentSnapshot } from '@blackbox/content-model';
@@ -13,6 +13,7 @@ import {
   type PublicationPointer,
   type PublicationEnvironment,
 } from './published-storage';
+import { deliverPublicCmsImage } from './public-image-transform';
 
 declare const PUBLIC_RELEASE_IDENTITY: { sha: string; runId: string; runNumber: number };
 declare const PUBLIC_BOOTSTRAP: PublicationPointer | null;
@@ -21,16 +22,24 @@ type Bindings = {
   MEDIA: R2Bucket;
   ASSETS: Fetcher;
   PRODUCT_ENVIRONMENT: PublicationEnvironment;
+  PUBLIC_IMAGE_TRANSFORM_ORIGIN: string;
   PUBLIC_SITE_RUNTIME: DurableObjectNamespace<PublicSiteRuntime>;
 };
 
 export default {
-  async fetch(request: Request, env: Bindings) {
-    const path = new URL(request.url).pathname;
+  async fetch(request: Request, env: Bindings, context: ExecutionContext) {
+    const path = new URL(request.url).pathname.replace(/^\/blackbox-records(?=\/)/, '');
     if (/(?:^|\/)(?:assets|_astro)\//.test(path)) return env.ASSETS.fetch(request);
+    if (path === '/_image') return context.exports.PublicImageRenderer.fetch(request);
     return env.PUBLIC_SITE_RUNTIME.getByName('public').fetch(request);
   },
 } satisfies ExportedHandler<Bindings>;
+
+export class PublicImageRenderer extends WorkerEntrypoint<Bindings> {
+  fetch(request: Request): Promise<Response> {
+    return this.env.PUBLIC_SITE_RUNTIME.getByName('public').fetch(request);
+  }
+}
 
 export class PublicSiteRuntime extends DurableObject<Bindings> {
   private current: { pointer: PublicationPointer; snapshot: ContentSnapshot; checkedAt: number } | undefined;
@@ -169,10 +178,24 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
       if (path === '/_image') {
         const source = new URL(url.searchParams.get('href') ?? '', url);
         const imagePath = source.pathname.replace(/^\/blackbox-records(?=\/)/, '');
-        if (source.origin !== url.origin || !/^\/(?:media\/content\/|_astro\/|assets\/)/.test(imagePath))
+        const publicMedia = /^\/media\/content\/[a-f0-9]{64}\/[a-f0-9]{64}$/.test(imagePath);
+        const staticAsset = /^\/(?:_astro|assets)\//.test(imagePath);
+        if (
+          source.origin !== url.origin ||
+          (!publicMedia && !staticAsset) ||
+          (publicMedia && (source.search || source.hash))
+        )
           return new Response('Not found', { status: 404 });
         const original = new Request(source, { method: request.method });
-        return imagePath.startsWith('/media/') ? this.fetch(original) : this.env.ASSETS.fetch(original);
+        return publicMedia
+          ? deliverPublicCmsImage(
+              request,
+              source,
+              this.env.PRODUCT_ENVIRONMENT,
+              this.env.PUBLIC_IMAGE_TRANSFORM_ORIGIN,
+              () => this.fetch(original),
+            )
+          : this.env.ASSETS.fetch(original);
       }
       const { pointer, snapshot } = await this.selected();
       if (path === '/content-version.json' || path === '/release.json')

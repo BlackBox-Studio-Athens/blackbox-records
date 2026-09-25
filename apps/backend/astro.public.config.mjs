@@ -30,10 +30,18 @@ const config = {
   compatibility_flags: ['nodejs_compat'],
   workers_dev: false,
   assets: { binding: 'ASSETS', run_worker_first: true },
-  vars: { PRODUCT_ENVIRONMENT: environment },
+  vars: {
+    PRODUCT_ENVIRONMENT: environment,
+    PUBLIC_IMAGE_TRANSFORM_ORIGIN: environment === 'local' ? '' : 'https://images.blackboxrecordsathens.com',
+  },
   r2_buckets: [{ binding: 'MEDIA', bucket_name: resources.bucket_name }],
   durable_objects: { bindings: [{ name: 'PUBLIC_SITE_RUNTIME', class_name: 'PublicSiteRuntime' }] },
-  migrations: [{ tag: 'public-site-v1', new_sqlite_classes: ['PublicSiteRuntime'] }],
+  cache: { enabled: false },
+  exports: {
+    default: { type: 'worker', cache: { enabled: false } },
+    PublicImageRenderer: { type: 'worker', cache: { enabled: true } },
+    PublicSiteRuntime: { type: 'durable-object', storage: 'sqlite' },
+  },
   observability: { enabled: true },
 };
 mkdirSync(local('.emdash'), { recursive: true });

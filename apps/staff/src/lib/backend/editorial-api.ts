@@ -37,8 +37,29 @@ export type EditorialMedia = {
 };
 export type EditorialList<T> = { items: T[]; nextCursor?: string };
 
-const staffThumbnailOriginalKeyPattern = /^[A-Za-z0-9][A-Za-z0-9_-]{0,159}\.(?:png|jpe?g|webp)$/i;
 const nativeMediaPath = '/_emdash/api/media/file/';
+const staffThumbnailMaxDimension = 96;
+const staffThumbnailMaxBytes = 40 * 1024;
+
+function isStaffThumbnailOriginalKey(value: string): boolean {
+  if (
+    value.length < 5 ||
+    value.length > 200 ||
+    Array.from(value).some((character) => {
+      const code = character.charCodeAt(0);
+      return character === '/' || character === '\\' || code <= 0x1f || (code >= 0x7f && code <= 0x9f);
+    }) ||
+    !/\.(?:png|jpe?g|webp)$/i.test(value) ||
+    value.slice(0, value.lastIndexOf('.')).length === 0
+  )
+    return false;
+  try {
+    encodeURIComponent(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export function editorialMediaUrl(item: EditorialMedia, origin: string): string {
   const storageKey = item.storageKey ?? item.meta?.storageKey;
@@ -58,13 +79,17 @@ export function staffThumbnailUrl(item: EditorialMedia, origin: string): string 
   if (original) {
     try {
       const url = new URL(original);
-      if (!url.search && !url.hash) candidates.push(url.pathname.slice(nativeMediaPath.length));
+      const encodedKey = url.pathname.slice(nativeMediaPath.length);
+      if (!url.search && !url.hash && encodedKey && !encodedKey.includes('/')) {
+        const decodedKey = decodeURIComponent(encodedKey);
+        if (encodeURIComponent(decodedKey) === encodedKey) candidates.push(decodedKey);
+      }
     } catch {
       // Keep the empty fallback below.
     }
   }
   const storageKey = candidates.find(
-    (candidate): candidate is string => !!candidate && staffThumbnailOriginalKeyPattern.test(candidate),
+    (candidate): candidate is string => !!candidate && isStaffThumbnailOriginalKey(candidate),
   );
   if (!storageKey) return '';
   try {
@@ -84,6 +109,7 @@ export function editorialWriteData(data: Record<string, unknown>): Record<string
     if (record.provider === 'local' && typeof record.id === 'string') return { id: record.id };
     return Object.fromEntries(Object.entries(record).map(([key, value]) => [key, field(value)]));
   }
+
   return field(data) as Record<string, unknown>;
 }
 
@@ -163,17 +189,29 @@ export async function uploadArtwork(base: string, file: File): Promise<Editorial
   const bitmap = await createImageBitmap(file);
   try {
     const canvas = document.createElement('canvas');
-    const scale = Math.min(1, 96 / Math.max(bitmap.width, bitmap.height));
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Image preview is unavailable. Try another browser.');
-    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const thumbnail = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+    let thumbnail: Blob | null = null;
+    for (
+      let maxDimension = staffThumbnailMaxDimension;
+      maxDimension >= 1;
+      maxDimension = Math.max(1, Math.floor(maxDimension * 0.8))
+    ) {
+      const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const candidate = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (candidate && candidate.size <= staffThumbnailMaxBytes) {
+        thumbnail = candidate;
+        break;
+      }
+      if (maxDimension === 1) break;
+    }
     if (!thumbnail) throw new Error('We could not prepare this image. Choose another file.');
     const form = new FormData();
     form.set('file', file);
-    if (thumbnail.size <= 40 * 1024) form.set('thumbnail', thumbnail, 'thumbnail.png');
+    form.set('thumbnail', thumbnail, 'thumbnail.png');
     const result = await editorialRequest<{ item: EditorialMedia }>(base, 'media', form);
     return result.item;
   } finally {

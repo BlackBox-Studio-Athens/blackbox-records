@@ -4,7 +4,6 @@ export const staffThumbnailVersion = '1';
 export const staffThumbnailMaxDimension = 96;
 export const staffThumbnailMaxBytes = 40 * 1024;
 
-const originalStorageKeyPattern = /^[A-Za-z0-9][A-Za-z0-9_-]{0,159}\.(?:png|jpe?g|webp)$/i;
 const pngSignature = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
 
 export type StaffThumbnailDimensions = { width: number; height: number };
@@ -15,7 +14,23 @@ export type StaffThumbnailCandidate = StaffThumbnailDimensions & {
 };
 
 export function isStaffThumbnailOriginalKey(value: string): boolean {
-  return originalStorageKeyPattern.test(value);
+  if (
+    value.length < 5 ||
+    value.length > 200 ||
+    Array.from(value).some((character) => {
+      const code = character.charCodeAt(0);
+      return character === '/' || character === '\\' || code <= 0x1f || (code >= 0x7f && code <= 0x9f);
+    }) ||
+    !/\.(?:png|jpe?g|webp)$/i.test(value) ||
+    value.slice(0, value.lastIndexOf('.')).length === 0
+  )
+    return false;
+  try {
+    encodeURIComponent(value);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function staffThumbnailStorageKey(originalStorageKey: string): string | null {

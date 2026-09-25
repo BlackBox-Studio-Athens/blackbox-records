@@ -54,6 +54,7 @@ try {
   const stock = await fetch('http://127.0.0.1:8799/api/internal/variants');
   assert.equal(stock.status, 200, await stock.clone().text());
   assert.deepEqual(await stock.json(), []);
+
   async function request(path, method = 'GET', body) {
     const form = body instanceof FormData;
     const response = await fetch('http://127.0.0.1:8799/_emdash/api' + path, {
@@ -72,6 +73,7 @@ try {
       throw new Error(`${method} ${path} returned ${response.status}: ${text.slice(0, 400)}`);
     }
   }
+
   const pixels = await sharp({ create: { width: 40, height: 60, channels: 3, background: '#333' } })
     .png()
     .toBuffer();
@@ -89,6 +91,9 @@ try {
     if (width) invalid.set('width', width);
     assert.equal((await request('/media', 'POST', invalid)).status, 400, filename);
   }
+  const missingThumbnail = new FormData();
+  missingThumbnail.set('file', new Blob([pixels], { type: 'image/png' }), 'missing-thumbnail.png');
+  assert.equal((await request('/media', 'POST', missingThumbnail)).status, 400, 'Uploads require a valid thumbnail');
   const form = new FormData();
   form.set('file', new Blob([pixels], { type: 'image/png' }), 'schema-check.png');
   form.set('thumbnail', new Blob([pixels], { type: 'image/png' }), 'thumbnail.png');

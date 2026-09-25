@@ -41,6 +41,12 @@ it('builds private thumbnails only from approved native media identities', () =>
   expect(staffThumbnailUrl({ ...mediaWithoutKey, url: '/_emdash/api/media/file/stored-3.jpg' }, origin)).toBe(
     `${origin}/_emdash/api/blackbox/thumbnails/stored-3.jpg`,
   );
+  expect(staffThumbnailUrl({ ...media, storageKey: 'café cover%2F.png' }, origin)).toBe(
+    `${origin}/_emdash/api/blackbox/thumbnails/${encodeURIComponent('café cover%2F.png')}`,
+  );
+  expect(staffThumbnailUrl({ ...mediaWithoutKey, url: '/_emdash/api/media/file/caf%C3%A9%20cover.png' }, origin)).toBe(
+    `${origin}/_emdash/api/blackbox/thumbnails/${encodeURIComponent('café cover.png')}`,
+  );
   expect(staffThumbnailUrl({ ...media, storageKey: 'private/stored.png' }, origin)).toBe('');
   expect(staffThumbnailUrl({ ...mediaWithoutKey, url: 'https://foreign.invalid/file.png' }, origin)).toBe('');
   expect(staffThumbnailUrl({ ...mediaWithoutKey, url: '/_emdash/api/media/file/stored.png?x=1' }, origin)).toBe('');
@@ -49,11 +55,15 @@ it('builds private thumbnails only from approved native media identities', () =>
 it('uploads a PNG thumbnail capped at 96 pixels and 40 KiB', async () => {
   const bitmap = { width: 200, height: 100, close: vi.fn() };
   const context = { drawImage: vi.fn() };
+  let thumbnailRenders = 0;
   const canvas = {
     width: 0,
     height: 0,
     getContext: vi.fn(() => context),
-    toBlob: vi.fn((callback: BlobCallback) => callback(new Blob(['png'], { type: 'image/png' }))),
+    toBlob: vi.fn((callback: BlobCallback) => {
+      thumbnailRenders++;
+      callback(new Blob([thumbnailRenders === 1 ? new Uint8Array(40 * 1024 + 1) : 'png'], { type: 'image/png' }));
+    }),
   } as unknown as HTMLCanvasElement;
   const fetch = vi.fn(async (_url: string, init: RequestInit) => {
     const form = init.body as FormData;
@@ -61,8 +71,9 @@ it('uploads a PNG thumbnail capped at 96 pixels and 40 KiB', async () => {
     expect(thumbnail).toBeInstanceOf(File);
     expect((thumbnail as File).type).toBe('image/png');
     expect((thumbnail as File).size).toBeLessThanOrEqual(40 * 1024);
-    expect(canvas.width).toBe(96);
-    expect(canvas.height).toBe(48);
+    expect(canvas.width).toBe(76);
+    expect(canvas.height).toBe(38);
+    expect(await (form.get('file') as File).text()).toBe('original');
     return new Response(JSON.stringify({ success: true, data: { item: { id: 'image' } } }), { status: 201 });
   });
   vi.stubGlobal(
@@ -72,6 +83,7 @@ it('uploads a PNG thumbnail capped at 96 pixels and 40 KiB', async () => {
   vi.stubGlobal('document', { createElement: vi.fn(() => canvas) });
   vi.stubGlobal('fetch', fetch);
   await uploadArtwork('', new File(['original'], 'cover.jpg', { type: 'image/jpeg' }));
+  expect(thumbnailRenders).toBe(2);
   expect(bitmap.close).toHaveBeenCalledOnce();
 });
 

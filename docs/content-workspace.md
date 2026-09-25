@@ -68,29 +68,45 @@ Protected hashed `/_astro/` scripts, styles and fonts with ETags use `private, n
 
 EmDash remains the owner of original media. The CMS Worker owns only the private display derivative in the existing `MEDIA` R2 binding:
 
-- Original keys are flat native media filenames. Derivatives use `staff-thumbnails/v1/<original-storage-key>.png`.
+- Original keys use flat JPEG, PNG or WebP names up to 200 characters. Safe Unicode and punctuation are supported; path separators, control characters and malformed Unicode are rejected. Derivatives use `staff-thumbnails/v1/<original-storage-key>.png`.
 - The authenticated route is `/_emdash/api/blackbox/thumbnails/<encoded-original-storage-key>`. It serves private, no-store `image/png` responses at most 96 × 96 pixels and 40 KiB. It has no D1 record, CMS content field, KV binding or public URL.
 - Compact Content and Stock rows use this route. Full editor/media previews continue to use the native original route.
-- A missing or invalid derivative shows the existing fixed-size placeholder and does not retry or request the original. An upload keeps the native POST status/body; its validated optional thumbnail is stored only after the native write succeeds, and a derivative write failure does not undo the original upload.
+- New uploads must include a valid PNG thumbnail. The browser reduces it until it is at most 96 × 96 pixels and 40 KiB; the Worker validates it again. EmDash uses the submitted thumbnail for its low-quality placeholder, while the Worker stores the same bytes as a separate private derivative.
+- The original media upload remains successful if the separate derivative write fails. The failure is logged for later backfill. Originals are never replaced or deleted by thumbnail repair.
+- The EmDash media audit compares image records in D1 with original and derivative objects in R2. It reports missing originals, unsupported keys, missing thumbnails and invalid thumbnails separately.
 
-The bounded Local preparation commands are:
+The bounded Local audit and preparation commands are:
 
 ```sh
 pnpm --filter @blackbox/backend exec node --import tsx scripts/prepare-staff-thumbnails.mjs --env local --limit 25
 pnpm --filter @blackbox/backend exec node --import tsx scripts/prepare-staff-thumbnails.mjs --env local --limit 25 --apply
+pnpm --filter @blackbox/backend exec node --import tsx scripts/prepare-staff-thumbnails.mjs --env local --audit-media --media-limit 25 --hash-originals
 ```
 
-The default is a dry run. `--limit` accepts 1–25, `--max-bytes` accepts 1–67,108,864 and defaults to 67,108,864, and `--cursor` resumes one opaque R2 list page. Every invocation performs one list page only. Hosted UAT/PRD preparation must use the same bounded commands with `--env uat|prd` plus `--hosted-budget-reviewed`; review the account-wide Free-tier worksheet before any hosted run. `--apply` adds at most 25 derivative PUTs. The script binds only `MEDIA`, never executes backups or SQL, compares each original ETag before reading, and retains the input cursor when a page is interrupted.
+The default is a dry run. `--limit` and `--media-limit` accept 1–25; `--max-bytes` accepts 1–67,108,864 and defaults to 67,108,864. Use `--start-after <last-key>` to resume an R2 page across separate invocations. This avoids a Local R2 cursor that can repeat an earlier page after a process restarts. The script stops safely if a page does not advance. `--audit-media` reads one bounded D1 page and checks its R2 originals and derivatives without writing; resume with `--media-after <id>`. Add `--hash-originals` to compute SHA-256 values from original bytes for before/after preservation checks; it adds at most 25 original GETs per page and respects `--max-bytes`. The backfill binds only `MEDIA`; the audit binds `CMS_DB` and `MEDIA` for reads only. `--apply` is only for the R2 backfill and adds at most 25 derivative PUTs. Original ETags are checked before source reads, and every write targets the derivative prefix.
+
+Local inventory on 2026-09-25 found 149 image records: 25 already had valid thumbnails and 124 were missing derivatives. All 149 originals existed, with no unsupported keys or invalid derivatives. The bounded repair wrote 124 thumbnails and skipped one non-image R2 object. A second audit found 149 valid thumbnails; all 149 original SHA-256 hashes matched the pre-repair inventory.
+
+Before any UAT or PRD audit/backfill, review account-wide Free-tier usage and headroom. Hosted commands also require `--hosted-budget-reviewed`; an applied page additionally requires the one-run `--apply` flag. Run the bounded audit and backfill in UAT first, then PRD after UAT succeeds. Hosted inventory and writes have not been run by this local implementation.
 
 ### Preparation operation worksheet
 
-| Operation                  | Bounded Local/hosted estimate                                                                                                                                                                 |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R2 reads per page          | 1 LIST + at most 25 derivative HEADs + 25 original GETs; original reads are capped at 20 MiB each and 64 MiB cumulative by default                                                            |
-| R2 writes per applied page | At most 25 derivative PUTs; each derivative is at most 40 KiB                                                                                                                                 |
-| Derivative storage         | Existing `MEDIA` storage only; no new bucket, binding, D1 row, KV write or session                                                                                                            |
-| Backup overhead            | CMS media backups that include `MEDIA` must budget each retained derivative blob and its manifest/blob metadata in addition to existing originals; do not run a backup as part of preparation |
-| Hosted gate                | Current account-wide Free-tier usage, ordinary-service headroom, remote proxy/background overhead, and explicit one-run authorization are required before UAT/PRD                             |
+| Operation                  | Bounded Local/hosted estimate                                                                                                                              |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R2 reads per backfill page | 1 LIST + at most 25 derivative HEADs + 25 derivative GETs + 25 original GETs; each source is capped at 20 MiB and 64 MiB cumulative by default             |
+| R2 reads per media audit   | At most 25 original HEADs + 25 derivative HEADs + 25 derivative GETs; optional 25 original GETs to hash bytes; one D1 query page (at most 26 rows fetched) |
+| R2 writes per applied page | At most 25 derivative PUTs; each derivative is at most 40 KiB                                                                                              |
+| Derivative storage         | Existing `MEDIA` storage only; no new bucket, binding, D1 row, KV write or session                                                                         |
+
+## Public image delivery
+
+Accepted snapshot images use the existing public `/media/content/<snapshot-hash>/<media-hash>` route. In UAT and PRD, the `/_image` renderer may request a Cloudflare Images URL transformation from `images.blackboxrecordsathens.com`, using the site's finite existing responsive widths and `format=auto`. Originals stay in environment-owned R2 snapshot storage. The renderer rejects unapproved source hosts, paths and widths and returns the verified original when transformation fails. Local leaves the transformation hostname unset.
+
+Cloudflare Images Free transforms images from R2-backed Pages URLs on demand; it does not store or replace originals. Cloudflare counts one unique source-and-options combination per month, up to 5,000 free transformations. After that limit, new variants can fail, so the public renderer falls back to the original. The transformation zone must allow only `https://blackbox-records-web-uat.pages.dev` and `https://blackbox-records-web.pages.dev` as source origins, restricted to the `/media/content/` path where the dashboard supports a path restriction. Configure the `images.blackboxrecordsathens.com` hostname and those origins in the Cloudflare Images Transformations settings before hosted rollout. See [Images pricing](https://developers.cloudflare.com/images/pricing/) and [source origins](https://developers.cloudflare.com/images/optimization/transformations/sources/).
+
+Workers Caching is enabled only for the named public image entrypoint. The default renderer stays uncached, and accepted image responses use immutable content-addressed URLs with `Vary: Accept`. HTML, previews, errors, staff media and the CMS Worker keep their existing no-store behavior. The Cloudflare Workers Free limit is 100,000 incoming requests per day; cache hits still count as Worker requests. Static repository images continue through Astro and Pages. See [Workers caching configuration](https://developers.cloudflare.com/workers/cache/configuration/) and [Workers limits](https://developers.cloudflare.com/workers/platform/limits/).
+| Backup overhead | CMS media backups that include `MEDIA` must budget each retained derivative blob and its manifest/blob metadata in addition to existing originals; do not run a backup as part of preparation |
+| Hosted gate | Current account-wide Free-tier usage, ordinary-service headroom, remote proxy/background overhead, and explicit one-run authorization are required before UAT/PRD |
 
 Rollback is a code change, not an original-media operation: restore the previous staff bundle/Worker route and compact rows return to their prior original-media behavior. Leave already-created `staff-thumbnails/v1/` objects untouched unless a separately authorized storage cleanup has an inventory and budget; never delete the native originals as rollback.
 
