@@ -4,121 +4,115 @@ import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
 
 const root = path.resolve(__dirname, '../../../..');
-const source = readFileSync(path.join(root, '.github/workflows/pages.yml'), 'utf8');
-const release = parse(source);
+const release = parse(readFileSync(path.join(root, '.github/workflows/pages.yml'), 'utf8'));
+const uatSequence = parse(readFileSync(path.join(root, '.github/workflows/uat-release-sequence.yml'), 'utf8'));
+const prdSequence = parse(readFileSync(path.join(root, '.github/workflows/prd-promotion-sequence.yml'), 'utf8'));
 
 describe('one gated release', () => {
-  it('retains and deploys the combined UAT runtime with its generated bindings and staff assets', () => {
-    const build = release.jobs['build-candidate'].steps.find(
-      (step: { name: string }) => step.name === 'Retain PRD and Worker artifacts',
+  it('builds and retains independent UAT and PRD bundles with migration manifests', () => {
+    const uatBuild = release.jobs['prepare-uat'].steps.find(
+      (step: { name: string }) => step.name === 'Build UAT Worker and renderer',
     ).run;
-    expect(build).toContain('build:cms --env uat');
-    expect(build).toContain('cp -R apps/backend/dist .codex-artifacts/release/uat/worker');
-    expect(build).toContain('build:cms --env prd --out-dir ../../.codex-artifacts/release/prd/cms');
-    const upload = release.jobs['build-candidate'].steps.find(
-      (step: { name: string }) => step.name === 'Upload verified release bundle',
-    ).with;
-    expect(upload.path).toBe('.codex-artifacts/release');
-    expect(upload['include-hidden-files']).toBe(true);
-    const deploy = release.jobs['deploy-uat'].steps.find(
-      (step: { name: string }) => step.name === 'Deploy UAT Worker',
+    const prdBuild = release.jobs['prepare-prd'].steps.find(
+      (step: { name: string }) => step.name === 'Build PRD Worker and renderer',
     ).run;
-    expect(deploy).toContain('uat/worker/server/wrangler.json --keep-vars');
-    expect(deploy).not.toContain('worker/index.js');
-    const steps = release.jobs['deploy-uat'].steps.map((step: { name: string }) => step.name);
-    expect(steps.indexOf('Prepare UAT CMS application schema')).toBeLessThan(
-      steps.indexOf('Apply UAT EmDash core migrations'),
-    );
-    expect(steps.indexOf('Apply UAT EmDash core migrations')).toBeLessThan(steps.indexOf('Deploy UAT Worker'));
-    const uatCoreMigrations = release.jobs['deploy-uat'].steps.find(
+    expect(uatBuild).toContain('build:cms --env uat');
+    expect(uatBuild).toContain('cp -R apps/backend/dist .codex-artifacts/release/uat/worker');
+    expect(uatBuild).toContain('pack-target uat');
+    expect(prdBuild).toContain('build:cms --env prd --out-dir ../../.codex-artifacts/release/prd/cms');
+    expect(prdBuild).toContain('pack-target prd');
+    for (const [job, target] of [
+      [release.jobs['prepare-uat'], 'uat'],
+      [release.jobs['prepare-prd'], 'prd'],
+    ]) {
+      const build = job.steps.find(
+        (step: { name: string }) => step.name === `Build ${target.toUpperCase()} Worker and renderer`,
+      ).run;
+      const worker = target === 'uat' ? 'worker' : 'cms';
+      expect(build).toContain(
+        `cp apps/backend/.emdash/migrations.json .codex-artifacts/release/${target}/${worker}/migrations.json`,
+      );
+      const upload = job.steps.find(
+        (step: { name: string }) => step.name === `Upload verified ${target.toUpperCase()} target bundle`,
+      ).with;
+      expect(upload.name).toBe(`release-${target}-\${{ inputs.artifact_commit_sha || github.sha }}`);
+      expect(upload.path).toBe('.codex-artifacts/release');
+      expect(upload['include-hidden-files']).toBe(true);
+    }
+    const uatSteps = uatSequence.jobs['deploy-uat'].steps;
+    const uatCoreMigrations = uatSteps.find(
       (step: { name: string }) => step.name === 'Apply UAT EmDash core migrations',
     ).run;
     expect(uatCoreMigrations).toContain('node apps/backend/scripts/migrate-cms.mjs --env uat');
-    expect(uatCoreMigrations).toContain('--fingerprint "$fingerprint"');
-    const prdMigration = release.jobs['deploy-prd'].steps.find(
+    expect(uatCoreMigrations).toContain('--apply --fingerprint "$fingerprint"');
+    const prdSteps = prdSequence.jobs['deploy-prd'].steps;
+    const prdMigration = prdSteps.find(
       (step: { name: string }) => step.name === 'Apply reviewed PRD EmDash core migrations',
     ).run;
     expect(prdMigration).toContain('--confirm-live-cms-changes');
-    for (const [environment, directory] of [
-      ['uat', 'worker'],
-      ['prd', 'cms'],
-    ]) {
-      expect(build).toContain(
-        `cp apps/backend/.emdash/migrations.json .codex-artifacts/release/${environment}/${directory}/migrations.json`,
-      );
-      const migration = environment === 'uat' ? uatCoreMigrations : prdMigration;
+    for (const migration of [uatCoreMigrations, prdMigration]) {
       expect(migration.match(/--manifest "\$\{config%\/server\/wrangler.json\}\/migrations.json"/g)).toHaveLength(2);
       expect(migration).toContain('exit "$status"');
     }
   });
 
-  it('limits main pushes to UAT and keeps code/catalog/launch authorization independent', () => {
+  it('limits main pushes to UAT and keeps code, catalog, and launch authorization independent', () => {
     expect(release.on.workflow_dispatch.inputs.target.default).toBe('uat');
     expect(release.on.workflow_dispatch.inputs.confirm_code_promotion.default).toBe(false);
     expect(release.on.workflow_dispatch.inputs.confirm_live_catalog_changes.default).toBe(false);
-    expect(release.jobs['deploy-prd'].if).toBe(
+    expect(release.jobs['prd-release-sequence'].if).toBe(
       "${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}",
     );
     expect(release.jobs['catalog-prd'].if).toBe(
       "${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}",
     );
-    expect(JSON.stringify(release.jobs['deploy-prd'])).not.toMatch(
-      /stripe:catalog:verify|d1:seed:prd|confirm-live-catalog-changes/,
-    );
-    expect(JSON.stringify(release.jobs['deploy-prd'])).toContain(
+    expect(JSON.stringify(prdSequence)).not.toMatch(/stripe:catalog:verify|d1:seed:prd|confirm-live-catalog-changes/);
+    expect(JSON.stringify(prdSequence)).toContain(
       'cms:application-migrations --env prd --apply --confirm-live-cms-changes',
     );
-    expect(source).not.toMatch(/PRD_LAUNCH_APPROVED=true|native_checkout_enabled=true|NATIVE_CHECKOUT_ENABLED: true/);
-  });
-
-  it('serializes bounded mutations and keeps provider smoke behind deployment', () => {
-    expect(release.concurrency).toEqual({ group: 'blackbox-release', 'cancel-in-progress': false });
-    for (const job of Object.values(release.jobs) as Array<{ 'timeout-minutes': number }>) {
-      expect(job['timeout-minutes']).toBeGreaterThan(0);
-      expect(job['timeout-minutes']).toBeLessThanOrEqual(40);
-    }
-    expect(release.jobs['inspect-uat-pages'].needs).toBe('build-candidate');
-    expect(release.jobs['inspect-uat-pages'].environment).toBeUndefined();
-    expect(release.jobs['deploy-uat'].needs).toEqual(['build-candidate', 'inspect-uat-pages']);
-    expect(release.jobs['deploy-uat'].environment).toBe('catalog-promotion-uat');
-    expect(release.jobs['deploy-uat-static'].needs).toBe('deploy-uat');
-    expect(release.jobs['deploy-uat-static'].environment).toBeUndefined();
-    expect(release.jobs['smoke-uat'].needs).toBe('deploy-uat-static');
-    expect(release.jobs['deploy-prd'].environment).toBe('catalog-promotion-prd');
-    expect(release.jobs['deploy-prd-static'].environment).toBeUndefined();
-    expect(release.jobs['deploy-prd-static'].needs).toBe('deploy-prd');
-    expect(release.jobs['deploy-prd-static'].if).toBe(release.jobs['deploy-prd'].if);
-    const steps = release.jobs['deploy-uat'].steps.map((step: { name: string }) => step.name);
-    expect(steps.indexOf('Prepare UAT catalog schema')).toBeLessThan(steps.indexOf('Deploy UAT Worker'));
-    expect(source.match(/--scenario happy_path_paid,pay_what_you_want_paid/g)).toHaveLength(1);
-    expect(source).not.toMatch(/gh workflow run|git commit|DELETE FROM|stripe:catalog:reset/);
-    expect(release.on.push['paths-ignore']).toEqual(['docs/**', 'openspec/**', '*.md', 'LICENSE']);
-    expect(source).not.toMatch(
-      /legacy_uat|legacy-uat|configure-pages|upload-pages-artifact|deploy-pages|pages: write|id-token: write/,
+    expect(JSON.stringify(release.jobs['prd-release-sequence'])).toContain('release-${{ inputs.artifact_commit_sha }}');
+    expect(JSON.stringify(release)).not.toMatch(
+      /PRD_LAUNCH_APPROVED=true|native_checkout_enabled=true|NATIVE_CHECKOUT_ENABLED: true/,
     );
   });
 
-  it('rechecks identity before mutations and records mixed revision outcomes', () => {
-    const steps = [...release.jobs['deploy-prd'].steps, ...release.jobs['deploy-prd-static'].steps];
-    for (const step of steps.filter((step: { run?: string }) => /wrangler|d1:migrations/.test(step.run ?? ''))) {
-      expect(
-        step.run.trim().startsWith('node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd'),
-      ).toBe(true);
+  it('serializes the complete release workflow through acceptance', () => {
+    expect(release.concurrency).toEqual({ group: 'blackbox-release', 'cancel-in-progress': false });
+    expect(release.jobs['inspect-uat-pages'].needs).toEqual(['check-candidate', 'prepare-uat']);
+    expect(release.jobs['uat-release-sequence'].needs).toEqual(['prepare-uat', 'inspect-uat-pages']);
+    expect(uatSequence.jobs['deploy-uat'].environment).toBe('catalog-promotion-uat');
+    expect(uatSequence.jobs['deploy-uat-static'].needs).toBe('deploy-uat');
+    expect(uatSequence.jobs['smoke-uat'].needs).toBe('deploy-uat-static');
+    expect(prdSequence.jobs['deploy-prd'].environment).toBe('catalog-promotion-prd');
+    expect(prdSequence.jobs['deploy-prd-static'].needs).toBe('deploy-prd');
+    expect(release.on.push['paths-ignore']).toEqual(['docs/**', 'openspec/**', '*.md', 'LICENSE']);
+    expect(JSON.stringify(release)).not.toMatch(/gh workflow run|git commit|DELETE FROM|stripe:catalog:reset/);
+  });
+
+  it('rechecks candidate identity before every PRD mutation and records deployed revisions', () => {
+    const steps = [...prdSequence.jobs['deploy-prd'].steps, ...prdSequence.jobs['deploy-prd-static'].steps];
+    for (const step of steps.filter((candidate: { run?: string }) =>
+      /wrangler|d1:migrations/.test(candidate.run ?? ''),
+    )) {
+      expect(step.run.trim().startsWith('node scripts/release-candidate.mjs verify prd')).toBe(true);
     }
     const report = steps.find((step: { name: string }) => step.name === 'Record actual deployed revisions');
     expect(report.if).toBe('${{ always() }}');
     expect(report.run).toContain('observe prd');
   });
 
-  it('promotes the uploaded PRD version without changing existing routes', () => {
-    const worker = release.jobs['deploy-prd'].steps.find(
-      (step: { name: string }) => step.name === 'Deploy candidate combined PRD CMS Worker',
-    ).run;
+  it('promotes the uploaded PRD Worker version and selected retained bundle without rebuilding', () => {
+    const steps = prdSequence.jobs['deploy-prd'].steps;
+    const worker = steps.find((step: { name: string }) => step.name === 'Deploy candidate combined PRD CMS Worker').run;
     expect(worker).toContain('wrangler versions upload');
     expect(worker).toContain('prd/cms/server/wrangler.json --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"');
     expect(worker).toContain('--version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes');
     expect(worker).not.toMatch(/wrangler deploy|triggers deploy|--routes/);
     expect(worker.match(/release-candidate\.mjs verify prd/g)).toHaveLength(1);
     expect(worker).toContain('release-candidate.mjs verify-worker prd');
+    const download = steps.find((step: { name: string }) => step.name === 'Download selected candidate artifacts');
+    expect(download.with.name).toBe('${{ inputs.candidate_artifact }}');
+    expect(download.with['run-id']).toBe('${{ inputs.candidate_run_id }}');
+    expect(JSON.stringify(prdSequence)).not.toContain('pnpm build');
   });
 });

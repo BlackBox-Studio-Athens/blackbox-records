@@ -44,6 +44,8 @@ function exists(relativePath: string): boolean {
 
 export function verifyEnvironmentModel(): CheckResult[] {
   const staticDeployWorkflow = read('.github/workflows/pages.yml');
+  const uatReleaseWorkflow = read('.github/workflows/uat-release-sequence.yml');
+  const prdPromotionWorkflow = read('.github/workflows/prd-promotion-sequence.yml');
   const holdingWorkflow = read('.github/workflows/prd-holding-page.yml');
   const envDeclaration = read('apps/web/src/env.d.ts');
   const header = read('apps/web/src/components/Header.astro');
@@ -68,7 +70,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
       detail: 'Shared static deployment workflow deploys UAT to Cloudflare Pages with UAT_PUBLIC_BACKEND_BASE_URL.',
       ok:
         staticDeployWorkflow.includes('Release BlackBox') &&
-        staticDeployWorkflow.includes('Deploy UAT to Cloudflare Pages') &&
+        uatReleaseWorkflow.includes('Deploy UAT to Cloudflare Pages') &&
         staticDeployWorkflow.includes('UAT_PUBLIC_BACKEND_BASE_URL') &&
         !staticDeployWorkflow.includes('PUBLIC_BACKEND_BASE_URL="${{ vars.PUBLIC_BACKEND_BASE_URL }}"'),
     },
@@ -88,9 +90,9 @@ export function verifyEnvironmentModel(): CheckResult[] {
       detail:
         'Shared static deployment workflow deploys PRD to Cloudflare Pages without branch or preview product deploys.',
       ok:
-        staticDeployWorkflow.includes('Deploy PRD static frontend to Cloudflare Pages') &&
+        prdPromotionWorkflow.includes('Deploy PRD static frontend to Cloudflare Pages') &&
         staticDeployWorkflow.includes('PRD_PUBLIC_BACKEND_BASE_URL') &&
-        staticDeployWorkflow.includes('--project-name=blackbox-records-web --branch=main') &&
+        prdPromotionWorkflow.includes('--project-name=blackbox-records-web --branch=main') &&
         !staticDeployWorkflow.includes('pages/**') &&
         !staticDeployWorkflow.includes('--branch=${{ github.ref_name }}') &&
         !exists('.github/workflows/cloudflare-pages.yml'),
@@ -113,9 +115,9 @@ export function verifyEnvironmentModel(): CheckResult[] {
     {
       detail: 'Catalog promotion owns UAT Worker deployment while post-merge provider smoke remains observation-only.',
       ok:
-        catalogPromotionWorkflow.includes('- name: Deploy UAT Worker') &&
-        staticDeployWorkflow.includes('Run UAT provider smoke') &&
-        staticDeployWorkflow.includes('cancel-in-progress: false') &&
+        uatReleaseWorkflow.includes('- name: Deploy UAT Worker') &&
+        uatReleaseWorkflow.includes('Run UAT provider smoke') &&
+        parse(staticDeployWorkflow).concurrency['cancel-in-progress'] === false &&
         !uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:uat') &&
         !uatSandboxSmokeWorkflow.includes('d1:migrations:apply:uat') &&
         !exists('.github/workflows/cloudflare-uat.yml') &&
@@ -168,15 +170,15 @@ export function verifyEnvironmentModel(): CheckResult[] {
     },
     {
       detail: 'Routine deployment does not seed or reconcile repository catalog state.',
-      ok: !parse(staticDeployWorkflow).jobs['deploy-uat'].steps.some((step: { run?: string }) =>
+      ok: !parse(uatReleaseWorkflow).jobs['deploy-uat'].steps.some((step: { run?: string }) =>
         /d1:seed:.*catalog|stripe:catalog:verify/.test(step.run ?? ''),
       ),
     },
     {
       detail: 'UAT and PRD deploy to distinct Cloudflare Pages projects.',
       ok:
-        staticDeployWorkflow.includes('--project-name=blackbox-records-web-uat --branch=main') &&
-        staticDeployWorkflow.includes('--project-name=blackbox-records-web --branch=main'),
+        uatReleaseWorkflow.includes('--project-name=blackbox-records-web-uat --branch=main') &&
+        prdPromotionWorkflow.includes('--project-name=blackbox-records-web --branch=main'),
     },
   ];
 }

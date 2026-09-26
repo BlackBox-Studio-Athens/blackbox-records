@@ -4,9 +4,18 @@ import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
 
 const workflow = parse(readFileSync(fileURLToPath(new URL('../.github/workflows/pages.yml', import.meta.url)), 'utf8'));
-const build = workflow.jobs['build-candidate'];
-const promotion = workflow.jobs['deploy-prd'];
-const staticPromotion = workflow.jobs['deploy-prd-static'];
+const checks = workflow.jobs['check-candidate'];
+const uatBuild = workflow.jobs['prepare-uat'];
+const prdBuild = workflow.jobs['prepare-prd'];
+const assembly = workflow.jobs['assemble-candidate'];
+const uatSequence = parse(
+  readFileSync(fileURLToPath(new URL('../.github/workflows/uat-release-sequence.yml', import.meta.url)), 'utf8'),
+);
+const prdSequence = parse(
+  readFileSync(fileURLToPath(new URL('../.github/workflows/prd-promotion-sequence.yml', import.meta.url)), 'utf8'),
+);
+const promotion = prdSequence.jobs['deploy-prd'];
+const staticPromotion = prdSequence.jobs['deploy-prd-static'];
 const publication = parse(
   readFileSync(fileURLToPath(new URL('../.github/workflows/content-publication.yml', import.meta.url)), 'utf8'),
 );
@@ -24,7 +33,7 @@ describe('Content publication workflow', () => {
     expect(steps.at(-1).run).toBe('node scripts/report-publication-run.mjs failed');
   });
   it('shares the release lock and builds selected deployed code without build credentials', () => {
-    expect(publication.concurrency).toEqual(workflow.concurrency);
+    expect(publication.concurrency).toEqual({ group: 'blackbox-release', 'cancel-in-progress': false });
     const steps = publication.jobs.publish.steps;
     const checkout = steps.find((step: { name: string }) => step.name === 'Checkout deployed source');
     expect(checkout.with.ref).toBe('${{ steps.code.outputs.sha }}');
@@ -48,8 +57,56 @@ describe('Content publication workflow', () => {
 });
 
 describe('Pages artifact promotion contract', () => {
+  it('runs the normal provider and active public-surface smoke without retired-route exceptions', () => {
+    expect(workflow.on.workflow_dispatch.inputs.confirm_retired_admin_cache_exception).toBeUndefined();
+    const steps = uatSequence.jobs['smoke-uat'].steps;
+    const normal = steps.find((step: { name: string }) => step.name === 'Run UAT provider smoke');
+    expect(normal.if).toBeUndefined();
+    expect(JSON.stringify(steps)).not.toMatch(/admin|retired|legacy|cache exception/i);
+  });
+  it('reports static UAT feedback directly after Pages deployment before provider acceptance', () => {
+    const pages = uatSequence.jobs['deploy-uat-static'].steps;
+    const deploy = pages.findIndex((step: { name: string }) => step.name === 'Deploy UAT to Cloudflare Pages');
+    const quick = pages.findIndex((step: { name: string }) => step.name === 'Run UAT quick checks');
+    expect(quick).toBeGreaterThan(deploy);
+    expect(pages[quick].run).toContain('smoke:uat-static -- --site-url');
+    expect(pages[quick].run).toContain('UAT quick checks passed');
+    const evidence = pages.find((step: { name: string }) => step.name === 'Upload UAT quick-check evidence');
+    expect(evidence.if).toBe('${{ always() }}');
+    expect(evidence.with.path).toBe('.codex-artifacts/smoke/uat/uat-static');
+    const providers = uatSequence.jobs['smoke-uat'].steps;
+    expect(providers.some((step: { name: string }) => step.name === 'Run UAT quick checks')).toBe(false);
+    expect(providers.findIndex((step: { name: string }) => step.name === 'Run UAT provider smoke')).toBeLessThan(
+      providers.findIndex((step: { name: string }) => step.name === 'Verify current UAT release identity'),
+    );
+  });
+  it('reuses matching trusted tooling and downloads only the required target artifacts', () => {
+    for (const sequence of [uatSequence, prdSequence]) {
+      expect(sequence.env.UAT_PUBLIC_BACKEND_BASE_URL).toBe('${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}');
+      expect(sequence.env.PRD_PUBLIC_BACKEND_BASE_URL).toBe('${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}');
+    }
+    expect(uatSequence.env.RELEASE_TOOLS_DIR).toBe(
+      "${{ inputs.source_sha == github.sha && '.' || '.codex-artifacts/release-tools' }}",
+    );
+    for (const jobName of ['deploy-uat', 'deploy-uat-static', 'smoke-uat']) {
+      const steps = uatSequence.jobs[jobName].steps;
+      const checkouts = steps.filter((step: { uses?: string }) => step.uses === 'actions/checkout@v7.0.1');
+      expect(checkouts[0].with.ref).toBe('${{ inputs.source_sha }}');
+      expect(checkouts[1].if).toBe('${{ inputs.source_sha != github.sha }}');
+      expect(steps.find((step: { name?: string }) => step.name?.startsWith('Download verified')).with.name).toBe(
+        '${{ inputs.artifact_name }}',
+      );
+    }
+    for (const job of [promotion, staticPromotion]) {
+      expect(job.steps[0].with.ref).toBe('${{ github.sha }}');
+      expect(job.steps.some((step: { name?: string }) => step.name === 'Checkout trusted release tooling')).toBe(false);
+      expect(
+        job.steps.find((step: { name?: string }) => step.name === 'Download selected candidate artifacts').with.name,
+      ).toBe('${{ inputs.candidate_artifact }}');
+    }
+  });
   it('keeps advisory unused-code analysis out of candidate preparation', () => {
-    const names = build.steps.map((step: { name?: string; run?: string }) => `${step.name ?? ''} ${step.run ?? ''}`);
+    const names = checks.steps.map((step: { name?: string; run?: string }) => `${step.name ?? ''} ${step.run ?? ''}`);
     expect(names.join('\n')).not.toContain('audit:unused');
     const audit = parse(
       readFileSync(fileURLToPath(new URL('../.github/workflows/unused-code-audit.yml', import.meta.url)), 'utf8'),
@@ -57,13 +114,6 @@ describe('Pages artifact promotion contract', () => {
     expect(audit.on.schedule).toHaveLength(1);
     expect(audit.on.workflow_dispatch).toBeNull();
     expect(JSON.stringify(audit)).toContain('upload-artifact');
-  });
-  it('runs the normal provider and active public-surface smoke without retired-route exceptions', () => {
-    expect(workflow.on.workflow_dispatch.inputs.confirm_retired_admin_cache_exception).toBeUndefined();
-    const steps = workflow.jobs['smoke-uat'].steps;
-    const normal = steps.find((step: { name: string }) => step.name === 'Run UAT provider smoke');
-    expect(normal.if).toBeUndefined();
-    expect(JSON.stringify(steps)).not.toMatch(/admin|retired|legacy|cache exception/i);
   });
   it('keeps unconfirmed PRD dispatches on the read-only catalog plan', () => {
     const plan = workflow.jobs['catalog-prd-plan'];
@@ -122,55 +172,69 @@ describe('Pages artifact promotion contract', () => {
     expect(combined.run).toContain('release-candidate.mjs verify prd');
     expect(combined.run).toContain('/prd/cms/server/wrangler.json --keep-vars');
     expect(combined.run).toContain('release-candidate.mjs verify-worker prd');
-    expect(promotion.if).toContain('inputs.confirm_code_promotion');
+    expect(workflow.jobs['prd-release-sequence'].if).toContain('inputs.confirm_code_promotion');
   });
 
-  it('builds paired targets after the repository gates without provider credentials', () => {
-    expect(build.env).toBeUndefined();
-    const tooling = build.steps.find((step: { name: string }) => step.name === 'Checkout trusted release tooling');
-    expect(tooling.with.ref).toBe('${{ github.sha }}');
-    expect(tooling.with.path).toBe('.codex-artifacts/release-tools');
-    expect(JSON.stringify(build)).toContain('node .codex-artifacts/release-tools/scripts/release-candidate.mjs pack');
-    const steps = build.steps.map((step: { name: string }) => step.name);
-    expect(steps.indexOf('Run validation checks')).toBeLessThan(steps.indexOf('Build hosted UAT static frontend'));
-    expect(steps).not.toContain('Run unused code audit');
-    expect(build.steps.find((step: { name: string }) => step.name === 'Run validation checks').run).toBe(
+  it('prepares independent target bundles and assembles the retained final candidate', () => {
+    expect(checks.env).toBeUndefined();
+    expect(checks.steps.find((step: { name: string }) => step.name === 'Run validation checks').run).toBe(
       'pnpm validate:checks',
     );
-    const uat = build.steps.find((step: { name: string }) => step.name === 'Build hosted UAT static frontend');
-    const prd = build.steps.find((step: { name: string }) => step.name === 'Build hosted PRD static frontend');
-    expect(uat.env.ASTRO_BASE_PATH).toBe('/');
-    expect(prd.env.ASTRO_BASE_PATH).toBe('/');
-    expect(uat.env.PUBLIC_BACKEND_BASE_URL).not.toBe(prd.env.PUBLIC_BACKEND_BASE_URL);
-    expect(uat.env.SHOW_REVIEW_SITE_MARKER).toBe('true');
-    expect(prd.env.SHOW_REVIEW_SITE_MARKER).toBeUndefined();
-    for (const [target, step] of [
-      ['uat', uat],
-      ['prd', prd],
+    expect(uatBuild.needs).toBe('check-candidate');
+    expect(prdBuild.needs).toBe('check-candidate');
+    const uatSteps = uatBuild.steps.map(
+      (step: { name?: string; run?: string }) => `${step.name ?? ''} ${step.run ?? ''}`,
+    );
+    const prdSteps = prdBuild.steps.map(
+      (step: { name?: string; run?: string }) => `${step.name ?? ''} ${step.run ?? ''}`,
+    );
+    expect(uatSteps.join('\n')).toContain('pack-target uat');
+    expect(prdSteps.join('\n')).toContain('pack-target prd');
+    expect(uatSteps.join('\n')).not.toContain('PRD_CMS_');
+    expect(prdSteps.join('\n')).not.toContain('UAT_CMS_');
+    expect(uatSteps.join('\n')).not.toContain('build:cms --env prd');
+    expect(prdSteps.join('\n')).not.toContain('build:cms --env uat');
+    for (const [target, job] of [
+      ['uat', uatBuild],
+      ['prd', prdBuild],
     ] as const) {
-      expect(step.env.CMS_CONTENT_ENVIRONMENT).toBe(target);
-      expect(step.env.CMS_CONTENT_SOURCE).toBe(`\${{ steps.${target}-content.outputs.source }}`);
-      expect(step.env.CMS_CONTENT_SNAPSHOT).toContain(`/release-content/${target}/snapshot.json`);
-      expect(JSON.stringify(step.env)).not.toContain('secrets.');
-      const restore = build.steps.find(
-        (entry: { name: string }) => entry.name === `Restore current ${target.toUpperCase()} publication`,
+      const frontend = job.steps.find(
+        (step: { name: string }) => step.name === `Build hosted ${target.toUpperCase()} static frontend`,
+      );
+      expect(frontend.env.ASTRO_BASE_PATH).toBe('/');
+      expect(frontend.env.CMS_CONTENT_ENVIRONMENT).toBe(target);
+      expect(frontend.env.CMS_CONTENT_SOURCE).toBe(`\${{ steps.${target}-content.outputs.source }}`);
+      expect(frontend.env.CMS_CONTENT_SNAPSHOT).toContain(`/release-content/${target}/snapshot.json`);
+      expect(frontend.env.PUBLIC_BACKEND_BASE_URL).toBe(`\${{ vars.${target.toUpperCase()}_PUBLIC_BACKEND_BASE_URL }}`);
+      expect(JSON.stringify(frontend.env)).not.toContain('secrets.');
+      const restore = job.steps.find(
+        (step: { name: string }) => step.name === `Restore current ${target.toUpperCase()} publication`,
       );
       expect(restore.env.CMS_PUBLICATION_EXPORT_TOKEN).toBe(
         `\${{ secrets.${target.toUpperCase()}_CMS_PUBLICATION_EXPORT_TOKEN }}`,
       );
-      expect(restore.run).toContain(`restore-published-content.mjs ${target}`);
+      expect(restore.run).toContain('restore-published-content.mjs');
+      expect(restore.run).toContain(`"$tool" ${target}`);
     }
-    const staff = build.steps.find((step: { name: string }) => step.name === 'Build hosted staff frontend');
-    expect(staff).toBeUndefined();
-    const imageCache = build.steps.find((step: { name: string }) => step.name === 'Restore Astro image cache');
-    expect(imageCache.uses).toBe('actions/cache/restore@v6.1.0');
-    expect(imageCache.with.path).toBe('apps/web/node_modules/.astro/assets');
-    expect(imageCache.with.key).toContain('${{ github.run_id }}');
-    const upload = build.steps.find((step: { name: string }) => step.name === 'Upload verified release bundle');
-    expect(upload.with['compression-level']).toBe(1);
-    const diagnostics = build.steps.find((step: { name: string }) => step.name === 'Upload validation diagnostics');
-    expect(diagnostics.if).toBe('${{ failure() }}');
-    expect(diagnostics.with.path).toBe('.codex-artifacts/validation');
+    expect(prdSteps.join('\n')).toContain('run-release-preparation.mjs browsers');
+    expect(JSON.stringify(prdBuild)).toContain('chromium firefox');
+    expect(assembly.needs).toEqual(['prepare-uat', 'prepare-prd']);
+    expect(
+      assembly.steps.find((step: { name: string }) => step.name === 'Setup Node.js for bundle assembly').with.cache,
+    ).toBeUndefined();
+    const downloads = assembly.steps.filter((step: { name?: string }) => step.name?.startsWith('Download verified'));
+    expect(downloads.map((step: { with: { name: string } }) => step.with.name)).toEqual([
+      'release-uat-${{ inputs.artifact_commit_sha || github.sha }}',
+      'release-prd-${{ inputs.artifact_commit_sha || github.sha }}',
+    ]);
+    const assemble = assembly.steps.find(
+      (step: { name: string }) => step.name === 'Verify and assemble immutable release bundle',
+    );
+    expect(assemble.run).toContain('release-candidate.mjs');
+    expect(assemble.run).toContain('assemble');
+    const finalUpload = assembly.steps.find((step: { name: string }) => step.name === 'Upload verified release bundle');
+    expect(finalUpload.with.name).toBe('release-${{ inputs.artifact_commit_sha || github.sha }}');
+    expect(finalUpload.with['compression-level']).toBe(1);
   });
 
   it('keeps UAT inspection built-in-only after downloading the candidate', () => {
@@ -179,7 +243,11 @@ describe('Pages artifact promotion contract', () => {
     expect(steps.some((step: { name?: string }) => step.name === 'Install dependencies')).toBe(false);
     expect(steps.some((step: { uses?: string }) => step.uses?.startsWith('actions/cache/'))).toBe(false);
     expect(steps.find((step: { name?: string }) => step.name === 'Setup Node.js').with['node-version']).toBe('24.21.0');
-    expect(steps.at(-1).run).toBe('node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify uat');
+    expect(steps.at(-1).run).toContain('node "$tool" verify uat');
+    expect(steps.at(-1).run).toContain('tool=scripts/release-candidate.mjs');
+    expect(steps.find((step: { name: string }) => step.name === 'Checkout trusted release tooling').if).toContain(
+      'inputs.artifact_commit_sha != github.sha',
+    );
   });
 
   it('promotes only the selected retained artifact without rebuilding it', () => {
@@ -188,14 +256,16 @@ describe('Pages artifact promotion contract', () => {
         (step: { name: string }) => step.name === 'Download selected candidate artifacts',
       );
       expect(download.with['run-id']).toBe('${{ inputs.candidate_run_id }}');
-      expect(download.with.name).toBe('release-${{ inputs.artifact_commit_sha }}');
+      expect(download.with.name).toBe('${{ inputs.candidate_artifact }}');
       expect(JSON.stringify(job)).not.toContain('pnpm build');
-      expect(job.env.SOURCE_SHA).toBe('${{ inputs.artifact_commit_sha }}');
+      expect(prdSequence.env.SOURCE_SHA).toBe('${{ inputs.source_sha }}');
       expect(job.steps[0].with.ref).toBe('${{ github.sha }}');
     }
     expect(JSON.stringify(promotion)).toContain('/prd/cms/server/wrangler.json');
     expect(JSON.stringify(staticPromotion)).toContain('/prd/public --project-name=blackbox-records-web --branch=main');
     expect(JSON.stringify(staticPromotion)).not.toContain('blackbox-records-staff');
-    expect(JSON.stringify(workflow.jobs['deploy-uat'])).not.toMatch(/d1:seed:.*catalog|stripe:catalog:verify/);
+    expect(JSON.stringify(uatSequence.jobs['deploy-uat'])).not.toMatch(/d1:seed:.*catalog|stripe:catalog:verify/);
+    expect(workflow.jobs['uat-release-sequence'].needs).toEqual(['prepare-uat', 'inspect-uat-pages']);
+    expect(JSON.stringify(workflow.jobs['uat-release-sequence'].needs)).not.toContain('prepare-prd');
   });
 });
