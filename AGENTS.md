@@ -111,6 +111,7 @@ Read these first before editing:
 
 ### WebStorm launcher contract
 
+- The explicitly requested validation entries are `BlackBox Validate Fresh` (`pnpm validate --no-cache`) and `OpenSpec Strict` (the guarded strict check for `shorten-validation-release-feedback`). Keep these pointing to committed package scripts, never temporary test fixtures.
 - The canonical committed IDE launcher is `.run/BlackBox Local Stack.run.xml`.
 - It must keep running the root script `pnpm dev:stack:stripe-mock` so the default local stack works without real Stripe keys.
 - Do not add more committed WebStorm run configurations unless the user explicitly asks; keep the IDE surface to one working local-stack entry.

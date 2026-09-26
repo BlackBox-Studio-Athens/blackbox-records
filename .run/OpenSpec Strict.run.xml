@@ -1,11 +1,11 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="BlackBox Validate Fresh" type="js.build_tools.npm">
+  <configuration default="false" name="OpenSpec Strict" type="js.build_tools.npm">
     <package-json value="$PROJECT_DIR$/package.json" />
     <command value="run" />
     <scripts>
-      <script value="validate" />
+      <script value="openspec" />
     </scripts>
-    <arguments value="--no-cache" />
+    <arguments value="--allow-worktree -- validate shorten-validation-release-feedback --strict" />
     <node-interpreter value="project" />
     <package-manager value="pnpm" />
     <envs />
