@@ -18,6 +18,7 @@ import { fileURLToPath } from 'node:url';
 import { setTimeout } from 'node:timers/promises';
 
 const bundle = '.codex-artifacts/release';
+const targetBundles = '.codex-artifacts/release-targets';
 const manifestPath = `${bundle}/manifest.json`;
 const transportPath = `${bundle}/transport.json`;
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
@@ -422,7 +423,176 @@ export function verifyFiles(candidate, directory = bundle) {
   }
 }
 
+const targetDirectories = (target) =>
+  target === 'uat'
+    ? ['uat/public', 'uat/worker', 'uat/renderer', 'migrations']
+    : ['prd/public', 'prd/cms', 'prd/renderer', 'migrations'];
+
+export function verifyTargetFiles(candidate, target, directory) {
+  materializeBundle(directory);
+  assert.equal(candidate.schema, 2, 'Legacy candidate contract; build and accept a fresh candidate.');
+  assert.equal(candidate.target, target, `Expected ${target.toUpperCase()} target bundle.`);
+  assert.ok(['uat', 'prd'].includes(target), 'Invalid target bundle.');
+  assert.match(candidate.sha ?? '', /^[a-f0-9]{40}$/);
+  assert.match(candidate.workflowSha ?? '', /^[a-f0-9]{40}$/);
+  assert.match(String(candidate.runId ?? ''), /^[1-9][0-9]*$/);
+  assert.ok(Number.isSafeInteger(candidate.runNumber) && candidate.runNumber > 0);
+  assert.deepEqual(Object.keys(candidate.files ?? {}).sort(), targetDirectories(target).sort());
+  for (const targetPath of targetDirectories(target)) {
+    assert.ok(existsSync(`${directory}/${targetPath}`), `Missing artifact: ${targetPath}`);
+    assert.deepEqual(
+      inventory(`${directory}/${targetPath}`),
+      candidate.files[targetPath],
+      `Artifact digest mismatch: ${targetPath}`,
+    );
+  }
+  const workerPath = target === 'uat' ? 'uat/worker' : 'prd/cms';
+  for (const file of [
+    'server/wrangler.json',
+    'server/entry.mjs',
+    'client/content/index.html',
+    'client/items/index.html',
+    'client/stock/index.html',
+  ])
+    assert.ok(existsSync(`${directory}/${workerPath}/${file}`), `Missing combined CMS artifact: ${workerPath}/${file}`);
+  const worker = Object.keys(candidate.files[workerPath])
+    .filter((name) => /\.(?:js|mjs)$/.test(name))
+    .map((name) => readFileSync(`${directory}/${workerPath}/${name}`, 'utf8'))
+    .join('\n');
+  assert.ok(
+    worker.includes(candidate.sha) && worker.includes('X-Release-SHA'),
+    'Worker has no compiled release identity.',
+  );
+  const publicPath = `${target}/public`;
+  const current = readJson(`${directory}/${publicPath}/release.json`);
+  validateIdentity(candidate, current, candidate.configuration);
+  assert.equal(current.publicationMode, candidate.publicationMode);
+}
+
+export function assembleTargetBundles(uatDirectory, prdDirectory, outputDirectory) {
+  const uat = JSON.parse(readFileSync(`${uatDirectory}/manifest.json`, 'utf8'));
+  const prd = JSON.parse(readFileSync(`${prdDirectory}/manifest.json`, 'utf8'));
+  verifyTargetFiles(uat, 'uat', uatDirectory);
+  verifyTargetFiles(prd, 'prd', prdDirectory);
+  for (const key of ['schema', 'publicationMode', 'sha', 'workflowSha', 'runId', 'runNumber', 'configuration'])
+    assert.deepEqual(prd[key], uat[key], `Target bundles have different candidate ${key}.`);
+  assert.deepEqual(
+    uat.files.migrations,
+    prd.files.migrations,
+    'Target bundles have conflicting migration inventories.',
+  );
+  assert.deepEqual(
+    uat.configuration.migrations,
+    uat.files.migrations,
+    'Candidate migrations differ from its configuration.',
+  );
+  assert.ok(!existsSync(outputDirectory), 'Final release bundle output already exists.');
+
+  mkdirSync(outputDirectory, { recursive: true });
+  for (const [source, candidate] of [
+    [uatDirectory, uat],
+    [prdDirectory, prd],
+  ]) {
+    for (const targetPath of targetDirectories(candidate.target).filter((entry) => entry !== 'migrations')) {
+      cpSync(`${source}/${targetPath}`, `${outputDirectory}/${targetPath}`, { recursive: true });
+    }
+  }
+  cpSync(`${uatDirectory}/migrations`, `${outputDirectory}/migrations`, { recursive: true });
+
+  const candidate = {
+    schema: 2,
+    publicationMode: uat.publicationMode,
+    sha: uat.sha,
+    workflowSha: uat.workflowSha,
+    runId: uat.runId,
+    runNumber: uat.runNumber,
+    configuration: uat.configuration,
+    files: {},
+  };
+  for (const targetPath of [
+    'uat/public',
+    'prd/public',
+    'uat/worker',
+    'prd/cms',
+    'uat/renderer',
+    'prd/renderer',
+    'migrations',
+  ]) {
+    assert.ok(existsSync(`${outputDirectory}/${targetPath}`), `Missing assembled artifact: ${targetPath}`);
+    candidate.files[targetPath] = inventory(`${outputDirectory}/${targetPath}`);
+  }
+  verifyFiles(candidate, outputDirectory);
+  writeFileSync(`${outputDirectory}/manifest.json`, JSON.stringify(candidate, null, 2));
+  const transport = packBundle(outputDirectory);
+  return { candidate, transport };
+}
+
+function packTarget(target) {
+  assert.ok(['uat', 'prd'].includes(target), 'Select target uat or prd.');
+  const startedAt = performance.now();
+  const sha = process.env.SOURCE_SHA;
+  assert.match(sha ?? '', /^[0-9a-f]{40}$/);
+  assert.match(process.env.GITHUB_RUN_ID ?? '', /^[1-9][0-9]*$/);
+  assert.match(process.env.GITHUB_SHA ?? '', /^[0-9a-f]{40}$/);
+  const config = configuration();
+  assert.match(config.cloudflareAccount ?? '', /^[0-9a-f]{32}$/, 'Select an explicit Cloudflare account.');
+  assert.equal(config.uatBackend, 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev');
+  assert.equal(config.prdBackend, 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev');
+  cpSync('apps/backend/prisma/migrations', `${bundle}/migrations`, { recursive: true });
+  const candidate = {
+    schema: 2,
+    target,
+    publicationMode: 'runtime',
+    sha,
+    workflowSha: process.env.GITHUB_SHA,
+    runId: process.env.GITHUB_RUN_ID,
+    runNumber: Number(process.env.GITHUB_RUN_NUMBER),
+    configuration: config,
+    files: {},
+  };
+  validateOrder(candidate, null);
+  const workerPath = target === 'uat' ? 'uat/worker' : 'prd/cms';
+  const publicPath = `${target}/public`;
+  const worker = Object.keys(inventory(`${bundle}/${workerPath}`))
+    .filter((name) => /\.(?:js|mjs)$/.test(name))
+    .map((name) => readFileSync(`${bundle}/${workerPath}/${name}`, 'utf8'))
+    .join('\n');
+  assert.ok(worker.includes(sha) && worker.includes('X-Release-SHA'), 'Worker has no compiled release identity.');
+  const html = readFileSync(`${bundle}/${publicPath}/index.html`, 'utf8');
+  if (target === 'uat') assert.ok(html.includes('[TEST] ') && html.includes('TEST SITE'));
+  else assert.ok(!html.includes('[TEST] ') && !html.includes('TEST SITE'));
+  assert.ok(existsSync(`${bundle}/${publicPath}/_headers`));
+  const wrongBackend = target === 'uat' ? config.prdBackend : config.uatBackend;
+  for (const file of Object.keys(inventory(`${bundle}/${publicPath}`)).filter((name) => /\.(html|js)$/.test(name))) {
+    assert.ok(
+      !readFileSync(`${bundle}/${publicPath}/${file}`, 'utf8').includes(wrongBackend),
+      `Wrong target backend in ${publicPath}/${file}`,
+    );
+  }
+  const content = readJson(`.codex-artifacts/release-content/${target}/identity.json`);
+  writeFileSync(
+    `${bundle}/${publicPath}/release.json`,
+    JSON.stringify({ ...refreshedReleaseIdentity(candidate, content), publicationMode: 'runtime' }),
+  );
+  for (const targetPath of targetDirectories(target)) {
+    assert.ok(statSync(`${bundle}/${targetPath}`).isDirectory());
+    candidate.files[targetPath] = inventory(`${bundle}/${targetPath}`);
+  }
+  writeFileSync(`${bundle}/manifest.json`, JSON.stringify(candidate, null, 2));
+  verifyTargetFiles(candidate, target, bundle);
+  const transport = packBundle(bundle);
+  console.log(
+    `Packed ${target.toUpperCase()} target: ${transport.objectCount} objects, ${transport.storedBytes} bytes, ${Math.round(performance.now() - startedAt)}ms.`,
+  );
+}
+
 async function main(command, target) {
+  if (command === 'pack-target') return packTarget(target);
+  if (command === 'assemble') {
+    const assembled = assembleTargetBundles(`${targetBundles}/uat`, `${targetBundles}/prd`, bundle);
+    console.log(`Assembled schema-2 release bundle: ${assembled.transport.objectCount} objects.`);
+    return;
+  }
   if (command === 'resolve-publication-code') {
     assert.ok(['uat', 'prd'].includes(target));
     const account = process.env.CLOUDFLARE_ACCOUNT_ID;
@@ -528,7 +698,8 @@ async function main(command, target) {
     return;
   }
   const verificationStartedAt = performance.now();
-  verifyFiles(candidate);
+  if (candidate.target) verifyTargetFiles(candidate, target, bundle);
+  else verifyFiles(candidate);
   console.log(`Verified release bundle in ${Math.round(performance.now() - verificationStartedAt)}ms.`);
   assert.deepEqual(candidate.configuration, configuration(), 'Build/deploy configuration differs.');
   const config = candidate.configuration;

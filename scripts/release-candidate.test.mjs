@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { cpSync, existsSync, mkdtempSync, mkdirSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import {
   contentPublicationIdentity,
   configuration,
@@ -19,6 +21,8 @@ import {
   validateRun,
   validateWorker,
   verifyFiles,
+  verifyTargetFiles,
+  assembleTargetBundles,
   waitForDeployment,
 } from './release-candidate.mjs';
 
@@ -293,4 +297,187 @@ test('compact transport rejects path escapes and duplicate logical destinations 
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
+});
+
+test('pack-target CLI produces independently verifiable UAT and PRD bundles', (context) => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'blackbox-pack-target-'));
+  context.after(() => rmSync(directory, { recursive: true, force: true }));
+  for (const target of ['uat', 'prd']) {
+    const cwd = path.join(directory, target);
+    const write = (name, content) => {
+      const filename = path.join(cwd, name);
+      mkdirSync(path.dirname(filename), { recursive: true });
+      writeFileSync(filename, content);
+    };
+    for (const name of ['wrangler.jsonc', 'cms-resources.json', 'astro.config.mjs', 'astro.public.config.mjs'])
+      write(`apps/backend/${name}`, '{}');
+    write('pnpm-lock.yaml', 'fixture lock');
+    write('apps/backend/prisma/migrations/fixture.sql', 'SELECT 1;');
+    write('apps/backend/cms-migrations/fixture.sql', 'SELECT 1;');
+    write(`.codex-artifacts/release-content/${target}/identity.json`, 'null');
+    const bundle = '.codex-artifacts/release';
+    write(`${bundle}/${target}/public/index.html`, target === 'uat' ? '[TEST] TEST SITE' : 'PRD SITE');
+    write(`${bundle}/${target}/public/_headers`, 'fixture headers');
+    write(`${bundle}/${target}/renderer/server/entry.mjs`, sha);
+    const worker = target === 'uat' ? 'worker' : 'cms';
+    for (const file of [
+      'server/wrangler.json',
+      'server/entry.mjs',
+      'client/content/index.html',
+      'client/items/index.html',
+      'client/stock/index.html',
+    ])
+      write(`${bundle}/${target}/${worker}/${file}`, file.endsWith('.mjs') ? `${sha} X-Release-SHA` : '{}');
+    execFileSync(
+      process.execPath,
+      [fileURLToPath(new URL('./release-candidate.mjs', import.meta.url)), 'pack-target', target],
+      {
+        cwd,
+        env: {
+          ...process.env,
+          SOURCE_SHA: sha,
+          GITHUB_SHA: sha,
+          GITHUB_RUN_ID: '123',
+          GITHUB_RUN_NUMBER: '10',
+          CLOUDFLARE_ACCOUNT_ID: 'a'.repeat(32),
+          UAT_PUBLIC_BACKEND_BASE_URL: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
+          PRD_PUBLIC_BACKEND_BASE_URL: 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev',
+        },
+        stdio: 'pipe',
+      },
+    );
+    const root = path.join(cwd, bundle);
+    const manifest = JSON.parse(readFileSync(path.join(root, 'manifest.json'), 'utf8'));
+    assert.equal(manifest.target, target);
+    verifyTargetFiles(manifest, target, root);
+  }
+  const result = assembleTargetBundles(
+    `${directory}/uat/.codex-artifacts/release`,
+    `${directory}/prd/.codex-artifacts/release`,
+    `${directory}/final`,
+  );
+  assert.equal(result.candidate.schema, 2);
+  verifyFiles(result.candidate, `${directory}/final`);
+});
+
+test('target bundles assemble only when identities, digests, and migration inventories agree', (context) => {
+  const directory = mkdtempSync(path.join(os.tmpdir(), 'blackbox-release-targets-'));
+  context.after(() => rmSync(directory, { recursive: true, force: true }));
+  const common = {
+    schema: 2,
+    publicationMode: 'runtime',
+    sha,
+    workflowSha: 'b'.repeat(40),
+    runId: '123',
+    runNumber: 10,
+    configuration: {
+      uatBackend: 'https://uat.example.com',
+      prdBackend: 'https://prd.example.com',
+    },
+  };
+  const makeTarget = (target, root) => {
+    const paths =
+      target === 'uat'
+        ? ['uat/public', 'uat/worker', 'uat/renderer', 'migrations']
+        : ['prd/public', 'prd/cms', 'prd/renderer', 'migrations'];
+    const files = {};
+    for (const targetPath of paths) {
+      mkdirSync(`${root}/${targetPath}`, { recursive: true });
+      writeFileSync(`${root}/${targetPath}/artifact`, targetPath === 'migrations' ? 'same migration' : targetPath);
+      if (targetPath === `${target}/public`) {
+        writeFileSync(`${root}/${targetPath}/index.html`, target === 'uat' ? '[TEST] TEST SITE' : 'PRD SITE');
+        writeFileSync(`${root}/${targetPath}/_headers`, 'headers');
+        writeFileSync(
+          `${root}/${targetPath}/release.json`,
+          JSON.stringify({ sha, runId: '123', runNumber: 10, publicationMode: 'runtime' }),
+        );
+      }
+      if (targetPath === 'uat/worker' || targetPath === 'prd/cms') {
+        for (const file of [
+          'server/wrangler.json',
+          'server/entry.mjs',
+          'client/content/index.html',
+          'client/items/index.html',
+          'client/stock/index.html',
+        ]) {
+          mkdirSync(path.dirname(`${root}/${targetPath}/${file}`), { recursive: true });
+          writeFileSync(`${root}/${targetPath}/${file}`, file.endsWith('.mjs') ? `${sha} X-Release-SHA` : file);
+        }
+      }
+      files[targetPath] = inventory(`${root}/${targetPath}`);
+    }
+    const candidate = {
+      ...common,
+      target,
+      configuration: { ...common.configuration, migrations: files.migrations },
+      files,
+    };
+    writeFileSync(`${root}/manifest.json`, JSON.stringify(candidate));
+    packBundle(root);
+    return candidate;
+  };
+  const uatDir = `${directory}/uat`;
+  const prdDir = `${directory}/prd`;
+  mkdirSync(uatDir);
+  mkdirSync(prdDir);
+  const uat = makeTarget('uat', uatDir);
+  const prd = makeTarget('prd', prdDir);
+  verifyTargetFiles(uat, 'uat', uatDir);
+  verifyTargetFiles(prd, 'prd', prdDir);
+  const missingDir = `${directory}/missing-file`;
+  cpSync(uatDir, missingDir, { recursive: true });
+  materializeBundle(missingDir);
+  rmSync(`${missingDir}/uat/public/index.html`);
+  assert.throws(() => verifyTargetFiles(uat, 'uat', missingDir), /Artifact digest mismatch/);
+  assert.throws(() => assembleTargetBundles(uatDir, `${directory}/missing-prd`, `${directory}/missing-target`));
+
+  const output = `${directory}/assembled`;
+  const result = assembleTargetBundles(uatDir, prdDir, output);
+  assert.equal(result.candidate.schema, 2);
+  assert.equal('target' in result.candidate, false);
+  verifyFiles(result.candidate, output);
+  assert.throws(() => assembleTargetBundles(uatDir, prdDir, output), /already exists/);
+
+  const mismatchDir = `${directory}/mismatch`;
+  cpSync(prdDir, mismatchDir, { recursive: true });
+  materializeBundle(mismatchDir);
+  const mismatch = JSON.parse(readFileSync(`${mismatchDir}/manifest.json`, 'utf8'));
+  mismatch.runNumber += 1;
+  writeFileSync(
+    `${mismatchDir}/prd/public/release.json`,
+    JSON.stringify({ sha, runId: mismatch.runId, runNumber: mismatch.runNumber, publicationMode: 'runtime' }),
+  );
+  mismatch.files['prd/public'] = inventory(`${mismatchDir}/prd/public`);
+  writeFileSync(`${mismatchDir}/manifest.json`, JSON.stringify(mismatch));
+  packBundle(mismatchDir);
+  assert.throws(() => assembleTargetBundles(uatDir, mismatchDir, `${directory}/wrong-run`), /different candidate/);
+
+  const foreignDir = `${directory}/foreign`;
+  cpSync(prdDir, foreignDir, { recursive: true });
+  materializeBundle(foreignDir);
+  const foreign = JSON.parse(readFileSync(`${foreignDir}/manifest.json`, 'utf8'));
+  foreign.target = 'uat';
+  writeFileSync(`${foreignDir}/manifest.json`, JSON.stringify(foreign));
+  packBundle(foreignDir);
+  assert.throws(() => assembleTargetBundles(uatDir, foreignDir, `${directory}/wrong-target`), /Expected PRD/);
+
+  const conflictDir = `${directory}/migration-conflict`;
+  cpSync(prdDir, conflictDir, { recursive: true });
+  materializeBundle(conflictDir);
+  writeFileSync(`${conflictDir}/migrations/artifact`, 'conflicting migration');
+  const conflict = JSON.parse(readFileSync(`${conflictDir}/manifest.json`, 'utf8'));
+  conflict.files.migrations = inventory(`${conflictDir}/migrations`);
+  writeFileSync(`${conflictDir}/manifest.json`, JSON.stringify(conflict));
+  packBundle(conflictDir);
+  assert.throws(
+    () => assembleTargetBundles(uatDir, conflictDir, `${directory}/wrong-migrations`),
+    /conflicting migration inventories/,
+  );
+
+  const tamperedDir = `${directory}/tampered`;
+  cpSync(prdDir, tamperedDir, { recursive: true });
+  packBundle(tamperedDir);
+  const object = readdirSync(`${tamperedDir}/objects`)[0];
+  writeFileSync(`${tamperedDir}/objects/${object}`, 'tampered');
+  assert.throws(() => verifyTargetFiles(prd, 'prd', tamperedDir), /size mismatch|digest mismatch/);
 });
