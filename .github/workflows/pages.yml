@@ -158,7 +158,9 @@ jobs:
           cp -R apps/web/dist .codex-artifacts/release/prd/public
           pnpm --filter @blackbox/backend build:cms --env uat
           cp -R apps/backend/dist .codex-artifacts/release/uat/worker
+          cp apps/backend/.emdash/migrations.json .codex-artifacts/release/uat/worker/migrations.json
           pnpm --filter @blackbox/backend build:cms --env prd --out-dir ../../.codex-artifacts/release/prd/cms
+          cp apps/backend/.emdash/migrations.json .codex-artifacts/release/prd/cms/migrations.json
           node scripts/build-public-release.mjs uat
           node scripts/build-public-release.mjs prd
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs pack
@@ -275,10 +277,34 @@ jobs:
           pnpm stripe:webhooks:verify --env uat
           pnpm stripe:payment-methods:verify
           pnpm --filter @blackbox/backend d1:migrations:apply:uat
-      - name: Deploy UAT Worker
+      - name: Prepare UAT CMS application schema
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-backend uat
           pnpm --filter @blackbox/backend cms:application-migrations --env uat --apply
+      - name: Apply UAT EmDash core migrations
+        run: |
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-backend uat
+          set -euo pipefail
+          config='../../.codex-artifacts/release/uat/worker/server/wrangler.json'
+          report="$RUNNER_TEMP/uat-cms-migrations.json"
+          set +e
+          node apps/backend/scripts/migrate-cms.mjs --env uat --wrangler-config "$config" --manifest "${config%/server/wrangler.json}/migrations.json" > "$report"
+          status=$?
+          set -e
+          if [[ "$status" -eq 0 ]]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$status" -eq 2 ]]; then
+            fingerprint=$(node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const r=JSON.parse(s);process.stdout.write(r.target.fingerprint)})' < "$report")
+            [[ "$fingerprint" =~ ^[a-f0-9]{64}$ ]]
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+            node apps/backend/scripts/migrate-cms.mjs --env uat --wrangler-config "$config" --manifest "${config%/server/wrangler.json}/migrations.json" --apply --fingerprint "$fingerprint"
+          else
+            cat "$report"
+            exit "$status"
+          fi
+      - name: Deploy UAT Worker
+        run: |
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-backend uat
           pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/uat/renderer/server/wrangler.json
           pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/uat/worker/server/wrangler.json --keep-vars
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify-worker uat
@@ -380,10 +406,34 @@ jobs:
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend d1:migrations:apply:prd
-      - name: Deploy candidate PRD public renderer
+      - name: Prepare PRD CMS application schema
         run: |
           node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend cms:application-migrations --env prd --apply --confirm-live-cms-changes
+      - name: Apply reviewed PRD EmDash core migrations
+        run: |
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
+          set -euo pipefail
+          config='../../.codex-artifacts/release/prd/cms/server/wrangler.json'
+          report="$RUNNER_TEMP/prd-cms-migrations.json"
+          set +e
+          node apps/backend/scripts/migrate-cms.mjs --env prd --wrangler-config "$config" --manifest "${config%/server/wrangler.json}/migrations.json" > "$report"
+          status=$?
+          set -e
+          if [[ "$status" -eq 0 ]]; then
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$status" -eq 2 ]]; then
+            fingerprint=$(node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const r=JSON.parse(s);process.stdout.write(r.target.fingerprint)})' < "$report")
+            [[ "$fingerprint" =~ ^[a-f0-9]{64}$ ]]
+            cat "$report" >> "$GITHUB_STEP_SUMMARY"
+            node apps/backend/scripts/migrate-cms.mjs --env prd --wrangler-config "$config" --manifest "${config%/server/wrangler.json}/migrations.json" --apply --fingerprint "$fingerprint" --confirm-live-cms-changes
+          else
+            cat "$report"
+            exit "$status"
+          fi
+      - name: Deploy candidate PRD public renderer
+        run: |
+          node .codex-artifacts/release-tools/scripts/release-candidate.mjs verify prd
           pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/prd/renderer/server/wrangler.json
       - name: Deploy candidate combined PRD CMS Worker
         run: |

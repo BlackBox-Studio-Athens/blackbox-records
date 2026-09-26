@@ -9,10 +9,15 @@ const { values } = parseArgs({
     env: { type: 'string', default: 'uat' },
     apply: { type: 'boolean', default: false },
     fingerprint: { type: 'string' },
+    manifest: { type: 'string', default: '.emdash/migrations.json' },
+    'confirm-live-cms-changes': { type: 'boolean', default: false },
     'wrangler-config': { type: 'string', default: '.emdash/wrangler.build.json' },
   },
 });
 if (!['uat', 'prd'].includes(values.env)) throw new Error('Select uat or prd; Local uses isolated Wrangler storage.');
+if (values.env === 'prd' && values.apply && !values['confirm-live-cms-changes']) {
+  throw new Error('PRD apply requires --confirm-live-cms-changes.');
+}
 if (values.apply && !/^[a-f0-9]{64}$/.test(values.fingerprint ?? '')) {
   throw new Error('Apply requires the reviewed --fingerprint from a migration check.');
 }
@@ -39,7 +44,7 @@ const result = spawnSync(
     'node_modules/emdash/dist/cli/index.mjs',
     'migrate',
     '--manifest',
-    '.emdash/migrations.json',
+    values.manifest,
     '--wrangler-config',
     values['wrangler-config'],
     '--d1',

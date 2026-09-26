@@ -25,6 +25,31 @@ describe('one gated release', () => {
     ).run;
     expect(deploy).toContain('uat/worker/server/wrangler.json --keep-vars');
     expect(deploy).not.toContain('worker/index.js');
+    const steps = release.jobs['deploy-uat'].steps.map((step: { name: string }) => step.name);
+    expect(steps.indexOf('Prepare UAT CMS application schema')).toBeLessThan(
+      steps.indexOf('Apply UAT EmDash core migrations'),
+    );
+    expect(steps.indexOf('Apply UAT EmDash core migrations')).toBeLessThan(steps.indexOf('Deploy UAT Worker'));
+    const uatCoreMigrations = release.jobs['deploy-uat'].steps.find(
+      (step: { name: string }) => step.name === 'Apply UAT EmDash core migrations',
+    ).run;
+    expect(uatCoreMigrations).toContain('node apps/backend/scripts/migrate-cms.mjs --env uat');
+    expect(uatCoreMigrations).toContain('--fingerprint "$fingerprint"');
+    const prdMigration = release.jobs['deploy-prd'].steps.find(
+      (step: { name: string }) => step.name === 'Apply reviewed PRD EmDash core migrations',
+    ).run;
+    expect(prdMigration).toContain('--confirm-live-cms-changes');
+    for (const [environment, directory] of [
+      ['uat', 'worker'],
+      ['prd', 'cms'],
+    ]) {
+      expect(build).toContain(
+        `cp apps/backend/.emdash/migrations.json .codex-artifacts/release/${environment}/${directory}/migrations.json`,
+      );
+      const migration = environment === 'uat' ? uatCoreMigrations : prdMigration;
+      expect(migration.match(/--manifest "\$\{config%\/server\/wrangler.json\}\/migrations.json"/g)).toHaveLength(2);
+      expect(migration).toContain('exit "$status"');
+    }
   });
 
   it('limits main pushes to UAT and keeps code/catalog/launch authorization independent', () => {
