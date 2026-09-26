@@ -110,8 +110,6 @@ jobs:
           sparse-checkout-cone-mode: false
       - name: Run validation checks
         run: pnpm validate:checks
-      - name: Run unused code audit
-        run: pnpm audit:unused
       - name: Restore current UAT publication
         id: uat-content
         env:

@@ -1,0 +1,33 @@
+name: Unused code audit
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 8 * * 1'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: pnpm/action-setup@v6.0.10
+        with:
+          version: 12.0.0
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 24.21.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Run unused code audit
+        run: |
+          mkdir -p .codex-artifacts/audit
+          set -o pipefail
+          pnpm audit:unused 2>&1 | tee .codex-artifacts/audit/unused-code.log
+      - uses: actions/upload-artifact@v7.0.1
+        if: ${{ always() }}
+        with:
+          name: unused-code-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .codex-artifacts/audit/unused-code.log
+          if-no-files-found: ignore
+          retention-days: 7

@@ -44,8 +44,10 @@ Read these first before editing:
 
 ## Commands
 
-- Agent completion gates: `pnpm validate`; inspect its summary and only the relevant failure log.
-- Agent iteration: `pnpm validate:fast --scope all` (partial, never completion).
+- Agent completion gates: `pnpm validate`; inspect its summary and only the relevant failure log. A passing run applies only to its recorded final source fingerprint and toolchain.
+- Agent iteration: `pnpm validate:fast --scope web|staff|backend|api-client|all` (partial, never completion). Use `all` for shared packages, content, configuration, migrations, and tooling.
+- Package test watch: `pnpm test:watch --scope web|staff|backend|api-client`.
+- Explicitly reuse safe successful phases: `pnpm validate --resume`; use `--no-cache` to force every phase to run.
 - Additional staff/editor acceptance: `pnpm validate:editor` (partial; does not replace completion gates).
 - Install deps: `pnpm install`
 - Normal Local stack: `pnpm dev` (alias for `pnpm dev:stack:stripe-mock`)
@@ -194,7 +196,9 @@ Read these first before editing:
 ### Required command policy
 
 - After finishing behavior-changing implementation, run `pnpm validate` (alias `pnpm validate:full`). It executes every check required by `pnpm test:unit`, `pnpm check`, and `pnpm build`, without catalog generation. The three legacy commands remain supported independently.
-- Use `pnpm validate:fast --scope web|staff|backend|api-client|all` only during iteration. Default to `all`; shared package, content, configuration, migration, and tooling changes require `all`. Partial success never establishes completion.
+- Use scoped `pnpm validate:fast` during implementation; shared package, content, configuration, migration, and tooling changes require `--scope all`. Partial success never establishes completion.
+- Full validation is fresh by default. `--resume` reuses only eligible successful checks with an identical source, toolchain, configuration, and allowlisted environment fingerprint; `--no-cache` disables reuse.
+- Run one complete `pnpm validate` on the final source fingerprint and toolchain before claiming completion or pushing. Reuse a prior full pass only when its recorded fingerprint and toolchain still match the exact final tree.
 - Read the compact phase results first. On failure, inspect the named log excerpt before rerunning. Full logs and source fingerprints live in `.codex-artifacts/validation/`; do not paste successful logs into context.
 - Native Vitest JSON and ESLint statistics are retained beside logs. Inspect the relevant failed assertion or diagnostic instead of rereading successful output.
 - A passed summary establishes repository gates only. For staff/editor changes also run `pnpm validate:editor`. CMS/publication changes additionally require the relevant local checks in `docs/content-publication.md` and `docs/content-workspace.md`. Hosted checks are separate and never implicit.
@@ -224,7 +228,7 @@ Read these first before editing:
 - Do not change `site` or `base` behavior unless the task explicitly requires deployment URL changes.
 - Cloudflare Pages deploys the retained public assets and a GET/HEAD service-binding gateway to the accepted-snapshot renderer. Content publication does not rebuild or deploy code. See docs/content-publication.md.
 - The independent staff frontend builds to `apps/staff/dist`; its assets ship only inside the combined CMS Worker. No detached staff Pages upload runs.
-- The static frontend workflow must run `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and PRD `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project.
+- The static frontend workflow must run `pnpm test:unit`, `pnpm check`, and PRD `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project. `pnpm audit:unused` runs separately on a schedule or manual dispatch.
 - The PRD static build job may pass only non-secret PRD build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset. Snapshot refresh additionally supplies the non-secret `CMS_CONTENT_SOURCE`, `CMS_CONTENT_SNAPSHOT`, `CMS_CONTENT_SHA256`, and `CMS_CONTENT_ENVIRONMENT` build inputs. Restore credentials belong only to the preceding trusted restore step, never the build step.
 - Cloudflare Pages PRD deploys must run through `.github/workflows/pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not acceptance evidence.
 - Cloudflare Pages may own only the public gateway; it must not own business backend routes, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.

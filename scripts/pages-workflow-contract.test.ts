@@ -48,6 +48,16 @@ describe('Content publication workflow', () => {
 });
 
 describe('Pages artifact promotion contract', () => {
+  it('keeps advisory unused-code analysis out of candidate preparation', () => {
+    const names = build.steps.map((step: { name?: string; run?: string }) => `${step.name ?? ''} ${step.run ?? ''}`);
+    expect(names.join('\n')).not.toContain('audit:unused');
+    const audit = parse(
+      readFileSync(fileURLToPath(new URL('../.github/workflows/unused-code-audit.yml', import.meta.url)), 'utf8'),
+    );
+    expect(audit.on.schedule).toHaveLength(1);
+    expect(audit.on.workflow_dispatch).toBeNull();
+    expect(JSON.stringify(audit)).toContain('upload-artifact');
+  });
   it('runs the normal provider and active public-surface smoke without retired-route exceptions', () => {
     expect(workflow.on.workflow_dispatch.inputs.confirm_retired_admin_cache_exception).toBeUndefined();
     const steps = workflow.jobs['smoke-uat'].steps;
@@ -123,7 +133,7 @@ describe('Pages artifact promotion contract', () => {
     expect(JSON.stringify(build)).toContain('node .codex-artifacts/release-tools/scripts/release-candidate.mjs pack');
     const steps = build.steps.map((step: { name: string }) => step.name);
     expect(steps.indexOf('Run validation checks')).toBeLessThan(steps.indexOf('Build hosted UAT static frontend'));
-    expect(steps.indexOf('Run unused code audit')).toBeLessThan(steps.indexOf('Build hosted UAT static frontend'));
+    expect(steps).not.toContain('Run unused code audit');
     expect(build.steps.find((step: { name: string }) => step.name === 'Run validation checks').run).toBe(
       'pnpm validate:checks',
     );
