@@ -237,7 +237,7 @@ const metadata = {
   rtk: (await execa(values.rtk, ['--version'])).stdout,
   codex: (await execa('codex', ['--version'])).stdout,
 };
-if (metadata.pnpm !== '12.0.0') throw new Error('Benchmark requires pnpm 12.0.0.');
+if (metadata.pnpm !== '12.6.0') throw new Error('Benchmark requires pnpm 12.6.0.');
 await writeFile(path.join(output, 'metadata.json'), JSON.stringify(metadata, null, 2));
 
 async function save() {
@@ -448,7 +448,7 @@ async function agentRun(arm, scenario, index) {
   const started = performance.now();
   try {
     const prompt =
-      'This separate benchmark worktree is explicitly authorized. Use Node 24.21.0 and pnpm 12.0.0, available on PATH. Run validation only; do not modify OpenSpec artifacts. ' +
+      'This separate benchmark worktree is explicitly authorized. Use Node 24.21.0 and pnpm 12.6.0, available on PATH. Run validation only; do not modify OpenSpec artifacts. ' +
       'Personal policy links resolve under C:/Users/SVall/.codex, not this worktree. Read C:/Users/SVall/.codex/policy/README.md and C:/Users/SVall/.codex/RTK.md; use C:/Users/SVall/.local/bin/rtk.exe to wrap noisy validation commands according to that guide. Select the validation commands from this worktree’s normal instructions. ' +
       (scenario === 'failure'
         ? 'A prepared test change is present. Exercise the repository’s normal validation, diagnose any failure with its file and assertion, and report whether completion is allowed. Do not edit, suppress tests, commit, deploy, or access hosted services. Local generated build outputs are allowed.'

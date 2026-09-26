@@ -16,7 +16,7 @@ A fresh public build also exposes an existing Home bundle-gate failure: 110,118 
 - Use Astro's native `build.inlineStylesheets: 'always'` for the staff app so initial project CSS arrives inside authenticated HTML. Preserve lazy editor and picker styles.
 - Extend the existing bundle checker with a staff profile and run it from `build:staff`. Check initial JavaScript size, compressed HTML size, and absence of external initial project stylesheets.
 - Separate browser prose helpers and the shared safe-link predicate from Zod schema construction. Keep Zod validation at existing CMS and content boundaries, and preserve rich-text rendering and the package root entrypoint.
-- Run the existing default public bundle gate from `build:web`; keep the 97,280-byte Home budget unchanged.
+- Run the existing default public bundle gate from `build:web`. Its original 97,280-byte Home budget was explicitly superseded by the user-approved 98,304-byte dependency-upgrade baseline on 2026-09-26; see `docs/dependency-upgrade.md`.
 - Reuse existing staff functional checks, then collect a bounded, foreground-controlled hosted comparison through the normal release process. Report first visits separately from repeats, persist each navigation's timing evidence promptly, and distinguish rendering, artwork completion, and provider request timing.
 
 ## Capabilities

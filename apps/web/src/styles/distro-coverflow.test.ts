@@ -40,7 +40,7 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(pageSource).toContain("data-store-coverflow-mode={enrolled ? 'catalog' : undefined}");
     expect(pageSource).toContain('group.entries.map');
     expect(pageSource).not.toContain('getStoreCoverflowPosition');
-    expect(controls.indexOf('>Grid</button>')).toBeLessThan(controls.indexOf('>Coverflow</button>'));
+    expect(controls).toMatch(/>\s*Grid\s*<\/button>[\s\S]*>\s*Coverflow\s*<\/button>/);
     expect(controls).toContain('data-store-coverflow-controls hidden');
     for (const hook of [
       'data-store-coverflow-current-value',

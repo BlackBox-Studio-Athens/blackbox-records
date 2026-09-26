@@ -47,7 +47,7 @@ test('real test, formatting, type, boundary and Astro build failures propagate',
       phases: [{ ...phase, env: { NODE_TEST_CONTEXT: undefined } }],
       jobs: 1,
       identify: async () => ({ fingerprint: 'isolated acceptance fixtures' }),
-      readPnpmVersion: async () => '12.0.0',
+      readPnpmVersion: async () => '12.6.0',
       log: () => {},
     });
     assert.equal(summary.status, 'failed', phase.name);

@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// Public browser validation must not probe eval under the site's Content Security Policy.
+z.config({ jitless: true });
+
 const moneySchema = z
   .object({
     amountMinor: z.number().int().min(0),

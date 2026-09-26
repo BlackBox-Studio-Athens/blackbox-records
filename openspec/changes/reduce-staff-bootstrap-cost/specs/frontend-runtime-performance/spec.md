@@ -8,7 +8,7 @@ The standard public web build SHALL run the existing route-specific eager JavaSc
 
 - **WHEN** `build:web` completes the Astro build and route-isolation check
 - **THEN** it runs the default `performance:bundles` check against that build
-- **AND** Home's first-party eager JavaScript graph is no more than 97,280 Brotli bytes.
+- **AND** Home's first-party eager JavaScript graph is no more than 98,304 Brotli bytes, as explicitly approved for the 2026-09-26 dependency upgrade.
 
 #### Scenario: A route exceeds its eager budget
 

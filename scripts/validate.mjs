@@ -283,8 +283,8 @@ export async function runValidation({
     if (identify === sourceIdentity) stopMonitoring = await monitorSourceChanges(cwd);
     summary.sourceBefore = await identify(cwd);
     summary.pnpm = await readPnpmVersion();
-    if (process.version !== 'v24.21.0' || summary.pnpm !== '12.0.0')
-      throw new Error('Validation requires Node 24.21.0 and pnpm 12.0.0.');
+    if (process.version !== 'v24.21.0' || summary.pnpm !== '12.6.0')
+      throw new Error('Validation requires Node 24.21.0 and pnpm 12.6.0.');
     const cacheContext = { node: process.version, pnpm: summary.pnpm, platform: process.platform, arch: process.arch };
     const cacheEnvironment = Object.fromEntries(validationEnvironment.map((name) => [name, process.env[name] ?? null]));
     summary.cacheContext = cacheContext;

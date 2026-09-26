@@ -22,13 +22,14 @@ const routeDocuments = {
   services: 'services/index.html',
   store: 'store/index.html',
 };
-const eagerGraphBudgetBytes = 95 * 1024;
+// React 19.3 baseline; see docs/dependency-upgrade.md for measured changes.
+const eagerGraphBudgetBytes = 96 * 1024;
 const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton'];
 const staffRouteDocuments = {
-  overview: { document: 'index.html', javascriptBudgetBytes: 118784 },
-  website: { document: 'content/index.html', javascriptBudgetBytes: 168960 },
-  stock: { document: 'stock/index.html', javascriptBudgetBytes: 148480 },
-  orders: { document: 'orders/index.html', javascriptBudgetBytes: 122880 },
+  overview: { document: 'index.html', javascriptBudgetBytes: 122880 },
+  website: { document: 'content/index.html', javascriptBudgetBytes: 176128 },
+  stock: { document: 'stock/index.html', javascriptBudgetBytes: 152576 },
+  orders: { document: 'orders/index.html', javascriptBudgetBytes: 128000 },
 };
 const staffHtmlBudgetBytes = 24576;
 

@@ -113,6 +113,11 @@ async function comparePublicPreviews() {
             await publicPage.waitForFunction(() => !window.document.querySelector('astro-island[client="load"][ssr]'));
             for (const target of [frame, publicPage])
               await target.locator('header').getByRole('button', { name: 'Cart', exact: true }).waitFor();
+            if (label === 'store-detail') {
+              for (const target of [frame, publicPage]) {
+                await target.getByText('Checking availability', { exact: true }).waitFor({ state: 'hidden' });
+              }
+            }
             if (overlay) {
               const selector = `a[href*="/releases/${item.slug}/"]`;
               await frame.locator(selector).first().click();
@@ -337,13 +342,24 @@ if (process.argv.includes('--browsers')) {
     if (process.env.PREVIEW_BROWSER && process.env.PREVIEW_BROWSER !== type.name()) continue;
     const browser = await type.launch();
     const context = await browser.newContext();
-    // Keep the actual font files, but remove optional-font timing from paired layout comparisons.
-    await context.route('https://fonts.googleapis.com/**', async (route) => {
-      const response = await route.fetch();
-      await route.fulfill({
-        response,
-        body: (await response.text()).replaceAll('font-display: optional', 'font-display: swap'),
-      });
+    // Routing disables the browser HTTP cache. Reuse real font responses within this
+    // run so iframe replacement does not repeatedly cancel cross-origin downloads.
+    const fontResponses = new Map();
+    await context.route(/^https:\/\/fonts\.(googleapis|gstatic)\.com\//, async (route) => {
+      const url = route.request().url();
+      let cached = fontResponses.get(url);
+      if (!cached) {
+        const response = await route.fetch({ maxRetries: 2 });
+        assert.equal(response.status(), 200, `Font resource: ${url}`);
+        cached = {
+          response,
+          body: url.startsWith('https://fonts.googleapis.com/')
+            ? (await response.text()).replaceAll('font-display: optional', 'font-display: swap')
+            : await response.body(),
+        };
+        fontResponses.set(url, cached);
+      }
+      await route.fulfill(cached);
     });
     const page = await context.newPage();
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -361,7 +377,7 @@ if (process.argv.includes('--browsers')) {
       if (message.type() === 'error') console.error(type.name(), message.text().slice(0, 500));
     });
     // Keep Chromium's real loopback address-space classification for the private iframe.
-    await page.goto(`${base}/content/`);
+    await page.goto(`${base}/content/`, { waitUntil: 'domcontentloaded' });
     await page.setContent(
       '<!doctype html><title>Local preview verification</title><style>html,body{margin:0}iframe{display:block;border:0;width:100vw;height:100vh}</style><iframe sandbox="allow-scripts allow-same-origin"></iframe>',
     );

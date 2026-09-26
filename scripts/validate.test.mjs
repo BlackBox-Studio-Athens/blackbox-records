@@ -11,7 +11,7 @@ import { validationReporters } from './validation-reporters.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const identity = async () => ({ sha: 'fixture', fingerprint: 'same' });
-const testOptions = { identify: identity, readPnpmVersion: async () => '12.0.0', log: () => {} };
+const testOptions = { identify: identity, readPnpmVersion: async () => '12.6.0', log: () => {} };
 const command = (name, source) => ({ name, command: process.execPath, args: ['-e', source] });
 async function fixture(t) {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'blackbox-validation-'));

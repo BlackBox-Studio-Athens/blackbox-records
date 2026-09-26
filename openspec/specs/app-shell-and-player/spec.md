@@ -287,7 +287,7 @@ The app shell SHALL keep navigation-critical behavior eager while loading dorman
 - **WHEN** `AppShell` hydrates on page load
 - **THEN** same-document navigation interception, route state, focus reset, scroll reset, required event names, and minimal state bridges become ready immediately
 - **AND** dormant cart drawer, player presentation, overlay presentation, mobile sheet content, and route-specific portal presentation are not all part of the initial eager closure
-- **AND** the initial app-shell JavaScript closure is no more than 95 KiB using actual hosted Brotli transfer size.
+- **AND** the initial app-shell JavaScript closure is no more than 96 KiB using actual hosted Brotli transfer size.
 
 #### Scenario: Active route owns a portal outlet
 

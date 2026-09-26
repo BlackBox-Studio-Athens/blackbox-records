@@ -6,6 +6,7 @@ const manifestPath = path.resolve(repoRoot, 'openspec/specs/module-boundaries/mo
 
 const WALK_IGNORES = new Set([
   '.git',
+  '.codex-artifacts',
   'node_modules',
   'dist',
   'build',

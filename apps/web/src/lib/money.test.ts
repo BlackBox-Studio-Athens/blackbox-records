@@ -1,8 +1,25 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { createMoney, formatMoney, moneyToCurrencyCode, moneyToMinorAmount } from './money';
 
 describe('Money value object', () => {
+  it('validates browser money without probing dynamic code under a strict CSP', async () => {
+    vi.resetModules();
+    const dynamicCode = vi.fn(function () {
+      throw new EvalError('Dynamic code is blocked by CSP');
+    });
+    vi.stubGlobal('Function', dynamicCode);
+    try {
+      const { createMoney: createBrowserMoney } = await import('./money');
+      expect(createBrowserMoney({ amountMinor: 2800, currencyCode: 'eur' }).currencyCode).toBe('EUR');
+      expect(() => createBrowserMoney({ amountMinor: -1, currencyCode: 'EUR' })).toThrow();
+      expect(dynamicCode).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+      vi.resetModules();
+    }
+  });
+
   it('stores money in minor units and normalizes ISO currency code', () => {
     const money = createMoney({ amountMinor: 2800, currencyCode: 'eur' });
 

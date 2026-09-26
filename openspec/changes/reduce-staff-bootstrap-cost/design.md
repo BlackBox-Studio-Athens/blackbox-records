@@ -42,10 +42,12 @@ For staff, use these documents and budgets. Website and all collection-query var
 
 | Report key | Document under staff dist | Maximum eager JS Brotli bytes |
 | ---------- | ------------------------- | ----------------------------: |
-| overview   | `index.html`              |              118784 (116 KiB) |
-| website    | `content/index.html`      |              168960 (165 KiB) |
-| stock      | `stock/index.html`        |              148480 (145 KiB) |
-| orders     | `orders/index.html`       |              122880 (120 KiB) |
+| overview   | `index.html`              |              122880 (120 KiB) |
+| website    | `content/index.html`      |              176128 (172 KiB) |
+| stock      | `stock/index.html`        |              152576 (149 KiB) |
+| orders     | `orders/index.html`       |              128000 (125 KiB) |
+
+The user explicitly approved these revised ceilings during the 2026-09-26 dependency upgrade, together with a 96 KiB Home/shell ceiling. See `docs/dependency-upgrade.md` for the previous budgets and measured upgraded builds. This exception does not authorize future automatic budget increases.
 
 Reuse `initialEntries`, `closure`, `staticImports`, and the existing quality-11 Brotli calculation. Count every initial module script and every `client:load` island component/renderer plus their static dependencies once per route. Do not follow dynamic feature imports into the eager budget. Do not skip the nested route island under StaffShell. Missing documents or referenced chunks must fail rather than produce an empty passing graph.
 
@@ -75,7 +77,7 @@ Use type-only imports for schema-derived prose types in the rendering module. Pr
 
 ### 6. Enforce the public web graph in its standard build
 
-Append `pnpm performance:bundles` to root `build:web` after the fresh Astro build and route-isolation check. This selects the existing default web profile and the unchanged 97,280-byte Home budget. The baseline overrun must fail the standard command; the corrected fresh output must pass without changing the budget.
+Append `pnpm performance:bundles` to root `build:web` after the fresh Astro build and route-isolation check. This selects the existing default web profile and the 98,304-byte Home budget explicitly approved during the 2026-09-26 dependency upgrade. The original implementation retained 97,280 bytes; its historical evidence remains unchanged. Overruns must fail the standard command rather than automatically raising its budget.
 
 ## Revalidation and improvement estimate
 

@@ -63,8 +63,11 @@ try {
   );
   console.log('Copied Local D1/R2 into disposable upgrade storage.');
   const before = await inspect();
-  assert.ok(before.migrations.includes('077_plugin_storage_revisions'), 'Requires an initialized 0.38 Local store');
-  assert.ok(!before.migrations.includes('079_datetime_normalization'), 'Use a pre-upgrade Local backup');
+  assert.ok(
+    before.migrations.includes('077_plugin_storage_revisions'),
+    'Requires an initialized 0.38 or newer Local store',
+  );
+  const calendarFieldsToUpdate = before.migrations.includes('079_datetime_normalization') ? 0 : 3;
   assert.ok(
     Object.values(before.dates).some((rows) => rows.length),
     'Requires populated date-bearing content',
@@ -83,7 +86,7 @@ try {
     assert.equal(result.status, 0, result.stdout + result.stderr);
     return result.stdout;
   };
-  assert.equal(JSON.parse(migrate()).calendarDateFieldsToUpdate, 3);
+  assert.equal(JSON.parse(migrate()).calendarDateFieldsToUpdate, calendarFieldsToUpdate);
   migrate('--apply');
   assert.equal(JSON.parse(migrate()).calendarDateFieldsToUpdate, 0);
   for (let start = 0; start < 2; start++) {
@@ -103,6 +106,8 @@ try {
     worker = undefined;
     const after = await inspect();
     assert.ok(after.migrations.includes('085_taxonomy_def_groups'));
+    assert.ok(after.migrations.includes('086_relations_structural'));
+    assert.ok(after.migrations.includes('087_reference_field_relations'));
     assert.deepEqual(
       after.dates,
       before.dates,
@@ -115,7 +120,7 @@ try {
     assert.equal(after.fields.length, 0, 'Editorial dates no longer use datetime storage');
   }
   console.log(
-    'EmDash 0.38 → 0.40.1 Local upgrade and restart passed: dates, revisions, stock and accepted publication preserved.',
+    'EmDash Local upgrade to 0.41.0 and restart passed: dates, revisions, stock and accepted publication preserved.',
   );
 } finally {
   await worker?.stop();

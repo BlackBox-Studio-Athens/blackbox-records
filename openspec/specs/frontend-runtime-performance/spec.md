@@ -276,9 +276,9 @@ The system SHALL keep the complete first-party eager JavaScript graph within bud
 #### Scenario: Home loads
 
 - **WHEN** Home completes its initial production load
-- **THEN** its complete first-party eager JavaScript graph is no more than 95 KiB using actual hosted Brotli transfer size
+- **THEN** its complete first-party eager JavaScript graph is no more than 96 KiB using actual hosted Brotli transfer size
 - **AND** Artists filters, Services form code, Store cart presentation, detail overlay presentation, and player presentation are absent unless required by immediate Home behavior
-- **AND** the separately measured app-shell closure remains no more than 95 KiB Brotli.
+- **AND** the separately measured app-shell closure remains no more than 96 KiB Brotli.
 
 #### Scenario: A route owns a portal
 
