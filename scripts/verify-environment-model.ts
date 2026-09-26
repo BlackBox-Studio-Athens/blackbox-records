@@ -44,8 +44,9 @@ function exists(relativePath: string): boolean {
 
 export function verifyEnvironmentModel(): CheckResult[] {
   const staticDeployWorkflow = read('.github/workflows/pages.yml');
-  const uatReleaseWorkflow = read('.github/workflows/uat-release-sequence.yml');
-  const prdPromotionWorkflow = read('.github/workflows/prd-promotion-sequence.yml');
+  const releaseWorkflow = parse(staticDeployWorkflow);
+  const uatReleaseWorkflow = staticDeployWorkflow;
+  const prdPromotionWorkflow = staticDeployWorkflow;
   const holdingWorkflow = read('.github/workflows/prd-holding-page.yml');
   const envDeclaration = read('apps/web/src/env.d.ts');
   const header = read('apps/web/src/components/Header.astro');
@@ -117,7 +118,10 @@ export function verifyEnvironmentModel(): CheckResult[] {
       ok:
         uatReleaseWorkflow.includes('- name: Deploy UAT Worker') &&
         uatReleaseWorkflow.includes('Run UAT provider smoke') &&
-        parse(staticDeployWorkflow).jobs['uat-release-sequence'].concurrency['cancel-in-progress'] === false &&
+        releaseWorkflow.jobs['deploy-uat'].environment === 'catalog-promotion-uat' &&
+        releaseWorkflow.jobs['smoke-uat'].environment === 'catalog-promotion-uat' &&
+        releaseWorkflow.concurrency?.group === 'blackbox-release' &&
+        releaseWorkflow.concurrency?.['cancel-in-progress'] === false &&
         !uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:uat') &&
         !uatSandboxSmokeWorkflow.includes('d1:migrations:apply:uat') &&
         !exists('.github/workflows/cloudflare-uat.yml') &&
@@ -170,7 +174,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
     },
     {
       detail: 'Routine deployment does not seed or reconcile repository catalog state.',
-      ok: !parse(uatReleaseWorkflow).jobs['deploy-uat'].steps.some((step: { run?: string }) =>
+      ok: !releaseWorkflow.jobs['deploy-uat'].steps.some((step: { run?: string }) =>
         /d1:seed:.*catalog|stripe:catalog:verify/.test(step.run ?? ''),
       ),
     },

@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 
 const root = path.resolve(__dirname, '../../../..');
 const release = parse(readFileSync(path.join(root, '.github/workflows/pages.yml'), 'utf8'));
-const uatSequence = parse(readFileSync(path.join(root, '.github/workflows/uat-release-sequence.yml'), 'utf8'));
-const prdSequence = parse(readFileSync(path.join(root, '.github/workflows/prd-promotion-sequence.yml'), 'utf8'));
+const uatSequence = release;
+const prdSequence = release;
 
 describe('one gated release', () => {
   it('builds and retains independent UAT and PRD bundles with migration manifests', () => {
@@ -60,35 +60,52 @@ describe('one gated release', () => {
     expect(release.on.workflow_dispatch.inputs.target.default).toBe('uat');
     expect(release.on.workflow_dispatch.inputs.confirm_code_promotion.default).toBe(false);
     expect(release.on.workflow_dispatch.inputs.confirm_live_catalog_changes.default).toBe(false);
-    expect(release.jobs['prd-release-sequence'].if).toBe(
+    expect(release.jobs['deploy-prd'].if).toBe(
       "${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}",
     );
     expect(release.jobs['catalog-prd'].if).toBe(
       "${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}",
     );
-    expect(JSON.stringify(prdSequence)).not.toMatch(/stripe:catalog:verify|d1:seed:prd|confirm-live-catalog-changes/);
-    expect(JSON.stringify(prdSequence)).toContain(
+    const promotion = [prdSequence.jobs['deploy-prd'], prdSequence.jobs['deploy-prd-static']];
+    expect(JSON.stringify(promotion)).not.toMatch(/stripe:catalog:verify|d1:seed:prd|confirm-live-catalog-changes/);
+    expect(JSON.stringify(prdSequence.jobs['deploy-prd'])).toContain(
       'cms:application-migrations --env prd --apply --confirm-live-cms-changes',
     );
-    expect(JSON.stringify(release.jobs['prd-release-sequence'])).toContain('release-${{ inputs.artifact_commit_sha }}');
+    expect(JSON.stringify(release.jobs['deploy-prd'])).toContain('release-${{ inputs.artifact_commit_sha }}');
     expect(JSON.stringify(release)).not.toMatch(
       /PRD_LAUNCH_APPROVED=true|native_checkout_enabled=true|NATIVE_CHECKOUT_ENABLED: true/,
     );
   });
 
-  it('serializes release mutations through acceptance while allowing preparation cancellation', () => {
-    expect(release.concurrency).toBeUndefined();
+  it('serializes the full release workflow and retains cancellable preparation roles', () => {
     const lock = { group: 'blackbox-release', 'cancel-in-progress': false };
-    expect(release.jobs['uat-release-sequence'].concurrency).toEqual(lock);
-    expect(release.jobs['prd-release-sequence'].concurrency).toEqual(lock);
-    expect(release.jobs['catalog-prd'].concurrency).toEqual(lock);
+    expect(release.concurrency).toEqual(lock);
+    for (const role of [
+      'deploy-uat',
+      'deploy-uat-static',
+      'smoke-uat',
+      'deploy-prd',
+      'deploy-prd-static',
+      'catalog-prd',
+    ])
+      expect(release.jobs[role].concurrency).toBeUndefined();
     for (const role of ['check-candidate', 'prepare-uat', 'prepare-prd', 'assemble-candidate']) {
       expect(release.jobs[role].concurrency['cancel-in-progress']).toBe(true);
       expect(release.jobs[role].concurrency.group).toContain('github.ref');
       expect(release.jobs[role].concurrency.group).toContain('github.run_id');
     }
     expect(release.jobs['inspect-uat-pages'].needs).toEqual(['check-candidate', 'prepare-uat']);
-    expect(release.jobs['uat-release-sequence'].needs).toEqual(['prepare-uat', 'inspect-uat-pages']);
+    expect(release.jobs['deploy-uat'].needs).toEqual(['prepare-uat', 'inspect-uat-pages']);
+    expect(release.jobs['deploy-uat'].environment).toBe('catalog-promotion-uat');
+    expect(release.jobs['smoke-uat'].environment).toBe('catalog-promotion-uat');
+    expect(release.jobs['deploy-uat-static'].environment).toBeUndefined();
+    for (const role of ['deploy-uat', 'smoke-uat', 'deploy-prd']) {
+      expect(release.jobs[role].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
+    }
+    expect(release.jobs['deploy-uat'].env.STRIPE_SECRET_KEY).toBe('${{ secrets.STRIPE_SECRET_KEY }}');
+    expect(release.jobs['smoke-uat'].env.STRIPE_SECRET_KEY).toBe('${{ secrets.STRIPE_SECRET_KEY }}');
+    expect(release.jobs['deploy-uat-static'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
+    expect(release.jobs['deploy-prd-static'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
     expect(uatSequence.jobs['deploy-uat'].environment).toBe('catalog-promotion-uat');
     expect(uatSequence.jobs['deploy-uat-static'].needs).toBe('deploy-uat');
     expect(uatSequence.jobs['smoke-uat'].needs).toBe('deploy-uat-static');
@@ -120,8 +137,10 @@ describe('one gated release', () => {
     expect(worker.match(/release-candidate\.mjs verify prd/g)).toHaveLength(1);
     expect(worker).toContain('release-candidate.mjs verify-worker prd');
     const download = steps.find((step: { name: string }) => step.name === 'Download selected candidate artifacts');
-    expect(download.with.name).toBe('${{ inputs.candidate_artifact }}');
+    expect(download.with.name).toBe('release-${{ inputs.artifact_commit_sha }}');
     expect(download.with['run-id']).toBe('${{ inputs.candidate_run_id }}');
-    expect(JSON.stringify(prdSequence)).not.toContain('pnpm build');
+    expect(JSON.stringify([prdSequence.jobs['deploy-prd'], prdSequence.jobs['deploy-prd-static']])).not.toContain(
+      'pnpm build',
+    );
   });
 });

@@ -42,9 +42,9 @@
 
 ## Milestone 6 — setup and early UAT feedback
 
-- **Changes:** UAT Pages smoke now runs immediately after deployment and before paid/email provider scenarios. Matching source/tooling SHAs reuse checkout; mismatches use trusted tooling checkout. UAT jobs download only the UAT bundle. Both reusable sequences carry the required non-secret configuration inputs, migration manifests retain their original paths, and the Pages job independently uploads quick-check evidence.
+- **Changes:** UAT Pages smoke now runs immediately after deployment and before paid/email provider scenarios. Matching source/tooling SHAs reuse checkout; mismatches use trusted tooling checkout. UAT jobs download only the UAT bundle. The main release workflow declares Worker, Pages, provider-smoke, and PRD-promotion jobs directly so environment secrets are available in the job context; the Pages job keeps its repository-scoped token. Migration manifests retain their original paths, and the Pages job independently uploads quick-check evidence.
 - **Checks:** Full repository validation passed, including workflow contracts for quick-check ordering, credentials, trusted tooling, browser installation, downloads, provider failure, and evidence upload.
-- **Evidence:** `.github/workflows/uat-release-sequence.yml`; `.github/workflows/prd-promotion-sequence.yml`.
+- **Evidence:** `.github/workflows/pages.yml`.
 - **Measured effect:** Not measured.
 - **Next milestone:** Separate cancellable preparation from non-cancellable release mutation.
 

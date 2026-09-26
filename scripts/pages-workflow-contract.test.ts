@@ -8,14 +8,10 @@ const checks = workflow.jobs['check-candidate'];
 const uatBuild = workflow.jobs['prepare-uat'];
 const prdBuild = workflow.jobs['prepare-prd'];
 const assembly = workflow.jobs['assemble-candidate'];
-const uatSequence = parse(
-  readFileSync(fileURLToPath(new URL('../.github/workflows/uat-release-sequence.yml', import.meta.url)), 'utf8'),
-);
-const prdSequence = parse(
-  readFileSync(fileURLToPath(new URL('../.github/workflows/prd-promotion-sequence.yml', import.meta.url)), 'utf8'),
-);
-const promotion = prdSequence.jobs['deploy-prd'];
-const staticPromotion = prdSequence.jobs['deploy-prd-static'];
+const uatSequence = workflow;
+const prdSequence = workflow;
+const promotion = workflow.jobs['deploy-prd'];
+const staticPromotion = workflow.jobs['deploy-prd-static'];
 const publication = parse(
   readFileSync(fileURLToPath(new URL('../.github/workflows/content-publication.yml', import.meta.url)), 'utf8'),
 );
@@ -86,23 +82,24 @@ describe('Pages artifact promotion contract', () => {
       expect(sequence.env.PRD_PUBLIC_BACKEND_BASE_URL).toBe('${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}');
     }
     expect(uatSequence.env.RELEASE_TOOLS_DIR).toBe(
-      "${{ inputs.source_sha == github.sha && '.' || '.codex-artifacts/release-tools' }}",
+      "${{ (inputs.artifact_commit_sha || github.sha) == github.sha && '.' || '.codex-artifacts/release-tools' }}",
     );
     for (const jobName of ['deploy-uat', 'deploy-uat-static', 'smoke-uat']) {
       const steps = uatSequence.jobs[jobName].steps;
       const checkouts = steps.filter((step: { uses?: string }) => step.uses === 'actions/checkout@v7.0.1');
-      expect(checkouts[0].with.ref).toBe('${{ inputs.source_sha }}');
-      expect(checkouts[1].if).toBe('${{ inputs.source_sha != github.sha }}');
-      expect(steps.find((step: { name?: string }) => step.name?.startsWith('Download verified')).with.name).toBe(
-        '${{ inputs.artifact_name }}',
-      );
+      expect(checkouts[0].with.ref).toBe('${{ inputs.artifact_commit_sha || github.sha }}');
+      expect(checkouts[1].if).toBe('${{ inputs.artifact_commit_sha && inputs.artifact_commit_sha != github.sha }}');
+      expect(
+        steps.find((step: { name?: string }) => step.name === 'Download verified UAT target bundle').with.name,
+      ).toBe('release-uat-${{ inputs.artifact_commit_sha || github.sha }}');
+      expect(uatSequence.jobs[jobName].environment === 'catalog-promotion-uat').toBe(jobName !== 'deploy-uat-static');
     }
     for (const job of [promotion, staticPromotion]) {
       expect(job.steps[0].with.ref).toBe('${{ github.sha }}');
       expect(job.steps.some((step: { name?: string }) => step.name === 'Checkout trusted release tooling')).toBe(false);
       expect(
         job.steps.find((step: { name?: string }) => step.name === 'Download selected candidate artifacts').with.name,
-      ).toBe('${{ inputs.candidate_artifact }}');
+      ).toBe('release-${{ inputs.artifact_commit_sha }}');
     }
   });
   it('keeps advisory unused-code analysis out of candidate preparation', () => {
@@ -172,7 +169,7 @@ describe('Pages artifact promotion contract', () => {
     expect(combined.run).toContain('release-candidate.mjs verify prd');
     expect(combined.run).toContain('/prd/cms/server/wrangler.json --keep-vars');
     expect(combined.run).toContain('release-candidate.mjs verify-worker prd');
-    expect(workflow.jobs['prd-release-sequence'].if).toContain('inputs.confirm_code_promotion');
+    expect(workflow.jobs['deploy-prd'].if).toContain('inputs.confirm_code_promotion');
   });
 
   it('prepares independent target bundles and assembles the retained final candidate', () => {
@@ -256,33 +253,38 @@ describe('Pages artifact promotion contract', () => {
         (step: { name: string }) => step.name === 'Download selected candidate artifacts',
       );
       expect(download.with['run-id']).toBe('${{ inputs.candidate_run_id }}');
-      expect(download.with.name).toBe('${{ inputs.candidate_artifact }}');
+      expect(download.with.name).toBe('release-${{ inputs.artifact_commit_sha }}');
       expect(JSON.stringify(job)).not.toContain('pnpm build');
-      expect(prdSequence.env.SOURCE_SHA).toBe('${{ inputs.source_sha }}');
+      expect(prdSequence.env.SOURCE_SHA).toBe('${{ inputs.artifact_commit_sha || github.sha }}');
       expect(job.steps[0].with.ref).toBe('${{ github.sha }}');
     }
     expect(JSON.stringify(promotion)).toContain('/prd/cms/server/wrangler.json');
     expect(JSON.stringify(staticPromotion)).toContain('/prd/public --project-name=blackbox-records-web --branch=main');
     expect(JSON.stringify(staticPromotion)).not.toContain('blackbox-records-staff');
     expect(JSON.stringify(uatSequence.jobs['deploy-uat'])).not.toMatch(/d1:seed:.*catalog|stripe:catalog:verify/);
-    expect(workflow.jobs['uat-release-sequence'].needs).toEqual(['prepare-uat', 'inspect-uat-pages']);
-    expect(JSON.stringify(workflow.jobs['uat-release-sequence'].needs)).not.toContain('prepare-prd');
+    expect(workflow.jobs['deploy-uat'].needs).toEqual(['prepare-uat', 'inspect-uat-pages']);
+    expect(JSON.stringify(workflow.jobs['deploy-uat'].needs)).not.toContain('prepare-prd');
   });
 
   it('cancels only preparation and holds one shared non-cancelling lock through mutations and acceptance', () => {
-    expect(workflow.concurrency).toBeUndefined();
+    const lock = { group: 'blackbox-release', 'cancel-in-progress': false };
+    expect(workflow.concurrency).toEqual(lock);
     for (const role of ['check-candidate', 'prepare-uat', 'prepare-prd', 'assemble-candidate']) {
       const concurrency = workflow.jobs[role].concurrency;
       expect(concurrency['cancel-in-progress']).toBe(true);
       expect(concurrency.group).toContain('github.ref');
       expect(concurrency.group).toContain('github.run_id');
     }
-    const lock = { group: 'blackbox-release', 'cancel-in-progress': false };
-    expect(workflow.jobs['uat-release-sequence'].concurrency).toEqual(lock);
-    expect(workflow.jobs['prd-release-sequence'].concurrency).toEqual(lock);
-    expect(workflow.jobs['catalog-prd'].concurrency).toEqual(lock);
-    expect(uatSequence.concurrency).toBeUndefined();
-    expect(prdSequence.concurrency).toBeUndefined();
+    for (const role of [
+      'deploy-uat',
+      'deploy-uat-static',
+      'smoke-uat',
+      'deploy-prd',
+      'deploy-prd-static',
+      'catalog-prd',
+    ]) {
+      expect(workflow.jobs[role].concurrency).toBeUndefined();
+    }
     expect(uatSequence.jobs['deploy-uat-static'].needs).toBe('deploy-uat');
     expect(uatSequence.jobs['smoke-uat'].needs).toBe('deploy-uat-static');
     expect(prdSequence.jobs['deploy-prd-static'].needs).toBe('deploy-prd');
