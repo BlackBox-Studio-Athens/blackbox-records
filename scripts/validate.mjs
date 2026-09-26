@@ -45,7 +45,7 @@ export function validationPlan({ fast = false, scope = 'all', editor = false, ch
   return [
     phase('tests', ['--parallel', ...selection, 'test']),
     phase('types', ['--parallel', ...selection, 'check']),
-    phase('contracts', ['test:contracts']),
+    ...(scope === 'all' ? [phase('contracts', ['test:contracts'])] : []),
   ];
 }
 
@@ -183,10 +183,11 @@ export async function runValidation({
     jobs,
     trace,
     startedAt: new Date().toISOString(),
+    firstFailureDurationMs: null,
     status: 'incomplete',
     exitCode: 1,
     phases: [],
-    plannedPhases: phases.map(({ name, command, args }) => ({ name, command, args })),
+    plannedPhases: phases.map(({ name, command, args, cwd }) => ({ name, command, args, cwd })),
     node: process.version,
     pnpm: null,
     sourceBefore: null,
@@ -204,7 +205,9 @@ export async function runValidation({
     if (process.version !== 'v24.21.0' || summary.pnpm !== '12.0.0')
       throw new Error('Validation requires Node 24.21.0 and pnpm 12.0.0.');
     if (fast || editor) log('PARTIAL validation: this does not establish implementation completion.');
-    const canOverlap = jobs === 2 && !fast && !editor && phases.length > 1 && phases[0].name === 'test:unit';
+    const fastPair = fast && jobs === 2 && phases[0]?.name === 'tests' && phases[1]?.name === 'types';
+    const canOverlap =
+      jobs === 2 && (fastPair || (!fast && !editor && phases.length > 1 && phases[0].name === 'test:unit'));
     async function execute(phase) {
       const phaseStart = performance.now();
       const logPath = path.join(evidenceDir, `${summary.phases.length}-${phase.name.replaceAll(':', '-')}.log`);
@@ -262,6 +265,8 @@ export async function runValidation({
         await output.close();
       }
       entry.durationMs = Math.round(performance.now() - phaseStart);
+      if (entry.status === 'failed' && summary.firstFailureDurationMs === null)
+        summary.firstFailureDurationMs = Math.round(performance.now() - started);
       const content = await readFile(logPath, 'utf8');
       entry.outputBytes = Buffer.byteLength(content);
       if (phase.name === 'lint') {
@@ -298,7 +303,13 @@ export async function runValidation({
       return true;
     }
     let passed;
-    if (canOverlap) {
+    if (fastPair) {
+      const results = await Promise.allSettled([execute(phases[0]), execute(phases[1])]);
+      const rejected = results.find((result) => result.status === 'rejected');
+      if (rejected) throw rejected.reason;
+      passed = results.every((result) => result.value === true);
+      if (passed) passed = await sequence(phases.slice(2));
+    } else if (canOverlap) {
       const hasBuild = phases.at(-1)?.name === 'build';
       const middle = phases.slice(1, hasBuild ? -1 : undefined);
       const results = await Promise.allSettled([execute(phases[0]), sequence(middle)]);

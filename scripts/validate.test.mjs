@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { execa } from 'execa';
 import { validationPlan, runValidation, sourceIdentity, diagnosticExcerpt, monitorSourceChanges } from './validate.mjs';
+import { watchConfigurations } from './test-watch.mjs';
 import { validationReporters } from './validation-reporters.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -43,6 +44,11 @@ test('full plan preserves current gates without retired catalog preparation', as
     '@blackbox/backend',
     'test',
   ]);
+  for (const scope of ['web', 'staff', 'backend', 'api-client'])
+    assert.deepEqual(
+      validationPlan({ fast: true, scope }).map(({ name }) => name),
+      ['tests', 'types'],
+    );
   assert.equal(validationPlan({ fast: true }).at(-1).name, 'contracts');
   assert.equal(validationPlan({ editor: true }).length, 4);
   assert.throws(() => validationPlan({ editor: true, fast: true }));
@@ -52,6 +58,15 @@ test('full plan preserves current gates without retired catalog preparation', as
   );
   assert.throws(() => validationPlan({ checks: true, fast: true }));
   assert.throws(() => validationPlan({ checks: true, scope: 'web' }));
+});
+
+test('test watch requires one known package and starts only its Vitest configurations', () => {
+  assert.deepEqual(watchConfigurations('web'), ['vitest.config.ts', 'vitest.request.config.ts']);
+  assert.deepEqual(watchConfigurations('staff'), [undefined]);
+  assert.deepEqual(watchConfigurations('backend'), ['vitest.config.ts', 'vitest.node.config.ts']);
+  assert.deepEqual(watchConfigurations('api-client'), [undefined]);
+  assert.throws(() => watchConfigurations(undefined), /Specify --scope/);
+  assert.throws(() => watchConfigurations('all'), /Specify --scope/);
 });
 
 for (const phase of ['test', 'format', 'type', 'boundary', 'build', 'missing-artifact']) {
@@ -67,6 +82,8 @@ for (const phase of ['test', 'format', 'type', 'boundary', 'build', 'missing-art
     });
     assert.equal(summary.status, 'failed');
     assert.equal(summary.exitCode, 7);
+    assert.ok(summary.firstFailureDurationMs > 0);
+    assert.ok(summary.firstFailureDurationMs <= summary.durationMs);
     assert.equal(summary.phases.length, 1);
     assert.match(await readFile(summary.phases[0].logPath, 'utf8'), /FAIL sentinel/);
   });
@@ -238,6 +255,18 @@ for (const failure of ['unit', 'check']) {
     assert.match(await readFile(failed.logPath, 'utf8'), failure === 'unit' ? /UNIT sentinel/ : /CHECK sentinel/);
   });
 }
+
+test('fast package validation cancels its sibling lane after a failure', async (t) => {
+  const cwd = await fixture(t);
+  const phases = [
+    command('tests', 'setTimeout(() => process.exit(9), 20)'),
+    command('types', 'setTimeout(() => {}, 5000)'),
+  ];
+  const summary = await runValidation({ cwd, phases, fast: true, jobs: 2, ...testOptions });
+  assert.equal(summary.status, 'failed');
+  assert.equal(summary.phases.find(({ name }) => name === 'tests').exitCode, 9);
+  assert.equal(summary.phases.find(({ name }) => name === 'types').status, 'cancelled');
+});
 
 test('checks mode is partial and never schedules a build', async (t) => {
   const cwd = await fixture(t);
