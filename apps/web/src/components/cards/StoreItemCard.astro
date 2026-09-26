@@ -24,9 +24,11 @@ const widths = [240, 320, 480, 640, 800, 960];
   aria-label={storeItem.title + ' — ' + storeItem.subtitle}
   data-distro-search-item={searchable ? '' : undefined}
   data-store-artist={searchable ? storeItem.subtitle : undefined}
-  data-distro-search-text={searchable
-    ? [storeItem.title, storeItem.subtitle, ...storeItem.metadata, entry.distro?.group].filter(Boolean).join(' ')
-    : undefined}
+  data-distro-search-text={
+    searchable
+      ? [storeItem.title, storeItem.subtitle, ...storeItem.metadata, entry.distro?.group].filter(Boolean).join(' ')
+      : undefined
+  }
   data-store-coverflow-card={coverflowEnrolled ? '' : undefined}
 >
   <Card className="store-item-card__surface flex flex-1 flex-col rounded-none border-border bg-card shadow-none">
@@ -47,30 +49,26 @@ const widths = [240, 320, 480, 640, 800, 960];
           loading={priority ? 'eager' : imageLoadingMode}
           fetchpriority={priority ? 'high' : 'auto'}
         />
-        {
-          previewImage && (
-            <Image
-              src={previewImage.image}
-              alt=""
-              aria-hidden="true"
-              class="store-item-card__preview"
-              data-store-preview-image
-              widths={widths}
-              sizes={sizes}
-              data-store-grid-sizes={sizes}
-              loading="lazy"
-              fetchpriority="low"
-            />
-          )
-        }
+        {previewImage && (
+          <Image
+            src={previewImage.image}
+            alt=""
+            aria-hidden="true"
+            class="store-item-card__preview"
+            data-store-preview-image
+            widths={widths}
+            sizes={sizes}
+            data-store-grid-sizes={sizes}
+            loading="lazy"
+            fetchpriority="low"
+          />
+        )}
       </a>
     </div>
     <div class="store-item-card__listen">
-      {
-        storeItem.embeddedPlayerData && (
-          <MusicStreamingServiceListenTrigger embeddedPlayerData={storeItem.embeddedPlayerData} />
-        )
-      }
+      {storeItem.embeddedPlayerData && (
+        <MusicStreamingServiceListenTrigger embeddedPlayerData={storeItem.embeddedPlayerData} />
+      )}
     </div>
     <CardContent className="store-item-card__content">
       <h2 class="brand-card-title">{storeItem.title}</h2>
@@ -82,8 +80,10 @@ const widths = [240, 320, 480, 640, 800, 960];
           class="font-display"
           data-store-item-slug={storeItem.slug}
           data-store-listing-price
-          data-store-listing-price-state="loading">Checking price</span
+          data-store-listing-price-state="loading"
         >
+          Checking price
+        </span>
         <span data-store-coverflow-availability>{primaryAvailability?.availability.label || 'Unavailable'}</span>
       </div>
     </CardContent>

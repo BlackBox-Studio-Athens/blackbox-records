@@ -24,4 +24,6 @@ const style =
   alignment && ['left', 'center', 'right', 'justify'].includes(alignment) ? `text-align: ${alignment}` : undefined;
 ---
 
-<Tag style={style}><slot /></Tag>
+<Tag style={style}>
+  <slot />
+</Tag>

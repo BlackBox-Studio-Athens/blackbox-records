@@ -41,74 +41,76 @@ const dataAttributes = embeddedPlayerData
 ---
 
 <div class="release-card-link prose-link-card group block h-full" {...dataAttributes}>
-  <a class="prose-card-link" href={createReleaseDetailPath(release)} data-astro-prefetch
-    ><span class="sr-only">{releaseCardTitle}</span></a
-  >
+  <a class="prose-card-link" href={createReleaseDetailPath(release)} data-astro-prefetch>
+    <span class="sr-only">{releaseCardTitle}</span>
+  </a>
   <Card
-    className={usesFramedArtworkLayout
-      ? `rounded-none border-0 bg-transparent shadow-none ${isArtistDiscography ? 'release-card-tile--artist-discography' : 'release-card-tile--framed'}`
-      : 'catalog-tile-card rounded-none border-[#2b2b2b] bg-[#141414] shadow-none'}
+    className={
+      usesFramedArtworkLayout
+        ? `rounded-none border-0 bg-transparent shadow-none ${isArtistDiscography ? 'release-card-tile--artist-discography' : 'release-card-tile--framed'}`
+        : 'catalog-tile-card rounded-none border-[#2b2b2b] bg-[#141414] shadow-none'
+    }
   >
     <div
-      class={usesFramedArtworkLayout
-        ? 'release-card-image-shell release-card-image-shell--framed'
-        : 'relative aspect-square overflow-hidden border-b border-[#2b2b2b]'}
+      class={
+        usesFramedArtworkLayout
+          ? 'release-card-image-shell release-card-image-shell--framed'
+          : 'relative aspect-square overflow-hidden border-b border-[#2b2b2b]'
+      }
     >
       <div
-        class={usesFramedArtworkLayout
-          ? 'release-card-image-frame release-card-image-frame--framed'
-          : 'relative h-full w-full overflow-hidden'}
+        class={
+          usesFramedArtworkLayout
+            ? 'release-card-image-frame release-card-image-frame--framed'
+            : 'relative h-full w-full overflow-hidden'
+        }
       >
         <Image
           src={release.data.cover_image}
           alt={release.data.cover_image_alt || release.data.title}
-          class={usesFramedArtworkLayout
-            ? 'release-card-artwork release-card-artwork--framed h-full w-full object-cover'
-            : 'release-card-artwork h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]'}
+          class={
+            usesFramedArtworkLayout
+              ? 'release-card-artwork release-card-artwork--framed h-full w-full object-cover'
+              : 'release-card-artwork h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]'
+          }
           widths={releaseCardImageWidths}
           sizes="(min-width: 1280px) 260px, (min-width: 768px) 50vw, 100vw"
           loading={imageLoading}
         />
         <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div>
         <div class="release-card-meta-row absolute inset-x-0 bottom-0 px-2.5 py-3">
-          {
-            embeddedPlayerData && (
-              <MusicStreamingServiceListenTrigger embeddedPlayerData={embeddedPlayerData} includePlayerData={false} />
-            )
-          }
-          <span
-            class="release-card-view-release-text release-card-view-release-desktop-reveal uppercase text-foreground"
-          >
+          {embeddedPlayerData && (
+            <MusicStreamingServiceListenTrigger embeddedPlayerData={embeddedPlayerData} includePlayerData={false} />
+          )}
+          <span class="release-card-view-release-text release-card-view-release-desktop-reveal uppercase text-foreground">
             View release
           </span>
         </div>
       </div>
     </div>
     <CardContent
-      className={usesFramedArtworkLayout
-        ? `release-card-copy space-y-2.5 p-0 pt-4 ${isArtistDiscography ? 'release-card-copy--artist-discography' : 'release-card-copy--framed'}`
-        : 'release-card-copy space-y-2 p-5'}
+      className={
+        usesFramedArtworkLayout
+          ? `release-card-copy space-y-2.5 p-0 pt-4 ${isArtistDiscography ? 'release-card-copy--artist-discography' : 'release-card-copy--framed'}`
+          : 'release-card-copy space-y-2 p-5'
+      }
     >
       <p class="release-card-year-text">
         <time datetime={releaseDateMachineValue}>{releaseDate}</time>
       </p>
-      <h3 class="brand-card-title text-foreground">
-        {release.data.title.toUpperCase()}
-      </h3>
-      {
-        isArtistDiscography ? (
-          release.data.summary ? (
-            <Prose
-              class="release-card-summary-text text-sm leading-relaxed text-muted-foreground"
-              value={release.data.summary}
-              rich={release.data.summary_rich}
-              data-content-path="summary"
-            />
-          ) : null
-        ) : (
-          <p class="release-card-artist-text text-sm tracking-[0.03em] text-muted-foreground">{artistName}</p>
-        )
-      }
+      <h3 class="brand-card-title text-foreground">{release.data.title.toUpperCase()}</h3>
+      {isArtistDiscography ? (
+        release.data.summary ? (
+          <Prose
+            class="release-card-summary-text text-sm leading-relaxed text-muted-foreground"
+            value={release.data.summary}
+            rich={release.data.summary_rich}
+            data-content-path="summary"
+          />
+        ) : null
+      ) : (
+        <p class="release-card-artist-text text-sm tracking-[0.03em] text-muted-foreground">{artistName}</p>
+      )}
     </CardContent>
   </Card>
 </div>

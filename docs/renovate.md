@@ -35,6 +35,8 @@ Current cross-workspace alignment pass on 2026-09-01:
 
 Local config validation:
 
+The [September 26 dependency upgrade](dependency-upgrade.md) records the current versions and compatibility holds. Node types track Node 24 LTS; TypeScript stays on 5.x for OpenAPI generation; Vitest stays on 4.x for Cloudflare's pool. Lingui and React Query stay aligned with EmDash's shared editor providers. The current local validator is Renovate 44.115.10 under pnpm 12.6.0.
+
 ```powershell
 pnpm renovate:validate
 ```

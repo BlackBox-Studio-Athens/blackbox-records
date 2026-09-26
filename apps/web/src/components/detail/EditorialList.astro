@@ -5,4 +5,6 @@ const first = Astro.props.node.children[0] as { listStart?: number } | undefined
 const start = first?.listStart ?? 1;
 ---
 
-<ol start={start === 1 ? undefined : start}><slot /></ol>
+<ol start={start === 1 ? undefined : start}>
+  <slot />
+</ol>

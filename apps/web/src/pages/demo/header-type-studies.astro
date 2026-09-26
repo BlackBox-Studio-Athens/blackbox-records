@@ -160,7 +160,9 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
             <h2 id="mock-preview-title">Applied to a site slice</h2>
           </div>
           <div class="mock-preview__controls">
-            <p class="mock-preview__active" data-font-preview-label>Previewing: Bebas Neue</p>
+            <p class="mock-preview__active" data-font-preview-label>
+              Previewing: Bebas Neue
+            </p>
             <button class="mock-preview__baseline-button" type="button" data-font-preview-baseline aria-pressed="true">
               Bebas Neue
             </button>
@@ -174,18 +176,16 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
           </div>
 
           <section class="mock-site__latest" aria-labelledby="mock-release-title">
-            {
-              mockReleaseImage && (
-                <div class="mock-site__artwork-frame">
-                  <Image
-                    src={mockReleaseImage}
-                    alt={mockReleaseImageAlt}
-                    class="mock-site__artwork"
-                    sizes="(min-width: 960px) 22rem, 100vw"
-                  />
-                </div>
-              )
-            }
+            {mockReleaseImage && (
+              <div class="mock-site__artwork-frame">
+                <Image
+                  src={mockReleaseImage}
+                  alt={mockReleaseImageAlt}
+                  class="mock-site__artwork"
+                  sizes="(min-width: 960px) 22rem, 100vw"
+                />
+              </div>
+            )}
 
             <div class="mock-site__copy">
               <p class="mock-site__label">Latest release</p>
@@ -193,7 +193,9 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
                 <span class="font-fit__reference" data-font-fit-reference aria-hidden="true">
                   {mockReleaseTitle}
                 </span>
-                <span class="font-fit__text" data-font-fit-text>{mockReleaseTitle}</span>
+                <span class="font-fit__text" data-font-fit-text>
+                  {mockReleaseTitle}
+                </span>
               </h3>
               <p class="mock-site__meta">
                 {mockReleaseArtist} / {mockReleaseYear} / {mockReleaseFormats}
@@ -210,24 +212,36 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
             <article>
               <p class="mock-site__label">Artist</p>
               <h4 class="mock-site__card-title" data-font-fit-frame>
-                <span class="font-fit__reference" data-font-fit-reference aria-hidden="true">{mockArtistTitle}</span>
-                <span class="font-fit__text" data-font-fit-text>{mockArtistTitle}</span>
+                <span class="font-fit__reference" data-font-fit-reference aria-hidden="true">
+                  {mockArtistTitle}
+                </span>
+                <span class="font-fit__text" data-font-fit-text>
+                  {mockArtistTitle}
+                </span>
               </h4>
               <p class="mock-site__meta">{mockReleaseArtist}</p>
             </article>
             <article>
               <p class="mock-site__label">Distro</p>
               <h4 class="mock-site__card-title" data-font-fit-frame>
-                <span class="font-fit__reference" data-font-fit-reference aria-hidden="true">{mockDistroTitle}</span>
-                <span class="font-fit__text" data-font-fit-text>{mockDistroTitle}</span>
+                <span class="font-fit__reference" data-font-fit-reference aria-hidden="true">
+                  {mockDistroTitle}
+                </span>
+                <span class="font-fit__text" data-font-fit-text>
+                  {mockDistroTitle}
+                </span>
               </h4>
               <p class="mock-site__meta">{mockDistroMeta}</p>
             </article>
             <article>
               <p class="mock-site__label">News</p>
               <h4 class="mock-site__card-title" data-font-fit-frame>
-                <span class="font-fit__reference" data-font-fit-reference aria-hidden="true">{mockNewsTitle}</span>
-                <span class="font-fit__text" data-font-fit-text>{mockNewsTitle}</span>
+                <span class="font-fit__reference" data-font-fit-reference aria-hidden="true">
+                  {mockNewsTitle}
+                </span>
+                <span class="font-fit__text" data-font-fit-text>
+                  {mockNewsTitle}
+                </span>
               </h4>
               <p class="mock-site__meta">BlackBox Records</p>
             </article>
@@ -236,35 +250,33 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
       </section>
 
       <section class="study-grid" aria-label="Typography candidates">
-        {
-          reviewedCandidates.map((study) => (
-            <article class:list={['study-card', study.isMissing && 'is-missing']}>
-              <p
-                class="study-card__sample"
-                data-study-fit-frame
-                style={`--candidate-font: '${study.fontFamily}', var(--font-current);`}
-              >
-                <span class="font-fit__reference" data-study-fit-reference aria-hidden="true">
-                  Release
-                </span>
-                <span class="font-fit__text" data-study-fit-text>
-                  Release
-                </span>
-              </p>
-              <button
-                class="study-card__preview-button"
-                type="button"
-                data-font-preview-button
-                data-font-id={study.id}
-                aria-label={`Apply ${study.name}${study.isMissing ? ', add licensed woff2 file first' : ''}`}
-                aria-pressed="false"
-                disabled={study.isMissing}
-              >
-                {study.name}
-              </button>
-            </article>
-          ))
-        }
+        {reviewedCandidates.map((study) => (
+          <article class:list={['study-card', study.isMissing && 'is-missing']}>
+            <p
+              class="study-card__sample"
+              data-study-fit-frame
+              style={`--candidate-font: '${study.fontFamily}', var(--font-current);`}
+            >
+              <span class="font-fit__reference" data-study-fit-reference aria-hidden="true">
+                Release
+              </span>
+              <span class="font-fit__text" data-study-fit-text>
+                Release
+              </span>
+            </p>
+            <button
+              class="study-card__preview-button"
+              type="button"
+              data-font-preview-button
+              data-font-id={study.id}
+              aria-label={`Apply ${study.name}${study.isMissing ? ', add licensed woff2 file first' : ''}`}
+              aria-pressed="false"
+              disabled={study.isMissing}
+            >
+              {study.name}
+            </button>
+          </article>
+        ))}
       </section>
     </main>
     <script is:inline>

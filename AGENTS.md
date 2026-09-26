@@ -221,7 +221,7 @@ Read these first before editing:
   - `pnpm check`
   - target-specific static build (`pnpm build:web` for UAT, `pnpm build` for PRD)
 - `pnpm check` is intentionally editor-independent; do not rely on WebStorm formatting or inspections as the only style gate.
-- The workflow uses explicit pnpm setup/install steps with Node 24.21.0, pnpm 12.0.0, and setup-node pnpm-store caching
+- The workflow uses explicit pnpm setup/install steps with Node 24.21.0, pnpm 12.6.0, and setup-node pnpm-store caching
 - Configured in `apps/web/astro.config.mjs`
   - default `site: https://blackbox-studio-athens.github.io`
   - default `base: /blackbox-records/`
@@ -288,7 +288,7 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 
 ## Content model notes
 
-- EmDash 0.40.1 stores editorial calendar dates as validated `YYYY-MM-DD` strings. Run CMS application migrations before native core migrations; see `apps/backend/cms-migrations/README.md`. Preserve the dependency patch's concurrent-save/delete protection until upstream passes the existing race smoke.
+- EmDash 0.41.0 stores editorial calendar dates as validated `YYYY-MM-DD` strings. Run CMS application migrations before native core migrations; see `apps/backend/cms-migrations/README.md`. Preserve the dependency patch's concurrent-save/delete protection until upstream passes the existing race smoke.
 
 - `releases.artist` is an Astro `reference('artists')`
 - Collection-owned images for artists/releases/news use Astro `image()`

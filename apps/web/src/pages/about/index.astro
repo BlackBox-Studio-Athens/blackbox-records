@@ -36,91 +36,81 @@ const {
     <Card className="surface-card">
       <CardContent className="p-7 sm:p-10">
         <div class="rich-text-content">
-          {
-            aboutLead && (
-              <Prose
-                class="font-display text-3xl tracking-[0.06em] uppercase text-foreground"
-                value={aboutLead.text}
-                data-content-path="lead.text"
-              />
-            )
-          }
+          {aboutLead && (
+            <Prose
+              class="font-display text-3xl tracking-[0.06em] uppercase text-foreground"
+              value={aboutLead.text}
+              data-content-path="lead.text"
+            />
+          )}
 
-          {
-            aboutStory && (
-              <>
-                <h2>{aboutStory.title.toUpperCase()}</h2>
-                {aboutStory.paragraphs.map((paragraph) => (
-                  <Prose value={paragraph} />
+          {aboutStory && (
+            <>
+              <h2>{aboutStory.title.toUpperCase()}</h2>
+              {aboutStory.paragraphs.map((paragraph) => (
+                <Prose value={paragraph} />
+              ))}
+            </>
+          )}
+
+          {aboutQuote && (
+            <blockquote>
+              <Prose value={aboutQuote.text} data-content-path="quote.text" />
+              <cite>{aboutQuote.cite}</cite>
+            </blockquote>
+          )}
+
+          {aboutContact && (
+            <section class="about-contact" aria-labelledby="about-contact-title">
+              <h2 id="about-contact-title">{aboutContact.title.toUpperCase()}</h2>
+              <Prose class="about-contact__intro" value={aboutContact.intro} data-content-path="contact.intro" />
+              <ul class="about-contact__list">
+                {aboutContact.items.map((item, itemIndex) => (
+                  <li
+                    class:list={[
+                      'about-contact__item',
+                      itemIndex === 0 ? 'about-contact__item--primary' : 'about-contact__item--secondary',
+                    ]}
+                  >
+                    <a class="about-contact__link" href={`mailto:${item.value}`}>
+                      <span class="about-contact__text">
+                        <span class="about-contact__label">{item.label}</span>
+                        <span class="about-contact__address">{item.value}</span>
+                      </span>
+                      <Mail className="about-contact__icon" aria-hidden="true" size={18} strokeWidth={1.5} />
+                    </a>
+                  </li>
                 ))}
-              </>
-            )
-          }
-
-          {
-            aboutQuote && (
-              <blockquote>
-                <Prose value={aboutQuote.text} data-content-path="quote.text" />
-                <cite>{aboutQuote.cite}</cite>
-              </blockquote>
-            )
-          }
-
-          {
-            aboutContact && (
-              <section class="about-contact" aria-labelledby="about-contact-title">
-                <h2 id="about-contact-title">{aboutContact.title.toUpperCase()}</h2>
-                <Prose class="about-contact__intro" value={aboutContact.intro} data-content-path="contact.intro" />
-                <ul class="about-contact__list">
-                  {aboutContact.items.map((item, itemIndex) => (
-                    <li
-                      class:list={[
-                        'about-contact__item',
-                        itemIndex === 0 ? 'about-contact__item--primary' : 'about-contact__item--secondary',
-                      ]}
-                    >
-                      <a class="about-contact__link" href={`mailto:${item.value}`}>
-                        <span class="about-contact__text">
-                          <span class="about-contact__label">{item.label}</span>
-                          <span class="about-contact__address">{item.value}</span>
-                        </span>
-                        <Mail className="about-contact__icon" aria-hidden="true" size={18} strokeWidth={1.5} />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )
-          }
+              </ul>
+            </section>
+          )}
         </div>
       </CardContent>
     </Card>
   </section>
 
-  {
-    aboutStats && (
-      <section class="layout-container mt-12">
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {aboutStats.items.map((stat) => {
-            let statValue = '';
-            if (stat.key === 'artists') statValue = String(artistProfiles.length);
-            else if (stat.key === 'releases') statValue = String(releaseCatalogEntries.length);
-            else if (stat.key === 'countries') statValue = String(countryCount);
-            else if (stat.key === 'year') statValue = String(yearsActive);
+  {aboutStats && (
+    <section class="layout-container mt-12">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {aboutStats.items.map((stat) => {
+          let statValue = '';
+          if (stat.key === 'artists') statValue = String(artistProfiles.length);
+          else if (stat.key === 'releases') statValue = String(releaseCatalogEntries.length);
+          else if (stat.key === 'countries') statValue = String(countryCount);
+          else if (stat.key === 'year') statValue = String(yearsActive);
 
-            return (
-              <Card className="surface-card">
-                <CardContent className="space-y-1 p-5">
-                  <p class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">{statValue}</p>
-                  <span class="text-xs uppercase tracking-[0.12em] text-muted-foreground">{stat.label}</span>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </section>
-    )
-  }
+          return (
+            <Card className="surface-card">
+              <CardContent className="space-y-1 p-5">
+                <p class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">{statValue}</p>
+                <span class="text-xs uppercase tracking-[0.12em] text-muted-foreground">{stat.label}</span>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </section>
+  )}
 
   <NewsletterSignup formId="about-newsletter-email" />
 </SiteLayout>

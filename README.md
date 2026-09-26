@@ -9,7 +9,7 @@ Astro site for the BlackBox Records label. Public pages render from accepted imm
 - Tailwind CSS v4 + shadcn-ui setup (design implemented in Astro templates + `apps/web/src/styles/global.css`)
 - Type-safe content collections (`apps/web/src/content`)
 - Separate Cloudflare Worker backend scaffold (`apps/backend/src/index.ts`) using TypeScript + Hono
-- EmDash 0.40.1 powers the protected editorial APIs; follow the [CMS upgrade ordering](apps/backend/cms-migrations/README.md) before core migrations.
+- EmDash 0.41.0 powers the protected editorial APIs; follow the [CMS upgrade ordering](apps/backend/cms-migrations/README.md) before core migrations.
 - Code-first OpenAPI documents and a generated `@blackbox/api-client` workspace package
 
 ## URL model
@@ -104,7 +104,7 @@ Use [UAT staff](https://staff-uat.blackboxrecordsathens.com/content/) or the Loc
 ## Prerequisites
 
 - Node.js 24.21.0, pinned by `.node-version` and the root package engine
-- pnpm 12.0.0, via the repo `packageManager` field
+- pnpm 12.6.0, via the repo `packageManager` field
 - Go, only for the local official `stripe-mock` launcher
 
 ## Setup
@@ -693,7 +693,7 @@ CI/deploy credentials and public build variables:
 
 - UAT deployment is handled by `.github/workflows/pages.yml`.
 - Deploy-relevant pushes to `main` build both targets and deploy UAT only; pushes changing only `docs/**`, `openspec/**`, root `*.md`, or root `LICENSE` are skipped. `workflow_dispatch` remains available for a forced deployment.
-- The shared static workflow uses Node 24.21.0, pnpm 12.0.0, explicit pnpm setup/install steps, and only deploys UAT if all of these succeed:
+- The shared static workflow uses Node 24.21.0, pnpm 12.6.0, explicit pnpm setup/install steps, and only deploys UAT if all of these succeed:
   - `pnpm validate:checks`
   - `pnpm build:web` for the UAT artifact
 - The build step passes `PUBLIC_BACKEND_BASE_URL` from `UAT_PUBLIC_BACKEND_BASE_URL` so the Cloudflare Pages URL serves as the public UAT surface.

@@ -22,15 +22,13 @@ const components = {
 ---
 
 <div class:list={['editorial-prose', className]} data-content-path={path}>
-  {
-    groups.map((group) =>
-      group.quote ? (
-        <blockquote>
-          <PortableText value={group.value} components={components} />
-        </blockquote>
-      ) : (
+  {groups.map((group) =>
+    group.quote ? (
+      <blockquote>
         <PortableText value={group.value} components={components} />
-      ),
-    )
-  }
+      </blockquote>
+    ) : (
+      <PortableText value={group.value} components={components} />
+    ),
+  )}
 </div>

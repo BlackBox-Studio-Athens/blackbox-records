@@ -97,33 +97,102 @@ const archiveModels = releaseModels.slice(0, 8);
       <p class="release-draft-board__source">{new URL(pageUrl).pathname}</p>
     </header>
 
-    {
-      latestOutNowModel ? (
-        <div class="release-draft-stack">
-          <article class="release-draft release-draft--feature-wall" aria-labelledby="draft-feature-wall-title">
-            <div class="release-draft__label-row">
-              <p>Draft A</p>
-              <p>Feature Wall</p>
+    {latestOutNowModel ? (
+      <div class="release-draft-stack">
+        <article class="release-draft release-draft--feature-wall" aria-labelledby="draft-feature-wall-title">
+          <div class="release-draft__label-row">
+            <p>Draft A</p>
+            <p>Feature Wall</p>
+          </div>
+          <section class="feature-wall" aria-labelledby="draft-feature-wall-title">
+            <a class="feature-wall__artwork-link" href={latestOutNowModel.detailPath} data-astro-prefetch>
+              <Image
+                src={latestOutNowModel.releaseEntry.data.cover_image}
+                alt={latestOutNowModel.releaseEntry.data.cover_image_alt || latestOutNowModel.releaseEntry.data.title}
+                class="feature-wall__artwork"
+                sizes="(min-width: 1100px) 42vw, 100vw"
+              />
+            </a>
+
+            <div class="feature-wall__copy">
+              <p class="release-draft__kicker">Latest out now</p>
+              <h2 id="draft-feature-wall-title">{latestOutNowModel.releaseEntry.data.title}</h2>
+              <p class="release-draft__meta">
+                {latestOutNowModel.artistName} / {latestOutNowModel.monthYear} / {latestOutNowModel.formattedFormats}
+              </p>
+              {latestOutNowModel.releaseEntry.data.summary && (
+                <p class="feature-wall__summary">{latestOutNowModel.releaseEntry.data.summary}</p>
+              )}
+              <div class="release-draft__actions">
+                {latestOutNowModel.playerData && (
+                  <MusicStreamingServiceListenTrigger
+                    embeddedPlayerData={latestOutNowModel.playerData}
+                    tone="accent"
+                    variant="standalone"
+                  />
+                )}
+                <a href={latestOutNowModel.detailPath} data-astro-prefetch>
+                  View release
+                </a>
+                {latestOutNowModel.commerceLink && (
+                  <a
+                    href={latestOutNowModel.commerceLink.href}
+                    rel={latestOutNowModel.commerceLink.rel}
+                    target={latestOutNowModel.commerceLink.target}
+                  >
+                    {latestOutNowModel.commerceLink.label}
+                  </a>
+                )}
+              </div>
             </div>
-            <section class="feature-wall" aria-labelledby="draft-feature-wall-title">
-              <a class="feature-wall__artwork-link" href={latestOutNowModel.detailPath} data-astro-prefetch>
+
+            {primaryUpcomingModel && (
+              <aside class="feature-wall__upcoming" aria-label="Upcoming release">
+                <p class="release-draft__kicker">Upcoming</p>
+                <a href={primaryUpcomingModel.detailPath} data-astro-prefetch>
+                  {primaryUpcomingModel.releaseEntry.data.title}
+                </a>
+                <p>
+                  {primaryUpcomingModel.artistName} / {primaryUpcomingModel.formattedDate}
+                </p>
+              </aside>
+            )}
+          </section>
+        </article>
+
+        <article class="release-draft release-draft--discography" aria-labelledby="draft-discography-title">
+          <div class="release-draft__label-row">
+            <p>Draft B</p>
+            <p>Discography Sheet</p>
+          </div>
+          <section class="discography-sheet" aria-labelledby="draft-discography-title">
+            <div class="discography-sheet__feature">
+              <a class="discography-sheet__artwork-link" href={latestOutNowModel.detailPath} data-astro-prefetch>
                 <Image
                   src={latestOutNowModel.releaseEntry.data.cover_image}
                   alt={latestOutNowModel.releaseEntry.data.cover_image_alt || latestOutNowModel.releaseEntry.data.title}
-                  class="feature-wall__artwork"
-                  sizes="(min-width: 1100px) 42vw, 100vw"
+                  class="discography-sheet__artwork"
+                  sizes="(min-width: 1100px) 18rem, 100vw"
                 />
               </a>
-
-              <div class="feature-wall__copy">
+              <div class="discography-sheet__copy">
                 <p class="release-draft__kicker">Latest out now</p>
-                <h2 id="draft-feature-wall-title">{latestOutNowModel.releaseEntry.data.title}</h2>
-                <p class="release-draft__meta">
-                  {latestOutNowModel.artistName} / {latestOutNowModel.monthYear} / {latestOutNowModel.formattedFormats}
-                </p>
-                {latestOutNowModel.releaseEntry.data.summary && (
-                  <p class="feature-wall__summary">{latestOutNowModel.releaseEntry.data.summary}</p>
-                )}
+                <h2 id="draft-discography-title">{latestOutNowModel.releaseEntry.data.title}</h2>
+                <p class="release-draft__meta">{latestOutNowModel.artistName}</p>
+                <dl class="discography-sheet__facts">
+                  <div>
+                    <dt>Release date</dt>
+                    <dd>{latestOutNowModel.formattedDate}</dd>
+                  </div>
+                  <div>
+                    <dt>Format</dt>
+                    <dd>{latestOutNowModel.formattedFormats}</dd>
+                  </div>
+                  <div>
+                    <dt>Status</dt>
+                    <dd>Out now</dd>
+                  </div>
+                </dl>
                 <div class="release-draft__actions">
                   {latestOutNowModel.playerData && (
                     <MusicStreamingServiceListenTrigger
@@ -135,204 +204,131 @@ const archiveModels = releaseModels.slice(0, 8);
                   <a href={latestOutNowModel.detailPath} data-astro-prefetch>
                     View release
                   </a>
+                </div>
+              </div>
+            </div>
+
+            <div class="discography-sheet__archive" aria-label="Release archive preview">
+              <div class="discography-sheet__archive-header">
+                <p>Artist</p>
+                <p>Title</p>
+                <p>Date</p>
+                <p>Format</p>
+              </div>
+              {archiveModels.map((releaseModel) => (
+                <a class="discography-sheet__archive-row" href={releaseModel.detailPath} data-astro-prefetch>
+                  <span>{releaseModel.artistName}</span>
+                  <span>{releaseModel.releaseEntry.data.title}</span>
+                  <span>{releaseModel.year}</span>
+                  <span>{releaseModel.formattedFormats}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        </article>
+
+        <article class="release-draft release-draft--drop-shelf" aria-labelledby="draft-drop-shelf-title">
+          <div class="release-draft__label-row">
+            <p>Draft C</p>
+            <p>Drop Shelf</p>
+          </div>
+          <section class="drop-shelf" aria-labelledby="draft-drop-shelf-title">
+            <div class="drop-shelf__primary">
+              <div class="drop-shelf__media">
+                <a class="drop-shelf__artwork-link" href={latestOutNowModel.detailPath} data-astro-prefetch>
+                  <Image
+                    src={latestOutNowModel.releaseEntry.data.cover_image}
+                    alt={
+                      latestOutNowModel.releaseEntry.data.cover_image_alt || latestOutNowModel.releaseEntry.data.title
+                    }
+                    class="drop-shelf__artwork"
+                    sizes="(min-width: 1100px) 24rem, 100vw"
+                  />
+                </a>
+                <span class="drop-shelf__record" aria-hidden="true" />
+              </div>
+              <div class="drop-shelf__copy">
+                <p class="release-draft__kicker">Latest out now</p>
+                <h2 id="draft-drop-shelf-title">{latestOutNowModel.releaseEntry.data.title}</h2>
+                <p class="release-draft__meta">
+                  {latestOutNowModel.artistName} / {latestOutNowModel.formattedFormats}
+                </p>
+                <div class="release-draft__actions release-draft__actions--wide">
+                  {latestOutNowModel.playerData && (
+                    <MusicStreamingServiceListenTrigger
+                      embeddedPlayerData={latestOutNowModel.playerData}
+                      tone="accent"
+                      variant="standalone"
+                    />
+                  )}
                   {latestOutNowModel.commerceLink && (
                     <a
                       href={latestOutNowModel.commerceLink.href}
                       rel={latestOutNowModel.commerceLink.rel}
                       target={latestOutNowModel.commerceLink.target}
                     >
-                      {latestOutNowModel.commerceLink.label}
+                      View in store
                     </a>
                   )}
-                </div>
-              </div>
-
-              {primaryUpcomingModel && (
-                <aside class="feature-wall__upcoming" aria-label="Upcoming release">
-                  <p class="release-draft__kicker">Upcoming</p>
-                  <a href={primaryUpcomingModel.detailPath} data-astro-prefetch>
-                    {primaryUpcomingModel.releaseEntry.data.title}
+                  <a href={latestOutNowModel.detailPath} data-astro-prefetch>
+                    View release
                   </a>
-                  <p>
-                    {primaryUpcomingModel.artistName} / {primaryUpcomingModel.formattedDate}
-                  </p>
-                </aside>
-              )}
-            </section>
-          </article>
-
-          <article class="release-draft release-draft--discography" aria-labelledby="draft-discography-title">
-            <div class="release-draft__label-row">
-              <p>Draft B</p>
-              <p>Discography Sheet</p>
-            </div>
-            <section class="discography-sheet" aria-labelledby="draft-discography-title">
-              <div class="discography-sheet__feature">
-                <a class="discography-sheet__artwork-link" href={latestOutNowModel.detailPath} data-astro-prefetch>
-                  <Image
-                    src={latestOutNowModel.releaseEntry.data.cover_image}
-                    alt={
-                      latestOutNowModel.releaseEntry.data.cover_image_alt || latestOutNowModel.releaseEntry.data.title
-                    }
-                    class="discography-sheet__artwork"
-                    sizes="(min-width: 1100px) 18rem, 100vw"
-                  />
-                </a>
-                <div class="discography-sheet__copy">
-                  <p class="release-draft__kicker">Latest out now</p>
-                  <h2 id="draft-discography-title">{latestOutNowModel.releaseEntry.data.title}</h2>
-                  <p class="release-draft__meta">{latestOutNowModel.artistName}</p>
-                  <dl class="discography-sheet__facts">
-                    <div>
-                      <dt>Release date</dt>
-                      <dd>{latestOutNowModel.formattedDate}</dd>
-                    </div>
-                    <div>
-                      <dt>Format</dt>
-                      <dd>{latestOutNowModel.formattedFormats}</dd>
-                    </div>
-                    <div>
-                      <dt>Status</dt>
-                      <dd>Out now</dd>
-                    </div>
-                  </dl>
-                  <div class="release-draft__actions">
-                    {latestOutNowModel.playerData && (
-                      <MusicStreamingServiceListenTrigger
-                        embeddedPlayerData={latestOutNowModel.playerData}
-                        tone="accent"
-                        variant="standalone"
-                      />
-                    )}
-                    <a href={latestOutNowModel.detailPath} data-astro-prefetch>
-                      View release
-                    </a>
-                  </div>
                 </div>
               </div>
-
-              <div class="discography-sheet__archive" aria-label="Release archive preview">
-                <div class="discography-sheet__archive-header">
-                  <p>Artist</p>
-                  <p>Title</p>
-                  <p>Date</p>
-                  <p>Format</p>
-                </div>
-                {archiveModels.map((releaseModel) => (
-                  <a class="discography-sheet__archive-row" href={releaseModel.detailPath} data-astro-prefetch>
-                    <span>{releaseModel.artistName}</span>
-                    <span>{releaseModel.releaseEntry.data.title}</span>
-                    <span>{releaseModel.year}</span>
-                    <span>{releaseModel.formattedFormats}</span>
-                  </a>
-                ))}
-              </div>
-            </section>
-          </article>
-
-          <article class="release-draft release-draft--drop-shelf" aria-labelledby="draft-drop-shelf-title">
-            <div class="release-draft__label-row">
-              <p>Draft C</p>
-              <p>Drop Shelf</p>
             </div>
-            <section class="drop-shelf" aria-labelledby="draft-drop-shelf-title">
-              <div class="drop-shelf__primary">
-                <div class="drop-shelf__media">
-                  <a class="drop-shelf__artwork-link" href={latestOutNowModel.detailPath} data-astro-prefetch>
+
+            {primaryUpcomingModel && (
+              <aside class="drop-shelf__upcoming" aria-label="Upcoming release shelf">
+                <p class="release-draft__kicker">Upcoming / pre-order</p>
+                <div class="drop-shelf__upcoming-grid">
+                  <a class="drop-shelf__upcoming-artwork" href={primaryUpcomingModel.detailPath} data-astro-prefetch>
                     <Image
-                      src={latestOutNowModel.releaseEntry.data.cover_image}
+                      src={primaryUpcomingModel.releaseEntry.data.cover_image}
                       alt={
-                        latestOutNowModel.releaseEntry.data.cover_image_alt || latestOutNowModel.releaseEntry.data.title
+                        primaryUpcomingModel.releaseEntry.data.cover_image_alt ||
+                        primaryUpcomingModel.releaseEntry.data.title
                       }
                       class="drop-shelf__artwork"
-                      sizes="(min-width: 1100px) 24rem, 100vw"
+                      sizes="(min-width: 1100px) 13rem, 38vw"
                     />
                   </a>
-                  <span class="drop-shelf__record" aria-hidden="true" />
-                </div>
-                <div class="drop-shelf__copy">
-                  <p class="release-draft__kicker">Latest out now</p>
-                  <h2 id="draft-drop-shelf-title">{latestOutNowModel.releaseEntry.data.title}</h2>
-                  <p class="release-draft__meta">
-                    {latestOutNowModel.artistName} / {latestOutNowModel.formattedFormats}
-                  </p>
-                  <div class="release-draft__actions release-draft__actions--wide">
-                    {latestOutNowModel.playerData && (
-                      <MusicStreamingServiceListenTrigger
-                        embeddedPlayerData={latestOutNowModel.playerData}
-                        tone="accent"
-                        variant="standalone"
-                      />
-                    )}
-                    {latestOutNowModel.commerceLink && (
-                      <a
-                        href={latestOutNowModel.commerceLink.href}
-                        rel={latestOutNowModel.commerceLink.rel}
-                        target={latestOutNowModel.commerceLink.target}
-                      >
-                        View in store
-                      </a>
-                    )}
-                    <a href={latestOutNowModel.detailPath} data-astro-prefetch>
-                      View release
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              {primaryUpcomingModel && (
-                <aside class="drop-shelf__upcoming" aria-label="Upcoming release shelf">
-                  <p class="release-draft__kicker">Upcoming / pre-order</p>
-                  <div class="drop-shelf__upcoming-grid">
-                    <a class="drop-shelf__upcoming-artwork" href={primaryUpcomingModel.detailPath} data-astro-prefetch>
-                      <Image
-                        src={primaryUpcomingModel.releaseEntry.data.cover_image}
-                        alt={
-                          primaryUpcomingModel.releaseEntry.data.cover_image_alt ||
-                          primaryUpcomingModel.releaseEntry.data.title
-                        }
-                        class="drop-shelf__artwork"
-                        sizes="(min-width: 1100px) 13rem, 38vw"
-                      />
-                    </a>
-                    <div>
-                      <h3>{primaryUpcomingModel.releaseEntry.data.title}</h3>
-                      <p class="release-draft__meta">
-                        {primaryUpcomingModel.artistName} / {primaryUpcomingModel.formattedDate}
-                      </p>
-                      <div class="release-draft__actions">
-                        {primaryUpcomingModel.playerData && (
-                          <MusicStreamingServiceListenTrigger
-                            embeddedPlayerData={primaryUpcomingModel.playerData}
-                            tone="neutral"
-                            variant="standalone"
-                            label="Listen"
-                          />
-                        )}
-                        {primaryUpcomingModel.commerceLink && (
-                          <a
-                            href={primaryUpcomingModel.commerceLink.href}
-                            rel={primaryUpcomingModel.commerceLink.rel}
-                            target={primaryUpcomingModel.commerceLink.target}
-                          >
-                            Pre-order
-                          </a>
-                        )}
-                        <a href={primaryUpcomingModel.detailPath} data-astro-prefetch>
-                          View release
+                  <div>
+                    <h3>{primaryUpcomingModel.releaseEntry.data.title}</h3>
+                    <p class="release-draft__meta">
+                      {primaryUpcomingModel.artistName} / {primaryUpcomingModel.formattedDate}
+                    </p>
+                    <div class="release-draft__actions">
+                      {primaryUpcomingModel.playerData && (
+                        <MusicStreamingServiceListenTrigger
+                          embeddedPlayerData={primaryUpcomingModel.playerData}
+                          tone="neutral"
+                          variant="standalone"
+                          label="Listen"
+                        />
+                      )}
+                      {primaryUpcomingModel.commerceLink && (
+                        <a
+                          href={primaryUpcomingModel.commerceLink.href}
+                          rel={primaryUpcomingModel.commerceLink.rel}
+                          target={primaryUpcomingModel.commerceLink.target}
+                        >
+                          Pre-order
                         </a>
-                      </div>
+                      )}
+                      <a href={primaryUpcomingModel.detailPath} data-astro-prefetch>
+                        View release
+                      </a>
                     </div>
                   </div>
-                </aside>
-              )}
-            </section>
-          </article>
-        </div>
-      ) : (
-        <p class="release-draft-board__empty">No out-now release is available for this build date.</p>
-      )
-    }
+                </div>
+              </aside>
+            )}
+          </section>
+        </article>
+      </div>
+    ) : (
+      <p class="release-draft-board__empty">No out-now release is available for this build date.</p>
+    )}
   </section>
 </SiteLayout>
 

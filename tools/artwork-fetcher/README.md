@@ -6,6 +6,8 @@ The package now exposes separate command modules for artwork fetching, vinyl/CD/
 
 ## Setup
 
+Use Python 3.12 or newer; the Bandcamp API dependency requires it.
+
 ```powershell
 cd tools/artwork-fetcher
 python -m venv .venv

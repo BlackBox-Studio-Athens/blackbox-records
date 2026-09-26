@@ -30,8 +30,8 @@ jobs:
         with:
           ref: ${{ inputs.source_sha }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.10
-        with: { version: 12.0.0 }
+        uses: pnpm/action-setup@v6.1.0
+        with: { version: 12.6.0 }
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
@@ -112,8 +112,8 @@ jobs:
         with:
           ref: ${{ inputs.source_sha }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.10
-        with: { version: 12.0.0 }
+        uses: pnpm/action-setup@v6.1.0
+        with: { version: 12.6.0 }
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
@@ -161,8 +161,8 @@ jobs:
         with:
           ref: ${{ inputs.source_sha }}
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.10
-        with: { version: 12.0.0 }
+        uses: pnpm/action-setup@v6.1.0
+        with: { version: 12.6.0 }
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:

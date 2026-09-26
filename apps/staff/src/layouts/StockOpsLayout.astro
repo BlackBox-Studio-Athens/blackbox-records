@@ -34,7 +34,9 @@ const htmlTitle = pageTitle + ' | BlackBox Records';
     data-workspace={Astro.url.pathname.startsWith('/content/') ? 'content' : 'staff'}
     class="staff-body min-h-screen overflow-x-clip bg-background text-foreground"
   >
-    <a class="accessibility-skip-to-content-link" href="#main">Skip to workspace</a>
+    <a class="accessibility-skip-to-content-link" href="#main">
+      Skip to workspace
+    </a>
     <StaffShell title={pageTitle} environment={import.meta.env.PUBLIC_STAFF_ENVIRONMENT} client:load>
       <slot />
     </StaffShell>

@@ -21,50 +21,46 @@ const heroImageClass = `internal-page-hero__image h-[20rem] w-full object-cover 
 
 <section class="mx-auto w-full max-w-6xl px-4 pt-14 pb-8 sm:px-6 lg:px-8">
   <div class="max-w-4xl">
-    {
-      resolvedSectionLabel && (
-        <Badge
-          variant="outline"
-          className="border-border/80 bg-card/85 px-3 py-1 text-xs tracking-[0.18em] uppercase text-muted-foreground"
-        >
-          {resolvedSectionLabel}
-        </Badge>
-      )
-    }
+    {resolvedSectionLabel && (
+      <Badge
+        variant="outline"
+        className="border-border/80 bg-card/85 px-3 py-1 text-xs tracking-[0.18em] uppercase text-muted-foreground"
+      >
+        {resolvedSectionLabel}
+      </Badge>
+    )}
     <h1 class="internal-page-hero__title mt-4 uppercase text-foreground" transition:name="internal-page-hero-title">
       {title.toUpperCase()}
     </h1>
   </div>
 </section>
-{
-  image && (
-    <section class="layout-container">
-      <div
-        class="relative overflow-hidden rounded-xl border border-border/70 bg-card shadow-2xl shadow-black/35"
-        transition:name="internal-page-hero-image"
-      >
-        {typeof image === 'string' ? (
-          <img
-            src={createProjectRelativeUrl(image)}
-            alt={imageAlt || title}
-            class={heroImageClass}
-            loading={firstViewportPriority ? 'eager' : 'lazy'}
-            fetchpriority={firstViewportPriority ? 'high' : 'auto'}
-          />
-        ) : (
-          <Image
-            src={image}
-            alt={imageAlt || title}
-            class={heroImageClass}
-            widths={[720, 1080, 1200, 1440, 1800]}
-            sizes="(min-width: 1024px) 72rem, 100vw"
-            priority={firstViewportPriority}
-          />
-        )}
-        <div
-          class={`absolute inset-0${imageColor ? ' bg-gradient-to-t from-black/45 via-transparent to-black/15' : ' bg-gradient-to-t from-black/70 via-black/20 to-transparent'}`}
+{image && (
+  <section class="layout-container">
+    <div
+      class="relative overflow-hidden rounded-xl border border-border/70 bg-card shadow-2xl shadow-black/35"
+      transition:name="internal-page-hero-image"
+    >
+      {typeof image === 'string' ? (
+        <img
+          src={createProjectRelativeUrl(image)}
+          alt={imageAlt || title}
+          class={heroImageClass}
+          loading={firstViewportPriority ? 'eager' : 'lazy'}
+          fetchpriority={firstViewportPriority ? 'high' : 'auto'}
         />
-      </div>
-    </section>
-  )
-}
+      ) : (
+        <Image
+          src={image}
+          alt={imageAlt || title}
+          class={heroImageClass}
+          widths={[720, 1080, 1200, 1440, 1800]}
+          sizes="(min-width: 1024px) 72rem, 100vw"
+          priority={firstViewportPriority}
+        />
+      )}
+      <div
+        class={`absolute inset-0${imageColor ? ' bg-gradient-to-t from-black/45 via-transparent to-black/15' : ' bg-gradient-to-t from-black/70 via-black/20 to-transparent'}`}
+      />
+    </div>
+  </section>
+)}

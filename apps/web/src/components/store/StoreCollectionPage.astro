@@ -26,68 +26,68 @@ const catalogId = 'all-store-catalog';
 ---
 
 <SiteLayout pageTitle={category.title} pageDescription={category.description} mainClass="store-collection-page">
-  <div id="store-page-top"><InternalPageHero sectionLabel="Store" title={category.heading} /></div>
+  <div id="store-page-top">
+    <InternalPageHero sectionLabel="Store" title={category.heading} />
+  </div>
   <StoreCategoryNavigation activeCategoryId={category.id} />
   <p class="layout-container store-purchase-note">
-    VAT included. Shipping calculated in your cart. <a class="underline" href={createProjectRelativeUrl('/terms/')}
-      >Delivery rates and terms</a
-    >.
+    VAT included. Shipping calculated in your cart.{' '}
+    <a class="underline" href={createProjectRelativeUrl('/terms/')}>
+      Delivery rates and terms
+    </a>
+    .
   </p>
-  {
-    category.id === 'distro' ? (
-      <slot name="distro" />
-    ) : (
-      <div class="layout-container store-browse-layout" data-store-search-root>
-        <StoreBrowsePane>
-          {distroGroups.length > 0 && (
-            <nav aria-label="Browse Distro formats" class="store-format-links">
-              <h2>Browse Distro formats</h2>
-              {distroGroups.map((group) => (
-                <a
-                  href={createProjectRelativeUrl('/store/distro/#' + createStoreDistroGroupHeadingId(group.groupName))}
-                >
-                  <span>{group.groupName}</span>
-                  <span>{group.entries.length}</span>
-                </a>
+  {category.id === 'distro' ? (
+    <slot name="distro" />
+  ) : (
+    <div class="layout-container store-browse-layout" data-store-search-root>
+      <StoreBrowsePane>
+        {distroGroups.length > 0 && (
+          <nav aria-label="Browse Distro formats" class="store-format-links">
+            <h2>Browse Distro formats</h2>
+            {distroGroups.map((group) => (
+              <a href={createProjectRelativeUrl('/store/distro/#' + createStoreDistroGroupHeadingId(group.groupName))}>
+                <span>{group.groupName}</span>
+                <span>{group.entries.length}</span>
+              </a>
+            ))}
+          </nav>
+        )}
+      </StoreBrowsePane>
+      <section class="store-browse-results" aria-label={category.label + ' Store collection'}>
+        {category.id !== 'all' && <p class="store-category-description">{category.description}</p>}
+        <div data-store-search />
+        <p data-store-result-total>
+          {entries.length} {entries.length === 1 ? 'item' : 'items'}
+        </p>
+        <div
+          data-store-coverflow-group={coverflowEligible ? '' : undefined}
+          data-store-coverflow-mode={coverflowEligible ? 'catalog' : undefined}
+          data-store-coverflow-total={coverflowEligible ? entries.length : undefined}
+        >
+          {coverflowEligible && <StoreCoverflowControls catalogId={catalogId} total={entries.length} />}
+          <div class="store-coverflow-shell">
+            {coverflowEligible && (
+              <span class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true" />
+            )}
+            <div
+              id={catalogId}
+              class="store-catalog-chunks"
+              data-store-coverflow-stage={coverflowEligible ? '' : undefined}
+            >
+              {entries.map((entry, index) => (
+                <StoreItemCard
+                  entry={entry}
+                  searchable
+                  coverflowEnrolled={coverflowEligible}
+                  imageLoadingMode={index === 0 ? 'priority' : index < 4 ? 'eager' : 'lazy'}
+                />
               ))}
-            </nav>
-          )}
-        </StoreBrowsePane>
-        <section class="store-browse-results" aria-label={category.label + ' Store collection'}>
-          {category.id !== 'all' && <p class="store-category-description">{category.description}</p>}
-          <div data-store-search />
-          <p data-store-result-total>
-            {entries.length} {entries.length === 1 ? 'item' : 'items'}
-          </p>
-          <div
-            data-store-coverflow-group={coverflowEligible ? '' : undefined}
-            data-store-coverflow-mode={coverflowEligible ? 'catalog' : undefined}
-            data-store-coverflow-total={coverflowEligible ? entries.length : undefined}
-          >
-            {coverflowEligible && <StoreCoverflowControls catalogId={catalogId} total={entries.length} />}
-            <div class="store-coverflow-shell">
-              {coverflowEligible && (
-                <span class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true" />
-              )}
-              <div
-                id={catalogId}
-                class="store-catalog-chunks"
-                data-store-coverflow-stage={coverflowEligible ? '' : undefined}
-              >
-                {entries.map((entry, index) => (
-                  <StoreItemCard
-                    entry={entry}
-                    searchable
-                    coverflowEnrolled={coverflowEligible}
-                    imageLoadingMode={index === 0 ? 'priority' : index < 4 ? 'eager' : 'lazy'}
-                  />
-                ))}
-              </div>
             </div>
           </div>
-          {entries.length === 0 && <p>No Store items currently available.</p>}
-        </section>
-      </div>
-    )
-  }
+        </div>
+        {entries.length === 0 && <p>No Store items currently available.</p>}
+      </section>
+    </div>
+  )}
 </SiteLayout>

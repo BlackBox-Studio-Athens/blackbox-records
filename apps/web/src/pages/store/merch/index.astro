@@ -9,22 +9,20 @@ const collectionEntries = await listStoreCollectionEntries('merch');
 const redirectUrl = createProjectRelativeUrl('/store/');
 ---
 
-{
-  collectionEntries.length === 0 ? (
-    <RedirectLayout
-      pageTitle="Merch"
-      pageDescription="No BlackBox Records merch is currently available."
-      redirectUrl={redirectUrl}
-    >
-      <p class="text-sm leading-relaxed text-muted-foreground">
-        No merch is currently available.{' '}
-        <a class="underline underline-offset-4" href={redirectUrl}>
-          Browse Store
-        </a>
-        .
-      </p>
-    </RedirectLayout>
-  ) : (
-    <StoreCollectionPage category={getStoreCatalogCategory('merch')} entries={collectionEntries} />
-  )
-}
+{collectionEntries.length === 0 ? (
+  <RedirectLayout
+    pageTitle="Merch"
+    pageDescription="No BlackBox Records merch is currently available."
+    redirectUrl={redirectUrl}
+  >
+    <p class="text-sm leading-relaxed text-muted-foreground">
+      No merch is currently available.{' '}
+      <a class="underline underline-offset-4" href={redirectUrl}>
+        Browse Store
+      </a>
+      .
+    </p>
+  </RedirectLayout>
+) : (
+  <StoreCollectionPage category={getStoreCatalogCategory('merch')} entries={collectionEntries} />
+)}

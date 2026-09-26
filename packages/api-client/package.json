@@ -18,10 +18,10 @@
     "openapi-typescript-fetch": "^2.2.1"
   },
   "devDependencies": {
-    "@types/node": "^24.13.3",
+    "@types/node": "^24.19.0",
     "msw": "2.15.0",
     "openapi-typescript": "^7.13.0",
-    "tsx": "4.23.13",
+    "tsx": "4.23.15",
     "typescript": "^5.9.3",
     "vitest": "4.1.11"
   }

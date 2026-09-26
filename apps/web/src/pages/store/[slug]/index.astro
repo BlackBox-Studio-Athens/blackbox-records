@@ -84,54 +84,51 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
       href={createProjectRelativeUrl('/store/')}
       data-astro-prefetch
       class="mb-5 inline-flex min-h-11 items-center text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
-      >Back to Store</a
     >
+      Back to Store
+    </a>
     <div class="store-item-composition">
       <div class="store-item-purchase" data-store-purchase-group>
         <div class="store-item-identity">
           <h1 class="brand-display-title break-words text-foreground">{storeItem.title}</h1>
           <p class="text-sm uppercase tracking-[0.13em] text-muted-foreground">{storeItem.subtitle}</p>
-          {
-            primaryAvailability?.optionLabel && (
-              <p class="text-sm font-semibold text-foreground" data-store-item-option>
-                {primaryAvailability.optionLabel}
-              </p>
-            )
-          }
-          {
-            (embeddedPlayerData || sourceReleaseUrl || sourceReleaseArtistUrl) && (
-              <div class="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1" data-store-item-listening-context>
-                {embeddedPlayerData && (
-                  <MusicStreamingServiceListenTrigger
-                    embeddedPlayerData={embeddedPlayerData}
-                    includeCardAttribute
-                    tone="accent"
-                    variant="standalone"
-                  />
+          {primaryAvailability?.optionLabel && (
+            <p class="text-sm font-semibold text-foreground" data-store-item-option>
+              {primaryAvailability.optionLabel}
+            </p>
+          )}
+          {(embeddedPlayerData || sourceReleaseUrl || sourceReleaseArtistUrl) && (
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1" data-store-item-listening-context>
+              {embeddedPlayerData && (
+                <MusicStreamingServiceListenTrigger
+                  embeddedPlayerData={embeddedPlayerData}
+                  includeCardAttribute
+                  tone="accent"
+                  variant="standalone"
+                />
+              )}
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                {sourceReleaseUrl && (
+                  <a
+                    href={sourceReleaseUrl}
+                    data-astro-prefetch
+                    class="underline decoration-border underline-offset-4 transition-colors hover:text-foreground"
+                  >
+                    Release
+                  </a>
                 )}
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                  {sourceReleaseUrl && (
-                    <a
-                      href={sourceReleaseUrl}
-                      data-astro-prefetch
-                      class="underline decoration-border underline-offset-4 transition-colors hover:text-foreground"
-                    >
-                      Release
-                    </a>
-                  )}
-                  {sourceReleaseArtistUrl && (
-                    <a
-                      href={sourceReleaseArtistUrl}
-                      data-astro-prefetch
-                      class="underline decoration-border underline-offset-4 transition-colors hover:text-foreground"
-                    >
-                      {sourceReleaseArtistName}
-                    </a>
-                  )}
-                </div>
+                {sourceReleaseArtistUrl && (
+                  <a
+                    href={sourceReleaseArtistUrl}
+                    data-astro-prefetch
+                    class="underline decoration-border underline-offset-4 transition-colors hover:text-foreground"
+                  >
+                    {sourceReleaseArtistName}
+                  </a>
+                )}
               </div>
-            )
-          }
+            </div>
+          )}
         </div>
         <StoreOfferPriceDisplay
           client:load
@@ -159,85 +156,76 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
       </div>
     </div>
     <div class="store-item-information">
-      {
-        hasInfo && (
-          <section aria-labelledby="store-item-info" data-store-item-description>
-            <h2 id="store-item-info">Info</h2>
-            {storeItem.summary && (
-              <Prose value={storeItem.summary} rich={storeItem.summaryRich} data-content-path="summary" />
-            )}
-            {hasBody && sourceRelease && (
-              <div class="prose">
-                <EditorialContent entry={sourceRelease} />
-              </div>
-            )}
-            {(releaseDate || credits.length > 0) && (
-              <dl class="store-item-facts">
-                {releaseDate && (
-                  <div>
-                    <dt>Release date</dt>
-                    <dd>{formatDayMonthYear(releaseDate)}</dd>
-                  </div>
-                )}
-                {credits.map((credit) => (
-                  <div>
-                    <dt>{credit.role}</dt>
-                    <dd>{credit.name}</dd>
-                  </div>
+      {hasInfo && (
+        <section aria-labelledby="store-item-info" data-store-item-description>
+          <h2 id="store-item-info">Info</h2>
+          {storeItem.summary && (
+            <Prose value={storeItem.summary} rich={storeItem.summaryRich} data-content-path="summary" />
+          )}
+          {hasBody && sourceRelease && (
+            <div class="prose">
+              <EditorialContent entry={sourceRelease} />
+            </div>
+          )}
+          {(releaseDate || credits.length > 0) && (
+            <dl class="store-item-facts">
+              {releaseDate && (
+                <div>
+                  <dt>Release date</dt>
+                  <dd>{formatDayMonthYear(releaseDate)}</dd>
+                </div>
+              )}
+              {credits.map((credit) => (
+                <div>
+                  <dt>{credit.role}</dt>
+                  <dd>{credit.name}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </section>
+      )}
+      {trackGroups.length > 0 && (
+        <section aria-labelledby="store-item-tracklist" data-content-path="tracklist">
+          <h2 id="store-item-tracklist">Tracklist</h2>
+          {trackGroups.map((group) => (
+            <div class="store-track-group">
+              {group.heading && <h3>{group.heading}</h3>}
+              <ol role="list" class="store-item-tracklist">
+                {group.tracks.map((track) => (
+                  <li>
+                    <span class="store-track-position">{track.position}</span>
+                    <span>{track.title}</span>
+                    {track.duration && <span class="store-track-duration">{track.duration}</span>}
+                  </li>
                 ))}
-              </dl>
-            )}
-          </section>
-        )
-      }
-      {
-        trackGroups.length > 0 && (
-          <section aria-labelledby="store-item-tracklist" data-content-path="tracklist">
-            <h2 id="store-item-tracklist">Tracklist</h2>
-            {trackGroups.map((group) => (
-              <div class="store-track-group">
-                {group.heading && <h3>{group.heading}</h3>}
-                <ol role="list" class="store-item-tracklist">
-                  {group.tracks.map((track) => (
-                    <li>
-                      <span class="store-track-position">{track.position}</span>
-                      <span>{track.title}</span>
-                      {track.duration && <span class="store-track-duration">{track.duration}</span>}
-                    </li>
-                  ))}
-                </ol>
-              </div>
-            ))}
-          </section>
-        )
-      }
+              </ol>
+            </div>
+          ))}
+        </section>
+      )}
     </div>
   </section>
 
-  {
-    gallery.length > 0 && (
-      <section class="layout-container pb-14 pt-6" aria-labelledby="store-item-more-views">
-        <h2
-          id="store-item-more-views"
-          class="mb-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground"
-        >
-          More views
-        </h2>
-        <div class="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {gallery.map(({ image, image_alt }) => (
-            <div class="overflow-hidden border border-border/60 bg-background/55">
-              <Image
-                src={image}
-                alt={image_alt}
-                loading="lazy"
-                widths={[480, 720, 960, 1200]}
-                sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw"
-                class="h-auto w-full"
-              />
-            </div>
-          ))}
-        </div>
-      </section>
-    )
-  }
+  {gallery.length > 0 && (
+    <section class="layout-container pb-14 pt-6" aria-labelledby="store-item-more-views">
+      <h2 id="store-item-more-views" class="mb-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        More views
+      </h2>
+      <div class="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {gallery.map(({ image, image_alt }) => (
+          <div class="overflow-hidden border border-border/60 bg-background/55">
+            <Image
+              src={image}
+              alt={image_alt}
+              loading="lazy"
+              widths={[480, 720, 960, 1200]}
+              sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw"
+              class="h-auto w-full"
+            />
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
 </SiteLayout>

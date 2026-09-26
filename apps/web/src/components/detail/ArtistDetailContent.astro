@@ -72,273 +72,257 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
     </div>
 
     <div class="artist-detail-hero__copy">
-      {
-        (artist.data.genre || artist.data.country) && (
-          <div class="artist-detail-kicker-list">
-            {artist.data.genre && <span class="artist-detail-kicker">{artist.data.genre}</span>}
-            {artist.data.country && (
-              <span class="artist-detail-kicker artist-detail-kicker--muted">{artist.data.country}</span>
-            )}
-          </div>
-        )
-      }
+      {(artist.data.genre || artist.data.country) && (
+        <div class="artist-detail-kicker-list">
+          {artist.data.genre && <span class="artist-detail-kicker">{artist.data.genre}</span>}
+          {artist.data.country && (
+            <span class="artist-detail-kicker artist-detail-kicker--muted">{artist.data.country}</span>
+          )}
+        </div>
+      )}
       <h1 class="artist-detail-title">{artistName}</h1>
 
-      {
-        hasArtistBody ? (
+      {hasArtistBody ? (
+        <div class="artist-detail-prose artist-detail-prose--story">
+          <EditorialContent entry={artist} />
+        </div>
+      ) : (
+        artist.data.bio && (
           <div class="artist-detail-prose artist-detail-prose--story">
-            <EditorialContent entry={artist} />
+            <Prose value={artist.data.bio} rich={artist.data.bio_rich} data-content-path="bio" />
           </div>
-        ) : (
-          artist.data.bio && (
-            <div class="artist-detail-prose artist-detail-prose--story">
-              <Prose value={artist.data.bio} rich={artist.data.bio_rich} data-content-path="bio" />
-            </div>
-          )
         )
-      }
+      )}
 
-      {
-        profileLinks.length > 0 && (
-          <nav class="artist-profile-links" aria-label={`${artistName} profile links`}>
-            <p class="artist-detail-section-label">Profile</p>
-            <div class="artist-profile-links__list">
-              {profileLinks.map((link) => {
-                const linkAttributes = resolveLinkAttributes(link.url);
+      {profileLinks.length > 0 && (
+        <nav class="artist-profile-links" aria-label={`${artistName} profile links`}>
+          <p class="artist-detail-section-label">Profile</p>
+          <div class="artist-profile-links__list">
+            {profileLinks.map((link) => {
+              const linkAttributes = resolveLinkAttributes(link.url);
 
-                return (
-                  <a
-                    class="artist-profile-link"
-                    href={linkAttributes.href}
-                    target={linkAttributes.target}
-                    rel={linkAttributes.rel}
-                  >
-                    <SocialIcon title={link.label} class="artist-profile-link__icon" />
-                    <span>{link.label}</span>
-                  </a>
-                );
-              })}
-            </div>
-          </nav>
-        )
-      }
+              return (
+                <a
+                  class="artist-profile-link"
+                  href={linkAttributes.href}
+                  target={linkAttributes.target}
+                  rel={linkAttributes.rel}
+                >
+                  <SocialIcon title={link.label} class="artist-profile-link__icon" />
+                  <span>{link.label}</span>
+                </a>
+              );
+            })}
+          </div>
+        </nav>
+      )}
     </div>
   </div>
 </section>
 
-{
-  latestRelease && (
-    <section
-      class={cn(
-        'layout-container artist-detail artist-detail--latest-release',
-        isOverlayPresentation ? 'artist-detail--overlay' : 'artist-detail--page',
-      )}
-    >
-      <div class="artist-latest-release-panel">
-        <p class="artist-detail-section-label">Latest release</p>
-        <a href={latestReleaseHref} data-astro-prefetch class="artist-latest-release-panel__artwork-link">
-          <Image
-            src={latestRelease.data.cover_image}
-            alt={latestRelease.data.cover_image_alt || latestRelease.data.title}
-            class="artist-latest-release-panel__artwork h-full w-full object-cover"
-            widths={[160, 240, 320, 480]}
-            sizes="(min-width: 1024px) 13rem, 42vw"
-          />
+{latestRelease && (
+  <section
+    class={cn(
+      'layout-container artist-detail artist-detail--latest-release',
+      isOverlayPresentation ? 'artist-detail--overlay' : 'artist-detail--page',
+    )}
+  >
+    <div class="artist-latest-release-panel">
+      <p class="artist-detail-section-label">Latest release</p>
+      <a href={latestReleaseHref} data-astro-prefetch class="artist-latest-release-panel__artwork-link">
+        <Image
+          src={latestRelease.data.cover_image}
+          alt={latestRelease.data.cover_image_alt || latestRelease.data.title}
+          class="artist-latest-release-panel__artwork h-full w-full object-cover"
+          widths={[160, 240, 320, 480]}
+          sizes="(min-width: 1024px) 13rem, 42vw"
+        />
+      </a>
+      <div class="artist-latest-release-panel__copy">
+        <a href={latestReleaseHref} data-astro-prefetch class="artist-latest-release-panel__title">
+          {latestRelease.data.title}
         </a>
-        <div class="artist-latest-release-panel__copy">
-          <a href={latestReleaseHref} data-astro-prefetch class="artist-latest-release-panel__title">
-            {latestRelease.data.title}
-          </a>
-          <p class="artist-latest-release-panel__meta">
-            {latestReleaseFormats}
-            {latestReleaseDate && (
-              <>
-                {' / '}
-                <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time>
-              </>
-            )}
-          </p>
-          {latestRelease.data.summary && (
-            <Prose
-              class="artist-latest-release-panel__summary"
-              value={latestRelease.data.summary}
-              rich={latestRelease.data.summary_rich}
-            />
+        <p class="artist-latest-release-panel__meta">
+          {latestReleaseFormats}
+          {latestReleaseDate && (
+            <>
+              {' / '}
+              <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time>
+            </>
           )}
-        </div>
-        <div class="artist-detail-actions artist-detail-actions--latest">
-          {latestReleasePlayerData && (
-            <MusicStreamingServiceListenTrigger
-              embeddedPlayerData={latestReleasePlayerData}
-              tone="accent"
-              variant="standalone"
-              class="artist-detail-listen-trigger"
-            />
-          )}
-          <a
-            href={latestReleaseHref}
-            data-astro-prefetch
-            class={cn(
-              buttonVariants({ variant: 'ghost', size: 'lg' }),
-              'artist-detail-action artist-detail-action--secondary rounded-none',
-            )}
-          >
-            Details
-          </a>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-{
-  hasSecondaryArtistBodySection && (
-    <section
-      class={cn(
-        'layout-container artist-detail artist-detail--body',
-        isOverlayPresentation ? 'artist-detail--overlay' : 'artist-detail--page',
-      )}
-    >
-      <div
-        class={cn('artist-detail-body-grid', hasUpcomingReleaseCallout ? 'artist-detail-body-grid--with-upcoming' : '')}
-      >
-        {!hasArtistBody && !artist.data.bio ? (
-          <div class="artist-detail-section-block">
-            <p class="artist-detail-section-label">Biography</p>
-            <div class="artist-detail-empty-state">
-              <p class="artist-detail-empty-state__label">Profile pending</p>
-              <p class="artist-detail-empty-state__copy">This artist profile is still taking shape.</p>
-            </div>
-          </div>
-        ) : null}
-
-        {hasUpcomingReleaseCallout && (
-          <aside class="artist-detail-upcoming">
-            <p class="artist-detail-section-label">Upcoming release</p>
-            <p class="artist-detail-upcoming__text">{artist.data.upcoming_release}</p>
-          </aside>
+        </p>
+        {latestRelease.data.summary && (
+          <Prose
+            class="artist-latest-release-panel__summary"
+            value={latestRelease.data.summary}
+            rich={latestRelease.data.summary_rich}
+          />
         )}
       </div>
-    </section>
-  )
-}
-
-{
-  artistVideos.length > 0 && (
-    <section
-      class={cn(
-        'layout-container artist-detail artist-detail--videos',
-        isOverlayPresentation ? 'artist-detail--overlay' : 'artist-detail--page',
-      )}
-    >
-      <div class="artist-detail-section-heading artist-detail-section-heading--compact">
-        <div>
-          <p class="artist-detail-section-label">Videos</p>
-          <h2 class="artist-detail-section-title">Videos</h2>
-        </div>
+      <div class="artist-detail-actions artist-detail-actions--latest">
+        {latestReleasePlayerData && (
+          <MusicStreamingServiceListenTrigger
+            embeddedPlayerData={latestReleasePlayerData}
+            tone="accent"
+            variant="standalone"
+            class="artist-detail-listen-trigger"
+          />
+        )}
+        <a
+          href={latestReleaseHref}
+          data-astro-prefetch
+          class={cn(
+            buttonVariants({ variant: 'ghost', size: 'lg' }),
+            'artist-detail-action artist-detail-action--secondary rounded-none',
+          )}
+        >
+          Details
+        </a>
       </div>
-      <div class="artist-video-grid">
-        {artistVideos.map((video) => (
-          <article class="artist-video-card">
-            <iframe
-              class="artist-video-card__frame"
-              src={`https://www.youtube-nocookie.com/embed/${video.youtube_video_id}`}
-              title={`${artistName} - ${video.title}`}
-              loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-              allowfullscreen
+    </div>
+  </section>
+)}
+
+{hasSecondaryArtistBodySection && (
+  <section
+    class={cn(
+      'layout-container artist-detail artist-detail--body',
+      isOverlayPresentation ? 'artist-detail--overlay' : 'artist-detail--page',
+    )}
+  >
+    <div
+      class={cn('artist-detail-body-grid', hasUpcomingReleaseCallout ? 'artist-detail-body-grid--with-upcoming' : '')}
+    >
+      {!hasArtistBody && !artist.data.bio ? (
+        <div class="artist-detail-section-block">
+          <p class="artist-detail-section-label">Biography</p>
+          <div class="artist-detail-empty-state">
+            <p class="artist-detail-empty-state__label">Profile pending</p>
+            <p class="artist-detail-empty-state__copy">This artist profile is still taking shape.</p>
+          </div>
+        </div>
+      ) : null}
+
+      {hasUpcomingReleaseCallout && (
+        <aside class="artist-detail-upcoming">
+          <p class="artist-detail-section-label">Upcoming release</p>
+          <p class="artist-detail-upcoming__text">{artist.data.upcoming_release}</p>
+        </aside>
+      )}
+    </div>
+  </section>
+)}
+
+{artistVideos.length > 0 && (
+  <section
+    class={cn(
+      'layout-container artist-detail artist-detail--videos',
+      isOverlayPresentation ? 'artist-detail--overlay' : 'artist-detail--page',
+    )}
+  >
+    <div class="artist-detail-section-heading artist-detail-section-heading--compact">
+      <div>
+        <p class="artist-detail-section-label">Videos</p>
+        <h2 class="artist-detail-section-title">Videos</h2>
+      </div>
+    </div>
+    <div class="artist-video-grid">
+      {artistVideos.map((video) => (
+        <article class="artist-video-card">
+          <iframe
+            class="artist-video-card__frame"
+            src={`https://www.youtube-nocookie.com/embed/${video.youtube_video_id}`}
+            title={`${artistName} - ${video.title}`}
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowfullscreen
+          />
+          <div class="artist-video-card__copy">
+            <h3 class="artist-video-card__title">{video.title}</h3>
+            {video.description && <Prose class="artist-video-card__description" value={video.description} />}
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+)}
+
+{previousReleases.length > 0 && (
+  <section
+    class={cn(
+      'layout-container artist-detail artist-detail--discography',
+      isOverlayPresentation ? 'artist-detail--overlay' : 'artist-detail--page',
+    )}
+  >
+    <div class="artist-detail-section-heading">
+      <div class="space-y-2">
+        <p class="artist-detail-section-label">{discographyLabel}</p>
+        <h2 class="artist-detail-section-title">{discographyLabel}</h2>
+      </div>
+    </div>
+    <div class="artist-previous-release-list">
+      {previousReleases.map((release) => {
+        const releaseDate = formatMonthYear(release.data.release_date);
+        return (
+          <a class="artist-previous-release" href={createReleaseDetailPath(release)} data-astro-prefetch>
+            <Image
+              src={release.data.cover_image}
+              alt={release.data.cover_image_alt || release.data.title}
+              class="artist-previous-release__artwork h-full w-full object-cover"
+              widths={[96, 160, 240]}
+              sizes="5rem"
             />
-            <div class="artist-video-card__copy">
-              <h3 class="artist-video-card__title">{video.title}</h3>
-              {video.description && <Prose class="artist-video-card__description" value={video.description} />}
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-{
-  previousReleases.length > 0 && (
-    <section
-      class={cn(
-        'layout-container artist-detail artist-detail--discography',
-        isOverlayPresentation ? 'artist-detail--overlay' : 'artist-detail--page',
-      )}
-    >
-      <div class="artist-detail-section-heading">
-        <div class="space-y-2">
-          <p class="artist-detail-section-label">{discographyLabel}</p>
-          <h2 class="artist-detail-section-title">{discographyLabel}</h2>
-        </div>
-      </div>
-      <div class="artist-previous-release-list">
-        {previousReleases.map((release) => {
-          const releaseDate = formatMonthYear(release.data.release_date);
-          return (
-            <a class="artist-previous-release" href={createReleaseDetailPath(release)} data-astro-prefetch>
-              <Image
-                src={release.data.cover_image}
-                alt={release.data.cover_image_alt || release.data.title}
-                class="artist-previous-release__artwork h-full w-full object-cover"
-                widths={[96, 160, 240]}
-                sizes="5rem"
-              />
-              <span class="artist-previous-release__copy">
-                <span class="artist-previous-release__title">{release.data.title}</span>
-                <span class="artist-previous-release__meta">
-                  {release.data.formats?.join(' / ') || 'Release'}
-                  {releaseDate && (
-                    <>
-                      {' / '}
-                      <time datetime={release.data.release_date.toISOString().slice(0, 10)}>{releaseDate}</time>
-                    </>
-                  )}
-                </span>
+            <span class="artist-previous-release__copy">
+              <span class="artist-previous-release__title">{release.data.title}</span>
+              <span class="artist-previous-release__meta">
+                {release.data.formats?.join(' / ') || 'Release'}
+                {releaseDate && (
+                  <>
+                    {' / '}
+                    <time datetime={release.data.release_date.toISOString().slice(0, 10)}>{releaseDate}</time>
+                  </>
+                )}
               </span>
-              <span class="artist-previous-release__arrow" aria-hidden="true">
-                &rarr;
-              </span>
-            </a>
-          );
-        })}
-      </div>
-    </section>
-  )
-}
+            </span>
+            <span class="artist-previous-release__arrow" aria-hidden="true">
+              &rarr;
+            </span>
+          </a>
+        );
+      })}
+    </div>
+  </section>
+)}
 
-{
-  showRouteNavigation && (
-    <section class="layout-container artist-detail-route-links" aria-label="Artist detail navigation">
-      <nav class="artist-detail-route-links__inner">
-        <a
-          href={createProjectRelativeUrl('/artists/')}
-          data-astro-prefetch
-          class="artist-detail-route-link artist-detail-route-link--back"
-        >
-          <span class="artist-detail-route-link__arrow" aria-hidden="true">
-            &larr;
-          </span>
-          <span class="artist-detail-route-link__copy">
-            <span class="artist-detail-route-link__label">All artists</span>
-            <span class="artist-detail-route-link__meta">Return to roster</span>
-          </span>
-        </a>
-        <a
-          href={createProjectRelativeUrl('/releases/')}
-          data-astro-prefetch
-          class="artist-detail-route-link artist-detail-route-link--next"
-        >
-          <span class="artist-detail-route-link__copy">
-            <span class="artist-detail-route-link__label">Browse releases</span>
-            <span class="artist-detail-route-link__meta">Open catalog</span>
-          </span>
-          <span class="artist-detail-route-link__arrow" aria-hidden="true">
-            &rarr;
-          </span>
-        </a>
-      </nav>
-    </section>
-  )
-}
+{showRouteNavigation && (
+  <section class="layout-container artist-detail-route-links" aria-label="Artist detail navigation">
+    <nav class="artist-detail-route-links__inner">
+      <a
+        href={createProjectRelativeUrl('/artists/')}
+        data-astro-prefetch
+        class="artist-detail-route-link artist-detail-route-link--back"
+      >
+        <span class="artist-detail-route-link__arrow" aria-hidden="true">
+          &larr;
+        </span>
+        <span class="artist-detail-route-link__copy">
+          <span class="artist-detail-route-link__label">All artists</span>
+          <span class="artist-detail-route-link__meta">Return to roster</span>
+        </span>
+      </a>
+      <a
+        href={createProjectRelativeUrl('/releases/')}
+        data-astro-prefetch
+        class="artist-detail-route-link artist-detail-route-link--next"
+      >
+        <span class="artist-detail-route-link__copy">
+          <span class="artist-detail-route-link__label">Browse releases</span>
+          <span class="artist-detail-route-link__meta">Open catalog</span>
+        </span>
+        <span class="artist-detail-route-link__arrow" aria-hidden="true">
+          &rarr;
+        </span>
+      </a>
+    </nav>
+  </section>
+)}

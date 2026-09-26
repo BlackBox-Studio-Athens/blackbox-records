@@ -13,35 +13,33 @@ const releaseContextByArtistId = await mapArtistRosterReleaseContextById();
   <section class="layout-container artists-roster-section" data-artists-roster-root>
     {artistProfiles.length > 5 && <div data-artists-roster-filters />}
     <div class="artists-roster-grid">
-      {
-        artistProfiles.map((artistProfile, index) => {
-          const releaseContext = releaseContextByArtistId.get(artistProfile.id) || {
-            latestReleaseTitle: null,
-            latestReleaseDate: null,
-            releaseCount: 0,
-          };
-          return (
-            <div
-              class="artists-roster-grid__item"
-              data-artist-roster-item
-              data-artist-title={artistProfile.data.title}
-              data-artist-genre={artistProfile.data.genre || ''}
-              data-artist-country={artistProfile.data.country || ''}
-              data-artist-bio={(artistProfile.data.bio || '').replace(/\s+/g, ' ').trim()}
-              data-artist-latest-release-title={releaseContext.latestReleaseTitle || ''}
-              data-artist-latest-release-date={releaseContext.latestReleaseDate || ''}
-            >
-              <ArtistCard
-                artist={artistProfile}
-                imageLoading={index < 3 ? 'eager' : 'lazy'}
-                imagePriority={index === 0}
-                releaseContext={releaseContext}
-                variant="roster-detailed"
-              />
-            </div>
-          );
-        })
-      }
+      {artistProfiles.map((artistProfile, index) => {
+        const releaseContext = releaseContextByArtistId.get(artistProfile.id) || {
+          latestReleaseTitle: null,
+          latestReleaseDate: null,
+          releaseCount: 0,
+        };
+        return (
+          <div
+            class="artists-roster-grid__item"
+            data-artist-roster-item
+            data-artist-title={artistProfile.data.title}
+            data-artist-genre={artistProfile.data.genre || ''}
+            data-artist-country={artistProfile.data.country || ''}
+            data-artist-bio={(artistProfile.data.bio || '').replace(/\s+/g, ' ').trim()}
+            data-artist-latest-release-title={releaseContext.latestReleaseTitle || ''}
+            data-artist-latest-release-date={releaseContext.latestReleaseDate || ''}
+          >
+            <ArtistCard
+              artist={artistProfile}
+              imageLoading={index < 3 ? 'eager' : 'lazy'}
+              imagePriority={index === 0}
+              releaseContext={releaseContext}
+              variant="roster-detailed"
+            />
+          </div>
+        );
+      })}
     </div>
   </section>
 </SiteLayout>

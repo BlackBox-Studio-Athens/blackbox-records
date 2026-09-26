@@ -131,7 +131,6 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
         sameAs,
       })}
     />
-
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
     {publicBackendOrigin && <link rel="dns-prefetch" href={publicBackendOrigin} />}
@@ -150,22 +149,22 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
     </noscript>
   </head>
   <body class={resolvedBodyClass}>
-    <a class="accessibility-skip-to-content-link" href="#main">Skip to content</a>
+    <a class="accessibility-skip-to-content-link" href="#main">
+      Skip to content
+    </a>
     <Header pathname={Astro.url.pathname} />
     <main class={resolvedMainClass} id="main" tabindex="-1" data-app-shell-main>
       <slot />
     </main>
     <AppShell />
     <Footer />
-    {
-      import.meta.env.PROD && (
-        <script
-          is:inline
-          data-domain="blackbox-studio-athens.github.io"
-          defer
-          src="https://www.glancelytics.com/js/script.js"
-        />
-      )
-    }
+    {import.meta.env.PROD && (
+      <script
+        is:inline
+        data-domain="blackbox-studio-athens.github.io"
+        defer
+        src="https://www.glancelytics.com/js/script.js"
+      />
+    )}
   </body>
 </html>

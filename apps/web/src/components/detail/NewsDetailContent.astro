@@ -28,30 +28,26 @@ const sectionLabel = item.data.section_label || 'News';
       >
         {formatMonthYear(item.data.date)}
       </Badge>
-      {
-        item.data.image && (
-          <div class="overflow-hidden rounded-lg border border-border/70">
-            <Image
-              src={item.data.image}
-              alt={item.data.image_alt || item.data.title}
-              class="news-detail-lead__image h-auto w-full object-cover"
-              widths={[720, 1080, 1440, 1800]}
-              sizes="(min-width: 1024px) 72rem, 100vw"
-              priority={imagePriority}
-            />
-          </div>
-        )
-      }
-      {
-        item.data.summary && (
-          <Prose
-            class="font-display text-3xl tracking-[0.06em] uppercase text-foreground"
-            value={item.data.summary}
-            rich={item.data.summary_rich}
-            data-content-path="summary"
+      {item.data.image && (
+        <div class="overflow-hidden rounded-lg border border-border/70">
+          <Image
+            src={item.data.image}
+            alt={item.data.image_alt || item.data.title}
+            class="news-detail-lead__image h-auto w-full object-cover"
+            widths={[720, 1080, 1440, 1800]}
+            sizes="(min-width: 1024px) 72rem, 100vw"
+            priority={imagePriority}
           />
-        )
-      }
+        </div>
+      )}
+      {item.data.summary && (
+        <Prose
+          class="font-display text-3xl tracking-[0.06em] uppercase text-foreground"
+          value={item.data.summary}
+          rich={item.data.summary_rich}
+          data-content-path="summary"
+        />
+      )}
       <div class="news-markdown-content text-sm leading-relaxed text-muted-foreground">
         <EditorialContent entry={item} />
       </div>

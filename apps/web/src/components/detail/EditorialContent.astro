@@ -30,18 +30,16 @@ const withImages = (value: NonNullable<typeof body>) =>
   );
 ---
 
-{
-  LegacyContent ? (
-    <LegacyContent />
-  ) : (
-    groups.map((group) =>
-      group.quote ? (
-        <blockquote>
-          <PortableText value={withImages(group.value)} components={components} />
-        </blockquote>
-      ) : (
+{LegacyContent ? (
+  <LegacyContent />
+) : (
+  groups.map((group) =>
+    group.quote ? (
+      <blockquote>
         <PortableText value={withImages(group.value)} components={components} />
-      ),
-    )
+      </blockquote>
+    ) : (
+      <PortableText value={withImages(group.value)} components={components} />
+    ),
   )
-}
+)}

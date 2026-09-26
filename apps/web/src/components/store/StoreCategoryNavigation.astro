@@ -20,20 +20,18 @@ const discoverableCategories = getDiscoverableStoreCatalogCategories([
     class="layout-container store-category-signal__list"
     style={`--store-category-count: ${discoverableCategories.length}`}
   >
-    {
-      discoverableCategories.map((category) => (
-        <li class="store-category-signal__item">
-          <a
-            class="store-category-signal__link"
-            data-store-category-link
-            data-store-category-active={category.id === activeCategoryId ? '' : undefined}
-            href={createProjectRelativeUrl(category.path)}
-            aria-current={category.id === activeCategoryId ? 'page' : undefined}
-          >
-            {category.label}
-          </a>
-        </li>
-      ))
-    }
+    {discoverableCategories.map((category) => (
+      <li class="store-category-signal__item">
+        <a
+          class="store-category-signal__link"
+          data-store-category-link
+          data-store-category-active={category.id === activeCategoryId ? '' : undefined}
+          href={createProjectRelativeUrl(category.path)}
+          aria-current={category.id === activeCategoryId ? 'page' : undefined}
+        >
+          {category.label}
+        </a>
+      </li>
+    ))}
   </ul>
 </nav>

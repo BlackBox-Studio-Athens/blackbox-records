@@ -18,9 +18,9 @@ const newsletterContent = await getNewsletterContent();
     <Card className="border-none bg-transparent shadow-none">
       <CardHeader className="pb-2">
         <p class="text-xs tracking-[0.2em] text-muted-foreground uppercase">{newsletterContent.section_label}</p>
-        <CardTitle className="font-display text-4xl tracking-[0.09em] uppercase"
-          >{newsletterContent.title.toUpperCase()}</CardTitle
-        >
+        <CardTitle className="font-display text-4xl tracking-[0.09em] uppercase">
+          {newsletterContent.title.toUpperCase()}
+        </CardTitle>
       </CardHeader>
       <CardContent className="pb-8">
         <Prose

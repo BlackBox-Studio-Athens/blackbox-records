@@ -8,7 +8,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@portabletext/toolkit": "5.0.2",
-    "zod": "^4.5.4"
+    "@portabletext/toolkit": "6.0.0",
+    "zod": "^4.6.5"
   }
 }

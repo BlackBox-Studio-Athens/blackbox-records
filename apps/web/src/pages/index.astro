@@ -27,64 +27,60 @@ const homeArtists = homeContent.artists;
     scrollIndicatorText={homeContent.hero.scroll_indicator_text}
   />
 
-  {
-    homeNews && latestNewsArticles.length > 0 && (
-      <section class="home-news-section layout-container mt-16" id="news">
-        <div class="home-section-header home-section-header--split mb-6 sm:mb-8">
-          <div class="home-section-header__lead">
-            <h2 class="home-section-header__title">{homeNews.title}</h2>
-            <span class="home-section-header__rule" aria-hidden="true" />
-          </div>
-          <a
-            href={createProjectRelativeUrl(homeNews.link_url)}
-            data-astro-prefetch
-            class={cn(
-              buttonVariants({ variant: 'ghost', size: 'sm' }),
-              'home-section-header__action rounded-md px-2 text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground',
-            )}
-          >
-            {homeNews.link_text} <span aria-hidden="true">→</span>
-          </a>
+  {homeNews && latestNewsArticles.length > 0 && (
+    <section class="home-news-section layout-container mt-16" id="news">
+      <div class="home-section-header home-section-header--split mb-6 sm:mb-8">
+        <div class="home-section-header__lead">
+          <h2 class="home-section-header__title">{homeNews.title}</h2>
+          <span class="home-section-header__rule" aria-hidden="true" />
         </div>
-        <div class="home-news-grid">
-          {latestNewsArticles.map((newsArticle) => (
-            <NewsCard item={newsArticle} />
+        <a
+          href={createProjectRelativeUrl(homeNews.link_url)}
+          data-astro-prefetch
+          class={cn(
+            buttonVariants({ variant: 'ghost', size: 'sm' }),
+            'home-section-header__action rounded-md px-2 text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground',
+          )}
+        >
+          {homeNews.link_text} <span aria-hidden="true">→</span>
+        </a>
+      </div>
+      <div class="home-news-grid">
+        {latestNewsArticles.map((newsArticle) => (
+          <NewsCard item={newsArticle} />
+        ))}
+      </div>
+    </section>
+  )}
+
+  {homeArtists && (
+    <section class="artists-surface-section mt-20 border-t border-border py-20 sm:py-24" id="artists">
+      <div class="layout-container">
+        <div class="home-section-header home-section-header--centered mb-6 sm:mb-8">
+          <span class="home-section-header__rule" aria-hidden="true" />
+          <h2 class="home-section-header__title">{homeArtists.title}</h2>
+          <span class="home-section-header__rule" aria-hidden="true" />
+        </div>
+        <div class="home-featured-roster-grid">
+          {featuredArtistProfiles.map((artistProfile) => (
+            <ArtistCard artist={artistProfile} variant="featured-roster" />
           ))}
         </div>
-      </section>
-    )
-  }
-
-  {
-    homeArtists && (
-      <section class="artists-surface-section mt-20 border-t border-border py-20 sm:py-24" id="artists">
-        <div class="layout-container">
-          <div class="home-section-header home-section-header--centered mb-6 sm:mb-8">
-            <span class="home-section-header__rule" aria-hidden="true" />
-            <h2 class="home-section-header__title">{homeArtists.title}</h2>
-            <span class="home-section-header__rule" aria-hidden="true" />
-          </div>
-          <div class="home-featured-roster-grid">
-            {featuredArtistProfiles.map((artistProfile) => (
-              <ArtistCard artist={artistProfile} variant="featured-roster" />
-            ))}
-          </div>
-          <div class="mt-8 text-center">
-            <a
-              href={createProjectRelativeUrl(homeArtists.button_link)}
-              data-astro-prefetch
-              class={cn(
-                buttonVariants({ variant: 'outline' }),
-                'h-auto rounded-none border-foreground bg-transparent px-10 py-4 text-xs tracking-[0.2em] uppercase text-foreground shadow-none hover:bg-foreground hover:text-background',
-              )}
-            >
-              {homeArtists.button_text}
-            </a>
-          </div>
+        <div class="mt-8 text-center">
+          <a
+            href={createProjectRelativeUrl(homeArtists.button_link)}
+            data-astro-prefetch
+            class={cn(
+              buttonVariants({ variant: 'outline' }),
+              'h-auto rounded-none border-foreground bg-transparent px-10 py-4 text-xs tracking-[0.2em] uppercase text-foreground shadow-none hover:bg-foreground hover:text-background',
+            )}
+          >
+            {homeArtists.button_text}
+          </a>
         </div>
-      </section>
-    )
-  }
+      </div>
+    </section>
+  )}
 
   <NewsletterSignup id="newsletter-signup-area" />
 </SiteLayout>
