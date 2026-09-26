@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, readFile, rm, mkdir } from 'node:fs/promises';
+import { mkdtemp, writeFile, readFile, rm, mkdir, readdir } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +17,45 @@ async function fixture(t) {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'blackbox-validation-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   return cwd;
+}
+
+async function gitFixture(t) {
+  const cwd = await fixture(t);
+  await execa('git', ['init'], { cwd });
+  await writeFile(path.join(cwd, '.gitignore'), '.codex-artifacts/\n');
+  for (const [name, content] of [
+    ['package.json', '{"name":"cache-fixture","version":"1.0.0"}'],
+    ['pnpm-lock.yaml', 'lockfileVersion: 9.0\n'],
+    ['tsconfig.json', '{}\n'],
+    ['source.ts', 'export const source = true;\n'],
+    ['delete-me.ts', 'export const remove = true;\n'],
+  ])
+    await writeFile(path.join(cwd, name), content);
+  await execa('git', ['add', '.'], { cwd });
+  await execa(
+    'git',
+    ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture'],
+    {
+      cwd,
+    },
+  );
+  return cwd;
+}
+
+async function latestEvidenceSummary(cwd) {
+  const entries = await readdir(path.join(cwd, '.codex-artifacts/validation'), { withFileTypes: true });
+  const latest = entries
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name)
+    .sort()
+    .at(-1);
+  return path.join(cwd, '.codex-artifacts/validation', latest, 'summary.json');
+}
+
+async function evidenceSummaries(cwd) {
+  const root = path.join(cwd, '.codex-artifacts/validation');
+  const entries = await readdir(root, { withFileTypes: true });
+  return entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(root, entry.name, 'summary.json'));
 }
 
 test('full plan preserves current gates without retired catalog preparation', async () => {
@@ -266,6 +305,130 @@ test('fast package validation cancels its sibling lane after a failure', async (
   assert.equal(summary.status, 'failed');
   assert.equal(summary.phases.find(({ name }) => name === 'tests').exitCode, 9);
   assert.equal(summary.phases.find(({ name }) => name === 'types').status, 'cancelled');
+});
+
+test('resume reuses only matching successful eligible phases and no-cache bypasses them', async (t) => {
+  const cwd = await fixture(t);
+  await writeFile(path.join(cwd, 'package.json'), '{"name":"cache-fixture","version":"1.0.0"}');
+  const phases = ['tests', 'types'].map((name) => ({
+    name,
+    command: 'pnpm',
+    args: ['exec', 'node', '-e', 'process.exit(0)'],
+    cwd: root,
+  }));
+  await runValidation({ cwd, phases, fast: true, jobs: 1, ...testOptions });
+  const resumed = await runValidation({ cwd, phases, fast: true, jobs: 1, resume: true, ...testOptions });
+  assert.ok(
+    resumed.phases.every(({ cacheHit }) => cacheHit),
+    JSON.stringify(resumed.phases),
+  );
+  const changed = await runValidation({
+    cwd,
+    phases: phases.map((phase) => ({ ...phase, args: [...phase.args.slice(0, -1), 'process.exit(1)'] })),
+    fast: true,
+    jobs: 1,
+    resume: true,
+    ...testOptions,
+  });
+  assert.ok(changed.phases.every(({ cacheHit }) => !cacheHit));
+  const fresh = await runValidation({ cwd, phases, fast: true, jobs: 1, resume: true, noCache: true, ...testOptions });
+  assert.ok(fresh.phases.every(({ cacheHit }) => !cacheHit));
+});
+
+test('resume requires complete original evidence and matching phase environment', async (t) => {
+  for (const change of ['missing-log', 'altered-log', 'incomplete', 'cancelled', 'missing-exit', 'environment']) {
+    await t.test(change, async (t) => {
+      const cwd = await fixture(t);
+      const phase = { name: 'tests', command: 'pnpm', args: ['exec', 'node', '-e', 'process.exit(0)'], cwd: root };
+      const options = { cwd, phases: [phase], fast: true, jobs: 1, ...testOptions };
+      const original = await runValidation(options);
+      const filename = await latestEvidenceSummary(cwd);
+      const evidence = JSON.parse(await readFile(filename, 'utf8'));
+      if (change === 'missing-log') await rm(original.phases[0].logPath);
+      if (change === 'altered-log') await writeFile(original.phases[0].logPath, 'altered');
+      if (change === 'incomplete') delete evidence.endedAt;
+      if (change === 'cancelled') evidence.status = 'cancelled';
+      if (change === 'missing-exit') delete evidence.phases[0].exitCode;
+      if (change === 'environment') phase.env = { NODE_ENV: 'changed' };
+      await writeFile(filename, JSON.stringify(evidence));
+      const resumed = await runValidation({ ...options, resume: true });
+      assert.equal(resumed.phases[0].cacheHit, undefined);
+      assert.equal(resumed.phases[0].status, 'passed');
+    });
+  }
+});
+
+test('resume keeps an uncached failing build failure visible', async (t) => {
+  const cwd = await fixture(t);
+  await writeFile(path.join(cwd, 'package.json'), '{"name":"cache-fixture","version":"1.0.0"}');
+  const phases = [
+    { name: 'check:types', command: 'pnpm', args: ['exec', 'node', '-e', 'process.exit(0)'], cwd: root },
+    command('build', 'process.exit(7)'),
+  ];
+  await runValidation({ cwd, phases, ...testOptions });
+  const resumed = await runValidation({ cwd, phases, resume: true, ...testOptions });
+  assert.equal(resumed.status, 'failed');
+  assert.equal(resumed.phases[0].cacheHit, true);
+  assert.equal(resumed.phases[1].cacheHit, undefined);
+  assert.equal(resumed.phases[1].exitCode, 7);
+});
+
+test('resume misses after source, toolchain, allowlisted environment, or evidence changes', async (t) => {
+  const cwd = await gitFixture(t);
+  const phases = [{ name: 'tests', command: 'pnpm', args: ['exec', 'node', '-e', 'process.exit(0)'], cwd: root }];
+  const run = (options = {}) =>
+    runValidation({ cwd, phases, fast: true, jobs: 1, ...testOptions, ...options, identify: sourceIdentity });
+  await run();
+  const changes = [
+    () => writeFile(path.join(cwd, 'package.json'), '{"name":"cache-fixture","version":"2.0.0"}'),
+    () => writeFile(path.join(cwd, 'pnpm-lock.yaml'), 'lockfileVersion: 9.1\n'),
+    () => writeFile(path.join(cwd, 'tsconfig.json'), '{"compilerOptions":{"strict":true}}\n'),
+    () => writeFile(path.join(cwd, 'added.ts'), 'export const added = true;\n'),
+    () => rm(path.join(cwd, 'delete-me.ts')),
+  ];
+  for (const change of changes) {
+    await change();
+    const resumed = await run({ resume: true });
+    assert.ok(resumed.phases.every(({ cacheHit }) => !cacheHit));
+  }
+
+  const summaryPath = await latestEvidenceSummary(cwd);
+  const previous = JSON.parse(await readFile(summaryPath, 'utf8'));
+  previous.cacheContext.node = 'incompatible-node';
+  await writeFile(summaryPath, JSON.stringify(previous));
+  const toolchainChanged = await run({ resume: true });
+  assert.equal(toolchainChanged.phases[0].cacheHit, undefined);
+
+  const originalCi = process.env.CI;
+  process.env.CI = 'validation-cache-context';
+  try {
+    const environmentChanged = await run({ resume: true });
+    assert.equal(environmentChanged.phases[0].cacheHit, undefined);
+  } finally {
+    if (originalCi === undefined) delete process.env.CI;
+    else process.env.CI = originalCi;
+  }
+
+  for (const filename of await evidenceSummaries(cwd)) await writeFile(filename, '{corrupt');
+  const corrupted = await run({ resume: true });
+  assert.equal(corrupted.phases[0].cacheHit, undefined);
+  for (const filename of await evidenceSummaries(cwd)) await rm(filename);
+  const missing = await run({ resume: true });
+  assert.equal(missing.phases[0].cacheHit, undefined);
+});
+
+test('a source edit during validation invalidates the completed result', async (t) => {
+  const cwd = await gitFixture(t);
+  const phases = [
+    {
+      name: 'tests',
+      command: process.execPath,
+      args: ['-e', 'require("node:fs").writeFileSync("source.ts", "changed during test"); setTimeout(() => {}, 80)'],
+    },
+  ];
+  const summary = await runValidation({ cwd, phases, fast: true, ...testOptions, identify: sourceIdentity });
+  assert.equal(summary.status, 'invalidated');
+  assert.ok(summary.sourceChanges.includes('source.ts'));
 });
 
 test('checks mode is partial and never schedules a build', async (t) => {

@@ -76,6 +76,85 @@ export async function sourceIdentity(cwd) {
   return { sha, fingerprint: hash.digest('hex'), files: names.length };
 }
 
+const cacheablePhases = new Set([
+  'tests',
+  'types',
+  'contracts',
+  'test:unit',
+  'environment:model:verify',
+  'check:boundaries',
+  'check:types',
+  'format:check',
+  'lint',
+]);
+const validationEnvironment = ['CI', 'NODE_ENV', 'NODE_OPTIONS', 'TZ'];
+
+function phaseCacheKey(phase, source, context, env) {
+  if (!cacheablePhases.has(phase.name) || phase.command !== 'pnpm') return null;
+  return createHash('sha256')
+    .update(
+      JSON.stringify({
+        version: 2,
+        phase: {
+          name: phase.name,
+          command: phase.command,
+          args: phase.args,
+          cwd: phase.cwd ?? null,
+          env: phase.env ?? {},
+        },
+        source: source.fingerprint,
+        context,
+        env,
+      }),
+    )
+    .digest('hex');
+}
+
+async function reusablePhases(root, source, context, env) {
+  const entries = await readdir(root, { withFileTypes: true });
+  const reusable = new Map();
+  for (const entry of entries
+    .filter((candidate) => candidate.isDirectory())
+    .sort((a, b) => b.name.localeCompare(a.name))) {
+    const filename = path.join(root, entry.name, 'summary.json');
+    try {
+      const summary = JSON.parse(await readFile(filename, 'utf8'));
+      if (
+        summary.schemaVersion !== 1 ||
+        !Number.isFinite(Date.parse(summary.endedAt)) ||
+        !Number.isFinite(summary.durationMs) ||
+        !Array.isArray(summary.skippedPhases) ||
+        !['passed', 'failed', 'partial'].includes(summary.status) ||
+        summary.sourceBefore?.fingerprint !== source.fingerprint ||
+        summary.sourceBefore?.fingerprint !== summary.sourceAfter?.fingerprint ||
+        summary.sourceChanges?.length ||
+        JSON.stringify(summary.cacheContext) !== JSON.stringify(context) ||
+        JSON.stringify(summary.cacheEnvironment) !== JSON.stringify(env)
+      )
+        continue;
+      if (summary.phases.some((phase) => phase.status === 'running')) continue;
+      for (const report of summary.reports ?? []) await readFile(report);
+      for (const result of summary.phases.filter((phase) => phase.status === 'passed' && phase.exitCode === 0)) {
+        const planned = summary.plannedPhases.find((phase) => phase.name === result.name);
+        if (!planned) continue;
+        const key = phaseCacheKey({ ...planned, name: result.name }, source, context, env);
+        if (!key || result.cacheKey !== key || reusable.has(key)) continue;
+        try {
+          const log = await readFile(result.logPath);
+          if (createHash('sha256').update(log).digest('hex') !== result.logSha256) continue;
+          if (result.reportPath) await readFile(result.reportPath);
+          reusable.set(key, { phase: result, summaryPath: filename });
+        } catch {
+          // A summary without its original phase evidence cannot establish success.
+        }
+      }
+    } catch {
+      // Missing or corrupt phase evidence is a cache miss.
+    }
+  }
+  return reusable;
+}
+
 export function diagnosticExcerpt(text) {
   const lines = stripVTControlCharacters(text).split(/\r?\n/);
   // Passing negative-path tests can log Error stacks before the actual failed assertion.
@@ -151,6 +230,8 @@ export async function runValidation({
   trace = false,
   scope = 'all',
   jobs = 2,
+  resume = false,
+  noCache = false,
   signal,
   phases = validationPlan({ fast, scope, editor, checks }),
   identify = sourceIdentity,
@@ -187,7 +268,7 @@ export async function runValidation({
     status: 'incomplete',
     exitCode: 1,
     phases: [],
-    plannedPhases: phases.map(({ name, command, args, cwd }) => ({ name, command, args, cwd })),
+    plannedPhases: phases.map(({ name, command, args, cwd, env }) => ({ name, command, args, cwd, env })),
     node: process.version,
     pnpm: null,
     sourceBefore: null,
@@ -204,12 +285,34 @@ export async function runValidation({
     summary.pnpm = await readPnpmVersion();
     if (process.version !== 'v24.21.0' || summary.pnpm !== '12.0.0')
       throw new Error('Validation requires Node 24.21.0 and pnpm 12.0.0.');
+    const cacheContext = { node: process.version, pnpm: summary.pnpm, platform: process.platform, arch: process.arch };
+    const cacheEnvironment = Object.fromEntries(validationEnvironment.map((name) => [name, process.env[name] ?? null]));
+    summary.cacheContext = cacheContext;
+    summary.cacheEnvironment = cacheEnvironment;
+    const cache =
+      resume && !noCache ? await reusablePhases(root, summary.sourceBefore, cacheContext, cacheEnvironment) : new Map();
     if (fast || editor) log('PARTIAL validation: this does not establish implementation completion.');
     const fastPair = fast && jobs === 2 && phases[0]?.name === 'tests' && phases[1]?.name === 'types';
     const canOverlap =
       jobs === 2 && (fastPair || (!fast && !editor && phases.length > 1 && phases[0].name === 'test:unit'));
     async function execute(phase) {
       const phaseStart = performance.now();
+      const key = phaseCacheKey(phase, summary.sourceBefore, cacheContext, cacheEnvironment);
+      const hit = key ? cache.get(key) : null;
+      if (hit) {
+        const entry = {
+          ...hit.phase,
+          status: 'passed',
+          exitCode: 0,
+          durationMs: 0,
+          cacheHit: true,
+          cacheKey: key,
+          reusedFrom: hit.summaryPath,
+        };
+        summary.phases.push(entry);
+        log(`CACHED ${phase.name} — ${hit.summaryPath}`);
+        return true;
+      }
       const logPath = path.join(evidenceDir, `${summary.phases.length}-${phase.name.replaceAll(':', '-')}.log`);
       const entry = {
         name: phase.name,
@@ -218,6 +321,7 @@ export async function runValidation({
         logPath,
         status: 'running',
         exitCode: null,
+        cacheKey: key,
       };
       summary.phases.push(entry);
       const output = await open(logPath, 'w');
@@ -268,6 +372,7 @@ export async function runValidation({
       if (entry.status === 'failed' && summary.firstFailureDurationMs === null)
         summary.firstFailureDurationMs = Math.round(performance.now() - started);
       const content = await readFile(logPath, 'utf8');
+      entry.logSha256 = createHash('sha256').update(content).digest('hex');
       entry.outputBytes = Buffer.byteLength(content);
       if (phase.name === 'lint') {
         const reportPath = path.join(evidenceDir, 'eslint.json');
@@ -379,6 +484,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
         editor: { type: 'boolean' },
         checks: { type: 'boolean' },
         trace: { type: 'boolean' },
+        resume: { type: 'boolean' },
+        'no-cache': { type: 'boolean' },
         scope: { type: 'string' },
         jobs: { type: 'string' },
       },
@@ -390,6 +497,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
       trace: values.trace,
       scope: values.scope,
       jobs: Number(values.jobs || 2),
+      resume: values.resume,
+      noCache: values['no-cache'],
       signal: controller.signal,
     });
     process.exitCode = summary.exitCode;
