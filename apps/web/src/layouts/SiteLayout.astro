@@ -158,7 +158,7 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
     </main>
     <AppShell />
     <Footer />
-    {import.meta.env.PROD && (
+    {import.meta.env.PROD && !showReviewSiteMarker && (
       <script
         is:inline
         data-domain="blackbox-studio-athens.github.io"
