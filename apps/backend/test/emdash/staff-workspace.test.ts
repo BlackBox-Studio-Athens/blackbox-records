@@ -382,7 +382,7 @@ test('workspace reuse follows fresh pointers, isolates targets, and never hides 
   expect(snapshotCache.current).toBeUndefined();
 });
 
-test('review discovery compares publishable values and includes new incomplete entries', async () => {
+test('review discovery compares saved revisions rather than published list values and includes incomplete entries', async () => {
   await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
   const entries = [
     {
@@ -395,7 +395,7 @@ test('review discovery compares publishable values and includes new incomplete e
     {
       id: 'changed',
       slug: 'changed',
-      data: { title: 'Changed', url: 'https://new.example.com', order: 2 },
+      data: { title: 'Changed', url: 'https://example.com', order: 2 },
       draftRevisionId: 'changed-draft',
       liveRevisionId: 'changed-live',
     },
@@ -440,6 +440,19 @@ test('review discovery compares publishable values and includes new incomplete e
   const response = await readStaffWorkspace(new Request('https://staff.invalid/?view=changes&collection=socials'), {
     runtime: {
       handleContentList: vi.fn(async () => ({ success: true, data: { items: entries } })),
+      handleRevisionGet: vi.fn(async (revisionId: string) => {
+        const item = entries.find((entry) => entry.draftRevisionId === revisionId)!;
+        return {
+          success: true,
+          data: {
+            item: {
+              entryId: item.id,
+              collection: 'socials',
+              data: { ...item.data, ...(item.id === 'changed' ? { url: 'https://new.example.com' } : {}) },
+            },
+          },
+        };
+      }),
     } as unknown as EmDashRuntime,
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
@@ -447,6 +460,7 @@ test('review discovery compares publishable values and includes new incomplete e
     environment: 'local',
   });
   expect(response.status).toBe(200);
-  const { data } = (await response.json()) as { data: { items: { id: string }[] } };
+  const { data } = (await response.json()) as { data: { items: { id: string; data: { url?: string } }[] } };
   expect(data.items.map((item) => item.id)).toEqual(['changed', 'incomplete']);
+  expect(data.items[0].data.url).toBe('https://new.example.com');
 });

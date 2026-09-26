@@ -170,21 +170,31 @@ export async function readStaffWorkspace(
         order: 'asc',
       });
       if (!result.success) throw new Error('Changes could not be loaded.');
-      const items = result.data.items.filter((item) => {
+      const items = [];
+      for (const item of result.data.items) {
         const accepted = snapshot?.records.find((entry) => entry.collection === section && entry.id === item.id);
-        if (!accepted) return true;
-        if (accepted.revisionId === (item.draftRevisionId ?? item.liveRevisionId)) return false;
-        const { _slug, ...after } = item.data;
+        if (!accepted) {
+          items.push(item);
+          continue;
+        }
+        const revisionId = item.draftRevisionId ?? item.liveRevisionId;
+        if (accepted.revisionId === revisionId) continue;
+        if (!revisionId) throw new Error('Saved changes could not be loaded.');
+        const revision = await deps.runtime.handleRevisionGet(revisionId);
+        if (!revision.success || revision.data.item.entryId !== item.id || revision.data.item.collection !== section)
+          throw new Error('Saved changes could not be loaded.');
+        const { _slug, ...after } = revision.data.item.data;
         if (section === 'navigation')
           for (const key of ['show_in_header', 'show_in_footer'])
             if (after[key] === 0 || after[key] === 1) after[key] = after[key] === 1;
-        return (
+        if (
           changedPublicationFields({
             before: { ...accepted.data, slug: accepted.slug },
             after: { ...after, slug: String(_slug ?? item.slug) },
           }).length > 0
-        );
-      });
+        )
+          items.push({ ...item, data: revision.data.item.data });
+      }
       pages.push({ section, items, nextCursor: undefined });
       found += items.length;
       if (result.data.nextCursor) position.cursor = result.data.nextCursor;
