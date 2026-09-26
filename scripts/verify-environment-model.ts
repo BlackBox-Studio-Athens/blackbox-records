@@ -117,7 +117,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
       ok:
         uatReleaseWorkflow.includes('- name: Deploy UAT Worker') &&
         uatReleaseWorkflow.includes('Run UAT provider smoke') &&
-        parse(staticDeployWorkflow).concurrency['cancel-in-progress'] === false &&
+        parse(staticDeployWorkflow).jobs['uat-release-sequence'].concurrency['cancel-in-progress'] === false &&
         !uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:uat') &&
         !uatSandboxSmokeWorkflow.includes('d1:migrations:apply:uat') &&
         !exists('.github/workflows/cloudflare-uat.yml') &&

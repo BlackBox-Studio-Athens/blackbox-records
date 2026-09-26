@@ -2,7 +2,13 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { classifyRun, collectMeasurements, measureAttempt, summarizeMeasurements } from './ci-speed-measurement.mjs';
 
-const job = (name, start, end, conclusion = 'success', steps = []) => ({ name, started_at: start, completed_at: end, conclusion, steps });
+const job = (name, start, end, conclusion = 'success', steps = []) => ({
+  name,
+  started_at: start,
+  completed_at: end,
+  conclusion,
+  steps,
+});
 
 test('classifies UAT, PRD, catalog, and diagnostic runs without guessing from failures', () => {
   assert.equal(classifyRun({ path: '.github/workflows/pages.yml', event: 'push' }), 'uat-candidate');
@@ -38,15 +44,39 @@ test('measures attempt-specific execution and rejects incomplete or failed requi
     job('prepare-uat', '2026-09-20T00:00:13.000Z', '2026-09-20T00:00:15.000Z'),
     job('prepare-prd', '2026-09-20T00:00:13.000Z', '2026-09-20T00:00:15.000Z'),
     job('assemble-candidate', '2026-09-20T00:00:16.000Z', '2026-09-20T00:00:20.000Z', 'success', [
-      { name: 'Download verified UAT target bundle', started_at: '2026-09-20T00:00:16.000Z', completed_at: '2026-09-20T00:00:17.000Z' },
-      { name: 'Upload verified release bundle', started_at: '2026-09-20T00:00:19.000Z', completed_at: '2026-09-20T00:00:20.000Z' },
+      {
+        name: 'Download verified UAT target bundle',
+        started_at: '2026-09-20T00:00:16.000Z',
+        completed_at: '2026-09-20T00:00:17.000Z',
+      },
+      {
+        name: 'Upload verified release bundle',
+        started_at: '2026-09-20T00:00:19.000Z',
+        completed_at: '2026-09-20T00:00:20.000Z',
+      },
     ]),
     job('inspect-uat-pages', '2026-09-20T00:00:21.000Z', '2026-09-20T00:00:25.000Z'),
-    job('deploy-uat', '2026-09-20T00:00:26.000Z', '2026-09-20T00:00:30.000Z'),
-    job('deploy-uat-static', '2026-09-20T00:00:31.000Z', '2026-09-20T00:00:35.000Z', 'success', [
-      { name: 'Run UAT quick checks', started_at: '2026-09-20T00:00:31.500Z', completed_at: '2026-09-20T00:00:33.500Z' },
+    job('uat-release-sequence / deploy-uat', '2026-09-20T00:00:26.000Z', '2026-09-20T00:00:30.000Z'),
+    job('uat-release-sequence / deploy-uat-static', '2026-09-20T00:00:31.000Z', '2026-09-20T00:00:35.000Z', 'success', [
+      {
+        name: 'Install Chromium for UAT quick checks',
+        conclusion: 'success',
+        started_at: '2026-09-20T00:00:31.000Z',
+        completed_at: '2026-09-20T00:00:31.500Z',
+      },
+      {
+        name: 'Run UAT quick checks',
+        conclusion: 'success',
+        started_at: '2026-09-20T00:00:31.500Z',
+        completed_at: '2026-09-20T00:00:33.500Z',
+      },
+      {
+        name: 'Post Setup Node.js',
+        started_at: '2026-09-20T00:00:34.000Z',
+        completed_at: '2026-09-20T00:00:35.000Z',
+      },
     ]),
-    job('smoke-uat', '2026-09-20T00:00:36.000Z', '2026-09-20T00:00:40.000Z'),
+    job('uat-release-sequence / smoke-uat', '2026-09-20T00:00:36.000Z', '2026-09-20T00:00:40.000Z'),
   ];
   const measured = measureAttempt(run, jobs);
   assert.equal(measured.attempt, 2);
@@ -54,7 +84,8 @@ test('measures attempt-specific execution and rejects incomplete or failed requi
   assert.equal(measured.queuedMs, 2_000);
   assert.equal(measured.pushToPromotionReadyMs, 40_000);
   assert.equal(measured.uatQuickFeedbackMs, 33_500);
-  assert.equal(measured.artifactTransferElapsedMs, 4_000);
+  assert.equal(measured.artifactTransferElapsedMs, 2_000);
+  assert.equal(measured.setupElapsedMs, 500);
   assert.equal(measured.artifactTransferRunnerSeconds, 2);
   assert.equal(measured.valid, true);
   assert.equal(measureAttempt(run, jobs.slice(0, -1)).valid, false);
@@ -66,7 +97,6 @@ test('summaries retain failures and use low confidence below five successes', ()
     {
       classification: 'uat-candidate',
       executionMs: 1000,
-      jobSeconds: 1,
       jobSeconds: 2,
       setupElapsedMs: 400,
       setupRunnerSeconds: 0.5,
@@ -80,7 +110,6 @@ test('summaries retain failures and use low confidence below five successes', ()
     {
       classification: 'uat-candidate',
       executionMs: null,
-      jobSeconds: 0,
       jobSeconds: null,
       setupElapsedMs: null,
       setupRunnerSeconds: null,
@@ -110,10 +139,9 @@ test('missing timestamps stay unavailable and failed runs do not skew successful
     conclusion: 'success',
     created_at: '2026-09-20T00:00:00.000Z',
   };
-  const unavailable = measureAttempt(
-    run,
-    [job('check-candidate', null, null, 'success', [{ name: 'Setup Node.js', started_at: null, completed_at: null }])],
-  );
+  const unavailable = measureAttempt(run, [
+    job('check-candidate', null, null, 'success', [{ name: 'Setup Node.js', started_at: null, completed_at: null }]),
+  ]);
   assert.equal(unavailable.executionMs, null);
   assert.equal(unavailable.queuedMs, null);
   assert.equal(unavailable.setupElapsedMs, null);
@@ -156,15 +184,52 @@ test('measurement collection reads every attempt and paginates attempt jobs', as
     to: Date.parse('2026-09-21T00:00:00.000Z'),
     read: async (endpoint) => {
       calls.push(endpoint);
-      if (endpoint.includes('/actions/runs?')) return { workflow_runs: [run] };
+      if (endpoint.includes('/actions/workflows/pages.yml/runs?')) return { workflow_runs: [run] };
+      if (endpoint.endsWith('/attempts/1')) return { ...run, run_attempt: 1, conclusion: 'failure' };
       if (endpoint.endsWith('/attempts/1/jobs?per_page=100&page=1'))
-        return { jobs: Array.from({ length: 100 }, (_, i) => job(`job-${i}`, '2026-09-20T00:00:00.000Z', '2026-09-20T00:00:01.000Z')) };
+        return {
+          jobs: Array.from({ length: 100 }, (_, i) =>
+            job(`job-${i}`, '2026-09-20T00:00:00.000Z', '2026-09-20T00:00:01.000Z'),
+          ),
+        };
       if (endpoint.endsWith('/attempts/1/jobs?per_page=100&page=2'))
         return { jobs: [job('job-last', '2026-09-20T00:00:00.000Z', '2026-09-20T00:00:01.000Z')] };
       return { jobs: [job('job', '2026-09-20T00:00:00.000Z', '2026-09-20T00:00:02.000Z')] };
     },
   });
-  assert.deepEqual(measurements.map(({ attempt }) => attempt), [1, 2]);
+  assert.deepEqual(
+    measurements.map(({ attempt }) => attempt),
+    [1, 2],
+  );
   assert.ok(calls.some((endpoint) => endpoint.endsWith('/attempts/1/jobs?per_page=100&page=2')));
   assert.ok(calls.some((endpoint) => endpoint.endsWith('/attempts/2/jobs?per_page=100&page=1')));
+  assert.equal(measurements[0].successful, false);
+  assert.equal(measurements[1].successful, true);
+});
+
+test('manual UAT classification ignores skipped PRD jobs and empty timing stays unavailable', async () => {
+  const run = {
+    id: 9,
+    run_attempt: 1,
+    event: 'workflow_dispatch',
+    path: '.github/workflows/pages.yml',
+    created_at: '2026-09-20T00:00:00.000Z',
+    status: 'completed',
+    conclusion: 'success',
+  };
+  const rows = await collectMeasurements({
+    repository: 'owner/repo',
+    workflow: 'pages.yml',
+    from: Date.parse('2026-09-19'),
+    to: Date.parse('2026-09-21'),
+    read: async (endpoint) =>
+      endpoint.includes('/workflows/pages.yml/runs?')
+        ? { workflow_runs: [run] }
+        : {
+            jobs: [job('deploy-prd', null, null, 'skipped'), job('catalog-prd', null, null, 'skipped')],
+          },
+  });
+  assert.equal(rows[0].classification, 'uat-candidate');
+  assert.equal(rows[0].jobSeconds, null);
+  assert.equal(rows[0].valid, false);
 });

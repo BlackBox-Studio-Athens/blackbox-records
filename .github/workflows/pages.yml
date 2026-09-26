@@ -36,9 +36,6 @@ on:
         type: string
 permissions:
   contents: read
-concurrency:
-  group: blackbox-release
-  cancel-in-progress: false
 env:
   CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
   UAT_PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
@@ -47,6 +44,9 @@ env:
 jobs:
   check-candidate:
     if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}-checks', github.run_id) || 'auto-checks' }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -86,6 +86,9 @@ jobs:
   prepare-uat:
     if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
     needs: check-candidate
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}-uat', github.run_id) || 'auto-uat' }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -236,6 +239,9 @@ jobs:
   prepare-prd:
     if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
     needs: check-candidate
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}-prd', github.run_id) || 'auto-prd' }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 35
     steps:
@@ -302,6 +308,9 @@ jobs:
   assemble-candidate:
     if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
     needs: [prepare-uat, prepare-prd]
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}-assembly', github.run_id) || 'auto-assembly' }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -382,6 +391,9 @@ jobs:
   uat-release-sequence:
     if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
     needs: [prepare-uat, inspect-uat-pages]
+    concurrency:
+      group: blackbox-release
+      cancel-in-progress: false
     permissions:
       contents: read
       actions: read
@@ -393,6 +405,9 @@ jobs:
       pages_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
   prd-release-sequence:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
+    concurrency:
+      group: blackbox-release
+      cancel-in-progress: false
     permissions:
       contents: read
       actions: read
@@ -440,6 +455,9 @@ jobs:
   catalog-prd:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}
     runs-on: ubuntu-latest
+    concurrency:
+      group: blackbox-release
+      cancel-in-progress: false
     environment: catalog-promotion-prd
     timeout-minutes: 25
     env:

@@ -268,4 +268,38 @@ describe('Pages artifact promotion contract', () => {
     expect(workflow.jobs['uat-release-sequence'].needs).toEqual(['prepare-uat', 'inspect-uat-pages']);
     expect(JSON.stringify(workflow.jobs['uat-release-sequence'].needs)).not.toContain('prepare-prd');
   });
+
+  it('cancels only preparation and holds one shared non-cancelling lock through mutations and acceptance', () => {
+    expect(workflow.concurrency).toBeUndefined();
+    for (const role of ['check-candidate', 'prepare-uat', 'prepare-prd', 'assemble-candidate']) {
+      const concurrency = workflow.jobs[role].concurrency;
+      expect(concurrency['cancel-in-progress']).toBe(true);
+      expect(concurrency.group).toContain('github.ref');
+      expect(concurrency.group).toContain('github.run_id');
+    }
+    const lock = { group: 'blackbox-release', 'cancel-in-progress': false };
+    expect(workflow.jobs['uat-release-sequence'].concurrency).toEqual(lock);
+    expect(workflow.jobs['prd-release-sequence'].concurrency).toEqual(lock);
+    expect(workflow.jobs['catalog-prd'].concurrency).toEqual(lock);
+    expect(uatSequence.concurrency).toBeUndefined();
+    expect(prdSequence.concurrency).toBeUndefined();
+    expect(uatSequence.jobs['deploy-uat-static'].needs).toBe('deploy-uat');
+    expect(uatSequence.jobs['smoke-uat'].needs).toBe('deploy-uat-static');
+    expect(prdSequence.jobs['deploy-prd-static'].needs).toBe('deploy-prd');
+    expect(publication.concurrency).toEqual(lock);
+    const holding = parse(
+      readFileSync(fileURLToPath(new URL('../.github/workflows/prd-holding-page.yml', import.meta.url)), 'utf8'),
+    );
+    expect(holding.concurrency).toEqual(lock);
+    const workerDeploy = uatSequence.jobs['deploy-uat'].steps.find(
+      (step: { name: string }) => step.name === 'Deploy UAT Worker',
+    ).run;
+    expect(workerDeploy.indexOf('verify-backend')).toBeLessThan(workerDeploy.indexOf('wrangler deploy'));
+    const prdDeploy = promotion.steps.find(
+      (step: { name: string }) => step.name === 'Deploy candidate combined PRD CMS Worker',
+    ).run;
+    expect(prdDeploy.indexOf('release-candidate.mjs verify prd')).toBeLessThan(
+      prdDeploy.indexOf('wrangler versions deploy'),
+    );
+  });
 });

@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: prd-holding-page
+  group: blackbox-release
   cancel-in-progress: false
 
 jobs:

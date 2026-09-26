@@ -76,8 +76,17 @@ describe('one gated release', () => {
     );
   });
 
-  it('serializes the complete release workflow through acceptance', () => {
-    expect(release.concurrency).toEqual({ group: 'blackbox-release', 'cancel-in-progress': false });
+  it('serializes release mutations through acceptance while allowing preparation cancellation', () => {
+    expect(release.concurrency).toBeUndefined();
+    const lock = { group: 'blackbox-release', 'cancel-in-progress': false };
+    expect(release.jobs['uat-release-sequence'].concurrency).toEqual(lock);
+    expect(release.jobs['prd-release-sequence'].concurrency).toEqual(lock);
+    expect(release.jobs['catalog-prd'].concurrency).toEqual(lock);
+    for (const role of ['check-candidate', 'prepare-uat', 'prepare-prd', 'assemble-candidate']) {
+      expect(release.jobs[role].concurrency['cancel-in-progress']).toBe(true);
+      expect(release.jobs[role].concurrency.group).toContain('github.ref');
+      expect(release.jobs[role].concurrency.group).toContain('github.run_id');
+    }
     expect(release.jobs['inspect-uat-pages'].needs).toEqual(['check-candidate', 'prepare-uat']);
     expect(release.jobs['uat-release-sequence'].needs).toEqual(['prepare-uat', 'inspect-uat-pages']);
     expect(uatSequence.jobs['deploy-uat'].environment).toBe('catalog-promotion-uat');

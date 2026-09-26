@@ -72,23 +72,24 @@ export function measureAttempt(run, jobs) {
   const hasJob = (required) => [...presentNames].some((name) => name === required || name.endsWith(` / ${required}`));
   const missingJobs = requiredNames.filter((name) => !hasJob(name));
   const executionMs = firstStartedAt !== null && lastCompletedAt !== null ? lastCompletedAt - firstStartedAt : null;
-  const queuedMs = firstStartedAt === null ? null : duration(run.created_at, new Date(firstStartedAt).toISOString());
+  const queuedMs =
+    firstStartedAt === null
+      ? null
+      : duration(
+          Number(run.run_attempt ?? 1) > 1 ? run.run_started_at : run.created_at,
+          new Date(firstStartedAt).toISOString(),
+        );
   const steps = timed.flatMap(({ name: jobName, steps = [] }) =>
     steps.map((step) => ({ ...step, jobName, durationMs: duration(step.started_at, step.completed_at) })),
   );
   const stepMeasure = (names) => {
-    const matching = steps.filter(({ name }) => names.test(name));
+    const matching = steps.filter(({ name }) => !/^post /i.test(name) && names.test(name));
     if (!matching.length || matching.some(({ durationMs }) => durationMs === null))
       return { elapsedMs: null, runnerSeconds: null };
     const jobWindows = Map.groupBy(matching, ({ jobName }) => jobName);
-    const elapsedByJob = [...jobWindows.values()].map((jobSteps) => {
-      const starts = jobSteps.map(({ started_at }) => timestamp(started_at));
-      const ends = jobSteps.map(({ completed_at }) => timestamp(completed_at));
-      return starts.some((value) => value === null) || ends.some((value) => value === null)
-        ? null
-        : Math.max(...ends) - Math.min(...starts);
-    });
-    if (elapsedByJob.some((value) => value === null)) return { elapsedMs: null, runnerSeconds: null };
+    const elapsedByJob = [...jobWindows.values()].map((jobSteps) =>
+      jobSteps.reduce((total, step) => total + step.durationMs, 0),
+    );
     const elapsedMs = Math.max(...elapsedByJob);
     return {
       elapsedMs: elapsedMs >= 0 ? elapsedMs : null,
@@ -96,8 +97,10 @@ export function measureAttempt(run, jobs) {
     };
   };
   const setup = stepMeasure(/setup|install|dependency/i);
-  const artifactTransfer = stepMeasure(/(?:artifact|bundle).*(?:upload|download)|(?:upload|download).*(?:artifact|bundle)/i);
-  const quickStep = steps.find(({ name }) => /quick.*uat|uat.*quick/i.test(name));
+  const artifactTransfer = stepMeasure(
+    /(?:artifact|bundle).*(?:upload|download)|(?:upload|download).*(?:artifact|bundle)/i,
+  );
+  const quickStep = steps.find(({ name, conclusion }) => name === 'Run UAT quick checks' && conclusion === 'success');
   return {
     runId: String(run.id ?? ''),
     attempt: Number(run.run_attempt ?? 1),
@@ -114,8 +117,11 @@ export function measureAttempt(run, jobs) {
         ? duration(run.created_at, new Date(lastCompletedAt).toISOString())
         : null,
     queuedMs,
-    manualRerunGapMs: null,
-    jobSeconds: timed.length === relevant.length ? timed.reduce((total, job) => total + job.durationMs, 0) / 1000 : null,
+    manualRerunGapMs: Number(run.run_attempt ?? 1) > 1 ? duration(run.created_at, run.run_started_at) : null,
+    jobSeconds:
+      relevant.length > 0 && timed.length === relevant.length
+        ? timed.reduce((total, job) => total + job.durationMs, 0) / 1000
+        : null,
     setupElapsedMs: setup.elapsedMs,
     setupRunnerSeconds: setup.runnerSeconds,
     artifactTransferElapsedMs: artifactTransfer.elapsedMs,
@@ -179,8 +185,14 @@ export function summarizeMeasurements(measurements) {
           ),
           artifactTransferRunnerSeconds: sumAvailable(entries.map((entry) => entry.artifactTransferRunnerSeconds)),
           queuedMs: percentile(successful.map((entry) => entry.queuedMs).filter(Number.isFinite), 0.5),
-          uatQuickFeedbackMs: percentile(successful.map((entry) => entry.uatQuickFeedbackMs).filter(Number.isFinite), 0.5),
-          pushToPromotionReadyMs: percentile(successful.map((entry) => entry.pushToPromotionReadyMs).filter(Number.isFinite), 0.5),
+          uatQuickFeedbackMs: percentile(
+            successful.map((entry) => entry.uatQuickFeedbackMs).filter(Number.isFinite),
+            0.5,
+          ),
+          pushToPromotionReadyMs: percentile(
+            successful.map((entry) => entry.pushToPromotionReadyMs).filter(Number.isFinite),
+            0.5,
+          ),
           confidence: successful.length >= 5 ? 'high' : successful.length ? 'low' : 'unavailable',
           failures: entries
             .filter((entry) => !entry.successful || !entry.valid)
@@ -215,20 +227,23 @@ export function renderMeasurementReport({ window, summary }) {
 }
 
 async function ghJson(endpoint) {
-  const filter = endpoint.includes('/actions/runs?')
+  const filter = endpoint.includes('/runs?')
     ? '{workflow_runs: [.workflow_runs[] | {id, run_attempt, path, workflow_path, event, status, conclusion, head_sha, workflow_sha, created_at, run_started_at, inputs}]}'
     : endpoint.includes('/jobs?')
       ? '{jobs: [.jobs[] | {name, started_at, completed_at, conclusion, steps: [.steps[] | {name, started_at, completed_at, conclusion}]}]}'
       : '.';
-  const { stdout } = await execFileAsync('gh', ['api', endpoint, '--jq', filter], { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+  const { stdout } = await execFileAsync('gh', ['api', endpoint, '--jq', filter], {
+    encoding: 'utf8',
+    maxBuffer: 8 * 1024 * 1024,
+  });
   return JSON.parse(stdout);
 }
 
 export async function collectMeasurements({ repository, workflow = 'pages.yml', from, to, read = ghJson }) {
   const runs = [];
-  for (let page = 1; page <= 10; page += 1) {
+  for (let page = 1; ; page += 1) {
     const response = await read(
-      `repos/${repository}/actions/runs?workflow=${encodeURIComponent(workflow)}&per_page=100&page=${page}`,
+      `repos/${repository}/actions/workflows/${encodeURIComponent(workflow)}/runs?per_page=100&page=${page}`,
     );
     const pageRuns = response.workflow_runs ?? [];
     runs.push(
@@ -243,29 +258,31 @@ export async function collectMeasurements({ repository, workflow = 'pages.yml', 
   for (const run of runs) {
     for (let attempt = 1; attempt <= Number(run.run_attempt ?? 1); attempt += 1) {
       const jobs = [];
-      for (let page = 1; page <= 10; page += 1) {
+      for (let page = 1; ; page += 1) {
         const response = await read(
           `repos/${repository}/actions/runs/${run.id}/attempts/${attempt}/jobs?per_page=100&page=${page}`,
         );
         jobs.push(...(response.jobs ?? []));
         if ((response.jobs ?? []).length < 100) break;
       }
-      const attemptRun = { ...run, run_attempt: attempt };
+      const attemptRun = {
+        ...run,
+        ...(attempt !== Number(run.run_attempt ?? 1)
+          ? await read(`repos/${repository}/actions/runs/${run.id}/attempts/${attempt}`)
+          : {}),
+        run_attempt: attempt,
+      };
       if (attemptRun.event === 'workflow_dispatch' && !attemptRun.inputs) {
-        attemptRun.inputs = jobs.some(({ name }) =>
-          ['deploy-prd', 'deploy-prd-static', 'prd-release-sequence'].some((required) =>
-            name === required || name.endsWith(` / ${required}`),
+        const activeJobs = jobs.filter(({ conclusion }) => conclusion !== 'skipped');
+        attemptRun.inputs = activeJobs.some(({ name }) =>
+          ['deploy-prd', 'deploy-prd-static', 'prd-release-sequence'].some(
+            (required) => name === required || name.endsWith(` / ${required}`),
           ),
         )
           ? { target: 'prd', confirm_code_promotion: true }
-          : jobs.some(({ name }) => name === 'catalog-prd' || name === 'catalog-prd-plan')
+          : activeJobs.some(({ name }) => name === 'catalog-prd' || name === 'catalog-prd-plan')
             ? { target: 'prd' }
             : {};
-      }
-      if (attempt !== Number(run.run_attempt ?? 1)) {
-        attemptRun.status = 'completed';
-        attemptRun.conclusion = jobs.length > 0 && jobs.every((job) => ['success', 'skipped'].includes(job.conclusion)) ? 'success' :
-          jobs.some((job) => job.conclusion === 'cancelled') ? 'cancelled' : 'failure';
       }
       measurements.push(measureAttempt(attemptRun, jobs));
     }
