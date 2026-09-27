@@ -1,3 +1,7 @@
+import { animate } from 'motion';
+
+type MotionControls = ReturnType<typeof animate>;
+
 const COVERFLOW_POSITIONS = ['active', 'right-near', 'right-far', 'back', 'left-far', 'left-near'] as const;
 const POINTER_INTENT_DISTANCE = 10;
 const TOUCH_SWIPE_DISTANCE = 40;
@@ -208,7 +212,10 @@ export function createStoreCoverflowController(
   if (dom.groups.length === 0 || !documentElement.hasAttribute('data-store-coverflow-capable')) return null;
 
   let revision = 0;
-  let inFlight: Animation[] | null = null;
+  let inFlight: MotionControls[] | null = null;
+  const positionAnimations = new Map<HTMLElement, MotionControls>();
+  const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const prefersReducedMotion = () => motionPreference.matches;
   let focusedGroupElement: HTMLElement | null = null;
   let searchActive = false;
 
@@ -272,27 +279,98 @@ export function createStoreCoverflowController(
     group.status.hidden = true;
     group.previousButton.removeAttribute('aria-disabled');
     group.nextButton.removeAttribute('aria-disabled');
-    group.controls.hidden =
-      group.state.mode === 'search-results' || (group.cards.length <= 6 && group.element !== focusedGroupElement);
+    group.controls.hidden = false;
+    setAriaDisabled(group.previewButton, group.state.mode === 'search-results');
 
     if (!group.element.hasAttribute('data-store-coverflow-transitioning')) setAriaDisabled(group.toggleButton, false);
   };
 
-  const setGroupState = (group: StoreCoverflowGroup, state: StoreCoverflowState) => {
+  const setGroupState = (group: StoreCoverflowGroup, state: StoreCoverflowState, animatePositions = true) => {
+    const previousStyles = new Map(
+      group.cards.map((card) => {
+        const style = getComputedStyle(card);
+        const opacity = Number.parseFloat(style.opacity);
+        return [
+          card,
+          {
+            opacity: Number.isFinite(opacity) ? opacity : 1,
+            transform: style.transform || 'none',
+          },
+        ] as const;
+      }),
+    );
+    // Read the current frame, then release Motion's inline styles before measuring the CSS destination.
+    stopPositionAnimations(group);
     group.state = state;
     if (state.mode === 'preview') group.lastActiveIndex = state.activeIndex;
     if (state.mode === 'catalog' && state.selectedIndex !== undefined) group.lastActiveIndex = state.selectedIndex;
     renderGroup(group);
+    if (!animatePositions || prefersReducedMotion()) return [];
+
+    const animations: MotionControls[] = [];
+    for (const card of group.cards) {
+      const previous = previousStyles.get(card)!;
+      const style = getComputedStyle(card);
+      const opacity = Number.parseFloat(style.opacity);
+      const target = {
+        opacity: Number.isFinite(opacity) ? opacity : 1,
+        transform: style.transform || 'none',
+      };
+      if (previous.opacity === target.opacity && previous.transform === target.transform) continue;
+
+      positionAnimations.get(card)?.stop();
+      const animation = animate(
+        card,
+        { opacity: [previous.opacity, target.opacity], transform: [previous.transform, target.transform] },
+        {
+          duration: 0.36,
+          ease: [0.22, 1, 0.36, 1],
+          opacity: { duration: 0.18, ease: 'easeOut' },
+        },
+      );
+      positionAnimations.set(card, animation);
+      void animation.finished.then(
+        () => {
+          if (positionAnimations.get(card) === animation) {
+            positionAnimations.delete(card);
+            card.style.removeProperty('transform');
+            card.style.removeProperty('opacity');
+          }
+        },
+        () => {
+          if (positionAnimations.get(card) === animation) {
+            positionAnimations.delete(card);
+            card.style.removeProperty('transform');
+            card.style.removeProperty('opacity');
+          }
+        },
+      );
+      animations.push(animation);
+    }
+    return animations;
   };
 
   const restoreGroupPresentations = () => {
     dom.groups.forEach((group) => setGroupState(group, { mode: 'catalog', selectedIndex: group.lastActiveIndex }));
   };
 
+  const stopPositionAnimations = (group?: StoreCoverflowGroup) => {
+    const cards = group ? group.cards : [...positionAnimations.keys()];
+    for (const card of cards) {
+      positionAnimations.get(card)?.stop();
+      positionAnimations.delete(card);
+      card.style.removeProperty('transform');
+      card.style.removeProperty('opacity');
+    }
+  };
+
   const clearTransitionState = () => {
+    stopPositionAnimations();
     dom.groups.forEach((group) => {
       group.element.removeAttribute('data-store-coverflow-transitioning');
       group.element.removeAttribute('data-store-coverflow-reveal');
+      group.reveal.style.removeProperty('clip-path');
+      group.stage.style.removeProperty('opacity');
       setAriaDisabled(group.toggleButton, false);
       setAriaDisabled(group.previewButton, false);
     });
@@ -300,10 +378,15 @@ export function createStoreCoverflowController(
 
   const cancelTransition = () => {
     revision += 1;
-    inFlight?.forEach((animation) => animation.cancel());
+    inFlight?.forEach((animation) => animation.stop());
     clearTransitionState();
     inFlight = null;
   };
+
+  const onMotionPreferenceChange = () => {
+    if (prefersReducedMotion()) cancelTransition();
+  };
+  motionPreference.addEventListener('change', onMotionPreferenceChange);
 
   const runDisclosure = async (group: StoreCoverflowGroup) => {
     if (inFlight || group.state.mode === 'search-results') return;
@@ -327,10 +410,17 @@ export function createStoreCoverflowController(
     try {
       if (targetState.mode === 'catalog') {
         group.element.toggleAttribute('data-store-coverflow-visited', true);
-        group.element.dataset.storeCoverflowReveal = 'catalog';
       }
 
-      setGroupState(group, targetState);
+      stopPositionAnimations(group);
+      const positionAnimationsForDisclosure = setGroupState(group, targetState, targetState.mode !== 'catalog');
+      const animations =
+        targetState.mode === 'catalog'
+          ? prefersReducedMotion()
+            ? []
+            : [animate(group.stage, { opacity: [0.4, 1] }, { duration: 0.22, ease: [0.22, 1, 0.36, 1] })]
+          : positionAnimationsForDisclosure;
+      inFlight = animations;
       if (targetState.mode === 'catalog' && activeCard) {
         // Let the browser lay out the catalog before focus can force synchronous layout.
         void getComputedStyle(group.element).color;
@@ -340,9 +430,6 @@ export function createStoreCoverflowController(
         activeCard.scrollIntoView({ behavior: 'instant' as ScrollBehavior, block: 'nearest', inline: 'nearest' });
       }
 
-      const animatedElements = targetState.mode === 'catalog' ? [group.reveal] : [...group.positionedCards];
-      const animations = animatedElements.flatMap((element) => element.getAnimations?.() ?? []);
-      inFlight = animations;
       await Promise.allSettled(animations.map((animation) => animation.finished));
     } finally {
       if (revision === token) {
@@ -582,6 +669,7 @@ export function createStoreCoverflowController(
 
   return {
     setFocusedGroup(groupElement) {
+      if (focusedGroupElement === groupElement) return;
       cancelTransition();
       focusedGroupElement = groupElement;
       if (!searchActive) restoreGroupPresentations();
@@ -598,6 +686,7 @@ export function createStoreCoverflowController(
     },
     cleanup() {
       cancelTransition();
+      motionPreference.removeEventListener('change', onMotionPreferenceChange);
       focusedGroupElement = null;
       searchActive = false;
       groupListeners.forEach(

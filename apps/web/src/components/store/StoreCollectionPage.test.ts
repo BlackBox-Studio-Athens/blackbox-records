@@ -63,7 +63,7 @@ describe('Store collection category surfaces', () => {
     expect(storeItemCardSource).toContain('data-store-item-slug={storeItem.slug}');
     expect(storeItemCardSource).not.toContain('StoreOfferPriceDisplay');
     expect(storeItemCardSource).not.toContain('View Item');
-    expect(storeItemCardSource).toContain('data-store-coverflow-availability');
+    expect(storeItemCardSource).not.toContain('primaryAvailability?.availability.label');
     expect(storeItemCardSource).toContain('storeItem.embeddedPlayerData && (');
     expect(storeItemCardSource).toContain('<MusicStreamingServiceListenTrigger');
     expect(storeItemCardSource).not.toContain('iframe');

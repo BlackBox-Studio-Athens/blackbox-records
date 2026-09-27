@@ -22,8 +22,9 @@ const routeDocuments = {
   services: 'services/index.html',
   store: 'store/index.html',
 };
-// React 19.3 baseline; see docs/dependency-upgrade.md for measured changes.
-const eagerGraphBudgetBytes = 96 * 1024;
+// React 19.3 plus Lenis/Motion lifecycle wiring; libraries and dormant surfaces remain lazy.
+// Measured migration output and prior budget: openspec/changes/adopt-lenis-motion-frontends/design.md.
+const eagerGraphBudgetBytes = 100 * 1024;
 const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton'];
 const staffRouteDocuments = {
   overview: { document: 'index.html', javascriptBudgetBytes: 122880 },

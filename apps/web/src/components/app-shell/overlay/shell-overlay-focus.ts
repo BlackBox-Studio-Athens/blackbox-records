@@ -1,10 +1,12 @@
+import { scrollWithLenis } from '../lenis-scroll';
+
 type OverlayFocusScheduler = {
   requestAnimationFrame(callback: FrameRequestCallback): number;
 };
 
 type FocusableElement = Pick<HTMLElement, 'focus' | 'isConnected'>;
 
-type OverlayScrollContainer = Pick<HTMLElement, 'scrollTo'>;
+type OverlayScrollContainer = HTMLElement;
 
 export function restoreConnectedOverlayTriggerFocus(triggerElement: FocusableElement | null) {
   if (triggerElement?.isConnected) {
@@ -32,7 +34,7 @@ export function scheduleOverlayContentFocus({
   scheduler: OverlayFocusScheduler;
 }) {
   scheduler.requestAnimationFrame(() => {
-    getScrollContainer()?.scrollTo({ top: 0, behavior: 'auto' });
+    scrollWithLenis(getScrollContainer(), 0, { immediate: true });
     getCloseButton()?.focus();
   });
 }

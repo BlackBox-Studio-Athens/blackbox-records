@@ -5,6 +5,7 @@ import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createExactFirstSearcher } from '@/lib/exact-first-search';
+import { scrollElementWithLenis } from '@/lib/lenis-scroll';
 
 import {
   createStoreCoverflowController,
@@ -236,7 +237,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
           ? summaryRef.current
           : target || summaryRef.current;
         visibleTarget?.focus({ preventScroll: true });
-        visibleTarget?.scrollIntoView({ block: 'start' });
+        if (visibleTarget) scrollElementWithLenis(visibleTarget, { block: 'start' });
         pendingFocus.current = false;
       }
       setFormat(link.dataset.distroFormatKey);
@@ -282,7 +283,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     const frame = requestAnimationFrame(() => {
       const target = visibleCount && format !== 'all' ? selection.target : summaryRef.current;
       target?.focus({ preventScroll: true });
-      target?.scrollIntoView({ block: 'start', behavior: 'instant' });
+      if (target) scrollElementWithLenis(target, { block: 'start' });
     });
     return () => cancelAnimationFrame(frame);
   }, [ready, query, artist, format, filtered, choices, scope]);
@@ -301,7 +302,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
           <fieldset className="store-artists">
             <legend>Artists</legend>
             <p id="store-artists-help">Artist or label credits from this catalogue.</p>
-            <div className="store-artists-list">
+            <div className="store-artists-list" data-lenis-scroll-root>
               {[{ key: '', label: 'All artists', count: domRef.current?.items.length || 0 }, ...choices].map(
                 (choice) => (
                   <label key={choice.key}>

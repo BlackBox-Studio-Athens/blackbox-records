@@ -1,0 +1,51 @@
+# Design
+
+## Decisions
+
+- Pin Lenis 1.3.26 and Motion 13.4.4 in both frontend packages. Use Motion's React entry point in React components and its JavaScript entry point for Astro-owned DOM.
+- Keep one scroll runtime per app. The public app-shell React root owns document scrolling and modal/panel registration through its entrypoint. The `platform-shared` web module holds the public scroll registry so Store and private-preview callers use the same runtime without depending on app-shell internals. The staff shell owns its main workspace and explicitly marked nested panes. Each owner stops, resumes, updates, and destroys only its own instances.
+- Register scroll roots at mount and remove them at unmount. A nested root does not also receive its wheel input through its parent. Keep third-party editor internals, form controls, iframes, embedded media, and horizontal Coverflow native.
+- Use Lenis for smooth user-initiated navigation and explicit “Top” actions. Cancel active motion and write immediate scroll positions for section swaps, history restoration, validation focus, search-result positioning, and private preview synchronization. Preserve existing offsets and alignment.
+- Keep route matching, history, focus management, and persistent player session ownership in their current modules. Let those modules call the scroll runtime rather than enabling a second anchor or router.
+- Use Motion where first-party code coordinates entering, exiting, or sequencing a surface. Keep simple CSS hover/focus feedback, isolated loading indicators, decorative infinite loops, and third-party EmDash animations in CSS.
+- Preserve current transition appearance and timing. For reduced motion, stop smoothing and resolve transitions to their final state immediately. React policy applies to each app root; imperative animations check the live preference and always clean up on teardown or interruption.
+- Retain native immediate behavior when a Lenis instance is not mounted. Scroll runtime callbacks must tolerate content swaps and disconnected DOM nodes.
+- Staff loads scroll-root setup after mount and Motion sheet surfaces on first opening. The immediate scroll fallback and modal-lock registry remain available in the initial bundle. Delayed setup cleans up after unmount and applies existing modal locks before accepting input.
+- Public Lenis and the Motion mini DOM animator load asynchronously; existing lazy React surfaces remain lazy. The measured Home eager graph is about 99.4 kB Brotli, versus the previous 98,304-byte ceiling. Raise the public ceiling to 102,400 bytes to cover required lifecycle wiring with a small margin. Staff ceilings stay unchanged. This follows reducing the initial migration graph from 123.4 kB by deferring both libraries and using Motion mini for the veil.
+- Keep Grid/Coverflow controls stable through animation and filtering, preserve repeated format selection, and animate from the current visual frame after interruption. Use a short grid fade and eased cover movement. Alternate-image hover remains simple CSS with a short intent delay and reduced-motion fallback.
+- Remove build-time availability badges from listing cards; listing prices do not imply current stock. Product details retain their authoritative live Store Offer and Sold Out state.
+- Multi-image products use an inline gallery built with existing shadcn Button controls and Motion, with all source images represented by thumbnails. Keep artwork uncropped and support arrows, keyboard, swipes, and reduced motion. Single-image items keep static Astro Image markup. This intentionally uses existing dependencies rather than adding Embla solely for one gallery.
+- Design Library selection: SI [Simple Icons](https://github.com/simple-icons/simple-icons) for Bandcamp/TIDAL marks (CC0 catalog; brand trademarks retained), and the [shadcn carousel pattern](https://ui.shadcn.com/docs/components/radix/carousel) for image navigation. Source and license checked on 2026-09-27; gallery motion is implemented with the already-selected Motion library.
+
+## Ownership inventory
+
+| Surface                                                                                                               | Scroll owner                                                        | Animation owner or exception                                                                  |
+| --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| Public document, smooth in-page targets, and explicit Top actions                                                     | Migrated to the app-shell Lenis runtime                             | Motion owns section-transition sequencing; CSS retains simple feedback and loading indicators |
+| Public section swaps, history restoration, focus reset, search positioning, and preview sync                          | Immediate Lenis writes or native immediate fallback                 | Route and focus lifecycle remain with the app shell                                           |
+| Public detail overlays, cart, and mobile navigation                                                                   | Migrated to registered Lenis roots with overlapping modal locks     | Motion owns enter/exit transitions; dialog and focus semantics remain with Radix              |
+| Persistent player modal and minimized surface                                                                         | Lenis locks the background; embedded iframe input stays native      | Motion animates the shell-owned surfaces without replacing the iframe                         |
+| Store Grid/Coverflow                                                                                                  | Native horizontal wheel and touch behavior is retained              | Motion owns disclosure controls; simple card styling remains CSS                              |
+| Staff workspace, inventory lists, editor outer panes, navigation drawers, and history/review panels                   | Migrated to the staff Lenis runtime and explicitly registered roots | Motion owns first-party drawers, history, and disclosure transitions                          |
+| Staff saved positions, focused rows, validation visibility, and preview synchronization                               | Immediate positioning; inputs and embedded previews remain native   | Existing focus and recovery behavior remains with the owning staff components                 |
+| EmDash internals, text controls, media embeds, iframes, hover/focus states, standalone spinners, and decorative loops | Native or CSS exceptions                                            | Third-party editor motion and simple CSS effects are retained                                 |
+
+## Risks
+
+- Nested scroll registration or overlapping modal locks could double-consume input or resume a blocked background. Test nested wheel input, multiple open surfaces, and cleanup during route changes.
+- Motion completion promises may outlive a replaced route or component. Cancel each animation at its owner and ensure every completion path restores interaction state.
+- Browser history restoration and staff draft recovery depend on immediate positions. Keep those paths outside smooth navigation and test the existing saved-position flow.
+
+## Verification
+
+- Scoped web and staff fast validation passed during implementation.
+- Local Browser Use covered public shell navigation, Store search, Coverflow, detail/cart overlays, and player lifecycle at desktop and narrow viewport sizes.
+- The BlackBox Chrome GPT extension smoke-tested staff inventory scrolling and the Publication history drawer without stock, publication, or content changes. Inventory and history scrolling, opening, and closing worked. The history heading and Close control scroll with the full panel; this is the existing `.publication-history-sheet { overflow-y: auto; }` layout rule and was retained.
+- Follow-up BlackBox Chrome acceptance verified tape filtering, Coverflow next/repeated-format selection/Grid return, static availability badge removal, the 2016 Sold Out detail state, and the exact Bandcamp/TIDAL SVG paths in the Afterwise overlay. Public and staff console checks returned no errors.
+- The Local 2016 record contains only its primary image. Its single-image fallback was verified; the existing Traumatique record supplied the real three-image gallery acceptance case. All thumbnails, previous/next bounds, arrow-key navigation, a mobile swipe at 390 × 844, and a live reduced-motion change worked. No content was changed to manufacture gallery evidence.
+- Staff pagination recovery cancels Lenis inertia and uses native immediate alignment to reveal the target through every scrolling ancestor. The preview-policy and editor fixtures now serve the real scroll module imported by the preview bridge.
+- `pnpm validate` passed all repository gates in 224.4 seconds on 2026-09-27. Evidence: `.codex-artifacts/validation/2026-09-27T02-03-54-420Z-60980/summary.json`.
+- `pnpm validate:editor` passed the staff build, preview policy, Chromium, and Firefox acceptance phases. Its summary is correctly marked partial because this editor-specific command does not replace full validation. Evidence: `.codex-artifacts/validation/2026-09-27T01-45-06-073Z-52136/summary.json`.
+- Production JS/CSS totals changed from 769,322 to 938,430 bytes across 45 to 55 public assets, and from 14,709,617 to 14,710,587 bytes across 88 to 91 staff assets. These are complete uncompressed output totals, including lazy chunks, rather than initial transfer sizes. The build's eager-graph checks passed; the public ceiling adjustment is documented above and staff ceilings are unchanged.
+- Existing dormant surfaces remain lazy. Only multi-image Store Item detail pages add gallery hydration; single-image details and other static Astro content retain their existing rendering model.
+- Prettier is the formatting authority; no IntelliJ formatter pass or `.editorconfig` change was needed.

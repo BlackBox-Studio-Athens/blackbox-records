@@ -12,6 +12,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { createInternalOrderApi, type InternalOrder, type OrderStatus } from '../../lib/backend/internal-order-api';
 import { useStaffRead } from '../../lib/staff-query';
+import { scrollWithLenis } from '../../lib/lenis-scroll';
 import { createOrderWorkspace } from './order-workspace';
 import OrderDetail, { formatOrderTime, notificationStatus, OrderStatusLabel, paymentLabels } from './OrderDetail';
 
@@ -72,22 +73,25 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
     rememberStaffPosition();
     writeStaffLocation(`/orders/?${new URLSearchParams({ checkoutSessionId: session })}`, { push: true, task: true });
     void workspace.lookup(session);
-    document.getElementById('main')?.scrollTo(0, 0);
+    scrollWithLenis(document.getElementById('main'), 0, { immediate: true });
   }
+
   function inspect(order: InternalOrder) {
     if (order.checkoutSessionId) openSession(order.checkoutSessionId);
     else {
       focusPending.current = true;
       rememberStaffPosition();
       workspace.inspectUnbound(order);
-      document.getElementById('main')?.scrollTo(0, 0);
+      scrollWithLenis(document.getElementById('main'), 0, { immediate: true });
     }
   }
+
   function back() {
     focusPending.current = true;
     if (state.session) returnStaffTask();
     else workspace.back();
   }
+
   useEffect(() => {
     if (state.selected || state.denied || state.list.loading || !state.list.data) return;
     const params = new URLSearchParams();

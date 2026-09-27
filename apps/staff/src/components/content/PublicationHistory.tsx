@@ -3,12 +3,14 @@ import { AlertCircle, CheckCircle2, Clock3, History, RefreshCw, XCircle } from '
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '../ui/sheet';
+import { acquireLenisModalLock } from '../../lib/lenis-scroll';
 import {
   readPublicationHistory,
   publicationStage,
   type ContentPublication,
 } from '../../lib/backend/content-publication-api';
 import { contentSections, type ContentSection } from '../../lib/content-sections';
+
 export { publicationHistoryEvent, requestPublicationHistory } from '../../lib/publication-history-events';
 export type { PublicationHistoryFilter } from '../../lib/publication-history-events';
 
@@ -44,6 +46,7 @@ export default function PublicationHistory({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const sequence = useRef(0);
+  const scrollRootRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(
     async (next?: string) => {
@@ -80,10 +83,20 @@ export default function PublicationHistory({
       sequence.current++;
     };
   }, [open, load]);
+  useEffect(() => {
+    const scrollRoot = scrollRootRef.current;
+    if (!open || !scrollRoot) return;
+    return acquireLenisModalLock(scrollRoot);
+  }, [open]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="cms-surface publication-history-sheet">
+      <SheetContent
+        ref={scrollRootRef}
+        side="right"
+        className="cms-surface publication-history-sheet"
+        data-lenis-scroll-root
+      >
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <History aria-hidden="true" />

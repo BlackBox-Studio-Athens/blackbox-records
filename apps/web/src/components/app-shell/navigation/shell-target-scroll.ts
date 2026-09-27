@@ -1,3 +1,5 @@
+import { scrollWithLenis } from '../lenis-scroll';
+
 export function scrollShellTargetIntoView({
   documentRoot = document,
   overlayScrollContainer,
@@ -22,15 +24,14 @@ export function scrollShellTargetIntoView({
     const targetRect = targetElement.getBoundingClientRect();
     const nextScrollTop = overlayScrollRoot.scrollTop + (targetRect.top - overlayScrollRootRect.top) - 16;
 
-    overlayScrollRoot.scrollTo({
-      top: Math.max(nextScrollTop, 0),
-      behavior: 'smooth',
-    });
+    scrollWithLenis(overlayScrollRoot, Math.max(nextScrollTop, 0));
   } else {
-    targetElement.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    });
+    const scrollMarginTop =
+      typeof getComputedStyle === 'function'
+        ? Number.parseFloat(getComputedStyle(targetElement).scrollMarginTop) || 0
+        : 0;
+    const nextScrollTop = window.scrollY + targetElement.getBoundingClientRect().top - scrollMarginTop;
+    scrollWithLenis(null, Math.max(nextScrollTop, 0));
   }
 
   return true;

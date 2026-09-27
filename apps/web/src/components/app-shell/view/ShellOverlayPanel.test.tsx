@@ -23,15 +23,12 @@ describe('ShellOverlayPanel', () => {
     expect(overlayZIndex).toBeGreaterThan(headerZIndex);
   });
 
-  it('renders the closed overlay shell without detail content', () => {
+  it('renders nothing when no detail overlay is active', () => {
     const html = renderToStaticMarkup(
-      <ShellOverlayPanel {...refs} overlayState={null} onClose={vi.fn()} onReady={vi.fn()} />,
+      <ShellOverlayPanel {...refs} overlayState={null} onClose={vi.fn()} onExitComplete={vi.fn()} onReady={vi.fn()} />,
     );
 
-    expect(html).toContain('data-state="closed"');
-    expect(html).toContain('aria-hidden="true"');
-    expect(html).toContain('>detail</span>');
-    expect(html).not.toContain('app-shell-content-overlay__content');
+    expect(html).toBe('');
   });
 
   it('renders loaded overlay content with the route kind label', () => {
@@ -40,6 +37,7 @@ describe('ShellOverlayPanel', () => {
         {...refs}
         onClose={vi.fn()}
         onReady={vi.fn()}
+        onExitComplete={vi.fn()}
         overlayState={{
           backgroundHref: 'https://example.test/blackbox-records/',
           href: 'https://example.test/blackbox-records/releases/disintegration/',
@@ -66,6 +64,7 @@ describe('ShellOverlayPanel', () => {
         {...refs}
         onClose={vi.fn()}
         onReady={vi.fn()}
+        onExitComplete={vi.fn()}
         overlayState={{
           backgroundHref: 'https://example.test/blackbox-records/',
           href: 'https://example.test/blackbox-records/artists/afterwise/',

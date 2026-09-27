@@ -23,6 +23,7 @@ import {
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 import { refreshReviewChangesPresence } from '../../lib/review-changes';
 import { contentSections, type ContentSection } from '../../lib/content-sections';
+import { scrollWithLenis } from '../../lib/lenis-scroll';
 import { getContentValidation } from './content-validation';
 import {
   readSelection,
@@ -60,6 +61,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
   const heading = useRef<HTMLHeadingElement>(null);
   const root = useRef<HTMLDivElement>(null);
   const restorePosition = useRef(true);
+
   function select(value: PublicationSelectionItem[]) {
     try {
       setSelection(saveSelection(base, value));
@@ -67,6 +69,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
       setError('This browser cannot remember your selection. Allow session storage and retry.');
     }
   }
+
   async function list() {
     const request = ++sequence.current;
     setLoading(true);
@@ -99,6 +102,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
       if (request === sequence.current) setLoading(false);
     }
   }
+
   async function prepareDiscard(item: EditorialRecord) {
     if (discardBusy.current || discardCandidate || !item.collection || item.publicationState !== 'changes') return;
     discardBusy.current = true;
@@ -131,6 +135,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
       setDiscardBusyKey('');
     }
   }
+
   async function discardSavedChanges() {
     const candidate = discardCandidate;
     const collection = candidate?.record.collection;
@@ -161,6 +166,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
       setDiscardBusyKey('');
     }
   }
+
   useEffect(() => {
     const restore = () => {
       const params = new URLSearchParams(location.search);
@@ -201,10 +207,11 @@ export default function WebsiteChanges({ base }: { base: string }) {
     [...root.current.querySelectorAll<HTMLAnchorElement>('a')]
       .find((link) => link.href === saved.href)
       ?.focus({ preventScroll: true });
-    root.current.scrollTop = saved.scroll;
-    window.scrollTo(0, saved.windowScroll);
+    scrollWithLenis(root.current, saved.scroll, { immediate: true });
+    scrollWithLenis(null, saved.windowScroll, { immediate: true });
   }, [loading, ready, reviewing]);
   useStaffRead(['website-changes-return', base, query, scope, cursor], list, { enabled: ready && !reviewing });
+
   function browse(q: string, area: string, page = '', trail = ['']) {
     setQuery(q);
     setScope(area);
@@ -214,6 +221,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
     if (page) params.set('cursor', page);
     writeStaffLocation(`/review/?${params}`, { push: true, pages: trail });
   }
+
   function add(entries: EditorialRecord[]) {
     select([
       ...selection,
@@ -228,10 +236,12 @@ export default function WebsiteChanges({ base }: { base: string }) {
         })),
     ]);
   }
+
   return (
     <div
       ref={root}
       data-staff-scroll
+      data-lenis-scroll-root
       className="staff-page website-changes"
       onClickCapture={(event) => {
         const link = (event.target as HTMLElement).closest('a');

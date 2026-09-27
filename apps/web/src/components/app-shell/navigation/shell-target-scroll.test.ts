@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { scrollShellTargetIntoView } from './shell-target-scroll';
 
@@ -37,6 +37,8 @@ function createOverlayScrollContainer({
   } as unknown as FakeOverlayScrollContainer;
 }
 
+afterEach(() => vi.unstubAllGlobals());
+
 describe('scrollShellTargetIntoView', () => {
   it('returns false when no target exists', () => {
     const documentRoot = {
@@ -52,8 +54,10 @@ describe('scrollShellTargetIntoView', () => {
     ).toBe(false);
   });
 
-  it('scrolls the document target into view when there is no overlay scroll root', () => {
-    const targetElement = createTargetElement();
+  it('smooth-scrolls the document target through Lenis when there is no overlay root', () => {
+    const targetElement = createTargetElement(80);
+    const scrollTo = vi.fn();
+    vi.stubGlobal('window', { scrollY: 20, scrollTo });
     const documentRoot = {
       querySelector: vi.fn(() => targetElement),
     };
@@ -66,7 +70,7 @@ describe('scrollShellTargetIntoView', () => {
       }),
     ).toBe(true);
 
-    expect(targetElement.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    expect(scrollTo).toHaveBeenCalledWith({ top: 100, behavior: 'smooth' });
   });
 
   it('scrolls within the overlay when the trigger and target are inside the overlay scroll root', () => {

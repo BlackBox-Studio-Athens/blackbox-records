@@ -1,6 +1,7 @@
 import * as React from 'react';
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { acquireLenisModalLock } from '@/lib/lenis-scroll';
 import {
   createCartCheckoutPath,
   getCartLineTotalDisplay,
@@ -65,9 +66,18 @@ export default function StoreCartDrawer({
   onRemoveItem,
   resolveHref,
 }: StoreCartDrawerProps) {
+  const modalRootRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const modalRoot = modalRootRef.current;
+    if (!open || !modalRoot) return;
+    return acquireLenisModalLock(modalRoot);
+  }, [open]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
+        ref={modalRootRef}
         side="right"
         className="top-[var(--header-height)] bottom-auto flex h-[calc(100dvh-var(--header-height))] w-[min(100vw,460px)] max-w-none flex-col border-l border-border/80 bg-background/98 p-0 text-foreground sm:max-w-none"
       >
@@ -125,7 +135,7 @@ export function StoreCartDrawerPanel({
         </div>
       ) : (
         <div className="flex flex-1 flex-col">
-          <div className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="flex-1 overflow-y-auto px-6 py-6" data-lenis-scroll-root>
             <div className="space-y-6">
               {view.lines.map((line) => (
                 <article className="grid grid-cols-[88px_1fr] gap-4" data-store-cart-line-item key={line.variantId}>

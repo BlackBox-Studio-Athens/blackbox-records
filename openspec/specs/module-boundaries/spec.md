@@ -44,6 +44,14 @@ The system SHALL treat application modules as closed by default with explicit pr
 - **THEN** it targets the module's provided interface or approved named interface
 - **AND** it does not deep-import another module's internal implementation.
 
+#### Scenario: Public scroll ownership respects web module boundaries
+
+- **GIVEN** the app shell, Store features, and private-preview code use the public Lenis runtime
+- **WHEN** those modules call the shared scroll operations
+- **THEN** `platform-shared` owns the implementation at `apps/web/src/lib/lenis-scroll.ts`
+- **AND** app-shell exposes its `apps/web/src/components/app-shell/lenis-scroll.ts` entrypoint to shell components
+- **AND** lower-level modules do not depend on app-shell internals.
+
 ### Requirement: Boundary manifest authority
 
 The system MUST keep module ownership, entrypoints, allowed dependencies, statuses, and exceptions in the OpenSpec module-boundary manifest.

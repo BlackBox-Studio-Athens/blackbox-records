@@ -49,7 +49,7 @@ describe('Distro Coverflow progressive enhancement', () => {
       'data-store-coverflow-disclosure-rail',
     ])
       expect(controls).toContain(hook);
-    expect(cardSource).toContain('data-store-coverflow-availability');
+    expect(cardSource).not.toContain('primaryAvailability?.availability.label');
     expect(cardSource).toContain('href={storeItem.storePath}');
   });
   it('owns one route-lazy controller in the browse component without pre-ready intent capture', () => {
@@ -90,18 +90,20 @@ describe('Distro Coverflow progressive enhancement', () => {
       /\[data-store-coverflow-card\]:where\(\[data-store-coverflow-position\]\)\s*\{\s*position: absolute/,
     );
     expect(cssSource).toMatch(/\.store-item-card__content[\s\S]*?display: none/);
-    expect(cssSource).toContain('animation: store-catalog-reveal 180ms');
-    expect(cssSource).toContain('animation: store-coverflow-preview-rail-in 360ms');
+    expect(cssSource).not.toContain('store-catalog-reveal');
+    expect(cssSource).not.toContain('animation: store-coverflow-preview-rail-in');
     expect(cssSource).not.toContain('animation: store-coverflow-disclosure-fill');
     expect(cssSource).toContain('transform: scaleX(var(--store-coverflow-position-ratio))');
-    expect(cssSource).toContain('transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1)');
+    expect(cssSource).not.toMatch(
+      /\[data-store-coverflow-card\]:where\(\[data-store-coverflow-position\]\)\s*\{[^}]*transition: transform/,
+    );
     expect(cssSource).toMatch(/\.store-coverflow-stat[\s\S]*?justify-content: flex-end/);
     expect(cssSource).not.toContain("data-store-coverflow-reveal='catalog-pending'");
     expect(cssSource).toContain('grid-template-columns: repeat(auto-fit, minmax(min(5rem, 100%), 1fr))');
     expect(cssSource).toContain('background: #0d0d0d');
     expect(cssSource).not.toContain('view-transition-name');
     expect(cssSource).toContain('touch-action: pan-y pinch-zoom');
-    expect(cssSource).toContain('[data-store-coverflow-availability]');
+    expect(cssSource).not.toContain('[data-store-coverflow-availability]');
     expect(cssSource).toContain('[data-store-coverflow-position]:is(:hover, :focus-visible)');
     expect(cssSource).toContain('.store-item-card__image');
     expect(cssSource).not.toMatch(/\.distro-group-grid[^{}]*\{[^}]*content-visibility/);

@@ -86,7 +86,7 @@ describe('overlay focus scheduling', () => {
 
     scheduleOverlayContentFocus({
       getCloseButton: () => closeButton,
-      getScrollContainer: () => scrollContainer,
+      getScrollContainer: () => scrollContainer as unknown as HTMLElement,
       scheduler,
     });
 

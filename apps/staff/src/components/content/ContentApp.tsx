@@ -1,4 +1,5 @@
 import { lazy, useEffect, useRef, useState } from 'react';
+import { scrollElementWithLenis, scrollWithLenis } from '../../lib/lenis-scroll';
 import '../../styles/content.css';
 import ContentFeature from './ContentFeature';
 import {
@@ -20,6 +21,7 @@ import { changedPublicationFields } from '@blackbox/content-model';
 
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
 import { Table, TableBody, TableRow, TableCell } from '../ui/table';
+
 const CatalogSelling = lazy(() => import('../items/CatalogSelling'));
 import FormatFilter, { formatLabel } from '../items/FormatFilter';
 import WebsitePages from '../WebsitePages';
@@ -55,6 +57,7 @@ import {
   type ContentSection,
   type ContentData,
 } from '../../lib/content-sections';
+
 const ContentPreview = lazy(() => import('./ContentPreview'));
 
 const PublicationReviewFlow = lazy(() => import('./PublicationReviewFlow'));
@@ -79,11 +82,13 @@ type EditorComparison = {
   status: 'checking' | 'ready' | 'error';
   before: Record<string, unknown> | null;
 };
+
 function contentSave(document: Document, data: ContentData) {
   if (!document._rev) throw new Error('Load the saved version before publishing.');
   // The saved slug and identity remain unchanged when the member renames a title.
   return { _rev: document._rev, data: editorialWriteData(data) };
 }
+
 function publicationAfter(collection: ContentSection, item: EditorialRecord, data: ContentData) {
   const { _slug, ...after } = editorialWriteData(data);
   if (collection === 'navigation')
@@ -150,6 +155,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [pagePosition, setPagePosition] = useState('');
   const rows = useRef<HTMLDivElement>(null);
   const leaving = useRef(false);
+
   function turnPage(direction: 'previous' | 'next' | 'first') {
     if (listPending.current || busy) return;
     const trail =
@@ -167,6 +173,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       },
     });
   }
+
   function pager(placement: 'top' | 'bottom') {
     return cursor || pageCursor.current ? (
       <CatalogPager
@@ -180,6 +187,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       />
     ) : null;
   }
+
   const [media, setMedia] = useState(false);
   const [failedArtwork, setFailedArtwork] = useState<Record<string, string>>({});
   const [mobileEditor, setMobileEditor] = useState(false);
@@ -188,6 +196,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const reloadFocus = useRef<HTMLElement | null>(null);
   const editorHeading = useRef<HTMLHeadingElement>(null);
   const listHeading = useRef<HTMLHeadingElement>(null);
+
   function updateUrl(section: ContentSection, id?: string, mediaView = false, replace = false) {
     const params = new URLSearchParams({ collection: section });
     if (section === collection) {
@@ -207,6 +216,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       writeStaffLocation(next, { push: !replace, task: !replace && !!id, pages: pageCursors });
     }
   }
+
   useEffect(() => {
     if (mobileEditor && !media) editorHeading.current?.focus();
   }, [mobileEditor, media]);
@@ -217,10 +227,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [confirmReload, setConfirmReload] = useState(false);
   const [busy, setIsBusy] = useState(false);
   const busyFocus = useRef<HTMLElement | null>(null);
+
   function setBusy(value: boolean) {
     if (value) busyFocus.current = window.document.activeElement as HTMLElement | null;
     setIsBusy(value);
   }
+
   useEffect(() => {
     if (busy) return;
     if (busyFocus.current?.isConnected && window.document.activeElement === window.document.body) {
@@ -242,6 +254,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       /* Optional preference. */
     }
   }, []);
+
   function togglePreview() {
     const next = !desktopPreview;
     setDesktopPreview(next);
@@ -251,6 +264,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       /* Optional preference. */
     }
   }
+
   const [wide, setWide] = useState(false);
   useEffect(() => {
     const media = window.matchMedia('(min-width: 1280px)');
@@ -270,6 +284,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const pendingKey = `blackbox-content-create:${base}`;
   const [reviewing, setReviewing] = useState(false);
   const [draftActionsOpen, setDraftActionsOpen] = useState(false);
+
   function openPublicationSurface() {
     setDraftActionsOpen(false);
     requestPublicationHistory({
@@ -277,6 +292,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       ...(document?.item.id ? { recordId: document.item.id } : {}),
     });
   }
+
   const validation: ContentValidation = getContentValidation(collection, data);
   const editorComparisonIdentity = document ? `${collection}/${document.item.id || 'new'}` : '';
   const currentEditorComparison =
@@ -349,7 +365,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       parent = parent.parentElement;
     }
     target.focus({ preventScroll: true });
-    target.scrollIntoView({ block: 'center' });
+    scrollElementWithLenis(target, { block: 'center' });
   }
 
   function requireValidContent(result = validation) {
@@ -400,6 +416,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setPublicationStatusError('Publication status is unavailable. Check again before assuming a change is live.');
     }
   }
+
   async function list(
     section = collection,
     next = pageCursor.current,
@@ -468,9 +485,9 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       }
       if (mode === 'page')
         requestAnimationFrame(() => {
-          rows.current?.scrollTo(0, 0);
+          scrollWithLenis(rows.current, 0, { immediate: true });
           listHeading.current?.focus({ preventScroll: true });
-          listHeading.current?.scrollIntoView({ block: 'start' });
+          if (listHeading.current) scrollElementWithLenis(listHeading.current, { block: 'start' });
         });
       else if (mode === 'restore') restoreStaffPosition(listHeading.current);
       return page;
@@ -497,6 +514,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       }
     }
   }
+
   useEffect(() => {
     setReady(true);
     const listParams = new URLSearchParams(window.location.search);
@@ -591,16 +609,19 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
+
   function mayLeave() {
     if (!dirty) return true;
     reloadFocus.current = window.document.activeElement instanceof HTMLElement ? window.document.activeElement : null;
     setConfirmReload(true);
     return false;
   }
+
   function requestDiscard(trigger: HTMLElement | null = window.document.activeElement as HTMLElement | null) {
     reloadFocus.current = trigger;
     setConfirmReload(true);
   }
+
   async function discardChanges() {
     const current = document;
     const focusTarget = reloadFocus.current ?? editorHeading.current;
@@ -630,6 +651,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       reloadFocus.current = null;
     });
   }
+
   async function discardSavedDraft() {
     const current = document;
     if (
@@ -689,6 +711,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setBusy(false);
     }
   }
+
   async function loadEditor(
     id: string,
     section: ContentSection,
@@ -721,6 +744,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       if (sequence === editorSequence.current) setBusy(false);
     }
   }
+
   async function open(item: EditorialRecord, replace = false, section = collection, navigate = true) {
     if (!replace && !(await autosave.flush())) {
       setConfirmReload(true);
@@ -734,11 +758,13 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     if (navigate) updateUrl(section, item.id, false, replace);
     editorHeading.current?.focus();
   }
+
   function openSingletonFromPage(section: ContentSection, page: EditorialList<EditorialRecord> | null) {
     if (!singletonContentSections.includes(section) || page?.items.length !== 1) return;
     const item = page.items[0];
     if (item) void open(item, true, section);
   }
+
   const currentDocument = useRef(document);
   currentDocument.current = document;
   const editorComparisonRef = useRef(editorComparison);
@@ -821,10 +847,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       if (JSON.stringify(latestData.current) === JSON.stringify(snapshot)) setDirty(false);
     },
   });
+
   async function saveNew(event: React.FormEvent) {
     event.preventDefault();
     await autosave.flush();
   }
+
   useEffect(() => {
     const leave = (event: MouseEvent) => {
       const link = (event.target as Element)?.closest<HTMLAnchorElement>('a[href]');
@@ -919,6 +947,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     }, 300);
     return () => window.clearTimeout(timer);
   }, [query, catalogArea, format, sort]);
+
   async function create(section = collection) {
     if (!mayLeave() || !['news', 'socials', 'artists'].includes(section)) return;
     // Start locally; incomplete editorial work is saved privately.
@@ -942,6 +971,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     params.delete('id');
     writeStaffLocation(`/content/?${params}`, { push: true, task: true, pages: pageCursors });
   }
+
   async function remove() {
     if (!document?.item.id || busy || !['news', 'socials'].includes(collection)) return;
     setConfirmTrash(false);
@@ -967,6 +997,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setBusy(false);
     }
   }
+
   async function moveLink(index: number, direction: -1 | 1) {
     const ordered = [...items].sort((a, b) => Number(a.data.order ?? 0) - Number(b.data.order ?? 0));
     const current = ordered[index];
@@ -998,6 +1029,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setBusy(false);
     }
   }
+
   const canCreate = ['news', 'socials', 'artists'].includes(collection);
 
   const title = String(data.title || data.label_name || contentSections[collection]);
@@ -1013,7 +1045,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     );
   if (reviewing && document)
     return (
-      <div className="cms-surface staff-page publication-editor">
+      <div className="cms-surface staff-page publication-editor" data-lenis-scroll-root>
         <ContentFeature name="Publication review">
           <PublicationReviewFlow
             base={base}
@@ -1051,7 +1083,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     <div className="cms-surface cms-workspace">
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {media && (
-          <section className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8">
+          <section className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-8" data-lenis-scroll-root>
             <div className="mx-auto max-w-6xl">
               <h1 className="text-2xl font-semibold">Images</h1>
               <ContentFeature name="Images">
@@ -1168,7 +1200,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 </Button>
               </div>
             )}
-            <div ref={rows} data-staff-scroll className="min-h-0 flex-1 overflow-y-auto">
+            <div ref={rows} data-staff-scroll data-lenis-scroll-root className="min-h-0 flex-1 overflow-y-auto">
               {!mobileEditor && message && (
                 <Alert role={conflict ? 'alert' : 'status'} className="m-4 w-auto">
                   <AlertDescription>{message}</AlertDescription>
@@ -1329,6 +1361,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               <Tabs.Content value="edit" forceMount asChild>
                 <section
                   aria-label="Content editor"
+                  data-lenis-scroll-root
                   className={`cms-editor ${!mobileEditor ? 'cms-editor-mobile-hidden' : ''}`}
                 >
                   {document ? (

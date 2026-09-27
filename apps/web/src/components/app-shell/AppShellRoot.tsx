@@ -25,6 +25,7 @@ import {
   createShellSectionTransitionController,
   scrollShellViewportToTop,
   triggerShellPageEnterTransition,
+  type ShellMotionControls,
 } from '@/components/app-shell/navigation/shell-transition';
 import { createProjectRelativeUrl } from '@/config/site';
 import { normalizeAppPathname, type ShellSectionRoute } from '@/lib/app-shell/routing';
@@ -64,6 +65,7 @@ import { syncShellRenderedNavigationState } from './navigation/shell-rendered-na
 import { openShellSectionNavigation, type ShellSectionActivationOutcome } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
+import { connectLenisScrollRoots } from './lenis-scroll';
 import ShellPortalOutlets from './view/ShellPortalOutlets';
 
 const MobileNavigationSheet = lazy(() => import('./view/MobileNavigationSheet'));
@@ -90,6 +92,7 @@ export default function AppShellRoot({
 }: AppShellRootProps) {
   const [activeShellPathname, setActiveShellPathname] = useState(() => normalizeAppPathname(initialPathname));
   const [overlayState, setOverlayState] = useState<OverlayState | null>(null);
+  const [hasOpenedOverlay, setHasOpenedOverlay] = useState(false);
   const [isRouteLoading, setIsRouteLoading] = useState(false);
   const [isStoreLoadingFeedbackVisible, setIsStoreLoadingFeedbackVisible] = useState(false);
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
@@ -147,8 +150,9 @@ export default function AppShellRoot({
     current: null,
     generation: 0,
   });
-  const shellPageTransitionFrameRef = useRef<number | null>(null);
-  const shellPageTransitionTimerRef = useRef<number | null>(null);
+  const shellPageTransitionAnimationsRef = useRef<ShellMotionControls[]>([]);
+  const shellSectionTransitionVeilRef = useRef<HTMLDivElement | null>(null);
+  const shellSectionTransitionAnimationsRef = useRef<ShellMotionControls[]>([]);
   const shellSectionTransitionTokenRef = useRef(0);
   const shellSectionTransitionStartedAtRef = useRef(0);
   const shellSectionTransitionTimerRef = useRef<number | null>(null);
@@ -184,6 +188,9 @@ export default function AppShellRoot({
   const shellSectionTransition = useMemo(
     () =>
       createShellSectionTransitionController({
+        animationsRef: shellSectionTransitionAnimationsRef,
+        getVeilElement: () => shellSectionTransitionVeilRef.current,
+        shouldReduceMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
         timerRef: shellSectionTransitionTimerRef,
         tokenRef: shellSectionTransitionTokenRef,
         startedAtRef: shellSectionTransitionStartedAtRef,
@@ -195,9 +202,9 @@ export default function AppShellRoot({
   );
   const shellPageTransition = useMemo(
     () => ({
-      frameRef: shellPageTransitionFrameRef,
+      animationsRef: shellPageTransitionAnimationsRef,
       getMainElement: getCurrentMainElement,
-      timerRef: shellPageTransitionTimerRef,
+      shouldReduceMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
     }),
     [],
   );
@@ -246,6 +253,19 @@ export default function AppShellRoot({
       targetDocument: document,
     });
   }
+
+  useEffect(() => connectLenisScrollRoots(document.body), []);
+
+  useEffect(() => {
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handlePreferenceChange = () => {
+      if (!reducedMotionQuery.matches) return;
+      clearShellPageTransition(shellPageTransition);
+      shellSectionTransition.reset();
+    };
+    reducedMotionQuery.addEventListener('change', handlePreferenceChange);
+    return () => reducedMotionQuery.removeEventListener('change', handlePreferenceChange);
+  }, [shellPageTransition, shellSectionTransition]);
 
   useEffect(() => {
     return syncShellBodyStateClasses({
@@ -704,14 +724,26 @@ export default function AppShellRoot({
       </div>
 
       <div
+        ref={shellSectionTransitionVeilRef}
         className="app-shell-section-transition-veil"
         data-state={shellSectionTransitionState}
         data-shell-navigation-source={shellNavigationSource}
         data-shell-navigation-target={shellSectionTransitionTarget || undefined}
         aria-hidden="true"
-      ></div>
+      >
+        <span
+          className="app-shell-section-transition-veil__texture"
+          data-shell-transition-layer
+          aria-hidden="true"
+        ></span>
+        <span
+          className="app-shell-section-transition-veil__shade"
+          data-shell-transition-layer
+          aria-hidden="true"
+        ></span>
+      </div>
 
-      {overlayState && (
+      {(overlayState || hasOpenedOverlay) && (
         <Suspense
           fallback={
             <span className="accessibility-visually-hidden-text" role="status">
@@ -722,7 +754,11 @@ export default function AppShellRoot({
           <ShellOverlayPanel
             closeButtonRef={overlayCloseButtonRef}
             onClose={closeOverlayWithHistoryBack}
+            onExitComplete={() => {
+              if (!overlayStateRef.current) setHasOpenedOverlay(false);
+            }}
             onReady={() => {
+              setHasOpenedOverlay(true);
               syncPlayerTriggers();
               scheduleOverlayContentFocus({
                 getCloseButton: () => overlayCloseButtonRef.current,

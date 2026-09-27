@@ -83,7 +83,10 @@
     "app-shell": {
       "status": "closed",
       "roots": ["apps/web/src/components/app-shell/**", "apps/web/src/lib/app-shell/**"],
-      "providedEntrypoints": ["apps/web/src/components/app-shell/AppShell.astro"],
+      "providedEntrypoints": [
+        "apps/web/src/components/app-shell/AppShell.astro",
+        "apps/web/src/components/app-shell/lenis-scroll.ts"
+      ],
       "namedInterfaces": {},
       "allowedDependencies": [
         "player",
@@ -499,6 +502,7 @@
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
         "apps/web/src/lib/private-preview.ts",
+        "apps/web/src/lib/lenis-scroll.ts",
         "apps/backend/src/observability/index.ts",
         "apps/backend/src/env.ts",
         "apps/backend/src/interfaces/http/responses.ts",
@@ -514,6 +518,7 @@
         "apps/web/src/lib/backend/api-client.ts",
         "apps/web/src/lib/backend/public-backend-config.ts",
         "apps/web/src/lib/private-preview.ts",
+        "apps/web/src/lib/lenis-scroll.ts",
         "apps/web/src/utils/urls.ts",
         "apps/backend/src/observability/index.ts",
         "apps/backend/src/env.ts",

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const source = readFileSync(fileURLToPath(new URL('../../pages/store/[slug]/index.astro', import.meta.url)), 'utf8');
-const gallerySource = source.slice(source.indexOf('gallery.length > 0'));
+const gallerySource = readFileSync(fileURLToPath(new URL('./StoreImageGallery.tsx', import.meta.url)), 'utf8');
 const storeCard = readFileSync(fileURLToPath(new URL('../cards/StoreItemCard.astro', import.meta.url)), 'utf8');
 
 describe('Store Item detail gallery contract', () => {
@@ -24,17 +24,17 @@ describe('Store Item detail gallery contract', () => {
     expect(source).toContain('const gallery = distroSource?.data.gallery ?? [];');
   });
 
-  it('renders source-ordered lazy images only when secondary views exist', () => {
+  it('enhances multiple source-ordered images with shadcn controls and leaves single images static', () => {
     expect(source).toContain('gallery.length > 0');
-    expect(source).toContain('gallery.map(({ image, image_alt })');
-    expect(source).toContain('src={image}');
-    expect(source).toContain('alt={image_alt}');
-    expect(source).toContain('loading="lazy"');
+    expect(source).toContain('...gallery');
+    expect(source).toContain('galleryImages.length > 1');
+    expect(source).toContain('<StoreImageGallery client:load');
+    expect(gallerySource).toContain('loading="lazy"');
     expect(gallerySource).not.toContain('aspect-[4/5]');
-    expect(gallerySource).toContain('h-auto w-full');
-    expect(source).toContain('widths={[480, 720, 960, 1200]}');
-    expect(gallerySource).not.toMatch(/client:(load|idle|visible|only)/g);
-    expect(gallerySource).not.toMatch(/carousel|lightbox/i);
+    expect(gallerySource).toContain("from '@/components/ui/button'");
+    expect(gallerySource).toContain('useReducedMotion');
+    expect(gallerySource).toContain('onPanEnd');
+    expect(gallerySource).toContain('ArrowLeft');
   });
 });
 

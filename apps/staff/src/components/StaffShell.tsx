@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowUpRight,
   Boxes,
@@ -21,6 +21,7 @@ import { publicationHistoryEvent, type PublicationHistoryFilter } from '../lib/p
 import StaffBack from './StaffBack';
 import ReviewChangesControl from './ReviewChangesControl';
 import { staffEntry, staffLink, staffTarget } from '../lib/staff-navigation';
+import { acquireLenisModalLock } from '../lib/lenis-scroll';
 import { singletonContentSections, type ContentSection } from '../lib/content-sections';
 
 const PublicationHistory = lazy(() => import('./content/PublicationHistory'));
@@ -76,8 +77,28 @@ export default function StaffShell({
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyFilter, setHistoryFilter] = useState<PublicationHistoryFilter>({});
   const historyFocus = useRef<HTMLElement | null>(null);
+  const menuUnlock = useRef<(() => void) | undefined>(undefined);
+  const menuScrollRootRef = useCallback((root: HTMLDivElement | null) => {
+    menuUnlock.current?.();
+    menuUnlock.current = root ? acquireLenisModalLock(root) : undefined;
+  }, []);
   const historyUrl = useRef('');
   const base = getInternalStockApiBaseUrl();
+  useEffect(() => {
+    let cancelled = false;
+    let disconnect: (() => void) | undefined;
+    void import('../lib/lenis-scroll-roots')
+      .then(({ connectLenisScrollRoots }) => {
+        if (!cancelled) disconnect = connectLenisScrollRoots(document.body);
+      })
+      .catch(() => {
+        /* Native scrolling remains available if the chunk cannot load. */
+      });
+    return () => {
+      cancelled = true;
+      disconnect?.();
+    };
+  }, []);
   useEffect(() => {
     staffEntry();
     const links = (event: MouseEvent) => {
@@ -122,12 +143,14 @@ export default function StaffShell({
       window.removeEventListener('staff:navigation', update);
     };
   }, []);
+
   function showHistory(filter: PublicationHistoryFilter = {}, trigger?: HTMLElement | null) {
     historyFocus.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     setHistoryFilter(filter);
     setMenuOpen(false);
     window.setTimeout(() => setHistoryOpen(true), 0);
   }
+
   function closeHistory(open: boolean) {
     setHistoryOpen(open);
     if (!open) {
@@ -135,6 +158,7 @@ export default function StaffShell({
       window.requestAnimationFrame(() => trigger?.focus());
     }
   }
+
   useEffect(() => {
     const open = (event: Event) => {
       const detail = (event as CustomEvent<PublicationHistoryFilter>).detail ?? {};
@@ -190,6 +214,7 @@ export default function StaffShell({
       : environment === 'prd'
         ? 'https://blackbox-records-web.pages.dev/'
         : 'http://127.0.0.1:4321/blackbox-records/';
+
   function toggleNavigation() {
     setHiddenAreas((current) => (hidden ? current.filter((label) => label !== area.label) : [...current, area.label]));
     try {
@@ -198,6 +223,7 @@ export default function StaffShell({
       /* Optional preference. */
     }
   }
+
   function primaryLinks() {
     return areas.map(({ label, href, icon: Icon, color }) => (
       <a
@@ -214,6 +240,7 @@ export default function StaffShell({
       </a>
     ));
   }
+
   function contextualLinks() {
     return area.links.map(({ label, href }) => (
       <a key={href} href={href} aria-current={selectedHref === href ? 'page' : undefined}>
@@ -221,6 +248,7 @@ export default function StaffShell({
       </a>
     ));
   }
+
   function utilities() {
     return (
       <>
@@ -256,6 +284,7 @@ export default function StaffShell({
       </>
     );
   }
+
   return (
     <div className="staff-shell cms-surface">
       <header className="staff-shell-header">
@@ -279,7 +308,13 @@ export default function StaffShell({
               Menu
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="cms-surface staff-navigation-drawer" aria-describedby={undefined}>
+          <SheetContent
+            ref={menuScrollRootRef}
+            side="left"
+            className="cms-surface staff-navigation-drawer"
+            aria-describedby={undefined}
+            data-lenis-scroll-root
+          >
             <SheetHeader>
               <SheetTitle>Staff workspace</SheetTitle>
             </SheetHeader>
@@ -296,7 +331,7 @@ export default function StaffShell({
       </header>
       <div className="staff-shell-body">
         {area.links.length > 0 && (
-          <aside className="staff-context-navigation" data-collapsed={hidden}>
+          <aside className="staff-context-navigation" data-collapsed={hidden} data-lenis-scroll-root>
             {!hidden && (
               <>
                 <h2>{area.label}</h2>
@@ -329,7 +364,7 @@ export default function StaffShell({
                 <StaffBack />
               </div>
             )}
-          <main id="main" tabIndex={-1} aria-label={title}>
+          <main id="main" data-lenis-scroll-root tabIndex={-1} aria-label={title}>
             {children}
           </main>
         </div>

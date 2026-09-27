@@ -239,6 +239,9 @@ const previewBridge =
   ts.transpileModule(await readFile('apps/web/src/lib/private-preview.ts', 'utf8'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
   }).outputText + '\nconnectPrivatePreview();';
+const previewScrollRuntime = ts.transpileModule(await readFile('apps/web/src/lib/lenis-scroll.ts', 'utf8'), {
+  compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+}).outputText;
 const fixtureOrders = Array.from({ length: 51 }, (_, index) => ({
   ...structuredClone(exampleOrder),
   orderReference: `ORDER-${String(index).padStart(3, '0')}`,
@@ -247,6 +250,11 @@ const fixtureOrders = Array.from({ length: 51 }, (_, index) => ({
 }));
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://127.0.0.1');
+  if (url.pathname.endsWith('/lenis-scroll')) {
+    res.writeHead(200, { 'Content-Type': 'text/javascript' });
+    res.end(previewScrollRuntime);
+    return;
+  }
   const json = (data, status = 200) => {
     res.writeHead(status, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data));
@@ -2395,7 +2403,8 @@ else if (sellingJourney) {
       await pollingPage.evaluate(() =>
         Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' }),
       );
-      await pollingPage.clock.runFor(30 * 60_000);
+      // Check the elapsed-time deadline without simulating 108,000 smooth-scroll animation frames.
+      await pollingPage.clock.fastForward(30 * 60_000);
       await pollingPage.getByRole('button', { name: 'Check publication status' }).waitFor();
       state.publication = 'failed';
       await pollingPage.getByRole('button', { name: 'Check publication status' }).click();

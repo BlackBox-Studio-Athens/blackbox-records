@@ -1,3 +1,5 @@
+import { scrollElementWithLenis, scrollWithLenis } from './lenis-scroll';
+
 type Preview = { context: string; generation: number; parentOrigin: string; release?: string };
 let loaded: Preview | undefined;
 
@@ -50,19 +52,26 @@ export function connectPrivatePreview() {
       return;
     if (event.data.type === 'activate') {
       active = true;
-      if (Number.isFinite(event.data.x) && Number.isFinite(event.data.y)) window.scrollTo(event.data.x, event.data.y);
-      if (event.data.target === 'footer' || event.data.target === 'newsletter')
-        document
-          .querySelector(event.data.target === 'footer' ? 'footer' : '#newsletter-signup-area')
-          ?.scrollIntoView({ block: 'start', behavior: 'instant' });
+      if (Number.isFinite(event.data.x) && Number.isFinite(event.data.y)) {
+        const left = event.data.x as number;
+        const top = event.data.y as number;
+        if (left === 0) scrollWithLenis(null, top, { immediate: true });
+        else window.scrollTo(left, top);
+      }
+      if (event.data.target === 'footer' || event.data.target === 'newsletter') {
+        const target = document.querySelector<HTMLElement>(
+          event.data.target === 'footer' ? 'footer' : '#newsletter-signup-area',
+        );
+        if (target) scrollElementWithLenis(target, { block: 'start' });
+      }
     }
     if (event.data.type === 'focus' && typeof event.data.text === 'string') {
       const target = event.data.image
-        ? document.querySelector('main img')
-        : [...document.querySelectorAll('.editorial-prose,h1,h2,h3,p,figcaption,a')].find(
+        ? document.querySelector<HTMLElement>('main img')
+        : [...document.querySelectorAll<HTMLElement>('.editorial-prose,h1,h2,h3,p,figcaption,a')].find(
             (item) => item.textContent?.replace(/\s/g, '') === event.data.text.replace(/\s/g, ''),
           );
-      target?.scrollIntoView({ block: 'center', behavior: 'instant' });
+      if (target) scrollElementWithLenis(target, { block: 'center' });
     }
   });
   window.addEventListener(

@@ -1,3 +1,4 @@
+import { motion, useReducedMotion } from 'motion/react';
 import { Square } from 'lucide-react';
 import * as React from 'react';
 import type { MouseEvent } from 'react';
@@ -7,6 +8,7 @@ import MusicEqualizer from '@/components/music/MusicEqualizer';
 import { type PlayerEmbedLayout, type PlayerProvider, type PlayerProviderId } from '../player-provider-data';
 import { OPEN_PLAYER_ACTION_LABEL } from '../player-session-ui';
 import { PLAYER_PROVIDER_LABELS } from '../player-shell/shell-player-view-state';
+import { acquireLenisModalLock } from '../lenis-scroll';
 
 type ProviderLogoUrls = Record<PlayerProviderId, string>;
 
@@ -49,6 +51,8 @@ export default function ShellPlayerSurface({
   playerProviders,
   providerLogoUrls,
 }: ShellPlayerSurfaceProps) {
+  const playerModalRootRef = React.useRef<HTMLDivElement | null>(null);
+  const shouldReduceMotion = useReducedMotion() === true;
   const onReadyRef = React.useRef(onReady);
   onReadyRef.current = onReady;
 
@@ -56,22 +60,38 @@ export default function ShellPlayerSurface({
     onReadyRef.current();
   }, []);
 
+  React.useEffect(() => {
+    const modalRoot = playerModalRootRef.current;
+    if (!isPlayerModalOpen || !modalRoot) return;
+    return acquireLenisModalLock(modalRoot);
+  }, [isPlayerModalOpen]);
+
   return (
     <>
-      <div
+      <motion.div
         className="music-streaming-service-embedded-player-modal-overlay"
         data-state={isPlayerModalOpen ? 'open' : 'closed'}
+        aria-hidden={!isPlayerModalOpen}
+        inert={!isPlayerModalOpen}
+        initial={shouldReduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: isPlayerModalOpen ? 1 : 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: 'easeOut' }}
         onClick={onModalBackdropClick}
       >
-        <div
+        <motion.div
           aria-labelledby="music-streaming-service-embedded-player-modal-title"
           aria-modal="true"
           aria-busy={isPlayerLoading ? 'true' : 'false'}
+          ref={playerModalRootRef}
           className="music-streaming-service-embedded-player-modal-card"
           role="dialog"
+          data-lenis-scroll-root
           data-music-streaming-service-embedded-player-active-provider={activePlayerProviderId}
           data-music-streaming-service-embedded-player-embed-layout={activePlayerEmbedLayout}
           data-music-streaming-service-embedded-player-loading={isPlayerLoading ? 'true' : 'false'}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
+          animate={{ opacity: isPlayerModalOpen ? 1 : 0, y: isPlayerModalOpen ? 0 : 16 }}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: 'easeOut' }}
         >
           <h2 className="accessibility-visually-hidden-text" id="music-streaming-service-embedded-player-modal-title">
             Music player
@@ -148,12 +168,17 @@ export default function ShellPlayerSurface({
               className="music-streaming-service-embedded-player-modal-frame-host flex w-full justify-center"
             ></div>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      <div
+      <motion.div
         className="music-streaming-service-embedded-player-mini-player"
         data-state={isMiniPlayerVisible ? 'open' : 'closed'}
+        aria-hidden={!isMiniPlayerVisible}
+        inert={!isMiniPlayerVisible}
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: isMiniPlayerVisible ? 1 : 0, y: isMiniPlayerVisible ? 0 : 8 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.2, ease: 'easeOut' }}
       >
         <div className="music-streaming-service-embedded-player-mini-player-copy">
           <p className="music-streaming-service-embedded-player-mini-player-provider uppercase text-muted-foreground">
@@ -182,7 +207,7 @@ export default function ShellPlayerSurface({
             <Square className="size-3 fill-current" aria-hidden="true" strokeWidth={0} />
           </button>
         </div>
-      </div>
+      </motion.div>
     </>
   );
 }

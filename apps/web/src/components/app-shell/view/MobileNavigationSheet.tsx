@@ -4,6 +4,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { resolveLinkAttributes } from '@/config/site';
 import type { SiteNavigationItem } from '@/lib/site-data';
 import { isCurrentPath } from '@/utils/urls';
+import { acquireLenisModalLock } from '../lenis-scroll';
 
 type MobileNavigationSheetProps = {
   activeShellPathname: string;
@@ -22,11 +23,21 @@ export default function MobileNavigationSheet({
   open,
   siteTitle,
 }: MobileNavigationSheetProps) {
+  const scrollRootRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    const scrollRoot = scrollRootRef.current;
+    if (!open || !scrollRoot) return;
+    return acquireLenisModalLock(scrollRoot);
+  }, [open]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
+        ref={scrollRootRef}
+        data-lenis-scroll-root
         side="right"
-        className="top-[var(--header-height)] bottom-auto h-[calc(100dvh-var(--header-height))] w-[min(92vw,320px)] border-l border-border/80 bg-background/95 pt-6"
+        className="top-[var(--header-height)] bottom-auto h-[calc(100dvh-var(--header-height))] w-[min(92vw,320px)] overflow-y-auto border-l border-border/80 bg-background/95 pt-6"
       >
         <div className="flex h-full flex-col gap-6">
           <SheetHeader>

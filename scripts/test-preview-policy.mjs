@@ -8,10 +8,14 @@ import { previewPolicy } from '../apps/backend/src/cms/preview-policy.ts';
 
 const image = await readFile('apps/staff/public/favicon-96x96.png');
 const readiness = stripTypeScriptTypes(await readFile('apps/web/src/lib/private-preview.ts', 'utf8'));
+const scrollRuntime = stripTypeScriptTypes(await readFile('apps/web/src/lib/lenis-scroll.ts', 'utf8'));
 const hits = [];
 const server = createServer((request, response) => {
   hits.push(request.url);
-  if (request.url === '/readiness') {
+  if (request.url === '/lenis-scroll') {
+    response.setHeader('Content-Type', 'text/javascript');
+    response.end(scrollRuntime);
+  } else if (request.url === '/readiness') {
     response.setHeader('Content-Type', 'text/html');
     const preview = { context: '00000000-0000-0000-0000-000000000001', generation: 1, parentOrigin: origin };
     response.end(`<!doctype html><meta name="blackbox-preview" content='${JSON.stringify(preview)}'>

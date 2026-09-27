@@ -1,5 +1,5 @@
 ---
-import { Disc3, Globe2 } from 'lucide-react';
+import { Globe2 } from 'lucide-react';
 
 import FacebookIcon from '@/components/icons/FacebookIcon.astro';
 import InstagramIcon from '@/components/icons/InstagramIcon.astro';
@@ -21,11 +21,23 @@ const iconName = normalizedTitle.includes('insta')
       ? 'linktree'
       : normalizedTitle.includes('band')
         ? 'bandcamp'
-        : 'generic';
+        : normalizedTitle.includes('tidal')
+          ? 'tidal'
+          : 'generic';
 ---
 
 {iconName === 'instagram' ? <InstagramIcon class={iconClassName} /> : null}
 {iconName === 'facebook' ? <FacebookIcon class={iconClassName} /> : null}
 {iconName === 'linktree' ? <LinktreeIcon class={iconClassName} /> : null}
-{iconName === 'bandcamp' ? <Disc3 className={iconClassName} aria-hidden="true" /> : null}
+{/* Simple Icons (CC0): Bandcamp and TIDAL brand marks. */}
+{iconName === 'bandcamp' ? (
+  <svg class={iconClassName} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M0 18.75l7.437-13.5H24l-7.438 13.5H0z" />
+  </svg>
+) : null}
+{iconName === 'tidal' ? (
+  <svg class={iconClassName} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M12.012 3.992L8.008 7.996 4.004 3.992 0 7.996 4.004 12l4.004-4.004L12.012 12l-4.004 4.004 4.004 4.004 4.004-4.004L12.012 12l4.004-4.004-4.004-4.004zM16.042 7.996l3.979-3.979L24 7.996l-3.979 3.979z" />
+  </svg>
+) : null}
 {iconName === 'generic' ? <Globe2 className={iconClassName} aria-hidden="true" /> : null}

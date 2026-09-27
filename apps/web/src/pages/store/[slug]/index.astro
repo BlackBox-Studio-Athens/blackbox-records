@@ -3,7 +3,8 @@ import { tracklistGroups } from '@blackbox/content-model';
 import EditorialContent from '@/components/detail/EditorialContent.astro';
 import { formatDayMonthYear } from '@/utils/content';
 import Prose from '@/components/Prose.astro';
-import { Image } from 'astro:assets';
+import { getImage, Image } from 'astro:assets';
+import StoreImageGallery from '@/components/store/StoreImageGallery';
 import { getEntry } from '@/lib/content-reader';
 
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
@@ -60,6 +61,21 @@ if (storeItem.sourceKind === 'distro' && !distroSource) {
 }
 
 const gallery = distroSource?.data.gallery ?? [];
+const galleryImages =
+  gallery.length > 0
+    ? await Promise.all(
+        [{ image: storeItem.image, image_alt: storeItem.imageAlt }, ...gallery].map(async ({ image, image_alt }) => {
+          const optimized = await getImage({ src: image, widths: [96, 480, 720, 960, 1200], format: 'webp' });
+          return {
+            src: optimized.src,
+            srcSet: optimized.srcSet.attribute,
+            alt: image_alt,
+            width: image.width,
+            height: image.height,
+          };
+        }),
+      )
+    : [];
 const trackGroups = tracklistGroups(
   sourceRelease?.data.tracklist ?? distroSource?.data.tracklist,
   primaryAvailability?.optionLabel || distroSource?.data.format || distroSource?.data.group,
@@ -145,14 +161,18 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
         <PurchaseInformation />
       </div>
       <div class="store-item-artwork">
-        <Image
-          src={storeItem.image}
-          alt={storeItem.imageAlt}
-          class="store-item-detail__image aspect-square h-auto w-full object-contain"
-          priority
-          widths={[720, 1080, 1440, 1800]}
-          sizes="(min-width: 768px) 26rem, calc(100vw - 32px)"
-        />
+        {galleryImages.length > 1 ? (
+          <StoreImageGallery client:load images={galleryImages} title={storeItem.title} />
+        ) : (
+          <Image
+            src={storeItem.image}
+            alt={storeItem.imageAlt}
+            class="store-item-detail__image aspect-square h-auto w-full object-contain"
+            priority
+            widths={[720, 1080, 1440, 1800]}
+            sizes="(min-width: 768px) 26rem, calc(100vw - 32px)"
+          />
+        )}
       </div>
     </div>
     <div class="store-item-information">
@@ -206,26 +226,4 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
       )}
     </div>
   </section>
-
-  {gallery.length > 0 && (
-    <section class="layout-container pb-14 pt-6" aria-labelledby="store-item-more-views">
-      <h2 id="store-item-more-views" class="mb-5 text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-        More views
-      </h2>
-      <div class="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {gallery.map(({ image, image_alt }) => (
-          <div class="overflow-hidden border border-border/60 bg-background/55">
-            <Image
-              src={image}
-              alt={image_alt}
-              loading="lazy"
-              widths={[480, 720, 960, 1200]}
-              sizes="(min-width: 1024px) 30vw, (min-width: 640px) 50vw, 100vw"
-              class="h-auto w-full"
-            />
-          </div>
-        ))}
-      </div>
-    </section>
-  )}
 </SiteLayout>

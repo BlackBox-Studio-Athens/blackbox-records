@@ -4,7 +4,7 @@ import mediaStyles from '../../styles/content-media.css?inline';
 import { useStaffRead } from '../../lib/staff-query';
 import { Check, ChevronDown, ImageIcon, LayoutGrid, List as ListIcon, Search, Upload } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { Input } from '../ui/input';
 import { Field, FieldLabel, FieldDescription, FieldError } from '../ui/field';
@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '../ui/alert';
 import { Skeleton } from '../ui/skeleton';
 import { Spinner } from '../ui/spinner';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '../ui/sheet';
+import { acquireLenisModalLock, scrollWithLenis } from '../../lib/lenis-scroll';
 import {
   editorialRequest,
   editorialMediaUrl,
@@ -88,13 +89,20 @@ export default function MediaLibrary({
     if (remembered) remembered.current = { query, view: viewMode };
   }, [remembered, query, viewMode]);
   const [uploadOpen, setUploadOpen] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
   const detailTrigger = useRef<HTMLElement | null>(null);
+  const detailScrollRootRef = useRef<HTMLDivElement | null>(null);
   const sequence = useRef(0);
   const busy = loading || uploading || disabled;
 
   useEffect(() => {
     if (!loading && (items.length === 0 || error)) setUploadOpen(true);
   }, [error, items.length, loading]);
+  useEffect(() => {
+    const scrollRoot = detailScrollRootRef.current;
+    if (!detail || !scrollRoot) return;
+    return acquireLenisModalLock(scrollRoot);
+  }, [detail]);
 
   async function search(next?: string) {
     const request = ++sequence.current;
@@ -117,6 +125,7 @@ export default function MediaLibrary({
       if (sequence.current === request) setLoading(false);
     }
   }
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       if (navigator.onLine) void search();
@@ -197,7 +206,7 @@ export default function MediaLibrary({
         </div>
       </div>
       {/* blocks.so/file-upload/file-upload-02: native upload field, adapted to the existing CMS command. */}
-      <Collapsible open={uploadOpen} onOpenChange={setUploadOpen} className="grid gap-3">
+      <div className="grid gap-3">
         <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3">
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-sm font-medium">
@@ -206,38 +215,62 @@ export default function MediaLibrary({
             </p>
             <p className="mt-1 text-xs text-muted-foreground">Add a JPG, PNG or WebP without publishing it.</p>
           </div>
-          <CollapsibleTrigger asChild>
-            <Button type="button" variant="ghost" size="sm" className="shrink-0">
-              {uploadOpen ? 'Hide' : 'Upload'}
-              <ChevronDown
-                className={`size-4 transition-transform ${uploadOpen ? 'rotate-180' : ''}`}
-                aria-hidden="true"
-              />
-            </Button>
-          </CollapsibleTrigger>
-        </div>
-        <CollapsibleContent>
-          <Field className="rounded-lg border border-dashed border-border bg-muted/20 p-4">
-            <FieldLabel htmlFor={`${id}-upload`}>Choose an image</FieldLabel>
-            <Input
-              id={`${id}-upload`}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              disabled={busy}
-              aria-label="Upload an image"
-              aria-describedby={`${id}-upload-help`}
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                event.target.value = '';
-                if (file) void upload(file);
-              }}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="shrink-0"
+            aria-expanded={uploadOpen}
+            onClick={() => setUploadOpen((open) => !open)}
+          >
+            {uploadOpen ? 'Hide' : 'Upload'}
+            <ChevronDown
+              className={`size-4 transition-transform ${uploadOpen ? 'rotate-180' : ''}`}
+              aria-hidden="true"
             />
-            <FieldDescription id={`${id}-upload-help`}>
-              JPG, PNG or WebP, up to 20 MB. Uploading does not publish the image.
-            </FieldDescription>
-          </Field>
-        </CollapsibleContent>
-      </Collapsible>
+          </Button>
+        </div>
+        <AnimatePresence initial={false}>
+          {uploadOpen && (
+            <motion.div
+              key="media-upload-panel"
+              id={`${id}-upload-panel`}
+              initial={prefersReducedMotion ? false : { height: 0, opacity: 0 }}
+              animate={{
+                height: 'auto',
+                opacity: 1,
+                transition: { duration: prefersReducedMotion ? 0 : 0.18, ease: 'easeOut' },
+              }}
+              exit={{
+                height: 0,
+                opacity: 0,
+                transition: { duration: prefersReducedMotion ? 0 : 0.18, ease: 'easeOut' },
+              }}
+              className="overflow-hidden"
+            >
+              <Field className="rounded-lg border border-dashed border-border bg-muted/20 p-4">
+                <FieldLabel htmlFor={`${id}-upload`}>Choose an image</FieldLabel>
+                <Input
+                  id={`${id}-upload`}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={busy}
+                  aria-label="Upload an image"
+                  aria-describedby={`${id}-upload-help`}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = '';
+                    if (file) void upload(file);
+                  }}
+                />
+                <FieldDescription id={`${id}-upload-help`}>
+                  JPG, PNG or WebP, up to 20 MB. Uploading does not publish the image.
+                </FieldDescription>
+              </Field>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
       {uploading && (
         <p role="status" className="flex items-center gap-2 text-sm">
           <Spinner className="size-4" />
@@ -322,7 +355,9 @@ export default function MediaLibrary({
         }}
       >
         <SheetContent
+          ref={detailScrollRootRef}
           className="cms-surface w-full overflow-y-auto sm:max-w-xl"
+          data-lenis-scroll-root
           onCloseAutoFocus={(event) => {
             event.preventDefault();
             detailTrigger.current?.focus();
@@ -387,6 +422,11 @@ export function ContentImagePicker({
   const remembered = useRef<{ query: string; view: 'grid' | 'list' }>({ query: '', view: 'grid' });
   const scrollPosition = useRef(0);
   const pickerContent = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const scrollRoot = pickerContent.current;
+    if (!open || !scrollRoot) return;
+    return acquireLenisModalLock(scrollRoot);
+  }, [open]);
   const [item, setItem] = useState<EditorialMedia | null>(null);
   const [failed, setFailed] = useState(false);
   useEffect(() => {
@@ -470,10 +510,12 @@ export function ContentImagePicker({
               }}
               onOpenAutoFocus={() =>
                 requestAnimationFrame(() => {
-                  if (pickerContent.current) pickerContent.current.scrollTop = scrollPosition.current;
+                  if (pickerContent.current)
+                    scrollWithLenis(pickerContent.current, scrollPosition.current, { immediate: true });
                 })
               }
               className="cms-surface w-full overflow-y-auto sm:max-w-3xl"
+              data-lenis-scroll-root
             >
               <SheetHeader>
                 <SheetTitle>Choose {label.toLowerCase()}</SheetTitle>

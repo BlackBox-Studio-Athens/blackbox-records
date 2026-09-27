@@ -1,5 +1,6 @@
 @layer emdash, theme, base, components, utilities;
 @import 'tailwindcss';
+@import 'lenis/dist/lenis.css';
 
 @theme inline {
   --font-sans: 'Inter', sans-serif;
@@ -97,11 +98,13 @@
   min-height: 44px;
   border-radius: 0.35rem;
 }
+
 .staff-brand img {
   display: block;
   width: clamp(7rem, 20vw, 11rem);
   height: auto;
 }
+
 .staff-environment-badge {
   display: inline-flex;
   align-items: center;
@@ -119,39 +122,48 @@
   color: var(--foreground);
   background: var(--background);
 }
+
 .staff-workspace :is(h1, h2, h3, h4) {
   font-family: var(--font-sans);
   letter-spacing: normal;
 }
+
 .staff-workspace :is(button, select, input, textarea) {
   min-height: 44px;
 }
+
 .staff-workspace :is(button, select):not(:disabled) {
   cursor: pointer;
 }
+
 .staff-workspace input:not([type='hidden']):not(:disabled),
 .staff-workspace textarea:not(:disabled) {
   cursor: text;
 }
+
 .staff-workspace [data-slot='card'] {
   box-shadow: none;
 }
+
 .staff-workspace-hero {
   border-bottom: 1px solid var(--border);
   background: var(--card);
 }
+
 .staff-workspace-hero h1 {
   margin: 0;
   font-size: clamp(1.75rem, 3vw, 2.5rem);
   line-height: 1.1;
   font-weight: 650;
 }
+
 .staff-workspace-hero p {
   max-width: 65ch;
   margin: 0.5rem 0 0;
   color: var(--muted-foreground);
   font-size: 0.95rem;
 }
+
 .staff-section-title {
   display: flex;
   align-items: center;
@@ -160,12 +172,14 @@
   font-size: 1rem;
   font-weight: 650;
 }
+
 .staff-form-section {
   padding: 1.25rem;
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   background: var(--card);
 }
+
 .staff-readiness {
   display: grid;
   gap: 0.75rem;
@@ -174,11 +188,13 @@
   border-radius: 0.5rem;
   background: color-mix(in oklch, var(--card) 84%, var(--accent));
 }
+
 .staff-readiness-items {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+
 .staff-readiness-item {
   display: inline-flex;
   align-items: center;
@@ -190,12 +206,15 @@
   color: var(--muted-foreground);
   font-size: 0.75rem;
 }
+
 .staff-readiness-item.is-ready {
   color: oklch(0.8 0.13 155);
 }
+
 .staff-readiness-item:not(.is-ready) {
   color: oklch(0.84 0.13 85);
 }
+
 .staff-operation-preview {
   display: flex;
   align-items: center;
@@ -206,22 +225,27 @@
   border-radius: 0.375rem;
   background: var(--background);
 }
+
 .staff-operation-preview span {
   color: var(--muted-foreground);
   font-size: 0.8rem;
 }
+
 .staff-operation-preview strong {
   text-align: right;
   font-size: 1rem;
   font-variant-numeric: tabular-nums;
 }
+
 .staff-operation-preview[data-invalid='true'] strong {
   color: oklch(0.76 0.12 25);
 }
+
 .staff-history-row {
   border-top: 1px solid var(--border);
   padding-block: 0.75rem;
 }
+
 .staff-history-row:first-child {
   border-top: 0;
 }

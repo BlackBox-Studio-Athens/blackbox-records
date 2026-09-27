@@ -1,4 +1,5 @@
 import { DISTRO_GROUP_VALUES } from '@blackbox/content-model';
+import { scrollWithLenis } from './lenis-scroll';
 import { contentSections, singletonContentSections, type ContentSection } from './content-sections';
 
 const namespace = 'blackboxStaff';
@@ -197,9 +198,9 @@ export function restoreStaffPosition(fallback?: HTMLElement | null) {
         return;
       const nodes = scrollSelectors.flatMap((selector) => [...document.querySelectorAll(selector)]);
       nodes.forEach((node, index) => {
-        node.scrollTop = entry.scroll![index] ?? 0;
+        scrollWithLenis(node as HTMLElement, entry.scroll![index] ?? 0, { immediate: true });
       });
-      window.scrollTo(0, entry.scroll.at(-1) ?? 0);
+      scrollWithLenis(null, entry.scroll.at(-1) ?? 0, { immediate: true });
     });
   });
 }

@@ -620,7 +620,7 @@ export default function ContentPreview({
           </AlertDescription>
         </Alert>
       )}
-      <div className="cms-preview-viewport">
+      <div className="cms-preview-viewport" data-lenis-scroll-root>
         {[rendered, pending]
           .filter((item): item is Rendering => item !== null)
           .map((item) => (

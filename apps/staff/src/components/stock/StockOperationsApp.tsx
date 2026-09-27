@@ -678,7 +678,14 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
           inventoryOpen && 'inventory-browsing',
         )}
       >
-        <aside ref={inventoryRef} data-staff-scroll tabIndex={-1} className="inventory-list" aria-label="Inventory">
+        <aside
+          ref={inventoryRef}
+          data-staff-scroll
+          data-lenis-scroll-root
+          tabIndex={-1}
+          className="inventory-list"
+          aria-label="Inventory"
+        >
           <div className="inventory-toolbar">
             <Input
               aria-label="Search items"
@@ -820,7 +827,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
           </nav>
         </aside>
         {selectedVariantId && (
-          <div className="staff-stock-task inventory-task">
+          <div className="staff-stock-task inventory-task" data-lenis-scroll-root>
             {stocktake && (
               <section className="stocktake-progress" aria-label="Counting progress">
                 <strong>
@@ -885,7 +892,10 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                   {selectedStockDetail && (
                     <a
                       className="inline-flex min-h-11 items-center underline"
-                      href={`/items/?${new URLSearchParams({ variantId: selectedStockDetail.variantId, tab: 'selling' })}`}
+                      href={`/items/?${new URLSearchParams({
+                        variantId: selectedStockDetail.variantId,
+                        tab: 'selling',
+                      })}`}
                       onClick={(event) => {
                         event.preventDefault();
                         const href = event.currentTarget.href;
