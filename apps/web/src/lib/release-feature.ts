@@ -1,6 +1,7 @@
 export type ReleaseDateEntry = {
   data: {
-    release_date: Date;
+    release_date?: Date | undefined;
+    release_stage?: 'upcoming' | 'released' | undefined;
     title?: string;
   };
 };
@@ -15,20 +16,21 @@ function compareReleaseTitle(left: ReleaseDateEntry, right: ReleaseDateEntry) {
 
 function sortReleasedNewestFirst<T extends ReleaseDateEntry>(releaseEntries: T[]) {
   return releaseEntries.slice().sort((left, right) => {
-    const dateDifference = right.data.release_date.getTime() - left.data.release_date.getTime();
+    const dateDifference = (right.data.release_date?.getTime() ?? 0) - (left.data.release_date?.getTime() ?? 0);
     return dateDifference || compareReleaseTitle(left, right);
   });
 }
 
 function sortUpcomingSoonestFirst<T extends ReleaseDateEntry>(releaseEntries: T[]) {
   return releaseEntries.slice().sort((left, right) => {
-    const dateDifference = left.data.release_date.getTime() - right.data.release_date.getTime();
+    const dateDifference =
+      (left.data.release_date?.getTime() ?? Infinity) - (right.data.release_date?.getTime() ?? Infinity);
     return dateDifference || compareReleaseTitle(left, right);
   });
 }
 
-export function isReleaseOutNow(releaseDate: Date, referenceDate = new Date()) {
-  return getUtcDayTimestamp(releaseDate) <= getUtcDayTimestamp(referenceDate);
+export function isReleaseOutNow(releaseDate: Date | undefined, referenceDate = new Date()) {
+  return !!releaseDate && getUtcDayTimestamp(releaseDate) <= getUtcDayTimestamp(referenceDate);
 }
 
 export function splitReleaseCatalogByAvailability<T extends ReleaseDateEntry>(
@@ -39,7 +41,10 @@ export function splitReleaseCatalogByAvailability<T extends ReleaseDateEntry>(
   const upcomingReleases: T[] = [];
 
   releaseEntries.forEach((releaseEntry) => {
-    if (isReleaseOutNow(releaseEntry.data.release_date, referenceDate)) {
+    if (
+      releaseEntry.data.release_stage !== 'upcoming' &&
+      isReleaseOutNow(releaseEntry.data.release_date, referenceDate)
+    ) {
       outNowReleases.push(releaseEntry);
       return;
     }

@@ -73,7 +73,10 @@ export function publishedCollection(
         if (!artist) throw new Error('Published Artist is unavailable.');
         data.artist = { collection: 'artists', id: artist.slug };
       }
-      for (const key of ['date', 'release_date']) if (typeof data[key] === 'string') data[key] = new Date(data[key]);
+      for (const key of ['date', 'release_date']) {
+        if (data[key] === '') delete data[key];
+        else if (typeof data[key] === 'string') data[key] = new Date(data[key]);
+      }
       if (['artists', 'releases', 'news'].includes(record.collection)) {
         data.editorial_body = body ?? [];
         data.content_media = Object.fromEntries(contentMediaIds(body).map((id) => [id, image(id)]));

@@ -11,14 +11,16 @@ export function calculateYearsActive(establishedYear: number, currentYear = getG
 }
 
 export function calculateCountryCount(countries: string[]) {
-  return new Set(countries.filter(Boolean)).size;
+  return new Set(countries.flatMap((country) => country.split('/').map((name) => name.trim())).filter(Boolean)).size;
 }
 
-export function formatMonthYear(value: Date) {
+export function formatMonthYear(value: Date | undefined) {
+  if (!value) return 'Date to be announced';
   return value.toLocaleDateString('en-US', { month: 'short', timeZone: GREECE_TIME_ZONE, year: 'numeric' });
 }
 
-export function formatDayMonthYear(value: Date) {
+export function formatDayMonthYear(value: Date | undefined) {
+  if (!value) return 'Date to be announced';
   return value.toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'short',
@@ -27,6 +29,7 @@ export function formatDayMonthYear(value: Date) {
   });
 }
 
-export function formatYear(value: Date) {
+export function formatYear(value: Date | undefined) {
+  if (!value) return 'Upcoming';
   return String(getGreeceYear(value));
 }

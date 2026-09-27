@@ -1,5 +1,7 @@
 # CMS application migrations
 
+The application migration runner adds the nullable `releases.release_stage` text column and native field metadata in one D1 batch, only when missing. This runs in the existing Local/UAT/PRD release flow and leaves content, revisions, media and publication pointers unchanged. Fresh seeds and the explicit catalog-schema setup define the same field. Missing/null stage values retain the legacy date-based interpretation.
+
 These migrations belong to application-owned tables in `CMS_DB`. They are separate from EmDash's core migration manifest and from commerce's Prisma/D1 migrations. Never apply them to `COMMERCE_DB`.
 
 Release bundles retain each built Worker's EmDash manifest as `migrations.json`. The core migration runner accepts `--manifest <path>` alongside `--wrangler-config <path>` so fresh deployment runners use the verified candidate's manifest, without rebuilding or depending on ignored Local files.

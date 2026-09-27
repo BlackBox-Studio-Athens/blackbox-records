@@ -26,7 +26,7 @@ const artistUrl = releaseArtist
   ? createProjectRelativeUrl(`/artists/${releaseArtist.data.slug}/`)
   : createProjectRelativeUrl('/artists/');
 const releaseDate = formatDayMonthYear(release.data.release_date);
-const releaseDateMachineValue = release.data.release_date.toISOString().slice(0, 10);
+const releaseDateMachineValue = release.data.release_date?.toISOString().slice(0, 10);
 const embeddedPlayerTitle = `${release.data.title} — ${artistName}`;
 const embeddedPlayerData = buildEmbeddedPlayerData(release.id, release.data, embeddedPlayerTitle);
 const commerceLink = await getReleaseCommerceLink(release);
@@ -63,7 +63,11 @@ const commerceLink = await getReleaseCommerceLink(release);
         <p class="text-sm uppercase tracking-[0.12em] text-muted-foreground">
           <span>Release date</span>
           <span aria-hidden="true"> / </span>
-          <time datetime={releaseDateMachineValue}>{releaseDate}</time>
+          {releaseDateMachineValue ? (
+            <time datetime={releaseDateMachineValue}>{releaseDate}</time>
+          ) : (
+            <span>{releaseDate}</span>
+          )}
         </p>
         {release.data.summary && (
           <Prose

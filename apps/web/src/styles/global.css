@@ -1398,8 +1398,7 @@ body {
   }
 
   .artist-detail-hero__image {
-    transform: scale(1.018);
-    transform-origin: center center;
+    object-fit: contain;
   }
 
   .artist-detail-hero__image-frame::after {

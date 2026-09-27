@@ -60,6 +60,17 @@ export function nativeEditorialWrite(collection: string, fields: Record<string, 
   return { ...fields, data, references: { artist: artist ? [artist] : [] } };
 }
 
+// Older EmDash tables keep NOT NULL image columns with an empty-string default.
+// At creation an absent image uses that native default; revisions retain null.
+export function nativeDraftCreation(collection: string, fields: Record<string, unknown>) {
+  const image = collection === 'releases' ? 'cover_image' : 'image';
+  const data = fields.data as Record<string, unknown>;
+  if (!['artists', 'releases', 'distro', 'news'].includes(collection) || data[image] !== null) return fields;
+  const { [image]: omitted, ...initialData } = data;
+  void omitted;
+  return { ...fields, data: initialData };
+}
+
 export const onRequest: MiddlewareHandler = async ({ request, url }, next) => {
   if (['GET', 'HEAD'].includes(request.method)) return next();
   const match = /^\/_emdash\/api\/content\/([^/]+)(?:\/([^/]+))?(?:\/([^/]+))?$/.exec(url.pathname.replace(/\/+$/, ''));

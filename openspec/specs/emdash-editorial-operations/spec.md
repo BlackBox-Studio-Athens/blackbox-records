@@ -6,6 +6,29 @@ Provide self-hosted editorial content management within the BlackBox staff works
 
 ## Requirements
 
+### Requirement: Artist entry supports validated choices and incomplete private drafts
+
+Artist creation SHALL wait for an edit before autosaving. An unselected image SHALL remain a valid private draft value on both new and upgraded CMS stores. Country selection SHALL use ISO country identities, support multiple countries without duplicates, and preserve the existing public country labels. Genre entry SHALL offer suggestions while allowing new genres. Standard artist links SHALL use service choices and matching HTTPS domains; Spotify SHALL be rejected.
+
+#### Scenario: Member uploads an artist portrait
+
+- **WHEN** an image upload succeeds inside the artist picker
+- **THEN** it is selected without a second click
+- **AND** the full image fits the dark portrait frame without manual cropping or loss of original bytes
+- **AND** dimensions guidance recommends 1800 × 2400 px with 1200 × 1600 px minimum
+- **AND** the description uses library metadata or the entry title, with optional accessibility editing.
+
+### Requirement: Upcoming and released music share one Release identity
+
+A member SHALL be able to create a Release from a saved Artist. Its title, artwork and Artist reference SHALL remain on the same Release when its stage changes. An Upcoming Release MAY omit its release date. A Released record SHALL require a valid calendar date for preview and publication. Stage does not grant publication or commerce authority.
+
+#### Scenario: Upcoming record becomes released
+
+- **WHEN** the member supplies a release date and changes Upcoming to Released
+- **THEN** the Release keeps its identity, cover and Artist reference
+- **AND** no duplicate Release or artwork copy is created
+- **AND** price, stock, checkout and future prepurchase remain outside this operation.
+
 ### Requirement: One staff workspace uses one verified identity
 
 Label members SHALL manage content, Store Items, stock, and orders from one BlackBox-owned workspace using their existing allowlisted sign-in. CMS and commerce authorization SHALL enforce the same verified person and target environment.

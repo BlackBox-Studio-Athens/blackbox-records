@@ -31,7 +31,12 @@ import { reviewPublication, PublicationReviewConflict, publicationPublicUrl } fr
 import { handleLocalPublicationRequest, localPublicationRoot } from './local-publication-routes';
 import { DurableObject } from 'cloudflare:workers';
 import { CommerceRuntime } from '../index';
-import { isSupportedCmsApiRequest, isCmsTokenExportRead, nativeEditorialWrite } from '../middleware';
+import {
+  isSupportedCmsApiRequest,
+  isCmsTokenExportRead,
+  nativeEditorialWrite,
+  nativeDraftCreation,
+} from '../middleware';
 import {
   handlePublicationRequest,
   handlePublicationWorkflow,
@@ -762,7 +767,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         try {
           const raw = await readBoundedText(request.body, 272 * 1024);
           request = new Request(request, { body: raw });
-          const payload = JSON.parse(raw) as Record<string, unknown>;
+          let payload = JSON.parse(raw) as Record<string, unknown>;
           if (
             !isCmsCollection(editorialWrite[1]) ||
             !payload.data ||
@@ -784,7 +789,13 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
               },
               { status: 422, headers: { 'Cache-Control': 'private, no-store' } },
             );
-          if (editorialWrite[1] === 'releases' && Object.hasOwn(payload.data, 'artist')) {
+          if (request.method === 'POST' && !editorialWrite[2]) {
+            payload = nativeDraftCreation(editorialWrite[1], payload);
+            const headers = new Headers(request.headers);
+            headers.delete('Content-Length');
+            request = new Request(request, { headers, body: JSON.stringify(payload) });
+          }
+          if (editorialWrite[1] === 'releases' && Object.hasOwn(payload.data as object, 'artist')) {
             const { withEmDashRuntime } = await import('emdash/middleware');
             const field = await withEmDashRuntime((runtime) =>
               new SchemaRegistry(runtime.db).getField('releases', 'artist'),

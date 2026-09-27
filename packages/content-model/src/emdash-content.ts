@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { validArtistLink } from './artist-fields';
 import {
   createArtistsContentSchema,
   createReleasesContentSchema,
@@ -53,7 +54,7 @@ export const cmsContentSchemas = {
   artists: createArtistsContentSchema(image).omit({ slug: true }).extend({ body: cmsBodySchema.optional() }),
   releases: createReleasesContentSchema(image, { artist: mediaId }).extend({
     body: cmsBodySchema.optional(),
-    release_date: z.iso.date(),
+    release_date: z.iso.date().optional(),
   }),
   news: createNewsContentSchema(image).extend({ body: cmsBodySchema.optional(), date: z.iso.date() }),
   distro: createDistroContentSchema(image).extend({ release_date: z.iso.date().optional() }),
@@ -101,7 +102,9 @@ export function getCmsContentIssues(collection: CmsCollection, data: Record<stri
     collection === 'purchase_information' ? ['publication', 'content'] : Object.keys((schema as z.ZodObject).shape);
   const normalized = Object.fromEntries(
     Object.entries(projectProseFields(collection, data)).filter(
-      ([field, value]) => value !== null || !known.includes(field),
+      ([field, value]) =>
+        (value !== null || !known.includes(field)) &&
+        !(collection === 'releases' && field === 'release_date' && value === ''),
     ),
   );
   const result = schema.safeParse(normalized);
@@ -111,6 +114,11 @@ export function getCmsContentIssues(collection: CmsCollection, data: Record<stri
       message: issue.message,
     }));
   const issues: CmsContentIssue[] = [];
+  if (collection === 'releases' && normalized.release_stage !== 'upcoming' && !normalized.release_date)
+    issues.push({
+      path: ['release_date'],
+      message: 'Released records need a release date. Choose Upcoming while the date is unknown.',
+    });
   function unknownFields(input: unknown, parsed: unknown, path: Array<string | number> = []) {
     if (!input || typeof input !== 'object' || !parsed || typeof parsed !== 'object') return;
     for (const [name, value] of Object.entries(input)) {
@@ -169,7 +177,14 @@ const cmsDraftSchemas = Object.fromEntries(
 export function validateCmsDraft(collection: CmsCollection, data: Record<string, unknown>): string[] {
   if (JSON.stringify(data).length > 256 * 1024) return ['Draft is too large.'];
   const result = cmsDraftSchemas[collection]!.safeParse(data);
-  return result.success ? [] : result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`);
+  if (!result.success) return result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`);
+  if (collection === 'artists' && Array.isArray(data.profile_links))
+    return data.profile_links.flatMap((link, index) =>
+      link?.label && link?.url && !validArtistLink(link.label, link.url)
+        ? [`profile_links.${index}.url: Use the matching service URL. Spotify links are not supported.`]
+        : [],
+    );
+  return [];
 }
 
 export function contentMediaIds(data: unknown): string[] {

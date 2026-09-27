@@ -1,4 +1,5 @@
 import { tracklistSchema } from './tracklist';
+import { artistCountriesSchema, validArtistLink } from './artist-fields';
 import { z } from 'zod';
 import { proseSchema, requiredProseSchema, richTextSchema } from './prose';
 import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from './music';
@@ -36,17 +37,22 @@ export function createArtistsContentSchema<TImage extends z.ZodType>(image: () =
     title: requiredText,
     slug: z.string().regex(new RegExp(slugPatternSource), 'Use lowercase kebab-case.'),
     genre: requiredText,
-    country: z.string().optional(),
+    country: artistCountriesSchema.optional(),
     image: image(),
     image_alt: requiredAltText,
     bio: requiredText,
     bio_rich: richTextSchema.nullish(),
     profile_links: z
       .array(
-        z.object({
-          label: requiredText,
-          url: httpsUrl,
-        }),
+        z
+          .object({
+            label: requiredText,
+            url: httpsUrl,
+          })
+          .refine((link) => validArtistLink(link.label, link.url), {
+            path: ['url'],
+            message: 'Use the matching service URL. Spotify links are not supported.',
+          }),
       )
       .optional(),
     videos: z
@@ -69,7 +75,8 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
   return z.object({
     title: requiredText,
     artist: references.artist,
-    release_date: z.coerce.date(),
+    release_stage: z.enum(['upcoming', 'released']).optional(),
+    release_date: z.coerce.date().optional(),
     cover_image: image(),
     cover_image_alt: requiredAltText,
     merch_url: internalOrHttpsUrl.optional(),

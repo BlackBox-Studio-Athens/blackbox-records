@@ -48,7 +48,8 @@ export type ArtistRosterReleaseContext = {
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
 
-function formatMonthYear(value: Date) {
+function formatMonthYear(value: Date | undefined) {
+  if (!value) return 'Date to be announced';
   return value.toLocaleDateString('en-US', { month: 'short', timeZone: 'Europe/Athens', year: 'numeric' });
 }
 
@@ -57,7 +58,10 @@ function sortArtistProfilesByName(left: ArtistProfileEntry, right: ArtistProfile
 }
 
 function sortReleaseCatalogByDate(left: ReleaseCatalogEntry, right: ReleaseCatalogEntry) {
-  return right.data.release_date.getTime() - left.data.release_date.getTime();
+  return (
+    (right.data.release_date?.getTime() ?? Infinity) - (left.data.release_date?.getTime() ?? Infinity) ||
+    left.data.title.localeCompare(right.data.title)
+  );
 }
 
 function sortNewsArticlesByDate(left: NewsArticleEntry, right: NewsArticleEntry) {

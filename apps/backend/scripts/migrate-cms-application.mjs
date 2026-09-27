@@ -55,6 +55,7 @@ const proxy = await getPlatformProxy({
 let pending;
 let privateDraftFieldsToUpdate = 0;
 let calendarDateFieldsToUpdate = 0;
+let releaseStageToAdd = false;
 try {
   const db = proxy.env.CMS_DB;
   const exists = await db
@@ -64,6 +65,33 @@ try {
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='_emdash_fields'")
     .first();
   if (fieldsExist) {
+    const releases = await db.prepare("SELECT id FROM _emdash_collections WHERE slug = 'releases'").first();
+    if (releases) {
+      const field = await db
+        .prepare("SELECT type FROM _emdash_fields WHERE collection_id = ? AND slug = 'release_stage'")
+        .bind(releases.id)
+        .first();
+      const columns = (await db.prepare('PRAGMA table_info(ec_releases)').all()).results;
+      const column = columns.find((column) => column.name === 'release_stage');
+      if ((field && field.type !== 'string') || (column && column.type.toLowerCase() !== 'text'))
+        throw new Error('Unexpected release_stage schema; stop before changing content.');
+      releaseStageToAdd = !field || !column;
+      if (values.apply && releaseStageToAdd) {
+        const statements = [];
+        if (!column) statements.push(db.prepare('ALTER TABLE ec_releases ADD COLUMN release_stage TEXT'));
+        if (!field)
+          statements.push(
+            db
+              .prepare(
+                `INSERT INTO _emdash_fields
+          (id, collection_id, slug, label, type, column_type, required)
+          VALUES ('blackbox-release-stage', ?, 'release_stage', 'Release stage', 'string', 'text', 0)`,
+              )
+              .bind(releases.id),
+          );
+        await db.batch(statements);
+      }
+    }
     // Run before EmDash 079_datetime_normalization, including before Local auto migrations.
     const calendarDates = `type = 'datetime' AND (
       (slug = 'release_date' AND collection_id IN (SELECT id FROM _emdash_collections WHERE slug IN ('releases', 'distro')))
@@ -117,6 +145,7 @@ try {
         pending,
         privateDraftFieldsToUpdate,
         calendarDateFieldsToUpdate,
+        releaseStageToAdd,
       },
       null,
       2,

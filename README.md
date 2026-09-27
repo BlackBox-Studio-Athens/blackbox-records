@@ -89,6 +89,8 @@ Local, UAT and PRD use the protected EmDash workspace for content, item creation
 
 ## Member workspace
 
+Artist drafts support searchable country choices, genre suggestions, standard service links, and automatic image selection after upload. Artist photos fit intact in portrait frames. Add upcoming release creates one linked Release with its own artwork; the same record becomes Released after a date is supplied. UAT/PRD deployment migrations add the optional stage field without copying or publishing content. See [the editorial workflow](docs/content-workspace.md).
+
 Use [UAT staff](https://staff-uat.blackboxrecordsathens.com/content/) or the Local workspace at `http://127.0.0.1:8787/content/`. [PRD staff](https://staff.blackboxrecordsathens.com/content/) now serves the imported content through the combined Worker. The cutover is complete and normal editorial work can resume there.
 
 | Task                   | Member action                                                                                                                                                                                                      |

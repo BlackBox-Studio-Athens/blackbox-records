@@ -10,6 +10,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
 import { createReleaseDetailPath, listReleaseCatalogByArtistId } from '@/lib/catalog-data';
 import { cn } from '@/lib/utils';
+import { splitReleaseCatalogByAvailability } from '@/lib/release-feature';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/utils/music';
 
@@ -27,9 +28,10 @@ const profileLinks = artist.data.profile_links || [];
 const artistVideos = artist.data.videos || [];
 
 const artistReleases = await listReleaseCatalogByArtistId(artist.id);
-const latestRelease = artistReleases[0] || null;
+const { upcomingReleases, outNowReleases } = splitReleaseCatalogByAvailability(artistReleases);
+const latestRelease = upcomingReleases[0] || outNowReleases[0] || null;
 const latestReleaseDate = latestRelease ? formatMonthYear(latestRelease.data.release_date) : '';
-const latestReleaseDateMachineValue = latestRelease ? latestRelease.data.release_date.toISOString().slice(0, 10) : '';
+const latestReleaseDateMachineValue = latestRelease?.data.release_date?.toISOString().slice(0, 10);
 const latestReleaseFormats = latestRelease?.data.formats?.length ? latestRelease.data.formats.join(' / ') : 'Release';
 const latestReleaseHref = latestRelease
   ? createReleaseDetailPath(latestRelease)
@@ -38,6 +40,7 @@ const latestReleasePlayerTitle = latestRelease ? `${latestRelease.data.title} â€
 const normalizedUpcomingRelease = (artist.data.upcoming_release || '').trim().toLowerCase();
 const latestReleaseTitleNormalized = (latestRelease?.data.title || '').trim().toLowerCase();
 const hasUpcomingReleaseCallout = Boolean(
+  !upcomingReleases.length &&
   normalizedUpcomingRelease &&
   (!latestReleaseTitleNormalized || !normalizedUpcomingRelease.includes(latestReleaseTitleNormalized)),
 );
@@ -63,7 +66,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
         <Image
           src={artist.data.image}
           alt={artist.data.image_alt || artistName}
-          class="artist-detail-hero__image h-full w-full object-cover object-center"
+          class="artist-detail-hero__image h-full w-full object-contain object-center bg-[#141414]"
           widths={[720, 1080, 1440, 1800]}
           sizes="(min-width: 1024px) 34rem, 100vw"
           priority={showRouteNavigation}
@@ -128,7 +131,9 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
     )}
   >
     <div class="artist-latest-release-panel">
-      <p class="artist-detail-section-label">Latest release</p>
+      <p class="artist-detail-section-label">
+        {upcomingReleases.includes(latestRelease) ? 'Upcoming release' : 'Latest release'}
+      </p>
       <a href={latestReleaseHref} data-astro-prefetch class="artist-latest-release-panel__artwork-link">
         <Image
           src={latestRelease.data.cover_image}
@@ -147,7 +152,11 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
           {latestReleaseDate && (
             <>
               {' / '}
-              <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time>
+              {latestReleaseDateMachineValue ? (
+                <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time>
+              ) : (
+                <span>{latestReleaseDate}</span>
+              )}
             </>
           )}
         </p>
@@ -279,7 +288,11 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
                 {releaseDate && (
                   <>
                     {' / '}
-                    <time datetime={release.data.release_date.toISOString().slice(0, 10)}>{releaseDate}</time>
+                    {release.data.release_date ? (
+                      <time datetime={release.data.release_date.toISOString().slice(0, 10)}>{releaseDate}</time>
+                    ) : (
+                      <span>{releaseDate}</span>
+                    )}
                   </>
                 )}
               </span>

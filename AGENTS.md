@@ -303,8 +303,8 @@ All JSON collection entries include `$schema` links to Astro-generated collectio
 - Ideal band-delivered source: `1800 x 2400`
 - Acceptable minimum: `1200 x 1600`
 - Ask bands to keep the subject centered with headroom and side breathing room
-- Default rendering uses `object-fit: cover` and centered cropping
-- If an artist image crops badly, replace the source image before introducing focal-point config
+- Default artist rendering uses `object-fit: contain` inside the existing dark frames, preserving the full photo
+- The roster retains its strict 3:4 frame; do not reintroduce automatic cropping that clips band members
 
 ## Routing model
 

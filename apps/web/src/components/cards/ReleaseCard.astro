@@ -27,7 +27,7 @@ const isArtistDiscography = variant === 'artist-discography';
 const usesFramedArtworkLayout = isFramedArtwork || isArtistDiscography;
 const releaseCardImageWidths = isArtistDiscography ? [240, 320, 480, 640] : [320, 480, 640, 800, 960];
 const releaseDate = formatMonthYear(release.data.release_date);
-const releaseDateMachineValue = release.data.release_date.toISOString().slice(0, 10);
+const releaseDateMachineValue = release.data.release_date?.toISOString().slice(0, 10);
 
 const dataAttributes = embeddedPlayerData
   ? {
@@ -96,7 +96,11 @@ const dataAttributes = embeddedPlayerData
       }
     >
       <p class="release-card-year-text">
-        <time datetime={releaseDateMachineValue}>{releaseDate}</time>
+        {releaseDateMachineValue ? (
+          <time datetime={releaseDateMachineValue}>{releaseDate}</time>
+        ) : (
+          <span>{releaseDate}</span>
+        )}
       </p>
       <h3 class="brand-card-title text-foreground">{release.data.title.toUpperCase()}</h3>
       {isArtistDiscography ? (

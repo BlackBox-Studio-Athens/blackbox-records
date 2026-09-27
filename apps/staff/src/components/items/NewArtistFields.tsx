@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { genreSuggestions } from '@blackbox/content-model';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
@@ -48,7 +49,7 @@ export default function NewArtistFields({ base, onCreated }: { base: string; onC
           genre: genre.trim(),
           bio: bio.trim(),
           image: { id: image },
-          image_alt: alt.trim(),
+          image_alt: alt.trim() || title.trim(),
         },
       };
       sessionStorage.setItem(storageKey, JSON.stringify(command));
@@ -86,7 +87,17 @@ export default function NewArtistFields({ base, onCreated }: { base: string; onC
             </label>
             <label className="grid gap-2">
               Genre
-              <Input required value={genre} onChange={(event) => setGenre(event.target.value)} />
+              <Input
+                required
+                value={genre}
+                list="new-artist-genres"
+                onChange={(event) => setGenre(event.target.value)}
+              />
+              <datalist id="new-artist-genres">
+                {genreSuggestions.map((genre) => (
+                  <option key={genre} value={genre} />
+                ))}
+              </datalist>
             </label>
             <label className="grid gap-2">
               Short biography
@@ -105,10 +116,13 @@ export default function NewArtistFields({ base, onCreated }: { base: string; onC
               value={image}
               onSelect={(item) => setImage(item.id)}
             />
-            <label className="grid gap-2">
-              Describe the artist photo
-              <Input required value={alt} onChange={(event) => setAlt(event.target.value)} />
-            </label>
+            <details>
+              <summary>Image description for accessibility</summary>
+              <label className="grid gap-2">
+                Image description
+                <Input value={alt} placeholder={title} onChange={(event) => setAlt(event.target.value)} />
+              </label>
+            </details>
           </fieldset>
           <Button type="button" disabled={busy} onClick={() => void save()}>
             {busy ? 'Checking artist…' : pending ? 'Check artist' : 'Save artist'}

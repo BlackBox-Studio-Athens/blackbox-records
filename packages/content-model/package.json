@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@portabletext/toolkit": "6.0.0",
+    "i18n-iso-countries": "7.14.0",
     "zod": "^4.6.5"
   }
 }

@@ -36,11 +36,16 @@ const artists = defineCollection({
 const releases = defineCollection({
   loader: publicContentLoader('releases', '**/*.{md,mdx}', './src/content/releases'),
   schema: ({ image }) =>
-    createReleasesContentSchema(image, { artist: reference('artists') }).extend({
-      store_item: storeIdentity,
-      editorial_body: cmsBodySchema.optional(),
-      content_media: z.record(z.string(), image()).optional(),
-    }),
+    createReleasesContentSchema(image, { artist: reference('artists') })
+      .extend({
+        store_item: storeIdentity,
+        editorial_body: cmsBodySchema.optional(),
+        content_media: z.record(z.string(), image()).optional(),
+      })
+      .refine((release) => release.release_stage === 'upcoming' || !!release.release_date, {
+        path: ['release_date'],
+        message: 'Released records need a release date.',
+      }),
 });
 
 const news = defineCollection({

@@ -1,5 +1,60 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import {
+  parseArtistCountries,
+  formatArtistCountries,
+  validArtistLink,
+  publishedCollection,
+} from '@blackbox/content-model';
+
+test('artist countries and service links preserve valid identities', () => {
+  assert.deepEqual(parseArtistCountries('Greece / Germany'), ['GR', 'DE']);
+  assert.equal(formatArtistCountries(['GR', 'DE', 'GR']), 'Greece / Germany');
+  assert.equal(parseArtistCountries('Greece / Atlantis'), null);
+  assert.equal(parseArtistCountries('Greece / GR'), null);
+  assert.equal(validArtistLink('Bandcamp', 'https://sidus-gr.bandcamp.com/'), true);
+  assert.equal(validArtistLink('Tidal', 'https://bandcamp.com/'), false);
+  assert.equal(validArtistLink('Website', 'https://open.spotify.com/artist/example'), false);
+  assert.equal(validArtistLink('Bandcamp', 'https://bandcamp.com.evil.example/'), false);
+});
+
+test('upcoming releases may omit dates; released records must provide one', () => {
+  const release = {
+    title: 'LOTUS',
+    artist: 'sidus',
+    cover_image: { id: 'artwork' },
+    cover_image_alt: 'Lotus',
+    release_stage: 'upcoming',
+  };
+  assert.deepEqual(validateCmsContent('releases', release), []);
+  for (const release_date of ['', null]) {
+    assert.deepEqual(validateCmsContent('releases', { ...release, release_date }), []);
+    const [rendered] = publishedCollection(
+      {
+        media: [],
+        records: [
+          { collection: 'artists', id: 'sidus', slug: 'sidus', data: {} },
+          { collection: 'releases', id: 'lotus', slug: 'lotus', data: { ...release, release_date } },
+        ],
+      },
+      'releases',
+      '/media',
+      { artwork: { src: '/lotus.png', width: 1024, height: 1024, format: 'png' } },
+    );
+    assert.equal(rendered.data.release_date, undefined);
+    assert.ok(validateCmsContent('releases', { ...release, release_date, release_stage: 'released' }).length);
+  }
+  assert.ok(
+    validateCmsContent('releases', { ...release, release_stage: 'released' }).some((issue) =>
+      issue.startsWith('release_date:'),
+    ),
+  );
+  assert.deepEqual(
+    validateCmsContent('releases', { ...release, release_stage: 'released', release_date: '2026-10-10' }),
+    [],
+  );
+  assert.ok(validateCmsContent('releases', { ...release, release_stage: 'preorder' }).length);
+});
 import { formattedProse } from './fixtures/prose.ts';
 import {
   cmsLinkSchema,

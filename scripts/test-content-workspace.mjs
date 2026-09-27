@@ -56,7 +56,7 @@ const artist = {
   image: { id: media[0].id },
   image_alt: 'Band portrait',
   bio: 'Independent music from Athens. New recordings, live shows, and a shared love of loud guitars.',
-  profile_links: [{ label: 'Bandcamp', url: 'https://example.com' }],
+  profile_links: [{ label: 'Bandcamp', url: 'https://ouranopithecus.bandcamp.com' }],
   videos: [],
   upcoming_release: '',
   body: [
@@ -805,7 +805,68 @@ await new Promise((resolve) =>
 );
 const origin = `http://127.0.0.1:${server.address().port}`;
 if (process.argv.includes('--serve')) console.log(`Local CMS fixtures: ${origin}/content/`);
-else if (sellingJourney) {
+else if (process.argv.includes('--artist-journey')) {
+  const browser = await browserType.launch();
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  await mkdir(artifacts, { recursive: true });
+  try {
+    const artistCount = records.artists.length;
+    await page.goto(`${origin}/content/?collection=artists&new=1`);
+    await page.getByLabel('Artist name', { exact: true }).waitFor();
+    await page.waitForTimeout(1700);
+    assert.equal(records.artists.length, artistCount, 'Opening a form must not create an empty draft');
+    assert.equal(await page.getByText('We could not confirm this request.', { exact: false }).count(), 0);
+    await page.getByLabel('Artist name', { exact: true }).fill('Artist journey');
+    await page.getByRole('combobox', { name: 'Countries', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Search countries', exact: true }).fill('Greece');
+    await page.getByRole('option', { name: 'Greece', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Search countries', exact: true }).fill('Germany');
+    await page.getByRole('option', { name: 'Germany', exact: true }).click();
+    await page.keyboard.press('Escape');
+    await page.getByLabel('Genre', { exact: true }).fill('Post Rock / Post Metal');
+    await page.getByRole('button', { name: 'Choose artist image', exact: true }).click();
+    await page.getByRole('button', { name: 'Upload', exact: true }).click();
+    await page.locator('input[type=file]').setInputFiles({ name: 'artist.png', mimeType: 'image/png', buffer: pixels });
+    await page.getByRole('dialog').waitFor({ state: 'hidden' });
+    await page.getByRole('button', { name: 'Change artist image', exact: true }).waitFor();
+    await page.getByRole('status').filter({ hasText: 'Changes saved' }).first().waitFor();
+    const artist = records.artists.find((item) => item.data.title === 'Artist journey');
+    assert.equal(artist.data.country, 'Greece / Germany');
+    assert.equal(artist.data.image.id, 'uploaded');
+    assert.equal(artist.data.image_alt, 'Artist journey');
+    await page.screenshot({ path: resolve(artifacts, 'artist-journey.png') });
+    await page.getByRole('button', { name: 'Add upcoming release', exact: true }).click();
+    await page.getByLabel('Release title', { exact: true }).fill('Upcoming journey');
+    await page.getByRole('status').filter({ hasText: 'Changes saved' }).first().waitFor();
+    const release = records.releases.find((item) => item.data.title === 'Upcoming journey');
+    assert.equal(release.data.artist, artist.id);
+    assert.equal(release.data.release_stage, 'upcoming');
+    assert.equal(release.data.release_date ?? '', '');
+    await page.getByRole('button', { name: 'Choose cover image', exact: true }).click();
+    await page.getByRole('button', { name: 'Upload', exact: true }).click();
+    await page.locator('input[type=file]').setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: pixels });
+    await page.getByRole('dialog').waitFor({ state: 'hidden' });
+    await page.getByLabel('Release stage', { exact: true }).selectOption('released');
+    await page.getByLabel('Release date', { exact: true }).fill('2026-09-27');
+    await page.getByRole('status').filter({ hasText: 'Changes saved' }).first().waitFor();
+    await page.reload();
+    await page.getByLabel('Release title', { exact: true }).waitFor();
+    assert.equal(await page.getByLabel('Release title', { exact: true }).inputValue(), 'Upcoming journey');
+    assert.equal(release.data.cover_image.id, 'uploaded');
+    assert.equal(release.data.release_stage, 'released');
+    assert.equal(records.releases.filter((item) => item.id === release.id).length, 1);
+    await page.screenshot({ path: resolve(artifacts, 'release-journey.png') });
+    console.log(
+      `${browserType.name()}: artist creation, countries, upload selection, save and release transition passed.`,
+    );
+  } catch (error) {
+    await page.screenshot({ path: resolve(artifacts, 'artist-journey-failure.png') });
+    throw error;
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+} else if (sellingJourney) {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await mkdir(artifacts, { recursive: true });
@@ -1186,7 +1247,7 @@ else if (sellingJourney) {
       );
       const settledReads = reads.length;
       await probe.getByLabel('Inventory area', { exact: true }).selectOption('merch');
-      await probe.clock.runFor(61_000);
+      await probe.clock.fastForward(61_000);
       assert.equal(reads.length, settledReads, 'Hidden inventory navigation and polling pause reads');
       await Promise.all([
         probe.waitForResponse(
@@ -1204,7 +1265,7 @@ else if (sellingJourney) {
       await context.setOffline(true);
       const beforeOffline = reads.length;
       await probe.getByLabel('Inventory area', { exact: true }).selectOption('distro');
-      await probe.clock.runFor(61_000);
+      await probe.clock.fastForward(61_000);
       assert.equal(reads.length, beforeOffline, 'Offline inventory navigation and polling pause reads');
       await Promise.all([
         probe.waitForResponse(
@@ -1255,6 +1316,7 @@ else if (sellingJourney) {
   try {
     await mkdir(artifacts, { recursive: true });
     page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    page.setDefaultTimeout(30_000);
     if (process.env.BLACKBOX_VALIDATION_TRACE === '1')
       await page.context().tracing.start({ screenshots: true, snapshots: true, sources: true });
     initialStockReads.resolve();
@@ -1652,12 +1714,27 @@ else if (sellingJourney) {
         process.exit(0);
       }
     }
-    await assertClosedOptionalFeatures(browser);
-    await assertOptionalFeatures(browser);
-    await assertOverviewPanels(browser);
-    await assertNavigationStartup(browser);
-    await assertOverviewRefresh(browser);
-    await assertStockStartup(browser);
+    for (const check of [
+      assertClosedOptionalFeatures,
+      assertOptionalFeatures,
+      assertOverviewPanels,
+      assertNavigationStartup,
+      assertOverviewRefresh,
+      assertStockStartup,
+    ]) {
+      console.log(`Checking ${check.name}`);
+      let timer;
+      try {
+        await Promise.race([
+          check(browser),
+          new Promise((_, reject) => {
+            timer = setTimeout(() => reject(new Error(`${check.name} exceeded 60 seconds`)), 60_000);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timer);
+      }
+    }
     await page.goto(`${origin}/content/?collection=about&id=about-1`);
     const opening = page.getByRole('textbox', { name: 'Opening text', exact: true });
     await opening.waitFor();
@@ -2350,7 +2427,7 @@ else if (sellingJourney) {
       await page.screenshot({ path: resolve(artifacts, `staff-stock-${width}.png`) });
     }
     state.stockRevision = 4;
-    await page.clock.runFor(60_100);
+    await page.clock.fastForward(60_100);
     await page.getByRole('button', { name: /reassessed/ }).waitFor();
     assert.equal(await count.inputValue(), '12', 'Changed stock never clears entered counts');
     assert.equal(await page.getByRole('button', { name: 'Save count', exact: true }).isEnabled(), false);
@@ -2372,13 +2449,13 @@ else if (sellingJourney) {
       Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' }),
     );
     const beforeHidden = orderReads();
-    await page.clock.runFor(120_100);
+    await page.clock.fastForward(120_100);
     assert.equal(orderReads(), beforeHidden, 'Hidden tabs do not poll orders');
     await page.evaluate(() =>
       Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' }),
     );
     state.orderDenied = true;
-    await page.clock.runFor(60_100);
+    await page.clock.fastForward(60_100);
     await page.getByRole('heading', { name: 'Access required' }).waitFor();
     assert.equal(
       await page.getByText('Test customer 50', { exact: true }).count(),
@@ -2398,7 +2475,7 @@ else if (sellingJourney) {
         Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' }),
       );
       const before = reads();
-      await pollingPage.clock.runFor(120_000);
+      await pollingPage.clock.fastForward(120_000);
       assert.equal(reads(), before, 'Hidden publication polling is paused');
       await pollingPage.evaluate(() =>
         Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' }),

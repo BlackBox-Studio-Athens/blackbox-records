@@ -38,12 +38,14 @@ const latestReleasePlayerData = latestReleaseEntry
 const latestReleaseCommerceLink = latestReleaseEntry ? await getReleaseCommerceLink(latestReleaseEntry) : null;
 const latestReleaseDetailPath = latestReleaseEntry ? createReleaseDetailPath(latestReleaseEntry) : '';
 const latestReleaseLabel =
-  latestReleaseEntry?.data.release_date && isReleaseOutNow(latestReleaseEntry.data.release_date)
+  latestReleaseEntry?.data.release_stage !== 'upcoming' &&
+  latestReleaseEntry?.data.release_date &&
+  isReleaseOutNow(latestReleaseEntry.data.release_date)
     ? 'Latest out now'
     : 'Next release';
 const latestReleaseDate = latestReleaseEntry ? formatMonthYear(latestReleaseEntry.data.release_date) : '';
 const latestReleaseDateMachineValue = latestReleaseEntry
-  ? latestReleaseEntry.data.release_date.toISOString().slice(0, 10)
+  ? latestReleaseEntry.data.release_date?.toISOString().slice(0, 10)
   : '';
 const hasLatestReleaseActions = Boolean(latestReleasePlayerData || latestReleaseCommerceLink);
 const upcomingReleaseArtist = upcomingReleaseEntry
@@ -55,7 +57,7 @@ const upcomingReleaseArtistName = upcomingReleaseEntry
 const upcomingReleaseDetailPath = upcomingReleaseEntry ? createReleaseDetailPath(upcomingReleaseEntry) : '';
 const upcomingReleaseDate = upcomingReleaseEntry ? formatDayMonthYear(upcomingReleaseEntry.data.release_date) : '';
 const upcomingReleaseDateMachineValue = upcomingReleaseEntry
-  ? upcomingReleaseEntry.data.release_date.toISOString().slice(0, 10)
+  ? upcomingReleaseEntry.data.release_date?.toISOString().slice(0, 10)
   : '';
 
 function formatReleaseFormats(formats: string[] | undefined) {
@@ -98,8 +100,13 @@ function formatReleaseFormats(formats: string[] | undefined) {
                 </a>
               </h2>
               <p class="releases-latest-feature__meta">
-                {latestReleaseArtistName} / <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time> /{' '}
-                {formatReleaseFormats(latestReleaseEntry.data.formats)}
+                {latestReleaseArtistName} /{' '}
+                {latestReleaseDateMachineValue ? (
+                  <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time>
+                ) : (
+                  <span>{latestReleaseDate}</span>
+                )}{' '}
+                / {formatReleaseFormats(latestReleaseEntry.data.formats)}
               </p>
               {latestReleaseEntry.data.summary && (
                 <Prose
@@ -162,7 +169,11 @@ function formatReleaseFormats(formats: string[] | undefined) {
               </h3>
               <p class="releases-latest-feature__upcoming-meta">
                 {upcomingReleaseArtistName} /{' '}
-                <time datetime={upcomingReleaseDateMachineValue}>{upcomingReleaseDate}</time>
+                {upcomingReleaseDateMachineValue ? (
+                  <time datetime={upcomingReleaseDateMachineValue}>{upcomingReleaseDate}</time>
+                ) : (
+                  <span>{upcomingReleaseDate}</span>
+                )}
               </p>
               {upcomingReleaseEntry.data.summary && (
                 <Prose

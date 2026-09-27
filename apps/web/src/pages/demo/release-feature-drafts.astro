@@ -25,7 +25,8 @@ const artistProfiles = await listArtistProfiles();
 const artistProfileById = mapArtistProfilesById(artistProfiles);
 const { outNowReleases, upcomingReleases } = splitReleaseCatalogByAvailability(releaseCatalogEntries);
 
-function formatReleaseDate(value: Date) {
+function formatReleaseDate(value: Date | undefined) {
+  if (!value) return 'Date to be announced';
   return value.toLocaleDateString('en-US', {
     day: '2-digit',
     month: 'short',

@@ -5,6 +5,15 @@ import type { EmDashRuntime } from 'emdash/middleware';
 // Explicit setup operation, never run as a side effect of browsing.
 export async function prepareCatalogSchema(runtime: EmDashRuntime) {
   const registry = new SchemaRegistry(runtime.db);
+  const releaseStage = await registry.getField('releases', 'release_stage');
+  if (!releaseStage)
+    await registry.createField('releases', {
+      slug: 'release_stage',
+      label: 'Release stage',
+      type: 'string',
+      required: false,
+    });
+  else if (releaseStage.type !== 'string') throw new Error('Unexpected field type: releases.release_stage');
   for (const [collection, fields] of Object.entries(scalarProseFields)) {
     for (const field of fields) {
       const slug = `${field}_rich`;

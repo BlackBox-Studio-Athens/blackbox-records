@@ -12,3 +12,4 @@ export * from './purchase-headings';
 export * from './publication-review';
 
 export * from './tracklist';
+export * from './artist-fields';

@@ -18,6 +18,17 @@ function release(title: string, releaseDate: string) {
 }
 
 describe('release feature availability', () => {
+  it('keeps undated and explicitly upcoming releases out of the released catalog', () => {
+    const undated = { id: 'lotus', data: { title: 'LOTUS', release_stage: 'upcoming' as const } };
+    const dated = {
+      ...release('Scheduled', '2025-01-01'),
+      data: { ...release('Scheduled', '2025-01-01').data, release_stage: 'upcoming' as const },
+    };
+    const out = release('Released', '2025-01-01');
+    const result = splitReleaseCatalogByAvailability([undated, dated, out]);
+    expect(result.outNowReleases).toEqual([out]);
+    expect(result.upcomingReleases).toEqual([dated, undated]);
+  });
   it('assigns highlighted releases once and preserves the remaining catalog order', () => {
     const releases = [
       release('Anarchotribal', '2026-12-01'),

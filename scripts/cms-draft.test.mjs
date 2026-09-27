@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import './editorial-draft-creation.test.mjs';
 import { validateCmsDraft, validateCmsContent } from '../packages/content-model/src/emdash-content.ts';
 import { onRequest, nativeEditorialWrite } from '../apps/backend/src/middleware.ts';
 

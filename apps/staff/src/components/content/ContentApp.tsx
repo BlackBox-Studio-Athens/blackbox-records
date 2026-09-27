@@ -63,7 +63,7 @@ const ContentPreview = lazy(() => import('./ContentPreview'));
 const PublicationReviewFlow = lazy(() => import('./PublicationReviewFlow'));
 import { requestPublicationHistory } from '../../lib/publication-history-events';
 import PublicationStatus from './PublicationStatus';
-import { getContentValidation, type ContentValidation } from './content-validation';
+import type { ContentValidation, getContentValidation } from './content-validation';
 import { readContentPublications, type ContentPublication } from '../../lib/backend/content-publication-api';
 import { refreshReviewChangesPresence, reviewChangesKey } from '../../lib/review-changes';
 import {
@@ -293,7 +293,25 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     });
   }
 
-  const validation: ContentValidation = getContentValidation(collection, data);
+  const [validate, setValidate] = useState<typeof getContentValidation>();
+  const hasDocument = !!document;
+  useEffect(() => {
+    if (!hasDocument || validate) return;
+    let active = true;
+    void import('./content-validation')
+      .then(({ getContentValidation }) => {
+        if (active) setValidate(() => getContentValidation);
+      })
+      .catch(() => {
+        if (active) setMessage('Form validation could not load. Reload the workspace to continue.');
+      });
+    return () => {
+      active = false;
+    };
+  }, [hasDocument, validate]);
+  const validation: ContentValidation = validate
+    ? validate(collection, data)
+    : { valid: false, issues: [], byPath: {} };
   const editorComparisonIdentity = document ? `${collection}/${document.item.id || 'new'}` : '';
   const currentEditorComparison =
     editorComparison?.identity === editorComparisonIdentity ? editorComparison : undefined;
@@ -541,7 +559,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     if (pending) {
       try {
         const saved = JSON.parse(pending) as { collection: ContentSection; slug: string; data: ContentData };
-        if (!['news', 'socials', 'artists'].includes(saved.collection)) throw new Error('Unsupported section');
+        if (!['news', 'socials', 'artists', 'releases'].includes(saved.collection))
+          throw new Error('Unsupported section');
         setCollection(saved.collection);
         setDocument({ item: { id: '', slug: saved.slug, data: saved.data }, _rev: '' });
         setData(saved.data);
@@ -609,13 +628,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     window.addEventListener('beforeunload', warn);
     return () => window.removeEventListener('beforeunload', warn);
   }, [dirty]);
-
-  function mayLeave() {
-    if (!dirty) return true;
-    reloadFocus.current = window.document.activeElement instanceof HTMLElement ? window.document.activeElement : null;
-    setConfirmReload(true);
-    return false;
-  }
 
   function requestDiscard(trigger: HTMLElement | null = window.document.activeElement as HTMLElement | null) {
     reloadFocus.current = trigger;
@@ -948,18 +960,23 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     return () => window.clearTimeout(timer);
   }, [query, catalogArea, format, sort]);
 
-  async function create(section = collection) {
-    if (!mayLeave() || !['news', 'socials', 'artists'].includes(section)) return;
+  async function create(section = collection, initial: ContentData = {}) {
+    if (!['news', 'socials', 'artists', 'releases'].includes(section) || !(await autosave.flush())) return;
+    setCollection(section);
+    setPendingNew(null);
     // Start locally; incomplete editorial work is saved privately.
     setDocument({ item: { id: '', slug: editorialSlug(section, crypto.randomUUID()), data: {} }, _rev: '' });
-    setData(
-      section === 'artists'
+    setData({
+      ...(section === 'artists'
         ? { title: '', genre: '', bio: '', image: null, image_alt: '', profile_links: [], videos: [] }
-        : section === 'news'
-          ? { title: '', date: '', summary: '', image: null, image_alt: '', body: [] }
-          : { title: '', url: '', order: 0 },
-    );
-    setDirty(true);
+        : section === 'releases'
+          ? { title: '', artist: '', release_stage: 'upcoming', cover_image: null, cover_image_alt: '' }
+          : section === 'news'
+            ? { title: '', date: '', summary: '', image: null, image_alt: '', body: [] }
+            : { title: '', url: '', order: 0 }),
+      ...initial,
+    });
+    setDirty(false);
     setValidationAttempt(0);
     setConflict(false);
     setMessage('');
@@ -970,6 +987,16 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     params.set('new', '1');
     params.delete('id');
     writeStaffLocation(`/content/?${params}`, { push: true, task: true, pages: pageCursors });
+  }
+
+  async function addUpcomingRelease() {
+    if (!(await autosave.flush())) return;
+    const artist = currentDocument.current?.item;
+    if (!artist?.id) {
+      setMessage('Enter the artist name and let the draft save before adding a release.');
+      return;
+    }
+    await create('releases', { artist: artist.id });
   }
 
   async function remove() {
@@ -1571,6 +1598,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                 disabled={busy}
                                 validation={validation}
                                 validationAttempt={validationAttempt}
+                                onAddUpcomingRelease={addUpcomingRelease}
                                 onChange={(next) => {
                                   setData(next);
                                   setDirty(true);

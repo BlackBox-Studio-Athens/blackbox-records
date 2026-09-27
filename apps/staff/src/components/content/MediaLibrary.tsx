@@ -24,6 +24,7 @@ import {
 } from '../../lib/backend/editorial-api';
 
 function cropSuitability(item: EditorialMedia, cropRatio?: number) {
+  if (cropRatio === 0.75) return 'Full photo in a portrait frame';
   if (!cropRatio || !item.width || !item.height) return '';
   const ratio = item.width / item.height;
   return Math.abs(ratio - cropRatio) <= 0.08 ? 'Fits this crop' : 'Check the crop';
@@ -144,8 +145,8 @@ export default function MediaLibrary({
     try {
       const item = await uploadArtwork(base, file);
       setItems((previous) => [item, ...previous.filter((row) => row.id !== item.id)]);
-      setMessage(`${item.filename} uploaded. Select the image to use it in your draft.`);
-      // Keep the upload field in view so its success message remains visible.
+      setMessage(`${item.filename} uploaded.`);
+      onSelect?.(item);
     } catch (error) {
       setError(true);
       setMessage(error instanceof Error ? error.message : 'The image could not be uploaded. Try again.');
@@ -307,7 +308,7 @@ export default function MediaLibrary({
                 }}
               >
                 <AspectRatio ratio={cropRatio ?? 4 / 3} className="w-full bg-muted/30 p-2">
-                  <MediaImage item={item} base={base} crop={!!cropRatio} />
+                  <MediaImage item={item} base={base} crop={!!cropRatio && cropRatio !== 0.75} />
                 </AspectRatio>
                 <span className="cms-media-filename w-full truncate border-t border-border p-3 text-sm">
                   {item.filename}
@@ -525,7 +526,7 @@ export function ContentImagePicker({
                 {cropRatio && (
                   <p className="mb-4 text-sm text-muted-foreground">
                     {cropRatio === 0.75
-                      ? 'Portraits use a centered 3:4 crop. Aim for 1800 × 2400 px, at least 1200 × 1600 px, with headroom and room at the sides.'
+                      ? 'The full photo fits into a dark 3:4 frame. Aim for 1800 × 2400 px, at least 1200 × 1600 px. No manual cropping is needed.'
                       : 'Artwork uses a centered square crop. These previews show what will be visible.'}
                   </p>
                 )}

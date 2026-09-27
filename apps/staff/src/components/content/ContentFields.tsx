@@ -1,4 +1,6 @@
 import TracklistFields from './TracklistFields';
+import CountryPicker from './CountryPicker';
+import { artistLinkNames, genreSuggestions } from '@blackbox/content-model';
 import { tracklistFormat, type Tracklist } from '@blackbox/content-model';
 import { lazy, Suspense, useState } from 'react';
 import {
@@ -32,6 +34,7 @@ export default function ContentFields({
   disabled = false,
   validation,
   validationAttempt,
+  onAddUpcomingRelease,
 }: {
   collection: ContentSection;
   data: ContentData;
@@ -40,6 +43,7 @@ export default function ContentFields({
   disabled?: boolean;
   validation: ContentValidation;
   validationAttempt: number;
+  onAddUpcomingRelease?: (() => Promise<void>) | undefined;
 }) {
   const [touched, setTouched] = useState<Set<string>>(() => new Set());
   function touch(path: string) {
@@ -59,16 +63,21 @@ export default function ContentFields({
         data,
       );
   }
-  function set(path: string, next: unknown) {
+  function setFields(changes: Record<string, unknown>) {
     const updated = structuredClone(data);
-    const parts = path.split('.');
-    let parent = updated;
-    for (const key of parts.slice(0, -1)) {
-      if (!parent[key] || typeof parent[key] !== 'object') parent[key] = {};
-      parent = parent[key] as ContentData;
+    for (const [path, next] of Object.entries(changes)) {
+      const parts = path.split('.');
+      let parent = updated;
+      for (const key of parts.slice(0, -1)) {
+        if (!parent[key] || typeof parent[key] !== 'object') parent[key] = {};
+        parent = parent[key] as ContentData;
+      }
+      parent[parts.at(-1)!] = next;
     }
-    parent[parts.at(-1)!] = next;
     onChange(updated);
+  }
+  function set(path: string, next: unknown) {
+    setFields({ [path]: next });
   }
   const fieldClass = 'min-h-11 w-full min-w-0';
   type FieldOptions = {
@@ -79,6 +88,7 @@ export default function ContentFields({
     min?: number;
     max?: number;
     step?: number;
+    list?: string;
   };
   function field(path: string, label: string, options: FieldOptions = {}) {
     if (options.prose || (options.multiline && path !== 'content.seller.address')) {
@@ -150,7 +160,14 @@ export default function ContentFields({
         {options.multiline ? (
           <Textarea {...props} className={fieldClass} rows={4} />
         ) : (
-          <Input {...props} type={options.type ?? 'text'} min={options.min} max={options.max} step={options.step} />
+          <Input
+            {...props}
+            type={options.type ?? 'text'}
+            min={options.min}
+            max={options.max}
+            step={options.step}
+            list={options.list}
+          />
         )}
         {options.required === false && <FieldDescription id={descriptionId}>Optional</FieldDescription>}
         <FieldError id={errorId}>{fieldErrors.join(' ')}</FieldError>
@@ -196,10 +213,18 @@ export default function ContentFields({
             error={fieldErrors.join(' ') || undefined}
             hideLabel
             onBlur={() => touch(path)}
-            onSelect={(item) => set(path, { id: item.id })}
+            onSelect={(item) => {
+              setFields({ [path]: { id: item.id }, [alt]: item.alt || String(data.title || label) });
+            }}
             path={path}
           />
-          {field(alt, 'Describe the image')}
+          <details>
+            <summary className="cursor-pointer text-sm">Image description for accessibility</summary>
+            <p className="my-2 text-sm text-muted-foreground">
+              Filled from the image library or entry title. Change it when the image conveys more information.
+            </p>
+            {field(alt, 'Image description')}
+          </details>
         </FieldGroup>
       </FieldSet>
     );
@@ -306,19 +331,46 @@ export default function ContentFields({
     return (
       <>
         {field('title', 'Artist name')}
-        {field('genre', 'Genre')}
-        {field('country', 'Country', { required: false })}
+        {field('genre', 'Genre', { list: 'artist-genre-suggestions' })}
+        <datalist id="artist-genre-suggestions">
+          {genreSuggestions.map((genre) => (
+            <option key={genre} value={genre} />
+          ))}
+        </datalist>
+        <CountryPicker
+          value={String(data.country ?? '')}
+          onChange={(country) => set('country', country)}
+          error={errors('country').join(' ') || undefined}
+        />
         <h2 className="col-span-full text-lg font-semibold">Photography</h2>
         {image('image', 'image_alt', 'Artist image')}
         <p className="col-span-full text-sm text-muted-foreground">
-          Homepage portraits crop to 3:4. Use 1800 × 2400 px where possible, at least 1200 × 1600 px. Keep the band
-          centered with headroom and space at the sides.
+          Artist photos fit inside a dark 3:4 portrait frame without cutting anyone off. Recommended: 1800 × 2400 px;
+          minimum: 1200 × 1600 px. Originals are preserved.
         </p>
         <h2 className="col-span-full text-lg font-semibold">Biography</h2>
         {field('bio', 'Short biography', { multiline: true })}
-        {rows('profile_links', 'Artist links', { label: '', url: '' }, (path) => (
+        {rows('profile_links', 'Artist links', { label: 'Bandcamp', url: '' }, (path) => (
           <>
-            {field(`${path}.label`, 'Link name')}
+            <Field>
+              <FieldLabel htmlFor={`content-${path}-service`}>Service</FieldLabel>
+              <NativeSelect
+                id={`content-${path}-service`}
+                value={
+                  artistLinkNames.includes(value(`${path}.label`) as (typeof artistLinkNames)[number])
+                    ? String(value(`${path}.label`))
+                    : 'Other'
+                }
+                onChange={(event) => set(`${path}.label`, event.target.value === 'Other' ? '' : event.target.value)}
+              >
+                {artistLinkNames.map((name) => (
+                  <option key={name}>{name}</option>
+                ))}
+                <option>Other</option>
+              </NativeSelect>
+            </Field>
+            {!artistLinkNames.includes(value(`${path}.label`) as (typeof artistLinkNames)[number]) &&
+              field(`${path}.label`, 'Custom link name')}
             {field(`${path}.url`, 'Website address', { type: 'url' })}
           </>
         ))}
@@ -334,10 +386,29 @@ export default function ContentFields({
             {field(`${path}.description`, 'Description', { multiline: true, required: false })}
           </>
         ))}
-        <details className="col-span-full">
-          <summary className="min-h-11 cursor-pointer">Additional artist details</summary>
-          {field('upcoming_release', 'Upcoming release', { required: false })}
-        </details>
+        <FieldSet className="col-span-full gap-3">
+          <FieldLegend>Releases</FieldLegend>
+          <FieldDescription>
+            Create an upcoming release with its own artwork. Keep the same release when it comes out.
+          </FieldDescription>
+          {!!data.upcoming_release && (
+            <p className="text-sm text-muted-foreground">
+              Previous announcement: {String(data.upcoming_release)}. Move its details into the release record.
+            </p>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            disabled={disabled || !String(data.title ?? '').trim()}
+            onClick={() => void onAddUpcomingRelease?.()}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            Add upcoming release
+          </Button>
+          <a href="/content/?collection=releases" className="text-sm underline">
+            Manage existing releases
+          </a>
+        </FieldSet>
         {body}
       </>
     );
@@ -356,7 +427,20 @@ export default function ContentFields({
           onBlur={() => touch('artist')}
           onSelect={(item) => set('artist', item.id)}
         />
-        {field('release_date', 'Release date', { type: 'date' })}
+        <Field>
+          <FieldLabel htmlFor="content-release_stage">Release stage</FieldLabel>
+          <NativeSelect
+            id="content-release_stage"
+            data-content-path="release_stage"
+            value={String(data.release_stage || 'released')}
+            onChange={(event) => set('release_stage', event.target.value)}
+          >
+            <option value="upcoming">Upcoming</option>
+            <option value="released">Released</option>
+          </NativeSelect>
+          <FieldDescription>Keep the same record and artwork when the release comes out.</FieldDescription>
+        </Field>
+        {field('release_date', 'Release date', { type: 'date', required: data.release_stage !== 'upcoming' })}
         {image('cover_image', 'cover_image_alt', 'Cover image')}
         {field('summary', 'Short description', { multiline: true, required: false })}
         <TracklistFields
