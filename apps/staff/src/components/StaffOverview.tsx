@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, FileText, Plus, Boxes, RefreshCw } from 'lucide-react';
 import { editorialRequest, type EditorialList, type EditorialRecord } from '../lib/backend/editorial-api';
 import { readContentPublications, type ContentPublication } from '../lib/backend/content-publication-api';
 import { createInternalOrderApi } from '../lib/backend/internal-order-api';
 import { readStaffQuery, useStaffRead } from '../lib/staff-query';
 import { Button } from './ui/button';
 import { contentSections, type ContentSection } from '../lib/content-sections';
-import ReviewChangesControl from './ReviewChangesControl';
 
 type PanelState = { status: 'loading' | 'ready' | 'error'; error: string; hasLoaded: boolean };
 
@@ -133,21 +132,30 @@ export default function StaffOverview({ base }: { base: string }) {
       <div className="staff-destinations">
         <a href="/content/">
           <div>
-            <strong>Edit a page</strong>
+            <strong className="flex items-center gap-2">
+              <FileText aria-hidden="true" className="size-5" />
+              Edit a page
+            </strong>
             <p>Update the website’s words and images.</p>
           </div>
           <ArrowRight aria-hidden="true" />
         </a>
         <a href="/items/">
           <div>
-            <strong>Add to the catalog</strong>
+            <strong className="flex items-center gap-2">
+              <Plus aria-hidden="true" className="size-5" />
+              Add to the catalog
+            </strong>
             <p>A release, distro title or merch.</p>
           </div>
           <ArrowRight aria-hidden="true" />
         </a>
         <a href="/stock/">
           <div>
-            <strong>Update stock</strong>
+            <strong className="flex items-center gap-2">
+              <Boxes aria-hidden="true" className="size-5" />
+              Update stock
+            </strong>
             <p>Record a sale, new delivery or count.</p>
           </div>
           <ArrowRight aria-hidden="true" />
@@ -184,6 +192,7 @@ export default function StaffOverview({ base }: { base: string }) {
             <div className="mt-4" role="alert">
               <p>{publicationsState.error}</p>
               <Button variant="outline" onClick={retryPublications}>
+                <RefreshCw aria-hidden="true" />
                 Retry publication status
               </Button>
             </div>
@@ -192,6 +201,7 @@ export default function StaffOverview({ base }: { base: string }) {
             <div className="mt-4" role="alert">
               <p>{ordersState.error}</p>
               <Button variant="outline" onClick={retryOrders}>
+                <RefreshCw aria-hidden="true" />
                 Retry order status
               </Button>
             </div>
@@ -200,7 +210,6 @@ export default function StaffOverview({ base }: { base: string }) {
       )}
       <section className="mt-8">
         <h2>Recent drafts</h2>
-        <ReviewChangesControl base={base} className="staff-overview-review" />
         {draftsState.status === 'loading' && !draftsState.hasLoaded && (
           <p role="status" className="mt-4 text-muted-foreground">
             Loading recent work…
@@ -210,6 +219,7 @@ export default function StaffOverview({ base }: { base: string }) {
           <div className="mt-4" role="alert">
             <p>{draftsState.error}</p>
             <Button variant="outline" onClick={retryDrafts}>
+              <RefreshCw aria-hidden="true" />
               Retry recent drafts
             </Button>
           </div>

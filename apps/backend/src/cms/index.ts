@@ -762,6 +762,37 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       if ((origin && origin !== url.origin) || request.headers.get('X-EmDash-Request') !== '1') {
         return new Response('Forbidden', { status: 403 });
       }
+      const discard = /^\/_emdash\/api\/content\/([a-z_]+)\/([A-Za-z0-9_-]+)(\/discard-draft)?$/.exec(url.pathname);
+      if (discard && (request.method === 'DELETE' || (request.method === 'POST' && discard[3]))) {
+        // Check accepted publication and selling state on the server, not just in the review UI.
+        const { withEmDashRuntime } = await import('emdash/middleware');
+        const workspaceUrl = new URL('/_emdash/api/blackbox/workspace', url);
+        workspaceUrl.search = new URLSearchParams({ collection: discard[1], id: discard[2] }).toString();
+        const response = await withEmDashRuntime((runtime) =>
+          readStaffWorkspace(new Request(workspaceUrl), {
+            runtime,
+            db: bindings.CMS_DB,
+            commerce: bindings.COMMERCE_DB,
+            bucket: bindings.MEDIA,
+            environment: productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
+            snapshotCache: this.staffSnapshotCache,
+          }),
+        );
+        if (!response.ok) return response;
+        const result = (await response.json()) as {
+          data: { items: { publicationState?: string; selling?: unknown }[] };
+        };
+        const item = result.data.items[0];
+        if (
+          !item ||
+          item.publicationState === 'pending' ||
+          item.selling ||
+          (request.method === 'DELETE' &&
+            ['artists', 'releases'].includes(discard[1]) &&
+            item.publicationState !== 'draft')
+        )
+          return cmsNestedProblemResponse(409, { code: 'DISCARD_UNAVAILABLE' });
+      }
       const editorialWrite = /^\/_emdash\/api\/content\/([a-z_]+)(?:\/([A-Za-z0-9_-]+))?$/.exec(url.pathname);
       if (editorialWrite && ['POST', 'PUT'].includes(request.method)) {
         try {

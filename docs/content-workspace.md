@@ -48,6 +48,16 @@ If initial pricing is interrupted, reopen Selling with the same authorized accou
 
 ## Private appearance preview
 
+Staff navigation and common actions use the Design Library's Lucide family through existing named `lucide-react` imports. Icons accompany visible labels, remain decorative to screen readers, and share the current shadcn button sizing. The catalog, website pages, images, stock, orders and review workspace keep one consistent icon vocabulary.
+
+New catalog entries and the changes review read saved revision data, including native artist and media references. Initial empty list fields must not replace a member's saved draft in validation or selection.
+
+The staff header owns the single **Review changes** control, including a compact icon on narrow screens. It finishes autosave and opens the current draft's review even when details are incomplete. **All saved changes** opens the shared list. Missing required details block publication; **Show required details** in preview reveals field errors and focuses the first invalid control.
+
+The review list offers **Discard selected changes** and **Discard all changes**. Confirmation lists the exact entries and outcomes. Published entries discard their private draft; never-published Artists, Releases, News and social links move to native trash. Selling-linked entries and pending publications cannot be discarded. The operation uses each reviewed revision and stops at the first conflict or failure, retaining remaining work. All-change preparation is bounded to 100 entries; larger sets use selections of up to 20. Nothing is permanently deleted or published.
+
+Staff uses native wheel movement through forms and rich-text controls. Returning to a tab or application does not refresh workspace lists. Reconnection and pending-publication status still check the server. The review action uses an adapted MIT-licensed [Cult UI Texture Button](https://www.cult-ui.com/docs/components/texture-button), with staff color tokens and the existing shadcn Button's focus and disabled behavior.
+
 UAT Staff and Preview use the same Access application audience in `apps/backend/cms-resources.json`. Configure both exact hostnames (`staff-uat.blackboxrecordsathens.com` and `preview-uat.blackboxrecordsathens.com`) on **BlackBox Records Staff UAT**, with **Eager redirect cookie** enabled. Cloudflare then sets both authorization cookies during the initial Google sign-in. Keep the Google provider, existing member allowlist and 24-hour application session unchanged. The two browser origins remain separate; the Worker still requires a verified human email and matching preview-context owner. Publication service tokens do not grant draft-preview access.
 
 This requires a coordinated Access configuration change and UAT Worker deployment; a build does not provision Access. Remove the redundant **BlackBox Records Preview UAT** application when transferring its hostname. Retain its configuration in the change evidence before removal. A mismatched audience fails closed until both sides agree. Test from a fresh Staff sign-in without first visiting Preview, then check frame readiness, gallery images, retry and tab switching in Firefox and Chromium. The separate-tab connection recovery is for missing or expired sessions, not the expected daily workflow.

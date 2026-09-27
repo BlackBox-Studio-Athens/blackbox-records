@@ -11,7 +11,8 @@ async function createLenis(root: ScrollRoot, prevent: (element: HTMLElement) => 
     content: root instanceof HTMLElement ? root : document.documentElement,
     prevent,
     respectReducedMotion: true,
-    smoothWheel: true,
+    // Native wheel scrolling must agree with form controls and contenteditable scrolling.
+    smoothWheel: false,
     stopInertiaOnNavigate: true,
     wrapper: root,
   });

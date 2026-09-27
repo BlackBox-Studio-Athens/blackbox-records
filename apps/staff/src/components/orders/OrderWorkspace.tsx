@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { ArrowRight, ChevronRight, Inbox, LockKeyhole, Mail, TriangleAlert } from 'lucide-react';
+import {
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Inbox,
+  LockKeyhole,
+  Mail,
+  TriangleAlert,
+  RefreshCw,
+  X,
+} from 'lucide-react';
 import StaffBack from '../StaffBack';
 import {
   rememberStaffPosition,
@@ -164,6 +174,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
           <StaffBack />
         ) : (
           <Button variant="ghost" onClick={back}>
+            <ChevronLeft aria-hidden="true" />
             Back to Orders
           </Button>
         ))}
@@ -244,6 +255,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
               }}
               disabled={read.loading}
             >
+              <RefreshCw aria-hidden="true" />
               {state.selected && !state.session ? 'Return to list and retry' : 'Retry'}
             </Button>
           </div>
@@ -280,6 +292,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                   void workspace.loadList(state.status, search, notification, cursor);
                 }}
               >
+                <ChevronLeft aria-hidden="true" />
                 Previous
               </Button>
             )}
@@ -292,6 +305,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                 }}
               >
                 Next
+                <ChevronRight aria-hidden="true" />
               </Button>
             )}
           </div>
@@ -372,6 +386,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                   void workspace.loadList('', '', '');
                 }}
               >
+                <X aria-hidden="true" />
                 Clear filters
               </Button>
             </div>

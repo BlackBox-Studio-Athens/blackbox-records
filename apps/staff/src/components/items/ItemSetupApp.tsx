@@ -11,7 +11,7 @@ import {
   type Prose,
   type RichText,
 } from '@blackbox/content-model';
-import { CheckCircle2, CircleAlert } from 'lucide-react';
+import { CheckCircle2, CircleAlert, ChevronLeft, ArrowRight, Save } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
@@ -698,11 +698,13 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
             disabled={busy}
             onClick={() => setStep(step === 2 && !sell ? 0 : step - 1)}
           >
+            <ChevronLeft aria-hidden="true" />
             {step === 1 || !sell ? 'Back to details' : 'Back to price & starting stock'}
           </Button>
         )}
         {!completed && !draftSaved && (
           <Button type="submit" disabled={!ready || busy || needsReview}>
+            {step < 2 ? <ArrowRight aria-hidden="true" /> : <Save aria-hidden="true" />}
             {busy
               ? 'Checking item…'
               : pending || draftPending

@@ -37,6 +37,7 @@ export default function ContentPreview({
   valid,
   publication,
   onReadiness,
+  onShowValidation,
 }: {
   collection: ContentSection;
   focusedPath?: string;
@@ -49,6 +50,7 @@ export default function ContentPreview({
   valid: boolean;
   publication?: PublicationReviewInput;
   onReadiness?(state: 'loading' | 'ready' | 'failed'): void;
+  onShowValidation?: (() => void) | undefined;
 }) {
   type Rendering = {
     generation: number;
@@ -247,7 +249,7 @@ export default function ContentPreview({
       setPending(null);
       setError('');
       setDiagnostic(null);
-      setStatus('Fix the highlighted fields to update preview');
+      setStatus('Complete the required details to preview this draft');
       return;
     }
     if (rendered?.inputKey === inputKey && Date.now() < rendered.refreshAt) {
@@ -571,6 +573,11 @@ export default function ContentPreview({
             ? ' · Showing the last successful preview (outdated)'
             : ''}
         </p>
+        {!valid && onShowValidation && (
+          <Button variant="outline" onClick={onShowValidation}>
+            Show required details
+          </Button>
+        )}
         {collection === 'settings' && (
           <p className="text-xs text-muted-foreground">
             Label name and established year appear in the footer. Website URL, logo metadata and location have no

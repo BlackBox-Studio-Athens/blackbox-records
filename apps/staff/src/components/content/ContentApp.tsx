@@ -15,9 +15,8 @@ import {
 } from '../../lib/staff-navigation';
 import StaffBack from '../StaffBack';
 import { Button } from '../ui/button';
-import { ClipboardCheck, Eye, EyeOff, FileText, History, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
+import { Eye, EyeOff, FileText, History, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import { Badge } from '../ui/badge';
-import { changedPublicationFields } from '@blackbox/content-model';
 
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
 import { Table, TableBody, TableRow, TableCell } from '../ui/table';
@@ -26,7 +25,7 @@ const CatalogSelling = lazy(() => import('../items/CatalogSelling'));
 import FormatFilter, { formatLabel } from '../items/FormatFilter';
 import WebsitePages from '../WebsitePages';
 import { useDraftAutosave } from '../../hooks/use-draft-autosave';
-import { readStaffQuery, setStaffQueryData, useStaffRead } from '../../lib/staff-query';
+import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 
 import { Skeleton } from '../ui/skeleton';
 
@@ -59,13 +58,12 @@ import {
 } from '../../lib/content-sections';
 
 const ContentPreview = lazy(() => import('./ContentPreview'));
-
 const PublicationReviewFlow = lazy(() => import('./PublicationReviewFlow'));
+
 import { requestPublicationHistory } from '../../lib/publication-history-events';
 import PublicationStatus from './PublicationStatus';
 import type { ContentValidation, getContentValidation } from './content-validation';
 import { readContentPublications, type ContentPublication } from '../../lib/backend/content-publication-api';
-import { refreshReviewChangesPresence, reviewChangesKey } from '../../lib/review-changes';
 import {
   EditorialApiError,
   editorialRequest,
@@ -77,24 +75,11 @@ import {
 } from '../../lib/backend/editorial-api';
 
 type Document = { item: EditorialRecord; _rev: string };
-type EditorComparison = {
-  identity: string;
-  status: 'checking' | 'ready' | 'error';
-  before: Record<string, unknown> | null;
-};
 
 function contentSave(document: Document, data: ContentData) {
   if (!document._rev) throw new Error('Load the saved version before publishing.');
   // The saved slug and identity remain unchanged when the member renames a title.
   return { _rev: document._rev, data: editorialWriteData(data) };
-}
-
-function publicationAfter(collection: ContentSection, item: EditorialRecord, data: ContentData) {
-  const { _slug, ...after } = editorialWriteData(data);
-  if (collection === 'navigation')
-    for (const key of ['show_in_header', 'show_in_footer'])
-      if (after[key] === 0 || after[key] === 1) after[key] = after[key] === 1;
-  return { ...after, slug: String(_slug ?? item.slug) };
 }
 
 function CatalogPager({
@@ -243,7 +228,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [message, setMessage] = useState('');
   const [conflict, setConflict] = useState(false);
   const [ready, setReady] = useState(false);
-  const [editorComparison, setEditorComparison] = useState<EditorComparison>();
   const [comparisonRetry, setComparisonRetry] = useState(0);
   const [preview, setPreview] = useState(false);
   const [desktopPreview, setDesktopPreview] = useState(false);
@@ -312,31 +296,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const validation: ContentValidation = validate
     ? validate(collection, data)
     : { valid: false, issues: [], byPath: {} };
-  const editorComparisonIdentity = document ? `${collection}/${document.item.id || 'new'}` : '';
-  const currentEditorComparison =
-    editorComparison?.identity === editorComparisonIdentity ? editorComparison : undefined;
-  const editorHasChanges = Boolean(
-    document &&
-    currentEditorComparison?.status === 'ready' &&
-    changedPublicationFields({
-      before: currentEditorComparison.before,
-      after: publicationAfter(collection, document.item, data),
-    }).length,
-  );
 
   useEffect(() => {
-    if (!document) {
-      setEditorComparison(undefined);
-      return;
-    }
-    const identity = `${collection}/${document.item.id || 'new'}`;
-    if (!document.item.id) {
-      setEditorComparison({ identity, status: 'ready', before: null });
-      return;
-    }
+    if (!document?.item.id) return;
     let active = true;
     const id = document.item.id;
-    setEditorComparison({ identity, status: 'checking', before: null });
     void editorialRequest<EditorialList<EditorialRecord>>(
       base,
       `blackbox/workspace?collection=${collection}&id=${encodeURIComponent(id)}`,
@@ -345,7 +309,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         const item = page.items[0];
         if (!item) throw new Error('The accepted version is unavailable.');
         if (active) {
-          setEditorComparison({ identity, status: 'ready', before: item.acceptedData ?? null });
           setDocument((current) =>
             current?.item.id === id
               ? {
@@ -361,9 +324,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           );
         }
       })
-      .catch(() => {
-        if (active) setEditorComparison({ identity, status: 'error', before: null });
-      });
+      .catch(() => {});
     return () => {
       active = false;
     };
@@ -706,11 +667,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       currentDocument.current = nextDocument;
       setDocument(nextDocument);
       setData(loaded.item.data);
-      setEditorComparison({
-        identity: `${collection}/${nextItem.id}`,
-        status: 'ready',
-        before: nextItem.acceptedData ?? null,
-      });
       setItems((items) => items.map((item) => (item.id === nextItem.id ? nextItem : item)));
       setDirty(false);
       setValidationAttempt(0);
@@ -779,8 +735,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
 
   const currentDocument = useRef(document);
   currentDocument.current = document;
-  const editorComparisonRef = useRef(editorComparison);
-  editorComparisonRef.current = editorComparison;
   const latestData = useRef(data);
   latestData.current = data;
   const needsSave = useRef(dirty);
@@ -838,15 +792,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               ? 'changes'
               : 'draft',
         };
-        const comparison = editorComparisonRef.current;
-        const after = publicationAfter(collection, result.item, snapshot);
-        if (
-          !current.item.liveRevisionId ||
-          (comparison?.identity === `${collection}/${result.item.id}` &&
-            comparison.status === 'ready' &&
-            changedPublicationFields({ before: comparison.before, after }).length > 0)
-        )
-          setStaffQueryData(reviewChangesKey(base), true);
         setDocument(result);
         setItems((previous) => [result.item, ...previous.filter((item) => item.id !== result.item.id)]);
         updateUrl(collection, result.item.id, false, true);
@@ -866,10 +811,27 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
 
   useEffect(() => {
+    if (!document || reviewing) return;
+    const review = (event: Event) => {
+      if (!currentDocument.current?.item.id && !needsSave.current) return;
+      event.preventDefault();
+      void autosave
+        .flush()
+        .then((saved) => {
+          if (saved && currentDocument.current?.item.id) setReviewing(true);
+        })
+        .catch(() => setMessage('The review could not be opened. Your draft is safe. Retry.'));
+    };
+    window.addEventListener('staff:review-changes', review);
+    return () => window.removeEventListener('staff:review-changes', review);
+  }, [!!document, reviewing, autosave.flush]);
+
+  useEffect(() => {
     const leave = (event: MouseEvent) => {
       const link = (event.target as Element)?.closest<HTMLAnchorElement>('a[href]');
       if (
         !link ||
+        event.defaultPrevented ||
         link.origin !== location.origin ||
         link.target ||
         event.ctrlKey ||
@@ -1070,27 +1032,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         <Skeleton className="mt-4 h-14" />
       </div>
     );
-  if (reviewing && document)
-    return (
-      <div className="cms-surface staff-page publication-editor" data-lenis-scroll-root>
-        <ContentFeature name="Publication review">
-          <PublicationReviewFlow
-            base={base}
-            individual
-            records={[{ collection, recordId: document.item.id, expectedRevision: document._rev }]}
-            onPublished={() => {
-              setComparisonRetry((attempt) => attempt + 1);
-              void refreshReviewChangesPresence(base).catch(() => {});
-              void publicationStatus();
-            }}
-            onBack={() => {
-              setReviewing(false);
-              requestAnimationFrame(() => editorHeading.current?.focus());
-            }}
-          />
-        </ContentFeature>
-      </div>
-    );
   if (landing)
     return (
       <>
@@ -1105,6 +1046,29 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           />
         </div>
       </>
+    );
+  if (reviewing && document)
+    return (
+      <div className="cms-surface staff-page publication-editor" data-lenis-scroll-root>
+        <Button asChild variant="outline">
+          <a href="/review/">All saved changes</a>
+        </Button>
+        <ContentFeature name="Publication review">
+          <PublicationReviewFlow
+            base={base}
+            individual
+            records={[{ collection, recordId: document.item.id, expectedRevision: document._rev }]}
+            onPublished={() => {
+              setComparisonRetry((attempt) => attempt + 1);
+              void publicationStatus();
+            }}
+            onBack={() => {
+              setReviewing(false);
+              requestAnimationFrame(() => editorHeading.current?.focus());
+            }}
+          />
+        </ContentFeature>
+      </div>
     );
   return (
     <div className="cms-surface cms-workspace">
@@ -1428,44 +1392,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                 {desktopPreview ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}Preview
                               </Button>
                             )}
-                            <Button
-                              disabled={
-                                busy ||
-                                conflict ||
-                                !currentEditorComparison ||
-                                currentEditorComparison?.status === 'checking' ||
-                                (currentEditorComparison?.status === 'ready' && !editorHasChanges)
-                              }
-                              onClick={() => {
-                                if (currentEditorComparison?.status === 'error') {
-                                  setComparisonRetry((attempt) => attempt + 1);
-                                  return;
-                                }
-                                if (!editorHasChanges) return;
-                                if (!requireValidContent()) return;
-                                void autosave
-                                  .flush()
-                                  .then((saved) => {
-                                    const current = currentDocument.current;
-                                    if (!saved || !current?.item.id) return;
-                                    setReviewing(true);
-                                  })
-                                  .catch(() =>
-                                    setMessage(
-                                      'The review could not be opened. Your saved draft is safe. Allow session storage and retry.',
-                                    ),
-                                  );
-                              }}
-                            >
-                              <ClipboardCheck aria-hidden="true" />
-                              {!currentEditorComparison || currentEditorComparison.status === 'checking'
-                                ? 'Checking changes…'
-                                : currentEditorComparison?.status === 'error'
-                                  ? 'Retry change check'
-                                  : editorHasChanges
-                                    ? 'Review changes'
-                                    : 'No changes to review'}
-                            </Button>
                             <DropdownMenu open={draftActionsOpen} onOpenChange={setDraftActionsOpen}>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" aria-label="More draft actions">
@@ -1639,6 +1565,10 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                       base={base}
                       dirty={dirty}
                       valid={validation.valid}
+                      onShowValidation={() => {
+                        setPreview(false);
+                        requireValidContent();
+                      }}
                       active={!media && catalogTab === 'details' && (wide ? desktopPreview : preview)}
                     />
                   </ContentFeature>

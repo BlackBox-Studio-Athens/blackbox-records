@@ -9,7 +9,7 @@ import { completeSnapshot } from '../../src/cms/snapshot-storage';
 
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));
 afterEach(() => vi.restoreAllMocks());
-test('release listing resolves saved native artist references without replacing list fields', async () => {
+test('new release listing uses saved draft fields and native artist references', async () => {
   await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
   const item = {
     id: 'release',
@@ -51,7 +51,7 @@ test('release listing resolves saved native artist references without replacing 
   const result = (await response.json()) as {
     data: { items: { data: { title: string; artist: string }; artistTitle: string }[] };
   };
-  expect(result.data.items[0].data).toEqual({ title: 'List title', artist: 'sidus' });
+  expect(result.data.items[0].data).toEqual({ title: 'Draft title', artist: 'sidus' });
   expect(result.data.items[0].artistTitle).toBe('Sidus');
 });
 test('catalog forwards native filters, ordering and opaque cursors without truncating editorial entries', async () => {
@@ -308,7 +308,13 @@ test('bounded review continues past 250 published entries without losing later d
       data: { items: entries.slice(offset, end), nextCursor: end < entries.length ? String(end) : undefined },
     };
   });
-  const runtime = { handleContentList: list } as unknown as EmDashRuntime;
+  const runtime = {
+    handleContentList: list,
+    handleRevisionGet: vi.fn(async (revisionId: string) => {
+      const entry = entries.find((item) => item.draftRevisionId === revisionId)!;
+      return { success: true, data: { item: { collection: 'socials', entryId: entry.id, data: entry.data } } };
+    }),
+  } as unknown as EmDashRuntime;
   const snapshotCache: StaffSnapshotCache = {};
   const reads = vi.spyOn(env.TEST_SNAPSHOTS, 'get');
   const found = [];
@@ -493,7 +499,11 @@ test('review discovery compares saved revisions rather than published list value
             item: {
               entryId: item.id,
               collection: 'socials',
-              data: { ...item.data, ...(item.id === 'changed' ? { url: 'https://new.example.com' } : {}) },
+              data: {
+                ...item.data,
+                ...(item.id === 'changed' ? { url: 'https://new.example.com' } : {}),
+                ...(item.id === 'incomplete' ? { title: 'Saved new draft' } : {}),
+              },
             },
           },
         };
@@ -505,7 +515,10 @@ test('review discovery compares saved revisions rather than published list value
     environment: 'local',
   });
   expect(response.status).toBe(200);
-  const { data } = (await response.json()) as { data: { items: { id: string; data: { url?: string } }[] } };
+  const { data } = (await response.json()) as {
+    data: { items: { id: string; data: { title?: string; url?: string } }[] };
+  };
   expect(data.items.map((item) => item.id)).toEqual(['changed', 'incomplete']);
   expect(data.items[0].data.url).toBe('https://new.example.com');
+  expect(data.items[1].data.title).toBe('Saved new draft');
 });

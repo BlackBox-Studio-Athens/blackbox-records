@@ -74,6 +74,37 @@ try {
     }
   }
 
+  // Incomplete new editorial entries can be discarded without publishing or deleting media.
+  const disposableArtist = await request('/content/artists', 'POST', {
+    slug: 'discard-artist',
+    data: { title: 'Discard artist', genre: '', bio: '', image: null, image_alt: '' },
+  });
+  assert.equal(disposableArtist.status, 201, JSON.stringify(disposableArtist.body));
+  const disposable = disposableArtist.body.data;
+  const revised = await request(`/content/artists/${disposable.item.id}`, 'PUT', {
+    _rev: disposable._rev,
+    data: { ...disposable.item.data, title: 'Revised private draft' },
+  });
+  assert.equal(revised.status, 200, JSON.stringify(revised.body));
+  const revisedList = await request(`/blackbox/workspace?collection=artists&id=${disposable.item.id}`);
+  assert.equal(revisedList.body.data.items[0].data.title, 'Revised private draft');
+  const changesList = await request('/blackbox/workspace?view=changes&collection=artists');
+  assert.equal(
+    changesList.body.data.items.find((item) => item.id === disposable.item.id)?.data.title,
+    'Revised private draft',
+  );
+  assert.equal(
+    (await request(`/content/artists/${disposable.item.id}`, 'DELETE', { _rev: disposable._rev, confirm: true }))
+      .status,
+    409,
+  );
+  const removed = await request(`/content/artists/${disposable.item.id}`, 'DELETE', {
+    _rev: revised.body.data._rev,
+    confirm: true,
+  });
+  assert.equal(removed.status, 200, JSON.stringify(removed.body));
+  assert.equal((await request(`/content/artists/${disposable.item.id}`)).status, 404);
+
   const pixels = await sharp({ create: { width: 40, height: 60, channels: 3, background: '#333' } })
     .png()
     .toBuffer();

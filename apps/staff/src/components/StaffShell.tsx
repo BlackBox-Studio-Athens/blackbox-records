@@ -1,9 +1,10 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  ArrowUpRight,
+  ArrowRight,
   Boxes,
   ChevronLeft,
   Disc3,
+  FileText,
   Globe,
   House,
   History,
@@ -11,7 +12,6 @@ import {
   Menu,
   PanelLeft,
   Plus,
-  ReceiptText,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
@@ -34,9 +34,9 @@ const areas = [
     icon: Disc3,
     color: 'catalog',
     links: [
-      { label: 'Artists', href: '/content/?collection=artists' },
-      { label: 'Releases', href: '/content/?collection=releases' },
-      { label: 'Distro & merch', href: '/content/?collection=distro' },
+      { label: 'Artists', href: '/content/?collection=artists', icon: Disc3 },
+      { label: 'Releases', href: '/content/?collection=releases', icon: Disc3 },
+      { label: 'Distro & merch', href: '/content/?collection=distro', icon: Boxes },
     ],
   },
   {
@@ -45,21 +45,21 @@ const areas = [
     icon: Globe,
     color: 'website',
     links: [
-      { label: 'Pages', href: '/content/' },
-      { label: 'News', href: '/content/?collection=news' },
-      { label: 'Navigation & footer', href: '/content/?view=footer' },
-      { label: 'Label details', href: '/content/?collection=settings' },
+      { label: 'Pages', href: '/content/', icon: FileText },
+      { label: 'News', href: '/content/?collection=news', icon: FileText },
+      { label: 'Navigation & footer', href: '/content/?view=footer', icon: Menu },
+      { label: 'Label details', href: '/content/?collection=settings', icon: House },
     ],
   },
   { label: 'Images', href: '/content/?view=media', icon: ImageIcon, color: 'images', links: [] },
   { label: 'Stock', href: '/stock/', icon: Boxes, color: 'stock', links: [] },
-  { label: 'Orders', href: '/orders/', icon: ReceiptText, color: 'orders', links: [] },
+  { label: 'Orders', href: '/orders/', icon: FileText, color: 'orders', links: [] },
 ];
 const additions = [
-  { label: 'Artist', href: '/content/?collection=artists&new=1' },
-  { label: 'Release', href: '/items/new/?kind=release' },
-  { label: 'Distro', href: '/items/new/?kind=distro' },
-  { label: 'Merch', href: '/items/new/?kind=merch' },
+  { label: 'Artist', href: '/content/?collection=artists&new=1', icon: Disc3 },
+  { label: 'Release', href: '/items/new/?kind=release', icon: Disc3 },
+  { label: 'Distro', href: '/items/new/?kind=distro', icon: Boxes },
+  { label: 'Merch', href: '/items/new/?kind=merch', icon: Boxes },
 ];
 
 export default function StaffShell({
@@ -242,8 +242,9 @@ export default function StaffShell({
   }
 
   function contextualLinks() {
-    return area.links.map(({ label, href }) => (
+    return area.links.map(({ label, href, icon: Icon }) => (
       <a key={href} href={href} aria-current={selectedHref === href ? 'page' : undefined}>
+        <Icon aria-hidden="true" className="size-4 shrink-0" />
         {label}
       </a>
     ));
@@ -252,7 +253,6 @@ export default function StaffShell({
   function utilities() {
     return (
       <>
-        <ReviewChangesControl base={base} className="staff-review-link" current={url.pathname.startsWith('/review/')} />
         <Button
           type="button"
           variant="outline"
@@ -270,16 +270,19 @@ export default function StaffShell({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="cms-surface staff-add-menu" align="end">
-            {additions.map(({ label, href }) => (
+            {additions.map(({ label, href, icon: Icon }) => (
               <DropdownMenuItem key={href} asChild onSelect={(event) => event.preventDefault()}>
-                <a href={href}>{label}</a>
+                <a href={href}>
+                  <Icon aria-hidden="true" />
+                  {label}
+                </a>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
         <a className="staff-view-website" href={publicUrl} target="_blank" rel="noopener noreferrer">
           View website
-          <ArrowUpRight aria-hidden="true" />
+          <ArrowRight className="-rotate-45" aria-hidden="true" />
         </a>
       </>
     );
@@ -300,6 +303,7 @@ export default function StaffShell({
           </span>
           {environment === 'uat' && <span className="staff-environment-badge">Test environment</span>}
         </div>
+        <ReviewChangesControl className="staff-review-link" current={url.pathname.startsWith('/review/')} />
         <div className="staff-header-utilities">{utilities()}</div>
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>

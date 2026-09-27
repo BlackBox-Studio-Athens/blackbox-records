@@ -805,7 +805,112 @@ await new Promise((resolve) =>
 );
 const origin = `http://127.0.0.1:${server.address().port}`;
 if (process.argv.includes('--serve')) console.log(`Local CMS fixtures: ${origin}/content/`);
-else if (process.argv.includes('--artist-journey')) {
+else if (process.argv.includes('--editor-recovery')) {
+  const browser = await browserType.launch();
+  const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+  page.setDefaultTimeout(15_000);
+  const recoveryRequests = [];
+  page.on('request', (request) =>
+    recoveryRequests.push(request.method() + ' ' + new URL(request.url()).pathname + new URL(request.url()).search),
+  );
+  page.on('pageerror', (error) => console.error(error.message));
+  await mkdir(artifacts, { recursive: true });
+  try {
+    await page.goto(`${origin}/content/?collection=artists&new=1`);
+    await page.getByLabel('Artist name', { exact: true }).waitFor();
+    await page.getByRole('textbox', { name: 'Short biography', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Show required details', exact: true }).click();
+    await page.locator('#content-title[aria-invalid=true]').waitFor();
+    assert.ok(await page.locator('#content-title-error').innerText());
+    await page.getByLabel('Artist name', { exact: true }).fill('Incomplete recovery artist');
+    await page.getByRole('status').filter({ hasText: 'Changes saved' }).first().waitFor();
+    const editor = page.locator('.cms-editor');
+    const box = await editor.boundingBox();
+    await page.mouse.move(box.x + box.width - 25, box.y + box.height / 2);
+    await page.mouse.wheel(0, 300);
+    await page.waitForTimeout(350);
+    const before = await editor.evaluate((node) => node.scrollTop);
+    await page.mouse.wheel(0, 300);
+    await page.waitForTimeout(800);
+    assert.ok((await editor.evaluate((node) => node.scrollTop)) > before + 50, 'Wheel scrolling must advance');
+    await page.clock.install();
+    await page.clock.fastForward(31_000);
+    let reads = 0;
+    const countRead = (request) => {
+      if (request.url().includes('/blackbox/workspace')) reads++;
+    };
+    page.on('request', countRead);
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('focus'));
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.clock.fastForward(500);
+    assert.equal(reads, 0, 'Returning to the tab must not refresh workspace data');
+    page.off('request', countRead);
+    await page.clock.resume();
+    assert.equal(await page.getByRole('link', { name: 'Review changes', exact: true }).count(), 1);
+    assert.equal(await page.getByRole('button', { name: 'Review changes', exact: true }).count(), 0);
+    await page.getByRole('link', { name: 'Review changes', exact: true }).click();
+    await page.getByRole('link', { name: 'All saved changes', exact: true }).click();
+    await page.getByRole('heading', { name: 'Review website changes', exact: true }).waitFor();
+    await page
+      .getByRole('checkbox', { name: 'Select Incomplete recovery artist for publication', exact: true })
+      .check();
+    await page.getByRole('button', { name: 'Discard selected changes', exact: true }).click();
+    await page.getByRole('alertdialog').waitFor();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await page.getByRole('alertdialog').waitFor({ state: 'hidden' });
+    await page.getByRole('link', { name: 'Incomplete recovery artist', exact: true }).waitFor({ state: 'hidden' });
+    assert.equal(
+      records.artists.some((item) => item.data.title === 'Incomplete recovery artist'),
+      false,
+    );
+    // All means every page, and confirmation is bound to the revisions shown.
+    for (const collection of Object.keys(records)) records[collection] = [];
+    records.artists = Array.from({ length: 28 }, (_, index) => ({
+      id: `bulk-${index}`,
+      slug: `bulk-${index}`,
+      _rev: '1',
+      data: { ...artist, title: `Bulk artist ${index}` },
+    }));
+    await page.reload();
+    await page.getByRole('link', { name: 'Bulk artist 0', exact: true }).waitFor();
+    await page.getByRole('button', { name: 'Discard all changes', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('heading', { name: 'Discard 28 changes?' }).waitFor();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Keep saved changes' }).click();
+    assert.equal(records.artists.length, 28, 'Cancel preserves every draft');
+    await page.getByRole('button', { name: 'Discard all changes', exact: true }).click();
+    await page.getByRole('alertdialog').waitFor();
+    await page.route('**/_emdash/api/content/artists/bulk-1', (route) =>
+      route.request().method() === 'DELETE'
+        ? route.fulfill({
+            status: 409,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: { message: 'Changed revision' } }),
+          })
+        : route.continue(),
+    );
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await page.getByRole('alert').filter({ hasText: '1 changes discarded' }).waitFor();
+    assert.equal(records.artists.length, 27, 'Conflict stops remaining writes');
+    await page.unroute('**/_emdash/api/content/artists/bulk-1');
+    await page.getByRole('button', { name: 'Discard all changes', exact: true }).click();
+    await page.getByRole('alertdialog').getByRole('heading', { name: 'Discard 27 changes?' }).waitFor();
+    await page.getByRole('alertdialog').getByRole('button', { name: 'Discard changes', exact: true }).click();
+    await page.getByRole('alertdialog').waitFor({ state: 'hidden' });
+    assert.equal(records.artists.length, 0, 'All pages discarded');
+    await page.screenshot({ path: resolve(artifacts, 'editor-recovery.png') });
+    console.log(`${browserType.name()}: editor validation, wheel, tab return, review and discard passed.`);
+  } catch (error) {
+    console.error(recoveryRequests.slice(-10));
+    console.error((await page.locator('body').innerText()).slice(0, 1800));
+    await page.screenshot({ path: resolve(artifacts, 'editor-recovery-failure.png') });
+    throw error;
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+} else if (process.argv.includes('--artist-journey')) {
   const browser = await browserType.launch();
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
   await mkdir(artifacts, { recursive: true });
@@ -1137,7 +1242,7 @@ else if (process.argv.includes('--artist-journey')) {
     await probe.route(overviewApi, async (route) => {
       const url = new URL(route.request().url());
       paths.push({ pathname: url.pathname, search: url.search });
-      if (paths.length === 4) started.resolve();
+      if (paths.length === 3) started.resolve();
       await gate.promise;
       if (fail)
         await route.fulfill({ status: 503, json: { success: false, error: { message: 'Refresh unavailable' } } });
@@ -1154,9 +1259,9 @@ else if (process.argv.includes('--artist-journey')) {
       await probe.goto(`${origin}/`);
       await started.promise;
       await refresh();
-      // Flush queued browser work while the three Overview panels and shared review read are pending.
+      // Flush queued browser work while the three Overview panels are pending.
       await probe.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      assert.equal(paths.length, 4, 'Initial/focus/visibility/reconnect must share the Overview and review reads');
+      assert.equal(paths.length, 3, 'Refresh triggers must share the three Overview reads');
       assert.equal(
         paths.filter(({ pathname, search }) => pathname.endsWith('/workspace') && search.includes('view=overview'))
           .length,
@@ -1166,8 +1271,8 @@ else if (process.argv.includes('--artist-journey')) {
       assert.equal(
         paths.filter(({ pathname, search }) => pathname.endsWith('/workspace') && search.includes('view=changes'))
           .length,
-        1,
-        'Shell and Overview share global change discovery',
+        0,
+        'Review navigation does not require a global change discovery request',
       );
       assert.equal(paths.filter(({ pathname }) => pathname.endsWith('/publications')).length, 1);
       assert.equal(paths.filter(({ pathname }) => pathname.endsWith('/orders/search')).length, 1);
@@ -1253,10 +1358,14 @@ else if (process.argv.includes('--artist-journey')) {
         probe.waitForResponse(
           (response) => response.url().includes('/api/internal/inventory?') && response.url().includes('area=merch'),
         ),
-        probe.evaluate(() => {
-          Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
-          document.dispatchEvent(new Event('visibilitychange'));
-        }),
+        (async () => {
+          await probe.evaluate(() => {
+            Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+            document.dispatchEvent(new Event('visibilitychange'));
+          });
+          assert.equal(reads.length, settledReads, 'Tab return does not refresh inventory');
+          await probe.clock.fastForward(61_000);
+        })(),
       ]);
       await probe
         .getByRole('status')
@@ -1972,7 +2081,7 @@ else if (process.argv.includes('--artist-journey')) {
     );
     assert.equal(records.artists[0].data.title, '', 'Incomplete drafts save privately');
     assert.equal(state.publicTitle, 'Ouranopithecus', 'Saving does not publish');
-    await page.getByRole('button', { name: 'Review changes', exact: true }).click();
+    await page.getByRole('button', { name: 'Show required details', exact: true }).click();
     await page.getByRole('alert').filter({ hasText: 'Fix the highlighted' }).waitFor();
     state.saveDelay = 1200;
     await artistName.fill('Earlier typing');
@@ -2050,7 +2159,7 @@ else if (process.argv.includes('--artist-journey')) {
         ]),
       ),
     );
-    await page.getByRole('button', { name: 'Review changes', exact: true }).click();
+    await page.getByRole('link', { name: 'Review changes', exact: true }).click();
     await page.getByRole('heading', { name: 'Review your changes', exact: true }).waitFor();
     assert.ok((await page.url()).includes('/content/'), 'Single-entry review stays in the editor');
     for (const width of [390, 768, 1280, 1600]) {
@@ -2303,7 +2412,7 @@ else if (process.argv.includes('--artist-journey')) {
     );
     state.previewImageFailure = true;
     state.publication = 'pending';
-    await page.getByRole('button', { name: 'Review changes', exact: true }).click();
+    await page.getByRole('link', { name: 'Review changes', exact: true }).click();
     await page.getByRole('alert').filter({ hasText: 'Preview images could not load' }).waitFor();
     const publicationCount = publications.length;
     const publicationRoute = '**/_emdash/api/blackbox/content-publications';

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { ClipboardCheck, Trash2, CheckCheck, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { staffPages, writeStaffLocation } from '../../lib/staff-navigation';
 import { Button } from '../ui/button';
+import { TextureButton } from '../ui/texture-button';
 import { Checkbox } from '../ui/checkbox';
 import { Input } from '../ui/input';
 import { Skeleton } from '../ui/skeleton';
@@ -21,7 +23,6 @@ import {
   type EditorialRecord,
 } from '../../lib/backend/editorial-api';
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
-import { refreshReviewChangesPresence } from '../../lib/review-changes';
 import { contentSections, type ContentSection } from '../../lib/content-sections';
 import { scrollWithLenis } from '../../lib/lenis-scroll';
 import { getContentValidation } from './content-validation';
@@ -38,7 +39,14 @@ const key = (item: { collection?: string; id?: string; recordId?: string }) =>
 const title = (item: EditorialRecord) =>
   String(item.data.title || item.data.label_name || contentSections[item.collection as ContentSection] || 'Untitled');
 const canDiscardSavedChanges = (item: EditorialRecord) =>
-  Boolean(item.collection && item.liveRevisionId && item.draftRevisionId && item.publicationState === 'changes');
+  Boolean(
+    item.collection &&
+    !item.selling &&
+    ((item.liveRevisionId && item.draftRevisionId && item.publicationState === 'changes') ||
+      (item.publicationState === 'draft' &&
+        !item.liveRevisionId &&
+        ['artists', 'releases', 'news', 'socials'].includes(item.collection))),
+  );
 type CurrentEditorialDocument = { item: EditorialRecord; _rev: string };
 type DiscardCandidate = { document: CurrentEditorialDocument; record: EditorialRecord };
 
@@ -54,7 +62,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reviewing, setReviewing] = useState(false);
-  const [discardCandidate, setDiscardCandidate] = useState<DiscardCandidate | null>(null);
+  const [discardCandidates, setDiscardCandidates] = useState<DiscardCandidate[]>([]);
   const [discardBusyKey, setDiscardBusyKey] = useState('');
   const discardBusy = useRef(false);
   const sequence = useRef(0);
@@ -103,33 +111,63 @@ export default function WebsiteChanges({ base }: { base: string }) {
     }
   }
 
-  async function prepareDiscard(item: EditorialRecord) {
-    if (discardBusy.current || discardCandidate || !item.collection || item.publicationState !== 'changes') return;
+  async function prepareDiscard(entries: PublicationSelectionItem[] | 'all') {
+    if (discardBusy.current || discardCandidates.length) return;
     discardBusy.current = true;
-    setDiscardBusyKey(key(item));
+    setDiscardBusyKey('preparing');
     try {
-      const [document, workspace] = await Promise.all([
-        editorialRequest<CurrentEditorialDocument>(base, `content/${item.collection}/${encodeURIComponent(item.id)}`),
-        editorialRequest<EditorialList<EditorialRecord>>(
-          base,
-          `blackbox/workspace?collection=${encodeURIComponent(item.collection)}&id=${encodeURIComponent(item.id)}`,
-        ),
-      ]);
-      const current = workspace.items[0];
-      if (
-        !current ||
-        current.publicationState !== 'changes' ||
-        !document.item.liveRevisionId ||
-        !document.item.draftRevisionId
-      ) {
-        await list();
-        setError('This entry is no longer eligible for discard. The review list was refreshed.');
+      let selected = entries;
+      if (selected === 'all') {
+        selected = [];
+        let continuation: string | undefined;
+        const seen = new Set<string>();
+        do {
+          const params = new URLSearchParams({ view: 'changes', scope: 'all', limit: '25' });
+          if (continuation) params.set('cursor', continuation);
+          const page = await editorialRequest<EditorialList<EditorialRecord>>(base, `blackbox/workspace?${params}`);
+          selected.push(
+            ...page.items.map((item) => ({
+              collection: item.collection!,
+              recordId: item.id,
+              expectedRevision: 'review-required',
+              title: title(item),
+            })),
+          );
+          continuation = page.nextCursor;
+          if (selected.length > 100 || seen.size >= 100 || (continuation && seen.has(continuation)))
+            throw new Error('Too many changes for one discard. Select up to 20 changes at a time.');
+          if (continuation) seen.add(continuation);
+        } while (continuation);
+      }
+      if (!selected.length) {
+        setError('There are no changes to discard.');
         return;
       }
-      setDiscardCandidate({ document, record: current });
-    } catch {
-      await list();
-      setError('We could not load the latest saved version. The review list was refreshed.');
+      const candidates: DiscardCandidate[] = [];
+      for (const entry of selected) {
+        const [document, workspace] = await Promise.all([
+          editorialRequest<CurrentEditorialDocument>(
+            base,
+            `content/${entry.collection}/${encodeURIComponent(entry.recordId)}`,
+          ),
+          editorialRequest<EditorialList<EditorialRecord>>(
+            base,
+            `blackbox/workspace?collection=${encodeURIComponent(entry.collection)}&id=${encodeURIComponent(entry.recordId)}`,
+          ),
+        ]);
+        const current = workspace.items[0];
+        if (!current || !canDiscardSavedChanges(current))
+          throw new Error(
+            `${entry.title || 'This entry'} cannot be discarded while publishing or linked to selling. Deselect it and retry.`,
+          );
+        candidates.push({ document, record: current });
+      }
+      // Remove unpublished releases before their artists; retain each exact reviewed revision.
+      candidates.sort((a, b) => Number(a.record.collection === 'artists') - Number(b.record.collection === 'artists'));
+      setError('');
+      setDiscardCandidates(candidates);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'We could not load the latest saved versions. Retry.');
     } finally {
       discardBusy.current = false;
       setDiscardBusyKey('');
@@ -137,33 +175,36 @@ export default function WebsiteChanges({ base }: { base: string }) {
   }
 
   async function discardSavedChanges() {
-    const candidate = discardCandidate;
-    const collection = candidate?.record.collection;
-    if (!candidate || !collection || discardBusy.current) return;
+    if (!discardCandidates.length || discardBusy.current) return;
     discardBusy.current = true;
-    setDiscardBusyKey(key(candidate.record));
+    setDiscardBusyKey('discarding');
+    const discarded = new Set<string>();
     try {
-      await editorialRequest(
-        base,
-        `content/${collection}/${encodeURIComponent(candidate.record.id)}/discard-draft`,
-        { _rev: candidate.document._rev },
-        'POST',
-      );
-      setDiscardCandidate(null);
-      select(selection.filter((entry) => key(entry) !== key(candidate.record)));
-      void refreshReviewChangesPresence(base).catch(() => {});
-      await list();
+      for (const candidate of discardCandidates) {
+        const collection = candidate.record.collection!;
+        const existing = Boolean(candidate.record.liveRevisionId);
+        await editorialRequest(
+          base,
+          `content/${collection}/${encodeURIComponent(candidate.record.id)}${existing ? '/discard-draft' : ''}`,
+          { _rev: candidate.document._rev, ...(!existing ? { confirm: true } : {}) },
+          existing ? 'POST' : 'DELETE',
+        );
+        discarded.add(key(candidate.record));
+      }
     } catch (error) {
-      setDiscardCandidate(null);
-      await list();
       setError(
         error instanceof EditorialApiError && error.status === 409
-          ? 'This saved version changed before it could be discarded. The review list was refreshed.'
-          : 'We could not discard the saved changes. The review list was refreshed.',
+          ? `${discarded.size} changes discarded. The next saved version changed; remaining changes were kept.`
+          : `${discarded.size} changes discarded. We could not discard the next entry; remaining changes were kept.`,
       );
     } finally {
+      setDiscardCandidates([]);
+      select(selection.filter((entry) => !discarded.has(key(entry))));
+      // Preserve failure feedback while updating the surviving records.
+      sequence.current++;
       discardBusy.current = false;
       setDiscardBusyKey('');
+      setItems((current) => current.filter((entry) => !discarded.has(key(entry))));
     }
   }
 
@@ -263,7 +304,6 @@ export default function WebsiteChanges({ base }: { base: string }) {
           onReviewed={(review) => select(review.entries)}
           onPublished={(published) => {
             select(selection.filter((entry) => !published.some((record) => key(record) === key(entry))));
-            void refreshReviewChangesPresence(base).catch(() => {});
           }}
           onBack={() => {
             setReviewing(false);
@@ -287,6 +327,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
             <div role="alert" className="publication-issues">
               <p>{error}</p>
               <Button variant="outline" disabled={Boolean(discardBusyKey)} onClick={() => void list()}>
+                <RefreshCw aria-hidden="true" />
                 Retry
               </Button>
             </div>
@@ -326,7 +367,16 @@ export default function WebsiteChanges({ base }: { base: string }) {
                 )
               }
             >
+              <CheckCheck aria-hidden="true" />
               Select ready changes on this page
+            </Button>
+            <Button
+              variant="outline"
+              disabled={loading || Boolean(discardBusyKey)}
+              onClick={() => void prepareDiscard('all')}
+            >
+              <Trash2 aria-hidden="true" />
+              Discard all changes
             </Button>
           </div>
           {selection.length > 0 && (
@@ -366,13 +416,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
                   <Checkbox
                     aria-label={`Select ${title(item)} for publication`}
                     checked={selected}
-                    disabled={
-                      loading ||
-                      Boolean(discardBusyKey) ||
-                      updating ||
-                      !validation.valid ||
-                      (!selected && selection.length === 20)
-                    }
+                    disabled={loading || Boolean(discardBusyKey) || updating || (!selected && selection.length === 20)}
                     onCheckedChange={() =>
                       selected ? select(selection.filter((entry) => key(entry) !== key(item))) : add([item])
                     }
@@ -399,7 +443,16 @@ export default function WebsiteChanges({ base }: { base: string }) {
                       <Button
                         variant="outline"
                         disabled={loading || Boolean(discardBusyKey)}
-                        onClick={() => void prepareDiscard(item)}
+                        onClick={() =>
+                          void prepareDiscard([
+                            {
+                              collection: item.collection!,
+                              recordId: item.id,
+                              expectedRevision: 'review-required',
+                              title: title(item),
+                            },
+                          ])
+                        }
                       >
                         {discardBusyKey === key(item) ? 'Loading saved version…' : 'Discard saved changes'}
                       </Button>
@@ -425,6 +478,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
               disabled={loading || Boolean(discardBusyKey) || pages.length < 2}
               onClick={() => browse(query, scope, pages.at(-2), pages.slice(0, -1))}
             >
+              <ChevronLeft aria-hidden="true" />
               Previous
             </Button>
             <Button
@@ -433,6 +487,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
               onClick={() => browse(query, scope, next, [...pages, next!])}
             >
               Next
+              <ChevronRight aria-hidden="true" />
             </Button>
           </nav>
           <footer className="publication-action-bar">
@@ -440,32 +495,54 @@ export default function WebsiteChanges({ base }: { base: string }) {
               <strong>{selection.length}/20 changes selected</strong>
               <p className="text-sm text-muted-foreground">Review the differences before publishing.</p>
             </div>
-            <Button disabled={!selection.length || Boolean(discardBusyKey)} onClick={() => setReviewing(true)}>
-              Review selected changes
+            <Button
+              variant="outline"
+              disabled={!selection.length || Boolean(discardBusyKey)}
+              onClick={() => void prepareDiscard(selection)}
+            >
+              <Trash2 aria-hidden="true" />
+              Discard selected changes
             </Button>
+            <TextureButton disabled={!selection.length || Boolean(discardBusyKey)} onClick={() => setReviewing(true)}>
+              <ClipboardCheck aria-hidden="true" />
+              Review selected changes
+            </TextureButton>
           </footer>
         </>
       )}
       <AlertDialog
-        open={Boolean(discardCandidate)}
+        open={discardCandidates.length > 0}
         onOpenChange={(open) => {
-          if (!open && !discardBusy.current) setDiscardCandidate(null);
+          if (!open && !discardBusy.current) setDiscardCandidates([]);
         }}
       >
         <AlertDialogContent className="cms-surface">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Discard saved changes to {discardCandidate ? title(discardCandidate.record) : 'this entry'}?
+              Discard {discardCandidates.length} {discardCandidates.length === 1 ? 'change' : 'changes'}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              The current private draft will be removed and the live version will be shown. The public site will not
-              change.
+              Published entries return to their live version. New entries move to trash. The public site stays
+              unchanged.
             </AlertDialogDescription>
+            <ul className="max-h-60 overflow-y-auto text-sm">
+              {discardCandidates.map(({ record }) => (
+                <li key={key(record)}>
+                  {title(record)} · {record.liveRevisionId ? 'Restore live version' : 'Move new draft to trash'}
+                </li>
+              ))}
+            </ul>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={Boolean(discardBusyKey)}>Keep saved changes</AlertDialogCancel>
-            <AlertDialogAction disabled={Boolean(discardBusyKey)} onClick={() => void discardSavedChanges()}>
-              Discard saved changes
+            <AlertDialogAction
+              disabled={Boolean(discardBusyKey)}
+              onClick={(event) => {
+                event.preventDefault();
+                void discardSavedChanges();
+              }}
+            >
+              {discardBusyKey ? 'Discarding…' : 'Discard changes'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -105,7 +105,7 @@ CMS editing SHALL cover every existing public content collection and fixed page 
 
 - **WHEN** a required value is blank, a constrained value is malformed, or a nested row is invalid
 - **THEN** the affected field exposes an associated error and invalid state
-- **AND** Save and Publish do not send a mutation until all current fields pass the shared content validation rules.
+- **AND** incomplete work can be saved privately, while Publish remains blocked until all current fields pass the shared content validation rules.
 
 #### Scenario: Member discards edits
 
@@ -113,6 +113,22 @@ CMS editing SHALL cover every existing public content collection and fixed page 
 - **THEN** the workspace asks for confirmation before replacing or clearing the edited values
 - **AND** canceling preserves values and focus
 - **AND** confirming a saved record reloads its saved revision while confirming a new record returns to the collection list without saving.
+
+#### Scenario: Member reviews or discards an incomplete saved draft
+
+- **WHEN** a member opens the single Review changes control in the staff header
+- **THEN** autosave finishes and review remains accessible for incomplete drafts; publication stays blocked by field errors
+- **AND** preview offers Show required details to reveal associated field errors and focus the first invalid control
+- **AND** All saved changes offers selected and all-change discard with a confirmation naming every entry and outcome
+- **AND** discard uses the reviewed revision: published entries restore their live draft baseline, while never-published Artists and Releases may move to native trash
+- **AND** pending publications, selling-linked records, permanent deletion and stale revisions remain protected
+- **AND** partial failure retains the remaining changes and reports the completed count.
+
+#### Scenario: Member scrolls or returns to the staff tab
+
+- **WHEN** the member uses the wheel over form controls or rich text, or returns from another tab or application
+- **THEN** native wheel scrolling remains stable and tab focus does not reload workspace data or replace editing state
+- **AND** explicit navigation, reconnection and pending-publication status checks retain their existing freshness checks.
 
 ### Requirement: Staff editing remains accessible and task-first
 

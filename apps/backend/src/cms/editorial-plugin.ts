@@ -21,10 +21,12 @@ export default {
         }
       },
     },
-    'content:beforeDelete': async (event) => {
-      // Ordinary member editing can trash News and social links only. Permanent
-      // deletion is unavailable; recovery keeps media and historical references.
-      return !event.permanent && ['news', 'socials'].includes(event.collection);
+    'content:beforeDelete': async (event, context) => {
+      if (event.permanent) return false;
+      if (['news', 'socials'].includes(event.collection)) return true;
+      if (!['artists', 'releases'].includes(event.collection)) return false;
+      const item = await context.content?.get(event.collection, event.id);
+      return Boolean(item && item.status === 'draft' && !item.liveRevisionId && !item.publishedAt);
     },
   },
 } satisfies SandboxedPlugin;

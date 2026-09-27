@@ -318,6 +318,20 @@ body[data-workspace='content'] {
   flex-shrink: 0;
   padding-inline: 8px;
 }
+.staff-shell-header > .staff-review-link {
+  flex-shrink: 0;
+  min-height: 44px;
+  min-width: 44px;
+}
+@media (max-width: 1439px) {
+  .staff-shell-header > .staff-review-link span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
 .staff-area-link {
   display: flex;
   align-items: center;
@@ -411,6 +425,7 @@ body[data-workspace='content'] {
 .staff-context-links a {
   display: flex;
   align-items: center;
+  gap: 8px;
   min-height: 44px;
   padding: 10px 12px;
   font-size: 1rem;

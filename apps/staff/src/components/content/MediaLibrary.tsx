@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import '../../styles/content.css';
 import mediaStyles from '../../styles/content-media.css?inline';
 import { useStaffRead } from '../../lib/staff-query';
-import { Check, ChevronDown, ImageIcon, LayoutGrid, List as ListIcon, Search, Upload } from 'lucide-react';
+import { Check, ChevronDown, ImageIcon, LayoutGrid, List as ListIcon, Search, Upload, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/button';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
@@ -185,6 +185,7 @@ export default function MediaLibrary({
         <div className="flex flex-wrap items-end gap-3">
           {error && (
             <Button type="button" variant="outline" disabled={busy} onClick={() => void search()}>
+              <RefreshCw aria-hidden="true" />
               Retry images
             </Button>
           )}

@@ -1,4 +1,4 @@
-import { ArrowDownUp, ClipboardCheck, Disc3 } from 'lucide-react';
+import { ArrowDownUp, ClipboardCheck, Disc3, ChevronLeft } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import StaffBack from '../StaffBack';
@@ -743,6 +743,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
             <p role="alert">
               {searchError}{' '}
               <Button variant="outline" onClick={() => void searchVariants()}>
+                <ArrowDownUp aria-hidden="true" />
                 Retry inventory
               </Button>
             </p>
@@ -809,6 +810,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                 setPageCursor(previous.at(-1) ?? '');
               }}
             >
+              <ChevronLeft aria-hidden="true" />
               Previous
             </Button>
             <Button
@@ -823,6 +825,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               }}
             >
               Next
+              <ChevronLeft className="rotate-180" aria-hidden="true" />
             </Button>
           </nav>
         </aside>

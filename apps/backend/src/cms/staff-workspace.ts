@@ -174,17 +174,21 @@ export async function readStaffWorkspace(
       const items = [];
       for (const item of result.data.items) {
         const accepted = snapshot?.records.find((entry) => entry.collection === section && entry.id === item.id);
-        if (!accepted) {
+        const revisionId = item.draftRevisionId ?? item.liveRevisionId;
+        if (accepted && accepted.revisionId === revisionId) continue;
+        if (!revisionId && !accepted) {
           items.push(item);
           continue;
         }
-        const revisionId = item.draftRevisionId ?? item.liveRevisionId;
-        if (accepted.revisionId === revisionId) continue;
         if (!revisionId) throw new Error('Saved changes could not be loaded.');
         const revision = await deps.runtime.handleRevisionGet(revisionId);
         if (!revision.success || revision.data.item.entryId !== item.id || revision.data.item.collection !== section)
           throw new Error('Saved changes could not be loaded.');
         const projected = await readRevisionContent(deps.runtime, revision.data.item);
+        if (!accepted) {
+          items.push({ ...item, data: projected });
+          continue;
+        }
         const { _slug, ...after } = projected;
         if (section === 'navigation')
           for (const key of ['show_in_header', 'show_in_footer'])
@@ -248,14 +252,16 @@ export async function readStaffWorkspace(
             return { section, ...result.data };
           }),
         );
-  for (const page of pages.filter((page) => !overview && !review && page.section === 'releases')) {
+  for (const page of pages.filter(() => !overview && !review)) {
     for (const item of page.items) {
+      if (page.section !== 'releases' && (item.liveRevisionId || !item.draftRevisionId)) continue;
       const revisionId = item.draftRevisionId ?? item.liveRevisionId;
       if (!revisionId) continue;
       const revision = await deps.runtime.handleRevisionGet(revisionId);
-      if (!revision.success) throw new Error('Selected Release is unavailable.');
+      if (!revision.success || revision.data.item.entryId !== item.id || revision.data.item.collection !== page.section)
+        throw new Error('Saved content is unavailable.');
       const data = await readRevisionContent(deps.runtime, revision.data.item);
-      item.data = { ...item.data, artist: data.artist };
+      item.data = item.liveRevisionId ? { ...item.data, artist: data.artist } : data;
     }
   }
   const artistNames = new Map(
@@ -270,7 +276,20 @@ export async function readStaffWorkspace(
       order: 'desc',
     });
     if (artists.success)
-      for (const artist of artists.data.items) artistNames.set(artist.id, String(artist.data.title ?? ''));
+      for (const artist of artists.data.items) {
+        let data = artist.data;
+        if (!artist.liveRevisionId && artist.draftRevisionId) {
+          const revision = await deps.runtime.handleRevisionGet(artist.draftRevisionId);
+          if (
+            !revision.success ||
+            revision.data.item.entryId !== artist.id ||
+            revision.data.item.collection !== 'artists'
+          )
+            throw new Error('Saved Artist is unavailable.');
+          data = await readRevisionContent(deps.runtime, revision.data.item);
+        }
+        artistNames.set(artist.id, String(data.title ?? ''));
+      }
   }
   const pending = overviewData?.pending ?? (await readPending(pages));
   const identities = pages.flatMap((page) =>

@@ -85,7 +85,8 @@ export const onRequest: MiddlewareHandler = async ({ request, url }, next) => {
   };
   if (!isCmsCollection(collection)) return reject('UNSUPPORTED_COLLECTION');
   const lock = id && action === 'lock' && ['POST', 'DELETE'].includes(request.method);
-  const remove = id && !action && request.method === 'DELETE' && ['news', 'socials'].includes(collection);
+  const remove =
+    id && !action && request.method === 'DELETE' && ['artists', 'releases', 'news', 'socials'].includes(collection);
   const create = !id && request.method === 'POST';
   const save = id && !action && request.method === 'PUT';
   const lifecycle = id && ['publish', 'unpublish', 'discard-draft'].includes(action ?? '') && request.method === 'POST';
