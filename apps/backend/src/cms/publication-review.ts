@@ -10,7 +10,7 @@ import {
   type ContentSnapshot,
 } from '@blackbox/content-model';
 import { readPublicationPointer, readPublishedSnapshot, type PublicationEnvironment } from './published-storage';
-import { projectPublicationStoreItems, readPublicationMedia } from './publication-projection';
+import { projectPublicationStoreItems, readPublicationMedia, readRevisionContent } from './publication-projection';
 import { readPublicationCatalog } from './item-publication-recovery';
 
 export class PublicationReviewConflict extends Error {}
@@ -72,7 +72,7 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
       revision.data.item.collection !== record.collection
     )
       throw new PublicationReviewConflict('The saved version is unavailable. Review again.');
-    const { _slug, ...after } = revision.data.item.data;
+    const { _slug, ...after } = await readRevisionContent(deps.runtime, revision.data.item);
     if (record.collection === 'navigation')
       for (const key of ['show_in_header', 'show_in_footer'])
         if (after[key] === 0 || after[key] === 1) after[key] = after[key] === 1;

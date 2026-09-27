@@ -1,5 +1,6 @@
 import { astro, FetchState } from 'astro/fetch';
 import { cf, finalize } from '@astrojs/cloudflare/fetch';
+import { SchemaRegistry } from 'emdash';
 import { productEnvironmentProfileFromBindings, type AppBindings } from '../env';
 import { authenticate } from './auth';
 import {
@@ -30,7 +31,7 @@ import { reviewPublication, PublicationReviewConflict, publicationPublicUrl } fr
 import { handleLocalPublicationRequest, localPublicationRoot } from './local-publication-routes';
 import { DurableObject } from 'cloudflare:workers';
 import { CommerceRuntime } from '../index';
-import { isSupportedCmsApiRequest, isCmsTokenExportRead } from '../middleware';
+import { isSupportedCmsApiRequest, isCmsTokenExportRead, nativeEditorialWrite } from '../middleware';
 import {
   handlePublicationRequest,
   handlePublicationWorkflow,
@@ -60,6 +61,7 @@ import {
   problemResponse,
 } from '../interfaces/http/responses';
 import { previewInputSchema, previewPath, readBoundedText } from './preview-content';
+import { projectArtistReference, readRevisionContent } from './publication-projection';
 
 declare const RELEASE_SOURCE_SHA: string;
 const releaseSourceSha = typeof RELEASE_SOURCE_SHA === 'undefined' ? undefined : RELEASE_SOURCE_SHA;
@@ -760,7 +762,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         try {
           const raw = await readBoundedText(request.body, 272 * 1024);
           request = new Request(request, { body: raw });
-          const payload = JSON.parse(raw) as { data?: unknown };
+          const payload = JSON.parse(raw) as Record<string, unknown>;
           if (
             !isCmsCollection(editorialWrite[1]) ||
             !payload.data ||
@@ -782,6 +784,21 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
               },
               { status: 422, headers: { 'Cache-Control': 'private, no-store' } },
             );
+          if (editorialWrite[1] === 'releases' && Object.hasOwn(payload.data, 'artist')) {
+            const { withEmDashRuntime } = await import('emdash/middleware');
+            const field = await withEmDashRuntime((runtime) =>
+              new SchemaRegistry(runtime.db).getField('releases', 'artist'),
+            );
+            // Legacy columns remain writable until EmDash has migrated this field to a relation.
+            if (field?.validation?.relation) {
+              const headers = new Headers(request.headers);
+              headers.delete('Content-Length');
+              request = new Request(request, {
+                headers,
+                body: JSON.stringify(nativeEditorialWrite(editorialWrite[1], payload)),
+              });
+            }
+          }
         } catch {
           return problemResponse(
             {
@@ -805,7 +822,13 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           const valid = await withEmDashRuntime(async (runtime) => {
             const current = await runtime.handleContentGet(publishing[1], publishing[2]);
             if (!current.success || !isCmsCollection(publishing[1])) return false;
-            const content = { ...current.data.item.data };
+            let content = { ...current.data.item.data };
+            const revisionId = current.data.item.draftRevisionId ?? current.data.item.liveRevisionId;
+            if (publishing[1] === 'releases' && revisionId) {
+              const revision = await runtime.handleRevisionGet(revisionId);
+              if (!revision.success) return false;
+              content = await readRevisionContent(runtime, revision.data.item);
+            }
             if (publishing[1] === 'navigation')
               for (const key of ['show_in_header', 'show_in_footer'])
                 if (content[key] === 0 || content[key] === 1) content[key] = content[key] === 1;
@@ -855,7 +878,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           !body.data ||
           typeof body.data !== 'object' ||
           Array.isArray(body.data) ||
-          Object.keys(body).some((key) => !['_rev', 'data', 'slug', 'skipRevision'].includes(key))
+          Object.keys(body).some((key) => !['_rev', 'data', 'slug', 'skipRevision', 'references'].includes(key))
         ) {
           return cmsNestedProblemResponse(400, { code: 'INVALID_EDITORIAL_SAVE' });
         }
@@ -864,7 +887,30 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     const state = new FetchState(request);
     // Astro only consumes waitUntil here; DurableObjectState provides that lifecycle hook.
     const asset = await cf(state, bindings, this.ctx as unknown as ExecutionContext);
-    const response = asset ?? finalize(state, await astro(state));
+    let response = asset ?? finalize(state, await astro(state));
+    if (
+      response.ok &&
+      (/^\/_emdash\/api\/content\/releases(?:\/[^/]+)?$/.test(url.pathname) ||
+        /^\/_emdash\/api\/revisions\/[^/]+$/.test(url.pathname))
+    ) {
+      const payload = (await response.clone().json()) as {
+        data?: {
+          item?: { collection?: string; entryId?: string; data: Record<string, unknown>; references?: unknown };
+        };
+      };
+      const item = payload.data?.item;
+      if (item) {
+        if (item.collection === 'releases' && item.entryId) {
+          const { withEmDashRuntime } = await import('emdash/middleware');
+          item.data = await withEmDashRuntime((runtime) =>
+            readRevisionContent(runtime, { collection: 'releases', entryId: item.entryId!, data: item.data }),
+          );
+        } else item.data = projectArtistReference(item).data;
+        const headers = new Headers(response.headers);
+        headers.delete('Content-Length');
+        response = Response.json(payload, { status: response.status, headers });
+      }
+    }
     if (validatedThumbnail && [200, 201].includes(response.status)) {
       try {
         const payload = (await response

@@ -1,5 +1,6 @@
 import { applyD1Migrations, env } from 'cloudflare:test';
-import { beforeAll, beforeEach, expect, test, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest';
+import { ContentRepository } from 'emdash';
 import type { EmDashRuntime } from 'emdash/middleware';
 import { acceptSelectedPublication, processRuntimePublication } from '../../src/cms/runtime-publication';
 import {
@@ -15,6 +16,37 @@ import { readPublicationHistory } from '../../src/cms/publication-journal';
 import { reviewPublication } from '../../src/cms/publication-review';
 import { publishedCollection } from '@blackbox/content-model';
 import { selectPreviewContent, previewDestination } from '../../src/cms/preview-selection';
+import { projectArtistReference, readRevisionContent } from '../../src/cms/publication-projection';
+
+afterEach(() => vi.restoreAllMocks());
+
+test('native Artist references override stale columns without reading a newer draft selection', async () => {
+  const item = { data: { artist: 'stale', title: 'LOTUS' }, references: { artist: { children: [{ id: 'sidus' }] } } };
+  expect(projectArtistReference(item).data.artist).toBe('sidus');
+  expect(item.data.artist).toBe('stale');
+  const find = vi.spyOn(ContentRepository.prototype, 'findById').mockResolvedValue({ locale: 'en' } as never);
+  const translations = vi.spyOn(ContentRepository.prototype, 'findTranslations').mockResolvedValue([
+    { id: 'sidus', locale: 'en' },
+    { id: 'sidus-el', locale: 'el' },
+  ] as never);
+  const runtime = { db: {} } as EmDashRuntime;
+  const revision = {
+    collection: 'releases',
+    entryId: 'lotus',
+    data: { artist: 'stale', title: 'LOTUS', _references: { artist: ['sidus-group'] } },
+  };
+  expect(await readRevisionContent(runtime, revision)).toEqual({ artist: 'sidus', title: 'LOTUS' });
+  expect(translations).toHaveBeenCalledWith('artists', 'sidus-group');
+  expect(find).toHaveBeenCalledWith('releases', 'lotus');
+  expect(await readRevisionContent(runtime, { ...revision, data: { _references: { artist: [] } } })).toEqual({
+    artist: '',
+  });
+  await expect(
+    readRevisionContent(runtime, { ...revision, data: { _references: { artist: ['one', 'two'] } } }),
+  ).rejects.toThrow();
+  const legacy = { collection: 'releases', entryId: 'legacy', data: { artist: 'legacy-artist' } };
+  expect(await readRevisionContent(runtime, legacy)).toBe(legacy.data);
+});
 
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));
 beforeEach(async () => {

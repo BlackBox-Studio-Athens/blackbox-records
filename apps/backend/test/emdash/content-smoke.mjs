@@ -177,6 +177,11 @@ try {
     const saved = await request(idPath, 'PUT', { _rev: current.body.data._rev, data });
     assert.equal(saved.status, 200, collection + ': ' + JSON.stringify(saved));
     assert.equal((await request(idPath, 'PUT', { _rev: current.body.data._rev, data })).status, 409);
+    if (collection === 'releases') {
+      const linked = await request(idPath);
+      assert.equal(linked.body.data.item.data.artist, artistId, 'Saved release retains its native Artist reference');
+      assert.equal(linked.body.data.item.liveRevisionId, null, 'Saving the Artist reference does not publish');
+    }
     if (!['news', 'socials'].includes(collection)) {
       const rejected = await request(idPath, 'DELETE', { _rev: saved.body.data._rev, confirm: true });
       assert.ok(rejected.status >= 400 && rejected.status < 500, JSON.stringify(rejected));

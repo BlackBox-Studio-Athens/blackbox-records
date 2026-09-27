@@ -9,6 +9,7 @@ import {
 import type { EmDashRuntime } from 'emdash/middleware';
 import { readPublicationPointer, readPublishedSnapshot, type PublicationEnvironment } from './published-storage';
 import { createCmsNestedProblemBody, problemResponse } from '../interfaces/http/responses';
+import { readRevisionContent } from './publication-projection';
 
 const reviewPositionSchema = z
   .object({
@@ -183,7 +184,8 @@ export async function readStaffWorkspace(
         const revision = await deps.runtime.handleRevisionGet(revisionId);
         if (!revision.success || revision.data.item.entryId !== item.id || revision.data.item.collection !== section)
           throw new Error('Saved changes could not be loaded.');
-        const { _slug, ...after } = revision.data.item.data;
+        const projected = await readRevisionContent(deps.runtime, revision.data.item);
+        const { _slug, ...after } = projected;
         if (section === 'navigation')
           for (const key of ['show_in_header', 'show_in_footer'])
             if (after[key] === 0 || after[key] === 1) after[key] = after[key] === 1;
@@ -193,7 +195,7 @@ export async function readStaffWorkspace(
             after: { ...after, slug: String(_slug ?? item.slug) },
           }).length > 0
         )
-          items.push({ ...item, data: revision.data.item.data });
+          items.push({ ...item, data: projected });
       }
       pages.push({ section, items, nextCursor: undefined });
       found += items.length;
@@ -246,6 +248,16 @@ export async function readStaffWorkspace(
             return { section, ...result.data };
           }),
         );
+  for (const page of pages.filter((page) => !overview && !review && page.section === 'releases')) {
+    for (const item of page.items) {
+      const revisionId = item.draftRevisionId ?? item.liveRevisionId;
+      if (!revisionId) continue;
+      const revision = await deps.runtime.handleRevisionGet(revisionId);
+      if (!revision.success) throw new Error('Selected Release is unavailable.');
+      const data = await readRevisionContent(deps.runtime, revision.data.item);
+      item.data = { ...item.data, artist: data.artist };
+    }
+  }
   const artistNames = new Map(
     snapshot?.records
       .filter((entry) => entry.collection === 'artists')

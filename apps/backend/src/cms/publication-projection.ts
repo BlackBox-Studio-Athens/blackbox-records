@@ -1,6 +1,36 @@
 import { z } from 'zod';
+import { ContentRepository } from 'emdash';
 import type { EmDashRuntime } from 'emdash/middleware';
 import type { ContentSnapshot } from '@blackbox/content-model';
+
+/** Resolve the selected revision's native relation snapshot, never a newer draft's selection. */
+export async function readRevisionContent(
+  runtime: EmDashRuntime,
+  revision: { collection: string; entryId: string; data: Record<string, unknown> },
+) {
+  if (revision.collection !== 'releases' || !Object.hasOwn(revision.data, '_references')) return revision.data;
+  const { _references, ...data } = revision.data;
+  const references = z
+    .object({ artist: z.array(z.string().min(1)).max(1).optional() })
+    .strict()
+    .parse(_references);
+  if (!references.artist) return data;
+  const repository = new ContentRepository(runtime.db);
+  const entry = await repository.findById('releases', revision.entryId);
+  if (!entry) throw new Error('The selected Release is unavailable.');
+  const artists = references.artist[0] ? await repository.findTranslations('artists', references.artist[0]) : [];
+  const artist = artists.find((item) => item.locale === entry.locale);
+  if (references.artist.length && !artist) throw new Error('The selected Artist is unavailable.');
+  return { ...data, artist: artist?.id ?? '' };
+}
+
+export function projectArtistReference<T extends { data: Record<string, unknown>; references?: unknown }>(item: T): T {
+  const references = item.references as { artist?: { children?: Array<{ id: string }> } } | undefined;
+  const children = references?.artist?.children;
+  if (!children) return item;
+  if (children.length > 1) throw new Error('A Release must select one Artist.');
+  return { ...item, data: { ...item.data, artist: children[0]?.id ?? '' } };
+}
 
 /** The same selected source replaces its accepted catalog identity in review and publication. */
 export function projectPublicationStoreItems(

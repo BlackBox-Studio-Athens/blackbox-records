@@ -52,6 +52,14 @@ export function isSupportedCmsApiRequest(request: Request): boolean {
   );
 }
 
+export function nativeEditorialWrite(collection: string, fields: Record<string, unknown>) {
+  if (collection !== 'releases' || !fields.data || typeof fields.data !== 'object' || fields.references !== undefined)
+    return fields;
+  const { artist, ...data } = fields.data as Record<string, unknown>;
+  if (typeof artist !== 'string' && artist !== null) return fields;
+  return { ...fields, data, references: { artist: artist ? [artist] : [] } };
+}
+
 export const onRequest: MiddlewareHandler = async ({ request, url }, next) => {
   if (['GET', 'HEAD'].includes(request.method)) return next();
   const match = /^\/_emdash\/api\/content\/([^/]+)(?:\/([^/]+))?(?:\/([^/]+))?$/.exec(url.pathname.replace(/\/+$/, ''));
@@ -79,9 +87,9 @@ export const onRequest: MiddlewareHandler = async ({ request, url }, next) => {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return reject('INVALID_EDITORIAL_REQUEST');
   const fields = body as Record<string, unknown>;
   const allowed = create
-    ? ['slug', 'data']
+    ? ['slug', 'data', 'references']
     : save
-      ? ['_rev', 'data', 'overrideLock']
+      ? ['_rev', 'data', 'overrideLock', 'references']
       : remove
         ? ['_rev', 'confirm']
         : ['_rev', 'overrideLock'];
@@ -89,5 +97,19 @@ export const onRequest: MiddlewareHandler = async ({ request, url }, next) => {
   if (create && (typeof fields.slug !== 'string' || !slugPattern.test(fields.slug))) return reject('INVALID_SLUG');
   if (!create && (typeof fields._rev !== 'string' || !fields._rev.trim())) return reject('REVISION_REQUIRED');
   if (remove && fields.confirm !== true) return reject('CONFIRMATION_REQUIRED');
+  if (fields.references !== undefined) {
+    const references = fields.references as Record<string, unknown> | null;
+    if (
+      collection !== 'releases' ||
+      !references ||
+      typeof references !== 'object' ||
+      Object.keys(references).some((key) => key !== 'artist') ||
+      !Array.isArray(references.artist) ||
+      references.artist.length > 1 ||
+      references.artist.some((id) => typeof id !== 'string' || !id || id.length > 128) ||
+      (fields.data && typeof fields.data === 'object' && Object.hasOwn(fields.data, 'artist'))
+    )
+      return reject('INVALID_EDITORIAL_REQUEST');
+  }
   return next();
 };

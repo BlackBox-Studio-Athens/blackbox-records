@@ -9,6 +9,51 @@ import { completeSnapshot } from '../../src/cms/snapshot-storage';
 
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));
 afterEach(() => vi.restoreAllMocks());
+test('release listing resolves saved native artist references without replacing list fields', async () => {
+  await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
+  const item = {
+    id: 'release',
+    slug: 'lotus',
+    data: { title: 'List title', artist: '' },
+    draftRevisionId: 'draft',
+    liveRevisionId: null,
+  };
+  vi.spyOn(ContentRepository.prototype, 'findById').mockResolvedValue({ locale: 'en' } as never);
+  vi.spyOn(ContentRepository.prototype, 'findTranslations').mockResolvedValue([{ id: 'sidus', locale: 'en' }] as never);
+  const runtime = {
+    db: {},
+    handleContentList: vi.fn(async (collection: string) => ({
+      success: true,
+      data: { items: collection === 'releases' ? [item] : [{ id: 'sidus', data: { title: 'Sidus' } }] },
+    })),
+    handleRevisionGet: vi.fn(async () => ({
+      success: true,
+      data: {
+        item: {
+          collection: 'releases',
+          entryId: 'release',
+          data: {
+            title: 'Draft title',
+            artist: '',
+            _references: { artist: ['sidus-group'] },
+          },
+        },
+      },
+    })),
+  } as unknown as EmDashRuntime;
+  const response = await readStaffWorkspace(new Request('https://staff.invalid/?collection=releases'), {
+    runtime,
+    db: env.TEST_CMS_DB,
+    commerce: env.COMMERCE_DB,
+    bucket: env.TEST_SNAPSHOTS,
+    environment: 'local',
+  });
+  const result = (await response.json()) as {
+    data: { items: { data: { title: string; artist: string }; artistTitle: string }[] };
+  };
+  expect(result.data.items[0].data).toEqual({ title: 'List title', artist: 'sidus' });
+  expect(result.data.items[0].artistTitle).toBe('Sidus');
+});
 test('catalog forwards native filters, ordering and opaque cursors without truncating editorial entries', async () => {
   await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
   const entries = Array.from({ length: 251 }, (_, index) => ({

@@ -21,7 +21,7 @@ import { validateImage } from './media-upload';
 import { readPublicationCatalog } from './item-publication-recovery';
 import { publicationSummary, readPublication } from './publication-journal';
 import { reviewPublication } from './publication-review';
-import { projectPublicationStoreItems, readPublicationMedia } from './publication-projection';
+import { projectPublicationStoreItems, readPublicationMedia, readRevisionContent } from './publication-projection';
 
 const identifier = publicationRecordSchema.shape.recordId;
 const selectedRecordSchema = publicationRecordSchema;
@@ -122,7 +122,7 @@ export async function acceptSelectedPublication(
     const revisionId = current.item.draftRevisionId ?? current.item.liveRevisionId;
     if (!revisionId) throw new InvalidPublication('Save content before publishing.');
     const revision = successful(await deps.runtime.handleRevisionGet(revisionId)).item;
-    const { _slug: _slug, ...content } = revision.data;
+    const { _slug: _slug, ...content } = await readRevisionContent(deps.runtime, revision);
     if (!isCmsCollection(record.collection) || validateCmsRevisionContent(record.collection, content).length)
       throw new InvalidPublication('Complete the highlighted fields before publishing.');
     records.push({ ...record, revisionId, title: String(content.title ?? content.label_name ?? current.item.slug) });
@@ -230,7 +230,7 @@ export async function processRuntimePublication(deps: Dependencies) {
       for (const intent of selections.length ? selections : [{ revisionId: job.revisionId }]) {
         const revision = successful(await deps.runtime.handleRevisionGet(intent.revisionId)).item;
         if (!isCmsCollection(revision.collection)) throw new InvalidPublication('Unsupported collection.');
-        const { _slug: _validationSlug, ...publicationData } = revision.data;
+        const { _slug: _validationSlug, ...publicationData } = await readRevisionContent(deps.runtime, revision);
         if (validateCmsRevisionContent(revision.collection, publicationData).length)
           throw new InvalidPublication('Incomplete drafts cannot be published.');
         if ('collection' in intent) {
@@ -245,7 +245,7 @@ export async function processRuntimePublication(deps: Dependencies) {
         const recordState = successful(await deps.runtime.handleContentGet(revision.collection, revision.entryId));
         if (recordState.item.liveRevisionId !== revision.id || recordState.item.status !== 'published')
           throw new InvalidPublication('Selected revision is not published.');
-        const { _slug, ...data } = revision.data;
+        const { _slug, ...data } = await readRevisionContent(deps.runtime, revision);
         if (revision.collection === 'navigation')
           for (const key of ['show_in_header', 'show_in_footer'])
             if (data[key] === 0 || data[key] === 1) data[key] = data[key] === 1;
