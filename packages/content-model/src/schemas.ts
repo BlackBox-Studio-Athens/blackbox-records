@@ -76,7 +76,10 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
     title: requiredText,
     artist: references.artist,
     release_stage: z.enum(['upcoming', 'released']).optional(),
-    release_date: z.coerce.date().optional(),
+    release_date: z.preprocess(
+      (value) => (value === '' || value === null ? undefined : value),
+      z.coerce.date().optional(),
+    ),
     cover_image: image(),
     cover_image_alt: requiredAltText,
     merch_url: internalOrHttpsUrl.optional(),

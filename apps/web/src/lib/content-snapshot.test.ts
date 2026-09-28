@@ -4,9 +4,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { afterEach, expect, it, vi } from 'vitest';
+import { z } from 'zod';
 import { readContentSnapshot, snapshotCollection } from './content-snapshot';
 import { contentSnapshotInput } from './content-loader';
-import { parseContentSnapshot, publishedCollection } from '@blackbox/content-model';
+import { createReleasesContentSchema, parseContentSnapshot, publishedCollection } from '@blackbox/content-model';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -89,6 +90,18 @@ it('loads only checksum-bound content, maps stable references and rejects altere
       },
     });
     expect(snapshotCollection(loaded, 'releases')[0]!.data.tracklist).toBeUndefined();
+    const releaseSchema = createReleasesContentSchema(() => z.string(), { artist: z.string() });
+    const releaseData = loaded.snapshot.records.find((record) => record.collection === 'releases')!.data;
+    releaseData.release_stage = 'upcoming';
+    for (const date of ['', null]) {
+      releaseData.release_date = date;
+      expect(releaseSchema.parse(snapshotCollection(loaded, 'releases')[0]!.data).release_date).toBeUndefined();
+    }
+    releaseData.release_stage = 'released';
+    releaseData.release_date = '2026-09-14';
+    expect(releaseSchema.parse(snapshotCollection(loaded, 'releases')[0]!.data).release_date?.toISOString()).toBe(
+      '2026-09-14T00:00:00.000Z',
+    );
     const tracklist = {
       format: 'vinyl',
       sides: [
