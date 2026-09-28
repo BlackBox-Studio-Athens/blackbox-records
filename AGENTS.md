@@ -23,6 +23,7 @@ Start with the relevant row. Use [README](README.md) when setup or product conte
 
 ## Project constraints
 
+- Blackbox Graphify queries default to `--budget 2500`; keep queries focused and follow the global truncation rule.
 - Cloudflare stays on Free. Read the Free-tier rule before quota-consuming hosted work; authenticated GETs can write sessions. CMS builds reject KV bindings in source and generated configuration.
 - Product Environments are Local, UAT and PRD. Live catalog authorization, code promotion and shopper launch are separate gates; follow catalog promotion and the current change's acceptance criteria.
 - CMS drafts remain private until Content Publication accepts a snapshot. Content Publication and Software Release are separate operations.

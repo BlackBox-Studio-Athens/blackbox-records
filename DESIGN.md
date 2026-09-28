@@ -283,6 +283,8 @@ Review discovery uses bounded native EmDash cursor reads and existing accepted-s
 
 ### Store browsing and item information
 
+Store cards retain their price and show Sold Out, Out of Stock, or Currently Unavailable beside it, wrapping below the price when needed. Keep artwork unobstructed and Listen in its existing row. Use readable foreground text with a subtle Store Blood outline for Sold Out and a neutral outline for the other statuses; stocked items need no additional label. The active Coverflow card keeps its purchase row visible. One native link covers the card, with only the independent Listen button above its hit area.
+
 Store Listen actions use the selected Below the artwork placement: a 112 × 44px button in a 52px row before the item title. Source-less items keep the row alignment without a button. The active recording shows disabled amber **In player** status across Store, Releases and details. This denotes the shell's existing session, including a paused provider, rather than verified playback. Reopen and Stop belong to the floating player, with 44px controls on mobile. Stop or switching recordings resets the previous source's Listen controls. Keep Releases' existing placements.
 
 Store collections use a 90rem container with 32px desktop and 16px mobile gutters. At 1024px the 13rem Artists pane sits beside the results; below it, one native Browse disclosure contains Artists and Distro formats. Keep Top outside the disclosure. Cards form a continuous Grid by default: four columns from 1280px, three from 640px, two from 360px, and one below. Optional Coverflow requires explicit selection.

@@ -14,7 +14,14 @@ function createState(): StoreListingPriceActivationState {
 describe('Store listing-price activation', () => {
   it('reuses one prepared promise only for its owning route', async () => {
     const state = createState();
-    const records = [{ displayPrice: '€28.00', presentationState: 'ready' as const, storeItemSlug: 'item' }];
+    const records = [
+      {
+        availabilityState: 'stocked' as const,
+        displayPrice: '€28.00',
+        presentationState: 'ready' as const,
+        storeItemSlug: 'item',
+      },
+    ];
     const readListingPrices = vi.fn(async () => records);
 
     prepareStoreListingPriceActivation({ pathname: '/store/', readListingPrices, state });

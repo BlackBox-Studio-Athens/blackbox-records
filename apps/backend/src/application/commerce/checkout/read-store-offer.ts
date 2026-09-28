@@ -3,7 +3,13 @@ import type {
   StockRepository,
   StoreItemOptionRepository,
 } from '../../../domain/commerce/repositories/spi';
-import { parseStoreItemSlug, type StoreItemSlug, type VariantId } from '../../../domain/commerce';
+import {
+  classifyStoreStockAvailability,
+  parseStoreItemSlug,
+  storeStockAvailabilityLabels,
+  type StoreItemSlug,
+  type VariantId,
+} from '../../../domain/commerce';
 import {
   createStoreOfferPriceFromCatalogPrice,
   hasBlockingCatalogIssue,
@@ -82,30 +88,13 @@ export async function readStoreOffer(
 
   const availability = await itemAvailability.findByVariantId(storeItem.variantId);
 
-  if (!availability) {
-    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Currently Unavailable');
-  }
-
-  if (availability.status === 'available' && !availability.canBuy) {
-    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Currently Unavailable');
-  }
-
-  const currentStock = await stock.findByVariantId(storeItem.variantId);
-
-  if (!currentStock) {
-    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Currently Unavailable');
-  }
-
-  if (currentStock.onlineQuantity <= 0) {
-    return soldOutOffer(
-      storeItem.storeItemSlug,
-      storeItem.variantId,
-      currentStock.restockPlanned ? 'Out of Stock' : 'Sold Out',
-    );
-  }
-
-  if (availability.status !== 'available' || !availability.canBuy) {
-    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, 'Currently Unavailable');
+  const currentStock =
+    availability && !(availability.status === 'available' && !availability.canBuy)
+      ? await stock.findByVariantId(storeItem.variantId)
+      : null;
+  const stockAvailability = classifyStoreStockAvailability(availability, currentStock);
+  if (stockAvailability !== 'stocked') {
+    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, storeStockAvailabilityLabels[stockAvailability]);
   }
 
   const productProjection = await productProjections.findByStoreItem(storeItem);

@@ -266,6 +266,8 @@ The system MUST keep Store listing-price presentation inside the closed `storefr
 
 The system MUST expose application-owned Store readers through the documented commerce reader entrypoint rather than private reader files.
 
+The pure stock-availability classifier belongs to `commerce-domain`, exposed through its existing index. Listing and detail readers share that classifier; the existing `commerce-persistence` repository owns the bulk listing query including pending holds. The boundary manifest SHALL include `stock-availability.ts` in the closed domain's roots.
+
 #### Scenario: Public HTTP composes Store listing prices
 
 - **WHEN** public commerce HTTP wires the Store listing-price reader

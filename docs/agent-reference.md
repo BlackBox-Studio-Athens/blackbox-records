@@ -44,4 +44,4 @@ Read the relevant section. [AGENTS.md](../AGENTS.md) routes to current domain sp
 
 ## Graphify context
 
-The Blackbox index includes archived OpenSpec changes, which broad architecture queries can select as starting points. Include the relevant Blackbox module or symbol names when already known to locate the current domain. Global instructions own graph budgets and evidence handling.
+The Blackbox index includes archived OpenSpec changes, which broad architecture queries can select as starting points. Include the relevant Blackbox module or symbol names when already known to locate the current domain. The root AGENTS.md sets Blackbox's query budget; global instructions own truncation and evidence handling.

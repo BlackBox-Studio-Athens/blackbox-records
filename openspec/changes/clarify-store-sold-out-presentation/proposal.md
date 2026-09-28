@@ -6,6 +6,8 @@ Make unavailable Store Items clear and recognizable, and remove four small sourc
 
 ## What Changes
 
+- Extend Store collection price presentation with current availability beside the retained price, including Sold Out versus Out of Stock, and repair whole-card navigation while keeping Listen independent. Preserve one listing request per activation and use one bulk database read without provider calls or writes.
+
 - Correct Worker availability labels and show purchase state in the selected compact control. Share its 224 × 54 px desktop footprint and responsive mobile width across enabled and disabled states; distinguish Sold Out from Out of Stock with a subtle tone change.
 - Add a per-item Restock planned switch to protected stock operations and Store Item setup. It defaults to false for new and existing items. At zero available-to-buy-online stock, shoppers see Out of Stock when restock is planned and Sold Out otherwise; Releases and Distro share the rule.
 - Remove adjacent duplicate purchase headings and contradictory add-to-cart instructions; retain standalone summary feedback, existing navigation, and listening.
@@ -21,6 +23,9 @@ Make unavailable Store Items clear and recognizable, and remove four small sourc
 None.
 
 ### Modified Capabilities
+
+- `store-listing-price-presentation`: Typed stock presentation and resilient collection state refresh.
+- `store-catalog-categories`: Whole-card native navigation and unobstructed status beside price.
 
 - `commerce-checkout`: Accurate, non-duplicated purchase status.
 - `staff-workspace`: Discard from global review, meaningful review-control disabled states, working compact artwork, and per-item restock intent.

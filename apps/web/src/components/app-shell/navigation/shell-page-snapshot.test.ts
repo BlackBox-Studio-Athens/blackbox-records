@@ -95,6 +95,42 @@ class FakeElement {
         },
       ];
     }
+    if (
+      selector === '[data-store-listing-availability]' &&
+      this.innerHTML.includes('data-store-listing-availability')
+    ) {
+      const replaceInnerHtml = (pattern: string | RegExp, replacement: string) => {
+        this.innerHTML = this.innerHTML.replace(pattern, replacement);
+      };
+      const setAvailabilityHidden = (value: boolean) => {
+        this.innerHTML = this.innerHTML.replace(
+          /<span([^>]*data-store-listing-availability[^>]*)>/,
+          (_tag, attributes: string) =>
+            `<span${value ? `${attributes} hidden` : attributes.replace(/\s+hidden(?=\s|$)/g, '')}>`,
+        );
+      };
+      return [
+        {
+          dataset: {
+            set storeListingAvailabilityState(value: string) {
+              replaceInnerHtml(
+                /data-store-listing-availability-state="[^"]*"/,
+                `data-store-listing-availability-state="${value}"`,
+              );
+            },
+          },
+          set hidden(value: boolean) {
+            setAvailabilityHidden(value);
+          },
+          set textContent(value: string) {
+            replaceInnerHtml(/(<span[^>]*data-store-listing-availability[^>]*>)[\s\S]*?(<\/span>)/, `$1${value}$2`);
+          },
+          setAttribute(name: string, value: string) {
+            if (name === 'aria-busy') replaceInnerHtml('<span ', `<span aria-busy="${value}" `);
+          },
+        },
+      ];
+    }
     return [];
   }
 }
@@ -102,7 +138,7 @@ class FakeElement {
 function createSnapshotDocument() {
   const main = new FakeElement(
     { class: 'catalog-page' },
-    '<section>Catalog</section><div data-artists-roster-filters>hydrated filters</div><div data-distro-search><input value="vinyl"></div><a hidden data-distro-search-hidden>Item</a><span data-store-listing-price data-store-listing-price-state="ready">€28.00</span><img data-store-preview-image data-store-preview-ready>',
+    '<section>Catalog</section><div data-artists-roster-filters>hydrated filters</div><div data-distro-search><input value="vinyl"></div><a hidden data-distro-search-hidden>Item</a><span data-store-listing-price data-store-listing-price-state="ready">€28.00</span><span hidden data-store-listing-availability data-store-listing-availability-state="stocked">Sold Out</span><img data-store-preview-image data-store-preview-ready>',
   );
   const canonical = new FakeElement();
   canonical.href = 'https://example.test/blackbox-records/store/distro/';
@@ -302,6 +338,10 @@ describe('shell page snapshots', () => {
     expect(snapshot?.mainHtml).toContain('data-store-listing-price-state="loading"');
     expect(snapshot?.mainHtml).toContain('Checking price');
     expect(snapshot?.mainHtml).not.toContain('€28.00');
+    expect(snapshot?.mainHtml).toContain('data-store-listing-availability-state="pending"');
+    expect(snapshot?.mainHtml).toContain('Checking availability');
+    expect(snapshot?.mainHtml).not.toContain('Sold Out');
+    expect(snapshot?.mainHtml).not.toMatch(/<span[^>]*data-store-listing-availability[^>]*\shidden/);
     expect(snapshot?.mainHtml).toContain('data-store-preview-image');
     expect(snapshot?.mainHtml).not.toContain('data-store-preview-ready');
   });

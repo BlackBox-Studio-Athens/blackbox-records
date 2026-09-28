@@ -92,4 +92,14 @@ Use `Apply this price to the live shop` for fixed prices and `Apply these pricin
 
 ## Migration Plan
 
+### Collection follow-up (September 28)
+
+The approved follow-up adds required `availabilityState` (`stocked`, `sold_out`, `out_of_stock`, `unavailable`) to both branches of the existing listing-price union. Prices remain independent presentation data. A shared pure classification function preserves the detail reader's pause/missing-record/depletion precedence. The existing repository reads price snapshots joined to canonical items, availability, stock and pending order-line totals in one query; it never calls Stripe or reconciles offers. No additional migration is needed.
+
+Keep the existing endpoint and one fresh no-store request per collection activation. An older response without the field is unknown, and loading/failure/snapshot sanitization clears stale labels. Available items have no extra label. Status sits beside price and wraps on narrow cards, with readable text and a subtle Store Blood outline for Sold Out or neutral outline otherwise. Keep artwork and the Listen row unchanged. Active Coverflow cards retain the purchase row.
+
+The existing link pseudo-element is contained by the positioned, clipped artwork frame. Give the native link a card-level hit area, keep clipping on the artwork alone, and raise only the Listen button above the link. Empty row space, titles, metadata, prices and statuses navigate to the existing Store Item page. Preserve modified clicks, one link focus stop, previews, Coverflow selection and existing shell behavior.
+
+Update the listing specification's availability prohibition through this delta. Register the shared classifier in commerce-domain's explicit roots and document ownership in the boundary spec; existing public entrypoints remain sufficient, with no boundary exception or new adapter. Deploy the additive backend response before frontend promotion when separately authorized. Local acceptance does not authorize deployment.
+
 Apply one additive D1 migration for `Stock.restockPlanned` with a false default, then regenerate Prisma and internal API client types. Verify each slice locally and use normal code promotion. Any derivative preparation is separate from code deployment. Preserve unrelated ongoing preview work.

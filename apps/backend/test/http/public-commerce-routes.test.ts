@@ -211,11 +211,13 @@ describe('public commerce routes', () => {
   it('returns one browser-safe no-store listing-price projection without Store Offer reads', async () => {
     mockReadStoreListingPrices.mockResolvedValueOnce([
       {
+        availabilityState: 'sold_out',
         displayPrice: '€28.00',
         presentationState: 'ready',
         storeItemSlug: 'disintegration-black-vinyl-lp',
       },
       {
+        availabilityState: 'unavailable',
         presentationState: 'unavailable',
         storeItemSlug: 'afterglow-tape',
       },
@@ -232,17 +234,19 @@ describe('public commerce routes', () => {
     const body = await response.json();
     expect(body).toEqual([
       {
+        availabilityState: 'sold_out',
         displayPrice: '€28.00',
         presentationState: 'ready',
         storeItemSlug: 'disintegration-black-vinyl-lp',
       },
       {
+        availabilityState: 'unavailable',
         presentationState: 'unavailable',
         storeItemSlug: 'afterglow-tape',
       },
     ]);
     expect(JSON.stringify(body)).not.toMatch(
-      /variantId|canCheckout|stripe|stock|availability|amountMinor|currencyCode/,
+      /variantId|canCheckout|stripe|onlineQuantity|restockPlanned|amountMinor|currencyCode/,
     );
   });
 

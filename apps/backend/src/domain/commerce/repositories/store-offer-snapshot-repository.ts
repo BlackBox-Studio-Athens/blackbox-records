@@ -1,4 +1,6 @@
 import type { StoreItemSlug, StripePriceId, VariantId } from '../ids';
+import type { ItemAvailabilityRecord } from './item-availability-repository';
+import type { StockRecord } from './stock-repository';
 
 export type StoreOfferSnapshotRecord = {
   amountMinor: number | null;
@@ -18,7 +20,10 @@ export type StoreOfferSnapshotState = StoreOfferSnapshotRecord;
 export type StoreOfferListingPriceSnapshotRecord = Pick<
   StoreOfferSnapshotRecord,
   'amountMinor' | 'currencyCode' | 'freshUntil' | 'priceActive' | 'productActive' | 'storeItemSlug'
->;
+> & {
+  availability: Pick<ItemAvailabilityRecord, 'status' | 'canBuy'> | null;
+  stock: Pick<StockRecord, 'onlineQuantity' | 'restockPlanned'> | null;
+};
 
 export interface StoreOfferListingPriceSnapshotRepository {
   listForListingPricePresentation(): Promise<StoreOfferListingPriceSnapshotRecord[]>;

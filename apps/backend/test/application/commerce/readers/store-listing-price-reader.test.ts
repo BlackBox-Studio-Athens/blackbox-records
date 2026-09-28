@@ -2,10 +2,13 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { readStoreListingPrices } from '../../../../src/application/commerce/readers';
 import type { StoreOfferListingPriceSnapshotRecord } from '../../../../src/domain/commerce/repositories/spi';
+import { createStockQuantity } from '../../../../src/domain/commerce';
 import { storeItemSlug } from '../../../support/commerce-value-objects';
 
 function snapshot(overrides: Partial<StoreOfferListingPriceSnapshotRecord> = {}): StoreOfferListingPriceSnapshotRecord {
   return {
+    availability: { status: 'available', canBuy: true },
+    stock: { onlineQuantity: createStockQuantity(3), restockPlanned: false },
     amountMinor: 2800,
     currencyCode: 'EUR',
     freshUntil: new Date('2026-07-16T13:00:00.000Z'),
@@ -26,6 +29,7 @@ describe('Store listing-price reader', () => {
 
     await expect(readStoreListingPrices(snapshots)).resolves.toEqual([
       {
+        availabilityState: 'stocked',
         displayPrice: '€28.00',
         presentationState: 'ready',
         storeItemSlug: 'disintegration-black-vinyl-lp',
@@ -39,6 +43,7 @@ describe('Store listing-price reader', () => {
       readStoreListingPrices({ listForListingPricePresentation: async () => [snapshot({ amountMinor: null })] }),
     ).resolves.toEqual([
       {
+        availabilityState: 'stocked',
         displayPrice: 'Pay what you want',
         presentationState: 'ready',
         storeItemSlug: 'disintegration-black-vinyl-lp',
@@ -56,6 +61,7 @@ describe('Store listing-price reader', () => {
       readStoreListingPrices({ listForListingPricePresentation: async () => [snapshot(overrides)] }),
     ).resolves.toEqual([
       {
+        availabilityState: 'stocked',
         presentationState: 'unavailable',
         storeItemSlug: 'disintegration-black-vinyl-lp',
       },
@@ -65,4 +71,34 @@ describe('Store listing-price reader', () => {
   it('returns no guessed record when no snapshot exists', async () => {
     await expect(readStoreListingPrices({ listForListingPricePresentation: async () => [] })).resolves.toEqual([]);
   });
+
+  it.each([
+    ['stocked', 'available', true, 2, false, 'stocked'],
+    ['depleted', 'available', true, 0, false, 'sold_out'],
+    ['restocking', 'sold_out', false, 0, true, 'out_of_stock'],
+    ['restock with stock', 'available', true, 2, true, 'stocked'],
+    ['paused and depleted', 'available', false, 0, false, 'unavailable'],
+    ['paused with stock', 'available', false, 2, true, 'unavailable'],
+    ['non-buyable with stock', 'sold_out', false, 2, false, 'unavailable'],
+    ['missing availability', null, false, 0, false, 'unavailable'],
+    ['missing stock', 'available', true, null, false, 'unavailable'],
+  ] as const)(
+    'classifies %s without discarding a valid price',
+    async (_case, status, canBuy, quantity, restockPlanned, expected) => {
+      const [record] = await readStoreListingPrices({
+        listForListingPricePresentation: async () => [
+          snapshot({
+            availability: status === null ? null : { status, canBuy },
+            stock: quantity === null ? null : { onlineQuantity: createStockQuantity(quantity), restockPlanned },
+          }),
+        ],
+      });
+      expect(record).toEqual({
+        availabilityState: expected,
+        displayPrice: '€28.00',
+        presentationState: 'ready',
+        storeItemSlug: 'disintegration-black-vinyl-lp',
+      });
+    },
+  );
 });

@@ -320,6 +320,7 @@
         "apps/backend/src/domain/commerce/index.ts",
         "apps/backend/src/domain/commerce/ids.ts",
         "apps/backend/src/domain/commerce/quantities.ts",
+        "apps/backend/src/domain/commerce/stock-availability.ts",
         "apps/backend/src/domain/commerce/monetary.ts",
         "apps/backend/src/domain/commerce/request-idempotency.ts",
         "apps/backend/src/domain/commerce/repositories/**"

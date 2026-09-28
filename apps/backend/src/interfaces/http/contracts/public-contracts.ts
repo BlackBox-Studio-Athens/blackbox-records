@@ -119,11 +119,13 @@ const storeListingPriceSchema = z
   .discriminatedUnion('presentationState', [
     z.object({
       displayPrice: z.string().trim().min(1),
+      availabilityState: z.enum(['stocked', 'sold_out', 'out_of_stock', 'unavailable']),
       presentationState: z.literal('ready'),
       storeItemSlug: z.string().trim().min(1),
     }),
     z.object({
       presentationState: z.literal('unavailable'),
+      availabilityState: z.enum(['stocked', 'sold_out', 'out_of_stock', 'unavailable']),
       storeItemSlug: z.string().trim().min(1),
     }),
   ])

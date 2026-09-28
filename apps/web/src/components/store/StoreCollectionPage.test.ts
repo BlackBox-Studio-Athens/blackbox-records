@@ -14,6 +14,7 @@ const releasesRouteSource = source('../../pages/store/blackbox-releases/index.as
 const distroRouteSource = source('../../pages/store/distro/index.astro');
 const merchRouteSource = source('../../pages/store/merch/index.astro');
 const storeItemCardSource = source('../cards/StoreItemCard.astro');
+const proseCssSource = source('../../styles/prose.css');
 
 describe('Store collection category surfaces', () => {
   it('renders semantic category navigation with an active ordinary link', () => {
@@ -60,6 +61,8 @@ describe('Store collection category surfaces', () => {
 
   it('renders plain listing-price placeholders without per-card Store Offer islands or redundant CTAs', () => {
     expect(storeItemCardSource).toContain('data-store-listing-price');
+    expect(storeItemCardSource).toContain('data-store-listing-availability');
+    expect(storeItemCardSource).toContain('Checking availability');
     expect(storeItemCardSource).toContain('data-store-item-slug={storeItem.slug}');
     expect(storeItemCardSource).not.toContain('StoreOfferPriceDisplay');
     expect(storeItemCardSource).not.toContain('View Item');
@@ -67,6 +70,30 @@ describe('Store collection category surfaces', () => {
     expect(storeItemCardSource).toContain('storeItem.embeddedPlayerData && (');
     expect(storeItemCardSource).toContain('<MusicStreamingServiceListenTrigger');
     expect(storeItemCardSource).not.toContain('iframe');
+  });
+
+  it('makes the card a single native link while keeping Listen separate and availability visible in Coverflow', () => {
+    expect(storeItemCardSource.match(/class="prose-card-link"/g)).toHaveLength(1);
+    expect(storeItemCardSource).toMatch(
+      /<div class="store-item-card__image-frame">[\s\S]*?<\/div>\s*<a\s+class="prose-card-link"[\s\S]*?href=\{storeItem\.storePath\}/,
+    );
+    expect(storeItemCardSource).toMatch(
+      /<a\s+class="prose-card-link"[\s\S]*?<\/a>\s*<div class="store-item-card__listen">/,
+    );
+    expect(proseCssSource).toContain(
+      '.store-item-card--listing .prose-card-link {\n  position: absolute;\n  inset: 0;',
+    );
+    expect(proseCssSource).not.toContain('.store-item-card--listing .prose-card-link::after');
+    expect(cssSource).toContain('.store-item-card--listing:has(.prose-card-link:hover) .store-item-card__preview');
+    expect(cssSource).toContain(
+      '.store-item-card__listen .music-listen-trigger {\n  position: relative;\n  z-index: 3;',
+    );
+    expect(cssSource).toContain('height: calc(var(--store-cover-size) + 8rem)');
+    expect(cssSource).toContain('> :not(.store-item-card__price)');
+    expect(cssSource).toContain(
+      "[data-store-coverflow-position='active']\n  .store-item-card__content {\n  display: flex;",
+    );
+    expect(cssSource).toContain("data-store-listing-availability-state='sold_out'");
   });
 
   it('uses compact Grid image slots and switches sizes only for explicit Coverflow', () => {

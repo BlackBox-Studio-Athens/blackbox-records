@@ -1203,7 +1203,7 @@ body {
   }
 
   .store-item-card__image-frame {
-    z-index: 3;
+    z-index: 1;
   }
 
   html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .prose-card-link {
@@ -1211,7 +1211,7 @@ body {
   }
 
   @media (hover: hover) and (pointer: fine) {
-    .store-item-card__image-frame:hover .store-item-card__preview[data-store-preview-ready] {
+    .store-item-card--listing:has(.prose-card-link:hover) .store-item-card__preview[data-store-preview-ready] {
       opacity: 1;
       transform: scale(1);
       transition-delay: 100ms;
@@ -4836,12 +4836,13 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 
 .store-collection-page .store-item-card__listen {
   position: relative;
-  z-index: 4;
   min-height: 3.25rem;
   padding: 0.5rem 0.75rem 0;
 }
 
 .store-collection-page .store-item-card__listen .music-listen-trigger {
+  position: relative;
+  z-index: 3;
   width: 6.6rem;
   min-width: 6.6rem;
   height: 2.75rem;
@@ -4853,7 +4854,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 
 @media (min-width: 40rem) {
   html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] [data-store-coverflow-stage] {
-    height: calc(var(--store-cover-size) + 4rem);
+    height: calc(var(--store-cover-size) + 8rem);
   }
 
   html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-item-card__image-frame {
@@ -4888,6 +4889,43 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   padding-top: 0.5rem;
   font-size: 0.9375rem;
   font-variant-numeric: tabular-nums;
+}
+
+.store-collection-page .store-item-card__availability {
+  align-self: center;
+  border: 1px solid color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+  padding: 0.2rem 0.35rem;
+  color: var(--foreground);
+  font-size: 0.625rem;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.store-collection-page .store-item-card__availability[data-store-listing-availability-state='sold_out'] {
+  border-color: var(--store-accent);
+}
+
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  [data-store-coverflow-position='active']
+  .store-item-card__content {
+  display: flex;
+}
+
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  [data-store-coverflow-position='active']
+  .store-item-card__content
+  > :not(.store-item-card__price) {
+  display: none;
+}
+
+html[data-store-coverflow-capable]
+  [data-store-coverflow-mode='preview']
+  [data-store-coverflow-position='active']
+  .store-item-card__price {
+  margin-top: 0;
+  padding-top: 0.5rem;
 }
 
 .store-image-gallery__stage {

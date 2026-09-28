@@ -50,13 +50,9 @@
 }
 
 .store-item-card--listing .prose-card-link {
-  position: static;
-  display: block;
-}
-.store-item-card--listing .prose-card-link::after {
-  content: '';
   position: absolute;
   inset: 0;
+  display: block;
   z-index: 2;
 }
 .store-item-card--listing .prose-card-link:focus-visible {

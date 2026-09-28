@@ -5,7 +5,7 @@ import type {
   StoreOfferSnapshotRepository,
   StoreOfferSnapshotState,
 } from '../../../domain/commerce/repositories/spi';
-import { parseStoreItemSlug, parseStripePriceId, parseVariantId } from '../../../domain/commerce';
+import { createStockQuantity, parseStoreItemSlug, parseStripePriceId, parseVariantId } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 function mapStoreOfferSnapshot(record: {
@@ -56,21 +56,62 @@ export class PrismaStoreOfferSnapshotRepository
   }
 
   public async listForListingPricePresentation(): Promise<StoreOfferListingPriceSnapshotRecord[]> {
-    const records = await this.prisma.storeOfferSnapshot.findMany({
-      orderBy: { storeItemSlug: 'asc' },
-      select: {
-        amountMinor: true,
-        currencyCode: true,
-        freshUntil: true,
-        priceActive: true,
-        productActive: true,
-        storeItemSlug: true,
-      },
-    });
+    const records = await this.prisma.$queryRaw<
+      {
+        amountMinor: number | null;
+        currencyCode: string;
+        freshUntil: number | string;
+        priceActive: number;
+        productActive: number;
+        storeItemSlug: string;
+        availabilityStatus: 'available' | 'sold_out' | null;
+        canBuy: number | null;
+        effectiveQuantity: number | null;
+        restockPlanned: number | null;
+      }[]
+    >`
+      SELECT snapshot."amountMinor", snapshot."currencyCode", snapshot."freshUntil",
+        snapshot."priceActive", snapshot."productActive", snapshot."storeItemSlug",
+        availability."status" AS "availabilityStatus", availability."canBuy",
+        CASE WHEN stock."variantId" IS NULL THEN NULL
+          ELSE MAX(0, MIN(stock."quantity", stock."onlineQuantity") - COALESCE(holds."quantity", 0))
+        END AS "effectiveQuantity", stock."restockPlanned"
+      FROM "StoreOfferSnapshot" snapshot
+      INNER JOIN "StoreItemOption" item ON item."storeItemSlug" = snapshot."storeItemSlug"
+        AND item."variantId" = snapshot."variantId"
+      LEFT JOIN "ItemAvailability" availability ON availability."variantId" = item."variantId"
+      LEFT JOIN "Stock" stock ON stock."variantId" = item."variantId"
+      LEFT JOIN (
+        SELECT line."variantId", SUM(line."quantity") AS "quantity"
+        FROM "CheckoutOrderLine" line
+        INNER JOIN "CheckoutOrder" checkout ON checkout."id" = line."orderId"
+        WHERE checkout."status" = 'pending_payment'
+        GROUP BY line."variantId"
+      ) holds ON holds."variantId" = item."variantId"
+      ORDER BY snapshot."storeItemSlug" ASC
+    `;
 
     return records.map((record) => ({
-      ...record,
+      amountMinor: record.amountMinor,
+      currencyCode: record.currencyCode,
+      freshUntil: new Date(record.freshUntil),
+      priceActive: Boolean(record.priceActive),
+      productActive: Boolean(record.productActive),
       storeItemSlug: parseStoreItemSlug(record.storeItemSlug),
+      availability:
+        record.availabilityStatus === null
+          ? null
+          : {
+              status: record.availabilityStatus,
+              canBuy: Boolean(record.canBuy),
+            },
+      stock:
+        record.effectiveQuantity === null
+          ? null
+          : {
+              onlineQuantity: createStockQuantity(Number(record.effectiveQuantity)),
+              restockPlanned: Boolean(record.restockPlanned),
+            },
     }));
   }
 

@@ -33,38 +33,37 @@ const widths = [240, 320, 480, 640, 800, 960];
 >
   <Card className="store-item-card__surface flex flex-1 flex-col rounded-none border-border bg-card shadow-none">
     <div class="store-item-card__image-frame">
-      <a
-        class="prose-card-link"
-        href={storeItem.storePath}
-        aria-label={storeItem.title + ' — ' + storeItem.subtitle}
-        data-astro-prefetch
-      >
+      <Image
+        src={storeItem.image}
+        alt={storeItem.imageAlt}
+        class="store-item-card__image"
+        widths={widths}
+        sizes={sizes}
+        data-store-grid-sizes={sizes}
+        loading={priority ? 'eager' : imageLoadingMode}
+        fetchpriority={priority ? 'high' : 'auto'}
+      />
+      {previewImage && (
         <Image
-          src={storeItem.image}
-          alt={storeItem.imageAlt}
-          class="store-item-card__image"
+          src={previewImage.image}
+          alt=""
+          aria-hidden="true"
+          class="store-item-card__preview"
+          data-store-preview-image
           widths={widths}
           sizes={sizes}
           data-store-grid-sizes={sizes}
-          loading={priority ? 'eager' : imageLoadingMode}
-          fetchpriority={priority ? 'high' : 'auto'}
+          loading="lazy"
+          fetchpriority="low"
         />
-        {previewImage && (
-          <Image
-            src={previewImage.image}
-            alt=""
-            aria-hidden="true"
-            class="store-item-card__preview"
-            data-store-preview-image
-            widths={widths}
-            sizes={sizes}
-            data-store-grid-sizes={sizes}
-            loading="lazy"
-            fetchpriority="low"
-          />
-        )}
-      </a>
+      )}
     </div>
+    <a
+      class="prose-card-link"
+      href={storeItem.storePath}
+      aria-label={storeItem.title + ' — ' + storeItem.subtitle}
+      data-astro-prefetch
+    ></a>
     <div class="store-item-card__listen">
       {storeItem.embeddedPlayerData && (
         <MusicStreamingServiceListenTrigger embeddedPlayerData={storeItem.embeddedPlayerData} />
@@ -83,6 +82,15 @@ const widths = [240, 320, 480, 640, 800, 960];
           data-store-listing-price-state="loading"
         >
           Checking price
+        </span>
+        <span
+          aria-busy="true"
+          class="store-item-card__availability"
+          data-store-item-slug={storeItem.slug}
+          data-store-listing-availability
+          data-store-listing-availability-state="pending"
+        >
+          Checking availability
         </span>
       </div>
     </CardContent>

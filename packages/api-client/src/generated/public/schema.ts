@@ -304,11 +304,15 @@ export type components = {
             links: components["schemas"]["ApiLink"][];
         };
         PublicStoreListingPrice: {
+            /** @enum {string} */
+            availabilityState: "stocked" | "sold_out" | "out_of_stock" | "unavailable";
             displayPrice: string;
             /** @enum {string} */
             presentationState: "ready";
             storeItemSlug: string;
         } | {
+            /** @enum {string} */
+            availabilityState: "stocked" | "sold_out" | "out_of_stock" | "unavailable";
             /** @enum {string} */
             presentationState: "unavailable";
             storeItemSlug: string;

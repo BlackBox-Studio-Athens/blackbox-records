@@ -257,6 +257,15 @@
                 "type": "string",
                 "minLength": 1
               },
+              "availabilityState": {
+                "type": "string",
+                "enum": [
+                  "stocked",
+                  "sold_out",
+                  "out_of_stock",
+                  "unavailable"
+                ]
+              },
               "presentationState": {
                 "type": "string",
                 "enum": [
@@ -270,6 +279,7 @@
             },
             "required": [
               "displayPrice",
+              "availabilityState",
               "presentationState",
               "storeItemSlug"
             ]
@@ -283,6 +293,15 @@
                   "unavailable"
                 ]
               },
+              "availabilityState": {
+                "type": "string",
+                "enum": [
+                  "stocked",
+                  "sold_out",
+                  "out_of_stock",
+                  "unavailable"
+                ]
+              },
               "storeItemSlug": {
                 "type": "string",
                 "minLength": 1
@@ -290,6 +309,7 @@
             },
             "required": [
               "presentationState",
+              "availabilityState",
               "storeItemSlug"
             ]
           }

@@ -1,5 +1,11 @@
 # Tasks
 
+## 5. Store collection follow-up
+
+- [x] 5.1 Extend the existing listing projection with a typed availability state, one bulk read including pending holds, and shared detail/listing classification. Regenerate public API types and verify truthful states, price independence, privacy, and constant query count.
+- [x] 5.2 Show compact status beside price across Store categories and active Coverflow cards. Repair whole-card native links while preserving independent Listen, artwork previews, focus, and modified clicks. Reset price/status together and cover failed, superseded, cached, and older responses.
+- [x] 5.3 Verify Local desktop/mobile, zoom, keyboard, Grid/Coverflow and player behavior. Run affected checks, shell tests, strict OpenSpec validation and final `pnpm validate`; record source-bound evidence. Deployment is excluded.
+
 ## 1. Store purchase status
 
 - [x] 1.1 Correct Worker labels using the design's table without changing response shape or eligibility. Extend existing tests for depleted effective stock, missing records, pauses at zero/positive stock, and non-buyable status with positive stock.

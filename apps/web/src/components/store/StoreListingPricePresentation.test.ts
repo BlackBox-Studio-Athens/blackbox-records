@@ -17,6 +17,30 @@ function placeholder(storeItemSlug: string) {
   };
 }
 
+function availabilityPlaceholder(storeItemSlug: string) {
+  const attributes = new Map<string, string>();
+  let hidden = false;
+  return {
+    dataset: { storeItemSlug, storeListingAvailabilityState: 'sold_out' },
+    get hidden() {
+      return hidden;
+    },
+    set hidden(value: boolean) {
+      hidden = value;
+    },
+    removeAttribute: (name: string) => attributes.delete(name),
+    setAttribute: (name: string, value: string) => attributes.set(name, value),
+    textContent: STORE_LISTING_PRICE_COPY.soldOut,
+  };
+}
+
+function listingRoot(prices: unknown[], availability: unknown[] = []) {
+  return {
+    querySelectorAll: (selector: string) =>
+      (selector === '[data-store-listing-availability]' ? availability : prices) as HTMLElement[],
+  } as unknown as ParentNode;
+}
+
 describe('Store listing-price presentation', () => {
   afterEach(() => vi.unstubAllGlobals());
 
@@ -38,13 +62,22 @@ describe('Store listing-price presentation', () => {
     const unavailable = placeholder('unavailable-item');
     const missing = placeholder('missing-item');
     const readListingPrices = vi.fn(async () => [
-      { displayPrice: '€28.00', presentationState: 'ready' as const, storeItemSlug: 'ready-item' },
-      { presentationState: 'unavailable' as const, storeItemSlug: 'unavailable-item' },
+      {
+        availabilityState: 'stocked' as const,
+        displayPrice: '€28.00',
+        presentationState: 'ready' as const,
+        storeItemSlug: 'ready-item',
+      },
+      {
+        availabilityState: 'unavailable' as const,
+        presentationState: 'unavailable' as const,
+        storeItemSlug: 'unavailable-item',
+      },
     ]);
 
     connectStoreListingPricePresentation({
       readListingPrices,
-      root: { querySelectorAll: () => [ready, unavailable, missing] } as unknown as ParentNode,
+      root: listingRoot([ready, unavailable, missing]),
     });
 
     await vi.waitFor(() => expect(ready.textContent).toBe('€28.00'));
@@ -55,16 +88,55 @@ describe('Store listing-price presentation', () => {
     expect(ready.getAttribute('aria-busy')).toBeNull();
   });
 
+  it('shows explicit availability and treats older or missing records as unknown', async () => {
+    const stocked = availabilityPlaceholder('stocked');
+    const soldOut = availabilityPlaceholder('sold-out');
+    const outOfStock = availabilityPlaceholder('out-of-stock');
+    const unavailable = availabilityPlaceholder('unavailable');
+    const older = availabilityPlaceholder('older');
+    const missing = availabilityPlaceholder('missing');
+    const records = [
+      { storeItemSlug: 'stocked', presentationState: 'ready', displayPrice: '€28.00', availabilityState: 'stocked' },
+      { storeItemSlug: 'sold-out', presentationState: 'ready', displayPrice: '€28.00', availabilityState: 'sold_out' },
+      {
+        storeItemSlug: 'out-of-stock',
+        presentationState: 'ready',
+        displayPrice: '€28.00',
+        availabilityState: 'out_of_stock',
+      },
+      { storeItemSlug: 'unavailable', presentationState: 'unavailable', availabilityState: 'unavailable' },
+      { storeItemSlug: 'older', presentationState: 'ready', displayPrice: '€28.00' },
+    ];
+
+    connectStoreListingPricePresentation({
+      readListingPrices: async () => records as never,
+      root: listingRoot([], [stocked, soldOut, outOfStock, unavailable, older, missing]),
+    });
+
+    await vi.waitFor(() => expect(soldOut.textContent).toBe(STORE_LISTING_PRICE_COPY.soldOut));
+    expect(stocked.hidden).toBe(true);
+    expect(outOfStock.textContent).toBe(STORE_LISTING_PRICE_COPY.outOfStock);
+    expect(unavailable.textContent).toBe(STORE_LISTING_PRICE_COPY.currentlyUnavailable);
+    expect(older.textContent).toBe(STORE_LISTING_PRICE_COPY.availabilityUnknown);
+    expect(missing.textContent).toBe(STORE_LISTING_PRICE_COPY.availabilityUnknown);
+    expect(older.dataset.storeListingAvailabilityState).toBe('unknown');
+  });
+
   it('consumes one already-prepared projection without creating a second read', async () => {
     const item = placeholder('item');
     const prepareProjection = vi.fn(async () => [
-      { displayPrice: '€24.00', presentationState: 'ready' as const, storeItemSlug: 'item' },
+      {
+        availabilityState: 'stocked' as const,
+        displayPrice: '€24.00',
+        presentationState: 'ready' as const,
+        storeItemSlug: 'item',
+      },
     ]);
     const preparedProjection = prepareProjection();
 
     connectStoreListingPricePresentation({
       readListingPrices: () => preparedProjection,
-      root: { querySelectorAll: () => [item] } as unknown as ParentNode,
+      root: listingRoot([item]),
     });
 
     await vi.waitFor(() => expect(item.textContent).toBe('€24.00'));
@@ -79,7 +151,7 @@ describe('Store listing-price presentation', () => {
         signal = nextSignal;
         return new Promise(() => {});
       },
-      root: { querySelectorAll: () => [item] } as unknown as ParentNode,
+      root: listingRoot([item]),
     });
 
     cleanup();
@@ -89,14 +161,17 @@ describe('Store listing-price presentation', () => {
 
   it('replaces indefinite loading with a non-price state when the projection fails', async () => {
     const item = placeholder('item');
+    const availability = availabilityPlaceholder('item');
     connectStoreListingPricePresentation({
       readListingPrices: async () => {
         throw new Error('Worker unavailable');
       },
-      root: { querySelectorAll: () => [item] } as unknown as ParentNode,
+      root: listingRoot([item], [availability]),
     });
 
     await vi.waitFor(() => expect(item.textContent).toBe(STORE_LISTING_PRICE_COPY.unavailable));
     expect(item.dataset.storeListingPriceState).toBe('unavailable');
+    expect(availability.textContent).toBe(STORE_LISTING_PRICE_COPY.availabilityUnknown);
+    expect(availability.dataset.storeListingAvailabilityState).toBe('unknown');
   });
 });
