@@ -22,6 +22,8 @@ export default tseslint.config(
       '**/.astro/**',
       '**/.emdash/**',
       '**/.codex-artifacts/**',
+      '**/.codegraph/**',
+      '**/graphify-out/**',
       '**/.wrangler/**',
       '**/.vite/**',
       '**/coverage/**',

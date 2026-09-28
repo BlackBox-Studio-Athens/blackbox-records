@@ -1,90 +1,27 @@
-# Design inspiration library
+# BlackBox design references and decisions
 
-Living repository reference for people and AI agents. Last source review: **2026-09-23**.
+Project application log and study history. Shared sources and reusable pattern evidence now live in the personal [Design Library](C:/Users/SVall/.codex/design-library/README.md). Migration: 2026-09-26. Historical review and selection dates below retain their original meaning.
 
-Start here when designing or redesigning an element. This is a source directory and decision log; the existing [UI pattern dataset](ui-design-patterns.csv) remains the canonical pattern evidence library. [PRODUCT.md](../PRODUCT.md) and [DESIGN.md](../DESIGN.md) govern BlackBox's identity.
+[PRODUCT.md](../PRODUCT.md) and [DESIGN.md](../DESIGN.md) govern BlackBox’s identity. The [pattern guide](ui-design-patterns-guide.md) explains how the local application table joins the global evidence by stable ID. On another machine, the personal library must be transferred separately; it is not installed by cloning this repository.
 
-## Find a reference
+## Shared references and BlackBox compatibility
 
-| Need / search terms                               | Start with                                   | BlackBox application                             |
-| ------------------------------------------------- | -------------------------------------------- | ------------------------------------------------ |
-| Button, hover, press, pointer, border             | RB, GS                                       | Listen, player controls, compact actions         |
-| Material, light, depth, shader, texture           | TU, VA                                       | Release feature art or a small interaction study |
-| Sequence, transition, timeline, choreography      | GS, GSK                                      | Player and overlay transitions                   |
-| Scroll, inertia, parallax, scroll synchronization | LE                                           | Deliberate future page-level motion              |
-| Typography, navigation, hierarchy, layout         | [Pattern guide](ui-design-patterns-guide.md) | Existing research before new library adoption    |
+| ID  | Shared guide                                                                                    | BlackBox application / constraint                                                                                                                                                                                                                                                              |
+| --- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TU  | [ThreeUI](C:/Users/SVall/.codex/design-library/sources/threeui/README.md)                       | Material/light studies for a bounded surface; preserve the current restrained visual language and inspect runtime assets.                                                                                                                                                                      |
+| RB  | [React Bits](C:/Users/SVall/.codex/design-library/sources/react-bits/README.md)                 | Contained interaction references; keep Listen hit targets stationary and avoid per-card global listeners.                                                                                                                                                                                      |
+| GS  | [GSAP](C:/Users/SVall/.codex/design-library/sources/gsap/README.md)                             | Sequencing reference when CSS is insufficient; the selected Listen treatment uses local CSS and needs no animation dependency.                                                                                                                                                                 |
+| GSK | [GSAP AI guidance](C:/Users/SVall/.codex/design-library/sources/gsap-skills/README.md)          | Read only when GSAP is relevant; no upstream skill is installed or activated by this index.                                                                                                                                                                                                    |
+| VA  | [Vanta](C:/Users/SVall/.codex/design-library/sources/vanta/README.md)                           | Atmosphere reference for a bounded feature; repeated canvases across catalog controls are a poor fit.                                                                                                                                                                                          |
+| LE  | [Lenis](C:/Users/SVall/.codex/design-library/sources/lenis/README.md)                           | Future scrolling reference. AppShellRoot already coordinates scroll reset/restoration, anchor navigation and overlays; any integration needs one scroll/RAF owner and reduced-motion checks.                                                                                                   |
+| BA  | [Barba](C:/Users/SVall/.codex/design-library/sources/barba/README.md)                           | Page-transition reference. BlackBox already intercepts navigation and caches/swaps main content while keeping the player mounted. Another container/history owner could destroy iframe continuity or duplicate routing, focus and scroll work. Inclusion does not approve replacing the shell. |
+| PW  | [Cosmos Public Work](C:/Users/SVall/.codex/design-library/sources/cosmos-public-work/README.md) | Artwork-first restraint and quiet controls; retain BlackBox’s dark palette, square geometry and typography.                                                                                                                                                                                    |
 
-## Source register
+Lenis and Barba are distinct choices: scrolling versus navigation/container replacement. Neither is selected for BlackBox by this migration. Any later proposal must account for header/footer/mobile navigation, overlays, focus, history, scroll resets and open/minimize/reopen/Stop player continuity.
 
-### TU · ThreeUI
+## Historical source evidence
 
-- **Repository:** https://github.com/MengTo/threeui
-- **Explore:** https://threeui.com
-- **Code entry:** [Community README](https://github.com/MengTo/threeui/blob/main/README.md), [component catalog](https://github.com/MengTo/threeui/blob/main/src/data/shaders.tsx), [source bundles](https://github.com/MengTo/threeui/blob/main/public/source-code.json).
-- **Ideas:** Directional light, dimensional surfaces, parameterized visual studies. Translate selectively to BlackBox's restrained monochrome surface.
-- **Adoption:** Community includes source and assets; Pro/Beta implementations are excluded. React components may require runtime assets at their documented paths. Review the individual component before adding dependencies.
-- **License checkpoint:** Community code is MIT; fonts and assets have separate notices. Check [asset notices](https://github.com/MengTo/threeui/blob/main/ASSET-LICENSES.md) before reuse.
-- **Status:** Researched; inspiration only. No package installed or code copied.
-
-### LE · Lenis
-
-- **Repository and code entry:** https://github.com/darkroomengineering/lenis
-- **Explore:** https://lenis.darkroom.engineering
-- **Ideas:** Controlled acceleration and deceleration; consistent scroll pacing.
-- **Adoption:** A scroll engine, not a button component. Consider only for an approved scrolling task. BlackBox already owns scroll resets, overlays and navigation; evaluate those interactions before introduction.
-- **License checkpoint:** [MIT](https://github.com/darkroomengineering/lenis/blob/main/LICENSE).
-- **Status:** Researched; future scroll reference. No installation for the Listen study.
-
-### GS · GSAP
-
-- **Repository:** https://github.com/greensock/GSAP
-- **Explore / API:** https://gsap.com/docs/v3/
-- **Code entry:** [README](https://github.com/greensock/GSAP/blob/master/README.md).
-- **Ideas:** Short press feedback, deliberate easing, ordered reveals and reversible timelines.
-- **Adoption:** Use when sequencing needs exceed CSS. Scope selectors and clean up with the component/shell lifecycle. Respect reduced motion and keep the hit target stable.
-- **License checkpoint:** Follow the current [GSAP license](https://gsap.com/standard-license/); do not assume MIT from its GitHub availability.
-- **Status:** Researched; timing inspiration only for the Listen study.
-
-### GSK · Official GSAP AI skills
-
-- **Repository:** https://github.com/greensock/gsap-skills
-- **Agent index:** https://github.com/greensock/gsap-skills/blob/main/skills/llms.txt
-- **Read for implementation:** [core](https://github.com/greensock/gsap-skills/blob/main/skills/gsap-core/SKILL.md), [timelines](https://github.com/greensock/gsap-skills/blob/main/skills/gsap-timeline/SKILL.md), [React](https://github.com/greensock/gsap-skills/blob/main/skills/gsap-react/SKILL.md), [performance](https://github.com/greensock/gsap-skills/blob/main/skills/gsap-performance/SKILL.md).
-- **Purpose:** Task-specific AI guidance for actual GSAP adoption, not a visual component catalog.
-- **Adoption:** Read the relevant skill when GSAP is selected. Repository instructions remain authoritative. Reading a reference does not install it or enable a new tool.
-- **License checkpoint:** README declares MIT for the skills; GSAP itself has its own terms.
-- **Status:** Indexed, not installed. README reviewed; individual skills have not been audited.
-
-### VA · Vanta
-
-- **Repository:** https://github.com/tengbao/vanta
-- **Explore:** https://www.vantajs.com
-- **Code entry:** [README and lifecycle](https://github.com/tengbao/vanta/blob/master/README.md), [effects](https://github.com/tengbao/vanta/tree/master/src).
-- **Ideas:** Wave fields, surface movement and pointer-responsive atmosphere.
-- **Adoption:** WebGL/Three.js or p5 backgrounds suit a bounded feature surface. Repeating a canvas across 96 Listen controls is a poor fit. Stop offscreen effects, provide a static fallback and destroy instances when their surface leaves.
-- **License checkpoint:** [MIT-style license text](https://github.com/tengbao/vanta/blob/master/LICENSE.md); check renderer dependencies separately.
-- **Status:** Researched; conceptual texture inspiration only.
-
-### RB · React Bits
-
-- **Repository:** https://github.com/DavidHDev/react-bits
-- **Explore:** https://reactbits.dev
-- **Code studied:** [Magnet](https://github.com/DavidHDev/react-bits/blob/main/src/content/Animations/Magnet/Magnet.jsx), [StarBorder](https://github.com/DavidHDev/react-bits/blob/main/src/content/Animations/StarBorder/StarBorder.jsx).
-- **Ideas:** Pointer proximity, edge highlights, contained microinteractions.
-- **Adoption:** Inspect a component's own dependencies and accessibility. Prefer a stationary button with a moving internal decoration. Avoid one global pointer listener per catalog item.
-- **License checkpoint:** [MIT + Commons Clause](https://github.com/DavidHDev/react-bits/blob/main/LICENSE.md). Check current terms and preserve notices for copied portions; this is not unmodified MIT.
-- **Status:** Source reviewed; no code copied or package installed.
-
-### PW · Cosmos Public Work
-
-- **Visual reference:** https://www.cosmos.so/public-work
-- **Type:** Aesthetic and image-discovery reference, not a component/code repository.
-- **Observed in browser (2026-09-23):** An image-dominant archival collection, neutral floating controls, sparse labels and generous separation between images. This is a visual observation, not a claim about conversion or usability results.
-- **Search terms:** Archival, image-first, gallery, curation, quiet controls, restrained hierarchy, negative space.
-- **BlackBox translation:** Let sleeve artwork lead; keep utility controls compact and calm. Carry across restraint and spacing while retaining BlackBox's dark palette, square geometry and existing typography. Do not import the reference's light canvas or pill-shaped controls as a new site language.
-- **Current application:** LISTEN-5's low-contrast frame and all five proposals' quieter hierarchy. The existing BlackBox button remains the primary reference.
-- **Asset/code checkpoint:** No code or imagery copied. If an archival image is later selected, inspect its individual source, rights and attribution requirements before adoption.
-- **Status:** Page and rendered design reviewed; included for current and future aesthetic exploration.
+The source register was reviewed on 2026-09-23. ThreeUI, Lenis, GSAP and Vanta were researched as inspiration; the GSAP skill index was reviewed without auditing individual skills. React Bits Magnet and StarBorder source was examined, with no copied code or package installation. Cosmos Public Work was reviewed in a browser and informed the Listen exploration. Shared inventory capture dates do not replace these project-specific observations.
 
 ## Listen button study · 2026-09-23
 
@@ -229,12 +166,11 @@ The Store applies this alignment only to the active Coverflow action row. Grid k
 
 ## Add a source or revisit a decision
 
-1. Search this register and the pattern dataset first. Reuse IDs.
-2. Add a stable short ID, repository URL, visual demo, exact code entry, useful search terms, intended surfaces, limitations, license link and review date.
-3. Mark evidence accurately: README reviewed, source reviewed, prototype tried, selected, rejected or shipped. Link the task/prototype and record why.
-4. Reopen upstream source before copying code or choosing a dependency. Pin the exact revision and preserve required notices if code is adopted.
-5. Add distinct reusable patterns to the existing CSV. Keep source discovery here and task planning in OpenSpec; do not create parallel specification systems.
+1. Search the [global source register](C:/Users/SVall/.codex/design-library/README.md) and [pattern map](C:/Users/SVall/.codex/design-library/patterns/README.md); reuse existing IDs.
+2. Maintain reusable source facts and pattern evidence through [library maintenance](C:/Users/SVall/.codex/design-library/maintenance.md). Record BlackBox applicability in this log or the local [application table](ui-design-patterns.csv).
+3. Keep selection, rejection and shipping evidence in the project. Reopen upstream material before code reuse or dependency selection; preserve required notices.
+4. Keep task planning in OpenSpec. Library entries do not approve visual changes, integrations or new dependencies.
 
-Future-agent prompt: “Read DESIGN.md and docs/design-inspiration.md. For [element], shortlist relevant source IDs, inspect current upstream examples, and propose options consistent with PRODUCT.md. Record the selection and its rationale here.”
+Future-agent prompt: “Read PRODUCT.md, DESIGN.md and the global Design Library map. For [element], inspect relevant source inventories and pattern IDs, then propose options appropriate to BlackBox. Record project selections and rationale in docs/design-inspiration.md.”
 
-This is a Git-versioned living reference. It does not automatically monitor upstream repositories or synchronize to a cloud document.
+This project history remains Git-versioned. The global personal library is maintained separately and has no automatic upstream monitor or cloud synchronization.

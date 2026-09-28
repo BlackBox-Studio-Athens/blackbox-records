@@ -8,7 +8,9 @@ const checks = workflow.jobs['check-candidate'];
 const uatBuild = workflow.jobs['prepare-uat'];
 const prdBuild = workflow.jobs['prepare-prd'];
 const assembly = workflow.jobs['assemble-candidate'];
-const uatSequence = workflow;
+const uatSequence = parse(
+  readFileSync(fileURLToPath(new URL('../.github/workflows/uat-release-sequence.yml', import.meta.url)), 'utf8'),
+);
 const prdSequence = workflow;
 const promotion = workflow.jobs['deploy-prd'];
 const staticPromotion = workflow.jobs['deploy-prd-static'];
@@ -177,8 +179,14 @@ describe('Pages artifact promotion contract', () => {
     expect(checks.steps.find((step: { name: string }) => step.name === 'Run validation checks').run).toBe(
       'pnpm validate:checks',
     );
-    expect(uatBuild.needs).toBe('check-candidate');
-    expect(prdBuild.needs).toBe('check-candidate');
+    // Build while validation runs, but do not assemble or deploy a failed candidate.
+    expect(uatBuild.needs).toBeUndefined();
+    expect(prdBuild.needs).toBeUndefined();
+    expect(workflow.jobs['inspect-uat-pages'].needs).toEqual(['check-candidate', 'prepare-uat']);
+    for (const job of [checks, uatBuild]) {
+      const diagnostics = job.steps.find((step: { name?: string }) => step.name === 'Upload validation diagnostics');
+      expect(diagnostics.with.name).toContain('${{ github.job }}');
+    }
     const uatSteps = uatBuild.steps.map(
       (step: { name?: string; run?: string }) => `${step.name ?? ''} ${step.run ?? ''}`,
     );
@@ -195,6 +203,7 @@ describe('Pages artifact promotion contract', () => {
       ['uat', uatBuild],
       ['prd', prdBuild],
     ] as const) {
+      expect(job.steps[0]).toEqual(checks.steps[0]);
       const frontend = job.steps.find(
         (step: { name: string }) => step.name === `Build hosted ${target.toUpperCase()} static frontend`,
       );
@@ -204,6 +213,7 @@ describe('Pages artifact promotion contract', () => {
       expect(frontend.env.CMS_CONTENT_SNAPSHOT).toContain(`/release-content/${target}/snapshot.json`);
       expect(frontend.env.PUBLIC_BACKEND_BASE_URL).toBe(`\${{ vars.${target.toUpperCase()}_PUBLIC_BACKEND_BASE_URL }}`);
       expect(JSON.stringify(frontend.env)).not.toContain('secrets.');
+      expect(frontend.run).toBe('pnpm build:web');
       const restore = job.steps.find(
         (step: { name: string }) => step.name === `Restore current ${target.toUpperCase()} publication`,
       );
@@ -215,7 +225,7 @@ describe('Pages artifact promotion contract', () => {
     }
     expect(prdSteps.join('\n')).toContain('run-release-preparation.mjs browsers');
     expect(JSON.stringify(prdBuild)).toContain('chromium firefox');
-    expect(assembly.needs).toEqual(['prepare-uat', 'prepare-prd']);
+    expect(assembly.needs).toEqual(['check-candidate', 'prepare-uat', 'prepare-prd']);
     expect(
       assembly.steps.find((step: { name: string }) => step.name === 'Setup Node.js for bundle assembly').with.cache,
     ).toBeUndefined();
@@ -232,6 +242,53 @@ describe('Pages artifact promotion contract', () => {
     const finalUpload = assembly.steps.find((step: { name: string }) => step.name === 'Upload verified release bundle');
     expect(finalUpload.with.name).toBe('release-${{ inputs.artifact_commit_sha || github.sha }}');
     expect(finalUpload.with['compression-level']).toBe(1);
+  });
+
+  it('reuses only the Astro image cache and validates the single target staff build', () => {
+    const cache = (job: typeof uatBuild) =>
+      job.steps.find((step: { name?: string }) => step.name === 'Restore Astro image cache');
+    expect(cache(prdBuild)).toEqual(cache(uatBuild));
+    expect(cache(prdBuild).with.path).toBe('apps/web/node_modules/.astro/assets');
+    const restoreReport = uatBuild.steps.find(
+      (step: { name?: string }) => step.name === 'Record Astro image cache restore',
+    );
+    const candidate = uatBuild.steps.find(
+      (step: { name?: string }) => step.name === 'Measure Astro image cache candidate',
+    );
+    const frontendBuildIndex = uatBuild.steps.findIndex(
+      (step: { name?: string }) => step.name === 'Build hosted UAT static frontend',
+    );
+    expect(restoreReport.id).toBe('astro-cache-restore-report');
+    expect(restoreReport.env.ASTRO_CACHE_FINGERPRINT).toBe(
+      "${{ hashFiles('apps/web/node_modules/.astro/assets/**') }}",
+    );
+    expect(restoreReport.run).toContain('fingerprint=${ASTRO_CACHE_FINGERPRINT}');
+    expect(uatBuild.steps.indexOf(restoreReport)).toBeLessThan(frontendBuildIndex);
+    expect(uatBuild.steps.indexOf(candidate)).toBeGreaterThan(frontendBuildIndex);
+    expect(candidate.env.ASTRO_CACHE_FINGERPRINT_BEFORE).toBe(
+      '${{ steps.astro-cache-restore-report.outputs.fingerprint }}',
+    );
+    expect(candidate.env.ASTRO_CACHE_FINGERPRINT_AFTER).toBe(
+      "${{ hashFiles('apps/web/node_modules/.astro/assets/**') }}",
+    );
+    expect(candidate.run.indexOf('if [[ -z "$ASTRO_CACHE_FINGERPRINT_AFTER" ]]')).toBeLessThan(
+      candidate.run.indexOf('elif [[ "$ASTRO_CACHE_FINGERPRINT_AFTER" == "$ASTRO_CACHE_FINGERPRINT_BEFORE" ]]'),
+    );
+    expect(candidate.run).toContain('bytes <= 629145600');
+    for (const stepName of ['Start Astro image cache save timer', 'Save Astro image cache']) {
+      expect(uatBuild.steps.find((step: { name?: string }) => step.name === stepName).if).toBe(
+        "${{ steps.astro-cache-candidate.outputs.save == 'true' }}",
+      );
+    }
+    expect(prdBuild.steps.some((step: { name?: string }) => step.name === 'Measure Astro image cache candidate')).toBe(
+      false,
+    );
+    const cmsBuild = readFileSync(
+      fileURLToPath(new URL('../apps/backend/scripts/build-cms.mjs', import.meta.url)),
+      'utf8',
+    );
+    expect(cmsBuild).toContain("['--dir', '../..', 'build:staff']");
+    expect(cmsBuild).toContain('validateCmsFreeTier');
   });
 
   it('keeps UAT inspection built-in-only after downloading the candidate', () => {
@@ -262,27 +319,41 @@ describe('Pages artifact promotion contract', () => {
     expect(JSON.stringify(staticPromotion)).toContain('/prd/public --project-name=blackbox-records-web --branch=main');
     expect(JSON.stringify(staticPromotion)).not.toContain('blackbox-records-staff');
     expect(JSON.stringify(uatSequence.jobs['deploy-uat'])).not.toMatch(/d1:seed:.*catalog|stripe:catalog:verify/);
-    expect(workflow.jobs['deploy-uat'].needs).toEqual(['prepare-uat', 'inspect-uat-pages']);
-    expect(JSON.stringify(workflow.jobs['deploy-uat'].needs)).not.toContain('prepare-prd');
+    expect(workflow.jobs['uat-release'].needs).toEqual(['check-candidate', 'prepare-uat', 'inspect-uat-pages']);
+    expect(JSON.stringify(workflow.jobs['uat-release'].needs)).not.toContain('prepare-prd');
   });
 
   it('cancels only preparation and holds one shared non-cancelling lock through mutations and acceptance', () => {
     const lock = { group: 'blackbox-release', 'cancel-in-progress': false };
-    expect(workflow.concurrency).toEqual(lock);
+    expect(workflow.concurrency).toEqual({
+      group: "${{ inputs.target == 'prd' && 'blackbox-release' || format('blackbox-preparation-{0}', github.run_id) }}",
+      'cancel-in-progress': false,
+    });
+    const caller = workflow.jobs['uat-release'];
+    expect(caller.concurrency).toEqual(lock);
+    expect(caller.uses).toBe('./.github/workflows/uat-release-sequence.yml');
+    expect(caller.secrets).toBe('inherit');
+    expect(caller.with.artifact_commit_sha).toBe('${{ inputs.artifact_commit_sha || github.sha }}');
+    expect(uatSequence.concurrency).toBeUndefined();
+    expect(JSON.stringify(uatSequence.env)).not.toContain('secrets.');
+    for (const role of ['deploy-uat', 'deploy-uat-static', 'smoke-uat']) {
+      expect(uatSequence.jobs[role].concurrency).toBeUndefined();
+    }
+    for (const role of ['deploy-uat', 'smoke-uat']) {
+      const job = uatSequence.jobs[role];
+      expect(job.environment).toBe('catalog-promotion-uat');
+      expect(job.steps[0].run).toContain(
+        'CLOUDFLARE_API_TOKEN STRIPE_SECRET_KEY STRIPE_PAYMENT_METHOD_CONFIGURATION_ID',
+      );
+      expect(job.steps[0].run).toContain('exit 1');
+    }
     for (const role of ['check-candidate', 'prepare-uat', 'prepare-prd', 'assemble-candidate']) {
       const concurrency = workflow.jobs[role].concurrency;
       expect(concurrency['cancel-in-progress']).toBe(true);
       expect(concurrency.group).toContain('github.ref');
       expect(concurrency.group).toContain('github.run_id');
     }
-    for (const role of [
-      'deploy-uat',
-      'deploy-uat-static',
-      'smoke-uat',
-      'deploy-prd',
-      'deploy-prd-static',
-      'catalog-prd',
-    ]) {
+    for (const role of ['deploy-prd', 'deploy-prd-static', 'catalog-prd']) {
       expect(workflow.jobs[role].concurrency).toBeUndefined();
     }
     expect(uatSequence.jobs['deploy-uat-static'].needs).toBe('deploy-uat');

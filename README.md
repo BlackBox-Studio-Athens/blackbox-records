@@ -148,6 +148,8 @@ Notes:
 
 ## Local development
 
+For Codex iteration, reuse `pnpm site:dev:bg` and Astro hot updates for browser checks. `pnpm validate` now selects affected tests, types and lint automatically; full tests and builds run in CI. For an even smaller edit/test loop, use `pnpm test:changed --scope web|staff|backend|api-client`, or keep `pnpm test:watch --scope <package>` warm. CMS, checkout and publication acceptance still use `pnpm dev`. See [validation and release feedback](docs/validation-feedback.md).
+
 The normal command is `pnpm dev`, or **BlackBox Local Stack** in WebStorm. Both start the same Local stack described below. The isolated CMS integration diagnostic is:
 
 ```sh
@@ -166,7 +168,7 @@ After a target-specific build, `pnpm --filter @blackbox/backend cms:migrations -
 pnpm dev
 ```
 
-For frontend-only diagnostics, use Astro's background dev server. CMS and item-publication acceptance must use the full Local stack above:
+For public frontend edits, reuse Astro's background dev server and its hot updates; inspect status before starting it. Browser checks can run as soon as the affected route renders. CMS, checkout, and item-publication acceptance use the full Local stack above:
 
 ```sh
 pnpm site:dev:bg
@@ -435,11 +437,17 @@ pnpm validate
 
 `pnpm check` is the repo-owned quality gate. It runs Prettier format verification, ESLint, and the existing Astro/TypeScript content checks.
 
-`pnpm validate` (also `pnpm validate:full`) runs the complete tests, checks and build without catalog generation. The original `pnpm test:unit`, `pnpm check`, and `pnpm build` commands remain standalone equivalents. Full logs, native Vitest JSON, ESLint statistics and `summary.json` are retained under `.codex-artifacts/validation/<run-id>/`; the summary records source identity and rejects a source change during validation. A pass establishes repository gates, not task-specific acceptance. For staff/editor changes run `pnpm validate:editor` too; CMS/publication checks remain additional as documented in [content publication](docs/content-publication.md) and [content workspace](docs/content-workspace.md).
+`pnpm validate` is the default local completion check. It compares with `origin/main` (HEAD fallback), including committed, staged, unstaged, deleted, and untracked files. Use `--since <ref>` to choose another base. It runs Vitest import dependents, affected-package type checks, changed-file lint, and cached formatting. Content, assets, migrations, and package configuration broaden that package's tests; shared packages/tooling also select repository contracts. Logs and `summary.json` live under `.codex-artifacts/validation/<run-id>/`; `mode: local` distinguishes this evidence from full acceptance, and source changes invalidate the run. Browser/editor/publication checks remain additional when relevant.
+
+CI retains complete tests/checks and checked builds before deployment. `pnpm validate:full` runs that complete suite locally when needed, without catalog generation. The standalone `pnpm test:unit`, `pnpm check`, and `pnpm build` commands remain available. For staff/editor changes run `pnpm validate:editor` too; CMS/publication checks remain as documented in [content publication](docs/content-publication.md) and [content workspace](docs/content-workspace.md).
+
+Backend and API-client type checks use TypeScript's native incremental mode with separate ignored `.codex-artifacts/typecheck/*.tsbuildinfo` files. They still use `--noEmit` and report errors on warm runs; no validation result or release artifact is reused by this compiler cache.
+
+`pnpm lint` reuses a successful lint phase only while the complete source, configuration, toolchain, environment, and retained evidence still match. It reports partial lint evidence; `pnpm lint --no-cache` forces a fresh run. Full validation and CI run fresh lint by default. `pnpm format` now uses the same configuration/plugin-aware cache and experimental Prettier CLI as formatting checks, with direct invocation of the installed binary; pass filenames to format only those files. `--uncached` disables the formatter cache explicitly.
 
 For CI prerequisites without a build, use `pnpm validate:checks`; it is partial and does not establish completion. `pnpm format:check` uses the native content cache under the ignored validation cache directory; use `pnpm format:check:uncached` for parity or diagnosis. The root `pnpm build` overlaps independent web/staff builds and joins both results before returning.
 
-For iteration, use `pnpm validate:fast --scope web|staff|backend|api-client|all`. Package scope runs only that package's tests and types; `all` also runs repository contracts. Shared packages, content, configuration, migrations, or tooling require `all`. All fast results are partial. Use `pnpm test:watch --scope <package>` for a package's Vitest watch configs. Full `pnpm validate` runs fresh by default; `pnpm validate --resume` reuses only eligible successful checks with matching source, toolchain, and allowlisted environment inputs, while `--no-cache` forces a fresh pass. Run full validation on the exact final source fingerprint and toolchain before completion or pushing. `--jobs 1` runs full validation sequentially. A stale `.codex-artifacts/validation/active.lock` after a hard kill requires checking that its recorded PID is no longer running before removing that exact lock. Use `pnpm validate:editor --trace` to capture the primary browser context on failure; traces supplement assertion logs and screenshots, not replace them.
+`pnpm validate:fast --scope web|staff|backend|api-client|all` remains a complete package checkpoint: tests and types, plus contracts for `all`. Its result is partial. Full `pnpm validate:full` runs fresh by default; `--resume` reuses only successful checks with matching source, toolchain, and allowlisted environment inputs. `--no-cache` forces a fresh full pass and `--jobs 1` runs it sequentially. The existing `pnpm validate --no-cache` IDE launcher remains a full-suite command. Before completion or push, require a passing targeted `pnpm validate` for the final tree. A stale `.codex-artifacts/validation/active.lock` after a hard kill requires checking that its recorded PID is no longer running before removing that exact lock. Use `pnpm validate:editor --trace` for failure traces.
 
 The measurement protocol and acceptance targets are in [the validation benchmark](docs/validation-benchmark.md). Reduced output alone is not proof of reduced total AI usage.
 
@@ -711,9 +719,9 @@ CI/deploy credentials and public build variables:
 - The deploy artifact remains the prebuilt Astro output at `apps/web/dist`.
 - The staff artifact is built separately at `apps/staff/dist` and packaged into the combined Worker; no standalone staff Pages upload runs.
 - Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/pages.yml`, not by local manual `wrangler pages deploy`.
-- The candidate workflow runs `pnpm validate:checks`, then prepares the UAT and PRD bundles independently from their own published snapshots. Verified target bundles are assembled by digest into the retained schema-2 `release-<sha>` artifact; PRD promotion consumes that artifact without rebuilding or restamping it.
+- The candidate workflow runs `pnpm validate:checks` alongside independent UAT and PRD builds from their own published snapshots. Each target restores image transforms and builds its checked staff artifact once inside the CMS build. Passing checks gate UAT deployment and digest-verified assembly of the retained schema-2 `release-<sha>` artifact; PRD promotion consumes that artifact without rebuilding or restamping it.
 - The UAT Pages job reports read-only readiness and static smoke results immediately after deployment. Stripe and email provider smoke follows, then a final release-identity check; quick success alone does not accept a candidate.
-- Automatic checks and target builds can cancel older preparation for the same branch and role. One non-cancelling `blackbox-release` lock covers UAT Worker and Pages deployment through provider acceptance, and is shared by PRD promotion, confirmed catalog mutation, content publication, and the PRD holding-page deploy. Manual candidate preparation uses run-specific concurrency. If a late candidate is older than the deployed run, the monotonic release-order guard rejects it.
+- Automatic checks and target builds cancel older preparation for the same branch and role without waiting for an earlier deployment. The `uat-release` call holds the non-cancelling `blackbox-release` lock across Worker, Pages, and provider acceptance; its called workflow inherits repository secrets and binds Worker/smoke jobs to `catalog-promotion-uat`. PRD, confirmed catalog mutation, content publication, and the holding-page deploy share that lock. Manual preparation uses run-specific concurrency. The monotonic release-order guard rejects late older candidates.
 - The workflow sets Cloudflare-root static build values with `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/`.
 - The workflow passes only browser-safe public Astro variables into the frontend runtime: `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`.
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.

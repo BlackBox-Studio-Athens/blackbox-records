@@ -265,7 +265,7 @@ Editors autosave private drafts and publish explicitly. Real shared-template pre
 
 ## Design inspiration and component studies
 
-For future design work, start with the living [design inspiration library](docs/design-inspiration.md). It indexes visual repositories, code entry points, AI guidance, adoption notes and component decisions. The [UI pattern dataset guide](docs/ui-design-patterns-guide.md) remains the entry to shared pattern evidence.
+For reference research, start with the personal [Design Library](C:/Users/SVall/.codex/design-library/README.md), which maps shared sources, inventories and reusable pattern evidence. [BlackBox design references and decisions](docs/design-inspiration.md) retains project studies and selections. The [pattern application guide](docs/ui-design-patterns-guide.md) explains the local application table and stable pattern IDs.
 
 Listen refinement selected September 24, 2026: **Fluid five with animation**. Preserve the familiar dark face, square edges and compact label; replace the circular indicator with five amber (`#e3b56c`) bars. Use the same mark in the modal heading and minimized player. Hover/focus and modal entry run two brief cycles, then settle; reduced motion disables the animation. The mark identifies listening and never claims verified playback. Retain `Player Ready` and the existing shell-owned lifecycle. Future button studies should extend this restrained family. Cosmos Public Work remains an aesthetic reference for quiet hierarchy and image-first restraint; amber is a music accent, not a replacement global action color.
 

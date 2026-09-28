@@ -1,6 +1,6 @@
 ## Why
 
-Package-only edits wait on unrelated contracts, and release preparation serializes independent UAT and PRD builds. Make feedback arrive sooner while preserving complete validation, immutable candidate promotion, and hosted mutation controls.
+Package-only edits repeat the full local suite, and release preparation waits for checks and previous deployments. Make targeted local checks the default, keep complete validation in CI, overlap independent builds, and narrow lock ownership to hosted mutations and acceptance.
 
 ## What Changes
 
@@ -8,7 +8,8 @@ Package-only edits wait on unrelated contracts, and release preparation serializ
 - Measure local and hosted feedback milestones; move advisory unused-code reporting off candidate acceptance.
 - Prepare UAT and PRD artifacts independently, assemble the existing immutable bundle, and report read-only UAT feedback early.
 - Cancel superseded preparation while serializing hosted mutations through final acceptance.
-- Keep full local validation before push, complete CI acceptance, credential separation, live-catalog confirmation, and checkout launch gates.
+- Require targeted local validation before completion/push; retain optional full local validation, complete CI acceptance, credential separation, live-catalog confirmation, and checkout launch gates.
+- Extend the edit loop with native affected-test selection and reuse Astro's background server. Overlap complete checks with target preparation, restore image transforms for both targets, and validate the single staff build that is packaged.
 
 ## Capabilities
 

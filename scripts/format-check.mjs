@@ -44,30 +44,49 @@ export async function formatCacheLocation(cwd = root) {
   return path.join(cwd, 'node_modules', '.cache', 'blackbox-validation', `prettier-${identity}.cache`);
 }
 
-async function runPrettier(cwd, args) {
-  return execa('pnpm', ['exec', 'prettier', '.', '--check', '--experimental-cli', ...args], { cwd, stdio: 'inherit' });
+async function runPrettier(cwd, args, { files = ['.'], write = false } = {}) {
+  const manifestPath = require.resolve('prettier/package.json', { paths: [cwd, root] });
+  const { bin } = require(manifestPath);
+  const executable = path.resolve(path.dirname(manifestPath), typeof bin === 'string' ? bin : bin.prettier);
+  return execa(process.execPath, [executable, ...files, write ? '--write' : '--check', '--experimental-cli', ...args], {
+    cwd,
+    stdio: 'inherit',
+  });
 }
 
-export async function runFormatCheck({ cwd = root, uncached = false } = {}) {
-  if (uncached) return runPrettier(cwd, []);
+export async function runFormatCheck({ cwd = root, uncached = false, write = false, files = ['.'] } = {}) {
+  if (uncached) return runPrettier(cwd, ['--no-cache'], { files, write });
   const cache = await formatCacheLocation(cwd);
   await stat(path.dirname(cache)).catch(async (error) => {
     if (error.code !== 'ENOENT') throw error;
     await mkdir(path.dirname(cache), { recursive: true });
   });
   try {
-    return await runPrettier(cwd, ['--cache', '--cache-location', cache]);
+    return await runPrettier(cwd, ['--cache', '--cache-location', cache], { files, write });
   } catch (error) {
     const output = String(error?.stderr ?? '');
     if (!/(?:cache.*(?:invalid|corrupt|parse|json|read)|(?:invalid|corrupt|parse|json|read).*cache)/i.test(output))
       throw error;
     await rm(cache, { force: true });
-    return runPrettier(cwd, []);
+    return runPrettier(cwd, ['--no-cache'], { files, write });
   }
 }
 
+function parseArguments(args) {
+  const options = { files: [] };
+  for (const arg of args) {
+    if (arg === '--write') options.write = true;
+    else if (arg === '--uncached') options.uncached = true;
+    else if (arg.startsWith('-')) throw new Error(`Unexpected option: ${arg}`);
+    else options.files.push(arg);
+  }
+  if (options.files.length === 0) options.files.push('.');
+  return options;
+}
+
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  runFormatCheck({ uncached: process.argv.includes('--uncached') }).catch((error) => {
+  const run = async () => runFormatCheck(parseArguments(process.argv.slice(2)));
+  run().catch((error) => {
     console.error(error.shortMessage ?? error.message);
     process.exitCode = error.exitCode ?? 1;
   });

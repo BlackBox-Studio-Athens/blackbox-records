@@ -44,10 +44,11 @@ Read these first before editing:
 
 ## Commands
 
-- Agent completion gates: `pnpm validate`; inspect its summary and only the relevant failure log. A passing run applies only to its recorded final source fingerprint and toolchain.
+- Agent local completion: `pnpm validate` selects affected tests, package types, changed-file lint, and cached formatting against `origin/main` (HEAD fallback). Full tests/checks/builds run in CI. Inspect the summary and relevant failure log; evidence applies only to its recorded source fingerprint.
 - Agent iteration: `pnpm validate:fast --scope web|staff|backend|api-client|all` (partial, never completion). Use `all` for shared packages, content, configuration, migrations, and tooling.
+- Agent inner loop: `pnpm test:changed --scope web|staff|backend|api-client` runs import-affected tests against HEAD; `--since <ref>` includes committed changes. This is partial. Use the existing background Astro server for public UI edits and reserve full Local stack startup for CMS/commerce/publication work. Dynamic file reads, shared/configuration/content/migration changes still need fast scope `all`.
 - Package test watch: `pnpm test:watch --scope web|staff|backend|api-client`.
-- Explicitly reuse safe successful phases: `pnpm validate --resume`; use `--no-cache` to force every phase to run.
+- Optional full local suite: `pnpm validate:full`; use `--resume` for safe phase reuse or `--no-cache` to force every phase. `pnpm validate --no-cache` remains a full-suite compatibility command.
 - Additional staff/editor acceptance: `pnpm validate:editor` (partial; does not replace completion gates).
 - Install deps: `pnpm install`
 - Normal Local stack: `pnpm dev` (alias for `pnpm dev:stack:stripe-mock`)
@@ -196,16 +197,19 @@ Read these first before editing:
 
 ### Required command policy
 
-- After finishing behavior-changing implementation, run `pnpm validate` (alias `pnpm validate:full`). It executes every check required by `pnpm test:unit`, `pnpm check`, and `pnpm build`, without catalog generation. The three legacy commands remain supported independently.
-- Use scoped `pnpm validate:fast` during implementation; shared package, content, configuration, migration, and tooling changes require `--scope all`. Partial success never establishes completion.
+- During implementation, prefer affected tests or a warm package watcher. Reuse `pnpm site:dev:bg` and Astro hot updates for public UI edits; use the full Local stack for CMS, checkout, and publication acceptance.
+- After implementation and before pushing, run `pnpm validate` on the final tree. This is targeted local acceptance: native Vitest import selection, affected-package types, changed-file ESLint, and cached formatting. Git selection includes committed changes since `origin/main`, staged/unstaged changes, deletions, and untracked source; `--since <ref>` overrides the base. Content, assets, migrations, and package configuration broaden that package's tests. Shared packages/tooling select all package type checks and repository contracts.
+- CI owns the complete unit/check/build gates before deployment. `pnpm validate:full` remains available for full local diagnosis; it is not required for every completed edit. `pnpm validate:fast --scope <package|all>` remains an explicit package checkpoint and is partial.
 - Full validation is fresh by default. `--resume` reuses only eligible successful checks with an identical source, toolchain, configuration, and allowlisted environment fingerprint; `--no-cache` disables reuse.
-- Run one complete `pnpm validate` on the final source fingerprint and toolchain before claiming completion or pushing. Reuse a prior full pass only when its recorded fingerprint and toolchain still match the exact final tree.
+- Local summaries use `mode: local`; they never establish full CI or release acceptance. Reuse final local evidence only while its source fingerprint and toolchain still match.
+- Backend/API-client checks use native incremental TypeScript state under ignored `.codex-artifacts/typecheck/`. Keep distinct build-info paths, `--noEmit`, and all diagnostics; compiler state does not establish validation or release acceptance.
+- Standalone `pnpm lint` resumes only matching successful lint evidence through the validation runner; `pnpm lint --no-cache` forces execution. Full validation/CI remains fresh by default. `pnpm format` uses the existing configuration/plugin-aware formatter cache and supports explicit file targets; `--uncached` disables that cache.
 - Read the compact phase results first. On failure, inspect the named log excerpt before rerunning. Full logs and source fingerprints live in `.codex-artifacts/validation/`; do not paste successful logs into context.
 - Native Vitest JSON and ESLint statistics are retained beside logs. Inspect the relevant failed assertion or diagnostic instead of rereading successful output.
 - A passed summary establishes repository gates only. For staff/editor changes also run `pnpm validate:editor`. CMS/publication changes additionally require the relevant local checks in `docs/content-publication.md` and `docs/content-workspace.md`. Hosted checks are separate and never implicit.
 - A `passed` full summary is valid only for its recorded source fingerprint. Changed source, cancellation, missing phases, and incomplete evidence cannot establish completion. Browser/CMS/asset and other task-specific checks remain additional.
 - `pnpm check` includes Prettier format verification, ESLint, and Astro/TypeScript content checks.
-- Before pushing, run full validation again unless it just passed against the exact final tree you are pushing.
+- Before pushing, rerun targeted local validation if the tree changed since its passing summary. CI performs the full suite.
 - Do not claim completion or push with unverified behavioral changes
 
 ## Deployment and URL model
@@ -229,7 +233,7 @@ Read these first before editing:
 - Do not change `site` or `base` behavior unless the task explicitly requires deployment URL changes.
 - Cloudflare Pages deploys the retained public assets and a GET/HEAD service-binding gateway to the accepted-snapshot renderer. Content publication does not rebuild or deploy code. See docs/content-publication.md.
 - The independent staff frontend builds to `apps/staff/dist`; its assets ship only inside the combined CMS Worker. No detached staff Pages upload runs.
-- The static frontend workflow must run `pnpm test:unit`, `pnpm check`, and PRD `pnpm build` before Direct Upload to the `blackbox-records-web` Pages project. `pnpm audit:unused` runs separately on a schedule or manual dispatch.
+- The static frontend workflow runs the complete unit/check gates alongside independent UAT/PRD preparation. Each target uses `pnpm build:web` plus one target-configured `build:cms`, which runs the checked `pnpm build:staff` internally. Both builds retain the checks covered by `pnpm build`. Deployment and candidate assembly require passing validation; PRD promotion uses the retained bundle. `pnpm audit:unused` runs separately on a schedule or manual dispatch.
 - The PRD static build job may pass only non-secret PRD build-target env plus browser-safe public Astro env into the build: `ASTRO_SITE_URL`, `ASTRO_BASE_PATH`, and `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`; keep `PUBLIC_CHECKOUT_CLIENT_MODE` unset. Snapshot refresh additionally supplies the non-secret `CMS_CONTENT_SOURCE`, `CMS_CONTENT_SNAPSHOT`, `CMS_CONTENT_SHA256`, and `CMS_CONTENT_ENVIRONMENT` build inputs. Restore credentials belong only to the preceding trusted restore step, never the build step.
 - Cloudflare Pages PRD deploys must run through `.github/workflows/pages.yml`. Manual local `wrangler pages deploy` is diagnostic only and is not acceptance evidence.
 - Cloudflare Pages may own only the public gateway; it must not own business backend routes, D1 access, Stripe secrets, webhooks, operator auth, stock mutations, order state, or future BOX NOW runtime secrets.
@@ -417,20 +421,24 @@ This is an iframe boundary, not an app bug.
 - When Serena is warranted, use the workflow: `activate_project`, read initial instructions if needed, `check_onboarding_performed`, list/read relevant memories, then use `get_symbols_overview` or `find_symbol`.
 - Use `find_referencing_symbols` for impact checks; if it returns empty, confirm with Serena `search_for_pattern` or RTK-wrapped `rg` before treating a symbol as unused.
 - If `find_symbol`, `find_referencing_symbols`, `search_for_pattern`, `read_memory`, or `check_onboarding_performed` is missing, call `tool_search` for the exact Serena tool before falling back.
-- Use RTK-wrapped PowerShell commands for simple search, discovery reads, docs/YAML/JSON orientation, generated artifact discovery, package scripts, diffs, logs, validation, tests, and builds.
+- Use RTK-wrapped console commands for simple search, discovery reads, docs/YAML/JSON orientation, generated artifact discovery, package scripts, diffs, logs, validation, tests, and builds.
 - OpenSpec Markdown files are good RTK first-pass candidates: use `rtk read <doc> --max-lines N -n` or `rtk smart <doc>`, not RTK-wrapped `Get-Content ... | Select-Object -First N`. Exact-read the relevant lines before changing spec source-of-truth or citing a decision. Source, config, schema, test, migration, and generated-contract behavior must be confirmed with exact bounded reads or Serena when semantic navigation is genuinely needed.
 - Do not use Serena for routine/simple work, and do not use `rtk rg` as a substitute when the task genuinely needs Serena symbol navigation.
-- Keep Serena shell execution unfavored; run shell commands through Codex PowerShell with RTK when output may be noisy.
+- Keep Serena shell execution unfavored; run shell commands through the Codex console with RTK when output may be noisy.
 - Keep Serena on the default LSP backend unless the paid Serena JetBrains plugin is installed and verified. JetBrains IDE MCP is separate and must not be treated as Serena's semantic backend.
-- When JetBrains MCP tools are Router-only, call them through `execute_tool` with a command beginning with the exact tool name and its arguments. The workflow hook tracks routed renames and run configurations.
+- Run tests, lint, type checks, and builds through Codex console execution with `shell: "C:\\Windows\\System32\\cmd.exe"`, `login: false`, an explicit project `workdir`, and RTK output filtering. Use PowerShell without profiles when its syntax or existing Android tooling requires it. Never route automated validation through WebStorm run configurations, builds, or its terminal.
+- Use native `apply_patch` for ordinary edits. WebStorm MCP is reserved for large-scale refactoring across many files or modules.
+- The workflow hook governs edits and refactors only. Project commands and verification guidance own validation; the hook does not select checks, inspect their results, or block completion on their behalf.
+- Use WebStorm MCP only for large-scale refactoring where semantic tools provide a concrete benefit; `rename_refactoring` is available within that scope. Routine edits, small renames, reads, searches, inspections, and checks use native tools, graphs, and shell commands. Missing patch/delete tools, unsupported workspace paths, or failed IDE operations do not block work: inspect partial changes, then use native `apply_patch` or scoped filesystem commands and verify affected references.
+- The hook supplies editing guidance on each prompt; it does not block tools or completion, and old IDE-only session state is ignored. Existing manual IDE launchers remain available; local services do not require IDE launch.
 - Browser Use is mandatory for local or hosted rendered UI checks.
 - DevTools MCP is fallback-only for browser validation. Use it only when Browser Use is unavailable, fails to initialize, or lacks a needed inspection capability, and record the Browser Use failure reason in validation notes.
 
 ## Verification checklist (minimum)
 
-1. `pnpm test:unit` succeeds
-2. `pnpm check` succeeds
-3. `pnpm build` succeeds
+1. `pnpm validate` succeeds locally on the final source tree
+2. CI requires complete `pnpm test:unit` and `pnpm check` coverage
+3. CI requires the checked target builds before deployment; `pnpm validate:full` is optional locally
 4. If UI/layout changed, validate with Browser Use; use DevTools MCP only as the fallback described above
 5. If routing/player behavior changed, validate:
    - header section switch
@@ -474,3 +482,12 @@ These checks are mandatory both:
 - Moving shell state into scattered document-global scripts
 - Reintroducing real route swaps on top-level section links without revisiting player persistence
 - Introducing SSR/live content features unless the deployment model intentionally changes away from static Cloudflare Pages UAT plus static Cloudflare Pages PRD
+
+## graphify
+
+- Use **CodeGraph** first for exact symbols, source, callers/callees, implementation flow, and change impact: `codegraph_explore` with this repository's absolute `projectPath`. CLI fallback: `codegraph explore "<symbols>"` from the repository root.
+- Use **Graphify** for architecture overviews, communities, architectural hubs, and broad relationships across modules: `graphify query "<question>" --budget 1500`. Use `graphify explain "<concept>"` or `graphify path "<A>" "<B>"` for follow-up; read `graphify-out/GRAPH_REPORT.md` only for an overview.
+- For substantive code work, both tools are mandatory: Graphify supplies architecture context, then CodeGraph supplies precise code evidence. Follow the top-level AGENTS.md workflow and its narrow-lookup exceptions. Do not duplicate the same query or reread unchanged evidence; graph inferences are navigation hints, not proof.
+- Graphify uses local AST extraction for code and supported document structure. Documentation/media semantics require an explicit enrichment task; do not configure API providers, dispatch extraction agents, or start another watcher for ordinary coding.
+- CodeGraph's MCP daemon watches working-tree changes. Git hooks provide refresh after commits, merges, and branch checkouts. After a meaningful edit batch, run `graphify update .` once before relying on its graph again; use `codegraph sync .` if CodeGraph is stale. After pull/merge, also run `graphify update .`.
+- Generated graphs stay ignored. Never create indexes in another repository without authorization. Explicit `$graphify` or `/graphify` requests use the project skill; these routing rules override its general graph-first defaults.

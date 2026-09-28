@@ -28,6 +28,7 @@ files/
 node_modules/.astro/
 node_modules/.vite/
 .codex-artifacts/
+/graphify-out/
 apps/backend/test/emdash/.emdash/
 apps/backend/.emdash/
 apps/backend/prisma/seeds/uat-commerce-state.sql

@@ -1,0 +1,5 @@
+.codegraph/
+.codex/
+.githooks/
+graphify-out/
+**/generated/

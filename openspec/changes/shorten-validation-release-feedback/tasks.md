@@ -1,5 +1,4 @@
-Complete sections in order. Commit each section after focused checks pass. Run full validation on the exact final tree
-before completion or push.
+Sections 1–8 record the earlier implementation. The September 28 user decision supersedes their full-local requirement: targeted local completion, full suite in CI. Preserve applicable browser/publication acceptance.
 
 ## 1. Measure and revise validation policy
 
@@ -69,3 +68,24 @@ before completion or push.
 - [x] Strictly validate OpenSpec and verify schema-2 promotion consumes retained bytes without weakening confirmations
       or launch gates.
 - [x] Record all milestone commits and final evidence, measured outcomes, unobserved hosted behavior, and remaining work.
+
+## 9. Shorten the remaining edit and release waits
+
+- [x] Add native affected-test selection to the existing package runner; cover imported-source failure propagation, unrelated-test exclusion, explicit refs, and partial status.
+- [x] Overlap checks with UAT/PRD preparation; retain immutable-source verification and dependency gates before deployment and candidate assembly.
+- [x] Remove the duplicate PRD staff build while checking the target-configured staff artifact inside the canonical CMS build; verify the Local build remains usable.
+- [x] Restore the existing image-transform cache for PRD, retain all final gates, and document the smaller development loop and measured versus estimated effects.
+- [x] Verify fixed-port background startup, reuse, hot updates, and cleanup in the native browser; preserve the full Local stack for acceptance boundaries.
+
+## 10. Make the larger workflow cuts the default
+
+- [x] Make `pnpm validate` select affected tests/types/lint with source-stable local evidence; retain `validate:full` and the full CI gates.
+- [x] Cover committed/staged/unstaged/deleted/untracked selection, dynamic-file broadening, failed checks, and local versus full evidence.
+- [x] Move the shared UAT lock to the complete reusable deployment/acceptance call, inherit secrets, and preserve job environments and PRD direct promotion.
+- [x] Update agent instructions, operating docs, workflow contracts, environment verification, and full-suite benchmark commands.
+- [x] Delegate native incremental backend/API-client checks to a Luna implementor; verify cold/warm success, warm-cache error detection, and exact probe cleanup.
+- [x] Delegate native image-cache fingerprint comparison to a Luna implementor; skip unchanged/empty uploads, retain the byte cap, and pass workflow contracts and actionlint.
+- [x] Delegate cached formatter writes and standalone source-bound lint reuse to a Luna implementor; verify stale-input failure, write repair, and warm lint reuse.
+- [x] Run targeted validation and strict OpenSpec validation; record measured local results separately from unobserved hosted gains, and confirm the exact final tree in the ignored evidence file.
+
+Record the final summary and fingerprint in ignored `.codex-artifacts/feedback-speed/final-verification.json` rather than editing validated source afterward. No hosted deployment is part of this follow-up.

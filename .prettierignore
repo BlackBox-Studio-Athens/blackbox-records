@@ -15,6 +15,7 @@ pnpm-lock.yaml
 compressed-repo.md
 tmp/
 .codegraph/
+graphify-out/
 
 apps/backend/openapi/*.json
 apps/backend/src/generated/

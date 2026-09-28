@@ -1,5 +1,17 @@
 # Implementation handoff
 
+## September 28 follow-up
+
+This follow-up runs on the main worktree and validates through the Codex console. It supersedes older WebStorm-only execution notes below. The existing hook/design edits in the worktree belong to separate work and are preserved.
+
+- `pnpm validate` selects affected tests/types/lint and cached formatting for local completion and pushing, as explicitly requested. Full tests/checks/builds remain CI gates; `pnpm validate:full` is optional locally. Public browser iteration reuses Astro background mode and boundary-specific acceptance remains required.
+- Checks and target preparation start together outside the hosted mutation lock. Each preparation job verifies immutable main source; UAT inspection and final assembly wait for checks. The UAT reusable-workflow caller holds the shared lock through provider acceptance, inherits repository secrets, and preserves job environment boundaries. PRD confirmations remain intact.
+- PRD builds public assets once, and the canonical CMS build owns the one target-configured staff build plus its route/bundle checks. PRD restores the same bounded image-transform cache as UAT.
+- Luna implementors added native incremental backend/API-client type checks, unchanged-image-cache upload suppression, cached formatter writes, and standalone lint reuse through the existing evidence cache. Repeated standalone lint fell from 51.6s to 5.2s; changed input invalidation and formatter repair have runnable regression coverage.
+- This validation-harness refactor receives one final fresh full validation run. Routine local completion remains targeted under the user's explicit decision; final results are recorded in the ignored evidence file without changing the validated source afterward.
+- Local acceptance passed for affected-test selection/failure propagation, fixed-port rejection, background-server reuse, native-browser hot updates, and the isolated combined CMS artifact's staff-hosting checks. `strictPort` fixes the discovered background-port drift. The prior Local public launcher was stopped with explicit user authorization.
+- Evidence and limitations are recorded in `docs/validation-feedback.md`. Final fingerprint, toolchain, checks, and summary path belong in ignored `.codex-artifacts/feedback-speed/final-verification.json`; hosted savings remain unmeasured until the revised workflow is deployed.
+
 ## Milestone 1 — measurements and validation policy
 
 - **Changes:** Added attempt-aware, paginated GitHub Actions measurement; separated UAT quick feedback, promotion readiness, queue, setup, artifact transfer, elapsed time, and runner seconds. Updated validation policy and captured the existing historical baseline.

@@ -113,21 +113,23 @@ Migration and targeted catalog checks SHALL retain reviewed source matching, art
 
 ### Requirement: Standard repository gates
 
-The system SHALL run the standard repository gates after behavior-changing implementation.
+The system SHALL run targeted local checks after behavior-changing implementation and retain complete repository gates in CI before deployment.
 
 #### Scenario: Behavior changes
 
 - **GIVEN** code changes affect runtime behavior, tests, build output, scripts, or workflows
 - **WHEN** implementation is complete
-- **THEN** `pnpm validate` (alias `pnpm validate:full`) must pass every test, check, and build leaf previously owned by `pnpm test:unit`, `pnpm check`, and `pnpm build` before completion is claimed
-- **AND** those three standalone commands remain supported without catalog generation
-- **AND** partial `pnpm validate:fast`, `pnpm validate:checks`, and `pnpm validate:editor` results never establish completion.
+- **THEN** targeted `pnpm validate` must pass for the final source fingerprint before local completion or push
+- **AND** CI must pass every test/check leaf and the checked target builds before deployment
+- **AND** `pnpm validate:full` and the three standalone unit/check/build commands remain available without catalog generation
+- **AND** local evidence and partial `pnpm validate:fast`, `pnpm validate:checks`, and `pnpm validate:editor` results never establish full CI or release acceptance.
 
 #### Scenario: Local validation evidence is produced
 
 - **WHEN** validation runs
 - **THEN** compact phase results point to full local logs and a JSON summary
 - **AND** the summary records source SHA, tracked/untracked source fingerprint, tool versions, durations, and phase exit status
+- **AND** targeted local summaries declare `mode: local`, distinct from `mode: full`
 - **AND** source changes, cancellation, and incomplete phases prevent full success
 - **AND** task-specific rendered, asset, CMS, and hosted checks retain their existing scope.
 
@@ -138,13 +140,13 @@ The system SHALL run the standard repository gates after behavior-changing imple
 - **THEN** it permits that repository checkout and does not forward the opt-in to OpenSpec
 - **AND** omitting the flag preserves the default main-worktree and main-branch restriction.
 
-#### Scenario: CI runs prerequisites before target builds
+#### Scenario: CI runs complete checks alongside target builds
 
 - **WHEN** `pnpm validate:checks` succeeds
 - **THEN** all current unit-test and workspace-check leaves have succeeded for its recorded source identity
 - **AND** its evidence is explicitly partial because target builds have not run
-- **AND** CI still requires its unused audit, both target builds, combined artifacts, previews, and hosted acceptance before promotion eligibility
-- **AND** a failed prerequisite prevents downstream builds and deployment.
+- **AND** CI still requires both target builds, combined artifacts, previews, and hosted acceptance before promotion eligibility; the unused-code audit runs separately
+- **AND** checks and target builds may run concurrently, but failed checks prevent deployment and final candidate assembly.
 
 ### Requirement: Asset QA is read-only
 

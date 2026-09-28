@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { execa } from 'execa';
 import { validationPlan, runValidation, sourceIdentity, diagnosticExcerpt, monitorSourceChanges } from './validate.mjs';
-import { watchConfigurations } from './test-watch.mjs';
+import { watchConfigurations, vitestArguments } from './test-watch.mjs';
 import { validationReporters } from './validation-reporters.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
@@ -63,9 +63,10 @@ test('full plan preserves current gates without retired catalog preparation', as
   const plan = validationPlan();
   assert.deepEqual(
     plan.map((phase) => phase.args[0]),
-    ['test:unit', 'environment:model:verify', 'check:boundaries', 'check:types', 'format:check', 'lint', 'build'],
+    ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:boundaries', 'check:types', 'build'],
   );
   assert.equal(scripts.build, 'node --import tsx scripts/run-release-preparation.mjs builds');
+  assert.equal(scripts.lint, 'node --import tsx scripts/validate.mjs --lint-only --resume');
   assert.equal(
     scripts.check,
     'pnpm environment:model:verify && pnpm format:check && pnpm lint && pnpm check:types && pnpm check:boundaries',
@@ -93,10 +94,13 @@ test('full plan preserves current gates without retired catalog preparation', as
   assert.throws(() => validationPlan({ editor: true, fast: true }));
   assert.deepEqual(
     validationPlan({ checks: true }).map((phase) => phase.name),
-    ['test:unit', 'environment:model:verify', 'check:boundaries', 'check:types', 'format:check', 'lint'],
+    ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:boundaries', 'check:types'],
   );
   assert.throws(() => validationPlan({ checks: true, fast: true }));
   assert.throws(() => validationPlan({ checks: true, scope: 'web' }));
+  assert.deepEqual(validationPlan({ lintOnly: true }), [{ name: 'lint', command: 'pnpm', args: ['lint'] }]);
+  for (const options of [{ fast: true }, { editor: true }, { checks: true }, { scope: 'web' }])
+    assert.throws(() => validationPlan({ lintOnly: true, ...options }));
 });
 
 test('test watch requires one known package and starts only its Vitest configurations', () => {
@@ -106,6 +110,46 @@ test('test watch requires one known package and starts only its Vitest configura
   assert.deepEqual(watchConfigurations('api-client'), [undefined]);
   assert.throws(() => watchConfigurations(undefined), /Specify --scope/);
   assert.throws(() => watchConfigurations('all'), /Specify --scope/);
+  assert.deepEqual(vitestArguments('vitest.node.config.ts'), ['--watch', '--config', 'vitest.node.config.ts']);
+  assert.deepEqual(vitestArguments(undefined, { changed: true, since: 'HEAD~1' }), [
+    'run',
+    '--changed=HEAD~1',
+    '--passWithNoTests',
+  ]);
+  assert.throws(() => vitestArguments(undefined, { since: 'HEAD~1' }), /requires --changed/);
+});
+
+test('affected selection follows changed imports and keeps failures visible', async (t) => {
+  const cwd = await gitFixture(t);
+  await writeFile(
+    path.join(cwd, 'affected.test.mjs'),
+    'import { source } from "./source.ts"; test("affected", () => expect(source).toBe(true));\n',
+  );
+  await writeFile(
+    path.join(cwd, 'unrelated.test.mjs'),
+    'test("unrelated", () => { throw new Error("must not run"); });\n',
+  );
+  await execa('git', ['add', '.'], { cwd, windowsHide: true });
+  await execa('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'tests'], {
+    cwd,
+    windowsHide: true,
+  });
+  await writeFile(path.join(cwd, 'source.ts'), 'export const source = false;\n');
+  const result = await execa(
+    process.execPath,
+    [
+      path.join(root, 'apps/web/node_modules/vitest/vitest.mjs'),
+      ...vitestArguments(undefined, { changed: true }),
+      '--globals',
+      '--reporter=json',
+    ],
+    { cwd, reject: false, windowsHide: true },
+  );
+  const report = JSON.parse(result.stdout);
+  assert.equal(result.exitCode, 1);
+  assert.equal(report.numTotalTests, 1);
+  assert.equal(report.numFailedTests, 1);
+  assert.equal(report.testResults[0].assertionResults[0].title, 'affected');
 });
 
 for (const phase of ['test', 'format', 'type', 'boundary', 'build', 'missing-artifact']) {
@@ -440,6 +484,27 @@ test('checks mode is partial and never schedules a build', async (t) => {
   assert.equal(summary.mode, 'partial');
   assert.deepEqual(summary.skippedPhases, []);
   assert.ok(!summary.phases.some(({ name }) => name === 'build'));
+});
+
+test('lint-only mode records one partial lint phase', async (t) => {
+  const cwd = await fixture(t);
+  const logs = [];
+  const summary = await runValidation({
+    cwd,
+    phases: [command('lint', 'process.exit(0)')],
+    lintOnly: true,
+    ...testOptions,
+    log: (line) => logs.push(line),
+  });
+  assert.equal(summary.status, 'partial');
+  assert.equal(summary.mode, 'partial');
+  assert.equal(summary.scope, 'lint');
+  assert.deepEqual(
+    summary.plannedPhases.map(({ name }) => name),
+    ['lint'],
+  );
+  assert.match(summary.taskAcceptance, /not established/);
+  assert.ok(logs.some((line) => /PARTIAL lint-only validation/.test(line)));
 });
 
 test('native reports are opt-in and root contract ownership stays explicit', async () => {

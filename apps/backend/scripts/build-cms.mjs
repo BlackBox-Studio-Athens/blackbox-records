@@ -12,14 +12,18 @@ const { values } = parseArgs({
   },
 });
 if (!['local', 'mock', 'mock-api', 'uat', 'prd'].includes(values.env)) throw new Error('Unknown backend build target');
-const seed = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/generate-cms-seed.ts'], { stdio: 'inherit' });
+const seed = spawnSync(process.execPath, ['--import', 'tsx', 'scripts/generate-cms-seed.ts'], {
+  stdio: 'inherit',
+  windowsHide: true,
+});
 if (seed.status !== 0) process.exit(seed.status ?? 1);
 const staffEnv = { ...process.env, PUBLIC_STAFF_ENVIRONMENT: values.env };
 delete staffEnv.PUBLIC_BACKEND_BASE_URL;
-const staff = spawnSync('pnpm', ['--filter', '@blackbox/staff', 'build'], {
+const staff = spawnSync('pnpm', ['--dir', '../..', 'build:staff'], {
   env: staffEnv,
   stdio: 'inherit',
   shell: process.platform === 'win32',
+  windowsHide: true,
 });
 if (staff.status !== 0) process.exit(staff.status ?? 1);
 // Private previews reuse the public site's committed brand assets. Draft media stays behind CMS authentication.
@@ -32,6 +36,7 @@ const backend = spawnSync(
   {
     env: backendEnv,
     stdio: 'inherit',
+    windowsHide: true,
   },
 );
 if (backend.status !== 0) process.exit(backend.status ?? 1);

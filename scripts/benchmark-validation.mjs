@@ -9,7 +9,7 @@ import { sourceIdentity } from './validate.mjs';
 
 function completedGates(commands, arm) {
   if (arm === 'candidate') return completedGates(commands, 'legacy') || completedGates(commands, 'aggregate');
-  const gates = arm === 'aggregate' ? ['validate(?::full)?'] : ['test:unit', 'check', 'build'];
+  const gates = arm === 'aggregate' ? ['validate:full'] : ['test:unit', 'check', 'build'];
   return gates.every((gate) =>
     commands.some(
       ({ command, exit_code }) =>
@@ -22,7 +22,7 @@ function completedGates(commands, arm) {
 
 function selectedGateCommands(mode, scenario) {
   if (scenario === 'editor') return ['build:staff', 'preview-policy', 'editor-chromium', 'editor-firefox'];
-  return mode === 'aggregate' ? ['validate'] : ['test:unit', 'check', 'build'];
+  return mode === 'aggregate' ? ['validate:full'] : ['test:unit', 'check', 'build'];
 }
 
 function isCompleteValidationSummary(summary) {
@@ -139,7 +139,8 @@ assert.equal(completedGates([{ command: 'pnpm validate:fast --scope web', exit_c
 assert.equal(completedGates([{ command: 'pnpm validate --fast', exit_code: 0 }], 'candidate'), false);
 assert.equal(completedGates([{ command: 'pnpm validate --editor', exit_code: 0 }], 'candidate'), false);
 assert.equal(completedGates([{ command: 'pnpm validate', exit_code: 1 }], 'candidate'), false);
-assert.equal(completedGates([{ command: "pwsh -Command 'pnpm validate'", exit_code: 0 }], 'candidate'), true);
+assert.equal(completedGates([{ command: 'pnpm validate', exit_code: 0 }], 'candidate'), false);
+assert.equal(completedGates([{ command: "pwsh -Command 'pnpm validate:full'", exit_code: 0 }], 'candidate'), true);
 assert.equal(
   completedGates(
     ['test:unit', 'check', 'build'].map((gate) => ({ command: `pnpm ${gate}`, exit_code: 0 })),
@@ -331,7 +332,7 @@ async function commandRun(arm, scenario, index, priming = false) {
               'scripts/test-content-workspace.mjs',
               ...(gate === 'editor-firefox' ? ['--firefox'] : []),
             ]
-          : gate === 'validate'
+          : gate === 'validate:full'
             ? ['pnpm', gate, '--jobs', values.jobs]
             : ['pnpm', gate];
     const start = performance.now();
@@ -370,7 +371,7 @@ async function commandRun(arm, scenario, index, priming = false) {
     });
     await save();
     if (result.exitCode !== 0) break;
-    if (gate === 'validate') {
+    if (gate === 'validate:full') {
       const summaryPath = content.match(/— (.+summary\.json)/)?.[1];
       try {
         if (

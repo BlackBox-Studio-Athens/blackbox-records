@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 
 const root = path.resolve(__dirname, '../../../..');
 const release = parse(readFileSync(path.join(root, '.github/workflows/pages.yml'), 'utf8'));
-const uatSequence = release;
+const uatSequence = parse(readFileSync(path.join(root, '.github/workflows/uat-release-sequence.yml'), 'utf8'));
 const prdSequence = release;
 
 describe('one gated release', () => {
@@ -77,17 +77,14 @@ describe('one gated release', () => {
     );
   });
 
-  it('serializes the full release workflow and retains cancellable preparation roles', () => {
+  it('serializes hosted mutations while preparation stays independent and cancellable', () => {
     const lock = { group: 'blackbox-release', 'cancel-in-progress': false };
-    expect(release.concurrency).toEqual(lock);
-    for (const role of [
-      'deploy-uat',
-      'deploy-uat-static',
-      'smoke-uat',
-      'deploy-prd',
-      'deploy-prd-static',
-      'catalog-prd',
-    ])
+    expect(release.concurrency.group).toContain("inputs.target == 'prd' && 'blackbox-release'");
+    expect(release.concurrency.group).toContain("format('blackbox-preparation-{0}', github.run_id)");
+    expect(release.concurrency['cancel-in-progress']).toBe(false);
+    expect(release.jobs['uat-release'].concurrency).toEqual(lock);
+    expect(release.jobs['uat-release'].secrets).toBe('inherit');
+    for (const role of ['deploy-prd', 'deploy-prd-static', 'catalog-prd'])
       expect(release.jobs[role].concurrency).toBeUndefined();
     for (const role of ['check-candidate', 'prepare-uat', 'prepare-prd', 'assemble-candidate']) {
       expect(release.jobs[role].concurrency['cancel-in-progress']).toBe(true);
@@ -95,16 +92,17 @@ describe('one gated release', () => {
       expect(release.jobs[role].concurrency.group).toContain('github.run_id');
     }
     expect(release.jobs['inspect-uat-pages'].needs).toEqual(['check-candidate', 'prepare-uat']);
-    expect(release.jobs['deploy-uat'].needs).toEqual(['prepare-uat', 'inspect-uat-pages']);
-    expect(release.jobs['deploy-uat'].environment).toBe('catalog-promotion-uat');
-    expect(release.jobs['smoke-uat'].environment).toBe('catalog-promotion-uat');
-    expect(release.jobs['deploy-uat-static'].environment).toBeUndefined();
-    for (const role of ['deploy-uat', 'smoke-uat', 'deploy-prd']) {
-      expect(release.jobs[role].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
+    expect(release.jobs['uat-release'].needs).toEqual(['check-candidate', 'prepare-uat', 'inspect-uat-pages']);
+    expect(uatSequence.jobs['deploy-uat-static'].environment).toBeUndefined();
+    for (const role of ['deploy-uat', 'smoke-uat']) {
+      const job = uatSequence.jobs[role];
+      expect(job.environment).toBe('catalog-promotion-uat');
+      expect(job.concurrency).toBeUndefined();
+      expect(job.env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
+      expect(job.env.STRIPE_SECRET_KEY).toBe('${{ secrets.STRIPE_SECRET_KEY }}');
     }
-    expect(release.jobs['deploy-uat'].env.STRIPE_SECRET_KEY).toBe('${{ secrets.STRIPE_SECRET_KEY }}');
-    expect(release.jobs['smoke-uat'].env.STRIPE_SECRET_KEY).toBe('${{ secrets.STRIPE_SECRET_KEY }}');
-    expect(release.jobs['deploy-uat-static'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
+    expect(release.jobs['deploy-prd'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
+    expect(uatSequence.jobs['deploy-uat-static'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
     expect(release.jobs['deploy-prd-static'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
     expect(uatSequence.jobs['deploy-uat'].environment).toBe('catalog-promotion-uat');
     expect(uatSequence.jobs['deploy-uat-static'].needs).toBe('deploy-uat');

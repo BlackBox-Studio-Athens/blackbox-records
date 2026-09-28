@@ -11,19 +11,6 @@
           }
         ]
       }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "graphify hook-check",
-            "commandWindows": "C:/Users/SVall/.local/bin/graphify.exe hook-check",
-            "timeout": 3
-          }
-        ]
-      }
     ]
   }
 }

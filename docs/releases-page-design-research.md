@@ -2,6 +2,8 @@
 
 Date: 2026-07-17
 
+> Migration note (2026-09-26): this memo records historical research. Reusable evidence now lives in the personal [Design Library](C:/Users/SVall/.codex/design-library/patterns/README.md); the existing CSV retains BlackBox applications and original wording. See the [application guide](ui-design-patterns-guide.md).
+
 ## Target
 
 Redesign `/releases/` so visitors can identify the latest release, understand what is upcoming, and scan the remaining label catalog faster without weakening listening, detail, or commerce paths.
@@ -111,5 +113,5 @@ Research ranked **Evolved Split Showcase** highest, and the user selected it. Th
 - The selected PoC is retained at `docs/ui-mockups/releases-evolved-split-showcase-poc.png`.
 - The implementation plan lives under `openspec/changes/redesign-releases-evolved-split-showcase/`.
 - The PoC guides hierarchy, density, rule placement, artwork emphasis, and action grouping. Repository typography, content values, semantic source order, accessible reflow, and runtime contracts override raster text or spacing imperfections.
-- The canonical evidence library remains `docs/ui-design-patterns.csv`; this study records stable IDs instead of copying the dataset.
+- This study’s stable IDs now resolve to the global Design Library; `docs/ui-design-patterns.csv` retains BlackBox application context.
 - Reuse and maintenance rules remain in `docs/ui-design-patterns-guide.md`.

@@ -7,12 +7,17 @@ import { parseArgs, stripVTControlCharacters } from 'node:util';
 import { execa } from 'execa';
 import { runFiniteCommand } from './local-process.ts';
 
-export function validationPlan({ fast = false, scope = 'all', editor = false, checks = false } = {}) {
+export function validationPlan({ fast = false, scope = 'all', editor = false, checks = false, lintOnly = false } = {}) {
   if (!['all', 'web', 'staff', 'backend', 'api-client'].includes(scope)) throw new Error(`Unknown scope: ${scope}`);
+  const phase = (name, args) => ({ name, command: 'pnpm', args });
+  if (lintOnly) {
+    if (fast || editor || checks || scope !== 'all')
+      throw new Error('Lint-only validation cannot be combined with fast, editor, checks, or scoped validation.');
+    return [phase('lint', ['lint'])];
+  }
   if (checks && (fast || editor || scope !== 'all'))
     throw new Error('Checks validation cannot be combined with fast, editor, or scoped validation.');
   if (!fast && !checks && scope !== 'all') throw new Error('Full validation cannot be scoped.');
-  const phase = (name, args) => ({ name, command: 'pnpm', args });
   if (editor) {
     if (fast || scope !== 'all') throw new Error('Editor acceptance cannot be combined with scoped iteration.');
     return [
@@ -25,7 +30,7 @@ export function validationPlan({ fast = false, scope = 'all', editor = false, ch
     ];
   }
   if (checks) {
-    return ['test:unit', 'environment:model:verify', 'check:boundaries', 'check:types', 'format:check', 'lint'].map(
+    return ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:boundaries', 'check:types'].map(
       (name) => phase(name, [name]),
     );
   }
@@ -33,10 +38,10 @@ export function validationPlan({ fast = false, scope = 'all', editor = false, ch
     return [
       'test:unit',
       'environment:model:verify',
-      'check:boundaries',
-      'check:types',
       'format:check',
       'lint',
+      'check:boundaries',
+      'check:types',
       'build',
     ].map((name) => phase(name, [name]));
   }
@@ -224,16 +229,18 @@ export async function monitorSourceChanges(cwd) {
 
 export async function runValidation({
   cwd = process.cwd(),
+  local = false,
   fast = false,
   editor = false,
   checks = false,
+  lintOnly = false,
   trace = false,
   scope = 'all',
   jobs = 2,
   resume = false,
   noCache = false,
   signal,
-  phases = validationPlan({ fast, scope, editor, checks }),
+  phases = validationPlan({ fast, scope, editor, checks, lintOnly }),
   identify = sourceIdentity,
   readPnpmVersion = async () => (await execa('pnpm', ['--version'], { cwd })).stdout,
   log = console.log,
@@ -259,8 +266,8 @@ export async function runValidation({
   const summary = {
     schemaVersion: 1,
     runId,
-    mode: fast || editor || checks ? 'partial' : 'full',
-    scope: editor ? 'editor' : checks ? 'checks' : scope,
+    mode: local ? 'local' : fast || editor || checks || lintOnly ? 'partial' : 'full',
+    scope: lintOnly ? 'lint' : editor ? 'editor' : checks ? 'checks' : scope,
     jobs,
     trace,
     startedAt: new Date().toISOString(),
@@ -291,8 +298,10 @@ export async function runValidation({
     summary.cacheEnvironment = cacheEnvironment;
     const cache =
       resume && !noCache ? await reusablePhases(root, summary.sourceBefore, cacheContext, cacheEnvironment) : new Map();
-    if (fast || editor) log('PARTIAL validation: this does not establish implementation completion.');
-    const fastPair = fast && jobs === 2 && phases[0]?.name === 'tests' && phases[1]?.name === 'types';
+    if (lintOnly) log('PARTIAL lint-only validation: this does not establish implementation completion.');
+    else if (fast || editor) log('PARTIAL validation: this does not establish implementation completion.');
+    const fastPair =
+      (local || fast) && jobs === 2 && phases[0]?.name === 'tests' && ['types', 'checks'].includes(phases[1]?.name);
     const canOverlap =
       jobs === 2 && (fastPair || (!fast && !editor && phases.length > 1 && phases[0].name === 'test:unit'));
     async function execute(phase) {
@@ -435,7 +444,7 @@ export async function runValidation({
       : !unchanged
         ? 'invalidated'
         : passed
-          ? fast || editor || checks
+          ? fast || editor || checks || lintOnly
             ? 'partial'
             : 'passed'
           : 'failed';
@@ -466,6 +475,7 @@ export async function runValidation({
   log(
     `${summary.status.toUpperCase()} ${(summary.durationMs / 1000).toFixed(1)}s — ${path.join(evidenceDir, 'summary.json')}`,
   );
+  if (local) log('Targeted local checks only. CI retains full tests, checks and release builds.');
   log(`Repository gates only. ${summary.taskAcceptance}`);
   return summary;
 }
@@ -483,6 +493,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
         fast: { type: 'boolean' },
         editor: { type: 'boolean' },
         checks: { type: 'boolean' },
+        'lint-only': { type: 'boolean' },
         trace: { type: 'boolean' },
         resume: { type: 'boolean' },
         'no-cache': { type: 'boolean' },
@@ -494,6 +505,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
       fast: values.fast,
       editor: values.editor,
       checks: values.checks,
+      lintOnly: values['lint-only'],
       trace: values.trace,
       scope: values.scope,
       jobs: Number(values.jobs || 2),

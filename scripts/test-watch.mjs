@@ -16,14 +16,31 @@ export function watchConfigurations(scope) {
   return configs;
 }
 
+export function vitestArguments(config, { changed = false, since } = {}) {
+  if (since && !changed) throw new Error('--since requires --changed.');
+  return [
+    ...(changed ? ['run', `--changed=${since || 'HEAD'}`, '--passWithNoTests'] : ['--watch']),
+    ...(config ? ['--config', config] : []),
+  ];
+}
+
 async function main() {
-  const { values } = parseArgs({ options: { scope: { type: 'string' } } });
-  console.log('PARTIAL test watch: this does not establish implementation completion.');
-  const children = watchConfigurations(values.scope).map((config) =>
+  const { values } = parseArgs({
+    args: process.argv.slice(2).filter((arg) => arg !== '--'),
+    options: { scope: { type: 'string' }, changed: { type: 'boolean' }, since: { type: 'string' } },
+  });
+  const configs = watchConfigurations(values.scope);
+  vitestArguments(undefined, values);
+  console.log(
+    `PARTIAL ${values.changed ? 'affected tests' : 'test watch'}: this does not establish implementation completion.`,
+  );
+  if (values.changed)
+    console.log('Import-based selection only; use validate:fast --scope all for shared/configuration/content changes.');
+  const children = configs.map((config) =>
     execa(
       process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
-      ['--filter', `@blackbox/${values.scope}`, 'exec', 'vitest', '--watch', ...(config ? ['--config', config] : [])],
-      { stdio: 'inherit', reject: false },
+      ['--filter', `@blackbox/${values.scope}`, 'exec', 'vitest', ...vitestArguments(config, values)],
+      { stdio: 'inherit', reject: false, windowsHide: true },
     ),
   );
   for (const signal of ['SIGINT', 'SIGTERM'])

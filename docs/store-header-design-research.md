@@ -2,6 +2,8 @@
 
 Date: 2026-07-16
 
+> Migration note (2026-09-26): this memo records historical research. Reusable evidence now lives in the personal [Design Library](C:/Users/SVall/.codex/design-library/patterns/README.md); the existing CSV retains BlackBox applications and original wording. See the [application guide](ui-design-patterns-guide.md).
+
 ## Target
 
 Improve the Store category header so shoppers can identify the current shelf and switch between `All`, `BlackBox Releases`, `Distro`, and `Merch` faster.
@@ -114,5 +116,5 @@ Research initially ranked **Record-crate index** highest, but the user selected 
 
 - The selected PoC is retained at `docs/ui-mockups/store-category-signal-rail-poc.png`.
 - The implementation plan lives under `openspec/changes/strengthen-store-category-signal-rail/`.
-- The canonical evidence library remains `docs/ui-design-patterns.csv`; future tasks should filter and cite stable IDs rather than copy the dataset.
+- For future tasks, cite stable IDs from the global Design Library and use `docs/ui-design-patterns.csv` for BlackBox application context.
 - Reuse and maintenance rules live in `docs/ui-design-patterns-guide.md`.
