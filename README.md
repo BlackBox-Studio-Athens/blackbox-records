@@ -2,6 +2,8 @@
 
 Astro site for the BlackBox Records label. Public pages render from accepted immutable content snapshots; Cloudflare Pages serves assets and forwards public reads to the renderer. See [content publication](docs/content-publication.md).
 
+Agent work starts at [AGENTS.md](AGENTS.md). The [acceptance workflow](docs/agent-workflow.md) maps tasks to existing checks and evidence. `pnpm agent:check` validates the maintained agent guidance; `pnpm validate` remains local completion.
+
 ## Stack
 
 - Astro 7 (published-content runtime plus retained static build)

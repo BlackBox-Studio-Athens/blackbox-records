@@ -43,7 +43,7 @@ test('local checks select import dependents and broaden content/configuration wi
   assert.deepEqual(docs.tests, []);
   assert.deepEqual(
     docs.checks.map(({ name }) => name),
-    ['format'],
+    ['guidance', 'format'],
   );
   const workflow = localCommands(localSelection(['.github/workflows/pages.yml']));
   assert.deepEqual(
@@ -56,6 +56,37 @@ test('local checks select import dependents and broaden content/configuration wi
   assert.ok(backend.args.includes(path.resolve('scripts/validate.mjs')));
   assert.ok(!backend.args.includes(path.resolve('package.json')));
   assert.ok(!backend.args.includes(path.resolve('apps/web/vitest.config.ts')));
+});
+
+test('executable boundary policy selects boundary gates while OpenSpec prose stays lightweight', () => {
+  for (const file of [
+    'openspec/specs/module-boundaries/module-boundaries.manifest.json',
+    '.dependency-cruiser.cjs',
+    'eslint.config.mjs',
+    'scripts/module-boundaries-manifest.cjs',
+    'scripts/audit-module-boundaries.ts',
+    'scripts/audit-commerce-boundaries.ts',
+  ]) {
+    const commands = localCommands(localSelection([file]));
+    assert.ok(
+      commands.checks.some(({ args }) => args.includes('check:boundaries')),
+      file,
+    );
+    assert.ok(
+      commands.tests.some(({ args }) => args.includes('test:contracts')),
+      file,
+    );
+  }
+  const prose = localCommands(localSelection(['openspec/specs/module-boundaries/spec.md']));
+  assert.deepEqual(prose.tests, []);
+  assert.deepEqual(
+    prose.checks.map(({ name }) => name),
+    ['guidance', 'format'],
+  );
+  assert.deepEqual(
+    localCommands(localSelection([])).checks.map(({ name }) => name),
+    ['guidance'],
+  );
 });
 
 test('the Git selection includes committed, staged, unstaged, deleted and untracked work, but not ignored output', async (t) => {

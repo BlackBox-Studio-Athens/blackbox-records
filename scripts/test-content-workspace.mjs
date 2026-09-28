@@ -816,9 +816,45 @@ else if (process.argv.includes('--editor-recovery')) {
   page.on('pageerror', (error) => console.error(error.message));
   await mkdir(artifacts, { recursive: true });
   try {
+    await page.goto(`${origin}/content/?collection=releases&id=releases-1`);
+    const releaseArtist = page.getByRole('combobox', { name: 'Artist', exact: true });
+    await releaseArtist.waitFor();
+    assert.equal(await releaseArtist.getAttribute('aria-required'), 'true');
+    assert.equal(
+      await releaseArtist.evaluate(
+        (element) =>
+          getComputedStyle(
+            element.closest('[data-slot="field"]').querySelector('[data-slot="field-label"] [aria-hidden="true"]'),
+            '::after',
+          ).content,
+      ),
+      '"*"',
+    );
+
     await page.goto(`${origin}/content/?collection=artists&new=1`);
-    await page.getByLabel('Artist name', { exact: true }).waitFor();
+    const artistName = page.getByLabel('Artist name', { exact: true });
+    await artistName.waitFor();
+    assert.equal(await artistName.getAttribute('required'), '');
+    assert.equal(
+      await page
+        .locator('label[for="content-title"] [aria-hidden="true"]')
+        .evaluate((node) => getComputedStyle(node, '::after').content),
+      '"*"',
+    );
+    const artistImage = page.getByRole('group', { name: /Artist image.*\(required\)/i });
+    await artistImage.waitFor();
+    assert.equal(
+      await artistImage
+        .locator('legend [aria-hidden="true"]')
+        .evaluate((node) => getComputedStyle(node, '::after').content),
+      '"*"',
+    );
     await page.getByRole('textbox', { name: 'Short biography', exact: true }).waitFor();
+    const invalidPreviewStatus = page.getByRole('status').filter({
+      hasText: 'Complete the required details to preview this draft',
+    });
+    await invalidPreviewStatus.waitFor();
+    assert.match(await invalidPreviewStatus.innerText(), /Required fields are marked with \*/);
     await page.getByRole('button', { name: 'Show required details', exact: true }).click();
     await page.locator('#content-title[aria-invalid=true]').waitFor();
     assert.ok(await page.locator('#content-title-error').innerText());

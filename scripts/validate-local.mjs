@@ -10,13 +10,21 @@ import { watchConfigurations } from './test-watch.mjs';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const packages = { web: 'apps/web', staff: 'apps/staff', backend: 'apps/backend', 'api-client': 'packages/api-client' };
 const sourceFile = /\.(?:[cm]?[jt]sx?|astro|css|json|ya?ml|sql|prisma)$/;
+const boundaryPolicyFiles = new Set([
+  'openspec/specs/module-boundaries/module-boundaries.manifest.json',
+  '.dependency-cruiser.cjs',
+  'eslint.config.mjs',
+  'scripts/module-boundaries-manifest.cjs',
+  'scripts/audit-module-boundaries.ts',
+  'scripts/audit-commerce-boundaries.ts',
+]);
 
 export function localSelection(files) {
   const scopes = new Set();
   let contracts = false;
   const fullTests = new Set();
   for (const file of files) {
-    if (/^(?:docs|openspec)\//.test(file)) continue;
+    if (/^(?:docs|openspec)\//.test(file) && !boundaryPolicyFiles.has(file)) continue;
     const scope = Object.keys(packages).find((name) => file.startsWith(`${packages[name]}/`));
     if (scope) {
       scopes.add(scope);
@@ -29,7 +37,13 @@ export function localSelection(files) {
       contracts = true;
     } else if (file.startsWith('.github/')) contracts = true;
   }
-  return { files, scopes: Object.keys(packages).filter((name) => scopes.has(name)), fullTests, contracts };
+  return {
+    files,
+    scopes: Object.keys(packages).filter((name) => scopes.has(name)),
+    fullTests,
+    contracts,
+    boundaries: files.some((file) => boundaryPolicyFiles.has(file)),
+  };
 }
 
 export async function changedFiles(cwd, since) {
@@ -65,7 +79,9 @@ export function localCommands(selection, cwd = root) {
   const lint = selection.files.filter(
     (file) => /\.[cm]?[jt]sx?$|\.astro$/.test(file) && existsSync(path.join(cwd, file)),
   );
-  const checks = selection.files.length ? [command('format', ['format:check'])] : [];
+  const checks = [command('guidance', ['agent:check'])];
+  if (selection.files.length) checks.push(command('format', ['format:check']));
+  if (selection.boundaries) checks.push(command('boundaries', ['check:boundaries']));
   if (lint.length)
     checks.push(
       command('lint:changed', [
