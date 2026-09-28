@@ -55,6 +55,15 @@ describe('Content publication workflow', () => {
 });
 
 describe('Pages artifact promotion contract', () => {
+  it('passes the selected candidate and explicit approval to both PRD verification jobs', () => {
+    expect(workflow.on.workflow_dispatch.inputs.confirm_code_promotion.default).toBe(false);
+    for (const job of [promotion, staticPromotion]) {
+      const environment = { ...workflow.env, ...job.env };
+      expect(environment.CANDIDATE_RUN_ID).toBe('${{ inputs.candidate_run_id }}');
+      expect(environment.CONFIRM_CODE_PROMOTION).toBe('${{ inputs.confirm_code_promotion }}');
+      expect(job.if).toContain('inputs.confirm_code_promotion');
+    }
+  });
   it('runs the normal provider and active public-surface smoke without retired-route exceptions', () => {
     expect(workflow.on.workflow_dispatch.inputs.confirm_retired_admin_cache_exception).toBeUndefined();
     const steps = uatSequence.jobs['smoke-uat'].steps;
