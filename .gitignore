@@ -29,6 +29,8 @@ node_modules/.astro/
 node_modules/.vite/
 .codex-artifacts/
 /graphify-out/
+.codex/skills/graphify/
+.codex/hooks.json.graphify-bak
 apps/backend/test/emdash/.emdash/
 apps/backend/.emdash/
 apps/backend/prisma/seeds/uat-commerce-state.sql
