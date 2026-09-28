@@ -92,7 +92,23 @@ it('loads only checksum-bound content, maps stable references and rejects altere
     expect(snapshotCollection(loaded, 'releases')[0]!.data.tracklist).toBeUndefined();
     const releaseSchema = createReleasesContentSchema(() => z.string(), { artist: z.string() });
     const releaseData = loaded.snapshot.records.find((record) => record.collection === 'releases')!.data;
-    releaseData.release_stage = 'upcoming';
+    const upcomingRelease = {
+      ...snapshotCollection(loaded, 'releases')[0]!.data,
+      release_stage: 'upcoming',
+      singles: [{ title: 'Soul Gazing', url: 'https://open.spotify.com/track/example' }],
+      clips: [{ title: 'Soul Gazing', youtube_video_id: '1sp213QHLX0' }],
+    };
+    expect(releaseSchema.parse(upcomingRelease)).toMatchObject({
+      singles: upcomingRelease.singles,
+      clips: upcomingRelease.clips,
+    });
+    expect(
+      releaseSchema.safeParse({ ...upcomingRelease, singles: [{ title: '', url: 'http://invalid.test' }] }).success,
+    ).toBe(false);
+    expect(
+      releaseSchema.safeParse({ ...upcomingRelease, clips: [{ title: 'Broken', youtube_video_id: 'invalid' }] })
+        .success,
+    ).toBe(false);
     for (const date of ['', null]) {
       releaseData.release_date = date;
       expect(releaseSchema.parse(snapshotCollection(loaded, 'releases')[0]!.data).release_date).toBeUndefined();

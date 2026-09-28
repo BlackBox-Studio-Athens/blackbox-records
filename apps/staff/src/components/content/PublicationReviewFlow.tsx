@@ -118,6 +118,7 @@ export default function PublicationReviewFlow({
     if (result.status === 'live' && completed.current !== result.id) {
       completed.current = result.id;
       localStorage.removeItem(pendingPublicationKey(base));
+      window.dispatchEvent(new Event('staff:editorial-change'));
       onPublishedRef.current?.(request?.records ?? []);
     }
   }

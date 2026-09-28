@@ -251,6 +251,10 @@ const [selected, other] = await Promise.all(
   items.slice(0, 2).map(async (item) => (await api(`content/artists/${item.id}`)).data.item),
 );
 const tracklistExamples = [];
+const releaseMedia = {
+  singles: [{ title: 'Local preview single', url: 'https://example.com/listen' }],
+  clips: [{ title: 'Local preview clip', youtube_video_id: '1sp213QHLX0' }],
+};
 for (const [collection, slug, storeSlug, tracklist] of [
   [
     'releases',
@@ -302,7 +306,15 @@ try {
   const tracklistRecords = [];
   for (const example of tracklistExamples) {
     const before = await fetch(site + '/store/' + example.storeSlug + '/').then((response) => response.text());
-    const edited = await save(example.item, { ...example.item.data, tracklist: example.tracklist }, example.collection);
+    const edited = await save(
+      example.item,
+      {
+        ...example.item.data,
+        tracklist: example.tracklist,
+        ...(example.collection === 'releases' ? releaseMedia : {}),
+      },
+      example.collection,
+    );
     tracklistRecords.push({ collection: example.collection, recordId: example.item.id, expectedRevision: edited._rev });
     const privateHtml = await fetch(site + '/store/' + example.storeSlug + '/').then((response) => response.text());
     assert.equal(privateHtml.includes('Local opening track'), before.includes('Local opening track'));
@@ -334,6 +346,14 @@ try {
       if (example.tracklist.format === 'vinyl') {
         assert.ok(html.includes('Side B'));
         assert.ok(html.includes('B1'));
+        const release = await fetch(
+          new URL(`/blackbox-records/releases/${example.item.slug}/?__preview=${document.context}`, document.url),
+        );
+        assert.equal(release.status, 200);
+        const releaseHtml = await release.text();
+        assert.ok(releaseHtml.includes('Local preview single'));
+        assert.ok(releaseHtml.includes('Local preview clip'));
+        assert.ok(releaseHtml.includes('youtube-nocookie.com/embed/1sp213QHLX0'));
       }
     }
   });
@@ -352,6 +372,10 @@ try {
         assert.doesNotMatch(html, /data-music-streaming-service-embedded-player-release-id="distro:/);
       }
       assert.doesNotMatch(html, /<iframe\b/i, 'Published player remains inert until Listen is activated.');
+    } else {
+      const releaseHtml = await fetch(`${site}/releases/${example.item.slug}/`).then((response) => response.text());
+      assert.ok(releaseHtml.includes('Local preview single'));
+      assert.ok(releaseHtml.includes('Local preview clip'));
     }
   }
   const unrelated = await fetch(`${site}/artists/${other.slug}/`).then((response) => response.text());
@@ -385,7 +409,13 @@ try {
   for (const example of tracklistExamples) {
     const restored = await save(
       example.item,
-      { ...example.item.data, tracklist: example.item.data.tracklist ?? null },
+      {
+        ...example.item.data,
+        tracklist: example.item.data.tracklist ?? null,
+        ...(example.collection === 'releases'
+          ? { singles: example.item.data.singles ?? [], clips: example.item.data.clips ?? [] }
+          : {}),
+      },
       example.collection,
     );
     restoredTracks.push({

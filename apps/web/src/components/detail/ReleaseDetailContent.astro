@@ -30,6 +30,8 @@ const releaseDateMachineValue = release.data.release_date?.toISOString().slice(0
 const embeddedPlayerTitle = `${release.data.title} — ${artistName}`;
 const embeddedPlayerData = buildEmbeddedPlayerData(release.id, release.data, embeddedPlayerTitle);
 const commerceLink = await getReleaseCommerceLink(release);
+const singles = release.data.singles ?? [];
+const clips = release.data.clips ?? [];
 ---
 
 <section class="layout-container pt-14">
@@ -112,6 +114,58 @@ const commerceLink = await getReleaseCommerceLink(release);
     </CardContent>
   </Card>
 </section>
+
+{(singles.length > 0 || clips.length > 0) && (
+  <section class="layout-container mt-12" aria-labelledby="release-media-title">
+    <Card className="surface-card">
+      <CardContent className="space-y-8 p-7 sm:p-9">
+        <h2 id="release-media-title" class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">
+          Singles & clips
+        </h2>
+        {singles.length > 0 && (
+          <div>
+            <h3 class="mb-3 text-xs tracking-[0.14em] text-muted-foreground uppercase">Singles</h3>
+            <ul>
+              {singles.map((single) => (
+                <li class="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 py-3">
+                  <span class="text-sm text-foreground">{single.title}</span>
+                  <a
+                    href={single.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="min-h-11 content-center text-sm underline underline-offset-4 hover:text-foreground"
+                  >
+                    Listen <span aria-hidden="true">↗</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {clips.length > 0 && (
+          <div>
+            <h3 class="mb-4 text-xs tracking-[0.14em] text-muted-foreground uppercase">Clips</h3>
+            <div class="artist-video-grid">
+              {clips.map((clip) => (
+                <article class="artist-video-card">
+                  <iframe
+                    class="artist-video-card__frame"
+                    src={`https://www.youtube-nocookie.com/embed/${clip.youtube_video_id}`}
+                    title={`${artistName} - ${clip.title}`}
+                    loading="lazy"
+                    allow="encrypted-media; picture-in-picture"
+                    allowfullscreen
+                  />
+                  <h4 class="artist-video-card__title">{clip.title}</h4>
+                </article>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  </section>
+)}
 
 {release.data.credits && (
   <section class="layout-container mt-12">

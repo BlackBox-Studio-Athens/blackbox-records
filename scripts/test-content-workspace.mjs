@@ -1278,7 +1278,7 @@ else if (process.argv.includes('--editor-recovery')) {
     await probe.route(overviewApi, async (route) => {
       const url = new URL(route.request().url());
       paths.push({ pathname: url.pathname, search: url.search });
-      if (paths.length === 3) started.resolve();
+      if (paths.length === 4) started.resolve();
       await gate.promise;
       if (fail)
         await route.fulfill({ status: 503, json: { success: false, error: { message: 'Refresh unavailable' } } });
@@ -1295,9 +1295,9 @@ else if (process.argv.includes('--editor-recovery')) {
       await probe.goto(`${origin}/`);
       await started.promise;
       await refresh();
-      // Flush queued browser work while the three Overview panels are pending.
+      // Flush queued browser work while Overview and the header check are pending.
       await probe.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      assert.equal(paths.length, 3, 'Refresh triggers must share the three Overview reads');
+      assert.equal(paths.length, 4, 'Refresh triggers must share the three Overview reads and header check');
       assert.equal(
         paths.filter(({ pathname, search }) => pathname.endsWith('/workspace') && search.includes('view=overview'))
           .length,
@@ -1307,8 +1307,8 @@ else if (process.argv.includes('--editor-recovery')) {
       assert.equal(
         paths.filter(({ pathname, search }) => pathname.endsWith('/workspace') && search.includes('view=changes'))
           .length,
-        0,
-        'Review navigation does not require a global change discovery request',
+        1,
+        'Review control checks for saved changes',
       );
       assert.equal(paths.filter(({ pathname }) => pathname.endsWith('/publications')).length, 1);
       assert.equal(paths.filter(({ pathname }) => pathname.endsWith('/orders/search')).length, 1);
@@ -1523,6 +1523,13 @@ else if (process.argv.includes('--editor-recovery')) {
       const failures = [];
       await page.goto(`${origin}/content/?collection=distro`);
       await page.getByRole('button', { name: /Browse 000/ }).waitFor();
+      const rows = page.locator('[data-staff-scroll]');
+      assert.ok(await rows.evaluate((node) => node.scrollHeight > node.clientHeight), 'Distro rows must scroll');
+      const rowsBox = await rows.boundingBox();
+      await page.mouse.move(rowsBox.x + rowsBox.width / 2, rowsBox.y + rowsBox.height / 2);
+      await page.mouse.wheel(0, 350);
+      await page.waitForTimeout(350);
+      assert.ok(await rows.evaluate((node) => node.scrollTop > 0), 'Distro rows must scroll with the mouse wheel');
       await page
         .getByRole('navigation', { name: 'Catalog pages, top', exact: true })
         .getByRole('button', { name: 'Next', exact: true })
@@ -2348,6 +2355,33 @@ else if (process.argv.includes('--editor-recovery')) {
     assert.ok(!created.data.summary, 'Rich edits do not synchronize a legacy summary');
     await page.screenshot({ path: resolve(artifacts, 'staff-add-release-390.png') });
     await page.goto(`${origin}/content/?collection=releases&id=${created.id}`);
+    const singles = page.getByRole('group', { name: 'Singles', exact: true });
+    await singles.getByRole('button', { name: 'Add row' }).click();
+    await singles.getByRole('textbox', { name: 'Single title' }).fill('First single');
+    await singles.getByRole('textbox', { name: 'Listening link' }).fill('https://example.com/listen');
+    const clips = page.getByRole('group', { name: 'Clips', exact: true });
+    await clips.getByRole('button', { name: 'Add row' }).click();
+    await clips.getByRole('textbox', { name: 'Clip title' }).fill('First clip');
+    await clips.getByRole('textbox', { name: 'YouTube URL' }).fill('https://www.youtube.com/watch?v=1sp213QHLX0');
+    await clips.getByRole('button', { name: 'Add row' }).click();
+    await clips.getByRole('textbox', { name: 'Clip title' }).nth(1).fill('Second clip');
+    await clips
+      .getByRole('textbox', { name: 'YouTube URL' })
+      .nth(1)
+      .fill('https://www.youtube.com/watch?v=abcdefghijk');
+    await clips.getByRole('button', { name: 'Move up' }).nth(1).click();
+    assert.equal(
+      await clips.getByRole('textbox', { name: 'YouTube URL' }).first().inputValue(),
+      'https://www.youtube.com/watch?v=abcdefghijk',
+    );
+    await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
+    assert.deepEqual(records.releases.find((item) => item.id === created.id).data.singles, [
+      { title: 'First single', url: 'https://example.com/listen' },
+    ]);
+    assert.deepEqual(records.releases.find((item) => item.id === created.id).data.clips, [
+      { title: 'Second clip', youtube_video_id: 'abcdefghijk' },
+      { title: 'First clip', youtube_video_id: '1sp213QHLX0' },
+    ]);
     await page.getByRole('button', { name: 'Add tracklist', exact: true }).click();
     await page.getByLabel('Tracklist format', { exact: true }).selectOption('vinyl');
     await page.getByRole('button', { name: 'Add track', exact: true }).click();

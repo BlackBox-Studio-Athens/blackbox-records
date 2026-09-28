@@ -2,7 +2,7 @@ import TracklistFields from './TracklistFields';
 import CountryPicker from './CountryPicker';
 import { artistLinkNames, genreSuggestions } from '@blackbox/content-model';
 import { tracklistFormat, type Tracklist } from '@blackbox/content-model';
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import {
   DISTRO_GROUP_VALUES,
   DISTRO_INTRO_FIELDS,
@@ -454,6 +454,23 @@ export default function ContentFields({
         {field('release_date', 'Release date', { type: 'date', required: data.release_stage !== 'upcoming' })}
         {image('cover_image', 'cover_image_alt', 'Cover image')}
         {field('summary', 'Short description', { multiline: true, required: false })}
+        {rows('singles', 'Singles', { title: '', url: '' }, (path) => (
+          <>
+            {field(`${path}.title`, 'Single title')}
+            {field(`${path}.url`, 'Listening link', { type: 'url' })}
+          </>
+        ))}
+        {rows('clips', 'Clips', { title: '', youtube_video_id: '' }, (path) => (
+          <>
+            {field(`${path}.title`, 'Clip title')}
+            <YouTubeField
+              path={`${path}.youtube_video_id`}
+              initial={String(value(`${path}.youtube_video_id`) ?? '')}
+              onChange={(id) => set(`${path}.youtube_video_id`, id)}
+              errors={errors(`${path}.youtube_video_id`)}
+            />
+          </>
+        ))}
         <TracklistFields
           disabled={disabled}
           value={(data.tracklist as Tracklist | null) ?? null}
@@ -794,6 +811,10 @@ function YouTubeField({
   errors: string[];
 }) {
   const [url, setUrl] = useState(initial ? `https://www.youtube.com/watch?v=${initial}` : '');
+  useEffect(() => {
+    if (initial !== url && initial !== youtubeVideoId(url))
+      setUrl(initial && youtubeVideoId(initial) === initial ? `https://www.youtube.com/watch?v=${initial}` : initial);
+  }, [initial, url]);
   const invalid = !!url && !youtubeVideoId(url);
   return (
     <Field data-invalid={invalid || !!errors.length}>

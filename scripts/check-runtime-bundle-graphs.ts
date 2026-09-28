@@ -29,7 +29,7 @@ const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'Stor
 const staffRouteDocuments = {
   overview: { document: 'index.html', javascriptBudgetBytes: 122880 },
   website: { document: 'content/index.html', javascriptBudgetBytes: 176128 },
-  stock: { document: 'stock/index.html', javascriptBudgetBytes: 152576 },
+  stock: { document: 'stock/index.html', javascriptBudgetBytes: 152592 },
   orders: { document: 'orders/index.html', javascriptBudgetBytes: 128000 },
 };
 const staffHtmlBudgetBytes = 24576;

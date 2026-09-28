@@ -18,4 +18,5 @@ it.each([
     environment === 'uat',
   );
   expect(html.includes('href="https://staff.blackboxrecordsathens.com/" target="_blank"')).toBe(environment === 'uat');
+  expect(html).not.toContain('href="/review/"');
 });

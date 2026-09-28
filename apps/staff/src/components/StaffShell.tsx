@@ -19,12 +19,12 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { getInternalStockApiBaseUrl } from '../lib/backend/internal-stock-api';
 import { publicationHistoryEvent, type PublicationHistoryFilter } from '../lib/publication-history-events';
 import StaffBack from './StaffBack';
-import ReviewChangesControl from './ReviewChangesControl';
 import { staffEntry, staffLink, staffTarget } from '../lib/staff-navigation';
 import { acquireLenisModalLock } from '../lib/lenis-scroll';
 import { singletonContentSections, type ContentSection } from '../lib/content-sections';
 
 const PublicationHistory = lazy(() => import('./content/PublicationHistory'));
+const ReviewChangesControl = lazy(() => import('./ReviewChangesControl'));
 
 const areas = [
   { label: 'Overview', href: '/', icon: House, color: 'overview', links: [] },
@@ -311,7 +311,9 @@ export default function StaffShell({
             {url.pathname.startsWith('/review/') ? 'Website changes' : area.label}
           </span>
         </div>
-        <ReviewChangesControl className="staff-review-link" current={url.pathname.startsWith('/review/')} />
+        <Suspense>
+          <ReviewChangesControl />
+        </Suspense>
         <div className="staff-header-utilities">{utilities()}</div>
         <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
           <SheetTrigger asChild>

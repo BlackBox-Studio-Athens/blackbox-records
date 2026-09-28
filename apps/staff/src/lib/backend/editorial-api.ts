@@ -152,6 +152,8 @@ export async function editorialRequest<T>(
   }
   const result = (await response.json()) as { success: boolean; data: T };
   if (!result.success) throw new Error('We could not read the result. Try again.');
+  if (typeof window !== 'undefined' && method !== 'GET' && path.startsWith('content/'))
+    window.dispatchEvent(new Event('staff:editorial-change'));
   return result.data;
 }
 

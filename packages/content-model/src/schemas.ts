@@ -87,6 +87,12 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
     tidal_url: tidalUrlSchema.optional(),
     summary: z.string().optional(),
     summary_rich: richTextSchema.nullish(),
+    singles: z.array(z.object({ title: requiredText, url: httpsUrl })).optional(),
+    clips: z
+      .array(
+        z.object({ title: requiredText, youtube_video_id: z.string().regex(new RegExp(youtubeVideoIdPatternSource)) }),
+      )
+      .optional(),
     tracklist: tracklistSchema.nullish(),
     formats: z.array(requiredText).optional(),
     credits: z

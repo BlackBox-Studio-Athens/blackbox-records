@@ -137,6 +137,7 @@ body[data-workspace='content'] {
   padding: 16px;
 }
 .staff-shell .cms-records {
+  flex: 1;
   width: 100%;
   border: 0;
 }
