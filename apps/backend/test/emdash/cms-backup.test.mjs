@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
-import { backupCms, restoreCms, importCmsSql, exportCmsSql } from '../../scripts/cms-backup.mjs';
+import { backupCms, restoreCms, importCmsSql, exportCmsSnapshot, exportCmsSql } from '../../scripts/cms-backup.mjs';
 
 test('binding export restores FTS5 row identities, triggers, blobs and embedded NUL text', async () => {
   const source = new DatabaseSync(':memory:');
@@ -36,12 +36,15 @@ test('binding export restores FTS5 row identities, triggers, blobs and embedded 
   try {
     assert.deepEqual(JSON.parse((await exportCmsSql(binding(source))).toString()), { schema: '', data: '' });
     source.exec(
-      'CREATE TABLE content (id INTEGER PRIMARY KEY AUTOINCREMENT, body TEXT, image BLOB); CREATE INDEX body_index ON content(body); CREATE VIRTUAL TABLE search USING fts5(body); CREATE TRIGGER searchable AFTER INSERT ON content BEGIN INSERT INTO search(rowid, body) VALUES (new.id,new.body); END;',
+      'CREATE TABLE content (id INTEGER PRIMARY KEY AUTOINCREMENT, body TEXT, image BLOB); CREATE TABLE media (storage_key TEXT PRIMARY KEY); CREATE INDEX body_index ON content(body); CREATE VIRTUAL TABLE search USING fts5(body); CREATE TRIGGER searchable AFTER INSERT ON content BEGIN INSERT INTO search(rowid, body) VALUES (new.id,new.body); END;',
     );
     source
       .prepare('INSERT INTO content(id,body,image) VALUES (?,?,?)')
       .run(17, 'music\0record', Buffer.from([0, 255, 2]));
-    const dump = await exportCmsSql(binding(source));
+    source.prepare('INSERT INTO media(storage_key) VALUES (?)').run('cover.png');
+    const snapshot = await exportCmsSnapshot(binding(source));
+    assert.deepEqual(snapshot.mediaKeys, ['cover.png']);
+    const dump = snapshot.sql;
     await importCmsSql(dump, binding(destination));
     assert.deepEqual(destination.prepare('SELECT * FROM content').all(), source.prepare('SELECT * FROM content').all());
     assert.equal(destination.prepare("SELECT rowid FROM search WHERE search MATCH 'music'").get().rowid, 17);
@@ -92,6 +95,107 @@ function bucket() {
   };
 }
 
+test('captures one D1 snapshot while CMS content and media change', async () => {
+  const source = bucket();
+  const backups = bucket();
+  await source.put('existing.png', 'existing bytes');
+  let liveSql = Buffer.from('initial state');
+  let sourceLists = 0;
+  let editedBeforeSnapshot = false;
+  const listSource = source.list.bind(source);
+  source.list = async (options) => {
+    sourceLists++;
+    if (sourceLists === 2) {
+      liveSql = Buffer.from('edited after snapshot');
+      await source.put('after-snapshot.png', 'later upload');
+    }
+    return listSource(options);
+  };
+  const getSource = source.get.bind(source);
+  source.get = async (key) => {
+    const object = await getSource(key);
+    if (!editedBeforeSnapshot) {
+      editedBeforeSnapshot = true;
+      liveSql = Buffer.from('edited before snapshot');
+      await source.put('during-capture.png', 'concurrent upload');
+    }
+    return object;
+  };
+  let exportCalls = 0;
+  const result = await backupCms({
+    source,
+    backups,
+    exportSnapshot: async () => {
+      exportCalls++;
+      return { sql: Buffer.from(liveSql), mediaKeys: ['existing.png', 'during-capture.png'] };
+    },
+    environment: 'local',
+    now: new Date('2026-09-09T00:00:00Z'),
+  });
+
+  assert.equal(exportCalls, 1);
+  assert.equal(result.objects, 3);
+  const manifest = JSON.parse(backups.files.get(`cms/local/points/${result.point}.json`).bytes.toString());
+  assert.deepEqual(manifest.media.map(({ key }) => key).sort(), [
+    'after-snapshot.png',
+    'during-capture.png',
+    'existing.png',
+  ]);
+  assert.equal(
+    backups.files.get(`cms/local/blobs/${manifest.database.sha256}`).bytes.toString(),
+    'edited before snapshot',
+  );
+});
+
+test('does not publish a recovery point when snapshot media is missing', async () => {
+  const source = bucket();
+  const backups = bucket();
+  await assert.rejects(
+    backupCms({
+      source,
+      backups,
+      exportSnapshot: async () => ({ sql: Buffer.from('snapshot'), mediaKeys: ['missing.png'] }),
+      environment: 'local',
+      now: new Date('2026-09-10T00:00:00Z'),
+    }),
+    /missing 1 media object/,
+  );
+  assert.equal(
+    [...backups.files.keys()].some((key) => key.includes('/points/')),
+    false,
+  );
+});
+
+test('does not publish when snapshot media changes during capture', async () => {
+  const source = bucket();
+  const backups = bucket();
+  await source.put('image.png', 'before');
+  let changed = false;
+  const getSource = source.get.bind(source);
+  source.get = async (key) => {
+    const object = await getSource(key);
+    if (!changed) {
+      changed = true;
+      await source.put(key, 'after');
+    }
+    return object;
+  };
+  await assert.rejects(
+    backupCms({
+      source,
+      backups,
+      exportSnapshot: async () => ({ sql: Buffer.from('snapshot'), mediaKeys: ['image.png'] }),
+      environment: 'local',
+      now: new Date('2026-09-11T00:00:00Z'),
+    }),
+    /missing 1 media object/,
+  );
+  assert.equal(
+    [...backups.files.keys()].some((key) => key.includes('/points/')),
+    false,
+  );
+});
+
 test('retains seven daily points, restores exact SQL/media, and rejects corrupt bytes before restoring', async () => {
   const source = bucket(),
     backups = bucket(),
@@ -104,7 +208,7 @@ test('retains seven daily points, restores exact SQL/media, and rejects corrupt 
     await backupCms({
       source,
       backups,
-      exportSql: async () => sql,
+      exportSnapshot: async () => ({ sql, mediaKeys: [] }),
       environment: 'local',
       now: new Date(`2026-09-${String(day).padStart(2, '0')}T00:00:00Z`),
     });

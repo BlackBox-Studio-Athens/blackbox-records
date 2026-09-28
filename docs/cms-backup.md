@@ -2,7 +2,7 @@
 
 CMS backups contain the complete D1 schema/data capture (including users, revisions and application publication records) and every media-bucket object with its metadata. They never read or restore `COMMERCE_DB`. JSON content export is not a substitute.
 
-`apps/backend/scripts/cms-backup.mjs` stores immutable, checksum-addressed bytes in a separate private R2 bucket. It retains seven daily recovery points and the latest pre-upgrade point, sharing unchanged bytes. It publishes a recovery point only if database exports before and after media capture match and the media inventory remains unchanged. Concurrent editing makes capture fail; retry after editing stops. The initial recovery objective is at most 24 hours of editorial loss and manual same-day recovery.
+`apps/backend/scripts/cms-backup.mjs` stores immutable, checksum-addressed bytes in a separate private R2 bucket. It retains seven daily recovery points and the latest pre-upgrade point, sharing unchanged bytes. Each point contains one transactional D1 snapshot and every media object referenced by that snapshot. The capture lists and reads media on both sides of the D1 snapshot, so content edits and uploads can continue while it runs; media added after the snapshot may be retained as unreferenced extras. A missing or changed object referenced by the snapshot prevents publication of the recovery point. The initial recovery objective is at most 24 hours of editorial loss and manual same-day recovery.
 
 ## Local use
 
@@ -28,7 +28,7 @@ Before enabling it:
 3. Supply `CMS_BACKUP_API_TOKEN` through GitHub secrets with the permissions needed for CMS D1 export, source R2 reads and backup R2 writes. Do not give it commerce restore duties or expose it to browser builds.
 4. Run one bounded manual pilot, inspect actual D1/R2 usage and retained bytes, then enable the daily job. Stop scheduling if quota headroom is lost. A configured flag is not itself usage evidence.
 
-Each run captures schema and data before and after media capture (two bounded database captures), lists source media twice, reads each source object once, checks retained backup blobs and writes changed bytes. Retention also reads the kept manifests and deletes unreferenced backup objects. Budget those operations and failed attempts; there are no automatic inline retries. Seven points do not necessarily require seven full copies, but changed large media still needs measured storage headroom.
+Each run captures schema, data, and media storage keys in one bounded D1 batch, lists source media twice around that snapshot, and reads each unchanged object once. It checks that every media key in the D1 snapshot has a verified backup blob before publishing the manifest. Retention also reads the kept manifests and deletes unreferenced backup objects. Budget those operations and failed attempts; there are no automatic inline retries. Seven points do not necessarily require seven full copies, but changed large media still needs measured storage headroom.
 
 ## Isolated recovery
 

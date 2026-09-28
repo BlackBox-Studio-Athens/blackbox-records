@@ -13,7 +13,7 @@ const backend = fileURLToPath(new URL('../', import.meta.url));
 const resources = JSON.parse(await readFile(new URL('../cms-resources.json', import.meta.url), 'utf8'));
 
 // Native hosted D1 export rejects FTS5. Capture through the existing binding without modifying search tables.
-export async function exportCmsSql(database) {
+export async function exportCmsSnapshot(database) {
   const quote = (name) => '"' + name.replaceAll('"', '""') + '"';
   const { results: listed } = await database.prepare('PRAGMA table_list').all();
   const tables = listed
@@ -42,9 +42,12 @@ export async function exportCmsSql(database) {
       const col = quote(name);
       return `CASE WHEN typeof(${col})='text' THEN 'CAST(X''' || hex(${col}) || ''' AS TEXT)' ELSE quote(${col}) END`;
     });
+    const mediaKey = table.name === 'media' && fields.includes('storage_key');
+    if (mediaKey) expressions.push(quote('storage_key'));
     return {
       table,
       fields,
+      mediaKey,
       statement: database.prepare(
         `SELECT ${expressions.map((e, i) => `${e} AS ${quote(String(i))}`).join(',')} FROM ${quote(table.name)} LIMIT 10001`,
       ),
@@ -52,6 +55,19 @@ export async function exportCmsSql(database) {
   });
   // ponytail: one bounded batch for this small CMS; stream a frozen export if it outgrows 10,000 rows.
   const results = queries.length ? await database.batch(queries.map((q) => q.statement)) : [];
+  const mediaQueryIndex = queries.findIndex((q) => q.mediaKey);
+  const mediaKeys =
+    mediaQueryIndex < 0
+      ? []
+      : [
+          ...new Set(
+            results[mediaQueryIndex].results.map((row) => row[String(queries[mediaQueryIndex].fields.length)]),
+          ),
+        ];
+  assert.ok(
+    mediaKeys.every((key) => typeof key === 'string' && key.length > 0),
+    'CMS media storage key is invalid.',
+  );
   let count = 0;
   const data = results
     .flatMap((result, index) => {
@@ -69,7 +85,14 @@ export async function exportCmsSql(database) {
       ];
     })
     .join('\n');
-  return Buffer.from(JSON.stringify({ schema: definitions.map((s) => s.sql + ';').join('\n'), data }));
+  return {
+    sql: Buffer.from(JSON.stringify({ schema: definitions.map((s) => s.sql + ';').join('\n'), data })),
+    mediaKeys,
+  };
+}
+
+export async function exportCmsSql(database) {
+  return (await exportCmsSnapshot(database)).sql;
 }
 
 async function list(bucket, prefix = '') {
@@ -87,7 +110,7 @@ async function list(bucket, prefix = '') {
 export async function backupCms({
   source,
   backups,
-  exportSql,
+  exportSnapshot,
   environment,
   kind = 'daily',
   maxBytes = 256 * 1024 * 1024,
@@ -96,36 +119,62 @@ export async function backupCms({
   assert.ok(['local', 'uat', 'prd'].includes(environment));
   assert.ok(['daily', 'pre-upgrade'].includes(kind));
   const prefix = `cms/${environment}/`;
-  const objects = await list(source);
-  const sql = await exportSql();
-  let bytes = sql.byteLength;
-  assert.ok(bytes + objects.reduce((sum, item) => sum + item.size, 0) <= maxBytes, 'Backup exceeds the byte budget.');
+  const media = new Map();
+  const etags = new Map();
+  const changed = new Set();
+  let bytes = 0;
   async function store(body) {
     const sha256 = hash(body);
     const key = `${prefix}blobs/${sha256}`;
     if (!(await backups.head(key))) await backups.put(key, body);
     return { sha256, bytes: body.byteLength };
   }
-  const database = await store(sql);
-  const media = [];
-  for (const item of objects) {
-    const object = await source.get(item.key);
-    assert.ok(object && object.etag === item.etag, 'Media changed during backup.');
-    const body = new Uint8Array(await object.arrayBuffer());
-    bytes += body.byteLength;
-    assert.ok(bytes <= maxBytes, 'Backup exceeds the byte budget.');
-    media.push({
-      key: item.key,
-      ...(await store(body)),
-      httpMetadata: object.httpMetadata,
-      customMetadata: object.customMetadata,
-    });
+  async function capture(items) {
+    for (const item of items) {
+      if (etags.has(item.key)) {
+        if (etags.get(item.key) !== item.etag) changed.add(item.key);
+        continue;
+      }
+      assert.ok(media.size < 10000, 'Backup exceeds the object budget.');
+      const object = await source.get(item.key);
+      if (!object) continue;
+      if (object.etag !== item.etag) {
+        changed.add(item.key);
+        continue;
+      }
+      const body = new Uint8Array(await object.arrayBuffer());
+      bytes += body.byteLength;
+      assert.ok(bytes <= maxBytes, 'Backup exceeds the byte budget.');
+      media.set(item.key, {
+        key: item.key,
+        ...(await store(body)),
+        httpMetadata: object.httpMetadata,
+        customMetadata: object.customMetadata,
+      });
+      etags.set(item.key, item.etag);
+    }
   }
-  const identity = (items) => items.map(({ key, etag, size }) => ({ key, etag, size }));
-  assert.deepEqual(identity(await list(source)), identity(objects), 'Media changed during backup.');
-  assert.equal(hash(await exportSql()), database.sha256, 'CMS changed during backup; capture again.');
+  await capture(await list(source));
+  const snapshot = await exportSnapshot();
+  bytes += snapshot.sql.byteLength;
+  assert.ok(bytes <= maxBytes, 'Backup exceeds the byte budget.');
+  const database = await store(snapshot.sql);
+  await capture(await list(source));
+  const missingMedia = snapshot.mediaKeys.filter((key) => !media.has(key) || changed.has(key));
+  assert.equal(
+    missingMedia.length,
+    0,
+    `CMS backup is missing ${missingMedia.length} media object(s) referenced by its D1 snapshot.`,
+  );
   const point = `${now.toISOString().slice(0, 10)}-${kind}`;
-  const manifest = { version: 2, environment, kind, createdAt: now.toISOString(), database, media };
+  const manifest = {
+    version: 2,
+    environment,
+    kind,
+    createdAt: now.toISOString(),
+    database,
+    media: [...media.values()],
+  };
   await backups.put(`${prefix}points/${point}.json`, JSON.stringify(manifest));
   // Seven daily points plus the last pre-upgrade point; shared immutable bytes are stored once.
   const points = (await list(backups, `${prefix}points/`)).reverse();
@@ -147,7 +196,7 @@ export async function backupCms({
   }
   for (const blob of await list(backups, `${prefix}blobs/`))
     if (!retained.has(blob.key)) await backups.delete(blob.key);
-  return { point, objects: media.length, bytes };
+  return { point, objects: media.size, bytes };
 }
 
 export async function restoreCms({ backups, destination, importSql, environment, point }) {
@@ -347,7 +396,7 @@ async function main() {
           environment,
           kind: values.kind,
           maxBytes,
-          exportSql: () => exportCmsSql(proxy.env.CMS_DB),
+          exportSnapshot: () => exportCmsSnapshot(proxy.env.CMS_DB),
         });
     console.log(JSON.stringify({ environment, mode: values.mode, ...result }));
   } finally {
