@@ -15,5 +15,5 @@
 
 ## 3. Hosted rollout
 
-- [ ] 3.1 Record UAT version/history, reviewed Free-tier budget, verified CMS backups and accepted pointer; run existing release and bounded hosted acceptance. Confirmed migrations 088/089 do not require an editorial pause.
+- [x] 3.1 Record UAT version/history, reviewed Free-tier budget, verified CMS backups and accepted pointer; run existing release and bounded hosted acceptance. Release 36458345173 passed; migrations 088/089, staff editor/preview and unchanged accepted pointer were verified. See validation.md.
 - [ ] 3.2 After explicit PRD promotion approval, verify PRD backups/history and promote the accepted immutable candidate; record hosted checks without changing catalog or launch gates.
