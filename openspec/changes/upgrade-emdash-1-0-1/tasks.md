@@ -11,9 +11,9 @@
 - [x] 2.1 Extend the existing copied-state upgrade smoke for migrations 088/089, scheduling instants, seed completion and retained state; verify migration and two starts.
 - [x] 2.2 Verify fresh initialization, unsafe URL rejection, native Artist references, rich text, media, exact-revision publication and preview using existing suites and focused added cases.
 - [x] 2.3 Update migration guidance and changelog applicability evidence; validate the OpenSpec change strictly.
-- [ ] 2.4 Finish unchanged-tree pnpm validate after concurrent backup work settles. Editor checks, affected tests and canonical builds passed; both local validation lanes passed twice, but concurrent source additions invalidated completion. See validation.md.
+- [x] 2.4 Verify unchanged-tree local validation. The later successful backup-chat run exactly matches the upgrade implementation fingerprint; reuse that evidence and run only the documentation checkpoint for rollout-note changes. See validation.md.
 
 ## 3. Hosted rollout
 
-- [ ] 3.1 Record UAT version/history, reviewed Free-tier budget, verified CMS backups and editorial write pause; run existing release and bounded hosted acceptance.
+- [ ] 3.1 Record UAT version/history, reviewed Free-tier budget, verified CMS backups and accepted pointer; run existing release and bounded hosted acceptance. Confirmed migrations 088/089 do not require an editorial pause.
 - [ ] 3.2 After explicit PRD promotion approval, verify PRD backups/history and promote the accepted immutable candidate; record hosted checks without changing catalog or launch gates.

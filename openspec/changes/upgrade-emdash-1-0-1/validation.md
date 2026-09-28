@@ -36,6 +36,16 @@ The next validation run also passed both lanes but was invalidated by the concur
 
 ## Hosted gates
 
-No UAT or PRD mutation has been performed. The current UAT release observed during preparation is run 36436534684 at the baseline SHA above; it is not an upgrade candidate.
+The backup change was released separately as 20f223cd11e2814130b8717d734c7a14f3ee9d96. Its UAT candidate 36446508852 and PRD promotion 36449141162 still contain EmDash 0.41.0. The upgrade implementation is committed locally as a0eecccca619070db7f33d2cef55206de5787d29; PRD upgrade approval has not been given.
 
-UAT still requires its editorial pause, current account-wide Free-tier budget, target migration history, stored-URL preflight, verified database/media backup and accepted-pointer capture before rollout. PRD requires separate explicit approval of the accepted immutable upgrade candidate. Catalog mutation and shopper launch remain separate gates. Local results establish none of these hosted prerequisites.
+The later successful `mode: local` run `.codex-artifacts/validation/2026-09-28T15-45-27-359Z-60012/summary.json` has matching before/after fingerprint `7fb68c2d1f05b0bab80e70ea941fbe6964f1441f8a9c86113b91ebce16ef2b01`. On September 28 at 17:18 UTC, `sourceIdentity` confirmed that the upgrade implementation tree exactly matched it. The commit changes Git identity, not the tested file contents; code tests are reused. Subsequent rollout-note edits receive a documentation-only local checkpoint against that implementation commit.
+
+UAT preflight on September 28 around 17:20 UTC:
+
+- Core history ends at 087; there are no cron tasks and no seed-complete marker. Expected pending core migrations are exactly 088 and 089. Neither rewrites editorial content; the timestamp update compares its original value and marker insertion ignores an existing marker. No editorial pause is needed for this confirmed path.
+- Backup workflow 36447631911 succeeded. Its UAT capture completed at 16:05:55 UTC with point `2026-09-28-pre-upgrade`, 579 objects and 434,192,751 bytes, within the documented 24-hour recovery objective. Reuse this verified capture instead of repeating it. The backup implementation supports edits during capture.
+- The UAT accepted pointer is publication `137fa676-688f-491d-a873-cce7f98dfce9`, generation 116, snapshot SHA-256 `20338ace8a5d2c2a7ccb7b091fae423905fcf3262d851936a792bba7e665c1e2`. The full pointer is retained in `.codex-artifacts/emdash-1.0.1-uat-pointer-before.json`.
+- The two native URL fields are Distro Bandcamp/Tidal URLs. All 278 nonempty values across 103 content rows and 206 revisions passed the installed 1.0.1 URL validator. Only IDs/field names would be reported for rejection; no content was rewritten. Results are in `.codex-artifacts/emdash-1.0.1-uat-url-report.json`.
+- Account-wide dashboard usage: Worker requests 21,968/100,000 today; D1 reads 412.56k/5M and writes 14.18k/100k today; R2 Class A 2.65k/1M, Class B 96.81k/10M and storage 1.5/10 GB. Reserve at most 2,000 Worker requests, 50,000 D1 reads, 5,000 D1 writes, 100 R2 Class A and 2,500 Class B operations for this single release/preflight/acceptance, including preparation reads and provider smoke. This leaves over half of every operation allowance for normal service. Do not automatically retry a quota failure or start bulk imports. No new resources, KV, sessions or paid capacity are introduced.
+
+UAT release results will be recorded after the existing pipeline finishes. PRD requires separate explicit approval of the accepted immutable upgrade candidate. Catalog mutation and shopper launch remain separate gates.
