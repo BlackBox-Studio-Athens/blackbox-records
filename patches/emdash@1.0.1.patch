@@ -1,7 +1,8 @@
-diff --git a/dist/api-CXwQkV_m.mjs b/dist/api-CXwQkV_m.mjs
---- a/dist/api-CXwQkV_m.mjs
-+++ b/dist/api-CXwQkV_m.mjs
-@@ -1347,12 +1347,14 @@
+diff --git a/dist/api-BBZlif0y.mjs b/dist/api-BBZlif0y.mjs
+index 46689d8013572ada54c91dfa0ee14f34ee11d83d..1d19fad679b6700c487f92e0d24bfbcd90a073bc 100644
+--- a/dist/api-BBZlif0y.mjs
++++ b/dist/api-BBZlif0y.mjs
+@@ -1402,12 +1402,14 @@ async function handleContentDuplicate(db, collection, id, authorId) {
  /**
  * Delete content item (soft delete - moves to trash)
  */
@@ -18,7 +19,7 @@ diff --git a/dist/api-CXwQkV_m.mjs b/dist/api-CXwQkV_m.mjs
  			if (deleted) await new EntryLockRepository(trx).releaseEntry(collection, resolvedId);
  			return {
  				id: resolvedId,
-@@ -1362,8 +1364,8 @@
+@@ -1417,8 +1419,8 @@ async function handleContentDelete(db, collection, id) {
  		if (!result.deleted) return {
  			success: false,
  			error: {
@@ -30,18 +31,19 @@ diff --git a/dist/api-CXwQkV_m.mjs b/dist/api-CXwQkV_m.mjs
  		};
  		return {
 diff --git a/dist/astro/routes/api/content/_collection_/_id_.mjs b/dist/astro/routes/api/content/_collection_/_id_.mjs
+index 0731d7a752e9c6eb2e14855b2c671be45e00aff3..54a2ae950648b1e818e9bd442c5273c5f1474142 100644
 --- a/dist/astro/routes/api/content/_collection_/_id_.mjs
 +++ b/dist/astro/routes/api/content/_collection_/_id_.mjs
-@@ -8,7 +8,7 @@
- import "../../../../../site-settings-NGzdrt7O.mjs";
- import { n as mapErrorStatus } from "../../../../../errors-BN1QAnEY.mjs";
- import { a as unwrapResult, t as apiError } from "../../../../../error-BfsNNrIE.mjs";
--import { n as parseBody, t as isParseError } from "../../../../../parse-CORGGhHf.mjs";
-+import { n as parseBody, r as parseOptionalBody, t as isParseError } from "../../../../../parse-CORGGhHf.mjs";
- import "../../../../../redirects-BjTwDTsV.mjs";
- import { Kt as contentUpdateBody } from "../../../../../entry-lock-BaRBHCsH.mjs";
- import "../../../../../media-OEIQ3bVc.mjs";
-@@ -87,7 +87,9 @@
+@@ -9,7 +9,7 @@ import { n as mapErrorStatus } from "../../../../../errors-CNvATh_7.mjs";
+ import "../../../../../settings-CwcrX-Ay.mjs";
+ import "../../../../../site-settings-B7vGFRDT.mjs";
+ import { a as unwrapResult, t as apiError } from "../../../../../error-DIYXAVk4.mjs";
+-import { n as parseBody, t as isParseError } from "../../../../../parse-5Y0W39xR.mjs";
++import { n as parseBody, r as parseOptionalBody, t as isParseError } from "../../../../../parse-5Y0W39xR.mjs";
+ import "../../../../../redirects-1nhdEaTq.mjs";
+ import { Kt as contentUpdateBody } from "../../../../../entry-lock-yIkBduqJ.mjs";
+ import "../../../../../media-Bs6qmlVl.mjs";
+@@ -88,7 +88,9 @@ const PUT = async ({ params, request, locals, cache }) => {
  	if (cache?.enabled && result.liveContentChanged !== false) await cache.invalidate({ tags: [collection, resolvedId] });
  	return unwrapResult(result);
  };
@@ -52,7 +54,7 @@ diff --git a/dist/astro/routes/api/content/_collection_/_id_.mjs b/dist/astro/ro
  	const { emdash, user } = locals;
  	const collection = params.collection;
  	const id = params.id;
-@@ -102,7 +104,7 @@
+@@ -103,7 +105,7 @@ const DELETE = async ({ params, locals, url, cache }) => {
  	const resolvedId = typeof deleteItem?.id === "string" ? deleteItem.id : id;
  	const refusal = await claimEntryLockForWrite(emdash.db, collection, resolvedId, user.id, { override: url.searchParams.get("overrideLock") === "true" });
  	if (refusal) return apiError(refusal.code, refusal.message, mapErrorStatus(refusal.code), { ...refusal.details });
@@ -61,10 +63,11 @@ diff --git a/dist/astro/routes/api/content/_collection_/_id_.mjs b/dist/astro/ro
  	if (!result.success) return unwrapResult(result);
  	if (cache?.enabled) await cache.invalidate({ tags: [collection, resolvedId] });
  	return unwrapResult(result);
-diff --git a/dist/config-D3d5Qudq.d.mts b/dist/config-D3d5Qudq.d.mts
---- a/dist/config-D3d5Qudq.d.mts
-+++ b/dist/config-D3d5Qudq.d.mts
-@@ -1013,7 +1013,7 @@
+diff --git a/dist/config-BCM5sQP7.d.mts b/dist/config-BCM5sQP7.d.mts
+index 2a9e9900b9e7cc8c2beff931dd8d6e7fe9b3c00f..ad23a0cc57bfa7122152cf9d3caf78806ae62e85 100644
+--- a/dist/config-BCM5sQP7.d.mts
++++ b/dist/config-BCM5sQP7.d.mts
+@@ -1013,7 +1013,7 @@ declare function handleContentDuplicate(db: Kysely<Database>, collection: string
  /**
   * Delete content item (soft delete - moves to trash)
   */
@@ -73,7 +76,7 @@ diff --git a/dist/config-D3d5Qudq.d.mts b/dist/config-D3d5Qudq.d.mts
    deleted: true;
    id: string;
  }>>;
-@@ -3323,7 +3323,7 @@
+@@ -3327,7 +3327,7 @@ declare class EmDashRuntime {
      success: true;
      data: ContentResponse;
    }>;
@@ -82,10 +85,11 @@ diff --git a/dist/config-D3d5Qudq.d.mts b/dist/config-D3d5Qudq.d.mts
      success: false;
      error: {
        code: string;
-diff --git a/dist/content-CbnufDsM.mjs b/dist/content-CbnufDsM.mjs
---- a/dist/content-CbnufDsM.mjs
-+++ b/dist/content-CbnufDsM.mjs
-@@ -1021,14 +1021,15 @@
+diff --git a/dist/content-RzEXY3QX.mjs b/dist/content-RzEXY3QX.mjs
+index 395bd93899b3a63fa9a99698d746d93e4dc2af06..f365d48ce360a7e7b8607d7aa83c1bfefedeb825 100644
+--- a/dist/content-RzEXY3QX.mjs
++++ b/dist/content-RzEXY3QX.mjs
+@@ -1023,14 +1023,15 @@ var ContentRepository = class {
  	/**
  	* Delete content (soft delete - moves to trash)
  	*/
@@ -103,10 +107,11 @@ diff --git a/dist/content-CbnufDsM.mjs b/dist/content-CbnufDsM.mjs
  		`.execute(this.db)).numAffectedRows ?? 0n) > 0n;
  		if (changed) invalidateCollectionCache(type);
  		return changed;
-diff --git a/dist/emdash-runtime-CrzxJFmF.mjs b/dist/emdash-runtime-CrzxJFmF.mjs
---- a/dist/emdash-runtime-CrzxJFmF.mjs
-+++ b/dist/emdash-runtime-CrzxJFmF.mjs
-@@ -2725,7 +2725,7 @@
+diff --git a/dist/emdash-runtime-BakQ6io7.mjs b/dist/emdash-runtime-BakQ6io7.mjs
+index 8beff2d2dd8c11ba739d5bdc076c0a8a418c73c7..3124a54aec14f5a625fc8bb45a0c5aa91199c824 100644
+--- a/dist/emdash-runtime-BakQ6io7.mjs
++++ b/dist/emdash-runtime-BakQ6io7.mjs
+@@ -2732,7 +2732,7 @@ var EmDashRuntime = class EmDashRuntime {
  					}
  				}
  				const revisionRepo = new RevisionRepository(this.db);
@@ -115,7 +120,7 @@ diff --git a/dist/emdash-runtime-CrzxJFmF.mjs b/dist/emdash-runtime-CrzxJFmF.mjs
  				for (let attempt = 0; existing && attempt < MAX_DRAFT_STAGE_ATTEMPTS; attempt++) {
  					let baseData;
  					if (existing.draftRevisionId) baseData = (await revisionRepo.findById(existing.draftRevisionId))?.data ?? existing.data;
-@@ -2838,7 +2838,7 @@
+@@ -2846,7 +2846,7 @@ var EmDashRuntime = class EmDashRuntime {
  		};
  		return hydrated;
  	}
@@ -124,7 +129,7 @@ diff --git a/dist/emdash-runtime-CrzxJFmF.mjs b/dist/emdash-runtime-CrzxJFmF.mjs
  		if (this.hooks.hasHooks("content:beforeDelete")) {
  			const { allowed } = await this.hooks.runContentBeforeDelete(id, collection);
  			if (!allowed) return {
-@@ -2850,7 +2850,7 @@
+@@ -2858,7 +2858,7 @@ var EmDashRuntime = class EmDashRuntime {
  			};
  		}
  		const policyRejectionRevision = await this.getScheduledPolicyRejectionRevision(collection, id);
@@ -133,10 +138,11 @@ diff --git a/dist/emdash-runtime-CrzxJFmF.mjs b/dist/emdash-runtime-CrzxJFmF.mjs
  		if (result.success) {
  			await this.clearScheduledPolicyRejection(collection, result.data.id, policyRejectionRevision);
  			await this.refreshContentUsageAfterSuccessfulWrite(collection, [result.data.id]);
-diff --git a/dist/storage-query-B-cWcTjJ.d.mts b/dist/storage-query-B-cWcTjJ.d.mts
---- a/dist/storage-query-B-cWcTjJ.d.mts
-+++ b/dist/storage-query-B-cWcTjJ.d.mts
-@@ -186,7 +186,7 @@
+diff --git a/dist/storage-query-CdVF2bng.d.mts b/dist/storage-query-CdVF2bng.d.mts
+index 5134577069d2d2d09d4c66f772d3c1244e0826bf..997bc0484da37ecb805ab90e7dd8c3c847b8470c 100644
+--- a/dist/storage-query-CdVF2bng.d.mts
++++ b/dist/storage-query-CdVF2bng.d.mts
+@@ -195,7 +195,7 @@ declare class ContentRepository {
    /**
     * Delete content (soft delete - moves to trash)
     */
@@ -146,9 +152,10 @@ diff --git a/dist/storage-query-B-cWcTjJ.d.mts b/dist/storage-query-B-cWcTjJ.d.m
     * Restore content from trash
     *
 diff --git a/src/api/handlers/content.ts b/src/api/handlers/content.ts
+index 1593ff09bee40971a67d9baf8716fd3b3005c3ef..e189c0509fa129adc0c6cde5e7bd69025893dc1c 100644
 --- a/src/api/handlers/content.ts
 +++ b/src/api/handlers/content.ts
-@@ -1820,12 +1820,15 @@
+@@ -1832,12 +1832,15 @@ export async function handleContentDelete(
  	db: Kysely<Database>,
  	collection: string,
  	id: string,
@@ -165,7 +172,7 @@ diff --git a/src/api/handlers/content.ts b/src/api/handlers/content.ts
  			if (deleted) {
  				await new EntryLockRepository(trx).releaseEntry(collection, resolvedId);
  			}
-@@ -1836,8 +1839,8 @@
+@@ -1848,8 +1851,8 @@ export async function handleContentDelete(
  			return {
  				success: false,
  				error: {
@@ -177,9 +184,10 @@ diff --git a/src/api/handlers/content.ts b/src/api/handlers/content.ts
  			};
  		}
 diff --git a/src/astro/routes/api/content/[collection]/[id].ts b/src/astro/routes/api/content/[collection]/[id].ts
+index 39cddb51f6bc6123573c0a159165940f4f587e83..d59b7458f96dce137e57f1087ec0947a035046db 100644
 --- a/src/astro/routes/api/content/[collection]/[id].ts
 +++ b/src/astro/routes/api/content/[collection]/[id].ts
-@@ -12,7 +12,7 @@
+@@ -12,7 +12,7 @@ import type { APIRoute } from "astro";
  import { requirePerm, requireOwnerPerm } from "#api/authorize.js";
  import { apiError, mapErrorStatus, unwrapResult } from "#api/error.js";
  import { claimEntryLockForWrite } from "#api/handlers/entry-lock.js";
@@ -188,7 +196,7 @@ diff --git a/src/astro/routes/api/content/[collection]/[id].ts b/src/astro/route
  import { contentUpdateBody } from "#api/schemas.js";
  
  export const prerender = false;
-@@ -150,7 +150,9 @@
+@@ -150,7 +150,9 @@ export const PUT: APIRoute = async ({ params, request, locals, cache }) => {
  	return unwrapResult(result);
  };
  
@@ -199,7 +207,7 @@ diff --git a/src/astro/routes/api/content/[collection]/[id].ts b/src/astro/route
  	const { emdash, user } = locals;
  	const collection = params.collection!;
  	const id = params.id!;
-@@ -199,7 +201,7 @@
+@@ -199,7 +201,7 @@ export const DELETE: APIRoute = async ({ params, locals, url, cache }) => {
  		});
  	}
  
@@ -209,9 +217,10 @@ diff --git a/src/astro/routes/api/content/[collection]/[id].ts b/src/astro/route
  	if (!result.success) return unwrapResult(result);
  
 diff --git a/src/database/repositories/content.ts b/src/database/repositories/content.ts
+index e1bb69c2287b1e496fbb557bbeb5eed0ca028509..fd7eb5174b9a6855f30a0698628b74385b9186e4 100644
 --- a/src/database/repositories/content.ts
 +++ b/src/database/repositories/content.ts
-@@ -1541,15 +1541,16 @@
+@@ -1548,15 +1548,16 @@ export class ContentRepository {
  	/**
  	 * Delete content (soft delete - moves to trash)
  	 */
@@ -231,9 +240,10 @@ diff --git a/src/database/repositories/content.ts b/src/database/repositories/co
  
  		const changed = (result.numAffectedRows ?? 0n) > 0n;
 diff --git a/src/emdash-runtime.ts b/src/emdash-runtime.ts
+index d2694fb440cd9dfd82a0bbe4693c7ab31c916631..9b4ca6ea54e9007e3208dd2758b8debf1135001d 100644
 --- a/src/emdash-runtime.ts
 +++ b/src/emdash-runtime.ts
-@@ -3717,7 +3717,7 @@
+@@ -3726,7 +3726,7 @@ export class EmDashRuntime {
  				}
  
  				const revisionRepo = new RevisionRepository(this.db);
@@ -242,7 +252,7 @@ diff --git a/src/emdash-runtime.ts b/src/emdash-runtime.ts
  
  				for (let attempt = 0; existing && attempt < MAX_DRAFT_STAGE_ATTEMPTS; attempt++) {
  					let baseData: Record<string, unknown>;
-@@ -3915,7 +3915,7 @@
+@@ -3930,7 +3930,7 @@ export class EmDashRuntime {
  		return hydrated;
  	}
  
@@ -251,7 +261,7 @@ diff --git a/src/emdash-runtime.ts b/src/emdash-runtime.ts
  		// Run beforeDelete hooks (trusted plugins)
  		if (this.hooks.hasHooks("content:beforeDelete")) {
  			const { allowed } = await this.hooks.runContentBeforeDelete(id, collection);
-@@ -3933,7 +3933,7 @@
+@@ -3948,7 +3948,7 @@ export class EmDashRuntime {
  		const policyRejectionRevision = await this.getScheduledPolicyRejectionRevision(collection, id);
  
  		// Delete the content

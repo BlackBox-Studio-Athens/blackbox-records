@@ -15,15 +15,19 @@ allowBuilds:
   workerd: true
 minimumReleaseAgeExclude:
   - '@cloudflare/workers-types@5.20260926.1'
-  - '@emdash-cms/admin@0.41.0'
-  - '@emdash-cms/auth@0.41.0'
-  - '@emdash-cms/blocks@0.41.0'
-  - '@emdash-cms/cloudflare@0.41.0'
-  - '@emdash-cms/gutenberg-to-portable-text@0.41.0'
+  - '@emdash-cms/admin@1.0.1'
+  - '@emdash-cms/auth@1.0.1'
+  - '@emdash-cms/blocks@1.0.1'
+  - '@emdash-cms/cloudflare@1.0.1'
+  - '@emdash-cms/gutenberg-to-portable-text@1.0.1'
   - '@types/node@24.19.0'
-  - emdash@0.41.0
+  - emdash@1.0.1
   - miniflare@5.20260925.0-alpha
   - resend@6.30.0
   - wrangler@4.141.0
+  - '@emdash-cms/plugin-types@0.5.0'
+  - '@emdash-cms/registry-client@0.7.0'
+  - '@emdash-cms/registry-lexicons@0.7.0'
+  - '@emdash-cms/registry-verification@0.3.3'
 patchedDependencies:
-  emdash@0.41.0: patches/emdash@0.41.0.patch
+  emdash@1.0.1: patches/emdash@1.0.1.patch

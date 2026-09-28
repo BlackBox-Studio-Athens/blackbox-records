@@ -9,7 +9,7 @@ export async function readRevisionContent(
   revision: { collection: string; entryId: string; data: Record<string, unknown> },
 ) {
   if (revision.collection !== 'releases' || !Object.hasOwn(revision.data, '_references')) return revision.data;
-  const { _references, ...data } = revision.data;
+  const { _references, _referencesBaseline, ...data } = revision.data;
   const references = z
     .object({ artist: z.array(z.string().min(1)).max(1).optional() })
     .strict()

@@ -74,6 +74,37 @@ try {
     }
   }
 
+  const publicationResponse = await fetch('http://127.0.0.1:8799/_emdash/api/blackbox/publications', {
+    method: 'POST',
+    headers: { Origin: 'http://127.0.0.1:8799', 'X-EmDash-Request': '1', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: crypto.randomUUID(), requestedRevision: 'pre-migration-check' }),
+  });
+  assert.equal(publicationResponse.status, 503, 'Unapplied application migrations must fail closed without bootstrap');
+  assert.deepEqual(await publicationResponse.json(), {
+    type: '/problems/publication_unavailable',
+    title: 'Publication unavailable.',
+    status: 503,
+    detail: 'Publication is temporarily unavailable.',
+    code: 'publication_unavailable',
+    error: 'PUBLICATION_UNAVAILABLE',
+  });
+  const migrate = (...args) => {
+    const result = spawnSync(
+      process.execPath,
+      [fileURLToPath(new URL('scripts/migrate-cms-application.mjs', root)), '--persist-to', localState, ...args],
+      { encoding: 'utf8', env: { ...process.env, WRANGLER_SEND_METRICS: 'false' } },
+    );
+    assert.equal(result.status, 0, result.stdout + result.stderr);
+    return result.stdout;
+  };
+  assert.deepEqual(JSON.parse(migrate()).pending, [
+    '0001_publications.sql',
+    '0002_publication_dispatch.sql',
+    '0003_local_publication_receipt.sql',
+    '0004_runtime_publication.sql',
+  ]);
+  migrate('--apply');
+
   // Incomplete new editorial entries can be discarded without publishing or deleting media.
   const disposableArtist = await request('/content/artists', 'POST', {
     slug: 'discard-artist',
@@ -87,8 +118,10 @@ try {
   });
   assert.equal(revised.status, 200, JSON.stringify(revised.body));
   const revisedList = await request(`/blackbox/workspace?collection=artists&id=${disposable.item.id}`);
+  assert.equal(revisedList.status, 200, JSON.stringify(revisedList.body));
   assert.equal(revisedList.body.data.items[0].data.title, 'Revised private draft');
   const changesList = await request('/blackbox/workspace?view=changes&collection=artists');
+  assert.equal(changesList.status, 200, JSON.stringify(changesList.body));
   assert.equal(
     changesList.body.data.items.find((item) => item.id === disposable.item.id)?.data.title,
     'Revised private draft',
@@ -212,11 +245,29 @@ try {
       const linked = await request(idPath);
       assert.equal(linked.body.data.item.data.artist, artistId, 'Saved release retains its native Artist reference');
       assert.equal(linked.body.data.item.liveRevisionId, null, 'Saving the Artist reference does not publish');
+      for (const unsafe of [
+        'javascript:alert(1)',
+        'data:text/html,unsafe',
+        '//evil.example',
+        '/\\evil.example',
+        '/\t/evil.example',
+      ]) {
+        const rejected = await request(idPath, 'PUT', {
+          _rev: linked.body.data._rev,
+          data: { ...data, bandcamp_embed_url: unsafe },
+        });
+        assert.ok(rejected.status >= 400 && rejected.status < 500, JSON.stringify(rejected));
+        assert.equal(
+          (await request(idPath)).body.data._rev,
+          linked.body.data._rev,
+          'Unsafe URLs must not partially save',
+        );
+      }
     }
-    if (!['news', 'socials'].includes(collection)) {
+    if (!['artists', 'releases', 'news', 'socials'].includes(collection)) {
       const rejected = await request(idPath, 'DELETE', { _rev: saved.body.data._rev, confirm: true });
       assert.ok(rejected.status >= 400 && rejected.status < 500, JSON.stringify(rejected));
-    } else {
+    } else if (['news', 'socials'].includes(collection)) {
       for (const body of [
         { confirm: true },
         { _rev: saved.body.data._rev },
@@ -291,35 +342,6 @@ try {
   assert.deepEqual(loaded.snapshot, snapshot.snapshot);
   assert.equal(loaded.media.size, 1);
   await assert.rejects(writeCmsSnapshot(snapshot, join(localState, 'public-snapshot'), 'local'), { code: 'EEXIST' });
-  const publicationResponse = await fetch('http://127.0.0.1:8799/_emdash/api/blackbox/publications', {
-    method: 'POST',
-    headers: { Origin: 'http://127.0.0.1:8799', 'X-EmDash-Request': '1', 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: crypto.randomUUID(), requestedRevision: snapshot.snapshot.records[0].revisionId }),
-  });
-  assert.equal(publicationResponse.status, 503, 'Unapplied application migrations must fail closed without bootstrap');
-  assert.deepEqual(await publicationResponse.json(), {
-    type: '/problems/publication_unavailable',
-    title: 'Publication unavailable.',
-    status: 503,
-    detail: 'Publication is temporarily unavailable.',
-    code: 'publication_unavailable',
-    error: 'PUBLICATION_UNAVAILABLE',
-  });
-  const migrate = (...args) => {
-    const result = spawnSync(
-      process.execPath,
-      [fileURLToPath(new URL('scripts/migrate-cms-application.mjs', root)), '--persist-to', localState, ...args],
-      { encoding: 'utf8', env: { ...process.env, WRANGLER_SEND_METRICS: 'false' } },
-    );
-    assert.equal(result.status, 0, result.stdout + result.stderr);
-    return result.stdout;
-  };
-  assert.deepEqual(JSON.parse(migrate()).pending, [
-    '0001_publications.sql',
-    '0002_publication_dispatch.sql',
-    '0003_local_publication_receipt.sql',
-    '0004_runtime_publication.sql',
-  ]);
   const dateState = await getPlatformProxy({
     configPath: fileURLToPath(new URL('.emdash/wrangler.application-local.json', root)),
     persist: { path: join(localState, 'v3') },

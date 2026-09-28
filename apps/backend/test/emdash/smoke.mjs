@@ -33,6 +33,23 @@ await once(barrier, 'listening');
 let worker;
 const localState = await mkdtemp(fileURLToPath(new URL('.emdash/race-', root)));
 try {
+  const commerceMigration = spawnSync(
+    process.execPath,
+    [
+      fileURLToPath(new URL('../../node_modules/wrangler/bin/wrangler.js', root)),
+      'd1',
+      'migrations',
+      'apply',
+      'COMMERCE_DB',
+      '--local',
+      '--persist-to',
+      localState,
+      '--config',
+      fileURLToPath(new URL('dist/server/wrangler.json', root)),
+    ],
+    { env: { ...process.env, CI: 'true' }, encoding: 'utf8', windowsHide: true },
+  );
+  assert.equal(commerceMigration.status, 0, commerceMigration.stdout + commerceMigration.stderr);
   const migration = spawnSync(
     process.execPath,
     [fileURLToPath(new URL('../../scripts/migrate-cms-application.mjs', root)), '--persist-to', localState, '--apply'],
@@ -77,6 +94,8 @@ try {
   assert.equal((await request(lockPath)).status, 200);
   assert.equal((await request(lockPath, 'DELETE')).status, 200);
   const current = await request(path);
+  assert.equal((await request(path, 'DELETE', { _rev: 'malformed' })).status, 409);
+  assert.equal((await request(path)).data._rev, current.data._rev, 'Malformed delete revisions cannot mutate content');
   const first = await request(path, 'PUT', { _rev: current.data._rev, data: { title: 'First' } });
   assert.equal(first.status, 200);
   assert.equal((await request(path, 'PUT', { _rev: current.data._rev, data: { title: 'Stale' } })).status, 409);

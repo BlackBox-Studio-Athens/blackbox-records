@@ -16,6 +16,12 @@ const configPath = join(backend, 'dist/server/wrangler.json');
 const config = JSON.parse(await readFile(configPath, 'utf8'));
 assert.equal(config.vars.PRODUCT_ENVIRONMENT, 'LOCAL');
 const storageConfig = join(state, 'storage.json');
+const cronCases = [
+  { id: 'upgrade-space', value: '2099-01-02 03:04:05', expected: '2099-01-02T03:04:05.000Z', oneshot: 1 },
+  { id: 'upgrade-offset', value: '2099-01-02T05:04:05+02:00', expected: '2099-01-02T03:04:05.000Z', oneshot: 1 },
+  { id: 'upgrade-invalid', value: 'invalid', expected: 'invalid', oneshot: 1 },
+  { id: 'upgrade-recurring', value: '2099-01-02 03:04:05', expected: '2099-01-02 03:04:05', oneshot: 0 },
+];
 async function inspect() {
   const proxy = await getPlatformProxy({
     configPath: storageConfig,
@@ -63,6 +69,13 @@ async function inspect() {
       distroGallery: { field: distroGalleryField ?? null, column: distroGalleryColumn ?? null },
       dates,
       revisions: await rows('SELECT id, collection, entry_id, data FROM revisions ORDER BY id'),
+      collections: await rows('SELECT id, slug FROM _emdash_collections ORDER BY id'),
+      media: await rows('SELECT * FROM media ORDER BY id'),
+      references: await rows('SELECT * FROM _emdash_content_references ORDER BY rowid'),
+      cron: await rows(
+        "SELECT id, next_run_at FROM _emdash_cron_tasks WHERE plugin_id = 'blackbox-upgrade-test' ORDER BY id",
+      ),
+      seedComplete: await db.prepare("SELECT value FROM options WHERE name = 'emdash:seed_complete'").first(),
       stock: (await proxy.env.COMMERCE_DB.prepare('SELECT * FROM Stock ORDER BY rowid').all()).results,
       prices: (await proxy.env.COMMERCE_DB.prepare('SELECT * FROM StoreOfferSnapshot ORDER BY rowid').all()).results,
       pointer: pointer ? await pointer.text() : null,
@@ -79,6 +92,23 @@ async function createPendingReleaseDraft() {
   });
   try {
     const db = proxy.env.CMS_DB;
+    assert.equal(
+      await db.prepare("SELECT name FROM _emdash_migrations WHERE name = '088_cron_oneshot_utc'").first(),
+      null,
+      'Requires a stopped pre-0.42 store or backup to exercise the actual upgrade',
+    );
+    for (const fixture of cronCases)
+      await db
+        .prepare(
+          `INSERT INTO _emdash_cron_tasks
+          (id, plugin_id, task_name, schedule, is_oneshot, next_run_at, enabled)
+          VALUES (?, 'blackbox-upgrade-test', ?, ?, ?, ?, 0)`,
+        )
+        .bind(fixture.id, fixture.id, fixture.oneshot ? fixture.value : '0 0 * * *', fixture.oneshot, fixture.value)
+        .run();
+    // Simulate a configured pre-089 site with a removed seed collection, only in the disposable copy.
+    await db.prepare("DELETE FROM options WHERE name = 'emdash:seed_complete'").run();
+    await db.prepare("UPDATE _emdash_collections SET slug = 'upgrade_socials' WHERE slug = 'socials'").run();
     const release = await db
       .prepare('SELECT id, live_revision_id FROM ec_releases WHERE live_revision_id IS NOT NULL ORDER BY id LIMIT 1')
       .first();
@@ -169,7 +199,7 @@ try {
       logLevel: 'error',
       experimental: { disableExperimentalWarning: true },
     });
-    const response = await fetch('http://127.0.0.1:8797/_emdash/api/content/news?limit=1');
+    const response = await fetch('http://127.0.0.1:8797/_emdash/api/content/releases?limit=1');
     assert.equal(response.status, 200, await response.text());
     await worker.stop();
     worker = undefined;
@@ -177,6 +207,18 @@ try {
     assert.ok(after.migrations.includes('085_taxonomy_def_groups'));
     assert.ok(after.migrations.includes('086_relations_structural'));
     assert.ok(after.migrations.includes('087_reference_field_relations'));
+    assert.ok(after.migrations.includes('088_cron_oneshot_utc'));
+    assert.ok(after.migrations.includes('089_auto_seed_completion'));
+    assert.deepEqual(after.seedComplete, { value: 'true' });
+    assert.deepEqual(after.collections, before.collections, 'Restart must not recreate a removed seed collection');
+    assert.deepEqual(after.media, before.media, 'Native media identities and metadata survive upgrade');
+    if (before.migrations.includes('087_reference_field_relations'))
+      assert.deepEqual(after.references, before.references, 'Native relation edges survive upgrade');
+    assert.deepEqual(
+      after.cron,
+      cronCases.map(({ id, expected }) => ({ id, next_run_at: expected })).sort((a, b) => a.id.localeCompare(b.id)),
+      'One-shot normalization preserves instants and leaves invalid/recurring timestamps unchanged',
+    );
     assert.deepEqual(
       after.dates,
       before.dates,
@@ -199,7 +241,7 @@ try {
     assert.equal(after.fields.length, 0, 'Editorial dates no longer use datetime storage');
   }
   console.log(
-    'EmDash Local upgrade to 0.41.0 and restart passed: Release gallery schema, pending draft, dates, revisions, stock and accepted publication preserved.',
+    'EmDash Local upgrade to 1.0.1 and restart passed: migrations 088/089, seed completion, media, pending draft, dates, revisions, stock and accepted publication preserved.',
   );
 } finally {
   await worker?.stop();

@@ -103,6 +103,7 @@ export default defineConfig({
   integrations: [
     react(),
     emdash({
+      updateCheck: false,
       database: d1({ binding: 'CMS_DB' }),
       storage: r2({ binding: 'MEDIA' }),
       migrations: { runtime: 'check', dev: 'auto' },

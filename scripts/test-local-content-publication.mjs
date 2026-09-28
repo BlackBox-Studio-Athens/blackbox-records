@@ -72,7 +72,10 @@ async function publish(item, saved, extra = [], inspectPreview = async () => {})
   };
   const review = await api('blackbox/publication-review', { records: input.records });
   assert.equal(review.dependencies.length, 0);
-  assert.ok(review.entries.every((entry) => entry.issues.length === 0));
+  assert.ok(
+    review.entries.every((entry) => entry.issues.length === 0),
+    JSON.stringify(review.entries.map(({ collection, recordId, issues }) => ({ collection, recordId, issues }))),
+  );
   input.baseline = review.baseline;
   const beforePreview = await api('blackbox/publications');
   const preview = await fetch(`${staff}/_emdash/preview`, {

@@ -33,7 +33,12 @@ test('native Artist references override stale columns without reading a newer dr
   const revision = {
     collection: 'releases',
     entryId: 'lotus',
-    data: { artist: 'stale', title: 'LOTUS', _references: { artist: ['sidus-group'] } },
+    data: {
+      artist: 'stale',
+      title: 'LOTUS',
+      _references: { artist: ['sidus-group'] },
+      _referencesBaseline: { artist: ['previous-artist-group'] },
+    },
   };
   expect(await readRevisionContent(runtime, revision)).toEqual({ artist: 'sidus', title: 'LOTUS' });
   expect(translations).toHaveBeenCalledWith('artists', 'sidus-group');

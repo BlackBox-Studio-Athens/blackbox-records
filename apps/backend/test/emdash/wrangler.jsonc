@@ -34,6 +34,7 @@
       "binding": "COMMERCE_DB",
       "database_name": "blackbox-commerce-local-checkpoint",
       "database_id": "00000000-0000-0000-0000-000000000002",
+      "migrations_dir": "../../prisma/migrations",
     },
   ],
   "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "blackbox-emdash-local-checkpoint" }],
