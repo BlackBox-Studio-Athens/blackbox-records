@@ -31,6 +31,23 @@ export function publicationPreviewDestination(review: PublicationReview, activeE
   return destinations.find((entry) => entryKey(entry) === activeEntry) ?? destinations[0];
 }
 
+export function directPublicationSelection(review: PublicationReview) {
+  if (
+    review.dependencies.length ||
+    !review.entries.some((entry) => changedPublicationFields(entry).length) ||
+    review.entries.some((entry) => entry.issues.length || !entry.expectedRevision)
+  )
+    return null;
+  return {
+    baseline: review.baseline,
+    records: review.entries.map(({ collection, recordId, expectedRevision }) => ({
+      collection,
+      recordId,
+      expectedRevision,
+    })),
+  };
+}
+
 export function PublicationSteps({ step }: { step: number }) {
   return (
     <ol className="publication-steps" aria-label="Publication progress">
@@ -47,6 +64,7 @@ export function PublicationSteps({ step }: { step: number }) {
 export default function PublicationReviewFlow({
   base,
   records: initialRecords,
+  intent = 'review',
   individual = false,
   onBack,
   onPublished,
@@ -54,6 +72,7 @@ export default function PublicationReviewFlow({
 }: {
   base: string;
   records: PublicationReviewInput['records'];
+  intent?: 'review' | 'publish';
   individual?: boolean;
   onBack(): void;
   onPublished?(records: PublicationReviewInput['records']): void;
@@ -67,29 +86,34 @@ export default function PublicationReviewFlow({
   const [error, setError] = useState('');
   const [recoveryError, setRecoveryError] = useState('');
   const [stale, setStale] = useState(false);
+  const staleRef = useRef(false);
   const [previewState, setPreviewState] = useState<'loading' | 'ready' | 'failed'>('loading');
   const [previewStateKey, setPreviewStateKey] = useState('');
   const [activeEntry, setActiveEntry] = useState('');
   const [tab, setTab] = useState('changes');
   const [wide, setWide] = useState(false);
+  const [directPreparing, setDirectPreparing] = useState(intent === 'publish');
   const lock = useRef(false);
   const sequence = useRef(0);
+  const directIntent = useRef(intent === 'publish');
   const heading = useRef<HTMLHeadingElement>(null);
   const completed = useRef('');
   const tabId = useId();
   const onPublishedRef = useRef(onPublished);
   onPublishedRef.current = onPublished;
 
-  async function loadReview(selected = records) {
+  async function loadReview(selected = records, direct = false) {
     if (lock.current) return;
     lock.current = true;
     setBusy(true);
     setError('');
+    staleRef.current = false;
     setStale(false);
     const request = ++sequence.current;
+    let publishing = false;
     try {
       const next = await readPublicationReview(base, {
-        records: selected.map(({ collection, recordId }) => ({ collection, recordId })),
+        records: direct ? selected : selected.map(({ collection, recordId }) => ({ collection, recordId })),
       });
       if (request !== sequence.current) return;
       setReview(next);
@@ -102,14 +126,29 @@ export default function PublicationReviewFlow({
       setPreviewState('loading');
       setPreviewStateKey('');
       heading.current?.focus();
+      if (direct) {
+        setDirectPreparing(false);
+        const selection =
+          selected.every((record) => record.expectedRevision) && !staleRef.current
+            ? directPublicationSelection(next)
+            : null;
+        if (selection) {
+          publishing = true;
+          void publish(selection, true);
+        }
+      }
     } catch (error) {
+      if (direct) setDirectPreparing(false);
       if (request === sequence.current) {
+        staleRef.current = true;
         setStale(true);
         setError(error instanceof Error ? error.message : 'Review unavailable.');
       }
     } finally {
-      lock.current = false;
-      if (request === sequence.current) setBusy(false);
+      if (!publishing) {
+        lock.current = false;
+        if (request === sequence.current) setBusy(false);
+      }
     }
   }
   function settle(result: ContentPublication, request = pending) {
@@ -143,13 +182,21 @@ export default function PublicationReviewFlow({
     media.addEventListener('change', update);
     try {
       const retained = restorePublication(base);
-      if (retained) setPending(retained);
-      else void loadReview();
+      if (retained) {
+        directIntent.current = false;
+        setDirectPreparing(false);
+        setPending(retained);
+      } else {
+        const direct = directIntent.current;
+        directIntent.current = false;
+        void loadReview(initialRecords, direct);
+      }
     } catch (error) {
+      directIntent.current = false;
+      setDirectPreparing(false);
       setRecoveryError(error instanceof Error ? error.message : 'Saved publication unavailable. Check history.');
     }
     return () => {
-      sequence.current++;
       media.removeEventListener('change', update);
     };
   }, [base]);
@@ -158,13 +205,16 @@ export default function PublicationReviewFlow({
   }, [pending?.id]);
   useEffect(() => {
     const markStale = () => {
-      if (!pending && document.visibilityState === 'visible') setStale(true);
+      if (!pending && document.visibilityState === 'visible') {
+        staleRef.current = true;
+        setStale(true);
+      }
     };
-    document.addEventListener('visibilitychange', markStale);
     window.addEventListener('online', markStale);
+    window.addEventListener('staff:editorial-change', markStale);
     return () => {
-      document.removeEventListener('visibilitychange', markStale);
       window.removeEventListener('online', markStale);
+      window.removeEventListener('staff:editorial-change', markStale);
     };
   }, [pending]);
 
@@ -186,10 +236,12 @@ export default function PublicationReviewFlow({
       }
     : undefined;
 
-  async function publish() {
-    if (lock.current || recoveryError || (!pending && blocked)) return;
-    lock.current = true;
-    setBusy(true);
+  async function publish(selection = reviewedSelection, ownsLock = false) {
+    if ((!ownsLock && lock.current) || recoveryError || (!pending && (ownsLock ? !selection : blocked))) return;
+    if (!ownsLock) {
+      lock.current = true;
+      setBusy(true);
+    }
     setError('');
     try {
       const retained = !pending ? restorePublication(base) : null;
@@ -199,7 +251,7 @@ export default function PublicationReviewFlow({
       }
       const input = pending ?? {
         id: crypto.randomUUID(),
-        ...reviewedSelection!,
+        ...selection!,
       };
       localStorage.setItem(pendingPublicationKey(base), JSON.stringify(input));
       setPending(input);
@@ -208,6 +260,7 @@ export default function PublicationReviewFlow({
       if (error instanceof EditorialApiError && [400, 409].includes(error.status)) {
         localStorage.removeItem(pendingPublicationKey(base));
         setPending(null);
+        staleRef.current = true;
         setStale(true);
       }
       setError(error instanceof Error ? error.message : 'Update not confirmed. Check status.');
@@ -225,16 +278,20 @@ export default function PublicationReviewFlow({
       <header className="publication-heading">
         <div>
           <h1 ref={heading} tabIndex={-1}>
-            {pending
-              ? operation?.status === 'live'
-                ? 'Your changes are on the website'
-                : 'Website update'
-              : 'Review your changes'}
+            {directPreparing
+              ? 'Publishing this item'
+              : pending
+                ? operation?.status === 'live'
+                  ? 'Your changes are on the website'
+                  : 'Website update'
+                : 'Review your changes'}
           </h1>
           <p className="text-muted-foreground">
-            {pending
-              ? 'Publication status is confirmed against the public website.'
-              : 'Check what will change. Other drafts stay private.'}
+            {directPreparing
+              ? 'Checking the saved version before publication.'
+              : pending
+                ? 'Publication status is confirmed against the public website.'
+                : 'Check what will change. Other drafts stay private.'}
           </p>
         </div>
       </header>
@@ -256,8 +313,14 @@ export default function PublicationReviewFlow({
       )}
       {busy && !review && !pending && (
         <div role="status" className="publication-loading">
-          <span>Loading saved changes…</span>
-          <Skeleton className="h-48 w-full" />
+          {directPreparing ? (
+            <span>Checking the saved version…</span>
+          ) : (
+            <>
+              <span>Loading saved changes…</span>
+              <Skeleton className="h-48 w-full" />
+            </>
+          )}
         </div>
       )}
       {review && !reviewHasChanges && !busy && !pending && (

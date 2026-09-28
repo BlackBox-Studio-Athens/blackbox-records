@@ -1,9 +1,10 @@
 ---
 import Prose from '@/components/Prose.astro';
-import { Image } from 'astro:assets';
+import { getImage, Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
+import StoreImageGallery from '@/components/store/StoreImageGallery';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
@@ -32,21 +33,46 @@ const embeddedPlayerData = buildEmbeddedPlayerData(release.id, release.data, emb
 const commerceLink = await getReleaseCommerceLink(release);
 const singles = release.data.singles ?? [];
 const clips = release.data.clips ?? [];
+const gallery = release.data.gallery ?? [];
+const galleryImages =
+  gallery.length > 0
+    ? await Promise.all(
+        [
+          { image: release.data.cover_image, image_alt: release.data.cover_image_alt || release.data.title },
+          ...gallery,
+        ].map(async ({ image, image_alt }) => {
+          const optimized = await getImage({ src: image, widths: [96, 480, 720, 960, 1200], format: 'webp' });
+          return {
+            src: optimized.src,
+            srcSet: optimized.srcSet.attribute,
+            alt: image_alt,
+            width: image.width,
+            height: image.height,
+          };
+        }),
+      )
+    : [];
 ---
 
 <section class="layout-container pt-14">
   <Card className="surface-card overflow-hidden">
     <CardContent className="grid gap-8 p-0 lg:grid-cols-[0.85fr_1.15fr]">
       <div class="relative overflow-hidden border-b border-border/70 lg:border-r lg:border-b-0">
-        <Image
-          src={release.data.cover_image}
-          alt={release.data.cover_image_alt || release.data.title}
-          class="release-detail-cover__image h-full w-full object-cover"
-          widths={[720, 1080, 1440, 1800]}
-          sizes="(min-width: 1024px) 36vw, 100vw"
-          priority={showRouteNavigation}
-        />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+        {galleryImages.length > 1 ? (
+          <StoreImageGallery client:load images={galleryImages} title={release.data.title} />
+        ) : (
+          <>
+            <Image
+              src={release.data.cover_image}
+              alt={release.data.cover_image_alt || release.data.title}
+              class="release-detail-cover__image h-full w-full object-cover"
+              widths={[720, 1080, 1440, 1800]}
+              sizes="(min-width: 1024px) 36vw, 100vw"
+              priority={showRouteNavigation}
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+          </>
+        )}
       </div>
       <div class="space-y-5 p-7 sm:p-9">
         <Badge variant="outline" className="border-border/70 bg-background/80 text-xs tracking-[0.15em] uppercase">

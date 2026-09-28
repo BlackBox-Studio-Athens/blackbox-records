@@ -1,23 +1,36 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { editorialRequest, type EditorialList, type EditorialRecord } from '../../lib/backend/editorial-api';
 import { createInternalStockApi, type CatalogSellingDetail } from '../../lib/backend/internal-stock-api';
 import { Button } from '../ui/button';
 import ItemPriceEditor from '../stock/ItemPriceEditor';
 import ItemPublication from '../stock/ItemPublication';
+import StockOperationsApp from '../stock/StockOperationsApp';
 
 export default function CatalogSelling({
   item,
   base,
-  section,
   onSummary,
   onDetails,
+  onLeaveGuard,
 }: {
   item: EditorialRecord;
   base: string;
-  section: 'selling' | 'stock';
   onSummary(item: EditorialRecord): void;
   onDetails(): void;
+  onLeaveGuard(guard: (() => boolean) | null): void;
 }) {
+  const priceGuard = useRef<(() => boolean) | null>(null);
+  const stockGuard = useRef<(() => boolean) | null>(null);
+  const registerPrice = useCallback((guard: (() => boolean) | null) => {
+    priceGuard.current = guard;
+  }, []);
+  const registerStock = useCallback((guard: (() => boolean) | null) => {
+    stockGuard.current = guard;
+  }, []);
+  useEffect(() => {
+    onLeaveGuard(() => (stockGuard.current?.() ?? true) && (priceGuard.current?.() ?? true));
+    return () => onLeaveGuard(null);
+  }, [onLeaveGuard]);
   const [selected, setSelected] = useState<EditorialRecord | null>(null);
   const [readiness, setReadiness] = useState<CatalogSellingDetail | null>(null);
   const [message, setMessage] = useState('Loading selling details…');
@@ -38,7 +51,7 @@ export default function CatalogSelling({
       if (request !== sequence.current) return;
       setSelected(fresh);
       onSummary(fresh);
-      if (fresh.selling && section === 'selling') {
+      if (fresh.selling) {
         const next = await createInternalStockApi({ backendBaseUrl: base }).readSelling(fresh.selling.variantId);
         if (request !== sequence.current) return;
         setReadiness(next);
@@ -55,9 +68,9 @@ export default function CatalogSelling({
     return () => {
       sequence.current++;
     };
-  }, [base, item.id, section]);
+  }, [base, item.id]);
   const selling = selected?.selling;
-  if (message)
+  if (message && !selected)
     return (
       <div className="grid gap-4 p-6">
         {saved && <p role="status">Price saved. Existing orders are unchanged.</p>}
@@ -79,60 +92,20 @@ export default function CatalogSelling({
         </a>
       </div>
     );
-  if (section === 'stock')
-    return (
-      <section className="p-6">
-        <h2 className="text-lg font-semibold">Stock</h2>
-        <dl className="my-6 grid grid-cols-2 gap-4">
-          <div>
-            <dt>{selling.itemType === 'Clothes' ? 'Units on hand' : 'Copies on hand'}</dt>
-            <dd className="text-2xl">{selling.quantity ?? 'Not recorded'}</dd>
-          </div>
-          <div>
-            <dt>Available to buy online</dt>
-            <dd className="text-2xl">{selling.onlineQuantity ?? 'Not recorded'}</dd>
-          </div>
-        </dl>
-        <a
-          className="inline-flex min-h-11 items-center underline"
-          href={`/stock/?variantId=${encodeURIComponent(selling.variantId)}`}
-        >
-          Manage stock
-        </a>
-      </section>
-    );
   return (
-    <div className="grid min-w-0 gap-6 p-6">
+    <section aria-label="Price and stock" tabIndex={-1} className="catalog-commerce grid min-w-0 gap-6">
+      <div>
+        <h2 className="text-lg font-semibold">Price & stock</h2>
+        <p className="text-sm text-muted-foreground">
+          Saving a price updates the shop price. Shop publication controls the saved title, description and artwork.
+          Details and photos save automatically.
+        </p>
+      </div>
+      {message && <p role="status">{message}</p>}
       {saved && <p role="status">Price saved. Existing orders are unchanged.</p>}
-      {readiness?.state === 'blocked' && (
-        <div className="grid gap-3">
-          <p>{readiness.reason}</p>
-          {readiness.operationId && <p className="break-all text-sm">Operation: {readiness.operationId}</p>}
-          {readiness.action === 'details' && (
-            <Button variant="outline" onClick={onDetails}>
-              Review Details
-            </Button>
-          )}
-        </div>
-      )}
-      {readiness && (readiness.state !== 'blocked' || ['resume', 'price_change'].includes(readiness.action)) ? (
-        <ItemPriceEditor
-          key={`price:${selling.variantId}:${generation}`}
-          variantId={selling.variantId}
-          backendBaseUrl={base}
-          readiness={readiness}
-          onRefresh={load}
-          onSaved={async () => {
-            setSaved(true);
-            await load();
-          }}
-        />
-      ) : (
-        <Button variant="outline" onClick={() => void load()}>
-          Refresh
-        </Button>
-      )}
-      {readiness?.state === 'ready' || (readiness?.state === 'blocked' && readiness.action === 'publication') ? (
+      {readiness === null ? (
+        <p className="text-sm text-muted-foreground">Checking shop publication status…</p>
+      ) : readiness.state === 'ready' || (readiness.state === 'blocked' && readiness.action === 'publication') ? (
         <ItemPublication
           key={`publish:${selling.variantId}:${generation}`}
           variantId={selling.variantId}
@@ -144,6 +117,44 @@ export default function CatalogSelling({
           Details.
         </p>
       )}
-    </div>
+      {readiness?.state === 'blocked' && (
+        <div className="grid gap-3">
+          <p>{readiness.reason}</p>
+          {readiness.operationId && <p className="break-all text-sm">Operation: {readiness.operationId}</p>}
+          {readiness.action === 'details' && (
+            <Button variant="outline" onClick={onDetails}>
+              Review Details
+            </Button>
+          )}
+        </div>
+      )}
+      <div className="catalog-commerce-columns">
+        <div className="min-w-0">
+          {readiness && (readiness.state !== 'blocked' || ['resume', 'price_change'].includes(readiness.action)) ? (
+            <ItemPriceEditor
+              key={`price:${selling.variantId}:${generation}`}
+              variantId={selling.variantId}
+              backendBaseUrl={base}
+              readiness={readiness}
+              onRefresh={load}
+              onLeaveGuard={registerPrice}
+              onSaved={async () => {
+                setSaved(true);
+                await load();
+              }}
+            />
+          ) : (
+            <Button variant="outline" onClick={() => void load()}>
+              Refresh
+            </Button>
+          )}
+        </div>
+        <StockOperationsApp
+          key={selling.variantId}
+          backendBaseUrl={base}
+          embedded={{ variantId: selling.variantId, onLeaveGuard: registerStock }}
+        />
+      </div>
+    </section>
   );
 }

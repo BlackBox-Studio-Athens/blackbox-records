@@ -40,7 +40,10 @@ function RecordPicker({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const requestSequence = useRef(0);
-  const [selectedItem, setSelectedItem] = useState<Choice | null>(null);
+  const selectedRequestSequence = useRef(0);
+  const selectionIdentity = JSON.stringify([base, collection, value]);
+  const [selectedItem, setSelectedItem] = useState<{ identity: string; item: Choice } | null>(null);
+  const [selectedLookupError, setSelectedLookupError] = useState(false);
   const [open, setOpen] = useState(false);
   const id = useId();
   const trigger = useRef<HTMLButtonElement>(null);
@@ -48,6 +51,27 @@ function RecordPicker({
   const errorId = `${id}-error`;
   const fieldError = error || '';
   const name = (item: Choice) => ('filename' in item ? item.filename : String(item.data.title ?? item.slug));
+  useEffect(() => {
+    const request = ++selectedRequestSequence.current;
+    if (!value) {
+      setSelectedItem(null);
+      setSelectedLookupError(false);
+      return;
+    }
+    setSelectedLookupError(false);
+    void editorialRequest<{ item: EditorialRecord }>(base, `content/${collection}/${encodeURIComponent(value)}`).then(
+      ({ item }) => {
+        if (request === selectedRequestSequence.current && item.id === value)
+          setSelectedItem({ identity: selectionIdentity, item });
+      },
+      () => {
+        if (request === selectedRequestSequence.current) setSelectedLookupError(true);
+      },
+    );
+    return () => {
+      selectedRequestSequence.current++;
+    };
+  }, [base, collection, value, selectionIdentity]);
   async function search(next?: string) {
     const request = ++requestSequence.current;
     setBusy(true);
@@ -79,12 +103,15 @@ function RecordPicker({
     };
   }, [query, open]);
   function select(item: Choice) {
-    setSelectedItem(item);
+    setSelectedItem({ identity: JSON.stringify([base, collection, item.id]), item });
+    setSelectedLookupError(false);
     setRequiredError(false);
     onSelect(item);
     setOpen(false);
   }
-  const selected = selectedItem?.id === value ? selectedItem : items.find((item) => item.id === value);
+  const selected =
+    (selectedItem?.identity === selectionIdentity ? selectedItem.item : undefined) ??
+    items.find((item) => item.id === value);
   return (
     <Field data-invalid={!!fieldError || (requiredError && !value)}>
       <FieldLabel htmlFor={id} required>
@@ -126,13 +153,18 @@ function RecordPicker({
               {selected
                 ? name(selected)
                 : value
-                  ? selectedLabel || 'Current selection'
+                  ? selectedLookupError
+                    ? `${label} unavailable`
+                    : selectedLabel || `Loading ${label.toLowerCase()}…`
                   : `Choose ${label.toLowerCase()}`}
             </span>
             <ChevronsUpDown className="size-4 shrink-0" aria-hidden="true" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="cms-surface w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <PopoverContent
+          className="cms-surface editorial-picker-popover w-[var(--radix-popover-trigger-width)] p-0"
+          align="start"
+        >
           <Command shouldFilter={false}>
             <CommandInput
               aria-label={`Search ${label.toLowerCase()}`}
@@ -199,6 +231,11 @@ function RecordPicker({
       {(busy || message) && (
         <p role="status" className="text-sm text-muted-foreground">
           {busy ? 'Loading' : message}
+        </p>
+      )}
+      {selectedLookupError && !selected && (
+        <p role="status" className="text-sm text-muted-foreground">
+          Could not load the selected {label.toLowerCase()} name.
         </p>
       )}
     </Field>

@@ -9,51 +9,60 @@ import { completeSnapshot } from '../../src/cms/snapshot-storage';
 
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));
 afterEach(() => vi.restoreAllMocks());
-test('new release listing uses saved draft fields and native artist references', async () => {
-  await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
-  const item = {
-    id: 'release',
-    slug: 'lotus',
-    data: { title: 'List title', artist: '' },
-    draftRevisionId: 'draft',
-    liveRevisionId: null,
-  };
-  vi.spyOn(ContentRepository.prototype, 'findById').mockResolvedValue({ locale: 'en' } as never);
-  vi.spyOn(ContentRepository.prototype, 'findTranslations').mockResolvedValue([{ id: 'sidus', locale: 'en' }] as never);
-  const runtime = {
-    db: {},
-    handleContentList: vi.fn(async (collection: string) => ({
-      success: true,
-      data: { items: collection === 'releases' ? [item] : [{ id: 'sidus', data: { title: 'Sidus' } }] },
-    })),
-    handleRevisionGet: vi.fn(async () => ({
-      success: true,
-      data: {
-        item: {
-          collection: 'releases',
-          entryId: 'release',
-          data: {
-            title: 'Draft title',
-            artist: '',
-            _references: { artist: ['sidus-group'] },
+test.each(['', '&q=SIDUS'])(
+  'new release listing and band search use saved native artist references (%s)',
+  async (search) => {
+    await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
+    const item = {
+      id: 'release',
+      slug: 'lotus',
+      data: { title: 'List title', artist: '' },
+      draftRevisionId: 'draft',
+      liveRevisionId: null,
+    };
+    vi.spyOn(ContentRepository.prototype, 'findById').mockResolvedValue({ locale: 'en' } as never);
+    vi.spyOn(ContentRepository.prototype, 'findTranslations').mockResolvedValue([
+      { id: 'sidus', locale: 'en' },
+    ] as never);
+    const runtime = {
+      db: {},
+      handleContentList: vi.fn(async (collection: string) => ({
+        success: true,
+        data: { items: collection === 'releases' ? [item] : [{ id: 'sidus', data: { title: 'Sidus' } }] },
+      })),
+      handleContentGet: vi.fn(async () => ({
+        success: true,
+        data: { item: { id: 'sidus', data: { title: 'Sidus' } } },
+      })),
+      handleRevisionGet: vi.fn(async () => ({
+        success: true,
+        data: {
+          item: {
+            collection: 'releases',
+            entryId: 'release',
+            data: {
+              title: 'Draft title',
+              artist: '',
+              _references: { artist: ['sidus-group'] },
+            },
           },
         },
-      },
-    })),
-  } as unknown as EmDashRuntime;
-  const response = await readStaffWorkspace(new Request('https://staff.invalid/?collection=releases'), {
-    runtime,
-    db: env.TEST_CMS_DB,
-    commerce: env.COMMERCE_DB,
-    bucket: env.TEST_SNAPSHOTS,
-    environment: 'local',
-  });
-  const result = (await response.json()) as {
-    data: { items: { data: { title: string; artist: string }; artistTitle: string }[] };
-  };
-  expect(result.data.items[0].data).toEqual({ title: 'Draft title', artist: 'sidus' });
-  expect(result.data.items[0].artistTitle).toBe('Sidus');
-});
+      })),
+    } as unknown as EmDashRuntime;
+    const response = await readStaffWorkspace(new Request(`https://staff.invalid/?collection=releases${search}`), {
+      runtime,
+      db: env.TEST_CMS_DB,
+      commerce: env.COMMERCE_DB,
+      bucket: env.TEST_SNAPSHOTS,
+      environment: 'local',
+    });
+    const result = (await response.json()) as {
+      data: { items: { data: { title: string; artist: string }; artistTitle: string }[] };
+    };
+    expect(result.data.items[0].data).toEqual({ title: 'Draft title', artist: 'sidus' });
+    expect(result.data.items[0].artistTitle).toBe('Sidus');
+  },
+);
 test('catalog forwards native filters, ordering and opaque cursors without truncating editorial entries', async () => {
   await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
   const entries = Array.from({ length: 251 }, (_, index) => ({
@@ -99,7 +108,7 @@ test('catalog forwards native filters, ordering and opaque cursors without trunc
             expect(list).toHaveBeenLastCalledWith('distro', {
               limit: 25,
               cursor,
-              q: 'Title',
+              q: undefined,
               orderBy: sort === 'title' ? 'title' : 'updatedAt',
               order: sort === 'title' ? 'asc' : 'desc',
               ...(format || area !== 'all' ? { fieldFilters: { group: { in: groups } } } : {}),
@@ -117,6 +126,44 @@ test('catalog forwards native filters, ordering and opaque cursors without trunc
     }
   }
 });
+test('distro band search preserves native continuation through empty pages and title matches', async () => {
+  await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
+  const list = vi
+    .fn()
+    .mockResolvedValueOnce({
+      success: true,
+      data: { items: [{ id: 'other', data: { title: 'Other' } }], nextCursor: 'next-page' },
+    })
+    .mockResolvedValueOnce({
+      success: true,
+      data: {
+        items: [
+          { id: 'split', data: { title: 'Crawl', artist_or_label: 'Zebu / Dead Elephant' } },
+          { id: 'title', data: { title: 'Zebu live', artist_or_label: 'Other' } },
+        ],
+      },
+    });
+  const deps = {
+    runtime: { handleContentList: list } as unknown as EmDashRuntime,
+    db: env.TEST_CMS_DB,
+    commerce: env.COMMERCE_DB,
+    bucket: env.TEST_SNAPSHOTS,
+    environment: 'local' as const,
+  };
+  const first = await readStaffWorkspace(new Request('https://staff.invalid/?collection=distro&q=ZEBU'), deps);
+  expect(await first.json()).toMatchObject({ data: { items: [], nextCursor: 'next-page' } });
+  const second = await readStaffWorkspace(
+    new Request('https://staff.invalid/?collection=distro&q=ZEBU&cursor=next-page'),
+    deps,
+  );
+  expect(await second.json()).toMatchObject({ data: { items: [{ id: 'split' }, { id: 'title' }] } });
+  expect(list).toHaveBeenCalledTimes(2);
+  expect(list).toHaveBeenLastCalledWith(
+    'distro',
+    expect.objectContaining({ q: undefined, cursor: 'next-page', limit: 25 }),
+  );
+});
+
 test('Overview keeps bounded recent publication truth without list enrichment or commerce', async () => {
   await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
   const sections = Object.keys(sourceCollectionNames);

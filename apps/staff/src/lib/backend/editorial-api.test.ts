@@ -7,6 +7,7 @@ import {
   editorialWriteData,
   staffThumbnailUrl,
   uploadArtwork,
+  uploadArtworkFiles,
 } from './editorial-api';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -85,6 +86,32 @@ it('uploads a PNG thumbnail capped at 96 pixels and 40 KiB', async () => {
   await uploadArtwork('', new File(['original'], 'cover.jpg', { type: 'image/jpeg' }));
   expect(thumbnailRenders).toBe(2);
   expect(bitmap.close).toHaveBeenCalledOnce();
+});
+
+it('uploads artwork in selection order, keeps partial successes, and retries only failed files', async () => {
+  const files = ['first.png', 'broken.png', 'last.png'].map((name) => new File([name], name, { type: 'image/png' }));
+  const attempts: string[] = [];
+  const upload = vi.fn(async (file: File) => {
+    attempts.push(file.name);
+    if (file.name === 'broken.png') throw new Error('Image upload failed.');
+    return { id: file.name, filename: file.name, alt: null };
+  });
+
+  const firstRun = await uploadArtworkFiles(files, upload);
+  expect(attempts).toEqual(['first.png', 'broken.png', 'last.png']);
+  expect(firstRun.uploaded.map(({ id }) => id)).toEqual(['first.png', 'last.png']);
+  expect(firstRun.failed).toEqual([{ file: files[1], message: 'Image upload failed.' }]);
+
+  const retry = await uploadArtworkFiles(
+    firstRun.failed.map(({ file }) => file),
+    async (file) => ({
+      id: file.name,
+      filename: file.name,
+      alt: null,
+    }),
+  );
+  expect(retry.uploaded.map(({ id }) => id)).toEqual(['broken.png']);
+  expect(attempts).toEqual(['first.png', 'broken.png', 'last.png']);
 });
 
 it('keeps native media identities and rich text while removing read-only image delivery metadata', () => {

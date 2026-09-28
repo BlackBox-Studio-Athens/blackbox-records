@@ -514,13 +514,17 @@ const server = createServer(async (req, res) => {
     }
     if (/^\/api\/internal\/variants\/[^/]+\/publication$/.test(url.pathname)) {
       sellingFixture.publicationReads++;
+      const item =
+        url.pathname.split('/')[4] === 'variant_retained'
+          ? records.releases.find((entry) => entry.id === 'releases-retained')
+          : records.releases[0];
       return json({
         expectedRevision: sellingFixture.revision || 1,
         cmsRevision: '1',
         requiresLiveConfirmation: false,
-        title: 'Retained stocked CD',
+        title: item.data.title,
         collection: 'releases',
-        cmsSourceId: 'releases-retained',
+        cmsSourceId: item.id,
         availability: 'withheld',
         pending: null,
       });
@@ -609,6 +613,14 @@ const server = createServer(async (req, res) => {
       );
     }
     if (url.pathname === '/_emdash/api/blackbox/publication-review') {
+      if (
+        body.records.some(
+          (record) =>
+            record.expectedRevision &&
+            record.expectedRevision !== records[record.collection].find((item) => item.id === record.recordId)?._rev,
+        )
+      )
+        return json({ error: 'Saved draft changed. Review again.' }, 409);
       const entries = body.records.map((record) => {
         const item = records[record.collection].find((item) => item.id === record.recordId);
         return {
@@ -1172,6 +1184,338 @@ else if (process.argv.includes('--editor-recovery')) {
     }
   }
 
+  async function assertDirectPublishing(browser) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    const original = structuredClone(records.artists[0]);
+    const originalPublications = structuredClone(publications);
+    const previousStatus = state.publication;
+    const previousTitle = state.publicTitle;
+    const posts = [];
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().endsWith('/blackbox/content-publications'))
+        posts.push(request.postDataJSON());
+    });
+    try {
+      state.publication = 'live';
+      await page.goto(`${origin}/content/?collection=artists&id=${original.id}`);
+      const title = page.getByRole('textbox', { name: 'Artist name', exact: true });
+      await title.fill('Immediate publication');
+      await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
+      await page.getByRole('heading', { name: 'Your changes are on the website', exact: true }).waitFor();
+      assert.equal(posts.length, 1, 'Explicit publish sends one command');
+      assert.deepEqual(posts[0].records, [
+        { collection: 'artists', recordId: original.id, expectedRevision: records.artists[0]._rev },
+      ]);
+      assert.equal(state.publicTitle, 'Immediate publication', 'Publish flushes the latest edit first');
+      await page.screenshot({ path: resolve(artifacts, 'direct-publication-mobile.png') });
+
+      await page.goto(`${origin}/content/?collection=artists&id=${original.id}`);
+      await title.fill('Still a private draft');
+      await page
+        .getByText(/Changes saved/)
+        .first()
+        .waitFor();
+      await page.reload();
+      await title.waitFor();
+      assert.equal(await title.inputValue(), 'Still a private draft');
+      assert.equal(posts.length, 1, 'Reopening an autosaved draft never publishes');
+      assert.equal(state.publicTitle, 'Immediate publication');
+      await page.getByRole('button', { name: 'Publishing options', exact: true }).click();
+      await page.getByRole('menuitem', { name: 'Review before publishing', exact: true }).click();
+      await page.getByRole('heading', { name: 'Review your changes', exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Publish without preview', exact: true }).waitFor();
+      assert.equal(posts.length, 1, 'Review is a non-publishing alternative');
+
+      await page.goto(`${origin}/content/?collection=artists&id=${original.id}`);
+      await page.route('**/_emdash/api/blackbox/publication-review', (route) =>
+        route.fulfill({ status: 409, json: { error: 'Saved draft changed. Review again.' } }),
+      );
+      await page.getByRole('button', { name: 'Publish changes', exact: true }).click();
+      await page.getByRole('button', { name: 'Review latest changes', exact: true }).waitFor();
+      assert.equal(posts.length, 1, 'A changed saved revision cannot publish');
+      await page.unroute('**/_emdash/api/blackbox/publication-review');
+      await page.getByRole('button', { name: 'Review latest changes', exact: true }).click();
+      await page.getByRole('heading', { name: '1 change to review', exact: true }).waitFor();
+      assert.equal(posts.length, 1, 'Refreshing after conflict consumes the initial publish intent');
+    } finally {
+      await context.close();
+      records.artists[0] = original;
+      publications.splice(0, publications.length, ...originalPublications);
+      state.publication = previousStatus;
+      state.publicTitle = previousTitle;
+    }
+  }
+
+  async function assertCreationPublication(browser) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    const original = structuredClone(records.distro);
+    const commands = [];
+    let published = false;
+    await page.route('**/api/internal/items/setup', (route) => {
+      commands.push({ action: 'setup', ...route.request().postDataJSON() });
+      return route.fulfill({ json: { status: 'completed', variantId: 'new-distro-variant' } });
+    });
+    await page.route('**/api/internal/variants/new-distro-variant/publication', (route) => {
+      if (route.request().method() === 'POST') {
+        commands.push({ action: 'publish', ...route.request().postDataJSON() });
+        published = true;
+        return route.fulfill({ json: { status: 'completed', publicationStatus: 'live' } });
+      }
+      const item = records.distro.find((item) => item.data.title === 'New draft for sale');
+      return route.fulfill({
+        json: {
+          expectedRevision: 1,
+          cmsRevision: item._rev,
+          requiresLiveConfirmation: true,
+          title: item.data.title,
+          collection: 'distro',
+          cmsSourceId: item.id,
+          availability: published ? 'published' : 'withheld',
+          pending: null,
+        },
+      });
+    });
+    try {
+      await page.goto(`${origin}/items/new/?kind=distro`);
+      await page.getByLabel('Title', { exact: true }).fill('New draft for sale');
+      await page.getByLabel('Artist or label', { exact: true }).fill('Mass Culture');
+      await page.getByRole('textbox', { name: 'Short description', exact: true }).fill('A new distro record.');
+      await page.getByRole('button', { name: 'Choose artwork', exact: true }).click();
+      await page.getByRole('button', { name: media[0].filename, exact: true }).click();
+      await page.getByLabel(/^Describe the artwork/).fill('Black and white cover');
+      await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      await page.getByLabel('Price (EUR)', { exact: true }).fill('15');
+      await page.getByLabel(/^How many copies do you have/).fill('3');
+      await page.reload();
+      await page.getByRole('status').filter({ hasText: 'Changes saved privately' }).waitFor();
+      assert.equal(await page.getByLabel('Title', { exact: true }).inputValue(), 'New draft for sale');
+      await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      assert.equal(await page.getByLabel('Price (EUR)', { exact: true }).inputValue(), '15');
+      assert.equal(await page.getByLabel(/^How many copies do you have/).inputValue(), '3');
+      assert.equal(commands.length, 0, 'Unfinished creation remains a draft, including unapplied commerce inputs');
+      await page.getByRole('button', { name: 'Continue', exact: true }).click();
+      await page.getByLabel('I confirm this price and starting stock', { exact: true }).check();
+      await page.screenshot({ path: resolve(artifacts, 'create-and-publish-mobile.png') });
+      await page.getByRole('button', { name: 'Create and publish', exact: true }).click();
+      await page.getByRole('status').filter({ hasText: 'Shop status: Published' }).waitFor();
+      assert.deepEqual(
+        commands.map((command) => command.action),
+        ['setup', 'publish'],
+      );
+      assert.equal(commands[1].confirmLivePublication, true);
+      assert.equal(
+        commands[1].cmsRevision,
+        records.distro.find((item) => item.data.title === 'New draft for sale')._rev,
+      );
+    } finally {
+      await context.close();
+      records.distro = original;
+    }
+  }
+
+  async function assertArtistPicker(browser) {
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const page = await context.newPage();
+    const original = structuredClone(records.releases[0]);
+    const selected = { ...structuredClone(records.artists[0]), id: 'artists-outside-page' };
+    selected.data.title = 'Mass Culture';
+    records.releases[0].data.artist = selected.id;
+    const delayed = Promise.withResolvers();
+    let reads = 0;
+    await page.route(`**/_emdash/api/content/artists/${selected.id}`, async (route) => {
+      if (++reads === 2) await delayed.promise;
+      await route.fulfill({ json: { success: true, data: { item: selected } } });
+    });
+    try {
+      await page.goto(`${origin}/content/?collection=releases&id=${original.id}`);
+      const artist = page.getByRole('combobox', { name: 'Artist', exact: true });
+      await artist.filter({ hasText: 'Mass Culture' }).waitFor();
+      assert.equal(
+        await artist.getAttribute('aria-expanded'),
+        'false',
+        'Saved name resolves without opening the picker',
+      );
+      await page.screenshot({ path: resolve(artifacts, 'artist-picker-selected.png') });
+      await page.reload();
+      await artist.click();
+      await page.getByRole('option', { name: records.artists[0].data.title, exact: true }).waitFor();
+      const search = page.getByRole('combobox', { name: 'Search artist', exact: true });
+      const box = await search.boundingBox();
+      assert.ok(box.x >= 0 && box.x + box.width <= 390, 'Search fits the mobile dropdown');
+      assert.equal(await search.evaluate((element) => getComputedStyle(element).outlineStyle), 'none');
+      assert.notEqual(
+        await search.evaluate((element) => getComputedStyle(element.parentElement).boxShadow),
+        'none',
+        'Keyboard focus remains visible on the search row',
+      );
+      await page.screenshot({ path: resolve(artifacts, 'artist-picker-mobile.png') });
+      await page.getByRole('option', { name: records.artists[0].data.title, exact: true }).click();
+      delayed.resolve();
+      await page
+        .getByText(/Changes saved/)
+        .first()
+        .waitFor();
+      assert.equal(
+        await artist.textContent(),
+        records.artists[0].data.title,
+        'Late lookup cannot replace a new selection',
+      );
+      assert.equal(records.releases[0].data.artist, records.artists[0].id);
+    } finally {
+      delayed.resolve();
+      await context.close();
+      records.releases[0] = original;
+    }
+  }
+
+  async function assertUnifiedCatalog(browser) {
+    const context = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+    const page = await context.newPage();
+    const original = structuredClone(records.releases[0]);
+    const originalDistro = structuredClone(records.distro[0]);
+    await page.route('**/api/internal/variants/*/selling', async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      body.detail.requiresLiveConfirmation = true;
+      await route.fulfill({ response, json: body });
+    });
+    let uploads = 0;
+    let releaseUpload;
+    const uploadGate = new Promise((resolve) => {
+      releaseUpload = resolve;
+    });
+    await page.route('**/_emdash/api/media', async (route) => {
+      if (route.request().method() !== 'POST') return route.continue();
+      const index = ++uploads;
+      if (index === 1) await uploadGate;
+      if (index === 2) return route.fulfill({ status: 503, json: { success: false, error: 'Upload failed' } });
+      const item = { id: `bulk-${index}`, filename: `bulk-${index}.png`, storageKey: `bulk-${index}.png`, alt: null };
+      media.push(item);
+      return route.fulfill({ json: { success: true, data: { item } } });
+    });
+    try {
+      await page.goto(`${origin}/content/?collection=releases&id=${original.id}`);
+      await page.getByLabel('Release title', { exact: true }).waitFor();
+      await page.getByRole('tab', { name: 'Price & stock', exact: true }).click();
+      await page.getByRole('button', { name: 'Save stock change', exact: true }).waitFor();
+      assert.equal(await page.getByRole('button', { name: 'Selling', exact: true }).count(), 0);
+      const publication = page.getByRole('region', { name: 'Shop publication', exact: true });
+      await publication.getByRole('button', { name: 'Publish item to shop', exact: true }).waitFor();
+      assert.equal(await publication.locator('xpath=ancestor::details').count(), 0);
+      assert.ok(
+        (await publication.boundingBox()).y < (await page.locator('#item-price-heading').boundingBox()).y,
+        'Shop publication is visible before the price and stock controls',
+      );
+      const priceConfirmation = page.getByRole('checkbox', {
+        name: 'Confirm this price for the live shop',
+        exact: true,
+      });
+      await priceConfirmation.waitFor();
+      assert.equal(await priceConfirmation.isChecked(), false);
+      assert.equal(await priceConfirmation.getAttribute('required'), '');
+      await page.getByRole('tab', { name: 'Details & photos', exact: true }).click();
+      const files = [1, 2, 3].map((index) => ({ name: `photo-${index}.png`, mimeType: 'image/png', buffer: pixels }));
+      await page.getByLabel('Upload photos', { exact: true }).setInputFiles(files);
+      await page.getByText(/Uploading 1 of 3/).waitFor();
+      await page.getByLabel('Release title', { exact: true }).fill('Title edited during upload');
+      await page.getByRole('link', { name: 'Back to Releases', exact: true }).click();
+      assert.equal(new URL(page.url()).searchParams.get('id'), original.id, 'Uploading keeps the item open');
+      releaseUpload();
+      await page.getByRole('button', { name: 'Retry failed images', exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Retry failed images', exact: true }).click();
+      await page.getByText('1 photo added in order.', { exact: true }).waitFor();
+      await page
+        .getByText(/Changes saved/)
+        .first()
+        .waitFor();
+      assert.deepEqual(records.releases[0].data.cover_image, original.data.cover_image);
+      assert.equal(records.releases[0].data.title, 'Title edited during upload');
+      assert.deepEqual(
+        records.releases[0].data.gallery.map((item) => item.image.id),
+        ['bulk-1', 'bulk-3', 'bulk-4'],
+      );
+      assert.equal(uploads, 4, 'Only the failed file is retried');
+      await page.getByRole('tab', { name: 'Price & stock', exact: true }).click();
+      await page.getByLabel('How many?', { exact: true }).fill('2');
+      await page.getByRole('tab', { name: 'Details & photos', exact: true }).click();
+      assert.equal(await page.getByLabel('Release title', { exact: true }).inputValue(), 'Title edited during upload');
+      await page.getByRole('tab', { name: 'Price & stock', exact: true }).click();
+      page.once('dialog', (dialog) => dialog.dismiss());
+      await page.getByRole('link', { name: 'Back to Releases', exact: true }).click();
+      assert.equal(await page.getByLabel('How many?', { exact: true }).inputValue(), '2');
+      assert.equal(new URL(page.url()).searchParams.get('id'), original.id);
+      await page.getByRole('button', { name: 'Count stock', exact: true }).click();
+      await page.getByLabel('Physical stock counted', { exact: true }).fill('12');
+      state.stockRevision++;
+      await page.getByRole('button', { name: 'Save count', exact: true }).click();
+      await page.getByRole('button', { name: 'I have reassessed this count', exact: true }).waitFor();
+      assert.equal(await page.getByLabel('Physical stock counted', { exact: true }).inputValue(), '12');
+      assert.equal(await page.getByRole('button', { name: 'Save count', exact: true }).isEnabled(), false);
+      await page.getByRole('button', { name: 'I have reassessed this count', exact: true }).click();
+      await page.getByRole('button', { name: 'Save count', exact: true }).click();
+      await page.getByText('Stock count saved.', { exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Add or remove copies', exact: true }).click();
+      await page.getByLabel('How many?', { exact: true }).fill('');
+      for (const width of [320, 768, 1440]) {
+        await page.setViewportSize({ width, height: 900 });
+        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+        await page.getByRole('tab', { name: 'Price & stock', exact: true }).scrollIntoViewIfNeeded();
+        const gradient = await page.locator('.staff-gradient').boundingBox();
+        const header = await page.locator('.cms-editor-toolbar').boundingBox();
+        assert.ok(gradient.height <= header.height + 1, 'Gradient stays inside the toolbar on every viewport');
+        await page.screenshot({ path: resolve(artifacts, `unified-catalog-${width}.png`) });
+      }
+      await page.getByLabel('New price (EUR)', { exact: true }).fill('29');
+      page.once('dialog', (dialog) => dialog.dismiss());
+      await page.getByRole('link', { name: 'Back to Releases', exact: true }).click();
+      assert.equal(await page.getByLabel('New price (EUR)', { exact: true }).inputValue(), '29');
+      page.once('dialog', (dialog) => dialog.accept());
+      await page.getByRole('link', { name: 'Back to Releases', exact: true }).click();
+      await page.waitForURL((url) => !url.searchParams.has('id'));
+      await page.goto(`${origin}/content/?collection=distro&id=${originalDistro.id}`);
+      await page.getByLabel('Upload photos', { exact: true }).setInputFiles(files.slice(0, 2));
+      await page.getByText('2 photos added in order.', { exact: true }).waitFor();
+      await page
+        .getByText(/Changes saved/)
+        .first()
+        .waitFor();
+      assert.deepEqual(records.distro[0].data.image, originalDistro.data.image);
+      assert.deepEqual(
+        records.distro[0].data.gallery.slice(-2).map((item) => item.image.id),
+        ['bulk-5', 'bulk-6'],
+      );
+      await page.evaluate(() =>
+        sessionStorage.setItem(
+          'blackbox-pending-change',
+          JSON.stringify({
+            variantId: 'other-item',
+            delta: 2,
+            reason: 'delivery',
+            notes: null,
+            idempotencyKey: '00000000-0000-4000-8000-000000000099',
+          }),
+        ),
+      );
+      await page.goto(`${origin}/content/?collection=releases&id=${original.id}&tab=stock`);
+      await page.getByRole('alert').filter({ hasText: "Another item's stock update is unconfirmed" }).waitFor();
+      assert.equal(await page.getByRole('button', { name: 'Save stock change', exact: true }).isEnabled(), false);
+      assert.equal(
+        await page.evaluate(() => JSON.parse(sessionStorage.getItem('blackbox-pending-change')).variantId),
+        'other-item',
+      );
+    } catch (error) {
+      await page.screenshot({ path: resolve(artifacts, 'unified-catalog-failure.png') });
+      throw error;
+    } finally {
+      releaseUpload();
+      records.releases[0] = original;
+      records.distro[0] = originalDistro;
+      await context.close();
+    }
+  }
+
   async function assertOverviewPanels(browser) {
     state.overviewOrdersDelay = 3000;
     const delayedContext = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
@@ -1465,6 +1809,10 @@ else if (process.argv.includes('--editor-recovery')) {
     if (process.env.BLACKBOX_VALIDATION_TRACE === '1')
       await page.context().tracing.start({ screenshots: true, snapshots: true, sources: true });
     initialStockReads.resolve();
+    await assertDirectPublishing(browser);
+    await assertCreationPublication(browser);
+    await assertArtistPicker(browser);
+    await assertUnifiedCatalog(browser);
     {
       const probe = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
       const originalGroup = records.distro[0].data.group;
@@ -1521,6 +1869,23 @@ else if (process.argv.includes('--editor-recovery')) {
         })),
       );
       const failures = [];
+      const searchPages = [];
+      const searchRoute = '**/_emdash/api/blackbox/workspace?*';
+      await page.route(searchRoute, async (route) => {
+        const params = new URL(route.request().url()).searchParams;
+        if (params.get('q') !== 'band-search') return route.continue();
+        searchPages.push(params.get('cursor'));
+        return route.fulfill({
+          json: {
+            success: true,
+            data: params.has('cursor') ? { items: [original[0]] } : { items: [], nextCursor: 'later-band-match' },
+          },
+        });
+      });
+      await page.goto(`${origin}/content/?collection=distro&q=band-search`);
+      await page.getByRole('button', { name: /Barren Point LP/ }).waitFor();
+      assert.deepEqual(searchPages, [null, 'later-band-match'], 'Band search follows empty native pages');
+      await page.unroute(searchRoute);
       await page.goto(`${origin}/content/?collection=distro`);
       await page.getByRole('button', { name: /Browse 000/ }).waitFor();
       const rows = page.locator('[data-staff-scroll]');
@@ -1538,10 +1903,11 @@ else if (process.argv.includes('--editor-recovery')) {
       await page.locator('#content-title').waitFor();
       await page.reload();
       await page.locator('#content-title').waitFor();
-      await page.getByRole('button', { name: 'Selling', exact: true }).click();
-      await page.waitForURL((url) => url.searchParams.get('tab') === 'selling');
+      await page.getByRole('tab', { name: 'Price & stock', exact: true }).click();
+      await page.getByRole('link', { name: 'Set up selling', exact: true }).waitFor();
       await page.reload();
-      await page.locator('button[aria-pressed="true"]').filter({ hasText: 'Selling' }).waitFor();
+      await page.getByRole('tab', { name: 'Price & stock', exact: true }).click();
+      await page.getByRole('link', { name: 'Set up selling', exact: true }).waitFor();
       await page.getByRole('link', { name: 'Back to Distro and merch', exact: true }).click();
       await page.getByRole('button', { name: /Browse 024/ }).waitFor();
       assert.equal(new URL(page.url()).searchParams.get('cursor'), '25');
@@ -2355,6 +2721,7 @@ else if (process.argv.includes('--editor-recovery')) {
     assert.ok(!created.data.summary, 'Rich edits do not synchronize a legacy summary');
     await page.screenshot({ path: resolve(artifacts, 'staff-add-release-390.png') });
     await page.goto(`${origin}/content/?collection=releases&id=${created.id}`);
+    await page.getByRole('button', { name: 'Music & listening links', exact: true }).click();
     const singles = page.getByRole('group', { name: 'Singles', exact: true });
     await singles.getByRole('button', { name: 'Add row' }).click();
     await singles.getByRole('textbox', { name: 'Single title' }).fill('First single');
@@ -2456,6 +2823,20 @@ else if (process.argv.includes('--editor-recovery')) {
     await page.getByRole('button', { name: 'Previous', exact: true }).click();
     await page.getByRole('button', { name: 'Review selected changes', exact: true }).click();
     await page.getByRole('heading', { name: 'Review your changes', exact: true }).waitFor();
+    await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
+    const reviewFrame = page.locator('iframe[data-preview-readiness="ready"]');
+    assert.ok((await reviewFrame.boundingBox()).height >= 350, 'Standalone review loads the preview layout styles');
+    const reviewGeneration = await reviewFrame.getAttribute('data-preview-generation');
+    for (const visibility of ['hidden', 'visible']) {
+      await page.evaluate((value) => {
+        Object.defineProperty(document, 'visibilityState', { configurable: true, value });
+        document.dispatchEvent(new Event('visibilitychange'));
+      }, visibility);
+      await page.waitForTimeout(50);
+    }
+    assert.equal(await page.getByRole('button', { name: 'Review latest changes' }).count(), 0);
+    assert.equal(await page.getByRole('button', { name: 'Publish 20 changes', exact: true }).isEnabled(), true);
+    assert.equal(await reviewFrame.getAttribute('data-preview-generation'), reviewGeneration);
     const batch = page.waitForRequest(
       (request) => request.method() === 'POST' && request.url().endsWith('/blackbox/content-publications'),
     );

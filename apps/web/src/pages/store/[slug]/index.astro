@@ -60,7 +60,7 @@ if (storeItem.sourceKind === 'distro' && !distroSource) {
   throw new Error(`Missing Distro source entry for Store Item ${storeItem.slug}: ${storeItem.sourceId}.`);
 }
 
-const gallery = distroSource?.data.gallery ?? [];
+const gallery = sourceRelease?.data.gallery ?? distroSource?.data.gallery ?? [];
 const galleryImages =
   gallery.length > 0
     ? await Promise.all(

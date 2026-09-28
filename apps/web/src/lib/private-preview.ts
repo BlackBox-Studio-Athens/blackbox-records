@@ -155,10 +155,29 @@ export function connectPrivatePreview() {
               (box.top < innerHeight && box.bottom > 0 && box.left < innerWidth && box.right > 0)
             );
           })
-          .map((image) => {
+          .map(async (image) => {
             // A pending preview is hidden until ready; lazy images must start before that reveal.
             image.loading = 'eager';
-            return image.decode();
+            // Responsive source selection can change while loading (including iframe resizing).
+            // decode() rejects the superseded request even when its replacement is valid.
+            if (!image.complete)
+              await new Promise<void>((resolve, reject) => {
+                const cleanup = () => {
+                  image.removeEventListener('load', onLoad);
+                  image.removeEventListener('error', onError);
+                };
+                const onLoad = () => {
+                  cleanup();
+                  resolve();
+                };
+                const onError = () => {
+                  cleanup();
+                  reject(new Error('Preview image could not load.'));
+                };
+                image.addEventListener('load', onLoad, { once: true });
+                image.addEventListener('error', onError, { once: true });
+              });
+            await image.decode();
           }),
       );
       stage = 'font';

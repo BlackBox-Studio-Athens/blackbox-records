@@ -29,7 +29,8 @@ const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'Stor
 const staffRouteDocuments = {
   overview: { document: 'index.html', javascriptBudgetBytes: 122880 },
   website: { document: 'content/index.html', javascriptBudgetBytes: 176128 },
-  stock: { document: 'stock/index.html', javascriptBudgetBytes: 152592 },
+  // Shared catalogue stock controls add identity-bound recovery and navigation protection (153,047 bytes measured).
+  stock: { document: 'stock/index.html', javascriptBudgetBytes: 150 * 1024 },
   orders: { document: 'orders/index.html', javascriptBudgetBytes: 128000 },
 };
 const staffHtmlBudgetBytes = 24576;

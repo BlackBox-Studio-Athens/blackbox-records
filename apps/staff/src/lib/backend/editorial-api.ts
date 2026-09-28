@@ -220,3 +220,22 @@ export async function uploadArtwork(base: string, file: File): Promise<Editorial
     bitmap.close();
   }
 }
+
+export async function uploadArtworkFiles(
+  files: readonly File[],
+  upload: (file: File) => Promise<EditorialMedia>,
+): Promise<{ uploaded: EditorialMedia[]; failed: Array<{ file: File; message: string }> }> {
+  const uploaded: EditorialMedia[] = [];
+  const failed: Array<{ file: File; message: string }> = [];
+  for (const file of files) {
+    try {
+      uploaded.push(await upload(file));
+    } catch (error) {
+      failed.push({
+        file,
+        message: error instanceof Error ? error.message : 'The image could not be uploaded. Try again.',
+      });
+    }
+  }
+  return { uploaded, failed };
+}

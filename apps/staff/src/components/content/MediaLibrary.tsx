@@ -19,9 +19,155 @@ import {
   editorialRequest,
   editorialMediaUrl,
   uploadArtwork,
+  uploadArtworkFiles,
   type EditorialMedia,
   type EditorialList,
 } from '../../lib/backend/editorial-api';
+
+export function ContentGalleryUploader({
+  base,
+  editorIdentity,
+  onUpload,
+  onUploadPendingChange,
+  disabled = false,
+}: {
+  base: string;
+  editorIdentity: string;
+  onUpload(images: EditorialMedia[]): void;
+  onUploadPendingChange?(pending: boolean): void;
+  disabled?: boolean;
+}) {
+  const id = useId();
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState('');
+  const [failed, setFailed] = useState<Array<{ file: File; message: string; editorIdentity: string }>>([]);
+  const [uploaded, setUploaded] = useState<string[]>([]);
+  const [message, setMessage] = useState('');
+  const pending = useRef(false);
+  const active = useRef(true);
+  const context = useRef({ editorIdentity, onUpload, onUploadPendingChange });
+  context.current = { editorIdentity, onUpload, onUploadPendingChange };
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+      if (pending.current) context.current.onUploadPendingChange?.(false);
+    };
+  }, []);
+
+  async function upload(files: File[], retry = false) {
+    if (pending.current || disabled || !files.length) return;
+    pending.current = true;
+    setUploading(true);
+    setMessage('');
+    setUploaded([]);
+    let index = 0;
+    const identity = context.current.editorIdentity;
+    context.current.onUploadPendingChange?.(true);
+    try {
+      const result = await uploadArtworkFiles(files, (file) => {
+        if (!active.current) throw new Error('Upload canceled.');
+        setProgress(`Uploading ${++index} of ${files.length}: ${file.name}`);
+        return uploadArtwork(base, file);
+      });
+      if (!active.current) return;
+      setProgress('');
+      const remaining = [
+        ...(retry
+          ? failed.filter((item) => item.editorIdentity === identity && !files.includes(item.file))
+          : failed.filter((item) => item.editorIdentity === identity)),
+        ...result.failed.map((failure) => ({ ...failure, editorIdentity: identity })),
+      ];
+      setFailed(remaining);
+      const attached = result.uploaded.length > 0 && context.current.editorIdentity === identity;
+      if (attached) {
+        context.current.onUpload(result.uploaded);
+        setUploaded(result.uploaded.map(({ filename }) => filename));
+      }
+      setMessage(
+        remaining.length
+          ? `${result.uploaded.length} uploaded. ${remaining.length} failed.`
+          : attached
+            ? `${result.uploaded.length} ${result.uploaded.length === 1 ? 'photo' : 'photos'} added in order.`
+            : 'Uploads finished, but the selected entry changed. Photos were not attached.',
+      );
+    } finally {
+      if (active.current) {
+        setProgress('');
+        context.current.onUploadPendingChange?.(false);
+        pending.current = false;
+        setUploading(false);
+      }
+    }
+  }
+
+  return (
+    <div className="grid gap-3">
+      <Field className="min-w-0 gap-2">
+        <FieldLabel htmlFor={`${id}-upload`}>Upload photos</FieldLabel>
+        <Input
+          id={`${id}-upload`}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          disabled={uploading || disabled}
+          aria-describedby={`${id}-upload-help`}
+          onChange={(event) => {
+            const files = Array.from(event.target.files ?? []);
+            event.target.value = '';
+            void upload(files);
+          }}
+        />
+        <FieldDescription id={`${id}-upload-help`}>
+          JPG, PNG or WebP, up to 20 MB each. Uploaded photos stay in the private draft until published.
+        </FieldDescription>
+      </Field>
+      {progress && (
+        <p role="status" aria-live="polite" className="text-sm">
+          {progress}
+        </p>
+      )}
+      {!!uploaded.length && (
+        <p role="status" className="text-sm">
+          Added in selection order: {uploaded.join(', ')}
+        </p>
+      )}
+      {message && !failed.length && <p role="status">{message}</p>}
+      {!!failed.length && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            <p>{message}</p>
+            <ul className="mt-2 list-disc pl-5">
+              {failed
+                .filter((item) => item.editorIdentity === editorIdentity)
+                .map(({ file, message: reason }, index) => (
+                  <li key={`${file.name}-${file.lastModified}-${file.size}-${index}`}>
+                    <strong>{file.name}</strong>: {reason}
+                  </li>
+                ))}
+            </ul>
+            {failed.some((item) => item.editorIdentity === editorIdentity) && (
+              <Button
+                type="button"
+                variant="outline"
+                className="mt-3"
+                disabled={uploading || disabled}
+                onClick={() =>
+                  void upload(
+                    failed.filter((item) => item.editorIdentity === editorIdentity).map(({ file }) => file),
+                    true,
+                  )
+                }
+              >
+                Retry failed images
+              </Button>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+    </div>
+  );
+}
 
 function cropSuitability(item: EditorialMedia, cropRatio?: number) {
   if (cropRatio === 0.75) return 'Full photo in a portrait frame';

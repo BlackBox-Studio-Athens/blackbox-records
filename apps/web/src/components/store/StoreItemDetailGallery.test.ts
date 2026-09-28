@@ -3,6 +3,10 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const source = readFileSync(fileURLToPath(new URL('../../pages/store/[slug]/index.astro', import.meta.url)), 'utf8');
+const releaseDetail = readFileSync(
+  fileURLToPath(new URL('../detail/ReleaseDetailContent.astro', import.meta.url)),
+  'utf8',
+);
 const gallerySource = readFileSync(fileURLToPath(new URL('./StoreImageGallery.tsx', import.meta.url)), 'utf8');
 const storeCard = readFileSync(fileURLToPath(new URL('../cards/StoreItemCard.astro', import.meta.url)), 'utf8');
 
@@ -21,7 +25,7 @@ describe('Store Item detail gallery contract', () => {
     expect(source).toContain("storeItem.sourceKind === 'distro' ? await getEntry('distro', storeItem.sourceId) : null");
     expect(source).toContain("storeItem.sourceKind === 'distro' && !distroSource");
     expect(source).toContain('throw new Error(`Missing Distro source entry');
-    expect(source).toContain('const gallery = distroSource?.data.gallery ?? [];');
+    expect(source).toContain('const gallery = sourceRelease?.data.gallery ?? distroSource?.data.gallery ?? [];');
   });
 
   it('enhances multiple source-ordered images with shadcn controls and leaves single images static', () => {
@@ -35,6 +39,12 @@ describe('Store Item detail gallery contract', () => {
     expect(gallerySource).toContain('useReducedMotion');
     expect(gallerySource).toContain('onPanEnd');
     expect(gallerySource).toContain('ArrowLeft');
+  });
+
+  it('shows optional Release gallery images on the public detail and storefront pages', () => {
+    expect(releaseDetail).toContain('const gallery = release.data.gallery ?? [];');
+    expect(releaseDetail).toContain('<StoreImageGallery client:load images={galleryImages}');
+    expect(source).toContain('const gallery = sourceRelease?.data.gallery ?? distroSource?.data.gallery ?? [];');
   });
 });
 

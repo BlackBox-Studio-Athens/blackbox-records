@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { PublicationReview } from '@blackbox/content-model';
-import { publicationPreviewDestination } from './PublicationReviewFlow';
+import { directPublicationSelection, publicationPreviewDestination } from './PublicationReviewFlow';
 
 const review: PublicationReview = {
   baseline: 'a'.repeat(64),
@@ -43,4 +43,40 @@ it('follows the active entry and sends shared website changes to the homepage', 
   expect(publicationPreviewDestination(review, 'releases/release')).toMatchObject({ title: 'Release' });
   expect(publicationPreviewDestination(review, 'navigation/navigation')).toMatchObject({ title: 'Homepage' });
   expect(publicationPreviewDestination(review, 'missing/missing')).toMatchObject({ title: 'Release' });
+});
+
+it('allows direct publication only for changed, issue-free records with saved revisions', () => {
+  const changed = {
+    ...review,
+    entries: review.entries.map((entry) => ({ ...entry, before: { title: 'Old' }, after: { title: 'New' } })),
+  };
+  expect(directPublicationSelection(changed)).toEqual({
+    baseline: review.baseline,
+    records: review.entries.map(({ collection, recordId, expectedRevision }) => ({
+      collection,
+      recordId,
+      expectedRevision,
+    })),
+  });
+  expect(directPublicationSelection(review)).toBeNull();
+  expect(
+    directPublicationSelection({
+      ...changed,
+      dependencies: [
+        { collection: 'releases', recordId: 'release-1', requiredBy: 'Release', available: true, title: 'Release' },
+      ],
+    }),
+  ).toBeNull();
+  expect(
+    directPublicationSelection({
+      ...changed,
+      entries: changed.entries.map((entry, index) => (index ? entry : { ...entry, issues: ['Missing reference'] })),
+    }),
+  ).toBeNull();
+  expect(
+    directPublicationSelection({
+      ...changed,
+      entries: changed.entries.map((entry, index) => (index ? entry : { ...entry, expectedRevision: '' })),
+    }),
+  ).toBeNull();
 });

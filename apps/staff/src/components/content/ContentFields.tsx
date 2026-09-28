@@ -15,12 +15,13 @@ import {
 import { ArrowUp, Plus, Trash2 } from 'lucide-react';
 import EditorialPicker from '../items/EditorialPicker';
 import { Button } from '../ui/button';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
 import { Input } from '../ui/input';
 import { Textarea } from '../ui/textarea';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegend, FieldSet } from '../ui/field';
 import { Checkbox } from '../ui/checkbox';
 import { NativeSelect } from '../ui/native-select';
-import { ContentImagePicker } from './MediaLibrary';
+import { ContentGalleryUploader, ContentImagePicker } from './MediaLibrary';
 import { contentFieldErrors, type ContentValidation } from './content-validation';
 import { type ContentData, type ContentSection } from '../../lib/content-sections';
 
@@ -31,6 +32,9 @@ export default function ContentFields({
   data,
   onChange,
   base,
+  editorIdentity,
+  onAppendGalleryImages,
+  onUploadPendingChange,
   disabled = false,
   validation,
   validationAttempt,
@@ -40,12 +44,33 @@ export default function ContentFields({
   data: ContentData;
   onChange(data: ContentData): void;
   base: string;
+  editorIdentity?: string;
+  onAppendGalleryImages?: (request: {
+    editorIdentity: string;
+    collection: 'releases' | 'distro';
+    images: Array<{ image: { id: string }; image_alt: string }>;
+  }) => void;
+  onUploadPendingChange?: (pending: boolean) => void;
   disabled?: boolean;
   validation: ContentValidation;
   validationAttempt: number;
   onAddUpcomingRelease?: (() => Promise<void>) | undefined;
 }) {
   const [touched, setTouched] = useState<Set<string>>(() => new Set());
+  const [openSections, setOpenSections] = useState<string[]>([]);
+  useEffect(() => {
+    if (validationAttempt > 0) setOpenSections(['music', 'credits', 'text', 'presentation']);
+  }, [validationAttempt]);
+  function section(id: string, label: string, children: React.ReactNode) {
+    return (
+      <AccordionItem value={id}>
+        <AccordionTrigger>{label}</AccordionTrigger>
+        <AccordionContent forceMount className="data-[state=closed]:hidden">
+          <div className="grid min-w-0 gap-6 @2xl:grid-cols-2">{children}</div>
+        </AccordionContent>
+      </AccordionItem>
+    );
+  }
   function touch(path: string) {
     setTouched((current) => (current.has(path) ? current : new Set(current).add(path)));
   }
@@ -255,6 +280,27 @@ export default function ContentFields({
           </FieldDescription>
         )}
         <FieldError>{fieldErrors.join(' ')}</FieldError>
+        {path === 'gallery' &&
+          editorIdentity &&
+          onAppendGalleryImages &&
+          (collection === 'releases' || collection === 'distro') && (
+            <ContentGalleryUploader
+              base={base}
+              editorIdentity={editorIdentity}
+              disabled={disabled}
+              {...(onUploadPendingChange ? { onUploadPendingChange } : {})}
+              onUpload={(images) =>
+                onAppendGalleryImages({
+                  editorIdentity,
+                  collection,
+                  images: images.map((item) => ({
+                    image: { id: item.id },
+                    image_alt: item.alt || String(data.title || 'Photos'),
+                  })),
+                })
+              }
+            />
+          )}
         <FieldGroup className="gap-4">
           {items.map((_, index) => (
             <div className="grid min-w-0 gap-4 border-t border-border pt-4" key={`${path}-${index}`}>
@@ -433,7 +479,6 @@ export default function ContentFields({
           label="Artist"
           path="artist"
           value={String(data.artist ?? '')}
-          selectedLabel="Current artist"
           error={errors('artist').join(' ') || undefined}
           onBlur={() => touch('artist')}
           onSelect={(item) => set('artist', item.id)}
@@ -453,44 +498,61 @@ export default function ContentFields({
         </Field>
         {field('release_date', 'Release date', { type: 'date', required: data.release_stage !== 'upcoming' })}
         {image('cover_image', 'cover_image_alt', 'Cover image')}
+        {rows('gallery', 'Photos', { image: null, image_alt: '' }, (path) =>
+          image(`${path}.image`, `${path}.image_alt`, 'Photo'),
+        )}
         {field('summary', 'Short description', { multiline: true, required: false })}
-        {rows('singles', 'Singles', { title: '', url: '' }, (path) => (
-          <>
-            {field(`${path}.title`, 'Single title')}
-            {field(`${path}.url`, 'Listening link', { type: 'url' })}
-          </>
-        ))}
-        {rows('clips', 'Clips', { title: '', youtube_video_id: '' }, (path) => (
-          <>
-            {field(`${path}.title`, 'Clip title')}
-            <YouTubeField
-              path={`${path}.youtube_video_id`}
-              initial={String(value(`${path}.youtube_video_id`) ?? '')}
-              onChange={(id) => set(`${path}.youtube_video_id`, id)}
-              errors={errors(`${path}.youtube_video_id`)}
-            />
-          </>
-        ))}
-        <TracklistFields
-          disabled={disabled}
-          value={(data.tracklist as Tracklist | null) ?? null}
-          formatHint={tracklistFormat(
-            (data.formats as string[] | undefined)?.find((format) => tracklistFormat(format)),
+        <Accordion type="multiple" value={openSections} onValueChange={setOpenSections} className="col-span-full">
+          {section(
+            'music',
+            'Music & listening links',
+            <>
+              {rows('singles', 'Singles', { title: '', url: '' }, (path) => (
+                <>
+                  {field(`${path}.title`, 'Single title')}
+                  {field(`${path}.url`, 'Listening link', { type: 'url' })}
+                </>
+              ))}
+              {rows('clips', 'Clips', { title: '', youtube_video_id: '' }, (path) => (
+                <>
+                  {field(`${path}.title`, 'Clip title')}
+                  <YouTubeField
+                    path={`${path}.youtube_video_id`}
+                    initial={String(value(`${path}.youtube_video_id`) ?? '')}
+                    onChange={(id) => set(`${path}.youtube_video_id`, id)}
+                    errors={errors(`${path}.youtube_video_id`)}
+                  />
+                </>
+              ))}
+              <TracklistFields
+                disabled={disabled}
+                value={(data.tracklist as Tracklist | null) ?? null}
+                formatHint={tracklistFormat(
+                  (data.formats as string[] | undefined)?.find((format) => tracklistFormat(format)),
+                )}
+                onChange={(next) => set('tracklist', next)}
+                errors={errors('tracklist')}
+              />
+              {field('merch_url', 'Merchandise link', { required: false })}
+              {field('bandcamp_embed_url', 'Bandcamp player link', { required: false })}
+              {field('tidal_url', 'Tidal link', { required: false })}
+            </>,
           )}
-          onChange={(next) => set('tracklist', next)}
-          errors={errors('tracklist')}
-        />
-        {field('merch_url', 'Merchandise link', { required: false })}
-        {field('bandcamp_embed_url', 'Bandcamp player link', { required: false })}
-        {field('tidal_url', 'Tidal link', { required: false })}
-        {rows('formats', 'Formats', '', (path) => field(path, 'Format'))}
-        {rows('credits', 'Credits', { role: '', name: '' }, (path) => (
-          <>
-            {field(`${path}.role`, 'Role')}
-            {field(`${path}.name`, 'Name')}
-          </>
-        ))}
-        {body}
+          {section(
+            'credits',
+            'Formats & credits',
+            <>
+              {rows('formats', 'Formats', '', (path) => field(path, 'Format'))}
+              {rows('credits', 'Credits', { role: '', name: '' }, (path) => (
+                <>
+                  {field(`${path}.role`, 'Role')}
+                  {field(`${path}.name`, 'Name')}
+                </>
+              ))}
+            </>,
+          )}
+          {section('text', 'Full text', body)}
+        </Accordion>
       </>
     );
   if (collection === 'news')
@@ -540,22 +602,36 @@ export default function ContentFields({
         })()}
         {image('image', 'image_alt', 'Item image')}
         {field('summary', 'Short description', { multiline: true })}
-        <TracklistFields
-          disabled={disabled}
-          value={(data.tracklist as Tracklist | null) ?? null}
-          formatHint={tracklistFormat(String(data.format || data.group || ''))}
-          onChange={(next) => set('tracklist', next)}
-          errors={errors('tracklist')}
-        />
-        {field('bandcamp_embed_url', 'Bandcamp player link', { required: false })}
-        {field('tidal_url', 'Tidal link', { required: false })}
-        {rows('gallery', 'More images', { image: null, image_alt: '' }, (path) =>
-          image(`${path}.image`, `${path}.image_alt`, 'Image'),
+        {rows('gallery', 'Photos', { image: null, image_alt: '' }, (path) =>
+          image(`${path}.image`, `${path}.image_alt`, 'Photo'),
         )}
-        {field('eyebrow', 'Small heading', { required: false })}
-        {field('format', 'Format description', { required: false })}
-        {field('release_date', 'Release date', { type: 'date', required: false })}
-        {field('order', 'Display order', { type: 'number', min: 0, step: 1 })}
+        <Accordion type="multiple" value={openSections} onValueChange={setOpenSections} className="col-span-full">
+          {section(
+            'music',
+            'Music & listening links',
+            <>
+              <TracklistFields
+                disabled={disabled}
+                value={(data.tracklist as Tracklist | null) ?? null}
+                formatHint={tracklistFormat(String(data.format || data.group || ''))}
+                onChange={(next) => set('tracklist', next)}
+                errors={errors('tracklist')}
+              />
+              {field('bandcamp_embed_url', 'Bandcamp player link', { required: false })}
+              {field('tidal_url', 'Tidal link', { required: false })}
+            </>,
+          )}
+          {section(
+            'presentation',
+            'More item details',
+            <>
+              {field('eyebrow', 'Small heading', { required: false })}
+              {field('format', 'Format description', { required: false })}
+              {field('release_date', 'Release date', { type: 'date', required: false })}
+              {field('order', 'Display order', { type: 'number', min: 0, step: 1 })}
+            </>,
+          )}
+        </Accordion>
       </>
     );
   if (collection === 'home')

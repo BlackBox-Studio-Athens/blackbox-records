@@ -25,12 +25,14 @@ export default function ItemPriceEditor({
   readiness,
   onRefresh,
   onSaved,
+  onLeaveGuard,
 }: {
   variantId: string;
   backendBaseUrl: string;
   readiness: CatalogSellingDetail;
   onRefresh(): Promise<void>;
   onSaved(): Promise<void>;
+  onLeaveGuard?(guard: (() => boolean) | null): void;
 }) {
   const api = createInternalStockApi({ backendBaseUrl });
   const initial = readiness.state === 'setup_required' ? readiness : null;
@@ -67,6 +69,24 @@ export default function ItemPriceEditor({
   const [needsReview, setNeedsReview] = useState(false);
   const [saved, setSaved] = useState(false);
   const active = useRef(true);
+  const leaveState = useRef({ dirty, busy, pending });
+  leaveState.current = { dirty, busy, pending };
+  useEffect(() => {
+    onLeaveGuard?.(() => {
+      const current = leaveState.current;
+      if (current.busy || current.pending) return false;
+      return !current.dirty || window.confirm('Discard the unsaved price and leave this item?');
+    });
+    const warn = (event: BeforeUnloadEvent) => {
+      const current = leaveState.current;
+      if (current.dirty || current.busy || current.pending) event.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => {
+      onLeaveGuard?.(null);
+      window.removeEventListener('beforeunload', warn);
+    };
+  }, [onLeaveGuard]);
   useEffect(() => {
     active.current = true;
     return () => {
@@ -176,7 +196,7 @@ export default function ItemPriceEditor({
       <p className="text-sm text-muted-foreground">
         {isInitial
           ? 'Set the first selling price. Publish item is a separate step; stock stays unchanged.'
-          : 'The shop price changes now. Existing orders keep their original price.'}
+          : 'Saving a price updates the shop price. Existing orders keep their original price.'}
       </p>
       {initial && <p>No price set</p>}
       {detail && (
@@ -190,6 +210,19 @@ export default function ItemPriceEditor({
       <form onSubmit={submit} onChange={() => setDirty(true)} className="grid min-w-0 gap-4">
         {(initial || detail || resume) && (
           <fieldset disabled={busy || !!pending || saved} className="grid min-w-0 gap-3">
+            {requiresConfirmation && (
+              <label className="flex min-h-11 items-center gap-3">
+                <input
+                  type="checkbox"
+                  required
+                  checked={confirmed}
+                  onChange={(event) => setConfirmed(event.target.checked)}
+                />
+                {kind === 'pay_what_you_want'
+                  ? 'Confirm these pricing settings for the live shop'
+                  : 'Confirm this price for the live shop'}
+              </label>
+            )}
             {initial && !initial.itemType && (
               <label className="grid gap-2">
                 Format
@@ -239,19 +272,6 @@ export default function ItemPriceEditor({
                   aria-describedby={error ? 'price-feedback' : undefined}
                   onChange={(event) => setMaximum(event.target.value)}
                 />
-              </label>
-            )}
-            {requiresConfirmation && (
-              <label className="flex min-h-11 items-center gap-3">
-                <input
-                  type="checkbox"
-                  required
-                  checked={confirmed}
-                  onChange={(event) => setConfirmed(event.target.checked)}
-                />
-                {kind === 'pay_what_you_want'
-                  ? 'Apply these pricing settings to the live shop'
-                  : 'Apply this price to the live shop'}
               </label>
             )}
           </fieldset>

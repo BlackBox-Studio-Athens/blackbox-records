@@ -1,7 +1,8 @@
-import { lazy, useEffect, useRef, useState } from 'react';
+import { lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { scrollElementWithLenis, scrollWithLenis } from '../../lib/lenis-scroll';
 import '../../styles/content.css';
 import ContentFeature from './ContentFeature';
+import StaffGradient from './StaffGradient';
 import {
   followStaffHistory,
   rememberStaffPosition,
@@ -15,10 +16,12 @@ import {
 } from '../../lib/staff-navigation';
 import StaffBack from '../StaffBack';
 import { Button } from '../ui/button';
+import { ButtonGroup } from '../ui/button-group';
 import {
   ArrowLeft,
   ArrowRight,
   ChevronLeft,
+  ChevronDown,
   Eye,
   EyeOff,
   FileText,
@@ -134,8 +137,37 @@ function CatalogPager({
 }
 
 export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: string }) {
+  const [itemTab, setItemTab] = useState<'details' | 'commerce'>('details');
   const [focusedPath, setFocusedPath] = useState('');
-  const [catalogTab, setCatalogTab] = useState<'details' | 'selling' | 'stock'>('details');
+  const commerceGuard = useRef<(() => boolean) | null>(null);
+  const registerCommerceGuard = useCallback((guard: (() => boolean) | null) => {
+    commerceGuard.current = guard;
+  }, []);
+  const uploadPending = useRef(false);
+  const publicationRequest = useRef(false);
+  const [preparingPublication, setPreparingPublication] = useState<'review' | 'publish' | null>(null);
+  const registerUploadPending = useCallback((pending: boolean) => {
+    uploadPending.current = pending;
+  }, []);
+  useEffect(() => {
+    const warn = (event: BeforeUnloadEvent) => {
+      if (uploadPending.current || publicationRequest.current) event.preventDefault();
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, []);
+  function canLeaveEditor() {
+    if (publicationRequest.current) return false;
+    if (uploadPending.current) {
+      setMessage('Wait for the image uploads to finish before leaving this item.');
+      return false;
+    }
+    if (commerceGuard.current && !commerceGuard.current()) {
+      setMessage('Finish or check the price and stock changes before leaving this item.');
+      return false;
+    }
+    return true;
+  }
   const [landing, setLanding] = useState<'pages' | 'footer' | null>(null);
   const [collection, setCollection] = useState<ContentSection>('artists');
   const [items, setItems] = useState<EditorialRecord[]>([]);
@@ -282,7 +314,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const [publicationStatusError, setPublicationStatusError] = useState('');
   const refreshedPublication = useRef('');
   const pendingKey = `blackbox-content-create:${base}`;
-  const [reviewing, setReviewing] = useState(false);
+  const [reviewing, setReviewing] = useState<'review' | 'publish' | null>(null);
   const [draftActionsOpen, setDraftActionsOpen] = useState(false);
 
   function openPublicationSurface() {
@@ -365,6 +397,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
 
   function requireValidContent(result = validation) {
     if (result.valid) return true;
+    setItemTab('details');
     setValidationAttempt((attempt) => attempt + 1);
     setMessage('');
     requestAnimationFrame(() => focusFirstInvalid(result));
@@ -450,9 +483,19 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         params.set('area', criteria.area);
         if (criteria.format) params.set('format', criteria.format);
       }
-      const page = await readStaffQuery(['catalog-page', base, section, params.toString()], () =>
+      let page = await readStaffQuery(['catalog-page', base, section, params.toString()], () =>
         editorialRequest<EditorialList<EditorialRecord>>(base, `blackbox/workspace?collection=${section}&${params}`),
       );
+      const scanned = new Set([next]);
+      while (searchValue && !page.items.length && page.nextCursor) {
+        if (sequence !== listSequence.current) return null;
+        if (scanned.has(page.nextCursor)) throw new Error('Search did not advance. Try again.');
+        scanned.add(page.nextCursor);
+        params.set('cursor', page.nextCursor);
+        page = await readStaffQuery(['catalog-page', base, section, params.toString()], () =>
+          editorialRequest<EditorialList<EditorialRecord>>(base, `blackbox/workspace?collection=${section}&${params}`),
+        );
+      }
       if (sequence !== listSequence.current) return null;
       setItems(page.items);
       setListLoaded(true);
@@ -551,6 +594,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       }
     } else {
       const selected = new URLSearchParams(window.location.search);
+      if (['selling', 'stock'].includes(selected.get('tab') ?? '')) setItemTab('commerce');
       if (window.location.pathname.startsWith('/items/')) {
         const variantId = selected.get('variantId');
         if (variantId) {
@@ -579,8 +623,6 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       setMedia(mediaView);
       const section = selected.get('collection');
       const id = selected.get('id');
-      if (selected.get('tab') === 'selling' || selected.get('tab') === 'stock')
-        setCatalogTab(selected.get('tab') as 'selling' | 'stock');
       if (section && Object.hasOwn(contentSections, section)) {
         const contentSection = section as ContentSection;
         setCollection(contentSection);
@@ -612,6 +654,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
 
   async function discardChanges() {
+    if (uploadPending.current) {
+      setMessage('Wait for the image uploads to finish before discarding changes.');
+      setConfirmReload(false);
+      return;
+    }
     const current = document;
     const focusTarget = reloadFocus.current ?? editorHeading.current;
     setConfirmReload(false);
@@ -642,6 +689,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
 
   async function discardSavedDraft() {
+    if (uploadPending.current) {
+      setMessage('Wait for the image uploads to finish before discarding changes.');
+      setConfirmDraftDiscard(false);
+      return;
+    }
     const current = document;
     if (
       !current?.item.id ||
@@ -683,6 +735,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       currentDocument.current = nextDocument;
       setDocument(nextDocument);
       setData(loaded.item.data);
+      if (!['releases', 'distro'].includes(collection)) setItemTab('details');
       setItems((items) => items.map((item) => (item.id === nextItem.id ? nextItem : item)));
       setDirty(false);
       setValidationAttempt(0);
@@ -715,6 +768,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           collection: section,
         },
       });
+      if (!['releases', 'distro'].includes(section)) setItemTab('details');
       setData(loaded.item.data);
       setDirty(false);
       setValidationAttempt(0);
@@ -730,6 +784,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }
 
   async function open(item: EditorialRecord, replace = false, section = collection, navigate = true) {
+    if (!canLeaveEditor()) return;
     if (!replace && !(await autosave.flush())) {
       setConfirmReload(true);
       return;
@@ -738,7 +793,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       rememberStaffPosition();
     }
     if (!(await loadEditor(item.id, section, item))) return;
-    setCatalogTab('details');
+    setItemTab('details');
     if (navigate) updateUrl(section, item.id, false, replace);
     editorHeading.current?.focus();
   }
@@ -826,17 +881,33 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     await autosave.flush();
   }
 
+  async function startPublication(intent: 'review' | 'publish') {
+    if (publicationRequest.current || busy || conflict || !canLeaveEditor()) return;
+    if (intent === 'publish' && !requireValidContent()) return;
+    const current = currentDocument.current;
+    if (!current || current.item.publicationState === 'pending') return;
+    publicationRequest.current = true;
+    setPreparingPublication(intent);
+    try {
+      if (!(await autosave.flush())) return;
+      const saved = currentDocument.current;
+      if (saved?.item.id && saved.item.slug === current.item.slug) setReviewing(intent);
+    } catch {
+      setMessage('Your draft is safe. Try saving again before publishing.');
+    } finally {
+      publicationRequest.current = false;
+      setPreparingPublication(null);
+    }
+  }
+  const publicationAction = useRef(startPublication);
+  publicationAction.current = startPublication;
+
   useEffect(() => {
     if (!document || reviewing) return;
     const review = (event: Event) => {
       if (!currentDocument.current?.item.id && !needsSave.current) return;
       event.preventDefault();
-      void autosave
-        .flush()
-        .then((saved) => {
-          if (saved && currentDocument.current?.item.id) setReviewing(true);
-        })
-        .catch(() => setMessage('The review could not be opened. Your draft is safe. Retry.'));
+      void publicationAction.current('review');
     };
     window.addEventListener('staff:review-changes', review);
     return () => window.removeEventListener('staff:review-changes', review);
@@ -847,6 +918,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       const link = (event.target as Element)?.closest<HTMLAnchorElement>('a[href]');
       if (
         !link ||
+        link.classList.contains('staff-review-link') ||
         event.defaultPrevented ||
         link.origin !== location.origin ||
         link.target ||
@@ -854,10 +926,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         event.metaKey ||
         event.shiftKey ||
         event.button !== 0 ||
-        !needsSave.current
+        (!needsSave.current && !commerceGuard.current && !uploadPending.current)
       )
         return;
       event.preventDefault();
+      if (!canLeaveEditor()) return;
       if (leaving.current) return;
       leaving.current = true;
       void autosave.flush().then((saved) => {
@@ -893,12 +966,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         pageCursor.current = currentCursor;
         setPageCursors(staffPages(currentCursor));
         setMedia(params.get('view') === 'media');
-        setReviewing(false);
+        setReviewing(null);
         setDocument(null);
         setData({});
         setMobileEditor(false);
-        const tab = params.get('tab');
-        setCatalogTab(tab === 'selling' || tab === 'stock' ? tab : 'details');
+        setItemTab(['selling', 'stock'].includes(params.get('tab') ?? '') ? 'commerce' : 'details');
         const section = params.get('collection') as ContentSection;
         if (!section || !Object.hasOwn(contentSections, section)) {
           setLanding(params.get('view') === 'media' ? null : params.get('view') === 'footer' ? 'footer' : 'pages');
@@ -915,6 +987,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       })();
     };
     return followStaffHistory(followHistory, () => {
+      if (!canLeaveEditor()) return false;
       if (!needsSave.current) return true;
       return autosave.flush().then((saved) => {
         if (!saved) setConfirmReload(true);
@@ -939,8 +1012,10 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   }, [query, catalogArea, format, sort]);
 
   async function create(section = collection, initial: ContentData = {}) {
+    if (!canLeaveEditor()) return;
     if (!['news', 'socials', 'artists', 'releases'].includes(section) || !(await autosave.flush())) return;
     setCollection(section);
+    setItemTab('details');
     setPendingNew(null);
     // Start locally; incomplete editorial work is saved privately.
     setDocument({ item: { id: '', slug: editorialSlug(section, crypto.randomUUID()), data: {} }, _rev: '' });
@@ -1076,13 +1151,14 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
           <PublicationReviewFlow
             base={base}
             individual
+            intent={reviewing}
             records={[{ collection, recordId: document.item.id, expectedRevision: document._rev }]}
             onPublished={() => {
               setComparisonRetry((attempt) => attempt + 1);
               void publicationStatus();
             }}
             onBack={() => {
-              setReviewing(false);
+              setReviewing(null);
               requestAnimationFrame(() => editorHeading.current?.focus());
             }}
           />
@@ -1105,7 +1181,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
         <Tabs.Root
           value={preview ? 'preview' : 'edit'}
           onValueChange={(value) => setPreview(value === 'preview')}
-          className={`cms-content-panes ${document && mobileEditor ? 'cms-editing' : ''} ${desktopPreview && catalogTab === 'details' ? '' : 'cms-preview-closed'}`}
+          className={`cms-content-panes ${document && mobileEditor ? 'cms-editing' : ''} ${desktopPreview && itemTab === 'details' ? '' : 'cms-preview-closed'}`}
           hidden={media}
         >
           {document && mobileEditor && (
@@ -1385,8 +1461,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                   className={`cms-editor ${!mobileEditor ? 'cms-editor-mobile-hidden' : ''}`}
                 >
                   {document ? (
-                    <>
-                      <header className="cms-editor-toolbar">
+                    <Tabs.Root
+                      value={itemTab}
+                      onValueChange={(value) => setItemTab(value === 'commerce' ? 'commerce' : 'details')}
+                    >
+                      <header className="cms-editor-toolbar cms-editor-atmosphere">
+                        <StaffGradient />
                         <div className="flex items-center justify-between gap-3">
                           <h1 ref={editorHeading} tabIndex={-1}>
                             {title}
@@ -1421,6 +1501,44 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                               <Button variant="outline" aria-expanded={desktopPreview} onClick={togglePreview}>
                                 {desktopPreview ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}Preview
                               </Button>
+                            )}
+                            {itemTab === 'details' && (
+                              <ButtonGroup aria-label="Publish this item">
+                                <Button
+                                  type="button"
+                                  disabled={
+                                    !validate ||
+                                    busy ||
+                                    !!preparingPublication ||
+                                    conflict ||
+                                    document.item.publicationState === 'pending'
+                                  }
+                                  onClick={() => void startPublication('publish')}
+                                >
+                                  {preparingPublication ? 'Saving draft…' : 'Publish changes'}
+                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      className="border-l border-primary-foreground/30"
+                                      aria-label="Publishing options"
+                                      disabled={busy || !!preparingPublication}
+                                    >
+                                      <ChevronDown aria-hidden="true" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent className="cms-surface" align="end">
+                                    <DropdownMenuItem onSelect={() => void startPublication('review')}>
+                                      Review before publishing
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                      <a href="/review/">Review all saved changes</a>
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </ButtonGroup>
                             )}
                             <DropdownMenu open={draftActionsOpen} onOpenChange={setDraftActionsOpen}>
                               <DropdownMenuTrigger asChild>
@@ -1465,57 +1583,19 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                             </DropdownMenu>
                           </div>
                         </div>
+                        {['releases', 'distro'].includes(collection) && (
+                          <Tabs.List aria-label="Item editing" className="catalog-item-tabs">
+                            <Tabs.Trigger value="details">Details & photos</Tabs.Trigger>
+                            <Tabs.Trigger value="commerce">Price & stock</Tabs.Trigger>
+                          </Tabs.List>
+                        )}
                         {autosave.error && (
                           <p role="alert" className="text-sm cms-state-error">
                             {autosave.error}
                           </p>
                         )}
                       </header>
-                      {['releases', 'distro'].includes(collection) && (
-                        <div className="flex gap-2 border-b px-4" role="group" aria-label="Catalog details">
-                          {(['details', 'selling', 'stock'] as const).map((section) => (
-                            <Button
-                              key={section}
-                              variant={catalogTab === section ? 'secondary' : 'ghost'}
-                              aria-pressed={catalogTab === section}
-                              onClick={() => {
-                                setCatalogTab(section);
-                                const url = new URL(location.href);
-                                url.searchParams.set('tab', section);
-                                writeStaffLocation(url.pathname + url.search);
-                              }}
-                            >
-                              {section === 'details' ? 'Details' : section === 'selling' ? 'Selling' : 'Stock'}
-                            </Button>
-                          ))}
-                        </div>
-                      )}
-                      {catalogTab !== 'details' && (
-                        <ContentFeature
-                          key={`${document.item.id}:${catalogTab}`}
-                          name={catalogTab === 'selling' ? 'Selling' : 'Stock'}
-                        >
-                          <CatalogSelling
-                            item={document.item}
-                            base={base}
-                            section={catalogTab}
-                            onDetails={() => {
-                              setCatalogTab('details');
-                              const url = new URL(location.href);
-                              url.searchParams.set('tab', 'details');
-                              writeStaffLocation(url.pathname + url.search);
-                            }}
-                            onSummary={(summary) =>
-                              setDocument((current) =>
-                                current?.item.id === summary.id
-                                  ? { ...current, item: { ...current.item, selling: summary.selling } }
-                                  : current,
-                              )
-                            }
-                          />
-                        </ContentFeature>
-                      )}
-                      <div className="cms-editor-body" hidden={catalogTab !== 'details'}>
+                      <div className="cms-editor-body">
                         {validationAttempt > 0 && !validation.valid && (
                           <Alert variant="destructive" role="alert" className="mb-6">
                             <AlertDescription>
@@ -1533,38 +1613,80 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                             <AlertDescription className="whitespace-pre-wrap">{message}</AlertDescription>
                           </Alert>
                         )}
-                        <form
-                          id="content-editor-form"
-                          noValidate
-                          onSubmit={saveNew}
-                          onFocusCapture={(event) =>
-                            setFocusedPath(
-                              (event.target as HTMLElement).closest<HTMLElement>('[data-content-path]')?.dataset
-                                .contentPath ?? '',
-                            )
-                          }
-                        >
-                          <fieldset disabled={busy} className="cms-fields grid min-w-0 gap-6 @2xl:grid-cols-2">
-                            <legend className="sr-only">{contentSections[collection]} details</legend>
-                            <ContentFeature key={document.item.slug} name="Editor">
-                              <ContentFields
-                                collection={collection}
-                                data={data}
+                        <Tabs.Content value="details" forceMount hidden={itemTab !== 'details'}>
+                          <form
+                            id="content-editor-form"
+                            noValidate
+                            onSubmit={saveNew}
+                            onFocusCapture={(event) =>
+                              setFocusedPath(
+                                (event.target as HTMLElement).closest<HTMLElement>('[data-content-path]')?.dataset
+                                  .contentPath ?? '',
+                              )
+                            }
+                          >
+                            <fieldset
+                              disabled={busy || !!preparingPublication}
+                              className="cms-fields grid min-w-0 gap-6 @2xl:grid-cols-2"
+                            >
+                              <legend className="sr-only">{contentSections[collection]} details</legend>
+                              <ContentFeature key={`${collection}:${document.item.slug}`} name="Editor">
+                                <ContentFields
+                                  collection={collection}
+                                  data={data}
+                                  base={base}
+                                  disabled={busy || !!preparingPublication}
+                                  validation={validation}
+                                  validationAttempt={validationAttempt}
+                                  onAddUpcomingRelease={addUpcomingRelease}
+                                  editorIdentity={`${collection}:${document.item.slug}`}
+                                  onUploadPendingChange={registerUploadPending}
+                                  onAppendGalleryImages={(request) => {
+                                    const current = currentDocument.current;
+                                    if (!current || request.editorIdentity !== `${collection}:${current.item.slug}`)
+                                      return;
+                                    setData((latest) => {
+                                      const gallery = Array.isArray(latest.gallery) ? latest.gallery : [];
+                                      return { ...latest, gallery: [...gallery, ...request.images] };
+                                    });
+                                    setDirty(true);
+                                  }}
+                                  onChange={(next) => {
+                                    setData(next);
+                                    setDirty(true);
+                                  }}
+                                />
+                              </ContentFeature>
+                            </fieldset>
+                          </form>
+                        </Tabs.Content>
+                        <Tabs.Content value="commerce" forceMount hidden={itemTab !== 'commerce'}>
+                          {document.item.id && ['releases', 'distro'].includes(collection) && (
+                            <ContentFeature key={`${collection}:${document.item.id}:commerce`} name="Price and stock">
+                              <CatalogSelling
+                                item={document.item}
                                 base={base}
-                                disabled={busy}
-                                validation={validation}
-                                validationAttempt={validationAttempt}
-                                onAddUpcomingRelease={addUpcomingRelease}
-                                onChange={(next) => {
-                                  setData(next);
-                                  setDirty(true);
+                                onLeaveGuard={registerCommerceGuard}
+                                onDetails={() => {
+                                  setItemTab('details');
+                                  editorHeading.current?.focus();
+                                  if (editorHeading.current)
+                                    scrollElementWithLenis(editorHeading.current, { block: 'start' });
                                 }}
+                                onSummary={(summary) =>
+                                  setDocument((current) =>
+                                    current?.item.id === summary.id
+                                      ? { ...current, item: { ...current.item, selling: summary.selling } }
+                                      : current,
+                                  )
+                                }
                               />
                             </ContentFeature>
-                          </fieldset>
-                        </form>
+                          )}
+                          {!document.item.id && <p>Save the title first to set up price and stock.</p>}
+                        </Tabs.Content>
                       </div>
-                    </>
+                    </Tabs.Root>
                   ) : (
                     <div className="p-6 text-muted-foreground">Choose a title to edit.</div>
                   )}
@@ -1599,7 +1721,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                         setPreview(false);
                         requireValidContent();
                       }}
-                      active={!media && catalogTab === 'details' && (wide ? desktopPreview : preview)}
+                      active={!media && itemTab === 'details' && (wide ? desktopPreview : preview)}
                     />
                   </ContentFeature>
                 </Tabs.Content>

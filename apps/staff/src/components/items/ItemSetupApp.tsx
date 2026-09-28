@@ -18,6 +18,8 @@ import EditorialPicker from './EditorialPicker';
 import NewArtistFields from './NewArtistFields';
 import { euroMinor } from '../stock/ItemPriceEditor';
 import { createInternalStockApi, type CatalogSetupCommand } from '../../lib/backend/internal-stock-api';
+import ItemPublication from '../stock/ItemPublication';
+import PublicationReviewFlow from '../content/PublicationReviewFlow';
 import {
   createEditorialDraft,
   editorialRequest,
@@ -165,6 +167,9 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   const [sellRelease, setSellRelease] = useState(true);
   const [draftPending, setDraftPending] = useState<Parameters<typeof createEditorialDraft>[2] | null>(null);
   const [draftSaved, setDraftSaved] = useState('');
+  const [publishAfterSetup, setPublishAfterSetup] = useState(false);
+  const [reviewRelease, setReviewRelease] = useState(false);
+  const catalogDraftKey = `blackbox-catalog-draft:${backendBaseUrl}`;
   const storageKey = `blackbox-item-setup:${backendBaseUrl}`;
   const draftKey = `blackbox-release-draft:${backendBaseUrl}`;
   const sell = kind !== 'release' || mode === 'existing' || sellRelease;
@@ -215,8 +220,12 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
       const collection = kind === 'release' ? 'releases' : 'distro';
       if (!draftSlug.current) draftSlug.current = editorialSlug(title, crypto.randomUUID());
       sessionStorage.setItem(
-        `blackbox-catalog-draft:${backendBaseUrl}`,
-        JSON.stringify({ collection, slug: draftSlug.current }),
+        catalogDraftKey,
+        JSON.stringify({
+          collection,
+          slug: draftSlug.current,
+          setup: { amount, minimum, maximum, custom, quantity, restockPlanned, sellRelease },
+        }),
       );
       const current = draftDocument.current;
       const result = current
@@ -239,6 +248,26 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
     },
     saved: (data) => setSavedData(JSON.stringify(data)),
   });
+  function retainSetup(patch: Record<string, string | boolean>) {
+    if (mode !== 'new' || !draftSlug.current) return;
+    try {
+      const value = sessionStorage.getItem(catalogDraftKey);
+      if (value) {
+        const collection = kind === 'release' ? 'releases' : 'distro';
+        const draft = JSON.parse(value) as {
+          collection?: string;
+          slug?: string;
+          setup?: Record<string, string | boolean>;
+        };
+        if (draft.slug !== draftSlug.current || draft.collection !== collection) return;
+        sessionStorage.setItem(catalogDraftKey, JSON.stringify({ ...draft, setup: { ...draft.setup, ...patch } }));
+      }
+    } catch {
+      setMessage(
+        'Price and stock choices could not be saved for recovery. Keep this page open or re-enter them if you reopen it.',
+      );
+    }
+  }
   const unsaved = useRef(false);
   unsaved.current = mode === 'new' && !!title && savedData !== editorialJson;
   useEffect(() => {
@@ -299,15 +328,24 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
         })
         .catch(() => setMessage('This title could not be loaded. Return to the catalog and try again.'));
     } else {
-      const retained = sessionStorage.getItem(`blackbox-catalog-draft:${backendBaseUrl}`);
+      const retained = sessionStorage.getItem(catalogDraftKey);
       if (retained) {
         try {
-          const saved = JSON.parse(retained) as { collection: string; slug: string };
+          const saved = JSON.parse(retained) as { collection: string; slug: string; setup?: Record<string, unknown> };
           if (!['releases', 'distro'].includes(saved.collection) || !/^[a-z0-9-]+$/.test(saved.slug))
             throw new Error('Invalid draft');
           if (requestedKind && (requestedKind === 'release') !== (saved.collection === 'releases')) {
             setReady(true);
           } else {
+            if (saved.setup) {
+              if (typeof saved.setup.amount === 'string') setAmount(saved.setup.amount);
+              if (typeof saved.setup.minimum === 'string') setMinimum(saved.setup.minimum);
+              if (typeof saved.setup.maximum === 'string') setMaximum(saved.setup.maximum);
+              if (typeof saved.setup.custom === 'boolean') setCustom(saved.setup.custom);
+              if (typeof saved.setup.quantity === 'string') setQuantity(saved.setup.quantity);
+              if (typeof saved.setup.restockPlanned === 'boolean') setRestockPlanned(saved.setup.restockPlanned);
+              if (typeof saved.setup.sellRelease === 'boolean') setSellRelease(saved.setup.sellRelease);
+            }
             draftSlug.current = saved.slug;
             void editorialRequest<{ item: EditorialRecord; _rev: string }>(
               backendBaseUrl,
@@ -366,6 +404,8 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   }, []);
   async function submit(event: React.FormEvent) {
     event.preventDefault();
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const publishRequested = submitter instanceof HTMLButtonElement && submitter.value === 'publish';
     if (busy || needsReview || completed || draftSaved) return;
     if (!pending && !draftPending && step < 2) {
       if (step === 0 && !setupReadiness.slice(0, 2).every((item) => item.ready)) {
@@ -378,14 +418,16 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
       return;
     }
     if (mode === 'new' && !pending && !draftPending && !(await autosave.flush())) return;
+    if (publishRequested) setPublishAfterSetup(true);
     setBusy(true);
     setMessage('');
     try {
       if (!sell) {
         if (draftDocument.current) {
           setDraftSaved(draftDocument.current.item.id);
+          setReviewRelease(true);
           setMessage('Your release draft is ready to preview and publish.');
-          sessionStorage.removeItem(`blackbox-catalog-draft:${backendBaseUrl}`);
+          sessionStorage.removeItem(catalogDraftKey);
           return;
         }
         const command = draftPending ?? {
@@ -395,8 +437,11 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
         sessionStorage.setItem(draftKey, JSON.stringify(command));
         setDraftPending(command);
         const saved = await createEditorialDraft(backendBaseUrl, 'releases', command);
+        draftDocument.current = saved;
         sessionStorage.removeItem(draftKey);
+        sessionStorage.removeItem(catalogDraftKey);
         setDraftSaved(saved.item.id);
+        setReviewRelease(true);
         setMessage('Release draft saved. No price or stock was created. It is not published yet.');
         return;
       }
@@ -427,8 +472,9 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
       const result = await createInternalStockApi({ backendBaseUrl }).setupItem(command);
       if (result.status === 'completed') {
         sessionStorage.removeItem(storageKey);
-        sessionStorage.removeItem(`blackbox-catalog-draft:${backendBaseUrl}`);
+        sessionStorage.removeItem(catalogDraftKey);
         setCompleted(result.variantId);
+        setPublishAfterSetup((current) => current || publishRequested);
         setMessage('Item created. It is not published in the shop yet.');
       } else if (result.status === 'needs_review') {
         setNeedsReview(true);
@@ -578,7 +624,14 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           {existing && kind !== 'release' && <p>Format: {String(existing.data.group)}</p>}
           {kind === 'release' && mode === 'new' && (
             <label className="flex min-h-11 items-center gap-3">
-              <input type="checkbox" checked={sellRelease} onChange={(event) => setSellRelease(event.target.checked)} />
+              <input
+                type="checkbox"
+                checked={sellRelease}
+                onChange={(event) => {
+                  setSellRelease(event.target.checked);
+                  retainSetup({ sellRelease: event.target.checked });
+                }}
+              />
               Sell this release in the shop
             </label>
           )}
@@ -591,7 +644,14 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           >
             <legend className="staff-section-title mb-4 text-xl font-semibold">Price & starting stock</legend>
             <label className="flex min-h-11 items-center gap-3">
-              <input type="checkbox" checked={custom} onChange={(event) => setCustom(event.target.checked)} />
+              <input
+                type="checkbox"
+                checked={custom}
+                onChange={(event) => {
+                  setCustom(event.target.checked);
+                  retainSetup({ custom: event.target.checked });
+                }}
+              />
               Let buyers choose what to pay
             </label>
             {custom && (
@@ -601,7 +661,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                   required
                   inputMode="decimal"
                   value={minimum}
-                  onChange={(event) => setMinimum(event.target.value)}
+                  onChange={(event) => {
+                    setMinimum(event.target.value);
+                    retainSetup({ minimum: event.target.value });
+                  }}
                 />
               </label>
             )}
@@ -612,7 +675,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 inputMode="decimal"
                 placeholder="e.g. 25,00"
                 value={amount}
-                onChange={(event) => setAmount(event.target.value)}
+                onChange={(event) => {
+                  setAmount(event.target.value);
+                  retainSetup({ amount: event.target.value });
+                }}
               />
             </label>
             {custom && (
@@ -622,7 +688,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                   required
                   inputMode="decimal"
                   value={maximum}
-                  onChange={(event) => setMaximum(event.target.value)}
+                  onChange={(event) => {
+                    setMaximum(event.target.value);
+                    retainSetup({ maximum: event.target.value });
+                  }}
                 />
               </label>
             )}
@@ -634,7 +703,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 min={0}
                 step={1}
                 value={quantity}
-                onChange={(event) => setQuantity(event.target.value)}
+                onChange={(event) => {
+                  setQuantity(event.target.value);
+                  retainSetup({ quantity: event.target.value });
+                }}
               />
               <span className="text-sm text-muted-foreground">
                 These {kind === 'merch' ? 'units' : 'copies'} will also be available to buy online when the item is
@@ -651,7 +723,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
               <input
                 checked={restockPlanned}
                 className="peer sr-only"
-                onChange={(event) => setRestockPlanned(event.currentTarget.checked)}
+                onChange={(event) => {
+                  setRestockPlanned(event.currentTarget.checked);
+                  retainSetup({ restockPlanned: event.currentTarget.checked });
+                }}
                 role="switch"
                 aria-describedby="setup-restock-planned-description"
                 type="checkbox"
@@ -703,29 +778,75 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           </Button>
         )}
         {!completed && !draftSaved && (
-          <Button type="submit" disabled={!ready || busy || needsReview}>
-            {step < 2 ? <ArrowRight aria-hidden="true" /> : <Save aria-hidden="true" />}
-            {busy
-              ? 'Checking item…'
-              : pending || draftPending
-                ? 'Check again'
-                : step < 2
-                  ? 'Continue'
-                  : sell
-                    ? 'Confirm price and starting stock'
-                    : 'Save release draft'}
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="submit"
+              value={step < 2 ? 'continue' : pending || draftPending ? 'check' : 'publish'}
+              disabled={!ready || busy || needsReview}
+            >
+              {step < 2 ? <ArrowRight aria-hidden="true" /> : <Save aria-hidden="true" />}
+              {busy
+                ? 'Checking item…'
+                : pending || draftPending
+                  ? 'Check again'
+                  : step < 2
+                    ? 'Continue'
+                    : sell
+                      ? 'Create and publish'
+                      : 'Publish release'}
+            </Button>
+            {step === 2 && !pending && !draftPending && (
+              <Button type="submit" value="draft" variant="outline" disabled={!ready || busy || needsReview}>
+                Keep as draft
+              </Button>
+            )}
+          </div>
         )}
         {message && <p role="status">{message}</p>}
         {draftSaved && (
-          <a className="min-h-11 underline" href={`/content/?collection=releases&id=${encodeURIComponent(draftSaved)}`}>
-            Open release draft
-          </a>
+          <>
+            <a
+              className="min-h-11 underline"
+              href={`/content/?collection=releases&id=${encodeURIComponent(draftSaved)}`}
+            >
+              Open release draft
+            </a>
+            {!reviewRelease && (
+              <Button variant="outline" onClick={() => setReviewRelease(true)}>
+                Review and publish release
+              </Button>
+            )}
+            {reviewRelease && draftDocument.current && (
+              <PublicationReviewFlow
+                base={backendBaseUrl}
+                records={[
+                  {
+                    collection: 'releases',
+                    recordId: draftDocument.current.item.id,
+                    expectedRevision: draftDocument.current._rev,
+                  },
+                ]}
+                intent={publishAfterSetup ? 'publish' : 'review'}
+                onBack={() => {
+                  setReviewRelease(false);
+                  setPublishAfterSetup(false);
+                }}
+              />
+            )}
+          </>
         )}
         {completed && (
-          <a className="min-h-11 underline" href={`/items/?variantId=${encodeURIComponent(completed)}`}>
-            Open item price and stock
-          </a>
+          <>
+            <a className="min-h-11 underline" href={`/items/?variantId=${encodeURIComponent(completed)}`}>
+              Open item price and stock
+            </a>
+            <ItemPublication
+              key={completed}
+              variantId={completed}
+              backendBaseUrl={backendBaseUrl}
+              {...(publishAfterSetup ? { intent: 'publish' as const } : {})}
+            />
+          </>
         )}
       </form>
     </div>

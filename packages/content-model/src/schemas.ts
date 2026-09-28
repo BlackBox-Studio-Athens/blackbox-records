@@ -82,6 +82,14 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
     ),
     cover_image: image(),
     cover_image_alt: requiredAltText,
+    gallery: z
+      .array(
+        z.object({
+          image: image(),
+          image_alt: requiredAltText,
+        }),
+      )
+      .optional(),
     merch_url: internalOrHttpsUrl.optional(),
     bandcamp_embed_url: bandcampEmbedUrlSchema.optional(),
     tidal_url: tidalUrlSchema.optional(),

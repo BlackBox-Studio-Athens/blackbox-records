@@ -148,6 +148,10 @@ export async function readStaffWorkspace(
   }
   const [snapshot, overviewData] = await Promise.all([readSnapshot(), overview ? readOverview() : undefined]);
   const review = query.data.view === 'changes';
+  const catalogSearch =
+    !overview && !review && !id && collection && ['releases', 'distro'].includes(collection)
+      ? q?.trim().normalize('NFC').toLowerCase()
+      : undefined;
   const sections = (collection ? [collection] : Object.keys(sourceCollectionNames)).filter(
     (section) =>
       !review ||
@@ -232,7 +236,7 @@ export async function readStaffWorkspace(
             const result = await deps.runtime.handleContentList(section, {
               limit: collection ? limit : 5,
               cursor,
-              q,
+              q: catalogSearch ? undefined : q,
               orderBy:
                 collection && ['artists', 'releases', 'distro', 'news'].includes(section) && sort === 'title'
                   ? 'title'
@@ -269,7 +273,7 @@ export async function readStaffWorkspace(
       .filter((entry) => entry.collection === 'artists')
       .map((entry) => [entry.id, String(entry.data.title ?? '')]),
   );
-  if (!overview && !review && pages.some((page) => page.section === 'releases')) {
+  if (!overview && !review && !catalogSearch && pages.some((page) => page.section === 'releases')) {
     const artists = await deps.runtime.handleContentList('artists', {
       limit: 100,
       orderBy: 'updatedAt',
@@ -290,6 +294,41 @@ export async function readStaffWorkspace(
         }
         artistNames.set(artist.id, String(data.title ?? ''));
       }
+  }
+  if (catalogSearch) {
+    // ponytail: scan one native page per request until EmDash supports linked-artist search.
+    // The native cursor retains every later match without copying the catalogue into memory.
+    const artistIds = new Set(
+      pages
+        .filter((page) => page.section === 'releases')
+        .flatMap((page) => page.items.map((item) => String(item.data.artist ?? '')).filter(Boolean)),
+    );
+    for (const artistId of artistIds) {
+      const result = await deps.runtime.handleContentGet('artists', artistId);
+      if (!result.success) throw new Error('Artist search details are unavailable.');
+      const artist = result.data.item;
+      let data = artist.data;
+      if (artist.draftRevisionId) {
+        const revision = await deps.runtime.handleRevisionGet(artist.draftRevisionId);
+        if (
+          !revision.success ||
+          revision.data.item.entryId !== artist.id ||
+          revision.data.item.collection !== 'artists'
+        )
+          throw new Error('Saved Artist is unavailable.');
+        data = await readRevisionContent(deps.runtime, revision.data.item);
+      }
+      artistNames.set(artistId, String(data.title ?? ''));
+    }
+    for (const page of pages)
+      page.items = page.items.filter((item) =>
+        [item.data.title, item.slug, item.data.artist_or_label, artistNames.get(String(item.data.artist))]
+          .filter((value) => typeof value === 'string')
+          .join(' ')
+          .normalize('NFC')
+          .toLowerCase()
+          .includes(catalogSearch),
+      );
   }
   const pending = overviewData?.pending ?? (await readPending(pages));
   const identities = pages.flatMap((page) =>

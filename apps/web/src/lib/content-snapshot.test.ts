@@ -27,6 +27,7 @@ it('loads only checksum-bound content, maps stable references and rejects altere
       .toBuffer();
     const digest = (value: Uint8Array | string) => createHash('sha256').update(value).digest('hex');
     const image = { id: 'image', provider: 'local', width: 2, height: 3, filename: 'cover.png' };
+    const galleryImage = { ...image, id: 'gallery-image', filename: 'back-cover.png' };
     const snapshot = {
       schemaVersion: 1,
       environment: 'local',
@@ -57,6 +58,7 @@ it('loads only checksum-bound content, maps stable references and rejects altere
             release_date: '2026-09-14',
             cover_image: image,
             cover_image_alt: 'Cover',
+            gallery: [{ image: galleryImage, image_alt: 'Back cover' }],
           },
         },
       ],
@@ -65,6 +67,15 @@ it('loads only checksum-bound content, maps stable references and rejects altere
           id: 'image',
           sha256: digest(bytes),
           filename: 'cover.png',
+          mimeType: 'image/png',
+          size: bytes.length,
+          width: 2,
+          height: 3,
+        },
+        {
+          id: 'gallery-image',
+          sha256: digest(bytes),
+          filename: 'back-cover.png',
           mimeType: 'image/png',
           size: bytes.length,
           width: 2,
@@ -90,6 +101,15 @@ it('loads only checksum-bound content, maps stable references and rejects altere
       },
     });
     expect(snapshotCollection(loaded, 'releases')[0]!.data.tracklist).toBeUndefined();
+    expect(snapshotCollection(loaded, 'releases')[0]!.data.gallery).toEqual([
+      { image: `./media/${digest(bytes)}.png`, image_alt: 'Back cover' },
+    ]);
+    expect(publishedCollection(loaded.snapshot, 'releases', '/media/content')[0]!.data.gallery).toEqual([
+      {
+        image: { src: `/media/content/${digest(bytes)}`, width: 2, height: 3, format: 'png' },
+        image_alt: 'Back cover',
+      },
+    ]);
     const releaseSchema = createReleasesContentSchema(() => z.string(), { artist: z.string() });
     const releaseData = loaded.snapshot.records.find((record) => record.collection === 'releases')!.data;
     const upcomingRelease = {

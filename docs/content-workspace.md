@@ -16,7 +16,9 @@ Private editorial drafts autosave after a 1.5-second typing pause. Incomplete dr
 
 Release editors and imports keep the scalar `data.artist` contract. When EmDash binds that field to a native relation, the CMS translates writes to the native selection and projects reads back to the selected Artist. Publication and snapshot export resolve the selected revision's reference metadata in its locale, never a newer draft's artist selection. Legacy column-backed fields remain supported until migrated.
 
-Publish changes opens a review of the exact saved version. Optional list selection supports up to twenty eligible entries. Existing staged selections are recovered for review, never published automatically. The old persistent staging toolbar, Edit → Stage → Publish landing panel and routine Refresh controls are superseded. Per-entry On the website state must match its accepted snapshot revision.
+**Publish changes** saves the current edit, checks its exact revision and publishes that item through the existing publication operation. Its adjacent menu offers **Review before publishing** and **Review all saved changes**. Required linked drafts, conflicts and retained operations open the existing review or recovery interface instead of silently broadening the action. Optional list selection supports up to twenty eligible entries. Existing staged selections are recovered for review, never published automatically. Per-entry On the website state must match its accepted snapshot revision.
+
+Creation remains private until a final publish action. Leaving midway retains the autosaved draft; reopening never publishes or enables buying. For a sale item, **Create and publish** follows confirmed price and starting stock, completes setup, then uses shop publication to publish its content and enable buying. **Keep as draft** is the alternative. A website-only release uses **Publish release** without commerce setup.
 
 At widths of at least 1280 px, editors initially show a resizable public appearance preview; visibility is remembered. Smaller screens use Edit/Preview tabs. Hidden previews do no background work. Images remains one flat library; uploading alone does not publish anything. Alt text belongs to its editorial placement.
 
@@ -26,9 +28,15 @@ The [backoffice design reference](backoffice-design.md) and [staff glossary](../
 
 `pnpm build:staff` runs the route-isolation check and `pnpm performance:bundles --scope=staff`. The performance check bounds eager JavaScript and compressed HTML for Overview, Website, Stock and Orders, and rejects initial project stylesheet requests. Initial project CSS is included in authenticated HTML, which remains private and `no-store`; full document navigations therefore retransmit the extra 12–13 KiB of compressed HTML. With warmed assets, private asset responses near 100 ms and throughput of at least 10 Mbps, the conditional estimate is 50–200 ms faster primary content on routine visits. Hosted results can differ, and this estimate does not cover slow first HTML or API responses.
 
-For Distro items, order **More images** with the existing Move up/Move down controls. The first extra photo different from the main image appears on hover or keyboard focus. All gallery photos appear on the item page. Save and preview privately, then review and publish to update the public order; the main image stays unchanged.
+Release and Distro editors have **Details & photos** and **Price & stock** tabs on the same item. Switching tabs retains pending uploads, editorial edits and unsaved commerce input. The commerce tab uses the available editor width and the existing explicit price, stock adjustment and stock count commands. Shop-publication status and controls stay visible near the top; stock history expands when needed. Saving a price updates the selling price, with live confirmation when required. Shop publication publishes saved title, description and artwork without changing price or stock. The separate Inventory workspace remains available for stocktake rounds. Secondary music, credits and full-text fields use expandable groups; validation opens them when necessary.
+
+In **Photos**, select multiple JPG, PNG or WebP files (up to 20 MB each). Successful files append in order, without replacing the cover or other edits. Failed filenames remain available for retry; successful uploads are not repeated. Use Move up/Move down for gallery ordering. Save and preview privately, then review and publish; uploading never publishes. Existing CMS instances need the additive `releases.gallery` setup in the CMS application migration command before release gallery editing; it preserves stored content and pending drafts.
+
+The catalogue header trials a monochrome WebGL gradient. It is decorative, pauses when hidden or offscreen and falls back to a static CSS gradient for reduced motion or unavailable WebGL. Inputs retain solid backgrounds. The shared stock controls measured 153,047 compressed JavaScript bytes; their route budget is now 150 KiB (1,008 bytes above the previous budget).
 
 ## Editorial text formatting
+
+Catalogue search matches titles, slugs and band names: linked Artists for Releases and artist/label credits for Distro. It uses bounded native content pages and continues through empty search pages. Existing area, format and sort choices remain applied; search does not create a separate catalogue index.
 
 Descriptions, biographies, video descriptions, page introductions and stories, quotations, service details/contact notes, newsletter copy and purchase/privacy wording use the existing EmDash Portable Text editor. Paragraphs, line breaks, inline marks, lists, quotations, alignment and safe links survive preview, publication and cards. Unsupported blocks receive validation feedback.
 
@@ -79,6 +87,8 @@ Public navigation, overlays, filtering and playback run inside the selected cont
 Run `node --import tsx apps/backend/scripts/smoke-content-preview.mjs --browsers` against Local for all collection destinations and browser asset checks. `PREVIEW_STAFF_ORIGIN=http://127.0.0.1:8799` selects an isolated fixture when another worktree owns the canonical port. Hosted verification requires separate authorization and configured Access; Local evidence does not establish UAT/PRD rollout.
 
 ## Publication visibility
+
+The standalone review loads the same preview layout styles as the editor. Responsive images finish loading their selected source before decoding, including when the frame width changes during loading. Returning from another tab or application retains the reviewed revision and Publish action; reconnecting or a confirmed editorial-change event requires fresh review. The server still rejects stale revisions at publication time.
 
 Workspace reads check the accepted R2 pointer on every request. The CMS object retains only one verified manifest, keyed by bucket, environment and checksum (at most 4 MiB of manifest input). A warm match saves one manifest read and parse; drafts, pending publications and commerce still read fresh. Missing pointers remove accepted state; unreadable pointers or invalid new manifests fail the request without stale fallback. Object eviction simply causes a verified reload.
 

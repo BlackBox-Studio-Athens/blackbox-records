@@ -53,13 +53,18 @@ import {
 
 interface StockOperationsAppProps {
   backendBaseUrl: string;
+  embedded?: {
+    variantId: string;
+    onLeaveGuard(guard: (() => boolean) | null): void;
+  };
 }
 
 type HistoryEntry = InternalStockHistoryResponse['entries'][number];
 export type StockLoadingIntent = 'refresh' | 'search' | 'variant' | 'workspace' | null;
 type StockSubmittingIntent = 'stockChange' | 'stockCount' | 'restockPlan' | null;
 
-export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAppProps) {
+export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOperationsAppProps) {
+  const [otherPending, setOtherPending] = useState(false);
   const [query, setQuery] = useState('');
   const [ready, setReady] = useState(false);
   const typing = useRef(false);
@@ -112,7 +117,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
 
   const api = createInternalStockApi({ backendBaseUrl });
   const selectedStockDetail = canSubmitStockMutation(selectedVariantId, stockDetail) ? stockDetail : null;
-  const canMutateSelectedStock = !!selectedStockDetail && hasFreshStock && !isLoading;
+  const canMutateSelectedStock = !!selectedStockDetail && hasFreshStock && !isLoading && !otherPending;
   const adjustmentQuantity =
     selectedStockDetail && /^\d+$/.test(changeDelta)
       ? selectedStockDetail.stock.quantity + Number(changeDelta) * (stockDirection === 'remove' ? -1 : 1)
@@ -257,7 +262,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
       }
       setStatusMessage('Stock loaded.');
 
-      if (shouldUpdateUrl) {
+      if (shouldUpdateUrl && !embedded) {
         const url = new URL(window.location.href);
         url.searchParams.set('variantId', variantId);
         writeStaffLocation(url.pathname + url.search, { push: true, task: true, pages });
@@ -277,7 +282,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const variantId = params.get('variantId');
+    const variantId = embedded?.variantId ?? params.get('variantId');
     setQuery(params.get('q') ?? '');
     setArea(params.get('area') ?? 'all');
     setFormat(params.get('format') ?? '');
@@ -289,7 +294,19 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
         JSON.parse(sessionStorage.getItem(pendingChangeKey) ?? 'null'),
       );
       const stored = stocktakeSchema.safeParse(JSON.parse(sessionStorage.getItem(stocktakeKey) ?? 'null'));
-      if (stored.success) {
+      if (
+        embedded &&
+        ((pending.success && pending.data.variantId !== variantId) ||
+          (pendingChange.success && pendingChange.data.variantId !== variantId))
+      ) {
+        setOtherPending(true);
+        if (variantId) void loadVariant(variantId, false);
+        setReady(true);
+        return () => {
+          activeStockLoadRequestRef.current++;
+        };
+      }
+      if (stored.success && !embedded) {
         setStocktake(stored.data);
         setArea(stored.data.area);
         setFormat(stored.data.format);
@@ -346,7 +363,8 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   }
 
   useEffect(() => {
-    if (isLoading || !selectedVariantId || inventoryOpen || focusedVariant.current === selectedVariantId) return;
+    if (embedded || isLoading || !selectedVariantId || inventoryOpen || focusedVariant.current === selectedVariantId)
+      return;
     focusedVariant.current = selectedVariantId;
     if (window.document.activeElement?.closest('.staff-stock-controls')) return;
     window.document
@@ -370,10 +388,21 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     blocked: isSubmitting || changeUnconfirmed || countUnconfirmed,
   };
   useEffect(() => {
+    if (!embedded) return;
+    embedded.onLeaveGuard(() => {
+      if (navigation.current.blocked) return false;
+      return (
+        !navigation.current.unfinished || window.confirm('Discard the unfinished stock entries and leave this item?')
+      );
+    });
+    return () => embedded.onLeaveGuard(null);
+  }, [embedded?.onLeaveGuard]);
+  useEffect(() => {
     const beforeUnload = (event: BeforeUnloadEvent) => {
       if (navigation.current.unfinished) event.preventDefault();
     };
     const leave = (event: MouseEvent) => {
+      if (embedded || event.defaultPrevented) return;
       const link = (event.target as Element).closest('a[href]');
       if (
         !(link instanceof HTMLAnchorElement) ||
@@ -411,17 +440,19 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     };
     window.addEventListener('beforeunload', beforeUnload);
     window.document.addEventListener('click', leave, true);
-    const stopHistory = followStaffHistory(back, () => {
-      if (navigation.current.blocked) return false;
-      if (!navigation.current.unfinished) return true;
-      return new Promise<boolean>((resolve) => {
-        resolveHistoryLeave.current = resolve;
-        navigation.current.protectInput(() => {
-          resolveHistoryLeave.current = null;
-          resolve(true);
+    const stopHistory = embedded
+      ? () => {}
+      : followStaffHistory(back, () => {
+          if (navigation.current.blocked) return false;
+          if (!navigation.current.unfinished) return true;
+          return new Promise<boolean>((resolve) => {
+            resolveHistoryLeave.current = resolve;
+            navigation.current.protectInput(() => {
+              resolveHistoryLeave.current = null;
+              resolve(true);
+            });
+          });
         });
-      });
-    });
     return () => {
       window.removeEventListener('beforeunload', beforeUnload);
       window.document.removeEventListener('click', leave, true);
@@ -649,7 +680,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
     { enabled: ready && !isSubmitting, interval: 60_000 },
   );
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || embedded) return;
     const read = () => {
       typing.current = false;
       if (navigator.onLine && window.document.visibilityState === 'visible') void searchVariants(query);
@@ -664,173 +695,199 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
   const loadingLabel = readStockLoadingLabel(loadingIntent);
 
   return (
-    <div className={`staff-workspace staff-stock-workspace min-h-screen ${selectedVariantId ? 'has-selection' : ''}`}>
-      <header className="inventory-heading">
-        <h1>
-          {selectedStockDetail?.displayName ?? selectedStockDetail?.storeItemSlug.replaceAll('-', ' ') ?? 'Stock'}
-        </h1>
-        {selectedVariantId && <StaffBack />}
-      </header>
+    <div
+      className={
+        embedded
+          ? 'grid min-w-0 gap-4'
+          : `staff-workspace staff-stock-workspace min-h-screen ${selectedVariantId ? 'has-selection' : ''}`
+      }
+    >
+      {!embedded && (
+        <header className="inventory-heading">
+          <h1>
+            {selectedStockDetail?.displayName ?? selectedStockDetail?.storeItemSlug.replaceAll('-', ' ') ?? 'Stock'}
+          </h1>
+          {selectedVariantId && <StaffBack />}
+        </header>
+      )}
       <section
-        className={cn(
-          'inventory-workspace',
-          selectedVariantId && 'inventory-workspace-selected',
-          inventoryOpen && 'inventory-browsing',
-        )}
+        className={
+          embedded
+            ? 'min-w-0'
+            : cn(
+                'inventory-workspace',
+                selectedVariantId && 'inventory-workspace-selected',
+                inventoryOpen && 'inventory-browsing',
+              )
+        }
       >
-        <aside
-          ref={inventoryRef}
-          data-staff-scroll
-          data-lenis-scroll-root
-          tabIndex={-1}
-          className="inventory-list"
-          aria-label="Inventory"
-        >
-          <div className="inventory-toolbar">
-            <Input
-              aria-label="Search items"
-              placeholder="Search titles-"
-              value={query}
-              disabled={!!stocktake || startingStocktake}
-              onChange={(event) => {
-                typing.current = true;
-                setQuery(event.target.value);
-                setPageCursor('');
-                setPages(['']);
-              }}
-            />
-            <select
-              aria-label="Inventory area"
-              value={area}
-              disabled={!!stocktake || startingStocktake}
-              onChange={(event) => {
-                typing.current = false;
-                setArea(event.target.value);
-                setPageCursor('');
-                setPages(['']);
-              }}
-            >
-              <option value="all">All</option>
-              <option value="release">Label releases</option>
-              <option value="distro">Distro</option>
-              <option value="merch">Merch</option>
-            </select>
-            <FormatFilter
-              value={format}
-              disabled={!!stocktake || startingStocktake}
-              onChange={(value) => {
-                typing.current = false;
-                setFormat(value);
-                setPageCursor('');
-                setPages(['']);
-              }}
-            />
-            {!stocktake && (
+        {!embedded && (
+          <aside
+            ref={inventoryRef}
+            data-staff-scroll
+            data-lenis-scroll-root
+            tabIndex={-1}
+            className="inventory-list"
+            aria-label="Inventory"
+          >
+            <div className="inventory-toolbar">
+              <Input
+                aria-label="Search items"
+                placeholder="Search titles-"
+                value={query}
+                disabled={!!stocktake || startingStocktake}
+                onChange={(event) => {
+                  typing.current = true;
+                  setQuery(event.target.value);
+                  setPageCursor('');
+                  setPages(['']);
+                }}
+              />
+              <select
+                aria-label="Inventory area"
+                value={area}
+                disabled={!!stocktake || startingStocktake}
+                onChange={(event) => {
+                  typing.current = false;
+                  setArea(event.target.value);
+                  setPageCursor('');
+                  setPages(['']);
+                }}
+              >
+                <option value="all">All</option>
+                <option value="release">Label releases</option>
+                <option value="distro">Distro</option>
+                <option value="merch">Merch</option>
+              </select>
+              <FormatFilter
+                value={format}
+                disabled={!!stocktake || startingStocktake}
+                onChange={(value) => {
+                  typing.current = false;
+                  setFormat(value);
+                  setPageCursor('');
+                  setPages(['']);
+                }}
+              />
+              {!stocktake && (
+                <Button
+                  variant="outline"
+                  disabled={startingStocktake || isSubmitting}
+                  onClick={() => protectInput(() => void startStocktake())}
+                >
+                  {startingStocktake ? 'Preparing count…' : 'Count stock'}
+                </Button>
+              )}
+            </div>
+            <p role="status" className="inventory-message">
+              {searchMessage}
+            </p>
+            {!selectedVariantId && errorMessage && <p role="alert">{errorMessage}</p>}
+            {searchError && (
+              <p role="alert">
+                {searchError}{' '}
+                <Button variant="outline" onClick={() => void searchVariants()}>
+                  <ArrowDownUp aria-hidden="true" />
+                  Retry inventory
+                </Button>
+              </p>
+            )}
+            <div className="inventory-columns" aria-hidden="true">
+              <span>Title / format</span>
+              <span>On hand</span>
+              <span>Available to buy online</span>
+            </div>
+            {variants.map((variant) => (
+              <button
+                type="button"
+                key={variant.variantId}
+                id={`inventory-${variant.variantId}`}
+                className="inventory-row"
+                data-staff-row={variant.variantId}
+                aria-pressed={selectedVariantId === variant.variantId}
+                disabled={isSubmitting || !!stocktake}
+                onClick={() => protectInput(() => chooseVariant(variant.variantId))}
+              >
+                <span className="inventory-identity">
+                  {artwork[variant.variantId] ? (
+                    <img
+                      src={artwork[variant.variantId]}
+                      width="48"
+                      height="48"
+                      alt={variant.displayName ?? variant.storeItemSlug.replaceAll('-', ' ')}
+                      loading="lazy"
+                      onError={() =>
+                        setArtwork((current) => {
+                          if (!current[variant.variantId]) return current;
+                          const next = { ...current };
+                          delete next[variant.variantId];
+                          return next;
+                        })
+                      }
+                    />
+                  ) : (
+                    <Disc3 aria-hidden="true" className="inventory-artwork-placeholder" />
+                  )}
+                  <span>
+                    <strong>{variant.displayName ?? variant.storeItemSlug.replaceAll('-', ' ')}</strong>
+                    <small>{formatLabel(variant.itemType ?? 'Format not set')}</small>
+                  </span>
+                </span>
+                <span className="inventory-quantity">
+                  <strong>{variant.quantity ?? '-'}</strong>
+                  <small>{variant.itemType === 'Clothes' ? 'units' : 'copies'} on hand</small>
+                </span>
+                <span className="inventory-quantity">
+                  <strong>{variant.onlineQuantity ?? '-'}</strong>
+                  <small>available to buy online</small>
+                </span>
+              </button>
+            ))}
+            <nav aria-label="Inventory pages" className="inventory-pagination">
               <Button
                 variant="outline"
-                disabled={startingStocktake || isSubmitting}
-                onClick={() => protectInput(() => void startStocktake())}
-              >
-                {startingStocktake ? 'Preparing count…' : 'Count stock'}
-              </Button>
-            )}
-          </div>
-          <p role="status" className="inventory-message">
-            {searchMessage}
-          </p>
-          {!selectedVariantId && errorMessage && <p role="alert">{errorMessage}</p>}
-          {searchError && (
-            <p role="alert">
-              {searchError}{' '}
-              <Button variant="outline" onClick={() => void searchVariants()}>
-                <ArrowDownUp aria-hidden="true" />
-                Retry inventory
-              </Button>
-            </p>
-          )}
-          <div className="inventory-columns" aria-hidden="true">
-            <span>Title / format</span>
-            <span>On hand</span>
-            <span>Available to buy online</span>
-          </div>
-          {variants.map((variant) => (
-            <button
-              type="button"
-              key={variant.variantId}
-              id={`inventory-${variant.variantId}`}
-              className="inventory-row"
-              data-staff-row={variant.variantId}
-              aria-pressed={selectedVariantId === variant.variantId}
-              disabled={isSubmitting || !!stocktake}
-              onClick={() => protectInput(() => chooseVariant(variant.variantId))}
-            >
-              <span className="inventory-identity">
-                {artwork[variant.variantId] ? (
-                  <img
-                    src={artwork[variant.variantId]}
-                    width="48"
-                    height="48"
-                    alt={variant.displayName ?? variant.storeItemSlug.replaceAll('-', ' ')}
-                    loading="lazy"
-                    onError={() =>
-                      setArtwork((current) => {
-                        if (!current[variant.variantId]) return current;
-                        const next = { ...current };
-                        delete next[variant.variantId];
-                        return next;
-                      })
-                    }
-                  />
-                ) : (
-                  <Disc3 aria-hidden="true" className="inventory-artwork-placeholder" />
-                )}
-                <span>
-                  <strong>{variant.displayName ?? variant.storeItemSlug.replaceAll('-', ' ')}</strong>
-                  <small>{formatLabel(variant.itemType ?? 'Format not set')}</small>
-                </span>
-              </span>
-              <span className="inventory-quantity">
-                <strong>{variant.quantity ?? '-'}</strong>
-                <small>{variant.itemType === 'Clothes' ? 'units' : 'copies'} on hand</small>
-              </span>
-              <span className="inventory-quantity">
-                <strong>{variant.onlineQuantity ?? '-'}</strong>
-                <small>available to buy online</small>
-              </span>
-            </button>
-          ))}
-          <nav aria-label="Inventory pages" className="inventory-pagination">
-            <Button
-              variant="outline"
-              disabled={!pageCursor || isSearchPending}
-              onClick={() => {
-                typing.current = false;
-                const previous = pages.slice(0, -1);
-                setPages(previous.length ? previous : ['']);
-                setPageCursor(previous.at(-1) ?? '');
-              }}
-            >
-              <ChevronLeft aria-hidden="true" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              disabled={!nextCursor || isSearchPending}
-              onClick={() => {
-                if (nextCursor) {
+                disabled={!pageCursor || isSearchPending}
+                onClick={() => {
                   typing.current = false;
-                  setPages((value) => [...value, nextCursor]);
-                  setPageCursor(nextCursor);
-                }
-              }}
-            >
-              Next
-              <ChevronLeft className="rotate-180" aria-hidden="true" />
-            </Button>
-          </nav>
-        </aside>
+                  const previous = pages.slice(0, -1);
+                  setPages(previous.length ? previous : ['']);
+                  setPageCursor(previous.at(-1) ?? '');
+                }}
+              >
+                <ChevronLeft aria-hidden="true" />
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                disabled={!nextCursor || isSearchPending}
+                onClick={() => {
+                  if (nextCursor) {
+                    typing.current = false;
+                    setPages((value) => [...value, nextCursor]);
+                    setPageCursor(nextCursor);
+                  }
+                }}
+              >
+                Next
+                <ChevronLeft className="rotate-180" aria-hidden="true" />
+              </Button>
+            </nav>
+          </aside>
+        )}
         {selectedVariantId && (
-          <div className="staff-stock-task inventory-task" data-lenis-scroll-root>
+          <div
+            className={embedded ? 'staff-stock-task grid min-w-0 gap-4' : 'staff-stock-task inventory-task'}
+            data-lenis-scroll-root={!embedded || undefined}
+          >
+            {otherPending && (
+              <p role="alert">
+                Another item's stock update is unconfirmed.{' '}
+                <a className="underline" href="/stock/">
+                  Check it in Inventory
+                </a>{' '}
+                before entering a new change.
+              </p>
+            )}
             {stocktake && (
               <section className="stocktake-progress" aria-label="Counting progress">
                 <strong>
@@ -892,7 +949,7 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
                       ? (selectedStockDetail.displayName ?? selectedStockDetail.storeItemSlug.replaceAll('-', ' '))
                       : 'Choose an item to see its stock.'}
                   </CardDescription>
-                  {selectedStockDetail && (
+                  {selectedStockDetail && !embedded && (
                     <a
                       className="inline-flex min-h-11 items-center underline"
                       href={`/items/?${new URLSearchParams({
@@ -1219,28 +1276,31 @@ export default function StockOperationsApp({ backendBaseUrl }: StockOperationsAp
               </div>
             </div>
 
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle>Recent history</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-2">
-                {historyPending && <LoadingInline label="Loading stock history" />}
-                {historyError && (
-                  <p role="alert" className="text-sm text-destructive">
-                    History could not load. {historyError}
-                    <Button variant="outline" onClick={() => void loadVariant(selectedVariantId, false, 'refresh')}>
-                      Retry history
-                    </Button>
-                  </p>
-                )}
-                {history.map((entry) => (
-                  <HistoryRow entry={entry} key={`${entry.type}-${entry.id}`} />
-                ))}
-                {!historyPending && !historyError && history.length === 0 && (
-                  <p className="text-sm text-muted-foreground">No recent history loaded.</p>
-                )}
-              </CardContent>
-            </Card>
+            <details open={embedded ? undefined : true} className="border border-border bg-card p-4">
+              <summary className="cursor-pointer font-medium">Recent history</summary>
+              <Card className="border-0 bg-card shadow-none">
+                <CardHeader>
+                  <CardTitle className="sr-only">Recent history</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-2">
+                  {historyPending && <LoadingInline label="Loading stock history" />}
+                  {historyError && (
+                    <p role="alert" className="text-sm text-destructive">
+                      History could not load. {historyError}
+                      <Button variant="outline" onClick={() => void loadVariant(selectedVariantId, false, 'refresh')}>
+                        Retry history
+                      </Button>
+                    </p>
+                  )}
+                  {history.map((entry) => (
+                    <HistoryRow entry={entry} key={`${entry.type}-${entry.id}`} />
+                  ))}
+                  {!historyPending && !historyError && history.length === 0 && (
+                    <p className="text-sm text-muted-foreground">No recent history loaded.</p>
+                  )}
+                </CardContent>
+              </Card>
+            </details>
           </div>
         )}
       </section>{' '}

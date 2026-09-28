@@ -20,6 +20,7 @@ const server = createServer((request, response) => {
     const preview = { context: '00000000-0000-0000-0000-000000000001', generation: 1, parentOrigin: origin };
     response.end(`<!doctype html><meta name="blackbox-preview" content='${JSON.stringify(preview)}'>
       <img loading="lazy" src="/image.png" width="96" height="96">
+      <img loading="lazy" src="/image.png" srcset="/image.png?small 96w, /image.png?large 480w" sizes="(min-width: 500px) 480px, 96px" width="96" height="96">
       <img loading="lazy" src="/offscreen.png" style="position:absolute;top:10000px" width="96" height="96">
       <script type="module">${readiness}\nconnectPrivatePreview();</script>`);
   } else if (request.url === '/readiness-host') {
@@ -27,13 +28,15 @@ const server = createServer((request, response) => {
     response.end(`<!doctype html><script>addEventListener('message', event => {
       if (event.data.type === 'ready') document.documentElement.dataset.ready = 'true';
       if (event.data.type === 'failed') document.documentElement.dataset.failed = event.data.stage;
+      if (event.data.readinessStage === 'images') document.querySelector('iframe').style.width = '300px';
     });</script><iframe style="visibility:hidden;width:600px;height:400px" src="/readiness"></iframe>`);
   } else if (request.url === '/style.css') {
     response.setHeader('Content-Type', 'text/css');
     response.end('body { background-color: rgb(12, 34, 56); }');
-  } else if (request.url === '/image.png') {
+  } else if (request.url?.startsWith('/image.png')) {
     response.setHeader('Content-Type', 'image/png');
-    response.end(image);
+    if (request.url.includes('?')) setTimeout(() => response.end(image), 100);
+    else response.end(image);
   } else if (request.url === '/frame') {
     response.writeHead(200, {
       'Content-Type': 'text/html',
@@ -74,7 +77,9 @@ try {
       assert.equal(forbidden.length, 0);
       assert.ok(!hits.includes('/submitted'));
       await page.goto(origin + '/readiness-host');
-      await page.waitForFunction(() => document.documentElement.dataset.ready === 'true');
+      await page.waitForFunction(
+        () => document.documentElement.dataset.ready || document.documentElement.dataset.failed,
+      );
       assert.equal(await page.evaluate(() => document.documentElement.dataset.failed), undefined);
       assert.ok(!hits.includes('/offscreen.png'), 'Offscreen preview images remain lazy');
       console.log(

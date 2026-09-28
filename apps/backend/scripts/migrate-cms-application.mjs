@@ -56,6 +56,7 @@ let pending;
 let privateDraftFieldsToUpdate = 0;
 let calendarDateFieldsToUpdate = 0;
 let releaseStageToAdd = false;
+let releaseGalleryToAdd = false;
 try {
   const db = proxy.env.CMS_DB;
   const exists = await db
@@ -88,6 +89,62 @@ try {
           VALUES ('blackbox-release-stage', ?, 'release_stage', 'Release stage', 'string', 'text', 0)`,
               )
               .bind(releases.id),
+          );
+        await db.batch(statements);
+      }
+      const gallery = await db
+        .prepare('SELECT type, column_type, required FROM _emdash_fields WHERE collection_id = ? AND slug = ?')
+        .bind(releases.id, 'gallery')
+        .first();
+      const galleryColumn = columns.find((column) => column.name === 'gallery');
+      if (
+        (gallery &&
+          (gallery.type !== 'json' ||
+            gallery.column_type.toLowerCase() !== 'json' ||
+            Number(gallery.required) !== 0)) ||
+        (galleryColumn && (galleryColumn.type.toLowerCase() !== 'json' || Number(galleryColumn.notnull) !== 0))
+      )
+        throw new Error('Unexpected releases.gallery schema; stop before changing content.');
+      releaseGalleryToAdd = !gallery || !galleryColumn;
+      if (values.apply && releaseGalleryToAdd) {
+        const distroGallery = await db
+          .prepare(
+            `SELECT f.label, f.type, f.column_type, f.required
+            FROM _emdash_fields f JOIN _emdash_collections c ON c.id = f.collection_id
+            WHERE c.slug = 'distro' AND f.slug = 'gallery'`,
+          )
+          .first();
+        const distroGalleryColumn = (await db.prepare('PRAGMA table_info(ec_distro)').all()).results.find(
+          (column) => column.name === 'gallery',
+        );
+        if (
+          !distroGallery ||
+          distroGallery.type !== 'json' ||
+          distroGallery.column_type.toLowerCase() !== 'json' ||
+          Number(distroGallery.required) !== 0 ||
+          !distroGalleryColumn ||
+          distroGalleryColumn.type.toLowerCase() !== 'json' ||
+          Number(distroGalleryColumn.notnull) !== 0
+        )
+          throw new Error('Unexpected distro.gallery schema; cannot register the matching Release gallery safely.');
+        const statements = [];
+        if (!galleryColumn)
+          statements.push(db.prepare(`ALTER TABLE ec_releases ADD COLUMN gallery ${distroGallery.column_type}`));
+        if (!gallery)
+          statements.push(
+            db
+              .prepare(
+                `INSERT INTO _emdash_fields
+          (id, collection_id, slug, label, type, column_type, required)
+          VALUES ('blackbox-release-gallery', ?, 'gallery', ?, ?, ?, ?)`,
+              )
+              .bind(
+                releases.id,
+                distroGallery.label,
+                distroGallery.type,
+                distroGallery.column_type,
+                distroGallery.required,
+              ),
           );
         await db.batch(statements);
       }
@@ -146,6 +203,7 @@ try {
         privateDraftFieldsToUpdate,
         calendarDateFieldsToUpdate,
         releaseStageToAdd,
+        releaseGalleryToAdd,
       },
       null,
       2,
