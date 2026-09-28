@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, FileText, Plus, Boxes, RefreshCw } from 'lucide-react';
 import { editorialRequest, type EditorialList, type EditorialRecord } from '../lib/backend/editorial-api';
 import { readContentPublications, type ContentPublication } from '../lib/backend/content-publication-api';
-import { createInternalOrderApi } from '../lib/backend/internal-order-api';
 import { readStaffQuery, useStaffRead } from '../lib/staff-query';
 import { Button } from './ui/button';
 import { contentSections, type ContentSection } from '../lib/content-sections';
@@ -75,9 +74,10 @@ export default function StaffOverview({ base }: { base: string }) {
     const request = ++ordersRequest.current;
     setOrdersState(checkingPanel);
     try {
-      const page = await readStaffQuery(['overview-orders', base], () =>
-        createInternalOrderApi(base).search({ status: 'needs_review', limit: 1 }),
-      );
+      const page = await readStaffQuery(['overview-orders', base], async () => {
+        const { createInternalOrderApi } = await import('../lib/backend/internal-order-api');
+        return createInternalOrderApi(base).search({ status: 'needs_review', limit: 1 });
+      });
       if (!isCurrent(id) || ordersRequest.current !== request) return;
       setReviewOrders(page.items.length > 0);
       setOrdersState({ status: 'ready', error: '', hasLoaded: true });

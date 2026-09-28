@@ -249,7 +249,7 @@ export default function ContentPreview({
       setPending(null);
       setError('');
       setDiagnostic(null);
-      setStatus('Complete the required details to preview this draft');
+      setStatus('Complete the required details to preview this draft. Required fields are marked with *.');
       return;
     }
     if (rendered?.inputKey === inputKey && Date.now() < rendered.refreshAt) {

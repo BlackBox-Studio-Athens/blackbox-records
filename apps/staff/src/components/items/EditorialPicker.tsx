@@ -87,7 +87,9 @@ function RecordPicker({
   const selected = selectedItem?.id === value ? selectedItem : items.find((item) => item.id === value);
   return (
     <Field data-invalid={!!fieldError || (requiredError && !value)}>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
+      <FieldLabel htmlFor={id} required>
+        {label}
+      </FieldLabel>
       <input
         className="sr-only"
         tabIndex={-1}
@@ -115,6 +117,7 @@ function RecordPicker({
             variant="outline"
             role="combobox"
             aria-label={label}
+            aria-required="true"
             aria-expanded={open}
             className="w-full justify-between"
             onBlur={onBlur}

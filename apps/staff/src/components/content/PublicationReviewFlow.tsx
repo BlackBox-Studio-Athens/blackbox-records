@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { CheckCircle2, CircleAlert, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, CircleAlert, ArrowLeft, ArrowRight, RefreshCw } from 'lucide-react';
 import type { PublicationReview, PublicationReviewInput } from '@blackbox/content-model';
 import { changedPublicationFields } from '@blackbox/content-model';
 import { Button } from '../ui/button';
@@ -248,6 +248,7 @@ export default function PublicationReviewFlow({
         <div className="publication-issues">
           <p>Review needs to be refreshed before publishing.</p>
           <Button variant="outline" disabled={busy} onClick={() => void loadReview()}>
+            <RefreshCw aria-hidden="true" />
             Review latest changes
           </Button>
         </div>
@@ -280,9 +281,11 @@ export default function PublicationReviewFlow({
               {review && (
                 <a href={review.publicUrl} target="_blank" rel="noreferrer">
                   View website
+                  <ArrowRight className="-rotate-45" aria-hidden="true" />
                 </a>
               )}
               <Button variant="outline" onClick={onBack}>
+                <ArrowLeft aria-hidden="true" />
                 {individual ? 'Back to editing' : 'Back to changes'}
               </Button>
             </>
@@ -298,6 +301,7 @@ export default function PublicationReviewFlow({
                 void loadReview(saved);
               }}
             >
+              <RefreshCw aria-hidden="true" />
               Review changes again
             </Button>
           ) : (
@@ -307,10 +311,12 @@ export default function PublicationReviewFlow({
                 update.
               </p>
               <Button variant="outline" disabled={busy || polling.checking} onClick={() => void polling.check()}>
+                <RefreshCw aria-hidden="true" />
                 Check status
               </Button>
               {!operation && (
                 <Button disabled={busy} onClick={() => void publish()}>
+                  <RefreshCw aria-hidden="true" />
                   Retry same publication
                 </Button>
               )}
@@ -440,6 +446,7 @@ export default function PublicationReviewFlow({
               }
               onClick={() => void publish()}
             >
+              <CheckCircle2 aria-hidden="true" />
               {busy
                 ? 'Checking…'
                 : !previewReady

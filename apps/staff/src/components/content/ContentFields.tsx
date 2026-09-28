@@ -91,6 +91,7 @@ export default function ContentFields({
     list?: string;
   };
   function field(path: string, label: string, options: FieldOptions = {}) {
+    const required = options.required ?? true;
     if (options.prose || (options.multiline && path !== 'content.seller.address')) {
       const scalarFields: readonly string[] = scalarProseFields[collection as keyof typeof scalarProseFields] ?? [];
       const storagePath = scalarFields.includes(path) ? `${path}_rich` : path;
@@ -102,12 +103,15 @@ export default function ContentFields({
       const fieldErrors = errors(path);
       return (
         <Field className="col-span-full min-w-0" key={path} data-invalid={fieldErrors.length > 0}>
-          <FieldLabel id={`${id}-label`}>{label}</FieldLabel>
+          <FieldLabel id={`${id}-label`} required={required}>
+            {label}
+          </FieldLabel>
           <Suspense fallback={<p role="status">Loading text editor…</p>}>
             <ContentBodyEditor
               aria-labelledby={`${id}-label`}
               aria-describedby={`${id}-error`}
               aria-invalid={fieldErrors.length > 0}
+              aria-required={required}
               data-content-path={path}
               editable={!disabled}
               value={proseBlocks(content) as never}
@@ -134,7 +138,7 @@ export default function ContentFields({
       id,
       'data-content-path': path,
       value: String(value(path) ?? ''),
-      required: options.required ?? true,
+      required,
       'aria-invalid': fieldErrors.length > 0 || undefined,
       'aria-describedby': describedBy || undefined,
       onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -156,7 +160,9 @@ export default function ContentFields({
         data-invalid={fieldErrors.length > 0}
         key={path}
       >
-        <FieldLabel htmlFor={props.id}>{label}</FieldLabel>
+        <FieldLabel htmlFor={props.id} required={required}>
+          {label}
+        </FieldLabel>
         {options.multiline ? (
           <Textarea {...props} className={fieldClass} rows={4} />
         ) : (
@@ -202,7 +208,9 @@ export default function ContentFields({
         className="col-span-full min-w-0 gap-4 border-y border-border py-6"
         data-invalid={errors(path).length > 0}
       >
-        <FieldLegend variant="label">{label}</FieldLegend>
+        <FieldLegend variant="label" required>
+          {label}
+        </FieldLegend>
         <FieldGroup className="gap-4">
           <ContentImagePicker
             cropRatio={collection === 'artists' ? 0.75 : ['releases', 'distro'].includes(collection) ? 1 : undefined}
@@ -353,9 +361,12 @@ export default function ContentFields({
         {rows('profile_links', 'Artist links', { label: 'Bandcamp', url: '' }, (path) => (
           <>
             <Field>
-              <FieldLabel htmlFor={`content-${path}-service`}>Service</FieldLabel>
+              <FieldLabel htmlFor={`content-${path}-service`} required>
+                Service
+              </FieldLabel>
               <NativeSelect
                 id={`content-${path}-service`}
+                aria-required="true"
                 value={
                   artistLinkNames.includes(value(`${path}.label`) as (typeof artistLinkNames)[number])
                     ? String(value(`${path}.label`))
@@ -487,7 +498,9 @@ export default function ContentFields({
           const errorId = `${id}-error`;
           return (
             <Field data-invalid={fieldErrors.length > 0}>
-              <FieldLabel htmlFor={id}>Physical format</FieldLabel>
+              <FieldLabel htmlFor={id} required>
+                Physical format
+              </FieldLabel>
               <NativeSelect
                 id={id}
                 data-content-path="group"
@@ -700,7 +713,9 @@ export default function ContentFields({
         const errorId = `${id}-error`;
         return (
           <Field data-invalid={fieldErrors.length > 0}>
-            <FieldLabel htmlFor={id}>Public wording approval</FieldLabel>
+            <FieldLabel htmlFor={id} required>
+              Public wording approval
+            </FieldLabel>
             <NativeSelect
               id={id}
               data-content-path="publication"
@@ -782,11 +797,14 @@ function YouTubeField({
   const invalid = !!url && !youtubeVideoId(url);
   return (
     <Field data-invalid={invalid || !!errors.length}>
-      <FieldLabel htmlFor={`content-${path}`}>YouTube URL</FieldLabel>
+      <FieldLabel htmlFor={`content-${path}`} required>
+        YouTube URL
+      </FieldLabel>
       <Input
         id={`content-${path}`}
         data-content-path={path}
         value={url}
+        aria-required="true"
         aria-invalid={invalid || !!errors.length}
         aria-describedby={`content-${path}-error`}
         onChange={(event) => {

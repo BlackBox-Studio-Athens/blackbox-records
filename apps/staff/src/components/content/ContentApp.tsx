@@ -15,7 +15,20 @@ import {
 } from '../../lib/staff-navigation';
 import StaffBack from '../StaffBack';
 import { Button } from '../ui/button';
-import { Eye, EyeOff, FileText, History, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  FileText,
+  History,
+  MoreHorizontal,
+  Plus,
+  RefreshCw,
+  Search,
+  Trash2,
+} from 'lucide-react';
 import { Badge } from '../ui/badge';
 
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
@@ -103,13 +116,16 @@ function CatalogPager({
     <nav aria-label={`Catalog pages, ${placement}`} className="flex flex-wrap items-center gap-2 p-4">
       <p className="w-full text-sm text-muted-foreground">{position}</p>
       <Button variant="outline" className="min-h-11" disabled={busy || !previous} onClick={() => turn('previous')}>
+        <ArrowLeft aria-hidden="true" />
         Previous
       </Button>
       <Button variant="outline" className="min-h-11" disabled={busy || !next} onClick={() => turn('next')}>
         Next
+        <ArrowRight aria-hidden="true" />
       </Button>
       {first && (
         <Button variant="ghost" className="min-h-11" disabled={busy} onClick={() => turn('first')}>
+          <ChevronLeft aria-hidden="true" />
           First page
         </Button>
       )}
@@ -1051,7 +1067,10 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     return (
       <div className="cms-surface staff-page publication-editor" data-lenis-scroll-root>
         <Button asChild variant="outline">
-          <a href="/review/">All saved changes</a>
+          <a href="/review/">
+            <ArrowLeft aria-hidden="true" />
+            All saved changes
+          </a>
         </Button>
         <ContentFeature name="Publication review">
           <PublicationReviewFlow
@@ -1157,12 +1176,16 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                 <div className="flex gap-2">
                   <Button asChild>
                     <a href={`/items/new/?kind=${collection === 'releases' ? 'release' : 'distro'}`}>
+                      <Plus aria-hidden="true" />
                       Add {collection === 'releases' ? 'release' : 'distro'}
                     </a>
                   </Button>
                   {collection === 'distro' && (
                     <Button variant="outline" asChild>
-                      <a href="/items/new/?kind=merch">Add merch</a>
+                      <a href="/items/new/?kind=merch">
+                        <Plus aria-hidden="true" />
+                        Add merch
+                      </a>
                     </Button>
                   )}
                 </div>
@@ -1175,6 +1198,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               )}
               {!mobileEditor && document && (
                 <Button type="button" variant="secondary" className="md:hidden" onClick={() => setMobileEditor(true)}>
+                  <ArrowLeft aria-hidden="true" />
                   Return to draft
                 </Button>
               )}
@@ -1187,6 +1211,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
               <div role="alert" className="p-4">
                 {listError}{' '}
                 <Button variant="outline" disabled={busy} onClick={() => retryList.current()}>
+                  <RefreshCw aria-hidden="true" />
                   Retry page
                 </Button>
               </div>
@@ -1297,6 +1322,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                 onClick={() => void moveLink(index, -1)}
                                 aria-label={`Move ${String(item.data.title)} up`}
                               >
+                                <ArrowRight className="-rotate-90" aria-hidden="true" />
                                 Move up
                               </Button>
                               <Button
@@ -1305,6 +1331,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                 onClick={() => void moveLink(index, 1)}
                                 aria-label={`Move ${String(item.data.title)} down`}
                               >
+                                <ArrowRight className="rotate-90" aria-hidden="true" />
                                 Move down
                               </Button>
                             </div>
@@ -1327,10 +1354,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                       setSort('title');
                     }}
                   >
+                    <RefreshCw aria-hidden="true" />
                     Reset filters
                   </Button>
                   {pageCursor.current && (
                     <Button variant="outline" onClick={() => turnPage('first')}>
+                      <ChevronLeft aria-hidden="true" />
                       First page
                     </Button>
                   )}
@@ -1384,6 +1413,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                           <div className="flex items-center gap-2">
                             {autosave.error && (
                               <Button variant="outline" onClick={() => void autosave.flush()}>
+                                <RefreshCw aria-hidden="true" />
                                 Retry save
                               </Button>
                             )}

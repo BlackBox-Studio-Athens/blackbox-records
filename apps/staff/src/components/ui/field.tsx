@@ -23,15 +23,21 @@ function FieldSet({ className, ...props }: React.ComponentProps<'fieldset'>) {
 function FieldLegend({
   className,
   variant = 'legend',
+  required = false,
+  children,
   ...props
-}: React.ComponentProps<'legend'> & { variant?: 'legend' | 'label' }) {
+}: React.ComponentProps<'legend'> & { variant?: 'legend' | 'label'; required?: boolean }) {
   return (
     <legend
       data-slot="field-legend"
       data-variant={variant}
       className={cn('mb-3 font-medium', 'data-[variant=legend]:text-base', 'data-[variant=label]:text-sm', className)}
       {...props}
-    />
+    >
+      {children}
+      {required && <span aria-hidden="true" className="ml-1 text-destructive after:content-['*']" />}
+      {required && <span className="sr-only"> (required)</span>}
+    </legend>
   );
 }
 
@@ -85,7 +91,12 @@ function Field({
   );
 }
 
-function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>) {
+function FieldLabel({
+  className,
+  required = false,
+  children,
+  ...props
+}: React.ComponentProps<typeof Label> & { required?: boolean }) {
   return (
     <Label
       data-slot="field-label"
@@ -96,7 +107,10 @@ function FieldLabel({ className, ...props }: React.ComponentProps<typeof Label>)
         className,
       )}
       {...props}
-    />
+    >
+      {children}
+      {required && <span aria-hidden="true" className="text-destructive after:content-['*']" />}
+    </Label>
   );
 }
 

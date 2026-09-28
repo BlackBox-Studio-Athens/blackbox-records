@@ -104,11 +104,14 @@ export default function TracklistFields({
                   className="grid min-w-0 gap-3 border-t border-border py-3 sm:grid-cols-[minmax(0,1fr)_8rem]"
                 >
                   <Field>
-                    <FieldLabel htmlFor={`track-${groupIndex}-${trackIndex}`}>Track {trackIndex + 1} title</FieldLabel>
+                    <FieldLabel htmlFor={`track-${groupIndex}-${trackIndex}`} required>
+                      Track {trackIndex + 1} title
+                    </FieldLabel>
                     <Input
                       id={`track-${groupIndex}-${trackIndex}`}
                       value={track.title}
                       maxLength={300}
+                      aria-required="true"
                       onChange={(event) =>
                         changeTracks(groupIndex, (tracks) =>
                           tracks.map((current, index) =>

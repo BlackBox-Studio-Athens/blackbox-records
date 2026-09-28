@@ -348,6 +348,7 @@ export default function MediaLibrary({
       {cursor && (
         <Button type="button" variant="outline" disabled={busy} onClick={() => void search(cursor)}>
           Show more images
+          <ChevronDown aria-hidden="true" />
         </Button>
       )}
       <Sheet
@@ -502,6 +503,7 @@ export function ContentImagePicker({
                 aria-describedby={fieldError ? errorId : undefined}
                 onBlur={onBlur}
               >
+                <ImageIcon aria-hidden="true" />
                 {value ? 'Change' : 'Choose'} {label.toLowerCase()}
               </Button>
             </SheetTrigger>
