@@ -13,10 +13,11 @@ const validSources = {
   checkoutStatus:
     'showReviewSiteMarker view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine Test checkout. No real payment will be taken. <Button',
   envDeclaration: "readonly SHOW_REVIEW_SITE_MARKER?: 'true';",
-  header: "import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'; TEST SITE Test payments only",
+  header:
+    "import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'; UAT · TESTING ONLY Data here is separate and does not transfer to or from the production site. https://blackbox-records-web.pages.dev/",
   holdingWorkflow: 'run: pnpm build',
   siteLayout:
-    "const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'; const htmlTitle = `[TEST] ${baseHtmlTitle}`;",
+    "const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'; const htmlTitle = `[UAT] ${baseHtmlTitle}`;",
   staticDeployWorkflow: [
     '- name: Build hosted UAT static frontend',
     '  env:',

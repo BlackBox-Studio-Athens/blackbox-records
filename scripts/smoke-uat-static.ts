@@ -98,8 +98,12 @@ const representativeReleaseSlug = 'disintegration';
 const representativeArtistSlug = 'chronoboros';
 const representativeNewsSlug = 'lorem-ipsum';
 const representativeStoreItemSlug = 'disintegration-black-vinyl-lp';
-const reviewSiteMarkerTexts = ['TEST SITE', 'Test payments only'] as const;
-const reviewSiteTitlePrefix = '[TEST] ';
+const reviewSiteMarkerTexts = [
+  'UAT · TESTING ONLY',
+  'Data here is separate and does not transfer to or from the production site.',
+  'Open production site',
+] as const;
+const reviewSiteTitlePrefix = '[UAT] ';
 const reviewSiteCheckoutWarning = 'Test checkout. No real payment will be taken.';
 
 const allScenarioNames: readonly UatStaticSmokeScenarioName[] = ['public_assets', 'checkout_shell', 'public_routes'];

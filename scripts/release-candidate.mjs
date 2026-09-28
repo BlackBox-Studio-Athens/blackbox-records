@@ -559,8 +559,8 @@ function packTarget(target) {
     .join('\n');
   assert.ok(worker.includes(sha) && worker.includes('X-Release-SHA'), 'Worker has no compiled release identity.');
   const html = readFileSync(`${bundle}/${publicPath}/index.html`, 'utf8');
-  if (target === 'uat') assert.ok(html.includes('[TEST] ') && html.includes('TEST SITE'));
-  else assert.ok(!html.includes('[TEST] ') && !html.includes('TEST SITE'));
+  if (target === 'uat') assert.ok(html.includes('[UAT] ') && html.includes('UAT · TESTING ONLY'));
+  else assert.ok(!html.includes('[UAT] ') && !html.includes('UAT · TESTING ONLY'));
   assert.ok(existsSync(`${bundle}/${publicPath}/_headers`));
   const wrongBackend = target === 'uat' ? config.prdBackend : config.uatBackend;
   for (const file of Object.keys(inventory(`${bundle}/${publicPath}`)).filter((name) => /\.(html|js)$/.test(name))) {
@@ -650,8 +650,8 @@ async function main(command, target) {
     }
     for (const surface of ['uat/public', 'prd/public']) {
       const html = readFileSync(`${bundle}/${surface}/index.html`, 'utf8');
-      if (surface === 'uat/public') assert.ok(html.includes('[TEST] ') && html.includes('TEST SITE'));
-      else assert.ok(!html.includes('[TEST] ') && !html.includes('TEST SITE'));
+      if (surface === 'uat/public') assert.ok(html.includes('[UAT] ') && html.includes('UAT · TESTING ONLY'));
+      else assert.ok(!html.includes('[UAT] ') && !html.includes('UAT · TESTING ONLY'));
       if (surface.endsWith('public')) {
         assert.ok(existsSync(`${bundle}/${surface}/_headers`));
         const wrongBackend = surface.startsWith('uat') ? config.prdBackend : config.uatBackend;

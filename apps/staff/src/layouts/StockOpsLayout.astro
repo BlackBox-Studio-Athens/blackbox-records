@@ -9,7 +9,8 @@ interface Props {
 }
 
 const { pageTitle, pageDescription } = Astro.props;
-const htmlTitle = pageTitle + ' | BlackBox Records';
+const htmlTitle =
+  (import.meta.env.PUBLIC_STAFF_ENVIRONMENT === 'uat' ? '[UAT] ' : '') + pageTitle + ' | BlackBox Records';
 ---
 
 <!doctype html>

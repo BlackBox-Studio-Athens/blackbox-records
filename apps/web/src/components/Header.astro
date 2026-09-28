@@ -12,19 +12,21 @@ interface Props {
 
 const { pathname } = Astro.props;
 const headerNavigationItems = await getHeaderNavigationItems();
+const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true';
 ---
 
-<HeaderShell>
+<HeaderShell hasBanner={showReviewSiteMarker}>
+  {showReviewSiteMarker && (
+    <aside slot="banner" class="uat-site-banner" aria-label="UAT environment">
+      <strong>UAT · TESTING ONLY</strong>
+      <span>Data here is separate and does not transfer to or from the production site.</span>
+      <a href="https://blackbox-records-web.pages.dev/" target="_blank" rel="noopener noreferrer">
+        Open production site <span aria-hidden="true">↗</span>
+      </a>
+    </aside>
+  )}
   <div class="header-brand-group">
     <HeaderBrand href={createProjectRelativeUrl('/')} />
-    {import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true' && (
-      <span class="header-review-site-marker" aria-label="Test site. Test payments only.">
-        <span class="header-review-site-marker-label" aria-hidden="true">
-          TEST SITE
-        </span>
-        <span aria-hidden="true">Test payments only</span>
-      </span>
-    )}
   </div>
   <HeaderDesktopNav items={headerNavigationItems} pathname={pathname} />
 

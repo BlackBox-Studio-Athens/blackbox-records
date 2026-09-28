@@ -1,18 +1,36 @@
 ---
 interface Props {
   class?: string;
+  hasBanner?: boolean;
 }
 
-const { class: className } = Astro.props;
+const { class: className, hasBanner = false } = Astro.props;
 ---
 
 <header
   class:list={[
-    'fixed inset-x-0 top-0 z-[1000] h-[var(--header-height)] border-b border-[#2b2b2b] bg-[#0d0d0d]/90 backdrop-blur-[10px]',
+    'fixed inset-x-0 top-0 z-[1000] border-b border-[#2b2b2b] bg-[#0d0d0d]/90 backdrop-blur-[10px]',
+    hasBanner ? 'uat-site-header' : 'h-[var(--header-height)]',
     className,
   ]}
 >
-  <div class="mx-auto flex h-full w-full max-w-[1240px] items-center justify-between gap-4 px-[var(--header-padding-x-mobile)] md:gap-6 md:px-[var(--header-padding-x-desktop)]">
+  <slot name="banner" />
+  <div
+    class:list={[
+      'mx-auto flex w-full max-w-[1240px] items-center justify-between gap-4 px-[var(--header-padding-x-mobile)] md:gap-6 md:px-[var(--header-padding-x-desktop)]',
+      hasBanner ? 'h-20' : 'h-full',
+    ]}
+  >
     <slot />
   </div>
 </header>
+
+<script>
+  const header = document.querySelector<HTMLElement>('.uat-site-header');
+  if (header) {
+    const updateHeight = () =>
+      document.documentElement.style.setProperty('--header-height', `${header.offsetHeight}px`);
+    updateHeight();
+    new ResizeObserver(updateHeight).observe(header);
+  }
+</script>

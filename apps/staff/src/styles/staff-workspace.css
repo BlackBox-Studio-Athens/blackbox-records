@@ -16,6 +16,34 @@
   min-width: 0;
   min-height: 0;
 }
+.uat-site-banner {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 16px;
+  padding: 4px 12px;
+  background: oklch(88% 0.16 95);
+  color: oklch(20% 0.02 95);
+  font:
+    400 14px/1.5 Inter,
+    system-ui,
+    sans-serif;
+}
+.uat-site-banner a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.staff-shell .uat-site-banner a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
 .staff-shell-header {
   display: flex;
   align-items: center;
@@ -451,12 +479,6 @@ body[data-workspace='content'] {
 .staff-navigation-drawer :is(a, button):focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
-}
-.staff-shell-header .staff-environment-badge {
-  font-size: 0.625rem;
-  line-height: 1.2;
-  min-height: 0;
-  padding: 2px 4px;
 }
 @media (min-width: 1440px) {
   .staff-shell-header {

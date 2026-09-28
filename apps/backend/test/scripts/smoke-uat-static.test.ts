@@ -31,7 +31,14 @@ describe('UAT static smoke', () => {
     expect(() => findPublicMediaPath('<main></main>', 'https://example.test/')).toThrow();
   });
   it('retains UAT marker checks', () => {
-    expect(checkReviewSiteMarker('TEST SITE Test payments only', '[TEST] Store', '/store/')).toEqual([]);
+    expect(
+      checkReviewSiteMarker(
+        'UAT · TESTING ONLY Data here is separate and does not transfer to or from the production site. Open production site',
+        '[UAT] Store',
+        '/store/',
+      ),
+    ).toEqual([]);
+    expect(checkReviewSiteMarker('TEST SITE Test payments only', '[TEST] Store', '/store/').length).toBeGreaterThan(0);
     expect(checkReviewSiteMarker('Store', 'Store', '/store/').length).toBeGreaterThan(0);
   });
   it('records public route status without hiding its actual response', () => {

@@ -316,7 +316,7 @@ test('pack-target CLI produces independently verifiable UAT and PRD bundles', (c
     write('apps/backend/cms-migrations/fixture.sql', 'SELECT 1;');
     write(`.codex-artifacts/release-content/${target}/identity.json`, 'null');
     const bundle = '.codex-artifacts/release';
-    write(`${bundle}/${target}/public/index.html`, target === 'uat' ? '[TEST] TEST SITE' : 'PRD SITE');
+    write(`${bundle}/${target}/public/index.html`, target === 'uat' ? '[UAT] UAT · TESTING ONLY' : 'PRD SITE');
     write(`${bundle}/${target}/public/_headers`, 'fixture headers');
     write(`${bundle}/${target}/renderer/server/entry.mjs`, sha);
     const worker = target === 'uat' ? 'worker' : 'cms';
@@ -385,7 +385,7 @@ test('target bundles assemble only when identities, digests, and migration inven
       mkdirSync(`${root}/${targetPath}`, { recursive: true });
       writeFileSync(`${root}/${targetPath}/artifact`, targetPath === 'migrations' ? 'same migration' : targetPath);
       if (targetPath === `${target}/public`) {
-        writeFileSync(`${root}/${targetPath}/index.html`, target === 'uat' ? '[TEST] TEST SITE' : 'PRD SITE');
+        writeFileSync(`${root}/${targetPath}/index.html`, target === 'uat' ? '[UAT] UAT · TESTING ONLY' : 'PRD SITE');
         writeFileSync(`${root}/${targetPath}/_headers`, 'headers');
         writeFileSync(
           `${root}/${targetPath}/release.json`,

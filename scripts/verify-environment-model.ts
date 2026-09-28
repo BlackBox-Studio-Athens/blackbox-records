@@ -219,10 +219,11 @@ export function verifyReviewSiteMarkerSources({
   return (
     envDeclaration.includes("readonly SHOW_REVIEW_SITE_MARKER?: 'true';") &&
     header.includes("import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'") &&
-    header.includes('TEST SITE') &&
-    header.includes('Test payments only') &&
+    header.includes('UAT · TESTING ONLY') &&
+    header.includes('Data here is separate and does not transfer to or from the production site.') &&
+    header.includes('https://blackbox-records-web.pages.dev/') &&
     siteLayout.includes("import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'") &&
-    siteLayout.includes('`[TEST] ${baseHtmlTitle}`') &&
+    siteLayout.includes('`[UAT] ${baseHtmlTitle}`') &&
     checkoutStatus.includes('showReviewSiteMarker') &&
     checkoutStatus.includes('Test checkout. No real payment will be taken.') &&
     checkoutStatus.indexOf('view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine') <

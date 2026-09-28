@@ -290,6 +290,15 @@ export default function StaffShell({
 
   return (
     <div className="staff-shell cms-surface">
+      {environment === 'uat' && (
+        <aside className="uat-site-banner" aria-label="UAT environment">
+          <strong>UAT · TESTING ONLY</strong>
+          <span>Data here is separate and does not transfer to or from the production site.</span>
+          <a href="https://staff.blackboxrecordsathens.com/" target="_blank" rel="noopener noreferrer">
+            Open production site <span aria-hidden="true">↗</span>
+          </a>
+        </aside>
+      )}
       <header className="staff-shell-header">
         <a className="staff-brand" href="/" aria-label="BlackBox Records Staff">
           <img src="/logo-horizontal.png" alt="" width="686" height="162" />
@@ -301,7 +310,6 @@ export default function StaffShell({
           <span className="staff-current-area">
             {url.pathname.startsWith('/review/') ? 'Website changes' : area.label}
           </span>
-          {environment === 'uat' && <span className="staff-environment-badge">Test environment</span>}
         </div>
         <ReviewChangesControl className="staff-review-link" current={url.pathname.startsWith('/review/')} />
         <div className="staff-header-utilities">{utilities()}</div>

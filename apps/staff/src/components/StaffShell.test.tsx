@@ -13,5 +13,9 @@ it.each([
     </StaffShell>,
   );
   expect(html).toContain(`href="${href}" target="_blank" rel="noopener noreferrer"`);
-  expect(html.includes('Test environment')).toBe(environment === 'uat');
+  expect(html.includes('UAT · TESTING ONLY')).toBe(environment === 'uat');
+  expect(html.includes('Data here is separate and does not transfer to or from the production site.')).toBe(
+    environment === 'uat',
+  );
+  expect(html.includes('href="https://staff.blackboxrecordsathens.com/" target="_blank"')).toBe(environment === 'uat');
 });

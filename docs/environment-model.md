@@ -19,7 +19,7 @@ Main pushes deploy only UAT. Disabled PRD code promotion separately requires `ta
 
 ## Review Site Marker
 
-The UAT static build sets the private build-time flag `SHOW_REVIEW_SITE_MARKER=true` and renders three cues: a solid `TEST SITE` label with `Test payments only` beneath the header wordmark, a `[TEST]` browser-title prefix, and `Test checkout. No real payment will be taken.` beside the final checkout action. Local, full PRD, PRD Holding Page, and diagnostic builds leave the flag unset, so they render none of these cues. Review Site Marker is presentational only: Worker feature gates and Stripe configuration still control checkout and payment authority.
+The UAT public build sets the private build-time flag `SHOW_REVIEW_SITE_MARKER=true`; Staff uses its existing `PUBLIC_STAFF_ENVIRONMENT=uat`. Both show a permanent yellow banner above the header: `UAT · TESTING ONLY` and `Data here is separate and does not transfer to or from the production site.` The `Open production site` link opens the corresponding production home in a new tab: `https://blackbox-records-web.pages.dev/` for public or `https://staff.blackboxrecordsathens.com/` for Staff. The banner wraps on mobile, remains visible while scrolling, and cannot be dismissed. Both browser titles start with `[UAT]`. Public checkout retains `Test checkout. No real payment will be taken.` beside the final checkout action. Local and PRD builds render none of these UAT cues. Review Site Marker is presentational only: Worker feature gates and Stripe configuration still control checkout and payment authority.
 
 Use this non-technical template when sharing the UAT URL:
 
