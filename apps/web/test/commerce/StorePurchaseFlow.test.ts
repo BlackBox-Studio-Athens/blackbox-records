@@ -92,7 +92,7 @@ import {
   createCartLineItemSnapshotForStorePage,
   createPricedCartSeedForStorePage,
   getStorePageEntryBySlug,
-} from '@/lib/store-page-data';
+} from '@/components/store/store-page-data';
 
 afterEach(() => {
   vi.unstubAllGlobals();

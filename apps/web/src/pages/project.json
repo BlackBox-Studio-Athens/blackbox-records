@@ -7,8 +7,11 @@
     "store-cart",
     "storefront-catalog",
     "ui-foundation",
+    "web-artists",
+    "web-editorial",
     "web-layouts",
-    "web-platform"
+    "web-platform",
+    "web-store"
   ],
   "targets": {
     "test": {
@@ -33,10 +36,13 @@
         "ui-foundation",
         "storefront-catalog",
         "web-content-files",
+        "web-editorial",
         "store-cart",
         "checkout-web",
         "web-platform",
-        "web-layouts"
+        "web-layouts",
+        "web-artists",
+        "web-store"
       ],
       "workspaceInterfaces": {
         "@blackbox/content-model": ["."],

@@ -1,7 +1,7 @@
 ---
 import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
-import ReleaseCard from '@/components/cards/ReleaseCard.astro';
+import ReleaseCard from '@/components/editorial/ReleaseCard.astro';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import {
@@ -11,7 +11,7 @@ import {
   mapArtistProfilesById,
   resolveReleaseArtistDisplayName,
 } from '@/lib/catalog-data';
-import { getReleaseCommerceLink } from '@/lib/release-commerce';
+import { getReleaseCommerceLink } from '@/components/editorial/release-commerce';
 import { isReleaseOutNow, selectReleasePageEntries } from '@/lib/release-feature';
 import { formatDayMonthYear, formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';

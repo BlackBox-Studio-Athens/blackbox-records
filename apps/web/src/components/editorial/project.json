@@ -1,0 +1,34 @@
+{
+  "name": "web-editorial",
+  "tags": ["module", "scope:web"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --project=web-editorial --project=web-editorial:worker --project=web-editorial:request --config vitest.modules.config.ts",
+      "inputs": ["webTests", "^default"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/web exec vitest --watch --project=web-editorial --project=web-editorial:worker --project=web-editorial:request --config vitest.modules.config.ts",
+      "cache": false,
+      "continuous": true
+    }
+  },
+  "implicitDependencies": ["player", "storefront-catalog", "ui-foundation", "web-platform", "web-store"],
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./HomeHero.astro",
+        "./NewsCard.astro",
+        "./NewsDetailContent.astro",
+        "./ReleaseCard.astro",
+        "./ReleaseDetailContent.astro",
+        "./release-commerce.ts"
+      ],
+      "namedInterfaces": {},
+      "dependsOn": ["player", "storefront-catalog", "ui-foundation", "web-platform", "web-store"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
+  }
+}

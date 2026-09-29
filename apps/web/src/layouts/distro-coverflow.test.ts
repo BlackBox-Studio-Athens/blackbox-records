@@ -8,7 +8,7 @@ const pageSource = readFileSync(
   'utf8',
 );
 const cardSource = readFileSync(
-  fileURLToPath(new URL('../components/cards/StoreItemCard.astro', import.meta.url)),
+  fileURLToPath(new URL('../components/store/StoreItemCard.astro', import.meta.url)),
   'utf8',
 );
 const appShellSource = readFileSync(
@@ -27,8 +27,8 @@ const controllerSource = readFileSync(
   fileURLToPath(new URL('../components/store/StoreCoverflowController.ts', import.meta.url)),
   'utf8',
 );
-const layoutSource = readFileSync(fileURLToPath(new URL('../layouts/SiteLayout.astro', import.meta.url)), 'utf8');
-const cssSource = readFileSync(fileURLToPath(new URL('./global.css', import.meta.url)), 'utf8');
+const layoutSource = readFileSync(fileURLToPath(new URL('./SiteLayout.astro', import.meta.url)), 'utf8');
+const cssSource = readFileSync(fileURLToPath(new URL('../styles/global.css', import.meta.url)), 'utf8');
 
 const controls = readFileSync(
   fileURLToPath(new URL('../components/store/StoreCoverflowControls.astro', import.meta.url)),

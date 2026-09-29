@@ -7,7 +7,7 @@ const source = readFileSync(
   fileURLToPath(new URL('../components/store/StoreDistroCatalog.astro', import.meta.url)),
   'utf8',
 );
-const cssSource = readFileSync(fileURLToPath(new URL('./global.css', import.meta.url)), 'utf8');
+const cssSource = readFileSync(fileURLToPath(new URL('../styles/global.css', import.meta.url)), 'utf8');
 
 const browse = readFileSync(
   fileURLToPath(new URL('../components/store/StoreBrowsePane.astro', import.meta.url)),

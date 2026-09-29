@@ -3,24 +3,21 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const css = readFileSync(fileURLToPath(new URL('./global.css', import.meta.url)), 'utf8');
+const css = readFileSync(fileURLToPath(new URL('../styles/global.css', import.meta.url)), 'utf8');
 const distroCatalog = readFileSync(
   fileURLToPath(new URL('../components/store/StoreDistroCatalog.astro', import.meta.url)),
   'utf8',
 );
 const releaseCard = readFileSync(
-  fileURLToPath(new URL('../components/cards/ReleaseCard.astro', import.meta.url)),
+  fileURLToPath(new URL('../components/editorial/ReleaseCard.astro', import.meta.url)),
   'utf8',
 );
 const releaseDetail = readFileSync(
-  fileURLToPath(new URL('../components/detail/ReleaseDetailContent.astro', import.meta.url)),
+  fileURLToPath(new URL('../components/editorial/ReleaseDetailContent.astro', import.meta.url)),
   'utf8',
 );
-const releasesPage = readFileSync(fileURLToPath(new URL('../pages/releases/index.astro', import.meta.url)), 'utf8');
-const storeItemDetail = readFileSync(
-  fileURLToPath(new URL('../pages/store/[slug]/index.astro', import.meta.url)),
-  'utf8',
-);
+const releasesPage = readFileSync(fileURLToPath(new URL('./releases/index.astro', import.meta.url)), 'utf8');
+const storeItemDetail = readFileSync(fileURLToPath(new URL('./store/[slug]/index.astro', import.meta.url)), 'utf8');
 
 function readClassRule(className: string) {
   const match = new RegExp(`\\.${className}\\s*\\{([^}]*)\\}`, 's').exec(css);

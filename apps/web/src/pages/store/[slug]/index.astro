@@ -18,13 +18,13 @@ import {
   resolveArtistProfileForRelease,
   resolveReleaseArtistDisplayName,
 } from '@/lib/catalog-data';
-import { getStorePageEntryBySlug } from '@/lib/store-page-data';
+import { getStorePageEntryBySlug } from '@/components/store/store-page-data';
 import {
   createCartLineItemSnapshotForStorePage,
   createPricedCartSeedForStorePage,
   type StorePageEntry,
   createStorePageStaticPaths,
-} from '@/lib/store-page-data';
+} from '@/components/store/store-page-data';
 
 export async function getStaticPaths() {
   return createStorePageStaticPaths();

@@ -3,10 +3,10 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const source = (path: string) => readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8');
-const css = source('./global.css');
+const css = source('../styles/global.css');
 const internalPageHero = source('../components/InternalPageHero.astro');
-const releasesPage = source('../pages/releases/index.astro');
-const servicesPage = source('../pages/services/index.astro');
+const releasesPage = source('./releases/index.astro');
+const servicesPage = source('./services/index.astro');
 
 function cssRule(selector: string) {
   const match = new RegExp(`\\${selector}\\s*\\{([^}]*)\\}`).exec(css);

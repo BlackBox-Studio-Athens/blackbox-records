@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search } from 'lucide-react';
 
-import { createArtistRosterSearcher } from '@/components/artists/artist-roster-search';
+import { createArtistRosterSearcher } from './artist-roster-search';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 

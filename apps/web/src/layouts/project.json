@@ -1,7 +1,7 @@
 {
   "name": "web-layouts",
   "tags": ["application", "scope:web"],
-  "implicitDependencies": ["app-shell", "storefront-catalog", "web-platform"],
+  "implicitDependencies": ["app-shell", "storefront-catalog", "web-platform", "web-store"],
   "targets": {
     "test": {
       "command": "pnpm --filter @blackbox/web exec vitest run --config vitest.modules.config.ts --project=web-layouts",
@@ -26,7 +26,8 @@
         "store-cart",
         "checkout-web",
         "web-platform",
-        "web-pages"
+        "web-pages",
+        "web-store"
       ],
       "workspaceInterfaces": {
         "@blackbox/content-model": ["."],

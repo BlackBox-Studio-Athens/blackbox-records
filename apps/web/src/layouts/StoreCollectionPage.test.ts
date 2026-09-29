@@ -13,7 +13,7 @@ const allRouteSource = source('../pages/store/index.astro');
 const releasesRouteSource = source('../pages/store/blackbox-releases/index.astro');
 const distroRouteSource = source('../pages/store/distro/index.astro');
 const merchRouteSource = source('../pages/store/merch/index.astro');
-const storeItemCardSource = source('../components/cards/StoreItemCard.astro');
+const storeItemCardSource = source('../components/store/StoreItemCard.astro');
 const proseCssSource = source('../styles/prose.css');
 
 describe('Store collection category surfaces', () => {

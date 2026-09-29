@@ -1,0 +1,27 @@
+{
+  "name": "web-artists",
+  "tags": ["module", "scope:web"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --project=web-artists --project=web-artists:worker --project=web-artists:request --config vitest.modules.config.ts",
+      "inputs": ["webTests", "^default"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/web exec vitest --watch --project=web-artists --project=web-artists:worker --project=web-artists:request --config vitest.modules.config.ts",
+      "cache": false,
+      "continuous": true
+    }
+  },
+  "implicitDependencies": ["player", "storefront-catalog", "ui-foundation", "web-platform"],
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./ArtistCard.astro", "./ArtistDetailContent.astro", "./ArtistsRosterFilters.tsx"],
+      "namedInterfaces": {},
+      "dependsOn": ["player", "storefront-catalog", "ui-foundation", "web-platform"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
+  }
+}

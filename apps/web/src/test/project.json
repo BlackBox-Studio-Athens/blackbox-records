@@ -21,7 +21,8 @@
         "checkout-web",
         "web-platform",
         "web-pages",
-        "web-layouts"
+        "web-layouts",
+        "web-store"
       ],
       "workspaceInterfaces": {
         "@blackbox/content-model": ["."],

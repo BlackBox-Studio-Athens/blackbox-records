@@ -7,7 +7,7 @@ const redirectLayoutSource = readFileSync(
   fileURLToPath(new URL('../layouts/RedirectLayout.astro', import.meta.url)),
   'utf8',
 );
-const redirectPageSource = readFileSync(fileURLToPath(new URL('../pages/distro/index.astro', import.meta.url)), 'utf8');
+const redirectPageSource = readFileSync(fileURLToPath(new URL('./distro/index.astro', import.meta.url)), 'utf8');
 
 describe('legacy Distro redirect', () => {
   it('preserves the browser fragment only for opt-in redirect callers', () => {

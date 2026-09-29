@@ -1,0 +1,45 @@
+{
+  "name": "web-store",
+  "tags": ["module", "scope:web"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --project=web-store --project=web-store:worker --project=web-store:request --config vitest.modules.config.ts",
+      "inputs": ["webTests", "^default"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/web exec vitest --watch --project=web-store --project=web-store:worker --project=web-store:request --config vitest.modules.config.ts",
+      "cache": false,
+      "continuous": true
+    }
+  },
+  "implicitDependencies": [
+    "checkout-web",
+    "player",
+    "store-cart",
+    "storefront-catalog",
+    "ui-foundation",
+    "web-platform"
+  ],
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./StoreBrowsePane.astro",
+        "./StoreCategoryNavigation.astro",
+        "./StoreCoverflowControls.astro",
+        "./StoreDistroCatalog.astro",
+        "./StoreDistroSearch.tsx",
+        "./StoreImageGallery.tsx",
+        "./StoreItemCard.astro",
+        "./StoreListingPricePresentation.ts",
+        "./StoreOfferPriceDisplay.tsx",
+        "./store-page-data.ts"
+      ],
+      "namedInterfaces": {},
+      "dependsOn": ["player", "store-cart", "checkout-web", "storefront-catalog", "ui-foundation", "web-platform"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
+  }
+}

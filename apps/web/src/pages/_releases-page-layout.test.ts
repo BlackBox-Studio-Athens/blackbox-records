@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const globalCssPath = fileURLToPath(new URL('./global.css', import.meta.url));
-const releasesPagePath = fileURLToPath(new URL('../pages/releases/index.astro', import.meta.url));
+const globalCssPath = fileURLToPath(new URL('../styles/global.css', import.meta.url));
+const releasesPagePath = fileURLToPath(new URL('./releases/index.astro', import.meta.url));
 
 describe('Releases page layout', () => {
   it('renders one compact route-local catalog identity', () => {

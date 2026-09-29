@@ -2,13 +2,19 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(fileURLToPath(new URL('../../pages/store/[slug]/index.astro', import.meta.url)), 'utf8');
+const source = readFileSync(fileURLToPath(new URL('./store/[slug]/index.astro', import.meta.url)), 'utf8');
 const releaseDetail = readFileSync(
-  fileURLToPath(new URL('../detail/ReleaseDetailContent.astro', import.meta.url)),
+  fileURLToPath(new URL('../components/editorial/ReleaseDetailContent.astro', import.meta.url)),
   'utf8',
 );
-const gallerySource = readFileSync(fileURLToPath(new URL('./StoreImageGallery.tsx', import.meta.url)), 'utf8');
-const storeCard = readFileSync(fileURLToPath(new URL('../cards/StoreItemCard.astro', import.meta.url)), 'utf8');
+const gallerySource = readFileSync(
+  fileURLToPath(new URL('../components/store/StoreImageGallery.tsx', import.meta.url)),
+  'utf8',
+);
+const storeCard = readFileSync(
+  fileURLToPath(new URL('../components/store/StoreItemCard.astro', import.meta.url)),
+  'utf8',
+);
 
 describe('Store Item detail gallery contract', () => {
   it('contains complete artwork and preserves alternate-photo nodes in the compact frame', () => {

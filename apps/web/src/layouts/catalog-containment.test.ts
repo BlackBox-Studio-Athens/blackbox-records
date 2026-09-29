@@ -7,7 +7,7 @@ const source = (path: string) => readFileSync(fileURLToPath(new URL(path, import
 
 describe('catalog containment', () => {
   it('keeps continuous Distro grids server rendered without fixed per-card containment', () => {
-    const css = source('./global.css');
+    const css = source('../styles/global.css');
     const distroCatalog = source('../components/store/StoreDistroCatalog.astro');
 
     expect(css).not.toMatch(/\.store-item-card--listing\s*{[^}]*(?:block-size:\s*40rem|contain:\s*strict)/s);
@@ -19,7 +19,7 @@ describe('catalog containment', () => {
   });
 
   it('retains invisible preview layout and eagerly renders complete Store catalogs', () => {
-    const css = source('./global.css');
+    const css = source('../styles/global.css');
     expect(css).not.toMatch(/\.distro-group-grid[^{}]*\{[^}]*(?:content-visibility|contain-intrinsic)/s);
     expect(css).toMatch(
       /prefers-reduced-motion:\s*no-preference[^]*?\[data-store-coverflow-stage\]\s*\{\s*display:\s*grid;\s*visibility:\s*hidden;/,
@@ -29,13 +29,13 @@ describe('catalog containment', () => {
       /\.store-item-card--listing \.brand-card-title\s*\{\s*font-family:\s*var\(--font-display-brand\)/,
     );
     expect(css).toMatch(/\.store-item-card--listing\s*\{\s*contain: layout inline-size;/);
-    expect(source('../layouts/SiteLayout.astro')).not.toContain('display=swap');
+    expect(source('./SiteLayout.astro')).not.toContain('display=swap');
   });
 
   it('keeps the eager Store listing server-rendered with its listing-price projection', () => {
-    const css = source('./global.css');
-    const storePage = source('../layouts/StoreCollectionPage.astro');
-    const storeCard = source('../components/cards/StoreItemCard.astro');
+    const css = source('../styles/global.css');
+    const storePage = source('./StoreCollectionPage.astro');
+    const storeCard = source('../components/store/StoreItemCard.astro');
 
     expect(css).not.toMatch(/\.store-item-card--listing\s*{[^}]*(?:content-visibility|contain-intrinsic)/s);
     expect(css).toMatch(

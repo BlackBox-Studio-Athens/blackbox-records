@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const source = readFileSync(fileURLToPath(new URL('../pages/sitemap.xml.ts', import.meta.url)), 'utf8');
+const source = readFileSync(fileURLToPath(new URL('./sitemap.xml.ts', import.meta.url)), 'utf8');
 
 describe('sitemap Store category coverage', () => {
   it('derives discoverable Store collection paths without a standalone Distro URL', () => {

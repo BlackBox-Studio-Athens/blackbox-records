@@ -3,8 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-const aboutPage = readFileSync(fileURLToPath(new URL('../pages/about/index.astro', import.meta.url)), 'utf8');
-const globalCss = readFileSync(fileURLToPath(new URL('./global.css', import.meta.url)), 'utf8');
+const aboutPage = readFileSync(fileURLToPath(new URL('./about/index.astro', import.meta.url)), 'utf8');
+const globalCss = readFileSync(fileURLToPath(new URL('../styles/global.css', import.meta.url)), 'utf8');
 
 describe('About contact presentation', () => {
   it('keeps one ordered contact list with first-item prominence and native email links', () => {

@@ -6,7 +6,7 @@ import {
   createStorePageStaticPaths,
   getStorePageEntryBySlug,
 } from './store-page-data';
-import { buildEmbeddedPlayerData } from '../components/music/music';
+import { buildEmbeddedPlayerData } from '@/components/music/music';
 
 const mockCatalogData = vi.hoisted(() => ({
   getStoreItemBySlug: vi.fn(),
@@ -17,12 +17,12 @@ const mockItemAvailability = vi.hoisted(() => ({
   getPrimaryAvailabilityForStoreItem: vi.fn(),
 }));
 
-vi.mock('./catalog-data', () => ({
+vi.mock('@/lib/catalog-data', () => ({
   getStoreItemBySlug: mockCatalogData.getStoreItemBySlug,
   listStoreItems: mockCatalogData.listStoreItems,
 }));
 
-vi.mock('./item-availability', () => ({
+vi.mock('@/lib/item-availability', () => ({
   getPrimaryAvailabilityForStoreItem: mockItemAvailability.getPrimaryAvailabilityForStoreItem,
   hasStructuredItemPrice: (price: { amountMinor?: unknown; currencyCode?: unknown } | null | undefined) =>
     Boolean(price && typeof price.amountMinor === 'number' && typeof price.currencyCode === 'string'),

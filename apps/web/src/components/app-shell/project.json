@@ -17,7 +17,16 @@
       "status": "closed",
       "exports": ["./AppShellRoot.tsx"],
       "namedInterfaces": {},
-      "dependsOn": ["player", "store-cart", "checkout-web", "storefront-catalog", "ui-foundation", "web-platform"],
+      "dependsOn": [
+        "player",
+        "store-cart",
+        "checkout-web",
+        "storefront-catalog",
+        "ui-foundation",
+        "web-platform",
+        "web-artists",
+        "web-store"
+      ],
       "workspaceInterfaces": {
         "@blackbox/content-model": ["."]
       }

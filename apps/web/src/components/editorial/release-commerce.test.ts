@@ -53,7 +53,7 @@ vi.mock('astro:config/client', () => ({
   site: 'https://blackbox-studio-athens.github.io',
 }));
 
-import { listReleaseCatalog } from './catalog-data';
+import { listReleaseCatalog } from '@/lib/catalog-data';
 import { getReleaseCommerceLink } from './release-commerce';
 
 type ReleaseEntry = CollectionEntry<'releases'>;

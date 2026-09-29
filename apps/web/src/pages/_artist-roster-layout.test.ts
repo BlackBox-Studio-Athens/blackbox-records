@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const globalCssPath = fileURLToPath(new URL('./global.css', import.meta.url));
-const artistsPagePath = fileURLToPath(new URL('../pages/artists/index.astro', import.meta.url));
+const globalCssPath = fileURLToPath(new URL('../styles/global.css', import.meta.url));
+const artistsPagePath = fileURLToPath(new URL('./artists/index.astro', import.meta.url));
 
 describe('Artists roster layout', () => {
   it('reserves the filter panel height before its portal mounts', () => {
