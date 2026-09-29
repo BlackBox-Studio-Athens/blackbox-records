@@ -1,0 +1,5 @@
+{
+  "name": "staff-ui",
+  "tags": ["module", "scope:staff"],
+  "targets": {}
+}

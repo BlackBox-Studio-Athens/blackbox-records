@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 import { Button } from './button';
-import { cn } from '../../lib/utils';
+import { cn } from './utils';
 
 // Adapted from Cult UI's Texture Button (accent variant), MIT.
 // https://www.cult-ui.com/docs/components/texture-button

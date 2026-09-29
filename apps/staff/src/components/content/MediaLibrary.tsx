@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import '../../styles/content.css';
-import mediaStyles from '../../styles/content-media.css?inline';
+import '../publication/content.css';
+import mediaStyles from './content-media.css?inline';
 import { useStaffRead } from '../../lib/staff-query';
 import { Check, ChevronDown, ImageIcon, LayoutGrid, List as ListIcon, Search, Upload, RefreshCw } from 'lucide-react';
 import { Button } from '../ui/button';

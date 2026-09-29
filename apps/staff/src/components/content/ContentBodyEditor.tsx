@@ -4,7 +4,7 @@ import { loadMessages, LocaleDirectionProvider } from '@emdash-cms/admin/locales
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import editorStyles from '../../styles/content-editor.css?inline';
+import editorStyles from './content-editor.css?inline';
 import { staffEntry } from '../../lib/staff-navigation';
 
 // EmDash's public admin entrypoint initializes router history while loading.

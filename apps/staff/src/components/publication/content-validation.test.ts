@@ -1,6 +1,5 @@
-import { youtubeVideoId } from './ContentFields';
 import { describe, expect, it } from 'vitest';
-import { getContentValidation } from './content-validation';
+import { getContentValidation, youtubeVideoId } from './content-validation';
 
 describe('content validation adapter', () => {
   it('returns field paths for required and constrained values', () => {

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { ContentImagePicker } from '../content/MediaLibrary';
+import { ContentImagePicker } from './MediaLibrary';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandInput, CommandList, CommandItem, CommandEmpty } from '../ui/command';
 import { Field, FieldLabel, FieldError } from '../ui/field';

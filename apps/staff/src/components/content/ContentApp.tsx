@@ -1,6 +1,6 @@
 import { lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { scrollElementWithLenis, scrollWithLenis } from '../../lib/lenis-scroll';
-import '../../styles/content.css';
+import '../publication/content.css';
 import ContentFeature from './ContentFeature';
 import StaffGradient from './StaffGradient';
 import {
@@ -14,7 +14,7 @@ import {
   returnStaffTask,
   replaceStaffTask,
 } from '../../lib/staff-navigation';
-import StaffBack from '../StaffBack';
+import StaffBack from '../../lib/StaffBack';
 import { Button } from '../ui/button';
 import { ButtonGroup } from '../ui/button-group';
 import {
@@ -37,10 +37,10 @@ import { Badge } from '../ui/badge';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '../ui/input-group';
 import { Table, TableBody, TableRow, TableCell } from '../ui/table';
 
-const CatalogSelling = lazy(() => import('../items/CatalogSelling'));
-import FormatFilter, { formatLabel } from '../items/FormatFilter';
-import WebsitePages from '../WebsitePages';
-import { useDraftAutosave } from '../../hooks/use-draft-autosave';
+const CatalogSelling = lazy(() => import('../stock/CatalogSelling'));
+import FormatFilter, { formatLabel } from '../stock/FormatFilter';
+import WebsitePages from './WebsitePages';
+import { useDraftAutosave } from '../../lib/use-draft-autosave';
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 
 import { Skeleton } from '../ui/skeleton';
@@ -73,12 +73,12 @@ import {
   type ContentData,
 } from '../../lib/content-sections';
 
-const ContentPreview = lazy(() => import('./ContentPreview'));
-const PublicationReviewFlow = lazy(() => import('./PublicationReviewFlow'));
+const ContentPreview = lazy(() => import('../publication/ContentPreview'));
+const PublicationReviewFlow = lazy(() => import('../publication/PublicationReviewFlow'));
 
 import { requestPublicationHistory } from '../../lib/publication-history-events';
-import PublicationStatus from './PublicationStatus';
-import type { ContentValidation, getContentValidation } from './content-validation';
+import PublicationStatus from '../publication/PublicationStatus';
+import type { ContentValidation, getContentValidation } from '../publication/content-validation';
 import { readContentPublications, type ContentPublication } from '../../lib/backend/content-publication-api';
 import {
   EditorialApiError,
@@ -330,7 +330,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   useEffect(() => {
     if (!hasDocument || validate) return;
     let active = true;
-    void import('./content-validation')
+    void import('../publication/content-validation')
       .then(({ getContentValidation }) => {
         if (active) setValidate(() => getContentValidation);
       })

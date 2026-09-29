@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { Button } from './ui/button';
-import { returnStaffTask, staffReturn } from '../lib/staff-navigation';
+import { Button } from '../components/ui/button';
+import { returnStaffTask, staffReturn } from './staff-navigation';
 
 export default function StaffBack() {
   const [target, setTarget] = useState({ url: '/', label: 'Overview' });

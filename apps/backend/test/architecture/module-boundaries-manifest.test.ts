@@ -49,20 +49,24 @@ describe('Module boundaries manifest', { timeout: 15_000 }, () => {
         string,
         {
           allowedWorkspaceInterfaces: Record<string, string[]>;
+          project?: string;
           roots: string[];
         }
       >;
       workspaceBoundaries: Record<string, { packageRoot: string }>;
     };
-    const staffFrontend = manifest.modules['staff-frontend']!;
+    const staffModules = Object.values(manifest.modules).filter((module) =>
+      module.project?.startsWith('apps/staff/src/'),
+    );
     const operatorStock = manifest.modules['operator-stock']!;
 
     expect(manifest.workspaceBoundaries['@blackbox/staff']?.packageRoot).toBe('apps/staff');
-    expect(staffFrontend.roots).toEqual(['apps/staff/src/**']);
-    expect(staffFrontend.allowedWorkspaceInterfaces).toEqual({
-      '@blackbox/api-client': ['./internal'],
-      '@blackbox/content-model': ['.'],
-    });
+    expect(staffModules.length).toBeGreaterThan(0);
+    for (const module of staffModules) {
+      expect(module.roots.every((root) => root.startsWith('apps/staff/src/'))).toBe(true);
+      expect(module.roots).not.toEqual(expect.arrayContaining([expect.stringContaining('apps/web/')]));
+      expect(module.allowedWorkspaceInterfaces['@blackbox/api-client'] ?? ['./internal']).toEqual(['./internal']);
+    }
     expect(operatorStock.roots).not.toEqual(expect.arrayContaining([expect.stringContaining('apps/web/')]));
   });
 

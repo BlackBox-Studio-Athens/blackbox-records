@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { usePublicationPolling } from '../content/PublicationStatus';
+import { usePublicationPolling } from '../publication/PublicationStatus';
 import { useStaffRead } from '../../lib/staff-query';
 import { Button } from '../ui/button';
 import {

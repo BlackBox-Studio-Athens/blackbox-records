@@ -1,7 +1,7 @@
 import { ArrowDownUp, ClipboardCheck, Disc3, ChevronLeft } from 'lucide-react';
 import * as React from 'react';
 import { useEffect, useRef, useState } from 'react';
-import StaffBack from '../StaffBack';
+import StaffBack from '../../lib/StaffBack';
 import {
   followStaffHistory,
   rememberStaffPosition,
@@ -27,8 +27,8 @@ import {
   type InternalVariantSummary,
 } from '../../lib/backend/internal-stock-api';
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
-import { cn } from '../../lib/utils';
-import FormatFilter, { formatLabel } from '../items/FormatFilter';
+import { cn } from '../ui/utils';
+import FormatFilter, { formatLabel } from './FormatFilter';
 import { editorialRequest, staffThumbnailUrl, type EditorialMedia } from '../../lib/backend/editorial-api';
 import {
   recordProgress,

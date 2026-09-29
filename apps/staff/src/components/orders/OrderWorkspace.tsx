@@ -10,7 +10,7 @@ import {
   RefreshCw,
   X,
 } from 'lucide-react';
-import StaffBack from '../StaffBack';
+import StaffBack from '../../lib/StaffBack';
 import {
   rememberStaffPosition,
   restoreStaffPosition,
@@ -20,7 +20,7 @@ import {
 } from '../../lib/staff-navigation';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
-import { createInternalOrderApi, type InternalOrder, type OrderStatus } from '../../lib/backend/internal-order-api';
+import { createInternalOrderApi, type InternalOrder, type OrderStatus } from './internal-order-api';
 import { useStaffRead } from '../../lib/staff-query';
 import { scrollWithLenis } from '../../lib/lenis-scroll';
 import { createOrderWorkspace } from './order-workspace';

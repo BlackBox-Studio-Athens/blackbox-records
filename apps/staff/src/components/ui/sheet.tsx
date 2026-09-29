@@ -3,7 +3,7 @@
 import * as React from 'react';
 import type { MotionProps } from 'motion/react';
 import { Dialog as SheetPrimitive } from 'radix-ui';
-import { cn } from '../../lib/utils';
+import { cn } from './utils';
 
 const SheetOpenContext = React.createContext(false);
 const MotionSheetSurface = React.lazy(() => import('./motion-sheet-surface'));

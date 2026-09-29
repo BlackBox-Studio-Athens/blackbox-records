@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { cn } from '../../lib/utils';
+import { cn } from './utils';
 import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui';
 
 function DropdownMenu({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {

@@ -2,9 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { editorialRequest, type EditorialList, type EditorialRecord } from '../../lib/backend/editorial-api';
 import { createInternalStockApi, type CatalogSellingDetail } from '../../lib/backend/internal-stock-api';
 import { Button } from '../ui/button';
-import ItemPriceEditor from '../stock/ItemPriceEditor';
-import ItemPublication from '../stock/ItemPublication';
-import StockOperationsApp from '../stock/StockOperationsApp';
+import ItemPriceEditor from './ItemPriceEditor';
+import ItemPublication from './ItemPublication';
+import StockOperationsApp from './StockOperationsApp';
 
 export default function CatalogSelling({
   item,

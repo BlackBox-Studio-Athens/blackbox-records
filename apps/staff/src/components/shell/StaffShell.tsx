@@ -13,17 +13,17 @@ import {
   PanelLeft,
   Plus,
 } from 'lucide-react';
-import { Button } from './ui/button';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from './ui/sheet';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { getInternalStockApiBaseUrl } from '../lib/backend/internal-stock-api';
-import { publicationHistoryEvent, type PublicationHistoryFilter } from '../lib/publication-history-events';
-import StaffBack from './StaffBack';
-import { staffEntry, staffLink, staffTarget } from '../lib/staff-navigation';
-import { acquireLenisModalLock } from '../lib/lenis-scroll';
-import { singletonContentSections, type ContentSection } from '../lib/content-sections';
+import { Button } from '../ui/button';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '../ui/sheet';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu';
+import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api';
+import { publicationHistoryEvent, type PublicationHistoryFilter } from '../../lib/publication-history-events';
+import StaffBack from '../../lib/StaffBack';
+import { staffEntry, staffLink, staffTarget } from '../../lib/staff-navigation';
+import { acquireLenisModalLock } from '../../lib/lenis-scroll';
+import { singletonContentSections, type ContentSection } from '../../lib/content-sections';
 
-const PublicationHistory = lazy(() => import('./content/PublicationHistory'));
+const PublicationHistory = lazy(() => import('../publication/PublicationHistory'));
 const ReviewChangesControl = lazy(() => import('./ReviewChangesControl'));
 
 const areas = [
@@ -87,7 +87,7 @@ export default function StaffShell({
   useEffect(() => {
     let cancelled = false;
     let disconnect: (() => void) | undefined;
-    void import('../lib/lenis-scroll-roots')
+    void import('../../lib/lenis-scroll-roots')
       .then(({ connectLenisScrollRoots }) => {
         if (!cancelled) disconnect = connectLenisScrollRoots(document.body);
       })

@@ -49,3 +49,5 @@ The Blackbox index includes archived OpenSpec changes, which broad architecture 
 ## Nx workspace
 
 Nx `project.json` files define app and module roots, targets and task inputs. Framework roots include `web-pages`, `web-layouts` and `web-test-support`. The boundary manifest references projects for ownership roots and separately declares allowed dependencies and public entrypoints. Nx's import graph describes actual dependencies, including declared Astro runtime edges; it does not grant architectural permission. Native Vitest projects derive test ownership from module locations and runtime suffixes. `scripts/check-module-projects.mjs` checks test ownership, module cycles and source ownership; cross-module commerce integration tests live under `apps/web/test/commerce/`, and backend cross-module tests under `apps/backend/test/integration/<feature>/`; single-module backend tests sit beside their source.
+
+Staff tests run per module with `pnpm test <module>` or `pnpm test:watch <module>`: `staff-platform`, `staff-orders`, `staff-publication`, `staff-shell`, `staff-stock` and `staff-content` (`staff-ui` and `staff-frontend` have no test target).

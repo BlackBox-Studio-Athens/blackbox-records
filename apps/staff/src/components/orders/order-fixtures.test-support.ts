@@ -1,4 +1,4 @@
-import type { InternalOrder } from '../../lib/backend/internal-order-api';
+import type { InternalOrder } from './internal-order-api';
 
 export const exampleOrder: InternalOrder = {
   checkoutExpiresAt: '2026-09-11T15:00:00.000Z',

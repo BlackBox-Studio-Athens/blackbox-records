@@ -152,7 +152,7 @@ Code releases still use the reviewed UAT candidate and retained PRD artifact. Se
 - [blocks.so File Upload Simple](https://blocks.so/file-upload/file-upload-02): adapted native file input, label and help presentation. Uploads call the existing `uploadArtwork` helper.
 - EmDash 0.38's existing Portable Text editor remains the rich-text engine.
 
-MIT notices are retained alongside the copied components. Staff registry configuration lives in `apps/staff/components.json`. Generated imports use relative paths to avoid the repository-wide lint resolver confusing the staff and public `@/` aliases.
+MIT notices are retained alongside the copied components. Staff registry configuration lives in `apps/staff/components.json`; the `cn` utility the components share sits beside them at `apps/staff/src/components/ui/utils.ts`. Generated imports use relative paths to avoid the repository-wide lint resolver confusing the staff and public `@/` aliases.
 
 Local adaptations: 1440 px navigation breakpoint, no global sidebar keyboard shortcut, staff touch targets, strict TypeScript compatibility and existing dark tokens. EmDash CSS is loaded into a lower-priority cascade layer so its bundled utility classes cannot override the staff app's responsive classes.
 

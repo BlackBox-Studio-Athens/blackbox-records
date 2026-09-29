@@ -75,7 +75,7 @@ export default function StaffOverview({ base }: { base: string }) {
     setOrdersState(checkingPanel);
     try {
       const page = await readStaffQuery(['overview-orders', base], async () => {
-        const { createInternalOrderApi } = await import('../lib/backend/internal-order-api');
+        const { createInternalOrderApi } = await import('./orders/internal-order-api');
         return createInternalOrderApi(base).search({ status: 'needs_review', limit: 1 });
       });
       if (!isCurrent(id) || ordersRequest.current !== request) return;

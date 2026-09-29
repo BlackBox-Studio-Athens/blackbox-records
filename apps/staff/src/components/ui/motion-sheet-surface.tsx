@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { AnimatePresence, motion, useReducedMotion, type MotionProps } from 'motion/react';
 import { Dialog as SheetPrimitive } from 'radix-ui';
-import { cn } from '../../lib/utils';
+import { cn } from './utils';
 import { XIcon } from 'lucide-react';
 
 type MotionRadixProps<T extends React.ElementType> = Omit<React.ComponentProps<T>, keyof MotionProps> & MotionProps;

@@ -385,15 +385,145 @@
       "allowedWorkspaceInterfaces": {},
       "project": "apps/backend/src/interfaces/http/auth/project.json"
     },
-    "staff-frontend": {
+    "staff-ui": {
       "status": "closed",
-      "providedEntrypoints": [],
+      "providedEntrypoints": [
+        "apps/staff/src/components/ui/accordion.tsx",
+        "apps/staff/src/components/ui/alert-dialog.tsx",
+        "apps/staff/src/components/ui/alert.tsx",
+        "apps/staff/src/components/ui/aspect-ratio.tsx",
+        "apps/staff/src/components/ui/badge.tsx",
+        "apps/staff/src/components/ui/button-group.tsx",
+        "apps/staff/src/components/ui/button.tsx",
+        "apps/staff/src/components/ui/card.tsx",
+        "apps/staff/src/components/ui/checkbox.tsx",
+        "apps/staff/src/components/ui/command.tsx",
+        "apps/staff/src/components/ui/dropdown-menu.tsx",
+        "apps/staff/src/components/ui/field.tsx",
+        "apps/staff/src/components/ui/input-group.tsx",
+        "apps/staff/src/components/ui/input.tsx",
+        "apps/staff/src/components/ui/loading-feedback.tsx",
+        "apps/staff/src/components/ui/native-select.tsx",
+        "apps/staff/src/components/ui/popover.tsx",
+        "apps/staff/src/components/ui/sheet.tsx",
+        "apps/staff/src/components/ui/skeleton.tsx",
+        "apps/staff/src/components/ui/spinner.tsx",
+        "apps/staff/src/components/ui/table.tsx",
+        "apps/staff/src/components/ui/textarea.tsx",
+        "apps/staff/src/components/ui/texture-button.tsx",
+        "apps/staff/src/components/ui/toggle-group.tsx",
+        "apps/staff/src/components/ui/utils.ts"
+      ],
       "namedInterfaces": {},
       "allowedDependencies": [],
+      "allowedWorkspaceInterfaces": {},
+      "project": "apps/staff/src/components/ui/project.json"
+    },
+    "staff-platform": {
+      "status": "closed",
+      "providedEntrypoints": [
+        "apps/staff/src/lib/StaffBack.tsx",
+        "apps/staff/src/lib/backend/content-publication-api.ts",
+        "apps/staff/src/lib/backend/editorial-api.ts",
+        "apps/staff/src/lib/backend/internal-stock-api.ts",
+        "apps/staff/src/lib/content-sections.ts",
+        "apps/staff/src/lib/lenis-scroll-roots.ts",
+        "apps/staff/src/lib/lenis-scroll.ts",
+        "apps/staff/src/lib/publication-history-events.ts",
+        "apps/staff/src/lib/staff-navigation.ts",
+        "apps/staff/src/lib/staff-query.ts",
+        "apps/staff/src/lib/use-draft-autosave.ts"
+      ],
+      "namedInterfaces": {},
+      "allowedDependencies": ["staff-ui"],
       "allowedWorkspaceInterfaces": {
         "@blackbox/api-client": ["./internal"],
         "@blackbox/content-model": ["."]
       },
+      "project": "apps/staff/src/lib/project.json"
+    },
+    "staff-orders": {
+      "status": "closed",
+      "providedEntrypoints": [
+        "apps/staff/src/components/orders/OrderWorkspace.tsx",
+        "apps/staff/src/components/orders/internal-order-api.ts"
+      ],
+      "namedInterfaces": {},
+      "allowedDependencies": ["staff-ui", "staff-platform"],
+      "allowedWorkspaceInterfaces": {
+        "@blackbox/api-client": ["./internal"]
+      },
+      "project": "apps/staff/src/components/orders/project.json"
+    },
+    "staff-publication": {
+      "status": "closed",
+      "providedEntrypoints": [
+        "apps/staff/src/components/publication/ContentPreview.tsx",
+        "apps/staff/src/components/publication/PublicationHistory.tsx",
+        "apps/staff/src/components/publication/PublicationReviewFlow.tsx",
+        "apps/staff/src/components/publication/PublicationStatus.tsx",
+        "apps/staff/src/components/publication/WebsiteChanges.tsx",
+        "apps/staff/src/components/publication/content-validation.ts",
+        "apps/staff/src/components/publication/content.css"
+      ],
+      "namedInterfaces": {},
+      "allowedDependencies": ["staff-ui", "staff-platform"],
+      "allowedWorkspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      },
+      "project": "apps/staff/src/components/publication/project.json"
+    },
+    "staff-stock": {
+      "status": "closed",
+      "providedEntrypoints": [
+        "apps/staff/src/components/stock/CatalogSelling.tsx",
+        "apps/staff/src/components/stock/FormatFilter.tsx",
+        "apps/staff/src/components/stock/ItemPriceEditor.tsx",
+        "apps/staff/src/components/stock/ItemPublication.tsx",
+        "apps/staff/src/components/stock/StockOperationsApp.tsx"
+      ],
+      "namedInterfaces": {},
+      "allowedDependencies": ["staff-ui", "staff-platform", "staff-publication"],
+      "allowedWorkspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      },
+      "project": "apps/staff/src/components/stock/project.json"
+    },
+    "staff-shell": {
+      "status": "closed",
+      "providedEntrypoints": ["apps/staff/src/components/shell/StaffShell.tsx"],
+      "namedInterfaces": {},
+      "allowedDependencies": ["staff-ui", "staff-platform", "staff-publication"],
+      "allowedWorkspaceInterfaces": {},
+      "project": "apps/staff/src/components/shell/project.json"
+    },
+    "staff-content": {
+      "status": "closed",
+      "providedEntrypoints": [
+        "apps/staff/src/components/content/ContentApp.tsx",
+        "apps/staff/src/components/content/ItemSetupApp.tsx"
+      ],
+      "namedInterfaces": {},
+      "allowedDependencies": ["staff-ui", "staff-platform", "staff-publication", "staff-stock"],
+      "allowedWorkspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      },
+      "project": "apps/staff/src/components/content/project.json"
+    },
+    "staff-frontend": {
+      "status": "closed",
+      "providedEntrypoints": [],
+      "namedInterfaces": {},
+      "allowedDependencies": [
+        "staff-ui",
+        "staff-platform",
+        "staff-orders",
+        "staff-publication",
+        "staff-stock",
+        "staff-shell",
+        "staff-content"
+      ],
+      "allowedWorkspaceInterfaces": {},
       "project": "apps/staff/src/project.json"
     },
     "operator-stock": {

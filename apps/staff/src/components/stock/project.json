@@ -1,0 +1,15 @@
+{
+  "name": "staff-stock",
+  "tags": ["module", "scope:staff"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/staff exec vitest run --project=staff-stock --config vitest.modules.config.ts",
+      "inputs": ["staffTests", "^default"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/staff exec vitest --watch --project=staff-stock --config vitest.modules.config.ts",
+      "cache": false,
+      "continuous": true
+    }
+  }
+}

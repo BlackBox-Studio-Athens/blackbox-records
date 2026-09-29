@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { Button } from '../ui/button';
-import type { InternalOrder, OrderStatus } from '../../lib/backend/internal-order-api';
+import type { InternalOrder, OrderStatus } from './internal-order-api';
 
 export const paymentLabels: Record<OrderStatus, string> = {
   pending_payment: 'Pending payment',

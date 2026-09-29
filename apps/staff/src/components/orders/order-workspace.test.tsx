@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
-import { InternalOrderApiError, type InternalOrder } from '../../lib/backend/internal-order-api';
+import { InternalOrderApiError, type InternalOrder } from './internal-order-api';
 import { createOrderWorkspace } from './order-workspace';
 import OrderDetail, { money, notificationStatus } from './OrderDetail';
 import { exampleOrder } from './order-fixtures.test-support.ts';

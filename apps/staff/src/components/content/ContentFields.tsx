@@ -13,7 +13,7 @@ import {
   type RichText,
 } from '@blackbox/content-model';
 import { ArrowUp, Plus, Trash2 } from 'lucide-react';
-import EditorialPicker from '../items/EditorialPicker';
+import EditorialPicker from './EditorialPicker';
 import { Button } from '../ui/button';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
 import { Input } from '../ui/input';
@@ -22,7 +22,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegen
 import { Checkbox } from '../ui/checkbox';
 import { NativeSelect } from '../ui/native-select';
 import { ContentGalleryUploader, ContentImagePicker } from './MediaLibrary';
-import { contentFieldErrors, type ContentValidation } from './content-validation';
+import { contentFieldErrors, youtubeVideoId, type ContentValidation } from '../publication/content-validation';
 import { type ContentData, type ContentSection } from '../../lib/content-sections';
 
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
@@ -854,27 +854,6 @@ export default function ContentFields({
   );
 }
 
-export function youtubeVideoId(input: string): string | null {
-  if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input;
-  try {
-    const url = new URL(input);
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
-    const host = url.hostname.toLowerCase();
-    const id =
-      host === 'youtu.be'
-        ? url.pathname.slice(1)
-        : ['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(host)
-          ? url.pathname === '/watch'
-            ? url.searchParams.get('v')
-            : /^\/(?:shorts|embed)\//.test(url.pathname)
-              ? url.pathname.split('/')[2]
-              : null
-          : null;
-    return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
-  } catch {
-    return null;
-  }
-}
 function YouTubeField({
   path,
   initial,

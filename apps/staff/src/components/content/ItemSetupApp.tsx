@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import { useDraftAutosave } from '../../hooks/use-draft-autosave';
-import StaffBack from '../StaffBack';
+import { useDraftAutosave } from '../../lib/use-draft-autosave';
+import StaffBack from '../../lib/StaffBack';
 import { returnStaffTask, staffLink } from '../../lib/staff-navigation';
 import { Progress } from 'radix-ui';
 import {
@@ -19,7 +19,7 @@ import NewArtistFields from './NewArtistFields';
 import { euroMinor } from '../stock/ItemPriceEditor';
 import { createInternalStockApi, type CatalogSetupCommand } from '../../lib/backend/internal-stock-api';
 import ItemPublication from '../stock/ItemPublication';
-import PublicationReviewFlow from '../content/PublicationReviewFlow';
+import PublicationReviewFlow from '../publication/PublicationReviewFlow';
 import {
   createEditorialDraft,
   editorialRequest,
@@ -27,7 +27,7 @@ import {
   type EditorialRecord,
 } from '../../lib/backend/editorial-api';
 
-const ContentBodyEditor = lazy(() => import('../content/ContentBodyEditor'));
+const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
 
 function descriptionFields(summary: Prose) {
   return Array.isArray(summary) ? { summary_rich: summary } : { summary: summary.trim() };

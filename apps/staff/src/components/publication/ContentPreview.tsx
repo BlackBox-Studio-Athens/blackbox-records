@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import '../../styles/content.css';
+import './content.css';
 import { Expand, Minimize, RefreshCw, Info, Monitor, Smartphone, Scan, Copy } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';

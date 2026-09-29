@@ -3,7 +3,7 @@ import {
   type createInternalOrderApi,
   type InternalOrder,
   type OrderStatus,
-} from '../../lib/backend/internal-order-api';
+} from './internal-order-api';
 
 type ReadState<T> = { data: T | null; readAt: string | null; loading: boolean; error: string | null };
 const emptyRead = <T>(): ReadState<T> => ({ data: null, readAt: null, loading: false, error: null });

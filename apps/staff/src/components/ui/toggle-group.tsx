@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { ToggleGroup as ToggleGroupPrimitive } from 'radix-ui';
 
-import { cn } from '../../lib/utils';
+import { cn } from './utils';
 
 function ToggleGroup({ className, ...props }: React.ComponentProps<typeof ToggleGroupPrimitive.Root>) {
   return (

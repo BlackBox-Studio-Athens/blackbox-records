@@ -39,3 +39,25 @@ export function contentFieldErrors(validation: ContentValidation, path: string):
     })
     .map((issue) => issue.message);
 }
+
+export function youtubeVideoId(input: string): string | null {
+  if (/^[A-Za-z0-9_-]{11}$/.test(input)) return input;
+  try {
+    const url = new URL(input);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+    const host = url.hostname.toLowerCase();
+    const id =
+      host === 'youtu.be'
+        ? url.pathname.slice(1)
+        : ['youtube.com', 'www.youtube.com', 'm.youtube.com'].includes(host)
+          ? url.pathname === '/watch'
+            ? url.searchParams.get('v')
+            : /^\/(?:shorts|embed)\//.test(url.pathname)
+              ? url.pathname.split('/')[2]
+              : null
+          : null;
+    return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}

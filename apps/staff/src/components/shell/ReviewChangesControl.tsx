@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { ClipboardCheck } from 'lucide-react';
-import type { EditorialList } from '../lib/backend/editorial-api';
-import { getInternalStockApiBaseUrl } from '../lib/backend/internal-stock-api';
-import { Button } from './ui/button';
+import type { EditorialList } from '../../lib/backend/editorial-api';
+import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api';
+import { Button } from '../ui/button';
 
 export default function ReviewChangesControl() {
   const base = getInternalStockApiBaseUrl();
@@ -14,7 +14,7 @@ export default function ReviewChangesControl() {
       const request = ++sequence;
       setStatus('checking');
       try {
-        const { editorialRequest } = await import('../lib/backend/editorial-api');
+        const { editorialRequest } = await import('../../lib/backend/editorial-api');
         let cursor: string | undefined;
         do {
           const params = new URLSearchParams({ view: 'changes', limit: '1' });

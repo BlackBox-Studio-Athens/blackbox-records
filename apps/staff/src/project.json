@@ -1,15 +1,14 @@
 {
   "name": "staff-frontend",
   "tags": ["module", "scope:staff"],
-  "targets": {
-    "test": {
-      "command": "pnpm --filter @blackbox/staff exec vitest run --project=staff-frontend --project=staff-frontend:worker --project=staff-frontend:request --config vitest.modules.config.ts",
-      "inputs": ["staffTests", "^default"]
-    },
-    "test-watch": {
-      "command": "pnpm --filter @blackbox/staff exec vitest --watch --project=staff-frontend --project=staff-frontend:worker --project=staff-frontend:request --config vitest.modules.config.ts",
-      "cache": false,
-      "continuous": true
-    }
-  }
+  "targets": {},
+  "implicitDependencies": [
+    "staff-ui",
+    "staff-platform",
+    "staff-orders",
+    "staff-publication",
+    "staff-stock",
+    "staff-shell",
+    "staff-content"
+  ]
 }
