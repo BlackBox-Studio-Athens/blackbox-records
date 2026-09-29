@@ -1,0 +1,97 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "defaultBase": "origin/main",
+  "parallel": 3,
+  "pluginsConfig": {
+    "@nx/js": {
+      "analyzeSourceFiles": true
+    }
+  },
+  "neverConnectToCloud": true,
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "toolchain"],
+    "webTests": [
+      "default",
+      "{workspaceRoot}/apps/web/vitest*.ts",
+      "{workspaceRoot}/apps/web/tsconfig.json",
+      "{workspaceRoot}/scripts/validation-reporters.ts",
+      "{workspaceRoot}/apps/web/src/test/**/*",
+      "{workspaceRoot}/apps/web/astro.config.mjs"
+    ],
+    "backendTests": [
+      "default",
+      "{workspaceRoot}/apps/backend/vitest*.ts",
+      "{workspaceRoot}/scripts/validation-reporters.ts",
+      "{workspaceRoot}/apps/backend/test/setup/**/*",
+      "{workspaceRoot}/apps/backend/test/support/**/*",
+      "{workspaceRoot}/apps/backend/test/fixtures/**/*"
+    ],
+    "backendWorkerTests": [
+      "{workspaceRoot}/apps/backend/prisma/**/*",
+      "{workspaceRoot}/apps/backend/cms-migrations/**/*"
+    ],
+    "staffTests": [
+      "default",
+      "{workspaceRoot}/apps/staff/vitest*.ts",
+      "{workspaceRoot}/apps/staff/tsconfig.json",
+      "{workspaceRoot}/scripts/validation-reporters.ts"
+    ],
+    "toolchain": [
+      "{workspaceRoot}/pnpm-lock.yaml",
+      "{workspaceRoot}/tsconfig.base.json",
+      {
+        "runtime": "node --version"
+      },
+      {
+        "runtime": "pnpm --version"
+      },
+      {
+        "env": "NODE_ENV"
+      },
+      {
+        "env": "NODE_OPTIONS"
+      },
+      {
+        "env": "TZ"
+      },
+      "{workspaceRoot}/scripts/module-test-projects.ts",
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/pnpm-workspace.yaml",
+      "{workspaceRoot}/nx.json"
+    ]
+  },
+  "targetDefaults": {
+    "test": {
+      "cache": true,
+      "inputs": ["default", "^default"]
+    },
+    "typecheck": {
+      "cache": true,
+      "inputs": ["default", "^default"],
+      "dependsOn": [
+        {
+          "projects": ["workspace"],
+          "target": "architecture"
+        }
+      ]
+    },
+    "lint": {
+      "cache": true,
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/eslint.config.mjs",
+        "{workspaceRoot}/tsconfig.eslint.json",
+        "{workspaceRoot}/tsconfig.boundaries.json",
+        "{workspaceRoot}/scripts/module-boundaries-manifest.cjs",
+        "{workspaceRoot}/openspec/specs/module-boundaries/**/*"
+      ],
+      "dependsOn": [
+        {
+          "projects": ["workspace"],
+          "target": "architecture"
+        }
+      ]
+    }
+  }
+}

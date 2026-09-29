@@ -2,7 +2,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 import type { APIRoute } from 'astro';
 import { contentSnapshotInput } from '../../../../lib/content-loader';
-import { readContentSnapshot } from '../../../../lib/content-snapshot';
+import { readContentSnapshot } from '../../../../lib/content-files/content-snapshot';
 
 export const prerender = true;
 

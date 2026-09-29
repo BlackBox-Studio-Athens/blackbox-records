@@ -1,4 +1,4 @@
-import { normalizeAppPathname } from '@/lib/app-shell/routing';
+import { normalizeAppPathname } from '@/components/app-shell/routing';
 import { sanitizeStoreListingPricePlaceholders } from '@/components/store/StoreListingPricePresentation';
 
 export type ShellPageSnapshot = {

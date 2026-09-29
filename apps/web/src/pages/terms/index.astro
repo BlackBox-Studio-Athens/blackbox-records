@@ -1,10 +1,10 @@
 ---
 import InternalPageHero from '@/components/InternalPageHero.astro';
-import DeliveryRates from '@/components/store/DeliveryRates';
+import DeliveryRates from '@/components/store/checkout/DeliveryRates';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import { createProjectRelativeUrl } from '@/config/site';
-import PurchaseDocument from '@/components/PurchaseDocument';
-import { getPurchaseInformation } from '@/lib/purchase-information';
+import { createProjectRelativeUrl } from '@/platform/config/site';
+import PurchaseDocument from '@/platform/components/PurchaseDocument';
+import { getPurchaseInformation } from '@/platform/lib/purchase-information';
 
 interface Props {
   information?: ReturnType<typeof getPurchaseInformation>;

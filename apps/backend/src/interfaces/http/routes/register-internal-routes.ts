@@ -1,12 +1,12 @@
-import type { AppOpenApi } from '../../../env';
+import type { AppOpenApi } from '../../../platform/env';
 import { operatorAccessMiddleware } from '../auth';
-import { getInternalApiDescriptionRoute, getInternalApiDiscoveryRoute } from '../contracts/internal-contracts';
-import { apiLink, jsonNoStore } from '../responses';
-import { registerInternalOrderRoutes } from './register-internal-order-routes';
+import { getInternalApiDescriptionRoute, getInternalApiDiscoveryRoute } from '../stock/internal-contracts';
+import { apiLink, jsonNoStore } from '../../../platform/interfaces/http/responses';
+import { registerInternalOrderRoutes } from '../../../application/commerce/orders/register-internal-order-routes';
 import { registerInternalPriceRoutes } from './register-internal-price-routes';
 import { registerInternalSetupRoutes } from './register-internal-setup-routes';
 import { registerInternalPublicationRoutes } from './register-internal-publication-routes';
-import { registerInternalStockRoutes } from './register-internal-stock-routes';
+import { registerInternalStockRoutes } from '../stock/register-internal-stock-routes';
 
 export function registerInternalRoutes(app: AppOpenApi, getInternalOpenApiDocument: () => object): void {
   app.use('/api/internal/*', operatorAccessMiddleware());

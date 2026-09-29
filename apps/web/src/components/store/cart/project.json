@@ -1,0 +1,15 @@
+{
+  "name": "store-cart",
+  "tags": ["module", "scope:web"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --project=store-cart --project=store-cart:worker --project=store-cart:request --config vitest.modules.config.ts",
+      "inputs": ["webTests", "^default"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/web exec vitest --watch --project=store-cart --project=store-cart:worker --project=store-cart:request --config vitest.modules.config.ts",
+      "cache": false,
+      "continuous": true
+    }
+  }
+}

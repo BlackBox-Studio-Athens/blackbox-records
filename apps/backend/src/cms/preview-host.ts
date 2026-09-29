@@ -1,5 +1,5 @@
 import { verifyOperatorAccess } from '../interfaces/http/auth';
-import type { AppBindings } from '../env';
+import type { AppBindings } from '../platform/env';
 
 type PreviewBindings = AppBindings & {
   CMS_HOSTNAME?: string;

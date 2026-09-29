@@ -1,4 +1,4 @@
-import { isCurrentPath } from '@/utils/urls';
+import { isCurrentPath } from '@/platform/utils/urls';
 
 type AnimationFrameScheduler = {
   cancelAnimationFrame: (id: number) => void;

@@ -7,7 +7,7 @@ import {
   type DesiredCatalogEntry,
 } from '../apps/backend/src/application/commerce/catalog-sync';
 import { loadStripeCatalogStoreItemContracts } from './stripe-catalog-contract';
-import { parseProductEnvironmentCliTarget, type ProductEnvironment } from '../apps/backend/src/env';
+import { parseProductEnvironmentCliTarget, type ProductEnvironment } from '../apps/backend/src/platform/env';
 import {
   createRunId as createSmokeRunId,
   createSmokeEvidencePath,

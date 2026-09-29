@@ -18,7 +18,7 @@ Logs stay at full sampling before PRD checkout opens so rare commerce failures r
 
 Runtime events use stable `event` names and safe context fields: `productEnvironment`, `workerDeploymentTarget`, `requestId`, `method`, normalized `path`, `status`, `durationMs`, `outcome`, `safeReason`, `retryable`, `orderReference`, `storeItemSlug`, `variantId`, and safe provider surrogates such as `checkoutSessionIdHash`.
 
-Do not log raw request bodies, cookies, authorization headers, Cloudflare Access tokens, Stripe signatures, raw provider payloads, email addresses, phone numbers, postal addresses, message HTML, D1 binding details, or full error stacks. Use the logger helper in `apps/backend/src/observability/index.ts`; it omits `undefined` fields and redacts representative unsafe values.
+Do not log raw request bodies, cookies, authorization headers, Cloudflare Access tokens, Stripe signatures, raw provider payloads, email addresses, phone numbers, postal addresses, message HTML, D1 binding details, or full error stacks. Use the logger helper in `apps/backend/src/platform/observability/index.ts`; it omits `undefined` fields and redacts representative unsafe values.
 
 Every `/api/*` response includes `X-Request-Id`. Support can ask a shopper/operator for that value and correlate it with `http_request_completed`, `http_request_error`, and domain outcome events.
 

@@ -43,7 +43,7 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 
 - **GIVEN** pending PaidOrderDelivery rows require bounded retry processing
 - **WHEN** the Worker scheduled handler is composed
-- **THEN** the `orders` module owns and provides `apps/backend/src/interfaces/scheduled/run-paid-order-delivery-schedule.ts`
+- **THEN** the `orders` module owns and provides `apps/backend/src/application/commerce/orders/run-paid-order-delivery-schedule.ts`
 - **AND** that entrypoint drains only paid-order deliveries through the existing email application and Resend integration
 - **AND** `public-commerce-http` owns no scheduled root or scheduled entrypoint.
 

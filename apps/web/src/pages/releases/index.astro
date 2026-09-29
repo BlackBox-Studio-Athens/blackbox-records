@@ -14,7 +14,7 @@ import {
 import { getReleaseCommerceLink } from '@/lib/release-commerce';
 import { isReleaseOutNow, selectReleasePageEntries } from '@/lib/release-feature';
 import { formatDayMonthYear, formatMonthYear } from '@/utils/content';
-import { buildEmbeddedPlayerData } from '@/utils/music';
+import { buildEmbeddedPlayerData } from '@/components/music/music';
 
 const artistProfiles = await listArtistProfiles();
 const releaseCatalogEntries = await listReleaseCatalog();

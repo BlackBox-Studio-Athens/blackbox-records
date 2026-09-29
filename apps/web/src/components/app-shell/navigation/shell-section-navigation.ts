@@ -1,4 +1,4 @@
-import { normalizeAppPathname, parseShellSectionRoute, type ShellSectionRoute } from '@/lib/app-shell/routing';
+import { normalizeAppPathname, parseShellSectionRoute, type ShellSectionRoute } from '@/components/app-shell/routing';
 
 import {
   markCurrentHistoryEntryForShellSection,

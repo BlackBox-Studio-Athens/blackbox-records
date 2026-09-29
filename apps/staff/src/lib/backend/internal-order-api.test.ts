@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createInternalOrderApi, InternalOrderApiError } from './internal-order-api';
-import { exampleOrder } from '../../components/orders/order-fixtures.test-support';
+import { exampleOrder } from '../../components/orders/order-fixtures.test-support.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 

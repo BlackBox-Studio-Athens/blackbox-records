@@ -33,7 +33,8 @@ function isCompleteValidationSummary(summary) {
     summary.mode === 'full' &&
     summary.scope === 'all' &&
     Array.isArray(summary.phases) &&
-    summary.phases.length === 7 &&
+    summary.phases.length === 1 &&
+    summary.phases[0].name === 'full' &&
     summary.phases.every((phase) => phase.status === 'passed' && phase.exitCode === 0) &&
     Array.isArray(summary.skippedPhases) &&
     summary.skippedPhases.length === 0 &&
@@ -159,7 +160,6 @@ const { values } = parseArgs({
     model: { type: 'string', default: 'gpt-5.6-luna' },
     effort: { type: 'string', default: 'high' },
     scenario: { type: 'string' },
-    jobs: { type: 'string', default: '2' },
     'baseline-gate': { type: 'string', default: 'legacy' },
     'candidate-gate': { type: 'string', default: 'aggregate' },
     capture: { type: 'string' },
@@ -180,7 +180,6 @@ if (arms.baseline === arms.candidate) throw new Error('Benchmark arms must be se
 const repetitions = Number(values.repetitions);
 if (!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 5) throw new Error('repetitions must be 1..5.');
 if (!['commands', 'agents'].includes(values.mode)) throw new Error('mode must be commands or agents.');
-if (!['1', '2'].includes(values.jobs)) throw new Error('jobs must be 1 or 2');
 for (const [name, value] of [
   ['baseline-gate', values['baseline-gate']],
   ['candidate-gate', values['candidate-gate']],
@@ -228,7 +227,7 @@ const metadata = {
   startedAt: new Date().toISOString(),
   repetitions,
   mode: values.mode,
-  candidateJobs: Number(values.jobs),
+  candidateJobs: 2,
   baselineGate: values['baseline-gate'],
   candidateGate: values['candidate-gate'],
   scenario: values.scenario ?? 'all',
@@ -332,9 +331,7 @@ async function commandRun(arm, scenario, index, priming = false) {
               'scripts/test-content-workspace.mjs',
               ...(gate === 'editor-firefox' ? ['--firefox'] : []),
             ]
-          : gate === 'validate:full'
-            ? ['pnpm', gate, '--jobs', values.jobs]
-            : ['pnpm', gate];
+          : ['pnpm', gate];
     const start = performance.now();
     const logPath = path.join(
       output,

@@ -1,9 +1,9 @@
 import * as React from 'react';
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { resolveLinkAttributes } from '@/config/site';
+import { resolveLinkAttributes } from '@/platform/config/site';
 import type { SiteNavigationItem } from '@/lib/site-data';
-import { isCurrentPath } from '@/utils/urls';
+import { isCurrentPath } from '@/platform/utils/urls';
 import { acquireLenisModalLock } from '../lenis-scroll';
 
 type MobileNavigationSheetProps = {

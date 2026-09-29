@@ -2,17 +2,17 @@ import {
   CHECKOUT_CART_UPDATED_EVENT,
   STORE_CART_ADD_ITEM_EVENT,
   STORE_CART_OPEN_REQUESTED_EVENT,
-} from '@/lib/store-cart-events';
+} from '@/components/store/cart/store-cart-events';
 import {
   addStoreCartItem,
   parseCartLineItemSnapshot,
   readStoreCartState,
   type StoreCartState,
   writeStoreCartState,
-} from '@/lib/store-cart';
+} from '@/components/store/cart/store-cart';
 
 type StoreCartBrowserStorage = Parameters<typeof readStoreCartState>[0];
-import { privatePreview } from '@/lib/private-preview';
+import { privatePreview } from '@/platform/lib/private-preview';
 const previewCart = new Map<string, string>();
 const previewStorage = {
   getItem: (key: string) => previewCart.get(key) ?? null,

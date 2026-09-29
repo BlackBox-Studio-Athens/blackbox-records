@@ -30,9 +30,9 @@ Current loading and pending states are handled surface-by-surface, so some paths
 - `apps/web/src/components/ui/spinner.tsx`
 - `apps/web/src/components/ui/button.tsx`
 - New or updated shared loading feedback primitives under `apps/web/src/components/ui/`
-- `apps/web/src/components/store/StoreItemPurchaseActions.tsx`
-- `apps/web/src/components/store/CheckoutOfferStatus.tsx`
-- `apps/web/src/components/store/CheckoutReturnStatus.tsx`
+- `apps/web/src/components/store/checkout/StoreItemPurchaseActions.tsx`
+- `apps/web/src/components/store/checkout/CheckoutOfferStatus.tsx`
+- `apps/web/src/components/store/checkout/CheckoutReturnStatus.tsx`
 - `apps/web/src/components/store/*.{test,tsx,ts}`
 - `apps/web/src/components/app-shell/AppShellRoot.tsx`
 - `apps/web/src/components/app-shell/view/ShellOverlayPanel.tsx`

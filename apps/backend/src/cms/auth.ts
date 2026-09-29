@@ -1,5 +1,5 @@
 import { env } from 'cloudflare:workers';
-import type { AppBindings } from '../env';
+import type { AppBindings } from '../platform/env';
 import { verifyOperatorAccess } from '../interfaces/http/auth';
 
 // Use EmDash's auth-provider interface with the same strict verifier as commerce.

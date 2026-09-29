@@ -1,0 +1,15 @@
+{
+  "name": "commerce-domain",
+  "tags": ["module", "scope:backend"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/backend exec vitest run --config vitest.modules.config.ts --project=commerce-domain --project=commerce-domain:worker",
+      "inputs": ["backendTests", "^default"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/backend exec vitest --watch --config vitest.modules.config.ts --project=commerce-domain --project=commerce-domain:worker",
+      "continuous": true,
+      "cache": false
+    }
+  }
+}

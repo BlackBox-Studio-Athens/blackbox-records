@@ -1,0 +1,16 @@
+{
+  "name": "ui-foundation",
+  "tags": ["module", "scope:web"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --project=ui-foundation --project=ui-foundation:worker --project=ui-foundation:request --config vitest.modules.config.ts",
+      "inputs": ["webTests", "^default"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/web exec vitest --watch --project=ui-foundation --project=ui-foundation:worker --project=ui-foundation:request --config vitest.modules.config.ts",
+      "cache": false,
+      "continuous": true
+    }
+  },
+  "implicitDependencies": []
+}

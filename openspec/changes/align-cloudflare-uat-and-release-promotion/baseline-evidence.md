@@ -36,7 +36,7 @@ The after column describes the approved design, not installed infrastructure.
 
 The Cloudflare Pages account inventory returned only the existing public and staff projects. The intended UAT project was absent. Local credentials support project listing; this does not prove the future GitHub UAT deploy credential's write scope. No proposed UAT origin was committed to runtime configuration.
 
-The current profile in `apps/backend/src/env.ts` carries Worker/provider/email policy, but no static hosting target field. Static origins also appear in Astro config, workflow build env, `verify-environment-model.ts`, Wrangler checkout/email vars, and smoke defaults. Section 2 must reconcile those through existing helpers.
+The current profile in `apps/backend/src/platform/env.ts` carries Worker/provider/email policy, but no static hosting target field. Static origins also appear in Astro config, workflow build env, `verify-environment-model.ts`, Wrangler checkout/email vars, and smoke defaults. Section 2 must reconcile those through existing helpers.
 
 ## Credential names and scope
 

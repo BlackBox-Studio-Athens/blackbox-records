@@ -6,7 +6,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-import { createSlugSuggestion, resolveExplicitOrSuggestedSlug } from '../../web/src/lib/slugs';
+import { createSlugSuggestion, resolveExplicitOrSuggestedSlug } from '../../web/src/lib/content-files/slugs';
 import { loadStripeCatalogStoreItemContracts } from '../../../scripts/stripe-catalog-contract';
 
 export type LocalMockStoreItem = {

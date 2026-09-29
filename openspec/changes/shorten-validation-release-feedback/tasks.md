@@ -89,3 +89,31 @@ Sections 1–8 record the earlier implementation. The September 28 user decision
 - [x] Run targeted validation and strict OpenSpec validation; record measured local results separately from unobserved hosted gains, and confirm the exact final tree in the ignored evidence file.
 
 Record the final summary and fingerprint in ignored `.codex-artifacts/feedback-speed/final-verification.json` rather than editing validated source afterward. No hosted deployment is part of this follow-up.
+
+## 11. Replace custom orchestration with module-owned Nx tasks
+
+- [x] Pin Nx and establish native module projects, explicit non-import inputs, and actual dependency selection without copying architectural allow-lists.
+- [x] Derive module roots from native project locations, split frontend/backend platform ownership, and enforce complete ownership and module boundaries.
+- [x] Give every test one native suite, retain real Worker/D1 integration coverage, and split the mixed repository tests and unrelated checkout exports.
+- [x] Replace custom affected selection, test fan-out, scheduling, and phase-cache reuse with Nx; preserve source-stable evidence and full CI gates.
+- [x] Verify changed-file forms, implicit inputs, illegal boundaries, missing/duplicate suites, failures, invalidation, and native cache behavior.
+- [x] Update personal/project guidance and OpenSpec contracts; measure affected task counts, cold/warm timing, and net custom-code reduction.
+- [x] Define the final-source verification gate and ignored evidence record in `nx-migration-validation.md`. Migration completion requires that record to contain a passed full run and source-unchanged local run.
+
+## 12. Review module development readiness
+
+- [x] Correct native cache inputs for filesystem-read workflow contracts; deduplicate shared inputs and include workspace libraries in cycle checks.
+- [x] Stream native validation output immediately, stop queuing after failure, and reject contradictory or ignored CLI options.
+- [x] Make native watch mode explicit for agent execution and provide the API-client watch target.
+- [x] Reconcile native test/spec discovery, remove duplicate runner definitions and dead files, and align operational guidance with module-first iteration.
+- [x] Verify a real watch failure/repair loop and define the final full/unchanged-source gate in `module-review.md`; completion requires a passed ignored `.codex-artifacts/module-review/final-verification.json` record.
+
+## 13. Module-owned backend tests and measured feedback
+
+- [x] Co-locate backend tests with the module that owns them; move real cross-module tests into feature-scoped integration projects under `apps/backend/test/integration/<feature>/` (catalog-sync, stock, checkout, cms).
+- [x] Give composition roots (public-commerce-http, backend-runtime including `apps/backend/src/cms-worker.ts`, cms-runtime) ownership of composed-app tests.
+- [x] Split root tests into `workspace:test-tooling` (narrow `workspaceTooling` inputs) and `workspace:test-content` (conservative inputs); check both are owned exactly once in `scripts/check-module-projects.mjs`.
+- [x] Run the validation wrapper with `NX_DAEMON=false` so a freshly started daemon cannot inherit piped stdio and hang; assert it in `scripts/validate.test.mjs`.
+- [x] Measure uncached full and affected runs at Nx parallelism 2, 3 and 4; set `parallel` to 3 and keep Vitest `maxWorkers: 1`.
+- [x] Record baseline, per-scenario timings and remaining bottlenecks in `module-review.md`.
+- [ ] Run final affected and full validation on the exact final tree and record the ignored evidence file `.codex-artifacts/perf/final-verification.json`.

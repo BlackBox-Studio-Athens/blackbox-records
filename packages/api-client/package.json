@@ -24,5 +24,33 @@
     "tsx": "4.23.15",
     "typescript": "^5.9.3",
     "vitest": "4.1.11"
+  },
+  "nx": {
+    "includedScripts": [],
+    "targets": {
+      "test": {
+        "command": "pnpm --filter @blackbox/api-client test",
+        "inputs": [
+          "default",
+          "^default",
+          "{workspaceRoot}/apps/backend/openapi/**/*"
+        ]
+      },
+      "test-watch": {
+        "command": "pnpm --filter @blackbox/api-client exec vitest --watch",
+        "continuous": true,
+        "cache": false
+      },
+      "typecheck": {
+        "command": "pnpm --filter @blackbox/api-client check"
+      },
+      "lint": {
+        "command": "pnpm exec eslint packages/api-client --max-warnings=0 --no-warn-ignored"
+      }
+    },
+    "tags": [
+      "module",
+      "scope:api-client"
+    ]
   }
 }

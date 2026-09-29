@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { runValidation } from './validate.mjs';
+import { runFiniteCommand } from './local-process.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
@@ -44,10 +45,10 @@ test('real test, formatting, type, boundary and Astro build failures propagate',
   for (const phase of cases) {
     const summary = await runValidation({
       cwd,
-      phases: [{ ...phase, env: { NODE_TEST_CONTEXT: undefined } }],
-      jobs: 1,
+      options: { full: true },
       identify: async () => ({ fingerprint: 'isolated acceptance fixtures' }),
-      readPnpmVersion: async () => '12.6.0',
+      runCommand: (_nx, options) =>
+        runFiniteCommand({ ...phase, env: { NODE_TEST_CONTEXT: undefined } }, { ...options, cwd: root }),
       log: () => {},
     });
     assert.equal(summary.status, 'failed', phase.name);

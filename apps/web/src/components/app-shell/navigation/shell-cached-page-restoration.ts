@@ -1,4 +1,4 @@
-import { parseShellSectionRoute, type ShellSectionRoute } from '@/lib/app-shell/routing';
+import { parseShellSectionRoute, type ShellSectionRoute } from '@/components/app-shell/routing';
 
 import { SHELL_SECTION_LABELS, type ShellNavigationSource } from './shell-navigation';
 import type { ShellPageSnapshot } from './shell-page-snapshot';

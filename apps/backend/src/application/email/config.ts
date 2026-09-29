@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { productEnvironmentProfileFromBindings, productEnvironmentSchema } from '../../env';
+import { productEnvironmentProfileFromBindings, productEnvironmentSchema } from '../../platform/env';
 import { EmailConfigurationError } from './errors';
 
 const requiredEmailAddress = z.string().trim().email();

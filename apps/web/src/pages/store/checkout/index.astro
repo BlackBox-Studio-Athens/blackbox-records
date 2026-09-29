@@ -1,10 +1,10 @@
 ---
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import CheckoutOrderSummary from '@/components/store/CheckoutOrderSummary';
-import CheckoutOfferStatus from '@/components/store/CheckoutOfferStatus';
+import CheckoutOrderSummary from '@/components/store/checkout/CheckoutOrderSummary';
+import CheckoutOfferStatus from '@/components/store/checkout/CheckoutOfferStatus';
 import { STORE_OFFER_PRICE_DISPLAY_COPY } from '@/components/store/StoreOfferPriceDisplay';
-import { createProjectRelativeUrl } from '@/config/site';
+import { createProjectRelativeUrl } from '@/platform/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 
 const initialCheckoutAvailability = {

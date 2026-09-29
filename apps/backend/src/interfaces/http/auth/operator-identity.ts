@@ -1,7 +1,7 @@
 import { createRemoteJWKSet, errors, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import { z } from 'zod';
 
-import { productEnvironmentSchema, type AppBindings, type OperatorIdentity } from '../../../env';
+import { productEnvironmentSchema, type AppBindings, type OperatorIdentity } from '../../../platform/env';
 
 export const CF_ACCESS_JWT_ASSERTION_HEADER = 'Cf-Access-Jwt-Assertion';
 export const CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER = 'cf-access-authenticated-user-email';

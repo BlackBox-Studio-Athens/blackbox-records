@@ -1,4 +1,4 @@
-import { isCurrentPath } from '@/utils/urls';
+import { isCurrentPath } from '@/platform/utils/urls';
 
 export const HOMEPAGE_HERO_SCROLLED_CLASS = 'homepage-hero-section--scrolled';
 export const HOMEPAGE_HERO_SELECTOR = '#homepage-hero-section';

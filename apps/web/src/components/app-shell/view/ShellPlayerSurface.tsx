@@ -5,8 +5,8 @@ import type { MouseEvent } from 'react';
 
 import { LoadingStateBlock } from '@/components/ui/loading-feedback';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
-import { type PlayerEmbedLayout, type PlayerProvider, type PlayerProviderId } from '../player-provider-data';
-import { OPEN_PLAYER_ACTION_LABEL } from '../player-session-ui';
+import { type PlayerEmbedLayout, type PlayerProvider, type PlayerProviderId } from '../../music/player-provider-data';
+import { OPEN_PLAYER_ACTION_LABEL } from '../../music/player-session-ui';
 import { PLAYER_PROVIDER_LABELS } from '../player-shell/shell-player-view-state';
 import { acquireLenisModalLock } from '../lenis-scroll';
 

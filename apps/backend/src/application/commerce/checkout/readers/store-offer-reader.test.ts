@@ -1,0 +1,128 @@
+import { describe, expect, it, vi } from 'vitest';
+
+import type {
+  ItemAvailabilityRecord,
+  ItemAvailabilityRepository,
+  StoreItemOptionRecord,
+  StoreItemOptionRepository,
+} from '../../../../domain/commerce/repositories/spi';
+import { StoreOfferReader } from './';
+import { storeItemSlug, variantId } from '../../../../../test/support/commerce-value-objects';
+
+describe('StoreOfferReader', () => {
+  it('returns null when no store item option exists', async () => {
+    const storeItemOptions: StoreItemOptionRepository = {
+      findByVariantId: vi.fn(async () => null),
+      findByStoreItemSlug: vi.fn(async () => null),
+      findBySource: vi.fn(async () => null),
+      search: vi.fn(async () => []),
+    };
+    const itemAvailability: ItemAvailabilityRepository = {
+      findByVariantId: vi.fn(async () => null),
+    };
+
+    const reader = new StoreOfferReader(storeItemOptions, itemAvailability);
+
+    await expect(reader.findByStoreItemSlug(storeItemSlug('unknown-slug'))).resolves.toBeNull();
+  });
+
+  it('returns a conservative unavailable offer when availability is missing', async () => {
+    const storeItemOption: StoreItemOptionRecord = {
+      storeItemSlug: storeItemSlug('aftermaths'),
+      sourceKind: 'distro',
+      sourceId: 'aftermaths',
+      variantId: variantId('variant_aftermaths_standard'),
+    };
+    const storeItemOptions: StoreItemOptionRepository = {
+      findByVariantId: vi.fn(async () => null),
+      findByStoreItemSlug: vi.fn(async () => storeItemOption),
+      findBySource: vi.fn(async () => null),
+      search: vi.fn(async () => []),
+    };
+    const itemAvailability: ItemAvailabilityRepository = {
+      findByVariantId: vi.fn(async () => null),
+    };
+
+    const reader = new StoreOfferReader(storeItemOptions, itemAvailability);
+
+    await expect(reader.findByStoreItemSlug(storeItemSlug('aftermaths'))).resolves.toEqual({
+      storeItemSlug: 'aftermaths',
+      variantId: 'variant_aftermaths_standard',
+      availability: {
+        status: 'sold_out',
+        label: 'Unavailable',
+      },
+      canBuy: false,
+    });
+  });
+
+  it('returns repository-backed offer availability for a mapped slug', async () => {
+    const storeItemOption: StoreItemOptionRecord = {
+      storeItemSlug: storeItemSlug('disintegration-black-vinyl-lp'),
+      sourceKind: 'release',
+      sourceId: 'disintegration',
+      variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
+    };
+    const availability: ItemAvailabilityRecord = {
+      variantId: variantId('variant_disintegration-black-vinyl-lp_standard'),
+      status: 'available',
+      canBuy: true,
+      updatedAt: new Date('2026-04-22T00:00:00.000Z'),
+    };
+    const storeItemOptions: StoreItemOptionRepository = {
+      findByVariantId: vi.fn(async () => null),
+      findByStoreItemSlug: vi.fn(async () => storeItemOption),
+      findBySource: vi.fn(async () => null),
+      search: vi.fn(async () => []),
+    };
+    const itemAvailability: ItemAvailabilityRepository = {
+      findByVariantId: vi.fn(async () => availability),
+    };
+
+    const reader = new StoreOfferReader(storeItemOptions, itemAvailability);
+
+    await expect(reader.findByStoreItemSlug(storeItemSlug('disintegration-black-vinyl-lp'))).resolves.toEqual({
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      availability: {
+        status: 'available',
+        label: 'Available',
+      },
+      canBuy: true,
+    });
+  });
+
+  it('uses sold-out language for stored sold-out availability', async () => {
+    const storeItemOption: StoreItemOptionRecord = {
+      storeItemSlug: storeItemSlug('afterglow-tape'),
+      sourceKind: 'distro',
+      sourceId: 'afterglow-tape',
+      variantId: variantId('variant_afterglow-tape_standard'),
+    };
+    const availability: ItemAvailabilityRecord = {
+      variantId: variantId('variant_afterglow-tape_standard'),
+      status: 'sold_out',
+      canBuy: false,
+      updatedAt: new Date('2026-04-22T00:00:00.000Z'),
+    };
+    const storeItemOptions: StoreItemOptionRepository = {
+      findByVariantId: vi.fn(async () => null),
+      findByStoreItemSlug: vi.fn(async () => storeItemOption),
+      findBySource: vi.fn(async () => null),
+      search: vi.fn(async () => []),
+    };
+    const itemAvailability: ItemAvailabilityRepository = {
+      findByVariantId: vi.fn(async () => availability),
+    };
+
+    const reader = new StoreOfferReader(storeItemOptions, itemAvailability);
+
+    await expect(reader.findByStoreItemSlug(storeItemSlug('afterglow-tape'))).resolves.toMatchObject({
+      availability: {
+        status: 'sold_out',
+        label: 'Sold Out',
+      },
+      canBuy: false,
+    });
+  });
+});

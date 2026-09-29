@@ -2,7 +2,7 @@
 import { Image } from 'astro:assets';
 
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
-import { createAbsoluteSiteUrl } from '@/config/site';
+import { createAbsoluteSiteUrl } from '@/platform/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import {
   createReleaseDetailPath,
@@ -14,7 +14,7 @@ import {
 import { getReleaseCommerceLink } from '@/lib/release-commerce';
 import { splitReleaseCatalogByAvailability } from '@/lib/release-feature';
 import { formatMonthYear, formatYear } from '@/utils/content';
-import { buildEmbeddedPlayerData } from '@/utils/music';
+import { buildEmbeddedPlayerData } from '@/components/music/music';
 
 const pageTitle = 'Release Feature Drafts';
 const pageDescription =

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ActivePlayerSession } from '../player-iframe-session';
-import type { PlayerProvider } from '../player-provider-data';
+import type { ActivePlayerSession } from '../../music/player-iframe-session';
+import type { PlayerProvider } from '../../music/player-provider-data';
 import { createShellPlayerSessionController } from './shell-player-session-controller';
 
 const bandcampEmbedUrl =

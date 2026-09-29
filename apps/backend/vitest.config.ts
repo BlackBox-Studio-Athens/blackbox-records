@@ -3,7 +3,6 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import { validationReporters } from '../../scripts/validation-reporters.ts';
-import { backendNodeTestFiles, resolveBackendWorkerMaxWorkers } from './vitest-test-selection.ts';
 
 import {
   filteredViteLogger,
@@ -21,7 +20,6 @@ export default defineConfig({
   customLogger: filteredViteLogger,
   plugins: [
     cloudflareTest({
-      main: './src/index.ts',
       miniflare: {
         modulesRules: [{ type: 'CompiledWasm', include: ['**/*.wasm', '**/*.wasm?module'] }],
         bindings: {
@@ -54,19 +52,10 @@ export default defineConfig({
   ],
   test: {
     ...validationReporters('backend-worker'),
-    maxWorkers: resolveBackendWorkerMaxWorkers(),
+    maxWorkers: 1,
     // Integration cases cross real workerd/D1 boundaries; allow local process scheduling delays.
     testTimeout: 15_000,
-    exclude: [
-      'test/architecture/**/*.test.ts',
-      'test/http/internal-order-routes.test.ts',
-      'test/http/internal-stock-routes.test.ts',
-      'test/http/public-commerce-routes.test.ts',
-      'test/http/stripe-webhook-routes.test.ts',
-      'test/scripts/**/*.test.ts',
-      ...backendNodeTestFiles,
-    ],
-    include: ['test/**/*.test.ts'],
+    include: ['test/**/*.worker.{test,spec}.{ts,tsx}'],
     onConsoleLog: filterBackendTestConsoleLog,
     setupFiles: ['./test/setup/apply-d1-migrations.ts'],
   },

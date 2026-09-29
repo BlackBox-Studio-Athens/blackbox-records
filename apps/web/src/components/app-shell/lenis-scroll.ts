@@ -3,4 +3,4 @@ export {
   connectLenisScrollRoots,
   scrollElementWithLenis,
   scrollWithLenis,
-} from '@/lib/lenis-scroll';
+} from '@/platform/lib/lenis-scroll';

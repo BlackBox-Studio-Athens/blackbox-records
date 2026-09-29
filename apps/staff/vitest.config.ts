@@ -6,6 +6,6 @@ export default defineConfig({
   plugins: [react()],
   test: {
     ...validationReporters('staff'),
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
   },
 });

@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-import { PublicCheckoutApiError } from '@/lib/backend/public-checkout-api';
+import { PublicCheckoutApiError } from '@/components/store/checkout/public-checkout-api';
 import ServicesInquiryForm, {
   SERVICES_INQUIRY_DETAIL_PROMPTS,
   ServicesInquirySubmissionFeedback,

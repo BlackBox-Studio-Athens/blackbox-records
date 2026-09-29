@@ -7,8 +7,8 @@ import { chromium, firefox } from 'playwright';
 import { previewPolicy } from '../apps/backend/src/cms/preview-policy.ts';
 
 const image = await readFile('apps/staff/public/favicon-96x96.png');
-const readiness = stripTypeScriptTypes(await readFile('apps/web/src/lib/private-preview.ts', 'utf8'));
-const scrollRuntime = stripTypeScriptTypes(await readFile('apps/web/src/lib/lenis-scroll.ts', 'utf8'));
+const readiness = stripTypeScriptTypes(await readFile('apps/web/src/platform/lib/private-preview.ts', 'utf8'));
+const scrollRuntime = stripTypeScriptTypes(await readFile('apps/web/src/platform/lib/lenis-scroll.ts', 'utf8'));
 const hits = [];
 const server = createServer((request, response) => {
   hits.push(request.url);

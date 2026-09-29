@@ -1,6 +1,6 @@
 import { PrismaD1 } from '@prisma/adapter-d1';
 
-import type { AppBindings } from '../../../env';
+import type { AppBindings } from '../../../platform/env';
 import { PrismaClient } from '../../../generated/prisma/client';
 
 export function createPrismaClient(bindings: Pick<AppBindings, 'COMMERCE_DB'>): PrismaClient {

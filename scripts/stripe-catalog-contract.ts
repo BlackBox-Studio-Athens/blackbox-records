@@ -12,8 +12,8 @@ import {
   getProductEnvironmentProfile,
   parseProductEnvironmentCliTarget,
   type ProductEnvironment,
-} from '../apps/backend/src/env';
-import { createSlugSuggestion } from '../apps/web/src/lib/slugs';
+} from '../apps/backend/src/platform/env';
+import { createSlugSuggestion } from '../apps/web/src/lib/content-files/slugs';
 import {
   createPhysicalEditionKey,
   createValidatedStoreItemProjection,

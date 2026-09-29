@@ -1,0 +1,328 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { createHttpApp } from './app';
+import { currentPaidCheckoutOrder } from '../../../test/fixtures/current-paid-checkout-order';
+
+const LOCAL_ENV = {
+  PRODUCT_ENVIRONMENT: 'LOCAL' as const,
+  COMMERCE_DB: {} as D1Database,
+  LOCAL_OPERATOR_EMAIL: 'operator@blackboxrecords.example',
+};
+const HOSTED_ENV = {
+  PRODUCT_ENVIRONMENT: 'UAT' as const,
+  COMMERCE_DB: {} as D1Database,
+  CF_ACCESS_POLICY_AUD: 'operator-audience',
+  CF_ACCESS_TEAM_DOMAIN: 'https://blackbox.cloudflareaccess.com',
+};
+
+const mockDisconnect = vi.fn(async () => {});
+const mockReadCheckoutOrder = vi.fn();
+const mockReadRecentCheckoutOrders = vi.fn();
+const mockCreateInternalOrderServices = vi.fn();
+
+function expectNoStoreCacheControl(response: Response): void {
+  expect(response.headers.get('Cache-Control')).toBe('no-store');
+}
+
+vi.mock('../../application/commerce/orders/internal-order-services', () => ({
+  createInternalOrderServices: (...args: unknown[]) => {
+    mockCreateInternalOrderServices(...args);
+
+    return {
+      disconnect: mockDisconnect,
+      readCheckoutOrder: mockReadCheckoutOrder,
+      readRecentCheckoutOrders: mockReadRecentCheckoutOrders,
+    };
+  },
+}));
+
+describe('internal order routes', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('rejects a hosted request without an Access assertion before service construction', async () => {
+    const app = createHttpApp();
+
+    const response = await app.request('https://ops.example/api/internal/orders', undefined, HOSTED_ENV);
+
+    expect(response.status).toBe(401);
+    expectNoStoreCacheControl(response);
+    await expect(response.json()).resolves.toEqual({
+      type: '/problems/unauthorized',
+      title: 'Unauthorized.',
+      status: 401,
+      detail: 'Unauthorized.',
+      code: 'unauthorized',
+      error: 'Unauthorized.',
+      requestId: expect.any(String),
+    });
+    expect(mockCreateInternalOrderServices).not.toHaveBeenCalled();
+    expect(mockReadRecentCheckoutOrders).not.toHaveBeenCalled();
+  });
+
+  it('searches beyond one page with server filters and a stable continuation cursor', async () => {
+    const first = currentPaidCheckoutOrder();
+    const second = { ...first, id: 'older_order', createdAt: new Date(first.createdAt.getTime() - 1000) };
+    mockReadRecentCheckoutOrders.mockResolvedValueOnce([
+      { order: first, deliveries: [] },
+      { order: second, deliveries: [] },
+    ]);
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://127.0.0.1/api/internal/orders/search?limit=1&q=Example&status=paid&notification=pending',
+      undefined,
+      LOCAL_ENV,
+    );
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    const result = (await response.json()) as { items: unknown[]; nextCursor: string };
+    expect(result.items).toHaveLength(1);
+    expect(result.nextCursor).toBe(`${first.createdAt.toISOString()}~${first.id}`);
+    expect(mockReadRecentCheckoutOrders).toHaveBeenLastCalledWith({
+      limit: 2,
+      status: 'paid',
+      q: 'Example',
+      notification: 'pending',
+    });
+    mockReadRecentCheckoutOrders.mockResolvedValueOnce([{ order: second, deliveries: [] }]);
+    const next = await app.request(
+      `http://127.0.0.1/api/internal/orders/search?limit=1&q=Example&status=paid&notification=pending&cursor=${encodeURIComponent(result.nextCursor)}`,
+      undefined,
+      LOCAL_ENV,
+    );
+    expect(await next.json()).toMatchObject({ nextCursor: null, items: [{ orderReference: second.id }] });
+    expect(mockReadRecentCheckoutOrders).toHaveBeenLastCalledWith({
+      limit: 2,
+      status: 'paid',
+      q: 'Example',
+      notification: 'pending',
+      cursor: { createdAt: first.createdAt, id: first.id },
+    });
+  });
+
+  it('denies hosted order search before constructing a repository', async () => {
+    const response = await createHttpApp().request(
+      'https://ops.example/api/internal/orders/search?q=customer',
+      undefined,
+      HOSTED_ENV,
+    );
+    expect(response.status).toBe(401);
+    expect(mockCreateInternalOrderServices).not.toHaveBeenCalled();
+  });
+
+  it('lists recent checkout orders for operators on the protected internal surface', async () => {
+    const paidOrder = currentPaidCheckoutOrder();
+    Object.assign(paidOrder, {
+      amountTotalMinor: 2750,
+      merchandiseGrossMinor: 2500,
+      deliveryGrossMinor: 250,
+      deliveryVatMinor: 48,
+      totalVatMinor: 532,
+      acceptedDeliveryAmountMinor: 250,
+      acceptedParcelTier: 'small',
+      monetaryPolicyReference: 'private-seller-policy',
+    });
+    Object.assign(paidOrder.lines[0]!, { lineVatMinor: 484, taxRatePercent: 24 });
+    mockReadRecentCheckoutOrders.mockResolvedValueOnce([
+      {
+        deliveries: [
+          {
+            attemptCount: 1,
+            createdAt: new Date('2026-08-31T10:00:00.000Z'),
+            deliveredAt: new Date('2026-08-31T10:01:00.000Z'),
+            id: 'delivery_internal_only',
+            kind: 'shopper_confirmation',
+            needsReviewAt: null,
+            nextAttemptAt: null,
+            orderId: paidOrder.id,
+            providerMessageId: 'provider_internal_only',
+            safeReason: null,
+            status: 'delivered',
+            updatedAt: new Date('2026-08-31T10:01:00.000Z'),
+          },
+        ],
+        order: paidOrder,
+      },
+    ]);
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://127.0.0.1/api/internal/orders?status=paid&limit=10',
+      undefined,
+      LOCAL_ENV,
+    );
+
+    expect(mockReadRecentCheckoutOrders).toHaveBeenCalledWith({
+      limit: 10,
+      status: 'paid',
+    });
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    const body = await response.json();
+    expect(body).toEqual([
+      expect.objectContaining({
+        deliveries: [
+          {
+            attemptCount: 1,
+            createdAt: '2026-08-31T10:00:00.000Z',
+            deliveredAt: '2026-08-31T10:01:00.000Z',
+            kind: 'shopper_confirmation',
+            needsReviewAt: null,
+            nextAttemptAt: null,
+            safeReason: null,
+            status: 'delivered',
+            updatedAt: '2026-08-31T10:01:00.000Z',
+          },
+        ],
+        fulfillment: {
+          merchandiseGrossMinor: 2500,
+          deliveryGrossMinor: 250,
+          deliveryVatMinor: 48,
+          totalVatMinor: 532,
+          amountTotalMinor: 2750,
+          currencyCode: 'EUR',
+          kind: 'current',
+          lines: [
+            expect.objectContaining({
+              displayName: 'Disintegration Black Vinyl LP',
+              lineAmountMinor: 2500,
+              unitAmountMinor: 2500,
+              lineVatMinor: 484,
+              taxRatePercent: 24,
+            }),
+          ],
+          newsletterConsent: {
+            consentedAt: '2026-08-31T10:00:00.000Z',
+            copyVersion: 'blackbox-newsletter-v1',
+            optedIn: true,
+          },
+          paidAt: '2026-08-31T10:00:00.000Z',
+          recipientName: 'Buyer Name',
+          shippingAddress: {
+            city: 'Athens',
+            country: 'GR',
+            line1: 'Long Street 1',
+            line2: null,
+            postalCode: '10558',
+            state: null,
+          },
+          shopperContact: {
+            email: 'buyer@example.com',
+            phone: '+302100000000',
+          },
+        },
+        status: 'paid',
+      }),
+    ]);
+    expect(JSON.stringify(body)).not.toContain('provider_internal_only');
+    expect(JSON.stringify(body)).not.toContain('delivery_internal_only');
+    expect(JSON.stringify(body)).not.toContain('leaseUntil');
+  });
+
+  it('returns checkout order detail by checkout session id', async () => {
+    mockReadCheckoutOrder.mockResolvedValueOnce({
+      deliveries: [],
+      order: {
+        checkoutExpiresAt: new Date('2026-04-25T11:30:00.000Z'),
+        checkoutSessionId: 'cs_test_review',
+        createdAt: new Date('2026-04-25T11:00:00.000Z'),
+        id: 'order_2',
+        needsReviewAt: new Date('2026-04-25T11:05:00.000Z'),
+        needsReviewReason: 'stock_unavailable',
+        notPaidAt: null,
+        paidAt: null,
+        shippingLocker: null,
+        status: 'needs_review',
+        statusUpdatedAt: new Date('2026-04-25T11:05:00.000Z'),
+        storeItemSlug: 'caregivers-vinyl',
+        stripePaymentIntentId: 'pi_test_review',
+        updatedAt: new Date('2026-04-25T11:05:00.000Z'),
+        variantId: 'variant_caregivers-vinyl_standard',
+      },
+    });
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://127.0.0.1/api/internal/orders/checkout-sessions/cs_test_review',
+      undefined,
+      LOCAL_ENV,
+    );
+
+    expect(mockReadCheckoutOrder).toHaveBeenCalledWith('cs_test_review');
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    await expect(response.json()).resolves.toEqual({
+      orderReference: 'order_2',
+      acceptedDeliveryAmountMinor: null,
+      acceptedParcelTier: null,
+      monetaryPolicyReference: null,
+      checkoutExpiresAt: '2026-04-25T11:30:00.000Z',
+      checkoutSessionId: 'cs_test_review',
+      createdAt: '2026-04-25T11:00:00.000Z',
+      deliveries: [],
+      fulfillment: { kind: 'unavailable' },
+      needsReviewAt: '2026-04-25T11:05:00.000Z',
+      needsReviewReason: 'stock_unavailable',
+      notPaidAt: null,
+      paidAt: null,
+      shippingLocker: null,
+      status: 'needs_review',
+      statusUpdatedAt: '2026-04-25T11:05:00.000Z',
+      storeItemSlug: 'caregivers-vinyl',
+      stripePaymentIntentId: 'pi_test_review',
+      updatedAt: '2026-04-25T11:05:00.000Z',
+      variantId: 'variant_caregivers-vinyl_standard',
+    });
+  });
+
+  it('does not expose partial fulfillment fields from an incomplete paid row', async () => {
+    mockReadCheckoutOrder.mockResolvedValueOnce({
+      deliveries: [],
+      order: {
+        ...currentPaidCheckoutOrder(),
+        recipientName: null,
+        shopperEmail: 'must-not-leak@example.com',
+        shippingAddressLine1: 'Must Not Leak 1',
+      },
+    });
+
+    const response = await createHttpApp().request(
+      'http://127.0.0.1/api/internal/orders/checkout-sessions/cs_test_paid',
+      undefined,
+      LOCAL_ENV,
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    expect(body).toEqual(
+      expect.objectContaining({ fulfillment: { kind: 'incomplete', reason: 'incomplete_paid_fulfillment' } }),
+    );
+    expect(JSON.stringify(body)).not.toContain('must-not-leak@example.com');
+    expect(JSON.stringify(body)).not.toContain('Must Not Leak 1');
+  });
+
+  it('returns 404 when an order cannot be found by checkout session id', async () => {
+    mockReadCheckoutOrder.mockResolvedValueOnce(null);
+
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://127.0.0.1/api/internal/orders/checkout-sessions/cs_missing',
+      undefined,
+      LOCAL_ENV,
+    );
+
+    expect(response.status).toBe(404);
+    expectNoStoreCacheControl(response);
+    await expect(response.json()).resolves.toEqual({
+      type: '/problems/not_found',
+      title: 'Not Found',
+      status: 404,
+      detail: 'Checkout order not found.',
+      code: 'not_found',
+      error: 'Checkout order not found.',
+      requestId: expect.any(String),
+    });
+  });
+});

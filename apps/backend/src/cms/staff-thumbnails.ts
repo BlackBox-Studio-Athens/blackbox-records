@@ -22,7 +22,7 @@ export function isStaffThumbnailOriginalKey(value: string): boolean {
       return character === '/' || character === '\\' || code <= 0x1f || (code >= 0x7f && code <= 0x9f);
     }) ||
     !/\.(?:png|jpe?g|webp)$/i.test(value) ||
-    value.slice(0, value.lastIndexOf('.')).length === 0
+    value.slice(0, value.lastIndexOf('./')).length === 0
   )
     return false;
   try {

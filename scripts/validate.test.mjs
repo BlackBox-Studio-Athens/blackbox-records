@@ -1,18 +1,15 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, readFile, rm, mkdir, readdir } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, access } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
 import { execa } from 'execa';
-import { validationPlan, runValidation, sourceIdentity, diagnosticExcerpt, monitorSourceChanges } from './validate.mjs';
-import { watchConfigurations, vitestArguments } from './test-watch.mjs';
-import { validationReporters } from './validation-reporters.ts';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { validationPlan, main, runValidation, sourceIdentity } from './validate.mjs';
+import { main as testWatchMain, nxWatchArguments } from './test-watch.mjs';
 
-const root = fileURLToPath(new URL('..', import.meta.url));
 const identity = async () => ({ sha: 'fixture', fingerprint: 'same' });
-const testOptions = { identify: identity, readPnpmVersion: async () => '12.6.0', log: () => {} };
-const command = (name, source) => ({ name, command: process.execPath, args: ['-e', source] });
+
 async function fixture(t) {
   const cwd = await mkdtemp(path.join(os.tmpdir(), 'blackbox-validation-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
@@ -21,508 +18,327 @@ async function fixture(t) {
 
 async function gitFixture(t) {
   const cwd = await fixture(t);
-  await execa('git', ['init'], { cwd });
+  await import('execa').then(({ execa }) => execa('git', ['init'], { cwd }));
   await writeFile(path.join(cwd, '.gitignore'), '.codex-artifacts/\n');
-  for (const [name, content] of [
-    ['package.json', '{"name":"cache-fixture","version":"1.0.0"}'],
-    ['pnpm-lock.yaml', 'lockfileVersion: 9.0\n'],
-    ['tsconfig.json', '{}\n'],
-    ['source.ts', 'export const source = true;\n'],
-    ['delete-me.ts', 'export const remove = true;\n'],
-  ])
-    await writeFile(path.join(cwd, name), content);
-  await execa('git', ['add', '.'], { cwd });
-  await execa(
-    'git',
-    ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture'],
-    {
-      cwd,
-    },
-  );
-  return cwd;
-}
-
-async function latestEvidenceSummary(cwd) {
-  const entries = await readdir(path.join(cwd, '.codex-artifacts/validation'), { withFileTypes: true });
-  const latest = entries
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name)
-    .sort()
-    .at(-1);
-  return path.join(cwd, '.codex-artifacts/validation', latest, 'summary.json');
-}
-
-async function evidenceSummaries(cwd) {
-  const root = path.join(cwd, '.codex-artifacts/validation');
-  const entries = await readdir(root, { withFileTypes: true });
-  return entries.filter((entry) => entry.isDirectory()).map((entry) => path.join(root, entry.name, 'summary.json'));
-}
-
-test('full plan preserves current gates without retired catalog preparation', async () => {
-  const { scripts } = JSON.parse(await readFile(path.join(root, 'package.json')));
-  const plan = validationPlan();
-  assert.deepEqual(
-    plan.map((phase) => phase.args[0]),
-    ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:boundaries', 'check:types', 'build'],
-  );
-  assert.equal(scripts.build, 'node --import tsx scripts/run-release-preparation.mjs builds');
-  assert.equal(scripts.lint, 'node --import tsx scripts/validate.mjs --lint-only --resume');
-  assert.equal(
-    scripts.check,
-    'pnpm environment:model:verify && pnpm format:check && pnpm lint && pnpm check:types && pnpm check:boundaries',
-  );
-  for (const name of ['build', 'check', 'test:unit']) assert.doesNotMatch(scripts[name], /catalog/);
-  assert.match(
-    scripts['test:unit'],
-    /--filter @blackbox\/web --filter @blackbox\/staff --filter @blackbox\/backend --filter @blackbox\/api-client test && pnpm test:contracts/,
-  );
-  assert.throws(() => validationPlan({ scope: 'web' }));
-  assert.throws(() => validationPlan({ fast: true, scope: 'unknown' }));
-  assert.deepEqual(validationPlan({ fast: true, scope: 'backend' })[0].args, [
-    '--parallel',
-    '--filter',
-    '@blackbox/backend',
-    'test',
-  ]);
-  for (const scope of ['web', 'staff', 'backend', 'api-client'])
-    assert.deepEqual(
-      validationPlan({ fast: true, scope }).map(({ name }) => name),
-      ['tests', 'types'],
-    );
-  assert.equal(validationPlan({ fast: true }).at(-1).name, 'contracts');
-  assert.equal(validationPlan({ editor: true }).length, 4);
-  assert.throws(() => validationPlan({ editor: true, fast: true }));
-  assert.deepEqual(
-    validationPlan({ checks: true }).map((phase) => phase.name),
-    ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:boundaries', 'check:types'],
-  );
-  assert.throws(() => validationPlan({ checks: true, fast: true }));
-  assert.throws(() => validationPlan({ checks: true, scope: 'web' }));
-  assert.deepEqual(validationPlan({ lintOnly: true }), [{ name: 'lint', command: 'pnpm', args: ['lint'] }]);
-  for (const options of [{ fast: true }, { editor: true }, { checks: true }, { scope: 'web' }])
-    assert.throws(() => validationPlan({ lintOnly: true, ...options }));
-});
-
-test('test watch requires one known package and starts only its Vitest configurations', () => {
-  assert.deepEqual(watchConfigurations('web'), ['vitest.config.ts', 'vitest.request.config.ts']);
-  assert.deepEqual(watchConfigurations('staff'), [undefined]);
-  assert.deepEqual(watchConfigurations('backend'), ['vitest.config.ts', 'vitest.node.config.ts']);
-  assert.deepEqual(watchConfigurations('api-client'), [undefined]);
-  assert.throws(() => watchConfigurations(undefined), /Specify --scope/);
-  assert.throws(() => watchConfigurations('all'), /Specify --scope/);
-  assert.deepEqual(vitestArguments('vitest.node.config.ts'), ['--watch', '--config', 'vitest.node.config.ts']);
-  assert.deepEqual(vitestArguments(undefined, { changed: true, since: 'HEAD~1' }), [
-    'run',
-    '--changed=HEAD~1',
-    '--passWithNoTests',
-  ]);
-  assert.throws(() => vitestArguments(undefined, { since: 'HEAD~1' }), /requires --changed/);
-});
-
-test('affected selection follows changed imports and keeps failures visible', async (t) => {
-  const cwd = await gitFixture(t);
-  await writeFile(
-    path.join(cwd, 'affected.test.mjs'),
-    'import { source } from "./source.ts"; test("affected", () => expect(source).toBe(true));\n',
-  );
-  await writeFile(
-    path.join(cwd, 'unrelated.test.mjs'),
-    'test("unrelated", () => { throw new Error("must not run"); });\n',
-  );
-  await execa('git', ['add', '.'], { cwd, windowsHide: true });
-  await execa('git', ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'tests'], {
-    cwd,
-    windowsHide: true,
-  });
-  await writeFile(path.join(cwd, 'source.ts'), 'export const source = false;\n');
-  const result = await execa(
-    process.execPath,
-    [
-      path.join(root, 'apps/web/node_modules/vitest/vitest.mjs'),
-      ...vitestArguments(undefined, { changed: true }),
-      '--globals',
-      '--reporter=json',
-    ],
-    { cwd, reject: false, windowsHide: true },
-  );
-  const report = JSON.parse(result.stdout);
-  assert.equal(result.exitCode, 1);
-  assert.equal(report.numTotalTests, 1);
-  assert.equal(report.numFailedTests, 1);
-  assert.equal(report.testResults[0].assertionResults[0].title, 'affected');
-});
-
-for (const phase of ['test', 'format', 'type', 'boundary', 'build', 'missing-artifact']) {
-  test(`${phase} failure preserves exit status and prevents later phases`, async (t) => {
-    const cwd = await fixture(t);
-    const summary = await runValidation({
-      cwd,
-      ...testOptions,
-      phases: [
-        command(phase, 'console.error("FAIL sentinel"); process.exit(7)'),
-        command('should-not-run', 'process.exit(0)'),
-      ],
-    });
-    assert.equal(summary.status, 'failed');
-    assert.equal(summary.exitCode, 7);
-    assert.ok(summary.firstFailureDurationMs > 0);
-    assert.ok(summary.firstFailureDurationMs <= summary.durationMs);
-    assert.equal(summary.phases.length, 1);
-    assert.match(await readFile(summary.phases[0].logPath, 'utf8'), /FAIL sentinel/);
-  });
-}
-
-test('partial pass, changed source and cancellation never report full completion', async (t) => {
-  const cwd = await fixture(t);
-  const phases = [command('ok', 'console.log("ok")')];
-  assert.equal((await runValidation({ cwd, phases, fast: true, ...testOptions })).status, 'partial');
-  assert.equal((await runValidation({ cwd, phases, editor: true, ...testOptions })).status, 'partial');
-  let reads = 0;
-  assert.equal(
-    (await runValidation({ cwd, phases, ...testOptions, identify: async () => ({ fingerprint: String(reads++) }) }))
-      .status,
-    'invalidated',
-  );
-  const controller = new AbortController();
-  controller.abort();
-  assert.equal((await runValidation({ cwd, phases, ...testOptions, signal: controller.signal })).status, 'cancelled');
-});
-
-test('cancellation terminates a running child and records a nonzero result', async (t) => {
-  const cwd = await fixture(t);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 500);
-  try {
-    const summary = await runValidation({
-      cwd,
-      ...testOptions,
-      signal: controller.signal,
-      phases: [command('waiting', 'setInterval(() => {}, 1000)')],
-    });
-    assert.equal(summary.status, 'cancelled');
-    assert.notEqual(summary.exitCode, 0);
-  } finally {
-    clearTimeout(timer);
-  }
-});
-
-test('missing generated input surfaces its filesystem diagnostic', async (t) => {
-  const cwd = await fixture(t);
-  const summary = await runValidation({
-    cwd,
-    ...testOptions,
-    phases: [command('build', "require('node:fs').readFileSync('missing-generated-input')")],
-  });
-  assert.equal(summary.status, 'failed');
-  assert.match(await readFile(summary.phases[0].logPath, 'utf8'), /ENOENT/);
-});
-
-test('source fingerprint detects tracked, untracked and deleted source but ignores logs', async (t) => {
-  const cwd = await fixture(t);
-  await execa('git', ['init'], { cwd });
-  await writeFile(path.join(cwd, '.gitignore'), '.codex-artifacts/\n');
-  await writeFile(path.join(cwd, 'source.txt'), 'before');
+  await writeFile(path.join(cwd, 'source.ts'), 'before');
+  const { execa } = await import('execa');
   await execa('git', ['add', '.'], { cwd });
   await execa(
     'git',
     ['-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-m', 'fixture'],
     { cwd },
   );
-  const original = await sourceIdentity(cwd);
-  const stopReadMonitoring = await monitorSourceChanges(cwd);
-  await readFile(path.join(cwd, 'source.txt'));
-  await new Promise((resolve) => setTimeout(resolve, 30));
-  assert.deepEqual(await stopReadMonitoring(), []);
-  const stopMonitoring = await monitorSourceChanges(cwd);
-  await writeFile(path.join(cwd, 'source.txt'), 'transient');
-  await new Promise((resolve) => setTimeout(resolve, 30));
-  await writeFile(path.join(cwd, 'source.txt'), 'before');
-  await new Promise((resolve) => setTimeout(resolve, 30));
-  assert.ok((await stopMonitoring()).includes('source.txt'));
-  assert.deepEqual(await sourceIdentity(cwd), original);
-  await mkdir(path.join(cwd, 'existing'));
-  const stopGeneratedMonitoring = await monitorSourceChanges(cwd);
-  await writeFile(path.join(cwd, 'existing', '_tmp_123_abcdef12'), 'pnpm probe');
-  await new Promise((resolve) => setTimeout(resolve, 30));
-  await rm(path.join(cwd, 'existing', '_tmp_123_abcdef12'));
-  await new Promise((resolve) => setTimeout(resolve, 30));
-  assert.deepEqual(await stopGeneratedMonitoring(), []);
-  await mkdir(path.join(cwd, '.codex-artifacts'));
-  await writeFile(path.join(cwd, '.codex-artifacts', 'log'), 'ignored');
-  assert.deepEqual(await sourceIdentity(cwd), original);
-  await writeFile(path.join(cwd, 'source.txt'), 'after');
-  assert.notEqual((await sourceIdentity(cwd)).fingerprint, original.fingerprint);
-  await writeFile(path.join(cwd, 'source.txt'), 'before');
-  await writeFile(path.join(cwd, 'new.txt'), 'untracked');
-  assert.notEqual((await sourceIdentity(cwd)).fingerprint, original.fingerprint);
-  await rm(path.join(cwd, 'new.txt'));
-  await rm(path.join(cwd, 'source.txt'));
-  assert.notEqual((await sourceIdentity(cwd)).fingerprint, original.fingerprint);
-});
-
-test('worktree guard rejects by default and accepts explicit authorization', async () => {
-  const run = (args) =>
-    execa(process.execPath, ['--import', 'tsx', 'scripts/assert-openspec-worktree.ts', ...args], {
-      cwd: root,
-      reject: false,
-    });
-  const worktrees = (await execa('git', ['worktree', 'list', '--porcelain'], { cwd: root })).stdout;
-  const primary = worktrees.split('\n')[0].slice('worktree '.length).replaceAll('\\', '/').toLowerCase();
-  const branch = (await execa('git', ['branch', '--show-current'], { cwd: root })).stdout;
-  assert.equal(
-    (await run([])).exitCode,
-    root.replaceAll('\\', '/').replace(/\/$/, '').toLowerCase() === primary && branch === 'main' ? 0 : 1,
-  );
-  assert.equal((await run(['--allow-worktree'])).exitCode, 0);
-  if ((await run([])).exitCode === 1) {
-    const wrapper = await execa(process.execPath, ['--import', 'tsx', 'scripts/run-openspec.ts', '--', '--version'], {
-      cwd: root,
-      reject: false,
-    });
-    assert.equal(wrapper.exitCode, 1);
-    assert.match(wrapper.stderr, /main worktree/);
-  }
-});
-
-test('diagnostics retain failure context within a fixed output bound', () => {
-  const output = `PASS handles failures\n${'noise\n'.repeat(200)}FAIL test assertion\n${'details\n'.repeat(200)}`;
-  assert.match(diagnosticExcerpt(output), /FAIL test assertion/);
-  assert.ok(diagnosticExcerpt(output).length <= 6000);
-  const negativePathLog = `Error: expected injected D1 failure\n${'passing test\n'.repeat(50)}Failed Tests 1\nFAIL fixture.test.ts\nAssertionError: expected /api/wrong\n`;
-  assert.match(diagnosticExcerpt(negativePathLog), /AssertionError: expected \/api\/wrong/);
-  assert.doesNotMatch(diagnosticExcerpt(negativePathLog), /injected D1 failure/);
-});
-
-test('parallel groups finish before build and failures cannot reach build', async (t) => {
-  const cwd = await fixture(t);
-  const phases = [command('test:unit', 'setTimeout(() => {}, 200)')];
-  for (let i = 0; i < 5; i++) phases.push(command(`check-${i}`, 'process.exit(0)'));
-  phases.push(command('build', 'process.exit(0)'));
-  const summary = await runValidation({ cwd, phases, jobs: 2, ...testOptions });
-  assert.equal(summary.status, 'passed');
-  assert.equal(summary.phases.at(-1).name, 'build');
-  assert.match(summary.taskAcceptance, /not established/);
-  phases[2] = command('bad-check', 'process.exit(9)');
-  const failed = await runValidation({ cwd, phases, jobs: 2, ...testOptions });
-  assert.equal(failed.exitCode, 9);
-  assert.ok(!failed.phases.some(({ name }) => name === 'build'));
-  assert.deepEqual(failed.skippedPhases, ['check-2', 'check-3', 'check-4', 'build']);
-});
-
-for (const failure of ['unit', 'check']) {
-  test(`parallel validation cancels the other lane after a ${failure} failure`, async (t) => {
-    const cwd = await fixture(t);
-    const phases = [
-      command(
-        'test:unit',
-        failure === 'unit' ? 'console.error("UNIT sentinel"); process.exit(7)' : 'setInterval(() => {}, 10000)',
-      ),
-      command(
-        'environment:model:verify',
-        failure === 'check' ? 'console.error("CHECK sentinel"); process.exit(9)' : 'setInterval(() => {}, 10000)',
-      ),
-      command('check:types', 'process.exit(0)'),
-      command('build', 'process.exit(0)'),
-    ];
-    const summary = await runValidation({ cwd, phases, jobs: 2, ...testOptions });
-    const failedName = failure === 'unit' ? 'test:unit' : 'environment:model:verify';
-    const cancelledName = failure === 'unit' ? 'environment:model:verify' : 'test:unit';
-    const failed = summary.phases.find(({ name }) => name === failedName);
-    const cancelled = summary.phases.find(({ name }) => name === cancelledName);
-    assert.equal(summary.status, 'failed');
-    assert.equal(summary.exitCode, failure === 'unit' ? 7 : 9);
-    assert.equal(failed.status, 'failed');
-    assert.equal(failed.exitCode, failure === 'unit' ? 7 : 9);
-    assert.equal(cancelled.status, 'cancelled');
-    assert.deepEqual(summary.skippedPhases, ['check:types', 'build']);
-    assert.match(await readFile(failed.logPath, 'utf8'), failure === 'unit' ? /UNIT sentinel/ : /CHECK sentinel/);
-  });
+  return cwd;
 }
 
-test('fast package validation cancels its sibling lane after a failure', async (t) => {
-  const cwd = await fixture(t);
-  const phases = [
-    command('tests', 'setTimeout(() => process.exit(9), 20)'),
-    command('types', 'setTimeout(() => {}, 5000)'),
-  ];
-  const summary = await runValidation({ cwd, phases, fast: true, jobs: 2, ...testOptions });
-  assert.equal(summary.status, 'failed');
-  assert.equal(summary.phases.find(({ name }) => name === 'tests').exitCode, 9);
-  assert.equal(summary.phases.find(({ name }) => name === 'types').status, 'cancelled');
-});
-
-test('resume reuses only matching successful eligible phases and no-cache bypasses them', async (t) => {
-  const cwd = await fixture(t);
-  await writeFile(path.join(cwd, 'package.json'), '{"name":"cache-fixture","version":"1.0.0"}');
-  const phases = ['tests', 'types'].map((name) => ({
-    name,
-    command: 'pnpm',
-    args: ['exec', 'node', '-e', 'process.exit(0)'],
-    cwd: root,
-  }));
-  await runValidation({ cwd, phases, fast: true, jobs: 1, ...testOptions });
-  const resumed = await runValidation({ cwd, phases, fast: true, jobs: 1, resume: true, ...testOptions });
-  assert.ok(
-    resumed.phases.every(({ cacheHit }) => cacheHit),
-    JSON.stringify(resumed.phases),
-  );
-  const changed = await runValidation({
-    cwd,
-    phases: phases.map((phase) => ({ ...phase, args: [...phase.args.slice(0, -1), 'process.exit(1)'] })),
-    fast: true,
-    jobs: 1,
-    resume: true,
-    ...testOptions,
-  });
-  assert.ok(changed.phases.every(({ cacheHit }) => !cacheHit));
-  const fresh = await runValidation({ cwd, phases, fast: true, jobs: 1, resume: true, noCache: true, ...testOptions });
-  assert.ok(fresh.phases.every(({ cacheHit }) => !cacheHit));
-});
-
-test('resume requires complete original evidence and matching phase environment', async (t) => {
-  for (const change of ['missing-log', 'altered-log', 'incomplete', 'cancelled', 'missing-exit', 'environment']) {
-    await t.test(change, async (t) => {
-      const cwd = await fixture(t);
-      const phase = { name: 'tests', command: 'pnpm', args: ['exec', 'node', '-e', 'process.exit(0)'], cwd: root };
-      const options = { cwd, phases: [phase], fast: true, jobs: 1, ...testOptions };
-      const original = await runValidation(options);
-      const filename = await latestEvidenceSummary(cwd);
-      const evidence = JSON.parse(await readFile(filename, 'utf8'));
-      if (change === 'missing-log') await rm(original.phases[0].logPath);
-      if (change === 'altered-log') await writeFile(original.phases[0].logPath, 'altered');
-      if (change === 'incomplete') delete evidence.endedAt;
-      if (change === 'cancelled') evidence.status = 'cancelled';
-      if (change === 'missing-exit') delete evidence.phases[0].exitCode;
-      if (change === 'environment') phase.env = { NODE_ENV: 'changed' };
-      await writeFile(filename, JSON.stringify(evidence));
-      const resumed = await runValidation({ ...options, resume: true });
-      assert.equal(resumed.phases[0].cacheHit, undefined);
-      assert.equal(resumed.phases[0].status, 'passed');
-    });
-  }
-});
-
-test('resume keeps an uncached failing build failure visible', async (t) => {
-  const cwd = await fixture(t);
-  await writeFile(path.join(cwd, 'package.json'), '{"name":"cache-fixture","version":"1.0.0"}');
-  const phases = [
-    { name: 'check:types', command: 'pnpm', args: ['exec', 'node', '-e', 'process.exit(0)'], cwd: root },
-    command('build', 'process.exit(7)'),
-  ];
-  await runValidation({ cwd, phases, ...testOptions });
-  const resumed = await runValidation({ cwd, phases, resume: true, ...testOptions });
-  assert.equal(resumed.status, 'failed');
-  assert.equal(resumed.phases[0].cacheHit, true);
-  assert.equal(resumed.phases[1].cacheHit, undefined);
-  assert.equal(resumed.phases[1].exitCode, 7);
-});
-
-test('resume misses after source, toolchain, allowlisted environment, or evidence changes', async (t) => {
-  const cwd = await gitFixture(t);
-  const phases = [{ name: 'tests', command: 'pnpm', args: ['exec', 'node', '-e', 'process.exit(0)'], cwd: root }];
-  const run = (options = {}) =>
-    runValidation({ cwd, phases, fast: true, jobs: 1, ...testOptions, ...options, identify: sourceIdentity });
-  await run();
-  const changes = [
-    () => writeFile(path.join(cwd, 'package.json'), '{"name":"cache-fixture","version":"2.0.0"}'),
-    () => writeFile(path.join(cwd, 'pnpm-lock.yaml'), 'lockfileVersion: 9.1\n'),
-    () => writeFile(path.join(cwd, 'tsconfig.json'), '{"compilerOptions":{"strict":true}}\n'),
-    () => writeFile(path.join(cwd, 'added.ts'), 'export const added = true;\n'),
-    () => rm(path.join(cwd, 'delete-me.ts')),
-  ];
-  for (const change of changes) {
-    await change();
-    const resumed = await run({ resume: true });
-    assert.ok(resumed.phases.every(({ cacheHit }) => !cacheHit));
-  }
-
-  const summaryPath = await latestEvidenceSummary(cwd);
-  const previous = JSON.parse(await readFile(summaryPath, 'utf8'));
-  previous.cacheContext.node = 'incompatible-node';
-  await writeFile(summaryPath, JSON.stringify(previous));
-  const toolchainChanged = await run({ resume: true });
-  assert.equal(toolchainChanged.phases[0].cacheHit, undefined);
-
-  const originalCi = process.env.CI;
-  process.env.CI = 'validation-cache-context';
+test('Nx plans use affected targets by default and run-many for full validation', async () => {
+  assert.deepEqual(validationPlan()[0].args, ['exec', 'nx', 'affected', '-t', 'test', 'lint', 'typecheck', '--nxBail']);
+  assert.deepEqual(validationPlan({ full: true })[0].args, [
+    'exec',
+    'nx',
+    'run-many',
+    '-t',
+    'test',
+    'lint',
+    'typecheck',
+    'build',
+    '--all',
+    '--nxBail',
+  ]);
+  assert.deepEqual(validationPlan({ checks: true })[0].args, [
+    'exec',
+    'nx',
+    'run-many',
+    '-t',
+    'test',
+    'lint',
+    'typecheck',
+    '--all',
+    '--nxBail',
+  ]);
+  assert.deepEqual(validationPlan({ scope: 'web' })[0].args, [
+    'exec',
+    'nx',
+    'affected',
+    '-t',
+    'test',
+    'lint',
+    'typecheck',
+    '--nxBail',
+    '--exclude=*,!tag:scope:web',
+  ]);
+  assert.deepEqual(validationPlan({ lintOnly: true })[0].args, [
+    'exec',
+    'nx',
+    'run-many',
+    '-t',
+    'lint',
+    '--all',
+    '--nxBail',
+  ]);
+  assert.deepEqual(validationPlan({ plan: true })[0].args.slice(-2), ['--nxBail', '--graph=stdout']);
+  assert.deepEqual(validationPlan({ since: 'HEAD' })[0].args.slice(-1), ['--base=HEAD']);
+  assert.throws(() => validationPlan({ full: true, since: 'HEAD' }), /only valid for affected/);
+  assert.throws(() => validationPlan({ full: true, fast: true }), /one validation mode/);
+  assert.throws(() => validationPlan({ full: true, scope: 'web' }), /cannot be scoped/);
+  assert.throws(() => validationPlan({ scope: 'unknown' }), /Unknown scope/);
+  assert.throws(() => validationPlan({ editor: true, since: 'HEAD' }), /--since/);
+  assert.throws(() => validationPlan({ editor: true, plan: true }), /--plan/);
+  assert.deepEqual(nxWatchArguments('stock'), ['exec', 'nx', 'run', 'stock:test-watch']);
+  assert.deepEqual(nxWatchArguments('backend', { changed: true, since: 'origin/main' }), [
+    'exec',
+    'nx',
+    'affected',
+    '-t',
+    'test',
+    '--exclude=*,!tag:scope:backend',
+    '--base=origin/main',
+  ]);
+  assert.deepEqual(nxWatchArguments(undefined, { changed: true }), ['exec', 'nx', 'affected', '-t', 'test']);
+  assert.deepEqual(nxWatchArguments(undefined, { changed: true, since: 'origin/main' }), [
+    'exec',
+    'nx',
+    'affected',
+    '-t',
+    'test',
+    '--base=origin/main',
+  ]);
+  assert.throws(() => nxWatchArguments(), /Specify a module/);
+  assert.throws(() => nxWatchArguments('typo', { changed: true }), /Unknown changed-test scope/);
+  let output = '';
+  const originalLog = console.log;
+  console.log = (message) => {
+    output = message;
+  };
   try {
-    const environmentChanged = await run({ resume: true });
-    assert.equal(environmentChanged.phases[0].cacheHit, undefined);
+    await testWatchMain(['--changed'], { runCommand: async () => ({ exitCode: 0 }) });
   } finally {
-    if (originalCi === undefined) delete process.env.CI;
-    else process.env.CI = originalCi;
+    console.log = originalLog;
   }
-
-  for (const filename of await evidenceSummaries(cwd)) await writeFile(filename, '{corrupt');
-  const corrupted = await run({ resume: true });
-  assert.equal(corrupted.phases[0].cacheHit, undefined);
-  for (const filename of await evidenceSummaries(cwd)) await rm(filename);
-  const missing = await run({ resume: true });
-  assert.equal(missing.phases[0].cacheHit, undefined);
+  assert.equal(output, 'PARTIAL affected tests: this does not establish implementation completion.');
+  await assert.rejects(testWatchMain(['--changed', 'web', 'backend'], { runCommand: async () => {} }), /module once/);
+  await assert.rejects(
+    testWatchMain(['--changed', '--scope=web', 'backend'], { runCommand: async () => {} }),
+    /module once/,
+  );
 });
 
-test('a source edit during validation invalidates the completed result', async (t) => {
-  const cwd = await gitFixture(t);
-  const phases = [
-    {
-      name: 'tests',
-      command: process.execPath,
-      args: ['-e', 'require("node:fs").writeFileSync("source.ts", "changed during test"); setTimeout(() => {}, 80)'],
+test('CLI rejects ignored jobs and unsupported editor combinations', async (t) => {
+  const cwd = await fixture(t);
+  const dependencies = { cwd, identify: identity, log: () => {}, runCommand: async () => {} };
+  await assert.rejects(main(['--jobs', '2'], dependencies), /Unknown option '--jobs'/);
+  await assert.rejects(main(['--editor', '--since=HEAD'], dependencies), /--since/);
+  await assert.rejects(main(['--editor', '--plan'], dependencies), /--plan/);
+});
+
+test('invalidated or cancelled plans cannot succeed', async (t) => {
+  const cwd = await fixture(t);
+  const invalidated = await runValidation({
+    cwd,
+    options: { plan: true },
+    identify: (() => {
+      let call = 0;
+      return async () => ({ fingerprint: String(call++) });
+    })(),
+    log: () => {},
+    runCommand: async () => {},
+  });
+  assert.equal(invalidated.status, 'invalidated');
+  assert.notEqual(invalidated.exitCode, 0);
+
+  const controller = new AbortController();
+  let spawnedEnv;
+  const cancelled = await runValidation({
+    cwd,
+    options: { plan: true },
+    signal: controller.signal,
+    identify: identity,
+    log: () => {},
+    runCommand: async (command) => {
+      spawnedEnv = command.env;
+      controller.abort();
     },
-  ];
-  const summary = await runValidation({ cwd, phases, fast: true, ...testOptions, identify: sourceIdentity });
+  });
+  assert.equal(spawnedEnv.NX_DAEMON, 'false');
+  assert.equal(cancelled.status, 'cancelled');
+  assert.notEqual(cancelled.exitCode, 0);
+});
+
+test('real failing subprocess output streams before exit and stays in the phase log', async (t) => {
+  const cwd = await fixture(t);
+  const root = path.dirname(fileURLToPath(import.meta.url));
+  const summaryPath = path.join(cwd, 'summary.json');
+  const harness = `
+    import { writeFile } from 'node:fs/promises';
+    import { runValidation } from ${JSON.stringify(pathToFileURL(path.join(root, 'validate.mjs')).href)};
+    import { runFiniteCommand } from ${JSON.stringify(pathToFileURL(path.join(root, 'local-process.ts')).href)};
+    const summary = await runValidation({
+      cwd: ${JSON.stringify(cwd)},
+      options: { fast: true },
+      identify: async () => ({ fingerprint: 'fixed' }),
+      log: () => {},
+      runCommand: (_command, options) => runFiniteCommand({
+        name: 'subprocess', command: process.execPath,
+        args: ['-e', "process.stdout.write('LIVE_STDOUT_SENTINEL\\\\n'); process.stderr.write('LIVE_STDERR_SENTINEL\\\\n'); setTimeout(() => process.exit(9), 500)"],
+      }, options),
+    });
+    await writeFile(${JSON.stringify(summaryPath)}, JSON.stringify(summary));
+  `;
+  let resolveFirstOutput;
+  const firstOutput = new Promise((resolve) => {
+    resolveFirstOutput = resolve;
+  });
+  const child = execa(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', harness], {
+    cwd: root,
+    reject: false,
+  });
+  let output = '';
+  child.stdout.on('data', (chunk) => {
+    output += chunk;
+    if (output.includes('LIVE_STDOUT_SENTINEL')) resolveFirstOutput();
+  });
+  child.stderr.on('data', (chunk) => {
+    output += chunk;
+  });
+  const first = await Promise.race([firstOutput.then(() => 'output'), child.then(() => 'exit')]);
+  const result = await child;
+  if (first !== 'output') {
+    const summary = JSON.parse(await readFile(summaryPath, 'utf8'));
+    assert.fail(
+      `subprocess exited before live output: ${JSON.stringify({ result: result.stderr, summary: summary.error })}`,
+    );
+  }
+  assert.equal(result.exitCode, 0, output);
+  assert.match(output, /LIVE_STDOUT_SENTINEL/);
+  assert.match(output, /LIVE_STDERR_SENTINEL/);
+  const summary = JSON.parse(await readFile(summaryPath, 'utf8'));
+  assert.equal(summary.status, 'failed');
+  assert.equal(summary.phases[0].exitCode, 9);
+  const log = await readFile(summary.phases[0].logPath, 'utf8');
+  assert.match(log, /LIVE_STDOUT_SENTINEL/);
+  assert.match(log, /LIVE_STDERR_SENTINEL/);
+  assert.equal(summary.firstFailureDurationMs, null);
+});
+
+test('CLI no-cache skips Nx cache without changing affected mode', async (t) => {
+  const cwd = await fixture(t);
+  let invocation;
+  const summary = await main(['--no-cache'], {
+    cwd,
+    identify: identity,
+    log: () => {},
+    runCommand: async (command) => {
+      invocation = command;
+    },
+  });
+  assert.equal(summary.mode, 'local');
+  assert.equal(summary.status, 'passed');
+  assert.deepEqual(invocation.args, [
+    'exec',
+    'nx',
+    'affected',
+    '-t',
+    'test',
+    'lint',
+    'typecheck',
+    '--nxBail',
+    '--skip-nx-cache',
+  ]);
+  await main(['--resume'], {
+    cwd,
+    identify: identity,
+    log: () => {},
+    runCommand: async (command) => {
+      invocation = command;
+    },
+  });
+  assert.equal(invocation.args.includes('--skip-nx-cache'), false);
+  const planned = await main(['--plan'], {
+    cwd,
+    identify: identity,
+    log: () => {},
+    runCommand: async (command) => {
+      invocation = command;
+    },
+  });
+  assert.equal(planned.status, 'planned');
+  assert.ok(invocation.args.includes('--graph=stdout'));
+});
+
+test('failed Nx invocation preserves its exit code and stops the run', async (t) => {
+  const cwd = await fixture(t);
+  let calls = 0;
+  const summary = await runValidation({
+    cwd,
+    options: { full: true },
+    identify: identity,
+    log: () => {},
+    runCommand: async () => {
+      calls += 1;
+      throw Object.assign(new Error('Nx failed'), { exitCode: 9 });
+    },
+  });
+  assert.equal(calls, 1);
+  assert.equal(summary.status, 'failed');
+  assert.equal(summary.exitCode, 9);
+  assert.equal(summary.phases[0].status, 'failed');
+  assert.ok(summary.skippedPhases.length === 0);
+});
+
+test('a source edit restored before exit still invalidates evidence', async (t) => {
+  const cwd = await gitFixture(t);
+  const summary = await runValidation({
+    cwd,
+    options: { fast: true },
+    identify: sourceIdentity,
+    log: () => {},
+    runCommand: async () => {
+      await writeFile(path.join(cwd, 'source.ts'), 'transient');
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      await writeFile(path.join(cwd, 'source.ts'), 'before');
+      await new Promise((resolve) => setTimeout(resolve, 40));
+    },
+  });
+  assert.equal(summary.sourceBefore.fingerprint, summary.sourceAfter.fingerprint);
   assert.equal(summary.status, 'invalidated');
   assert.ok(summary.sourceChanges.includes('source.ts'));
 });
 
-test('checks mode is partial and never schedules a build', async (t) => {
-  const cwd = await fixture(t);
-  const phases = [command('test:unit', 'setTimeout(() => {}, 20)'), command('check', 'process.exit(0)')];
-  const summary = await runValidation({ cwd, phases, checks: true, jobs: 2, ...testOptions });
-  assert.equal(summary.status, 'partial');
-  assert.equal(summary.scope, 'checks');
-  assert.equal(summary.mode, 'partial');
-  assert.deepEqual(summary.skippedPhases, []);
-  assert.ok(!summary.phases.some(({ name }) => name === 'build'));
+test('source fingerprint hashes tracked and untracked files and ignores validation evidence', async (t) => {
+  const cwd = await gitFixture(t);
+  const original = await sourceIdentity(cwd);
+  await writeFile(path.join(cwd, 'new.ts'), 'new');
+  assert.notEqual((await sourceIdentity(cwd)).fingerprint, original.fingerprint);
+  await rm(path.join(cwd, 'new.ts'));
+  await writeFile(path.join(cwd, 'source.ts'), 'after');
+  assert.notEqual((await sourceIdentity(cwd)).fingerprint, original.fingerprint);
 });
 
-test('lint-only mode records one partial lint phase', async (t) => {
+async function lockFixture(t, content) {
   const cwd = await fixture(t);
-  const logs = [];
-  const summary = await runValidation({
-    cwd,
-    phases: [command('lint', 'process.exit(0)')],
-    lintOnly: true,
-    ...testOptions,
-    log: (line) => logs.push(line),
-  });
-  assert.equal(summary.status, 'partial');
-  assert.equal(summary.mode, 'partial');
-  assert.equal(summary.scope, 'lint');
-  assert.deepEqual(
-    summary.plannedPhases.map(({ name }) => name),
-    ['lint'],
-  );
-  assert.match(summary.taskAcceptance, /not established/);
-  assert.ok(logs.some((line) => /PARTIAL lint-only validation/.test(line)));
+  const lockPath = path.join(cwd, '.codex-artifacts', 'validation', 'active.lock');
+  await mkdir(path.dirname(lockPath), { recursive: true });
+  await writeFile(lockPath, content);
+  const run = () =>
+    runValidation({ cwd, options: { plan: true }, identify: identity, log: () => {}, runCommand: async () => {} });
+  return { lockPath, run };
+}
+
+test('a lock left by a dead process is replaced', async (t) => {
+  const child = execa(process.execPath, ['-e', '']);
+  await child;
+  const { lockPath, run } = await lockFixture(t, String(child.pid));
+  assert.notEqual((await run()).status, 'incomplete');
+  await assert.rejects(access(lockPath), { code: 'ENOENT' });
 });
 
-test('native reports are opt-in and root contract ownership stays explicit', async () => {
-  const original = process.env.BLACKBOX_VALIDATION_REPORT_DIR;
-  try {
-    delete process.env.BLACKBOX_VALIDATION_REPORT_DIR;
-    assert.deepEqual(validationReporters('web'), {});
-    process.env.BLACKBOX_VALIDATION_REPORT_DIR = '/evidence';
-    assert.deepEqual(validationReporters('web').reporters, ['default', 'json']);
-    assert.notEqual(validationReporters('web').outputFile, validationReporters('backend-node').outputFile);
-  } finally {
-    if (original === undefined) delete process.env.BLACKBOX_VALIDATION_REPORT_DIR;
-    else process.env.BLACKBOX_VALIDATION_REPORT_DIR = original;
-  }
-  const web = await readFile(path.join(root, 'apps/web/vitest.config.ts'), 'utf8');
-  const contracts = await readFile(path.join(root, 'scripts/vitest.contracts.config.ts'), 'utf8');
-  for (const file of ['check-frontend-route-isolation.test.ts', 'pages-workflow-contract.test.ts']) {
-    assert.ok(web.includes(`../../scripts/${file}`));
-    assert.ok(contracts.includes(`scripts/${file}`));
+test('a lock held by a live or unknown owner still fails and stays intact', async (t) => {
+  for (const [content, message] of [
+    [String(process.pid), new RegExp(`active[.]lock.*PID ${process.pid}`)],
+    ['', /active\.lock.*unknown owner/],
+  ]) {
+    const { lockPath, run } = await lockFixture(t, content);
+    await assert.rejects(run(), message);
+    assert.equal(await readFile(lockPath, 'utf8'), content);
   }
 });

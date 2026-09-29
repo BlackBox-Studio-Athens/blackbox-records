@@ -1,21 +1,4 @@
-import { toPlainText } from '@portabletext/toolkit';
 import type { Prose, RichText } from './prose';
-
-export function isSafeCmsLink(value: unknown): value is string {
-  if (typeof value !== 'string') return false;
-  try {
-    return (
-      ![...value].some((character) => character <= ' ' || character === '\\') &&
-      ['https:', 'http:', 'mailto:'].includes(new URL(value, 'https://content.invalid/').protocol)
-    );
-  } catch {
-    return false;
-  }
-}
-
-export function proseText(value: Prose | null | undefined): string {
-  return typeof value === 'string' ? value : toPlainText(value ?? []);
-}
 
 /** Null means an absent native field; [] is an intentional clear. */
 export function resolveProse(legacy: Prose | null | undefined, rich?: RichText | null): Prose {

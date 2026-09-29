@@ -1,8 +1,8 @@
 ---
 import InternalPageHero from '@/components/InternalPageHero.astro';
-import PurchaseDocument from '@/components/PurchaseDocument';
+import PurchaseDocument from '@/platform/components/PurchaseDocument';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import { getPurchaseInformation } from '@/lib/purchase-information';
+import { getPurchaseInformation } from '@/platform/lib/purchase-information';
 
 export function getStaticPaths() {
   const information = getPurchaseInformation();

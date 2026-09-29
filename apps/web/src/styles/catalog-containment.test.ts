@@ -34,7 +34,7 @@ describe('catalog containment', () => {
 
   it('keeps the eager Store listing server-rendered with its listing-price projection', () => {
     const css = source('./global.css');
-    const storePage = source('../components/store/StoreCollectionPage.astro');
+    const storePage = source('../layouts/StoreCollectionPage.astro');
     const storeCard = source('../components/cards/StoreItemCard.astro');
 
     expect(css).not.toMatch(/\.store-item-card--listing\s*{[^}]*(?:content-visibility|contain-intrinsic)/s);

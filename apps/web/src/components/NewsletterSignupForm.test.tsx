@@ -12,7 +12,7 @@ import NewsletterSignupForm, {
   readNewsletterSignupView,
   type NewsletterSignupState,
 } from './NewsletterSignupForm';
-import { PublicCheckoutApiError } from '@/lib/backend/public-checkout-api';
+import { PublicCheckoutApiError } from '@/components/store/checkout/public-checkout-api';
 
 describe('NewsletterSignupForm', () => {
   it('renders idle controls, hard-edged layout classes, and pre-mounted live regions', () => {

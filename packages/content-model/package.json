@@ -11,5 +11,16 @@
     "@portabletext/toolkit": "6.0.0",
     "i18n-iso-countries": "7.14.0",
     "zod": "^4.6.5"
+  },
+  "nx": {
+    "includedScripts": [],
+    "tags": [
+      "module"
+    ],
+    "targets": {
+      "lint": {
+        "command": "pnpm exec eslint packages/content-model --max-warnings=0 --no-warn-ignored"
+      }
+    }
   }
 }

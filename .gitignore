@@ -28,6 +28,7 @@ files/
 node_modules/.astro/
 node_modules/.vite/
 .codex-artifacts/
+.nx/
 /graphify-out/
 .codex/skills/graphify/
 .codex/hooks.json.graphify-bak

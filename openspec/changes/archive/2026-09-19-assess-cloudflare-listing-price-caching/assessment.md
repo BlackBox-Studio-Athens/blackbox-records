@@ -37,7 +37,7 @@ No new hosted probes, resources, writes, deployment, commit or push. Existing re
 
 Listing freshness means current persisted commerce snapshots, not a Stripe read on every activation. An active old snapshot is still displayed; missing snapshots are omitted and inactive/invalid records show unavailable. Price changes, Stripe reconciliation and catalog operations update commerce independently of editorial publication. An editorial SHA cannot validate the listing. Open tabs are not continuously repriced by this endpoint.
 
-Sources: `apps/backend/src/cms/{index,public-runtime,published-storage}.ts`, `apps/backend/src/interfaces/http/{app,routes/register-public-commerce-routes,routes/public-commerce-services}.ts`, `apps/backend/src/application/commerce/readers/store-listing-price-reader.ts`, `apps/backend/src/infrastructure/persistence/prisma/prisma-store-offer-snapshot-repository.ts`, and the public listing/shell specifications and components.
+Sources: `apps/backend/src/cms/{index,public-runtime,published-storage}.ts`, `apps/backend/src/interfaces/http/{app,routes/register-public-commerce-routes,routes/public-commerce-services}.ts`, `apps/backend/src/application/commerce/checkout/readers/store-listing-price-reader.ts`, `apps/backend/src/infrastructure/persistence/prisma/prisma-store-offer-snapshot-repository.ts`, and the public listing/shell specifications and components.
 
 ## Local rehearsal
 

@@ -11,7 +11,7 @@ import {
   type ProductEnvironment,
   type ProductEnvironmentProfile,
   type WorkerRuntimeTarget,
-} from '../apps/backend/src/env';
+} from '../apps/backend/src/platform/env';
 import { UAT_RESEND_RECEIVING_SINK_EMAIL } from '../apps/backend/src/application/email/config';
 
 export type RuntimeConfigEnvironment = ProductEnvironment;

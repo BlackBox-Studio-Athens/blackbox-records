@@ -36,7 +36,7 @@ Loading animations make network waits visible, but they do not reduce Worker inv
 
 - `apps/web/public/_headers` or equivalent Astro-copied static header artifact.
 - `apps/web/src/components/app-shell/**` and `apps/web/src/lib/app-shell/**` where shell/overlay cache invalidation or bypass semantics are documented or adjusted.
-- `apps/web/src/lib/backend/public-checkout-api.ts` and `apps/web/src/lib/backend/internal-stock-api.ts` if browser fetch options need explicit cache modes.
+- `apps/web/src/components/store/checkout/public-checkout-api.ts` and `apps/web/src/lib/backend/internal-stock-api.ts` if browser fetch options need explicit cache modes.
 - `apps/backend/src/interfaces/http/**` for Worker route-level `Cache-Control` headers.
 - API contract tests under `apps/backend/test/**` and frontend tests under `apps/web/src/**`.
 - Validation scripts under `scripts/**`, especially checks that can inspect route/header policy from build output or local Worker responses.

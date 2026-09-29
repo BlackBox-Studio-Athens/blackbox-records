@@ -3,7 +3,7 @@ import type { ComponentProps } from 'react';
 import * as React from 'react';
 import { LoaderCircle } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/components/ui/utils';
 
 type SpinnerProps = ComponentProps<typeof LoaderCircle>;
 

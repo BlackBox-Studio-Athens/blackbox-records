@@ -30,14 +30,12 @@ describe('Module boundaries manifest', { timeout: 15_000 }, () => {
     const storefrontCatalog = manifest.modules['storefront-catalog']!;
     const publicCommerceHttp = manifest.modules['public-commerce-http']!;
 
-    expect(storefrontCatalog.roots).toContain('apps/web/src/components/services/**');
+    expect(storefrontCatalog.roots).toContain('apps/web/src/**');
     expect(storefrontCatalog.providedEntrypoints).toContain('apps/web/src/components/services/ServicesInquiryForm.tsx');
     expect(storefrontCatalog.allowedDependencies).toContain('ui-foundation');
-    expect(publicCommerceHttp.roots).toEqual(
-      expect.arrayContaining([
-        'apps/backend/src/interfaces/http/routes/register-public-services-inquiry-routes.ts',
-        'apps/backend/src/interfaces/http/routes/public-services-inquiry-services.ts',
-      ]),
+    expect(publicCommerceHttp.roots).toContain('apps/backend/src/interfaces/http/**');
+    expect(publicCommerceHttp.providedEntrypoints).toContain(
+      'apps/backend/src/interfaces/http/routes/register-public-routes.ts',
     );
     expect(publicCommerceHttp.namedInterfaces['public-contracts']).toBe(
       'apps/backend/src/interfaces/http/contracts/public-contracts.ts',
@@ -66,6 +64,19 @@ describe('Module boundaries manifest', { timeout: 15_000 }, () => {
       '@blackbox/content-model': ['.'],
     });
     expect(operatorStock.roots).not.toEqual(expect.arrayContaining([expect.stringContaining('apps/web/')]));
+  });
+
+  it('derives platform ownership from the native Nx project roots', () => {
+    const manifest = loadModuleBoundariesManifest() as {
+      modules: Record<string, { project: string; roots: string[] }>;
+    };
+    const webPlatform = manifest.modules['web-platform']!;
+    const backendPlatform = manifest.modules['backend-platform']!;
+
+    expect(webPlatform.project).toBe('apps/web/src/platform/project.json');
+    expect(webPlatform.roots).toEqual(['apps/web/src/platform/**']);
+    expect(backendPlatform.project).toBe('apps/backend/src/platform/project.json');
+    expect(backendPlatform.roots).toEqual(['apps/backend/src/platform/**']);
   });
 
   it('requires hard-closure metadata for open-temporary modules', () => {
@@ -121,82 +132,89 @@ describe('Module boundaries manifest', { timeout: 15_000 }, () => {
     );
   });
 
-  it('rejects reopening platform-shared after closure', () => {
+  it('keeps split platform modules closed and private from business modules', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
-      modules: Record<string, Record<string, unknown>>;
+      modules: Record<string, { allowedDependencies: string[]; status: string }>;
     };
-    manifest.modules['platform-shared'].status = 'split-pending';
+    for (const moduleName of ['web-platform', 'backend-platform']) {
+      manifest.modules[moduleName]!.status = 'split-pending';
+      manifest.modules[moduleName]!.allowedDependencies = ['app-shell'];
+    }
 
-    expect(validateManifest(manifest)).toContain('platform-shared must remain closed after Phase 12 closure');
+    const errors = validateManifest(manifest);
+    expect(errors).toContain('web-platform must remain closed');
+    expect(errors).toContain('web-platform must not depend on business modules');
+    expect(errors).toContain('backend-platform must remain closed');
+    expect(errors).toContain('backend-platform must not depend on business modules');
   });
 
-  it('rejects platform-shared ownership of backend commerce domain contracts', () => {
+  it('rejects backend-platform ownership of backend commerce domain contracts', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
       modules: Record<string, Record<string, unknown>>;
     };
-    manifest.modules['platform-shared'].roots = [
-      ...((manifest.modules['platform-shared'].roots as string[]) ?? []),
+    manifest.modules['backend-platform'].roots = [
+      ...((manifest.modules['backend-platform'].roots as string[]) ?? []),
       'apps/backend/src/domain/commerce/repositories/**',
     ];
 
     expect(validateManifest(manifest)).toContain(
-      'platform-shared must not own backend commerce domain code: apps/backend/src/domain/commerce/repositories/**',
+      'backend-platform must not own backend commerce domain code: apps/backend/src/domain/commerce/repositories/**',
     );
   });
 
-  it('rejects platform-shared ownership of frontend UI foundation code', () => {
+  it('rejects web-platform ownership of frontend UI foundation code', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
       modules: Record<string, Record<string, unknown>>;
     };
-    manifest.modules['platform-shared'].providedEntrypoints = [
-      ...((manifest.modules['platform-shared'].providedEntrypoints as string[]) ?? []),
+    manifest.modules['web-platform'].providedEntrypoints = [
+      ...((manifest.modules['web-platform'].providedEntrypoints as string[]) ?? []),
       'apps/web/src/components/ui/button.tsx',
     ];
 
     expect(validateManifest(manifest)).toContain(
-      'platform-shared must not own frontend UI foundation code: apps/web/src/components/ui/button.tsx',
+      'web-platform must not own frontend UI foundation code: apps/web/src/components/ui/button.tsx',
     );
   });
 
-  it('rejects platform-shared ownership of operator auth code', () => {
+  it('rejects backend-platform ownership of operator auth code', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
       modules: Record<string, Record<string, unknown>>;
     };
-    manifest.modules['platform-shared'].providedEntrypoints = [
-      ...((manifest.modules['platform-shared'].providedEntrypoints as string[]) ?? []),
+    manifest.modules['backend-platform'].providedEntrypoints = [
+      ...((manifest.modules['backend-platform'].providedEntrypoints as string[]) ?? []),
       'apps/backend/src/interfaces/http/auth/index.ts',
     ];
 
     expect(validateManifest(manifest)).toContain(
-      'platform-shared must not own operator auth code: apps/backend/src/interfaces/http/auth/index.ts',
+      'backend-platform must not own operator auth code: apps/backend/src/interfaces/http/auth/index.ts',
     );
   });
 
-  it('rejects platform-shared ownership of backend persistence adapters', () => {
+  it('rejects backend-platform ownership of backend persistence adapters', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
       modules: Record<string, Record<string, unknown>>;
     };
-    manifest.modules['platform-shared'].providedEntrypoints = [
-      ...((manifest.modules['platform-shared'].providedEntrypoints as string[]) ?? []),
+    manifest.modules['backend-platform'].providedEntrypoints = [
+      ...((manifest.modules['backend-platform'].providedEntrypoints as string[]) ?? []),
       'apps/backend/src/infrastructure/persistence/prisma/index.ts',
     ];
 
     expect(validateManifest(manifest)).toContain(
-      'platform-shared must not own backend persistence adapters: apps/backend/src/infrastructure/persistence/prisma/index.ts',
+      'backend-platform must not own backend persistence adapters: apps/backend/src/infrastructure/persistence/prisma/index.ts',
     );
   });
 
-  it('rejects platform-shared ownership of Stripe integration code', () => {
+  it('rejects backend-platform ownership of Stripe integration code', () => {
     const manifest = JSON.parse(JSON.stringify(loadModuleBoundariesManifest())) as {
       modules: Record<string, Record<string, unknown>>;
     };
-    manifest.modules['platform-shared'].providedEntrypoints = [
-      ...((manifest.modules['platform-shared'].providedEntrypoints as string[]) ?? []),
+    manifest.modules['backend-platform'].providedEntrypoints = [
+      ...((manifest.modules['backend-platform'].providedEntrypoints as string[]) ?? []),
       'apps/backend/src/infrastructure/stripe/index.ts',
     ];
 
     expect(validateManifest(manifest)).toContain(
-      'platform-shared must not own Stripe integration code: apps/backend/src/infrastructure/stripe/index.ts',
+      'backend-platform must not own Stripe integration code: apps/backend/src/infrastructure/stripe/index.ts',
     );
   });
 

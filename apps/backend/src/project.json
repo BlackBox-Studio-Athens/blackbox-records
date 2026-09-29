@@ -1,0 +1,15 @@
+{
+  "name": "backend-runtime",
+  "tags": ["module", "scope:backend"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/backend exec vitest run --config vitest.modules.config.ts --project=backend-runtime --project=backend-runtime:worker",
+      "inputs": ["backendTests", "^default", "backendWorkerTests"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/backend exec vitest --watch --config vitest.modules.config.ts --project=backend-runtime --project=backend-runtime:worker",
+      "continuous": true,
+      "cache": false
+    }
+  }
+}

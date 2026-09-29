@@ -24,8 +24,8 @@
     "check": "astro check --root .",
     "test:lightweight": "vitest run --config vitest.config.ts",
     "test:request": "vitest run --config vitest.request.config.ts",
-    "test": "pnpm test:lightweight && pnpm test:request",
-    "test:unit": "pnpm test:lightweight && pnpm test:request",
+    "test": "vitest run --config vitest.modules.config.ts",
+    "test:unit": "vitest run --config vitest.modules.config.ts",
     "astro": "astro"
   },
   "dependencies": {
@@ -65,5 +65,46 @@
     "shadcn": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "4.1.11"
+  },
+  "nx": {
+    "includedScripts": [],
+    "targets": {
+      "typecheck": {
+        "command": "pnpm --filter @blackbox/web check",
+        "inputs": [
+          "default",
+          "^default",
+          "{workspaceRoot}/apps/web/**/*"
+        ]
+      },
+      "build": {
+        "command": "pnpm build:web",
+        "cache": false
+      },
+      "lint": {
+        "command": "pnpm exec eslint apps/web --max-warnings=0 --no-warn-ignored"
+      }
+    },
+    "implicitDependencies": [
+      "storefront-catalog",
+      "web-platform",
+      "ui-foundation",
+      "checkout-web",
+      "store-cart",
+      "player",
+      "app-shell",
+      "web-pages",
+      "web-layouts",
+      "web-test-support"
+    ],
+    "tags": [
+      "scope:web"
+    ],
+    "namedInputs": {
+      "default": [
+        "{workspaceRoot}/apps/web/**/*",
+        "toolchain"
+      ]
+    }
   }
 }

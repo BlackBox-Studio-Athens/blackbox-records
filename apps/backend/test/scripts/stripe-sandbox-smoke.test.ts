@@ -42,7 +42,7 @@ import {
   type LocalCheckoutOrderRow,
   type RemoteD1ReadinessSummary,
 } from '../../../../scripts/smoke-stripe-sandbox';
-import { readStoreCartState, STORE_CART_STORAGE_KEY } from '../../../../apps/web/src/lib/store-cart';
+import { readStoreCartState, STORE_CART_STORAGE_KEY } from '../../../web/src/components/store/cart/store-cart';
 
 const paidOrder: LocalCheckoutOrderRow = {
   checkoutSessionId: 'cs_test_123',

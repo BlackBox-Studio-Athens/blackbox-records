@@ -28,7 +28,7 @@ const productPolicyFiles = [
   'apps/backend/src/application/email/config.ts',
   'apps/backend/src/application/email/routing.ts',
   'apps/backend/src/application/email/idempotency.ts',
-  'apps/backend/src/infrastructure/feature-flags/cloudflare-feature-flag-reader.ts',
+  'apps/backend/src/application/commerce/checkout/feature-flags/cloudflare-feature-flag-reader.ts',
   'apps/backend/src/interfaces/http/routes/public-commerce-services.ts',
   'apps/backend/src/interfaces/http/routes/stripe-webhook-services.ts',
   'scripts/verify-runtime-config.ts',
@@ -52,7 +52,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
   const envDeclaration = read('apps/web/src/env.d.ts');
   const header = read('apps/web/src/components/Header.astro');
   const siteLayout = read('apps/web/src/layouts/SiteLayout.astro');
-  const checkoutStatus = read('apps/web/src/components/store/CheckoutOfferStatus.tsx');
+  const checkoutStatus = read('apps/web/src/components/store/checkout/CheckoutOfferStatus.tsx');
   const checkoutRoutes = [
     read('apps/web/src/pages/store/checkout/index.astro'),
     read('apps/web/src/pages/store/[slug]/checkout/index.astro'),

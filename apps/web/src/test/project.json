@@ -1,0 +1,10 @@
+{
+  "name": "web-test-support",
+  "tags": ["test-support", "scope:web"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --config vitest.modules.config.ts --project=web-test-support",
+      "inputs": ["default", "^default", "{workspaceRoot}/apps/web/vitest*.ts"]
+    }
+  }
+}

@@ -4,7 +4,7 @@ Read the relevant section. [AGENTS.md](../AGENTS.md) routes to current domain sp
 
 ## Local runtime
 
-- `pnpm dev` runs the normal stack with the official local Stripe mock, public site, staff, CMS and backend without real provider credentials. For frontend-only work, check `pnpm site:dev:status` and reuse the existing site, or start `pnpm site:dev:bg` when the canonical port is free.
+- `pnpm dev` runs the normal stack with the official local Stripe mock, public site, staff, CMS and backend without real provider credentials. Before serving or rebuilding frontend output, inspect the current Local serving mode and process; reuse a suitable running site. For frontend-only work, check `pnpm site:dev:status` and start `pnpm site:dev:bg` only when the canonical port is free. Stop only a serving process you own, using `pnpm site:dev:stop`, before rebuilding its output.
 - The public Local URL is `http://127.0.0.1:4321/blackbox-records/`. The full stack can own port 4321 even when standalone Astro reports no instance. A port conflict must fail clearly instead of silently choosing a new public port.
 - `pnpm site:dev` stays foreground for stack/IDE supervision. Background controls are `pnpm site:dev:status`, `pnpm site:dev:logs` and `pnpm site:dev:stop`. Astro startup diagnostics are in `apps/web/.astro/dev.log`.
 - The canonical committed IDE launcher is [BlackBox Local Stack](../.run/BlackBox%20Local%20Stack.run.xml), running `pnpm dev:stack:stripe-mock`. Preserve the separately requested Validate Fresh, OpenSpec Strict and Stripe Sandbox Smoke entries. Add no further committed IDE launchers without a user request.
@@ -21,19 +21,19 @@ Read the relevant section. [AGENTS.md](../AGENTS.md) routes to current domain sp
 - EmDash calendar dates use validated `YYYY-MM-DD` strings. Apply [CMS application migrations](../apps/backend/cms-migrations/README.md) before native core migrations. Retain concurrent-save/delete protection until the existing race smoke passes without it.
 - Persistence uses domain repository seams and Prisma/D1. Wrangler applies migrations through `COMMERCE_DB`; do not introduce `prisma migrate dev`, `prisma db push`, `prisma migrate deploy` or a runtime database URL. Preserve deployed migration history.
 - Retain `COMMERCE_DB`, the `COMMERCE_RUNTIME` Durable Object binding and its migration. The [boundary spec](../openspec/specs/module-boundaries/spec.md) and [manifest](../openspec/specs/module-boundaries/module-boundaries.manifest.json) define ownership and entrypoints. Move callers directly instead of adding temporary compatibility facades.
-- D1 owns stock and order state. StoreCart is browser convenience state behind [store-cart.ts](../apps/web/src/lib/store-cart.ts), using native localStorage for its current scope. [Checkout](../openspec/specs/commerce-checkout/spec.md) and [project language](../openspec/specs/project-language/spec.md) define payload and authority constraints.
+- D1 owns stock and order state. StoreCart is browser convenience state behind [store-cart.ts](../apps/web/src/components/store/cart/store-cart.ts), using native localStorage for its current scope. [Checkout](../openspec/specs/commerce-checkout/spec.md) and [project language](../openspec/specs/project-language/spec.md) define payload and authority constraints.
 - Hosted operator identity comes from verified Access JWT claims, not an email header. The Local bypass is loopback-only. [Commerce operations](commerce-operations.md) owns protected stock operations; [shipping](../openspec/specs/shipping-fulfillment/spec.md) owns Greece-only manual fulfillment.
 
 ## Public frontend
 
-| Concern                      | Entry point                                                                                                                       |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Site/base configuration      | [astro.config.mjs](../apps/web/astro.config.mjs)                                                                                  |
-| Layout, metadata and JSON-LD | [SiteLayout.astro](../apps/web/src/layouts/SiteLayout.astro)                                                                      |
-| Persistent shell mounting    | [AppShell.astro](../apps/web/src/components/app-shell/AppShell.astro)                                                             |
-| Shell state/navigation       | [AppShellRoot.tsx](../apps/web/src/components/app-shell/AppShellRoot.tsx), [routing.ts](../apps/web/src/lib/app-shell/routing.ts) |
-| Overlay fragments            | [app-shell-overlay](../apps/web/src/pages/app-shell-overlay/)                                                                     |
-| Styling and primitives       | [global.css](../apps/web/src/styles/global.css), [UI components](../apps/web/src/components/ui/)                                  |
+| Concern                      | Entry point                                                                                                                              |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Site/base configuration      | [astro.config.mjs](../apps/web/astro.config.mjs)                                                                                         |
+| Layout, metadata and JSON-LD | [SiteLayout.astro](../apps/web/src/layouts/SiteLayout.astro)                                                                             |
+| Persistent shell mounting    | [AppShell.astro](../apps/web/src/layouts/AppShell.astro)                                                                                 |
+| Shell state/navigation       | [AppShellRoot.tsx](../apps/web/src/components/app-shell/AppShellRoot.tsx), [routing.ts](../apps/web/src/components/app-shell/routing.ts) |
+| Overlay fragments            | [app-shell-overlay](../apps/web/src/pages/app-shell-overlay/)                                                                            |
+| Styling and primitives       | [global.css](../apps/web/src/styles/global.css), [UI components](../apps/web/src/components/ui/)                                         |
 
 - Keep the monochrome visual language unless the task changes it. Artist frames remain 3:4 with `object-fit: contain`; sources are ideally 1800 × 2400, at least 1200 × 1600, with headroom. Preserve the whole band photo.
 - The shell owns player state, mobile navigation, scroll/focus resets and the transition veil. Page-local player state and body-swapping navigation require reconsidering persistence.
@@ -45,3 +45,7 @@ Read the relevant section. [AGENTS.md](../AGENTS.md) routes to current domain sp
 ## Graphify context
 
 The Blackbox index includes archived OpenSpec changes, which broad architecture queries can select as starting points. Include the relevant Blackbox module or symbol names when already known to locate the current domain. The root AGENTS.md sets Blackbox's query budget; global instructions own truncation and evidence handling.
+
+## Nx workspace
+
+Nx `project.json` files define app and module roots, targets and task inputs. Framework roots include `web-pages`, `web-layouts` and `web-test-support`. The boundary manifest references projects for ownership roots and separately declares allowed dependencies and public entrypoints. Nx's import graph describes actual dependencies, including declared Astro runtime edges; it does not grant architectural permission. Native Vitest projects derive test ownership from module locations and runtime suffixes. `scripts/check-module-projects.mjs` checks test ownership, module cycles and source ownership; cross-module commerce integration tests live under `apps/web/test/commerce/`, and backend cross-module tests under `apps/backend/test/integration/<feature>/`; single-module backend tests sit beside their source.

@@ -4,8 +4,8 @@ import {
   createPublicCheckoutApi,
   type PublicCheckoutApi,
   type PublicStoreOffer,
-} from '@/lib/backend/public-checkout-api';
-import { cn } from '@/lib/utils';
+} from '@/components/store/checkout/public-checkout-api';
+import { cn } from '@/components/ui/utils';
 
 export const STORE_OFFER_PRICE_DISPLAY_COPY = {
   loading: 'Checking price',

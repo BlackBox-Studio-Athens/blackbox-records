@@ -1,0 +1,19 @@
+{
+  "name": "operator-stock",
+  "tags": ["module", "scope:backend"],
+  "targets": {
+    "test": {
+      "dependsOn": [
+        {
+          "projects": ["public-commerce-http"],
+          "target": "test"
+        }
+      ]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/backend exec vitest --watch --config vitest.modules.config.ts --project=public-commerce-http*",
+      "continuous": true,
+      "cache": false
+    }
+  }
+}

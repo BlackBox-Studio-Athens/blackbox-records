@@ -1,4 +1,4 @@
-import { createAbsoluteSiteUrl } from '@/config/site';
+import { createAbsoluteSiteUrl } from '@/platform/config/site';
 
 export function GET() {
   const sitemapUrl = createAbsoluteSiteUrl('/sitemap.xml');

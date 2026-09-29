@@ -1,7 +1,7 @@
 import { ContentRepository } from 'emdash';
 import type { EmDashRuntime } from 'emdash/middleware';
 import { z } from 'zod';
-import { buildProblemDetails, problemResponse } from '../interfaces/http/responses';
+import { buildProblemDetails, problemResponse } from '../platform/interfaces/http/responses';
 
 const input = z
   .array(

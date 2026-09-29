@@ -7,7 +7,7 @@ import {
   prepareCmsSetupPresentation,
 } from '../../../application/commerce/catalog-sync';
 import { CatalogOperationConflictError } from '../../../domain/commerce/repositories/spi';
-import { productEnvironmentProfileFromBindings, type AppOpenApi } from '../../../env';
+import { productEnvironmentProfileFromBindings, type AppOpenApi } from '../../../platform/env';
 import {
   createPrismaClient,
   D1CatalogOperationRepository,
@@ -24,7 +24,7 @@ import {
   jsonNoStore,
   operatorAccessErrorResponses,
   problemContent,
-} from '../responses';
+} from '../../../platform/interfaces/http/responses';
 
 const resultSchema = z
   .object({

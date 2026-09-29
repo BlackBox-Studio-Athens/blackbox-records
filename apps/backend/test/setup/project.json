@@ -1,0 +1,5 @@
+{
+  "name": "backend-test-setup",
+  "tags": ["integration", "scope:backend"],
+  "targets": {}
+}

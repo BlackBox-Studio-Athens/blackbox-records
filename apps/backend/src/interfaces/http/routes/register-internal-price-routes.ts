@@ -11,7 +11,7 @@ import {
   prepareCmsSetupPresentation,
 } from '../../../application/commerce/catalog-sync';
 import { CatalogOperationConflictError } from '../../../domain/commerce/repositories/spi';
-import { productEnvironmentProfileFromBindings, type AppOpenApi, type AppBindings } from '../../../env';
+import { productEnvironmentProfileFromBindings, type AppOpenApi, type AppBindings } from '../../../platform/env';
 import { createCmsItemPublicationGateway } from './cms-item-publication-gateway';
 import {
   createPrismaClient,
@@ -30,7 +30,7 @@ import {
   jsonNoStore,
   operatorAccessErrorResponses,
   problemContent,
-} from '../responses';
+} from '../../../platform/interfaces/http/responses';
 
 const resultSchema = z
   .object({

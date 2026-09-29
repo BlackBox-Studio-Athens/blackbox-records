@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { readBoundedText } from './preview-content';
-import type { AppLogger } from '../observability';
+import type { AppLogger } from '../platform/observability';
 
 export const previewDiagnosticsPath = '/_emdash/preview-diagnostics';
 const reportSchema = z

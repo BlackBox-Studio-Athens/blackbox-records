@@ -1,0 +1,10 @@
+{
+  "name": "commerce-web-integration",
+  "tags": ["integration", "scope:web"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --config vitest.modules.config.ts --project=commerce-web-integration --project=commerce-web-integration:request",
+      "inputs": ["default", "^default", "{workspaceRoot}/apps/web/vitest*.ts", "{workspaceRoot}/apps/web/src/test/**/*"]
+    }
+  }
+}

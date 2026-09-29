@@ -1,0 +1,16 @@
+{
+  "name": "web-layouts",
+  "tags": ["application", "scope:web"],
+  "implicitDependencies": ["app-shell", "storefront-catalog", "web-platform"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --config vitest.modules.config.ts --project=web-layouts",
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/apps/web/vitest*.ts",
+        "{workspaceRoot}/apps/web/src/styles/**/*"
+      ]
+    }
+  }
+}

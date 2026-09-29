@@ -1,8 +1,8 @@
 ## Purpose
 
-The `storefront-catalog` module owns `content-loader.ts` and `content-snapshot.ts`. The content loader is its provided entrypoint for Astro collection configuration; catalog asset routes consume these helpers within the same module. Filesystem reads, image optimization and rendering remain public-build concerns, while shared snapshot validation stays in `@blackbox/content-model`.
+The `web-content-files` module owns `content-snapshot.ts` and `slugs.ts` under `apps/web/src/lib/content-files/`; it depends only on `@blackbox/content-model` so backend operations scripts consume it without depending on the storefront. The `storefront-catalog` module owns `content-loader.ts`, its provided entrypoint for Astro collection configuration; application-owned `web-pages` catalog asset routes consume the declared content entrypoints. Filesystem reads, image optimization and rendering remain public-build concerns, while shared snapshot validation stays in `@blackbox/content-model`.
 
-The combined backend composition is owned by `cms-runtime` under `apps/backend/src/cms/` plus the editorial request policy at `apps/backend/src/middleware.ts`; it consumes the `backend-runtime` entrypoint at `apps/backend/src/index.ts` and the existing operator verifier. Staff assets are build inputs, never cross-app source imports. The pure `@blackbox/content-model` workspace root owns portable collection schemas, rich-text and native revision validation, immutable snapshot validation, purchase-information validation, music provider URL construction, and Distro closed values formerly provided from the web app. Web and CMS callers use that package export directly; Astro image and grouping presentation remain in web.
+The combined backend composition is owned by `cms-runtime` under `apps/backend/src/cms/`; `backend-runtime` owns the editorial request policy at `apps/backend/src/middleware.ts`. CMS consumes the `backend-runtime` entrypoint at `apps/backend/src/index.ts` and the existing operator verifier. Staff assets are build inputs, never cross-app source imports. The pure `@blackbox/content-model` workspace root owns portable collection schemas, rich-text and native revision validation, immutable snapshot validation, purchase-information validation, music provider URL construction, and Distro closed values formerly provided from the web app. Web and CMS callers use that package export directly; Astro image and grouping presentation remain in web.
 
 The protected catalog price, Item Setup and Publish item HTTP adapters are owned by `public-commerce-http`; they compose the `catalog-sync` root and repository SPI/persistence roots behind the existing operator verifier. No editorial or public browser interface gains provider write access. Their CMS adapters call the bound CMS service through supported authenticated REST and never import CMS persistence. `catalog-sync` may use the public `@blackbox/content-model` root to reuse the existing physical-type vocabulary for Item Setup validation; CMS persistence remains outside that boundary. The private `cms-runtime` publication coordinator consumes the commerce persistence root to finish retained operations from verified CMS Live receipts and pause linked item eligibility before native unpublish. It never changes Price, stock quantities or order history, and does not expose repositories to editorial plugins.
 
@@ -16,9 +16,9 @@ The combined Worker SHALL retain closed module ownership and existing applicatio
 
 #### Scenario: Staff and CMS share a deployment
 
-- **WHEN** the combined Worker is built
-- **THEN** `cms-runtime` owns the `combined-worker` and `access-auth-provider` named interfaces and editorial middleware
-- **AND** it may depend only on `backend-runtime`, `operator-auth`, `platform-shared`, the commerce persistence root for publication coordination, and the pure content-model workspace export
+- **THEN** application-owned `backend-runtime` owns the `combined-worker` entry (`apps/backend/src/cms-worker.ts`) and editorial middleware; `cms-runtime` owns the `access-auth-provider` named interface and does not depend on `backend-runtime`
+- **THEN** `cms-runtime` owns the `combined-worker` and `access-auth-provider` named interfaces; application-owned `backend-runtime` owns editorial middleware
+- **AND** CMS dependencies remain limited to the manifest's declared interfaces, including `backend-platform`, commerce persistence for publication coordination, and the pure content-model workspace export
 - **AND** `staff-frontend` owns its source and consumes the internal API client; its built assets are packaged without cross-app source imports.
 
 #### Scenario: Runtime catalog data is read
@@ -48,7 +48,7 @@ The system SHALL treat application modules as closed by default with explicit pr
 
 - **GIVEN** the app shell, Store features, and private-preview code use the public Lenis runtime
 - **WHEN** those modules call the shared scroll operations
-- **THEN** `platform-shared` owns the implementation at `apps/web/src/lib/lenis-scroll.ts`
+- **THEN** `web-platform` owns the implementation at `apps/web/src/platform/lib/lenis-scroll.ts`
 - **AND** app-shell exposes its `apps/web/src/components/app-shell/lenis-scroll.ts` entrypoint to shell components
 - **AND** lower-level modules do not depend on app-shell internals.
 
@@ -61,6 +61,29 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **GIVEN** a change updates module roots, entrypoints, allowed dependencies, or exception policy
 - **WHEN** the change is made
 - **THEN** `openspec/specs/module-boundaries/module-boundaries.manifest.json` and this spec are updated together when behavior changes.
+
+### Requirement: Nx projects define module roots and actual dependencies
+
+Each application module MUST declare its source root, targets and task inputs in an Nx `project.json`. The boundary manifest MUST reference those projects for ownership roots while continuing to declare allowed dependencies and public entrypoints. Nx dependency edges describe actual imports and runtime relationships; they do not grant architectural permission.
+
+#### Scenario: Module ownership is declared
+
+- **WHEN** a module root changes
+- **THEN** the module's `project.json` defines its root and task inputs
+- **AND** the boundary manifest references that project instead of duplicating root globs
+- **AND** framework pages, layouts and test support remain separate roots such as `web-pages`, `web-layouts` and `web-test-support`.
+
+#### Scenario: Runtime imports affect the Nx graph
+
+- **WHEN** Astro loads a runtime dependency that static import analysis does not discover
+- **THEN** the Nx project declares the runtime edge
+- **AND** the actual dependency graph remains separate from the manifest's allowed-dependency policy.
+
+#### Scenario: Test ownership crosses modules
+
+- **WHEN** cross-module commerce behavior is tested
+- **THEN** its integration suite is located under `apps/web/test/commerce/` and declared as an external test input
+- **AND** test ownership does not grant source modules additional import permissions.
 
 #### Scenario: Shared UI primitive is added
 
@@ -101,7 +124,7 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 
 - **GIVEN** pending PaidOrderDelivery rows require bounded retry processing
 - **WHEN** the Worker scheduled handler is composed
-- **THEN** the `orders` module owns and provides `apps/backend/src/interfaces/scheduled/run-paid-order-delivery-schedule.ts`
+- **THEN** the `orders` module owns and provides `apps/backend/src/application/commerce/orders/run-paid-order-delivery-schedule.ts`
 - **AND** that entrypoint drains only paid-order deliveries through the existing email application and Resend integration
 - **AND** `public-commerce-http` owns no scheduled root or scheduled entrypoint.
 
@@ -125,15 +148,15 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 
 - **GIVEN** public purchase and privacy information is shared by Store Item, checkout, footer and personal-data forms
 - **WHEN** those surfaces render policy copy or links
-- **THEN** `platform-shared` owns and provides `components/PurchaseInformation.tsx`, `components/PurchaseDocument.tsx`, `lib/purchase-information.ts` and `lib/purchase-information-schema.ts` under `apps/web/src/`, with the purchase-information content entry owned by the same module
-- **AND** `checkout-web` owns the static `/terms/` and `/privacy/` routes and retains all runtime monetary presentation
+- **THEN** `web-platform` owns and provides `components/PurchaseInformation.tsx`, `components/PurchaseDocument.tsx`, `lib/purchase-information.ts` and `lib/purchase-information-schema.ts` under `apps/web/src/platform/`, with the purchase-information content entry owned by the same module
+- **AND** application-owned `web-pages` owns the static `/terms/` and `/privacy/` routes; `checkout-web` retains runtime monetary presentation
 - **AND** shared editorial information does not import checkout clients or become price, tax or order authority.
 
 #### Scenario: Store category routes are added
 
 - **GIVEN** Store collection pages exist at `/store/`, `/store/blackbox-releases/`, `/store/distro/`, and `/store/merch/`
 - **WHEN** boundary validation runs
-- **THEN** their route files, shared category page, category classifier, Distro grouping, and listing cards are owned by the closed `storefront-catalog` module
+- **THEN** `web-pages` owns route files, `web-layouts` owns the shared category page, and `storefront-catalog` owns the category classifier, Distro grouping and listing cards
 - **AND** the `/distro/` redirect route remains in the documented static storefront route root.
 
 #### Scenario: Shared Distro groups cross the CMS boundary
@@ -185,7 +208,7 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 
 - **GIVEN** backend modules need shared Worker-safe logging, tracing, or HTTP response helpers
 - **WHEN** the helper is added
-- **THEN** the helper is listed as a provided `platform-shared` entrypoint in `module-boundaries.manifest.json`
+- **THEN** the helper is listed as a provided `backend-platform` entrypoint in `module-boundaries.manifest.json`
 - **AND** feature modules import that entrypoint directly instead of deep-importing HTTP route internals.
 
 #### Scenario: Internal routes use the operator authentication boundary
@@ -193,7 +216,7 @@ The system MUST keep module ownership, entrypoints, allowed dependencies, status
 - **GIVEN** the complete `/api/internal/*` router requires one shared authentication middleware
 - **WHEN** public HTTP composition mounts the operator-auth entrypoint
 - **THEN** `public-commerce-http` declares `operator-auth` as an allowed dependency
-- **AND** `operator-auth` may use only provided `platform-shared` environment, observability, and response entrypoints.
+- **AND** `operator-auth` may use only provided `backend-platform` environment, observability, and response entrypoints.
 
 #### Scenario: Staff frontend is isolated from the public web app
 
@@ -324,7 +347,7 @@ CMS integration SHALL use supported CMS interfaces for editorial records, while 
 #### Scenario: Public components run inside a private editorial preview
 
 - **WHEN** the app shell, player, or public API configuration needs private preview context
-- **THEN** it imports the browser-only `apps/web/src/lib/private-preview.ts` entrypoint owned by `platform-shared`
+- **THEN** it imports the browser-only `apps/web/src/platform/lib/private-preview.ts` entrypoint owned by `web-platform`
 - **AND** that helper owns preview URLs and validated parent-frame messages without importing CMS server code or owning commerce authority.
 
 #### Scenario: CMS presents an operational control

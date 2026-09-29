@@ -3,7 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { X } from 'lucide-react';
 
 import { LoadingStateBlock } from '@/components/ui/loading-feedback';
-import type { OverlayRoute } from '@/lib/app-shell/routing';
+import type { OverlayRoute } from '@/components/app-shell/routing';
 
 import type { ShellOverlayState } from '../overlay/shell-overlay-navigation';
 import { acquireLenisModalLock } from '../lenis-scroll';

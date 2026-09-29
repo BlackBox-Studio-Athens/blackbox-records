@@ -14,9 +14,9 @@ import type { CheckoutReconciliation } from '../../../application/commerce/check
 import { EmailConfigurationError } from '../../../application/email';
 import { readPaidCheckoutFulfillment, type StoreItemOptionRecord } from '../../../domain/commerce/repositories/spi';
 import { parseCheckoutSessionId } from '../../../domain/commerce';
-import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../env';
-import type { AppLogger } from '../../../observability';
-import { createBindingLogger } from '../../../observability';
+import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../platform/env';
+import type { AppLogger } from '../../../platform/observability';
+import { createBindingLogger } from '../../../platform/observability';
 import { createStripeCatalogGateway, createStripeCheckoutGateway } from '../../../infrastructure/stripe';
 import {
   createPrismaClient,

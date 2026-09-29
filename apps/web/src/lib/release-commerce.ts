@@ -1,6 +1,6 @@
 import type { CollectionEntry } from 'astro:content';
 
-import { resolveLinkAttributes } from '../config/site';
+import { resolveLinkAttributes } from '../platform/config/site';
 import { getStoreItemForRelease } from './catalog-data';
 
 export type ReleaseCommerceLink = {

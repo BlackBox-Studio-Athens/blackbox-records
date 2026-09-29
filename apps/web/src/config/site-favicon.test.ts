@@ -9,7 +9,7 @@ vi.mock('astro:config/client', () => ({
   site: 'https://blackbox-studio-athens.github.io',
 }));
 
-import { siteBrandAssets } from './site';
+import { siteBrandAssets } from '../platform/config/site';
 
 const publicDirectory = fileURLToPath(new URL('../../public/', import.meta.url));
 const sourceDirectory = fileURLToPath(new URL('../', import.meta.url));

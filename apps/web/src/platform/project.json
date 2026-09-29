@@ -1,0 +1,15 @@
+{
+  "name": "web-platform",
+  "tags": ["module", "scope:web"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --config vitest.modules.config.ts --project=web-platform",
+      "inputs": ["default", "^default", "{workspaceRoot}/apps/web/vitest*.ts", "{workspaceRoot}/apps/web/src/test/**/*"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/web exec vitest --watch --config vitest.modules.config.ts --project=web-platform",
+      "cache": false,
+      "continuous": true
+    }
+  }
+}

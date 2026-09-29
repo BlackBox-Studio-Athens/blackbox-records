@@ -1,57 +1,65 @@
-import { execa } from 'execa';
-import { parseArgs } from 'node:util';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
+import { runFiniteCommand } from './local-process.ts';
 
-export const watchScopes = {
-  web: ['vitest.config.ts', 'vitest.request.config.ts'],
-  staff: [undefined],
-  backend: ['vitest.config.ts', 'vitest.node.config.ts'],
-  'api-client': [undefined],
-};
+export const watchScopes = ['web', 'staff', 'backend', 'api-client'];
 
-export function watchConfigurations(scope) {
-  const configs = watchScopes[scope];
-  if (!configs) throw new Error(`Specify --scope from: ${Object.keys(watchScopes).join(', ')}.`);
-  return configs;
-}
-
-export function vitestArguments(config, { changed = false, since } = {}) {
+export function nxWatchArguments(scope, { changed = false, since } = {}) {
+  if (!changed && !scope) throw new Error('Specify a module: pnpm test:watch <module>.');
+  if (changed && scope && !watchScopes.includes(scope)) throw new Error(`Unknown changed-test scope: ${scope}.`);
   if (since && !changed) throw new Error('--since requires --changed.');
-  return [
-    ...(changed ? ['run', `--changed=${since || 'HEAD'}`, '--passWithNoTests'] : ['--watch']),
-    ...(config ? ['--config', config] : []),
-  ];
+  return changed
+    ? [
+        'exec',
+        'nx',
+        'affected',
+        '-t',
+        'test',
+        ...(scope ? [`--exclude=*,!tag:scope:${scope}`] : []),
+        ...(since ? [`--base=${since}`] : []),
+      ]
+    : ['exec', 'nx', 'run', `${scope}:test-watch`];
 }
 
-async function main() {
-  const { values } = parseArgs({
-    args: process.argv.slice(2).filter((arg) => arg !== '--'),
+export async function main(args = process.argv.slice(2), { runCommand = runFiniteCommand, cwd = process.cwd() } = {}) {
+  const parsed = parseArgs({
+    args: args.filter((arg) => arg !== '--'),
     options: { scope: { type: 'string' }, changed: { type: 'boolean' }, since: { type: 'string' } },
+    allowPositionals: true,
   });
-  const configs = watchConfigurations(values.scope);
-  vitestArguments(undefined, values);
+  if (parsed.positionals.length > 1 || (parsed.values.scope && parsed.positionals.length))
+    throw new Error('Specify the module once, either as a positional argument or with --scope.');
+  const scope = parsed.values.scope ?? parsed.positionals[0];
+  const changed = parsed.values.changed;
+  const command = {
+    name: changed ? 'affected-tests' : 'test-watch',
+    command: 'pnpm',
+    args: nxWatchArguments(scope, parsed.values),
+  };
   console.log(
-    `PARTIAL ${values.changed ? 'affected tests' : 'test watch'}: this does not establish implementation completion.`,
+    `PARTIAL ${changed ? 'affected tests' : 'test watch'}${scope ? ` for ${scope}` : ''}: this does not establish implementation completion.`,
   );
-  if (values.changed)
-    console.log('Import-based selection only; use validate:fast --scope all for shared/configuration/content changes.');
-  const children = configs.map((config) =>
-    execa(
-      process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm',
-      ['--filter', `@blackbox/${values.scope}`, 'exec', 'vitest', ...vitestArguments(config, values)],
-      { stdio: 'inherit', reject: false, windowsHide: true },
-    ),
-  );
-  for (const signal of ['SIGINT', 'SIGTERM'])
-    process.once(signal, () => children.forEach((child) => child.kill(signal)));
-  const results = await Promise.all(children);
-  process.exitCode = results.some(({ exitCode }) => exitCode !== 0) ? 1 : 0;
+  return runCommand(command, { cwd, stdio: 'inherit' });
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  main().catch((error) => {
-    console.error(error.message);
-    process.exitCode = 1;
-  });
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  process.on('SIGINT', cancel);
+  process.on('SIGTERM', cancel);
+  main(process.argv.slice(2), {
+    runCommand: (command, options) => runFiniteCommand(command, { ...options, cancelSignal: controller.signal }),
+  })
+    .then((result) => {
+      process.exitCode = result?.exitCode ?? 0;
+    })
+    .catch((error) => {
+      console.error(error.message);
+      process.exitCode = error.exitCode || 1;
+    })
+    .finally(() => {
+      process.off('SIGINT', cancel);
+      process.off('SIGTERM', cancel);
+    });
 }

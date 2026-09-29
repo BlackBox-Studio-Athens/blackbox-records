@@ -1,0 +1,16 @@
+{
+  "name": "web-content-files",
+  "tags": ["module", "scope:web"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --project=web-content-files --config vitest.modules.config.ts",
+      "inputs": ["webTests", "^default"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/web exec vitest --watch --project=web-content-files --config vitest.modules.config.ts",
+      "cache": false,
+      "continuous": true
+    }
+  },
+  "implicitDependencies": []
+}

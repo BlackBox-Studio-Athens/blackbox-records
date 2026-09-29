@@ -5,7 +5,7 @@ import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createExactFirstSearcher } from '@/lib/exact-first-search';
-import { scrollElementWithLenis } from '@/lib/lenis-scroll';
+import { scrollElementWithLenis } from '@/platform/lib/lenis-scroll';
 
 import {
   createStoreCoverflowController,

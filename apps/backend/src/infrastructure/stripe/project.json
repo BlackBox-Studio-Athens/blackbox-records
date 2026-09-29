@@ -1,0 +1,15 @@
+{
+  "name": "stripe-integration",
+  "tags": ["module", "scope:backend"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/backend exec vitest run --config vitest.modules.config.ts --project=stripe-integration --project=stripe-integration:worker",
+      "inputs": ["backendTests", "^default", "backendWorkerTests"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/backend exec vitest --watch --config vitest.modules.config.ts --project=stripe-integration --project=stripe-integration:worker",
+      "continuous": true,
+      "cache": false
+    }
+  }
+}

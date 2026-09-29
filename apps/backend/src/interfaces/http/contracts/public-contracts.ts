@@ -1,7 +1,12 @@
 import { createRoute, z } from '@hono/zod-openapi';
 
 import { SERVICES_INQUIRY_FIELD_LIMITS, SERVICES_INQUIRY_SERVICES } from '../../../application/email';
-import { hypermediaLinkSchema, hypermediaMetadataShape, linkResponseHeaders, problemContent } from '../responses';
+import {
+  hypermediaLinkSchema,
+  hypermediaMetadataShape,
+  linkResponseHeaders,
+  problemContent,
+} from '../../../platform/interfaces/http/responses';
 
 const publicApiDiscoverySchema = z
   .object({ links: z.array(hypermediaLinkSchema).min(1) })

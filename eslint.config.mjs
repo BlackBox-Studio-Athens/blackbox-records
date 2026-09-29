@@ -23,6 +23,7 @@ export default tseslint.config(
       '**/.emdash/**',
       '**/.codex-artifacts/**',
       '**/.codegraph/**',
+      '**/.nx/**',
       '**/graphify-out/**',
       '**/.wrangler/**',
       '**/.vite/**',

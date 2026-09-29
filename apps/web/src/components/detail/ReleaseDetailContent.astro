@@ -8,12 +8,12 @@ import StoreImageGallery from '@/components/store/StoreImageGallery';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
-import { createProjectRelativeUrl } from '@/config/site';
+import { createProjectRelativeUrl } from '@/platform/config/site';
 import { resolveArtistProfileForRelease, resolveReleaseArtistDisplayName } from '@/lib/catalog-data';
 import { getReleaseCommerceLink } from '@/lib/release-commerce';
-import { cn } from '@/lib/utils';
+import { cn } from '@/components/ui/utils';
 import { formatDayMonthYear } from '@/utils/content';
-import { buildEmbeddedPlayerData } from '@/utils/music';
+import { buildEmbeddedPlayerData } from '@/components/music/music';
 
 interface Props {
   release: CollectionEntry<'releases'>;

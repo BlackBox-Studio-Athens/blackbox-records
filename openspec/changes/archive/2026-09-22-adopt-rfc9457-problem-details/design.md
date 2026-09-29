@@ -1,6 +1,6 @@
 ## Context
 
-See [proposal](proposal.md). `backend-error-responses` and `apps/backend/src/interfaces/http/responses.ts` already standardize Hono `code`, string `error`, optional `requestId`, and `no-store`. Accepted EmDash/runtime publication adds separate app-owned boundaries in `cms/index.ts` and `cms/publication-routes.ts`: some return `{ error: 'PUBLICATION_UNAVAILABLE' }`, others `{ error: { code: 'CMS_NOT_INITIALIZED' } }`. These are not the Hono message contract. Public renderer HTML/plain-text failures and upstream EmDash responses are separate protocols, not JSON envelopes to rewrite.
+See [proposal](proposal.md). `backend-error-responses` and `apps/backend/src/platform/interfaces/http/responses.ts` already standardize Hono `code`, string `error`, optional `requestId`, and `no-store`. Accepted EmDash/runtime publication adds separate app-owned boundaries in `cms/index.ts` and `cms/publication-routes.ts`: some return `{ error: 'PUBLICATION_UNAVAILABLE' }`, others `{ error: { code: 'CMS_NOT_INITIALIZED' } }`. These are not the Hono message contract. Public renderer HTML/plain-text failures and upstream EmDash responses are separate protocols, not JSON envelopes to rewrite.
 
 ## Goals / Non-Goals
 

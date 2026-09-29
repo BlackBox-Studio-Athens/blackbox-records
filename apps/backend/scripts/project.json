@@ -1,0 +1,5 @@
+{
+  "name": "backend-build-tools",
+  "tags": ["tooling", "scope:backend"],
+  "targets": {}
+}

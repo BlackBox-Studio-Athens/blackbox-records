@@ -1,5 +1,5 @@
-import { buildOverlayFragmentUrl, parseOverlayRoute } from '@/lib/app-shell/routing';
-import { previewUrl } from '@/lib/private-preview';
+import { buildOverlayFragmentUrl, parseOverlayRoute } from '@/components/app-shell/routing';
+import { previewUrl } from '@/platform/lib/private-preview';
 
 type OverlayFragmentResponse = Pick<Response, 'ok' | 'text'>;
 

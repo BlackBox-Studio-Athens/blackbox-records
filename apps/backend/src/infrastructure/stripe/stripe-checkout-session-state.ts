@@ -6,11 +6,7 @@ import type {
   StripeCheckoutSessionState,
   StripeCheckoutSessionStatus,
 } from '../../application/commerce/checkout/spi';
-import {
-  parseCheckoutSessionId,
-  parsePaymentIntentId,
-  type PaymentIntentId,
-} from '../../application/commerce/checkout';
+import { parseCheckoutSessionId, parsePaymentIntentId, type PaymentIntentId } from '../../domain/commerce';
 
 export function toStripeCheckoutSessionState(session: Stripe.Checkout.Session): StripeCheckoutSessionState {
   return {

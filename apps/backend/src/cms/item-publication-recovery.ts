@@ -2,7 +2,7 @@ import { D1CatalogOperationRepository } from '../infrastructure/persistence/pris
 import { readPublication } from './publication-journal';
 import { z } from 'zod';
 import { snapshotStoreItemSchema } from '@blackbox/content-model';
-import { cmsNestedProblemResponse } from '../interfaces/http/responses';
+import { cmsNestedProblemResponse } from '../platform/interfaces/http/responses';
 
 export async function readPublicationCatalog(db: D1Database) {
   const rows = await db

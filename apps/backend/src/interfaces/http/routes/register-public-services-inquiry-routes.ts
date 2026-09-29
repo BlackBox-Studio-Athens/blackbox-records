@@ -1,7 +1,7 @@
-import type { AppOpenApi } from '../../../env';
-import { requestLogger } from '../../../observability';
+import type { AppOpenApi } from '../../../platform/env';
+import { requestLogger } from '../../../platform/observability';
 import { postServicesInquiryRoute } from '../contracts/public-contracts';
-import { jsonError, jsonNoStore } from '../responses';
+import { jsonError, jsonNoStore } from '../../../platform/interfaces/http/responses';
 import { createPublicServicesInquiryServices } from './public-services-inquiry-services';
 
 export function registerPublicServicesInquiryRoutes(app: AppOpenApi): void {

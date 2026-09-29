@@ -236,10 +236,10 @@ const state = {
 const publications = [];
 const previewDocuments = new Map();
 const previewBridge =
-  ts.transpileModule(await readFile('apps/web/src/lib/private-preview.ts', 'utf8'), {
+  ts.transpileModule(await readFile('apps/web/src/platform/lib/private-preview.ts', 'utf8'), {
     compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
   }).outputText + '\nconnectPrivatePreview();';
-const previewScrollRuntime = ts.transpileModule(await readFile('apps/web/src/lib/lenis-scroll.ts', 'utf8'), {
+const previewScrollRuntime = ts.transpileModule(await readFile('apps/web/src/platform/lib/lenis-scroll.ts', 'utf8'), {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
 }).outputText;
 const fixtureOrders = Array.from({ length: 51 }, (_, index) => ({

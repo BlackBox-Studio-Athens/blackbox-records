@@ -17,7 +17,7 @@ import {
   recordPublicationDeployment,
   requestPublication,
 } from './publication-journal';
-import { cmsStringProblemResponse } from '../interfaces/http/responses';
+import { cmsStringProblemResponse } from '../platform/interfaces/http/responses';
 
 const revisionId = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 const bodySchema = z.object({ id: z.uuid(), requestedRevision: revisionId }).strict();

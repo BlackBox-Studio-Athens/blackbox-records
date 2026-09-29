@@ -1,5 +1,5 @@
-import type { PublicStoreListingPrice } from '@/lib/backend/public-checkout-api';
-import { resolvePublicCheckoutApiBaseUrl } from '@/lib/backend/public-checkout-api';
+import type { PublicStoreListingPrice } from '@/components/store/checkout/public-checkout-api';
+import { resolvePublicCheckoutApiBaseUrl } from '@/components/store/checkout/public-checkout-api';
 
 export const STORE_LISTING_PRICE_COPY = {
   loading: 'Checking price',

@@ -1,7 +1,7 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "blackbox-emdash-local-checkpoint",
-  "main": "../../src/cms/index.ts",
+  "main": "../../src/cms-worker.ts",
   "compatibility_date": "2026-08-31",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": false,

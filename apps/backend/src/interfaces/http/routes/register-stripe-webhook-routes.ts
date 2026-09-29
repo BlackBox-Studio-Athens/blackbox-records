@@ -1,12 +1,17 @@
-import type { AppOpenApi } from '../../../env';
-import { normalizeUnknownError, requestLogger, runWithTraceSpan, traceContextFromHono } from '../../../observability';
+import type { AppOpenApi } from '../../../platform/env';
+import {
+  normalizeUnknownError,
+  requestLogger,
+  runWithTraceSpan,
+  traceContextFromHono,
+} from '../../../platform/observability';
 import {
   StripeWebhookConfigurationError,
   StripeWebhookMissingSignatureError,
   StripeWebhookSignatureVerificationError,
   verifyStripeWebhookEvent,
 } from '../../../infrastructure/stripe';
-import { jsonError, jsonNoStore } from '../responses';
+import { jsonError, jsonNoStore } from '../../../platform/interfaces/http/responses';
 import {
   acknowledgeVerifiedStripeWebhookEvent,
   StripeWebhookReconciliationError,

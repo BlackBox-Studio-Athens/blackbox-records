@@ -26,10 +26,10 @@ async function run(mode, serial) {
   process.once('SIGTERM', cancel);
   try {
     if (mode === 'builds') {
-      await runParallelCommands([command('build:web', ['build:web']), command('build:staff', ['build:staff'])], {
-        serial,
-        signal: controller.signal,
-      });
+      await runFiniteCommand(
+        command('builds', ['exec', 'nx', 'run-many', '-t', 'build', ...(serial ? ['--parallel=1'] : [])]),
+        { cwd: root, cancelSignal: controller.signal },
+      );
       return;
     }
     if (mode === 'browsers') {

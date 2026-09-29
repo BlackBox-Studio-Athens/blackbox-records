@@ -7,8 +7,8 @@ import {
   type NewsletterRegistrationResult,
 } from '../../../application/email';
 import { NEWSLETTER_CONSENT_COPY_VERSION } from '../../../application/commerce/checkout';
-import type { AppBindings } from '../../../env';
-import type { AppLogger } from '../../../observability';
+import type { AppBindings } from '../../../platform/env';
+import type { AppLogger } from '../../../platform/observability';
 import { createEmailRuntimeServices } from '../../../infrastructure/resend';
 
 const publicNewsletterEmail = z.string().trim().email();

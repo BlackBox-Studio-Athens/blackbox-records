@@ -28,7 +28,7 @@ Planning base HEAD: `82704cb4be288bb5655f304faeb4ca93b8c472d3`. The tree has ext
 
 - `apps/backend/src/index.ts` forwards HTTP to CommerceRuntime and already invokes a typed object method for scheduled paid-order work. Earlier discussion suggesting there was no RPC of any kind was too broad.
 - `apps/backend/src/cms/index.ts` separates public commerce, protected internal API, CMS/staff, and private publication handling. Staff assets are marked private/no-store in the observed implementation.
-- `apps/backend/src/interfaces/http/responses.ts` already defines `code`, `error`, and optional `requestId`; RFC 9457 is an extension/migration, not the first structured error contract.
+- `apps/backend/src/platform/interfaces/http/responses.ts` already defines `code`, `error`, and optional `requestId`; RFC 9457 is an extension/migration, not the first structured error contract.
 - `apps/backend/src/application/commerce/checkout/start-checkout.ts` creates a fresh random order ID for each new call; existing stock hold/provider recovery must be preserved when adding a client attempt identity.
 - `record-stock-change.ts` currently has no request identity in its command; `record-stock-count.ts` already has `expectedRevision`.
 - `store-listing-price-reader.ts` reads listing snapshots and formats public presentation. `store-listing-price-presentation` requires no-store and one fresh read on each activation, including shell-cache restoration. A future nonzero TTL needs a real spec delta.

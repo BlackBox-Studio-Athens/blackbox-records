@@ -33,7 +33,8 @@ Start with the relevant row. Use [README](README.md) when setup or product conte
 
 ## Completion
 
-- Iterate with `pnpm test:changed --scope web|staff|backend|api-client` or the existing watcher. `pnpm validate:fast --scope web|staff|backend|api-client|all` is a partial checkpoint.
-- Run `pnpm validate` on the final tree. It performs targeted local acceptance; CI retains full unit, check and build gates. Reuse evidence only for its recorded source fingerprint.
+- Start with the module: run `pnpm test <project>` or keep `pnpm test:watch <project>` running while editing. Use `pnpm test:changed` or `pnpm validate` afterward to check affected consumers.
+- Run `pnpm validate` on the final tree. It uses Nx affected tests, package lint/type checks and required architecture checks; CI retains full unit, check and build gates. Reuse evidence only for its recorded source fingerprint.
+- Use `pnpm validate:full` for the full local run. `--no-cache` disables Nx cache reuse for the selected mode; it does not change affected or full selection.
 - Use the [acceptance matrix](docs/agent-workflow.md#acceptance-matrix) for additional behavior checks and the [evidence record](docs/agent-workflow.md#completion-evidence) for the handoff. Local validation alone does not establish browser, provider or release acceptance.
 - `pnpm agent:check` checks this entry point and its supporting agent documents. Update the relevant operational owner when commands or contracts change.

@@ -1,4 +1,4 @@
-import { validateSlug } from './slugs';
+import { validateSlug } from './content-files/slugs';
 import { reservedStoreRouteSegments } from './store-categories';
 
 type StoreItemSourceKind = 'distro' | 'release';

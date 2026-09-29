@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { acquireLenisModalLock, scrollElementWithLenis, scrollWithLenis } from '../lib/lenis-scroll';
+import { acquireLenisModalLock, scrollElementWithLenis, scrollWithLenis } from './lenis-scroll';
 import { connectLenisScrollRoots } from './lenis-scroll-roots';
 
 afterEach(() => vi.unstubAllGlobals());

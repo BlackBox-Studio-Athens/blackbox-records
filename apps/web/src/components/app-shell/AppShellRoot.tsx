@@ -5,8 +5,8 @@ import {
   type PlayerEmbedLayout,
   type PlayerProvider,
   type PlayerProviderId,
-} from '@/components/app-shell/player-provider-data';
-import { type ActivePlayerSession } from '@/components/app-shell/player-iframe-session';
+} from '@/components/music/player-provider-data';
+import { type ActivePlayerSession } from '@/components/music/player-iframe-session';
 import {
   markCurrentHistoryEntryForShellSection,
   syncDesktopNavigationState,
@@ -27,9 +27,9 @@ import {
   triggerShellPageEnterTransition,
   type ShellMotionControls,
 } from '@/components/app-shell/navigation/shell-transition';
-import { createProjectRelativeUrl } from '@/config/site';
-import { normalizeAppPathname, type ShellSectionRoute } from '@/lib/app-shell/routing';
-import { parseShellSectionRoute } from '@/lib/app-shell/routing';
+import { createProjectRelativeUrl } from '@/platform/config/site';
+import { normalizeAppPathname, type ShellSectionRoute } from '@/components/app-shell/routing';
+import { parseShellSectionRoute } from '@/components/app-shell/routing';
 import {
   connectStoreListingPricePresentation,
   readPublicStoreListingPrices,
@@ -43,7 +43,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import { connectStorePreviewImages } from './dom/store-preview-images';
 import type { SiteNavigationItem } from '@/lib/site-data';
-import type { StoreCartState } from '@/lib/store-cart';
+import type { StoreCartState } from '@/components/store/cart/store-cart';
 import { createOverlayFragmentLoader } from './overlay/overlay-fragment-loader';
 import {
   closeOverlayWithHistoryBack as closeOverlayHistoryWithBack,
@@ -71,8 +71,8 @@ import ShellPortalOutlets from './view/ShellPortalOutlets';
 const MobileNavigationSheet = lazy(() => import('./view/MobileNavigationSheet'));
 const ShellOverlayPanel = lazy(() => import('./view/ShellOverlayPanel'));
 const ShellPlayerSurface = lazy(() => import('./view/ShellPlayerSurface'));
-const StoreCartDrawer = lazy(() => import('@/components/store/StoreCartDrawer'));
-const CartDeliverySummary = lazy(() => import('@/components/store/DeliverySummary'));
+const StoreCartDrawer = lazy(() => import('@/components/store/cart/StoreCartDrawer'));
+const CartDeliverySummary = lazy(() => import('@/components/store/checkout/DeliverySummary'));
 const preloadStoreDistroSearch = () => import('@/components/store/StoreDistroSearch');
 
 type OverlayState = ShellOverlayState;
@@ -687,16 +687,16 @@ export default function AppShellRoot({
             resolveHref={createProjectRelativeUrl}
             onContinueShopping={() => setIsStoreCartDrawerOpen(false)}
             onDecrementItem={async (variantId) => {
-              const { decrementCartLineQuantityByVariant } = await import('@/lib/store-cart');
+              const { decrementCartLineQuantityByVariant } = await import('@/components/store/cart/store-cart');
               await applyStoreCartState(decrementCartLineQuantityByVariant(variantId, storeCartState));
             }}
             onIncrementItem={async (variantId) => {
-              const { incrementCartLineQuantityByVariant } = await import('@/lib/store-cart');
+              const { incrementCartLineQuantityByVariant } = await import('@/components/store/cart/store-cart');
               await applyStoreCartState(incrementCartLineQuantityByVariant(variantId, storeCartState));
             }}
             onOpenChange={setIsStoreCartDrawerOpen}
             onRemoveItem={async (variantId) => {
-              const { removeCartLineByVariant } = await import('@/lib/store-cart');
+              const { removeCartLineByVariant } = await import('@/components/store/cart/store-cart');
               await applyStoreCartState(removeCartLineByVariant(variantId, storeCartState));
             }}
           />

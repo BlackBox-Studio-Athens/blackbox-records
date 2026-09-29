@@ -1,0 +1,8 @@
+{
+  "name": "generated-prisma",
+  "root": "apps/backend/src/generated",
+  "tags": ["generated", "scope:backend"],
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "{workspaceRoot}/apps/backend/prisma/**/*", "toolchain"]
+  }
+}

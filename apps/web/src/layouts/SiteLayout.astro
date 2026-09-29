@@ -3,12 +3,12 @@ import '@/styles/global.css';
 
 import type { ImageMetadata } from 'astro';
 
-import AppShell from '@/components/app-shell/AppShell.astro';
+import AppShell from '@/layouts/AppShell.astro';
 import Footer from '@/components/Footer.astro';
 import Header from '@/components/Header.astro';
-import { createAbsoluteSiteUrl, createProjectRelativeUrl, siteBrandAssets, siteConfig } from '@/config/site';
+import { createAbsoluteSiteUrl, createProjectRelativeUrl, siteBrandAssets, siteConfig } from '@/platform/config/site';
 import { getLabelSettings, getSocialItems } from '@/lib/site-data';
-import { getPurchaseInformation } from '@/lib/purchase-information';
+import { getPurchaseInformation } from '@/platform/lib/purchase-information';
 
 interface Props {
   pageTitle?: string;
@@ -75,7 +75,7 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
 <html lang="en">
   <head>
     <script>
-      import { connectPrivatePreview } from '@/lib/private-preview';
+      import { connectPrivatePreview } from '@/platform/lib/private-preview';
       connectPrivatePreview();
     </script>
     <meta charset="utf-8" />

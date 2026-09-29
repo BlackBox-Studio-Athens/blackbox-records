@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import type { ProductEnvironmentProfile } from '../env';
+import type { ProductEnvironmentProfile } from '../platform/env';
 import { approvePublicationImage } from './snapshot-storage';
 import { readBytes, readJson } from './publication-routes';
-import { cmsStringProblemResponse } from '../interfaces/http/responses';
+import { cmsStringProblemResponse } from '../platform/interfaces/http/responses';
 
 export const itemArtworkPath = '/_emdash/api/blackbox/item-artwork';
 export const publishedMediaPath = '/media/published/';

@@ -1,0 +1,15 @@
+{
+  "name": "commerce-persistence",
+  "tags": ["module", "scope:backend"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/backend exec vitest run --config vitest.modules.config.ts --project=commerce-persistence --project=commerce-persistence:worker",
+      "inputs": ["backendTests", "^default", "backendWorkerTests"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/backend exec vitest --watch --config vitest.modules.config.ts --project=commerce-persistence --project=commerce-persistence:worker",
+      "continuous": true,
+      "cache": false
+    }
+  }
+}

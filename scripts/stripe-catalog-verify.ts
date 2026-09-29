@@ -27,7 +27,7 @@ import {
   productEnvironmentProfileFromWorkerRuntimeTarget,
   workerRuntimeTargetForProductEnvironment,
   type ProductEnvironmentProfile,
-} from '../apps/backend/src/env';
+} from '../apps/backend/src/platform/env';
 import type {
   StoreItemOptionRecord,
   StoreItemOptionRepository,

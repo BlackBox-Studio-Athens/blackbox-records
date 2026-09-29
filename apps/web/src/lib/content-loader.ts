@@ -1,7 +1,12 @@
 import { fileURLToPath } from 'node:url';
 import { relative, resolve } from 'node:path';
 import { glob, type Loader } from 'astro/loaders';
-import { readContentSnapshot, snapshotCollection, type LoadedSnapshot, type SnapshotInput } from './content-snapshot';
+import {
+  readContentSnapshot,
+  snapshotCollection,
+  type LoadedSnapshot,
+  type SnapshotInput,
+} from './content-files/content-snapshot';
 
 let loaded: Promise<LoadedSnapshot> | undefined;
 export function contentSnapshotInput(): SnapshotInput | undefined {

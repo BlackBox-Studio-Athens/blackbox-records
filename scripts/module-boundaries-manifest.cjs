@@ -6,6 +6,7 @@ const manifestPath = path.resolve(repoRoot, 'openspec/specs/module-boundaries/mo
 
 const WALK_IGNORES = new Set([
   '.git',
+  '.nx',
   '.codex-artifacts',
   'node_modules',
   'dist',
@@ -81,7 +82,26 @@ function fileExists(relativePath) {
 }
 
 function loadModuleBoundariesManifest() {
-  return readJson(manifestPath);
+  const manifest = readJson(manifestPath);
+  const projects = Object.entries(manifest.modules).map(([name, definition]) => {
+    if ('roots' in definition || 'ownershipExceptions' in definition)
+      throw new Error(`Module ${name} ownership must come from its Nx project.`);
+    const project = readJson(path.resolve(repoRoot, definition.project));
+    if (project.name !== name) throw new Error(`Module ${name} must reference its matching Nx project.`);
+    return [name, project.root ?? toPosixPath(path.dirname(definition.project))];
+  });
+  for (const [name, root] of projects) {
+    const definition = manifest.modules[name];
+    definition.roots = [`${root}/**`];
+    definition.ownershipExceptions = projects
+      .filter(([other, child]) => other !== name && child.startsWith(`${root}/`))
+      .map(([, child]) => `${child}/**`);
+  }
+  for (const boundary of Object.values(manifest.workspaceBoundaries)) {
+    boundary.packageRoot = toPosixPath(path.dirname(boundary.packageJson));
+    if (boundary.exports) boundary.ownedRoots = [`${boundary.packageRoot}/**`];
+  }
+  return manifest;
 }
 
 function sanitizeName(name) {
@@ -231,7 +251,7 @@ function buildEslintBoundaryConfig(manifest = loadModuleBoundariesManifest()) {
   }
 
   return {
-    files: dedupe(files),
+    files: dedupe(files).filter((file) => !/\.(?:css|json|svg)$/.test(file)),
     descriptors: sortPatternsBySpecificity(descriptors),
     dependencyRules,
   };
@@ -247,7 +267,7 @@ function buildUnionRegex(patterns) {
 
 function buildAllowedTargetPatterns(manifest, moduleName) {
   const moduleDefinition = manifest.modules[moduleName];
-  const ownPatterns = dedupe([...(moduleDefinition.roots ?? []), ...getModuleEntrypointFiles(moduleDefinition)]);
+  const ownPatterns = getModuleEntrypointFiles(moduleDefinition);
   const dependencyPatterns = (moduleDefinition.allowedDependencies ?? []).flatMap((dependencyName) =>
     getModuleEntrypointFiles(manifest.modules[dependencyName]),
   );
@@ -279,10 +299,13 @@ function buildDependencyCruiserConfig(manifest = loadModuleBoundariesManifest())
       severity: 'error',
       from: {
         path: buildUnionRegex(moduleDefinition.roots ?? []),
+        ...(moduleDefinition.ownershipExceptions?.length
+          ? { pathNot: buildUnionRegex(moduleDefinition.ownershipExceptions) }
+          : {}),
       },
       to: {
         path: '^(?:apps|packages)/',
-        pathNot: buildUnionRegex(buildAllowedTargetPatterns(manifest, moduleName)),
+        pathNot: `(?:${moduleDefinition.ownershipExceptions?.length ? `(?!${buildUnionRegex(moduleDefinition.ownershipExceptions)})` : ''}${buildUnionRegex(moduleDefinition.roots)}|${buildUnionRegex(buildAllowedTargetPatterns(manifest, moduleName))})`,
       },
     });
   }
@@ -486,34 +509,34 @@ function validateManifest(manifest = loadModuleBoundariesManifest()) {
       }
     }
 
-    if (moduleName === 'platform-shared') {
+    if (moduleName === 'web-platform' || moduleName === 'backend-platform') {
       if (moduleDefinition.status !== 'closed') {
-        errors.push('platform-shared must remain closed after Phase 12 closure');
+        errors.push(`${moduleName} must remain closed`);
       }
 
       if ((moduleDefinition.allowedDependencies ?? []).length > 0) {
-        errors.push('platform-shared must not depend on business modules');
+        errors.push(`${moduleName} must not depend on business modules`);
       }
 
       for (const entry of [...(moduleDefinition.roots ?? []), ...getModuleEntrypointFiles(moduleDefinition)]) {
         if (entry.startsWith('apps/backend/src/domain/commerce/')) {
-          errors.push(`platform-shared must not own backend commerce domain code: ${entry}`);
+          errors.push(`${moduleName} must not own backend commerce domain code: ${entry}`);
         }
 
-        if (entry.startsWith('apps/web/src/components/ui/') || entry === 'apps/web/src/lib/utils.ts') {
-          errors.push(`platform-shared must not own frontend UI foundation code: ${entry}`);
+        if (entry.startsWith('apps/web/src/components/ui/') || entry === 'apps/web/src/components/ui/utils.ts') {
+          errors.push(`${moduleName} must not own frontend UI foundation code: ${entry}`);
         }
 
         if (entry.startsWith('apps/backend/src/interfaces/http/auth/')) {
-          errors.push(`platform-shared must not own operator auth code: ${entry}`);
+          errors.push(`${moduleName} must not own operator auth code: ${entry}`);
         }
 
         if (entry.startsWith('apps/backend/src/infrastructure/persistence/prisma/')) {
-          errors.push(`platform-shared must not own backend persistence adapters: ${entry}`);
+          errors.push(`${moduleName} must not own backend persistence adapters: ${entry}`);
         }
 
         if (entry.startsWith('apps/backend/src/infrastructure/stripe/')) {
-          errors.push(`platform-shared must not own Stripe integration code: ${entry}`);
+          errors.push(`${moduleName} must not own Stripe integration code: ${entry}`);
         }
       }
     }

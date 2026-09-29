@@ -1,5 +1,5 @@
-import { isCurrentPath } from '@/utils/urls';
-import { normalizeAppPathname, parseOverlayRoute, parseShellSectionRoute } from '@/lib/app-shell/routing';
+import { isCurrentPath } from '@/platform/utils/urls';
+import { normalizeAppPathname, parseOverlayRoute, parseShellSectionRoute } from '@/components/app-shell/routing';
 
 export type ShellNavigationSource = 'footer' | 'header' | 'history' | 'mobile-nav' | 'programmatic';
 

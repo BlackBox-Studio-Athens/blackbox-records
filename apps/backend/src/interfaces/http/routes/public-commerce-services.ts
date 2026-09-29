@@ -4,7 +4,6 @@ import {
   CheckoutRetryableError,
   CheckoutAttemptTerminalError,
   CheckoutUnavailableError,
-  CatalogDriftError,
   NativeCheckoutDisabledError,
   listVariantOffersForStoreItem,
   readCheckoutState,
@@ -20,7 +19,7 @@ import {
   vatDisclosure,
   type StartCheckoutCommand,
 } from '../../../application/commerce/checkout';
-import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../env';
+import { productEnvironmentProfileFromBindings, type AppBindings } from '../../../platform/env';
 import {
   createPrismaClient,
   PrismaItemAvailabilityRepository,
@@ -30,14 +29,15 @@ import {
   PrismaStoreItemOptionRepository,
   PrismaVariantStripeMappingRepository,
 } from '../../../infrastructure/persistence/prisma';
-import { createFeatureFlagReader } from '../../../infrastructure/feature-flags';
+import { createFeatureFlagReader } from '../../../application/commerce/checkout/feature-flags';
 import { createStripeCatalogGateway, createStripeCheckoutGateway } from '../../../infrastructure/stripe';
 import {
+  CatalogDriftError,
   CatalogReconciler,
   createRuntimeCatalogProductProjectionReader,
 } from '../../../application/commerce/catalog-sync';
-import type { AppLogger } from '../../../observability';
-import { readStoreListingPrices } from '../../../application/commerce/readers';
+import type { AppLogger } from '../../../platform/observability';
+import { readStoreListingPrices } from '../../../application/commerce/checkout/readers';
 import type { VariantId } from '../../../domain/commerce';
 import { D1CheckoutStockHoldRepository } from '../../../infrastructure/persistence/d1-checkout-stock-hold-repository';
 

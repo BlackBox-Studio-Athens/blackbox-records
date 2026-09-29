@@ -1,0 +1,374 @@
+import { createRoute, z } from '@hono/zod-openapi';
+
+import {
+  readPaidCheckoutFulfillment,
+  type CurrentPaidCheckoutOrder,
+  type OrderStatus,
+} from '../../../domain/commerce/repositories/spi';
+import type { AppOpenApi } from '../../../platform/env';
+import {
+  addLinkHeader,
+  apiLink,
+  jsonError,
+  jsonNoStore,
+  linkResponseHeaders,
+  operatorAccessErrorResponses,
+  problemContent,
+} from '../../../platform/interfaces/http/responses';
+import { createInternalOrderServices, type InternalOrderRead } from './internal-order-services';
+
+const orderStatusSchema = z
+  .enum(['pending_payment', 'paid', 'not_paid', 'needs_review'])
+  .openapi('InternalOrderStatus');
+
+const orderListQuerySchema = z
+  .object({
+    limit: z.coerce.number().int().min(1).max(100).optional(),
+    status: orderStatusSchema.optional(),
+  })
+  .openapi('InternalOrderListQuery');
+
+const checkoutSessionParamsSchema = z
+  .object({
+    checkoutSessionId: z.string().min(1),
+  })
+  .openapi('InternalCheckoutSessionParams');
+
+const paidOrderDeliverySchema = z.object({
+  attemptCount: z.number().int().min(0).max(5),
+  createdAt: z.string().datetime(),
+  deliveredAt: z.string().datetime().nullable(),
+  kind: z.enum(['shopper_confirmation', 'ops_fulfillment', 'newsletter_registration']),
+  needsReviewAt: z.string().datetime().nullable(),
+  nextAttemptAt: z.string().datetime().nullable(),
+  safeReason: z.string().nullable(),
+  status: z.enum(['pending', 'delivered', 'needs_review']),
+  updatedAt: z.string().datetime(),
+});
+
+const paidOrderFulfillmentSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('unavailable') }),
+  z.object({
+    kind: z.literal('incomplete'),
+    reason: z.literal('incomplete_paid_fulfillment'),
+  }),
+  z.object({
+    amountTotalMinor: z.number().int().positive(),
+    merchandiseGrossMinor: z.number().int().positive().nullable(),
+    deliveryGrossMinor: z.number().int().positive().nullable(),
+    deliveryVatMinor: z.number().int().positive().nullable(),
+    totalVatMinor: z.number().int().positive().nullable(),
+    currencyCode: z.literal('EUR'),
+    kind: z.literal('current'),
+    lines: z.array(
+      z.object({
+        displayName: z.string().min(1),
+        lineAmountMinor: z.number().int().positive(),
+        lineVatMinor: z.number().int().positive().nullable(),
+        taxRatePercent: z.number().positive().nullable(),
+        optionLabel: z.string().nullable(),
+        quantity: z.number().int().positive(),
+        storeItemSlug: z.string().min(1),
+        unitAmountMinor: z.number().int().positive(),
+        variantId: z.string().min(1),
+      }),
+    ),
+    newsletterConsent: z.discriminatedUnion('optedIn', [
+      z.object({ optedIn: z.literal(false) }),
+      z.object({
+        consentedAt: z.string().datetime(),
+        copyVersion: z.string().min(1),
+        optedIn: z.literal(true),
+      }),
+    ]),
+    paidAt: z.string().datetime(),
+    recipientName: z.string().min(1),
+    shippingAddress: z.object({
+      city: z.string().min(1),
+      country: z.literal('GR'),
+      line1: z.string().min(1),
+      line2: z.string().nullable(),
+      postalCode: z.string().min(1),
+      state: z.string().nullable(),
+    }),
+    shopperContact: z.object({
+      email: z.string().email(),
+      phone: z.string().nullable(),
+    }),
+  }),
+]);
+
+const checkoutOrderSchema = z
+  .object({
+    orderReference: z.string().optional(),
+    checkoutExpiresAt: z.string().datetime(),
+    checkoutSessionId: z.string().nullable(),
+    createdAt: z.string().datetime(),
+    deliveries: z.array(paidOrderDeliverySchema),
+    fulfillment: paidOrderFulfillmentSchema,
+    monetaryPolicyReference: z.string().nullable(),
+    acceptedDeliveryAmountMinor: z.number().int().positive().nullable(),
+    acceptedParcelTier: z.enum(['small', 'medium']).nullable(),
+    needsReviewReason: z.string().nullable(),
+    needsReviewAt: z.string().datetime().nullable(),
+    notPaidAt: z.string().datetime().nullable(),
+    paidAt: z.string().datetime().nullable(),
+    shippingLocker: z
+      .object({
+        country_code: z.literal('GR'),
+        locker_id: z.string(),
+        locker_name_or_label: z.string(),
+      })
+      .nullable(),
+    status: orderStatusSchema,
+    statusUpdatedAt: z.string().datetime(),
+    storeItemSlug: z.string(),
+    stripePaymentIntentId: z.string().nullable(),
+    updatedAt: z.string().datetime(),
+    variantId: z.string(),
+  })
+  .openapi('InternalCheckoutOrder');
+
+const listOrdersRoute = createRoute({
+  method: 'get',
+  path: '/api/internal/orders',
+  operationId: 'listInternalOrders',
+  request: {
+    query: orderListQuerySchema,
+  },
+  responses: {
+    200: {
+      headers: linkResponseHeaders,
+      content: {
+        'application/json': {
+          schema: z.array(checkoutOrderSchema),
+        },
+      },
+      description: 'Recent checkout orders for protected operator reconciliation.',
+    },
+    ...operatorAccessErrorResponses,
+  },
+  tags: ['Internal Orders'],
+});
+
+const getOrderByCheckoutSessionRoute = createRoute({
+  method: 'get',
+  path: '/api/internal/orders/checkout-sessions/{checkoutSessionId}',
+  operationId: 'getInternalOrderByCheckoutSession',
+  request: {
+    params: checkoutSessionParamsSchema,
+  },
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: checkoutOrderSchema,
+        },
+      },
+      description: 'Checkout order state for one checkout session.',
+    },
+    ...operatorAccessErrorResponses,
+    404: {
+      content: problemContent,
+      description: 'Checkout order not found.',
+    },
+  },
+  tags: ['Internal Orders'],
+});
+
+const searchOrdersRoute = createRoute({
+  method: 'get',
+  path: '/api/internal/orders/search',
+  operationId: 'searchInternalOrders',
+  request: {
+    query: orderListQuerySchema.extend({
+      q: z.string().trim().max(200).optional(),
+      notification: z.enum(['pending', 'needs_review']).optional(),
+      cursor: z
+        .string()
+        .regex(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z~[A-Za-z0-9_-]{1,128}$/)
+        .optional(),
+    }),
+  },
+  responses: {
+    400: {
+      content: problemContent,
+      description: 'Invalid search cursor.',
+    },
+    200: {
+      content: {
+        'application/json': {
+          schema: z.object({ items: z.array(checkoutOrderSchema), nextCursor: z.string().nullable() }),
+        },
+      },
+      description: 'Search all protected orders with stable pagination.',
+    },
+    ...operatorAccessErrorResponses,
+  },
+  tags: ['Internal Orders'],
+});
+
+export function registerInternalOrderRoutes(app: AppOpenApi): void {
+  app.openapi(searchOrdersRoute, async (context) => {
+    const services = createInternalOrderServices(context.env);
+    try {
+      const query = context.req.valid('query');
+      const limit = Math.min(query.limit ?? 25, 50);
+      const [createdAt, id] = query.cursor?.split('~') ?? [];
+      if (createdAt && !Number.isFinite(Date.parse(createdAt)))
+        return jsonError(context, { code: 'invalid_request', message: 'Invalid cursor.', status: 400 });
+      const results = await services.readRecentCheckoutOrders({
+        limit: limit + 1,
+        status: query.status ?? null,
+        ...(query.q ? { q: query.q } : {}),
+        ...(query.notification ? { notification: query.notification } : {}),
+        ...(createdAt && id ? { cursor: { createdAt: new Date(createdAt), id } } : {}),
+      });
+      const page = results.slice(0, limit);
+      const last = page.at(-1)?.order;
+      return jsonNoStore(
+        context.json(
+          {
+            items: page.map(toCheckoutOrderResponse),
+            nextCursor: results.length > limit && last ? `${last.createdAt.toISOString()}~${last.id}` : null,
+          },
+          200,
+        ),
+      );
+    } finally {
+      await services.disconnect();
+    }
+  });
+  app.openapi(listOrdersRoute, async (context) => {
+    const services = createInternalOrderServices(context.env);
+
+    try {
+      const query = context.req.valid('query');
+      const orders = await services.readRecentCheckoutOrders({
+        limit: query.limit ?? 20,
+        status: (query.status as OrderStatus | undefined) ?? null,
+      });
+
+      const response = jsonNoStore(context.json(orders.map(toCheckoutOrderResponse), 200));
+      return addLinkHeader(response, [
+        apiLink({ href: '/api/internal/orders', rel: 'self' }),
+        apiLink({ href: '/api/internal/openapi.json', rel: 'service-desc' }),
+      ]);
+    } finally {
+      await services.disconnect();
+    }
+  });
+
+  app.openapi(getOrderByCheckoutSessionRoute, async (context) => {
+    const services = createInternalOrderServices(context.env);
+
+    try {
+      const { checkoutSessionId } = context.req.valid('param');
+      const order = await services.readCheckoutOrder(checkoutSessionId);
+
+      if (!order) {
+        return jsonError(context, {
+          code: 'not_found',
+          message: 'Checkout order not found.',
+          status: 404,
+        });
+      }
+
+      return jsonNoStore(context.json(toCheckoutOrderResponse(order), 200));
+    } finally {
+      await services.disconnect();
+    }
+  });
+}
+
+function toCheckoutOrderResponse(read: InternalOrderRead) {
+  const { deliveries, order } = read;
+
+  return {
+    orderReference: order.id,
+    checkoutExpiresAt: order.checkoutExpiresAt.toISOString(),
+    checkoutSessionId: order.checkoutSessionId,
+    createdAt: order.createdAt.toISOString(),
+    deliveries: deliveries.map((delivery) => ({
+      attemptCount: delivery.attemptCount,
+      createdAt: delivery.createdAt.toISOString(),
+      deliveredAt: delivery.deliveredAt?.toISOString() ?? null,
+      kind: delivery.kind,
+      needsReviewAt: delivery.needsReviewAt?.toISOString() ?? null,
+      nextAttemptAt: delivery.nextAttemptAt?.toISOString() ?? null,
+      safeReason: delivery.safeReason,
+      status: delivery.status,
+      updatedAt: delivery.updatedAt.toISOString(),
+    })),
+    fulfillment: toPaidFulfillmentResponse(order),
+    monetaryPolicyReference: order.monetaryPolicyReference ?? null,
+    acceptedDeliveryAmountMinor: order.acceptedDeliveryAmountMinor ?? null,
+    acceptedParcelTier: order.acceptedParcelTier ?? null,
+    needsReviewReason: order.needsReviewReason,
+    needsReviewAt: order.needsReviewAt?.toISOString() ?? null,
+    notPaidAt: order.notPaidAt?.toISOString() ?? null,
+    paidAt: order.paidAt?.toISOString() ?? null,
+    shippingLocker: order.shippingLocker,
+    status: order.status,
+    statusUpdatedAt: order.statusUpdatedAt.toISOString(),
+    storeItemSlug: order.storeItemSlug,
+    stripePaymentIntentId: order.stripePaymentIntentId,
+    updatedAt: order.updatedAt.toISOString(),
+    variantId: order.variantId,
+  };
+}
+
+function toPaidFulfillmentResponse(order: InternalOrderRead['order']) {
+  const fulfillment = readPaidCheckoutFulfillment(order);
+
+  if (fulfillment.kind === 'not_paid') return { kind: 'unavailable' as const };
+  if (fulfillment.kind === 'incomplete') {
+    return { kind: 'incomplete' as const, reason: fulfillment.reason };
+  }
+
+  return toCurrentPaidFulfillmentResponse(fulfillment.order);
+}
+
+function toCurrentPaidFulfillmentResponse(order: CurrentPaidCheckoutOrder) {
+  return {
+    amountTotalMinor: order.amountTotalMinor,
+    merchandiseGrossMinor: order.merchandiseGrossMinor ?? null,
+    deliveryGrossMinor: order.deliveryGrossMinor ?? null,
+    deliveryVatMinor: order.deliveryVatMinor ?? null,
+    totalVatMinor: order.totalVatMinor ?? null,
+    currencyCode: order.currencyCode,
+    kind: 'current' as const,
+    lines: order.lines.map((line) => ({
+      displayName: line.displayName,
+      lineAmountMinor: line.lineAmountMinor,
+      lineVatMinor: line.lineVatMinor ?? null,
+      taxRatePercent: line.taxRatePercent ?? null,
+      optionLabel: line.optionLabel,
+      quantity: line.quantity,
+      storeItemSlug: line.storeItemSlug,
+      unitAmountMinor: line.unitAmountMinor,
+      variantId: line.variantId,
+    })),
+    newsletterConsent: order.newsletterOptIn
+      ? {
+          consentedAt: order.newsletterConsentAt.toISOString(),
+          copyVersion: order.newsletterConsentCopyVersion,
+          optedIn: true as const,
+        }
+      : { optedIn: false as const },
+    paidAt: order.paidAt.toISOString(),
+    recipientName: order.recipientName,
+    shippingAddress: {
+      city: order.shippingAddressCity,
+      country: order.shippingAddressCountryCode,
+      line1: order.shippingAddressLine1,
+      line2: order.shippingAddressLine2,
+      postalCode: order.shippingAddressPostalCode,
+      state: order.shippingAddressState,
+    },
+    shopperContact: {
+      email: order.shopperEmail,
+      phone: order.shopperPhone,
+    },
+  };
+}

@@ -1,5 +1,5 @@
-import { normalizeAppPathname, parseShellSectionRoute } from '@/lib/app-shell/routing';
-import { previewUrl } from '@/lib/private-preview';
+import { normalizeAppPathname, parseShellSectionRoute } from '@/components/app-shell/routing';
+import { previewUrl } from '@/platform/lib/private-preview';
 
 import { readDocumentShellPageSnapshot, type ShellPageSnapshot } from './shell-page-snapshot';
 

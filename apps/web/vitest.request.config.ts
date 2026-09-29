@@ -8,7 +8,7 @@ export default defineConfig({
   test: {
     ...base.test,
     ...validationReporters('web-request'),
-    include: ['src/lib/backend/public-checkout-api.test.ts'],
+    include: ['{src,test}/**/*.request.{test,spec}.{ts,tsx}'],
     exclude: configDefaults.exclude,
     setupFiles: ['./src/test/setup-msw.ts'],
   },

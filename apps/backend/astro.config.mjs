@@ -39,7 +39,7 @@ if (selected.d1_databases.some((db) => db.database_id === cms.database_id || db.
 const runtime = {
   ...base,
   ...selected,
-  main: localPath('src/cms/index.ts'),
+  main: localPath('src/cms-worker.ts'),
   ...(['uat', 'prd'].includes(target)
     ? {
         routes: [

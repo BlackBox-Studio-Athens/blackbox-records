@@ -1,0 +1,17 @@
+{
+  "name": "architecture-tests",
+  "tags": ["integration", "scope:backend"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/backend exec vitest run --config vitest.modules.config.ts --project=architecture-tests",
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/scripts/**/*",
+        "{workspaceRoot}/apps/backend/scripts/**/*",
+        "{workspaceRoot}/apps/backend/vitest*.ts",
+        "{workspaceRoot}/openspec/specs/module-boundaries/**/*"
+      ]
+    }
+  }
+}

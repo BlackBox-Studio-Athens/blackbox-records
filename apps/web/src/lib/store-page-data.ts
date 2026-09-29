@@ -1,6 +1,6 @@
 import { getStoreItemBySlug, listStoreItems, type StoreItem } from './catalog-data';
 import { getPrimaryAvailabilityForStoreItem, type ItemAvailability } from './item-availability';
-import type { CartLineItemSnapshot } from './store-cart';
+import type { CartLineItemSnapshot } from '../components/store/cart/store-cart';
 
 export type StorePageEntry = {
   storeItem: StoreItem;

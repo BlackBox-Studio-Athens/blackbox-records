@@ -2,12 +2,12 @@ import { OpenAPIHono } from '@hono/zod-openapi';
 import { cors } from 'hono/cors';
 import { requestId } from 'hono/request-id';
 
-import type { AppEnv, AppOpenApi } from '../../env';
+import type { AppEnv, AppOpenApi } from '../../platform/env';
 import { getInternalOpenApiDocument, getPublicOpenApiDocument } from './openapi/api-documents';
-import { requestObservabilityMiddleware } from '../../observability';
-import { errorHandler } from './error-handler';
-import { notFoundHandler } from './not-found-handler';
-import { jsonError } from './responses';
+import { requestObservabilityMiddleware } from '../../platform/observability';
+import { errorHandler } from '../../platform/interfaces/http/error-handler';
+import { notFoundHandler } from '../../platform/interfaces/http/not-found-handler';
+import { jsonError } from '../../platform/interfaces/http/responses';
 import { registerInternalRoutes } from './routes/register-internal-routes';
 import { registerPublicRoutes } from './routes/register-public-routes';
 

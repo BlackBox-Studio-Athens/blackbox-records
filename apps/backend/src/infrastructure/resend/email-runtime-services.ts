@@ -1,5 +1,5 @@
 import { readEmailRuntimeConfig, type EmailProviderGateway, type EmailRuntimeConfig } from '../../application/email';
-import type { AppBindings } from '../../env';
+import type { AppBindings } from '../../platform/env';
 import { createResendEmailGatewayFromConfig } from './resend-email-gateway';
 
 export type EmailRuntimeServices = {

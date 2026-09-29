@@ -1,16 +1,16 @@
 ## 1. Inventory and Decisions
 
-- [x] 1.1 Inventory current Product Environment consumers in `apps/backend/src/env.ts`, backend runtime services, tests, scripts, workflows, docs, and OpenSpec specs.
+- [x] 1.1 Inventory current Product Environment consumers in `apps/backend/src/platform/env.ts`, backend runtime services, tests, scripts, workflows, docs, and OpenSpec specs.
 - [x] 1.2 Decide whether legacy CLI aliases `sandbox` and `production` emit deprecation warnings immediately or remain silent compatibility aliases for this slice.
 - [x] 1.3 Identify the smallest approved boundary-adapter allowlist for platform/provider terms in environment drift validation.
 
 ## 2. Canonical Environment Model
 
-- [x] 2.1 Change `ProductEnvironment` to the uppercase string union `LOCAL | UAT | PRD` and update the Zod schema/constants in `apps/backend/src/env.ts`.
+- [x] 2.1 Change `ProductEnvironment` to the uppercase string union `LOCAL | UAT | PRD` and update the Zod schema/constants in `apps/backend/src/platform/env.ts`.
 - [x] 2.2 Replace separate display-label behavior with canonical Product Environment values and helper formatting where prose output needs Local/UAT/PRD labels.
 - [x] 2.3 Rename profile traits so platform/provider policy reads as derived data, including Stripe mode, email delivery policy, Worker deployment target, catalog verification policy, and deployed-secret requirements.
 - [x] 2.4 Add centralized parsers that normalize lowercase product inputs and legacy `sandbox`/`production` aliases to canonical Product Environment values.
-- [x] 2.5 Update `apps/backend/test/env.test.ts` to cover uppercase values, profile mapping, alias normalization, invalid aliases, and profile schema validation.
+- [x] 2.5 Update `apps/backend/test/env.worker.test.ts` to cover uppercase values, profile mapping, alias normalization, invalid aliases, and profile schema validation.
 
 ## 3. Backend Runtime Binding Migration
 

@@ -10,7 +10,6 @@ export {
   StoreItemNotFoundError,
   VariantMismatchError,
 } from './errors';
-export { CatalogDriftError } from '../catalog-sync';
 export { readStoreCapabilities } from './feature-gates';
 export { quoteDelivery } from './packing';
 export { createPackingPolicy, deliveryCharges, vatDisclosure, hostedMonetaryPolicyReference } from './packing-policy';
@@ -20,13 +19,6 @@ export { readCheckoutState } from './read-checkout-state';
 export { reconcileCheckoutSession } from './reconcile-checkout-session';
 export { createStartCheckoutLineCommand, startCheckout } from './start-checkout';
 export { NEWSLETTER_CONSENT_COPY_VERSION } from './types';
-export {
-  createCartQuantity,
-  parseCheckoutSessionId,
-  parsePaymentIntentId,
-  parseStripePriceId,
-} from '../../../domain/commerce';
-export type { CheckoutSessionId, PaymentIntentId } from '../../../domain/commerce';
 export type { StoreCapabilities } from './feature-gates';
 export type { CheckoutReconciliation } from './reconcile-checkout-session';
 export type { StartCheckoutCommand, StartCheckoutLineCommand } from './start-checkout';

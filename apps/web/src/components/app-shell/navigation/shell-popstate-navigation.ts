@@ -1,4 +1,4 @@
-import { normalizeAppPathname, parseOverlayRoute, parseShellSectionRoute } from '@/lib/app-shell/routing';
+import { normalizeAppPathname, parseOverlayRoute, parseShellSectionRoute } from '@/components/app-shell/routing';
 
 import type { ShellNavigationSource } from './shell-navigation';
 

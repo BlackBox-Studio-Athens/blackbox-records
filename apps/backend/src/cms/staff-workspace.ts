@@ -8,7 +8,7 @@ import {
 } from '@blackbox/content-model';
 import type { EmDashRuntime } from 'emdash/middleware';
 import { readPublicationPointer, readPublishedSnapshot, type PublicationEnvironment } from './published-storage';
-import { createCmsNestedProblemBody, problemResponse } from '../interfaces/http/responses';
+import { createCmsNestedProblemBody, problemResponse } from '../platform/interfaces/http/responses';
 import { readRevisionContent } from './publication-projection';
 
 const reviewPositionSchema = z

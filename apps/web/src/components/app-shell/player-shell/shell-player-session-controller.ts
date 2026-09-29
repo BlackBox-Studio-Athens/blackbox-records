@@ -1,19 +1,19 @@
-import { reducePlayerSessionMachine } from '../player-session-machine';
+import { reducePlayerSessionMachine } from '../../music/player-session-machine';
 import {
   readPlayerProvidersFromElement,
   readPlayerReleaseIdFromElement,
   readPlayerTitleFromElement,
   type PlayerProvider,
   type PlayerProviderId,
-} from '../player-provider-data';
+} from '../../music/player-provider-data';
 import {
   DEFAULT_MAX_CACHED_PLAYER_IFRAMES,
   markPlayerIframeAsActive,
   resolvePlayerIframe,
   retirePlayerSession,
   type ActivePlayerSession,
-} from '../player-iframe-session';
-import { warmPlayerProviderOrigins } from '../player-provider-warmup';
+} from '../../music/player-iframe-session';
+import { warmPlayerProviderOrigins } from '../../music/player-provider-warmup';
 import { syncPlayerSessionFrameHost } from './shell-player-frame-host';
 import { restoreConnectedPlayerTriggerFocus, schedulePlayerModalCloseButtonFocus } from './shell-player-focus';
 import { resolvePlayerModalOpenRequest } from './shell-player-modal-open-request';

@@ -1,0 +1,25 @@
+{
+  "name": "web-pages",
+  "tags": ["application", "scope:web"],
+  "implicitDependencies": [
+    "checkout-web",
+    "player",
+    "store-cart",
+    "storefront-catalog",
+    "ui-foundation",
+    "web-layouts",
+    "web-platform"
+  ],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --config vitest.modules.config.ts --project=web-pages",
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/apps/web/vitest*.ts",
+        "{workspaceRoot}/apps/web/src/content/**/*",
+        "{workspaceRoot}/apps/web/public/**/*"
+      ]
+    }
+  }
+}

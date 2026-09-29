@@ -19,8 +19,8 @@
 
 ## 3. Cart Entry Points And Helpers
 
-- [x] 3.1 Replace item-derived checkout href creation in `apps/web/src/lib/store-cart.ts` with a cart-scoped checkout path helper.
-- [x] 3.2 Update `apps/web/src/components/store/StoreCartDrawer.tsx` so Checkout always points to `/store/checkout/` when the cart has lines.
+- [x] 3.1 Replace item-derived checkout href creation in `apps/web/src/components/store/cart/store-cart.ts` with a cart-scoped checkout path helper.
+- [x] 3.2 Update `apps/web/src/components/store/cart/StoreCartDrawer.tsx` so Checkout always points to `/store/checkout/` when the cart has lines.
 - [x] 3.3 Remove `primaryLineItem` as a routing dependency where it is only used to build checkout URLs.
 - [x] 3.4 Keep `primaryLineItem` only where display/backward compatibility still needs it, or delete it if no longer needed.
 - [x] 3.5 Update `CheckoutOfferStatus` and `checkout-offer-status-state` so checkout start uses cart lines as the primary contract and does not treat page slug as checkout document identity.
@@ -51,12 +51,12 @@
 
 ## 6. Tests
 
-- [x] 6.1 Update `apps/web/src/lib/store-cart.test.ts` for the cart-scoped checkout path helper.
-- [x] 6.2 Update `apps/web/src/components/store/StoreCartDrawer.test.tsx` so cart checkout href is `/store/checkout/` for single-line and multi-line carts.
+- [x] 6.1 Update `apps/web/src/components/store/cart/store-cart.test.ts` for the cart-scoped checkout path helper.
+- [x] 6.2 Update `apps/web/src/components/store/cart/StoreCartDrawer.test.tsx` so cart checkout href is `/store/checkout/` for single-line and multi-line carts.
 - [x] 6.3 Add or update checkout page tests for empty cart, single-line cart, multi-line cart, and quantity greater than one.
 - [x] 6.4 Update `CheckoutOfferStatus` tests so multi-line checkout sends `lines[]` from cart state from `/store/checkout/`.
 - [x] 6.5 Update `CheckoutOrderSummary` tests so checkout summary does not depend on one page item.
-- [x] 6.6 Update `apps/backend/test/http/public-checkout-return-url.test.ts` for cart-scoped success and cancel URLs, including configured base paths such as `/blackbox-records`.
+- [x] 6.6 Update `apps/backend/test/http/public-checkout-return-url.worker.test.ts` for cart-scoped success and cancel URLs, including configured base paths such as `/blackbox-records`.
 - [x] 6.7 Update `apps/backend/test/http/public-commerce-routes.test.ts` for cart-scoped referer and return URL expectations.
 - [x] 6.8 Keep or add backend tests proving `lines[]` validation still rejects missing, mismatched, unavailable, or over-quantity lines.
 - [x] 6.9 Add compatibility route tests or static build assertions for old item-scoped checkout paths, including empty-cart direct loads.

@@ -19,7 +19,7 @@ import {
   deriveStripeCatalogChildMutationContext,
 } from '../../application/commerce/catalog-sync';
 import { CheckoutConfigurationError } from '../../application/commerce/checkout';
-import type { AppBindings } from '../../env';
+import type { AppBindings } from '../../platform/env';
 import { createStripeClientOptions } from './stripe-checkout-gateway';
 
 type StripePriceWithExpandedProduct = Stripe.Price & {

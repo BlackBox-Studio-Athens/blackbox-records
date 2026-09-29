@@ -1,0 +1,16 @@
+{
+  "name": "web-tooling",
+  "tags": ["integration", "scope:web"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --config vitest.modules.config.ts --project=web-tooling",
+      "inputs": [
+        "default",
+        "^default",
+        "{workspaceRoot}/apps/web/scripts/**/*",
+        "{workspaceRoot}/apps/web/public/**/*",
+        "{workspaceRoot}/apps/web/vitest*.ts"
+      ]
+    }
+  }
+}

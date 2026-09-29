@@ -1,7 +1,7 @@
 import * as React from 'react';
-import Prose from './Prose';
+import Prose from '../platform/components/Prose';
 import type { Prose as ProseValue } from '@blackbox/content-model';
-import { PrivacyLink } from '@/components/PurchaseInformation';
+import { PrivacyLink } from '@/platform/components/PurchaseInformation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import {
   createPublicCheckoutApi,
   PublicCheckoutApiError,
   type PublicCheckoutApi,
-} from '@/lib/backend/public-checkout-api';
+} from '@/components/store/checkout/public-checkout-api';
 
 type NewsletterSignupFormProps = {
   api?: PublicCheckoutApi;

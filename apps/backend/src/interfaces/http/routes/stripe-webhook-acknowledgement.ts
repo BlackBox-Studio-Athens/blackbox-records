@@ -17,8 +17,8 @@ import type {
   RecordStripeCatalogWebhookEventResult,
   StoreItemOptionRecord,
 } from '../../../domain/commerce/repositories/spi';
-import type { AppLogger } from '../../../observability';
-import { safeCheckoutSessionId } from '../../../observability';
+import type { AppLogger } from '../../../platform/observability';
+import { safeCheckoutSessionId } from '../../../platform/observability';
 
 export type StripeWebhookAcknowledgement = {
   ignored?: true;

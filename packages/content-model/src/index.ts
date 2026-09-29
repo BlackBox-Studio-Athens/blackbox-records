@@ -5,6 +5,8 @@ export * from './distro-content-schema';
 export * from './purchase-information-schema';
 export * from './emdash-content';
 export * from './prose';
+export { isSafeCmsLink } from './cms-link';
+export { groupEditorialBlocks, proseBlocks, resolveProse } from './prose-rendering';
 export * from './content-snapshot';
 export * from './published-content';
 

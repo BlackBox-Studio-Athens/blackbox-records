@@ -13,7 +13,7 @@ import { createCmsSnapshotReaders } from '../../../../scripts/cms-snapshot-reade
 import { captureCmsSnapshot } from '../../../../scripts/capture-cms-snapshot.mjs';
 import { stageCmsSnapshot } from '../../../../scripts/stage-cms-snapshot.mjs';
 import { writeCmsSnapshot } from '../../../../scripts/export-cms-snapshot.mjs';
-import { readContentSnapshot } from '../../../web/src/lib/content-snapshot.ts';
+import { readContentSnapshot } from '../../../web/src/lib/content-files/content-snapshot.ts';
 import { claimPublicationDispatch } from '../../src/cms/publication-journal.ts';
 
 const root = new URL('../../', import.meta.url);

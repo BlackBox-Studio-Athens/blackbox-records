@@ -1,10 +1,10 @@
 import type { CollectionEntry } from 'astro:content';
 import { proseText, resolveProse, type RichText } from '@blackbox/content-model';
 import { getCollection, getEntry } from '@/lib/content-reader';
-import { buildEmbeddedPlayerData, type EmbeddedPlayerData } from '@/utils/music';
+import { buildEmbeddedPlayerData, type EmbeddedPlayerData } from '@/components/music/music';
 
-import { createProjectRelativeUrl } from '../config/site';
-import { assertNoSlugCollisions, createSlugSuggestion } from './slugs';
+import { createProjectRelativeUrl } from '../platform/config/site';
+import { assertNoSlugCollisions, createSlugSuggestion } from './content-files/slugs';
 import type { StoreItemTaxCategory } from './store-tax-category';
 import { sortDistroEntries } from './distro-data';
 import { createPhysicalEditionKey, createValidatedStoreItemProjection } from './store-item-ownership';

@@ -6,7 +6,7 @@ import {
 } from '../../../application/commerce/catalog-sync';
 import { CatalogOperationConflictError } from '../../../domain/commerce/repositories/spi';
 import { parseVariantId } from '../../../domain/commerce';
-import { productEnvironmentProfileFromBindings, type AppOpenApi } from '../../../env';
+import { productEnvironmentProfileFromBindings, type AppOpenApi } from '../../../platform/env';
 import {
   createPrismaClient,
   D1CatalogOperationRepository,
@@ -24,7 +24,7 @@ import {
   jsonNoStore,
   operatorAccessErrorResponses,
   problemContent,
-} from '../responses';
+} from '../../../platform/interfaces/http/responses';
 import { createCmsItemPublicationGateway } from './cms-item-publication-gateway';
 
 const resultSchema = z

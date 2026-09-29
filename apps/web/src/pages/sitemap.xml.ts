@@ -1,8 +1,8 @@
-import { createAbsoluteSiteUrl } from '@/config/site';
+import { createAbsoluteSiteUrl } from '@/platform/config/site';
 import { getReleaseDetailSlug, listArtistProfiles, listNewsArticles, listReleaseCatalog } from '@/lib/catalog-data';
 import { getDiscoverableStoreCatalogCategories } from '@/lib/store-categories';
 import { listStoreCollectionEntries } from '@/lib/store-collection';
-import { getPurchaseInformation } from '@/lib/purchase-information';
+import { getPurchaseInformation } from '@/platform/lib/purchase-information';
 
 export async function GET() {
   const [artists, releases, news, storeEntries] = await Promise.all([

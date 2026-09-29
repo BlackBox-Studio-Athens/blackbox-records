@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 
-import type { StoreCartState } from '@/lib/store-cart';
+import type { StoreCartState } from '@/components/store/cart/store-cart';
 
 const ArtistsRosterFilters = React.lazy(() => import('@/components/artists/ArtistsRosterFilters'));
 const StoreDistroSearch = React.lazy(() => import('@/components/store/StoreDistroSearch'));
 const ServicesInquiryForm = React.lazy(() => import('@/components/services/ServicesInquiryForm'));
-const StoreCartButton = React.lazy(() => import('@/components/store/StoreCartButton'));
+const StoreCartButton = React.lazy(() => import('@/components/store/cart/StoreCartButton'));
 
 class PortalErrorBoundary extends React.Component<
   React.PropsWithChildren<{ fallback: React.ReactNode; onError?: () => void }>,

@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef } from 'react';
-import { PrivacyLink } from '@/components/PurchaseInformation';
+import { PrivacyLink } from '@/platform/components/PurchaseInformation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import {
   type ServicesInquiryBody,
   type ServicesInquiryResponse,
   submitPublicServicesInquiry,
-} from '@/lib/backend/public-checkout-api';
+} from '@/components/store/checkout/public-checkout-api';
 
 type ServicesInquiryFormProps = {
   submitInquiry?: (body: ServicesInquiryBody) => Promise<ServicesInquiryResponse>;

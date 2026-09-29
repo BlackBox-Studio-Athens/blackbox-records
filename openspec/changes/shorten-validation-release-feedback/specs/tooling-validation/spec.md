@@ -1,21 +1,21 @@
 ## ADDED Requirements
 
-### Requirement: Local completion is targeted and CI validation is complete
+### Requirement: Nx owns local task selection, execution and caching
 
-The repository MUST default to targeted local validation for completion and pushing, retain full validation as an explicit local command, and require complete CI tests, checks, and target builds before deployment.
+The repository MUST use pinned Nx 23.2.1 for affected selection, task scheduling and deterministic local caching, capped at three concurrent tasks without Nx Cloud. The validation wrapper MUST retain source fingerprinting, change invalidation and evidence reporting without a second selector, task graph or phase cache. Complete CI tests, checks and target builds remain required before deployment.
 
-#### Scenario: Package-only iteration
+#### Scenario: Module test iteration
 
-- **WHEN** a maintainer selects one application package for fast validation
-- **THEN** tests and type checks run for that package without repository-wide contracts
-- **AND** the result is explicitly partial.
+- **WHEN** a maintainer runs `pnpm test <module>`
+- **THEN** Nx runs that module's test target without validation prerequisites
+- **AND** the result remains an iteration check rather than completion evidence.
 
 #### Scenario: Local completion
 
 - **WHEN** a maintainer completes implementation or prepares to push
-- **THEN** affected tests, affected-package types, changed-file lint, and cached formatting run against the final source fingerprint and toolchain
-- **AND** selection includes committed changes against a pinned comparison ref plus staged, unstaged, deleted and untracked source
-- **AND** content, assets, migrations and package configuration broaden that package's tests; shared packages/tooling add repository contracts
+- **THEN** Nx selects affected module tests and package-level lint/type checks, with required architecture checks
+- **AND** selection includes project dependencies and declared task inputs
+- **AND** the wrapper records the final source fingerprint and toolchain
 - **AND** local evidence is identified separately from complete CI acceptance
 - **AND** applicable browser, editor, content publication, and task-specific acceptance remains additional.
 
@@ -25,12 +25,38 @@ The repository MUST default to targeted local validation for completion and push
 - **THEN** every existing test/check/build gate remains required for that full acceptance
 - **AND** the default targeted local command cannot substitute for those gates.
 
-#### Scenario: Imported source module changes during iteration
+#### Scenario: Nx plan is requested
 
-- **WHEN** a maintainer selects a package's affected-test command
-- **THEN** its existing Vitest configurations run tests affected by edits against HEAD or an explicit comparison ref
-- **AND** selected failures remain nonzero, while an empty selection remains explicitly partial
-- **AND** shared/configuration/content/migration changes and dynamic file dependencies still require complete scoped checks.
+- **WHEN** a maintainer runs `pnpm validate --plan`
+- **THEN** the wrapper prints the native Nx task graph
+- **AND** it executes no task.
+
+#### Scenario: Native test projects are generated
+
+- **WHEN** a source or integration project declares a test command
+- **THEN** its Vitest project discovers tests within its native Nx root, excluding nested projects
+- **AND** backend source targets depend on integration test targets, which Nx deduplicates in full runs
+- **AND** backend `*.worker.test.ts` tests use Cloudflare while other backend `*.test.ts` tests use Node
+- **AND** `scripts/check-module-projects.mjs` verifies every TypeScript test has exactly one owner and rejects unowned source and module cycles.
+
+#### Scenario: Package checks avoid repeated typed lint
+
+- **WHEN** multiple source modules in one package are affected
+- **THEN** tests remain module-level and lint/typecheck remain package-level Nx targets
+- **AND** TypeScript-aware lint does not restart once per module.
+
+#### Scenario: Affected test shortcuts are used
+
+- **WHEN** a maintainer runs `pnpm test:changed` or `pnpm test:watch <module>`
+- **THEN** Nx affected selection or the native test-watch target is used
+- **AND** these iteration results alone do not establish local completion.
+
+#### Scenario: Cache behavior is selected
+
+- **WHEN** a maintainer runs validation without cache options
+- **THEN** Nx's deterministic local cache is enabled by default
+- **AND** `--resume` remains a compatibility option
+- **AND** `--no-cache` disables cache reuse without changing affected or full selection.
 
 #### Scenario: Public frontend browser iteration
 
@@ -39,40 +65,15 @@ The repository MUST default to targeted local validation for completion and push
 - **AND** CMS, checkout, and publication acceptance still use the full Local stack.
 - **AND** occupied port 4321 fails rather than silently selecting another port.
 
-### Requirement: Validation phase reuse is conservative
+### Requirement: Full validation retains all targets
 
-Full validation MUST reuse phase results only through explicit opt-in. Standalone lint MAY resume by default. All reuse MUST require completed, source-stable evidence whose eligible inputs match.
+Full local validation MUST run all test, lint, type and build targets through Nx `run-many`. Full CI and release acceptance MUST remain complete and independent of local cache hits.
 
-#### Scenario: An unchanged successful phase is reused
+#### Scenario: Full validation is requested
 
-- **GIVEN** a completed eligible phase with identical source, configuration, toolchain, and environment inputs
-- **WHEN** a maintainer requests resume
-- **THEN** that phase may be reused with its original evidence recorded.
-
-#### Scenario: Inputs or evidence are uncertain
-
-- **GIVEN** missing, changed, malformed, canceled, or invalid source or evidence
-- **WHEN** validation resumes
-- **THEN** the affected phase runs again, or validation fails closed if source identity is unavailable.
-
-#### Scenario: Native compiler state accelerates repeated package checks
-
-- **WHEN** backend or API-client type checking runs repeatedly
-- **THEN** TypeScript may reuse its native incremental state in separate ignored build-info files
-- **AND** no-emit diagnostics still fail on invalid changed source, and compiler state never establishes validation or release acceptance by itself.
-
-#### Scenario: Standalone lint repeats on unchanged source
-
-- **WHEN** a maintainer runs `pnpm lint` repeatedly
-- **THEN** the existing phase cache may reuse only a complete successful lint phase with matching source/configuration/toolchain/environment and intact evidence
-- **AND** the lint-only result is explicitly partial; `--no-cache` forces execution and full validation/CI remains fresh by default.
-
-#### Scenario: Formatting is applied during development
-
-- **WHEN** a maintainer runs `pnpm format` with optional file targets
-- **THEN** the installed Prettier CLI uses the existing configuration/plugin-aware cache for write mode
-- **AND** edited unformatted files fail checks and are repaired by write mode despite a warm cache
-- **AND** `--uncached` explicitly disables native caching.
+- **WHEN** a maintainer runs `pnpm validate:full`
+- **THEN** Nx `run-many` selects tests, lint, types and builds
+- **AND** the result does not omit required CI or release acceptance.
 
 ### Requirement: Validation timing distinguishes feedback milestones
 

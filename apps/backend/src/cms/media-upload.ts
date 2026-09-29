@@ -1,5 +1,5 @@
 import { enrichImageMetadata } from 'emdash/media';
-import { cmsNestedProblemResponse } from '../interfaces/http/responses';
+import { cmsNestedProblemResponse } from '../platform/interfaces/http/responses';
 import {
   isStaffThumbnailOriginalKey,
   readStaffThumbnailPng,

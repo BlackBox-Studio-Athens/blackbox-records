@@ -1,0 +1,6 @@
+{
+  "name": "cms-smoke",
+  "tags": ["tooling", "scope:backend"],
+  "implicitDependencies": ["cms-runtime"],
+  "targets": {}
+}

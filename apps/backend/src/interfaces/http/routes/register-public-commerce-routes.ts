@@ -1,4 +1,4 @@
-import { areCommerceIdempotencyKeysRequired, type AppOpenApi } from '../../../env';
+import { areCommerceIdempotencyKeysRequired, type AppOpenApi } from '../../../platform/env';
 import {
   getCheckoutStateRoute,
   getPublicApiDescriptionRoute,
@@ -11,8 +11,21 @@ import {
   postDeliveryQuoteRoute,
 } from '../contracts/public-contracts';
 import { createStartCheckoutLineCommand } from '../../../application/commerce/checkout';
-import { requestLogger, safeCheckoutSessionId, traceContextFromHono, runWithTraceSpan } from '../../../observability';
-import { addHypermedia, addLinkHeader, apiAction, apiLink, apiPath, jsonError, jsonNoStore } from '../responses';
+import {
+  requestLogger,
+  safeCheckoutSessionId,
+  traceContextFromHono,
+  runWithTraceSpan,
+} from '../../../platform/observability';
+import {
+  addHypermedia,
+  addLinkHeader,
+  apiAction,
+  apiLink,
+  apiPath,
+  jsonError,
+  jsonNoStore,
+} from '../../../platform/interfaces/http/responses';
 import { createPublicCheckoutCancelUrl, createPublicCheckoutReturnUrl } from './public-checkout-return-url';
 import { createPublicCommerceServices, readPublicStoreCapabilities } from './public-commerce-services';
 

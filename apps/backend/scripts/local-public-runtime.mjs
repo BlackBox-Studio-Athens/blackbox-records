@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { getPlatformProxy, unstable_dev } from 'wrangler';
-import { readContentSnapshot } from '../../web/src/lib/content-snapshot.ts';
+import { readContentSnapshot } from '../../web/src/lib/content-files/content-snapshot.ts';
 import { readFile } from 'node:fs/promises';
 import { storeSnapshotMedia, completeSnapshot } from '../src/cms/snapshot-storage.ts';
 

@@ -132,7 +132,7 @@ export function getCmsContentIssues(collection: CmsCollection, data: Record<stri
 }
 
 export function validateCmsContent(collection: CmsCollection, data: Record<string, unknown>) {
-  return getCmsContentIssues(collection, data).map((issue) => `${issue.path.join('.')}: ${issue.message}`);
+  return getCmsContentIssues(collection, data).map((issue) => `${issue.path.join('./')}: ${issue.message}`);
 }
 
 // Drafts may omit unfinished fields, but never introduce unknown fields, unsafe
@@ -177,7 +177,7 @@ const cmsDraftSchemas = Object.fromEntries(
 export function validateCmsDraft(collection: CmsCollection, data: Record<string, unknown>): string[] {
   if (JSON.stringify(data).length > 256 * 1024) return ['Draft is too large.'];
   const result = cmsDraftSchemas[collection]!.safeParse(data);
-  if (!result.success) return result.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`);
+  if (!result.success) return result.error.issues.map((issue) => `${issue.path.join('./')}: ${issue.message}`);
   if (collection === 'artists' && Array.isArray(data.profile_links))
     return data.profile_links.flatMap((link, index) =>
       link?.label && link?.url && !validArtistLink(link.label, link.url)

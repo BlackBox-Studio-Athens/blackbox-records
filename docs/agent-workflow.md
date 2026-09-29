@@ -10,11 +10,11 @@ Domain specs describe intended behavior; the module-boundary manifest is executa
 
 ## Iteration and local completion
 
-- Use `pnpm test:changed --scope web|staff|backend|api-client` or `pnpm test:watch --scope web|staff|backend|api-client` for affected imported source. `pnpm validate:fast --scope web|staff|backend|api-client|all` is a partial checkpoint; shared tooling and cross-package work use `all`.
+- Start with the module: run `pnpm test <project>` or keep `pnpm test:watch <project>` running while editing. Use `pnpm test:changed` or `pnpm validate` afterward to check affected consumers; these are iteration commands and their results are partial.
 - Public frontend work reuses the site and hot updates. CMS, checkout and publication acceptance use the normal Local stack. See [local runtime](agent-reference.md#local-runtime).
-- `pnpm validate` selects affected tests, package types, changed-file lint and cached formatting, and checks maintained agent guidance. Boundary manifest/enforcement changes select `pnpm check:boundaries`; executable OpenSpec policy is not prose.
+- `pnpm validate` uses the Nx project graph to select affected module tests and package-level lint/type checks, plus required architecture checks, and records source-bound evidence. `pnpm validate --plan` prints the native task graph without running tasks. Boundary manifest/enforcement changes select `pnpm check:boundaries`; executable OpenSpec policy is not prose.
 - `pnpm agent:check` checks local links, root package command names and the entry-point line budget in these three agent documents. It does not crawl linked documents, check heading anchors, interpret shell programs or execute examples. Review semantic freshness when behavior changes.
-- Full tests, checks and target builds remain CI gates. `pnpm validate:full` provides local full-suite diagnosis. [Validation feedback](validation-feedback.md) owns selection, caches and recovery.
+- Full tests, checks and target builds remain CI gates. `pnpm validate:full` runs module-level tests and package-level lint, type and build targets through Nx `run-many`; this avoids rerunning TypeScript-aware lint for every source module. Nx local caching is enabled by default with at most three tasks in parallel; `--no-cache` only disables cache reuse and does not broaden selection. [Validation feedback](validation-feedback.md) owns selection, cache behavior and recovery.
 
 ## Acceptance matrix
 

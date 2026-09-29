@@ -8,8 +8,8 @@
     "build": "astro build --root .",
     "preview": "astro preview --root .",
     "check": "astro check --root .",
-    "test": "vitest run",
-    "test:unit": "vitest run"
+    "test": "vitest run --config vitest.modules.config.ts",
+    "test:unit": "vitest run --config vitest.modules.config.ts"
   },
   "dependencies": {
     "@astrojs/react": "^7.0.0",
@@ -44,5 +44,37 @@
     "@vitejs/plugin-react": "^6.1.1",
     "typescript": "^5.9.3",
     "vitest": "4.1.11"
+  },
+  "nx": {
+    "includedScripts": [],
+    "targets": {
+      "typecheck": {
+        "command": "pnpm --filter @blackbox/staff check",
+        "inputs": [
+          "default",
+          "^default",
+          "{workspaceRoot}/apps/staff/**/*"
+        ]
+      },
+      "build": {
+        "command": "pnpm build:staff",
+        "cache": false
+      },
+      "lint": {
+        "command": "pnpm exec eslint apps/staff --max-warnings=0 --no-warn-ignored"
+      }
+    },
+    "implicitDependencies": [
+      "staff-frontend"
+    ],
+    "tags": [
+      "scope:staff"
+    ],
+    "namedInputs": {
+      "default": [
+        "{workspaceRoot}/apps/staff/**/*",
+        "toolchain"
+      ]
+    }
   }
 }

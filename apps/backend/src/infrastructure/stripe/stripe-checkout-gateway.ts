@@ -10,12 +10,14 @@ import {
   CheckoutConfigurationError,
   CheckoutCreationError,
   NEWSLETTER_CONSENT_COPY_VERSION,
+} from '../../application/commerce/checkout';
+import {
   createCartQuantity,
   parseCheckoutSessionId,
   parseStripePriceId,
   type CheckoutSessionId,
-} from '../../application/commerce/checkout';
-import type { AppBindings } from '../../env';
+} from '../../domain/commerce';
+import type { AppBindings } from '../../platform/env';
 import { toStripeCheckoutSessionState } from './stripe-checkout-session-state';
 
 const STRIPE_API_VERSION = '2026-08-26.dahlia';

@@ -1,0 +1,16 @@
+{
+  "name": "player",
+  "tags": ["module", "scope:web"],
+  "targets": {
+    "test": {
+      "command": "pnpm --filter @blackbox/web exec vitest run --project=player --project=player:worker --project=player:request --config vitest.modules.config.ts",
+      "inputs": ["webTests", "^default"]
+    },
+    "test-watch": {
+      "command": "pnpm --filter @blackbox/web exec vitest --watch --project=player --project=player:worker --project=player:request --config vitest.modules.config.ts",
+      "cache": false,
+      "continuous": true
+    }
+  },
+  "implicitDependencies": ["ui-foundation"]
+}

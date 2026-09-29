@@ -13,7 +13,7 @@ import {
   STORE_CART_STORAGE_KEY,
   type CartLineItemSnapshot,
   writeStoreCartState,
-} from '../apps/web/src/lib/store-cart';
+} from '../apps/web/src/components/store/cart/store-cart';
 import { createCheckoutOrderReferenceToken } from '../apps/backend/src/application/commerce/orders';
 import {
   createRunId as createSmokeRunId,

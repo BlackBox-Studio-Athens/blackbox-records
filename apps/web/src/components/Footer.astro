@@ -1,13 +1,13 @@
 ---
-import { resolveLinkAttributes, siteConfig } from '@/config/site';
+import { resolveLinkAttributes, siteConfig } from '@/platform/config/site';
 import { Image } from 'astro:assets';
 import logo from '@/content/brand-assets/logo-ui.png';
 import SocialIcon from '@/components/icons/SocialIcon.astro';
 import { getFooterNavigationItems, getLabelSettings, getSocialItems } from '@/lib/site-data';
 import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { PrivacyLink } from '@/components/PurchaseInformation';
-import { getPurchaseInformation } from '@/lib/purchase-information';
+import { cn } from '@/components/ui/utils';
+import { PrivacyLink } from '@/platform/components/PurchaseInformation';
+import { getPurchaseInformation } from '@/platform/lib/purchase-information';
 import { formatYear } from '@/utils/content';
 
 const [footerNavigationItems, socialItems, labelSettings] = await Promise.all([

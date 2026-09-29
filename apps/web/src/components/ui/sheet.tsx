@@ -3,7 +3,7 @@ import * as SheetPrimitive from '@radix-ui/react-dialog';
 import { AnimatePresence, motion, useReducedMotion, type MotionProps } from 'motion/react';
 import { cva, type VariantProps } from 'class-variance-authority';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/components/ui/utils';
 
 const SheetOpenContext = React.createContext(false);
 type MotionRadixProps<T extends React.ElementType> = Omit<React.ComponentProps<T>, keyof MotionProps> & MotionProps;

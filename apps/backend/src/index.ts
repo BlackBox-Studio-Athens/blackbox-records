@@ -1,6 +1,6 @@
 import { createHttpApp } from './interfaces/http/app';
-import type { AppBindings } from './env';
-import { runPaidOrderDeliverySchedule } from './interfaces/scheduled/run-paid-order-delivery-schedule';
+import type { AppBindings } from './platform/env';
+import { runPaidOrderDeliverySchedule } from './application/commerce/orders/run-paid-order-delivery-schedule';
 import { DurableObject } from 'cloudflare:workers';
 
 const app = createHttpApp();

@@ -1,0 +1,137 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  getProductEnvironmentProfile,
+  isCheckoutLaunchApprovedFromBindings,
+  isPrdLaunchApproved,
+  parseProductEnvironmentCliTarget,
+  productEnvironmentFromWorkerRuntimeTarget,
+  productEnvironmentProfileFromWorkerRuntimeTarget,
+  productEnvironmentProfileSchema,
+  productEnvironmentProfiles,
+  workerRuntimeTargetForProductEnvironment,
+  formatProductEnvironmentLabel,
+} from './env';
+
+describe('Product Environment Profile', () => {
+  it('keeps hosted targets isolated at root while Local retains base-path coverage', () => {
+    const local = getProductEnvironmentProfile('LOCAL');
+    const uat = getProductEnvironmentProfile('UAT');
+    const prd = getProductEnvironmentProfile('PRD');
+    expect(local.publicSite).toEqual({
+      origin: 'http://127.0.0.1:4321',
+      basePath: '/blackbox-records/',
+      pagesProject: null,
+    });
+    expect(uat.publicSite).toEqual({
+      origin: 'https://blackbox-records-web-uat.pages.dev',
+      basePath: '/',
+      pagesProject: 'blackbox-records-web-uat',
+    });
+    expect(prd.publicSite).toEqual({
+      origin: 'https://blackbox-records-web.pages.dev',
+      basePath: '/',
+      pagesProject: 'blackbox-records-web',
+    });
+    expect(uat.publicBackendOrigin).not.toBe(prd.publicBackendOrigin);
+  });
+  it('maps each Product Environment to one Worker runtime target and policy profile', () => {
+    expect(Object.keys(productEnvironmentProfiles)).toEqual(['LOCAL', 'UAT', 'PRD']);
+
+    expect(getProductEnvironmentProfile('LOCAL')).toMatchObject({
+      emailBrand: {
+        homeUrl: 'https://blackbox-records-web-uat.pages.dev/',
+        logoUrl: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
+      },
+      emailDeliveryPolicy: 'direct',
+      nativeCheckoutEnabledByDefault: true,
+      productEnvironment: 'LOCAL',
+      stripeMode: 'local',
+      workerDeploymentTarget: 'local',
+    });
+    expect(getProductEnvironmentProfile('UAT')).toMatchObject({
+      catalogVerificationPolicy: {
+        applyScheduledChanges: false,
+      },
+      emailBrand: {
+        homeUrl: 'https://blackbox-records-web-uat.pages.dev/',
+        logoUrl: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
+      },
+      emailDeliveryPolicy: 'uat-sink',
+      emailProviderTag: 'uat',
+      nativeCheckoutEnabledByDefault: false,
+      productEnvironment: 'UAT',
+      stripeMode: 'uat',
+      requiresDeployedSecretsByDefault: true,
+      workerDeploymentTarget: 'uat',
+    });
+    expect(getProductEnvironmentProfile('PRD')).toMatchObject({
+      catalogVerificationPolicy: {
+        applyScheduledChanges: false,
+      },
+      emailBrand: {
+        homeUrl: 'https://blackbox-records-web.pages.dev/',
+        logoUrl: 'https://blackbox-records-web.pages.dev/assets/images/brand/logo-horizontal.png',
+      },
+      emailDeliveryPolicy: 'direct',
+      nativeCheckoutEnabledByDefault: false,
+      productEnvironment: 'PRD',
+      stripeMode: 'prd',
+      workerDeploymentTarget: 'prd',
+    });
+  });
+
+  it('validates every mapped profile through the Zod schema', () => {
+    for (const profile of Object.values(productEnvironmentProfiles)) {
+      expect(productEnvironmentProfileSchema.parse(profile)).toEqual(profile);
+    }
+  });
+
+  it('maps Worker runtime targets at boundary adapters', () => {
+    expect(productEnvironmentFromWorkerRuntimeTarget('local')).toBe('LOCAL');
+    expect(productEnvironmentFromWorkerRuntimeTarget('uat')).toBe('UAT');
+    expect(productEnvironmentFromWorkerRuntimeTarget('prd')).toBe('PRD');
+    expect(productEnvironmentProfileFromWorkerRuntimeTarget('uat')).toBe(productEnvironmentProfiles.UAT);
+  });
+
+  it('maps Product Environment CLI targets while accepting legacy platform aliases at edges', () => {
+    expect(parseProductEnvironmentCliTarget('local')).toBe('LOCAL');
+    expect(parseProductEnvironmentCliTarget('LOCAL')).toBe('LOCAL');
+    expect(parseProductEnvironmentCliTarget('uat')).toBe('UAT');
+    expect(parseProductEnvironmentCliTarget('prd')).toBe('PRD');
+    expect(parseProductEnvironmentCliTarget('sandbox')).toBe('UAT');
+    expect(parseProductEnvironmentCliTarget('production')).toBe('PRD');
+    expect(workerRuntimeTargetForProductEnvironment('UAT')).toBe('uat');
+    expect(formatProductEnvironmentLabel('LOCAL')).toBe('Local');
+    expect(formatProductEnvironmentLabel('UAT')).toBe('UAT');
+    expect(() => parseProductEnvironmentCliTarget('test')).toThrow();
+  });
+
+  it('requires explicit PRD launch approval only for shopper checkout', () => {
+    expect(isPrdLaunchApproved(undefined)).toBe(false);
+    expect(isPrdLaunchApproved('review')).toBe(false);
+    expect(isPrdLaunchApproved('false')).toBe(false);
+    expect(isPrdLaunchApproved(' TRUE ')).toBe(true);
+    expect(
+      isCheckoutLaunchApprovedFromBindings({
+        PRODUCT_ENVIRONMENT: 'LOCAL',
+      }),
+    ).toBe(true);
+    expect(
+      isCheckoutLaunchApprovedFromBindings({
+        PRODUCT_ENVIRONMENT: 'UAT',
+      }),
+    ).toBe(true);
+    expect(
+      isCheckoutLaunchApprovedFromBindings({
+        PRODUCT_ENVIRONMENT: 'PRD',
+      }),
+    ).toBe(false);
+    expect(
+      isCheckoutLaunchApprovedFromBindings({
+        PRODUCT_ENVIRONMENT: 'PRD',
+        PRD_LAUNCH_APPROVED: 'true',
+      }),
+    ).toBe(true);
+  });
+});

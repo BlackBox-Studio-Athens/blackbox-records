@@ -1,7 +1,7 @@
 ## 1. Inventory And Decisions
 
 - [x] 1.1 Inventory Worker-runtime `console.*` calls under `apps/backend/src/**` and classify each as keep, migrate, remove, or script-only/not-runtime.
-- [x] 1.2 Record current gaps from `apps/backend/wrangler.jsonc`, `apps/backend/src/interfaces/http/app.ts`, `apps/backend/src/interfaces/http/error-handler.ts`, webhook services, email services, and scheduled catalog verification.
+- [x] 1.2 Record current gaps from `apps/backend/wrangler.jsonc`, `apps/backend/src/interfaces/http/app.ts`, `apps/backend/src/platform/interfaces/http/error-handler.ts`, webhook services, email services, and scheduled catalog verification.
 - [x] 1.3 Decide and document initial `observability.logs.head_sampling_rate` and `observability.traces.head_sampling_rate` values for Local, UAT/sandbox, and PRD/production.
 - [x] 1.4 Decide whether API responses should expose `x-request-id` for support correlation and document the decision in the implementation notes or docs.
 - [x] 1.5 Confirm no external logging SDK, Tail Worker, Logpush destination, or OpenTelemetry export destination is part of this slice.

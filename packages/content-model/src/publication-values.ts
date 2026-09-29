@@ -1,5 +1,3 @@
-import type { PublicationReviewEntry } from './publication-review';
-
 /** Compare editorial values, ignoring object key order while retaining list order and formatting. */
 export function publicationValueKey(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(publicationValueKey).join(',')}]`;
@@ -12,7 +10,10 @@ export function publicationValueKey(value: unknown): string {
       .join(',')}}`;
   return JSON.stringify(value ?? null);
 }
-export function changedPublicationFields(entry: Pick<PublicationReviewEntry, 'before' | 'after'>) {
+export function changedPublicationFields(entry: {
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown>;
+}) {
   return [...new Set([...Object.keys(entry.before ?? {}), ...Object.keys(entry.after)])].filter(
     (key) => !key.startsWith('_') && publicationValueKey(entry.before?.[key]) !== publicationValueKey(entry.after[key]),
   );

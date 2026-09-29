@@ -1,7 +1,7 @@
-import type { AppOpenApi } from '../../../env';
-import { requestLogger } from '../../../observability';
+import type { AppOpenApi } from '../../../platform/env';
+import { requestLogger } from '../../../platform/observability';
 import { postNewsletterRegistrationRoute } from '../contracts/public-contracts';
-import { jsonError, jsonNoStore } from '../responses';
+import { jsonError, jsonNoStore } from '../../../platform/interfaces/http/responses';
 import { createPublicNewsletterServices } from './public-newsletter-services';
 
 export function registerPublicNewsletterRoutes(app: AppOpenApi): void {

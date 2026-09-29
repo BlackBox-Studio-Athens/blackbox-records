@@ -6,12 +6,12 @@ import {
   readStoreCartState,
   type CartLineItemSnapshot,
   type StoreCartState,
-} from '@/lib/store-cart';
+} from '@/components/store/cart/store-cart';
 import {
   CHECKOUT_CART_UPDATED_EVENT,
   STORE_CART_ADD_ITEM_EVENT,
   STORE_CART_OPEN_REQUESTED_EVENT,
-} from '@/lib/store-cart-events';
+} from '@/components/store/cart/store-cart-events';
 
 import { applyStoreCartStateAndPersist, connectStoreCartBridge } from './store-cart-bridge';
 

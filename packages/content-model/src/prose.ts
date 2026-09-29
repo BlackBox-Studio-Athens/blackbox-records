@@ -1,7 +1,11 @@
 import { z } from 'zod';
+import { toPlainText } from '@portabletext/toolkit';
 // @ts-expect-error Native Node TypeScript loading requires the source extension here.
-import { groupEditorialBlocks, isSafeCmsLink, proseBlocks, proseText, resolveProse } from './prose-rendering.ts';
-export { groupEditorialBlocks, isSafeCmsLink, proseBlocks, proseText, resolveProse };
+import { isSafeCmsLink } from './cms-link.ts';
+
+export function proseText(value: Prose | null | undefined): string {
+  return typeof value === 'string' ? value : toPlainText(value ?? []);
+}
 
 export const cmsLinkSchema = z.string().refine(isSafeCmsLink, 'Use a safe web, email, or relative link.');
 

@@ -1,4 +1,4 @@
-import { parseOverlayRoute, type OverlayRoute } from '@/lib/app-shell/routing';
+import { parseOverlayRoute, type OverlayRoute } from '@/components/app-shell/routing';
 
 import { writeOverlayHistoryState as writeBrowserOverlayHistoryState } from './overlay-history';
 

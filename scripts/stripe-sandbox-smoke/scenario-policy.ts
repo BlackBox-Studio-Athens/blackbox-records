@@ -1,6 +1,11 @@
 import type { StripeCatalogStoreItemContract } from '../stripe-catalog-contract';
-import { createMoney, formatMoney, moneyToCurrencyCode, moneyToMinorAmount } from '../../apps/web/src/lib/money';
-import type { CartLineItemSnapshot } from '../../apps/web/src/lib/store-cart';
+import {
+  createMoney,
+  formatMoney,
+  moneyToCurrencyCode,
+  moneyToMinorAmount,
+} from '../../apps/web/src/components/store/cart/money';
+import type { CartLineItemSnapshot } from '../../apps/web/src/components/store/cart/store-cart';
 import { createRouteUrl, resolveSmokeScenarioSelection } from '../smoke-core';
 import type {
   StripeCheckoutSurfaceExpectation,

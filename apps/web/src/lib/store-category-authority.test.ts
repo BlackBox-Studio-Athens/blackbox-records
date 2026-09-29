@@ -10,7 +10,7 @@ const authorityRoots = [
   'apps/backend/prisma/migrations',
   'apps/backend/src',
   'apps/web/src/lib/catalog-data.ts',
-  'apps/web/src/lib/store-cart.ts',
+  'apps/web/src/components/store/cart/store-cart.ts',
   'apps/web/src/lib/store-item-ownership.ts',
   'apps/web/src/pages/store',
   'packages/api-client/src',

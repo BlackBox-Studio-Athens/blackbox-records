@@ -1,0 +1,53 @@
+{
+  "name": "workspace",
+  "namedInputs": {
+    "workspaceChecks": ["{workspaceRoot}/**/*", "toolchain"],
+    "workspaceTooling": [
+      "{workspaceRoot}/*",
+      "{workspaceRoot}/scripts/**/*",
+      "{workspaceRoot}/.codex/**/*",
+      "{workspaceRoot}/.github/**/*",
+      "{workspaceRoot}/**/project.json",
+      "{workspaceRoot}/apps/*/*",
+      "{workspaceRoot}/packages/*/*",
+      "{workspaceRoot}/apps/backend/scripts/build-cms.mjs",
+      "{workspaceRoot}/apps/backend/prisma/migrations/**/*",
+      "{workspaceRoot}/apps/backend/cms-migrations/**/*",
+      "toolchain"
+    ]
+  },
+  "targets": {
+    "architecture": {
+      "command": "node --import tsx scripts/check-module-projects.mjs && pnpm check:boundaries",
+      "cache": true,
+      "inputs": ["workspaceChecks"],
+      "dependsOn": ["format", "environment"]
+    },
+    "format": {
+      "command": "pnpm format:check",
+      "cache": true,
+      "inputs": ["workspaceChecks"]
+    },
+    "environment": {
+      "command": "pnpm environment:model:verify",
+      "cache": true,
+      "inputs": ["workspaceChecks"]
+    },
+    "test-tooling": {
+      "command": "pnpm test:tooling",
+      "cache": true,
+      "inputs": ["workspaceTooling"]
+    },
+    "test-content": {
+      "command": "pnpm test:content",
+      "cache": true,
+      "inputs": ["workspaceChecks"]
+    },
+    "test": {
+      "dependsOn": ["test-tooling", "test-content"]
+    },
+    "lint": {
+      "command": "pnpm exec eslint scripts .codex/hooks *.mjs .dependency-cruiser.cjs --max-warnings=0 --no-warn-ignored"
+    }
+  }
+}

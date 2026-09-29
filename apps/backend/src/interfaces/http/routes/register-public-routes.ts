@@ -1,4 +1,4 @@
-import type { AppOpenApi } from '../../../env';
+import type { AppOpenApi } from '../../../platform/env';
 import { registerPublicCommerceRoutes } from './register-public-commerce-routes';
 import { registerPublicNewsletterRoutes } from './register-public-newsletter-routes';
 import { registerPublicServicesInquiryRoutes } from './register-public-services-inquiry-routes';

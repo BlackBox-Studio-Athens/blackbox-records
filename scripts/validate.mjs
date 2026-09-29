@@ -1,56 +1,58 @@
 import { createHash } from 'node:crypto';
 import { createReadStream, watch } from 'node:fs';
-import { mkdir, readFile, writeFile, lstat, readlink, open, unlink, readdir } from 'node:fs/promises';
+import { mkdir, writeFile, lstat, readlink, open, unlink, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs, stripVTControlCharacters } from 'node:util';
 import { execa } from 'execa';
 import { runFiniteCommand } from './local-process.ts';
 
-export function validationPlan({ fast = false, scope = 'all', editor = false, checks = false, lintOnly = false } = {}) {
-  if (!['all', 'web', 'staff', 'backend', 'api-client'].includes(scope)) throw new Error(`Unknown scope: ${scope}`);
-  const phase = (name, args) => ({ name, command: 'pnpm', args });
-  if (lintOnly) {
-    if (fast || editor || checks || scope !== 'all')
-      throw new Error('Lint-only validation cannot be combined with fast, editor, checks, or scoped validation.');
-    return [phase('lint', ['lint'])];
-  }
-  if (checks && (fast || editor || scope !== 'all'))
-    throw new Error('Checks validation cannot be combined with fast, editor, or scoped validation.');
-  if (!fast && !checks && scope !== 'all') throw new Error('Full validation cannot be scoped.');
+const scopes = ['web', 'staff', 'backend', 'api-client'];
+
+// Nx targetDefaults make workspace:architecture a prerequisite of these project targets.
+// --fast/--scope select affected projects; --checks selects all check targets; --resume keeps Nx cache defaults.
+// --lint-only selects every lint target, while --editor retains its existing acceptance commands.
+export function validationPlan({
+  fast = false,
+  full = false,
+  scope = 'all',
+  editor = false,
+  checks = false,
+  lintOnly = false,
+  noCache = false,
+  plan = false,
+  since,
+} = {}) {
+  if ([fast, full, editor, checks, lintOnly].filter(Boolean).length > 1) throw new Error('Choose one validation mode.');
+  if ((full || checks) && scope !== 'all') throw new Error('Complete validation cannot be scoped.');
+  if (scope !== 'all' && !scopes.includes(scope)) throw new Error(`Unknown scope: ${scope}`);
   if (editor) {
-    if (fast || scope !== 'all') throw new Error('Editor acceptance cannot be combined with scoped iteration.');
+    if (plan || since || scope !== 'all')
+      throw new Error('Editor acceptance cannot be combined with --plan, --since, or scoped validation.');
     return [
-      phase('build:staff', ['build:staff']),
-      ...[
-        ['preview-policy', ['scripts/test-preview-policy.mjs']],
-        ['editor-chromium', ['scripts/test-content-workspace.mjs']],
-        ['editor-firefox', ['scripts/test-content-workspace.mjs', '--firefox']],
-      ].map(([name, args]) => ({ name, command: process.execPath, args })),
+      { name: 'build:staff', command: 'pnpm', args: ['build:staff'] },
+      { name: 'preview-policy', command: process.execPath, args: ['scripts/test-preview-policy.mjs'] },
+      { name: 'editor-chromium', command: process.execPath, args: ['scripts/test-content-workspace.mjs'] },
+      { name: 'editor-firefox', command: process.execPath, args: ['scripts/test-content-workspace.mjs', '--firefox'] },
     ];
   }
-  if (checks) {
-    return ['test:unit', 'environment:model:verify', 'format:check', 'lint', 'check:boundaries', 'check:types'].map(
-      (name) => phase(name, [name]),
-    );
-  }
-  if (!fast) {
-    return [
-      'test:unit',
-      'environment:model:verify',
-      'format:check',
-      'lint',
-      'check:boundaries',
-      'check:types',
-      'build',
-    ].map((name) => phase(name, [name]));
-  }
-  const filters = scope === 'all' ? ['web', 'staff', 'backend', 'api-client'] : [scope];
-  const selection = filters.flatMap((name) => ['--filter', `@blackbox/${name}`]);
+  if (lintOnly && scope !== 'all') throw new Error('Lint-only validation cannot be scoped.');
+
+  const affected = !full && !checks && !lintOnly;
+  if (since && !affected) throw new Error('--since is only valid for affected validation.');
+  const targets = lintOnly ? ['lint'] : ['test', 'lint', 'typecheck', ...(full ? ['build'] : [])];
+  const args = affected ? ['affected', '-t', ...targets] : ['run-many', '-t', ...targets, '--all'];
+  args.push('--nxBail');
+  if (scope !== 'all') args.push('--exclude=*,!tag:scope:' + scope);
+  if (since) args.push('--base=' + since);
+  if (plan) args.push('--graph=stdout');
+  if (noCache) args.push('--skip-nx-cache');
   return [
-    phase('tests', ['--parallel', ...selection, 'test']),
-    phase('types', ['--parallel', ...selection, 'check']),
-    ...(scope === 'all' ? [phase('contracts', ['test:contracts'])] : []),
+    {
+      name: affected ? 'affected' : full ? 'full' : lintOnly ? 'lint' : 'checks',
+      command: 'pnpm',
+      args: ['exec', 'nx', ...args],
+    },
   ];
 }
 
@@ -59,7 +61,6 @@ export async function sourceIdentity(cwd) {
   const { stdout } = await execa('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd });
   const names = [...new Set(stdout.split('\0').filter(Boolean))].sort();
   const hash = createHash('sha256');
-  // Include tracked generated source; only ignored validation outputs are excluded by Git.
   for (const name of names) {
     const filename = path.join(cwd, name);
     hash.update(`${name}\0`);
@@ -81,95 +82,13 @@ export async function sourceIdentity(cwd) {
   return { sha, fingerprint: hash.digest('hex'), files: names.length };
 }
 
-const cacheablePhases = new Set([
-  'tests',
-  'types',
-  'contracts',
-  'test:unit',
-  'environment:model:verify',
-  'check:boundaries',
-  'check:types',
-  'format:check',
-  'lint',
-]);
-const validationEnvironment = ['CI', 'NODE_ENV', 'NODE_OPTIONS', 'TZ'];
-
-function phaseCacheKey(phase, source, context, env) {
-  if (!cacheablePhases.has(phase.name) || phase.command !== 'pnpm') return null;
-  return createHash('sha256')
-    .update(
-      JSON.stringify({
-        version: 2,
-        phase: {
-          name: phase.name,
-          command: phase.command,
-          args: phase.args,
-          cwd: phase.cwd ?? null,
-          env: phase.env ?? {},
-        },
-        source: source.fingerprint,
-        context,
-        env,
-      }),
-    )
-    .digest('hex');
-}
-
-async function reusablePhases(root, source, context, env) {
-  const entries = await readdir(root, { withFileTypes: true });
-  const reusable = new Map();
-  for (const entry of entries
-    .filter((candidate) => candidate.isDirectory())
-    .sort((a, b) => b.name.localeCompare(a.name))) {
-    const filename = path.join(root, entry.name, 'summary.json');
-    try {
-      const summary = JSON.parse(await readFile(filename, 'utf8'));
-      if (
-        summary.schemaVersion !== 1 ||
-        !Number.isFinite(Date.parse(summary.endedAt)) ||
-        !Number.isFinite(summary.durationMs) ||
-        !Array.isArray(summary.skippedPhases) ||
-        !['passed', 'failed', 'partial'].includes(summary.status) ||
-        summary.sourceBefore?.fingerprint !== source.fingerprint ||
-        summary.sourceBefore?.fingerprint !== summary.sourceAfter?.fingerprint ||
-        summary.sourceChanges?.length ||
-        JSON.stringify(summary.cacheContext) !== JSON.stringify(context) ||
-        JSON.stringify(summary.cacheEnvironment) !== JSON.stringify(env)
-      )
-        continue;
-      if (summary.phases.some((phase) => phase.status === 'running')) continue;
-      for (const report of summary.reports ?? []) await readFile(report);
-      for (const result of summary.phases.filter((phase) => phase.status === 'passed' && phase.exitCode === 0)) {
-        const planned = summary.plannedPhases.find((phase) => phase.name === result.name);
-        if (!planned) continue;
-        const key = phaseCacheKey({ ...planned, name: result.name }, source, context, env);
-        if (!key || result.cacheKey !== key || reusable.has(key)) continue;
-        try {
-          const log = await readFile(result.logPath);
-          if (createHash('sha256').update(log).digest('hex') !== result.logSha256) continue;
-          if (result.reportPath) await readFile(result.reportPath);
-          reusable.set(key, { phase: result, summaryPath: filename });
-        } catch {
-          // A summary without its original phase evidence cannot establish success.
-        }
-      }
-    } catch {
-      // Missing or corrupt phase evidence is a cache miss.
-    }
-  }
-  return reusable;
-}
-
 export function diagnosticExcerpt(text) {
   const lines = stripVTControlCharacters(text).split(/\r?\n/);
-  // Passing negative-path tests can log Error stacks before the actual failed assertion.
-  let first = lines.findIndex((line) => /Failed Tests|(?:^|\s)FAIL(?:\s|$)|^not ok \d/.test(line));
-  if (first < 0)
-    first = lines.findIndex((line) =>
-      /(?:^|\s)(?:FAILED(?:\s|$)|\w*Error:|error TS\d|error:|✖)|\d+:\d+\s+error/.test(line),
-    );
+  const failure = lines.findIndex((line) =>
+    /Failed Tests|(?:^|\s)FAIL(?:\s|$)|^not ok \d|\w*Error:|error TS\d|error:|✖/.test(line),
+  );
   return lines
-    .slice(Math.max(0, first < 0 ? lines.length - 30 : first - 2), first < 0 ? undefined : first + 28)
+    .slice(Math.max(0, failure < 0 ? lines.length - 30 : failure - 2), failure < 0 ? undefined : failure + 28)
     .join('\n')
     .slice(0, 6000);
 }
@@ -190,7 +109,7 @@ export async function monitorSourceChanges(cwd) {
   let failure;
   const watcher = watch(cwd, { recursive: true }, (_event, filename) => {
     const name = filename?.toString().replaceAll('\\', '/');
-    if (name && !/(^|\/)(?:\.git|node_modules|\.codex-artifacts)(\/|$)/.test(name)) touched.add(name);
+    if (name && !/(^|\/)(?:\.git|\.nx|node_modules|\.codex-artifacts)(\/|$)/.test(name)) touched.add(name);
   });
   watcher.on('error', (error) => {
     failure = error;
@@ -199,13 +118,13 @@ export async function monitorSourceChanges(cwd) {
     watcher.close();
     if (failure) throw failure;
     if (!touched.size) return [];
-    const result = await execa('git', ['check-ignore', '-z', '--stdin'], {
+    const ignoredResult = await execa('git', ['check-ignore', '-z', '--stdin'], {
       cwd,
       input: [...touched].join('\0') + '\0',
       reject: false,
     });
-    if (![0, 1].includes(result.exitCode)) throw new Error('Cannot classify changed source paths.');
-    const ignored = new Set(result.stdout.split('\0'));
+    if (![0, 1].includes(ignoredResult.exitCode)) throw new Error('Cannot classify changed source paths.');
+    const ignored = new Set(ignoredResult.stdout.split('\0'));
     const tracked = new Set((await execa('git', ['ls-files', '-z'], { cwd })).stdout.split('\0'));
     const source = [];
     for (const name of touched) {
@@ -214,11 +133,8 @@ export async function monitorSourceChanges(cwd) {
         if (error.code === 'ENOENT') return null;
         throw error;
       });
-      // pnpm creates and removes extensionless _tmp_<pid>_<hex> filesystem probes.
-      // Never exclude a surviving file, or a tracked file with a matching name.
       if (!stat && !tracked.has(name) && /(?:^|\/)_tmp_\d+_[0-9a-f]{8}$/.test(name)) continue;
       const before = initial.get(name);
-      // Windows can notify on access/attribute activity. Reads are not source edits.
       if (stat && before && stat.mtimeNs === before.mtimeNs && stat.size === before.size && stat.mode === before.mode)
         continue;
       if (!stat?.isDirectory()) source.push(name);
@@ -227,61 +143,77 @@ export async function monitorSourceChanges(cwd) {
   };
 }
 
+function processAlive(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    return error.code !== 'ESRCH';
+  }
+}
+
+async function acquireLock(lockPath) {
+  try {
+    return await open(lockPath, 'wx');
+  } catch (error) {
+    if (error.code !== 'EEXIST') throw error;
+    const pid = Number((await readFile(lockPath, 'utf8').catch(() => '')).trim());
+    const owner = Number.isSafeInteger(pid) && pid > 0 ? pid : null;
+    // An unparseable lock is not stolen: its writer may sit between open and the PID write.
+    if (owner === null || processAlive(owner)) {
+      throw new Error(
+        `Validation lock ${lockPath} is held by ${owner === null ? 'unknown owner' : `PID ${owner}`}; delete it if that process is gone.`,
+        { cause: error },
+      );
+    }
+    await unlink(lockPath).catch((unlinkError) => {
+      if (unlinkError.code !== 'ENOENT') throw unlinkError;
+    });
+    return open(lockPath, 'wx');
+  }
+}
+
 export async function runValidation({
   cwd = process.cwd(),
-  local = false,
-  fast = false,
-  editor = false,
-  checks = false,
-  lintOnly = false,
-  trace = false,
-  scope = 'all',
-  jobs = 2,
-  resume = false,
-  noCache = false,
+  options = {},
   signal,
-  phases = validationPlan({ fast, scope, editor, checks, lintOnly }),
   identify = sourceIdentity,
-  readPnpmVersion = async () => (await execa('pnpm', ['--version'], { cwd })).stdout,
+  runCommand = runFiniteCommand,
   log = console.log,
 } = {}) {
-  if (![1, 2].includes(jobs)) throw new Error('jobs must be 1 or 2.');
+  const commands = validationPlan(options);
   const root = path.join(cwd, '.codex-artifacts', 'validation');
   await mkdir(root, { recursive: true });
   const lockPath = path.join(root, 'active.lock');
-  // ponytail: one invocation per worktree; isolate worktrees for concurrent validation.
-  const lock = await open(lockPath, 'wx');
+  const lock = await acquireLock(lockPath);
   const runId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}`;
   const evidenceDir = path.join(root, runId);
   const started = performance.now();
   const controller = new AbortController();
-  let externallyCancelled = false;
-  let firstFailure;
-  const cancel = () => {
-    externallyCancelled = true;
-    controller.abort();
-  };
+  const cancel = () => controller.abort();
   signal?.addEventListener('abort', cancel, { once: true });
   if (signal?.aborted) cancel();
+  const partial = Boolean(
+    options.fast || options.checks || options.lintOnly || (options.scope && options.scope !== 'all'),
+  );
   const summary = {
     schemaVersion: 1,
     runId,
-    mode: local ? 'local' : fast || editor || checks || lintOnly ? 'partial' : 'full',
-    scope: lintOnly ? 'lint' : editor ? 'editor' : checks ? 'checks' : scope,
-    jobs,
-    trace,
+    mode: options.editor ? 'editor' : options.full ? 'full' : partial ? 'partial' : 'local',
+    scope: options.lintOnly ? 'lint' : options.editor ? 'editor' : options.checks ? 'checks' : (options.scope ?? 'all'),
+    trace: Boolean(options.trace),
     startedAt: new Date().toISOString(),
     firstFailureDurationMs: null,
     status: 'incomplete',
     exitCode: 1,
     phases: [],
-    plannedPhases: phases.map(({ name, command, args, cwd, env }) => ({ name, command, args, cwd, env })),
+    plannedPhases: commands.map(({ name, command, args }) => ({ name, command, args })),
     node: process.version,
-    pnpm: null,
+    pnpm: process.env.npm_config_user_agent?.match(/^pnpm\/([^ ]+)/)?.[1] ?? null,
     sourceBefore: null,
     sourceAfter: null,
-    taskAcceptance:
-      'not established: browser, CMS, publication, asset and other task-specific checks remain additional',
+    sourceChanges: [],
+    taskAcceptance: 'not established: browser, CMS, publication, asset and task-specific checks remain additional',
   };
   let stopMonitoring;
   try {
@@ -289,178 +221,95 @@ export async function runValidation({
     await mkdir(evidenceDir);
     if (identify === sourceIdentity) stopMonitoring = await monitorSourceChanges(cwd);
     summary.sourceBefore = await identify(cwd);
-    summary.pnpm = await readPnpmVersion();
-    if (process.version !== 'v24.21.0' || summary.pnpm !== '12.6.0')
-      throw new Error('Validation requires Node 24.21.0 and pnpm 12.6.0.');
-    const cacheContext = { node: process.version, pnpm: summary.pnpm, platform: process.platform, arch: process.arch };
-    const cacheEnvironment = Object.fromEntries(validationEnvironment.map((name) => [name, process.env[name] ?? null]));
-    summary.cacheContext = cacheContext;
-    summary.cacheEnvironment = cacheEnvironment;
-    const cache =
-      resume && !noCache ? await reusablePhases(root, summary.sourceBefore, cacheContext, cacheEnvironment) : new Map();
-    if (lintOnly) log('PARTIAL lint-only validation: this does not establish implementation completion.');
-    else if (fast || editor) log('PARTIAL validation: this does not establish implementation completion.');
-    const fastPair =
-      (local || fast) && jobs === 2 && phases[0]?.name === 'tests' && ['types', 'checks'].includes(phases[1]?.name);
-    const canOverlap =
-      jobs === 2 && (fastPair || (!fast && !editor && phases.length > 1 && phases[0].name === 'test:unit'));
-    async function execute(phase) {
+    for (const [index, command] of commands.entries()) {
+      const logPath = path.join(evidenceDir, `${index}-${command.name}.log`);
+      await writeFile(logPath, '');
       const phaseStart = performance.now();
-      const key = phaseCacheKey(phase, summary.sourceBefore, cacheContext, cacheEnvironment);
-      const hit = key ? cache.get(key) : null;
-      if (hit) {
-        const entry = {
-          ...hit.phase,
-          status: 'passed',
-          exitCode: 0,
-          durationMs: 0,
-          cacheHit: true,
-          cacheKey: key,
-          reusedFrom: hit.summaryPath,
-        };
-        summary.phases.push(entry);
-        log(`CACHED ${phase.name} — ${hit.summaryPath}`);
-        return true;
-      }
-      const logPath = path.join(evidenceDir, `${summary.phases.length}-${phase.name.replaceAll(':', '-')}.log`);
       const entry = {
-        name: phase.name,
-        command: phase.command,
-        args: phase.args,
+        name: command.name,
+        command: command.command,
+        args: command.args,
         logPath,
         status: 'running',
         exitCode: null,
-        cacheKey: key,
       };
       summary.phases.push(entry);
-      const output = await open(logPath, 'w');
       try {
-        if (controller.signal.aborted) throw new Error('Validation cancelled.');
-        const command = {
-          ...phase,
-          env: {
-            ...phase.env,
-            BLACKBOX_VALIDATION_REPORT_DIR: evidenceDir,
-            BLACKBOX_VALIDATION_TRACE: trace ? '1' : undefined,
+        await runCommand(
+          {
+            ...command,
+            env: {
+              ...command.env,
+              // A daemon started mid-run inherits the piped stdio and keeps the wrapper waiting forever.
+              NX_DAEMON: 'false',
+              BLACKBOX_VALIDATION_REPORT_DIR: evidenceDir,
+              BLACKBOX_VALIDATION_TRACE: options.trace ? '1' : undefined,
+            },
           },
-        };
-        if (phase.name === 'lint' && phase.command === 'pnpm') {
-          command.args = [
-            'exec',
-            'eslint',
-            '.',
-            '--max-warnings=0',
-            '--stats',
-            '--format',
-            'json',
-            '--output-file',
-            path.join(evidenceDir, 'eslint.json'),
-          ];
-          entry.args = command.args;
-        }
-        await runFiniteCommand(command, {
-          cwd,
-          logger: () => {},
-          stdio: ['ignore', output.fd, output.fd],
-          cancelSignal: controller.signal,
-        });
-        entry.exitCode = 0;
+          {
+            cwd,
+            logger: () => {},
+            stdio: [
+              'ignore',
+              [{ file: logPath, append: true }, 'inherit'],
+              [{ file: logPath, append: true }, 'inherit'],
+            ],
+            cancelSignal: controller.signal,
+          },
+        );
         entry.status = 'passed';
+        entry.exitCode = 0;
       } catch (error) {
+        entry.status = controller.signal.aborted ? 'cancelled' : 'failed';
         entry.exitCode = error.exitCode || 1;
         entry.error = error.message;
-        entry.status = externallyCancelled || controller.signal.aborted ? 'cancelled' : 'failed';
-        if (entry.status === 'failed') {
-          firstFailure ??= entry;
-          if (canOverlap) controller.abort();
-        }
-      } finally {
-        await output.close();
+        summary.error = error.message;
       }
-      entry.durationMs = Math.round(performance.now() - phaseStart);
-      if (entry.status === 'failed' && summary.firstFailureDurationMs === null)
-        summary.firstFailureDurationMs = Math.round(performance.now() - started);
-      const content = await readFile(logPath, 'utf8');
-      entry.logSha256 = createHash('sha256').update(content).digest('hex');
+      const content = await import('node:fs/promises').then(({ readFile }) => readFile(logPath, 'utf8'));
       entry.outputBytes = Buffer.byteLength(content);
-      if (phase.name === 'lint') {
-        const reportPath = path.join(evidenceDir, 'eslint.json');
-        const report = await readFile(reportPath, 'utf8').catch((error) => {
-          if (error.code === 'ENOENT') return null;
-          throw error;
-        });
-        if (report) {
-          entry.reportPath = reportPath;
-          entry.diagnostics = JSON.parse(report)
-            .flatMap(({ filePath, messages }) =>
-              messages.map(
-                (message) =>
-                  `${filePath}:${message.line}:${message.column} ${message.ruleId || 'parse'}: ${message.message}`,
-              ),
-            )
-            .slice(0, 15);
-        }
-      }
-      entry.testSummaries = stripVTControlCharacters(content)
+      entry.logSha256 = createHash('sha256').update(content).digest('hex');
+      entry.diagnostics = diagnosticExcerpt(content);
+      entry.durationMs = Math.round(performance.now() - phaseStart);
+      entry.testSummaries = content
         .split(/\r?\n/)
         .filter((line) => /(?:Test Files|Tests)\s+\d|^[#ℹ] (?:tests|pass|fail) \d/.test(line));
-      log(`${entry.status.toUpperCase()} ${phase.name} ${(entry.durationMs / 1000).toFixed(1)}s`);
-      if (entry.status !== 'passed') {
-        log(
-          `Exit code: ${entry.exitCode}\n${diagnosticExcerpt(entry.diagnostics?.join('\n') || content || entry.error || '')}\nLog: ${logPath}`,
-        );
-      }
-      return entry.status === 'passed';
-    }
-    async function sequence(items) {
-      for (const phase of items) if (!(await execute(phase))) return false;
-      return true;
-    }
-    let passed;
-    if (fastPair) {
-      const results = await Promise.allSettled([execute(phases[0]), execute(phases[1])]);
-      const rejected = results.find((result) => result.status === 'rejected');
-      if (rejected) throw rejected.reason;
-      passed = results.every((result) => result.value === true);
-      if (passed) passed = await sequence(phases.slice(2));
-    } else if (canOverlap) {
-      const hasBuild = phases.at(-1)?.name === 'build';
-      const middle = phases.slice(1, hasBuild ? -1 : undefined);
-      const results = await Promise.allSettled([execute(phases[0]), sequence(middle)]);
-      const rejected = results.find((result) => result.status === 'rejected');
-      if (rejected) throw rejected.reason;
-      passed = results.every((result) => result.value === true);
-      if (passed && hasBuild) passed = await execute(phases.at(-1));
-    } else {
-      passed = await sequence(phases);
+      if (entry.status !== 'passed') break;
+      if (options.plan) break;
     }
     summary.sourceAfter = await identify(cwd);
     summary.sourceChanges = stopMonitoring ? await stopMonitoring() : [];
     stopMonitoring = null;
     const unchanged =
       !summary.sourceChanges.length && JSON.stringify(summary.sourceBefore) === JSON.stringify(summary.sourceAfter);
-    summary.status = externallyCancelled
-      ? 'cancelled'
-      : !unchanged
-        ? 'invalidated'
-        : passed
-          ? fast || editor || checks || lintOnly
-            ? 'partial'
-            : 'passed'
-          : 'failed';
-    summary.exitCode =
-      passed && unchanged && !externallyCancelled
-        ? 0
-        : firstFailure?.exitCode || summary.phases.find((entry) => entry.exitCode)?.exitCode || 1;
+    const planned =
+      options.plan &&
+      unchanged &&
+      !controller.signal.aborted &&
+      summary.phases.every(({ status }) => status === 'passed');
+    const passed =
+      summary.phases.length === commands.length && summary.phases.every(({ status }) => status === 'passed');
+    summary.status = !unchanged
+      ? 'invalidated'
+      : planned
+        ? 'planned'
+        : controller.signal.aborted
+          ? 'cancelled'
+          : passed
+            ? partial
+              ? 'partial'
+              : 'passed'
+            : 'failed';
+    summary.exitCode = ['partial', 'passed', 'planned'].includes(summary.status)
+      ? 0
+      : summary.phases.find(({ status }) => status !== 'passed')?.exitCode || 1;
   } catch (error) {
     summary.error = error.message;
     log(`INCOMPLETE: ${error.message}`);
   } finally {
     if (stopMonitoring) await stopMonitoring().catch(() => {});
-    summary.skippedPhases = phases
-      .filter((phase) => !summary.phases.some((entry) => entry.name === phase.name))
+    summary.skippedPhases = commands
+      .filter(({ name }) => !summary.phases.some((entry) => entry.name === name))
       .map(({ name }) => name);
-    for (const name of summary.skippedPhases) log(`SKIPPED ${name}: preceding failure or incomplete validation`);
     summary.durationMs = Math.round(performance.now() - started);
     summary.endedAt = new Date().toISOString();
     await mkdir(evidenceDir, { recursive: true });
@@ -475,50 +324,63 @@ export async function runValidation({
   log(
     `${summary.status.toUpperCase()} ${(summary.durationMs / 1000).toFixed(1)}s — ${path.join(evidenceDir, 'summary.json')}`,
   );
-  if (local) log('Targeted local checks only. CI retains full tests, checks and release builds.');
   log(`Repository gates only. ${summary.taskAcceptance}`);
   return summary;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+export async function main(args = process.argv.slice(2), dependencies = {}) {
+  const { values } = parseArgs({
+    args: args.filter((arg) => arg !== '--'),
+    options: {
+      fast: { type: 'boolean' },
+      full: { type: 'boolean' },
+      editor: { type: 'boolean' },
+      checks: { type: 'boolean' },
+      'lint-only': { type: 'boolean' },
+      trace: { type: 'boolean' },
+      resume: { type: 'boolean' },
+      'no-cache': { type: 'boolean' },
+      plan: { type: 'boolean' },
+      scope: { type: 'string' },
+      since: { type: 'string' },
+    },
+  });
+  const options = {
+    fast: values.fast,
+    full: values.full,
+    editor: values.editor,
+    checks: values.checks,
+    lintOnly: values['lint-only'],
+    noCache: values['no-cache'],
+    plan: values.plan,
+    scope: values.scope,
+    since: values.since,
+    trace: values.trace,
+  };
   const controller = new AbortController();
   const cancel = () => controller.abort();
-  process.on('SIGINT', cancel);
-  process.on('SIGTERM', cancel);
-  try {
-    const args = process.argv.slice(2).filter((arg) => arg !== '--');
-    const { values } = parseArgs({
-      args,
-      options: {
-        fast: { type: 'boolean' },
-        editor: { type: 'boolean' },
-        checks: { type: 'boolean' },
-        'lint-only': { type: 'boolean' },
-        trace: { type: 'boolean' },
-        resume: { type: 'boolean' },
-        'no-cache': { type: 'boolean' },
-        scope: { type: 'string' },
-        jobs: { type: 'string' },
-      },
-    });
-    const summary = await runValidation({
-      fast: values.fast,
-      editor: values.editor,
-      checks: values.checks,
-      lintOnly: values['lint-only'],
-      trace: values.trace,
-      scope: values.scope,
-      jobs: Number(values.jobs || 2),
-      resume: values.resume,
-      noCache: values['no-cache'],
-      signal: controller.signal,
-    });
-    process.exitCode = summary.exitCode;
-  } catch (error) {
-    console.error(error.message);
-    process.exitCode = 1;
-  } finally {
-    process.off('SIGINT', cancel);
-    process.off('SIGTERM', cancel);
+  const signal = dependencies.signal ?? controller.signal;
+  if (!dependencies.signal) {
+    process.on('SIGINT', cancel);
+    process.on('SIGTERM', cancel);
   }
+  try {
+    return await runValidation({ ...dependencies, options, signal });
+  } finally {
+    if (!dependencies.signal) {
+      process.off('SIGINT', cancel);
+      process.off('SIGTERM', cancel);
+    }
+  }
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  main()
+    .then(({ exitCode }) => {
+      process.exitCode = exitCode;
+    })
+    .catch((error) => {
+      console.error(error.message);
+      process.exitCode = 1;
+    });
 }

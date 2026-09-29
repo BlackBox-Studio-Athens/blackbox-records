@@ -111,7 +111,7 @@ Inventory used codegraph plus scoped `rg` over backend env, email, feature flags
 
 Approved implementation order:
 
-1. Product Environment Profile mapping in `apps/backend/src/env.ts`, then boundary mappers in route composition and scripts.
+1. Product Environment Profile mapping in `apps/backend/src/platform/env.ts`, then boundary mappers in route composition and scripts.
 2. Email runtime config type inference and a route-local email runtime composition factory.
 3. Checkout order reference token value object for visible `BBR-*` order references.
 4. Focused drift checks and tests for the touched behavior.

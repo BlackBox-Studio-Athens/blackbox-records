@@ -1,0 +1,5 @@
+{
+  "name": "web-build-tools",
+  "tags": ["tooling", "scope:web"],
+  "targets": {}
+}

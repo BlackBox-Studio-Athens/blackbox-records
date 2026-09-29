@@ -1,6 +1,6 @@
 ## Why
 
-`apps/backend/src/env.ts` already treats Local, UAT, and PRD as the product environments, but it still exposes Worker targets, provider modes, routing modes, CLI aliases, and display labels as competing environment concepts. This makes runtime code, scripts, tests, docs, and operator commands easier to misread and harder to validate.
+`apps/backend/src/platform/env.ts` already treats Local, UAT, and PRD as the product environments, but it still exposes Worker targets, provider modes, routing modes, CLI aliases, and display labels as competing environment concepts. This makes runtime code, scripts, tests, docs, and operator commands easier to misread and harder to validate.
 
 ## What Changes
 
@@ -28,7 +28,7 @@
 
 ## Impact
 
-- Affected backend runtime and tests: `apps/backend/src/env.ts`, runtime binding types, email config, feature flags, checkout services, catalog scheduling/webhook services, and related unit tests.
+- Affected backend runtime and tests: `apps/backend/src/platform/env.ts`, runtime binding types, email config, feature flags, checkout services, catalog scheduling/webhook services, and related unit tests.
 - Affected config and scripts: `apps/backend/wrangler.jsonc`, backend deploy scripts, runtime config verification, Stripe catalog verification, environment model verification, Stripe promotion smoke, local stack launchers, and any script parsing `--env`.
 - Affected docs/specs: `README.md`, `docs/environment-model.md`, relevant command docs, OpenSpec baseline specs, and active changes that still use platform/provider aliases as product environment substitutes.
 - No new runtime dependency is expected. This is a model and naming cleanup plus migration of non-secret environment/config values.

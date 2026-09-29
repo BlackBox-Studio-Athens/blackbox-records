@@ -1,8 +1,8 @@
 import type { MiddlewareHandler } from 'hono';
 
-import type { AppEnv } from '../../../env';
-import { requestLogger } from '../../../observability';
-import { jsonError } from '../responses';
+import type { AppEnv } from '../../../platform/env';
+import { requestLogger } from '../../../platform/observability';
+import { jsonError } from '../../../platform/interfaces/http/responses';
 import { verifyOperatorAccess } from './operator-identity';
 
 export function operatorAccessMiddleware(): MiddlewareHandler<AppEnv> {

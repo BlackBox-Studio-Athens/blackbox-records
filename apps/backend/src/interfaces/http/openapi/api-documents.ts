@@ -1,6 +1,6 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 
-import type { AppEnv, AppOpenApi } from '../../../env';
+import type { AppEnv, AppOpenApi } from '../../../platform/env';
 import { registerInternalRoutes } from '../routes/register-internal-routes';
 import { registerPublicRoutes } from '../routes/register-public-routes';
 

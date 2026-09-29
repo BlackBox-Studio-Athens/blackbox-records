@@ -5,10 +5,10 @@ import NewsCard from '@/components/cards/NewsCard.astro';
 import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { buttonVariants } from '@/components/ui/button';
-import { createProjectRelativeUrl } from '@/config/site';
+import { createProjectRelativeUrl } from '@/platform/config/site';
 import { listArtistProfiles, listNewsArticles } from '@/lib/catalog-data';
 import { getHomeContent } from '@/lib/site-data';
-import { cn } from '@/lib/utils';
+import { cn } from '@/components/ui/utils';
 
 const artistProfiles = await listArtistProfiles();
 const newsArticles = await listNewsArticles();

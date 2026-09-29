@@ -40,7 +40,7 @@
     "generate:openapi": "pnpm exec tsx scripts/generate-openapi.ts",
     "webhook:simulate:local": "tsx scripts/simulate-stripe-webhook.ts",
     "check": "tsc --noEmit --incremental --tsBuildInfoFile ../../.codex-artifacts/typecheck/backend.tsbuildinfo -p tsconfig.json",
-    "test": "vitest run --config vitest.config.ts && vitest run --config vitest.node.config.ts",
+    "test": "vitest run --config vitest.modules.config.ts",
     "test:node": "vitest run --config vitest.node.config.ts",
     "test:emdash": "node --import tsx scripts/generate-cms-seed.ts && astro build --root test/emdash && node test/emdash/smoke.mjs",
     "test:cms-render": "node test/emdash/parity-smoke.mjs",
@@ -87,5 +87,47 @@
     "typescript": "^5.9.3",
     "vitest": "4.1.11",
     "wrangler": "^4.141.0"
+  },
+  "nx": {
+    "includedScripts": [],
+    "targets": {
+      "typecheck": {
+        "command": "pnpm --filter @blackbox/backend check",
+        "inputs": [
+          "default",
+          "^default",
+          "{workspaceRoot}/apps/backend/**/*"
+        ]
+      },
+      "lint": {
+        "command": "pnpm exec eslint apps/backend --max-warnings=0 --no-warn-ignored"
+      }
+    },
+    "implicitDependencies": [
+      "backend-runtime",
+      "backend-platform",
+      "public-commerce-http",
+      "operator-stock",
+      "operator-auth",
+      "stripe-integration",
+      "resend-integration",
+      "commerce-persistence",
+      "commerce-domain",
+      "cms-runtime",
+      "email-application",
+      "stock",
+      "orders",
+      "checkout-core",
+      "catalog-sync"
+    ],
+    "tags": [
+      "scope:backend"
+    ],
+    "namedInputs": {
+      "default": [
+        "{workspaceRoot}/apps/backend/**/*",
+        "toolchain"
+      ]
+    }
   }
 }

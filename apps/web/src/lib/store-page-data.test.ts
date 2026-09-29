@@ -6,7 +6,7 @@ import {
   createStorePageStaticPaths,
   getStorePageEntryBySlug,
 } from './store-page-data';
-import { buildEmbeddedPlayerData } from '../utils/music';
+import { buildEmbeddedPlayerData } from '../components/music/music';
 
 const mockCatalogData = vi.hoisted(() => ({
   getStoreItemBySlug: vi.fn(),

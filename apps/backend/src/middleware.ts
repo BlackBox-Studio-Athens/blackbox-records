@@ -1,7 +1,7 @@
 import type { MiddlewareHandler } from 'astro';
 import { slugPatternSource } from '@blackbox/content-model';
 import { isCmsCollection } from '@blackbox/content-model';
-import { cmsNestedProblemResponse } from './interfaces/http/responses';
+import { cmsNestedProblemResponse } from './platform/interfaces/http/responses';
 
 const slugPattern = new RegExp(slugPatternSource);
 

@@ -32,9 +32,9 @@ This change moves shopper checkout documents to a cart-scoped URL while keeping 
 ## Impact
 
 - Frontend routes under `apps/web/src/pages/store/`.
-- Cart drawer checkout entry in `apps/web/src/components/store/StoreCartDrawer.tsx`.
+- Cart drawer checkout entry in `apps/web/src/components/store/cart/StoreCartDrawer.tsx`.
 - Checkout/return components under `apps/web/src/components/store/`.
-- Cart path helper in `apps/web/src/lib/store-cart.ts`.
+- Cart path helper in `apps/web/src/components/store/cart/store-cart.ts`.
 - Store item path helpers in `apps/web/src/lib/catalog-data.ts` and `apps/web/src/lib/store-page-data.ts`.
 - Remove the Store Item `checkoutPath` projection and any catalog field-ownership references that still make item-scoped checkout look primary.
 - Worker return/cancel URL generation in `apps/backend/src/interfaces/http/routes/public-checkout-return-url.ts`.

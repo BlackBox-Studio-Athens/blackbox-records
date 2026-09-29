@@ -2,7 +2,7 @@ import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-import type { PlayerProvider } from '../player-provider-data';
+import type { PlayerProvider } from '../../music/player-provider-data';
 import ShellPlayerSurface from './ShellPlayerSurface';
 
 const bandcampProvider: PlayerProvider = {

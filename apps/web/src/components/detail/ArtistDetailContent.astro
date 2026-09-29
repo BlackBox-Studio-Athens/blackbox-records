@@ -7,12 +7,12 @@ import EditorialContent from './EditorialContent.astro';
 import SocialIcon from '@/components/icons/SocialIcon.astro';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import { buttonVariants } from '@/components/ui/button';
-import { createProjectRelativeUrl, resolveLinkAttributes } from '@/config/site';
+import { createProjectRelativeUrl, resolveLinkAttributes } from '@/platform/config/site';
 import { createReleaseDetailPath, listReleaseCatalogByArtistId } from '@/lib/catalog-data';
-import { cn } from '@/lib/utils';
+import { cn } from '@/components/ui/utils';
 import { splitReleaseCatalogByAvailability } from '@/lib/release-feature';
 import { formatMonthYear } from '@/utils/content';
-import { buildEmbeddedPlayerData } from '@/utils/music';
+import { buildEmbeddedPlayerData } from '@/components/music/music';
 
 interface Props {
   artist: CollectionEntry<'artists'>;

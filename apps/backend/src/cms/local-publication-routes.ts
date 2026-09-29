@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { acknowledgeLocalPublication, readNextLocalPublication, readPublication } from './publication-journal';
 import { readJson } from './publication-routes';
-import { cmsStringProblemResponse } from '../interfaces/http/responses';
+import { cmsStringProblemResponse } from '../platform/interfaces/http/responses';
 
 export const localPublicationRoot = '/_emdash/api/blackbox/publications/local/';
 
