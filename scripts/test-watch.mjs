@@ -25,8 +25,9 @@ export function nxWatchArguments(scope, { changed = false, since } = {}) {
 
 /** Normalize an existing file or directory argument to a repo-relative posix path; otherwise undefined. */
 export function existingPath(arg, cwd = process.cwd(), exists = existsSync) {
-  if (!arg || !exists(path.resolve(cwd, arg))) return undefined;
-  return path.relative(cwd, path.resolve(cwd, arg)).replaceAll('\\', '/') || '.';
+  const resolved = arg && path.resolve(cwd, arg.replaceAll('\\', '/'));
+  if (!resolved || !exists(resolved)) return undefined;
+  return path.relative(cwd, resolved).replaceAll('\\', '/') || '.';
 }
 
 /** `exclude` drops the root `workspace` and `*-tooling` script-contract suites, which run in validate and CI. */
