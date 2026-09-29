@@ -15,7 +15,7 @@
   "metadata": {
     "boundaries": {
       "status": "closed",
-      "exports": ["./AppShellRoot.tsx", "./lenis-scroll.ts"],
+      "exports": ["./AppShellRoot.tsx"],
       "namedInterfaces": {},
       "dependsOn": ["player", "store-cart", "checkout-web", "storefront-catalog", "ui-foundation", "web-platform"],
       "workspaceInterfaces": {

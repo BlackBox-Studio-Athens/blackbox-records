@@ -16,18 +16,7 @@
   "metadata": {
     "boundaries": {
       "status": "closed",
-      "exports": [
-        "./badge.tsx",
-        "./button.tsx",
-        "./card.tsx",
-        "./grid-pattern.astro",
-        "./input.tsx",
-        "./loading-feedback.tsx",
-        "./sheet.tsx",
-        "./spinner.tsx",
-        "./textarea.tsx",
-        "./utils.ts"
-      ],
+      "exports": ["./*.tsx", "./*.astro", "./utils.ts"],
       "namedInterfaces": {},
       "dependsOn": [],
       "workspaceInterfaces": {}

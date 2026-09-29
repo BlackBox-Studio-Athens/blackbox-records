@@ -15,12 +15,7 @@
   "metadata": {
     "boundaries": {
       "status": "closed",
-      "exports": [
-        "./create-pending-checkout-order.ts",
-        "./index.ts",
-        "./register-internal-order-routes.ts",
-        "./run-paid-order-delivery-schedule.ts"
-      ],
+      "exports": ["./index.ts", "./register-internal-order-routes.ts", "./run-paid-order-delivery-schedule.ts"],
       "namedInterfaces": {
         "internal-order-routes": "./register-internal-order-routes.ts",
         "scheduled-paid-order-delivery": "./run-paid-order-delivery-schedule.ts"

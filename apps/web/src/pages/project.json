@@ -25,7 +25,7 @@
   "metadata": {
     "boundaries": {
       "status": "closed",
-      "exports": ["./assets/catalog/[collection]/[asset].ts"],
+      "exports": [],
       "namedInterfaces": {},
       "dependsOn": [
         "app-shell",

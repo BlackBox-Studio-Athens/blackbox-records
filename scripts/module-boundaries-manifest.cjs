@@ -100,9 +100,20 @@ function loadModuleBoundariesManifest() {
     const root = project.root ?? path.posix.dirname(projectFile);
     const resolve = (value) => path.posix.join(root, value);
     const resolveAll = (value) => (Array.isArray(value) ? value.map(resolve) : resolve(value));
+    // Export patterns such as "./*.tsx" work like package.json subpath patterns; tests are never public.
+    const expandExport = (value) => {
+      const pattern = resolve(value);
+      if (!pattern.includes('*')) return [pattern];
+      const files = fs
+        .globSync(pattern, { cwd: repoRoot })
+        .map(toPosixPath)
+        .filter((file) => !/\.(test|spec)\./.test(file))
+        .sort();
+      return files.length > 0 ? files : [pattern];
+    };
     manifest.modules[name] = {
       status: boundaries.status,
-      providedEntrypoints: (boundaries.exports ?? []).map(resolve),
+      providedEntrypoints: dedupe((boundaries.exports ?? []).flatMap(expandExport)),
       namedInterfaces: Object.fromEntries(
         Object.entries(boundaries.namedInterfaces ?? {}).map(([key, value]) => [key, resolveAll(value)]),
       ),

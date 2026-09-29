@@ -2,13 +2,19 @@
 
 ### Requirement: Boundary manifest authority
 
-Each module's Nx `project.json` `metadata.boundaries` MUST own that module's status, public exports, named interfaces, allowed module dependencies and allowed workspace interfaces. The OpenSpec module-boundary manifest MUST keep workspace-package policy, entrypoint policy and other package-level rules. The loader derives the module map from the Nx projects that carry `metadata.boundaries`.
+Each module's Nx `project.json` `metadata.boundaries` MUST own that module's status, public exports, named interfaces, allowed module dependencies and allowed workspace interfaces. The OpenSpec module-boundary manifest MUST keep workspace-package policy, entrypoint policy and other package-level rules. The loader derives the module map from the Nx projects that carry `metadata.boundaries`. Exports list only files another module imports. An export MAY be a pattern such as `./*.tsx`, like a `package.json` subpath pattern, for component kits whose files are all public; patterns never expose test files.
 
 #### Scenario: Module ownership changes
 
 - **GIVEN** a change updates module roots, exports, allowed dependencies, or exception policy
 - **WHEN** the change is made
 - **THEN** the module's `project.json` `metadata.boundaries` (or `openspec/specs/module-boundaries/module-boundaries.manifest.json` for workspace-package policy) and this spec are updated together when behavior changes.
+
+#### Scenario: Component kit adds a file
+
+- **GIVEN** a kit module exports `./*.tsx`
+- **WHEN** a new component file is added to the kit
+- **THEN** consumers may import it without a boundary edit, and the kit's test files stay private.
 
 ### Requirement: Nx projects define module roots and actual dependencies
 
