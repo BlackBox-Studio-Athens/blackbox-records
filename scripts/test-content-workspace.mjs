@@ -1,7 +1,8 @@
 // Local-only browser regression: pnpm build:staff && node scripts/test-content-workspace.mjs
 // Pass --serve for a fixture workspace at http://127.0.0.1:4399/content/.
 import assert from 'node:assert/strict';
-import { proseText, resolveProse } from '../packages/content-model/src/prose.ts';
+import { proseText } from '../packages/content-model/src/prose.ts';
+import { resolveProse } from '../packages/content-model/src/prose-rendering.ts';
 import { createServer } from 'node:http';
 import { readFile, mkdir } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
