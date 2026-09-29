@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+process.chdir(root);
+
 test('real ESLint rejects private module imports, workspace bypasses, and Astro violations', async () => {
-  const eslint = new ESLint();
+  const eslint = new ESLint({ cwd: root });
   const cases = [
     [
       'apps/backend/src/application/commerce/checkout/index.ts',
@@ -22,7 +27,7 @@ test('real ESLint rejects private module imports, workspace bypasses, and Astro 
     ],
   ];
   for (const [filePath, source, rule] of cases) {
-    const results = await eslint.lintText(source, { filePath });
+    const results = await eslint.lintText(source, { filePath: path.resolve(root, filePath) });
     assert.ok(
       results.flatMap(({ messages }) => messages).some(({ ruleId }) => ruleId === rule),
       `${filePath} must reject ${rule}: ${JSON.stringify(results.flatMap(({ messages }) => messages))}`,
