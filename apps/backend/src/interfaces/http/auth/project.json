@@ -11,5 +11,14 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./index.ts"],
+      "namedInterfaces": {},
+      "dependsOn": ["backend-platform"],
+      "workspaceInterfaces": {}
+    }
   }
 }

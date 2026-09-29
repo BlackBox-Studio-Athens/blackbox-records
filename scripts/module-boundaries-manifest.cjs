@@ -83,13 +83,35 @@ function fileExists(relativePath) {
 
 function loadModuleBoundariesManifest() {
   const manifest = readJson(manifestPath);
-  const projects = Object.entries(manifest.modules).map(([name, definition]) => {
-    if ('roots' in definition || 'ownershipExceptions' in definition)
-      throw new Error(`Module ${name} ownership must come from its Nx project.`);
-    const project = readJson(path.resolve(repoRoot, definition.project));
-    if (project.name !== name) throw new Error(`Module ${name} must reference its matching Nx project.`);
-    return [name, project.root ?? toPosixPath(path.dirname(definition.project))];
-  });
+  const projectFiles = fs
+    .globSync(['apps/**/project.json', 'packages/**/project.json'], {
+      cwd: repoRoot,
+      exclude: (name) => ['node_modules', 'dist', '.nx'].includes(name),
+    })
+    .map(toPosixPath)
+    .sort();
+  manifest.modules = {};
+  const projects = [];
+  for (const projectFile of projectFiles) {
+    const project = readJson(path.resolve(repoRoot, projectFile));
+    const boundaries = project.metadata?.boundaries;
+    if (!boundaries) continue;
+    const name = project.name;
+    const root = project.root ?? path.posix.dirname(projectFile);
+    const resolve = (value) => path.posix.join(root, value);
+    const resolveAll = (value) => (Array.isArray(value) ? value.map(resolve) : resolve(value));
+    manifest.modules[name] = {
+      status: boundaries.status,
+      providedEntrypoints: (boundaries.exports ?? []).map(resolve),
+      namedInterfaces: Object.fromEntries(
+        Object.entries(boundaries.namedInterfaces ?? {}).map(([key, value]) => [key, resolveAll(value)]),
+      ),
+      allowedDependencies: boundaries.dependsOn ?? [],
+      allowedWorkspaceInterfaces: boundaries.workspaceInterfaces ?? {},
+      project: projectFile,
+    };
+    projects.push([name, root]);
+  }
   for (const [name, root] of projects) {
     const definition = manifest.modules[name];
     definition.roots = [`${root}/**`];
@@ -203,7 +225,33 @@ function buildEslintBoundaryConfig(manifest = loadModuleBoundariesManifest()) {
     }
   }
 
-  const dependencyRules = [];
+  // The plugin applies the last matching policy, so these disallow policies come first: any allow policy below
+  // still wins, and a violation falls through to the message that names the module and how to widen it.
+  const entrypointTypes = getModuleEntries(manifest).map(([moduleName]) => getModuleEntrypointType(moduleName));
+  const explainRules = [];
+
+  for (const [moduleName, moduleDefinition] of getModuleEntries(manifest)) {
+    const projectFile = moduleDefinition.project;
+    const projectRoot = path.posix.dirname(projectFile);
+    const exportFiles = getModuleEntrypointFiles(moduleDefinition).map((file) =>
+      path.posix.relative(projectRoot, file),
+    );
+    const shownExports = exportFiles.length
+      ? `${exportFiles.slice(0, 3).join(', ')}${exportFiles.length > 3 ? ', …' : ''}`
+      : 'none declared';
+
+    explainRules.push({
+      disallow: { to: { type: getModuleInternalType(moduleName) } },
+      message: `${moduleName} internals are private. Import its public API (${shownExports}) or add the file to metadata.boundaries.exports in ${projectFile} and record it in openspec/specs/module-boundaries/spec.md.`,
+    });
+    explainRules.push({
+      from: { type: [getModuleInternalType(moduleName), getModuleEntrypointType(moduleName)] },
+      disallow: { to: { type: entrypointTypes } },
+      message: `${moduleName} may not depend on {{to.type}} (allowed: ${(moduleDefinition.allowedDependencies ?? []).join(', ') || 'none'}). Add it to metadata.boundaries.dependsOn in ${projectFile} only if the layering permits; cycles fail workspace:architecture.`,
+    });
+  }
+
+  const dependencyRules = [...explainRules];
 
   for (const [workspaceName, workspaceBoundary] of getWorkspaceEntries(manifest)) {
     if (!(workspaceBoundary.ownedRoots ?? []).length) {

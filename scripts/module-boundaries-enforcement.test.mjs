@@ -35,3 +35,12 @@ test('real ESLint rejects private module imports, workspace bypasses, and Astro 
     );
   }
 });
+
+test('module boundary violations explain the public API', async () => {
+  const eslint = new ESLint({ cwd: root, overrideConfig: tseslint.configs.disableTypeChecked });
+  const [result] = await eslint.lintText(
+    "import { createPrismaClient } from '../../../infrastructure/persistence/prisma/create-prisma-client';\nexport { createPrismaClient };\n",
+    { filePath: path.resolve(root, 'apps/backend/src/application/commerce/checkout/index.ts') },
+  );
+  assert.match(result.messages.map(({ message }) => message).join('\n'), /internals are private/);
+});

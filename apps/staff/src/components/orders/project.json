@@ -11,5 +11,16 @@
       "cache": false,
       "continuous": true
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./OrderWorkspace.tsx", "./internal-order-api.ts"],
+      "namedInterfaces": {},
+      "dependsOn": ["staff-ui", "staff-platform"],
+      "workspaceInterfaces": {
+        "@blackbox/api-client": ["./internal"]
+      }
+    }
   }
 }

@@ -109,7 +109,7 @@
     "catalog:bindings:migrate": "pnpm --filter @blackbox/backend exec tsx scripts/migrate-catalog-product-bindings.ts",
     "cms:import:local": "node --import tsx scripts/import-cms-content.mjs",
     "catalog:backfill": "tsx apps/backend/scripts/backfill-runtime-catalog.ts",
-    "test": "nx test"
+    "test": "node --import tsx scripts/test-watch.mjs --run"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",

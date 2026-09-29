@@ -11,5 +11,19 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./index.ts", "./middleware.ts", "./cms-worker.ts"],
+      "namedInterfaces": {
+        "commerce-worker": "./index.ts",
+        "combined-worker": "./cms-worker.ts"
+      },
+      "dependsOn": ["public-commerce-http", "orders", "backend-platform", "cms-runtime"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
   }
 }

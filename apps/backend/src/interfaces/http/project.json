@@ -11,5 +11,34 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./contracts/public-contracts.ts",
+        "./routes/register-public-routes.ts",
+        "./routes/register-internal-routes.ts",
+        "./app.ts"
+      ],
+      "namedInterfaces": {
+        "public-contracts": "./contracts/public-contracts.ts"
+      },
+      "dependsOn": [
+        "checkout-core",
+        "orders",
+        "operator-stock",
+        "stock",
+        "catalog-sync",
+        "email-application",
+        "commerce-domain",
+        "commerce-persistence",
+        "stripe-integration",
+        "resend-integration",
+        "operator-auth",
+        "backend-platform"
+      ],
+      "workspaceInterfaces": {}
+    }
   }
 }

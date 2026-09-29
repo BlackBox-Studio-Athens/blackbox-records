@@ -6,7 +6,13 @@ import { test } from 'node:test';
 import { execa } from 'execa';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { validationPlan, main, runValidation, sourceIdentity } from './validate.mjs';
-import { main as testWatchMain, nxWatchArguments } from './test-watch.mjs';
+import {
+  existingPath,
+  main as testWatchMain,
+  nxTestArguments,
+  nxWatchArguments,
+  owningProject,
+} from './test-watch.mjs';
 
 const identity = async () => ({ sha: 'fixture', fingerprint: 'same' });
 
@@ -116,6 +122,49 @@ test('Nx plans use affected targets by default and run-many for full validation'
     console.log = originalLog;
   }
   assert.equal(output, 'PARTIAL affected tests: this does not establish implementation completion.');
+  const affected = ['exec', 'nx', 'affected', '-t', 'test', '--exclude=workspace,*-tooling'];
+  assert.deepEqual(nxTestArguments(), [...affected, '--base=HEAD']);
+  assert.deepEqual(nxTestArguments('a/b.ts', 'a/b.ts'), [...affected, '--files=a/b.ts']);
+  assert.deepEqual(nxTestArguments('scripts/a.mjs', 'scripts/a.mjs', [], false).slice(5), ['--files=scripts/a.mjs']);
+  assert.deepEqual(nxTestArguments('staff-orders', undefined, ['--watch']).slice(-2), ['staff-orders:test', '--watch']);
+  assert.deepEqual(nxTestArguments('staff-orders'), ['exec', 'nx', 'run', 'staff-orders:test']);
+  assert.equal(existingPath('scripts\\test-watch.mjs'), 'scripts/test-watch.mjs');
+  assert.equal(existingPath('nope.ts'), undefined);
+  const node = (name, root, targets = {}) => ({ name, data: { root, targets } });
+  const nodes = [node('workspace', '.'), node('app', 'apps/x'), node('mod', 'apps/x/src/mod', { 'test-watch': {} })];
+  assert.equal(owningProject(nodes, 'apps/x/src/mod/a.ts').name, 'mod');
+  assert.equal(owningProject(nodes, 'apps/x/src/modern/a.ts').name, 'app');
+  assert.equal(owningProject(nodes, 'docs/a.md').name, 'workspace');
+  const seen = [];
+  const record = async (command) => seen.push(command.args.at(-1));
+  console.log = () => {};
+  try {
+    await testWatchMain(['--run', 'scripts/test-watch.mjs'], { runCommand: record, nodes: async () => nodes });
+    await testWatchMain(['--run', 'stock'], { runCommand: record });
+    await testWatchMain(['--', 'scripts/test-watch.mjs'], { runCommand: record, nodes: async () => nodes }).catch((e) =>
+      seen.push(e.message),
+    );
+  } finally {
+    console.log = originalLog;
+  }
+  const full = [];
+  console.log = () => {};
+  try {
+    const run = async (command) => full.push(command.args.join(' '));
+    await testWatchMain(['--run', 'stock', '--watch', '-u'], { runCommand: run });
+    await testWatchMain(['--run', 'scripts/test-watch.mjs'], { runCommand: run, nodes: async () => nodes });
+  } finally {
+    console.log = originalLog;
+  }
+  assert.equal(full[0], 'exec nx run stock:test --watch -u');
+  assert.ok(!full[1].includes('--exclude=workspace,*-tooling'), 'root-owned path keeps workspace');
+  await testWatchMain(['--run', 'scripts/test-watch.mjs'], {
+    runCommand: async (command) => full.push(command.args.join(' ')),
+    nodes: async () => [...nodes, node('x-tooling', 'scripts')],
+  });
+  assert.ok(!full[2].includes('--exclude'), 'tooling-owned path keeps its owner');
+  assert.deepEqual(seen.slice(0, 2), ['--files=scripts/test-watch.mjs', 'stock:test']);
+  assert.match(seen[2], /owned by workspace, which has no test-watch target/);
   await assert.rejects(testWatchMain(['--changed', 'web', 'backend'], { runCommand: async () => {} }), /module once/);
   await assert.rejects(
     testWatchMain(['--changed', '--scope=web', 'backend'], { runCommand: async () => {} }),

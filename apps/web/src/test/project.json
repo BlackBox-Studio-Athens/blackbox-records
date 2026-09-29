@@ -6,5 +6,27 @@
       "command": "pnpm --filter @blackbox/web exec vitest run --config vitest.modules.config.ts --project=web-test-support",
       "inputs": ["default", "^default", "{workspaceRoot}/apps/web/vitest*.ts"]
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [],
+      "namedInterfaces": {},
+      "dependsOn": [
+        "app-shell",
+        "player",
+        "ui-foundation",
+        "storefront-catalog",
+        "store-cart",
+        "checkout-web",
+        "web-platform",
+        "web-pages",
+        "web-layouts"
+      ],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."],
+        "@blackbox/api-client": ["./public"]
+      }
+    }
   }
 }

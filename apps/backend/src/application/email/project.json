@@ -11,5 +11,16 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./index.ts"],
+      "namedInterfaces": {
+        "email-provider-spi": "./spi.ts"
+      },
+      "dependsOn": ["backend-platform"],
+      "workspaceInterfaces": {}
+    }
   }
 }

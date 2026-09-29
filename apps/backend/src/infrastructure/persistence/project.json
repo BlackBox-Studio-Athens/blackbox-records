@@ -11,5 +11,18 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./d1-checkout-stock-hold-repository.ts",
+        "./d1-paid-order-delivery-repository.ts",
+        "./prisma/index.ts"
+      ],
+      "namedInterfaces": {},
+      "dependsOn": ["commerce-domain", "backend-platform", "generated-prisma"],
+      "workspaceInterfaces": {}
+    }
   }
 }

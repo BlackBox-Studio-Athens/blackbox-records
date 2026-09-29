@@ -12,5 +12,16 @@
       "continuous": true
     }
   },
-  "implicitDependencies": []
+  "implicitDependencies": [],
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./content-snapshot.ts", "./slugs.ts"],
+      "namedInterfaces": {},
+      "dependsOn": [],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
+  }
 }

@@ -12,5 +12,25 @@
       "continuous": true
     }
   },
-  "implicitDependencies": ["ui-foundation"]
+  "implicitDependencies": ["ui-foundation"],
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./MusicStreamingServiceListenTrigger.astro",
+        "./MusicEqualizer.tsx",
+        "./player-provider-data.ts",
+        "./player-provider-warmup.ts",
+        "./player-iframe-session.ts",
+        "./player-session-machine.ts",
+        "./player-session-ui.ts",
+        "./music.ts"
+      ],
+      "namedInterfaces": {},
+      "dependsOn": ["ui-foundation", "web-platform"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
+  }
 }

@@ -10,5 +10,22 @@
     "staff-stock",
     "staff-shell",
     "staff-content"
-  ]
+  ],
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [],
+      "namedInterfaces": {},
+      "dependsOn": [
+        "staff-ui",
+        "staff-platform",
+        "staff-orders",
+        "staff-publication",
+        "staff-stock",
+        "staff-shell",
+        "staff-content"
+      ],
+      "workspaceInterfaces": {}
+    }
+  }
 }

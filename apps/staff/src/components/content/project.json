@@ -11,5 +11,16 @@
       "cache": false,
       "continuous": true
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./ContentApp.tsx", "./ItemSetupApp.tsx"],
+      "namedInterfaces": {},
+      "dependsOn": ["staff-ui", "staff-platform", "staff-publication", "staff-stock"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
   }
 }

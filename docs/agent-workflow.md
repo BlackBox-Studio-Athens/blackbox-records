@@ -10,7 +10,7 @@ Domain specs describe intended behavior; the module-boundary manifest is executa
 
 ## Iteration and local completion
 
-- Start with the module: run `pnpm test <project>` or keep `pnpm test:watch <project>` running while editing. Use `pnpm test:changed` or `pnpm validate` afterward to check affected consumers; these are iteration commands and their results are partial.
+- Run `pnpm test` (tests reached by your working-tree changes), `pnpm test <file>`, or `pnpm test:watch <file>` while editing; `pnpm validate` before completion; these are iteration commands and their results are partial.
 - Public frontend work reuses the site and hot updates. CMS, checkout and publication acceptance use the normal Local stack. See [local runtime](agent-reference.md#local-runtime).
 - `pnpm validate` uses the Nx project graph to select affected module tests and package-level lint/type checks, plus required architecture checks, and records source-bound evidence. `pnpm validate --plan` prints the native task graph without running tasks. Boundary manifest/enforcement changes select `pnpm check:boundaries`; executable OpenSpec policy is not prose.
 - `pnpm agent:check` checks local links, root package command names and the entry-point line budget in these three agent documents. It does not crawl linked documents, check heading anchors, interpret shell programs or execute examples. Review semantic freshness when behavior changes.

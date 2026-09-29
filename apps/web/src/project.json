@@ -19,5 +19,63 @@
       "continuous": true
     }
   },
-  "implicitDependencies": ["checkout-web", "player", "store-cart", "ui-foundation", "web-platform"]
+  "implicitDependencies": ["checkout-web", "player", "store-cart", "ui-foundation", "web-platform"],
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./lib/store-collection.ts",
+        "./lib/store-categories.ts",
+        "./lib/catalog-data.ts",
+        "./lib/content-loader.ts",
+        "./lib/distro-data.ts",
+        "./lib/site-data.ts",
+        "./lib/store-page-data.ts",
+        "./components/artists/ArtistsRosterFilters.tsx",
+        "./components/store/StoreCoverflowController.ts",
+        "./components/store/StoreDistroSearch.tsx",
+        "./components/store/StoreListingPricePresentation.ts",
+        "./components/services/ServicesInquiryForm.tsx",
+        "./components/cards/ArtistCard.astro",
+        "./components/hero/HomeHero.astro",
+        "./components/cards/NewsCard.astro",
+        "./components/NewsletterSignup.astro",
+        "./components/InternalPageHero.astro",
+        "./components/detail/EditorialContent.astro",
+        "./utils/content.ts",
+        "./components/Prose.astro",
+        "./components/store/StoreImageGallery.tsx",
+        "./lib/content-reader.ts",
+        "./components/store/StoreOfferPriceDisplay.tsx",
+        "./components/store/StoreDistroCatalog.astro",
+        "./components/cards/ReleaseCard.astro",
+        "./lib/release-commerce.ts",
+        "./lib/release-feature.ts",
+        "./components/detail/ReleaseDetailContent.astro",
+        "./components/icons/InstagramIcon.astro",
+        "./components/detail/NewsDetailContent.astro",
+        "./components/detail/ArtistDetailContent.astro",
+        "./styles/global.css",
+        "./components/Footer.astro",
+        "./components/Header.astro",
+        "./components/cards/StoreItemCard.astro",
+        "./components/store/StoreCategoryNavigation.astro",
+        "./components/store/StoreBrowsePane.astro",
+        "./components/store/StoreCoverflowControls.astro"
+      ],
+      "namedInterfaces": {},
+      "dependsOn": [
+        "player",
+        "store-cart",
+        "checkout-web",
+        "ui-foundation",
+        "web-platform",
+        "web-content-files",
+        "app-shell"
+      ],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
+  }
 }

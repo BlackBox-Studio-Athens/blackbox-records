@@ -11,5 +11,30 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./create-pending-checkout-order.ts",
+        "./index.ts",
+        "./register-internal-order-routes.ts",
+        "./run-paid-order-delivery-schedule.ts"
+      ],
+      "namedInterfaces": {
+        "internal-order-routes": "./register-internal-order-routes.ts",
+        "scheduled-paid-order-delivery": "./run-paid-order-delivery-schedule.ts"
+      },
+      "dependsOn": [
+        "commerce-domain",
+        "checkout-core",
+        "stock",
+        "commerce-persistence",
+        "email-application",
+        "resend-integration",
+        "backend-platform"
+      ],
+      "workspaceInterfaces": {}
+    }
   }
 }

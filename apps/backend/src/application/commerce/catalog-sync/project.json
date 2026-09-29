@@ -11,5 +11,16 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./index.ts"],
+      "namedInterfaces": {},
+      "dependsOn": ["commerce-domain"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
   }
 }

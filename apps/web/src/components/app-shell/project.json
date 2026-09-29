@@ -11,5 +11,16 @@
       "cache": false,
       "continuous": true
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./AppShellRoot.tsx", "./lenis-scroll.ts"],
+      "namedInterfaces": {},
+      "dependsOn": ["player", "store-cart", "checkout-web", "storefront-catalog", "ui-foundation", "web-platform"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
   }
 }

@@ -11,5 +11,19 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./index.ts", "./auth.ts", "./media-upload.ts"],
+      "namedInterfaces": {
+        "access-auth-provider": "./auth.ts",
+        "lazy-media-upload": "./media-upload.ts"
+      },
+      "dependsOn": ["operator-auth", "backend-platform", "commerce-persistence"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
   }
 }

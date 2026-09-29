@@ -11,5 +11,24 @@
       "cache": false,
       "continuous": true
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./ContentPreview.tsx",
+        "./PublicationHistory.tsx",
+        "./PublicationReviewFlow.tsx",
+        "./PublicationStatus.tsx",
+        "./WebsiteChanges.tsx",
+        "./content-validation.ts",
+        "./content.css"
+      ],
+      "namedInterfaces": {},
+      "dependsOn": ["staff-ui", "staff-platform"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
   }
 }

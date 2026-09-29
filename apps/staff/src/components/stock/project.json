@@ -11,5 +11,22 @@
       "cache": false,
       "continuous": true
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./CatalogSelling.tsx",
+        "./FormatFilter.tsx",
+        "./ItemPriceEditor.tsx",
+        "./ItemPublication.tsx",
+        "./StockOperationsApp.tsx"
+      ],
+      "namedInterfaces": {},
+      "dependsOn": ["staff-ui", "staff-platform", "staff-publication"],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."]
+      }
+    }
   }
 }

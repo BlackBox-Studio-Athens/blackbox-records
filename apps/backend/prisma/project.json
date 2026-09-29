@@ -4,5 +4,14 @@
   "tags": ["generated", "scope:backend"],
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "{workspaceRoot}/apps/backend/prisma/**/*", "toolchain"]
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./prisma/client.ts"],
+      "namedInterfaces": {},
+      "dependsOn": [],
+      "workspaceInterfaces": {}
+    }
   }
 }

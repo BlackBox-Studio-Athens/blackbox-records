@@ -15,5 +15,16 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./internal-contracts.ts", "./register-internal-stock-routes.ts"],
+      "namedInterfaces": {
+        "internal-contracts": "./internal-contracts.ts"
+      },
+      "dependsOn": ["stock", "orders", "commerce-persistence", "backend-platform"],
+      "workspaceInterfaces": {}
+    }
   }
 }

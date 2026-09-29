@@ -27,13 +27,13 @@ Start with the relevant row. Use [README](README.md) when setup or product conte
 - Cloudflare stays on Free. Read the Free-tier rule before quota-consuming hosted work; authenticated GETs can write sessions. CMS builds reject KV bindings in source and generated configuration.
 - Product Environments are Local, UAT and PRD. Live catalog authorization, code promotion and shopper launch are separate gates; follow catalog promotion and the current change's acceptance criteria.
 - CMS drafts remain private until Content Publication accepts a snapshot. Content Publication and Software Release are separate operations.
-- The Worker owns commerce authority. Public code uses browser-safe API contracts; D1 owns stock and order state. Preserve closed module ownership and update the boundary spec and manifest together.
+- The Worker owns commerce authority. Public code uses browser-safe API contracts; D1 owns stock and order state. Preserve closed module ownership; a module's public API and allowed dependencies live in its `project.json` `metadata.boundaries`, updated together with the boundary spec.
 - Shell navigation preserves the persistent player. Changes to routing, overlays or player state require the continuity checks in the agent workflow.
 - OpenSpec is the only repository spec and task-state workflow. Baselines live in [specs](openspec/specs/); unfinished work lives in [changes](openspec/changes/). Keep acceptance, decisions and evidence in the relevant change.
 
 ## Completion
 
-- Start with the module: run `pnpm test <project>` or keep `pnpm test:watch <project>` running while editing. Use `pnpm test:changed` or `pnpm validate` afterward to check affected consumers.
+- Run `pnpm test` (tests reached by your working-tree changes), `pnpm test <file>`, or `pnpm test:watch <file>` while editing; `pnpm validate` before completion.
 - Run `pnpm validate` on the final tree. It uses Nx affected tests, package lint/type checks and required architecture checks; CI retains full unit, check and build gates. Reuse evidence only for its recorded source fingerprint.
 - Use `pnpm validate:full` for the full local run. `--no-cache` disables Nx cache reuse for the selected mode; it does not change affected or full selection.
 - Use the [acceptance matrix](docs/agent-workflow.md#acceptance-matrix) for additional behavior checks and the [evidence record](docs/agent-workflow.md#completion-evidence) for the handoff. Local validation alone does not establish browser, provider or release acceptance.

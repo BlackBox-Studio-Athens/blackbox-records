@@ -11,5 +11,16 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./index.ts", "./reconcile-checkout-session.ts", "./readers/index.ts", "./feature-flags/index.ts"],
+      "namedInterfaces": {
+        "checkout-spi": "./spi.ts"
+      },
+      "dependsOn": ["catalog-sync", "commerce-domain", "orders", "stock", "backend-platform"],
+      "workspaceInterfaces": {}
+    }
   }
 }

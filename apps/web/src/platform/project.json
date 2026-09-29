@@ -11,5 +11,28 @@
       "cache": false,
       "continuous": true
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./config/site.ts",
+        "./components/Prose.tsx",
+        "./components/PurchaseInformation.tsx",
+        "./components/PurchaseDocument.tsx",
+        "./lib/purchase-information.ts",
+        "./lib/backend/api-client.ts",
+        "./lib/backend/public-backend-config.ts",
+        "./lib/private-preview.ts",
+        "./lib/lenis-scroll.ts",
+        "./utils/urls.ts"
+      ],
+      "namedInterfaces": {},
+      "dependsOn": [],
+      "workspaceInterfaces": {
+        "@blackbox/api-client": ["./public"],
+        "@blackbox/content-model": ["."]
+      }
+    }
   }
 }

@@ -11,5 +11,14 @@
       "cache": false,
       "continuous": true
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./StaffShell.tsx"],
+      "namedInterfaces": {},
+      "dependsOn": ["staff-ui", "staff-platform", "staff-publication"],
+      "workspaceInterfaces": {}
+    }
   }
 }

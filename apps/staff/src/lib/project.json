@@ -11,5 +11,29 @@
       "cache": false,
       "continuous": true
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./StaffBack.tsx",
+        "./backend/content-publication-api.ts",
+        "./backend/editorial-api.ts",
+        "./backend/internal-stock-api.ts",
+        "./content-sections.ts",
+        "./lenis-scroll-roots.ts",
+        "./lenis-scroll.ts",
+        "./publication-history-events.ts",
+        "./staff-navigation.ts",
+        "./staff-query.ts",
+        "./use-draft-autosave.ts"
+      ],
+      "namedInterfaces": {},
+      "dependsOn": ["staff-ui"],
+      "workspaceInterfaces": {
+        "@blackbox/api-client": ["./internal"],
+        "@blackbox/content-model": ["."]
+      }
+    }
   }
 }

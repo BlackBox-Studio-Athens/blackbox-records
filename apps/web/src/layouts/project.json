@@ -12,5 +12,26 @@
         "{workspaceRoot}/apps/web/src/styles/**/*"
       ]
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./SiteLayout.astro", "./RedirectLayout.astro", "./StoreCollectionPage.astro"],
+      "namedInterfaces": {},
+      "dependsOn": [
+        "app-shell",
+        "player",
+        "ui-foundation",
+        "storefront-catalog",
+        "store-cart",
+        "checkout-web",
+        "web-platform",
+        "web-pages"
+      ],
+      "workspaceInterfaces": {
+        "@blackbox/content-model": ["."],
+        "@blackbox/api-client": ["./public"]
+      }
+    }
   }
 }

@@ -11,5 +11,17 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": ["./index.ts", "./request-idempotency.ts"],
+      "namedInterfaces": {
+        "repository-spi": "./repositories/spi.ts",
+        "request-identity": "./repositories/request-identity.ts"
+      },
+      "dependsOn": [],
+      "workspaceInterfaces": {}
+    }
   }
 }

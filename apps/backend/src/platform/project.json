@@ -11,5 +11,23 @@
       "continuous": true,
       "cache": false
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./observability/index.ts",
+        "./env.ts",
+        "./interfaces/http/responses.ts",
+        "./interfaces/http/error-handler.ts",
+        "./interfaces/http/not-found-handler.ts"
+      ],
+      "namedInterfaces": {},
+      "dependsOn": [],
+      "workspaceInterfaces": {
+        "@blackbox/api-client": ["./public"],
+        "@blackbox/content-model": ["."]
+      }
+    }
   }
 }

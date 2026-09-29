@@ -11,5 +11,26 @@
       "cache": false,
       "continuous": true
     }
+  },
+  "metadata": {
+    "boundaries": {
+      "status": "closed",
+      "exports": [
+        "./public-checkout-api.ts",
+        "./CheckoutOrderSummary.tsx",
+        "./DeliverySummary.tsx",
+        "./DeliveryRates.tsx",
+        "./StoreItemPurchaseActions.tsx",
+        "./CheckoutOfferStatus.tsx",
+        "./CheckoutReturnStatus.tsx"
+      ],
+      "namedInterfaces": {
+        "browser-checkout-api": "./public-checkout-api.ts"
+      },
+      "dependsOn": ["storefront-catalog", "store-cart", "public-commerce-http", "ui-foundation", "web-platform"],
+      "workspaceInterfaces": {
+        "@blackbox/api-client": ["./public"]
+      }
+    }
   }
 }
