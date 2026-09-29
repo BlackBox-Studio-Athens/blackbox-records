@@ -389,7 +389,7 @@ async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions
     issues.push(`Expected checkout shell route to return HTTP 200; received ${probe.status ?? 'no response'}.`);
   }
 
-  for (const expectedText of ['Checkout', 'Shipping & Payment', 'Secure Stripe Checkout']) {
+  for (const expectedText of ['Checkout', 'Review and Pay', 'Order Summary']) {
     if (!containsTextIgnoreCase(probe.bodyText, expectedText)) {
       issues.push(`Expected the checkout shell to include "${expectedText}".`);
     }
