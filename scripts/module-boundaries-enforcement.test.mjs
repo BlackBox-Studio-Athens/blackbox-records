@@ -3,11 +3,13 @@ import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
+import tseslint from 'typescript-eslint';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 test('real ESLint rejects private module imports, workspace bypasses, and Astro violations', async () => {
-  const eslint = new ESLint({ cwd: root });
+  // Fixtures reuse real file paths; type-aware parsing would lint the on-disk source instead of the fixture text.
+  const eslint = new ESLint({ cwd: root, overrideConfig: tseslint.configs.disableTypeChecked });
   const cases = [
     [
       'apps/backend/src/application/commerce/checkout/index.ts',
