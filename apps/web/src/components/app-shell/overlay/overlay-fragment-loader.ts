@@ -1,4 +1,5 @@
 import { buildOverlayFragmentUrl, parseOverlayRoute } from '@/components/app-shell/routing';
+import { preloadEagerImages } from '@/components/app-shell/navigation/shell-first-screen-images';
 import { previewUrl } from '@/platform/lib/private-preview';
 
 type OverlayFragmentResponse = Pick<Response, 'ok' | 'text'>;
@@ -9,6 +10,7 @@ type OverlayFragmentLoaderOptions = {
   currentHref?: () => string;
   fetchFragment?: (href: string, init: RequestInit) => Promise<OverlayFragmentResponse>;
   inFlightRequests?: Map<string, Promise<string>>;
+  preloadImages?: (html: string) => void;
 };
 
 function normalizeOverlayPathname(pathname: string) {
@@ -21,6 +23,7 @@ export function createOverlayFragmentLoader({
   currentHref = () => window.location.href,
   fetchFragment = (href, init) => fetch(previewUrl(href), init),
   inFlightRequests = new Map<string, Promise<string>>(),
+  preloadImages = preloadEagerImages,
 }: OverlayFragmentLoaderOptions = {}) {
   function getCachedHtml(pathname: string) {
     return cache.get(normalizeOverlayPathname(pathname)) ?? '';
@@ -73,7 +76,7 @@ export function createOverlayFragmentLoader({
     if (!route || cache.has(route.pathname)) return;
 
     try {
-      await fetchHtml(route.pathname);
+      preloadImages(await fetchHtml(route.pathname));
     } catch {
       // Ignore speculative prefetch failures and let click fallback to real navigation.
     }

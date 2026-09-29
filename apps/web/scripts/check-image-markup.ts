@@ -185,6 +185,48 @@ const routeChecks: RouteCheck[] = [
     ],
   },
   {
+    route: 'app-shell-overlay/releases/disintegration/index.html',
+    maxHighPriorityImages: 0,
+    images: [
+      {
+        className: 'release-detail-cover__image',
+        firstEagerCount: 1,
+        minCount: 1,
+        minSrcsetCandidates: 2,
+        requireDecoding: true,
+        requireSrcset: true,
+      },
+    ],
+  },
+  {
+    route: 'app-shell-overlay/artists/afterwise/index.html',
+    maxHighPriorityImages: 0,
+    images: [
+      {
+        className: 'artist-detail-hero__image',
+        firstEagerCount: 1,
+        minCount: 1,
+        minSrcsetCandidates: 2,
+        requireDecoding: true,
+        requireSrcset: true,
+      },
+    ],
+  },
+  {
+    route: 'app-shell-overlay/news/lorem-ipsum/index.html',
+    maxHighPriorityImages: 0,
+    images: [
+      {
+        className: 'news-detail-lead__image',
+        firstEagerCount: 1,
+        minCount: 1,
+        minSrcsetCandidates: 2,
+        requireDecoding: true,
+        requireSrcset: true,
+      },
+    ],
+  },
+  {
     route: 'services/index.html',
     maxHighPriorityImages: 1,
     images: [

@@ -59,6 +59,7 @@ export type OpenShellSectionNavigationOptions = {
   syncShellNavigationState: (pathname: string) => void;
   triggerShellPageEnterTransition: () => void;
   waitForAnimationFrames?: ((count?: number) => Promise<void>) | undefined;
+  waitForFirstScreenImages?: (() => Promise<unknown>) | undefined;
 };
 
 export async function openShellSectionNavigation({
@@ -86,6 +87,7 @@ export async function openShellSectionNavigation({
   syncShellNavigationState,
   triggerShellPageEnterTransition,
   waitForAnimationFrames: waitForAnimationFramesCallback = waitForAnimationFrames,
+  waitForFirstScreenImages = async () => undefined,
 }: OpenShellSectionNavigationOptions) {
   const resolvedUrl = new URL(href, currentHref);
   const route = parseShellSectionRoute(resolvedUrl.pathname);
@@ -152,6 +154,11 @@ export async function openShellSectionNavigation({
     }
 
     await scrollToDestination();
+    await waitForFirstScreenImages();
+    if (abortController.signal.aborted) {
+      return true;
+    }
+
     triggerShellPageEnterTransition();
     await shellSectionTransition.finish(sectionTransitionToken);
     activationOutcome = 'complete';

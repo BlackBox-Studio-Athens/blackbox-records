@@ -60,11 +60,27 @@ describe('overlay fragment loader', () => {
     const loader = createOverlayFragmentLoader({
       currentHref: () => 'https://example.test/blackbox-records/releases/',
       fetchFragment,
+      preloadImages: vi.fn(),
     });
 
     await expect(
       loader.prefetchHref('https://example.test/blackbox-records/releases/disintegration/'),
     ).resolves.toBeUndefined();
     expect(fetchFragment).toHaveBeenCalledTimes(1);
+  });
+
+  it('preloads eager images from prefetched fragments only', async () => {
+    const preloadImages = vi.fn();
+    const loader = createOverlayFragmentLoader({
+      currentHref: () => 'https://example.test/blackbox-records/releases/',
+      fetchFragment: vi.fn(async () => ({ ok: true, text: async () => '<article>Afterwise</article>' })),
+      preloadImages,
+    });
+
+    await loader.fetchHtml('/artists/afterwise/');
+    expect(preloadImages).not.toHaveBeenCalled();
+
+    await loader.prefetchHref('https://example.test/blackbox-records/releases/disintegration/');
+    expect(preloadImages).toHaveBeenCalledWith('<article>Afterwise</article>');
   });
 });

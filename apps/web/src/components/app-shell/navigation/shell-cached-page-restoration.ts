@@ -26,6 +26,7 @@ type RestoreCachedShellPageSnapshotOptions = {
   stopRouteLoadingSoon: () => void;
   triggerShellPageEnterTransition: () => void;
   waitForAnimationFrames: (count: number) => Promise<void>;
+  waitForFirstScreenImages?: (() => Promise<unknown>) | undefined;
 };
 
 export async function restoreCachedShellPageSnapshot({
@@ -39,6 +40,7 @@ export async function restoreCachedShellPageSnapshot({
   stopRouteLoadingSoon,
   triggerShellPageEnterTransition,
   waitForAnimationFrames,
+  waitForFirstScreenImages = async () => undefined,
 }: RestoreCachedShellPageSnapshotOptions) {
   const pageSnapshot = getCachedSnapshot(pathname);
   if (!pageSnapshot) return false;
@@ -62,6 +64,7 @@ export async function restoreCachedShellPageSnapshot({
     }
 
     await scrollShellViewportToTop();
+    await waitForFirstScreenImages();
     triggerShellPageEnterTransition();
 
     if (sectionTransitionToken !== null) {

@@ -140,6 +140,22 @@ describe('shell section navigation', () => {
     expect(options.scrollShellViewportToTop).not.toHaveBeenCalled();
   });
 
+  it('waits for first-screen images before the enter transition', async () => {
+    const order: string[] = [];
+    const options = createOptions({
+      triggerShellPageEnterTransition: vi.fn(() => {
+        order.push('enter');
+      }),
+      waitForFirstScreenImages: vi.fn(async () => {
+        order.push('images');
+      }),
+    });
+
+    await openShellSectionNavigation(options);
+
+    expect(order).toEqual(['images', 'enter']);
+  });
+
   it('uses cached snapshots without starting the route loading state', async () => {
     const cachedSnapshot = createSnapshot('/artists/');
     const finishSectionActivation = vi.fn();

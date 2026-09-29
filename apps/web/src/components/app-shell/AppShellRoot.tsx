@@ -62,6 +62,7 @@ import { openShellOverlayNavigation, type ShellOverlayState } from './overlay/sh
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './overlay/shell-overlay-focus';
 import { createShellPlayerSessionController } from './player-shell/shell-player-session-controller';
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
+import { waitForEagerImages } from './navigation/shell-first-screen-images';
 import { openShellSectionNavigation, type ShellSectionActivationOutcome } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
@@ -514,6 +515,7 @@ export default function AppShellRoot({
       stopRouteLoadingSoon,
       syncShellNavigationState,
       triggerShellPageEnterTransition: () => triggerShellPageEnterTransition(shellPageTransition),
+      waitForFirstScreenImages: () => waitForEagerImages(getCurrentMainElement()),
     });
   }
 
@@ -529,6 +531,7 @@ export default function AppShellRoot({
       stopRouteLoadingSoon,
       triggerShellPageEnterTransition: () => triggerShellPageEnterTransition(shellPageTransition),
       waitForAnimationFrames,
+      waitForFirstScreenImages: () => waitForEagerImages(getCurrentMainElement()),
     });
   }
 

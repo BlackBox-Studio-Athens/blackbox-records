@@ -74,6 +74,22 @@ describe('cached shell page restoration', () => {
     expect(finishSectionActivation).toHaveBeenCalledWith('complete');
   });
 
+  it('waits for first-screen images before the enter transition', async () => {
+    const order: string[] = [];
+    const options = createOptions({
+      triggerShellPageEnterTransition: vi.fn(() => {
+        order.push('enter');
+      }),
+      waitForFirstScreenImages: vi.fn(async () => {
+        order.push('images');
+      }),
+    });
+
+    await restoreCachedShellPageSnapshot(options);
+
+    expect(order).toEqual(['images', 'enter']);
+  });
+
   it('resets the section transition when the cached snapshot cannot be applied', async () => {
     const finishSectionActivation = vi.fn();
     const options = createOptions({

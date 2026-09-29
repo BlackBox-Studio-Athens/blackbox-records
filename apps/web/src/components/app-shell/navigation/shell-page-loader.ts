@@ -1,6 +1,7 @@
 import { normalizeAppPathname, parseShellSectionRoute } from '@/components/app-shell/routing';
 import { previewUrl } from '@/platform/lib/private-preview';
 
+import { preloadEagerImages } from './shell-first-screen-images';
 import { readDocumentShellPageSnapshot, type ShellPageSnapshot } from './shell-page-snapshot';
 
 type ShellPageSnapshotResponse = Pick<Response, 'ok' | 'text' | 'url'>;
@@ -11,6 +12,7 @@ type ShellPageSnapshotLoaderOptions = {
   fetchPage?: (href: string, init: RequestInit) => Promise<ShellPageSnapshotResponse>;
   inFlightRequests?: Map<string, Promise<ShellPageSnapshot>>;
   parseHtml?: (html: string) => Document;
+  preloadImages?: (html: string) => void;
   readSnapshot?: typeof readDocumentShellPageSnapshot;
 };
 
@@ -20,6 +22,7 @@ export function createShellPageSnapshotLoader({
   fetchPage = (href, init) => fetch(previewUrl(href), init),
   inFlightRequests = new Map<string, Promise<ShellPageSnapshot>>(),
   parseHtml = (html) => new DOMParser().parseFromString(html, 'text/html'),
+  preloadImages = preloadEagerImages,
   readSnapshot = readDocumentShellPageSnapshot,
 }: ShellPageSnapshotLoaderOptions = {}) {
   function cacheSnapshot(pageSnapshot: ShellPageSnapshot) {
@@ -78,7 +81,7 @@ export function createShellPageSnapshotLoader({
     if (!route || cache.has(route.pathname)) return;
 
     try {
-      await fetchSnapshot(route.pathname, resolvedUrl.toString());
+      preloadImages((await fetchSnapshot(route.pathname, resolvedUrl.toString())).mainHtml);
     } catch {
       // Ignore speculative prefetch failures and let click fallback to real navigation.
     }

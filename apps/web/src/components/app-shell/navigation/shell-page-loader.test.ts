@@ -80,9 +80,31 @@ describe('shell page snapshot loader', () => {
     const loader = createShellPageSnapshotLoader({
       currentHref: () => 'https://example.test/blackbox-records/',
       fetchPage,
+      preloadImages: vi.fn(),
     });
 
     await expect(loader.prefetchHref('https://example.test/blackbox-records/about/')).resolves.toBeUndefined();
     expect(fetchPage).toHaveBeenCalledTimes(1);
+  });
+
+  it('preloads eager images from prefetched snapshots only', async () => {
+    const preloadImages = vi.fn();
+    const loader = createShellPageSnapshotLoader({
+      currentHref: () => 'https://example.test/blackbox-records/',
+      fetchPage: vi.fn(async () => ({
+        ok: true,
+        text: async () => '',
+        url: 'https://example.test/blackbox-records/store/',
+      })),
+      parseHtml: () => ({}) as unknown as Document,
+      preloadImages,
+      readSnapshot: () => createSnapshot('/store/'),
+    });
+
+    await loader.fetchSnapshot('/store/', 'https://example.test/blackbox-records/store/');
+    expect(preloadImages).not.toHaveBeenCalled();
+
+    await loader.prefetchHref('https://example.test/blackbox-records/about/');
+    expect(preloadImages).toHaveBeenCalledWith('<section>/store/</section>');
   });
 });
