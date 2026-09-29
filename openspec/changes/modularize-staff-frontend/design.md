@@ -87,3 +87,19 @@ Route isolation and bundle budgets pass; sizes are unchanged within 20 bytes.
 - Every staff edit still pays package-level typecheck, lint and build inside `pnpm validate`; only the module test loop gets faster unless `check:fast` is adopted.
 - Overview, orders and stock bundles have under 1.5% budget headroom; the split must not add eager chunks to them.
 - The Linux CI boundary-fixture failure from the handoff is unrelated and needs its own fix before any push.
+
+### Paired benchmark
+
+`5d269954` (before) and `570577dc` (after) were run 3 times each. Runs alternated between before and after, caching was off, and each side had a warm-up run. The command for single-file edits was `nx affected -t test --files=<f>`, excluding the repository-wide tooling projects. All 56 runs passed. Raw data is in `.codex-artifacts/staff-modules/bench/`. Values are medians.
+
+| Scenario                         | Before | After  | Result                   |
+| -------------------------------- | ------ | ------ | ------------------------ |
+| Edit `orders/OrderDetail.tsx`    | 21.9s  | 7.5s   | about 3× faster          |
+| Edit `stock/stocktake.ts`        | 24.3s  | 9.0s   | about 2.7× faster        |
+| Edit `content/ContentFields.tsx` | 25.0s  | 9.0s   | about 2.8× faster        |
+| Edit `ui/button.tsx`             | 28.1s  | 22.0s  | no measurable difference |
+| Cached rerun (orders edit)       | 4.3s   | 4.3s   | same                     |
+| All staff tests                  | 21.0s  | 18.6s  | no measurable difference |
+| `pnpm validate:full --no-cache`  | 423.2s | 435.7s | no measurable difference |
+
+A result is "no measurable difference" when the before and after min–max ranges overlap.
