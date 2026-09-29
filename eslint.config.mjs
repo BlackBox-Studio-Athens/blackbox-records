@@ -99,6 +99,7 @@ export default tseslint.config(
       boundaries,
     },
     settings: {
+      'boundaries/root-path': import.meta.dirname,
       'boundaries/elements': boundaryConfig.descriptors,
       'boundaries/ignore': ['**/*.test.*', '**/*.spec.*', '**/test/**'],
       'import/resolver': {

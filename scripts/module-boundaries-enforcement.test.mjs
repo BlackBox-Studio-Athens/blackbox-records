@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url';
 import { ESLint } from 'eslint';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-process.chdir(root);
 
 test('real ESLint rejects private module imports, workspace bypasses, and Astro violations', async () => {
   const eslint = new ESLint({ cwd: root });
