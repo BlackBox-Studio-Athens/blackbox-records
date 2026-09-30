@@ -255,7 +255,7 @@ export default function EditorialPicker(props: Parameters<typeof RecordPicker>[0
   if (props.collection === 'media')
     return (
       <ContentImagePicker
-        cropRatio={props.label === 'Artwork' ? 1 : props.label === 'Artist photo' ? 0.75 : undefined}
+        cropRatio={props.label === 'Artwork' ? 1 : undefined}
         base={props.base}
         value={props.value}
         label={props.label}

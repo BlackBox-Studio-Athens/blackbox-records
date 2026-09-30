@@ -1,7 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 
-import { createArtistRosterSearcher } from './artist-roster-search';
+import {
+  createArtistRosterSearcher,
+  filterArtistRoster,
+  listArtistRosterGenres,
+  sortArtistRoster,
+  type ArtistRosterSort,
+} from './artist-roster-search';
+import { artistRosterVisibleEvent, type ArtistRosterVisibleDetail } from './artist-roster-preview-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -11,70 +18,99 @@ type ArtistRosterFiltersProps = {
 
 type ArtistRosterDomItem = {
   element: HTMLElement;
+  genre: string;
+  id: string;
+  latestReleaseSort: string;
+  sortName: string;
   title: string;
 };
 
+const sortOptions: { label: string; value: ArtistRosterSort }[] = [
+  { label: 'A–Z', value: 'az' },
+  { label: 'Latest release', value: 'latest' },
+];
+
+const controlClassName =
+  'inline-flex min-h-11 items-center justify-center rounded-none border px-3 text-[11px] tracking-[0.16em] uppercase lg:min-h-9';
+const idleClassName = 'border-[#2b2b2b] bg-transparent text-[#f5f5f5]';
+const pressedClassName = 'border-[#f5f5f5] bg-[#f5f5f5] text-[#090909]';
+
+function readRosterRoot() {
+  return document.querySelector<HTMLElement>('[data-artists-roster-root]');
+}
+
+function readRosterItems(root: HTMLElement): ArtistRosterDomItem[] {
+  return [...root.querySelectorAll<HTMLElement>('[data-artist-roster-item]')].map((element) => ({
+    element,
+    genre: element.dataset.artistGenre || '',
+    id: element.dataset.artistId || '',
+    latestReleaseSort: element.dataset.artistLatestReleaseSort || '',
+    sortName: element.dataset.artistSortName || element.dataset.artistTitle || '',
+    title: element.dataset.artistTitle || '',
+  }));
+}
+
 function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
-  const itemsRef = useRef<ArtistRosterDomItem[]>([]);
-  const searcherRef = useRef<ReturnType<typeof createArtistRosterSearcher<ArtistRosterDomItem>> | null>(null);
+  const [items, setItems] = useState<ArtistRosterDomItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [genre, setGenre] = useState('');
+  const [sort, setSort] = useState<ArtistRosterSort>('az');
   const [visibleCount, setVisibleCount] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
 
-  const hasActiveFilters = searchQuery.trim().length > 0;
-
-  const visibleLabel = useMemo(() => {
-    return `${visibleCount} ${visibleCount === 1 ? 'artist' : 'artists'}`;
-  }, [visibleCount]);
-
-  function applyFilters(nextSearchQuery: string, domItems: ArtistRosterDomItem[]) {
-    const matchedElements = nextSearchQuery.trim()
-      ? new Set((searcherRef.current?.search(nextSearchQuery) || []).map((match) => match.element))
-      : null;
-
-    let nextVisibleCount = 0;
-
-    domItems.forEach((item) => {
-      const shouldShow = matchedElements ? matchedElements.has(item.element) : true;
-
-      item.element.hidden = !shouldShow;
-      item.element.dataset.filterState = shouldShow ? 'visible' : 'hidden';
-
-      if (shouldShow) {
-        nextVisibleCount += 1;
-      }
-    });
-
-    setVisibleCount(nextVisibleCount);
-  }
+  const searcher = useMemo(() => createArtistRosterSearcher(items), [items]);
+  const genres = useMemo(() => listArtistRosterGenres(items), [items]);
+  const totalCount = items.length;
+  const hasActiveFilters = searchQuery.trim().length > 0 || genre !== '';
+  const visibleLabel = `${visibleCount} ${visibleCount === 1 ? 'artist' : 'artists'}`;
 
   useEffect(() => {
-    const rosterRoot = document.querySelector<HTMLElement>('[data-artists-roster-root]');
-    const domItems = rosterRoot
-      ? [...rosterRoot.querySelectorAll<HTMLElement>('[data-artist-roster-item]')].map((element) => ({
-          element,
-          title: element.dataset.artistTitle || '',
-        }))
-      : [];
-
-    itemsRef.current = domItems;
-    searcherRef.current = createArtistRosterSearcher(domItems);
-    setSearchQuery('');
-    setTotalCount(domItems.length);
-    applyFilters('', domItems);
+    const rosterRoot = readRosterRoot();
+    const domItems = rosterRoot ? readRosterItems(rosterRoot) : [];
+    setItems(domItems);
 
     return () => {
       domItems.forEach((item) => {
         item.element.hidden = false;
         item.element.dataset.filterState = 'visible';
+        item.element.style.removeProperty('order');
       });
-      searcherRef.current = null;
+      rosterRoot?.removeAttribute('data-roster-sort');
     };
   }, [pageKey]);
 
   useEffect(() => {
-    applyFilters(searchQuery, itemsRef.current);
-  }, [searchQuery]);
+    const visible = new Set(filterArtistRoster(items, { genre, query: searchQuery }, searcher));
+
+    items.forEach((item) => {
+      const shouldShow = visible.has(item);
+      item.element.hidden = !shouldShow;
+      item.element.dataset.filterState = shouldShow ? 'visible' : 'hidden';
+    });
+
+    // CSS `order` keeps server DOM order (and shell snapshots) intact; A-Z needs no order at all.
+    const ordered = sortArtistRoster(items, sort);
+    ordered.forEach((item, index) => {
+      if (sort === 'latest') item.element.style.order = String(index);
+      else item.element.style.removeProperty('order');
+    });
+
+    const rosterRoot = readRosterRoot();
+    if (sort === 'latest') rosterRoot?.setAttribute('data-roster-sort', 'latest');
+    else rosterRoot?.removeAttribute('data-roster-sort');
+
+    setVisibleCount(visible.size);
+    // The preview island follows this to drop an active artist that is no longer listed.
+    rosterRoot?.dispatchEvent(
+      new CustomEvent<ArtistRosterVisibleDetail>(artistRosterVisibleEvent, {
+        detail: { visibleIds: ordered.filter((item) => visible.has(item)).map((item) => item.id) },
+      }),
+    );
+  }, [items, searchQuery, genre, sort, searcher]);
+
+  function clearFilters() {
+    setSearchQuery('');
+    setGenre('');
+  }
 
   return (
     <div className="artists-roster-filters-panel space-y-4">
@@ -93,26 +129,82 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
         />
       </div>
 
+      {genres.length > 1 ? (
+        <div
+          role="group"
+          aria-label="Filter by genre"
+          className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible"
+        >
+          {[{ genre: '', count: totalCount }, ...genres].map((option) => {
+            const pressed = option.genre === genre;
+            return (
+              <button
+                key={option.genre || 'all'}
+                type="button"
+                aria-pressed={pressed}
+                className={`${controlClassName} shrink-0 gap-2 ${pressed ? pressedClassName : idleClassName}`}
+                onClick={() => setGenre(option.genre)}
+              >
+                <span>{option.genre || 'All'}</span>
+                <span className={pressed ? 'text-[#090909]' : 'text-[#8f8f8f]'}>{option.count}</span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs tracking-[0.18em] uppercase text-muted-foreground">{visibleLabel}</p>
-        {hasActiveFilters ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="rounded-none px-2 text-[11px] tracking-[0.16em] uppercase text-muted-foreground hover:bg-transparent hover:text-foreground"
-            onClick={() => {
-              setSearchQuery('');
-            }}
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] tracking-[0.18em] uppercase text-[#8f8f8f]">Sort</span>
+          <div role="group" aria-label="Sort artists" className="hidden lg:flex">
+            {sortOptions.map((option) => {
+              const pressed = option.value === sort;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  aria-pressed={pressed}
+                  className={`${controlClassName} -ml-px first:ml-0 ${pressed ? pressedClassName : idleClassName}`}
+                  onClick={() => setSort(option.value)}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
+          </div>
+          <select
+            aria-label="Sort artists"
+            value={sort}
+            onChange={(event) => setSort(event.target.value as ArtistRosterSort)}
+            className={`${controlClassName} border-[#2b2b2b] bg-[#111111] text-[#f5f5f5] lg:hidden`}
           >
-            Clear search
-          </Button>
-        ) : (
-          <p className="text-xs tracking-[0.14em] uppercase text-[#8f8f8f]">{totalCount} total</p>
-        )}
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <p className="text-xs tracking-[0.18em] uppercase text-muted-foreground">{visibleLabel}</p>
+          {hasActiveFilters ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="min-h-11 rounded-none px-2 text-[11px] tracking-[0.16em] uppercase text-muted-foreground hover:bg-transparent hover:text-foreground lg:min-h-9"
+              onClick={clearFilters}
+            >
+              {genre === '' ? 'Clear search' : 'Clear filters'}
+            </Button>
+          ) : (
+            <p className="text-xs tracking-[0.14em] uppercase text-[#8f8f8f]">{totalCount} total</p>
+          )}
+        </div>
       </div>
 
-      {visibleCount === 0 ? (
+      {totalCount > 0 && visibleCount === 0 ? (
         <div className="artists-roster-empty-state rounded-none border border-[#2b2b2b] bg-[#141414] px-5 py-6">
           <p className="text-sm tracking-[0.04em] text-muted-foreground">No artists match the current filters.</p>
         </div>

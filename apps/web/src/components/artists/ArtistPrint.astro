@@ -1,0 +1,80 @@
+---
+import type { ImageMetadata } from 'astro';
+import type { HTMLAttributes } from 'astro/types';
+import { Image } from 'astro:assets';
+import {
+  artistPrintMaxima,
+  artistPrintWidths,
+  getArtistPrintSlotSize,
+  getArtistPrintTilt,
+  type ArtistPrintRole,
+  type ArtistPrintSlot,
+} from './artist-print';
+
+interface Props extends Omit<HTMLAttributes<'figure'>, 'role' | 'loading' | 'style'> {
+  style?: string;
+  image: ImageMetadata;
+  alt: string;
+  name: string;
+  /** Roster number shown in the caption; omitted where no roster applies. */
+  number?: string;
+  role?: ArtistPrintRole;
+  tiltIndex?: number;
+  loading?: 'eager' | 'lazy';
+  /** First-viewport LCP print: eager and high priority. */
+  priority?: boolean;
+  /** High fetch priority without forcing eager loading (a lazy print hidden on some viewports). */
+  fetchPriority?: 'high' | undefined;
+  /** Override the role maximum, e.g. a narrower preview inside a phone disclosure. */
+  maxSize?: ArtistPrintSlot;
+}
+
+const {
+  image,
+  alt,
+  name,
+  number,
+  role = 'preview',
+  tiltIndex = 0,
+  loading = 'lazy',
+  priority = false,
+  fetchPriority,
+  maxSize,
+  class: className,
+  style,
+  ...rest
+} = Astro.props;
+
+const isThumb = role === 'thumb';
+const Tag = isThumb ? 'span' : 'figure';
+const slot = getArtistPrintSlotSize(image, maxSize ?? artistPrintMaxima[role]);
+const tilt = getArtistPrintTilt(role, tiltIndex);
+const caption = [number, name.toUpperCase()].filter(Boolean).join(' · ');
+---
+
+<Tag
+  class:list={['artist-print', `artist-print--${role}`, className]}
+  style={`--print-tilt: ${tilt}deg${style ? `; ${style}` : ''}`}
+  {...rest}
+>
+  <Image
+    src={image}
+    alt={isThumb ? '' : alt}
+    class="artist-print__image"
+    width={slot.width}
+    height={slot.height}
+    widths={artistPrintWidths[role]}
+    sizes={`${slot.width}px`}
+    loading={priority ? 'eager' : loading}
+    priority={priority}
+    fetchpriority={priority ? undefined : fetchPriority}
+    quality={68}
+    data-artist-roster-print={role === 'detail' ? undefined : role}
+  />
+  {!isThumb && (
+    <figcaption class="artist-print__caption">
+      <span>{caption}</span>
+      <span>BlackBox</span>
+    </figcaption>
+  )}
+</Tag>

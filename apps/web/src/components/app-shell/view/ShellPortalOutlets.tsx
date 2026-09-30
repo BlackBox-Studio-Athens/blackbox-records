@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import type { StoreCartState } from '@/components/store/cart/store-cart';
 
 const ArtistsRosterFilters = React.lazy(() => import('@/components/artists/ArtistsRosterFilters'));
+const ArtistRosterPreview = React.lazy(() => import('@/components/artists/ArtistRosterPreview'));
 const StoreDistroSearch = React.lazy(() => import('@/components/store/StoreDistroSearch'));
 const ServicesInquiryForm = React.lazy(() => import('@/components/services/ServicesInquiryForm'));
 const StoreCartButton = React.lazy(() => import('@/components/store/cart/StoreCartButton'));
@@ -38,6 +39,7 @@ function loadingStatus(label: string) {
 type ShellPortalOutletsProps = {
   activeShellPathname: string;
   artistsRosterFiltersContainer: HTMLElement | null;
+  artistsRosterPreviewContainer: HTMLElement | null;
   distroSearchContainer: HTMLElement | null;
   onOpenStoreCart: () => void;
   servicesInquiryContainer: HTMLElement | null;
@@ -50,6 +52,7 @@ type ShellPortalOutletsProps = {
 export default function ShellPortalOutlets({
   activeShellPathname,
   artistsRosterFiltersContainer,
+  artistsRosterPreviewContainer,
   distroSearchContainer,
   onOpenStoreCart,
   servicesInquiryContainer,
@@ -68,6 +71,18 @@ export default function ShellPortalOutlets({
               </React.Suspense>
             </PortalErrorBoundary>,
             artistsRosterFiltersContainer,
+          )
+        : null}
+
+      {artistsRosterPreviewContainer
+        ? createPortal(
+            // Behaviour-only island: on failure the server-rendered default preview stays as is.
+            <PortalErrorBoundary key={activeShellPathname} fallback={null}>
+              <React.Suspense fallback={null}>
+                <ArtistRosterPreview key={activeShellPathname} />
+              </React.Suspense>
+            </PortalErrorBoundary>,
+            artistsRosterPreviewContainer,
           )
         : null}
 

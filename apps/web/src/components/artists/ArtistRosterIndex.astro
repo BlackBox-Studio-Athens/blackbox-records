@@ -1,0 +1,231 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import Prose from '@/components/Prose.astro';
+import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
+import { buildEmbeddedPlayerData } from '@/components/music/music';
+import { emptyArtistRosterReleaseContext, type ArtistRosterReleaseContext } from '@/lib/catalog-data';
+import { createProjectRelativeUrl } from '@/platform/config/site';
+import ArtistPrint from './ArtistPrint.astro';
+import ArtistRosterContext from './ArtistRosterContext.astro';
+import { planArtistRoster } from './artist-roster-index';
+
+interface Props {
+  /** Artists in A-Z order. */
+  artists: CollectionEntry<'artists'>[];
+  releaseContextByArtistId: Map<string, ArtistRosterReleaseContext>;
+}
+
+const { artists, releaseContextByArtistId } = Astro.props;
+const { grouped, entries, jumpLetters } = planArtistRoster(artists, (artist) => artist.data.title);
+const total = String(entries.length).padStart(2, '0');
+const eagerThumbCount = 3;
+
+const rows = entries.map((entry, index) => {
+  const { artist } = entry;
+  const name = artist.data.title || 'Artist';
+  const releaseContext = releaseContextByArtistId.get(artist.id) ?? emptyArtistRosterReleaseContext;
+  const latestEntry = releaseContext.latestReleaseEntry;
+  return {
+    ...entry,
+    index,
+    name,
+    href: createProjectRelativeUrl(`/artists/${artist.data.slug}/`),
+    imageAlt: artist.data.image_alt || name,
+    label: [artist.data.genre, artist.data.country].filter(Boolean).join(' · '),
+    releaseContext,
+    releaseLabel: releaseContext.releaseCount === 1 ? '1 Release' : `${releaseContext.releaseCount} Releases`,
+    latestLine: releaseContext.latestReleaseTitle ? `Latest · ${releaseContext.latestReleaseTitle}` : 'No releases yet',
+    playerData: latestEntry
+      ? buildEmbeddedPlayerData(latestEntry.id, latestEntry.data, `${latestEntry.data.title} — ${name}`)
+      : null,
+  };
+});
+---
+
+<div class="artist-roster-index" data-artist-roster-index data-roster-grouped={grouped ? '' : undefined}>
+  {grouped && (
+    <nav class="artist-roster-index__jump" aria-label="Jump to letter" data-artist-roster-jump>
+      <ul>
+        {jumpLetters.map((item) => (
+          <li>
+            {item.enabled ? (
+              <a href={`#${item.anchorId}`} aria-label={`Jump to ${item.letter}`}>
+                {item.letter}
+              </a>
+            ) : (
+              <span aria-disabled="true">{item.letter}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )}
+
+  <div class="artist-roster-index__layout">
+    <ul class="artist-roster-index__list" data-artist-roster-list>
+      {rows.map((row) => (
+        <li
+          class="artist-roster-index__item"
+          id={row.anchorId ?? undefined}
+          tabindex={row.anchorId ? '-1' : undefined}
+          data-letter-start={row.groupStart ? '' : undefined}
+          data-artist-roster-item
+          data-artist-id={row.artist.id}
+          data-artist-title={row.artist.data.title}
+          data-artist-genre={row.artist.data.genre || ''}
+          data-artist-country={row.artist.data.country || ''}
+          data-artist-bio={(row.artist.data.bio || '').replace(/\s+/g, ' ').trim()}
+          data-artist-latest-release-title={row.releaseContext.latestReleaseTitle || ''}
+          data-artist-latest-release-date={row.releaseContext.latestReleaseDate || ''}
+          data-artist-sort-name={row.name}
+          data-artist-latest-release-sort={row.releaseContext.latestReleaseSortDate}
+        >
+          {row.groupStart && (
+            <span class="artist-roster-index__letter" data-artist-letter-marker aria-hidden="true">
+              {row.letter}
+            </span>
+          )}
+
+          <a
+            class="artist-roster-index__row"
+            href={row.href}
+            data-astro-prefetch
+            data-artist-roster-row
+            data-artist-id={row.artist.id}
+          >
+            <span class="artist-roster-index__number" data-artist-roster-number aria-hidden="true">
+              {row.number}
+            </span>
+            <span class="artist-roster-index__main">
+              <span class="artist-roster-index__name">{row.name}</span>
+              <span class="artist-roster-index__meta">
+                {row.label && <span>{row.label}</span>}
+                <span class="artist-roster-index__release-count">{row.releaseLabel}</span>
+              </span>
+            </span>
+            <span class="artist-roster-index__arrow" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </span>
+          </a>
+
+          <details class="artist-roster-index__disclosure" data-artist-roster-disclosure data-artist-id={row.artist.id}>
+            <summary class="artist-roster-index__summary">
+              <span class="artist-roster-index__thumb-slot">
+                <ArtistPrint
+                  role="thumb"
+                  image={row.artist.data.image}
+                  alt={row.imageAlt}
+                  name={row.name}
+                  tiltIndex={row.index}
+                  loading={row.index < eagerThumbCount ? 'eager' : 'lazy'}
+                />
+              </span>
+              <span class="artist-roster-index__summary-copy">
+                <span class="artist-roster-index__summary-name">{row.name}</span>
+                {row.artist.data.genre && (
+                  <span class="artist-roster-index__summary-line">{row.artist.data.genre}</span>
+                )}
+                <span class="artist-roster-index__summary-line artist-roster-index__summary-line--muted">
+                  {row.latestLine}
+                </span>
+              </span>
+              <span class="artist-roster-index__toggle" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </span>
+            </summary>
+            <div class="artist-roster-index__disclosure-body">
+              <div class="artist-roster-index__disclosure-print">
+                <ArtistPrint
+                  role="preview"
+                  image={row.artist.data.image}
+                  alt={row.imageAlt}
+                  name={row.name}
+                  number={row.number}
+                  tiltIndex={row.index}
+                  maxSize={{ width: 300, height: 340 }}
+                />
+              </div>
+              <ArtistRosterContext releaseContext={row.releaseContext} />
+              <div class="artist-roster-index__actions">
+                <a
+                  class="artist-roster-index__action artist-roster-index__action--primary"
+                  href={row.href}
+                  data-astro-prefetch
+                >
+                  View artist
+                </a>
+                {row.playerData && (
+                  <MusicStreamingServiceListenTrigger embeddedPlayerData={row.playerData} variant="standalone" />
+                )}
+              </div>
+            </div>
+          </details>
+        </li>
+      ))}
+    </ul>
+
+    <aside class="artist-roster-preview" aria-label="Artist preview" data-artist-roster-panel>
+      <div class="artist-roster-preview__deck" data-artist-preview-deck>
+        {rows.map((row) => (
+          <ArtistPrint
+            role="preview"
+            image={row.artist.data.image}
+            alt={row.imageAlt}
+            name={row.name}
+            number={row.number}
+            tiltIndex={row.index}
+            fetchPriority={row.index === 0 ? 'high' : undefined}
+            hidden={row.index > 0}
+            data-artist-preview-print
+            data-artist-id={row.artist.id}
+            data-print-depth={row.index === 0 ? '0' : undefined}
+          />
+        ))}
+      </div>
+      <div class="artist-roster-preview__details">
+        {rows.map((row) => (
+          <div
+            class="artist-roster-preview__details-item"
+            hidden={row.index > 0}
+            data-artist-preview-details
+            data-artist-id={row.artist.id}
+          >
+            <div class="artist-roster-preview__topline">
+              <span class="artist-roster-preview__count">
+                {row.number} / {total}
+              </span>
+              <span>{row.label}</span>
+            </div>
+            <h2 class="artist-roster-preview__name">{row.name}</h2>
+            {row.artist.data.bio && (
+              <Prose
+                class="artist-roster-index__bio"
+                value={row.artist.data.bio}
+                rich={row.artist.data.bio_rich}
+                data-content-path="bio"
+              />
+            )}
+            <ArtistRosterContext releaseContext={row.releaseContext} />
+            <div class="artist-roster-index__actions">
+              <a
+                class="artist-roster-index__action artist-roster-index__action--primary"
+                href={row.href}
+                data-astro-prefetch
+              >
+                View artist
+              </a>
+              {row.playerData && (
+                <MusicStreamingServiceListenTrigger embeddedPlayerData={row.playerData} variant="standalone" />
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div data-artist-roster-preview></div>
+    </aside>
+  </div>
+</div>

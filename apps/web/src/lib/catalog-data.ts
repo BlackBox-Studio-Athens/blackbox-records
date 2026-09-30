@@ -43,7 +43,19 @@ type StoreItemImageOverride = {
 export type ArtistRosterReleaseContext = {
   latestReleaseTitle: string | null;
   latestReleaseDate: string | null;
+  /** ISO day of the latest release, or the max date for upcoming/undated so it sorts first newest-first. */
+  latestReleaseSortDate: string;
+  latestReleaseEntry: ReleaseCatalogEntry | null;
   releaseCount: number;
+};
+
+export const undatedReleaseSortDate = '9999-12-31';
+export const emptyArtistRosterReleaseContext: ArtistRosterReleaseContext = {
+  latestReleaseTitle: null,
+  latestReleaseDate: null,
+  latestReleaseSortDate: undatedReleaseSortDate,
+  latestReleaseEntry: null,
+  releaseCount: 0,
 };
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
@@ -88,6 +100,8 @@ export async function mapArtistRosterReleaseContextById() {
       releaseContextByArtistId.set(artistId, {
         latestReleaseTitle: releaseEntry.data.title,
         latestReleaseDate: formatMonthYear(releaseEntry.data.release_date),
+        latestReleaseSortDate: releaseEntry.data.release_date?.toISOString().slice(0, 10) ?? undatedReleaseSortDate,
+        latestReleaseEntry: releaseEntry,
         releaseCount: 1,
       });
       return;

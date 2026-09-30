@@ -3,6 +3,7 @@ import Prose from '@/components/Prose.astro';
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import EditorialContent from '@/components/detail/EditorialContent.astro';
+import ArtistPrint from './ArtistPrint.astro';
 
 import SocialIcon from '@/components/icons/SocialIcon.astro';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
@@ -62,17 +63,14 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
 >
   <div class="artist-detail-hero">
     <div class="artist-detail-hero__image-shell">
-      <div class="artist-detail-hero__image-frame">
-        <Image
-          src={artist.data.image}
-          alt={artist.data.image_alt || artistName}
-          class="artist-detail-hero__image h-full w-full object-contain object-center bg-[#141414]"
-          widths={[720, 1080, 1440, 1800]}
-          sizes="(min-width: 1024px) 34rem, 100vw"
-          loading="eager"
-          priority={showRouteNavigation}
-        />
-      </div>
+      <ArtistPrint
+        role="detail"
+        image={artist.data.image}
+        alt={artist.data.image_alt || artistName}
+        name={artistName}
+        loading="eager"
+        priority={showRouteNavigation}
+      />
     </div>
 
     <div class="artist-detail-hero__copy">

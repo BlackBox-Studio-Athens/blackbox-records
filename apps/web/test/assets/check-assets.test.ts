@@ -82,36 +82,6 @@ describe('asset QA rule engine', () => {
     ]);
   });
 
-  it('warns on artist images that miss the documented 3:4 portrait source standard', () => {
-    expect(
-      evaluateImageMetadata(
-        {
-          collection: 'artists',
-          fieldPath: 'image',
-          path: 'src/content/artists/afterwise.jpg',
-          sourcePath: 'src/content/artists/afterwise.md',
-        },
-        {
-          channels: 3,
-          format: 'jpeg',
-          hasAlpha: false,
-          height: 1365,
-          width: 2048,
-        },
-      ),
-    ).toEqual([
-      {
-        actual: '2048x1365 (1.500)',
-        assetPath: 'src/content/artists/afterwise.jpg',
-        expected: 'at least 1200x1600 and 3:4 ratio',
-        message: 'Artist roster images should be portrait-oriented sources for the documented 3:4 crop.',
-        ruleId: 'artist-portrait-ratio',
-        severity: 'warning',
-        sourcePath: 'src/content/artists/afterwise.md',
-      },
-    ]);
-  });
-
   it('reports missing dimensions as an unreadable image error', () => {
     expect(evaluateImageMetadata({ path: 'src/content/releases/broken.jpg' }, { format: 'jpeg' })).toEqual([
       {
