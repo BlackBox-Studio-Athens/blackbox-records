@@ -9,7 +9,7 @@ export type ShellSectionHistoryState = {
 };
 
 export const SHELL_SECTION_LABELS = {
-  about: 'About',
+  about: 'Who we are',
   artists: 'Artists',
   home: 'Home',
   news: 'News',
