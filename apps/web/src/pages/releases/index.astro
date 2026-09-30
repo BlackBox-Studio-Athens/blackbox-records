@@ -134,12 +134,21 @@ function formatReleaseFormats(formats: string[] | undefined) {
                   </a>
                   {latestReleaseCommerceLink && (
                     <a
-                      class={buttonVariants({ variant: 'outline', size: 'lg' })}
+                      class={buttonVariants({
+                        variant: 'outline',
+                        size: 'lg',
+                        className: latestReleaseCommerceLink.target ? 'pr-6' : undefined,
+                      })}
                       href={latestReleaseCommerceLink.href}
                       rel={latestReleaseCommerceLink.rel}
                       target={latestReleaseCommerceLink.target}
                     >
                       {latestReleaseCommerceLink.label}
+                      {latestReleaseCommerceLink.target && (
+                        <span class="site-button-external-mark" aria-hidden="true">
+                          ↗
+                        </span>
+                      )}
                     </a>
                   )}
                 </div>

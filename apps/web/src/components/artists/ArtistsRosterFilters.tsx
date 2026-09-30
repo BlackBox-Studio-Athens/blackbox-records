@@ -30,9 +30,6 @@ const sortOptions: { label: string; value: ArtistRosterSort }[] = [
   { label: 'Latest release', value: 'latest' },
 ];
 
-const controlClassName =
-  'inline-flex min-h-11 items-center justify-center rounded-none border px-3 text-[11px] tracking-[0.16em] uppercase lg:min-h-9';
-
 function readRosterRoot() {
   return document.querySelector<HTMLElement>('[data-artists-roster-root]');
 }
@@ -146,7 +143,11 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
               >
                 {pressed ? <Check className="size-3" aria-hidden="true" /> : null}
                 <span>{option.genre || 'All'}</span>
-                <span>{option.count}</span>
+                <span
+                  className={`font-mono text-[10px] tracking-normal ${pressed ? 'text-foreground/70' : 'text-muted-foreground'}`}
+                >
+                  {option.count}
+                </span>
               </Button>
             );
           })}
@@ -179,7 +180,7 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
             aria-label="Sort artists"
             value={sort}
             onChange={(event) => setSort(event.target.value as ArtistRosterSort)}
-            className={`${controlClassName} border-[#2b2b2b] bg-[#111111] text-[#f5f5f5] lg:hidden`}
+            className="inline-flex min-h-11 items-center rounded-none border border-control-edge-quiet bg-secondary px-3 pt-px font-display text-sm tracking-[0.06em] text-foreground uppercase outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-foreground lg:hidden"
           >
             {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>

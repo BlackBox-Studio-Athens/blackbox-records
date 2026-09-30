@@ -17,14 +17,14 @@ import {
 type StoreCartDrawerProps = {
   deliverySummary?: React.ReactNode;
   cartState: StoreCartState;
-  checkoutAmountDisplay?: string | null;
+  checkoutAmountDisplay?: string | null | undefined;
   open: boolean;
   onContinueShopping: () => void;
   onDecrementItem: (variantId: string) => void;
   onIncrementItem: (variantId: string) => void;
   onOpenChange: (open: boolean) => void;
   onRemoveItem: (variantId: string) => void;
-  onRestoreItem?: (line: CartLine, index: number) => void;
+  onRestoreItem?: ((line: CartLine, index: number) => void) | undefined;
   resolveHref: (path: string) => string;
 };
 

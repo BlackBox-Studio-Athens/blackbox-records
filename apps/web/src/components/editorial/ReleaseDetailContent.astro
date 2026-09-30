@@ -122,9 +122,14 @@ const galleryImages =
               href={commerceLink.href}
               target={commerceLink.target}
               rel={commerceLink.rel}
-              class={buttonVariants({ size: 'lg' })}
+              class={buttonVariants({ size: 'lg', className: commerceLink.target ? 'pr-6' : undefined })}
             >
               {commerceLink.label}
+              {commerceLink.target && (
+                <span class="site-button-external-mark" aria-hidden="true">
+                  ↗
+                </span>
+              )}
             </a>
           )}
           {embeddedPlayerData && (
