@@ -14,7 +14,19 @@ Astro's passthrough image route already receives the original URL and requested 
 
 The transformation host is a non-secret Worker variable for UAT and PRD and is empty in Local. Cloudflare Images fetches each source from the current environment's Pages origin. A failed, rejected, or non-image transformation response falls back to the verified original response from the public renderer. Snapshot and media hashes make both source and transformed URLs immutable. No preview route can reach this public image path. Cloudflare Images Free allows 5,000 unique transformations per month; Workers Free allows 100,000 incoming requests per day, including cache hits.
 
-The public Worker uses its existing `PublicSiteRuntime` Durable Object. Replace its legacy migration declaration with the documented equivalent declarative export (`sqlite`), preserving the provisioned class, and add a named `PublicImageRenderer` entrypoint. The default entrypoint stays uncached; only the named image entrypoint enables Workers Caching. Its response varies on `Accept` when the transformed format is negotiated, and remains `public, max-age=31536000, immutable`.
+The public Worker uses its existing `PublicSiteRuntime` Durable Object. Replace its legacy migration declaration with the documented equivalent declarative export (`sqlite`), preserving the provisioned class, and add a named `PublicImageRenderer` entrypoint. Its response varies on `Accept` when the transformed format is negotiated, and remains `public, max-age=31536000, immutable`. An original returned after a failed or rejected transformation is `no-store`, because the failure can be transient, such as an exhausted monthly Images allowance, and a cache must not pin a multi-megabyte original at a sized URL.
+
+## Published HTML edge cache
+
+The Pages gateway reaches the public Worker's default entrypoint through a service binding, and that entrypoint now enables Workers Caching. The renderer marks successful renders of the accepted snapshot `public, max-age=0, s-maxage=30, stale-while-revalidate=30`; every other renderer response keeps `no-store`, and not-found responses set it explicitly because Workers Caching otherwise stores header-less 404s heuristically.
+
+- Category: Document Revalidation with a bounded edge window. Browsers revalidate every use.
+- Authority: the accepted snapshot pointer. Published HTML is identical for every visitor, because prices, stock and cart state load client-side from the Worker API.
+- Stale tolerance: the edge may serve a page for up to 60 seconds after its render, on top of the renderer's five-second pointer poll. Content Publication confirmation reads the uncached `/content-version.json`, so a confirmed publication can take about a minute more to appear on a cached page.
+- Invalidation: the cache key includes the Worker version, so a deployment starts empty; content changes expire within the window. No purge is available, because the CMS Worker holds no API token and `pages.dev` is not a purgeable zone.
+- Free-tier impact: a cache hit still counts one Worker request but skips the Durable Object and its render. Cached `/_image` responses vary on `Accept`, and the query string is part of the cache key.
+
+The cache helps bursts of traffic, such as a release announcement. A page requested less often than once per minute at a data centre still renders in the Durable Object.
 
 ## Cloudflare setup and rollout
 

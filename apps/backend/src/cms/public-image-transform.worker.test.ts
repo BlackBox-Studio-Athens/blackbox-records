@@ -68,6 +68,7 @@ it('serves negotiated immutable image bytes and falls back to the original on tr
     async () => new Response('rejected', { status: 403, headers: { 'Content-Type': 'text/plain' } }),
   );
   expect(await bodyText(fallback)).toBe('original');
+  expect(fallback.headers.get('Cache-Control')).toBe('no-store');
   expect(originalReads).toBe(1);
 });
 
@@ -98,6 +99,7 @@ it('snaps off-ladder widths, keeps originals without a width and returns bodyles
     transform,
   );
   expect(await bodyText(withoutWidth)).toBe('original');
+  expect(withoutWidth.headers.get('Cache-Control')).toBeNull();
   expect(transformedUrls).toHaveLength(1);
 
   const head = await deliverPublicCmsImage(

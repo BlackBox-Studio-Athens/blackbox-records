@@ -44,7 +44,7 @@ The system SHALL provide a bounded inventory and backfill path for native staff 
 
 ### Requirement: Public CMS images use bounded transformations with original fallback
 
-Published Content Images in accepted runtime snapshots MAY use Cloudflare Images URL transformations from the dedicated image hostname. Originals remain in environment-owned R2 storage and remain the source of truth.
+The public renderer SHALL deliver Published Content Images in accepted runtime snapshots through Cloudflare Images URL transformations from the dedicated image hostname when a transformation applies, with the verified original as fallback. Originals remain in environment-owned R2 storage and remain the source of truth.
 
 #### Scenario: A public CMS image requests a responsive size
 

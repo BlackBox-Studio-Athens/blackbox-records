@@ -25,6 +25,8 @@ type Bindings = {
   PUBLIC_IMAGE_TRANSFORM_ORIGIN: string;
   PUBLIC_SITE_RUNTIME: DurableObjectNamespace<PublicSiteRuntime>;
 };
+// Workers Caching stores header-less 404s heuristically; a not-found answer must never be reused.
+const notFound = () => new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
 
 export default {
   async fetch(request: Request, env: Bindings, context: ExecutionContext) {
@@ -173,8 +175,7 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
         return Response.json({ ...PUBLIC_RELEASE_IDENTITY, snapshotSha256: pointer.snapshotSha256 });
       }
       if (!['GET', 'HEAD'].includes(request.method)) return new Response('Method not allowed', { status: 405 });
-      if (/^\/(?:api|_emdash|__publication|content|stock)(?:\/|$)/.test(path))
-        return new Response('Not found', { status: 404 });
+      if (/^\/(?:api|_emdash|__publication|content|stock)(?:\/|$)/.test(path)) return notFound();
       if (path === '/_image') {
         const source = new URL(url.searchParams.get('href') ?? '', url);
         const imagePath = source.pathname.replace(/^\/blackbox-records(?=\/)/, '');
@@ -185,7 +186,7 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
           (!publicMedia && !staticAsset) ||
           (publicMedia && (source.search || source.hash))
         )
-          return new Response('Not found', { status: 404 });
+          return notFound();
         const original = new Request(source, { method: request.method });
         return publicMedia
           ? deliverPublicCmsImage(
@@ -216,13 +217,13 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
         const accepted =
           media[1] === pointer.snapshotSha256 ||
           (await this.env.MEDIA.head(`snapshots/${this.env.PRODUCT_ENVIRONMENT}/accepted/${media[1]}`));
-        if (!accepted) return new Response('Not found', { status: 404 });
+        if (!accepted) return notFound();
         const manifest =
           media[1] === pointer.snapshotSha256
             ? snapshot
             : await readPublishedSnapshot(this.env.MEDIA, this.env.PRODUCT_ENVIRONMENT, media[1]);
         const item = manifest.media.find((item) => item.sha256 === media[2]);
-        if (!item) return new Response('Not found', { status: 404 });
+        if (!item) return notFound();
         const object = await this.env.MEDIA.get(`snapshots/${this.env.PRODUCT_ENVIRONMENT}/media/${item.sha256}`);
         if (!object || object.size !== item.size || object.checksums.toJSON().sha256 !== item.sha256) {
           await object?.body.cancel();
@@ -246,11 +247,15 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
         });
       const response = await this.render(new Request(url, { method: 'GET' }), pointer, snapshot);
       const headers = new Headers(response.headers);
-      headers.set('Cache-Control', 'no-store');
+      // ponytail: 30 s fresh + 30 s stale-while-revalidate keeps edge staleness inside the 60 s publication target.
+      headers.set(
+        'Cache-Control',
+        response.ok ? 'public, max-age=0, s-maxage=30, stale-while-revalidate=30' : 'no-store',
+      );
       headers.set('X-Content-SHA256', pointer.snapshotSha256);
       headers.set('X-Release-SHA', PUBLIC_RELEASE_IDENTITY.sha);
       const body = await readBoundedText(response.body, 4 * 1024 * 1024);
-      // ponytail: bounded whole-page cache; use an edge cache if measured public traffic needs it.
+      // ponytail: bounded whole-page cache behind the 60 s edge cache; it absorbs edge misses and revalidations.
       if (response.ok && body.length <= 2 * 1024 * 1024) {
         if (this.pages.size >= 64 || this.pageBytes + body.length * 2 > 8 * 1024 * 1024) {
           this.pages.clear();

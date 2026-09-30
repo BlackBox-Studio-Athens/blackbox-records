@@ -63,6 +63,11 @@ try {
     const body = await response.text();
     assert.equal(response.status, 200, `${path}: ${body.slice(0, 300)}`);
     assert.equal(response.headers.get('X-Content-SHA256'), input.sha256, path);
+    assert.equal(
+      response.headers.get('Cache-Control'),
+      'public, max-age=0, s-maxage=30, stale-while-revalidate=30',
+      path,
+    );
     if (path === '/') {
       const images = [...body.matchAll(/<img[^>]*src="([^"]+)"/g)].map((match) => match[1].replaceAll('&amp;', '&'));
       for (const source of images) {
@@ -82,6 +87,7 @@ try {
   ]) {
     const response = await fetch(root + path);
     assert.equal(response.status, 404, path);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store', path);
     await response.body?.cancel();
   }
   console.log(

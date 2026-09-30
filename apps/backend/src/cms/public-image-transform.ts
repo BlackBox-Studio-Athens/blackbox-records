@@ -53,6 +53,13 @@ export async function deliverPublicCmsImage(
       }),
     ),
 ): Promise<Response> {
+  // A failed transform can be transient (e.g. the monthly Images quota), so no cache may pin the original here.
+  const uncachedOriginal = async () => {
+    const original = await fetchOriginal();
+    const headers = new Headers(original.headers);
+    headers.set('Cache-Control', 'no-store');
+    return new Response(original.body, { status: original.status, headers });
+  };
   const width = Number(new URL(request.url).searchParams.get('w'));
   const transformedUrl = publicImageTransformUrl(source, transformationOrigin, environment, width);
   if (!transformedUrl) return fetchOriginal();
@@ -62,7 +69,7 @@ export async function deliverPublicCmsImage(
     const contentType = transformed.headers.get('Content-Type')?.split(';', 1)[0].trim() ?? '';
     if (transformed.status !== 200 || !/^image\/(?:avif|jpeg|png|webp)$/i.test(contentType)) {
       if (transformed.body) await transformed.body.cancel().catch(() => {});
-      return fetchOriginal();
+      return uncachedOriginal();
     }
     const headers = new Headers(transformed.headers);
     if (request.method === 'HEAD' && transformed.body) await transformed.body.cancel().catch(() => {});
@@ -78,6 +85,6 @@ export async function deliverPublicCmsImage(
     headers.set('X-Content-Type-Options', 'nosniff');
     return new Response(request.method === 'HEAD' ? null : transformed.body, { status: 200, headers });
   } catch {
-    return fetchOriginal();
+    return uncachedOriginal();
   }
 }

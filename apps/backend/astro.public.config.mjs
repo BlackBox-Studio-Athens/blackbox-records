@@ -39,7 +39,7 @@ const config = {
   durable_objects: { bindings: [{ name: 'PUBLIC_SITE_RUNTIME', class_name: 'PublicSiteRuntime' }] },
   cache: { enabled: false },
   exports: {
-    default: { type: 'worker', cache: { enabled: false } },
+    default: { type: 'worker', cache: { enabled: true } },
     PublicImageRenderer: { type: 'worker', cache: { enabled: true } },
     PublicSiteRuntime: { type: 'durable-object', storage: 'sqlite' },
   },
