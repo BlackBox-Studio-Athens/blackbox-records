@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addStoreCartItem,
   createCartCheckoutPath,
+  createCartQuantity,
   createEmptyStoreCartState,
   incrementCartLineQuantityByVariant,
   decrementCartLineQuantityByVariant,
@@ -184,7 +185,8 @@ describe('store cart state', () => {
       canonicalItem.variantId,
       addStoreCartItem(afterglow, addStoreCartItem(canonicalItem)),
     );
-    const removedLine = withBoth.lines[0];
+    const [removedLine] = withBoth.lines;
+    if (!removedLine) throw new Error('Expected a cart line to remove.');
     const removed = removeCartLineByVariant(canonicalItem.variantId, withBoth);
     const restored = restoreCartLine(removedLine, 0, removed);
 
@@ -197,7 +199,9 @@ describe('store cart state', () => {
 
   it('keeps a line that was added again before Undo', () => {
     const state = addStoreCartItem(canonicalItem);
-    const removedLine = { ...state.lines[0], quantity: 3 } as (typeof state.lines)[number];
+    const [line] = state.lines;
+    if (!line) throw new Error('Expected a cart line.');
+    const removedLine = { ...line, quantity: createCartQuantity(3) };
 
     expect(restoreCartLine(removedLine, 0, state)).toEqual(state);
   });

@@ -9,7 +9,7 @@ import { Button, buttonVariants } from './button';
 const globalCss = readFileSync(fileURLToPath(new URL('../../styles/global.css', import.meta.url)), 'utf8');
 
 function classesOf(html: string) {
-  return /class="([^"]*)"/.exec(html)?.[1].split(' ') ?? [];
+  return /class="([^"]*)"/.exec(html)?.[1]?.split(' ') ?? [];
 }
 
 describe('Button', () => {
