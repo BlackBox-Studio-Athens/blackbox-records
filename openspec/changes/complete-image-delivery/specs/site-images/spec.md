@@ -46,11 +46,11 @@ The system SHALL provide a bounded inventory and backfill path for native staff 
 
 Published Content Images in accepted runtime snapshots MAY use Cloudflare Images URL transformations from the dedicated image hostname. Originals remain in environment-owned R2 storage and remain the source of truth.
 
-#### Scenario: A public CMS image requests a supported responsive size
+#### Scenario: A public CMS image requests a responsive size
 
 - **GIVEN** a public request references an exact content-addressed media path in the current environment
-- **WHEN** its source origin is the current UAT or PRD Pages origin and its width is an existing approved responsive size
-- **THEN** the renderer requests that width with `format=auto` from `images.blackboxrecordsathens.com`
+- **WHEN** its source origin is the current UAT or PRD Pages origin and its requested width is a positive number
+- **THEN** the renderer snaps that width up to the smallest ladder width (96 to 1800 pixels) not below it, or to 1800, and requests it with `format=auto` from `images.blackboxrecordsathens.com`
 - **AND** transformed responses have immutable caching and vary correctly by `Accept`.
 
 #### Scenario: A transformation fails or is unavailable
@@ -60,7 +60,7 @@ Published Content Images in accepted runtime snapshots MAY use Cloudflare Images
 
 #### Scenario: A request targets private or non-CMS media
 
-- **WHEN** a request targets a staff draft, preview, arbitrary origin, unapproved path, or unsupported width
+- **WHEN** a request targets a staff draft, preview, arbitrary origin, or unapproved path, or has a missing or non-positive width
 - **THEN** it is not sent to the Images transformation host.
 
 #### Scenario: The Pages gateway forwards format negotiation only

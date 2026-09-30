@@ -1,6 +1,6 @@
 export const publicImageTransformOrigin = 'https://images.blackboxrecordsathens.com';
 
-// These widths already occur in the site's Astro image candidates.
+// Transformation ladder. Requested widths snap up to the next rung so every candidate is a shared, bounded transform.
 export const publicImageWidths = [
   96, 160, 240, 320, 360, 480, 640, 720, 800, 900, 960, 1080, 1200, 1400, 1440, 1600, 1800,
 ] as const;
@@ -26,13 +26,14 @@ export function publicImageTransformUrl(
     source.search ||
     source.hash ||
     !/^\/media\/content\/[a-f0-9]{64}\/[a-f0-9]{64}$/.test(imagePath) ||
-    !publicImageWidths.some((candidate) => candidate === width)
+    !(width > 0)
   )
     return null;
   try {
     const origin = new URL(transformationOrigin);
     if (origin.origin !== publicImageTransformOrigin || origin.pathname !== '/') return null;
-    return new URL(`/cdn-cgi/image/width=${width},format=auto/${encodeURI(source.href)}`, origin);
+    const snapped = publicImageWidths.find((candidate) => candidate >= width) ?? publicImageWidths.at(-1)!;
+    return new URL(`/cdn-cgi/image/width=${snapped},format=auto/${encodeURI(source.href)}`, origin);
   } catch {
     return null;
   }

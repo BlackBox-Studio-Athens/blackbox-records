@@ -7,7 +7,7 @@ const source = new URL(`https://blackbox-records-web-uat.pages.dev/media/content
 const transformOrigin = 'https://images.blackboxrecordsathens.com';
 const bodyText = async (response: Response) => new TextDecoder().decode(await response.arrayBuffer());
 
-it('builds transformations only for approved Pages sources and responsive widths', () => {
+it('builds transformations only for approved Pages sources and snaps widths up the ladder', () => {
   const transformed = publicImageTransformUrl(source, transformOrigin, 'uat', 320);
   expect(transformed?.origin).toBe(transformOrigin);
   expect(transformed?.pathname).toBe(`/cdn-cgi/image/width=320,format=auto/${source.href}`);
@@ -15,7 +15,12 @@ it('builds transformations only for approved Pages sources and responsive widths
   expect(
     publicImageTransformUrl(new URL(source.href.replace('uat.pages.dev', 'pages.dev')), transformOrigin, 'uat', 320),
   ).toBeNull();
-  expect(publicImageTransformUrl(source, transformOrigin, 'uat', 321)).toBeNull();
+  const widthOf = (width: number) => publicImageTransformUrl(source, transformOrigin, 'uat', width)?.pathname;
+  expect(widthOf(321)).toBe(`/cdn-cgi/image/width=360,format=auto/${source.href}`);
+  expect(widthOf(80)).toBe(`/cdn-cgi/image/width=96,format=auto/${source.href}`);
+  expect(widthOf(5000)).toBe(`/cdn-cgi/image/width=1800,format=auto/${source.href}`);
+  expect(widthOf(0)).toBeUndefined();
+  expect(widthOf(Number.NaN)).toBeUndefined();
   expect(publicImageTransformUrl(new URL(`${source.href}?token=private`), transformOrigin, 'uat', 320)).toBeNull();
   expect(publicImageTransformUrl(source, 'https://foreign.invalid', 'uat', 320)).toBeNull();
 });
@@ -66,22 +71,34 @@ it('serves negotiated immutable image bytes and falls back to the original on tr
   expect(originalReads).toBe(1);
 });
 
-it('skips transforms for unsupported requests and returns bodyless HEAD responses', async () => {
-  let transforms = 0;
+it('snaps off-ladder widths, keeps originals without a width and returns bodyless HEAD responses', async () => {
+  const transformedUrls: URL[] = [];
   const original = async () => new Response('original', { headers: { 'Content-Type': 'image/jpeg' } });
-  const unsupported = await deliverPublicCmsImage(
+  const transform = async (url: URL) => {
+    transformedUrls.push(url);
+    return new Response('optimized', { headers: { 'Content-Type': 'image/webp' } });
+  };
+  const offLadder = await deliverPublicCmsImage(
     new Request('https://blackbox-records-web-uat.pages.dev/_image?w=999'),
     source,
     'uat',
     transformOrigin,
     original,
-    async () => {
-      transforms++;
-      return new Response('optimized', { headers: { 'Content-Type': 'image/webp' } });
-    },
+    transform,
   );
-  expect(await bodyText(unsupported)).toBe('original');
-  expect(transforms).toBe(0);
+  expect(await bodyText(offLadder)).toBe('optimized');
+  expect(transformedUrls.map((url) => url.pathname.split('/')[3])).toEqual(['width=1080,format=auto']);
+
+  const withoutWidth = await deliverPublicCmsImage(
+    new Request('https://blackbox-records-web-uat.pages.dev/_image'),
+    source,
+    'uat',
+    transformOrigin,
+    original,
+    transform,
+  );
+  expect(await bodyText(withoutWidth)).toBe('original');
+  expect(transformedUrls).toHaveLength(1);
 
   const head = await deliverPublicCmsImage(
     new Request('https://blackbox-records-web-uat.pages.dev/_image?w=320', { method: 'HEAD' }),
