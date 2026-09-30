@@ -59,7 +59,11 @@ import { restoreCachedShellPageSnapshot } from './navigation/shell-cached-page-r
 import { connectShellDocumentEventRouting } from './dom/shell-document-event-routing';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './dom/shell-hero-scroll-progress';
 import { openShellOverlayNavigation, type ShellOverlayState } from './overlay/shell-overlay-navigation';
-import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './overlay/shell-overlay-focus';
+import {
+  findStoreCartFocusReturnTarget,
+  scheduleOverlayContentFocus,
+  scheduleOverlayTriggerFocusRestore,
+} from './overlay/shell-overlay-focus';
 import { createShellPlayerSessionController } from './player-shell/shell-player-session-controller';
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
 import { MOBILE_NAVIGATION_TRIGGER_SELECTOR } from './navigation/shell-document-click-intent';
@@ -226,6 +230,14 @@ export default function AppShellRoot({
 
   function getCurrentMainElement() {
     return document.querySelector<HTMLElement>('main[data-app-shell-main]');
+  }
+
+  function closeStoreCartDrawer() {
+    setIsStoreCartDrawerOpen(false);
+    scheduleOverlayTriggerFocusRestore({
+      getTriggerElement: () => findStoreCartFocusReturnTarget(document),
+      scheduler: window,
+    });
   }
 
   function syncShellNavigationState(pathname: string) {
@@ -718,7 +730,7 @@ export default function AppShellRoot({
             cartState={storeCartState}
             open
             resolveHref={createProjectRelativeUrl}
-            onContinueShopping={() => setIsStoreCartDrawerOpen(false)}
+            onContinueShopping={closeStoreCartDrawer}
             onDecrementItem={async (variantId) => {
               const { decrementCartLineQuantityByVariant } = await import('@/components/store/cart/store-cart');
               await applyStoreCartState(decrementCartLineQuantityByVariant(variantId, storeCartState));
@@ -727,7 +739,7 @@ export default function AppShellRoot({
               const { incrementCartLineQuantityByVariant } = await import('@/components/store/cart/store-cart');
               await applyStoreCartState(incrementCartLineQuantityByVariant(variantId, storeCartState));
             }}
-            onOpenChange={setIsStoreCartDrawerOpen}
+            onOpenChange={(open) => (open ? setIsStoreCartDrawerOpen(true) : closeStoreCartDrawer())}
             onRemoveItem={async (variantId) => {
               const { removeCartLineByVariant } = await import('@/components/store/cart/store-cart');
               await applyStoreCartState(removeCartLineByVariant(variantId, storeCartState));

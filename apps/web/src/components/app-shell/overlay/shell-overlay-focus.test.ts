@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  findStoreCartFocusReturnTarget,
   restoreConnectedOverlayTriggerFocus,
   scheduleOverlayContentFocus,
   scheduleOverlayTriggerFocusRestore,
@@ -94,5 +95,29 @@ describe('overlay focus scheduling', () => {
 
     expect(scrollContainer.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'auto' });
     expect(closeButton.focus).toHaveBeenCalledOnce();
+  });
+});
+
+describe('findStoreCartFocusReturnTarget', () => {
+  function createRoot(elements: Record<string, object>) {
+    return {
+      querySelector: <ElementType extends Element = Element>(selector: string) =>
+        (elements[selector] ?? null) as ElementType | null,
+    };
+  }
+
+  it('returns focus to the header cart control when it is rendered', () => {
+    const trigger = { id: 'trigger' };
+    const main = { id: 'main' };
+
+    expect(
+      findStoreCartFocusReturnTarget(createRoot({ '[data-store-cart-trigger]': trigger, 'main[data-app-shell-main]': main })),
+    ).toBe(trigger);
+  });
+
+  it('falls back to the main landmark when the cart control is not rendered', () => {
+    const main = { id: 'main' };
+
+    expect(findStoreCartFocusReturnTarget(createRoot({ 'main[data-app-shell-main]': main }))).toBe(main);
   });
 });

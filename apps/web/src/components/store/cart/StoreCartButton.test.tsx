@@ -35,4 +35,12 @@ describe('StoreCartButton', () => {
     expect(html).toMatch(/<span aria-hidden="true" data-store-cart-label="true"[^>]*>/);
     expect(html).toContain('>Cart</span>');
   });
+
+  it('uses the family icon control with the shopping bag glyph', () => {
+    const html = renderToStaticMarkup(<StoreCartButton cartState={addStoreCartItem(cartItem)} />);
+
+    expect(html).toMatch(/<button[^>]*class="[^"]*site-button--icon[^"]*"/);
+    expect(html).toContain('stroke-width="1.75"');
+    expect(html).toContain('lucide-shopping-bag');
+  });
 });

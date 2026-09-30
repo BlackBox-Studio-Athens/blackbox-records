@@ -110,9 +110,13 @@ async function comparePublicPreviews() {
               timeout: 30000,
             });
             const frame = await (await page.$('iframe')).contentFrame();
-            await publicPage.waitForFunction(() => !window.document.querySelector('astro-island[client="load"][ssr]'));
-            for (const target of [frame, publicPage])
-              await target.locator('header').getByRole('button', { name: 'Cart', exact: true }).waitFor();
+            // With an empty cart the header cart control exists only on store routes, so it is the hydration
+            // signal there; elsewhere hydrated islands are.
+            for (const target of [frame, publicPage]) {
+              await target.waitForFunction(() => !window.document.querySelector('astro-island[client="load"][ssr]'));
+              if (label.startsWith('store-'))
+                await target.locator('header').getByRole('button', { name: 'Cart', exact: true }).waitFor();
+            }
             if (label === 'store-detail') {
               for (const target of [frame, publicPage]) {
                 await target.getByText('Checking availability', { exact: true }).waitFor({ state: 'hidden' });

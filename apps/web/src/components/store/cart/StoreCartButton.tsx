@@ -2,6 +2,7 @@ import * as React from 'react';
 import { ShoppingBag } from 'lucide-react';
 
 import { getStoreCartCount, type StoreCartState } from '@/components/store/cart/store-cart';
+import { buttonVariants } from '@/components/ui/button';
 
 type StoreCartButtonProps = {
   cartState: StoreCartState;
@@ -41,16 +42,16 @@ export default function StoreCartButton({ cartState, onClick }: StoreCartButtonP
         aria-label={label}
         data-store-cart-trigger
         data-store-cart-count={cartCount}
-        className="relative inline-flex size-11 items-center justify-center rounded-none border-0 bg-transparent p-0 text-foreground/80 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/60"
+        className={buttonVariants({ variant: 'outline', size: 'icon' })}
         onClick={() => {
           setLabelDismissed(true);
           onClick?.();
         }}
       >
-        <ShoppingBag className="size-4" aria-hidden="true" strokeWidth={1.8} />
+        <ShoppingBag className="size-[18px]" aria-hidden="true" strokeWidth={1.75} />
         {cartCount > 0 && (
           <span
-            className="absolute right-1 top-1 inline-flex min-h-4 min-w-4 items-center justify-center rounded-full border border-background bg-foreground px-1 text-[9px] font-semibold leading-none text-background"
+            className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full border border-background bg-foreground px-1 font-sans text-[9px] font-semibold leading-none tracking-normal text-background tabular-nums"
             aria-hidden="true"
           >
             {cartCount}

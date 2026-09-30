@@ -14,10 +14,10 @@
 
 ## 3. Cart control
 
-- [ ] 3.1 Restyle `StoreCartButton.tsx` (icon size, 1.75 stroke, bubble classes, 200ms mount fade) and update `StoreCartButton.test.tsx`; verify the test passes and the accessible name stays `Cart, N item(s)`.
-- [ ] 3.2 Gate the portal in `ShellPortalOutlets.tsx` on items or a store route with `isCurrentPath`; add an outlets test for the three cases; verify `app-shell-code-splitting.test.ts` and `scripts/check-runtime-bundle-graphs.ts` still pass.
-- [ ] 3.3 Return focus on drawer close in `AppShellRoot.tsx` (trigger when rendered, else `main[data-app-shell-main]`) reusing `scheduleOverlayTriggerFocusRestore`; verify with an `AppShellRoot` test that closes the drawer with and without the trigger mounted.
-- [ ] 3.4 Change `apps/backend/scripts/smoke-content-preview.mjs` hydration wait on non-store pages to the mobile navigation trigger; verify by reading the script's Store page assertion still waits for `Cart, 1 item`.
+- [x] 3.1 Restyle `StoreCartButton.tsx` (icon size, 1.75 stroke, bubble classes, 200ms mount fade) and update `StoreCartButton.test.tsx`; verify the test passes and the accessible name stays `Cart, N item(s)`.
+- [x] 3.2 Gate the portal in `ShellPortalOutlets.tsx` on items or a store route with `isCurrentPath`; add an outlets test for the three cases; verify `app-shell-code-splitting.test.ts` and `scripts/check-runtime-bundle-graphs.ts` still pass.
+- [x] 3.3 Return focus on drawer close in `AppShellRoot.tsx` (trigger when rendered, else `main[data-app-shell-main]`) reusing `scheduleOverlayTriggerFocusRestore`; verify with `shell-overlay-focus.test.ts` cases for the trigger present and absent (the target lookup is `findStoreCartFocusReturnTarget`), and confirm the close paths in the browser pass (6.3).
+- [x] 3.4 Change `apps/backend/scripts/smoke-content-preview.mjs` hydration wait on non-store pages to the mobile navigation trigger; verify by reading the script's Store page assertion still waits for `Cart, 1 item`.
 
 ## 4. In-place feedback
 

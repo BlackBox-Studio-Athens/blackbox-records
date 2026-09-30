@@ -38,3 +38,16 @@ export function scheduleOverlayContentFocus({
     getCloseButton()?.focus();
   });
 }
+
+type FocusTargetRoot = {
+  querySelector<ElementType extends Element = Element>(selectors: string): ElementType | null;
+};
+
+// The cart drawer has no Radix trigger (the header control lives in a portal), so the shell returns focus itself.
+// The control is not rendered when the cart is empty away from the store; focus then lands on the main landmark.
+export function findStoreCartFocusReturnTarget(root: FocusTargetRoot) {
+  return (
+    root.querySelector<HTMLElement>('[data-store-cart-trigger]') ??
+    root.querySelector<HTMLElement>('main[data-app-shell-main]')
+  );
+}

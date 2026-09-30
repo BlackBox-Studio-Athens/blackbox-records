@@ -2,6 +2,8 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 
 import type { StoreCartState } from '@/components/store/cart/store-cart';
+import { buttonVariants } from '@/components/ui/button';
+import { isCurrentPath } from '@/platform/utils/urls';
 
 const ArtistsRosterFilters = React.lazy(() => import('@/components/artists/ArtistsRosterFilters'));
 const ArtistRosterPreview = React.lazy(() => import('@/components/artists/ArtistRosterPreview'));
@@ -26,6 +28,13 @@ class PortalErrorBoundary extends React.Component<
   override render() {
     return this.state.failed ? this.props.fallback : this.props.children;
   }
+}
+
+// The header cart control appears only when there is something in the cart or the shopper is in the store.
+// Normalized cart lines always hold a quantity of at least one, so a line count stands in for the item count
+// without pulling the cart module into this eager bundle.
+export function shouldShowStoreCartControl(storeCartState: StoreCartState, activeShellPathname: string) {
+  return storeCartState.lines.length > 0 || isCurrentPath(activeShellPathname, '/store/');
 }
 
 function loadingStatus(label: string) {
@@ -118,14 +127,14 @@ export default function ShellPortalOutlets({
           )
         : null}
 
-      {storeCartHeaderContainer
+      {storeCartHeaderContainer && shouldShowStoreCartControl(storeCartState, activeShellPathname)
         ? createPortal(
             storeCartBridgeFailed ? (
               <span role="alert">Cart is unavailable.</span>
             ) : (
               <PortalErrorBoundary
                 fallback={
-                  <button type="button" onClick={onOpenStoreCart}>
+                  <button type="button" className={buttonVariants({ variant: 'outline' })} onClick={onOpenStoreCart}>
                     Cart
                   </button>
                 }
