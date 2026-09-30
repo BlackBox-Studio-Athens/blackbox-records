@@ -15,6 +15,7 @@ See proposal.md for motivation. Current state:
 **Goals:**
 
 - One print treatment reused by the roster, artist detail, and Home roster.
+- Keep the News hover zoom from `match-artist-image-hover` where artists appear as link cards (Home featured roster). Each print wraps its image in an overflow-clipped window so the zoom stays inside the paper border. That change must archive first, because this change modifies its requirement.
 - Server-rendered roster and default preview; client code adds only the hover/focus pile, filtering, sorting, and the jump index.
 - Keep images on `astro:assets` responsive delivery with source dimensions, so there is no layout shift.
 

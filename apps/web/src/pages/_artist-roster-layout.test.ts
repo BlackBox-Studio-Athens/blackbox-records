@@ -78,4 +78,16 @@ describe('Artists roster layout', () => {
 
     expect(css).toMatch(/@media \(prefers-reduced-motion: reduce\)\s*{\s*\.artist-print,[^{]*{\s*transition:\s*none/);
   });
+
+  it('zooms Home featured print photos like News cards, clipped to the print and off under reduced motion', () => {
+    const css = read(globalCssPath);
+    const print = read('../components/artists/ArtistPrint.astro');
+
+    expect(print).toMatch(/<span class="artist-print__window">\s*<Image/);
+    expect(css).toMatch(/\.artist-print__window\s*{[^}]*overflow:\s*hidden/);
+    expect(css).toMatch(/\.home-featured-roster-card:hover \.artist-print__image\s*{\s*transform:\s*scale\(1\.03\)/);
+    expect(css).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*{[^@]*\.home-featured-roster-card:hover \.artist-print__image\s*{\s*transform:\s*none/,
+    );
+  });
 });

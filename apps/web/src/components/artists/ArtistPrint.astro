@@ -57,20 +57,22 @@ const caption = [number, name.toUpperCase()].filter(Boolean).join(' · ');
   style={`--print-tilt: ${tilt}deg${style ? `; ${style}` : ''}`}
   {...rest}
 >
-  <Image
-    src={image}
-    alt={isThumb ? '' : alt}
-    class="artist-print__image"
-    width={slot.width}
-    height={slot.height}
-    widths={artistPrintWidths[role]}
-    sizes={`${slot.width}px`}
-    loading={priority ? 'eager' : loading}
-    priority={priority}
-    fetchpriority={priority ? undefined : fetchPriority}
-    quality={68}
-    data-artist-roster-print={role === 'detail' ? undefined : role}
-  />
+  <span class="artist-print__window">
+    <Image
+      src={image}
+      alt={isThumb ? '' : alt}
+      class="artist-print__image"
+      width={slot.width}
+      height={slot.height}
+      widths={artistPrintWidths[role]}
+      sizes={`${slot.width}px`}
+      loading={priority ? 'eager' : loading}
+      priority={priority}
+      fetchpriority={priority ? undefined : fetchPriority}
+      quality={68}
+      data-artist-roster-print={role === 'detail' ? undefined : role}
+    />
+  </span>
   {!isThumb && (
     <figcaption class="artist-print__caption">
       <span>{caption}</span>

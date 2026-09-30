@@ -12,6 +12,7 @@ A label member reported that the Chronoboros photo shows a black band around the
 - On narrow viewports, each row shows a small tilted print thumbnail and discloses the full print, latest release, and a link to the artist inline, without JavaScript.
 - Extend Artists search, which still appears only at six or more artists, with genre filters and an A–Z / latest-release sort. From 13 artists up, add an A–Z jump index and letter grouping.
 - Apply the print treatment to the artist detail lead image and the Home featured roster, and remove their fixed frames and text-over-image gradients.
+- Keep the News-style hover zoom from `match-artist-image-hover` on Home featured prints, clipped inside the paper border; the roster pile replaces it on the Artists page.
 - **BREAKING (content standard):** retire the documented 3:4 portrait crop for artist images. Any aspect ratio is valid, asset QA no longer warns about non-portrait artist sources, and the staff artist pickers drop the dark 3:4 preview frame and portrait dimension guidance.
 - Out of scope (CMS content work): replacing the Afterwise photo and the Sidus photo (the current Sidus file has black bars baked into the image).
 

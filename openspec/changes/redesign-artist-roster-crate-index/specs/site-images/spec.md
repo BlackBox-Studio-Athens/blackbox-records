@@ -84,3 +84,26 @@ The system SHALL give About, Services, and Artists route-specific image discover
 - **WHEN** About, Services, or Artists image priority or source assets change
 - **THEN** five-run desktop and declared mobile-stress profiles meet the route LCP and CLS gates
 - **AND** Browser Use verifies mobile and desktop framing, hierarchy, loading stability, and no duplicate high-priority content-image request.
+
+### Requirement: Artist card images match News hover feedback
+
+Home featured roster print photos SHALL use the existing News image hover treatment inside their paper border while preserving native-aspect print framing, captions, links, and responsive delivery. On the Artists roster, the hover and focus print pile is the image feedback, so roster prints do not zoom. The decorative effect MUST respect reduced-motion preferences and MUST NOT require JavaScript.
+
+#### Scenario: Visitor hovers a Home featured artist
+
+- **WHEN** a hover-capable pointer enters a Home featured artist card with no reduced-motion preference
+- **THEN** the photo inside its print scales to 1.03 over 500 ms, matching News, clipped to the print's image window
+- **AND** leaving the card returns the photo smoothly to its original scale
+- **AND** the paper border, caption, and surrounding layout keep their positions apart from the existing print straighten-and-lift.
+
+#### Scenario: Artists roster prints render
+
+- **WHEN** roster preview prints or row thumbnails render
+- **THEN** their photos do not zoom on hover
+- **AND** hovering or focusing a row keeps driving the preview pile instead.
+
+#### Scenario: Visitor requests reduced motion
+
+- **WHEN** the visitor enables reduced motion and hovers a Home featured artist card
+- **THEN** its photo remains at its original scale without a transform transition
+- **AND** the card retains visible focus feedback and normal link activation.

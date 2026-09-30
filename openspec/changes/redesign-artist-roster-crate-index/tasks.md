@@ -35,6 +35,7 @@
 
 - [x] 5.1 Replace the `16/13` frame and `object-contain` lead image in `ArtistDetailContent.astro` with `ArtistPrint` (`detail` role, preserving the existing priority input for direct loads vs overlays), and adjust `.artist-detail-hero__image-frame` styles. Verify an overlay and a direct load render the print without fill bars.
 - [x] 5.2 Replace the `featured-roster` card in `apps/web/src/pages/index.astro` with a print plus the genre and name below it, and no gradient. Remove the unused `ArtistCard` variants, or `ArtistCard` itself if it is now unused, and update `components/artists/project.json` boundary exports and the boundary manifest. Verify `pnpm validate` architecture checks pass.
+- [x] 5.3 Carry the `match-artist-image-hover` News zoom onto Home featured prints: the photo scales 1.03 over 500 ms inside a clipping `.artist-print__window`, removed under reduced motion; roster prints keep the pile as their hover feedback. Verify with the roster layout source test. Archive `match-artist-image-hover` before this change so the modified requirement exists in the baseline. Evidence 2026-09-30 (after rebasing onto main 2c89d15e): roster layout and image-markup tests passed; `astro build` + `image-markup:check` passed; in `astro preview`, hovering the first Home print computed `scale(1.03)` on the photo with the 320 px window unchanged (clipped), transition 500 ms; the Artists preview print stayed 372 px wide. `pnpm validate` PASSED (`.codex-artifacts/validation/2026-09-30T08-33-23-849Z-12444/summary.json`).
 
 ## 6. Tooling and image checks
 
