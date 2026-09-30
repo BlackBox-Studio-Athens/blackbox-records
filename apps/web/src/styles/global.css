@@ -1243,19 +1243,6 @@ body {
     cursor: default;
   }
 
-  .store-coverflow-actions .store-coverflow-actions__toggle {
-    border-color: var(--store-accent-active);
-    color: var(--foreground);
-    background: var(--store-accent);
-    font-weight: 500;
-  }
-
-  .store-coverflow-actions .store-coverflow-actions__toggle:hover,
-  .store-coverflow-actions .store-coverflow-actions__toggle:focus-visible {
-    border-color: var(--foreground);
-    background: var(--store-accent-hover);
-  }
-
   .store-item-card--listing {
     min-width: 0;
   }
@@ -2063,18 +2050,6 @@ body {
     border-color: #2b2b2b;
     font-size: 0.76rem;
     letter-spacing: 0.02em;
-  }
-
-  .artist-detail-action--primary {
-    border-color: color-mix(in srgb, var(--store-accent) 78%, #f5f5f5 0%);
-    background: rgba(146, 47, 63, 0.05);
-    color: #f1d9dc;
-  }
-
-  .artist-detail-action--primary:hover,
-  .artist-detail-action--primary:focus-visible {
-    border-color: var(--store-accent-hover);
-    background: rgba(146, 47, 63, 0.14);
   }
 
   .artist-detail-action--secondary {
@@ -4686,9 +4661,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   .music-listen-trigger,
   .release-card-artwork--framed,
   .releases-latest-feature__artwork,
-  .releases-latest-feature__upcoming-artwork,
-  .music-listen-trigger__indicator,
-  .music-listen-trigger__indicator::after {
+  .releases-latest-feature__upcoming-artwork {
     transition: none;
     animation: none;
     transform: none;
@@ -4702,10 +4675,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   .releases-latest-feature__upcoming-artwork-link:hover .releases-latest-feature__upcoming-artwork,
   .releases-latest-feature__upcoming-artwork-link:focus-visible .releases-latest-feature__upcoming-artwork {
     transform: none;
-  }
-
-  .music-listen-trigger__indicator::after {
-    opacity: 0;
   }
 
   .app-shell-route-loading-indicator,
