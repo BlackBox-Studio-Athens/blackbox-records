@@ -1,7 +1,9 @@
 import {
   CHECKOUT_CART_UPDATED_EVENT,
   STORE_CART_ADD_ITEM_EVENT,
+  STORE_CART_ITEM_ADDED_EVENT,
   STORE_CART_OPEN_REQUESTED_EVENT,
+  takePendingStoreCartAddItems,
 } from '@/components/store/cart/store-cart-events';
 import {
   addStoreCartItem,
@@ -69,14 +71,21 @@ export function connectStoreCartBridge({
     setStoreCartHeaderContainer(queryHeaderRoot());
   };
 
-  function handleStoreCartAddItem(event: Event) {
-    const item = parseCartLineItemSnapshot((event as CustomEvent<unknown>).detail);
+  function addItem(detail: unknown) {
+    const item = parseCartLineItemSnapshot(detail);
     if (!item) return;
 
     const nextState = addStoreCartItem(item, readStoreCartState(readStorage()));
     persistStoreCartState(readStorage(), nextState);
     setStoreCartState(nextState);
     setStoreCartDrawerOpen(true);
+    eventTarget.dispatchEvent(new CustomEvent(STORE_CART_ITEM_ADDED_EVENT, { detail: { variantId: item.variantId } }));
+  }
+
+  function handleStoreCartAddItem(event: Event) {
+    // Cancelling acknowledges the request, so the purchase control does not queue it.
+    event.preventDefault();
+    addItem((event as CustomEvent<unknown>).detail);
   }
 
   function handleStoreCartOpenRequested() {
@@ -93,6 +102,7 @@ export function connectStoreCartBridge({
   eventTarget.addEventListener(CHECKOUT_CART_UPDATED_EVENT, handleCheckoutCartUpdated);
   eventTarget.addEventListener(STORE_CART_OPEN_REQUESTED_EVENT, handleStoreCartOpenRequested);
   eventTarget.addEventListener('pageshow', syncStoreCartHeaderContainer);
+  for (const detail of takePendingStoreCartAddItems()) addItem(detail);
 
   return () => {
     eventTarget.removeEventListener(STORE_CART_ADD_ITEM_EVENT, handleStoreCartAddItem);

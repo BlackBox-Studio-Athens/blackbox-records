@@ -12,6 +12,7 @@ import StoreItemPurchaseActions, {
   STORE_ITEM_PURCHASE_ACTION_COPY,
   type StoreItemCartSeed,
 } from './StoreItemPurchaseActions';
+import { takePendingStoreCartAddItems } from '@/components/store/cart/store-cart-events';
 
 const cartItem: CartLineItemSnapshot = {
   availabilityLabel: 'Available',
@@ -136,6 +137,18 @@ describe('StoreItemPurchaseActions', () => {
     expect(JSON.stringify(receivedDetail)).not.toContain('price_');
     expect(JSON.stringify(receivedDetail)).not.toContain('clientSecret');
     expect(JSON.stringify(receivedDetail)).not.toContain('stockCount');
+  });
+
+  it('keeps an add until a cart bridge acknowledges it', () => {
+    takePendingStoreCartAddItems();
+    const acknowledging = new EventTarget();
+    acknowledging.addEventListener(STORE_CART_ADD_ITEM_EVENT, (event) => event.preventDefault());
+
+    expect(requestStoreCartAddItem(cartItem, acknowledging)).toBe(false);
+    expect(takePendingStoreCartAddItems()).toEqual([]);
+
+    expect(requestStoreCartAddItem(cartItem, new EventTarget())).toBe(true);
+    expect(takePendingStoreCartAddItems()).toEqual([cartItem]);
   });
 
   it('creates a browser-safe CartLineItemSnapshot from Worker checkout readiness', () => {

@@ -9,8 +9,11 @@ import {
 } from '@/components/store/cart/store-cart';
 import {
   CHECKOUT_CART_UPDATED_EVENT,
+  queuePendingStoreCartAddItem,
   STORE_CART_ADD_ITEM_EVENT,
+  STORE_CART_ITEM_ADDED_EVENT,
   STORE_CART_OPEN_REQUESTED_EVENT,
+  takePendingStoreCartAddItems,
 } from '@/components/store/cart/store-cart-events';
 
 import { applyStoreCartStateAndPersist, connectStoreCartBridge } from './store-cart-bridge';
@@ -113,6 +116,55 @@ describe('store cart bridge', () => {
     expect(drawerOpen).toBe(true);
     expect(readStoreCartState(storage).lines).toMatchObject([{ variantId: cartItem.variantId, quantity: 1 }]);
     expect(seenStates.at(-1)?.lines).toHaveLength(1);
+  });
+
+  it('acknowledges add requests and confirms each added item', () => {
+    const eventTarget = new EventTarget() as Window;
+    const storage = createMemoryStorage();
+    const confirmed: unknown[] = [];
+    eventTarget.addEventListener(STORE_CART_ITEM_ADDED_EVENT, (event) => {
+      confirmed.push((event as CustomEvent<unknown>).detail);
+    });
+
+    const disconnect = connectStoreCartBridge({
+      eventTarget,
+      queryHeaderRoot: () => null,
+      readStorage: () => storage,
+      setStoreCartDrawerOpen: () => undefined,
+      setStoreCartHeaderContainer: () => undefined,
+      setStoreCartState: () => undefined,
+    });
+
+    const request = new CustomEvent(STORE_CART_ADD_ITEM_EVENT, { cancelable: true, detail: cartItem });
+    expect(eventTarget.dispatchEvent(request)).toBe(false);
+    disconnect();
+
+    expect(request.defaultPrevented).toBe(true);
+    expect(confirmed).toEqual([{ variantId: cartItem.variantId }]);
+  });
+
+  it('applies adds requested before it connected', () => {
+    takePendingStoreCartAddItems();
+    queuePendingStoreCartAddItem(cartItem);
+    const eventTarget = new EventTarget() as Window;
+    const storage = createMemoryStorage();
+    let drawerOpen = false;
+
+    const disconnect = connectStoreCartBridge({
+      eventTarget,
+      queryHeaderRoot: () => null,
+      readStorage: () => storage,
+      setStoreCartDrawerOpen: (open) => {
+        drawerOpen = open;
+      },
+      setStoreCartHeaderContainer: () => undefined,
+      setStoreCartState: () => undefined,
+    });
+    disconnect();
+
+    expect(drawerOpen).toBe(true);
+    expect(readStoreCartState(storage).lines).toMatchObject([{ variantId: cartItem.variantId, quantity: 1 }]);
+    expect(takePendingStoreCartAddItems()).toEqual([]);
   });
 
   it('opens the drawer on checkout return requests without changing state', () => {

@@ -8,6 +8,7 @@ import {
   type PublicStoreOffer,
 } from '@/components/store/checkout/public-checkout-api';
 import { STORE_CART_ADD_ITEM_EVENT, type CartLineItemSnapshot } from '@/components/store/cart/store-cart';
+import { queuePendingStoreCartAddItem, STORE_CART_ITEM_ADDED_EVENT } from '@/components/store/cart/store-cart-events';
 import { cn } from '@/components/ui/utils';
 
 export type StoreItemCartSeed = Omit<
@@ -50,12 +51,16 @@ export function getStoreItemPurchaseStatusTone(label: string | null): StoreItemP
   return label === 'Sold Out' ? 'sold-out' : 'neutral';
 }
 
+// Returns true while no cart bridge acknowledged the add; the request then waits until the bridge connects.
 export function requestStoreCartAddItem(item: CartLineItemSnapshot, eventTarget: EventTarget = window) {
-  return eventTarget.dispatchEvent(
+  const isUnacknowledged = eventTarget.dispatchEvent(
     new CustomEvent<CartLineItemSnapshot>(STORE_CART_ADD_ITEM_EVENT, {
+      cancelable: true,
       detail: item,
     }),
   );
+  if (isUnacknowledged) queuePendingStoreCartAddItem(item);
+  return isUnacknowledged;
 }
 
 export function createCartLineItemSnapshotFromWorkerOffer(
@@ -131,6 +136,19 @@ export default function StoreItemPurchaseActions({
     const timer = window.setTimeout(() => setIsAddedVisible(false), STORE_ITEM_ADDED_CONFIRMATION_MS);
     return () => window.clearTimeout(timer);
   }, [addedCount]);
+
+  // Say Added only once the cart confirms this item arrived.
+  const activeVariantId = purchaseState.cartItem?.variantId;
+  React.useEffect(() => {
+    if (!activeVariantId) return;
+    function handleItemAdded(event: Event) {
+      if ((event as CustomEvent<{ variantId?: string }>).detail?.variantId !== activeVariantId) return;
+      setAddedCount((count) => count + 1);
+      setIsAddedVisible(true);
+    }
+    window.addEventListener(STORE_CART_ITEM_ADDED_EVENT, handleItemAdded);
+    return () => window.removeEventListener(STORE_CART_ITEM_ADDED_EVENT, handleItemAdded);
+  }, [activeVariantId]);
 
   React.useEffect(() => {
     if (!cartSeed) {
@@ -214,14 +232,12 @@ export default function StoreItemPurchaseActions({
         className={purchaseActionLayoutClasses}
         data-store-item-add-to-cart
         data-store-item-added={isAddedVisible ? '' : undefined}
-        onClick={() => {
-          requestStoreCartAddItem(activeCartItem);
-          setAddedCount((count) => count + 1);
-          setIsAddedVisible(true);
-        }}
+        onClick={() => requestStoreCartAddItem(activeCartItem)}
       >
         {isAddedVisible ? STORE_ITEM_PURCHASE_ACTION_COPY.added : STORE_ITEM_PURCHASE_ACTION_COPY.addToCart}
-        {isAddedVisible && <span key={addedCount} className="site-feedback-hairline" data-duration="4s" aria-hidden="true" />}
+        {isAddedVisible && (
+          <span key={addedCount} className="site-feedback-hairline" data-duration="4s" aria-hidden="true" />
+        )}
       </Button>
       <span className="sr-only" aria-live="polite">
         {isAddedVisible ? STORE_ITEM_PURCHASE_ACTION_COPY.addedAnnouncement : ''}
