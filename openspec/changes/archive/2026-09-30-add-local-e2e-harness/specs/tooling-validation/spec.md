@@ -2,7 +2,7 @@
 
 ### Requirement: Local end-to-end harness is deterministic and opt-in
 
-The repository SHALL provide `pnpm test:e2e`, which runs Playwright specs against the canonical Local site URL. These specs SHALL be the required check for shell navigation, overlay, player, mobile-navigation and cart continuity. The harness SHALL reuse a site already serving the canonical port and otherwise SHALL start the foreground static-site launcher for the run and stop it afterwards. It SHALL NOT start the Local stack, run inside `pnpm validate`, or depend on external network or Worker responses. Specs SHALL fail on console or page errors, and evidence SHALL be written under `.codex-artifacts/e2e/`.
+The repository SHALL provide `pnpm test:e2e`, which runs Playwright specs against the canonical Local site URL and is the required check for shell navigation, overlay, player, mobile-navigation and cart continuity. It SHALL reuse a site already serving that URL or run the foreground static-site launcher for the run. It SHALL NOT start the Local stack, run inside `pnpm validate`, or depend on external network or Worker responses.
 
 #### Scenario: A site already serves the canonical port
 
