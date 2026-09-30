@@ -26,6 +26,8 @@ test('add to cart opens the drawer, persists the line and restores it on another
   await expect(addToCart).toBeFocused();
   await expect(addToCart).toHaveText('Add To Cart', { timeout: 6000 });
 
+  // A controllable clock lets the test step past Undo's six seconds.
+  await page.clock.install();
   await page.goto('store/');
   await waitForShell(page);
   const trigger = page.locator('[data-store-cart-trigger]').first();
@@ -39,6 +41,9 @@ test('add to cart opens the drawer, persists the line and restores it on another
   await expect(reopened.locator('[data-store-cart-line-item]')).toHaveCount(0);
   const undo = reopened.getByRole('button', { name: 'Undo' });
   await expect(undo).toBeFocused();
+  // Undo waits while it has focus.
+  await page.clock.fastForward(7000);
+  await expect(undo).toBeVisible();
   await undo.click();
   await expect(reopened.locator('[data-store-cart-line-item]')).toHaveCount(1);
 
