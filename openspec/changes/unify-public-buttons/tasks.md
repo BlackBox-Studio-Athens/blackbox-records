@@ -36,6 +36,6 @@
 ## 6. Docs and validation
 
 - [x] 6.1 Update `DESIGN.md` §5 Buttons, `DESIGN.json` button components and `docs/design-inspiration.md` (Button family study · 2026-09-30 with the canvas link and decisions); verify `pnpm agent:check` passes.
-- [ ] 6.2 Run `pnpm test:app-shell` and `pnpm test:e2e`; verify all pass and record `.codex-artifacts/e2e/summary.json`.
+- [x] 6.2 Run `pnpm test:app-shell` and `pnpm test:e2e`; verify all pass and record `.codex-artifacts/e2e/summary.json` (serial run: 33 passed, 2 skipped, 0 unexpected; two-worker runs each hit one dev-server timeout unrelated to buttons).
 - [ ] 6.3 Browser pass on the Local site (Chrome, blackbox profile): header focus rings, cart hidden/visible cases, Added/Undo/Stop?/quote-ready states, 390px taps via halo, reduced motion, no console errors; verify by recording observations and screenshots in `validation.md`.
 - [ ] 6.4 Run `pnpm validate` on the final tree and write `validation.md` with the source SHA, summary path, mode and status; verify the summary reports success.
