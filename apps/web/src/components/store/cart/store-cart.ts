@@ -267,6 +267,20 @@ export function removeCartLineByVariant(
   });
 }
 
+// Undo after Remove: put the line back where it was. A line added again meanwhile keeps its current state.
+export function restoreCartLine(
+  line: CartLine,
+  index: number,
+  state: StoreCartState = createEmptyStoreCartState(),
+): StoreCartState {
+  const currentState = normalizeStoreCartState(state);
+  if (currentState.lines.some((candidate) => candidate.variantId === line.variantId)) return currentState;
+
+  const lines = [...currentState.lines];
+  lines.splice(Math.min(Math.max(index, 0), lines.length), 0, line);
+  return normalizeStoreCartState({ lines });
+}
+
 export function parseSerializedStoreCartState(serializedState: string | null): StoreCartState {
   if (!serializedState) return createEmptyStoreCartState();
 

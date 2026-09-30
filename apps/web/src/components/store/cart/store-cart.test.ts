@@ -10,6 +10,7 @@ import {
   parseSerializedStoreCartState,
   readStoreCartState,
   removeCartLineByVariant,
+  restoreCartLine,
   STORE_CART_MAX_QUANTITY,
   STORE_CART_STORAGE_KEY,
   type CartLineItemSnapshot,
@@ -170,6 +171,35 @@ describe('store cart state', () => {
 
     expect(getStoreCartCount(finalState)).toBe(1);
     expect(finalState.primaryLineItem?.storeItemSlug).toBe('afterglow-tape');
+  });
+
+  it('restores a removed line at its position with its quantity', () => {
+    const afterglow = {
+      ...canonicalItem,
+      storeItemSlug: 'afterglow-tape',
+      title: 'Afterglow Tape',
+      variantId: 'variant_afterglow-tape_standard',
+    };
+    const withBoth = incrementCartLineQuantityByVariant(
+      canonicalItem.variantId,
+      addStoreCartItem(afterglow, addStoreCartItem(canonicalItem)),
+    );
+    const removedLine = withBoth.lines[0];
+    const removed = removeCartLineByVariant(canonicalItem.variantId, withBoth);
+    const restored = restoreCartLine(removedLine, 0, removed);
+
+    expect(restored.lines.map((line) => [line.variantId, line.quantity])).toEqual([
+      [canonicalItem.variantId, 2],
+      [afterglow.variantId, 1],
+    ]);
+    expect(restored.primaryLineItem?.variantId).toBe(canonicalItem.variantId);
+  });
+
+  it('keeps a line that was added again before Undo', () => {
+    const state = addStoreCartItem(canonicalItem);
+    const removedLine = { ...state.lines[0], quantity: 3 } as (typeof state.lines)[number];
+
+    expect(restoreCartLine(removedLine, 0, state)).toEqual(state);
   });
 
   it('removes the whole draft when no variant id is provided', () => {
