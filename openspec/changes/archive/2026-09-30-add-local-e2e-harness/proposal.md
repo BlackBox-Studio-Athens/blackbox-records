@@ -9,7 +9,7 @@ Shell, player and routing acceptance currently relies on manual browser observat
 - Use the Playwright Test runner shipped with the installed `playwright` dev dependency. No dependency is added.
 - Add a root `playwright.config.ts` and `e2e/` specs covering canonical routes, shell navigation with focus and scroll reset, the delayed Store status, overlays, mobile navigation, player minimize/reopen/stop continuity and cart persistence, on desktop and a 390px mobile viewport.
 - A shared fixture fails every test on console or page errors, reusing the existing smoke diagnostics, and stubs Worker reads, provider embeds, Google Fonts and the production analytics script so runs need neither the stack nor external network.
-- The canonical public route table moves into the shared smoke module so the hosted UAT smoke and the local specs use one list.
+- The hosted static smoke's code-owned route table moves into the shared smoke module so the hosted smoke and the local specs use one list.
 - The runner reuses whatever serves port 4321 and otherwise starts `pnpm site:dev` for the run.
 - Add `pnpm test:e2e`, include the new files in type-aware lint and Knip, and update the acceptance matrix, local-runtime reference and README.
 - Deterministic specs become the required continuity check; Browser Use remains the authority for visual, performance and accessibility judgement.

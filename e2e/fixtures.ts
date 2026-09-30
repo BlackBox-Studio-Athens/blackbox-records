@@ -1,6 +1,15 @@
 import { expect, test as base, type Page } from 'playwright/test';
 
 import { attachSmokePageDiagnostics } from '../scripts/smoke-browser';
+import type { RepresentativePaths } from '../scripts/smoke-core';
+
+/** Published detail pages in the committed Local content; hosted smokes discover theirs instead. */
+export const localRepresentativePaths: RepresentativePaths = {
+  artist: '/artists/chronoboros/',
+  news: '/news/lorem-ipsum/',
+  release: '/releases/disintegration/',
+  storeItem: '/store/disintegration-black-vinyl-lp/',
+};
 
 // Minimal ready PublicStoreOffer (apps/backend/openapi/public-openapi.json).
 function readyOffer(storeItemSlug: string) {

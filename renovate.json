@@ -155,11 +155,9 @@
       "matchPackageNames": [
         "actions/checkout",
         "actions/setup-node",
-        "actions/configure-pages",
-        "actions/deploy-pages",
-        "actions/upload-pages-artifact",
         "actions/upload-artifact",
         "actions/download-artifact",
+        "actions/cache",
         "cloudflare/wrangler-action",
         "pnpm/action-setup"
       ],

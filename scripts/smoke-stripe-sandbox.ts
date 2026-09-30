@@ -16,6 +16,7 @@ import {
 } from '../apps/web/src/components/store/cart/store-cart';
 import { createCheckoutOrderReferenceToken } from '../apps/backend/src/application/commerce/orders';
 import {
+  appendSmokeStepSummary,
   createRunId as createSmokeRunId,
   createSmokeEvidencePath,
   createSmokeRunArtifactDir,
@@ -852,7 +853,9 @@ async function main() {
       ...(await runStripeSandboxSmokeScenarios({ options, receiptRunStartedAt, runArtifactDir, runId, scenarios })),
     );
 
-    writeJsonFile(summaryPath, buildStripeSandboxSmokeSummary({ evidence, options, runId, scenarios }));
+    const summary = buildStripeSandboxSmokeSummary({ evidence, options, runId, scenarios });
+    writeJsonFile(summaryPath, summary);
+    reportStripeSandboxSmokeStepSummary({ evidence, runArtifactDir, scenarios, summary });
 
     const failedEvidence = evidence.filter((item) => !item.passed);
 
@@ -865,10 +868,47 @@ async function main() {
   } catch (error) {
     evidence.push(...readStripeSandboxSmokeErrorEvidence(error));
     const blocker = scrubSensitiveStripeSmokeText(error instanceof Error ? error.message : String(error));
-    writeJsonFile(summaryPath, buildStripeSandboxSmokeSummary({ blocker, evidence, options, runId, scenarios }));
+    const summary = buildStripeSandboxSmokeSummary({ blocker, evidence, options, runId, scenarios });
+    writeJsonFile(summaryPath, summary);
+    reportStripeSandboxSmokeStepSummary({ evidence, runArtifactDir, scenarios, summary });
     console.error(blocker);
     process.exit(1);
   }
+}
+
+function reportStripeSandboxSmokeStepSummary(input: {
+  evidence: readonly StripeSandboxSmokeEvidence[];
+  runArtifactDir: string;
+  scenarios: readonly StripeSandboxSmokeScenario[];
+  summary: StripeSandboxSmokeSummary;
+}): void {
+  appendSmokeStepSummary({
+    blocker: input.summary.blocker,
+    evidenceDir: input.runArtifactDir,
+    scenarios: input.scenarios.map((scenario) => {
+      const item = input.evidence.find((candidate) => candidate.scenario.name === scenario.name);
+
+      if (!item) {
+        return { name: scenario.name, status: 'no evidence' };
+      }
+
+      return {
+        issues: item.passed
+          ? []
+          : [
+              ...(item.checkoutSurface?.issues ?? []),
+              ...(item.checkoutSessionProjection?.issues ?? []),
+              ...(item.webhookDeliveryDiagnostics?.issues ?? []),
+              ...(item.emailReceipts?.status === 'failed' ? ['Email receipt verification failed.'] : []),
+              `Order status ${item.order?.status ?? 'none'}; expected ${item.scenario.expectedOrderStatus}.`,
+            ],
+        name: scenario.name,
+        status: item.passed ? 'passed' : 'failed',
+      };
+    }),
+    status: input.summary.status,
+    suite: input.summary.suite,
+  });
 }
 
 async function verifyStripeSandboxSmokeReadiness(input: {
@@ -1269,7 +1309,8 @@ async function runScenarioWithBrowser(input: {
       );
       await Promise.all([
         page.waitForURL(/checkout\.stripe\.com/, { timeout: input.options.timeoutMs, waitUntil: 'commit' }),
-        checkoutButton.click({ timeout: input.options.fieldActionTimeoutMs }),
+        // The button can briefly disable again while delivery and prices refresh; wait like a shopper would.
+        checkoutButton.click({ timeout: input.options.timeoutMs }),
       ]);
     });
 

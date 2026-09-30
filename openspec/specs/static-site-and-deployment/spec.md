@@ -210,6 +210,14 @@ UAT Static Smoke SHALL verify the Cloudflare public site's routes, public assets
 - **AND** old admin links lead to the protected workspace or a clear retired state
 - **AND** authenticated staff tests remain a separate explicitly scoped suite.
 
+#### Scenario: Representative pages follow published content
+
+- **GIVEN** UAT content was published with different artists, releases, news or Store Items
+- **WHEN** the suite selects detail pages to probe
+- **THEN** it discovers one artist, release and news page from the deployed sitemap and one Store Item from the deployed Store listing
+- **AND** it asserts HTTP status, Review Site Marker, console and page errors, secret exposure, media origin and UI copy rather than content titles
+- **AND** a section without a discoverable page fails with a message naming that section.
+
 ### Requirement: Static deploy automation exposes measurable stages
 
 The system SHALL keep UAT and PRD static deploy automation split into measurable verification, build, and deploy stages while preserving the existing deployment targets.

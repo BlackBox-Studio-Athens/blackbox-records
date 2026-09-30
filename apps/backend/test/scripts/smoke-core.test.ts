@@ -1,8 +1,11 @@
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
+  appendSmokeStepSummary,
   createRouteUrl,
   createRunId,
   createSmokeEvidencePath,
@@ -51,6 +54,44 @@ describe('smoke core helpers', () => {
       'https://blackbox.example/blackbox-records',
     );
     expect(parseScreenshotMode('on-failure')).toBe('on-failure');
+  });
+
+  it('appends a redacted, bounded job summary only inside GitHub Actions', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'smoke-summary-'));
+    const summaryPath = path.join(dir, 'summary.md');
+    const summary = {
+      blocker: 'Preflight failed with STRIPE_SECRET_KEY=sk_test_1234567890',
+      evidenceDir: path.join(process.cwd(), '.codex-artifacts', 'smoke', 'uat', 'uat-static', '20260930000000'),
+      scenarios: [
+        { name: 'public_assets', status: 'passed' as const },
+        { issues: ['one', 'two', 'three', 'four', 'five'], name: 'public_routes', status: 'failed' as const },
+        { name: 'three_d_secure', status: 'no evidence' as const },
+      ],
+      status: 'failed' as const,
+      suite: 'uat-static',
+    };
+
+    try {
+      vi.stubEnv('GITHUB_STEP_SUMMARY', '');
+      appendSmokeStepSummary(summary);
+      vi.stubEnv('GITHUB_STEP_SUMMARY', summaryPath);
+      appendSmokeStepSummary(summary);
+      const written = readFileSync(summaryPath, 'utf8');
+
+      expect(written).toContain('### Smoke `uat-static`: FAILED');
+      expect(written).toContain(
+        '- `public_routes`: failed\n  - one\n  - two\n  - three\n  - 2 more issue(s) in evidence',
+      );
+      expect(written).toContain('- `three_d_secure`: no evidence');
+      expect(written).toContain(
+        `Evidence: \`${path.join('.codex-artifacts', 'smoke', 'uat', 'uat-static', '20260930000000')}\``,
+      );
+      expect(written).not.toContain('sk_test_1234567890');
+      expect(written.match(/### Smoke/g)).toHaveLength(1);
+    } finally {
+      vi.unstubAllEnvs();
+      rmSync(dir, { force: true, recursive: true });
+    }
   });
 
   it('flags and redacts high-risk smoke secrets', () => {

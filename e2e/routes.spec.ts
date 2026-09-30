@@ -1,7 +1,7 @@
 import { publicSmokeRoutes } from '../scripts/smoke-core';
-import { expect, test } from './fixtures';
+import { expect, localRepresentativePaths, test } from './fixtures';
 
-for (const [route, expectedText] of publicSmokeRoutes) {
+for (const [route, expectedText] of publicSmokeRoutes(localRepresentativePaths)) {
   test(`renders ${route}`, async ({ page }) => {
     // A relative path keeps the /blackbox-records/ base path.
     const response = await page.goto(`.${route}`);

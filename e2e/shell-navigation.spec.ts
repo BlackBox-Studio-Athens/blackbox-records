@@ -1,4 +1,3 @@
-import { representativeReleaseSlug } from '../scripts/smoke-core';
 import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
 const main = 'main[data-app-shell-main]';
@@ -43,15 +42,16 @@ test('detail link opens an overlay that closes back to the list; a direct load r
   await expect(overlay).toBeVisible();
   await expect(overlay.locator('[data-app-shell-overlay-kind="releases"]')).toBeVisible();
   await expect(page).toHaveURL(/\/releases\/[^/]+\/$/);
+  const detailUrl = page.url();
 
   await page.getByRole('button', { name: 'Close detail view' }).click();
   await expect(overlay).toBeHidden();
   await expect(page).toHaveURL(/\/releases\/$/);
   expect(await sentinelIntact(page)).toBe(true);
 
-  await page.goto(`releases/${representativeReleaseSlug}/`);
+  await page.goto(detailUrl);
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.locator(main)).toContainText('Disintegration', { ignoreCase: true });
+  await expect(page.locator(main).getByRole('heading', { level: 1 })).toBeVisible();
 });
 
 test('mobile navigation sheet drives shell navigation without horizontal overflow', async ({ page, isMobile }) => {

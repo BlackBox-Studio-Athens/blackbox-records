@@ -24,7 +24,7 @@
 
 ## Review
 
-A simplicity review moved the canonical route table and slugs into `scripts/smoke-core.ts` (shared with the hosted UAT smoke, whose unit test still passes), removed Playwright settings that restated defaults, simplified the Store status assertions and kept the tooling-validation delta's Browser Use requirement unchanged apart from its continuity scenario. After those changes `pnpm test:e2e` passed again from a cold autostart: 32 passed, 2 skipped, port 4321 free afterwards.
+A simplicity review shared the public route table with the hosted UAT static smoke through `scripts/smoke-core.ts` (after merging `main`, which had decoupled that smoke from fixed content, the shared table asserts only code-owned copy and takes the detail pages as input), removed Playwright settings that restated defaults, simplified the Store status assertions and kept the tooling-validation delta's Browser Use requirement unchanged apart from its continuity scenario. After those changes `pnpm test:e2e` passed again from a cold autostart: 32 passed, 2 skipped, port 4321 free afterwards.
 
 ## Final validation
 

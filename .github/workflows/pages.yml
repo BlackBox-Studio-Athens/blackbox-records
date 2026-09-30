@@ -69,15 +69,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ inputs.artifact_commit_sha || github.sha }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.1.0
-        with:
-          version: 12.6.0
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24.21.0
+          node-version-file: .node-version
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -104,17 +103,16 @@ jobs:
         name: Checkout
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ inputs.artifact_commit_sha || github.sha }}
       - &pnpm
         name: Setup pnpm
         uses: pnpm/action-setup@v6.1.0
-        with:
-          version: 12.6.0
       - &node
         name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24.21.0
+          node-version-file: .node-version
           cache: pnpm
       - &install
         name: Install dependencies
@@ -153,6 +151,7 @@ jobs:
         if: ${{ inputs.artifact_commit_sha && inputs.artifact_commit_sha != github.sha }}
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.sha }}
           path: .codex-artifacts/release-tools
           sparse-checkout: |
@@ -283,6 +282,7 @@ jobs:
         if: ${{ inputs.artifact_commit_sha && inputs.artifact_commit_sha != github.sha }}
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.sha }}
           path: .codex-artifacts/release-tools
           sparse-checkout: |
@@ -348,11 +348,12 @@ jobs:
       - name: Setup Node.js for bundle assembly
         uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24.21.0
+          node-version-file: .node-version
       - name: Checkout trusted release tooling
         if: ${{ inputs.artifact_commit_sha && inputs.artifact_commit_sha != github.sha }}
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.sha }}
           path: .codex-artifacts/release-tools
           sparse-checkout: |
@@ -395,12 +396,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24.21.0
+          node-version-file: .node-version
       - &release-tools
         name: Checkout trusted release tooling
         if: ${{ inputs.artifact_commit_sha && inputs.artifact_commit_sha != github.sha }}
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.sha }}
           path: .codex-artifacts/release-tools
           sparse-checkout: |
@@ -447,6 +449,7 @@ jobs:
       - name: Checkout trusted promotion tooling
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.sha }}
       - *pnpm
       - *node
@@ -522,6 +525,7 @@ jobs:
       - name: Checkout trusted promotion tooling
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.sha }}
       - *pnpm
       - *node
