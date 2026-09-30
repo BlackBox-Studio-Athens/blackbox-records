@@ -9,6 +9,7 @@ Some staff rows show the file placeholder because media can lack a valid private
 - Align staff upload, thumbnail URL, media-reference audit, and bounded R2 backfill key validation; require valid PNG thumbnails up to 96 × 96 and 40 KiB for new uploads.
 - Report missing originals, unsupported keys, and missing or invalid thumbnails as separate inventory outcomes. Store derivatives separately and preserve source bytes if derivative preparation or storage fails.
 - Transform only accepted public CMS snapshot images through Cloudflare Images URL transformations at `images.blackboxrecordsathens.com`, with the finite responsive widths already emitted by the site, `format=auto`, exact UAT/PRD Pages source origins, and original-byte fallback.
+- Forward only the shopper's `Accept` header through the Pages gateway so `format=auto` can negotiate AVIF or WebP; cookies and authorization stay behind.
 - Enable Workers Caching only for the public image entrypoint. Keep the default public renderer and the staff CMS uncached; staff images, drafts, and previews remain private and no-store.
 - Keep repository-owned static images on their existing Astro and Pages path.
 

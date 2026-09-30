@@ -63,6 +63,12 @@ Published Content Images in accepted runtime snapshots MAY use Cloudflare Images
 - **WHEN** a request targets a staff draft, preview, arbitrary origin, unapproved path, or unsupported width
 - **THEN** it is not sent to the Images transformation host.
 
+#### Scenario: The Pages gateway forwards format negotiation only
+
+- **WHEN** the Pages gateway forwards a public GET or HEAD request to the renderer
+- **THEN** the forwarded request carries the shopper's `Accept` header and no other request header
+- **AND** cookies and authorization never reach the renderer or the Images transformation host.
+
 #### Scenario: A repository-owned image is rendered
 
 - **WHEN** an image is a static repository asset

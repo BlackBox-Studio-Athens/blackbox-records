@@ -8,4 +8,5 @@
 - [x] Document the Images Free hostname/source-origin setup, rollout gates, and current local inventory results.
 - [x] Run focused thumbnail/public-image Vitest checks, `pnpm cache:policy:check`, and Browser Use checks for staff Content/Stock and public images.
 - [x] Run `pnpm validate` and obtain a valid `pnpm validate:editor` result against a stable source tree.
+- [x] Forward only `Accept` through the Pages gateway; gateway test in `test:tooling`.
 - [ ] After a fresh Free-tier usage review and one-run authorization, apply the bounded UAT backfill and configuration, verify a representative cache hit, then repeat for PRD after UAT succeeds.

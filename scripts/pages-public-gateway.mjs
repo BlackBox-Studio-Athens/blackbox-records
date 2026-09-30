@@ -1,4 +1,4 @@
-// Pages preserves public origins and serves compiled assets; only public GET/HEAD reaches the renderer.
+// Pages preserves public origins and serves compiled assets; only public GET/HEAD, carrying just their Accept header, reach the renderer.
 export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
@@ -7,6 +7,8 @@ export default {
       return new Response('Not found', { status: 404 });
     if (/^\/(?:assets|_astro)\//.test(path) || /^\/(?:favicon\.[^/]+|robots\.txt)$/.test(path))
       return env.ASSETS.fetch(request);
-    return env.PUBLIC_SITE.fetch(new Request(request.url, { method: request.method }));
+    return env.PUBLIC_SITE.fetch(
+      new Request(request.url, { method: request.method, headers: { Accept: request.headers.get('Accept') ?? '*/*' } }),
+    );
   },
 };
