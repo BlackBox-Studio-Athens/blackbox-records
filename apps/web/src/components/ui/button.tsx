@@ -33,7 +33,7 @@ const buttonVariantClasses = cva(
           'after:transition-transform after:duration-250 after:ease-[cubic-bezier(0.22,1,0.36,1)] hover:after:scale-x-100 motion-reduce:after:transition-none',
         ],
         link: 'site-button--link',
-        chip: 'site-button--chip border-control-edge-quiet bg-secondary text-muted-foreground hover:border-control-edge-hover hover:text-foreground aria-pressed:border-foreground aria-pressed:bg-control-face-selected aria-pressed:text-foreground',
+        chip: 'site-button--chip group border-control-edge-quiet bg-secondary text-muted-foreground hover:border-control-edge-hover hover:text-foreground aria-pressed:border-foreground aria-pressed:bg-control-face-selected aria-pressed:text-foreground',
       },
       size: {
         sm: "min-h-8 gap-1.5 px-2.5 text-[13px] pointer-coarse:before:-inset-1.5 [&_svg:not([class*='size-'])]:size-3.5",

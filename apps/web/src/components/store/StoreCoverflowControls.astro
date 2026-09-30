@@ -1,4 +1,6 @@
 ---
+import { Check } from 'lucide-react';
+
 import { buttonVariants } from '@/components/ui/button';
 
 interface Props {
@@ -13,6 +15,7 @@ const stepButton = buttonVariants({ variant: 'outline', size: 'sm' });
 <div class="store-coverflow-controls" data-store-coverflow-controls hidden>
   <div class="store-coverflow-actions" role="group" aria-label="Catalogue view">
     <button type="button" class={viewToggle} aria-controls={catalogId} aria-pressed="true" data-store-coverflow-toggle>
+      <Check className="hidden size-3 group-aria-pressed:inline-block" aria-hidden="true" />
       Grid
     </button>
     <button
@@ -22,6 +25,7 @@ const stepButton = buttonVariants({ variant: 'outline', size: 'sm' });
       aria-pressed="false"
       data-store-coverflow-preview
     >
+      <Check className="hidden size-3 group-aria-pressed:inline-block" aria-hidden="true" />
       Coverflow
     </button>
     <button type="button" class={stepButton} aria-controls={catalogId} data-store-coverflow-previous>
