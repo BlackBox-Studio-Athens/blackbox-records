@@ -72,4 +72,14 @@ describe('Listen trigger CSS', () => {
     expect(barRule).toContain('transform-box: fill-box;');
     expect(readCssBlock('.music-listen-trigger {')).toContain('min-height: 2.75rem;');
   });
+
+  it('sets the label in the button family face and centres it with the equalizer', () => {
+    const triggerRule = readCssBlock('.music-listen-trigger {');
+    const labelRule = readCssBlock('.music-listen-trigger [data-music-listen-label] {');
+
+    expect(triggerRule).toContain('font-family: var(--font-display-ui);');
+    expect(triggerRule).toContain('letter-spacing: 0.06em;');
+    expect(labelRule).toContain('margin-right: -0.06em;');
+    expect(readCssBlock('.music-listen-trigger--standalone,')).toContain('min-height: 2.75rem;');
+  });
 });

@@ -30,7 +30,7 @@
 ## 5. CSS cleanup, Listen and status
 
 - [ ] 5.1 Delete superseded and dead button CSS in `global.css` (`.catalog-nav-button`, `.artist-detail-action*`, `.services-page-intro__cta`, `.services-inquiry-form__submit`, `.releases-latest-feature__action-link`, `.artist-roster-index__action*`, coverflow button rules incl. the ≈5317 override, `.app-shell-content-overlay__close-button`, player close/provider/mini-action rules, footer pill, `.store-coverflow-actions__toggle`, listen `__indicator` and unused modifiers, gallery overrides ≈5478/5490) and exclude `[data-slot='button']` from the `.store-item-page` text rule; verify `rg` finds no remaining selector for each deleted class and `StoreCollectionPage.test.ts` / `_about-contact-presentation.test.ts` still pass.
-- [ ] 5.2 Listen label to Bebas (`.music-listen-trigger` gap, label span, tracking pull-back, 1px nudge; standalone `min-height: 2.75rem`) in `MusicStreamingServiceListenTrigger.astro` and `global.css`; verify `music-listen-trigger-css.test.ts` passes with one added assertion for the label rule.
+- [x] 5.2 Listen label to Bebas (`.music-listen-trigger` gap, label span, tracking pull-back, 1px nudge; standalone `min-height: 2.75rem`) in `MusicStreamingServiceListenTrigger.astro` and `global.css`; verify `music-listen-trigger-css.test.ts` passes with one added assertion for the label rule.
 - [ ] 5.3 Non-buyable purchase status as a `role="status"` element at 44 × 14rem in `StoreItemPurchaseActions.tsx`; verify its test asserts no button for Sold Out and the status text is present.
 
 ## 6. Docs and validation
