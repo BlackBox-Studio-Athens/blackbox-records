@@ -147,6 +147,7 @@ function createSnapshotDocument() {
 
   return {
     title: 'Distro | Store | BlackBox',
+    createElement: () => ({ content: { ownerDocument: { importNode: (node: FakeElement) => node.cloneNode() } } }),
     querySelector(selector: string) {
       if (selector === 'main[data-app-shell-main]') return main;
       if (selector === 'link[rel="canonical"]') return canonical;
@@ -158,10 +159,11 @@ function createSnapshotDocument() {
 
 describe('shell page snapshots', () => {
   it('keeps the previous snapshot when a dialog temporarily hides page descendants', () => {
-    const cloneNode = vi.fn();
+    const createElement = vi.fn();
     const cacheSnapshot = vi.fn();
     const targetDocument = {
-      querySelector: () => ({ querySelectorAll: () => [{}], cloneNode }),
+      createElement,
+      querySelector: () => ({ querySelectorAll: () => [{}] }),
     } as unknown as Document;
     expect(
       cacheDocumentShellPageSnapshot({
@@ -171,7 +173,7 @@ describe('shell page snapshots', () => {
         shellPageCache: { cacheSnapshot },
       }),
     ).toBeNull();
-    expect(cloneNode).not.toHaveBeenCalled();
+    expect(createElement).not.toHaveBeenCalled();
     expect(cacheSnapshot).not.toHaveBeenCalled();
   });
 

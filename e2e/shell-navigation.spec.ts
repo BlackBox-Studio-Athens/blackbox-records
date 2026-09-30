@@ -146,3 +146,18 @@ test('footer sitemap wraps with touch-sized links on small phones', async ({ pag
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   }
 });
+
+test('capturing the live Store snapshot does not fetch its lazy images', async ({ page }) => {
+  const imageRequests: string[] = [];
+  page.on('request', (request) => {
+    if (request.resourceType() === 'image') imageRequests.push(request.url());
+  });
+  await page.goto('store/');
+  await waitForShell(page);
+  // The shell snapshots the live page right after it mounts; give any fetches that clone starts time to appear.
+  await page.waitForTimeout(1_000);
+
+  const imageCount = await page.locator(`${main} img`).count();
+  expect(imageCount).toBeGreaterThan(20);
+  expect(imageRequests.length).toBeLessThan(imageCount / 2);
+});

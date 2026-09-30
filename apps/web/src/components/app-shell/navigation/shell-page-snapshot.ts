@@ -83,7 +83,10 @@ export function readDocumentShellPageSnapshot(
   // instead of persisting its accessibility mask into the next visit.
   if (mainElement.querySelectorAll('[data-aria-hidden]').length > 0) return null;
 
-  const mainElementClone = mainElement.cloneNode(true) as HTMLElement;
+  // Clone into an inert document: a clone in the live document makes Chrome fetch every lazy image it holds.
+  const mainElementClone = targetDocument
+    .createElement('template')
+    .content.ownerDocument.importNode(mainElement, true) as HTMLElement;
   mainElementClone.querySelectorAll<HTMLElement>('[data-artists-roster-filters]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';
   });
