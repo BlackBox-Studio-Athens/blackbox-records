@@ -170,6 +170,24 @@ A label member lost a typed price because it needed its own button. The user app
 
 Design Library references, used as patterns only (nothing copied beyond the official shadcn `item` and `empty` primitives): ReUI `c-item-5` and `c-item-2` for the "What goes live" rows, `c-stepper-3` and `c-stepper-8` for per-step progress, `c-empty-1` for Everything is live, and `c-button-group-53` with shadcn-studio `button-19` for the split publish button with a count badge. The library's store-navigation pattern set has no publish pattern. The staff surface keeps its tokens, blue actions and 44px targets.
 
+## Button family study · 2026-09-30
+
+The Listen study was run to inform a redesign of every public-site button. Buttons then came from four competing sources (the shadcn primitive, component classes, inline utilities and unlayered overrides): seven heights from 36 to 56px, square, rounded and pill corners, ten tracking values and five focus treatments; the header menu toggle had none.
+
+The comparison lives in the private Design canvas "BlackBox Button Family" (https://claude.ai/artifact/C5Lmv5FNLdqCRPnSFJtVGi): a recreation of today's buttons, three directions (A Refined, B Poster, C Quiet) with every role in every state and in context, a label-face board and a phone board, then three iterations of the chosen direction.
+
+| Decision | Choice |
+| --- | --- |
+| Direction | C Quiet: charcoal faces, hairline edges, controls recede behind artwork |
+| Label face | Bebas Neue caps (Google's cut has no lowercase); text actions stay Inter |
+| Sizes | 32 / 36 / 44px; 36 is the default. Coarse pointers get an invisible 44px halo instead of larger boxes |
+| Listen | Face, border, amber equalizer and motion unchanged; label to Bebas 15/17px, re-centred; standalone 48 → 44px |
+| Header cart | Shopping bag with a round count bubble, present only with items or on store routes |
+| In-place feedback (adopted) | Added state on Add to cart, Undo after Remove, Stop asks once, Pay fills when the quote is ready, subtotal in Checkout, counts on roster chips, text actions recede in rows, ↗ on actions that leave the site, tone inherited from the section |
+| Dropped | Boxes growing on touch; the cart count as a numeral instead of a bubble |
+
+Design Library consult: the shadcn shortlist's button catalogues (Cult UI's neumorph, texture, gradient, border-beam, metal and cosmic buttons) hit PRODUCT.md bans and were not used. Coss UI blocks informed structure only: loading button (`p-button-18`), link rendered as button (`p-button-17`), back link (`p-button-20`) and icon sizes (`p-button-13` to `p-button-15`). Cosmos Public Work stays the restraint reference. No dependency was added. Implementation and acceptance live in the OpenSpec change `unify-public-buttons`.
+
 ## Add a source or revisit a decision
 
 1. Search the [global source register](C:/Users/SVall/.codex/design-library/README.md) and [pattern map](C:/Users/SVall/.codex/design-library/patterns/README.md); reuse existing IDs.

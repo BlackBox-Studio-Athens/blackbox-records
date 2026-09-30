@@ -11,6 +11,7 @@ colors:
   hard-border: '#262626'
   deep-border: '#2b2b2b'
   primary-inverse: '#090909'
+  control-ink: '#e8e8e8'
   services-rose: '#8a495a'
   services-rose-hover: '#a76376'
   services-rose-active: '#c78997'
@@ -69,15 +70,15 @@ spacing:
   section: '4rem'
 components:
   button-primary:
-    backgroundColor: '{colors.ink-foreground}'
+    backgroundColor: '{colors.control-ink}'
     textColor: '{colors.primary-inverse}'
     rounded: '{rounded.none}'
-    padding: '0.75rem 1rem'
+    padding: '0 0.75rem'
   button-outline:
-    backgroundColor: 'transparent'
+    backgroundColor: '{colors.charcoal-surface}'
     textColor: '{colors.ink-foreground}'
     rounded: '{rounded.none}'
-    padding: '0.75rem 1rem'
+    padding: '0 0.75rem'
   catalog-card:
     backgroundColor: '{colors.charcoal-surface}'
     textColor: '{colors.ink-foreground}'
@@ -183,12 +184,21 @@ The system is flat by default. Depth comes from tonal separation, borders, image
 
 ### Buttons
 
-Buttons are hard, typographic controls with direct action language.
+Buttons are hard, typographic controls with direct action language: one family (`apps/web/src/components/ui/button.tsx`), three sizes, one focus ring. They sit behind the artwork; nothing glows except Listen.
 
-- **Shape:** Square for core public actions (`0`), modest rounding only when using shared shadcn primitives (`0.225rem` to `0.35rem`).
-- **Primary:** Ink Foreground background with Primary Inverse text. Use for checkout continuation, cart checkout, and decisive actions.
-- **Hover / Focus:** Keep hover tonal, not bouncy. Use background opacity or accent-border shifts, with visible focus rings from the `--ring` token.
-- **Secondary / Ghost:** Transparent or charcoal surfaces with Hard Border strokes. Use for back links, cart secondary actions, and service CTAs.
+- **Shape:** Square (`0`) everywhere, including shared primitives. No pills.
+- **Type:** Bebas Neue caps, 0.06em tracking, nudged 1px down to centre the caps. Text actions (Remove, Back to Store, Refresh status) stay Inter 13/500 with an underline.
+- **Sizes:** 32px for chips, sort and view toggles; 36px for every action and icon control; 44px for commerce decisions and anything sharing a row with a 44px input or Listen. On coarse pointers an invisible halo makes every control 44px tappable; the drawn size never changes.
+- **Primary:** Control Ink (#e8e8e8) face with Primary Inverse text, lifting to Ink Foreground on hover. One filled primary per view.
+- **Outline:** Charcoal Surface face with a Deep Border edge; hover lifts face and edge. Inside store or services surfaces (`data-tone`) the edge takes Store Blood or Services Rose automatically, never per button. Icon controls keep a quieter neutral edge.
+- **Quiet:** Soft Muted text with a hairline underline that grows from the centre on hover.
+- **Chips:** Charcoal face and quiet edge; selected chips gain an ink border and a check mark, and may show their result count.
+- **States:** Hover is tonal and only on hover-capable devices; press darkens the face; nothing moves. Focus is a 2px ink ring at 2px (amber on Listen). Disabled drops to 45%. Loading keeps the width, sets `aria-busy` and changes the label.
+- **Status is not a control:** Sold Out and Out of Stock render as status text in the purchase slot, never as a disabled button.
+
+**The Feedback Stays In Place Rule.** Add to cart says Added, Remove leaves an Undo line, Stop asks once, and Pay fills when the shipping quote is ready. No toasts or confirmation dialogs for these.
+
+**The Header Cart Rule.** The bag control appears when the cart has items or the shopper is on a store route; its box is reserved so the navigation never shifts.
 
 ### Chips
 
