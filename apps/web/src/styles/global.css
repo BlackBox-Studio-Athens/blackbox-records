@@ -44,6 +44,14 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-control-ink: var(--control-ink);
+  --color-control-ink-pressed: var(--control-ink-pressed);
+  --color-control-face-hover: var(--control-face-hover);
+  --color-control-face-selected: var(--control-face-selected);
+  --color-control-edge: var(--control-edge);
+  --color-control-edge-quiet: var(--control-edge-quiet);
+  --color-control-edge-hover: var(--control-edge-hover);
+  --color-control-muted-pressed: var(--control-muted-pressed);
 }
 
 :root {
@@ -88,6 +96,15 @@
   --store-accent-hover: #b4465a;
   --store-accent-active: #cf6b80;
   --store-accent-surface: rgba(146, 47, 63, 0.14);
+  /* Public button family (openspec/changes/unify-public-buttons) */
+  --control-ink: #e8e8e8;
+  --control-ink-pressed: #cfcfcf;
+  --control-face-hover: #1a1a1a;
+  --control-face-selected: #1f1f1f;
+  --control-edge: #2b2b2b;
+  --control-edge-quiet: #1f1f1f;
+  --control-edge-hover: #4a4a4a;
+  --control-muted-pressed: #8a8a8a;
 }
 
 html {
@@ -5754,7 +5771,7 @@ html[data-store-coverflow-capable]
   background: var(--store-accent-surface);
 }
 
-.store-item-purchase .font-display:not([data-store-offer-price]) {
+.store-item-purchase .font-display:not([data-store-offer-price], .site-button) {
   font-family: var(--font-sans);
   letter-spacing: normal;
   text-transform: none;
@@ -5772,4 +5789,60 @@ html[data-store-coverflow-capable]
   .store-item-card__listen {
   display: flex;
   justify-content: center;
+}
+
+/* Public button family: outlined buttons take the section tone declared once on a surface. */
+[data-tone='store'] .site-button--outline:not(.site-button--icon) {
+  border-color: color-mix(in srgb, var(--store-accent) 72%, transparent);
+}
+
+[data-tone='store'] .site-button--outline:not(.site-button--icon):active {
+  border-color: var(--store-accent-active);
+  background-color: color-mix(in srgb, var(--store-accent) 24%, transparent);
+}
+
+[data-tone='services'] .site-button--outline:not(.site-button--icon) {
+  border-color: color-mix(in srgb, var(--services-accent) 72%, transparent);
+}
+
+[data-tone='services'] .site-button--outline:not(.site-button--icon):active {
+  border-color: var(--services-accent-active);
+  background-color: color-mix(in srgb, var(--services-accent) 24%, transparent);
+}
+
+@media (hover: hover) {
+  [data-tone='store'] .site-button--outline:not(.site-button--icon):hover {
+    border-color: var(--store-accent-hover);
+    background-color: var(--store-accent-surface);
+  }
+
+  [data-tone='services'] .site-button--outline:not(.site-button--icon):hover {
+    border-color: var(--services-accent-hover);
+    background-color: var(--services-accent-surface);
+  }
+}
+
+/* The header reserves the cart control's box so the navigation never shifts when it appears. */
+[data-store-cart-header-root] {
+  display: inline-flex;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-store-cart-header-root] > * {
+  animation: store-cart-slot-in 200ms ease-out both;
+}
+
+@keyframes store-cart-slot-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-store-cart-header-root] > * {
+    animation: none;
+  }
 }

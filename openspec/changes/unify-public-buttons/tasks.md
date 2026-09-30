@@ -2,8 +2,8 @@
 
 ## 1. Primitive and tone
 
-- [ ] 1.1 Rewrite `apps/web/src/components/ui/button.tsx` (`buttonVariants`: base, sizes sm/default/lg/icon/icon-lg, variants default/outline/ghost/link/chip, `data-variant`/`data-size`, hover under `(hover: hover)`, coarse-pointer halo); verify `pnpm test apps/web/src/components/ui/button.test.ts` (new) passes for `rounded-none`, `min-h-9`, halo classes and `data-variant`.
-- [ ] 1.2 Add tone inheritance rules and the header cart root reservation to `apps/web/src/styles/global.css` using `--store-accent*` / `--services-accent*`; verify with a CSS string test in `button.test.ts` that both `[data-tone='store']` and `[data-tone='services']` rules exist.
+- [x] 1.1 Rewrite `apps/web/src/components/ui/button.tsx` (`buttonVariants`: base, sizes sm/default/lg/icon/icon-lg, variants default/outline/ghost/link/chip, `data-variant`/`data-size`, hover under `(hover: hover)`, coarse-pointer halo); verify `pnpm test apps/web/src/components/ui/button.test.ts` (new) passes for `rounded-none`, `min-h-9`, halo classes and `data-variant`.
+- [x] 1.2 Add tone inheritance rules and the header cart root reservation to `apps/web/src/styles/global.css` using `--store-accent*` / `--services-accent*`; verify with a CSS string test in `button.test.ts` that both `[data-tone='store']` and `[data-tone='services']` rules exist.
 - [ ] 1.3 Set `data-tone` on store surfaces (`StoreCollectionPage` layout, store item and checkout pages, `StoreCartDrawer`) and services surfaces (services page, `ServicesInquiryForm`); verify by rendering `StoreCartDrawer` and `ServicesInquiryForm` in their tests and asserting the attribute.
 
 ## 2. Callers
