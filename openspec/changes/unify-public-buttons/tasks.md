@@ -21,10 +21,10 @@
 
 ## 4. In-place feedback
 
-- [ ] 4.1 Added state in `StoreItemPurchaseActions.tsx` (4s, hairline, `aria-live`); verify `StoreItemPurchaseActions.test.tsx` covers add → Added → Add to cart with fake timers.
-- [ ] 4.2 Undo line after Remove and subtotal in the Checkout action in `StoreCartDrawer.tsx`; verify `StoreCartDrawer.test.tsx` covers remove → Undo restores the quantity, and the Checkout label contains the formatted subtotal.
+- [x] 4.1 Added state in `StoreItemPurchaseActions.tsx` (4s, draining hairline, polite announcement, width kept); verify with `e2e/store-cart.spec.ts` (reads Added right after the click, focus returns to it when the drawer closes, resets to Add To Cart) and the static render test.
+- [x] 4.2 Undo line after Remove (or a quantity below one) and the quoted total in the Checkout action in `StoreCartDrawer.tsx`, fed by `CartDeliverySummary`; verify with `restoreCartLine` cases in `store-cart.test.ts`, drawer static tests (aria-hidden total, name stays Checkout, icon steppers) and `e2e/store-cart.spec.ts` (Remove leaves a focused Undo that restores the line).
 - [x] 4.3 Quote-ready fill in `CheckoutOfferStatus.tsx`: charcoal outline "Waiting for shipping quote" (busy, disabled, readable) while the quote loads, ink primary with the Stripe label and the aria-hidden quote total once ready; verify with `createPayControlView` cases in `CheckoutOfferStatus.test.ts` (loading, ready, unavailable, starting).
-- [ ] 4.4 Armed Stop in `ShellPlayerSurface.tsx` (Stop? for 3s, second press stops, accessible name unchanged); verify `ShellPlayerSurface.test.tsx` and update `e2e/player-continuity.spec.ts` (and any spec pressing Stop) to press twice.
+- [x] 4.4 Armed Stop in `ShellPlayerSurface.tsx` (first press arms Stop? for 3s without the stop attribute, second press routes to the existing Stop, name unchanged, polite hint); provider chips expose `aria-pressed`; verify with `ShellPlayerSurface.test.tsx` and `e2e/player-continuity.spec.ts` (first press keeps the iframe, second removes it).
 - [ ] 4.5 Counts on roster chips in `ArtistsRosterFilters.tsx`, recede-in-rows classes on cart lines, ↗ mark on external text controls (release commerce link, provider buttons); verify component tests and that icon-only social links are unchanged.
 
 ## 5. CSS cleanup, Listen and status

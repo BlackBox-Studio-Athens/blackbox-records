@@ -41,7 +41,12 @@ test('player survives shell navigation, minimize/reopen and history; Stop destro
   expect(await sentinelIntact(page)).toBe(true);
   expect(await isOriginalIframeConnected()).toBe(true);
 
-  await page.getByRole('button', { name: 'Stop player' }).click();
+  // Stop asks once in place: the first press arms it (Stop?), the second ends the session.
+  const stop = page.getByRole('button', { name: 'Stop player' });
+  await stop.click();
+  await expect(stop).toHaveText('Stop?');
+  await expect(iframe).toHaveCount(1);
+  await stop.click();
   await expect(iframe).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Open player' })).toBeHidden();
 });
