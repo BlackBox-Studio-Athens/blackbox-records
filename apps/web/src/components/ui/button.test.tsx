@@ -31,6 +31,7 @@ describe('Button', () => {
         'pointer-coarse:before:absolute',
         'pointer-coarse:before:-inset-1',
         'focus-visible:outline-2',
+        'focus-visible:outline-solid',
       ]),
     );
   });
@@ -78,7 +79,12 @@ describe('Button family CSS', () => {
     expect(globalCss).toMatch(/\[data-store-cart-header-root\] \{[^}]*min-width: 2\.25rem;[^}]*min-height: 2\.25rem;/);
   });
 
-  it('keeps Bebas on buttons inside the store purchase area', () => {
-    expect(globalCss).toContain('.store-item-purchase .font-display:not([data-store-offer-price], .site-button) {');
+  it('keeps Bebas on buttons, Listen and purchase status inside store item pages', () => {
+    expect(globalCss).toContain(
+      '.store-item-purchase .font-display:not([data-store-offer-price], [data-store-item-purchase-status], .site-button) {',
+    );
+    expect(globalCss).toContain(
+      '.store-item-page :is(p, button, a, [data-store-purchase-group] > span):not(.site-button, .music-listen-trigger, [data-store-item-purchase-status]) {',
+    );
   });
 });

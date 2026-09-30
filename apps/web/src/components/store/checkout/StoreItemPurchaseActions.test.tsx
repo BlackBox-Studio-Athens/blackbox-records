@@ -82,6 +82,8 @@ describe('StoreItemPurchaseActions', () => {
     expect(html).toContain('w-full');
     expect(html).not.toContain('Buy Now');
     expect(html).not.toContain('href=');
+    expect(html).not.toContain('data-store-item-added');
+    expect(html).toContain('aria-live="polite"');
   });
 
   it('keeps an older cart snapshot disabled while a fresh Worker offer is pending', () => {
@@ -104,11 +106,14 @@ describe('StoreItemPurchaseActions', () => {
     expect(html).not.toContain('data-store-item-add-to-cart');
   });
 
-  it('renders unavailable items as disabled without a pending spinner', () => {
+  it('renders unavailable items as a status, not a disabled button', () => {
     const html = renderToStaticMarkup(<StoreItemPurchaseActions cartItem={null} cartSeed={null} />);
 
     expect(html).toContain(STORE_ITEM_PURCHASE_ACTION_COPY.unavailable);
-    expect(html).toContain('disabled=""');
+    expect(html).toMatch(/^<p role="status"/);
+    expect(html).not.toContain('<button');
+    expect(html).not.toContain('disabled=""');
+    expect(html).toContain('border-[#767676]');
     expect(html).toContain('min-h-11');
     expect(html).toContain('sm:w-56');
     expect(html).toContain('data-store-item-purchase-tone="neutral"');

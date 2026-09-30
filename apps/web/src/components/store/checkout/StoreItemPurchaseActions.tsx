@@ -8,6 +8,7 @@ import {
   type PublicStoreOffer,
 } from '@/components/store/checkout/public-checkout-api';
 import { STORE_CART_ADD_ITEM_EVENT, type CartLineItemSnapshot } from '@/components/store/cart/store-cart';
+import { cn } from '@/components/ui/utils';
 
 export type StoreItemCartSeed = Omit<
   CartLineItemSnapshot,
@@ -35,10 +36,15 @@ type StoreItemPurchaseStatusTone = 'neutral' | 'sold-out';
 const purchaseActionLayoutClasses = 'w-full sm:w-56 whitespace-normal';
 
 export const STORE_ITEM_PURCHASE_ACTION_COPY = {
+  added: 'Added',
+  addedAnnouncement: 'Added to cart',
   addToCart: 'Add To Cart',
   checking: 'Checking availability',
   unavailable: 'Currently Unavailable',
 } as const;
+
+// The purchase control confirms in place: it reads Added for this long after a successful add.
+export const STORE_ITEM_ADDED_CONFIRMATION_MS = 4000;
 
 export function getStoreItemPurchaseStatusTone(label: string | null): StoreItemPurchaseStatusTone {
   return label === 'Sold Out' ? 'sold-out' : 'neutral';
@@ -117,6 +123,14 @@ export default function StoreItemPurchaseActions({
         },
   );
   const [isChecking, setIsChecking] = React.useState(Boolean(cartSeed));
+  const [addedCount, setAddedCount] = React.useState(0);
+  const [isAddedVisible, setIsAddedVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    if (addedCount === 0) return;
+    const timer = window.setTimeout(() => setIsAddedVisible(false), STORE_ITEM_ADDED_CONFIRMATION_MS);
+    return () => window.clearTimeout(timer);
+  }, [addedCount]);
 
   React.useEffect(() => {
     if (!cartSeed) {
@@ -153,32 +167,41 @@ export default function StoreItemPurchaseActions({
 
   const activeCartItem = purchaseState.cartItem;
 
-  if (!activeCartItem) {
-    const statusLabel = isChecking ? STORE_ITEM_PURCHASE_ACTION_COPY.checking : purchaseState.label;
-
+  if (!activeCartItem && isChecking) {
     return (
       <Button
         type="button"
         size="lg"
         variant="outline"
-        className={`${purchaseActionLayoutClasses} disabled:opacity-100 ${
-          !isChecking && purchaseState.statusTone === 'sold-out'
-            ? 'border-[#922f3f]/60 bg-transparent text-[#b3b3b3]'
-            : 'border-[#767676] bg-[#141414] text-[#b3b3b3]'
-        }`}
+        className={`${purchaseActionLayoutClasses} disabled:opacity-100`}
         disabled
-        aria-busy={isChecking ? 'true' : undefined}
+        aria-busy="true"
         aria-live="polite"
         aria-atomic="true"
         data-store-item-purchase-status
         data-store-item-purchase-tone={purchaseState.statusTone}
       >
-        {isChecking ? (
-          <LoadingButtonContent label={STORE_ITEM_PURCHASE_ACTION_COPY.checking} />
-        ) : (
-          (statusLabel ?? STORE_ITEM_PURCHASE_ACTION_COPY.unavailable)
-        )}
+        <LoadingButtonContent label={STORE_ITEM_PURCHASE_ACTION_COPY.checking} />
       </Button>
+    );
+  }
+
+  if (!activeCartItem) {
+    // Not buyable is information, not a control: a status in the purchase slot, never a disabled button.
+    return (
+      <p
+        role="status"
+        aria-atomic="true"
+        data-store-item-purchase-status
+        data-store-item-purchase-tone={purchaseState.statusTone}
+        className={cn(
+          purchaseActionLayoutClasses,
+          'inline-flex min-h-11 items-center justify-center border px-4 pt-px text-center font-display text-base leading-none tracking-[0.06em] text-foreground uppercase',
+          purchaseState.statusTone === 'sold-out' ? 'border-[var(--store-accent)]' : 'border-[#767676]',
+        )}
+      >
+        {purchaseState.label ?? STORE_ITEM_PURCHASE_ACTION_COPY.unavailable}
+      </p>
     );
   }
 
@@ -187,12 +210,22 @@ export default function StoreItemPurchaseActions({
       <Button
         type="button"
         size="lg"
+        variant={isAddedVisible ? 'outline' : 'default'}
         className={purchaseActionLayoutClasses}
         data-store-item-add-to-cart
-        onClick={() => requestStoreCartAddItem(activeCartItem)}
+        data-store-item-added={isAddedVisible ? '' : undefined}
+        onClick={() => {
+          requestStoreCartAddItem(activeCartItem);
+          setAddedCount((count) => count + 1);
+          setIsAddedVisible(true);
+        }}
       >
-        {STORE_ITEM_PURCHASE_ACTION_COPY.addToCart}
+        {isAddedVisible ? STORE_ITEM_PURCHASE_ACTION_COPY.added : STORE_ITEM_PURCHASE_ACTION_COPY.addToCart}
+        {isAddedVisible && <span key={addedCount} className="site-feedback-hairline" data-duration="4s" aria-hidden="true" />}
       </Button>
+      <span className="sr-only" aria-live="polite">
+        {isAddedVisible ? STORE_ITEM_PURCHASE_ACTION_COPY.addedAnnouncement : ''}
+      </span>
       {purchaseHint && <p className="text-sm leading-relaxed text-muted-foreground">{purchaseHint}</p>}
     </>
   );

@@ -13,7 +13,8 @@ const buttonVariantClasses = cva(
     'site-button relative inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 whitespace-nowrap',
     'rounded-none border pt-px font-display leading-none font-normal tracking-[0.06em] uppercase',
     'transition-[color,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none',
-    'outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground focus-visible:ring-0 focus-visible:ring-offset-0',
+    // outline-none sets --tw-outline-style: none, so the focus ring must set its style explicitly.
+    'outline-none focus-visible:outline-2 focus-visible:outline-solid focus-visible:outline-offset-2 focus-visible:outline-foreground focus-visible:ring-0 focus-visible:ring-offset-0',
     'disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45 aria-disabled:pointer-events-none aria-disabled:opacity-45',
     'aria-busy:cursor-progress',
     'pointer-coarse:before:absolute pointer-coarse:before:-inset-1',

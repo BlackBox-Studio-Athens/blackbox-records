@@ -5623,7 +5623,7 @@ html[data-store-coverflow-capable]
   line-height: 1.1;
 }
 
-.store-item-page :is(p, button, a, [data-store-purchase-group] > span):not(.site-button, .music-listen-trigger) {
+.store-item-page :is(p, button, a, [data-store-purchase-group] > span):not(.site-button, .music-listen-trigger, [data-store-item-purchase-status]) {
   font-family: var(--font-sans);
   letter-spacing: normal;
   text-transform: none;
@@ -5747,7 +5747,7 @@ html[data-store-coverflow-capable]
   background: var(--store-accent-surface);
 }
 
-.store-item-purchase .font-display:not([data-store-offer-price], .site-button) {
+.store-item-purchase .font-display:not([data-store-offer-price], [data-store-item-purchase-status], .site-button) {
   font-family: var(--font-sans);
   letter-spacing: normal;
   text-transform: none;
@@ -5820,5 +5820,36 @@ html[data-store-coverflow-capable]
 @media (prefers-reduced-motion: reduce) {
   [data-store-cart-header-root] > * {
     animation: none;
+  }
+}
+
+/* In-place feedback: a 1px hairline drains across a control while a timed state (Added, Undo) lasts. */
+@keyframes site-feedback-drain {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}
+
+.site-feedback-hairline {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 1px;
+  background: currentColor;
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .site-feedback-hairline[data-duration='4s'] {
+    animation: site-feedback-drain 4s linear forwards;
+  }
+
+  .site-feedback-hairline[data-duration='6s'] {
+    animation: site-feedback-drain 6s linear forwards;
   }
 }
