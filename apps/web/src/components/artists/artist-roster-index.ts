@@ -5,8 +5,6 @@ const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 type ArtistRosterEntry<T> = {
   artist: T;
-  /** Two-digit roster number in A-Z order. */
-  number: string;
   letter: string;
   /** First row of a letter group; only set when the roster is grouped. */
   groupStart: boolean;
@@ -31,13 +29,13 @@ export function planArtistRoster<T>(artists: T[], getName: (artist: T) => string
   const seen = new Set<string>();
   let previousLetter = '';
 
-  const entries: ArtistRosterEntry<T>[] = artists.map((artist, index) => {
+  const entries: ArtistRosterEntry<T>[] = artists.map((artist) => {
     const letter = getArtistLetter(getName(artist));
     const groupStart = grouped && letter !== previousLetter;
     const anchorId = grouped && !seen.has(letter) ? getArtistLetterAnchorId(letter) : null;
     previousLetter = letter;
     seen.add(letter);
-    return { artist, number: String(index + 1).padStart(2, '0'), letter, groupStart, anchorId };
+    return { artist, letter, groupStart, anchorId };
   });
 
   const jumpLetters: ArtistJumpLetter[] = grouped

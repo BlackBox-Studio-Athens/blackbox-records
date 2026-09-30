@@ -1,8 +1,6 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import Prose from '@/components/Prose.astro';
-import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
-import { buildEmbeddedPlayerData } from '@/components/music/music';
 import { emptyArtistRosterReleaseContext, type ArtistRosterReleaseContext } from '@/lib/catalog-data';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import ArtistPrint from './ArtistPrint.astro';
@@ -17,14 +15,12 @@ interface Props {
 
 const { artists, releaseContextByArtistId } = Astro.props;
 const { grouped, entries, jumpLetters } = planArtistRoster(artists, (artist) => artist.data.title);
-const total = String(entries.length).padStart(2, '0');
 const eagerThumbCount = 3;
 
 const rows = entries.map((entry, index) => {
   const { artist } = entry;
   const name = artist.data.title || 'Artist';
   const releaseContext = releaseContextByArtistId.get(artist.id) ?? emptyArtistRosterReleaseContext;
-  const latestEntry = releaseContext.latestReleaseEntry;
   return {
     ...entry,
     index,
@@ -35,9 +31,6 @@ const rows = entries.map((entry, index) => {
     releaseContext,
     releaseLabel: releaseContext.releaseCount === 1 ? '1 Release' : `${releaseContext.releaseCount} Releases`,
     latestLine: releaseContext.latestReleaseTitle ? `Latest · ${releaseContext.latestReleaseTitle}` : 'No releases yet',
-    playerData: latestEntry
-      ? buildEmbeddedPlayerData(latestEntry.id, latestEntry.data, `${latestEntry.data.title} — ${name}`)
-      : null,
   };
 });
 ---
@@ -93,9 +86,6 @@ const rows = entries.map((entry, index) => {
             data-artist-roster-row
             data-artist-id={row.artist.id}
           >
-            <span class="artist-roster-index__number" data-artist-roster-number aria-hidden="true">
-              {row.number}
-            </span>
             <span class="artist-roster-index__main">
               <span class="artist-roster-index__name">{row.name}</span>
               <span class="artist-roster-index__meta">
@@ -144,7 +134,7 @@ const rows = entries.map((entry, index) => {
                   image={row.artist.data.image}
                   alt={row.imageAlt}
                   name={row.name}
-                  number={row.number}
+                  href={row.href}
                   tiltIndex={row.index}
                   maxSize={{ width: 300, height: 340 }}
                 />
@@ -158,9 +148,6 @@ const rows = entries.map((entry, index) => {
                 >
                   View artist
                 </a>
-                {row.playerData && (
-                  <MusicStreamingServiceListenTrigger embeddedPlayerData={row.playerData} variant="standalone" />
-                )}
               </div>
             </div>
           </details>
@@ -176,7 +163,7 @@ const rows = entries.map((entry, index) => {
             image={row.artist.data.image}
             alt={row.imageAlt}
             name={row.name}
-            number={row.number}
+            href={row.href}
             tiltIndex={row.index}
             fetchPriority={row.index === 0 ? 'high' : undefined}
             hidden={row.index > 0}
@@ -194,12 +181,7 @@ const rows = entries.map((entry, index) => {
             data-artist-preview-details
             data-artist-id={row.artist.id}
           >
-            <div class="artist-roster-preview__topline">
-              <span class="artist-roster-preview__count">
-                {row.number} / {total}
-              </span>
-              <span>{row.label}</span>
-            </div>
+            {row.label && <p class="artist-roster-preview__topline">{row.label}</p>}
             <h2 class="artist-roster-preview__name">{row.name}</h2>
             {row.artist.data.bio && (
               <Prose
@@ -218,9 +200,6 @@ const rows = entries.map((entry, index) => {
               >
                 View artist
               </a>
-              {row.playerData && (
-                <MusicStreamingServiceListenTrigger embeddedPlayerData={row.playerData} variant="standalone" />
-              )}
             </div>
           </div>
         ))}
