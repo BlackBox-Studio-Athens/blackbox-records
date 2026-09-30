@@ -1,7 +1,7 @@
 {
   "$schema": "../../../.astro/collections/about.schema.json",
   "hero": {
-    "section_label": "About",
+    "section_label": "Who we are",
     "title": "The Label",
     "image": "36585142_187676541905905_5704427450599997440_n.jpg",
     "image_alt": "Illuminated BlackBox Records sign on a dark studio wall"

@@ -22,7 +22,13 @@ describe('app shell startup closure', () => {
     expect(portalSource).toContain('storeCartBridgeFailed ?');
     expect(portalSource).toContain('Cart is unavailable.');
 
-    for (const moduleName of ['ArtistsRosterFilters', 'StoreDistroSearch', 'ServicesInquiryForm', 'StoreCartButton']) {
+    for (const moduleName of [
+      'ArtistsRosterFilters',
+      'ArtistRosterPreview',
+      'StoreDistroSearch',
+      'ServicesInquiryForm',
+      'StoreCartButton',
+    ]) {
       expect(portalSource).toContain(`const ${moduleName} = React.lazy(`);
     }
     expect(source).toContain(

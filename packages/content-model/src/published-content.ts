@@ -68,7 +68,7 @@ export function publishedCollection(
       const { body, ...editorial } = projectProseFields(record.collection, record.data);
       const data = field(editorial) as Record<string, unknown>;
       if (record.collection === 'artists') data.slug = record.slug;
-      if (record.collection === 'releases') {
+      if (record.collection === 'releases' || (record.collection === 'news' && record.data.artist)) {
         const artist = snapshot.records.find((item) => item.collection === 'artists' && item.id === record.data.artist);
         if (!artist) throw new Error('Published Artist is unavailable.');
         data.artist = { collection: 'artists', id: artist.slug };

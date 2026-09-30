@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { validateCmsDraft } from '@blackbox/content-model';
 import { getContentValidation, youtubeVideoId } from './content-validation';
 
 describe('content validation adapter', () => {
+  it('accepts navigation checkboxes in the 0/1 form EmDash stores', () => {
+    const stored = { title: 'Who we are', url: '/about/', order: 5, show_in_header: 1, show_in_footer: 0 };
+    expect(validateCmsDraft('navigation', stored)).toEqual([]);
+    expect(getContentValidation('navigation', stored).valid).toBe(true);
+    expect(validateCmsDraft('navigation', { ...stored, show_in_header: 2 })).not.toEqual([]);
+  });
+
   it('returns field paths for required and constrained values', () => {
     const result = getContentValidation('news', {
       title: ' ',

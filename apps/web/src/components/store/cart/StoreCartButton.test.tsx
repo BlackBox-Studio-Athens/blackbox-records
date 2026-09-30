@@ -21,20 +21,18 @@ const cartItem = {
 } as const;
 
 describe('StoreCartButton', () => {
-  it('renders an accessible empty cart button without a count badge', () => {
-    const html = renderToStaticMarkup(<StoreCartButton cartState={createEmptyStoreCartState()} />);
+  it.each([
+    { state: createEmptyStoreCartState(), count: 0, label: 'Cart' },
+    { state: addStoreCartItem(cartItem), count: 1, label: 'Cart, 1 item' },
+    { state: addStoreCartItem(cartItem, addStoreCartItem(cartItem)), count: 2, label: 'Cart, 2 items' },
+  ])('renders $label with a supplementary label and the correct badge', ({ state, count, label }) => {
+    const html = renderToStaticMarkup(<StoreCartButton cartState={state} />);
 
-    expect(html).toContain('aria-label="Cart"');
+    expect(html).toContain(`aria-label="${label}"`);
     expect(html).toContain('data-store-cart-trigger="true"');
-    expect(html).toContain('data-store-cart-count="0"');
-    expect(html).not.toContain('>1</span>');
-  });
-
-  it('renders count 1 when the browser cart has one item', () => {
-    const html = renderToStaticMarkup(<StoreCartButton cartState={addStoreCartItem(cartItem)} />);
-
-    expect(html).toContain('aria-label="Cart, 1 item"');
-    expect(html).toContain('data-store-cart-count="1"');
-    expect(html).toContain('>1</span>');
+    expect(html).toContain(`data-store-cart-count="${count}"`);
+    expect(html.includes(`>${count}</span>`)).toBe(count > 0);
+    expect(html).toMatch(/<span aria-hidden="true" data-store-cart-label="true"[^>]*>/);
+    expect(html).toContain('>Cart</span>');
   });
 });

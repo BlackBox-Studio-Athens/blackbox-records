@@ -1,0 +1,31 @@
+---
+import type { ArtistRosterReleaseContext } from '@/lib/catalog-data';
+
+interface Props {
+  releaseContext: ArtistRosterReleaseContext;
+}
+
+const { releaseContext } = Astro.props;
+const hasLatestRelease = Boolean(releaseContext.latestReleaseTitle);
+const releaseWord = releaseContext.releaseCount === 1 ? 'Release' : 'Releases';
+---
+
+<div class="artist-roster-index__context">
+  <div class="artist-release-stat artist-release-stat--roster">
+    <span class="artist-release-stat__value">{releaseContext.releaseCount}</span>
+    <span class="artist-release-stat__label">{releaseWord}</span>
+  </div>
+  <div class="artist-latest-teaser artist-latest-teaser--roster">
+    <p class="artist-latest-teaser__label">Latest</p>
+    {hasLatestRelease ? (
+      <>
+        <p class="artist-latest-teaser__title">{releaseContext.latestReleaseTitle}</p>
+        {releaseContext.latestReleaseDate && (
+          <p class="artist-latest-teaser__meta">{releaseContext.latestReleaseDate}</p>
+        )}
+      </>
+    ) : (
+      <p class="artist-latest-teaser__title artist-latest-teaser__title--muted">No releases yet</p>
+    )}
+  </div>
+</div>

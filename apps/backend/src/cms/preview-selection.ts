@@ -113,10 +113,10 @@ export async function selectPreviewContent(
   }
   for (const record of content.records) {
     if (
-      record.collection === 'releases' &&
+      (record.collection === 'releases' || (record.collection === 'news' && record.data.artist)) &&
       !content.records.some((artist) => artist.collection === 'artists' && artist.id === record.data.artist)
     )
-      throw new Error('Include the linked Artist in the review before previewing this Release.');
+      throw new Error('Include the linked Artist in the review before previewing this content.');
   }
   return { content, input: selected, media };
 }

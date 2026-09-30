@@ -1,5 +1,6 @@
 // Public API of the cms-runtime module: only what the combined Worker (cms-worker.ts) consumes.
 export { readStaffWorkspace, type StaffSnapshotCache } from './staff-workspace';
+export { readPriceDrafts } from './price-drafts';
 export { staffAssetResponse } from './staff-assets';
 export { readInventoryArtwork } from './inventory-artwork';
 export { prepareCatalogSchema } from './catalog-schema';

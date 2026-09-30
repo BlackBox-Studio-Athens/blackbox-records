@@ -39,9 +39,11 @@ export function DeliverySummary({ loading, quote }: ReturnType<typeof useDeliver
   return (
     <div className="space-y-3 text-sm" aria-live="polite" aria-busy={loading} data-delivery-summary>
       {loading ? (
-        <p>Calculating delivery and current prices…</p>
+        <p className="min-h-[4.75rem]">Calculating delivery and current prices…</p>
       ) : !quote ? (
-        <p>Delivery is unavailable for this cart. Please review the items or try again later.</p>
+        <p className="min-h-[4.75rem]">
+          Delivery is unavailable for this cart. Please review the items or try again later.
+        </p>
       ) : (
         <dl className="space-y-2">
           <div className="flex justify-between gap-4">

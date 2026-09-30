@@ -54,6 +54,28 @@ describe('one gated release', () => {
       expect(migration.match(/--manifest "\$\{config%\/server\/wrangler.json\}\/migrations.json"/g)).toHaveLength(2);
       expect(migration).toContain('exit "$status"');
     }
+    // Native catalog fields follow deployed code: after core migrations, before any CMS deploy.
+    for (const [steps, core, schema, deploy, command] of [
+      [
+        uatSteps,
+        'Apply UAT EmDash core migrations',
+        'Prepare UAT CMS catalog fields',
+        'Deploy UAT Worker',
+        'cms:catalog-schema --env uat',
+      ],
+      [
+        prdSteps,
+        'Apply reviewed PRD EmDash core migrations',
+        'Prepare PRD CMS catalog fields',
+        'Deploy candidate PRD public renderer',
+        'cms:catalog-schema --env prd --confirm-live-cms-changes',
+      ],
+    ] as const) {
+      const names = steps.map((step: { name: string }) => step.name);
+      expect(names.indexOf(core)).toBeLessThan(names.indexOf(schema));
+      expect(names.indexOf(schema)).toBeLessThan(names.indexOf(deploy));
+      expect(steps[names.indexOf(schema)].run).toContain(command);
+    }
   });
 
   it('limits main pushes to UAT and keeps code, catalog, and launch authorization independent', () => {

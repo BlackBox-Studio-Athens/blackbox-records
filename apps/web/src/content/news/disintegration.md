@@ -1,5 +1,6 @@
 ---
 title: 'New Release: Disintegration, by Afterwise'
+artist: afterwise
 date: 2026-06-09
 summary: >-
   Afterwise's six-track debut album, Disintegration, is out through BlackBox

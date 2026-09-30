@@ -10,6 +10,7 @@ import type { EmDashRuntime } from 'emdash/middleware';
 import { readPublicationPointer, readPublishedSnapshot, type PublicationEnvironment } from './published-storage';
 import { createCmsNestedProblemBody, problemResponse } from '../platform/interfaces/http/responses';
 import { readRevisionContent } from './publication-projection';
+import type { PriceDraftRecord } from './price-drafts';
 
 const reviewPositionSchema = z
   .object({
@@ -57,6 +58,7 @@ export async function readStaffWorkspace(
     bucket: R2Bucket;
     environment: PublicationEnvironment;
     snapshotCache?: StaffSnapshotCache;
+    readPriceDrafts?: () => Promise<PriceDraftRecord[]>;
   },
 ) {
   const query = querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
@@ -146,7 +148,14 @@ export async function readStaffWorkspace(
     const pending = await readPending(pages);
     return { pages, pending };
   }
-  const [snapshot, overviewData] = await Promise.all([readSnapshot(), overview ? readOverview() : undefined]);
+  // Price drafts decorate the workspace; an unavailable draft store must not block editing or review.
+  const [snapshot, overviewData, drafts] = await Promise.all([
+    readSnapshot(),
+    overview ? readOverview() : undefined,
+    !overview && deps.readPriceDrafts ? deps.readPriceDrafts().catch(() => null) : [],
+  ]);
+  const priceDraftsUnavailable = drafts === null;
+  const priceDrafts = new Map((drafts ?? []).map((draft) => [`${draft.collection}:${draft.recordId}`, draft]));
   const review = query.data.view === 'changes';
   const catalogSearch =
     !overview && !review && !id && collection && ['releases', 'distro'].includes(collection)
@@ -179,7 +188,11 @@ export async function readStaffWorkspace(
       for (const item of result.data.items) {
         const accepted = snapshot?.records.find((entry) => entry.collection === section && entry.id === item.id);
         const revisionId = item.draftRevisionId ?? item.liveRevisionId;
-        if (accepted && accepted.revisionId === revisionId) continue;
+        const priceDraft = priceDrafts.has(`${section}:${item.id}`);
+        if (accepted && accepted.revisionId === revisionId) {
+          if (priceDraft) items.push(item);
+          continue;
+        }
         if (!revisionId && !accepted) {
           items.push(item);
           continue;
@@ -198,6 +211,7 @@ export async function readStaffWorkspace(
           for (const key of ['show_in_header', 'show_in_footer'])
             if (after[key] === 0 || after[key] === 1) after[key] = after[key] === 1;
         if (
+          priceDraft ||
           changedPublicationFields({
             before: { ...accepted.data, slug: accepted.slug },
             after: { ...after, slug: String(_slug ?? item.slug) },
@@ -380,6 +394,7 @@ export async function readStaffWorkspace(
           catalog.results.find(
             (entry) => entry.sourceKind === kind && (entry.cmsSourceId === item.id || entry.sourceId === item.slug),
           ) ?? null,
+        ...(priceDraftsUnavailable ? {} : { priceDraft: priceDrafts.get(`${page.section}:${item.id}`) ?? null }),
       };
     }),
   );
@@ -395,6 +410,7 @@ export async function readStaffWorkspace(
                 .sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)))
                 .slice(0, 20),
         nextCursor: review ? reviewCursor : pages[0]?.nextCursor,
+        ...(priceDraftsUnavailable ? { priceDraftsUnavailable: true } : {}),
       },
     },
     { headers },

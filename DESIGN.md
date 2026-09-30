@@ -239,7 +239,7 @@ At widths of at least 1440 px, a 72 px top bar exposes Overview, Catalog, Websit
 
 The approved Staff logo is the Office stamp treatment: the selected C artwork extracted directly from the approved concept image as a transparent 686 × 162 PNG. Preserve its exact composition, lettering and Staff badge rather than recreating the endorsement in HTML. This is staff-only branding; public logo assets remain unchanged.
 
-Editors autosave private drafts and publish explicitly. Real shared-template previews start alongside editors at 1280 px and above, with remembered visibility; smaller widths use Edit/Preview tabs. Preview remains non-interactive and debounces typing for 750 ms. Review changes is a blue icon button; opening a comparison entry drives the publication preview, while Publication history opens in a right-side panel with colored status badges and expandable details. Preserve draft buffers and navigation recovery.
+Editors autosave private drafts and publish explicitly. Catalog items show one Publish changes on both tabs with a count of what is not live yet; typed prices wait as EmDash drafts until that single review applies them, and stock stays immediate. Real shared-template previews start alongside editors at 1280 px and above, with remembered visibility; smaller widths use Edit/Preview tabs. Preview remains non-interactive and debounces typing for 750 ms. Review changes is a blue icon button; opening a comparison entry drives the publication preview, while Publication history opens in a right-side panel with colored status badges and expandable details. Preserve draft buffers and navigation recovery.
 
 ## 6. Do's and Don'ts
 
@@ -275,7 +275,7 @@ For Content, Images, Items, Stock and Orders, use the living [backoffice design 
 
 Staff utilities and Overview open `/review/`. This supersedes the list-checkbox publication queue. Review discovers saved unpublished Website and Catalog entries through the EmDash workspace adapter, with search, area filters and up to 25 entries per page. Selection persists in the same tab, up to 20 entries across pages. Incomplete drafts remain visible with editing links. A final review checks saved versions; a changed version requires renewed review. The editor's Review changes shortcut finishes autosave and selects only that entry. One selected entry uses Publish change; several use Publish N changes.
 
-Editorial publication includes selling-linked entries but does not activate the shop, change price, or change stock. Selling retains its activation approvals and native lifecycle guard. Pending request identities survive response loss; failed operations require a fresh review. The batch service accepts all reviewed entries in one website update.
+Batch publication includes selling-linked entries but does not activate the shop, apply price drafts, or change stock. Entries with a price draft show it and link to the item, whose own publish review applies the price, the checkout presentation and a first sale. Pending request identities survive response loss; failed operations require a fresh review. The batch service accepts all reviewed entries in one website update.
 
 Count stock and Finish counting replace visible Stocktake wording; internal storage identities remain compatible. Quantities read Available to buy online, with copies for music and units for merchandise. The online quantity is how many customers may buy through the website.
 

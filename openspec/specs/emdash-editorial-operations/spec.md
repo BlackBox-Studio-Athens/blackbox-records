@@ -14,8 +14,8 @@ Artist creation SHALL wait for an edit before autosaving. An unselected image SH
 
 - **WHEN** an image upload succeeds inside the artist picker
 - **THEN** it is selected without a second click
-- **AND** the full image fits the dark portrait frame without manual cropping or loss of original bytes
-- **AND** dimensions guidance recommends 1800 × 2400 px with 1200 × 1600 px minimum
+- **AND** the full image keeps its native aspect ratio, without manual cropping or loss of original bytes
+- **AND** dimensions guidance recommends at least 1200 px on the long edge, ideally 1800 px or more
 - **AND** the description uses library metadata or the entry title, with optional accessibility editing.
 
 ### Requirement: Upcoming and released music share one Release identity

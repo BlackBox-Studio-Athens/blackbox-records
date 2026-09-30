@@ -23,6 +23,8 @@ function RecordPicker({
   path,
   error,
   onBlur,
+  required = true,
+  onClear,
 }: {
   base: string;
   collection: 'artists' | 'releases' | 'distro' | 'media';
@@ -33,6 +35,8 @@ function RecordPicker({
   path?: string | undefined;
   error?: string | undefined;
   onBlur?: (() => void) | undefined;
+  required?: boolean;
+  onClear?: () => void;
 }) {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Choice[]>([]);
@@ -114,14 +118,14 @@ function RecordPicker({
     items.find((item) => item.id === value);
   return (
     <Field data-invalid={!!fieldError || (requiredError && !value)}>
-      <FieldLabel htmlFor={id} required>
+      <FieldLabel htmlFor={id} required={required}>
         {label}
       </FieldLabel>
       <input
         className="sr-only"
         tabIndex={-1}
         aria-hidden="true"
-        required
+        required={required}
         value={value}
         aria-invalid={!!fieldError || (requiredError && !value) || undefined}
         aria-describedby={fieldError ? errorId : undefined}
@@ -144,7 +148,7 @@ function RecordPicker({
             variant="outline"
             role="combobox"
             aria-label={label}
-            aria-required="true"
+            aria-required={required}
             aria-expanded={open}
             className="w-full justify-between"
             onBlur={onBlur}
@@ -225,6 +229,11 @@ function RecordPicker({
           </Command>
         </PopoverContent>
       </Popover>
+      {!required && value && onClear && (
+        <Button type="button" variant="ghost" className="min-h-11 justify-self-start" onClick={onClear}>
+          Clear {label.toLowerCase()}
+        </Button>
+      )}
       <FieldError id={errorId}>
         {fieldError || (requiredError && !value ? `Choose ${label.toLowerCase()} before saving.` : '')}
       </FieldError>
@@ -246,7 +255,7 @@ export default function EditorialPicker(props: Parameters<typeof RecordPicker>[0
   if (props.collection === 'media')
     return (
       <ContentImagePicker
-        cropRatio={props.label === 'Artwork' ? 1 : props.label === 'Artist photo' ? 0.75 : undefined}
+        cropRatio={props.label === 'Artwork' ? 1 : undefined}
         base={props.base}
         value={props.value}
         label={props.label}

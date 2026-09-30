@@ -5,6 +5,7 @@ import {
   formatArtistCountries,
   validArtistLink,
   publishedCollection,
+  parseContentSnapshot,
 } from '@blackbox/content-model';
 
 test('artist countries and service links preserve valid identities', () => {
@@ -16,6 +17,71 @@ test('artist countries and service links preserve valid identities', () => {
   assert.equal(validArtistLink('Tidal', 'https://bandcamp.com/'), false);
   assert.equal(validArtistLink('Website', 'https://open.spotify.com/artist/example'), false);
   assert.equal(validArtistLink('Bandcamp', 'https://bandcamp.com.evil.example/'), false);
+});
+
+test('News Artist is optional and published snapshots preserve its identity without draft genre copies', () => {
+  const news = { title: 'News', date: '2026-06-09', summary: 'Copy', image: { id: 'image' }, image_alt: 'Cover' };
+  for (const artist of [undefined, null, '', 'native-artist']) {
+    assert.deepEqual(validateCmsContent('news', { ...news, artist }), []);
+    assert.deepEqual(validateCmsDraft('news', { ...news, artist }), []);
+  }
+  for (const artist of [42, true, {}, 'x'.repeat(129)])
+    assert.ok(validateCmsContent('news', { ...news, artist }).length);
+  const snapshot = {
+    schemaVersion: 1,
+    environment: 'local',
+    records: [
+      {
+        collection: 'artists',
+        id: 'native-artist',
+        slug: 'public-artist',
+        revisionId: 'accepted-artist',
+        data: { title: 'Artist', genre: 'Hardcore', bio: 'Biography', image: { id: 'image' }, image_alt: 'Portrait' },
+      },
+      {
+        collection: 'news',
+        id: 'news',
+        slug: 'news',
+        revisionId: 'accepted-news',
+        data: { ...news, artist: 'native-artist' },
+      },
+    ],
+    media: [
+      {
+        id: 'image',
+        sha256: 'a'.repeat(64),
+        filename: 'image.png',
+        mimeType: 'image/png',
+        size: 1,
+        width: 1,
+        height: 1,
+      },
+    ],
+  };
+  const accepted = parseContentSnapshot(JSON.stringify(snapshot), 'local');
+  const [article] = publishedCollection(accepted, 'news', '/media');
+  assert.deepEqual(article.data.artist, { collection: 'artists', id: 'public-artist' });
+  assert.equal(article.data.genre, undefined);
+  const [artist] = publishedCollection(accepted, 'artists', '/media');
+  assert.equal(artist.id, article.data.artist.id);
+  assert.equal(artist.data.genre, 'Hardcore');
+  const privateDraft = { ...snapshot.records[0].data, genre: 'Private draft genre' };
+  assert.equal(publishedCollection(accepted, 'artists', '/media')[0].data.genre, 'Hardcore');
+  const updated = { ...snapshot, records: [{ ...snapshot.records[0], data: privateDraft }, snapshot.records[1]] };
+  assert.equal(
+    publishedCollection(parseContentSnapshot(JSON.stringify(updated), 'local'), 'artists', '/media')[0].data.genre,
+    privateDraft.genre,
+  );
+  assert.throws(
+    () => parseContentSnapshot(JSON.stringify({ ...snapshot, records: [snapshot.records[1]] }), 'local'),
+    /Missing published Artist/,
+  );
+  for (const artist of [undefined, null, '']) {
+    const unlinked = { ...snapshot, records: [{ ...snapshot.records[1], data: { ...news, artist } }] };
+    assert.ok(
+      !publishedCollection(parseContentSnapshot(JSON.stringify(unlinked), 'local'), 'news', '/media')[0].data.artist,
+    );
+  }
 });
 
 test('upcoming releases may omit dates; released records must provide one', () => {

@@ -2,7 +2,8 @@ import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const DEFAULT_DOCUMENTS = ['AGENTS.md', 'docs/agent-workflow.md', 'docs/agent-reference.md'];
+const DEFAULT_DOCUMENTS = ['AGENTS.md', 'CLAUDE.md', 'docs/agent-workflow.md', 'docs/agent-reference.md'];
+const IMPORT_LINE = /^@(\S+)\s*$/;
 const CODE_SPAN = /(`+)(.*?)\1/g;
 const INLINE_LINK = /!?\[[^\]]*\]\(\s*(?:<([^>]+)>|((?:\\.|[^()\s]|\([^)]*\))*))/g;
 const PNPM_BUILTINS = new Set(['install', 'exec']);
@@ -137,6 +138,22 @@ export async function checkAgentGuidance({ cwd = process.cwd(), documents = DEFA
       }
       if (opening) {
         fence = opening[1];
+        continue;
+      }
+
+      const imported = IMPORT_LINE.exec(line)?.[1];
+      if (imported) {
+        try {
+          await stat(path.resolve(path.dirname(file), imported));
+        } catch {
+          diagnostics.push(
+            diagnostic(
+              label,
+              index + 1,
+              `@import target does not exist: "${imported}"; create the target or correct the import.`,
+            ),
+          );
+        }
         continue;
       }
 

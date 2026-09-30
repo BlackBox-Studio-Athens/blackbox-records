@@ -60,6 +60,7 @@ import {
   readInventoryArtwork,
   readPublicationCatalog,
   readRevisionContent,
+  readPriceDrafts,
   readStaffWorkspace,
   reconcileItemPublications,
   reconcilePendingPublication,
@@ -547,6 +548,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             bucket: bindings.MEDIA,
             environment: productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
             snapshotCache: this.staffSnapshotCache,
+            readPriceDrafts: () => readPriceDrafts(runtime, url.origin),
           }),
         );
       } catch {
@@ -878,7 +880,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             if (!current.success || !isCmsCollection(publishing[1])) return false;
             let content = { ...current.data.item.data };
             const revisionId = current.data.item.draftRevisionId ?? current.data.item.liveRevisionId;
-            if (publishing[1] === 'releases' && revisionId) {
+            if (['releases', 'news'].includes(publishing[1]) && revisionId) {
               const revision = await runtime.handleRevisionGet(revisionId);
               if (!revision.success) return false;
               content = await readRevisionContent(runtime, revision.data.item);
@@ -944,7 +946,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     let response = asset ?? finalize(state, await astro(state));
     if (
       response.ok &&
-      (/^\/_emdash\/api\/content\/releases(?:\/[^/]+)?$/.test(url.pathname) ||
+      (/^\/_emdash\/api\/content\/(?:releases|news)(?:\/[^/]+)?$/.test(url.pathname) ||
         /^\/_emdash\/api\/revisions\/[^/]+$/.test(url.pathname))
     ) {
       const payload = (await response.clone().json()) as {
@@ -954,10 +956,10 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       };
       const item = payload.data?.item;
       if (item) {
-        if (item.collection === 'releases' && item.entryId) {
+        if (item.collection && ['releases', 'news'].includes(item.collection) && item.entryId) {
           const { withEmDashRuntime } = await import('emdash/middleware');
           item.data = await withEmDashRuntime((runtime) =>
-            readRevisionContent(runtime, { collection: 'releases', entryId: item.entryId!, data: item.data }),
+            readRevisionContent(runtime, { collection: item.collection!, entryId: item.entryId!, data: item.data }),
           );
         } else item.data = projectArtistReference(item).data;
         const headers = new Headers(response.headers);

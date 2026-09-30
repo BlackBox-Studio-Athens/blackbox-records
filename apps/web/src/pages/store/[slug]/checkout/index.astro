@@ -1,6 +1,4 @@
 ---
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import CheckoutOrderSummary from '@/components/store/checkout/CheckoutOrderSummary';
 import CheckoutOfferStatus from '@/components/store/checkout/CheckoutOfferStatus';
 import StoreItemPurchaseActions from '@/components/store/checkout/StoreItemPurchaseActions';
@@ -55,19 +53,9 @@ const summaryItem = {
   pageDescription={`Compatibility checkout entry for ${storeItem.title} by ${storeItem.subtitle}.`}
   robots="noindex"
 >
-  <section class="layout-container pt-14 pb-8">
-    <div class="mb-8 flex flex-wrap items-center justify-between gap-4">
-      <div class="space-y-3">
-        <Badge variant="outline" className="border-border/70 bg-background/80 text-xs tracking-[0.15em] uppercase">
-          Checkout Compatibility
-        </Badge>
-        <div class="space-y-2">
-          <h1 class="font-display text-5xl tracking-[0.08em] uppercase text-foreground sm:text-6xl">Checkout</h1>
-          <p class="max-w-2xl text-sm leading-relaxed text-muted-foreground">
-            Old checkout links stay available while cart checkout moves to the store-level route.
-          </p>
-        </div>
-      </div>
+  <section class="layout-container pt-8 pb-8">
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
+      <h1 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Checkout</h1>
       <a
         href={createProjectRelativeUrl('/store/')}
         data-astro-prefetch
@@ -94,32 +82,22 @@ const summaryItem = {
         </details>
       </div>
 
-      <Card className="min-w-0 rounded-none border-border/70 bg-card/35 shadow-none">
-        <CardContent className="grid min-w-0 grid-cols-1 gap-6 p-5 sm:p-6 lg:p-8">
-          <div class="flex flex-wrap items-center justify-between gap-4 border-b border-border/60 pb-5">
-            <div class="space-y-2">
-              <p class="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Checkout</p>
-              <h2 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Shipping & Payment</h2>
-            </div>
-            <span class="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Secure Stripe Checkout</span>
-          </div>
+      <div class="grid min-w-0 gap-4">
+        <CheckoutOfferStatus
+          client:load
+          initialAvailability={initialCheckoutAvailability}
+          showReviewSiteMarker={import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'}
+        />
 
-          <CheckoutOfferStatus
+        <div class="grid gap-3 border border-border/70 bg-background/55 p-4">
+          <StoreItemPurchaseActions
             client:load
-            initialAvailability={initialCheckoutAvailability}
-            showReviewSiteMarker={import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'}
+            cartItem={null}
+            cartSeed={fallbackCartSeed}
+            purchaseHint="Recover this item by adding it to the cart, then continue through cart checkout."
           />
-
-          <div class="grid gap-3 border border-border/70 bg-background/55 p-4">
-            <StoreItemPurchaseActions
-              client:load
-              cartItem={null}
-              cartSeed={fallbackCartSeed}
-              purchaseHint="Recover this item by adding it to the cart, then continue through cart checkout."
-            />
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <aside class="hidden lg:block">
         <div class="sticky top-[calc(var(--header-height)+2rem)]">

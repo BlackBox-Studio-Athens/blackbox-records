@@ -41,6 +41,7 @@ const CatalogSelling = lazy(() => import('../stock/CatalogSelling'));
 import FormatFilter, { formatLabel } from '../stock/FormatFilter';
 import WebsitePages from './WebsitePages';
 import { useDraftAutosave } from '../../lib/use-draft-autosave';
+import type { ItemCommerce } from '../../lib/item-commerce';
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 
 import { Skeleton } from '../ui/skeleton';
@@ -98,6 +99,20 @@ function contentSave(document: Document, data: ContentData) {
   return { _rev: document._rev, data: editorialWriteData(data) };
 }
 
+const websiteStates: Record<string, string> = {
+  published: 'Everything is live',
+  draft: 'Draft',
+  changes: 'Unpublished changes',
+  pending: 'Updating website…',
+};
+
+function PendingDot() {
+  return (
+    // Decorative: the editor status line announces what is not live yet.
+    <span aria-hidden="true" className="ml-2 inline-block size-2 rounded-full bg-[var(--warning)]" />
+  );
+}
+
 function CatalogPager({
   placement,
   busy,
@@ -138,6 +153,8 @@ function CatalogPager({
 
 export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: string }) {
   const [itemTab, setItemTab] = useState<'details' | 'commerce'>('details');
+  const [commerce, setCommerce] = useState<ItemCommerce>({ status: 'loading' });
+  const selling = commerce.status === 'ready' ? commerce.state : null;
   const [focusedPath, setFocusedPath] = useState('');
   const commerceGuard = useRef<(() => boolean) | null>(null);
   const registerCommerceGuard = useCallback((guard: (() => boolean) | null) => {
@@ -163,7 +180,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
       return false;
     }
     if (commerceGuard.current && !commerceGuard.current()) {
-      setMessage('Finish or check the price and stock changes before leaving this item.');
+      setMessage('Finish the stock entry, or wait for the price draft to save, before leaving this item.');
       return false;
     }
     return true;
@@ -886,12 +903,18 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     if (intent === 'publish' && !requireValidContent()) return;
     const current = currentDocument.current;
     if (!current || current.item.publicationState === 'pending') return;
+    if (current.item.selling && commerce.status === 'loading') {
+      // Items on sale publish through the shop path, which needs the loaded selling state. If it cannot
+      // be read, website-only publication stays available and says price and stock stay unchanged.
+      setMessage('Selling details are still loading. Publish again in a moment.');
+      return;
+    }
     publicationRequest.current = true;
     setPreparingPublication(intent);
     try {
       if (!(await autosave.flush())) return;
       const saved = currentDocument.current;
-      if (saved?.item.id && saved.item.slug === current.item.slug) setReviewing(intent);
+      if (saved?.item.id && saved.item.slug === current.item.slug) setReviewing(selling ? 'review' : intent);
     } catch {
       setMessage('Your draft is safe. Try saving again before publishing.');
     } finally {
@@ -1113,6 +1136,15 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
   const canCreate = ['news', 'socials', 'artists'].includes(collection);
 
   const title = String(data.title || data.label_name || contentSections[collection]);
+  // Selling state belongs to the open item; it stays available while its publish review replaces the editor.
+  useEffect(() => {
+    setCommerce({ status: 'loading' });
+  }, [document?.item.id]);
+  const contentChanged = !!document && (dirty || document.item.publicationState !== 'published');
+  const pendingAreas = [
+    contentChanged && (['releases', 'distro'].includes(collection) ? 'Details & photos' : 'Saved changes'),
+    selling?.priceDraft && 'Price',
+  ].filter((area): area is string => !!area);
   const canDiscardSavedDraft = Boolean(
     document?.item.id && document.item.liveRevisionId && document.item.draftRevisionId,
   );
@@ -1152,6 +1184,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
             base={base}
             individual
             intent={reviewing}
+            {...(selling ? { commerce: selling } : {})}
             records={[{ collection, recordId: document.item.id, expectedRevision: document._rev }]}
             onPublished={() => {
               setComparisonRetry((attempt) => attempt + 1);
@@ -1474,21 +1507,32 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                           <StaffBack />
                         </div>
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p role="status" className="text-sm text-muted-foreground">
-                            {autosave.saving
-                              ? 'Saving…'
-                              : autosave.error
-                                ? 'Not saved'
-                                : dirty
-                                  ? 'Unsaved changes'
-                                  : 'Changes saved'}{' '}
-                            ·{' '}
-                            {{
-                              published: 'On the website',
-                              changes: 'Unpublished changes',
-                              pending: 'Updating website…',
-                              draft: 'Draft',
-                            }[document.item.publicationState!] ?? 'Website status unavailable'}
+                          <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+                            {pendingAreas.length > 0 && document.item.publicationState !== 'pending' && (
+                              <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-[var(--warning)]" />
+                            )}
+                            <span>
+                              {autosave.saving
+                                ? 'Saving…'
+                                : autosave.error
+                                  ? 'Not saved'
+                                  : dirty
+                                    ? 'Unsaved changes'
+                                    : 'Changes saved'}{' '}
+                              ·{' '}
+                              {document.item.publicationState === 'pending' ? (
+                                'Updating website…'
+                              ) : document.item.publicationState === 'draft' && !selling?.priceDraft ? (
+                                'Draft'
+                              ) : pendingAreas.length ? (
+                                <>
+                                  <strong className="font-semibold text-foreground">Not live yet:</strong>{' '}
+                                  {pendingAreas.join(', ')}
+                                </>
+                              ) : (
+                                (websiteStates[document.item.publicationState ?? ''] ?? 'Website status unavailable')
+                              )}
+                            </span>
                           </p>
                           <div className="flex items-center gap-2">
                             {autosave.error && (
@@ -1502,7 +1546,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                 {desktopPreview ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}Preview
                               </Button>
                             )}
-                            {itemTab === 'details' && (
+                            {
                               <ButtonGroup aria-label="Publish this item">
                                 <Button
                                   type="button"
@@ -1511,11 +1555,20 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                     busy ||
                                     !!preparingPublication ||
                                     conflict ||
-                                    document.item.publicationState === 'pending'
+                                    document.item.publicationState === 'pending' ||
+                                    (!pendingAreas.length && selling?.shop !== 'ready_to_sell')
                                   }
                                   onClick={() => void startPublication('publish')}
                                 >
                                   {preparingPublication ? 'Saving draft…' : 'Publish changes'}
+                                  {pendingAreas.length > 0 && !preparingPublication && (
+                                    <Badge
+                                      aria-hidden="true"
+                                      className="hidden min-w-5 justify-center rounded-full bg-primary-foreground px-1.5 text-primary sm:inline-flex"
+                                    >
+                                      {pendingAreas.length}
+                                    </Badge>
+                                  )}
                                 </Button>
                                 <DropdownMenu>
                                   <DropdownMenuTrigger asChild>
@@ -1539,7 +1592,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </ButtonGroup>
-                            )}
+                            }
                             <DropdownMenu open={draftActionsOpen} onOpenChange={setDraftActionsOpen}>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon" aria-label="More draft actions">
@@ -1585,8 +1638,14 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                         </div>
                         {['releases', 'distro'].includes(collection) && (
                           <Tabs.List aria-label="Item editing" className="catalog-item-tabs">
-                            <Tabs.Trigger value="details">Details & photos</Tabs.Trigger>
-                            <Tabs.Trigger value="commerce">Price & stock</Tabs.Trigger>
+                            <Tabs.Trigger value="details">
+                              Details & photos
+                              {contentChanged && <PendingDot />}
+                            </Tabs.Trigger>
+                            <Tabs.Trigger value="commerce">
+                              Price & stock
+                              {!!selling?.priceDraft && <PendingDot />}
+                            </Tabs.Trigger>
                           </Tabs.List>
                         )}
                         {autosave.error && (
@@ -1667,6 +1726,7 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                                 item={document.item}
                                 base={base}
                                 onLeaveGuard={registerCommerceGuard}
+                                onCommerce={setCommerce}
                                 onDetails={() => {
                                   setItemTab('details');
                                   editorHeading.current?.focus();

@@ -1,5 +1,6 @@
 ---
 title: 'New Release: Caregivers, by Chronoboros'
+artist: chronoboros
 date: 2026-03-13
 summary: 'We are proud to announce our very first co-release of the new
   Chronoboros album, Caregivers. This is a collaboration between the band,

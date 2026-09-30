@@ -8,7 +8,10 @@ Prepared work belongs on `main` in `C:\Users\SVall\WebstormProjects\blackbox-rec
 
 ## Read for the task
 
-Start with the relevant row. Use [README](README.md) when setup or product context is missing; a small edit does not require reading every document.
+Start with the relevant row. Use [README](README.md) when setup or product context is missing; a small edit does not require reading every document. The task-state, acceptance and edit-point guidance below applies to every implementation task (Claude Code imports it; Codex reads it when implementing):
+
+@docs/agent-workflow.md
+@docs/agent-reference.md
 
 | Task                                                     | Project references                                                                                                                                                          |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -23,7 +26,7 @@ Start with the relevant row. Use [README](README.md) when setup or product conte
 
 ## Project constraints
 
-- Blackbox Graphify queries default to `--budget 2500`; keep queries focused and follow the global truncation rule.
+- Blackbox Graphify queries default to `--budget 2500`; keep queries focused and follow the global truncation rule. Use `graphify query "<question>"` for codebase questions, `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. Prefer `graphify-out/wiki/index.md` for broad navigation when it exists; read `graphify-out/GRAPH_REPORT.md` only for broad architecture review. Run `graphify update .` once after a meaningful code edit batch and after pull/merge.
 - Cloudflare stays on Free. Read the Free-tier rule before quota-consuming hosted work; authenticated GETs can write sessions. CMS builds reject KV bindings in source and generated configuration.
 - Product Environments are Local, UAT and PRD. Live catalog authorization, code promotion and shopper launch are separate gates; follow catalog promotion and the current change's acceptance criteria.
 - CMS drafts remain private until Content Publication accepts a snapshot. Content Publication and Software Release are separate operations.

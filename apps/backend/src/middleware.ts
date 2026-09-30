@@ -48,7 +48,9 @@ export function isSupportedCmsApiRequest(request: Request): boolean {
     (pathname === '/_emdash/api/admin/api-tokens' && ['GET', 'POST'].includes(request.method)) ||
     (request.method === 'DELETE' && /^\/_emdash\/api\/admin\/api-tokens\/[A-Za-z0-9_-]{1,128}$/.test(pathname)) ||
     /^\/_emdash\/api\/(?:openapi\.json$|content\/|schema\/|media(?:\/|$))/.test(pathname) ||
-    (request.method === 'GET' && /^\/_emdash\/api\/revisions\/[A-Za-z0-9_-]+$/.test(pathname))
+    (request.method === 'GET' && /^\/_emdash\/api\/revisions\/[A-Za-z0-9_-]+$/.test(pathname)) ||
+    (pathname === '/_emdash/api/plugins/blackbox-editorial/price-drafts' &&
+      ['GET', 'PUT', 'DELETE'].includes(request.method))
   );
 }
 

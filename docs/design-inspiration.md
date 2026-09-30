@@ -164,6 +164,12 @@ The earlier comparison remains historical exploration. Future designs should pre
 
 The Store applies this alignment only to the active Coverflow action row. Grid keeps its existing left content rail. This follows each view’s visual anchor without changing the button’s size, status, or interaction.
 
+### Selected: one Publish changes per staff item · 2026-09-30
+
+A label member lost a typed price because it needed its own button. The user approved one **Publish changes** on both item tabs, EmDash price drafts, a first-sale checkbox in the review and immediate stock. Mockups live in the private Design canvas "Staff Publish Redesign" (today, redesigned editor, review, partial failure, phone first sale).
+
+Design Library references, used as patterns only (nothing copied beyond the official shadcn `item` and `empty` primitives): ReUI `c-item-5` and `c-item-2` for the "What goes live" rows, `c-stepper-3` and `c-stepper-8` for per-step progress, `c-empty-1` for Everything is live, and `c-button-group-53` with shadcn-studio `button-19` for the split publish button with a count badge. The library's store-navigation pattern set has no publish pattern. The staff surface keeps its tokens, blue actions and 44px targets.
+
 ## Add a source or revisit a decision
 
 1. Search the [global source register](C:/Users/SVall/.codex/design-library/README.md) and [pattern map](C:/Users/SVall/.codex/design-library/patterns/README.md); reuse existing IDs.

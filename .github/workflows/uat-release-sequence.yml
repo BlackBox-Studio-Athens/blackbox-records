@@ -105,6 +105,10 @@ jobs:
             cat "$report"
             exit "$status"
           fi
+      - name: Prepare UAT CMS catalog fields
+        run: |
+          node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" verify-backend uat
+          pnpm --filter @blackbox/backend cms:catalog-schema --env uat
       - name: Deploy UAT Worker
         run: |
           node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" verify-backend uat

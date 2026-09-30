@@ -490,6 +490,10 @@ jobs:
             cat "$report"
             exit "$status"
           fi
+      - name: Prepare PRD CMS catalog fields
+        run: |
+          node scripts/release-candidate.mjs verify prd
+          pnpm --filter @blackbox/backend cms:catalog-schema --env prd --confirm-live-cms-changes
       - name: Deploy candidate PRD public renderer
         run: |
           node scripts/release-candidate.mjs verify prd

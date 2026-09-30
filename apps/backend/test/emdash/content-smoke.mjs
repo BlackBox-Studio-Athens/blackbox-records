@@ -59,7 +59,11 @@ try {
     const form = body instanceof FormData;
     const response = await fetch('http://127.0.0.1:8799/_emdash/api' + path, {
       method,
-      headers: { 'X-EmDash-Request': '1', ...(form ? {} : { 'Content-Type': 'application/json' }) },
+      headers: {
+        Origin: 'http://127.0.0.1:8799',
+        'X-EmDash-Request': '1',
+        ...(form ? {} : { 'Content-Type': 'application/json' }),
+      },
       body: form ? body : body === undefined ? undefined : JSON.stringify(body),
     });
     assert.ok(
@@ -92,7 +96,7 @@ try {
     const result = spawnSync(
       process.execPath,
       [fileURLToPath(new URL('scripts/migrate-cms-application.mjs', root)), '--persist-to', localState, ...args],
-      { encoding: 'utf8', env: { ...process.env, WRANGLER_SEND_METRICS: 'false' } },
+      { encoding: 'utf8', windowsHide: true, env: { ...process.env, WRANGLER_SEND_METRICS: 'false' } },
     );
     assert.equal(result.status, 0, result.stdout + result.stderr);
     return result.stdout;
@@ -172,6 +176,7 @@ try {
   let artistId;
   for (const [collection, sourceName] of Object.entries(sourceCollectionNames)) {
     const record = manifest.records.find((item) => item.collection === sourceName);
+    if (!record) continue;
     const imagePaths = new Set(
       manifest.media.flatMap((item) =>
         item.references.filter((ref) => ref.source === record.source).map((ref) => ref.original),
@@ -184,7 +189,7 @@ try {
         : value;
     });
     if (collection === 'artists') delete data.slug;
-    if (collection === 'releases') data.artist = artistId;
+    if (['releases', 'news'].includes(collection)) data.artist = artistId;
     if (record.body.trim()) data.body = markdownTreeToPortableText(parseMarkdown(record.body));
     const path = '/content/' + collection;
     for (const invalid of [{ ...data, provider_id: 'forged' }]) {
@@ -196,6 +201,28 @@ try {
     if (collection === 'artists') artistId = created.body.data.item.id;
     const idPath = path + '/' + created.body.data.item.id;
     let current = await request(idPath);
+    if (collection === 'news') {
+      assert.equal(current.body.data.item.data.artist, artistId, 'News preserves the native Artist selection');
+      const cleared = await request(idPath, 'PUT', { _rev: current.body.data._rev, data: { artist: null } });
+      assert.equal(cleared.status, 200, JSON.stringify(cleared));
+      current = await request(idPath);
+      assert.ok(!current.body.data.item.data.artist, 'Clearing News removes the native relation');
+      const revision = await request('/revisions/' + current.body.data.item.draftRevisionId);
+      assert.ok(!revision.body.data.item.data.artist, 'Selected revisions preserve the cleared relation');
+      const restored = await request(idPath, 'PUT', { _rev: current.body.data._rev, data: { artist: artistId } });
+      assert.equal(restored.status, 200, JSON.stringify(restored));
+      current = await request(idPath);
+      assert.equal(current.body.data.item.data.artist, artistId);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const prepared = await request('/blackbox/catalog-schema', 'POST');
+        assert.equal(prepared.status, 200, JSON.stringify(prepared));
+      }
+      assert.equal(
+        (await request(idPath)).body.data._rev,
+        current.body.data._rev,
+        'Schema preparation preserves News revisions',
+      );
+    }
     if (collection === 'artists') {
       const incomplete = await request(idPath, 'PUT', {
         _rev: current.body.data._rev,
@@ -335,7 +362,11 @@ try {
   await assert.rejects(exportReaders.readRevision(snapshot.snapshot.records[0].revisionId), /401/);
   assert.equal(snapshot.snapshot.media.length, 1, 'Shared published media is captured once');
   assert.deepEqual(Buffer.from(snapshot.files.get(snapshot.snapshot.media[0].sha256)), pixels);
-  assert.equal(snapshot.snapshot.records.length, 13);
+  assert.equal(
+    snapshot.snapshot.records.length,
+    Object.values(sourceCollectionNames).filter((name) => manifest.records.some((record) => record.collection === name))
+      .length,
+  );
   assert.equal(snapshot.json.includes('UNPUBLISHED-SNAPSHOT-MARKER'), false);
   const buildInput = await writeCmsSnapshot(snapshot, join(localState, 'public-snapshot'), 'local');
   const loaded = await readContentSnapshot(buildInput);

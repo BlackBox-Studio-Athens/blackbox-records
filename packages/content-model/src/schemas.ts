@@ -114,9 +114,13 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
   });
 }
 
-export function createNewsContentSchema<TImage extends z.ZodType>(image: () => TImage) {
+export function createNewsContentSchema<TImage extends z.ZodType, TReference extends z.ZodType>(
+  image: () => TImage,
+  references: { artist: TReference },
+) {
   return z.object({
     title: requiredText,
+    artist: references.artist.or(z.literal('')).optional(),
     date: z.coerce.date(),
     summary: requiredText,
     summary_rich: richTextSchema.nullish(),

@@ -19,6 +19,7 @@
         "./StaffBack.tsx",
         "./backend/content-publication-api.ts",
         "./backend/editorial-api.ts",
+        "./item-commerce.ts",
         "./backend/internal-stock-api.ts",
         "./content-sections.ts",
         "./lenis-scroll-roots.ts",

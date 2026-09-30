@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ClipboardCheck, Trash2, CheckCheck, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { staffPages, writeStaffLocation } from '../../lib/staff-navigation';
+import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { TextureButton } from '../ui/texture-button';
 import { Checkbox } from '../ui/checkbox';
@@ -25,6 +26,7 @@ import {
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 import { contentSections, type ContentSection } from '../../lib/content-sections';
 import { scrollWithLenis } from '../../lib/lenis-scroll';
+import { describePrice, formatEuro } from '../../lib/item-commerce';
 import { getContentValidation } from './content-validation';
 import {
   readSelection,
@@ -61,6 +63,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [priceDraftsUnavailable, setPriceDraftsUnavailable] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [discardCandidates, setDiscardCandidates] = useState<DiscardCandidate[]>([]);
   const [discardBusyKey, setDiscardBusyKey] = useState('');
@@ -84,6 +87,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
     try {
       const params = new URLSearchParams({ view: 'changes', scope, q: query });
       const found: EditorialRecord[] = [];
+      let draftsUnavailable = false;
       let continuation = cursor || undefined;
       do {
         params.set('limit', String(25 - found.length));
@@ -94,9 +98,11 @@ export default function WebsiteChanges({ base }: { base: string }) {
         );
         if (request !== sequence.current) return;
         found.push(...result.items);
+        draftsUnavailable ||= !!result.priceDraftsUnavailable;
         continuation = result.nextCursor;
       } while (continuation && found.length < 25);
       setItems(found);
+      setPriceDraftsUnavailable(draftsUnavailable);
       setNext(continuation);
       setError('');
     } catch (error) {
@@ -362,6 +368,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
                   items.filter(
                     (item) =>
                       item.publicationState !== 'pending' &&
+                      item.publicationState !== 'published' &&
                       getContentValidation(item.collection as ContentSection, item.data).valid,
                   ),
                 )
@@ -405,18 +412,32 @@ export default function WebsiteChanges({ base }: { base: string }) {
               <Skeleton className="h-24 w-full" />
             </div>
           )}
+          {priceDraftsUnavailable && (
+            <p role="status" className="cms-state-warning">
+              Price drafts could not be checked. Items with only a price change may be missing; open an item to see its
+              price.
+            </p>
+          )}
           <div aria-busy={loading} className="website-change-list">
             {items.map((item) => {
               const validation = getContentValidation(item.collection as ContentSection, item.data);
               const selected = selection.some((entry) => key(entry) === key(item));
               const updating = item.publicationState === 'pending';
+              // Price drafts publish from the item's own review, which applies the price command.
+              const priceOnly = item.publicationState === 'published' && !!item.priceDraft;
               const href = `/content/?${new URLSearchParams({ collection: item.collection!, id: item.id })}`;
               return (
                 <article key={key(item)}>
                   <Checkbox
                     aria-label={`Select ${title(item)} for publication`}
                     checked={selected}
-                    disabled={loading || Boolean(discardBusyKey) || updating || (!selected && selection.length === 20)}
+                    disabled={
+                      loading ||
+                      Boolean(discardBusyKey) ||
+                      updating ||
+                      priceOnly ||
+                      (!selected && selection.length === 20)
+                    }
                     onCheckedChange={() =>
                       selected ? select(selection.filter((entry) => key(entry) !== key(item))) : add([item])
                     }
@@ -429,11 +450,26 @@ export default function WebsiteChanges({ base }: { base: string }) {
                       {contentSections[item.collection as ContentSection]} ·{' '}
                       {updating
                         ? 'Updating website…'
-                        : item.publicationState === 'draft'
-                          ? 'New entry'
-                          : 'Unpublished changes'}
+                        : priceOnly
+                          ? 'Price change only'
+                          : item.publicationState === 'draft'
+                            ? 'New entry'
+                            : 'Unpublished changes'}
                     </p>
-                    {!updating && (
+                    {item.priceDraft && (
+                      <p className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline" className="cms-state-warning border-current">
+                          Price not live yet
+                        </Badge>
+                        <span>
+                          {typeof item.selling?.amountMinor === 'number' &&
+                            `${formatEuro(item.selling.amountMinor)} → `}
+                          {describePrice(item.priceDraft.price)}
+                        </span>
+                        <a href={`${href}&tab=selling`}>Publish from the item</a>
+                      </p>
+                    )}
+                    {!updating && !priceOnly && (
                       <p className={validation.valid ? 'text-muted-foreground' : 'cms-state-warning'}>
                         {validation.valid ? 'Ready for review' : 'Needs details before publishing'}
                       </p>

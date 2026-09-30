@@ -569,3 +569,84 @@ test('review discovery compares saved revisions rather than published list value
   expect(data.items[0].data.url).toBe('https://new.example.com');
   expect(data.items[1].data.title).toBe('Saved new draft');
 });
+
+test('review discovery keeps published catalog entries whose only change is a price draft', async () => {
+  await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
+  const entries = ['priced', 'unchanged'].map((id) => ({
+    id,
+    slug: id,
+    data: { title: id, url: 'https://example.com', order: 1 },
+    draftRevisionId: null,
+    liveRevisionId: `${id}-live`,
+  }));
+  const snapshot = await completeSnapshot(
+    env.TEST_SNAPSHOTS,
+    'local',
+    JSON.stringify({
+      schemaVersion: 1,
+      environment: 'local',
+      records: entries.map((entry) => ({
+        collection: 'socials',
+        id: entry.id,
+        slug: entry.slug,
+        revisionId: entry.liveRevisionId,
+        data: entry.data,
+      })),
+      media: [],
+    }),
+  );
+  await activatePublication(env.TEST_SNAPSHOTS, 'local', {
+    id: crypto.randomUUID(),
+    snapshotSha256: snapshot.sha256,
+    generation: 0,
+  });
+  const draft = {
+    collection: 'socials' as never,
+    recordId: 'priced',
+    price: { kind: 'fixed' as const, currencyCode: 'EUR' as const, amountMinor: 1800 },
+    liveAmountWhenStaged: 1500,
+    attempt: null,
+    updatedBy: null,
+    updatedAt: '2026-09-30T12:00:00.000Z',
+    revision: 'r1',
+  };
+  const response = await readStaffWorkspace(new Request('https://staff.invalid/?view=changes&collection=socials'), {
+    runtime: {
+      handleContentList: vi.fn(async () => ({ success: true, data: { items: entries } })),
+    } as unknown as EmDashRuntime,
+    db: env.TEST_CMS_DB,
+    commerce: env.COMMERCE_DB,
+    bucket: env.TEST_SNAPSHOTS,
+    environment: 'local',
+    readPriceDrafts: async () => [draft],
+  });
+  expect(response.status).toBe(200);
+  const { data } = (await response.json()) as {
+    data: { items: { id: string; publicationState: string; priceDraft: unknown }[] };
+  };
+  expect(data.items).toMatchObject([{ id: 'priced', publicationState: 'published', priceDraft: draft }]);
+});
+
+test('an unavailable price-draft store degrades discovery instead of failing the workspace read', async () => {
+  await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
+  const item = { id: 'draft-only', slug: 'draft-only', data: {}, draftRevisionId: null, liveRevisionId: null };
+  const response = await readStaffWorkspace(new Request('https://staff.invalid/?view=changes&collection=socials'), {
+    runtime: {
+      handleContentList: vi.fn(async () => ({ success: true, data: { items: [item] } })),
+    } as unknown as EmDashRuntime,
+    db: env.TEST_CMS_DB,
+    commerce: env.COMMERCE_DB,
+    bucket: env.TEST_SNAPSHOTS,
+    environment: 'local',
+    readPriceDrafts: async () => {
+      throw new Error('plugin route unavailable');
+    },
+  });
+  expect(response.status).toBe(200);
+  const { data } = (await response.json()) as {
+    data: { items: Record<string, unknown>[]; priceDraftsUnavailable?: boolean };
+  };
+  expect(data.priceDraftsUnavailable).toBe(true);
+  expect(data.items.map((entry) => entry.id)).toEqual(['draft-only']);
+  expect('priceDraft' in data.items[0]!, 'Unknown drafts are omitted, not reported as none').toBe(false);
+});

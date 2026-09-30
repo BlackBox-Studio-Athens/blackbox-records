@@ -135,7 +135,12 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
   for (const entry of candidate.records.filter((r) => r.collection === 'artists'))
     review.referenceTitles[entry.id] = String(entry.data.title ?? entry.slug);
   for (const entry of review.entries) {
-    if (entry.collection !== 'releases' || typeof entry.after.artist !== 'string') continue;
+    if (
+      !['releases', 'news'].includes(entry.collection) ||
+      !entry.after.artist ||
+      typeof entry.after.artist !== 'string'
+    )
+      continue;
     if (candidate.records.some((r) => r.collection === 'artists' && r.id === entry.after.artist)) continue;
     reads++;
     const artist = await deps.runtime.handleContentGet('artists', entry.after.artist);

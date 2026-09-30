@@ -5,12 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { LoadingButtonContent, LoadingInline } from '@/components/ui/loading-feedback';
 import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/components/store/checkout/public-checkout-api';
-import {
-  getStoreCartCount,
-  readStoreCartState,
-  type CartLine,
-  type CartLineItemSnapshot,
-} from '@/components/store/cart/store-cart';
+import { readStoreCartState, type CartLine, type CartLineItemSnapshot } from '@/components/store/cart/store-cart';
 import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/cart/store-cart-events';
 import { cn } from '@/components/ui/utils';
 import {
@@ -22,7 +17,6 @@ import {
   type CheckoutOfferInitialAvailability,
   type CheckoutOfferStatusView,
 } from './checkout-offer-status-state';
-import CheckoutShippingStep from './CheckoutShippingStep';
 import { DeliverySummary, useDeliveryQuote } from './DeliverySummary';
 import { PrivacyLink } from '@/platform/components/PurchaseInformation';
 import { createCheckoutShippingGateView } from './checkout-shipping-step-state';
@@ -39,11 +33,6 @@ interface CheckoutOfferStatusProps {
   api?: PublicCheckoutApi;
 }
 
-export type CheckoutCartItemSummary = {
-  label: 'Cart' | 'Item';
-  value: string;
-};
-
 export const STRIPE_CHECKOUT_CTA_COPY = 'Continue to Stripe Checkout';
 export const STRIPE_CHECKOUT_BADGE_SRC = `${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/assets/vendor/stripe/powered-by-stripe.svg`;
 
@@ -51,31 +40,6 @@ export function createStripeCheckoutCtaView(isStartingCheckout: boolean) {
   return {
     badgeSrc: isStartingCheckout ? null : STRIPE_CHECKOUT_BADGE_SRC,
     label: isStartingCheckout ? 'Opening Stripe Checkout' : STRIPE_CHECKOUT_CTA_COPY,
-  };
-}
-
-export function createCheckoutCartItemSummary(
-  cartLines: CartLine[],
-  fallbackLineItem: CartLineItemSnapshot | null = null,
-): CheckoutCartItemSummary {
-  if (cartLines.length > 1) {
-    return {
-      label: 'Cart',
-      value: `${getStoreCartCount({ lines: cartLines, primaryLineItem: cartLines[0] ?? null })} items in cart`,
-    };
-  }
-
-  const line = cartLines[0] ?? fallbackLineItem;
-  if (line) {
-    return {
-      label: 'Item',
-      value: [line.title, line.optionLabel].filter(Boolean).join(' / '),
-    };
-  }
-
-  return {
-    label: 'Cart',
-    value: 'Cart is empty',
   };
 }
 
@@ -95,7 +59,6 @@ export default function CheckoutOfferStatus({
   const [isNewsletterOptedIn, setIsNewsletterOptedIn] = useState(false);
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const [workerFallbackLineItem, setWorkerFallbackLineItem] = useState<CartLineItemSnapshot | null>(fallbackLineItem);
-  const itemSummary = createCheckoutCartItemSummary(cartLines, workerFallbackLineItem);
   const ctaView = createStripeCheckoutCtaView(isStartingCheckout);
   const shippingGateView = createCheckoutShippingGateView(checkoutClientMode);
   const hasCheckoutLine = cartLines.length > 0 || Boolean(workerFallbackLineItem);
@@ -228,63 +191,43 @@ export default function CheckoutOfferStatus({
   }
 
   return (
-    <div className="min-w-0 space-y-5" data-checkout-offer-status>
-      <CheckoutShippingStep checkoutClientMode={checkoutClientMode} />
-
-      <Card className="min-w-0 rounded-none border-border/70 bg-[#111111] shadow-none">
-        <CardContent className="grid min-w-0 grid-cols-1 gap-5 p-5 sm:p-6">
-          <div className="flex min-w-0 flex-wrap items-start justify-between gap-4 border-b border-border/60 pb-5">
-            <div className="min-w-0 max-w-full space-y-2">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Payment</p>
-              <h3 className="font-display text-3xl uppercase tracking-[0.08em] text-foreground sm:text-4xl">
-                Review and Pay
-              </h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Stripe handles the secure payment page. BlackBox never sees card details.
-              </p>
-            </div>
-            <Badge
-              variant="outline"
-              className={cn(
-                'rounded-none border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
-                view.tone === 'ready' && 'border-foreground/30 bg-background/70 text-foreground',
-                view.tone === 'unavailable' && 'border-border/70 bg-background/70 text-muted-foreground',
-                view.tone === 'error' && 'border-amber-300/45 bg-amber-300/10 text-amber-100',
-                view.tone === 'loading' && 'border-border/70 bg-background/50 text-muted-foreground',
-              )}
-            >
-              {view.canStartCheckout && (delivery.loading || !delivery.quote)
-                ? delivery.loading
-                  ? 'Checking delivery'
-                  : 'Delivery unavailable'
-                : view.badgeLabel}
-            </Badge>
-          </div>
-
-          <div className="grid min-w-0 grid-cols-1 gap-px border border-border/70 bg-border/70 sm:grid-cols-2">
-            <div className="min-w-0 bg-background/85 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{itemSummary.label}</p>
-              <p className="text-xs uppercase tracking-[0.16em] text-foreground">{itemSummary.value}</p>
-            </div>
-            <div className="min-w-0 bg-background/85 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Shipping</p>
-              <p className="text-xs uppercase tracking-[0.16em] text-foreground">Greece only</p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <DeliverySummary {...delivery} />
-            <p className="text-sm leading-relaxed text-muted-foreground">{view.detail}</p>
-            {view.tone === 'loading' && (
-              <LoadingInline
-                className="text-xs uppercase tracking-[0.16em] text-muted-foreground"
-                label="Confirming price and availability"
-              />
+    <Card className="min-w-0 rounded-none border-border/70 bg-[#111111] shadow-none" data-checkout-offer-status>
+      <CardContent className="grid min-w-0 grid-cols-1 gap-4 p-5 sm:p-6">
+        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-2xl uppercase tracking-[0.08em] text-foreground">Review and Pay</h2>
+          <Badge
+            variant="outline"
+            className={cn(
+              'rounded-none border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
+              view.tone === 'ready' && 'border-foreground/30 bg-background/70 text-foreground',
+              view.tone === 'unavailable' && 'border-border/70 bg-background/70 text-muted-foreground',
+              view.tone === 'error' && 'border-amber-300/45 bg-amber-300/10 text-amber-100',
+              view.tone === 'loading' && 'border-border/70 bg-background/50 text-muted-foreground',
             )}
+          >
+            {view.canStartCheckout && (delivery.loading || !delivery.quote)
+              ? delivery.loading
+                ? 'Checking delivery'
+                : 'Delivery unavailable'
+              : view.badgeLabel}
+          </Badge>
+        </div>
 
-            {view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine ? (
-              <div className="grid gap-4">
-                <label className="flex max-w-2xl items-start gap-3 border border-border/70 bg-background/55 p-3 text-sm leading-relaxed text-muted-foreground">
+        <DeliverySummary {...delivery} />
+
+        <div className="grid gap-3 border-t border-border/60 pt-4">
+          <p className="text-sm leading-relaxed text-muted-foreground">{view.detail}</p>
+          {view.tone === 'loading' && (
+            <LoadingInline
+              className="text-xs uppercase tracking-[0.16em] text-muted-foreground"
+              label="Confirming price and availability"
+            />
+          )}
+
+          {view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine ? (
+            <>
+              <div className="flex flex-wrap items-center gap-x-4">
+                <label className="flex items-start gap-3 text-sm leading-relaxed text-muted-foreground">
                   <input
                     type="checkbox"
                     className="mt-1 size-4 shrink-0 accent-foreground"
@@ -298,83 +241,82 @@ export default function CheckoutOfferStatus({
                     Email me BlackBox Records release, distro, and event updates. You can unsubscribe anytime.
                   </span>
                 </label>
-                <div className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   <PrivacyLink />
-                </div>
+                </span>
+              </div>
 
-                {showReviewSiteMarker && (
-                  <p
-                    className="text-xs font-semibold leading-relaxed text-foreground"
-                    data-review-site-checkout-warning
-                  >
-                    Test checkout. No real payment will be taken.
-                  </p>
+              {showReviewSiteMarker && (
+                <p className="text-xs font-semibold leading-relaxed text-foreground" data-review-site-checkout-warning>
+                  Test checkout. No real payment will be taken.
+                </p>
+              )}
+
+              <Button
+                type="button"
+                size="lg"
+                className="inline-flex h-auto min-h-11 w-full flex-wrap gap-2 rounded-none px-4 py-3 text-center uppercase tracking-[0.16em] whitespace-normal sm:flex-nowrap sm:gap-3 sm:px-6"
+                disabled={isStartingCheckout || delivery.loading || !delivery.quote}
+                aria-busy={isStartingCheckout ? 'true' : undefined}
+                onClick={() => {
+                  void handleStartCheckout();
+                }}
+              >
+                {isStartingCheckout ? (
+                  <LoadingButtonContent label={ctaView.label} />
+                ) : ctaView.badgeSrc ? (
+                  <>
+                    <span className="min-w-0 leading-tight">{ctaView.label}</span>
+                    <img className="h-[18px] w-auto shrink-0" src={ctaView.badgeSrc} alt="" aria-hidden="true" />
+                  </>
+                ) : (
+                  ctaView.label
                 )}
+              </Button>
 
+              <p className="text-xs leading-relaxed text-muted-foreground">BlackBox never sees card details.</p>
+            </>
+          ) : (
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {!hasCheckoutLine
+                ? 'Add a priced item to the cart before checkout.'
+                : view.canStartCheckout
+                  ? 'Stripe opens after checkout is ready.'
+                  : 'Payment opens after price and availability are confirmed.'}
+            </p>
+          )}
+
+          {checkoutError && (
+            <div className="space-y-3">
+              <p
+                className="border border-amber-300/40 bg-amber-300/10 p-3 text-xs leading-relaxed text-amber-100"
+                role="alert"
+              >
+                {checkoutError}
+              </p>
+              {checkoutAttemptTerminal && (
                 <Button
                   type="button"
-                  size="lg"
-                  className="inline-flex h-auto min-h-11 w-full flex-wrap gap-2 rounded-none px-4 py-3 text-center uppercase tracking-[0.16em] whitespace-normal sm:w-auto sm:min-w-72 sm:flex-nowrap sm:gap-3 sm:px-6"
-                  disabled={isStartingCheckout || delivery.loading || !delivery.quote}
-                  aria-busy={isStartingCheckout ? 'true' : undefined}
+                  variant="outline"
                   onClick={() => {
-                    void handleStartCheckout();
+                    clearCheckoutAttempt();
+                    setCheckoutAttemptTerminal(false);
+                    setCheckoutError(null);
                   }}
                 >
-                  {isStartingCheckout ? (
-                    <LoadingButtonContent label={ctaView.label} />
-                  ) : ctaView.badgeSrc ? (
-                    <>
-                      <span className="min-w-0 leading-tight">{ctaView.label}</span>
-                      <img className="h-[18px] w-auto shrink-0" src={ctaView.badgeSrc} alt="" aria-hidden="true" />
-                    </>
-                  ) : (
-                    ctaView.label
-                  )}
+                  Start a new checkout
                 </Button>
-              </div>
-            ) : (
-              <p className="text-xs leading-relaxed text-muted-foreground">
-                {!hasCheckoutLine
-                  ? 'Add a priced item to the cart before checkout.'
-                  : view.canStartCheckout
-                    ? 'Stripe opens after checkout is ready.'
-                    : 'Payment opens after price and availability are confirmed.'}
-              </p>
-            )}
+              )}
+            </div>
+          )}
 
-            {checkoutError && (
-              <div className="space-y-3">
-                <p
-                  className="border border-amber-300/40 bg-amber-300/10 p-3 text-xs leading-relaxed text-amber-100"
-                  role="alert"
-                >
-                  {checkoutError}
-                </p>
-                {checkoutAttemptTerminal && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      clearCheckoutAttempt();
-                      setCheckoutAttemptTerminal(false);
-                      setCheckoutError(null);
-                    }}
-                  >
-                    Start a new checkout
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {isStartingCheckout && (
-              <p className="text-xs leading-relaxed text-muted-foreground" aria-live="polite">
-                Opening Stripe Checkout. Keep this tab open while the secure payment page loads.
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          {isStartingCheckout && (
+            <p className="text-xs leading-relaxed text-muted-foreground" aria-live="polite">
+              Opening Stripe Checkout. Keep this tab open while the secure payment page loads.
+            </p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -985,22 +985,32 @@ body {
     gap: 1.25rem;
   }
 
-  .catalog-tile-card--featured-roster {
-    background-color: #141414;
-    border-color: #2b2b2b;
-    box-shadow: none;
+  .home-featured-roster-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem 0.5rem 1rem;
+    text-align: center;
   }
 
-  .catalog-tile-card--featured-roster:hover,
-  .group:hover .catalog-tile-card--featured-roster,
-  .group:focus-within .catalog-tile-card--featured-roster {
-    background-color: #161616;
-    border-color: #3a3a3a;
-    box-shadow: none;
+  .home-featured-roster-card__label {
+    display: grid;
+    gap: 0.6rem;
   }
 
-  .home-featured-roster-card__content {
-    max-width: 100%;
+  .home-featured-roster-card:hover .artist-print,
+  .home-featured-roster-card:focus-within .artist-print {
+    transform: rotate(0deg) translateY(-4px);
+  }
+
+  /* News card image zoom, clipped inside the print's paper border. */
+  .home-featured-roster-card .artist-print__image {
+    transition: transform 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .home-featured-roster-card:hover .artist-print__image {
+    transform: scale(1.03);
   }
 
   [data-distro-search-hidden] {
@@ -1238,29 +1248,546 @@ body {
     padding-bottom: 4rem;
   }
 
-  .artists-roster-grid {
-    display: grid;
-    gap: 1.25rem;
+  /* Artist prints: native-aspect photo print with caption strip; role classes size the border. */
+  .artist-print {
+    --print-tilt: 0deg;
+
+    margin: 0;
+    padding: 10px 10px 0;
+    background: #f2f1ec;
+    box-shadow:
+      0 24px 48px rgba(0, 0, 0, 0.6),
+      0 2px 6px rgba(0, 0, 0, 0.5);
+    transform: rotate(var(--print-tilt));
+    transition:
+      transform 220ms ease,
+      opacity 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  .artist-print[hidden] {
+    display: none;
+  }
+
+  .artist-print__window {
+    display: block;
+    overflow: hidden;
+  }
+
+  .artist-print__image {
+    display: block;
+    max-inline-size: 100%;
+    block-size: auto;
+  }
+
+  .artist-print__caption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    block-size: 34px;
+    color: #0d0d0d;
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.16em;
+    white-space: nowrap;
+  }
+
+  .artist-print__caption > span:first-child {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .artist-print__caption > span:last-child {
+    flex: none;
+    color: #6b6a64;
+  }
+
+  .artist-print--detail {
+    inline-size: fit-content;
+    max-inline-size: 100%;
+  }
+
+  .artist-print--thumb {
+    display: block;
+    padding: 3px 3px 11px;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.55);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .artist-print,
+    .artist-roster-index__toggle svg,
+    .home-featured-roster-card .artist-print__image {
+      transition: none;
+    }
+
+    .home-featured-roster-card:hover .artist-print__image {
+      transform: none;
+    }
+  }
+
+  /* Artists roster: crate index list beside a sticky preview pile (lg+) or inline disclosures (<lg). */
+  .artist-roster-index__layout {
     margin-top: 1.5rem;
   }
 
-  .artists-roster-grid__item[hidden] {
+  .artist-roster-index__list {
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    border-bottom: 1px solid #222222;
+    list-style: none;
+  }
+
+  .artist-roster-index__item {
+    position: relative;
+    scroll-margin-top: calc(var(--header-height) + 1rem);
+  }
+
+  .artist-roster-index__item[hidden] {
     display: none !important;
   }
 
-  .artist-roster-card {
-    background-color: #141414;
-    border-color: #2b2b2b;
-    box-shadow: none;
+  .artist-roster-index__item:focus-visible {
+    outline: 2px solid #f5f5f5;
+    outline-offset: -2px;
   }
 
-  .artist-roster-card__body {
+  .artist-roster-index__letter {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    block-size: 2rem;
+    margin-top: 0.5rem;
+    padding-inline: 0.5rem;
+    background: #151515;
+    color: #f5f5f5;
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: 0.06em;
+  }
+
+  .artist-roster-index__letter::after {
+    content: '';
+    flex: 1;
+    block-size: 1px;
+    background: #2b2b2b;
+  }
+
+  [data-roster-sort='latest'] .artist-roster-index__letter,
+  [data-roster-sort='latest'] .artist-roster-index__jump {
+    display: none;
+  }
+
+  .artist-roster-index__jump {
+    margin-top: 1.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid #222222;
+  }
+
+  .artist-roster-index__jump ul {
+    display: flex;
+    margin: 0;
+    padding: 0;
+    overflow-x: auto;
+    list-style: none;
+  }
+
+  .artist-roster-index__jump li {
+    flex: none;
+  }
+
+  .artist-roster-index__jump a,
+  .artist-roster-index__jump span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 44px;
+    block-size: 44px;
+    font-family: var(--font-display);
+    font-size: 20px;
+    letter-spacing: 0.04em;
+    text-decoration: none;
+  }
+
+  .artist-roster-index__jump a {
+    color: #f5f5f5;
+  }
+
+  .artist-roster-index__jump a:hover,
+  .artist-roster-index__jump a:focus-visible {
+    background: #f5f5f5;
+    color: #090909;
+  }
+
+  .artist-roster-index__jump span[aria-disabled='true'] {
+    color: #4a4a4a;
+  }
+
+  /* Row link: lg+ only. */
+  .artist-roster-index__row {
+    display: none;
+  }
+
+  .artist-roster-index__main {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .artist-roster-index__name {
+    overflow: hidden;
+    color: #8a8a8a;
+    font-family: var(--font-display-brand);
+    font-size: clamp(2.75rem, 5.4vw, 4rem);
+    line-height: 0.9;
+    letter-spacing: 0.035em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: color 220ms ease;
+  }
+
+  .artist-roster-index__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    color: #b3b3b3;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .artist-roster-index__release-count {
+    color: #8f8f8f;
+  }
+
+  .artist-roster-index__arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 44px;
+    block-size: 44px;
+    border: 1px solid #2b2b2b;
+    color: #8a8a8a;
+    transition:
+      color 220ms ease,
+      border-color 220ms ease;
+  }
+
+  .artist-roster-index__row:hover .artist-roster-index__name,
+  .artist-roster-index__row:focus-visible .artist-roster-index__name,
+  .artist-roster-index__row[data-active] .artist-roster-index__name,
+  .artist-roster-index__row:hover .artist-roster-index__arrow,
+  .artist-roster-index__row:focus-visible .artist-roster-index__arrow,
+  .artist-roster-index__row[data-active] .artist-roster-index__arrow {
+    color: #f5f5f5;
+  }
+
+  .artist-roster-index__row[data-active] .artist-roster-index__arrow {
+    border-color: #f5f5f5;
+  }
+
+  .artist-roster-index__row:focus-visible {
+    outline: 2px solid #f5f5f5;
+    outline-offset: -2px;
+  }
+
+  /* Disclosure: <lg only. */
+  .artist-roster-index__disclosure {
+    border-top: 1px solid #222222;
+  }
+
+  .artist-roster-index__item[data-letter-start] > .artist-roster-index__disclosure,
+  .artist-roster-index__item[data-letter-start] > .artist-roster-index__row {
+    border-top-color: #3a3a3a;
+  }
+
+  .artist-roster-index__item .artist-roster-index__disclosure[open],
+  .artist-roster-index__item .artist-roster-index__row[data-active] {
+    border-top-color: #f5f5f5;
+    box-shadow: inset 0 1px 0 #f5f5f5;
+  }
+
+  .artist-roster-index__summary {
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr) 24px;
+    column-gap: 12px;
+    align-items: center;
+    padding: 14px 0;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .artist-roster-index__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .artist-roster-index__summary:focus-visible {
+    outline: 2px solid #f5f5f5;
+    outline-offset: -2px;
+  }
+
+  .artist-roster-index__thumb-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    block-size: 72px;
+  }
+
+  .artist-roster-index__summary-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .artist-roster-index__summary-name {
+    overflow: hidden;
+    font-family: var(--font-display-brand);
+    font-size: 28px;
+    line-height: 0.95;
+    letter-spacing: 0.035em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .artist-roster-index__summary-line {
+    overflow: hidden;
+    color: #b3b3b3;
+    font-size: 10.5px;
+    letter-spacing: 0.16em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .artist-roster-index__summary-line--muted {
+    color: #8f8f8f;
+  }
+
+  .artist-roster-index__toggle {
+    display: flex;
+    justify-content: center;
+    color: #b3b3b3;
+  }
+
+  .artist-roster-index__toggle svg {
+    transition: transform 220ms ease;
+  }
+
+  .artist-roster-index__disclosure[open] .artist-roster-index__toggle svg {
+    transform: rotate(45deg);
+  }
+
+  .artist-roster-index__disclosure-body {
     display: flex;
     flex-direction: column;
-    gap: 0.95rem;
+    gap: 24px;
+    padding: 12px 0 24px;
   }
 
-  .artist-roster-card__bio {
+  .artist-roster-index__disclosure-print {
+    display: flex;
+    justify-content: center;
+    padding: 10px 0 4px;
+  }
+
+  .artist-roster-index__context {
+    display: grid;
+    grid-template-columns: 5.1rem minmax(0, 1fr);
+    gap: 1rem;
+    align-items: stretch;
+  }
+
+  .artist-roster-index__actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .artist-roster-index__action {
+    display: inline-flex;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+    min-height: 48px;
+    border-radius: 0;
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .artist-roster-index__action--primary {
+    border: 1px solid #f5f5f5;
+    background: #f5f5f5;
+    color: #090909;
+    transition: background-color 200ms ease;
+  }
+
+  .artist-roster-index__action--primary:hover,
+  .artist-roster-index__action--primary:focus-visible {
+    background: #d8d8d8;
+  }
+
+  /* Preview panel: lg+ only. */
+  .artist-roster-preview {
+    display: none;
+  }
+
+  .artist-roster-preview__deck {
+    position: relative;
+    isolation: isolate;
+    inline-size: 100%;
+    block-size: clamp(440px, calc(100svh - 27rem), 520px);
+  }
+
+  .artist-roster-preview__deck > .artist-print {
+    --print-dx: 0px;
+    --print-dy: 0px;
+    --print-extra: 0deg;
+
+    position: absolute;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    /* An absolute box at 50% may only shrink into the remaining half; size the print to its image instead. */
+    inline-size: max-content;
+    max-inline-size: 100%;
+    transform: translate(calc(-50% + var(--print-dx)), calc(-50% + var(--print-dy)))
+      rotate(calc(var(--print-tilt) + var(--print-extra)));
+  }
+
+  .artist-roster-preview__deck > .artist-print[data-print-depth='0'] {
+    z-index: 3;
+  }
+
+  .artist-roster-preview__deck > .artist-print[data-print-depth='1'],
+  .artist-roster-preview__deck > .artist-print[data-print-depth='2'] {
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55);
+  }
+
+  .artist-roster-preview__deck > .artist-print[data-print-depth='1'] {
+    --print-dx: -26px;
+    --print-dy: 18px;
+    --print-extra: -3deg;
+
+    z-index: 2;
+  }
+
+  .artist-roster-preview__deck > .artist-print[data-print-depth='2'] {
+    --print-dx: 24px;
+    --print-dy: -14px;
+    --print-extra: 4deg;
+
+    z-index: 1;
+  }
+
+  .artist-roster-preview__details-item {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .artist-roster-preview__details-item[hidden] {
+    display: none;
+  }
+
+  .artist-roster-preview__topline {
+    margin: 0;
+    color: #b3b3b3;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .artist-roster-preview__name {
+    margin: 0;
+    font-family: var(--font-display-brand);
+    font-size: 40px;
+    font-weight: 400;
+    line-height: 0.98;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+  }
+
+  @media (min-width: 64rem) {
+    .artist-roster-index__layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(24rem, 26.5rem);
+      column-gap: 3rem;
+      align-items: start;
+    }
+
+    .artist-roster-index__jump ul {
+      display: grid;
+      grid-auto-columns: minmax(0, 1fr);
+      grid-auto-flow: column;
+      overflow: visible;
+    }
+
+    .artist-roster-index__jump a,
+    .artist-roster-index__jump span {
+      inline-size: auto;
+    }
+
+    .artist-roster-index__letter {
+      position: absolute;
+      inset-block-start: 26px;
+      inset-inline-start: 0;
+      z-index: 1;
+      gap: 0;
+      block-size: auto;
+      margin: 0;
+      padding: 0;
+      background: none;
+      font-size: 22px;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    .artist-roster-index__letter::after {
+      display: none;
+    }
+
+    .artist-roster-index__row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 44px;
+      column-gap: 16px;
+      align-items: center;
+      padding: 22px 0;
+      border-top: 1px solid #222222;
+      color: #f5f5f5;
+      text-decoration: none;
+    }
+
+    /* Grouped rows leave room for the letter marker; latest-first sort hides the markers. */
+    [data-roster-grouped] .artist-roster-index__row {
+      padding-inline-start: 72px;
+    }
+
+    [data-roster-sort='latest'] [data-roster-grouped] .artist-roster-index__row,
+    [data-roster-grouped][data-roster-sort='latest'] .artist-roster-index__row {
+      padding-inline-start: 0;
+    }
+
+    .artist-roster-index__disclosure {
+      display: none;
+    }
+
+    .artist-roster-preview {
+      display: block;
+      position: sticky;
+      inset-block-start: calc(var(--header-height) + 1.5rem);
+    }
+  }
+
+  .artist-roster-index__bio {
     display: -webkit-box;
     overflow: hidden;
     min-height: 0;
@@ -1269,13 +1796,6 @@ body {
     line-height: 1.62;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
-  }
-
-  .artist-roster-card__context {
-    display: grid;
-    grid-template-columns: minmax(5rem, auto) minmax(0, 1fr);
-    gap: 1rem;
-    align-items: stretch;
   }
 
   .artist-release-stat {
@@ -1396,29 +1916,10 @@ body {
   }
 
   .artist-detail-hero__image-shell {
-    width: 100%;
-  }
-
-  .artist-detail-hero__image-frame {
-    position: relative;
-    aspect-ratio: 16 / 13;
-    overflow: hidden;
-    border: 1px solid #2b2b2b;
-    background: #050505;
-  }
-
-  .artist-detail-hero__image {
-    object-fit: contain;
-  }
-
-  .artist-detail-hero__image-frame::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(180deg, rgba(0, 0, 0, 0.04), rgba(0, 0, 0, 0.34)),
-      radial-gradient(circle at 42% 24%, rgba(255, 255, 255, 0.08), transparent 34%);
-    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+    padding: 0.5rem;
   }
 
   .artist-detail-hero__copy {
@@ -3412,8 +3913,8 @@ body.is-app-shell-overlay-open {
     transform: translateY(0);
   }
 
-  .release-card-link:hover .music-listen-trigger,
-  .release-card-link:focus-within .music-listen-trigger {
+  .release-card-link:where(:not(.releases-page-layout *)):hover .music-listen-trigger,
+  .release-card-link:where(:not(.releases-page-layout *)):focus-within .music-listen-trigger {
     color: rgb(245, 245, 245);
     border-color: rgb(245, 245, 245);
     background-color: rgba(245, 245, 245, 0.14);
@@ -3448,6 +3949,31 @@ body.is-app-shell-overlay-open {
   .music-listen-trigger:active + .release-card-view-release-desktop-reveal {
     opacity: 0;
     transform: translateY(8px);
+  }
+
+  .releases-page-layout
+    :is(.releases-latest-feature__artwork-link, .releases-latest-feature__upcoming-artwork-link, .release-card-link)
+    :is(.releases-latest-feature__artwork, .releases-latest-feature__upcoming-artwork, .release-card-artwork--framed) {
+    transition: none;
+
+    @media (prefers-reduced-motion: no-preference) {
+      transform: scale(1.026);
+    }
+  }
+
+  .releases-page-layout .release-card-link:hover:not(:focus-within) .release-card-image-frame--framed {
+    border-color: rgba(245, 245, 245, 0.82);
+    box-shadow: none;
+  }
+
+  .releases-page-layout .release-card-link .release-card-view-release-desktop-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .releases-page-layout .music-listen-trigger:not(:hover, :focus-visible, :active) .music-equalizer__bar {
+    animation: none;
   }
 }
 
@@ -4522,10 +5048,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     grid-template-columns: minmax(24rem, 1.08fr) minmax(24rem, 0.92fr);
     align-items: center;
     gap: clamp(2rem, 5vw, 4rem);
-  }
-
-  .artist-detail-hero__image-frame {
-    aspect-ratio: 1.18 / 1;
   }
 
   .artist-detail-body-grid--with-upcoming {

@@ -1,5 +1,6 @@
 ---
 title: 'New Release: Anarchotribal, by Ouranopithecus'
+artist: ouranopithecus
 date: 2026-06-06
 summary: >-
   Ouranopithecus' ten-track Anarchotribal is out with BlackBox Records,

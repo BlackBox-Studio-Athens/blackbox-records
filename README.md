@@ -91,7 +91,7 @@ Local, UAT and PRD use the protected EmDash workspace for content, item creation
 
 ## Member workspace
 
-Artist drafts support searchable country choices, genre suggestions, standard service links, and automatic image selection after upload. Artist photos fit intact in portrait frames. Add upcoming release creates one linked Release with its own artwork; the same record becomes Released after a date is supplied. UAT/PRD deployment migrations add the optional stage field without copying or publishing content. See [the editorial workflow](docs/content-workspace.md).
+Artist drafts support searchable country choices, genre suggestions, standard service links, and automatic image selection after upload. Artist photos display uncropped at their native aspect ratio. Add upcoming release creates one linked Release with its own artwork; the same record becomes Released after a date is supplied. UAT/PRD deployment migrations add the optional stage field without copying or publishing content. See [the editorial workflow](docs/content-workspace.md).
 
 Use [UAT staff](https://staff-uat.blackboxrecordsathens.com/content/) or the Local workspace at `http://127.0.0.1:8787/content/`. [PRD staff](https://staff.blackboxrecordsathens.com/content/) now serves the imported content through the combined Worker. The cutover is complete and normal editorial work can resume there.
 
@@ -790,20 +790,17 @@ Runtime catalog backfill is an explicit migration command, `pnpm catalog:backfil
 
 ## Artist image standard
 
-Featured artist imagery is currently designed around a strict portrait crop on the homepage roster.
+Artist photos render as photo prints at their native aspect ratio (portrait, square, or landscape) on the Artists roster, artist detail, and homepage featured roster. Nothing is cropped or padded.
 
-- Ideal source delivery: `1800 x 2400`
-- Acceptable minimum: `1200 x 1600`
+- Source delivery: at least `1200` px on the long edge, ideally `1800` px or more
 - Composition guidance:
-  - keep the subject centered
-  - leave headroom and side breathing room for hard crops
-  - avoid tiny logos or overly distant subjects for roster usage
+  - keep the whole band photo in frame; the site never crops it
+  - do not bake letterbox or pillarbox bars into the source
 - Current UI behavior:
-  - homepage featured roster uses a strict `3:4` crop
-  - images use `object-fit: cover`
-  - images are center-cropped by default
+  - each print is sized from the source dimensions inside a per-role maximum (`apps/web/src/components/artists/artist-print.ts`)
+  - a caption strip and slight tilt are added by the print, not the photo
 
-If a source crops badly, replace the source image rather than adding focal-point config by default.
+If a photo looks wrong, replace the source image rather than adding crop or focal-point config.
 
 ## Project structure
 

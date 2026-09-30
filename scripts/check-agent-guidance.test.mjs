@@ -27,6 +27,7 @@ test('accepts existing relative links and known root scripts', async () => {
       'package.json': packageJson,
       'AGENTS.md':
         '# Guidance\nSee [workflow](docs/agent-workflow.md).\nRun `pnpm validate` and `pnpm run test:unit`.\nExamples: `mode: local`, `prisma migrate deploy`, `object-fit: contain`.\n\n```sh\npnpm install\npnpm exec node --version\n```\n',
+      'CLAUDE.md': '@AGENTS.md\n\n## Claude Code only\n',
       'docs/agent-workflow.md': 'See [reference](agent%20reference.md#top) and [root](../AGENTS.md#top).\n',
       'docs/agent-reference.md': '# Reference\n',
       'docs/agent reference.md': '# Reference\n',
@@ -34,6 +35,19 @@ test('accepts existing relative links and known root scripts', async () => {
     (cwd) => checkAgentGuidance({ cwd }),
   );
   assert.deepEqual(diagnostics, []);
+});
+
+test('reports missing @import targets', async () => {
+  const diagnostics = await fixture(
+    {
+      'package.json': packageJson,
+      'CLAUDE.md': '@AGENTS.md\n@docs/missing.md\nContact @team in chat.\n',
+      'AGENTS.md': '# Guidance\n',
+    },
+    (cwd) => checkAgentGuidance({ cwd, documents: ['CLAUDE.md'] }),
+  );
+  assert.equal(diagnostics.length, 1);
+  assert.match(diagnostics[0], /^CLAUDE\.md:2:.*docs\/missing\.md.*create the target or correct the import/);
 });
 
 test('reports missing links and unknown scripts with line and remediation', async () => {

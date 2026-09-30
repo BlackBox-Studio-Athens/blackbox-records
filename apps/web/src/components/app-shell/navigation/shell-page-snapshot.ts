@@ -68,6 +68,39 @@ export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
   });
 }
 
+/**
+ * Restore the server-authored Artists roster: the first print and details visible, no active row, and none of the
+ * sort, filter, or disclosure state that the filters and preview islands write.
+ */
+export function sanitizeArtistRosterSnapshot(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>('[data-artist-roster-preview]').forEach((mount) => {
+    mount.innerHTML = '';
+  });
+  root.querySelectorAll<HTMLElement>('[data-artist-preview-print]').forEach((print, index) => {
+    print.hidden = index > 0;
+    print.removeAttribute('aria-hidden');
+    if (index === 0) print.setAttribute('data-print-depth', '0');
+    else print.removeAttribute('data-print-depth');
+  });
+  root.querySelectorAll<HTMLElement>('[data-artist-preview-details]').forEach((details, index) => {
+    details.hidden = index > 0;
+  });
+  root.querySelectorAll<HTMLElement>('[data-artist-roster-row]').forEach((row) => {
+    row.removeAttribute('data-active');
+  });
+  root.querySelectorAll<HTMLElement>('[data-artist-roster-item]').forEach((item) => {
+    item.hidden = false;
+    item.removeAttribute('data-filter-state');
+    item.style.removeProperty('order');
+  });
+  root.querySelectorAll<HTMLDetailsElement>('[data-artist-roster-disclosure]').forEach((disclosure) => {
+    disclosure.open = false;
+  });
+  root.querySelectorAll<HTMLElement>('[data-artists-roster-root]').forEach((rosterRoot) => {
+    rosterRoot.removeAttribute('data-roster-sort');
+  });
+}
+
 export function readDocumentShellPageSnapshot(
   targetDocument: Document,
   href: string,
@@ -112,6 +145,7 @@ export function readDocumentShellPageSnapshot(
     hiddenElement.removeAttribute('data-distro-search-hidden');
   });
   sanitizeStoreCoverflowSnapshot(mainElementClone);
+  sanitizeArtistRosterSnapshot(mainElementClone);
   sanitizeStoreListingPricePlaceholders(mainElementClone);
   mainElementClone.querySelectorAll<HTMLElement>('[data-store-preview-ready]').forEach((image) => {
     image.removeAttribute('data-store-preview-ready');

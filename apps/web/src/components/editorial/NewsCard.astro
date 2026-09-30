@@ -5,6 +5,7 @@ import type { CollectionEntry } from 'astro:content';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatMonthYear } from '@/utils/content';
+import { getEntry } from '@/lib/content-reader';
 
 interface Props {
   item: CollectionEntry<'news'>;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 const { item, imageLoading = 'lazy', showSummary = true } = Astro.props;
+const artist = item.data.artist ? await getEntry(item.data.artist) : undefined;
 const newsCardImageWidths = [360, 540, 720, 960, 1200];
 ---
 
@@ -32,7 +34,14 @@ const newsCardImageWidths = [360, 540, 720, 960, 1200];
       />
     </div>
     <CardContent className="space-y-3 p-5">
-      <p class="text-[11px] tracking-[0.18em] uppercase text-muted-foreground">{formatMonthYear(item.data.date)}</p>
+      <div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-[11px] tracking-[0.18em] uppercase text-muted-foreground">
+        <p>{formatMonthYear(item.data.date)}</p>
+        {artist?.data.genre && (
+          <span class="news-card__genre max-w-full border border-border px-2 py-1 text-xs leading-relaxed tracking-[0.12em] text-foreground [overflow-wrap:anywhere]">
+            {artist.data.genre}
+          </span>
+        )}
+      </div>
       <h3 class="brand-card-title text-foreground">{item.data.title}</h3>
       {showSummary && (
         <Prose

@@ -90,7 +90,10 @@ export function parseContentSnapshot(json: string, environment: 'local' | 'uat' 
     if (identities.has(identity) || paths.has(path)) throw new Error('Duplicate snapshot record.');
     identities.add(identity);
     paths.add(path);
-    if (record.collection === 'releases' && !artists.has(record.data.artist as string))
+    if (
+      (record.collection === 'releases' || (record.collection === 'news' && record.data.artist)) &&
+      !artists.has(record.data.artist as string)
+    )
       throw new Error('Missing published Artist.');
     for (const mediaId of contentMediaIds(record.data)) referencedMedia.add(mediaId);
   }
