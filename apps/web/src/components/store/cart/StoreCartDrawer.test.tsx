@@ -109,6 +109,47 @@ describe('StoreCartDrawer', () => {
     expect(markup).toContain(STORE_CART_DRAWER_COPY.checkout);
   });
 
+  it('shows the quoted total on Checkout without changing its accessible name', () => {
+    const markup = renderToStaticMarkup(
+      <StoreCartDrawerPanel
+        cartState={addStoreCartItem(cartItem)}
+        checkoutAmountDisplay="€24.50"
+        onContinueShopping={() => undefined}
+        onDecrementItem={() => undefined}
+        onIncrementItem={() => undefined}
+        onRemoveItem={() => undefined}
+        onRestoreItem={() => undefined}
+        renderHeader={false}
+        resolveHref={resolveHref}
+      />,
+    );
+
+    expect(markup).toMatch(/<a[^>]*data-store-cart-checkout="true"[^>]*><span>Checkout<\/span>/);
+    expect(markup).toContain(
+      '<span class="tabular-nums" aria-hidden="true" data-store-cart-checkout-amount="true">€24.50</span>',
+    );
+  });
+
+  it('leaves Checkout as a plain label until the quote is known and draws icon steppers', () => {
+    const markup = renderToStaticMarkup(
+      <StoreCartDrawerPanel
+        cartState={addStoreCartItem(cartItem)}
+        onContinueShopping={() => undefined}
+        onDecrementItem={() => undefined}
+        onIncrementItem={() => undefined}
+        onRemoveItem={() => undefined}
+        renderHeader={false}
+        resolveHref={resolveHref}
+      />,
+    );
+
+    expect(markup).not.toContain('data-store-cart-checkout-amount');
+    expect(markup).toContain('lucide-minus');
+    expect(markup).toContain('lucide-plus');
+    expect(markup).toContain('data-store-cart-remove="variant_disintegration-black-vinyl-lp_standard"');
+    expect(markup).toContain('aria-live="polite"');
+  });
+
   it('uses CartQuantity when calculating the drawer subtotal', () => {
     const view = createStoreCartDrawerView(addStoreCartItem(cartItem, addStoreCartItem(cartItem)), resolveHref);
 

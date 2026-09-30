@@ -4,7 +4,7 @@
 
 ### Requirement: StoreCart convenience state
 
-The system SHALL treat `StoreCart` as browser convenience state only. Cart feedback SHALL happen in place: adding an item confirms on the purchase control, removing a line leaves an Undo window, and the drawer's Checkout action shows the current subtotal.
+The system SHALL treat `StoreCart` as browser convenience state only. Cart feedback SHALL happen in place: adding an item confirms on the purchase control, removing a line leaves an Undo window, and the drawer's Checkout action shows the quoted total once the delivery quote is known.
 
 #### Scenario: Cart persists locally
 
@@ -21,15 +21,16 @@ The system SHALL treat `StoreCart` as browser convenience state only. Cart feedb
 
 #### Scenario: Line is removed
 
-- **WHEN** the shopper removes a cart line
-- **THEN** the line leaves the cart at once
-- **AND** an Undo action naming the removed item stays in its place for six seconds
-- **AND** Undo restores the line with its previous quantity.
+- **WHEN** the shopper removes a cart line, or lowers its quantity below one
+- **THEN** the line leaves the cart at once and the removal is announced politely
+- **AND** an Undo action naming the removed item stays in its place for six seconds, paused while it has focus, and receives focus
+- **AND** Undo restores the line at its position with its previous quantity.
 
-#### Scenario: Checkout shows the subtotal
+#### Scenario: Checkout shows the quoted total
 
-- **WHEN** the cart drawer has at least one line
-- **THEN** its Checkout action displays the browser-side subtotal beside the label
+- **WHEN** the cart drawer has at least one line and its delivery quote is known
+- **THEN** its Checkout action displays the quoted total (VAT and shipping included) beside the label, hidden from assistive technology so the action's name stays Checkout
+- **AND** while the quote is loading or unavailable the action shows its label alone
 - **AND** the Worker remains the authority for every amount at checkout.
 
 ### Requirement: Store purchase readiness is visibly pending

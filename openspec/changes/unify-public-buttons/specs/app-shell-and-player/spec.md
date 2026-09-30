@@ -52,8 +52,9 @@ The public header SHALL render its cart control only while the cart contains at 
 #### Scenario: Cart drawer closes
 
 - **WHEN** the shopper closes the cart drawer
-- **THEN** focus returns to the header cart control when it is rendered
-- **AND** otherwise focus moves to the main content landmark.
+- **THEN** focus returns to the control that opened it (Add to cart or the header cart control) while that control is still in the page
+- **AND** otherwise to the header cart control when it is rendered
+- **AND** otherwise to the main content landmark.
 
 ### Requirement: Matching listening actions identify the existing session
 

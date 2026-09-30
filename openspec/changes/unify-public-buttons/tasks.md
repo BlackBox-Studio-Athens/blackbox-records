@@ -23,7 +23,7 @@
 
 - [ ] 4.1 Added state in `StoreItemPurchaseActions.tsx` (4s, hairline, `aria-live`); verify `StoreItemPurchaseActions.test.tsx` covers add → Added → Add to cart with fake timers.
 - [ ] 4.2 Undo line after Remove and subtotal in the Checkout action in `StoreCartDrawer.tsx`; verify `StoreCartDrawer.test.tsx` covers remove → Undo restores the quantity, and the Checkout label contains the formatted subtotal.
-- [ ] 4.3 Quote-ready fill in `CheckoutOfferStatus.tsx`; verify its test renders outline "Waiting for shipping quote…" while loading and the primary CTA once `delivery.quote` exists.
+- [x] 4.3 Quote-ready fill in `CheckoutOfferStatus.tsx`: charcoal outline "Waiting for shipping quote" (busy, disabled, readable) while the quote loads, ink primary with the Stripe label and the aria-hidden quote total once ready; verify with `createPayControlView` cases in `CheckoutOfferStatus.test.ts` (loading, ready, unavailable, starting).
 - [ ] 4.4 Armed Stop in `ShellPlayerSurface.tsx` (Stop? for 3s, second press stops, accessible name unchanged); verify `ShellPlayerSurface.test.tsx` and update `e2e/player-continuity.spec.ts` (and any spec pressing Stop) to press twice.
 - [ ] 4.5 Counts on roster chips in `ArtistsRosterFilters.tsx`, recede-in-rows classes on cart lines, ↗ mark on external text controls (release commerce link, provider buttons); verify component tests and that icon-only social links are unchanged.
 

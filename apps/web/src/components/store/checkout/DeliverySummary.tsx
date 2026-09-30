@@ -32,10 +32,16 @@ export function useDeliveryQuote(lines: Lines) {
       active = false;
     };
   }, [key]);
-  return { loading: lines.length > 0 && result?.key !== key, quote: result?.key === key ? result.quote : null };
+  const quote = result?.key === key ? result.quote : null;
+  const totalAmountMinor = quote?.totalAmountMinor ?? null;
+  return {
+    loading: lines.length > 0 && result?.key !== key,
+    quote,
+    totalDisplay: totalAmountMinor === null ? null : money(totalAmountMinor),
+  };
 }
 
-export function DeliverySummary({ loading, quote }: ReturnType<typeof useDeliveryQuote>) {
+export function DeliverySummary({ loading, quote }: Pick<ReturnType<typeof useDeliveryQuote>, 'loading' | 'quote'>) {
   return (
     <div className="space-y-3 text-sm" aria-live="polite" aria-busy={loading} data-delivery-summary>
       {loading ? (
@@ -80,6 +86,19 @@ export function DeliverySummary({ loading, quote }: ReturnType<typeof useDeliver
   );
 }
 
-export default function CartDeliverySummary({ lines }: { lines: Lines }) {
-  return <DeliverySummary {...useDeliveryQuote(lines)} />;
+export default function CartDeliverySummary({
+  lines,
+  onTotalDisplayChange,
+}: {
+  lines: Lines;
+  // The cart's Checkout action shows the quoted total beside its label once the quote is known.
+  onTotalDisplayChange?: (totalDisplay: string | null) => void;
+}) {
+  const delivery = useDeliveryQuote(lines);
+
+  React.useEffect(() => {
+    onTotalDisplayChange?.(delivery.totalDisplay);
+  }, [onTotalDisplayChange, delivery.totalDisplay]);
+
+  return <DeliverySummary {...delivery} />;
 }

@@ -127,8 +127,10 @@ export default function AppShellRoot({
   const [storeCartBridgeFailed, setStoreCartBridgeFailed] = useState(false);
   const [storeCartState, setStoreCartState] = useState<StoreCartState>(() => ({ lines: [], primaryLineItem: null }));
   const [isStoreCartDrawerOpen, setIsStoreCartDrawerOpen] = useState(false);
+  const [storeCartTotalDisplay, setStoreCartTotalDisplay] = useState<string | null>(null);
 
   const overlayStateRef = useRef<OverlayState | null>(null);
+  const storeCartOpenerRef = useRef<HTMLElement | null>(null);
   const overlayCacheRef = useRef(new Map<string, string>());
   const overlayInFlightRequestsRef = useRef(new Map<string, Promise<string>>());
   const overlayAbortControllerRef = useRef<AbortController | null>(null);
@@ -232,10 +234,19 @@ export default function AppShellRoot({
     return document.querySelector<HTMLElement>('main[data-app-shell-main]');
   }
 
+  // Remember what opened the drawer (Add to cart or the header control) so closing can return there.
+  function openStoreCartDrawer() {
+    const activeElement = document.activeElement;
+    storeCartOpenerRef.current =
+      activeElement instanceof HTMLElement && activeElement !== document.body ? activeElement : null;
+    setIsStoreCartDrawerOpen(true);
+  }
+
   function closeStoreCartDrawer() {
     setIsStoreCartDrawerOpen(false);
+    setStoreCartTotalDisplay(null);
     scheduleOverlayTriggerFocusRestore({
-      getTriggerElement: () => findStoreCartFocusReturnTarget(document),
+      getTriggerElement: () => findStoreCartFocusReturnTarget(document, storeCartOpenerRef.current),
       scheduler: window,
     });
   }
@@ -319,7 +330,7 @@ export default function AppShellRoot({
           eventTarget: window,
           queryHeaderRoot: () => document.querySelector<HTMLElement>('[data-store-cart-header-root]'),
           readStorage: getStoreCartBrowserStorage,
-          setStoreCartDrawerOpen: setIsStoreCartDrawerOpen,
+          setStoreCartDrawerOpen: (open) => (open ? openStoreCartDrawer() : closeStoreCartDrawer()),
           setStoreCartHeaderContainer,
           setStoreCartState,
         });
@@ -726,8 +737,11 @@ export default function AppShellRoot({
           }
         >
           <StoreCartDrawer
-            deliverySummary={<CartDeliverySummary lines={storeCartState.lines} />}
+            deliverySummary={
+              <CartDeliverySummary lines={storeCartState.lines} onTotalDisplayChange={setStoreCartTotalDisplay} />
+            }
             cartState={storeCartState}
+            checkoutAmountDisplay={storeCartTotalDisplay}
             open
             resolveHref={createProjectRelativeUrl}
             onContinueShopping={closeStoreCartDrawer}
@@ -743,6 +757,10 @@ export default function AppShellRoot({
             onRemoveItem={async (variantId) => {
               const { removeCartLineByVariant } = await import('@/components/store/cart/store-cart');
               await applyStoreCartState(removeCartLineByVariant(variantId, storeCartState));
+            }}
+            onRestoreItem={async (line, index) => {
+              const { restoreCartLine } = await import('@/components/store/cart/store-cart');
+              await applyStoreCartState(restoreCartLine(line, index, storeCartState));
             }}
           />
         </Suspense>
@@ -861,9 +879,7 @@ export default function AppShellRoot({
         artistsRosterFiltersContainer={artistsRosterFiltersContainer}
         artistsRosterPreviewContainer={artistsRosterPreviewContainer}
         distroSearchContainer={distroSearchContainer}
-        onOpenStoreCart={() => {
-          setIsStoreCartDrawerOpen(true);
-        }}
+        onOpenStoreCart={openStoreCartDrawer}
         servicesInquiryContainer={servicesInquiryContainer}
         servicesInquirySubmitText={servicesInquirySubmitText}
         storeCartHeaderContainer={storeCartHeaderContainer}

@@ -111,7 +111,22 @@ describe('findStoreCartFocusReturnTarget', () => {
     const main = { id: 'main' };
 
     expect(
-      findStoreCartFocusReturnTarget(createRoot({ '[data-store-cart-trigger]': trigger, 'main[data-app-shell-main]': main })),
+      findStoreCartFocusReturnTarget(
+        createRoot({ '[data-store-cart-trigger]': trigger, 'main[data-app-shell-main]': main }),
+      ),
+    ).toBe(trigger);
+  });
+
+  it('returns focus to the control that opened the drawer while it is still connected', () => {
+    const opener = createFocusableElement();
+    const trigger = { id: 'trigger' };
+
+    expect(findStoreCartFocusReturnTarget(createRoot({ '[data-store-cart-trigger]': trigger }), opener)).toBe(opener);
+    expect(
+      findStoreCartFocusReturnTarget(
+        createRoot({ '[data-store-cart-trigger]': trigger }),
+        createFocusableElement({ isConnected: false }),
+      ),
     ).toBe(trigger);
   });
 

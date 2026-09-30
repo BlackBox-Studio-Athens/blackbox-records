@@ -8,9 +8,11 @@ import {
   type CheckoutOfferInitialAvailability,
 } from './checkout-offer-status-state';
 import {
+  createPayControlView,
   createStripeCheckoutCtaView,
   STRIPE_CHECKOUT_BADGE_SRC,
   STRIPE_CHECKOUT_CTA_COPY,
+  WAITING_FOR_SHIPPING_QUOTE_COPY,
 } from './CheckoutOfferStatus';
 import { PublicCheckoutApiError, type PublicCheckoutApi, type PublicStoreOffer } from './public-checkout-api';
 
@@ -88,6 +90,48 @@ describe('CheckoutOfferStatus helpers', () => {
       badgeSrc: null,
       label: 'Opening Stripe Checkout',
     });
+  });
+
+  it('keeps Pay charcoal while the shipping quote loads and fills it with the amount when ready', () => {
+    expect(
+      createPayControlView({ hasQuote: false, isStartingCheckout: false, quoteLoading: true, quoteTotalDisplay: null }),
+    ).toEqual({
+      amountDisplay: null,
+      badgeSrc: null,
+      isWaitingForQuote: true,
+      label: WAITING_FOR_SHIPPING_QUOTE_COPY,
+      variant: 'outline',
+    });
+    expect(
+      createPayControlView({
+        hasQuote: true,
+        isStartingCheckout: false,
+        quoteLoading: false,
+        quoteTotalDisplay: '€24.50',
+      }),
+    ).toEqual({
+      amountDisplay: '€24.50',
+      badgeSrc: STRIPE_CHECKOUT_BADGE_SRC,
+      isWaitingForQuote: false,
+      label: STRIPE_CHECKOUT_CTA_COPY,
+      variant: 'default',
+    });
+    expect(
+      createPayControlView({
+        hasQuote: false,
+        isStartingCheckout: false,
+        quoteLoading: false,
+        quoteTotalDisplay: null,
+      }),
+    ).toMatchObject({ isWaitingForQuote: false, label: STRIPE_CHECKOUT_CTA_COPY, variant: 'outline' });
+    expect(
+      createPayControlView({
+        hasQuote: true,
+        isStartingCheckout: true,
+        quoteLoading: false,
+        quoteTotalDisplay: '€24.50',
+      }),
+    ).toMatchObject({ amountDisplay: null, label: 'Opening Stripe Checkout', variant: 'default' });
   });
 
   it('calls public Worker offer and variant reads for the current store item', async () => {

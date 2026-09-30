@@ -43,6 +43,33 @@ export function createStripeCheckoutCtaView(isStartingCheckout: boolean) {
   };
 }
 
+export const WAITING_FOR_SHIPPING_QUOTE_COPY = 'Waiting for shipping quote';
+
+// Fill means ready: Pay stays charcoal and says what it waits for, then fills to ink with the amount.
+export function createPayControlView({
+  hasQuote,
+  isStartingCheckout,
+  quoteLoading,
+  quoteTotalDisplay,
+}: {
+  hasQuote: boolean;
+  isStartingCheckout: boolean;
+  quoteLoading: boolean;
+  quoteTotalDisplay: string | null;
+}) {
+  const cta = createStripeCheckoutCtaView(isStartingCheckout);
+  const isReady = hasQuote && !quoteLoading;
+  const isWaitingForQuote = quoteLoading && !isStartingCheckout;
+
+  return {
+    amountDisplay: isReady && !isStartingCheckout ? quoteTotalDisplay : null,
+    badgeSrc: isReady ? cta.badgeSrc : null,
+    isWaitingForQuote,
+    label: isWaitingForQuote ? WAITING_FOR_SHIPPING_QUOTE_COPY : cta.label,
+    variant: isReady ? ('default' as const) : ('outline' as const),
+  };
+}
+
 export default function CheckoutOfferStatus({
   api,
   checkoutClientMode = import.meta.env.PUBLIC_CHECKOUT_CLIENT_MODE,
@@ -59,7 +86,6 @@ export default function CheckoutOfferStatus({
   const [isNewsletterOptedIn, setIsNewsletterOptedIn] = useState(false);
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
   const [workerFallbackLineItem, setWorkerFallbackLineItem] = useState<CartLineItemSnapshot | null>(fallbackLineItem);
-  const ctaView = createStripeCheckoutCtaView(isStartingCheckout);
   const shippingGateView = createCheckoutShippingGateView(checkoutClientMode);
   const hasCheckoutLine = cartLines.length > 0 || Boolean(workerFallbackLineItem);
   const delivery = useDeliveryQuote(
@@ -75,6 +101,13 @@ export default function CheckoutOfferStatus({
           ]
         : [],
   );
+
+  const payView = createPayControlView({
+    hasQuote: Boolean(delivery.quote),
+    isStartingCheckout,
+    quoteLoading: delivery.loading,
+    quoteTotalDisplay: delivery.totalDisplay,
+  });
 
   useEffect(() => {
     let isActive = true;
@@ -255,22 +288,32 @@ export default function CheckoutOfferStatus({
               <Button
                 type="button"
                 size="lg"
-                className="w-full flex-wrap py-2 text-center whitespace-normal sm:flex-nowrap"
+                variant={payView.variant}
+                className={cn(
+                  'w-full flex-wrap py-2 text-center whitespace-normal sm:flex-nowrap',
+                  payView.isWaitingForQuote && 'text-muted-foreground disabled:opacity-100',
+                )}
                 disabled={isStartingCheckout || delivery.loading || !delivery.quote}
-                aria-busy={isStartingCheckout ? 'true' : undefined}
+                aria-busy={isStartingCheckout || payView.isWaitingForQuote ? 'true' : undefined}
+                data-checkout-pay-state={payView.variant === 'default' ? 'ready' : 'waiting'}
                 onClick={() => {
                   void handleStartCheckout();
                 }}
               >
-                {isStartingCheckout ? (
-                  <LoadingButtonContent label={ctaView.label} />
-                ) : ctaView.badgeSrc ? (
-                  <>
-                    <span className="min-w-0 leading-tight">{ctaView.label}</span>
-                    <img className="h-[18px] w-auto shrink-0" src={ctaView.badgeSrc} alt="" aria-hidden="true" />
-                  </>
+                {isStartingCheckout || payView.isWaitingForQuote ? (
+                  <LoadingButtonContent label={payView.label} />
                 ) : (
-                  ctaView.label
+                  <>
+                    <span className="min-w-0 leading-tight">{payView.label}</span>
+                    {payView.amountDisplay && (
+                      <span className="tabular-nums" aria-hidden="true" data-checkout-pay-amount>
+                        {payView.amountDisplay}
+                      </span>
+                    )}
+                    {payView.badgeSrc && (
+                      <img className="h-[18px] w-auto shrink-0" src={payView.badgeSrc} alt="" aria-hidden="true" />
+                    )}
+                  </>
                 )}
               </Button>
 
