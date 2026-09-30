@@ -1,5 +1,7 @@
 # Staff editorial workspace
 
+News can select an optional Artist to show that Artist's published genre on homepage and News listing cards. Clear Artist leaves general news without a tag. The genre stays on the Artist; private Artist edits do not change public tags until publication. Existing CMS stores need explicit catalog-schema preparation before saving this new native reference. Review asks for an unpublished linked Artist to be included in the same batch. Retained source fixtures do not overwrite populated CMS records.
+
 Artist forms use searchable ISO country choices (including multiple countries), genre suggestions, and standard link services. Country choices retain the existing slash-separated CMS text format; ISO identities and the shared validator prevent unrecognized or duplicate countries. Service URLs must match their selected provider; Spotify is excluded. Custom services remain an explicit Other choice.
 
 Opening a blank form does not create a draft. The first edit begins autosave. Native creation maps missing image values to EmDash's empty default for older NOT NULL columns; private revisions retain the authored value. Uploading through an image picker selects the uploaded image immediately. Image descriptions use the library description or entry title, with an optional accessibility disclosure for more specific text. Artist photos fit intact inside the existing frames, including the roster's dark 3:4 frame; recommend 1800 × 2400 px, minimum 1200 × 1600 px. Original image bytes are preserved.

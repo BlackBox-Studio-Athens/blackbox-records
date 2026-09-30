@@ -51,7 +51,7 @@ const releases = defineCollection({
 const news = defineCollection({
   loader: publicContentLoader('news', '**/*.{md,mdx}', './src/content/news'),
   schema: ({ image }) =>
-    createNewsContentSchema(image).extend({
+    createNewsContentSchema(image, { artist: reference('artists') }).extend({
       editorial_body: cmsBodySchema.optional(),
       content_media: z.record(z.string(), image()).optional(),
     }),

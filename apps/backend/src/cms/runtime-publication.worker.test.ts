@@ -20,37 +20,95 @@ import { projectArtistReference, readRevisionContent } from './publication-proje
 
 afterEach(() => vi.restoreAllMocks());
 
-test('native Artist references override stale columns without reading a newer draft selection', async () => {
-  const item = { data: { artist: 'stale', title: 'LOTUS' }, references: { artist: { children: [{ id: 'sidus' }] } } };
-  expect(projectArtistReference(item).data.artist).toBe('sidus');
-  expect(item.data.artist).toBe('stale');
-  const find = vi.spyOn(ContentRepository.prototype, 'findById').mockResolvedValue({ locale: 'en' } as never);
-  const translations = vi.spyOn(ContentRepository.prototype, 'findTranslations').mockResolvedValue([
-    { id: 'sidus', locale: 'en' },
-    { id: 'sidus-el', locale: 'el' },
-  ] as never);
-  const runtime = { db: {} } as EmDashRuntime;
-  const revision = {
-    collection: 'releases',
-    entryId: 'lotus',
+test.each(['releases', 'news'])(
+  'native %s Artist references override stale columns without reading a newer draft selection',
+  async (collection) => {
+    const item = { data: { artist: 'stale', title: 'LOTUS' }, references: { artist: { children: [{ id: 'sidus' }] } } };
+    expect(projectArtistReference(item).data.artist).toBe('sidus');
+    expect(item.data.artist).toBe('stale');
+    const find = vi.spyOn(ContentRepository.prototype, 'findById').mockResolvedValue({ locale: 'en' } as never);
+    const translations = vi.spyOn(ContentRepository.prototype, 'findTranslations').mockResolvedValue([
+      { id: 'sidus', locale: 'en' },
+      { id: 'sidus-el', locale: 'el' },
+    ] as never);
+    const runtime = { db: {} } as EmDashRuntime;
+    const revision = {
+      collection,
+      entryId: 'lotus',
+      data: {
+        artist: 'stale',
+        title: 'LOTUS',
+        _references: { artist: ['sidus-group'] },
+        _referencesBaseline: { artist: ['previous-artist-group'] },
+      },
+    };
+    expect(await readRevisionContent(runtime, revision)).toEqual({ artist: 'sidus', title: 'LOTUS' });
+    expect(translations).toHaveBeenCalledWith('artists', 'sidus-group');
+    expect(find).toHaveBeenCalledWith(collection, 'lotus');
+    expect(await readRevisionContent(runtime, { ...revision, data: { _references: { artist: [] } } })).toEqual({
+      artist: '',
+    });
+    await expect(
+      readRevisionContent(runtime, { ...revision, data: { _references: { artist: ['one', 'two'] } } }),
+    ).rejects.toThrow();
+    const legacy = { collection, entryId: 'legacy', data: { artist: 'legacy-artist' } };
+    expect(await readRevisionContent(runtime, legacy)).toBe(legacy.data);
+  },
+);
+
+test('News review requires its unpublished Artist instead of exposing an unrelated draft genre', async () => {
+  const { deps, runtime, pointer } = await setup();
+  const baseline = await readPublishedSnapshot(deps.bucket, 'local', pointer.snapshotSha256);
+  const news = baseline.records.find((record) => record.id === 'news')!;
+  runtime.handleRevisionGet.mockResolvedValue({
+    success: true,
     data: {
-      artist: 'stale',
-      title: 'LOTUS',
-      _references: { artist: ['sidus-group'] },
-      _referencesBaseline: { artist: ['previous-artist-group'] },
+      item: { id: 'selected', collection: 'news', entryId: 'news', data: { ...news.data, artist: 'private-artist' } },
     },
-  };
-  expect(await readRevisionContent(runtime, revision)).toEqual({ artist: 'sidus', title: 'LOTUS' });
-  expect(translations).toHaveBeenCalledWith('artists', 'sidus-group');
-  expect(find).toHaveBeenCalledWith('releases', 'lotus');
-  expect(await readRevisionContent(runtime, { ...revision, data: { _references: { artist: [] } } })).toEqual({
-    artist: '',
   });
+  runtime.handleContentGet.mockImplementation(async (collection?: string) => ({
+    success: true,
+    data: {
+      _rev: 'version-1',
+      item:
+        collection === 'artists'
+          ? {
+              id: 'private-artist',
+              slug: 'private-artist',
+              status: 'draft',
+              draftRevisionId: 'artist-draft',
+              liveRevisionId: '',
+              data: { title: 'Private artist', genre: 'Private genre' },
+            }
+          : { id: 'news', slug: 'news', status: 'published', draftRevisionId: 'selected', liveRevisionId: 'old' },
+    },
+  }));
+  const records = [{ collection: 'news', recordId: 'news' }];
+  const { review, candidate } = await reviewPublication({ records }, deps);
+  expect(review.dependencies).toEqual([
+    {
+      collection: 'artists',
+      recordId: 'private-artist',
+      title: 'Private artist',
+      requiredBy: 'Published title',
+      available: true,
+    },
+  ]);
+  expect(candidate.records.some((record) => record.collection === 'artists')).toBe(false);
   await expect(
-    readRevisionContent(runtime, { ...revision, data: { _references: { artist: ['one', 'two'] } } }),
-  ).rejects.toThrow();
-  const legacy = { collection: 'releases', entryId: 'legacy', data: { artist: 'legacy-artist' } };
-  expect(await readRevisionContent(runtime, legacy)).toBe(legacy.data);
+    selectPreviewContent(
+      { collection: 'news', id: 'news', publication: { records, baseline: pointer.snapshotSha256 } },
+      deps,
+    ),
+  ).rejects.toThrow('Resolve');
+  await expect(completeSnapshot(deps.bucket, 'local', JSON.stringify(candidate))).rejects.toThrow(
+    'Missing published Artist',
+  );
+  runtime.handleRevisionGet.mockResolvedValue({
+    success: true,
+    data: { item: { id: 'selected', collection: 'news', entryId: 'news', data: { ...news.data, artist: '' } } },
+  });
+  expect((await reviewPublication({ records }, deps)).review.dependencies).toEqual([]);
 });
 
 beforeAll(() => applyD1Migrations(env.TEST_CMS_DB, env.TEST_CMS_MIGRATIONS));

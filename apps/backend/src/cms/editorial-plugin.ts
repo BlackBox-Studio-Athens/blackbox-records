@@ -10,7 +10,7 @@ export default {
         if (!isCmsCollection(event.collection)) throw new ContentSaveRejectedError('Unsupported editorial collection.');
         const issues = validateCmsDraft(event.collection, event.content);
         if (issues.length) throw new ContentSaveRejectedError(issues.join('\n'));
-        if (event.collection === 'releases' && event.content.artist) {
+        if (['releases', 'news'].includes(event.collection) && event.content.artist) {
           const artist = await context.content?.get('artists', String(event.content.artist));
           if (!artist) throw new ContentSaveRejectedError('artist: Select an existing Artist.');
         }

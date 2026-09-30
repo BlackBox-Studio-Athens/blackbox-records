@@ -559,6 +559,18 @@ export default function ContentFields({
     return (
       <>
         {field('title', 'News title')}
+        <EditorialPicker
+          base={base}
+          collection="artists"
+          label="Artist"
+          path="artist"
+          value={String(data.artist ?? '')}
+          required={false}
+          error={errors('artist').join(' ') || undefined}
+          onBlur={() => touch('artist')}
+          onSelect={(item) => set('artist', item.id)}
+          onClear={() => set('artist', null)}
+        />
         {field('date', 'Date', { type: 'date' })}
         {field('summary', 'Short description', { multiline: true })}
         {image('image', 'image_alt', 'News image')}

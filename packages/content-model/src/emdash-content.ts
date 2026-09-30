@@ -56,7 +56,10 @@ export const cmsContentSchemas = {
     body: cmsBodySchema.optional(),
     release_date: z.iso.date().optional(),
   }),
-  news: createNewsContentSchema(image).extend({ body: cmsBodySchema.optional(), date: z.iso.date() }),
+  news: createNewsContentSchema(image, { artist: mediaId }).extend({
+    body: cmsBodySchema.optional(),
+    date: z.iso.date(),
+  }),
   distro: createDistroContentSchema(image).extend({ release_date: z.iso.date().optional() }),
   distro_page: distroPageContentSchema,
   navigation: navigationContentSchema,

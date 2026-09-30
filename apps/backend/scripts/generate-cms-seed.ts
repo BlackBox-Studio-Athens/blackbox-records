@@ -19,7 +19,7 @@ const collections: NonNullable<SeedFile['collections']> = Object.entries(cmsCont
     if (name === 'tracklist') type = 'json';
     if (name === 'bandcamp_embed_url' || name === 'tidal_url') type = 'url';
     if (name === 'body' || name.endsWith('_rich')) type = 'portableText';
-    if (slug === 'releases' && name === 'artist') type = 'reference';
+    if (['releases', 'news'].includes(slug) && name === 'artist') type = 'reference';
     return {
       slug: name,
       label: name.replaceAll('_', ' '),

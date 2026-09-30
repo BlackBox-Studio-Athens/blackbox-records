@@ -21,5 +21,13 @@ test('actual collection inventory is deterministic and resolves references and m
   assert.deepEqual(first.anomalies, []);
   const release = first.records.find((record) => record.collection === 'releases' && record.id === 'disintegration');
   assert.deepEqual(release.references, [{ field: 'artist', collection: 'artists', id: 'afterwise' }]);
+  for (const [id, artist] of [
+    ['disintegration', 'afterwise'],
+    ['anarchotribal', 'ouranopithecus'],
+    ['lorem-ipsum', 'chronoboros'],
+  ]) {
+    const news = first.records.find((record) => record.collection === 'news' && record.id === id);
+    assert.deepEqual(news.references, [{ field: 'artist', collection: 'artists', id: artist }]);
+  }
   assert.ok(first.media.some((image) => image.references.some((reference) => reference.alt)));
 });

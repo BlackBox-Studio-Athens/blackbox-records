@@ -165,6 +165,7 @@ export async function inventory() {
       }
       if (body.trim()) markdown(markdownToMdast(body));
       for (const relation of collection.references) {
+        if (collection.name === 'news' && !data[relation.field]) continue;
         record.references.push({ ...relation, id: data[relation.field] });
       }
       records.push(record);
