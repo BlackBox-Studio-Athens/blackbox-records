@@ -5315,7 +5315,12 @@ html[data-store-coverflow-capable]
   line-height: 1.1;
 }
 
-.store-item-page :is(p, button, a, [data-store-purchase-group] > span):not(.site-button, .music-listen-trigger, [data-store-item-purchase-status]) {
+.store-item-page
+  :is(p, button, a, [data-store-purchase-group] > span):not(
+    .site-button,
+    .music-listen-trigger,
+    [data-store-item-purchase-status]
+  ) {
   font-family: var(--font-sans);
   letter-spacing: normal;
   text-transform: none;

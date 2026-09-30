@@ -7,6 +7,8 @@ import { describe, expect, it } from 'vitest';
 import { Button, buttonVariants } from './button';
 
 const globalCss = readFileSync(fileURLToPath(new URL('../../styles/global.css', import.meta.url)), 'utf8');
+// Prettier wraps long selectors, so selector checks compare the stylesheet with whitespace flattened.
+const flatCss = globalCss.replace(/\s+/g, ' ').replace(/\( /g, '(').replace(/ \)/g, ')');
 
 function classesOf(html: string) {
   return /class="([^"]*)"/.exec(html)?.[1]?.split(' ') ?? [];
@@ -47,7 +49,12 @@ describe('Button', () => {
     const classes = buttonVariants({ variant: 'chip', size: 'sm' }).split(' ');
 
     expect(classes).toEqual(
-      expect.arrayContaining(['site-button--chip', 'min-h-8', 'pointer-coarse:before:-inset-1.5', 'aria-pressed:border-foreground']),
+      expect.arrayContaining([
+        'site-button--chip',
+        'min-h-8',
+        'pointer-coarse:before:-inset-1.5',
+        'aria-pressed:border-foreground',
+      ]),
     );
     expect(classes).not.toContain('pointer-coarse:before:-inset-1');
     expect(classes).not.toContain('min-w-24');
@@ -56,7 +63,9 @@ describe('Button', () => {
   it('keeps text actions in the reading face without the caps nudge', () => {
     const classes = buttonVariants({ variant: 'link' }).split(' ');
 
-    expect(classes).toEqual(expect.arrayContaining(['site-button--link', 'font-sans', 'normal-case', 'pt-0', 'underline']));
+    expect(classes).toEqual(
+      expect.arrayContaining(['site-button--link', 'font-sans', 'normal-case', 'pt-0', 'underline']),
+    );
     expect(classes).not.toContain('font-display');
     expect(classes).not.toContain('pt-px');
   });
@@ -80,10 +89,10 @@ describe('Button family CSS', () => {
   });
 
   it('keeps Bebas on buttons, Listen and purchase status inside store item pages', () => {
-    expect(globalCss).toContain(
+    expect(flatCss).toContain(
       '.store-item-purchase .font-display:not([data-store-offer-price], [data-store-item-purchase-status], .site-button) {',
     );
-    expect(globalCss).toContain(
+    expect(flatCss).toContain(
       '.store-item-page :is(p, button, a, [data-store-purchase-group] > span):not(.site-button, .music-listen-trigger, [data-store-item-purchase-status]) {',
     );
   });

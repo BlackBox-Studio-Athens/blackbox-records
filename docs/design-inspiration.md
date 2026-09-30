@@ -176,15 +176,15 @@ The Listen study was run to inform a redesign of every public-site button. Butto
 
 The comparison lives in the private Design canvas "BlackBox Button Family" (https://claude.ai/artifact/C5Lmv5FNLdqCRPnSFJtVGi): a recreation of today's buttons, three directions (A Refined, B Poster, C Quiet) with every role in every state and in context, a label-face board and a phone board, then three iterations of the chosen direction.
 
-| Decision | Choice |
-| --- | --- |
-| Direction | C Quiet: charcoal faces, hairline edges, controls recede behind artwork |
-| Label face | Bebas Neue caps (Google's cut has no lowercase); text actions stay Inter |
-| Sizes | 32 / 36 / 44px; 36 is the default. Coarse pointers get an invisible 44px halo instead of larger boxes |
-| Listen | Face, border, amber equalizer and motion unchanged; label to Bebas 15/17px, re-centred; standalone 48 → 44px |
-| Header cart | Shopping bag with a round count bubble, present only with items or on store routes |
+| Decision                    | Choice                                                                                                                                                                                                                                         |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Direction                   | C Quiet: charcoal faces, hairline edges, controls recede behind artwork                                                                                                                                                                        |
+| Label face                  | Bebas Neue caps (Google's cut has no lowercase); text actions stay Inter                                                                                                                                                                       |
+| Sizes                       | 32 / 36 / 44px; 36 is the default. Coarse pointers get an invisible 44px halo instead of larger boxes                                                                                                                                          |
+| Listen                      | Face, border, amber equalizer and motion unchanged; label to Bebas 15/17px, re-centred; standalone 48 → 44px                                                                                                                                   |
+| Header cart                 | Shopping bag with a round count bubble, present only with items or on store routes                                                                                                                                                             |
 | In-place feedback (adopted) | Added state on Add to cart, Undo after Remove, Stop asks once, Pay fills when the quote is ready, subtotal in Checkout, counts on roster chips, text actions recede in rows, ↗ on actions that leave the site, tone inherited from the section |
-| Dropped | Boxes growing on touch; the cart count as a numeral instead of a bubble |
+| Dropped                     | Boxes growing on touch; the cart count as a numeral instead of a bubble                                                                                                                                                                        |
 
 Design Library consult: the shadcn shortlist's button catalogues (Cult UI's neumorph, texture, gradient, border-beam, metal and cosmic buttons) hit PRODUCT.md bans and were not used. Coss UI blocks informed structure only: loading button (`p-button-18`), link rendered as button (`p-button-17`), back link (`p-button-20`) and icon sizes (`p-button-13` to `p-button-15`). Cosmos Public Work stays the restraint reference. No dependency was added. Implementation and acceptance live in the OpenSpec change `unify-public-buttons`.
 

@@ -13,12 +13,15 @@ const emptyCart: StoreCartState = { lines: [], primaryLineItem: null };
 const cartWithItem = { lines: [{ quantity: 1 }], primaryLineItem: null } as unknown as StoreCartState;
 
 describe('shouldShowStoreCartControl', () => {
-  it.each(['/store/', '/store/distro/', '/store/disintegration-black-vinyl-lp/', '/store/checkout/', '/store/x/checkout/return/'])(
-    'shows the control with an empty cart on store route %s',
-    (pathname) => {
-      expect(shouldShowStoreCartControl(emptyCart, pathname)).toBe(true);
-    },
-  );
+  it.each([
+    '/store/',
+    '/store/distro/',
+    '/store/disintegration-black-vinyl-lp/',
+    '/store/checkout/',
+    '/store/x/checkout/return/',
+  ])('shows the control with an empty cart on store route %s', (pathname) => {
+    expect(shouldShowStoreCartControl(emptyCart, pathname)).toBe(true);
+  });
 
   it.each(['/', '/releases/', '/artists/afterwise/', '/services/'])(
     'hides the control with an empty cart away from the store (%s)',

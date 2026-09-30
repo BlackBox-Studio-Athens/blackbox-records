@@ -231,7 +231,11 @@ export default function ShellPlayerSurface({
               if (!isStopArmed && !event.defaultPrevented) setIsStopArmed(true);
             }}
           >
-            {isStopArmed ? STOP_ARMED_LABEL : <Square className="size-3 fill-current" aria-hidden="true" strokeWidth={0} />}
+            {isStopArmed ? (
+              STOP_ARMED_LABEL
+            ) : (
+              <Square className="size-3 fill-current" aria-hidden="true" strokeWidth={0} />
+            )}
           </Button>
           <span className="sr-only" aria-live="polite">
             {isStopArmed ? STOP_ARMED_ANNOUNCEMENT : ''}
