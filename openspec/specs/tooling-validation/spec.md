@@ -243,6 +243,13 @@ The system SHALL keep smoke runners on the shared `.codex-artifacts/smoke/<envir
 - **AND** static smoke and provider smoke remain separate suite boundaries
 - **AND** focused unit tests cover the shared harness and runner contracts.
 
+#### Scenario: Hosted smoke reports its result
+
+- **WHEN** a smoke suite finishes inside GitHub Actions, including after a preflight blocker
+- **THEN** the job summary shows the suite, overall status, each scenario's result and the evidence directory
+- **AND** the summary contains only redacted text already written to smoke evidence
+- **AND** outside GitHub Actions the runner writes no job summary.
+
 ### Requirement: Post-merge UAT provider smoke workflow
 
 The system SHALL validate the deployed Cloudflare Pages UAT site with the canonical Stripe test-mode paid scenarios and newsletter Contact smoke inside the canonical release workflow after its UAT deployment succeeds, without requiring operator presence or Resend receipt credentials.
