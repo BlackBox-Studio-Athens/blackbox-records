@@ -159,9 +159,9 @@ The system SHALL apply image optimization by section and image role instead of u
 
 #### Scenario: Artist images are rendered
 
-- **WHEN** artist roster cards render portrait images
-- **THEN** they preserve the documented 3:4 portrait framing and responsive width ladder
-- **AND** artist detail lead images and release thumbnails use separate large/detail and tiny-thumbnail strategies.
+- **WHEN** the Artists roster, artist detail lead media, or Home featured roster renders an artist image
+- **THEN** the image keeps its source aspect ratio inside a print slot sized from the source dimensions, with no fixed-ratio frame, fill bars, or text over the image
+- **AND** roster preview prints, roster row thumbnails, artist detail lead prints, and release thumbnails use separate width ladders that match their preview, tiny-thumbnail, large/detail, and tiny-thumbnail roles.
 
 #### Scenario: News and services images are rendered
 
@@ -276,18 +276,17 @@ The system SHALL give About, Services, and Artists route-specific image discover
 
 #### Scenario: Artists direct route loads
 
-- **WHEN** the Artists roster grid enters the first viewport
-- **THEN** only the expected visible leading portraits are eager
-- **AND** the expected LCP portrait is high priority
-- **AND** later portraits remain lazy-loaded
-- **AND** the selected 480w Ouranopithecus candidate is no more than 100 KiB after existing-pipeline source remediation or candidate tuning
-- **AND** its documented 3:4 crop, subject placement, detail, and alt text have no material visual regression.
+- **WHEN** the Artists roster enters the first viewport
+- **THEN** the first preview print has high fetch priority but is not requested on viewports where the preview panel is hidden, and only the leading visible row thumbnails are eager
+- **AND** at most one artist image, the expected LCP print for the active viewport, is high priority
+- **AND** later thumbnails and every other preview print remain lazy-loaded or undisplayed until needed
+- **AND** each rendered print keeps its source aspect ratio, subject, detail, and alt text with no material visual regression.
 
 #### Scenario: Secondary route image work is accepted
 
 - **WHEN** About, Services, or Artists image priority or source assets change
 - **THEN** five-run desktop and declared mobile-stress profiles meet the route LCP and CLS gates
-- **AND** Browser Use verifies mobile and desktop crop, hierarchy, loading stability, and no duplicate high-priority content-image request.
+- **AND** Browser Use verifies mobile and desktop framing, hierarchy, loading stability, and no duplicate high-priority content-image request.
 
 ### Requirement: Distro artwork uses approved source evidence
 
@@ -369,3 +368,26 @@ The system SHALL reserve initial high image-fetch priority for the first visible
 - **WHEN** the first Store collection or Store Distro group is not Coverflow-eligible
 - **THEN** its existing leading eager-image behavior remains unchanged
 - **AND** remaining catalog images stay lazy without receiving high fetch priority.
+
+### Requirement: Home featured artist prints match News hover feedback
+
+Home featured roster print photos SHALL use the existing News image hover treatment inside their paper border while preserving native-aspect print framing, captions, links, and responsive delivery. On the Artists roster, the hover and focus print pile is the image feedback, so roster prints do not zoom. The decorative effect MUST respect reduced-motion preferences and MUST NOT require JavaScript.
+
+#### Scenario: Visitor hovers a Home featured artist
+
+- **WHEN** a hover-capable pointer enters a Home featured artist card with no reduced-motion preference
+- **THEN** the photo inside its print scales to 1.03 over 500 ms, matching News, clipped to the print's image window
+- **AND** leaving the card returns the photo smoothly to its original scale
+- **AND** the paper border, caption, and surrounding layout keep their positions apart from the existing print straighten-and-lift.
+
+#### Scenario: Artists roster prints render
+
+- **WHEN** roster preview prints or row thumbnails render
+- **THEN** their photos do not zoom on hover
+- **AND** hovering or focusing a row keeps driving the preview pile instead.
+
+#### Scenario: Visitor requests reduced motion
+
+- **WHEN** the visitor enables reduced motion and hovers a Home featured artist card
+- **THEN** its photo remains at its original scale without a transform transition
+- **AND** the card retains visible focus feedback and normal link activation.

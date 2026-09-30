@@ -85,7 +85,17 @@ The system SHALL give About, Services, and Artists route-specific image discover
 - **THEN** five-run desktop and declared mobile-stress profiles meet the route LCP and CLS gates
 - **AND** Browser Use verifies mobile and desktop framing, hierarchy, loading stability, and no duplicate high-priority content-image request.
 
+## REMOVED Requirements
+
 ### Requirement: Artist card images match News hover feedback
+
+**Reason**: `ArtistCard` no longer exists; artists render as native-aspect prints.
+
+**Migration**: The News hover zoom moves to Home featured prints under "Home featured artist prints match News hover feedback"; the Artists roster uses the print pile as its hover feedback.
+
+## ADDED Requirements
+
+### Requirement: Home featured artist prints match News hover feedback
 
 Home featured roster print photos SHALL use the existing News image hover treatment inside their paper border while preserving native-aspect print framing, captions, links, and responsive delivery. On the Artists roster, the hover and focus print pile is the image feedback, so roster prints do not zoom. The decorative effect MUST respect reduced-motion preferences and MUST NOT require JavaScript.
 
