@@ -8,4 +8,4 @@
 
 - [x] 2.1 Update the unit-test document fakes (`createElement` returning a template whose owner document imports the node); `pnpm test:app-shell` passes.
 - [x] 2.2 Add the Store lazy-image check to `e2e/shell-navigation.spec.ts`; it fails before the fix on desktop and mobile and passes after.
-- [ ] 2.3 Run `pnpm validate` and strict OpenSpec validation on the final tree. See `validation.md`.
+- [x] 2.3 Run `pnpm validate` and strict OpenSpec validation on the final tree. See `validation.md`.
