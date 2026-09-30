@@ -6,11 +6,12 @@
       "entry": [
         "package.json",
         "scripts/*.ts",
+        "e2e/**/*.spec.ts",
         "*.config.{js,cjs,mjs,ts}",
         ".dependency-cruiser.cjs",
         ".github/workflows/*.{yml,yaml}",
       ],
-      "project": ["scripts/**/*.ts", "*.config.{js,cjs,mjs,ts}", ".dependency-cruiser.cjs"],
+      "project": ["scripts/**/*.ts", "e2e/**/*.ts", "*.config.{js,cjs,mjs,ts}", ".dependency-cruiser.cjs"],
       // Astro CLI resolves this from the workspace root under pnpm; app-local declaration alone triggers install prompts.
       "ignoreDependencies": ["@astrojs/check", "vitest"],
     },

@@ -3,6 +3,28 @@ import path from 'node:path';
 
 export type SmokeScreenshotMode = 'always' | 'never' | 'on-failure';
 
+export const representativeReleaseSlug = 'disintegration';
+export const representativeArtistSlug = 'chronoboros';
+export const representativeNewsSlug = 'lorem-ipsum';
+export const representativeStoreItemSlug = 'disintegration-black-vinyl-lp';
+
+/** Canonical public routes and the text each must render; shared by hosted smokes and the local e2e specs. */
+export const publicSmokeRoutes = [
+  ['/', ['BlackBox Records']],
+  ['/releases/', ['Releases']],
+  [`/releases/${representativeReleaseSlug}/`, ['Disintegration', 'Afterwise']],
+  ['/artists/', ['Artists']],
+  [`/artists/${representativeArtistSlug}/`, ['Chronoboros']],
+  ['/news/', ['News']],
+  [`/news/${representativeNewsSlug}/`, ['Chronoboros', 'Caregivers']],
+  ['/store/', ['Store']],
+  ['/store/blackbox-releases/', ['BlackBox Releases']],
+  ['/store/distro/', ['Distro', 'Browse Distro formats']],
+  [`/store/${representativeStoreItemSlug}/`, ['Disintegration', 'Add it to the cart']],
+  ['/services/', ['Services']],
+  ['/about/', ['About']],
+] as const;
+
 const smokeSecretNamePatterns: ReadonlyArray<[RegExp, string]> = [
   [/\bSTRIPE_SECRET_KEY\b/g, 'runtime secret name STRIPE_SECRET_KEY'],
   [/\bSTRIPE_WEBHOOK_SECRET\b/g, 'runtime secret name STRIPE_WEBHOOK_SECRET'],

@@ -101,6 +101,7 @@
     "validate:editor": "node --import tsx scripts/validate.mjs --editor",
     "validate:checks": "node --import tsx scripts/validate.mjs --checks",
     "test:app-shell": "pnpm test app-shell",
+    "test:e2e": "playwright test",
     "test:web": "pnpm --filter @blackbox/web test:unit",
     "test:staff": "pnpm --filter @blackbox/staff test:unit",
     "test:backend": "pnpm --filter @blackbox/backend test",

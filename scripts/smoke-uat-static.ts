@@ -16,7 +16,11 @@ import {
   parsePositiveInteger,
   parseRequiredValue,
   parseScreenshotMode,
+  publicSmokeRoutes,
   redactSensitiveSmokeText,
+  representativeArtistSlug,
+  representativeNewsSlug,
+  representativeReleaseSlug,
   scanHighRiskSmokeExposure,
   truncateForConsole,
   writeJsonFile,
@@ -94,10 +98,6 @@ export type UatStaticSmokeEvidenceInput = {
 
 const defaultSiteUrl = 'https://blackbox-records-web-uat.pages.dev';
 const defaultEvidenceDir = path.join('.codex-artifacts', 'smoke', 'uat', 'uat-static');
-const representativeReleaseSlug = 'disintegration';
-const representativeArtistSlug = 'chronoboros';
-const representativeNewsSlug = 'lorem-ipsum';
-const representativeStoreItemSlug = 'disintegration-black-vinyl-lp';
 const reviewSiteMarkerTexts = [
   'UAT · TESTING ONLY',
   'Data here is separate and does not transfer to or from the production site.',
@@ -452,23 +452,7 @@ export function findPublicMediaPath(html: string, siteUrl: string): string {
 
 async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
   const routeChecks: UatStaticSmokeCheck[] = [];
-  const routes = [
-    ['/', ['BlackBox Records']],
-    ['/releases/', ['Releases']],
-    [`/releases/${representativeReleaseSlug}/`, ['Disintegration', 'Afterwise']],
-    ['/artists/', ['Artists']],
-    [`/artists/${representativeArtistSlug}/`, ['Chronoboros']],
-    ['/news/', ['News']],
-    [`/news/${representativeNewsSlug}/`, ['Chronoboros', 'Caregivers']],
-    ['/store/', ['Store']],
-    ['/store/blackbox-releases/', ['BlackBox Releases']],
-    ['/store/distro/', ['Distro', 'Browse Distro formats']],
-    [`/store/${representativeStoreItemSlug}/`, ['Disintegration', 'Add it to the cart']],
-    ['/services/', ['Services']],
-    ['/about/', ['About']],
-  ] as const;
-
-  for (const [routePath, expectedText] of routes) {
+  for (const [routePath, expectedText] of publicSmokeRoutes) {
     const url = createRouteUrl(options.siteUrl, routePath);
     const requestedPaths: string[] = [];
     const onRequest = (request: Request) => requestedPaths.push(new URL(request.url()).pathname);
