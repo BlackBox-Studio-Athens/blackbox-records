@@ -3412,8 +3412,8 @@ body.is-app-shell-overlay-open {
     transform: translateY(0);
   }
 
-  .release-card-link:hover .music-listen-trigger,
-  .release-card-link:focus-within .music-listen-trigger {
+  .release-card-link:where(:not(.releases-page-layout *)):hover .music-listen-trigger,
+  .release-card-link:where(:not(.releases-page-layout *)):focus-within .music-listen-trigger {
     color: rgb(245, 245, 245);
     border-color: rgb(245, 245, 245);
     background-color: rgba(245, 245, 245, 0.14);
@@ -3448,6 +3448,31 @@ body.is-app-shell-overlay-open {
   .music-listen-trigger:active + .release-card-view-release-desktop-reveal {
     opacity: 0;
     transform: translateY(8px);
+  }
+
+  .releases-page-layout
+    :is(.releases-latest-feature__artwork-link, .releases-latest-feature__upcoming-artwork-link, .release-card-link)
+    :is(.releases-latest-feature__artwork, .releases-latest-feature__upcoming-artwork, .release-card-artwork--framed) {
+    transition: none;
+
+    @media (prefers-reduced-motion: no-preference) {
+      transform: scale(1.026);
+    }
+  }
+
+  .releases-page-layout .release-card-link:hover:not(:focus-within) .release-card-image-frame--framed {
+    border-color: rgba(245, 245, 245, 0.82);
+    box-shadow: none;
+  }
+
+  .releases-page-layout .release-card-link .release-card-view-release-desktop-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .releases-page-layout .music-listen-trigger:not(:hover, :focus-visible, :active) .music-equalizer__bar {
+    animation: none;
   }
 }
 
