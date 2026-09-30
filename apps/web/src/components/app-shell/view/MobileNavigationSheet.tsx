@@ -1,5 +1,6 @@
 import * as React from 'react';
 
+import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import type { MainNavigation } from '@/lib/site-data';
 import { navigationLinkAttributes } from '@/platform/utils/urls';
@@ -63,13 +64,9 @@ export default function MobileNavigationSheet({
             ))}
           </nav>
 
-          <button
-            className="mt-auto min-h-11 w-full text-[11px] tracking-[0.18em] uppercase text-muted-foreground transition-colors hover:text-foreground"
-            type="button"
-            onClick={onNavigate}
-          >
+          <Button className="mt-auto min-h-11 w-full" type="button" variant="ghost" onClick={onNavigate}>
             Close
-          </button>
+          </Button>
         </div>
       </SheetContent>
     </Sheet>

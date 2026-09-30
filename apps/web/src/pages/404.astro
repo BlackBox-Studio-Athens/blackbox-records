@@ -9,6 +9,9 @@ import { createProjectRelativeUrl } from '@/platform/config/site';
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>404 | Blackbox Records</title>
     <link rel="icon" href="data:," />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=optional" rel="stylesheet" />
     <link rel="stylesheet" href={createProjectRelativeUrl('/assets/404/tokens.css')} />
     <link rel="stylesheet" href={createProjectRelativeUrl('/assets/404/blackbox-monochrome.css')} />
     <link rel="stylesheet" href={createProjectRelativeUrl('/assets/404/404.css')} />
@@ -697,7 +700,7 @@ import { createProjectRelativeUrl } from '@/platform/config/site';
             </p>
 
             <div class="error-404__actions">
-              <a id="home-link" class="btn green" href="{{ '/' | relative_url }}">
+              <a id="home-link" class="btn green" href={createProjectRelativeUrl('/')}>
                 Home
               </a>
               <button id="back-link" class="btn ghost" type="button">

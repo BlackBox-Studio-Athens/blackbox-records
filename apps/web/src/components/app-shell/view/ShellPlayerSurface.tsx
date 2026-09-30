@@ -3,6 +3,7 @@ import { Square } from 'lucide-react';
 import * as React from 'react';
 import type { MouseEvent } from 'react';
 
+import { Button } from '@/components/ui/button';
 import { LoadingStateBlock } from '@/components/ui/loading-feedback';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
 import { type PlayerEmbedLayout, type PlayerProvider, type PlayerProviderId } from '../../music/player-provider-data';
@@ -107,15 +108,15 @@ export default function ShellPlayerSurface({
                   </p>
                 </div>
               </div>
-              <button
+              <Button
                 ref={modalCloseButtonRef}
                 aria-label={playerModalDismissAriaLabel}
-                className="music-streaming-service-embedded-player-modal-close-button"
                 data-music-streaming-service-embedded-player-modal-dismiss
                 type="button"
+                variant="outline"
               >
                 {playerModalDismissActionLabel}
-              </button>
+              </Button>
             </div>
             <div
               className="music-streaming-service-embedded-player-provider-switcher grid grid-cols-2 gap-2"
@@ -125,10 +126,11 @@ export default function ShellPlayerSurface({
                 const provider = playerProviders.find((item) => item.id === providerId);
 
                 return (
-                  <button
+                  <Button
                     key={providerId}
-                    className="music-streaming-service-embedded-player-provider-button music-streaming-service-embedded-player-provider-button--has-logo inline-flex min-h-10 items-center justify-center rounded-md px-4 transition-colors"
+                    className="music-streaming-service-embedded-player-provider-button"
                     type="button"
+                    variant="chip"
                     data-state={activePlayerProviderId === providerId ? 'active' : 'inactive'}
                     aria-label={PLAYER_PROVIDER_LABELS[providerId]}
                     hidden={!provider}
@@ -145,7 +147,7 @@ export default function ShellPlayerSurface({
                       aria-hidden="true"
                     />
                     <span className="accessibility-visually-hidden-text">{PLAYER_PROVIDER_LABELS[providerId]}</span>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -190,22 +192,23 @@ export default function ShellPlayerSurface({
           </p>
         </div>
         <div className="music-streaming-service-embedded-player-mini-player-actions">
-          <button
+          <Button
             aria-label="Open player"
-            className="music-streaming-service-embedded-player-mini-player-action inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-border/80 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-foreground/78 transition-colors hover:bg-accent hover:text-accent-foreground"
             data-music-streaming-service-embedded-player-mini-player-open
             type="button"
+            variant="outline"
           >
             {OPEN_PLAYER_ACTION_LABEL}
-          </button>
-          <button
+          </Button>
+          <Button
             aria-label="Stop player"
-            className="music-streaming-service-embedded-player-mini-player-action music-streaming-service-embedded-player-mini-player-action--icon inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-border/80 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             data-music-streaming-service-embedded-player-mini-player-stop
+            size="icon"
             type="button"
+            variant="outline"
           >
             <Square className="size-3 fill-current" aria-hidden="true" strokeWidth={0} />
-          </button>
+          </Button>
         </div>
       </motion.div>
     </>

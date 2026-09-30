@@ -1,6 +1,7 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import Prose from '@/components/Prose.astro';
+import { buttonVariants } from '@/components/ui/button';
 import { emptyArtistRosterReleaseContext, type ArtistRosterReleaseContext } from '@/lib/catalog-data';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import ArtistPrint from './ArtistPrint.astro';
@@ -142,7 +143,7 @@ const rows = entries.map((entry, index) => {
               <ArtistRosterContext releaseContext={row.releaseContext} />
               <div class="artist-roster-index__actions">
                 <a
-                  class="artist-roster-index__action artist-roster-index__action--primary"
+                  class={buttonVariants({ variant: 'outline', className: 'flex-1' })}
                   href={row.href}
                   data-astro-prefetch
                 >
@@ -194,7 +195,7 @@ const rows = entries.map((entry, index) => {
             <ArtistRosterContext releaseContext={row.releaseContext} />
             <div class="artist-roster-index__actions">
               <a
-                class="artist-roster-index__action artist-roster-index__action--primary"
+                class={buttonVariants({ variant: 'outline', className: 'flex-1' })}
                 href={row.href}
                 data-astro-prefetch
               >

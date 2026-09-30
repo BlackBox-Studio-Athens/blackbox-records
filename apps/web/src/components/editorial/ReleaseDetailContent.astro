@@ -11,7 +11,6 @@ import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { resolveArtistProfileForRelease, resolveReleaseArtistDisplayName } from '@/lib/catalog-data';
 import { getReleaseCommerceLink } from './release-commerce';
-import { cn } from '@/components/ui/utils';
 import { formatDayMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
 
@@ -123,7 +122,7 @@ const galleryImages =
               href={commerceLink.href}
               target={commerceLink.target}
               rel={commerceLink.rel}
-              class={cn(buttonVariants({ size: 'lg' }), 'rounded-md px-6 uppercase tracking-[0.12em]')}
+              class={buttonVariants({ size: 'lg' })}
             >
               {commerceLink.label}
             </a>
@@ -221,15 +220,11 @@ const galleryImages =
           <a
             href={createProjectRelativeUrl('/releases/')}
             data-astro-prefetch
-            class={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'catalog-nav-button')}
+            class={buttonVariants({ variant: 'outline' })}
           >
             All Releases
           </a>
-          <a
-            href={artistUrl}
-            data-astro-prefetch
-            class={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'catalog-nav-button catalog-nav-button--ghost')}
-          >
+          <a href={artistUrl} data-astro-prefetch class={buttonVariants({ variant: 'ghost' })}>
             Artist Page
           </a>
         </div>

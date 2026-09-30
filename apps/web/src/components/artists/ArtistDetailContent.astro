@@ -179,10 +179,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
         <a
           href={latestReleaseHref}
           data-astro-prefetch
-          class={cn(
-            buttonVariants({ variant: 'ghost', size: 'lg' }),
-            'artist-detail-action artist-detail-action--secondary rounded-none',
-          )}
+          class={buttonVariants({ variant: 'ghost', size: latestReleasePlayerData ? 'lg' : 'default' })}
         >
           Details
         </a>

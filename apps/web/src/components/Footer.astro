@@ -5,7 +5,6 @@ import logo from '@/content/brand-assets/logo-ui.png';
 import SocialIcon from '@/components/icons/SocialIcon.astro';
 import { getFooterNavigationItems, getLabelSettings, getSocialItems } from '@/lib/site-data';
 import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/components/ui/utils';
 import { getPurchaseInformation } from '@/platform/lib/purchase-information';
 import { navigationLinkAttributes } from '@/platform/utils/urls';
 import { formatYear } from '@/utils/content';
@@ -39,10 +38,7 @@ const footerSocialItems = socialItems.filter((item) => item.url.trim() && item.u
                 href={linkAttributes.href}
                 target={linkAttributes.target}
                 rel={linkAttributes.rel}
-                class={cn(
-                  buttonVariants({ variant: 'ghost' }),
-                  'site-footer-social-link h-11 w-11 px-0 hover:bg-transparent focus-visible:bg-transparent md:h-9 md:w-9',
-                )}
+                class={buttonVariants({ variant: 'outline', size: 'icon' })}
                 aria-label={item.title}
                 title={item.title}
               >

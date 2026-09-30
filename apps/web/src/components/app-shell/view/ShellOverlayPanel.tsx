@@ -2,6 +2,7 @@ import * as React from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { X } from 'lucide-react';
 
+import { Button } from '@/components/ui/button';
 import { LoadingStateBlock } from '@/components/ui/loading-feedback';
 import type { OverlayRoute } from '@/components/app-shell/routing';
 
@@ -89,15 +90,16 @@ export default function ShellOverlayPanel({
           >
             <div className="app-shell-content-overlay__header">
               <span className="app-shell-content-overlay__eyebrow">{OVERLAY_KIND_LABELS[overlayState.route.kind]}</span>
-              <button
+              <Button
                 ref={closeButtonRef}
-                className="app-shell-content-overlay__close-button"
                 type="button"
+                variant="outline"
+                size="icon"
                 aria-label="Close detail view"
                 onClick={onClose}
               >
                 <X className="size-4" />
-              </button>
+              </Button>
             </div>
             <div ref={scrollContainerRef} className="app-shell-content-overlay__scroll-region" data-lenis-scroll-root>
               {overlayState.isLoading ? (

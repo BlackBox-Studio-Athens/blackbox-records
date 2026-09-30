@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Check, Search } from 'lucide-react';
 
 import {
   createArtistRosterSearcher,
@@ -32,8 +32,6 @@ const sortOptions: { label: string; value: ArtistRosterSort }[] = [
 
 const controlClassName =
   'inline-flex min-h-11 items-center justify-center rounded-none border px-3 text-[11px] tracking-[0.16em] uppercase lg:min-h-9';
-const idleClassName = 'border-[#2b2b2b] bg-transparent text-[#f5f5f5]';
-const pressedClassName = 'border-[#f5f5f5] bg-[#f5f5f5] text-[#090909]';
 
 function readRosterRoot() {
   return document.querySelector<HTMLElement>('[data-artists-roster-root]');
@@ -133,21 +131,23 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
         <div
           role="group"
           aria-label="Filter by genre"
-          className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 lg:flex-wrap lg:overflow-visible"
+          className="-mx-1.5 -mt-1.5 flex gap-2 overflow-x-auto px-1.5 py-1.5 lg:flex-wrap lg:overflow-visible"
         >
           {[{ genre: '', count: totalCount }, ...genres].map((option) => {
             const pressed = option.genre === genre;
             return (
-              <button
+              <Button
                 key={option.genre || 'all'}
                 type="button"
+                variant="chip"
+                size="sm"
                 aria-pressed={pressed}
-                className={`${controlClassName} shrink-0 gap-2 ${pressed ? pressedClassName : idleClassName}`}
                 onClick={() => setGenre(option.genre)}
               >
+                {pressed ? <Check className="size-3" aria-hidden="true" /> : null}
                 <span>{option.genre || 'All'}</span>
-                <span className={pressed ? 'text-[#090909]' : 'text-[#8f8f8f]'}>{option.count}</span>
-              </button>
+                <span>{option.count}</span>
+              </Button>
             );
           })}
         </div>
@@ -160,15 +160,18 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
             {sortOptions.map((option) => {
               const pressed = option.value === sort;
               return (
-                <button
+                <Button
                   key={option.value}
                   type="button"
+                  variant="chip"
+                  size="sm"
                   aria-pressed={pressed}
-                  className={`${controlClassName} -ml-px first:ml-0 ${pressed ? pressedClassName : idleClassName}`}
+                  className="-ml-px first:ml-0 aria-pressed:z-10"
                   onClick={() => setSort(option.value)}
                 >
+                  {pressed ? <Check className="size-3" aria-hidden="true" /> : null}
                   {option.label}
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -189,13 +192,7 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
         <div className="flex items-center gap-3">
           <p className="text-xs tracking-[0.18em] uppercase text-muted-foreground">{visibleLabel}</p>
           {hasActiveFilters ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="min-h-11 rounded-none px-2 text-[11px] tracking-[0.16em] uppercase text-muted-foreground hover:bg-transparent hover:text-foreground lg:min-h-9"
-              onClick={clearFilters}
-            >
+            <Button type="button" variant="ghost" onClick={clearFilters}>
               {genre === '' ? 'Clear search' : 'Clear filters'}
             </Button>
           ) : (

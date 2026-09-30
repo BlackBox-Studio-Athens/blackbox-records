@@ -8,7 +8,6 @@ import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { listArtistProfiles, listNewsArticles } from '@/lib/catalog-data';
 import { getHomeContent } from '@/lib/site-data';
-import { cn } from '@/components/ui/utils';
 
 const artistProfiles = await listArtistProfiles();
 const newsArticles = await listNewsArticles();
@@ -37,12 +36,9 @@ const homeArtists = homeContent.artists;
         <a
           href={createProjectRelativeUrl(homeNews.link_url)}
           data-astro-prefetch
-          class={cn(
-            buttonVariants({ variant: 'ghost', size: 'sm' }),
-            'home-section-header__action rounded-md px-2 text-xs tracking-[0.14em] uppercase text-muted-foreground hover:text-foreground',
-          )}
+          class={buttonVariants({ variant: 'ghost' })}
         >
-          {homeNews.link_text} <span aria-hidden="true">→</span>
+          {homeNews.link_text}
         </a>
       </div>
       <div class="home-news-grid">
@@ -94,10 +90,7 @@ const homeArtists = homeContent.artists;
           <a
             href={createProjectRelativeUrl(homeArtists.button_link)}
             data-astro-prefetch
-            class={cn(
-              buttonVariants({ variant: 'outline' }),
-              'h-auto rounded-none border-foreground bg-transparent px-10 py-4 text-xs tracking-[0.2em] uppercase text-foreground shadow-none hover:bg-foreground hover:text-background',
-            )}
+            class={buttonVariants({ variant: 'outline' })}
           >
             {homeArtists.button_text}
           </a>

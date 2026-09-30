@@ -122,12 +122,7 @@ export default function NewsletterSignupForm({
             });
           }}
         />
-        <Button
-          type="submit"
-          className="h-11 rounded-none px-6 uppercase tracking-[0.12em]"
-          disabled={view.isSubmitting}
-          aria-busy={view.isSubmitting ? 'true' : undefined}
-        >
+        <Button type="submit" size="lg" disabled={view.isSubmitting} aria-busy={view.isSubmitting ? 'true' : undefined}>
           {view.isSubmitting ? <LoadingButtonContent label="Subscribing" /> : buttonLabel}
         </Button>
       </div>

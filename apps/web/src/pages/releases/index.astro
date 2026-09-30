@@ -4,6 +4,7 @@ import { Image } from 'astro:assets';
 import ReleaseCard from '@/components/editorial/ReleaseCard.astro';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { buttonVariants } from '@/components/ui/button';
 import {
   createReleaseDetailPath,
   listArtistProfiles,
@@ -124,12 +125,16 @@ function formatReleaseFormats(formats: string[] | undefined) {
                       variant="standalone"
                     />
                   )}
-                  <a class="releases-latest-feature__action-link" href={latestReleaseDetailPath} data-astro-prefetch>
+                  <a
+                    class={buttonVariants({ variant: 'outline', size: 'lg' })}
+                    href={latestReleaseDetailPath}
+                    data-astro-prefetch
+                  >
                     View Release
                   </a>
                   {latestReleaseCommerceLink && (
                     <a
-                      class="releases-latest-feature__action-link"
+                      class={buttonVariants({ variant: 'outline', size: 'lg' })}
                       href={latestReleaseCommerceLink.href}
                       rel={latestReleaseCommerceLink.rel}
                       target={latestReleaseCommerceLink.target}

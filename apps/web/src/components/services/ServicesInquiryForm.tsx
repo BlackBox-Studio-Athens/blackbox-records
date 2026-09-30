@@ -204,12 +204,7 @@ export function ServicesInquirySuccess({
       <p className="services-inquiry-form__success-copy">
         Your inquiry was submitted. We'll follow up at the email address you provided.
       </p>
-      <Button
-        className="services-inquiry-form__submit h-12 rounded-none border border-[rgba(199,137,151,0.52)] bg-[rgba(138,73,90,0.14)] px-5 text-[11px] tracking-[0.2em] uppercase text-[#f4e7ea] hover:border-[rgba(199,137,151,0.74)] hover:bg-[rgba(138,73,90,0.22)] hover:text-[#fff5f7]"
-        onClick={onSendAnother}
-        type="button"
-        variant="outline"
-      >
+      <Button className="min-w-[12.5rem] justify-self-start" onClick={onSendAnother} type="button" variant="outline">
         Send another inquiry
       </Button>
     </section>
@@ -390,9 +385,10 @@ export default function ServicesInquiryForm({
 
       <div className="services-inquiry-form__actions">
         <Button
-          className="services-inquiry-form__submit h-12 rounded-none border border-[rgba(199,137,151,0.52)] bg-[rgba(138,73,90,0.14)] px-5 text-[11px] tracking-[0.2em] uppercase text-[#f4e7ea] hover:border-[rgba(199,137,151,0.74)] hover:bg-[rgba(138,73,90,0.22)] hover:text-[#fff5f7]"
+          className="min-w-[12.5rem] justify-self-start"
           aria-busy={isSubmitting ? 'true' : undefined}
           disabled={isSubmitting}
+          size="lg"
           type="submit"
           variant="outline"
         >
