@@ -255,7 +255,7 @@ export default function CheckoutOfferStatus({
               <Button
                 type="button"
                 size="lg"
-                className="inline-flex h-auto min-h-11 w-full flex-wrap gap-2 rounded-none px-4 py-3 text-center uppercase tracking-[0.16em] whitespace-normal sm:flex-nowrap sm:gap-3 sm:px-6"
+                className="w-full flex-wrap py-2 text-center whitespace-normal sm:flex-nowrap"
                 disabled={isStartingCheckout || delivery.loading || !delivery.quote}
                 aria-busy={isStartingCheckout ? 'true' : undefined}
                 onClick={() => {

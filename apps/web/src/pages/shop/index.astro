@@ -1,4 +1,5 @@
 ---
+import { buttonVariants } from '@/components/ui/button';
 import RedirectLayout from '@/layouts/RedirectLayout.astro';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 
@@ -11,10 +12,7 @@ const redirectUrl = createProjectRelativeUrl('/store/');
     The native store now lives at <span class="text-foreground">/store/</span>.
   </p>
   <p class="mt-6">
-    <a
-      href={redirectUrl}
-      class="inline-flex min-h-11 items-center rounded-md border border-border bg-primary px-5 text-sm font-semibold uppercase tracking-[0.12em] text-primary-foreground transition-colors hover:bg-primary/90"
-    >
+    <a href={redirectUrl} class={buttonVariants()}>
       Continue
     </a>
   </p>

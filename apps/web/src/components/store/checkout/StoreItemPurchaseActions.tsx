@@ -32,8 +32,7 @@ type StoreItemPurchaseActionState = {
 
 type StoreItemPurchaseStatusTone = 'neutral' | 'sold-out';
 
-const purchaseActionLayoutClasses =
-  'h-[54px] min-h-[54px] w-full min-w-0 whitespace-normal rounded-none px-4 py-0 sm:w-56';
+const purchaseActionLayoutClasses = 'w-full sm:w-56 whitespace-normal';
 
 export const STORE_ITEM_PURCHASE_ACTION_COPY = {
   addToCart: 'Add To Cart',
@@ -162,7 +161,7 @@ export default function StoreItemPurchaseActions({
         type="button"
         size="lg"
         variant="outline"
-        className={`${purchaseActionLayoutClasses} border text-xl font-semibold normal-case tracking-normal shadow-none disabled:opacity-100 ${
+        className={`${purchaseActionLayoutClasses} disabled:opacity-100 ${
           !isChecking && purchaseState.statusTone === 'sold-out'
             ? 'border-[#922f3f]/60 bg-transparent text-[#b3b3b3]'
             : 'border-[#767676] bg-[#141414] text-[#b3b3b3]'
@@ -188,7 +187,7 @@ export default function StoreItemPurchaseActions({
       <Button
         type="button"
         size="lg"
-        className={`${purchaseActionLayoutClasses} uppercase tracking-[0.12em]`}
+        className={purchaseActionLayoutClasses}
         data-store-item-add-to-cart
         onClick={() => requestStoreCartAddItem(activeCartItem)}
       >

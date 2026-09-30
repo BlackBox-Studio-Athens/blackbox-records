@@ -1,23 +1,33 @@
 ---
+import { buttonVariants } from '@/components/ui/button';
+
 interface Props {
   catalogId: string;
   total: number;
 }
 const { catalogId, total } = Astro.props;
+const viewToggle = buttonVariants({ variant: 'chip', size: 'sm' });
+const stepButton = buttonVariants({ variant: 'outline', size: 'sm' });
 ---
 
 <div class="store-coverflow-controls" data-store-coverflow-controls hidden>
   <div class="store-coverflow-actions" role="group" aria-label="Catalogue view">
-    <button type="button" aria-controls={catalogId} aria-pressed="true" data-store-coverflow-toggle>
+    <button type="button" class={viewToggle} aria-controls={catalogId} aria-pressed="true" data-store-coverflow-toggle>
       Grid
     </button>
-    <button type="button" aria-controls={catalogId} aria-pressed="false" data-store-coverflow-preview>
+    <button
+      type="button"
+      class={viewToggle}
+      aria-controls={catalogId}
+      aria-pressed="false"
+      data-store-coverflow-preview
+    >
       Coverflow
     </button>
-    <button type="button" aria-controls={catalogId} data-store-coverflow-previous>
+    <button type="button" class={stepButton} aria-controls={catalogId} data-store-coverflow-previous>
       Previous
     </button>
-    <button type="button" aria-controls={catalogId} data-store-coverflow-next>
+    <button type="button" class={stepButton} aria-controls={catalogId} data-store-coverflow-next>
       Next
     </button>
   </div>

@@ -3,6 +3,7 @@ import CheckoutOrderSummary from '@/components/store/checkout/CheckoutOrderSumma
 import CheckoutOfferStatus from '@/components/store/checkout/CheckoutOfferStatus';
 import StoreItemPurchaseActions from '@/components/store/checkout/StoreItemPurchaseActions';
 import StoreOfferPriceDisplay, { STORE_OFFER_PRICE_DISPLAY_COPY } from '@/components/store/StoreOfferPriceDisplay';
+import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { getStorePageEntryBySlug } from '@/components/store/store-page-data';
@@ -53,14 +54,10 @@ const summaryItem = {
   pageDescription={`Compatibility checkout entry for ${storeItem.title} by ${storeItem.subtitle}.`}
   robots="noindex"
 >
-  <section class="layout-container pt-8 pb-8">
+  <section class="layout-container pt-8 pb-8" data-tone="store">
     <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
       <h1 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Checkout</h1>
-      <a
-        href={createProjectRelativeUrl('/store/')}
-        data-astro-prefetch
-        class="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-      >
+      <a href={createProjectRelativeUrl('/store/')} data-astro-prefetch class={buttonVariants({ variant: 'link' })}>
         Continue Shopping
       </a>
     </div>

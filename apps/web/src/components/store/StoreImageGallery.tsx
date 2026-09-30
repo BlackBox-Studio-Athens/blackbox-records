@@ -94,6 +94,7 @@ export default function StoreImageGallery({ images, title }: { images: StoreGall
           <Button
             key={item.src}
             variant="outline"
+            size="icon"
             className="store-image-gallery__thumbnail"
             aria-label={`Show image ${index + 1}: ${item.alt}`}
             aria-pressed={index === selected}

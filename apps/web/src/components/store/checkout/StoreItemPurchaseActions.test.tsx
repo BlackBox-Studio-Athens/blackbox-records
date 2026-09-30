@@ -77,7 +77,7 @@ describe('StoreItemPurchaseActions', () => {
 
     expect(html).toContain(STORE_ITEM_PURCHASE_ACTION_COPY.addToCart);
     expect(html).toContain('data-store-item-add-to-cart="true"');
-    expect(html).toContain('h-[54px]');
+    expect(html).toContain('min-h-11');
     expect(html).toContain('sm:w-56');
     expect(html).toContain('w-full');
     expect(html).not.toContain('Buy Now');
@@ -109,7 +109,7 @@ describe('StoreItemPurchaseActions', () => {
 
     expect(html).toContain(STORE_ITEM_PURCHASE_ACTION_COPY.unavailable);
     expect(html).toContain('disabled=""');
-    expect(html).toContain('h-[54px]');
+    expect(html).toContain('min-h-11');
     expect(html).toContain('sm:w-56');
     expect(html).toContain('data-store-item-purchase-tone="neutral"');
     expect(html).not.toContain('aria-busy="true"');

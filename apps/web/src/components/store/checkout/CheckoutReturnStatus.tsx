@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { CheckCircle2, PackageCheck, ReceiptText, Truck, type LucideIcon } from 'lucide-react';
 
 import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/components/store/checkout/public-checkout-api';
+import { Button } from '@/components/ui/button';
 import { LoadingStateBlock } from '@/components/ui/loading-feedback';
 import { createEmptyStoreCartState, writeStoreCartState } from '@/components/store/cart/store-cart';
 import {
@@ -182,12 +183,9 @@ export function CheckoutSuccessScreen({ storePath, view }: { storePath: string; 
           </div>
 
           <div className="mt-10 border-t border-border/60 pt-5">
-            <a
-              className="inline-flex min-h-11 w-full items-center justify-center bg-foreground px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-background transition-colors hover:bg-foreground/88 sm:w-auto sm:min-w-64"
-              href={storePath}
-            >
-              {CHECKOUT_RETURN_ACTION_COPY.continueShopping}
-            </a>
+            <Button asChild className="w-full sm:w-auto sm:min-w-64">
+              <a href={storePath}>{CHECKOUT_RETURN_ACTION_COPY.continueShopping}</a>
+            </Button>
           </div>
         </div>
 
@@ -270,51 +268,31 @@ export function CheckoutReturnStatusScreen({
         {view.shippingLocker.kind === 'selected' && <CheckoutShippingLockerRecap view={view} />}
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <a
-            className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            href={storePath}
-          >
-            {CHECKOUT_RETURN_ACTION_COPY.continueShopping}
-          </a>
+          <Button asChild variant="outline">
+            <a href={storePath}>{CHECKOUT_RETURN_ACTION_COPY.continueShopping}</a>
+          </Button>
           {view.supportOnly ? (
             <>
-              <button
-                type="button"
-                className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-sm"
-                onClick={onRefresh}
-              >
+              <Button type="button" variant="link" onClick={onRefresh}>
                 Refresh status
-              </button>
-              <a
-                className="inline-flex min-h-11 items-center justify-center bg-foreground px-4 text-sm text-background"
-                href="mailto:support@blackboxrecordsathens.com"
-              >
-                Contact the label
-              </a>
+              </Button>
+              <Button asChild variant="link">
+                <a href="mailto:support@blackboxrecordsathens.com">Contact the label</a>
+              </Button>
             </>
           ) : (
             <>
-              <a
-                className="inline-flex min-h-11 items-center justify-center bg-foreground px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-background transition-colors hover:bg-foreground/88"
-                href={checkoutPath}
-              >
-                {CHECKOUT_RETURN_ACTION_COPY.retryCheckout}
-              </a>
+              <Button asChild>
+                <a href={checkoutPath}>{CHECKOUT_RETURN_ACTION_COPY.retryCheckout}</a>
+              </Button>
               {itemPath && (
-                <a
-                  className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                  href={itemPath}
-                >
-                  {CHECKOUT_RETURN_ACTION_COPY.backToItem}
-                </a>
+                <Button asChild variant="outline">
+                  <a href={itemPath}>{CHECKOUT_RETURN_ACTION_COPY.backToItem}</a>
+                </Button>
               )}
-              <button
-                type="button"
-                className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                onClick={() => requestStoreCartOpen()}
-              >
+              <Button type="button" variant="outline" onClick={() => requestStoreCartOpen()}>
                 {CHECKOUT_RETURN_ACTION_COPY.backToCart}
-              </button>
+              </Button>
             </>
           )}
         </div>

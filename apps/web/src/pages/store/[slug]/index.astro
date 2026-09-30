@@ -5,6 +5,7 @@ import { formatDayMonthYear } from '@/utils/content';
 import Prose from '@/components/Prose.astro';
 import { getImage, Image } from 'astro:assets';
 import StoreImageGallery from '@/components/store/StoreImageGallery';
+import { buttonVariants } from '@/components/ui/button';
 import { getEntry } from '@/lib/content-reader';
 
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
@@ -95,11 +96,11 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
   pageTitle={`${storeItem.title} | Store`}
   pageDescription={storeItem.summary || `${storeItem.title} available through the BlackBox native storefront.`}
 >
-  <section class="layout-container pt-6 pb-6">
+  <section class="layout-container pt-6 pb-6" data-tone="store">
     <a
       href={createProjectRelativeUrl('/store/')}
       data-astro-prefetch
-      class="mb-5 inline-flex min-h-11 items-center text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+      class={buttonVariants({ variant: 'link', className: 'mb-5' })}
     >
       Back to Store
     </a>

@@ -1,5 +1,6 @@
 import * as React from 'react';
 
+import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { acquireLenisModalLock } from '@/platform/lib/lenis-scroll';
 import {
@@ -79,6 +80,7 @@ export default function StoreCartDrawer({
       <SheetContent
         ref={modalRootRef}
         side="right"
+        data-tone="store"
         className="top-[var(--header-height)] bottom-auto flex h-[calc(100dvh-var(--header-height))] w-[min(100vw,460px)] max-w-none flex-col border-l border-border/80 bg-background/98 p-0 text-foreground sm:max-w-none"
       >
         <StoreCartDrawerPanel
@@ -125,13 +127,9 @@ export function StoreCartDrawerPanel({
             <p className="font-display text-4xl uppercase tracking-[0.1em]">{STORE_CART_DRAWER_COPY.emptyTitle}</p>
             <p className="max-w-sm text-sm leading-6 text-muted-foreground">{STORE_CART_DRAWER_COPY.emptyDetail}</p>
           </div>
-          <button
-            type="button"
-            className="inline-flex min-h-11 items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-            onClick={onContinueShopping}
-          >
+          <Button type="button" variant="outline" onClick={onContinueShopping}>
             {STORE_CART_DRAWER_COPY.continueShopping}
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="flex flex-1 flex-col">
@@ -170,36 +168,31 @@ export function StoreCartDrawerPanel({
                           </p>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
-                        onClick={() => onRemoveItem(line.variantId)}
-                      >
+                      <Button type="button" variant="link" onClick={() => onRemoveItem(line.variantId)}>
                         {STORE_CART_DRAWER_COPY.remove}
-                      </button>
+                      </Button>
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <p className="inline-flex border border-border/70 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                         {line.availabilityLabel}
                       </p>
-                      <div
-                        className="inline-flex h-9 items-stretch border border-border/70"
-                        aria-label={`Quantity for ${line.title}`}
-                      >
-                        <button
+                      <div className="inline-flex items-center" aria-label={`Quantity for ${line.title}`}>
+                        <Button
                           type="button"
-                          className="w-9 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          variant="outline"
+                          size="icon"
                           onClick={() => onDecrementItem(line.variantId)}
                           aria-label={`Decrease quantity for ${line.title}`}
                         >
                           -
-                        </button>
-                        <span className="inline-flex min-w-9 items-center justify-center border-x border-border/70 px-2 text-xs font-semibold tabular-nums">
+                        </Button>
+                        <span className="inline-flex min-w-9 items-center justify-center px-2 text-xs font-semibold tabular-nums">
                           {line.quantity}
                         </span>
-                        <button
+                        <Button
                           type="button"
-                          className="w-9 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
+                          variant="outline"
+                          size="icon"
                           onClick={() => onIncrementItem(line.variantId)}
                           aria-label={`Increase quantity for ${line.title}`}
                           disabled={line.priceKind === 'pay_what_you_want'}
@@ -208,7 +201,7 @@ export function StoreCartDrawerPanel({
                           }
                         >
                           +
-                        </button>
+                        </Button>
                       </div>
                     </div>
                     {line.priceKind === 'pay_what_you_want' && (
@@ -227,19 +220,12 @@ export function StoreCartDrawerPanel({
 
           <div className="space-y-4 border-t border-border/70 px-6 py-6">
             {deliverySummary}
-            <a
-              className="inline-flex min-h-11 w-full items-center justify-center bg-foreground px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-background transition-colors hover:bg-foreground/88"
-              href={view.checkoutHref || undefined}
-            >
-              {STORE_CART_DRAWER_COPY.checkout}
-            </a>
-            <button
-              type="button"
-              className="inline-flex min-h-11 w-full items-center justify-center border border-border/80 px-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-              onClick={onContinueShopping}
-            >
+            <Button asChild size="lg" className="w-full">
+              <a href={view.checkoutHref || undefined}>{STORE_CART_DRAWER_COPY.checkout}</a>
+            </Button>
+            <Button type="button" variant="outline" className="w-full" onClick={onContinueShopping}>
               {STORE_CART_DRAWER_COPY.continueShopping}
-            </button>
+            </Button>
           </div>
         </div>
       )}
