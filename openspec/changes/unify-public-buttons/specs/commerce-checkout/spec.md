@@ -19,6 +19,12 @@ The system SHALL treat `StoreCart` as browser convenience state only. Cart feedb
 - **THEN** the cart drawer opens as before
 - **AND** the same control reads Added for four seconds, keeps its width, announces the addition politely to assistive technology and then returns to Add to cart.
 
+#### Scenario: Item is added before the cart is ready
+
+- **WHEN** the shopper activates Add to cart before the shell's cart has finished loading
+- **THEN** the request is kept and applied as soon as the cart is ready, opening the drawer
+- **AND** the control reads Added only once the cart confirms the item arrived.
+
 #### Scenario: Line is removed
 
 - **WHEN** the shopper removes a cart line, or lowers its quantity below one
