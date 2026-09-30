@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
@@ -17,6 +17,27 @@ const staticPromotion = workflow.jobs['deploy-prd-static'];
 const publication = parse(
   readFileSync(fileURLToPath(new URL('../.github/workflows/content-publication.yml', import.meta.url)), 'utf8'),
 );
+
+describe('Workflow toolchain and checkout policy', () => {
+  it('reads toolchain versions from repository files and never persists the checkout token', () => {
+    const workflowsDir = fileURLToPath(new URL('../.github/workflows/', import.meta.url));
+    const steps = readdirSync(workflowsDir)
+      .filter((file) => file.endsWith('.yml'))
+      .flatMap((file) =>
+        Object.values(parse(readFileSync(workflowsDir + file, 'utf8')).jobs).flatMap(
+          (job) => (job as { steps?: { uses?: string; with?: Record<string, unknown> }[] }).steps ?? [],
+        ),
+      );
+    const using = (action: string) => steps.filter((step) => step.uses?.startsWith(`${action}@`));
+    expect(using('actions/checkout').length).toBeGreaterThan(0);
+    for (const step of using('actions/checkout')) expect(step.with?.['persist-credentials']).toBe(false);
+    for (const step of using('pnpm/action-setup')) expect(step.with?.version).toBeUndefined();
+    for (const step of using('actions/setup-node')) {
+      expect(step.with?.['node-version']).toBeUndefined();
+      expect(step.with?.['node-version-file']).toBe('.node-version');
+    }
+  });
+});
 
 describe('Content publication workflow', () => {
   it('registers a run before installation and validation and reports failure without weakening acceptance', () => {
@@ -97,7 +118,7 @@ describe('Pages artifact promotion contract', () => {
     );
     for (const jobName of ['deploy-uat', 'deploy-uat-static', 'smoke-uat']) {
       const steps = uatSequence.jobs[jobName].steps;
-      const checkouts = steps.filter((step: { uses?: string }) => step.uses === 'actions/checkout@v7.0.1');
+      const checkouts = steps.filter((step: { uses?: string }) => step.uses?.startsWith('actions/checkout@'));
       expect(checkouts[0].with.ref).toBe('${{ inputs.artifact_commit_sha || github.sha }}');
       expect(checkouts[1].if).toBe('${{ inputs.artifact_commit_sha && inputs.artifact_commit_sha != github.sha }}');
       expect(
@@ -305,7 +326,9 @@ describe('Pages artifact promotion contract', () => {
     expect(steps.some((step: { name?: string }) => step.name === 'Setup pnpm')).toBe(false);
     expect(steps.some((step: { name?: string }) => step.name === 'Install dependencies')).toBe(false);
     expect(steps.some((step: { uses?: string }) => step.uses?.startsWith('actions/cache/'))).toBe(false);
-    expect(steps.find((step: { name?: string }) => step.name === 'Setup Node.js').with['node-version']).toBe('24.21.0');
+    expect(steps.find((step: { name?: string }) => step.name === 'Setup Node.js').with['node-version-file']).toBe(
+      '.node-version',
+    );
     expect(steps.at(-1).run).toContain('node "$tool" verify uat');
     expect(steps.at(-1).run).toContain('tool=scripts/release-candidate.mjs');
     expect(steps.find((step: { name: string }) => step.name === 'Checkout trusted release tooling').if).toContain(

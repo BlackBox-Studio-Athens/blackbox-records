@@ -243,6 +243,13 @@ The system SHALL keep smoke runners on the shared `.codex-artifacts/smoke/<envir
 - **AND** static smoke and provider smoke remain separate suite boundaries
 - **AND** focused unit tests cover the shared harness and runner contracts.
 
+#### Scenario: Hosted smoke reports its result
+
+- **WHEN** a smoke suite finishes inside GitHub Actions, including after a preflight blocker
+- **THEN** the job summary shows the suite, overall status, each scenario's result and the evidence directory
+- **AND** the summary contains only redacted text already written to smoke evidence
+- **AND** outside GitHub Actions the runner writes no job summary.
+
 ### Requirement: Post-merge UAT provider smoke workflow
 
 The system SHALL validate the deployed Cloudflare Pages UAT site with the canonical Stripe test-mode paid scenarios and newsletter Contact smoke inside the canonical release workflow after its UAT deployment succeeds, without requiring operator presence or Resend receipt credentials.
@@ -1116,7 +1123,7 @@ The validation workflow SHALL use Browser Use as the authority for rendered perf
 - **WHEN** catalog rendering, Store hydration, font/image delivery, shell code splitting, or animation lifetime changes
 - **THEN** Browser Use checks representative mobile and desktop routes, first and repeat traversal, focus and keyboard behavior, shell navigation, console cleanliness, and visible layout stability
 - **AND** font fallback/cached states plus About, Services, and Artists first-viewport media are visually checked when those assets change
-- **AND** player, overlay, mobile navigation, and cart continuity are checked when app-shell imports change.
+- **AND** `pnpm test:e2e` passes, including the mobile project, when app-shell imports change.
 
 #### Scenario: First traversal is accepted
 
@@ -1131,6 +1138,33 @@ The validation workflow SHALL use Browser Use as the authority for rendered perf
 - **THEN** validation records that specific capability limitation or classified tool failure
 - **AND** Chrome performance tracing may supply only the unavailable trace evidence
 - **AND** Browser Use still supplies rendered behavior acceptance.
+
+### Requirement: Local end-to-end harness is deterministic and opt-in
+
+The repository SHALL provide `pnpm test:e2e`, which runs Playwright specs against the canonical Local site URL and is the required check for shell navigation, overlay, player, mobile-navigation and cart continuity. It SHALL reuse a site already serving that URL or run the foreground static-site launcher for the run. It SHALL NOT start the Local stack, run inside `pnpm validate`, or depend on external network or Worker responses.
+
+#### Scenario: A site already serves the canonical port
+
+- **GIVEN** background Astro or the full Local stack serves `http://127.0.0.1:4321/blackbox-records/`
+- **WHEN** an agent runs `pnpm test:e2e`
+- **THEN** the harness reuses that server and leaves it running afterwards.
+
+#### Scenario: Nothing serves the canonical port
+
+- **WHEN** an agent runs `pnpm test:e2e` with port 4321 free
+- **THEN** the harness starts `pnpm site:dev` for the run
+- **AND** the port is free again after the run.
+
+#### Scenario: An agent verifies the feature under work
+
+- **WHEN** an agent runs `pnpm test:e2e` with a spec path or title filter
+- **THEN** only the selected specs run.
+
+#### Scenario: A page logs an error
+
+- **WHEN** a page under test logs a console error or throws an uncaught error
+- **THEN** that test fails and names the message
+- **AND** a trace, screenshot and error context are retained under `.codex-artifacts/e2e/test-results/`.
 
 ### Requirement: Store performance validation is bounded and authority-safe
 

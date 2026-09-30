@@ -16,8 +16,8 @@ interface Props extends Omit<HTMLAttributes<'figure'>, 'role' | 'loading' | 'sty
   image: ImageMetadata;
   alt: string;
   name: string;
-  /** Roster number shown in the caption; omitted where no roster applies. */
-  number?: string;
+  /** Links the photo to the artist; a pointer shortcut, so it stays out of the tab order. */
+  href?: string;
   role?: ArtistPrintRole;
   tiltIndex?: number;
   loading?: 'eager' | 'lazy';
@@ -33,7 +33,7 @@ const {
   image,
   alt,
   name,
-  number,
+  href,
   role = 'preview',
   tiltIndex = 0,
   loading = 'lazy',
@@ -49,7 +49,7 @@ const isThumb = role === 'thumb';
 const Tag = isThumb ? 'span' : 'figure';
 const slot = getArtistPrintSlotSize(image, maxSize ?? artistPrintMaxima[role]);
 const tilt = getArtistPrintTilt(role, tiltIndex);
-const caption = [number, name.toUpperCase()].filter(Boolean).join(' · ');
+const Window = href ? 'a' : 'span';
 ---
 
 <Tag
@@ -57,7 +57,7 @@ const caption = [number, name.toUpperCase()].filter(Boolean).join(' · ');
   style={`--print-tilt: ${tilt}deg${style ? `; ${style}` : ''}`}
   {...rest}
 >
-  <span class="artist-print__window">
+  <Window class="artist-print__window" href={href} tabindex={href ? '-1' : undefined}>
     <Image
       src={image}
       alt={isThumb ? '' : alt}
@@ -72,10 +72,10 @@ const caption = [number, name.toUpperCase()].filter(Boolean).join(' · ');
       quality={68}
       data-artist-roster-print={role === 'detail' ? undefined : role}
     />
-  </span>
+  </Window>
   {!isThumb && (
     <figcaption class="artist-print__caption">
-      <span>{caption}</span>
+      <span>{name.toUpperCase()}</span>
       <span>BlackBox</span>
     </figcaption>
   )}

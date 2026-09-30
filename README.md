@@ -181,6 +181,8 @@ pnpm site:dev:stop
 
 `pnpm site:dev` remains the foreground static-site launcher for WebStorm and local stack process supervision.
 
+Browser end-to-end checks are opt-in and not part of `pnpm validate`. `pnpm test:e2e` runs the Playwright specs in `e2e/` against the Local URL, reusing whatever serves port 4321 or starting `pnpm site:dev` for the run. Narrow a run with `pnpm test:e2e e2e/<name>.spec.ts` or `-g <text>`. The specs stub Worker reads and third-party requests, so they need neither the stack nor external network. Results, including a trace and `error-context.md` per failure, are in `.codex-artifacts/e2e/`. When the runner started Astro itself, the final `[WebServer] ... exit code 1` line only reports that server stopping.
+
 Run the default full local commerce stack:
 
 ```sh
@@ -254,13 +256,13 @@ pnpm email:previews
 
 This writes ignored HTML files under `.codex-artifacts/email-previews/` for Browser Use or the documented DevTools fallback. The previews use repo-owned template builders and do not create provider state.
 
-Run the UAT static smoke when you need to verify deployed Cloudflare Pages static routes, retired admin-route 404 responses, representative public pages, checkout shell visibility, sitemap, robots, console errors, and high-risk public-secret exposure:
+Run the UAT static smoke when you need to verify deployed Cloudflare Pages static routes, representative published pages, checkout shell visibility, sitemap, robots, console errors, and high-risk public-secret exposure:
 
 ```sh
 pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all
 ```
 
-The UAT static smoke runner is manual by design and writes ignored evidence to `.codex-artifacts/smoke/uat/uat-static/<run-id>/`. The supported scenarios are `public_assets`, `checkout_shell`, `public_routes`, and `all`. It never creates provider state.
+The release workflow runs it after each UAT Pages deployment; the manual **UAT static smoke** workflow takes a site URL, scenario, and screenshot policy. It discovers one artist, release, and news page from the deployed sitemap and one Store Item from the Store listing, and checks code-owned headings and UI copy, so publishing content needs no smoke change. Evidence goes to ignored `.codex-artifacts/smoke/uat/uat-static/<run-id>/`. The supported scenarios are `public_assets`, `checkout_shell`, `public_routes`, and `all`. It never creates provider state.
 
 The PRD no-payment promotion smoke runner writes ignored evidence to `.codex-artifacts/smoke/prd/stripe-promotion/<run-id>/`. The `not_configured` paid-policy status means live payment was not attempted, not that PRD commerce is open.
 

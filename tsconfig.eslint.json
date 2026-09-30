@@ -8,6 +8,8 @@
   "include": [
     "*.config.js",
     "*.config.mjs",
+    "*.config.ts",
+    "e2e/**/*.ts",
     "scripts/**/*.ts",
     "apps/**/*.ts",
     "apps/**/*.tsx",

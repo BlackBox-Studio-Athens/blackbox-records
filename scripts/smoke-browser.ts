@@ -2,7 +2,11 @@ import type { ConsoleMessage, Page } from 'playwright';
 
 import { redactSensitiveSmokeText, truncateForConsole } from './smoke-core';
 
-const ignoredConsoleIssuePatterns: readonly RegExp[] = [/Response was blocked by CORB \(Cross-Origin Read Blocking\)/i];
+const ignoredConsoleIssuePatterns: readonly RegExp[] = [
+  /Response was blocked by CORB \(Cross-Origin Read Blocking\)/i,
+  // Intermittent from embedded YouTube players; the site itself never requests Compute Pressure.
+  /Permissions policy violation: compute-pressure is not allowed in this document/i,
+];
 
 export type SmokePageDiagnostics = {
   consoleErrors: string[];

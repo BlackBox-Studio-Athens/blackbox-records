@@ -39,17 +39,16 @@ jobs:
         name: Checkout
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ inputs.artifact_commit_sha || github.sha }}
       - &pnpm
         name: Setup pnpm
         uses: pnpm/action-setup@v6.1.0
-        with:
-          version: 12.6.0
       - &node
         name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24.21.0
+          node-version-file: .node-version
           cache: pnpm
       - &install
         name: Install dependencies
@@ -59,6 +58,7 @@ jobs:
         if: ${{ inputs.artifact_commit_sha && inputs.artifact_commit_sha != github.sha }}
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.sha }}
           path: .codex-artifacts/release-tools
           sparse-checkout: |
@@ -105,6 +105,10 @@ jobs:
             cat "$report"
             exit "$status"
           fi
+      - name: Prepare UAT CMS catalog fields
+        run: |
+          node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" verify-backend uat
+          pnpm --filter @blackbox/backend cms:catalog-schema --env uat
       - name: Deploy UAT Worker
         run: |
           node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" verify-backend uat

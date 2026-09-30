@@ -4,6 +4,7 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
 import {
+  appendSmokeStepSummary,
   createRunId,
   createSmokeEvidencePath,
   createSmokeSummaryPath,
@@ -139,9 +140,7 @@ export async function runResendUatSmoke(options: ResendUatSmokeOptions): Promise
     await checkNewsletterRegistration(options, createResendUatSmokeEmail(runId)),
     await checkServicesInquirySubmission(options, createResendUatSmokeServicesInquiry(runId)),
   ];
-  const status = checks.some((check) => check.issues.length || check.status === null || check.status >= 400)
-    ? 'failed'
-    : 'passed';
+  const status = checks.some(hasResendUatSmokeCheckFailed) ? 'failed' : 'passed';
   const evidence = buildResendUatSmokeEvidence({
     checks,
     runId,
@@ -153,6 +152,10 @@ export async function runResendUatSmoke(options: ResendUatSmokeOptions): Promise
   writeJsonFile(createSmokeSummaryPath(runArtifactDir), buildResendUatSmokeSummary(evidence));
 
   return evidence;
+}
+
+function hasResendUatSmokeCheckFailed(check: ResendUatSmokeCheck): boolean {
+  return check.issues.length > 0 || check.status === null || check.status >= 400;
 }
 
 export function buildResendUatSmokeEvidence(input: {
@@ -353,8 +356,19 @@ function isSubmittedServicesInquiryResponse(bodyText: string): boolean {
 }
 
 async function main(): Promise<void> {
-  const evidence = await runResendUatSmoke(parseResendUatSmokeArgs(process.argv.slice(2)));
+  const options = parseResendUatSmokeArgs(process.argv.slice(2));
+  const evidence = await runResendUatSmoke(options);
 
+  appendSmokeStepSummary({
+    evidenceDir: path.join(options.evidenceDir, evidence.runId),
+    scenarios: evidence.checks.map((check) => ({
+      issues: check.issues,
+      name: check.kind,
+      status: hasResendUatSmokeCheckFailed(check) ? 'failed' : 'passed',
+    })),
+    status: evidence.status,
+    suite: evidence.suite,
+  });
   console.log(evidence.summary);
   console.log(JSON.stringify(evidence, null, 2));
 

@@ -97,9 +97,19 @@ export function isCmsCollection(value: string): value is CmsCollection {
   return Object.hasOwn(cmsContentSchemas, value);
 }
 
+// EmDash stores booleans as INTEGER and returns 0/1; its own field schema accepts both forms.
+function nativeBooleans(collection: CmsCollection, data: Record<string, unknown>): Record<string, unknown> {
+  if (collection !== 'navigation') return data;
+  const result = { ...data };
+  for (const key of ['show_in_header', 'show_in_footer'])
+    if (result[key] === 0 || result[key] === 1) result[key] = result[key] === 1;
+  return result;
+}
+
 // EmDash stores absent optional columns as null. Validate that representation as
 // absent, while still rejecting unknown keys and null required fields.
-export function getCmsContentIssues(collection: CmsCollection, data: Record<string, unknown>): CmsContentIssue[] {
+export function getCmsContentIssues(collection: CmsCollection, stored: Record<string, unknown>): CmsContentIssue[] {
+  const data = nativeBooleans(collection, stored);
   const schema = cmsContentSchemas[collection];
   const known =
     collection === 'purchase_information' ? ['publication', 'content'] : Object.keys((schema as z.ZodObject).shape);
@@ -179,7 +189,7 @@ const cmsDraftSchemas = Object.fromEntries(
 
 export function validateCmsDraft(collection: CmsCollection, data: Record<string, unknown>): string[] {
   if (JSON.stringify(data).length > 256 * 1024) return ['Draft is too large.'];
-  const result = cmsDraftSchemas[collection]!.safeParse(data);
+  const result = cmsDraftSchemas[collection]!.safeParse(nativeBooleans(collection, data));
   if (!result.success) return result.error.issues.map((issue) => `${issue.path.join('./')}: ${issue.message}`);
   if (collection === 'artists' && Array.isArray(data.profile_links))
     return data.profile_links.flatMap((link, index) =>

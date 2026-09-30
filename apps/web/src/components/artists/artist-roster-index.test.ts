@@ -25,8 +25,8 @@ describe('artist roster letter index', () => {
     expect(names).toHaveLength(13);
     expect(grouped).toBe(true);
     expect(entries.filter((entry) => entry.groupStart).map((entry) => entry.letter)).toEqual('ABCDEFGHIJKL'.split(''));
-    expect(entries[0]).toMatchObject({ number: '01', groupStart: true, anchorId: 'artist-roster-letter-a' });
-    expect(entries[1]).toMatchObject({ number: '02', groupStart: false, anchorId: null });
+    expect(entries[0]).toMatchObject({ groupStart: true, anchorId: 'artist-roster-letter-a' });
+    expect(entries[1]).toMatchObject({ groupStart: false, anchorId: null });
     expect(jumpLetters).toHaveLength(26);
     expect(jumpLetters.find((item) => item.letter === 'A')).toEqual({
       letter: 'A',

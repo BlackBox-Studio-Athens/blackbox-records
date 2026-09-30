@@ -52,6 +52,17 @@ describe('Artists roster layout', () => {
     expect(index).toMatch(/<summary\b/);
   });
 
+  it('links pile and disclosure print photos to the artist outside the tab order, without numbers or Listen', () => {
+    const index = read(rosterIndexPath);
+    const print = read('../components/artists/ArtistPrint.astro');
+
+    expect(index.match(/href=\{row\.href\}\s+tiltIndex/g)).toHaveLength(2);
+    expect(print).toContain("const Window = href ? 'a' : 'span';");
+    expect(print).toMatch(/tabindex=\{href \? '-1' : undefined\}/);
+    expect(index).not.toMatch(/row\.number|MusicStreamingServiceListenTrigger/);
+    expect(print).toContain('<span>{name.toUpperCase()}</span>');
+  });
+
   it('server-renders the first artist as the default preview and leaves a mount for the island', () => {
     const index = read(rosterIndexPath);
 
@@ -83,7 +94,7 @@ describe('Artists roster layout', () => {
     const css = read(globalCssPath);
     const print = read('../components/artists/ArtistPrint.astro');
 
-    expect(print).toMatch(/<span class="artist-print__window">\s*<Image/);
+    expect(print).toMatch(/<Window class="artist-print__window"[^>]*>\s*<Image/);
     expect(css).toMatch(/\.artist-print__window\s*{[^}]*overflow:\s*hidden/);
     expect(css).toMatch(/\.home-featured-roster-card:hover \.artist-print__image\s*{\s*transform:\s*scale\(1\.03\)/);
     expect(css).toMatch(

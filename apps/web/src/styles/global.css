@@ -1431,24 +1431,6 @@ body {
     display: none;
   }
 
-  .artist-roster-index__number {
-    align-self: start;
-    padding-top: 4px;
-    color: #8f8f8f;
-    font-family: var(--font-display);
-    font-size: 22px;
-    letter-spacing: 0.06em;
-  }
-
-  [data-roster-grouped] .artist-roster-index__number {
-    visibility: hidden;
-  }
-
-  [data-roster-sort='latest'] [data-roster-grouped] .artist-roster-index__number,
-  [data-roster-grouped][data-roster-sort='latest'] .artist-roster-index__number {
-    visibility: visible;
-  }
-
   .artist-roster-index__main {
     display: flex;
     min-width: 0;
@@ -1627,8 +1609,7 @@ body {
     gap: 8px;
   }
 
-  .artist-roster-index__action,
-  .artist-roster-index__actions > [data-music-listen-trigger-variant] {
+  .artist-roster-index__action {
     display: inline-flex;
     flex: 1 1 0;
     align-items: center;
@@ -1718,20 +1699,11 @@ body {
   }
 
   .artist-roster-preview__topline {
-    display: flex;
-    justify-content: space-between;
-    gap: 16px;
+    margin: 0;
     color: #b3b3b3;
     font-size: 11px;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-  }
-
-  .artist-roster-preview__count {
-    color: #8f8f8f;
-    font-family: var(--font-display);
-    font-size: 18px;
-    letter-spacing: 0.08em;
   }
 
   .artist-roster-preview__name {
@@ -1785,13 +1757,23 @@ body {
 
     .artist-roster-index__row {
       display: grid;
-      grid-template-columns: 56px minmax(0, 1fr) 44px;
+      grid-template-columns: minmax(0, 1fr) 44px;
       column-gap: 16px;
       align-items: center;
       padding: 22px 0;
       border-top: 1px solid #222222;
       color: #f5f5f5;
       text-decoration: none;
+    }
+
+    /* Grouped rows leave room for the letter marker; latest-first sort hides the markers. */
+    [data-roster-grouped] .artist-roster-index__row {
+      padding-inline-start: 72px;
+    }
+
+    [data-roster-sort='latest'] [data-roster-grouped] .artist-roster-index__row,
+    [data-roster-grouped][data-roster-sort='latest'] .artist-roster-index__row {
+      padding-inline-start: 0;
     }
 
     .artist-roster-index__disclosure {

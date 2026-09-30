@@ -17,16 +17,6 @@ on:
           - public_assets
           - checkout_shell
           - public_routes
-      timeout_ms:
-        description: Per-route timeout in milliseconds.
-        required: true
-        default: '60000'
-        type: string
-      evidence_dir:
-        description: Root directory for smoke artifacts.
-        required: true
-        default: .codex-artifacts/smoke/uat/uat-static
-        type: string
       screenshots:
         description: Screenshot policy.
         required: true
@@ -36,65 +26,47 @@ on:
           - on-failure
           - always
           - never
-      headed:
-        description: Run Chromium headed.
-        required: true
-        default: false
-        type: boolean
 permissions:
   contents: read
 concurrency:
-  group: uat-static-smoke-${{ github.event.workflow_run.head_branch || github.ref }}
+  group: uat-static-smoke-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      UAT_STATIC_EVIDENCE_DIR: ${{ inputs.evidence_dir || '.codex-artifacts/smoke/uat/uat-static' }}
-      UAT_STATIC_SCREENSHOTS: ${{ inputs.screenshots || 'on-failure' }}
-      UAT_STATIC_SITE_URL: ${{ inputs.site_url || 'https://blackbox-records-web-uat.pages.dev' }}
-      UAT_STATIC_SMOKE_SCENARIO: ${{ inputs.scenario || 'all' }}
-      UAT_STATIC_TIMEOUT_MS: ${{ inputs.timeout_ms || '60000' }}
+      UAT_STATIC_SCREENSHOTS: ${{ inputs.screenshots }}
+      UAT_STATIC_SITE_URL: ${{ inputs.site_url }}
+      UAT_STATIC_SMOKE_SCENARIO: ${{ inputs.scenario }}
     steps:
       - name: Checkout deployed commit
         uses: actions/checkout@v7.0.1
         with:
+          persist-credentials: false
           ref: ${{ github.sha }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.1.0
-        with:
-          version: 12.6.0
       - name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
-          node-version: 24.21.0
+          node-version-file: .node-version
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
       - name: Run UAT static smoke
-        run: |
-          args=(
-            --site-url "${UAT_STATIC_SITE_URL}"
-            --scenario "${UAT_STATIC_SMOKE_SCENARIO}"
-            --timeout-ms "${UAT_STATIC_TIMEOUT_MS}"
-            --evidence-dir "${UAT_STATIC_EVIDENCE_DIR}"
-            --screenshots "${UAT_STATIC_SCREENSHOTS}"
-          )
-
-          if [ "${{ inputs.headed || false }}" = "true" ]; then
-            args+=(--headed)
-          fi
-
-          pnpm smoke:uat-static -- "${args[@]}"
+        run: >-
+          pnpm smoke:uat-static --
+          --site-url "${UAT_STATIC_SITE_URL}"
+          --scenario "${UAT_STATIC_SMOKE_SCENARIO}"
+          --screenshots "${UAT_STATIC_SCREENSHOTS}"
       - name: Upload UAT static smoke evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v7.0.1
         with:
           name: uat-static-smoke-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            .codex-artifacts/smoke/uat/uat-static/**
-            ${{ inputs.evidence_dir || '.codex-artifacts/smoke/uat/uat-static' }}/**
+          path: .codex-artifacts/smoke/uat/uat-static/**
           if-no-files-found: warn
+          retention-days: 7

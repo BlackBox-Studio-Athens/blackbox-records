@@ -1,7 +1,44 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 export type SmokeScreenshotMode = 'always' | 'never' | 'on-failure';
+
+/** One published detail page per section: discovered on hosted sites, fixed for the Local e2e specs. */
+export type RepresentativePaths = {
+  artist: string;
+  news: string;
+  release: string;
+  storeItem: string;
+};
+
+/** Public routes and the code-owned copy each must render; published titles and labels change without a release. */
+export function publicSmokeRoutes(paths: RepresentativePaths): ReadonlyArray<readonly [string, readonly string[]]> {
+  return [
+    ['/', ['BlackBox Records']],
+    ['/releases/', ['Releases']],
+    [paths.release, []],
+    ['/artists/', ['Artists']],
+    [paths.artist, []],
+    ['/news/', ['News']],
+    [paths.news, []],
+    ['/store/', ['Store']],
+    ['/store/blackbox-releases/', ['BlackBox Releases']],
+    ['/store/distro/', ['Distro', 'Browse Distro formats']],
+    [paths.storeItem, ['Back to Store']],
+    ['/services/', ['Services']],
+    ['/about/', []],
+  ];
+}
+
+export type SmokeStepSummary = {
+  blocker?: string;
+  evidenceDir: string;
+  scenarios: readonly { issues?: readonly string[]; name: string; status: 'failed' | 'no evidence' | 'passed' }[];
+  status: 'failed' | 'passed';
+  suite: string;
+};
+
+const maxStepSummaryIssuesPerScenario = 3;
 
 const smokeSecretNamePatterns: ReadonlyArray<[RegExp, string]> = [
   [/\bSTRIPE_SECRET_KEY\b/g, 'runtime secret name STRIPE_SECRET_KEY'],
@@ -23,6 +60,35 @@ const smokeSecretValuePatterns: ReadonlyArray<[RegExp, string]> = [
   [/\b(?:cs|seti)_(?:test|live)_[A-Za-z0-9_]*?_secret_[A-Za-z0-9_]+\b/g, 'Stripe client secret value'],
   [/\b(?:cs|seti|pi|pm|price|prod|acct|cus|evt)_(?:test|live)?_?[A-Za-z0-9_]+\b/g, 'Stripe object identifier'],
 ];
+
+/** Appends a redacted Markdown result to the GitHub Actions job summary; does nothing outside Actions. */
+export function appendSmokeStepSummary(summary: SmokeStepSummary): void {
+  const summaryPath = process.env.GITHUB_STEP_SUMMARY;
+
+  if (!summaryPath) {
+    return;
+  }
+
+  const lines = [`### Smoke \`${summary.suite}\`: ${summary.status.toUpperCase()}`, ''];
+
+  if (summary.blocker) {
+    lines.push(`Blocker: ${truncateForConsole(summary.blocker)}`, '');
+  }
+
+  for (const scenario of summary.scenarios) {
+    lines.push(`- \`${scenario.name}\`: ${scenario.status}`);
+    for (const issue of (scenario.issues ?? []).slice(0, maxStepSummaryIssuesPerScenario)) {
+      lines.push(`  - ${truncateForConsole(issue)}`);
+    }
+    const hiddenIssueCount = (scenario.issues?.length ?? 0) - maxStepSummaryIssuesPerScenario;
+    if (hiddenIssueCount > 0) {
+      lines.push(`  - ${hiddenIssueCount} more issue(s) in evidence`);
+    }
+  }
+
+  lines.push('', `Evidence: \`${path.relative(process.cwd(), summary.evidenceDir) || summary.evidenceDir}\``);
+  appendFileSync(summaryPath, `${redactSensitiveSmokeText(lines.join('\n'))}\n\n`, 'utf8');
+}
 
 export function createRouteUrl(baseUrl: string, routePath = '/'): string {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl, 'siteUrl');
