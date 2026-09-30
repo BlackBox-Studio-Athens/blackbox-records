@@ -51,6 +51,8 @@ test('add to cart opens the drawer, persists the line and restores it on another
   await page.keyboard.press('Escape');
   await expect(reopened).toBeHidden();
   await expect(trigger).toBeFocused();
+  // Keyboard focus draws the family ring on the header control.
+  await expect(trigger).toHaveCSS('outline-style', 'solid');
   await expect(trigger).toHaveAccessibleName('Cart, 1 item');
 });
 
