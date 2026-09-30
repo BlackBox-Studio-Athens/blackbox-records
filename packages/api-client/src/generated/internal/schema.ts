@@ -564,7 +564,8 @@ export type components = {
         InternalStockChangeBody: {
             delta: number;
             notes?: string | null;
-            reason: string;
+            /** @enum {string} */
+            reason: "manual_adjustment" | "show_sale" | "delivery" | "gift";
         };
         InternalStockChangeEntry: {
             /** Format: email */

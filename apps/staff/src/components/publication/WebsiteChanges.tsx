@@ -343,6 +343,7 @@ export default function WebsiteChanges({ base }: { base: string }) {
               Find a change
               <Input
                 type="search"
+                maxLength={200}
                 value={query}
                 disabled={Boolean(discardBusyKey)}
                 onChange={(event) => browse(event.target.value, scope)}

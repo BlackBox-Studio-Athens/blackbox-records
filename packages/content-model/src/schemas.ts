@@ -1,15 +1,17 @@
 import { tracklistSchema } from './tracklist';
-import { artistCountriesSchema, validArtistLink } from './artist-fields';
+import { artistCountriesSchema, parseArtistCountries, validArtistLink } from './artist-fields';
 import { z } from 'zod';
 import { proseSchema, requiredProseSchema, richTextSchema } from './prose';
 import { buildBandcampEmbedUrl, buildTidalEmbedUrl } from './music';
 import {
+  ABOUT_STAT_KEYS,
   DISTRO_INTRO_FIELDS,
   isHttpsUrl,
   isInternalOrHttpsUrl,
-  isInternalSitePath,
   isPublicImagePath,
   isSocialProfileUrl,
+  SITE_PAGE_PATHS,
+  SOCIAL_PLATFORMS,
   youtubeVideoIdPatternSource,
   slugPatternSource,
 } from './validation';
@@ -17,9 +19,7 @@ import {
 const requiredAltText = z.string().trim().min(1, 'Describe the visible image for people who cannot see it.');
 const requiredText = z.string().trim().min(1, 'Enter a value.');
 const httpsUrl = z.string().refine(isHttpsUrl, { message: 'Use a full HTTPS URL.' });
-const internalSitePath = z
-  .string()
-  .refine(isInternalSitePath, { message: 'Use a safe internal path beginning with /.' });
+const sitePagePath = z.enum(SITE_PAGE_PATHS, { error: 'Choose a page from the list.' });
 const internalOrHttpsUrl = z.string().refine(isInternalOrHttpsUrl, {
   message: 'Use a safe internal path beginning with / or a full HTTPS URL.',
 });
@@ -140,14 +140,14 @@ export const distroPageContentSchema = z.object({
 
 export const navigationContentSchema = z.object({
   title: requiredText,
-  url: internalSitePath,
+  url: sitePagePath,
   order: z.number().int().nonnegative(),
   show_in_header: z.boolean(),
   show_in_footer: z.boolean(),
 });
 
 export const socialsContentSchema = z.object({
-  title: requiredText,
+  title: z.enum(SOCIAL_PLATFORMS, { error: 'Choose a platform from the list.' }),
   url: z.string().refine(isSocialProfileUrl, { message: 'Use a full HTTPS profile URL or # to hide the link.' }),
   order: z.number().int().nonnegative(),
 });
@@ -159,7 +159,9 @@ export const settingsContentSchema = z.object({
   logo: z.string().refine(isPublicImagePath, { message: 'Use an image path below /assets/.' }),
   location: z.object({
     locality: requiredText,
-    country: requiredText,
+    country: z.string().refine((value) => parseArtistCountries(value)?.length === 1, {
+      message: 'Choose one country from the list.',
+    }),
   }),
 });
 
@@ -185,12 +187,12 @@ export function createHomeContentSchema<TImage extends z.ZodType>(image: () => T
     news: z.object({
       title: requiredText,
       link_text: requiredText,
-      link_url: internalSitePath,
+      link_url: sitePagePath,
     }),
     artists: z.object({
       title: requiredText,
       button_text: requiredText,
-      button_link: internalSitePath,
+      button_link: sitePagePath,
     }),
   });
 }
@@ -220,14 +222,14 @@ export function createAboutContentSchema<TImage extends z.ZodType>(image: () => 
       items: z.array(
         z.object({
           label: requiredText,
-          value: requiredText,
+          value: z.email('Enter an email address.'),
         }),
       ),
     }),
     stats: z.object({
       items: z.array(
         z.object({
-          key: requiredText,
+          key: z.enum(ABOUT_STAT_KEYS, { error: 'Choose a fact from the list.' }),
           label: requiredText,
         }),
       ),
@@ -243,19 +245,31 @@ export function createServicesContentSchema<TImage extends z.ZodType>(image: () 
       cta_text: requiredText,
     }),
     services: z.object({
-      items: z.array(
-        z.object({
-          id: z.string().regex(new RegExp(slugPatternSource), 'Use lowercase kebab-case.'),
-          title: requiredText,
-          image: image(),
-          image_alt: requiredAltText,
-          summary: requiredProseSchema,
-          bullets: z.array(requiredProseSchema).min(2).max(12),
-          contact_note: requiredProseSchema,
-          partner_name: z.string().optional(),
-          partner_url: httpsUrl.optional(),
+      items: z
+        .array(
+          z.object({
+            id: z.string().regex(new RegExp(slugPatternSource), 'Use lowercase kebab-case.'),
+            title: requiredText,
+            image: image(),
+            image_alt: requiredAltText,
+            summary: requiredProseSchema,
+            bullets: z.array(requiredProseSchema).min(2).max(12),
+            contact_note: requiredProseSchema,
+            partner_name: z.string().optional(),
+            partner_url: httpsUrl.optional(),
+          }),
+        )
+        .superRefine((items, context) => {
+          // Service ids are page anchors, so each must be unique.
+          items.forEach(({ id }, index) => {
+            if (items.findIndex((item) => item.id === id) !== index)
+              context.addIssue({
+                code: 'custom',
+                path: [index, 'id'],
+                message: 'Use a link name no other service uses.',
+              });
+          });
         }),
-      ),
     }),
     process: z.object({
       title: requiredText,

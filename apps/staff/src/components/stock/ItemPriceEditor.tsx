@@ -10,6 +10,7 @@ import {
   clearPriceDraft,
   describePrice,
   euroMinor,
+  isEuroDraft,
   priceAmount,
   readPriceDraft,
   samePrice,
@@ -305,7 +306,7 @@ export default function ItemPriceEditor({
                 inputMode="decimal"
                 value={minimum}
                 aria-describedby="price-feedback"
-                onChange={(event) => edit({ minimum: event.target.value })}
+                onChange={(event) => isEuroDraft(event.target.value) && edit({ minimum: event.target.value })}
               />
             </label>
           )}
@@ -317,7 +318,7 @@ export default function ItemPriceEditor({
               aria-invalid={error || undefined}
               aria-describedby="price-feedback"
               className={draft ? 'border-[var(--warning)]' : undefined}
-              onChange={(event) => edit({ amount: event.target.value })}
+              onChange={(event) => isEuroDraft(event.target.value) && edit({ amount: event.target.value })}
               onBlur={() => {
                 if (timer.current) {
                   clearTimeout(timer.current);
@@ -334,7 +335,7 @@ export default function ItemPriceEditor({
                 inputMode="decimal"
                 value={maximum}
                 aria-describedby="price-feedback"
-                onChange={(event) => edit({ maximum: event.target.value })}
+                onChange={(event) => isEuroDraft(event.target.value) && edit({ maximum: event.target.value })}
               />
             </label>
           )}

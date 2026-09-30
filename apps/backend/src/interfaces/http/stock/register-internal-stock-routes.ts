@@ -162,7 +162,7 @@ const stockChangeBodySchema = z
   .object({
     delta: z.number().int(),
     notes: z.string().trim().min(1).max(500).nullable().optional(),
-    reason: z.string().trim().min(1).max(120),
+    reason: z.enum(['manual_adjustment', 'show_sale', 'delivery', 'gift']),
   })
   .openapi('InternalStockChangeBody');
 

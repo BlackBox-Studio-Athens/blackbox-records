@@ -170,7 +170,7 @@ test('Overview keeps bounded recent publication truth without list enrichment or
   const entries = Array.from({ length: 5 }, (_, i) => ({
     id: `overview-${i}`,
     slug: `overview-${i}`,
-    data: i ? { title: `Work ${i}` } : {},
+    data: i ? { title: 'Instagram' } : {},
     updatedAt: `2026-09-22T00:00:0${i}Z`,
     draftRevisionId: i ? `draft-${i}` : null,
     liveRevisionId: null,
@@ -210,7 +210,7 @@ test('Overview keeps bounded recent publication truth without list enrichment or
             id: 'overview-1',
             slug: 'overview-1',
             revisionId,
-            data: { title: 'Work 1', url: 'https://example.com', order: 1 },
+            data: { title: 'Instagram', url: 'https://example.com', order: 1 },
           },
         ],
       }),
@@ -326,7 +326,7 @@ test('bounded review continues past 250 published entries without losing later d
   const entries = Array.from({ length: 275 }, (_, i) => ({
     id: `social-${i}`,
     slug: `social-${i}`,
-    data: { title: `Link ${i}`, url: 'https://example.com', order: i },
+    data: { title: 'Instagram', url: 'https://example.com', order: i },
     draftRevisionId: `new-${i}`,
     liveRevisionId: `old-${i}`,
   }));
@@ -399,7 +399,7 @@ test('workspace reuse follows fresh pointers, isolates targets, and never hides 
     slug: 'link',
     draftRevisionId: 'one',
     liveRevisionId: 'one',
-    data: { title: 'Link', url: 'https://example.com', order: 1 },
+    data: { title: 'Instagram', url: 'https://example.com', order: 1 },
   };
   const runtime = {
     handleContentList: vi.fn(async () => ({ success: true, data: { items: [item] } })),
@@ -486,14 +486,14 @@ test('review discovery compares saved revisions rather than published list value
     {
       id: 'unchanged',
       slug: 'unchanged',
-      data: { title: 'Unchanged', url: 'https://example.com', order: 1 },
+      data: { title: 'Instagram', url: 'https://example.com', order: 1 },
       draftRevisionId: 'unchanged-draft',
       liveRevisionId: 'unchanged-live',
     },
     {
       id: 'changed',
       slug: 'changed',
-      data: { title: 'Changed', url: 'https://example.com', order: 2 },
+      data: { title: 'Facebook', url: 'https://example.com', order: 2 },
       draftRevisionId: 'changed-draft',
       liveRevisionId: 'changed-live',
     },
@@ -524,7 +524,7 @@ test('review discovery compares saved revisions rather than published list value
           id: 'changed',
           slug: 'changed',
           revisionId: 'changed-live',
-          data: { title: 'Changed', url: 'https://example.com', order: 2 },
+          data: { title: 'Facebook', url: 'https://example.com', order: 2 },
         },
       ],
       media: [],
@@ -575,7 +575,7 @@ test('review discovery keeps published catalog entries whose only change is a pr
   const entries = ['priced', 'unchanged'].map((id) => ({
     id,
     slug: id,
-    data: { title: id, url: 'https://example.com', order: 1 },
+    data: { title: 'Instagram', url: 'https://example.com', order: 1 },
     draftRevisionId: null,
     liveRevisionId: `${id}-live`,
   }));

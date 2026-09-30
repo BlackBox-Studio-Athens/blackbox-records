@@ -1,4 +1,13 @@
 import { z } from 'zod';
+import type { InternalStockChangeBody } from '../../lib/backend/internal-stock-api';
+
+export type StockChangeReason = InternalStockChangeBody['reason'];
+export const stockChangeReasons: Record<StockChangeReason, string> = {
+  manual_adjustment: 'Other stock change',
+  show_sale: 'Sold at a show',
+  delivery: 'New delivery',
+  gift: 'Gift or promo copy',
+};
 
 export const stocktakeSchema = z
   .object({
@@ -21,7 +30,7 @@ export const pendingChangeSchema = z.object({
     .number()
     .int()
     .refine((value) => value !== 0),
-  reason: z.string().min(1),
+  reason: z.enum(Object.keys(stockChangeReasons) as [StockChangeReason, ...StockChangeReason[]]),
   notes: z.string().nullable(),
   idempotencyKey: z.string().uuid(),
 });

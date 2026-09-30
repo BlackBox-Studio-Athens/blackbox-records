@@ -53,7 +53,7 @@ test('captures through fixed GET routes without forwarding unrelated credentials
               id: 'live-one',
               collection: 'socials',
               entryId: 'one',
-              data: { title: 'Live title', url: '#', order: 0 },
+              data: { title: 'Instagram', url: '#', order: 0 },
             },
           },
         });
@@ -80,7 +80,7 @@ test('captures through fixed GET routes without forwarding unrelated credentials
     },
   });
   const result = await captureCmsSnapshot(readers);
-  assert.equal(result.snapshot.records[0].data.title, 'Live title');
+  assert.equal(result.snapshot.records[0].data.title, 'Instagram');
   assert.equal(requests.length, 29);
   await assert.rejects(readers.readRevision('../private'), /Invalid/);
 });

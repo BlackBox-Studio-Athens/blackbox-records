@@ -2,6 +2,7 @@ import { afterEach, expect, test, vi } from 'vitest';
 import {
   applyPriceDraft,
   euroMinor,
+  isEuroDraft,
   planItemPublication,
   PriceConflictError,
   shopIntent,
@@ -179,4 +180,9 @@ test('a retained operation stops with the server reason instead of pointing at a
     'Finish the retained operation before starting another change.',
   );
   expect(changePrice).not.toHaveBeenCalled();
+});
+
+test('accepts only keystrokes that can still become a valid EUR amount', () => {
+  for (const draft of ['', '2', '25,', '25.5', '999999.99']) expect(isEuroDraft(draft)).toBe(true);
+  for (const draft of ['-1', '25,555', '1.2.3', '1000000', '25 €', 'abc']) expect(isEuroDraft(draft)).toBe(false);
 });

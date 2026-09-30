@@ -10,17 +10,25 @@ export default function CountryPicker({
   value,
   onChange,
   error,
+  single = false,
+  path = 'country',
 }: {
   value: string;
   onChange(value: string): void;
   error?: string | undefined;
+  single?: boolean;
+  path?: string;
 }) {
   const id = useId();
+  const label = single ? 'Country' : 'Countries';
   const [open, setOpen] = useState(false);
   const selected = parseArtistCountries(value);
+  const unrecognized = selected === null || (single && selected.length > 1);
   return (
-    <Field data-invalid={!!error || selected === null}>
-      <FieldLabel htmlFor={id}>Countries</FieldLabel>
+    <Field data-invalid={!!error || unrecognized}>
+      <FieldLabel htmlFor={id} required={single}>
+        {label}
+      </FieldLabel>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -29,12 +37,12 @@ export default function CountryPicker({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            aria-label="Countries"
+            aria-label={label}
             aria-describedby={`${id}-help`}
             className="h-auto min-h-11 w-full justify-between whitespace-normal"
-            data-content-path="country"
+            data-content-path={path}
           >
-            <span>{value || 'Choose countries'}</span>
+            <span>{value || (single ? 'Choose a country' : 'Choose countries')}</span>
             <ChevronsUpDown className="size-4 shrink-0" aria-hidden="true" />
           </Button>
         </PopoverTrigger>
@@ -47,15 +55,20 @@ export default function CountryPicker({
                 <CommandItem
                   key={code}
                   value={`${name} ${code}`}
-                  onSelect={() =>
+                  onSelect={() => {
+                    if (single) {
+                      onChange(formatArtistCountries([code]));
+                      setOpen(false);
+                      return;
+                    }
                     onChange(
                       formatArtistCountries(
                         selected?.includes(code)
                           ? selected.filter((item) => item !== code)
                           : [...(selected ?? []), code],
                       ),
-                    )
-                  }
+                    );
+                  }}
                 >
                   <Check
                     className={`size-4 ${selected?.includes(code) ? 'opacity-100' : 'opacity-0'}`}
@@ -70,10 +83,10 @@ export default function CountryPicker({
         </PopoverContent>
       </Popover>
       <FieldDescription id={`${id}-help`}>
-        Optional. Select one or more countries. Select again to remove.
+        {single ? 'Search and choose one country.' : 'Optional. Select one or more countries. Select again to remove.'}
       </FieldDescription>
       <FieldError>
-        {error || (selected === null ? 'Choose countries from the list to replace this unrecognized value.' : '')}
+        {error || (unrecognized ? 'Choose from the list to replace this unrecognized value.' : '')}
       </FieldError>
     </Field>
   );

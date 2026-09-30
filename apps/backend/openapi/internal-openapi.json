@@ -1072,8 +1072,12 @@
           },
           "reason": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 120
+            "enum": [
+              "manual_adjustment",
+              "show_sale",
+              "delivery",
+              "gift"
+            ]
           }
         },
         "required": [

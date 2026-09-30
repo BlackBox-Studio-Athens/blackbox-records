@@ -38,6 +38,8 @@ import {
   pendingCountSchema,
   pendingChangeKey,
   pendingChangeSchema,
+  stockChangeReasons,
+  type StockChangeReason,
   type Stocktake,
 } from './stocktake';
 import {
@@ -102,9 +104,9 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [changeUnconfirmed, setChangeUnconfirmed] = useState(false);
   const [changeDelta, setChangeDelta] = useState('');
-  const [stockDirection, setStockDirection] = useState('remove');
+  const [stockDirection, setStockDirection] = useState<'remove' | 'add'>('remove');
   const [stockMode, setStockMode] = useState<'adjust' | 'count'>('adjust');
-  const [changeReason, setChangeReason] = useState('manual_adjustment');
+  const [changeReason, setChangeReason] = useState<StockChangeReason>('manual_adjustment');
   const [changeNotes, setChangeNotes] = useState('');
   const [countedQuantity, setCountedQuantity] = useState('');
   const [onlineQuantity, setOnlineQuantity] = useState('');
@@ -733,6 +735,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
             <div className="inventory-toolbar">
               <Input
                 aria-label="Search items"
+                maxLength={200}
                 placeholder="Search titles-"
                 value={query}
                 disabled={!!stocktake || startingStocktake}
@@ -1076,7 +1079,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           className="min-h-11 border border-border bg-background p-2"
                           disabled={!selectedStockDetail || isSubmitting}
                           value={stockDirection}
-                          onChange={(event) => setStockDirection(event.target.value)}
+                          onChange={(event) => setStockDirection(event.target.value as 'remove' | 'add')}
                         >
                           <option value="remove">Remove stock</option>
                           <option value="add">Add stock</option>
@@ -1101,20 +1104,22 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           disabled={!selectedStockDetail || isSubmitting}
                           id="stock-change-reason"
                           name="reason"
-                          onChange={(event) => setChangeReason(event.target.value)}
+                          onChange={(event) => setChangeReason(event.target.value as StockChangeReason)}
                           required
                           value={changeReason}
                         >
-                          <option value="manual_adjustment">Other stock change</option>
-                          <option value="show_sale">Sold at a show</option>
-                          <option value="delivery">New delivery</option>
-                          <option value="gift">Gift or promo copy</option>
+                          {Object.entries(stockChangeReasons).map(([reason, label]) => (
+                            <option key={reason} value={reason}>
+                              {label}
+                            </option>
+                          ))}
                         </select>
                         <label htmlFor="stock-change-notes">Notes (optional)</label>
                         <Textarea
                           className="border-input bg-background"
                           disabled={!selectedStockDetail || isSubmitting}
                           id="stock-change-notes"
+                          maxLength={500}
                           name="notes"
                           onChange={(event) => setChangeNotes(event.target.value)}
                           placeholder="Notes"
@@ -1202,6 +1207,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           disabled={!selectedStockDetail || isSubmitting}
                           id="stock-count-online-quantity"
                           min="0"
+                          max={countedQuantity || undefined}
                           name="onlineQuantity"
                           onChange={(event) => {
                             setOnlineQuantity(event.target.value);
@@ -1217,6 +1223,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           className="border-input bg-background"
                           disabled={!selectedStockDetail || isSubmitting}
                           id="stock-count-notes"
+                          maxLength={500}
                           name="notes"
                           onChange={(event) => setCountNotes(event.target.value)}
                           placeholder="Notes"

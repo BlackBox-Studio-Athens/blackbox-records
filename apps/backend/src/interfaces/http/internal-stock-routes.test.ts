@@ -269,7 +269,7 @@ describe('internal stock routes', () => {
         id: 'change_1',
         notes: 'Packed for table',
         quantityDelta: -1,
-        reason: 'sale',
+        reason: 'show_sale',
         recordedAt: new Date('2026-04-24T12:05:00.000Z'),
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
@@ -290,7 +290,7 @@ describe('internal stock routes', () => {
         body: JSON.stringify({
           delta: -1,
           notes: 'Packed for table',
-          reason: 'sale',
+          reason: 'show_sale',
         }),
         headers: {
           [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'attacker@blackboxrecords.example',
@@ -307,7 +307,7 @@ describe('internal stock routes', () => {
       notes: 'Packed for table',
       productEnvironment: 'LOCAL',
       quantityDelta: -1,
-      reason: 'sale',
+      reason: 'show_sale',
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
     expect(response.status).toBe(200);
@@ -318,7 +318,7 @@ describe('internal stock routes', () => {
         id: 'change_1',
         notes: 'Packed for table',
         quantityDelta: -1,
-        reason: 'sale',
+        reason: 'show_sale',
         recordedAt: '2026-04-24T12:05:00.000Z',
         type: 'change',
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
@@ -346,7 +346,7 @@ describe('internal stock routes', () => {
         id: 'change_keyed',
         notes: null,
         quantityDelta: 1,
-        reason: 'sale',
+        reason: 'show_sale',
         recordedAt: new Date('2026-04-24T12:05:00.000Z'),
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
@@ -363,7 +363,7 @@ describe('internal stock routes', () => {
     const response = await createHttpApp().request(
       'http://127.0.0.1/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/changes',
       {
-        body: JSON.stringify({ delta: 1, reason: 'sale' }),
+        body: JSON.stringify({ delta: 1, reason: 'show_sale' }),
         headers: {
           'content-type': 'application/json',
           'idempotency-key': '123e4567-e89b-42d3-a456-426614174001',
@@ -383,7 +383,7 @@ describe('internal stock routes', () => {
     const response = await createHttpApp().request(
       'http://127.0.0.1/api/internal/variants/variant_test/stock/changes',
       {
-        body: JSON.stringify({ delta: 1, reason: 'sale' }),
+        body: JSON.stringify({ delta: 1, reason: 'show_sale' }),
         headers: { 'content-type': 'application/json' },
         method: 'POST',
       },
@@ -406,7 +406,7 @@ describe('internal stock routes', () => {
     const response = await createHttpApp().request(
       'http://127.0.0.1/api/internal/variants/variant_test/stock/changes',
       {
-        body: JSON.stringify({ delta: 1, reason: 'sale' }),
+        body: JSON.stringify({ delta: 1, reason: 'show_sale' }),
         headers: {
           'content-type': 'application/json',
           'idempotency-key': '123e4567-e89b-42d3-a456-426614174002',
@@ -442,7 +442,7 @@ describe('internal stock routes', () => {
         id: 'change_hosted',
         notes: null,
         quantityDelta: -1,
-        reason: 'sale',
+        reason: 'show_sale',
         recordedAt: new Date('2026-04-24T12:05:00.000Z'),
         variantId: 'variant_disintegration-black-vinyl-lp_standard',
       },
@@ -460,7 +460,7 @@ describe('internal stock routes', () => {
       const response = await createHttpApp().request(
         'https://ops.example/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/changes',
         {
-          body: JSON.stringify({ delta: -1, reason: 'sale' }),
+          body: JSON.stringify({ delta: -1, reason: 'show_sale' }),
           headers: {
             [CF_ACCESS_AUTHENTICATED_USER_EMAIL_HEADER]: 'attacker@blackboxrecords.example',
             [CF_ACCESS_JWT_ASSERTION_HEADER]: token,

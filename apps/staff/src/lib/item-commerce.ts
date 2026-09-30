@@ -57,6 +57,9 @@ export function euroMinor(value: string): number {
   return amount;
 }
 
+// Every prefix of an amount euroMinor accepts, so typing can only move towards a legal price.
+export const isEuroDraft = (value: string) => /^\d{0,6}(?:[.,]\d{0,2})?$/.test(value);
+
 export const formatEuro = (minor: number) => `€${(minor / 100).toFixed(2)}`;
 export const priceAmount = (price: DraftPrice) =>
   price.kind === 'fixed' ? price.amountMinor : price.presetAmountMinor;

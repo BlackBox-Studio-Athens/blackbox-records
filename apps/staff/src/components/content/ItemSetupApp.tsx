@@ -16,7 +16,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
 import NewArtistFields from './NewArtistFields';
-import { euroMinor } from '../../lib/item-commerce';
+import { euroMinor, isEuroDraft } from '../../lib/item-commerce';
 import { createInternalStockApi, type CatalogSetupCommand } from '../../lib/backend/internal-stock-api';
 import ItemPublication from '../stock/ItemPublication';
 import PublicationReviewFlow from '../publication/PublicationReviewFlow';
@@ -28,6 +28,7 @@ import {
 } from '../../lib/backend/editorial-api';
 
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
+const maxOpeningStock = 2_147_483_647; // Matches the item setup API bound.
 
 function descriptionFields(summary: Prose) {
   return Array.isArray(summary) ? { summary_rich: summary } : { summary: summary.trim() };
@@ -75,7 +76,7 @@ export function setupCommand(input: {
   restockPlanned?: boolean;
 }): CatalogSetupCommand {
   const openingQuantity = Number(input.quantity);
-  if (!/^\d+$/.test(input.quantity) || !Number.isSafeInteger(openingQuantity) || openingQuantity > 2_147_483_647)
+  if (!/^\d+$/.test(input.quantity) || !Number.isSafeInteger(openingQuantity) || openingQuantity > maxOpeningStock)
     throw new Error('Enter a whole number of copies, starting from zero.');
   const price: CatalogSetupCommand['price'] = input.custom
     ? {
@@ -365,7 +366,8 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 const artwork = (data.cover_image ?? data.image) as { id?: string } | null;
                 setImage(artwork?.id ?? '');
                 setAlt(String(data.cover_image_alt ?? data.image_alt ?? ''));
-                setFormat((Array.isArray(data.formats) ? data.formats[0] : data.group) as typeof format);
+                const restoredFormat = Array.isArray(data.formats) ? data.formats[0] : data.group;
+                setFormat((current) => DISTRO_GROUP_VALUES.find((group) => group === restoredFormat) ?? current);
                 setMessage('Your private draft has been restored.');
                 setReady(true);
               })
@@ -662,6 +664,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                   inputMode="decimal"
                   value={minimum}
                   onChange={(event) => {
+                    if (!isEuroDraft(event.target.value)) return;
                     setMinimum(event.target.value);
                     retainSetup({ minimum: event.target.value });
                   }}
@@ -676,6 +679,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 placeholder="e.g. 25,00"
                 value={amount}
                 onChange={(event) => {
+                  if (!isEuroDraft(event.target.value)) return;
                   setAmount(event.target.value);
                   retainSetup({ amount: event.target.value });
                 }}
@@ -689,6 +693,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                   inputMode="decimal"
                   value={maximum}
                   onChange={(event) => {
+                    if (!isEuroDraft(event.target.value)) return;
                     setMaximum(event.target.value);
                     retainSetup({ maximum: event.target.value });
                   }}
@@ -701,6 +706,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 required
                 type="number"
                 min={0}
+                max={maxOpeningStock}
                 step={1}
                 value={quantity}
                 onChange={(event) => {

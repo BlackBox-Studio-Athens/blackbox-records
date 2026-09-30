@@ -378,7 +378,7 @@ const revision = {
   id: 'live-one',
   collection: 'socials',
   entryId: 'one',
-  data: { title: 'Published title', url: '#', order: 0, _slug: 'record' },
+  data: { title: 'Instagram', url: '#', order: 0, _slug: 'record' },
 };
 function readers(change = () => {}) {
   let scans = 0;
@@ -427,7 +427,7 @@ test('normalizes only native navigation boolean columns before validating publis
 test('captures only pinned live data with a deterministic digest, omitting draft data and pointers', async () => {
   const first = await captureCmsSnapshot(readers());
   assert.equal(first.snapshot.records.length, 1);
-  assert.equal(first.snapshot.records[0].data.title, 'Published title');
+  assert.equal(first.snapshot.records[0].data.title, 'Instagram');
   assert.equal(first.json.includes('secret'), false);
   assert.equal(first.json.includes('draft-two'), false);
   assert.equal(first.sha256, (await captureCmsSnapshot(readers())).sha256);

@@ -90,7 +90,7 @@ export const internalStockFixtures = {
   stockChangeBody: {
     delta: -1,
     notes: 'Table sale',
-    reason: 'sale',
+    reason: 'show_sale',
   } satisfies InternalStockChangeBody,
   stockDetail: {
     sourceId: 'disintegration',

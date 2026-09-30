@@ -226,6 +226,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
               Search orders
               <Input
                 id="order-search"
+                maxLength={200}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Name, email or order reference"

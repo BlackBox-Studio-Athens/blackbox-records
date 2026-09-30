@@ -31,10 +31,14 @@ describe('stocktake progress', () => {
         delta: 1,
         idempotencyKey,
         notes: null,
-        reason: 'sale',
+        reason: 'show_sale',
         variantId: 'variant-a',
       }).success,
     ).toBe(true);
+    expect(
+      pendingChangeSchema.safeParse({ delta: 1, idempotencyKey, notes: null, reason: 'sale', variantId: 'variant-a' })
+        .success,
+    ).toBe(false);
     expect(
       pendingCountSchema.safeParse({
         countedQuantity: '5',

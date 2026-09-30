@@ -61,13 +61,13 @@ describe('createInternalStockApi', () => {
     await api.recordStockChange(variant.variantId, {
       delta: -1,
       notes: 'Table sale',
-      reason: 'sale',
+      reason: 'show_sale',
     });
 
     expect(fetcher).toHaveBeenCalledWith(
       '/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/changes',
       {
-        body: JSON.stringify({ delta: -1, notes: 'Table sale', reason: 'sale' }),
+        body: JSON.stringify({ delta: -1, notes: 'Table sale', reason: 'show_sale' }),
         cache: 'no-store',
         credentials: 'same-origin',
         headers: { 'content-type': 'application/json' },

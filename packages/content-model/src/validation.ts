@@ -1,6 +1,5 @@
 export const emailAddressPatternSource = '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$';
 export const httpsUrlPatternSource = '^https://[^\\s]+$';
-export const internalSitePathPatternSource = '^/(?!/)(?!.*(?:\\.\\.?/|/\\.\\.?(?:/|$)))(?!.*\\\\)[^\\s]*$';
 export const internalOrHttpsUrlPatternSource =
   '^(?:https://[^\\s]+|/(?!/)(?!.*(?:\\.\\.?/|/\\.\\.?(?:/|$)))(?!.*\\\\)[^\\s]*)$';
 export const youtubeVideoIdPatternSource = '^[A-Za-z0-9_-]{11}$';
@@ -12,7 +11,6 @@ export const publicImagePathPatternSource =
   '^/assets/(?!.*(?:\\.\\.?/|/\\.\\.?(?:/|$)))(?!.*\\\\)[^\\s]+\\.(?:avif|gif|jpe?g|png|svg|webp)$';
 
 const httpsUrlPattern = new RegExp(httpsUrlPatternSource);
-const internalSitePathPattern = new RegExp(internalSitePathPatternSource);
 const internalOrHttpsUrlPattern = new RegExp(internalOrHttpsUrlPatternSource);
 const publicImagePathPattern = new RegExp(publicImagePathPatternSource);
 
@@ -27,10 +25,6 @@ function parsesAsUrl(value: string): boolean {
 
 export function isHttpsUrl(value: string): boolean {
   return httpsUrlPattern.test(value) && parsesAsUrl(value);
-}
-
-export function isInternalSitePath(value: string): boolean {
-  return internalSitePathPattern.test(value);
 }
 
 export function isInternalOrHttpsUrl(value: string): boolean {
@@ -70,3 +64,29 @@ export const DISTRO_INTRO_FIELDS = [
 export type DistroIntroKey = (typeof DISTRO_INTRO_FIELDS)[number]['name'];
 
 export const slugPatternSource = '^[a-z0-9]+(?:-[a-z0-9]+)*$';
+
+// Public pages that editorial links may target; add a page here when its route ships.
+export const SITE_PAGES = [
+  { path: '/', label: 'Home' },
+  { path: '/about/', label: 'Who we are' },
+  { path: '/artists/', label: 'Artists' },
+  { path: '/releases/', label: 'Releases' },
+  { path: '/news/', label: 'News' },
+  { path: '/services/', label: 'Services' },
+  { path: '/store/', label: 'Store' },
+  { path: '/store/distro/', label: 'Store: Distro' },
+  { path: '/store/merch/', label: 'Store: Merch' },
+  { path: '/store/blackbox-releases/', label: 'Store: BlackBox releases' },
+  { path: '/terms/', label: 'Delivery information' },
+  { path: '/privacy/', label: 'Privacy' },
+] as const;
+
+type SitePagePath = (typeof SITE_PAGES)[number]['path'];
+export const SITE_PAGE_PATHS = SITE_PAGES.map(({ path }) => path) as [SitePagePath, ...SitePagePath[]];
+
+// Keys the About page can compute a number for.
+export const ABOUT_STAT_KEYS = ['artists', 'releases', 'countries', 'year'] as const;
+export type AboutStatKey = (typeof ABOUT_STAT_KEYS)[number];
+
+// Platforms the site footer has an icon for.
+export const SOCIAL_PLATFORMS = ['Instagram', 'Facebook', 'Bandcamp', 'Linktree', 'Tidal'] as const;

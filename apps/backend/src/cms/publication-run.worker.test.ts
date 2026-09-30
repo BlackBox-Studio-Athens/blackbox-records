@@ -221,7 +221,7 @@ test('marks only a matching deployed code and snapshot Live and replays acknowle
         id: 'social',
         slug: 'social',
         revisionId: item.requestedRevision,
-        data: { title: 'Social', url: '#', order: 0 },
+        data: { title: 'Instagram', url: '#', order: 0 },
       },
     ],
     media: [],

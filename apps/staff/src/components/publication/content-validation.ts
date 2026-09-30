@@ -1,4 +1,9 @@
-import { getCmsContentIssues, type CmsCollection, type CmsContentIssue } from '@blackbox/content-model';
+import {
+  buildBandcampEmbedUrl,
+  getCmsContentIssues,
+  type CmsCollection,
+  type CmsContentIssue,
+} from '@blackbox/content-model';
 import { editorialWriteData } from '../../lib/backend/editorial-api';
 
 export type ContentValidation = {
@@ -60,4 +65,10 @@ export function youtubeVideoId(input: string): string | null {
   } catch {
     return null;
   }
+}
+
+// Accepts Bandcamp's Share/Embed code or its iframe src and returns the canonical player URL.
+export function bandcampEmbedSrc(input: string): string | null {
+  const src = /<iframe\b[^>]*\bsrc="([^"]+)"/i.exec(input)?.[1] ?? input.trim();
+  return buildBandcampEmbedUrl(src) || null;
 }

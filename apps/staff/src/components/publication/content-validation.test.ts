@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getContentValidation, youtubeVideoId } from './content-validation';
+import { bandcampEmbedSrc, getContentValidation, youtubeVideoId } from './content-validation';
 
 describe('content validation adapter', () => {
   it('returns field paths for required and constrained values', () => {
@@ -41,4 +41,15 @@ it('accepts YouTube video URLs and rejects other hosts and malformed identities'
   expect(youtubeVideoId('https://youtube.com/shorts/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ');
   expect(youtubeVideoId('https://youtube.com.evil.example/watch?v=dQw4w9WgXcQ')).toBeNull();
   expect(youtubeVideoId('javascript:alert(1)')).toBeNull();
+});
+
+it('reads the Bandcamp player URL from pasted embed code or a bare src', () => {
+  const src =
+    'https://bandcamp.com/EmbeddedPlayer/album=1012756998/size=large/bgcol=0d0d0d/linkcol=f5f5f5/transparent=true/';
+  expect(
+    bandcampEmbedSrc(`<iframe style="border: 0" src="${src}" seamless><a href="https://x.bandcamp.com">X</a></iframe>`),
+  ).toBe(src);
+  expect(bandcampEmbedSrc(` ${src} `)).toBe(src);
+  expect(bandcampEmbedSrc('https://artist.bandcamp.com/album/example')).toBeNull();
+  expect(bandcampEmbedSrc('<iframe src="https://evil.example/EmbeddedPlayer/album=1/"></iframe>')).toBeNull();
 });

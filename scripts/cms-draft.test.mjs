@@ -67,5 +67,5 @@ test('draft validation retains trust boundaries', () => {
   assert.ok(validateCmsDraft('artists', { title: 2 }).length);
   assert.ok(validateCmsDraft('home', { hero: { unknown: 'field' } }).length);
   assert.ok(validateCmsDraft('artists', { body: [{ _type: 'html', html: '<script>alert(1)</script>' }] }).length);
-  assert.ok(validateCmsDraft('socials', { title: 'Link', url: 'javascript:alert(1)' }).length);
+  assert.ok(validateCmsDraft('socials', { title: 'Instagram', url: 'javascript:alert(1)' }).length);
 });

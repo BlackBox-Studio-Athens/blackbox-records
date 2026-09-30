@@ -4,6 +4,9 @@ import { Input } from '../ui/input';
 import { NativeSelect } from '../ui/native-select';
 import { Field, FieldLabel, FieldDescription, FieldError, FieldSet, FieldLegend } from '../ui/field';
 
+// Every prefix of a valid m:ss duration, so typing can only move towards a legal value.
+const durationDraft = /^\d{0,3}(?::[0-5]?\d?)?$/;
+
 export default function TracklistFields({
   value,
   onChange,
@@ -93,7 +96,12 @@ export default function TracklistFields({
                     }}
                   >
                     {TRACK_SIDE_LABELS.map((label) => (
-                      <option key={label}>{label}</option>
+                      <option
+                        key={label}
+                        disabled={value.sides.some((side, index) => index !== groupIndex && side.label === label)}
+                      >
+                        {label}
+                      </option>
                     ))}
                   </NativeSelect>
                 </Field>
@@ -129,6 +137,7 @@ export default function TracklistFields({
                       placeholder="3:42"
                       aria-describedby={`duration-help-${groupIndex}-${trackIndex}`}
                       onChange={(event) =>
+                        durationDraft.test(event.target.value) &&
                         changeTracks(groupIndex, (tracks) =>
                           tracks.map((current, index) => {
                             if (index !== trackIndex) return current;

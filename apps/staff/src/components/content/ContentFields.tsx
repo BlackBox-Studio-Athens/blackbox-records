@@ -4,11 +4,15 @@ import { artistLinkNames, genreSuggestions } from '@blackbox/content-model';
 import { tracklistFormat, type Tracklist } from '@blackbox/content-model';
 import { lazy, Suspense, useEffect, useState } from 'react';
 import {
+  ABOUT_STAT_KEYS,
   DISTRO_GROUP_VALUES,
   DISTRO_INTRO_FIELDS,
+  SITE_PAGES,
+  SOCIAL_PLATFORMS,
   proseBlocks,
   resolveProse,
   scalarProseFields,
+  type AboutStatKey,
   type Prose,
   type RichText,
 } from '@blackbox/content-model';
@@ -22,10 +26,34 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldLegen
 import { Checkbox } from '../ui/checkbox';
 import { NativeSelect } from '../ui/native-select';
 import { ContentGalleryUploader, ContentImagePicker } from './MediaLibrary';
-import { contentFieldErrors, youtubeVideoId, type ContentValidation } from '../publication/content-validation';
+import {
+  bandcampEmbedSrc,
+  contentFieldErrors,
+  youtubeVideoId,
+  type ContentValidation,
+} from '../publication/content-validation';
 import { type ContentData, type ContentSection } from '../../lib/content-sections';
 
 const ContentBodyEditor = lazy(() => import('./ContentBodyEditor'));
+
+type ChoiceOption = string | { value: string; label: string };
+const pageOptions = SITE_PAGES.map(({ path, label }) => ({ value: path, label: `${label} (${path})` }));
+const statLabels: Record<AboutStatKey, string> = {
+  artists: 'Number of artists',
+  releases: 'Number of releases',
+  countries: 'Number of artist countries',
+  year: 'Years active',
+};
+const unchanged = (text: string) => text;
+const youtubeWatchUrl = (id: string) =>
+  id && youtubeVideoId(id) === id ? `https://www.youtube.com/watch?v=${id}` : id;
+// Keeps a link name in lowercase-hyphen form while it is typed.
+const linkNameInput = (input: string) =>
+  input
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-/, '');
 
 export default function ContentFields({
   collection,
@@ -114,6 +142,7 @@ export default function ContentFields({
     max?: number;
     step?: number;
     list?: string;
+    normalize?: (input: string) => string;
   };
   function field(path: string, label: string, options: FieldOptions = {}) {
     const required = options.required ?? true;
@@ -167,7 +196,7 @@ export default function ContentFields({
       'aria-invalid': fieldErrors.length > 0 || undefined,
       'aria-describedby': describedBy || undefined,
       onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const input = event.target.value;
+        const input = options.normalize ? options.normalize(event.target.value) : event.target.value;
         set(
           path,
           options.type === 'number'
@@ -225,6 +254,42 @@ export default function ContentFields({
       </Field>
     );
   }
+  function choice(path: string, label: string, placeholder: string, options: readonly ChoiceOption[]) {
+    const fieldErrors = errors(path);
+    const id = `content-${path}`;
+    const errorId = `${id}-error`;
+    return (
+      <Field data-invalid={fieldErrors.length > 0} key={path}>
+        <FieldLabel htmlFor={id} required>
+          {label}
+        </FieldLabel>
+        <NativeSelect
+          id={id}
+          data-content-path={path}
+          className={fieldClass}
+          value={String(value(path) ?? '')}
+          required
+          disabled={disabled}
+          aria-invalid={fieldErrors.length > 0 || undefined}
+          aria-describedby={fieldErrors.length ? errorId : undefined}
+          onBlur={() => touch(path)}
+          onChange={(event) => set(path, event.target.value)}
+        >
+          <option value="">{placeholder}</option>
+          {options.map((option) =>
+            typeof option === 'string' ? (
+              <option key={option}>{option}</option>
+            ) : (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ),
+          )}
+        </NativeSelect>
+        <FieldError id={errorId}>{fieldErrors.join(' ')}</FieldError>
+      </Field>
+    );
+  }
   function image(path: string, alt: string, label: string) {
     const reference = value(path) as { id?: string } | undefined;
     const fieldErrors = exactErrors(path);
@@ -267,6 +332,7 @@ export default function ContentFields({
     label: string,
     initial: unknown,
     render: (path: string, index: number) => React.ReactNode,
+    { min = 0, max = Infinity }: { min?: number; max?: number } = {},
   ) {
     const items = Array.isArray(value(path)) ? (value(path) as unknown[]) : [];
     const fieldErrors = exactErrors(path);
@@ -334,6 +400,7 @@ export default function ContentFields({
                 <Button
                   type="button"
                   variant="outline"
+                  disabled={items.length <= min}
                   onClick={() =>
                     set(
                       path,
@@ -347,7 +414,12 @@ export default function ContentFields({
               </div>
             </div>
           ))}
-          <Button type="button" variant="outline" onClick={() => set(path, [...items, structuredClone(initial)])}>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={items.length >= max}
+            onClick={() => set(path, [...items, structuredClone(initial)])}
+          >
             <Plus className="size-4" aria-hidden="true" />
             Add row
           </Button>
@@ -355,6 +427,33 @@ export default function ContentFields({
       </FieldSet>
     );
   }
+  function youtube(path: string) {
+    return (
+      <ParsedField
+        path={path}
+        label="YouTube URL"
+        stored={String(value(path) ?? '')}
+        parse={youtubeVideoId}
+        show={youtubeWatchUrl}
+        invalidMessage="Paste a YouTube video URL."
+        onChange={(id) => set(path, id)}
+        errors={errors(path)}
+      />
+    );
+  }
+  const bandcamp = (
+    <ParsedField
+      path="bandcamp_embed_url"
+      label="Bandcamp player"
+      stored={String(data.bandcamp_embed_url ?? '')}
+      parse={bandcampEmbedSrc}
+      invalidMessage="Paste the embed code from Bandcamp's Share/Embed, not the album page address."
+      required={false}
+      help="Optional. Paste the embed code from Bandcamp's Share/Embed."
+      onChange={(next) => set('bandcamp_embed_url', next || null)}
+      errors={errors('bandcamp_embed_url')}
+    />
+  );
   const body = (
     <FieldSet className="col-span-full grid min-w-0 gap-3" data-invalid={errors('body').length > 0}>
       <FieldLegend id="content-body-label">Full text</FieldLegend>
@@ -434,12 +533,7 @@ export default function ContentFields({
         {rows('videos', 'Videos', { title: '', youtube_video_id: '' }, (path) => (
           <>
             {field(`${path}.title`, 'Video title')}
-            <YouTubeField
-              path={`${path}.youtube_video_id`}
-              initial={String(value(`${path}.youtube_video_id`) ?? '')}
-              onChange={(id) => set(`${path}.youtube_video_id`, id)}
-              errors={errors(`${path}.youtube_video_id`)}
-            />
+            {youtube(`${path}.youtube_video_id`)}
             {field(`${path}.description`, 'Description', { multiline: true, required: false })}
           </>
         ))}
@@ -516,12 +610,7 @@ export default function ContentFields({
               {rows('clips', 'Clips', { title: '', youtube_video_id: '' }, (path) => (
                 <>
                   {field(`${path}.title`, 'Clip title')}
-                  <YouTubeField
-                    path={`${path}.youtube_video_id`}
-                    initial={String(value(`${path}.youtube_video_id`) ?? '')}
-                    onChange={(id) => set(`${path}.youtube_video_id`, id)}
-                    errors={errors(`${path}.youtube_video_id`)}
-                  />
+                  {youtube(`${path}.youtube_video_id`)}
                 </>
               ))}
               <TracklistFields
@@ -534,7 +623,7 @@ export default function ContentFields({
                 errors={errors('tracklist')}
               />
               {field('merch_url', 'Merchandise link', { required: false })}
-              {field('bandcamp_embed_url', 'Bandcamp player link', { required: false })}
+              {bandcamp}
               {field('tidal_url', 'Tidal link', { required: false })}
             </>,
           )}
@@ -583,35 +672,7 @@ export default function ContentFields({
       <>
         {field('title', 'Item title')}
         {field('artist_or_label', 'Artist or label')}
-        {(() => {
-          const fieldErrors = errors('group');
-          const id = 'content-group';
-          const errorId = `${id}-error`;
-          return (
-            <Field data-invalid={fieldErrors.length > 0}>
-              <FieldLabel htmlFor={id} required>
-                Physical format
-              </FieldLabel>
-              <NativeSelect
-                id={id}
-                data-content-path="group"
-                className={fieldClass}
-                value={String(data.group ?? '')}
-                required
-                aria-invalid={fieldErrors.length > 0 || undefined}
-                aria-describedby={fieldErrors.length ? errorId : undefined}
-                onBlur={() => touch('group')}
-                onChange={(event) => set('group', event.target.value)}
-              >
-                <option value="">Choose a physical format</option>
-                {DISTRO_GROUP_VALUES.map((group) => (
-                  <option key={group}>{group}</option>
-                ))}
-              </NativeSelect>
-              <FieldError id={errorId}>{fieldErrors.join(' ')}</FieldError>
-            </Field>
-          );
-        })()}
+        {choice('group', 'Physical format', 'Choose a physical format', DISTRO_GROUP_VALUES)}
         {image('image', 'image_alt', 'Item image')}
         {field('summary', 'Short description', { multiline: true })}
         {rows('gallery', 'Photos', { image: null, image_alt: '' }, (path) =>
@@ -629,7 +690,7 @@ export default function ContentFields({
                 onChange={(next) => set('tracklist', next)}
                 errors={errors('tracklist')}
               />
-              {field('bandcamp_embed_url', 'Bandcamp player link', { required: false })}
+              {bandcamp}
               {field('tidal_url', 'Tidal link', { required: false })}
             </>,
           )}
@@ -658,13 +719,13 @@ export default function ContentFields({
           <div className="grid gap-6">
             {field('news.title', 'News heading')}
             {field('news.link_text', 'News link text')}
-            {field('news.link_url', 'News link')}
+            {choice('news.link_url', 'News link', 'Choose a page', pageOptions)}
           </div>
         </details>
         <h2 className="col-span-full text-lg font-semibold">Artist promotion</h2>
         {field('artists.title', 'Artists heading')}
         {field('artists.button_text', 'Artists button text')}
-        {field('artists.button_link', 'Artists button link')}
+        {choice('artists.button_link', 'Artists button link', 'Choose a page', pageOptions)}
       </>
     );
   if (collection === 'about')
@@ -697,12 +758,17 @@ export default function ContentFields({
         {rows('contact.items', 'Contact details', { label: '', value: '' }, (path) => (
           <>
             {field(`${path}.label`, 'Label')}
-            {field(`${path}.value`, 'Contact detail')}
+            {field(`${path}.value`, 'Email address', { type: 'email' })}
           </>
         ))}
         {rows('stats.items', 'Label facts', { key: '', label: '' }, (path) => (
           <>
-            {field(`${path}.key`, 'Fact')}
+            {choice(
+              `${path}.key`,
+              'Fact',
+              'Choose a fact',
+              ABOUT_STAT_KEYS.map((key) => ({ value: key, label: statLabels[key] })),
+            )}
             {field(`${path}.label`, 'Description')}
           </>
         ))}
@@ -720,11 +786,14 @@ export default function ContentFields({
           { id: '', title: '', image: null, image_alt: '', summary: '', bullets: ['', ''], contact_note: '' },
           (path) => (
             <>
-              {field(`${path}.id`, 'Link name (lowercase words separated by hyphens)')}
+              {field(`${path}.id`, 'Link name (lowercase words separated by hyphens)', { normalize: linkNameInput })}
               {field(`${path}.title`, 'Service title')}
               {image(`${path}.image`, `${path}.image_alt`, 'Service image')}
               {field(`${path}.summary`, 'Summary', { multiline: true })}
-              {rows(`${path}.bullets`, 'Service details', '', (item) => field(item, 'Detail', { prose: true }))}
+              {rows(`${path}.bullets`, 'Service details', '', (item) => field(item, 'Detail', { prose: true }), {
+                min: 2,
+                max: 12,
+              })}
               {field(`${path}.contact_note`, 'Contact note', { prose: true })}
               {field(`${path}.partner_name`, 'Partner name', { required: false })}
               {field(`${path}.partner_url`, 'Partner website', { type: 'url', required: false })}
@@ -734,12 +803,18 @@ export default function ContentFields({
         <h2 className="col-span-full text-lg font-semibold">How we work</h2>
         {field('process.title', 'Process heading')}
         {field('process.intro', 'Process introduction', { multiline: true })}
-        {rows('process.steps', 'Process steps', { title: '', body: '' }, (path) => (
-          <>
-            {field(`${path}.title`, 'Step title')}
-            {field(`${path}.body`, 'Step text', { multiline: true })}
-          </>
-        ))}
+        {rows(
+          'process.steps',
+          'Process steps',
+          { title: '', body: '' },
+          (path) => (
+            <>
+              {field(`${path}.title`, 'Step title')}
+              {field(`${path}.body`, 'Step text', { multiline: true })}
+            </>
+          ),
+          { min: 3, max: 12 },
+        )}
         <h2 className="col-span-full text-lg font-semibold">Contact form</h2>
         {field('inquiry.title', 'Contact form heading')}
         {field('inquiry.intro', 'Contact form introduction', { multiline: true })}
@@ -751,7 +826,7 @@ export default function ContentFields({
     return (
       <>
         {field('title', 'Link text')}
-        {field('url', 'Page link')}
+        {choice('url', 'Page link', 'Choose a page', pageOptions)}
         <p className="col-span-full text-sm text-muted-foreground">
           Use Move up or Move down in the link list to change its position.
         </p>
@@ -762,8 +837,17 @@ export default function ContentFields({
   if (collection === 'socials')
     return (
       <>
-        {field('title', 'Link name')}
-        {field('url', 'Profile link')}
+        {choice('title', 'Platform', 'Choose a platform', SOCIAL_PLATFORMS)}
+        <Field orientation="horizontal" className="min-h-11">
+          <Checkbox
+            id="content-url-hidden"
+            checked={data.url === '#'}
+            disabled={disabled}
+            onCheckedChange={(checked) => set('url', checked === true ? '#' : '')}
+          />
+          <FieldLabel htmlFor="content-url-hidden">Hide this link on the website</FieldLabel>
+        </Field>
+        {data.url !== '#' && field('url', 'Profile link', { type: 'url' })}
         <p className="col-span-full text-sm text-muted-foreground">
           Use Move up or Move down in the link list to change its position.
         </p>
@@ -794,7 +878,13 @@ export default function ContentFields({
             {field('url', 'Label website', { type: 'url' })}
             {field('logo', 'Logo path')}
             {field('location.locality', 'City')}
-            {field('location.country', 'Country')}
+            <CountryPicker
+              single
+              path="location.country"
+              value={String(value('location.country') ?? '')}
+              onChange={(country) => set('location.country', country)}
+              error={errors('location.country').join(' ') || undefined}
+            />
           </div>
         </details>
       </>
@@ -812,34 +902,10 @@ export default function ContentFields({
     );
   return (
     <>
-      {(() => {
-        const fieldErrors = errors('publication');
-        const id = 'content-publication';
-        const errorId = `${id}-error`;
-        return (
-          <Field data-invalid={fieldErrors.length > 0}>
-            <FieldLabel htmlFor={id} required>
-              Public wording approval
-            </FieldLabel>
-            <NativeSelect
-              id={id}
-              data-content-path="publication"
-              className={fieldClass}
-              value={String(data.publication ?? '')}
-              required
-              aria-invalid={fieldErrors.length > 0 || undefined}
-              aria-describedby={fieldErrors.length ? errorId : undefined}
-              onBlur={() => touch('publication')}
-              onChange={(event) => set('publication', event.target.value)}
-            >
-              <option value="">Choose approval state</option>
-              <option value="pending">Awaiting review</option>
-              <option value="approved">Approved by the label</option>
-            </NativeSelect>
-            <FieldError id={errorId}>{fieldErrors.join(' ')}</FieldError>
-          </Field>
-        );
-      })()}
+      {choice('publication', 'Public wording approval', 'Choose approval state', [
+        { value: 'pending', label: 'Awaiting review' },
+        { value: 'approved', label: 'Approved by the label' },
+      ])}
       {field('content.revision', 'Date of wording', { type: 'date' })}
       {field('content.seller.name', 'Seller name')}
       {field('content.seller.address', 'Seller address', { multiline: true })}
@@ -855,8 +921,12 @@ export default function ContentFields({
               {field(`content.${group}.${section}.summary`, section.replaceAll('_', ' ') + ' summary', {
                 multiline: true,
               })}
-              {rows(`content.${group}.${section}.paragraphs`, 'Full wording', '', (path) =>
-                field(path, 'Paragraph', { multiline: true }),
+              {rows(
+                `content.${group}.${section}.paragraphs`,
+                'Full wording',
+                '',
+                (path) => field(path, 'Paragraph', { multiline: true }),
+                { min: 1 },
               )}
             </div>
           ))}
@@ -866,41 +936,55 @@ export default function ContentFields({
   );
 }
 
-function YouTubeField({
+// Stores the canonical value parsed from pasted input; unparseable text stays so validation can report it.
+function ParsedField({
   path,
-  initial,
+  label,
+  stored,
+  parse,
+  show = unchanged,
+  invalidMessage,
+  required = true,
+  help,
   onChange,
   errors,
 }: {
   path: string;
-  initial: string;
-  onChange(id: string): void;
+  label: string;
+  stored: string;
+  parse(input: string): string | null;
+  show?: (stored: string) => string;
+  invalidMessage: string;
+  required?: boolean;
+  help?: string;
+  onChange(value: string): void;
   errors: string[];
 }) {
-  const [url, setUrl] = useState(initial ? `https://www.youtube.com/watch?v=${initial}` : '');
+  const [text, setText] = useState(() => show(stored));
   useEffect(() => {
-    if (initial !== url && initial !== youtubeVideoId(url))
-      setUrl(initial && youtubeVideoId(initial) === initial ? `https://www.youtube.com/watch?v=${initial}` : initial);
-  }, [initial, url]);
-  const invalid = !!url && !youtubeVideoId(url);
+    if (stored !== text && stored !== parse(text)) setText(show(stored));
+  }, [stored, text, parse, show]);
+  const invalid = !!text && !parse(text);
+  const id = `content-${path}`;
   return (
     <Field data-invalid={invalid || !!errors.length}>
-      <FieldLabel htmlFor={`content-${path}`} required>
-        YouTube URL
+      <FieldLabel htmlFor={id} required={required}>
+        {label}
       </FieldLabel>
       <Input
-        id={`content-${path}`}
+        id={id}
         data-content-path={path}
-        value={url}
-        aria-required="true"
+        value={text}
+        aria-required={required}
         aria-invalid={invalid || !!errors.length}
-        aria-describedby={`content-${path}-error`}
+        aria-describedby={help ? `${id}-help ${id}-error` : `${id}-error`}
         onChange={(event) => {
-          setUrl(event.target.value);
-          onChange(youtubeVideoId(event.target.value) ?? event.target.value);
+          setText(event.target.value);
+          onChange(parse(event.target.value) ?? event.target.value);
         }}
       />
-      <FieldError id={`content-${path}-error`}>{invalid ? 'Paste a YouTube video URL.' : errors.join(' ')}</FieldError>
+      {help && <FieldDescription id={`${id}-help`}>{help}</FieldDescription>}
+      <FieldError id={`${id}-error`}>{invalid ? invalidMessage : errors.join(' ')}</FieldError>
     </Field>
   );
 }

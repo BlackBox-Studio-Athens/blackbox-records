@@ -1,27 +1,24 @@
 import { describe, expect, it } from 'vitest';
+import { z } from 'zod';
 
 import {
   bandcampEmbedUrlPatternSource,
+  createAboutContentSchema,
+  createHomeContentSchema,
+  createServicesContentSchema,
   emailAddressPatternSource,
   isHttpsUrl,
   isInternalOrHttpsUrl,
-  isInternalSitePath,
   isPublicImagePath,
   isSocialProfileUrl,
+  navigationContentSchema,
+  settingsContentSchema,
+  socialsContentSchema,
   tidalContentUrlPatternSource,
   youtubeVideoIdPatternSource,
 } from '@blackbox/content-model';
 
 describe('editorial validation', () => {
-  it('accepts safe internal paths and rejects traversal, protocol-relative, and backslash paths', () => {
-    expect(isInternalSitePath('/')).toBe(true);
-    expect(isInternalSitePath('/store/distro/#vinyl')).toBe(true);
-    expect(isInternalSitePath('//example.com')).toBe(false);
-    expect(isInternalSitePath('/../secret')).toBe(false);
-    expect(isInternalSitePath('/store/../secret')).toBe(false);
-    expect(isInternalSitePath('/store\\secret')).toBe(false);
-  });
-
   it('accepts HTTPS and internal links at their intended seams', () => {
     expect(isHttpsUrl('https://example.com/path')).toBe(true);
     expect(isHttpsUrl('http://example.com/path')).toBe(false);
@@ -53,5 +50,40 @@ describe('editorial validation', () => {
     ).toBe(true);
     expect(new RegExp(tidalContentUrlPatternSource).test('https://tidal.com/browse/album/123456789?u')).toBe(true);
     expect(new RegExp(tidalContentUrlPatternSource).test('https://tidal.com/artist/123456789')).toBe(false);
+  });
+
+  it('limits constrained fields to the values the site can render', () => {
+    const image = () => z.unknown();
+    const aboutItems = createAboutContentSchema(image).shape.contact.shape.items;
+    const stats = createAboutContentSchema(image).shape.stats.shape.items;
+    const homeLink = createHomeContentSchema(image).shape.news.shape.link_url;
+    expect(stats.safeParse([{ key: 'year', label: 'Years' }]).success).toBe(true);
+    expect(stats.safeParse([{ key: 'albums', label: 'Albums' }]).success).toBe(false);
+    expect(aboutItems.safeParse([{ label: 'Press', value: 'press@example.com' }]).success).toBe(true);
+    expect(aboutItems.safeParse([{ label: 'Phone', value: '+30 210 000' }]).success).toBe(false);
+    expect(navigationContentSchema.shape.url.safeParse('/about/').success).toBe(true);
+    expect(homeLink.safeParse('/store/../secret').success).toBe(false);
+    expect(socialsContentSchema.shape.title.safeParse('Linktree').success).toBe(true);
+    expect(socialsContentSchema.shape.title.safeParse('MySpace').success).toBe(false);
+    const country = settingsContentSchema.shape.location.shape.country;
+    expect(country.safeParse('Greece').success).toBe(true);
+    expect(country.safeParse('Greece / Cyprus').success).toBe(false);
+    expect(country.safeParse('Atlantis').success).toBe(false);
+  });
+
+  it('rejects services that share a page anchor', () => {
+    const items = createServicesContentSchema(() => z.unknown()).shape.services.shape.items;
+    const service = (id: string) => ({
+      id,
+      title: 'Mixing',
+      image: null,
+      image_alt: 'Desk',
+      summary: 'Summary',
+      bullets: ['One', 'Two'],
+      contact_note: 'Note',
+    });
+    expect(items.safeParse([service('mixing'), service('mastering')]).success).toBe(true);
+    const duplicate = items.safeParse([service('mixing'), service('mixing')]);
+    expect(duplicate.error?.issues.map((issue) => issue.path)).toEqual([[1, 'id']]);
   });
 });
