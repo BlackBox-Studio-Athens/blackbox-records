@@ -5,7 +5,9 @@ import { pathToFileURL } from 'node:url';
 
 import { chromium, type Browser, type BrowserContext, type Page, type Request } from 'playwright';
 
+import { reservedStoreRouteSegments } from '../apps/web/src/lib/store-categories';
 import {
+  appendSmokeStepSummary,
   createRouteUrl,
   createRunId,
   createSmokeEvidencePath,
@@ -70,6 +72,14 @@ type UatStaticSmokeScenarioDefinition = {
   name: UatStaticSmokeScenarioName;
 };
 
+/** One published detail page per section, discovered from the deployed site instead of fixed content. */
+export type UatStaticRepresentativePaths = {
+  artist: string;
+  news: string;
+  release: string;
+  storeItem: string;
+};
+
 type UatStaticSmokeSummary = {
   environment: 'uat';
   failedScenarioCount: number;
@@ -94,10 +104,6 @@ export type UatStaticSmokeEvidenceInput = {
 
 const defaultSiteUrl = 'https://blackbox-records-web-uat.pages.dev';
 const defaultEvidenceDir = path.join('.codex-artifacts', 'smoke', 'uat', 'uat-static');
-const representativeReleaseSlug = 'disintegration';
-const representativeArtistSlug = 'chronoboros';
-const representativeNewsSlug = 'lorem-ipsum';
-const representativeStoreItemSlug = 'disintegration-black-vinyl-lp';
 const reviewSiteMarkerTexts = [
   'UAT · TESTING ONLY',
   'Data here is separate and does not transfer to or from the production site.',
@@ -238,7 +244,9 @@ export function resolveSelectedUatStaticSmokeScenarios(
   return selection === 'all' ? [...Object.values(UAT_STATIC_SMOKE_SCENARIOS)] : [UAT_STATIC_SMOKE_SCENARIOS[selection]];
 }
 
-export async function runUatStaticSmoke(options: UatStaticSmokeOptions): Promise<UatStaticSmokeEvidence[]> {
+export async function runUatStaticSmoke(
+  options: UatStaticSmokeOptions,
+): Promise<{ evidence: UatStaticSmokeEvidence[]; runArtifactDir: string }> {
   const scenarios = resolveSelectedUatStaticSmokeScenarios(options.scenario);
   const evidence: UatStaticSmokeEvidence[] = [];
   const runId = createRunId();
@@ -278,7 +286,7 @@ export async function runUatStaticSmoke(options: UatStaticSmokeOptions): Promise
 
   writeJsonFile(createSmokeSummaryPath(runArtifactDir), summary);
 
-  return evidence;
+  return { evidence, runArtifactDir };
 }
 
 async function runUatStaticSmokeScenario(input: {
@@ -302,11 +310,11 @@ async function runUatStaticSmokeScenario(input: {
     diagnostics = attachSmokePageDiagnostics(page);
 
     const checks =
-      input.scenario.name === 'public_assets'
-        ? await checkPublicAssets(input.options)
-        : input.scenario.name === 'checkout_shell'
-          ? [await checkCheckoutShellPage(page, input.options)]
-          : await checkPublicRoutes(page, input.options);
+      input.scenario.name === 'checkout_shell'
+        ? [await checkCheckoutShellPage(page, input.options)]
+        : input.scenario.name === 'public_assets'
+          ? await checkPublicAssets(input.options, await discoverUatStaticRepresentativePaths(input.options))
+          : await checkPublicRoutes(page, input.options, await discoverUatStaticRepresentativePaths(input.options));
 
     const consoleErrors = diagnostics.consoleErrors.slice();
     const pageErrors = diagnostics.pageErrors.slice();
@@ -421,16 +429,13 @@ async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions
   };
 }
 
-async function checkPublicAssets(options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
+async function checkPublicAssets(
+  options: UatStaticSmokeOptions,
+  paths: UatStaticRepresentativePaths,
+): Promise<UatStaticSmokeCheck[]> {
   const checks: UatStaticSmokeCheck[] = [];
   checks.push(await checkBinaryAsset(options, '/favicon.svg', 'image/'));
-  for (const route of [
-    '/',
-    '/artists/' + representativeArtistSlug + '/',
-    '/releases/' + representativeReleaseSlug + '/',
-    '/store/barren-point/',
-    '/news/' + representativeNewsSlug + '/',
-  ]) {
+  for (const route of ['/', paths.artist, paths.release, paths.storeItem, paths.news]) {
     const response = await fetchSmokeResponse(createRouteUrl(options.siteUrl, route), options.timeoutMs);
     if (!response.ok) throw new Error('Public media source page did not return HTTP 200: ' + route);
     checks.push(await checkBinaryAsset(options, findPublicMediaPath(await response.text(), options.siteUrl), 'image/'));
@@ -450,23 +455,79 @@ export function findPublicMediaPath(html: string, siteUrl: string): string {
   return '/' + asset.pathname.slice(root.pathname.length) + asset.search;
 }
 
-async function checkPublicRoutes(page: Page, options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
+export function discoverRepresentativePaths(
+  sitemapXml: string,
+  storeHtml: string,
+  siteUrl: string,
+): UatStaticRepresentativePaths {
+  // ponytail: scan generated sitemap and Store listing markup; use XML/HTML parsers if those formats change.
+  const root = new URL(createRouteUrl(siteUrl));
+  const toSitePaths = (urls: readonly URL[]) =>
+    urls
+      .filter((url) => url.pathname.startsWith(root.pathname))
+      .map((url) => '/' + url.pathname.slice(root.pathname.length));
+  // Sitemap entries carry the canonical origin, which can differ from the probed deployment URL.
+  const sitemapPaths = toSitePaths(
+    [...sitemapXml.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/gi)].map((match) => new URL(match[1] ?? '', root)),
+  );
+  const storePaths = toSitePaths(
+    [...storeHtml.matchAll(/<a\b[^>]*\shref=(["'])(.*?)\1/gi)]
+      .map((match) => new URL(match[2] ?? '', root))
+      .filter((url) => url.origin === root.origin),
+  );
+  const first = (section: string, paths: readonly string[], pattern: RegExp): string => {
+    const found = paths.find((candidate) => pattern.test(candidate));
+    if (!found) throw new Error(`Could not discover a published ${section} page for UAT static smoke.`);
+    return found;
+  };
+
+  return {
+    artist: first('artist', sitemapPaths, /^\/artists\/[^/]+\/$/),
+    news: first('news', sitemapPaths, /^\/news\/[^/]+\/$/),
+    release: first('release', sitemapPaths, /^\/releases\/[^/]+\/$/),
+    storeItem: first(
+      'Store Item',
+      storePaths.filter((path) => !reservedStoreRouteSegments.has(path.split('/')[2] ?? '')),
+      /^\/store\/[^/]+\/$/,
+    ),
+  };
+}
+
+async function discoverUatStaticRepresentativePaths(
+  options: UatStaticSmokeOptions,
+): Promise<UatStaticRepresentativePaths> {
+  const read = async (routePath: string) => {
+    const response = await fetchSmokeResponse(createRouteUrl(options.siteUrl, routePath), options.timeoutMs);
+    if (!response.ok) throw new Error(`Page discovery could not read ${routePath}: HTTP ${response.status}.`);
+    return response.text();
+  };
+  const [sitemapXml, storeHtml] = await Promise.all([read('/sitemap.xml'), read('/store/')]);
+
+  return discoverRepresentativePaths(sitemapXml, storeHtml, options.siteUrl);
+}
+
+async function checkPublicRoutes(
+  page: Page,
+  options: UatStaticSmokeOptions,
+  paths: UatStaticRepresentativePaths,
+): Promise<UatStaticSmokeCheck[]> {
   const routeChecks: UatStaticSmokeCheck[] = [];
-  const routes = [
+  // Expect only code-owned headings and UI copy; published titles and labels change without a release.
+  const routes: ReadonlyArray<readonly [string, readonly string[]]> = [
     ['/', ['BlackBox Records']],
     ['/releases/', ['Releases']],
-    [`/releases/${representativeReleaseSlug}/`, ['Disintegration', 'Afterwise']],
+    [paths.release, []],
     ['/artists/', ['Artists']],
-    [`/artists/${representativeArtistSlug}/`, ['Chronoboros']],
+    [paths.artist, []],
     ['/news/', ['News']],
-    [`/news/${representativeNewsSlug}/`, ['Chronoboros', 'Caregivers']],
+    [paths.news, []],
     ['/store/', ['Store']],
     ['/store/blackbox-releases/', ['BlackBox Releases']],
     ['/store/distro/', ['Distro', 'Browse Distro formats']],
-    [`/store/${representativeStoreItemSlug}/`, ['Disintegration', 'Add it to the cart']],
+    [paths.storeItem, ['Back to Store']],
     ['/services/', ['Services']],
-    ['/about/', ['About']],
-  ] as const;
+    ['/about/', []],
+  ];
 
   for (const [routePath, expectedText] of routes) {
     const url = createRouteUrl(options.siteUrl, routePath);
@@ -755,8 +816,19 @@ function containsTextIgnoreCase(text: string, expected: string): boolean {
 
 async function main(): Promise<void> {
   const options = parseUatStaticSmokeArgs(process.argv.slice(2));
-  const evidence = await runUatStaticSmoke(options);
+  const { evidence, runArtifactDir } = await runUatStaticSmoke(options);
   const failedEvidence = evidence.filter((item) => item.status === 'failed');
+
+  appendSmokeStepSummary({
+    evidenceDir: runArtifactDir,
+    scenarios: evidence.map((item) => ({
+      issues: [...item.checks.flatMap((check) => check.issues), ...item.consoleErrors, ...item.pageErrors],
+      name: item.scenario,
+      status: item.status,
+    })),
+    status: failedEvidence.length ? 'failed' : 'passed',
+    suite: 'uat-static',
+  });
 
   if (failedEvidence.length) {
     console.error(JSON.stringify(failedEvidence, null, 2));

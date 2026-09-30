@@ -38,6 +38,8 @@ Record post-migration local time to first failure and total duration separately 
 
 The candidate workflow runs checks and UAT/PRD preparation independently where allowed; candidate assembly still waits for checks and both target bundles. Failed validation cannot reach deployment or produce an assembled candidate. Each target builds the public frontend once and includes the staff build in the combined CMS build. This may spend runner time preparing bundles for a candidate that later fails.
 
+Each smoke suite writes its status, per-scenario results, and evidence directory to the GitHub job summary, so triage starts there before the uploaded evidence.
+
 UAT continues through Pages inspection and the `uat-release` reusable workflow while PRD preparation runs. Worker and provider-smoke jobs bind `catalog-promotion-uat`; the Pages job uses the repository Pages token. PRD promotion retains the direct jobs and schema-2 `release-<sha>` artifact without rebuilding. Hosted credential resolution remains unmeasured until an authorized workflow run.
 
 Automatic preparation uses cancellable branch-and-role concurrency groups. UAT mutations and acceptance hold `blackbox-release`; PRD dispatch, content publication and holding-page deployment share the release lock. Monotonic run-number checks reject late candidates. Cancellation can discard preparation but cannot interrupt active mutation and acceptance.

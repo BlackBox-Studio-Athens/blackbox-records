@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildUatStaticSmokeEvidence,
   checkReviewSiteMarker,
+  discoverRepresentativePaths,
   findPublicMediaPath,
   parseUatStaticSmokeArgs,
   resolveSelectedUatStaticSmokeScenarios,
@@ -29,6 +30,45 @@ describe('UAT static smoke', () => {
       findPublicMediaPath('<main><img src="https://foreign.test/a.webp"></main>', 'https://example.test/'),
     ).toThrow();
     expect(() => findPublicMediaPath('<main></main>', 'https://example.test/')).toThrow();
+  });
+  it('discovers representative pages from published content under the site base', () => {
+    const sitemap = [
+      '<urlset>',
+      '<url><loc>https://canonical.test/blackbox-records/</loc></url>',
+      '<url><loc>https://canonical.test/blackbox-records/artists/</loc></url>',
+      '<url><loc>https://canonical.test/blackbox-records/store/distro/</loc></url>',
+      '<url><loc>https://canonical.test/blackbox-records/artists/new-band/</loc></url>',
+      '<url><loc>https://canonical.test/blackbox-records/releases/new-record/</loc></url>',
+      '<url><loc>https://canonical.test/blackbox-records/news/new-post/</loc></url>',
+      '</urlset>',
+    ].join('\n');
+    const store = [
+      '<a href="/blackbox-records/store/">All</a>',
+      '<a href="/blackbox-records/store/distro/#cd">Distro</a>',
+      '<a href="/blackbox-records/store/checkout/">Cart</a>',
+      '<a href="https://foreign.test/blackbox-records/store/elsewhere/">Foreign</a>',
+      '<a class="prose-card-link" href=\'/blackbox-records/store/new-record-lp/\'></a>',
+    ].join('');
+
+    expect(discoverRepresentativePaths(sitemap, store, 'https://preview.test/blackbox-records/')).toEqual({
+      artist: '/artists/new-band/',
+      news: '/news/new-post/',
+      release: '/releases/new-record/',
+      storeItem: '/store/new-record-lp/',
+    });
+  });
+  it('names the section it cannot discover', () => {
+    const store = '<a href="/store/item/"></a>';
+    expect(() => discoverRepresentativePaths('<loc>https://x.test/artists/a/</loc>', store, 'https://x.test/')).toThrow(
+      'Could not discover a published news page',
+    );
+    expect(() =>
+      discoverRepresentativePaths(
+        '<loc>https://x.test/artists/a/</loc><loc>https://x.test/news/n/</loc><loc>https://x.test/releases/r/</loc>',
+        '<a href="/store/merch/"></a>',
+        'https://x.test/',
+      ),
+    ).toThrow('Could not discover a published Store Item page');
   });
   it('retains UAT marker checks', () => {
     expect(
