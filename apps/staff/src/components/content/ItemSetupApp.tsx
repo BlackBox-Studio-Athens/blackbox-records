@@ -16,7 +16,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
 import NewArtistFields from './NewArtistFields';
-import { euroMinor } from '../stock/ItemPriceEditor';
+import { euroMinor } from '../../lib/item-commerce';
 import { createInternalStockApi, type CatalogSetupCommand } from '../../lib/backend/internal-stock-api';
 import ItemPublication from '../stock/ItemPublication';
 import PublicationReviewFlow from '../publication/PublicationReviewFlow';

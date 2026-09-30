@@ -58,6 +58,19 @@ test('stores immutable bytes, reuses existing objects without writes, and isolat
   }
 });
 
+test('the CMS guard forwards only the price-draft plugin route', () => {
+  const url = 'https://staff.invalid/_emdash/api/plugins/blackbox-editorial/price-drafts';
+  for (const method of ['GET', 'PUT', 'DELETE'])
+    expect(isSupportedCmsApiRequest(new Request(url, { method }))).toBe(true);
+  expect(isSupportedCmsApiRequest(new Request(url, { method: 'POST' }))).toBe(false);
+  expect(
+    isSupportedCmsApiRequest(new Request('https://staff.invalid/_emdash/api/plugins/blackbox-editorial/admin')),
+  ).toBe(false);
+  expect(isSupportedCmsApiRequest(new Request('https://staff.invalid/_emdash/api/plugins/other/price-drafts'))).toBe(
+    false,
+  );
+});
+
 test('does not overwrite an existing corrupt object or write oversized input', async () => {
   const bytes = new TextEncoder().encode('corrupt object case');
   const result = await storeSnapshotMedia(env.TEST_SNAPSHOTS, 'local', bytes);

@@ -60,6 +60,7 @@ import {
   readInventoryArtwork,
   readPublicationCatalog,
   readRevisionContent,
+  readPriceDrafts,
   readStaffWorkspace,
   reconcileItemPublications,
   reconcilePendingPublication,
@@ -547,6 +548,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             bucket: bindings.MEDIA,
             environment: productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
             snapshotCache: this.staffSnapshotCache,
+            readPriceDrafts: () => readPriceDrafts(runtime, url.origin),
           }),
         );
       } catch {

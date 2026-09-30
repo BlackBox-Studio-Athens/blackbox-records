@@ -1,8 +1,10 @@
 import type { SandboxedPlugin } from 'emdash/plugin';
 import { ContentSaveRejectedError } from 'emdash';
 import { contentMediaIds, isCmsCollection, validateCmsDraft } from '@blackbox/content-model';
+import { deletePriceDraftFor, priceDraftRoute, priceDraftRouteEntry } from './price-drafts';
 
 export default {
+  routes: { [priceDraftRoute]: priceDraftRouteEntry },
   hooks: {
     'content:beforeSave': {
       errorPolicy: 'abort',
@@ -27,6 +29,9 @@ export default {
       if (!['artists', 'releases'].includes(event.collection)) return false;
       const item = await context.content?.get(event.collection, event.id);
       return Boolean(item && item.status === 'draft' && !item.liveRevisionId && !item.publishedAt);
+    },
+    'content:afterDelete': async (event, context) => {
+      await deletePriceDraftFor(context, { collection: event.collection, recordId: event.id });
     },
   },
 } satisfies SandboxedPlugin;

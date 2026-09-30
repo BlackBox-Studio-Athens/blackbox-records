@@ -1050,6 +1050,11 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                   Count stock
                 </Button>
               </ButtonGroup>
+              {embedded && (
+                <p className="text-sm text-muted-foreground">
+                  Stock updates immediately and is not part of Publish changes.
+                </p>
+              )}
               <div className="grid gap-5">
                 <div hidden={stockMode !== 'adjust'}>
                   <Card className="border-border bg-card">
@@ -1150,9 +1155,9 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           type="submit"
                         >
                           {submittingIntent === 'stockChange' ? (
-                            <LoadingButtonContent label="Saving stock change" />
+                            <LoadingButtonContent label="Updating stock" />
                           ) : (
-                            'Save stock change'
+                            'Update stock now'
                           )}
                         </Button>
                       </form>

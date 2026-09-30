@@ -830,6 +830,10 @@ body[data-workspace='content'] {
 .publication-flow button {
   min-height: 44px;
 }
+/* Review checkboxes keep their square box; the paired label provides the larger target. */
+.publication-flow [role='checkbox'] {
+  min-height: 0;
+}
 .website-change-list a,
 .publication-issues a,
 .publication-result a {

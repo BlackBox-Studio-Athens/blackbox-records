@@ -1,5 +1,37 @@
 import { extractSafeProblemDetail } from './problem-details';
 
+// Price drafts live in the EmDash `blackbox-editorial` plugin. A draft is never Price Authority:
+// only the confirmed price command below changes what shoppers pay.
+export type DraftPrice =
+  | { kind: 'fixed'; currencyCode: 'EUR'; amountMinor: number }
+  | {
+      kind: 'pay_what_you_want';
+      currencyCode: 'EUR';
+      minimumAmountMinor: number;
+      presetAmountMinor: number;
+      maximumAmountMinor: number;
+    };
+
+/** One publish attempt: exactly the idempotent command a retry resends, on any device. */
+export type PriceAttempt =
+  | { command: 'change'; operationId: string; expectedRevision: number }
+  | { command: 'initialize'; operationId: string; expectedRevision: number; cmsRevision: string; itemType: string };
+
+/** What the staff editor writes. */
+export type PriceDraftInput = {
+  collection: 'releases' | 'distro';
+  recordId: string;
+  price: DraftPrice;
+  /** Format chosen for a first price before any attempt. */
+  itemType?: string;
+  /** The live amount the member saw while typing; a different live price is a conflict. */
+  liveAmountWhenStaged: number | null;
+  attempt: PriceAttempt | null;
+};
+
+/** A stored draft, always with the revision needed to save over or remove it. */
+export type PriceDraft = PriceDraftInput & { revision: string; updatedBy: string | null; updatedAt: string };
+
 export type EditorialRecord = {
   id: string;
   slug: string;
@@ -24,6 +56,8 @@ export type EditorialRecord = {
       }
     | null
     | undefined;
+  /** Absent when the workspace could not read drafts; null when the item has none. */
+  priceDraft?: PriceDraft | null;
 };
 export type EditorialMedia = {
   id: string;
@@ -35,7 +69,7 @@ export type EditorialMedia = {
   width?: number;
   height?: number;
 };
-export type EditorialList<T> = { items: T[]; nextCursor?: string };
+export type EditorialList<T> = { items: T[]; nextCursor?: string; priceDraftsUnavailable?: boolean };
 
 const nativeMediaPath = '/_emdash/api/media/file/';
 const staffThumbnailMaxDimension = 96;
@@ -152,7 +186,11 @@ export async function editorialRequest<T>(
   }
   const result = (await response.json()) as { success: boolean; data: T };
   if (!result.success) throw new Error('We could not read the result. Try again.');
-  if (typeof window !== 'undefined' && method !== 'GET' && path.startsWith('content/'))
+  if (
+    typeof window !== 'undefined' &&
+    method !== 'GET' &&
+    (path.startsWith('content/') || path.startsWith('plugins/blackbox-editorial/price-drafts'))
+  )
     window.dispatchEvent(new Event('staff:editorial-change'));
   return result.data;
 }

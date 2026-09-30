@@ -235,6 +235,9 @@ const state = {
   requests: [],
 };
 const publications = [];
+// EmDash blackbox-editorial plugin KV stand-in: price drafts with compare-and-set revisions.
+const priceDrafts = new Map();
+let priceDraftRevision = 0;
 const previewDocuments = new Map();
 const previewBridge =
   ts.transpileModule(await readFile('apps/web/src/platform/lib/private-preview.ts', 'utf8'), {
@@ -367,6 +370,7 @@ const server = createServer(async (req, res) => {
                           freshUntil: null,
                         }
                       : null,
+                priceDraft: priceDrafts.get(`${section}:${item.id}`) ?? null,
               }))
           : [],
       );
@@ -378,6 +382,34 @@ const server = createServer(async (req, res) => {
         items: items.slice(offset, offset + limit),
         nextCursor: items.length > offset + limit ? String(offset + limit) : undefined,
       });
+    }
+    if (url.pathname === '/_emdash/api/plugins/blackbox-editorial/price-drafts') {
+      if (req.method === 'GET') {
+        const collection = url.searchParams.get('collection');
+        const id = url.searchParams.get('id');
+        return ok({
+          items: [...priceDrafts.values()].filter(
+            (draft) => !collection || (draft.collection === collection && draft.recordId === id),
+          ),
+        });
+      }
+      // Like EmDash, DELETE route input comes from the query string.
+      const input = req.method === 'DELETE' ? Object.fromEntries(url.searchParams) : body;
+      const target = req.method === 'PUT' ? input.draft : input;
+      const key = `${target.collection}:${target.recordId}`;
+      if ((priceDrafts.get(key)?.revision ?? null) !== (input.revision ?? null)) return fail(409);
+      if (req.method === 'DELETE') {
+        priceDrafts.delete(key);
+        return ok({ deleted: true });
+      }
+      const item = {
+        ...body.draft,
+        updatedBy: null,
+        updatedAt: new Date().toISOString(),
+        revision: `d${++priceDraftRevision}`,
+      };
+      priceDrafts.set(key, item);
+      return ok({ item });
     }
     if (url.pathname === '/api/internal/orders/search') {
       if (url.searchParams.get('status') === 'needs_review' && url.searchParams.get('limit') === '1') {
@@ -1028,7 +1060,7 @@ else if (process.argv.includes('--editor-recovery')) {
     await page.goto(`${origin}/stock/?variantId=variant_retained`);
     await page.getByRole('link', { name: 'Selling', exact: true }).click();
     await page.waitForURL(/collection=releases.*id=releases-retained.*tab=selling/);
-    await page.getByText('No price set', { exact: true }).waitFor();
+    await page.getByText('No price yet', { exact: true }).waitFor();
     assert.equal(sellingFixture.publicationReads, 0, 'Unfinished setup must not mount publication preflight');
     const amount = page.getByRole('textbox', { name: 'Price (EUR)', exact: true });
     assert.equal(await amount.inputValue(), '');
@@ -1036,51 +1068,47 @@ else if (process.argv.includes('--editor-recovery')) {
     await amount.focus();
     await page.keyboard.type('12,50');
     await page.keyboard.press('Tab');
-    await page.keyboard.press('Enter');
-    await page.getByText(/Your amount is retained/).waitFor();
-    assert.equal(await amount.inputValue(), '12,50');
-    page.once('dialog', (dialog) => dialog.dismiss());
-    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-    assert.equal(await amount.inputValue(), '12,50');
-    page.once('dialog', (dialog) => dialog.accept());
-    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-    await page.waitForFunction(() => document.querySelector('input[inputmode="decimal"]')?.value === '');
+    await page.getByText('Draft saved. Publish changes to make it live.', { exact: true }).waitFor();
+    assert.deepEqual(priceDrafts.get('releases:releases-retained')?.price, {
+      kind: 'fixed',
+      currencyCode: 'EUR',
+      amountMinor: 1250,
+    });
+    assert.equal(priceDrafts.get('releases:releases-retained')?.itemType, 'CDs');
+    assert.equal(sellingFixture.writes.length, 0, 'Typing a price never changes the live price');
+    await page.reload();
+    await page.getByText('Not live yet', { exact: true }).waitFor();
+    assert.equal(await amount.inputValue(), '12.50');
     await page.setViewportSize({ width: 320, height: 780 });
-    await page.getByRole('combobox', { name: /^Format/ }).selectOption('CDs');
-    await amount.fill('12.50');
-    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= 320));
-    assert.ok((await page.getByRole('button', { name: 'Set price', exact: true }).boundingBox()).height >= 44);
-    await page.screenshot({ path: resolve(artifacts, 'selling-initial-320.png'), fullPage: true });
-    await page.getByRole('button', { name: 'Set price', exact: true }).click();
-    await page.getByText('Price saved. Existing orders are unchanged.', { exact: true }).waitFor();
-    await page.getByText(/Selling details could not be refreshed/).waitFor();
-    assert.equal(await page.getByRole('button', { name: 'Set price', exact: true }).count(), 0);
-    await page.getByRole('button', { name: 'Refresh', exact: true }).click();
-    await page.getByText('Current price: €12.50', { exact: true }).waitFor();
-    assert.equal(sellingFixture.writes.length, 2, 'Conflict and corrected review submit once each');
-    assert.equal(sellingFixture.writes[0].price.amountMinor, 1250);
-    assert.equal(sellingFixture.writes[1].price.amountMinor, 1250);
-    assert.ok(sellingFixture.publicationReads > 0);
-    await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.screenshot({ path: resolve(artifacts, 'selling-desktop.png'), fullPage: true });
-    await page.setViewportSize({ width: 320, height: 780 });
-    await page.getByRole('button', { name: 'Change price', exact: true }).waitFor();
     assert.ok(
       await page.evaluate(() => document.documentElement.scrollWidth <= 320),
       'No horizontal overflow at 320px',
     );
-    assert.ok((await page.getByRole('button', { name: 'Change price', exact: true }).boundingBox()).height >= 44);
-    await page.screenshot({ path: resolve(artifacts, 'selling-320.png'), fullPage: true });
+    assert.ok((await page.getByRole('button', { name: 'Undo price change', exact: true }).boundingBox()).height >= 44);
+    await page.screenshot({ path: resolve(artifacts, 'selling-initial-320.png'), fullPage: true });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.getByRole('button', { name: /^Publish changes/ }).click();
+    const goesLive = page.getByRole('region', { name: 'What goes live', exact: true });
+    await goesLive.getByText('€12.50', { exact: true }).waitFor();
+    await page.getByRole('checkbox', { name: /^Put this item on sale in the shop/ }).waitFor();
+    assert.equal(await page.getByRole('checkbox', { name: /^Put this item on sale in the shop/ }).isChecked(), false);
+    await page.screenshot({ path: resolve(artifacts, 'selling-desktop.png'), fullPage: true });
+    await page.getByRole('button', { name: 'Back to editing', exact: true }).click();
+    await page.getByRole('tab', { name: 'Price & stock', exact: true }).click();
+    await page.getByRole('button', { name: 'Undo price change', exact: true }).click();
+    await page.waitForFunction(() => !document.body.innerText.includes('Not live yet'));
+    assert.equal(priceDrafts.size, 0, 'Undo removes the EmDash draft');
+    assert.equal(sellingFixture.writes.length, 0);
     await page.goto(`${origin}/stock/?variantId=variant_retained`);
     await page.getByRole('link', { name: 'Selling', exact: true }).waitFor();
     const stock = await (await page.request.get(`${origin}/api/internal/variants/variant_retained/stock`)).json();
     assert.equal(stock.stock.quantity, 1);
     assert.equal(stock.stock.onlineQuantity, 1);
     await page.goto(`${origin}/content/?collection=releases&id=releases-1&tab=selling`);
-    await page.getByText('Current price: €28.00', { exact: true }).waitFor();
-    await page.getByRole('button', { name: 'Change price', exact: true }).waitFor();
+    await page.getByText('€28.00', { exact: true }).first().waitFor();
+    await page.getByRole('textbox', { name: 'Price (EUR)', exact: true }).waitFor();
     console.log(
-      'Retained Selling journey passed: keyboard, comma/point, conflict/Refresh, saved/read-failure, 320px, configured control, Stock handoff.',
+      'Retained Selling journey passed: keyboard, comma/point, EmDash price draft, reload, review rows, first sale option, undo, 320px, Stock handoff.',
     );
   } catch (error) {
     await page.screenshot({ path: resolve(artifacts, 'selling-failure.png'), fullPage: true });
@@ -1400,22 +1428,17 @@ else if (process.argv.includes('--editor-recovery')) {
       await page.goto(`${origin}/content/?collection=releases&id=${original.id}`);
       await page.getByLabel('Release title', { exact: true }).waitFor();
       await page.getByRole('tab', { name: 'Price & stock', exact: true }).click();
-      await page.getByRole('button', { name: 'Save stock change', exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Update stock now', exact: true }).waitFor();
       assert.equal(await page.getByRole('button', { name: 'Selling', exact: true }).count(), 0);
-      const publication = page.getByRole('region', { name: 'Shop publication', exact: true });
-      await publication.getByRole('button', { name: 'Publish item to shop', exact: true }).waitFor();
-      assert.equal(await publication.locator('xpath=ancestor::details').count(), 0);
-      assert.ok(
-        (await publication.boundingBox()).y < (await page.locator('#item-price-heading').boundingBox()).y,
-        'Shop publication is visible before the price and stock controls',
+      await page.getByText('Price, text and photos go live together with Publish changes.', { exact: true }).waitFor();
+      await page.getByRole('button', { name: /^Publish changes/ }).waitFor();
+      for (const removed of ['Publish item to shop', 'Change price', 'Refresh'])
+        assert.equal(await page.getByRole('button', { name: removed, exact: true }).count(), 0, `${removed} is gone`);
+      assert.equal(
+        await page.getByRole('checkbox', { name: 'Confirm this price for the live shop', exact: true }).count(),
+        0,
+        'Live confirmation moves to the single publish review',
       );
-      const priceConfirmation = page.getByRole('checkbox', {
-        name: 'Confirm this price for the live shop',
-        exact: true,
-      });
-      await priceConfirmation.waitFor();
-      assert.equal(await priceConfirmation.isChecked(), false);
-      assert.equal(await priceConfirmation.getAttribute('required'), '');
       await page.getByRole('tab', { name: 'Details & photos', exact: true }).click();
       const files = [1, 2, 3].map((index) => ({ name: `photo-${index}.png`, mimeType: 'image/png', buffer: pixels }));
       await page.getByLabel('Upload photos', { exact: true }).setInputFiles(files);
@@ -1468,11 +1491,36 @@ else if (process.argv.includes('--editor-recovery')) {
         assert.ok(gradient.height <= header.height + 1, 'Gradient stays inside the toolbar on every viewport');
         await page.screenshot({ path: resolve(artifacts, `unified-catalog-${width}.png`) });
       }
-      await page.getByLabel('New price (EUR)', { exact: true }).fill('29');
-      page.once('dialog', (dialog) => dialog.dismiss());
+      await page.getByLabel('Price (EUR)', { exact: true }).fill('29');
+      await page.getByText('Draft saved. Publish changes to make it live.', { exact: true }).waitFor();
+      await page.getByText('Not live yet', { exact: true }).waitFor();
+      assert.equal(priceDrafts.get(`releases:${original.id}`)?.price.amountMinor, 2900);
+      let dialogs = 0;
+      page.on('dialog', (dialog) => {
+        dialogs++;
+        void dialog.dismiss();
+      });
       await page.getByRole('link', { name: 'Back to Releases', exact: true }).click();
-      assert.equal(await page.getByLabel('New price (EUR)', { exact: true }).inputValue(), '29');
-      page.once('dialog', (dialog) => dialog.accept());
+      await page.waitForURL((url) => !url.searchParams.has('id'));
+      assert.equal(dialogs, 0, 'A saved price draft never blocks leaving');
+      await page.goto(`${origin}/content/?collection=releases&id=${original.id}&tab=selling`);
+      await page.getByText('Not live yet', { exact: true }).waitFor();
+      assert.equal(await page.getByLabel('Price (EUR)', { exact: true }).inputValue(), '29.00');
+      await page.getByText('Not live yet:', { exact: true }).waitFor();
+      assert.match(
+        await page.getByRole('status').filter({ hasText: 'Not live yet:' }).first().innerText(),
+        /Details & photos, Price/,
+        'The header lists every change that is not live',
+      );
+      await page.getByRole('button', { name: /^Publish changes/ }).click();
+      const goesLive = page.getByRole('region', { name: 'What goes live', exact: true });
+      await goesLive.getByText('€29.00', { exact: true }).waitFor();
+      await goesLive.getByText('Shop checkout', { exact: true }).waitFor();
+      await page.getByRole('button', { name: 'Back to editing', exact: true }).click();
+      await page.getByRole('tab', { name: 'Price & stock', exact: true }).click();
+      await page.getByRole('button', { name: 'Undo price change', exact: true }).click();
+      await page.waitForFunction(() => !document.body.innerText.includes('Not live yet'));
+      assert.equal(priceDrafts.size, 0, 'Undo removes the EmDash draft');
       await page.getByRole('link', { name: 'Back to Releases', exact: true }).click();
       await page.waitForURL((url) => !url.searchParams.has('id'));
       await page.goto(`${origin}/content/?collection=distro&id=${originalDistro.id}`);
@@ -1501,7 +1549,7 @@ else if (process.argv.includes('--editor-recovery')) {
       );
       await page.goto(`${origin}/content/?collection=releases&id=${original.id}&tab=stock`);
       await page.getByRole('alert').filter({ hasText: "Another item's stock update is unconfirmed" }).waitFor();
-      assert.equal(await page.getByRole('button', { name: 'Save stock change', exact: true }).isEnabled(), false);
+      assert.equal(await page.getByRole('button', { name: 'Update stock now', exact: true }).isEnabled(), false);
       assert.equal(
         await page.evaluate(() => JSON.parse(sessionStorage.getItem('blackbox-pending-change')).variantId),
         'other-item',

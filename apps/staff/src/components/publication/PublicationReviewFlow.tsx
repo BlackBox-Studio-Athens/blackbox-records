@@ -17,6 +17,19 @@ import {
   type ContentPublication,
 } from '../../lib/backend/content-publication-api';
 import { EditorialApiError } from '../../lib/backend/editorial-api';
+import { createInternalStockApi } from '../../lib/backend/internal-stock-api';
+import {
+  applyPriceDraft,
+  describePrice,
+  planItemPublication,
+  shopIntent,
+  readItemPublication,
+  startItemPublication,
+  type ItemCommerceState,
+} from '../../lib/item-commerce';
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '../ui/empty';
+import { Checkbox } from '../ui/checkbox';
+import { ItemChangeRows, ItemPublishProgress, type ItemStepState, type StepStatus } from './ItemChanges';
 import { pendingPublicationKey, restorePublication } from './publication-selection';
 
 const entryKey = (entry?: { collection: string; recordId: string }) =>
@@ -66,6 +79,7 @@ export default function PublicationReviewFlow({
   records: initialRecords,
   intent = 'review',
   individual = false,
+  commerce,
   onBack,
   onPublished,
   onReviewed,
@@ -74,6 +88,8 @@ export default function PublicationReviewFlow({
   records: PublicationReviewInput['records'];
   intent?: 'review' | 'publish';
   individual?: boolean;
+  /** Selling state of a catalog item; its price draft and shop checkout publish in the same run. */
+  commerce?: ItemCommerceState;
   onBack(): void;
   onPublished?(records: PublicationReviewInput['records']): void;
   onReviewed?(review: PublicationReview): void;
@@ -101,6 +117,13 @@ export default function PublicationReviewFlow({
   const tabId = useId();
   const onPublishedRef = useRef(onPublished);
   onPublishedRef.current = onPublished;
+  const [putOnSale, setPutOnSale] = useState(false);
+  const [liveConfirmed, setLiveConfirmed] = useState(false);
+  const [steps, setSteps] = useState<ItemStepState[] | null>(null);
+  const stepsRef = useRef<ItemStepState[] | null>(null);
+  const [itemPollingKey, setItemPollingKey] = useState('');
+  const itemCompleted = useRef(false);
+  const confirmId = useId();
 
   async function loadReview(selected = records, direct = false) {
     if (lock.current) return;
@@ -236,8 +259,8 @@ export default function PublicationReviewFlow({
       }
     : undefined;
 
-  async function publish(selection = reviewedSelection, ownsLock = false) {
-    if ((!ownsLock && lock.current) || recoveryError || (!pending && (ownsLock ? !selection : blocked))) return;
+  async function publish(selection = reviewedSelection, ownsLock = false): Promise<boolean> {
+    if ((!ownsLock && lock.current) || recoveryError || (!pending && (ownsLock ? !selection : blocked))) return false;
     if (!ownsLock) {
       lock.current = true;
       setBusy(true);
@@ -256,6 +279,7 @@ export default function PublicationReviewFlow({
       localStorage.setItem(pendingPublicationKey(base), JSON.stringify(input));
       setPending(input);
       settle(await publishSavedContent(base, input), input);
+      return true;
     } catch (error) {
       if (error instanceof EditorialApiError && [400, 409].includes(error.status)) {
         localStorage.removeItem(pendingPublicationKey(base));
@@ -264,10 +288,166 @@ export default function PublicationReviewFlow({
         setStale(true);
       }
       setError(error instanceof Error ? error.message : 'Update not confirmed. Check status.');
+      return false;
     } finally {
       lock.current = false;
       setBusy(false);
     }
+  }
+
+  const plan = commerce
+    ? planItemPublication({
+        contentChanged: reviewHasChanges,
+        priceDraft: !!commerce.priceDraft,
+        shop: shopIntent(commerce.shop, putOnSale),
+        dependencies: (review?.entries.length ?? 0) > 1,
+      })
+    : [];
+  const commerceBlocked =
+    !review ||
+    stale ||
+    review.dependencies.length > 0 ||
+    review.entries.some((entry) => entry.issues.length) ||
+    !plan.length ||
+    (!!commerce?.requiresLiveConfirmation && !liveConfirmed);
+  const changeCount =
+    (commerce?.priceDraft ? 1 : 0) +
+    (reviewHasChanges ? (review?.entries.length ?? 0) : 0) +
+    (putOnSale && !reviewHasChanges ? 1 : 0);
+  function updateStep(step: ItemStepState['step'], status: StepStatus) {
+    const next = (stepsRef.current ?? []).map((state): ItemStepState =>
+      state.step === step ? { step, ...status } : state,
+    );
+    stepsRef.current = next;
+    setSteps(next);
+  }
+
+  // One Publish changes run: each step keeps its own retained identity, so Retry resumes only unfinished work.
+  async function publishItem() {
+    if (!commerce || lock.current) return;
+    const previous = stepsRef.current;
+    const start: ItemStepState[] = previous?.some((state) => state.status !== 'done')
+      ? previous.map((state) => (state.status === 'done' ? state : { step: state.step, status: 'waiting' }))
+      : plan.map((step) => ({ step, status: 'waiting' }));
+    stepsRef.current = start;
+    setSteps(start);
+    setError('');
+    itemCompleted.current = false;
+    heading.current?.focus();
+    const api = createInternalStockApi({ backendBaseUrl: base });
+    let running: ItemStepState['step'] | null = null;
+    try {
+      for (const { step, status } of start) {
+        if (status === 'done') continue;
+        running = step;
+        updateStep(step, { status: 'running' });
+        if (step === 'price') {
+          lock.current = true;
+          setBusy(true);
+          const result = await applyPriceDraft(base, api, commerce.variantId, commerce.priceDraft!);
+          if (result !== 'completed') {
+            updateStep(step, {
+              status: result === 'needs_review' ? 'review' : 'failed',
+              message:
+                result === 'needs_review'
+                  ? 'Ask a label administrator to review this price change.'
+                  : 'Price change not confirmed yet. Retry sends the same change.',
+            });
+            return;
+          }
+          updateStep(step, {
+            status: 'done',
+            message: `${describePrice(commerce.priceDraft!.price)} is live in the shop.`,
+          });
+          window.dispatchEvent(new Event('staff:editorial-change'));
+        } else if (step === 'content') {
+          lock.current = false;
+          if (!(await publish(reviewedSelection, true))) {
+            updateStep(step, { status: 'failed', message: 'The website update was not accepted.' });
+            return;
+          }
+          // The item step publishes the same record again; it waits until this publication is live.
+          updateStep(step, { status: 'running', message: 'Updating the website…' });
+          return;
+        } else {
+          lock.current = true;
+          setBusy(true);
+          const result = await startItemPublication(base, api, commerce.variantId);
+          if (result === 'live')
+            updateStep(step, { status: 'done', message: 'The website and shop checkout are live.' });
+          else if (result === 'pending') {
+            updateStep(step, { status: 'running', message: 'Updating the website and shop checkout…' });
+            setItemPollingKey(commerce.variantId);
+          } else {
+            updateStep(step, {
+              status: result === 'needs_review' ? 'review' : 'failed',
+              message:
+                result === 'needs_review'
+                  ? 'Ask a label administrator to review this shop update.'
+                  : 'The website update failed. Retry uses the same saved content.',
+            });
+            return;
+          }
+        }
+      }
+    } catch (error) {
+      if (running)
+        updateStep(running, {
+          status: 'failed',
+          message: error instanceof Error ? error.message : 'Update not confirmed. Retry sends the same change.',
+        });
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
+  async function checkItem() {
+    if (!commerce) return;
+    const result = await readItemPublication(
+      base,
+      createInternalStockApi({ backendBaseUrl: base }),
+      commerce.variantId,
+    );
+    if (result === 'pending') return;
+    setItemPollingKey('');
+    updateStep('item', {
+      status: result === 'live' ? 'done' : result === 'needs_review' ? 'review' : 'failed',
+      message:
+        result === 'live'
+          ? 'The website and shop checkout are live.'
+          : result === 'needs_review'
+            ? 'Ask a label administrator to review this shop update.'
+            : 'The website update failed. Retry uses the same saved content.',
+    });
+  }
+  const itemPolling = usePublicationPolling(itemPollingKey, checkItem);
+  useEffect(() => {
+    if (!stepsRef.current?.some((state) => state.step === 'content' && state.status === 'running')) return;
+    if (operation?.status === 'live') {
+      updateStep('content', { status: 'done', message: 'The website shows the saved details.' });
+      if (stepsRef.current?.some((state) => state.step === 'item' && state.status === 'waiting')) void publishItem();
+    } else if (operation?.status === 'failed')
+      updateStep('content', {
+        status: 'failed',
+        message: operation.failureReason ?? 'The website update failed. Review the changes again.',
+      });
+  }, [operation?.status]);
+  const itemDone = !!steps?.length && steps.every((state) => state.status === 'done');
+  useEffect(() => {
+    if (!itemDone || itemCompleted.current) return;
+    itemCompleted.current = true;
+    window.dispatchEvent(new Event('staff:editorial-change'));
+    window.dispatchEvent(new Event('staff:item-published'));
+    onPublishedRef.current?.(records);
+  }, [itemDone]);
+  function reviewAgain(saved = pending?.records ?? records) {
+    localStorage.removeItem(pendingPublicationKey(base));
+    setPending(null);
+    setOperation(null);
+    stepsRef.current = null;
+    setSteps(null);
+    setRecords(saved);
+    void loadReview(saved);
   }
   const preview = review ? publicationPreviewDestination(review, activeEntry) : undefined;
   const previewKey = preview ? entryKey(preview) : '';
@@ -278,31 +458,37 @@ export default function PublicationReviewFlow({
       <header className="publication-heading">
         <div>
           <h1 ref={heading} tabIndex={-1}>
-            {directPreparing
-              ? 'Publishing this item'
-              : pending
-                ? operation?.status === 'live'
-                  ? 'Your changes are on the website'
-                  : 'Website update'
-                : 'Review your changes'}
+            {steps
+              ? itemDone
+                ? 'Your changes are live'
+                : 'Publishing this item'
+              : directPreparing
+                ? 'Publishing this item'
+                : pending
+                  ? operation?.status === 'live'
+                    ? 'Your changes are on the website'
+                    : 'Website update'
+                  : 'Review your changes'}
           </h1>
           <p className="text-muted-foreground">
-            {directPreparing
-              ? 'Checking the saved version before publication.'
-              : pending
-                ? 'Publication status is confirmed against the public website.'
-                : 'Check what will change. Other drafts stay private.'}
+            {steps
+              ? 'You can leave this page. Each step is kept, so a retry never publishes anything twice.'
+              : directPreparing
+                ? 'Checking the saved version before publication.'
+                : pending
+                  ? 'Publication status is confirmed against the public website.'
+                  : 'Check what will change. Other drafts stay private.'}
           </p>
         </div>
       </header>
-      <PublicationSteps step={pending ? 3 : 2} />
+      <PublicationSteps step={pending || steps ? 3 : 2} />
       {(error || recoveryError) && (
         <div role="alert" className="publication-issues">
           <CircleAlert aria-hidden="true" />
           <p>{recoveryError || error}</p>
         </div>
       )}
-      {stale && !pending && (
+      {stale && !pending && !steps && (
         <div className="publication-issues">
           <p>Review needs to be refreshed before publishing.</p>
           <Button variant="outline" disabled={busy} onClick={() => void loadReview()}>
@@ -323,12 +509,46 @@ export default function PublicationReviewFlow({
           )}
         </div>
       )}
-      {review && !reviewHasChanges && !busy && !pending && (
+      {review && !reviewHasChanges && !busy && !pending && !commerce && (
         <div role="status" className="publication-issues">
           <p>No publishable differences remain. Return to selection.</p>
         </div>
       )}
-      {pending ? (
+      {commerce && review && !plan.length && commerce.shop !== 'ready_to_sell' && !busy && !pending && !steps && (
+        <Empty className="border border-dashed border-border">
+          <EmptyHeader>
+            <EmptyTitle>Everything is live</EmptyTitle>
+            <EmptyDescription>This item has no saved changes or price draft waiting to publish.</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+      )}
+      {steps ? (
+        <div className="publication-result grid gap-4" role="status">
+          <ItemPublishProgress steps={steps} busy={busy} onRetry={() => void publishItem()} />
+          {steps.some((state) => state.step === 'content' && state.status === 'failed') && (
+            <Button variant="outline" disabled={busy} onClick={() => reviewAgain()}>
+              <RefreshCw aria-hidden="true" />
+              Review changes again
+            </Button>
+          )}
+          {itemPolling.paused && (
+            <Button variant="outline" disabled={itemPolling.checking} onClick={() => void itemPolling.check()}>
+              <RefreshCw aria-hidden="true" />
+              Check status
+            </Button>
+          )}
+          {itemDone && review && (
+            <a href={review.publicUrl} target="_blank" rel="noreferrer">
+              View website
+              <ArrowRight className="-rotate-45" aria-hidden="true" />
+            </a>
+          )}
+          <Button variant="outline" disabled={busy} onClick={onBack}>
+            <ArrowLeft aria-hidden="true" />
+            Back to editing
+          </Button>
+        </div>
+      ) : pending ? (
         <div className="publication-result" role="status">
           {operation?.status === 'live' && <CheckCircle2 className="size-8 cms-state-success" aria-hidden="true" />}
           <h3>
@@ -354,17 +574,7 @@ export default function PublicationReviewFlow({
               </Button>
             </>
           ) : operation?.status === 'failed' ? (
-            <Button
-              disabled={busy}
-              onClick={() => {
-                localStorage.removeItem(pendingPublicationKey(base));
-                const saved = pending.records;
-                setPending(null);
-                setOperation(null);
-                setRecords(saved);
-                void loadReview(saved);
-              }}
-            >
+            <Button disabled={busy} onClick={() => reviewAgain(pending.records)}>
               <RefreshCw aria-hidden="true" />
               Review changes again
             </Button>
@@ -417,6 +627,15 @@ export default function PublicationReviewFlow({
                   </div>
                 ))}
               </section>
+            )}
+            {commerce && (plan.length > 0 || commerce.shop === 'ready_to_sell') && (
+              <ItemChangeRows
+                commerce={commerce}
+                contentChanged={reviewHasChanges}
+                putOnSale={putOnSale}
+                onPutOnSale={setPutOnSale}
+                disabled={busy}
+              />
             )}
             <Tabs.Root value={tab} onValueChange={setTab} className="publication-mobile-tabs">
               <Tabs.List aria-label="Review view">
@@ -477,24 +696,43 @@ export default function PublicationReviewFlow({
           </>
         )
       )}
-      {!pending && (
+      {!pending && !steps && (
         <footer className="publication-action-bar">
           <div>
             <strong>
               {review
-                ? reviewHasChanges
-                  ? `${review.entries.length} ${review.entries.length === 1 ? 'change' : 'changes'} selected`
-                  : 'No changes to publish'
+                ? commerce
+                  ? changeCount
+                    ? `${changeCount} ${changeCount === 1 ? 'change' : 'changes'}`
+                    : 'No changes to publish'
+                  : reviewHasChanges
+                    ? `${review.entries.length} ${review.entries.length === 1 ? 'change' : 'changes'} selected`
+                    : 'No changes to publish'
                 : 'Review changes'}
             </strong>
             <p className="text-sm text-muted-foreground">
-              {review && !reviewHasChanges
-                ? 'Select a saved change before publishing.'
-                : review
-                  ? `${review.environment.toUpperCase()} website`
-                  : 'Saved drafts stay private'}{' '}
-              · Price and stock stay unchanged.
+              {commerce
+                ? `${review ? `${review.environment.toUpperCase()} website and shop` : 'Saved drafts stay private'} · Stock is not part of publishing.`
+                : `${
+                    review && !reviewHasChanges
+                      ? 'Select a saved change before publishing.'
+                      : review
+                        ? `${review.environment.toUpperCase()} website`
+                        : 'Saved drafts stay private'
+                  } · Price and stock stay unchanged.`}
             </p>
+            {commerce?.requiresLiveConfirmation && (plan.length > 0 || commerce.shop === 'ready_to_sell') && (
+              <div className="mt-2 flex items-center gap-3 text-sm">
+                <Checkbox
+                  id={confirmId}
+                  className="size-5"
+                  checked={liveConfirmed}
+                  disabled={busy}
+                  onCheckedChange={(checked) => setLiveConfirmed(checked === true)}
+                />
+                <label htmlFor={confirmId}>I checked these changes for the live shop</label>
+              </div>
+            )}
           </div>
           <div className="publication-actions">
             <Button variant="outline" disabled={busy} onClick={onBack}>
@@ -504,20 +742,22 @@ export default function PublicationReviewFlow({
             <Button
               disabled={
                 busy ||
-                Boolean(blocked) ||
+                (commerce ? commerceBlocked : Boolean(blocked)) ||
                 Boolean(recoveryError) ||
-                (!previewReady && !previewFailed && (wide || tab === 'preview'))
+                ((!commerce || reviewHasChanges) && !previewReady && !previewFailed && (wide || tab === 'preview'))
               }
-              onClick={() => void publish()}
+              onClick={() => void (commerce ? publishItem() : publish())}
             >
               <CheckCircle2 aria-hidden="true" />
               {busy
                 ? 'Checking…'
-                : !previewReady
+                : (!commerce || reviewHasChanges) && !previewReady
                   ? 'Publish without preview'
-                  : review?.entries.length === 1
-                    ? 'Publish change'
-                    : `Publish ${review?.entries.length ?? 0} changes`}
+                  : commerce
+                    ? `Publish ${changeCount === 1 ? 'change' : `${changeCount} changes`}`
+                    : review?.entries.length === 1
+                      ? 'Publish change'
+                      : `Publish ${review?.entries.length ?? 0} changes`}
             </Button>
           </div>
         </footer>
