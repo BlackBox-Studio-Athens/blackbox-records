@@ -830,7 +830,7 @@ export default function ContentFields({
         <p className="col-span-full text-sm text-muted-foreground">
           Use Move up or Move down in the link list to change its position.
         </p>
-        {check('show_in_header', 'Show at the top of the site')}
+        {check('show_in_header', 'Show in the main menu (top of the site and the phone Menu)')}
         {check('show_in_footer', 'Show at the bottom of the site')}
       </>
     );

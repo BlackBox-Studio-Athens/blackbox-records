@@ -6,16 +6,16 @@ type SyncShellRenderedNavigationStateOptions = {
   pathname: string;
   renderedPagePathnameRef: RenderedPagePathnameRef;
   setActiveShellPathname: (pathname: string) => void;
-  syncDesktopNavigationState: (pathname: string) => void;
+  syncNavigationCurrentState: (pathname: string) => void;
 };
 
 export function syncShellRenderedNavigationState({
   pathname,
   renderedPagePathnameRef,
   setActiveShellPathname,
-  syncDesktopNavigationState,
+  syncNavigationCurrentState,
 }: SyncShellRenderedNavigationStateOptions) {
   renderedPagePathnameRef.current = pathname;
   setActiveShellPathname(pathname);
-  syncDesktopNavigationState(pathname);
+  syncNavigationCurrentState(pathname);
 }

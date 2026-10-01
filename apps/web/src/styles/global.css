@@ -55,7 +55,8 @@
   --header-padding-x-desktop: 32px;
   --header-brand-logo-aspect-ratio: 256 / 63;
   --header-brand-logo-inline-size: clamp(9rem, 42vw, 9.6rem);
-  --header-brand-logo-max-inline-size: calc(100vw - 8rem);
+  /* Leaves room for the cart and the labelled Menu button down to 280px phones. */
+  --header-brand-logo-max-inline-size: calc(100vw - 11rem);
   --header-nav-font-size: 12px;
   --header-nav-letter-spacing: 2.4px;
   --header-nav-gap: 2.5rem;
@@ -326,46 +327,115 @@ body {
     object-fit: contain;
   }
 
-  .header-nav-link {
-    font-size: var(--header-nav-font-size);
-    letter-spacing: var(--header-nav-letter-spacing);
-    line-height: normal;
-    -webkit-font-smoothing: auto;
-    padding-bottom: var(--header-nav-link-padding-bottom);
+  /* One link style for the header, the phone Menu and the footer sitemap; surface modifiers only size it.
+     Route accents appear on hover, focus, press or the current page, never at rest. */
+  .site-nav-link {
+    --nav-link-rest: var(--muted-foreground);
+    --nav-link-hover: var(--foreground);
+    --nav-link-current: var(--foreground);
+    display: inline-flex;
+    align-items: center;
+    color: var(--nav-link-rest);
+    transition: color 200ms ease-in-out;
   }
 
-  .header-nav-link[aria-current='page'] {
-    color: #f5f5f5;
+  .site-nav-link[data-nav-accent='store'] {
+    --nav-link-hover: var(--store-accent-hover);
+    --nav-link-current: var(--store-accent-active);
   }
 
-  .header-nav-link[aria-current='page']::after {
+  .site-nav-link[data-nav-accent='services'] {
+    --nav-link-hover: var(--services-accent-hover);
+    --nav-link-current: var(--services-accent-active);
+  }
+
+  .site-nav-link__label {
+    position: relative;
+    display: inline-block;
+  }
+
+  .site-nav-link__label::after {
+    position: absolute;
+    inset-inline: 0;
+    bottom: calc(-1 * var(--nav-link-underline-offset, 4px));
+    height: 1px;
+    background: currentColor;
+    content: '';
+    opacity: 0.9;
+    pointer-events: none;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* Touch screens never hover, so a tap leaves no stuck state; :active gives press feedback. */
+  @media (hover: hover) {
+    .site-nav-link:hover {
+      color: var(--nav-link-hover);
+    }
+
+    .site-nav-link:hover .site-nav-link__label::after {
+      transform: scaleX(1);
+    }
+  }
+
+  .site-nav-link:focus-visible,
+  .site-nav-link:active {
+    color: var(--nav-link-hover);
+  }
+
+  .site-nav-link[aria-current='page'] {
+    color: var(--nav-link-current);
+  }
+
+  .site-nav-link:focus-visible .site-nav-link__label::after,
+  .site-nav-link[aria-current='page'] .site-nav-link__label::after {
     transform: scaleX(1);
   }
 
-  .header-nav-link--services {
-    color: #b3b3b3;
+  .site-nav-link--header {
+    --nav-link-underline-offset: var(--header-nav-link-padding-bottom);
+    padding-bottom: var(--header-nav-link-padding-bottom);
+    font-size: var(--header-nav-font-size);
+    font-weight: 400;
+    letter-spacing: var(--header-nav-letter-spacing);
+    line-height: normal;
+    text-transform: uppercase;
+    -webkit-font-smoothing: auto;
   }
 
-  .header-nav-link--services:hover,
-  .header-nav-link--services:focus-visible {
-    color: var(--services-accent-hover);
+  .site-nav-link--menu {
+    --nav-link-rest: color-mix(in oklab, var(--foreground) 90%, transparent);
+    min-height: 2.75rem;
+    padding-block: 0.25rem;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, transparent);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
   }
 
-  .header-nav-link--services[aria-current='page'] {
-    color: var(--services-accent-active);
+  .site-nav-link--footer {
+    --nav-link-underline-offset: 3px;
+    min-height: 2.75rem;
+    font-size: 0.84rem;
+    letter-spacing: 0.01em;
+    line-height: 1;
   }
 
-  .header-nav-link--store {
-    color: #b3b3b3;
+  /* Touch-sized by default; a mouse can use the compact sitemap. */
+  @media (hover: hover) and (pointer: fine) {
+    .site-nav-link--footer {
+      min-height: 0;
+    }
   }
 
-  .header-nav-link--store:hover,
-  .header-nav-link--store:focus-visible {
-    color: var(--store-accent-hover);
-  }
-
-  .header-nav-link--store[aria-current='page'] {
-    color: var(--store-accent-active);
+  .site-menu-button {
+    --nav-link-rest: var(--foreground);
+    min-height: 2.75rem;
+    gap: 0.5rem;
+    padding-inline: 0.25rem;
+    padding-bottom: 0;
   }
 
   .page-content-width-constrained-container {
@@ -902,22 +972,6 @@ body {
     letter-spacing: 0.3em;
     line-height: 1;
     text-transform: uppercase;
-  }
-
-  .site-footer-link {
-    display: inline-flex;
-    min-height: 2.75rem;
-    align-items: center;
-    color: var(--muted-foreground);
-    font-size: 0.84rem;
-    letter-spacing: 0.01em;
-    line-height: 1;
-    transition: color 0.2s ease;
-  }
-
-  .site-footer-link:hover,
-  .site-footer-link:focus-visible {
-    color: var(--foreground);
   }
 
   .site-footer-nav-list {
@@ -4049,21 +4103,6 @@ body.is-app-shell-overlay-open {
     letter-spacing: 0.24em;
   }
 
-  .site-footer-nav-list {
-    width: 100%;
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    gap: 0.35rem;
-    overflow: hidden;
-  }
-
-  .site-footer-link {
-    min-height: 1.85rem;
-    white-space: nowrap;
-    font-size: 0.77rem;
-    letter-spacing: 0;
-  }
-
   .site-footer-meta {
     gap: 0.55rem;
     font-size: 0.6rem;
@@ -4450,8 +4489,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     padding-right: var(--header-padding-x-desktop);
   }
 
-  .site-footer-link {
-    min-height: 0;
+  .site-nav-link--footer {
     font-size: 0.85rem;
   }
 
@@ -4484,11 +4522,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   }
 
   .site-footer-nav-list {
-    width: auto;
-    flex-wrap: wrap;
-    justify-content: flex-start;
     gap: 0.35rem 1rem;
-    overflow: visible;
   }
 }
 
@@ -4588,11 +4622,8 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     transition: none;
   }
 
-  .header-nav-link {
-    transition: none;
-  }
-
-  .header-nav-link::after {
+  .site-nav-link,
+  .site-nav-link__label::after {
     transition: none;
   }
 

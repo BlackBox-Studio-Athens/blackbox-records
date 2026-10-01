@@ -1,6 +1,6 @@
 ---
 import { createProjectRelativeUrl } from '@/platform/config/site';
-import { getHeaderNavigationItems } from '@/lib/site-data';
+import { getMainNavigation } from '@/lib/site-data';
 import HeaderBrand from '@/components/header/HeaderBrand.astro';
 import HeaderDesktopNav from '@/components/header/HeaderDesktopNav.astro';
 import HeaderShell from '@/components/header/HeaderShell.astro';
@@ -11,7 +11,7 @@ interface Props {
 }
 
 const { pathname } = Astro.props;
-const headerNavigationItems = await getHeaderNavigationItems();
+const { sections } = await getMainNavigation();
 const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true';
 ---
 
@@ -28,17 +28,19 @@ const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true';
   <div class="header-brand-group">
     <HeaderBrand href={createProjectRelativeUrl('/')} />
   </div>
-  <HeaderDesktopNav items={headerNavigationItems} pathname={pathname} />
+  <HeaderDesktopNav items={sections} pathname={pathname} />
 
   <div class="flex items-center gap-1">
     <div data-store-cart-header-root></div>
     <button
       type="button"
-      class="inline-flex size-11 items-center justify-center rounded-none border-0 bg-transparent p-0 text-foreground transition-colors hover:bg-transparent hover:text-foreground focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-offset-0 lg:hidden"
-      aria-label="Toggle navigation"
+      class="site-nav-link site-nav-link--header site-menu-button lg:hidden"
+      aria-haspopup="dialog"
+      aria-expanded="false"
       data-app-shell-mobile-navigation-trigger
     >
-      <Menu className="size-4" />
+      <Menu className="size-4" aria-hidden="true" />
+      <span class="site-nav-link__label">Menu</span>
     </button>
   </div>
 </HeaderShell>

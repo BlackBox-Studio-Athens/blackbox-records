@@ -408,7 +408,7 @@ test('normalizes only native navigation boolean columns before validating publis
     readRevision: async () => ({
       ...revision,
       collection: 'navigation',
-      data: { title: 'Home', url: '/', order: 0, show_in_header: 1, show_in_footer: 0 },
+      data: { title: 'Artists', url: '/artists/', order: 1, show_in_header: 1, show_in_footer: 0 },
     }),
   };
   const result = await captureCmsSnapshot(input);

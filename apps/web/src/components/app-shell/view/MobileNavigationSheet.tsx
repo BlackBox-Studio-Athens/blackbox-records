@@ -1,14 +1,14 @@
 import * as React from 'react';
 
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { resolveLinkAttributes } from '@/platform/config/site';
-import type { SiteNavigationItem } from '@/lib/site-data';
-import { isCurrentPath } from '@/platform/utils/urls';
+import type { MainNavigation } from '@/lib/site-data';
+import { navigationLinkAttributes } from '@/platform/utils/urls';
 import { acquireLenisModalLock } from '../lenis-scroll';
+import { MOBILE_NAVIGATION_TRIGGER_SELECTOR } from '../navigation/shell-document-click-intent';
 
 type MobileNavigationSheetProps = {
   activeShellPathname: string;
-  items: SiteNavigationItem[];
+  navigation: MainNavigation;
   onNavigate: () => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
@@ -17,7 +17,7 @@ type MobileNavigationSheetProps = {
 
 export default function MobileNavigationSheet({
   activeShellPathname,
-  items,
+  navigation,
   onNavigate,
   onOpenChange,
   open,
@@ -36,6 +36,11 @@ export default function MobileNavigationSheet({
       <SheetContent
         ref={scrollRootRef}
         data-lenis-scroll-root
+        // Radix returns focus only to its own Trigger; the Menu button is rendered by Astro.
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          document.querySelector<HTMLElement>(MOBILE_NAVIGATION_TRIGGER_SELECTOR)?.focus();
+        }}
         side="right"
         className="top-[var(--header-height)] bottom-auto h-[calc(100dvh-var(--header-height))] w-[min(92vw,320px)] overflow-y-auto border-l border-border/80 bg-background/95 pt-6"
       >
@@ -46,44 +51,20 @@ export default function MobileNavigationSheet({
           </SheetHeader>
 
           <nav className="grid gap-1" aria-label="Mobile" data-app-shell-mobile-navigation>
-            {items.map((item) => {
-              const navigationIsActive = activeShellPathname ? isCurrentPath(activeShellPathname, item.url) : false;
-              const linkAttributes = resolveLinkAttributes(item.url);
-              const isServicesNavigationItem = item.url === '/services/';
-              const isStoreNavigationItem = item.url === '/store/';
-
-              return (
-                <a
-                  key={item.id}
-                  href={linkAttributes.href}
-                  target={linkAttributes.target}
-                  rel={linkAttributes.rel}
-                  data-astro-prefetch={linkAttributes.shouldPrefetch ? true : undefined}
-                  aria-current={navigationIsActive ? 'page' : undefined}
-                  data-services-navigation-link={isServicesNavigationItem ? 'true' : undefined}
-                  data-store-navigation-link={isStoreNavigationItem ? 'true' : undefined}
-                  className={[
-                    'relative inline-flex min-h-11 items-center border-b border-border/70 py-1 text-[12px] font-medium uppercase tracking-[0.2em] transition-colors',
-                    isStoreNavigationItem
-                      ? 'border-l-2 border-l-[var(--store-accent-active)] pl-3 text-[var(--store-accent-active)] hover:text-[var(--store-accent-hover)]'
-                      : isServicesNavigationItem
-                        ? navigationIsActive
-                          ? 'border-l-2 border-l-[var(--services-accent-active)] pl-3 text-[var(--services-accent-active)]'
-                          : 'text-foreground/90 hover:text-[var(--services-accent-hover)]'
-                        : navigationIsActive
-                          ? 'border-l-2 border-l-foreground/85 pl-3 text-foreground'
-                          : 'text-foreground/90 hover:text-foreground',
-                  ].join(' ')}
-                  onClick={onNavigate}
-                >
-                  {item.title}
-                </a>
-              );
-            })}
+            {[navigation.home, ...navigation.sections].map((link) => (
+              <a
+                key={link.id}
+                className="site-nav-link site-nav-link--menu"
+                {...navigationLinkAttributes(link.url, activeShellPathname)}
+                onClick={onNavigate}
+              >
+                <span className="site-nav-link__label">{link.title}</span>
+              </a>
+            ))}
           </nav>
 
           <button
-            className="mt-auto w-full text-[11px] tracking-[0.18em] uppercase text-muted-foreground transition-colors hover:text-foreground"
+            className="mt-auto min-h-11 w-full text-[11px] tracking-[0.18em] uppercase text-muted-foreground transition-colors hover:text-foreground"
             type="button"
             onClick={onNavigate}
           >

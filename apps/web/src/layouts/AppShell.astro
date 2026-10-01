@@ -1,9 +1,9 @@
 ---
 import AppShellRoot from '@/components/app-shell/AppShellRoot';
-import { getHeaderNavigationItems, getLabelSettings, getServicesContent } from '@/lib/site-data';
+import { getLabelSettings, getMainNavigation, getServicesContent } from '@/lib/site-data';
 
-const [mobileNavigationItems, labelSettings, servicesContent] = await Promise.all([
-  getHeaderNavigationItems(),
+const [navigation, labelSettings, servicesContent] = await Promise.all([
+  getMainNavigation(),
   getLabelSettings(),
   getServicesContent(),
 ]);
@@ -12,7 +12,7 @@ const [mobileNavigationItems, labelSettings, servicesContent] = await Promise.al
 <AppShellRoot
   client:load
   initialPathname={Astro.url.pathname}
-  mobileNavigationItems={mobileNavigationItems}
+  navigation={navigation}
   servicesInquirySubmitText={servicesContent.inquiry.submit_text}
   siteTitle={labelSettings.label_name}
 />

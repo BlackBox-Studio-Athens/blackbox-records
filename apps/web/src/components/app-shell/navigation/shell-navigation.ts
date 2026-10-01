@@ -1,5 +1,5 @@
 import { isCurrentPath } from '@/platform/utils/urls';
-import { normalizeAppPathname, parseOverlayRoute, parseShellSectionRoute } from '@/components/app-shell/routing';
+import { parseOverlayRoute, parseShellSectionRoute } from '@/components/app-shell/routing';
 
 export type ShellNavigationSource = 'footer' | 'header' | 'history' | 'mobile-nav' | 'programmatic';
 
@@ -79,12 +79,10 @@ export function isNavigableShellSectionAnchor(anchorElement: HTMLAnchorElement, 
   return parseShellSectionRoute(resolvedUrl.pathname) !== null;
 }
 
-export function syncDesktopNavigationState(pathname: string, currentHref = window.location.href) {
-  document.querySelectorAll<HTMLAnchorElement>('.header-nav-link[href]').forEach((anchorElement) => {
-    const anchorPathname = normalizeNavigationPathname(anchorElement, currentHref);
-    const isActive = isCurrentPath(pathname, anchorPathname);
-
-    if (isActive) {
+// The header and footer render once outside the swapped <main>; keep their current page in step.
+export function syncNavigationCurrentState(pathname: string) {
+  document.querySelectorAll<HTMLAnchorElement>('a[data-nav-link]').forEach((anchorElement) => {
+    if (isCurrentPath(pathname, anchorElement.dataset.navLink ?? '')) {
       anchorElement.setAttribute('aria-current', 'page');
     } else {
       anchorElement.removeAttribute('aria-current');
@@ -104,11 +102,5 @@ export function markCurrentHistoryEntryForShellSection(pathname: string, href = 
     } satisfies ShellSectionHistoryState,
     '',
     href,
-  );
-}
-
-function normalizeNavigationPathname(anchorElement: HTMLAnchorElement, currentHref: string) {
-  return normalizeAppPathname(
-    anchorElement.dataset.navigationPathname || new URL(anchorElement.href, currentHref).pathname,
   );
 }

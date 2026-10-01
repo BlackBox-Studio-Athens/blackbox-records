@@ -6,8 +6,8 @@ import SocialIcon from '@/components/icons/SocialIcon.astro';
 import { getFooterNavigationItems, getLabelSettings, getSocialItems } from '@/lib/site-data';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/components/ui/utils';
-import { PrivacyLink } from '@/platform/components/PurchaseInformation';
 import { getPurchaseInformation } from '@/platform/lib/purchase-information';
+import { navigationLinkAttributes } from '@/platform/utils/urls';
 import { formatYear } from '@/utils/content';
 
 const [footerNavigationItems, socialItems, labelSettings] = await Promise.all([
@@ -59,27 +59,16 @@ const footerSocialItems = socialItems.filter((item) => item.url.trim() && item.u
     <div class="space-y-3">
       <h3 class="site-footer-heading">Sitemap</h3>
       <ul class="site-footer-nav-list">
-        {getPurchaseInformation() && (
+        {[
+          ...(getPurchaseInformation() ? [{ title: 'Privacy information', url: '/privacy/' as const }] : []),
+          ...footerNavigationItems,
+        ].map((item) => (
           <li>
-            <PrivacyLink />
+            <a class="site-nav-link site-nav-link--footer" {...navigationLinkAttributes(item.url, Astro.url.pathname)}>
+              <span class="site-nav-link__label">{item.title}</span>
+            </a>
           </li>
-        )}
-        {footerNavigationItems.map((item) => {
-          const linkAttributes = resolveLinkAttributes(item.url);
-
-          return (
-            <li>
-              <a
-                href={linkAttributes.href}
-                target={linkAttributes.target}
-                rel={linkAttributes.rel}
-                class="site-footer-link"
-              >
-                {item.title}
-              </a>
-            </li>
-          );
-        })}
+        ))}
       </ul>
     </div>
   </div>

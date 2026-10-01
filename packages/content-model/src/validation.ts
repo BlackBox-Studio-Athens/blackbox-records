@@ -81,7 +81,7 @@ export const SITE_PAGES = [
   { path: '/privacy/', label: 'Privacy' },
 ] as const;
 
-type SitePagePath = (typeof SITE_PAGES)[number]['path'];
+export type SitePagePath = (typeof SITE_PAGES)[number]['path'];
 export const SITE_PAGE_PATHS = SITE_PAGES.map(({ path }) => path) as [SitePagePath, ...SitePagePath[]];
 
 // Keys the About page can compute a number for.

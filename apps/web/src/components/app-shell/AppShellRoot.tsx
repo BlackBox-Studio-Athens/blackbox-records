@@ -9,7 +9,7 @@ import {
 import { type ActivePlayerSession } from '@/components/music/player-iframe-session';
 import {
   markCurrentHistoryEntryForShellSection,
-  syncDesktopNavigationState,
+  syncNavigationCurrentState,
   type ShellNavigationSource,
   waitForAnimationFrames,
 } from '@/components/app-shell/navigation/shell-navigation';
@@ -42,7 +42,7 @@ import {
 } from './store-listing-price-activation';
 import { Spinner } from '@/components/ui/spinner';
 import { connectStorePreviewImages } from './dom/store-preview-images';
-import type { SiteNavigationItem } from '@/lib/site-data';
+import type { MainNavigation } from '@/lib/site-data';
 import type { StoreCartState } from '@/components/store/cart/store-cart';
 import { createOverlayFragmentLoader } from './overlay/overlay-fragment-loader';
 import {
@@ -62,6 +62,7 @@ import { openShellOverlayNavigation, type ShellOverlayState } from './overlay/sh
 import { scheduleOverlayContentFocus, scheduleOverlayTriggerFocusRestore } from './overlay/shell-overlay-focus';
 import { createShellPlayerSessionController } from './player-shell/shell-player-session-controller';
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
+import { MOBILE_NAVIGATION_TRIGGER_SELECTOR } from './navigation/shell-document-click-intent';
 import { waitForEagerImages } from './navigation/shell-first-screen-images';
 import { openShellSectionNavigation, type ShellSectionActivationOutcome } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
@@ -80,14 +81,14 @@ type OverlayState = ShellOverlayState;
 
 type AppShellRootProps = {
   initialPathname: string;
-  mobileNavigationItems: SiteNavigationItem[];
+  navigation: MainNavigation;
   servicesInquirySubmitText: string;
   siteTitle: string;
 };
 
 export default function AppShellRoot({
   initialPathname,
-  mobileNavigationItems,
+  navigation,
   servicesInquirySubmitText,
   siteTitle,
 }: AppShellRootProps) {
@@ -232,7 +233,7 @@ export default function AppShellRoot({
       pathname,
       renderedPagePathnameRef,
       setActiveShellPathname,
-      syncDesktopNavigationState,
+      syncNavigationCurrentState,
     });
   }
 
@@ -268,6 +269,22 @@ export default function AppShellRoot({
     reducedMotionQuery.addEventListener('change', handlePreferenceChange);
     return () => reducedMotionQuery.removeEventListener('change', handlePreferenceChange);
   }, [shellPageTransition, shellSectionTransition]);
+
+  // The Menu exists only in the phone layout: its button hides at Tailwind `lg`.
+  useEffect(() => {
+    const desktopQuery = window.matchMedia('(min-width: 64rem)');
+    const closeOnDesktop = () => {
+      if (desktopQuery.matches) setIsMobileNavigationOpen(false);
+    };
+    desktopQuery.addEventListener('change', closeOnDesktop);
+    return () => desktopQuery.removeEventListener('change', closeOnDesktop);
+  }, []);
+
+  useEffect(() => {
+    document
+      .querySelector(MOBILE_NAVIGATION_TRIGGER_SELECTOR)
+      ?.setAttribute('aria-expanded', String(isMobileNavigationOpen));
+  }, [isMobileNavigationOpen]);
 
   useEffect(() => {
     return syncShellBodyStateClasses({
@@ -679,7 +696,7 @@ export default function AppShellRoot({
         >
           <MobileNavigationSheet
             activeShellPathname={activeShellPathname}
-            items={mobileNavigationItems}
+            navigation={navigation}
             onNavigate={() => setIsMobileNavigationOpen(false)}
             onOpenChange={setIsMobileNavigationOpen}
             open

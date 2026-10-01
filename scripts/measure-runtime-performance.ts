@@ -313,7 +313,7 @@ async function storeActivationRun(page: Page, cdp: CDPSession, browserVersion: s
   await page.evaluate(
     () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
   );
-  const storeLink = page.locator('[data-store-navigation-link="true"]').first();
+  const storeLink = page.locator('[data-nav-accent="store"]').first();
   await storeLink.waitFor({ state: 'attached' });
 
   clickAt = performance.now();

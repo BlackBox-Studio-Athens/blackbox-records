@@ -26,6 +26,8 @@ test('header section link swaps main in place and shows the delayed Store status
   await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeVisible();
   await expect(page.locator(main)).toBeFocused();
   await expect(storeLink).toHaveAttribute('aria-current', 'page');
+  // The footer renders outside the swapped <main>; the shared sync keeps its current page in step.
+  await expect(page.locator('footer').getByRole('link', { name: 'Store' })).toHaveAttribute('aria-current', 'page');
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
   expect(await sentinelIntact(page)).toBe(true);
 });
@@ -60,15 +62,87 @@ test('mobile navigation sheet drives shell navigation without horizontal overflo
   await waitForShell(page);
   await plantSentinel(page);
 
-  await page.locator('[data-app-shell-mobile-navigation-trigger]').click();
+  // The open Menu hides the header from assistive technology, so read the button's state by its hook.
+  const menuButton = page.locator('[data-app-shell-mobile-navigation-trigger]');
+  await expect(page.getByRole('banner').getByRole('button', { name: 'Menu', exact: true })).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  );
+  await menuButton.click();
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'true');
   const mobileNav = page.getByRole('navigation', { name: 'Mobile' });
   await expect(mobileNav).toBeVisible();
-  await mobileNav.getByRole('link', { name: 'Store' }).click();
 
+  const links = mobileNav.getByRole('link');
+  await expect(links.first()).toHaveText('Home');
+  await expect(links.first()).toHaveAttribute('aria-current', 'page');
+  const store = mobileNav.getByRole('link', { name: 'Store' });
+  expect(await store.getAttribute('aria-current')).toBeNull();
+  await expect(store).toHaveCSS('border-left-width', '0px');
+  await expect(store).not.toHaveCSS('color', 'rgb(207, 107, 128)');
+  for (const target of [...(await links.all()), page.getByRole('button', { name: 'Close', exact: true })]) {
+    expect((await target.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  }
+
+  await store.click();
   await expect(page).toHaveURL(/\/blackbox-records\/store\/$/);
   await expect(mobileNav).toBeHidden();
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeVisible();
   await expect(page.locator(main)).toBeFocused();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  await menuButton.click();
+  await mobileNav.getByRole('link', { name: 'Home' }).click();
+  await expect(page).toHaveURL(/\/blackbox-records\/$/);
+  await expect(mobileNav).toBeHidden();
+  await expect(page.locator(main)).toBeFocused();
   expect(await sentinelIntact(page)).toBe(true);
+});
+
+test('Escape closes the Menu and returns focus to its button', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'The Menu opens only below the desktop breakpoint.');
+  await page.goto('./');
+  await waitForShell(page);
+  const menuButton = page.locator('[data-app-shell-mobile-navigation-trigger]');
+  await menuButton.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog')).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(menuButton).toBeFocused();
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('the Menu closes when the desktop layout starts', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'The Menu opens only below the desktop breakpoint.');
+  await page.goto('./');
+  await waitForShell(page);
+  const menuButton = page.locator('[data-app-shell-mobile-navigation-trigger]');
+  await menuButton.click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('footer sitemap wraps with touch-sized links on small phones', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'Touch-sized sitemap links apply to the phone layout.');
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto('./');
+    const sitemap = page.locator('.site-footer-nav-list');
+    await sitemap.scrollIntoViewIfNeeded();
+    const sitemapBox = await sitemap.boundingBox();
+    for (const link of await sitemap.getByRole('link').all()) {
+      const box = await link.boundingBox();
+      expect(box?.height, `${width}px link height`).toBeGreaterThanOrEqual(44);
+      expect((box?.x ?? 0) + (box?.width ?? 0), `${width}px link inside the sitemap`).toBeLessThanOrEqual(
+        (sitemapBox?.x ?? 0) + (sitemapBox?.width ?? 0) + 0.5,
+      );
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
 });

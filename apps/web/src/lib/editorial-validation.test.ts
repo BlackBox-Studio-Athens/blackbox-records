@@ -62,6 +62,11 @@ describe('editorial validation', () => {
     expect(aboutItems.safeParse([{ label: 'Press', value: 'press@example.com' }]).success).toBe(true);
     expect(aboutItems.safeParse([{ label: 'Phone', value: '+30 210 000' }]).success).toBe(false);
     expect(navigationContentSchema.shape.url.safeParse('/about/').success).toBe(true);
+    const home = { title: 'Home', url: '/', order: 0, show_in_header: false, show_in_footer: true };
+    expect(navigationContentSchema.safeParse(home).success).toBe(true);
+    expect(navigationContentSchema.safeParse({ ...home, show_in_header: true }).error?.issues[0]?.path).toEqual([
+      'show_in_header',
+    ]);
     expect(homeLink.safeParse('/store/../secret').success).toBe(false);
     expect(socialsContentSchema.shape.title.safeParse('Linktree').success).toBe(true);
     expect(socialsContentSchema.shape.title.safeParse('MySpace').success).toBe(false);

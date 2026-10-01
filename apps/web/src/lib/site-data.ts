@@ -1,14 +1,22 @@
 import type { CollectionEntry } from 'astro:content';
+import { SITE_PAGES, type SitePagePath } from '@blackbox/content-model';
 import { getCollection, getEntry } from '@/lib/content-reader';
 
 export type SiteNavigationItem = {
   id: string;
   title: string;
-  url: string;
+  url: SitePagePath;
   order: number;
   show_in_header: boolean;
   show_in_footer: boolean;
 };
+
+export type NavigationLink = Pick<SiteNavigationItem, 'id' | 'title' | 'url'>;
+type SectionLink = NavigationLink & { url: Exclude<SitePagePath, '/'> };
+
+// Home is structural: the logo on desktop and the first Menu item on phones. Editors
+// choose the sections after it, and the navigation schema keeps Home out of them.
+export type MainNavigation = { home: NavigationLink & { url: '/' }; sections: SectionLink[] };
 
 export type SiteSocialItem = {
   id: string;
@@ -41,8 +49,14 @@ async function getNavigationItems(): Promise<SiteNavigationItem[]> {
     .sort(sortByOrderAndTitle);
 }
 
-export async function getHeaderNavigationItems() {
-  return (await getNavigationItems()).filter((item) => item.show_in_header);
+export async function getMainNavigation(): Promise<MainNavigation> {
+  const [home] = SITE_PAGES;
+  return {
+    home: { id: 'home', title: home.label, url: home.path },
+    sections: (await getNavigationItems()).filter(
+      (item): item is SiteNavigationItem & SectionLink => item.show_in_header && item.url !== '/',
+    ),
+  };
 }
 
 export async function getFooterNavigationItems() {

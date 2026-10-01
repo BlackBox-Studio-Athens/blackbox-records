@@ -217,10 +217,12 @@ Inputs are quiet operational controls that must not become a second visual syste
 
 ### Navigation
 
-Navigation is compact, uppercase, and shell-owned.
+Navigation is compact, uppercase, and shell-owned. One link model and one `.site-nav-link` style serve the header, the phone Menu and the footer sitemap; each surface changes only size.
 
-- Header links use 12px uppercase text with wide tracking and an active underline.
-- Services and Store may shift into their route accents on hover and active states.
+- Header links use 12px uppercase text with wide tracking. On every surface the current page carries the same underline under its label.
+- Services and Store shift into their route accents only on hover, focus, press or the current page, never at rest, and never with side stripes.
+- The phone Menu lists Home first, then the main-menu sections. Desktop shows the sections beside the logo, which links Home. The header button shows the word Menu beside its icon.
+- On touch screens, Menu rows, Close and footer sitemap links are at least 44px tall, and the sitemap wraps instead of clipping.
 - Mobile navigation must preserve the same shell routing behavior and not introduce real document swaps for top-level sections.
 
 ### Signature Component: Persistent Music Player

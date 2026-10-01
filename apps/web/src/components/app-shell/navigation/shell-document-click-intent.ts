@@ -1,6 +1,6 @@
 import type { PlayerProvider } from '../../music/player-provider-data';
 
-const MOBILE_NAVIGATION_TRIGGER_SELECTOR = '[data-app-shell-mobile-navigation-trigger]';
+export const MOBILE_NAVIGATION_TRIGGER_SELECTOR = '[data-app-shell-mobile-navigation-trigger]';
 const PLAYER_MODAL_DISMISS_SELECTOR = '[data-music-streaming-service-embedded-player-modal-dismiss]';
 const MINI_PLAYER_OPEN_SELECTOR = '[data-music-streaming-service-embedded-player-mini-player-open]';
 const MINI_PLAYER_STOP_SELECTOR = '[data-music-streaming-service-embedded-player-mini-player-stop]';

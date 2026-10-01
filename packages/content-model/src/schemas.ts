@@ -138,13 +138,19 @@ export const distroPageContentSchema = z.object({
   group_intros: z.record(z.enum(DISTRO_INTRO_FIELDS.map(({ name }) => name)), requiredProseSchema),
 });
 
-export const navigationContentSchema = z.object({
-  title: requiredText,
-  url: sitePagePath,
-  order: z.number().int().nonnegative(),
-  show_in_header: z.boolean(),
-  show_in_footer: z.boolean(),
-});
+// Home is structural in the main menu: always first in the phone Menu and linked by the logo.
+export const navigationContentSchema = z
+  .object({
+    title: requiredText,
+    url: sitePagePath,
+    order: z.number().int().nonnegative(),
+    show_in_header: z.boolean(),
+    show_in_footer: z.boolean(),
+  })
+  .refine((item) => item.url !== '/' || !item.show_in_header, {
+    path: ['show_in_header'],
+    message: 'Home is always in the main menu, so it cannot be added again.',
+  });
 
 export const socialsContentSchema = z.object({
   title: z.enum(SOCIAL_PLATFORMS, { error: 'Choose a platform from the list.' }),
