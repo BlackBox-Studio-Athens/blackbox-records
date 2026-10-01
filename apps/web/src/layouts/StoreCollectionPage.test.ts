@@ -72,6 +72,15 @@ describe('Store collection category surfaces', () => {
     expect(storeItemCardSource).not.toContain('iframe');
   });
 
+  it('links a Release item artist above the card link', () => {
+    expect(storeItemCardSource).toMatch(
+      /storeItem\.artistPath \? \(\s*<a class="store-item-card__artist-link" href=\{storeItem\.artistPath\}/,
+    );
+    expect(proseCssSource).toMatch(
+      /\.prose-link-card :is\([^)]*\.store-item-card__artist-link[^)]*\)\s*{[^}]*z-index:\s*3/,
+    );
+  });
+
   it('makes the card a single native link while keeping Listen separate and availability visible in Coverflow', () => {
     expect(storeItemCardSource.match(/class="prose-card-link"/g)).toHaveLength(1);
     expect(storeItemCardSource).toMatch(

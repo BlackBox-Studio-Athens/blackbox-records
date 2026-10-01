@@ -26,6 +26,8 @@ export type StoreItem = {
   embeddedPlayerData: EmbeddedPlayerData | null;
   title: string;
   subtitle: string;
+  /** Artist page for the subtitle; only Release items by a roster artist have one. */
+  artistPath?: string;
   summary: string | null;
   summaryRich?: RichText | null;
   image: ReleaseCatalogEntry['data']['cover_image'];
@@ -205,6 +207,7 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
     ),
     title: releaseEntry.data.title,
     subtitle: artistDisplayName,
+    ...(artistProfile ? { artistPath: createArtistDetailPath(artistProfile) } : {}),
     summary: proseText(resolveProse(releaseEntry.data.summary, releaseEntry.data.summary_rich)) || null,
     summaryRich: releaseEntry.data.summary_rich ?? null,
     image: releaseEntry.data.store_item ? releaseEntry.data.cover_image : resolveStoreItemImageForRelease(releaseEntry),

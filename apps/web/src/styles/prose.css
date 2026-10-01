@@ -34,7 +34,7 @@
   inset: 0;
   z-index: 2;
 }
-.prose-link-card :is(.editorial-prose, button, .release-card-artist-link) {
+.prose-link-card :is(.editorial-prose, button, .release-card-artist-link, .store-item-card__artist-link) {
   position: relative;
   z-index: 3;
 }

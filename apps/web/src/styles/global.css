@@ -2305,7 +2305,8 @@ body {
   }
 
   .release-card-artist-link,
-  .releases-artist-link {
+  .releases-artist-link,
+  .store-item-card__artist-link {
     color: inherit;
     text-decoration: underline;
     text-decoration-color: var(--border);
@@ -2314,7 +2315,8 @@ body {
   }
 
   .release-card-artist-link:is(:hover, :focus-visible),
-  .releases-artist-link:is(:hover, :focus-visible) {
+  .releases-artist-link:is(:hover, :focus-visible),
+  .store-item-card__artist-link:is(:hover, :focus-visible) {
     color: var(--foreground);
   }
 

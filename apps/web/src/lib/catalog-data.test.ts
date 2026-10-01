@@ -209,6 +209,7 @@ describe('StoreItem projection contract', () => {
       embeddedPlayerData: null,
       title: 'Caregivers',
       subtitle: 'Afterwise',
+      artistPath: '/blackbox-records/artists/afterwise/',
       summary: 'Release summary',
       summaryRich: null,
       image: { src: '/cover.jpg', width: 100, height: 100, format: 'jpg' },

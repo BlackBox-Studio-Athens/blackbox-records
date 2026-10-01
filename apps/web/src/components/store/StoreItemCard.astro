@@ -74,7 +74,15 @@ const widths = [240, 320, 480, 640, 800, 960];
     </div>
     <CardContent className="store-item-card__content">
       <h2 class="brand-card-title">{storeItem.title}</h2>
-      <p class="store-item-card__artist">{storeItem.subtitle}</p>
+      <p class="store-item-card__artist">
+        {storeItem.artistPath ? (
+          <a class="store-item-card__artist-link" href={storeItem.artistPath} data-astro-prefetch>
+            {storeItem.subtitle}
+          </a>
+        ) : (
+          storeItem.subtitle
+        )}
+      </p>
       {option && <p class="store-item-card__option">{option}</p>}
       <div class="store-item-card__price">
         <span
