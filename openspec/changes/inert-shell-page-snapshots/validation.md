@@ -1,6 +1,6 @@
 # Validation
 
-Base commit: `8a1a1677`. Commit `4d731ebf` on branch `claude/image-loading-performance-21ca0a` (worktree `checkout-compact-design-7a18c0`), local only.
+Base commit: `ca47c42b`, rebased on 2026-10-01 from `8a1a1677`, where the first runs below were made. Commit `d649da03` on branch `claude/image-loading-performance-21ca0a` (worktree `checkout-compact-design-7a18c0`), for a fast-forward into local `main`; not pushed.
 Product Environment: Local, `astro dev` on `http://127.0.0.1:4321/blackbox-records/`, started by Playwright or by `pnpm site:dev:bg` and stopped after each run.
 
 ## Repository gates
@@ -9,11 +9,12 @@ Product Environment: Local, `astro dev` on `http://127.0.0.1:4321/blackbox-recor
 - `pnpm test:e2e e2e/shell-navigation.spec.ts`: the new Store check fails before the fix on both projects and passes after it. The full spec passes against a warmed dev server: 6 passed, 2 skipped (desktop-only tests on the mobile project). Summary `.codex-artifacts/e2e/summary.json` (ignored).
 - A first cold run failed the existing test "header section link swaps main in place and shows the delayed Store status": "Loading Store" stayed visible for 30 seconds while the dev server compiled pages in parallel. The test passed alone (39.6 s) and in the warmed full run, so this is dev-server compile time, not the change.
 - `pnpm openspec -- --allow-worktree validate inert-shell-page-snapshots --type change --strict`: valid.
+- After the rebase, which kept main's removal of the roster snapshot sanitizer and its tests: `pnpm test:app-shell` passes 40 files and 193 tests, and the full shell-navigation spec passes against a warmed dev server with 9 passed and 5 skipped, including main's new Menu and footer tests. Logs: `.codex-artifacts/image-delivery-fixes/rebased/` (ignored).
 - Final `pnpm validate`: the run pointer is kept in `.codex-artifacts/image-delivery-fixes/final-validation.md` (ignored).
 
 ## Browser acceptance (Acceptance row: Shell/player/routing)
 
-Image requests while loading Store and waiting two seconds after the shell mounts, without scrolling, in a fresh Chromium context; `<main>` holds 110 images.
+Image requests while loading Store and waiting two seconds after the shell mounts, without scrolling, in a fresh Chromium context; `<main>` holds 110 images. The rebased tree gives the same counts.
 
 | Viewport         | Before | After |
 | ---------------- | ------ | ----- |
