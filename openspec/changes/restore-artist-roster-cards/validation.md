@@ -1,6 +1,6 @@
 # Validation
 
-Source: branch `claude/restore-artist-photos-aeca04`, uncommitted working tree on base `5a713e71` (`main`). Evidence was recorded on 2026-10-01. This file and `tasks.md` were finished before the final `pnpm validate`. That run's pointer lives in `.codex-artifacts/restore-artist-cards/final-validate.txt`, which is ignored.
+Source: branch `claude/restore-artist-photos-aeca04`, with `5051a3da` rebased onto `main` at `622e0173`. A follow-up commit adds these notes. Evidence was recorded on 2026-10-01. The first round ran on base `5a713e71`. The second ran after a rebase onto `f07cb698`; that is the rebased tree the notes below refer to. This file and `tasks.md` were finished before the final `pnpm validate`. That run's pointer lives in `.codex-artifacts/restore-artist-cards/final-validate.txt`, which is ignored.
 
 Product Environment: Local.
 
@@ -11,46 +11,51 @@ Acceptance rows:
 - **Boundaries/tooling/instructions:** the `artists` module exports and the agent docs changed.
 - **Not applicable:** CMS/schema/publication, commerce and release. Nothing in this change touches them.
 
+## Rebase onto `main`
+
+`main` gained the public button family (`unify-public-buttons`).
+
+- **`ArtistRosterIndex.astro`:** it stays deleted. `main`'s only change there was the View artist link class.
+- **`ArtistsRosterFilters.tsx`:** the restored filter takes `main`'s Clear button style, a plain `Button variant="ghost"`. `main`'s genre and sort chips leave with the crate index.
+- **`global.css`:** the conflict held only crate-index rules, which are dropped.
+- **Unstyled classes:** every custom class in the restored markup has a rule, except `prose-link-card`, `artist-roster-card__image`, `artist-detail-listen-trigger` and `artist-detail-route-link--back`. Those four are unstyled hook classes both before the redesign and on `main`.
+- **Editor inputs:** up to `f07cb698`, `main` changed no staff or editor-test inputs (`apps/staff`, `packages`, `scripts/test-content-workspace.mjs`, `scripts/test-preview-policy.mjs`).
+- **Last rebase:** the move to `622e0173` added two independent commits and applied cleanly. `fbe63247` links release artist names, adding one helper to `catalog-data.ts` and release styles to `global.css`. `622e0173` renames the staff About label. The editor acceptance run predates that staff label change, which its own change validated. No code uses an identifier this change removes.
+
 ## Commands
 
-| Command                                                                                         | Result                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm test apps/web/src/pages/_artist-roster-layout.test.ts`                                    | Passed. `web-pages`: 10 files, 30 tests.                                                                                                                                                                                                                                                                                                                                                                |
-| `pnpm --filter @blackbox/web build`                                                             | 349 pages built. The static cache policy, brand font and `image-markup:check` passed.                                                                                                                                                                                                                                                                                                                   |
-| `pnpm test:e2e`                                                                                 | 35 passed, 5 skipped, against this worktree's `astro dev` on port 4321. Each skipped test targets the other viewport project.                                                                                                                                                                                                                                                                           |
-| `pnpm validate:editor`                                                                          | Passed, run `2026-10-01T09-39-49-634Z-87828`: staff build, preview policy, and the Chromium and Firefox workspace runs.                                                                                                                                                                                                                                                                                 |
-| `pnpm openspec -- --allow-worktree validate restore-artist-roster-cards --type change --strict` | Valid.                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `pnpm agent:check`                                                                              | Agent guidance OK (4 documents).                                                                                                                                                                                                                                                                                                                                                                        |
-| `node --import tsx scripts/check-module-projects.mjs && pnpm check:boundaries`                  | Passed: module test ownership, the module boundary audit, dependency-cruiser (621 modules) and the commerce boundary audit.                                                                                                                                                                                                                                                                             |
-| `pnpm validate`                                                                                 | First two runs: an Nx plugin worker timed out ("did not receive a load message within 10 seconds"), once while `astro dev` was starting and once in `workspace:architecture`. Under that load, `check-module-projects.test.mjs` also failed after 52 s, and the bail stopped the remaining tasks. Both architecture checks pass when run directly (row above). For the final run, see the pointer file. |
+| Command                                                                                         | Result                                                                                                                                                                                                                                                                                                                       |
+| ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm test apps/web/src/pages/_artist-roster-layout.test.ts`                                    | Passed before and after the rebase (`web-pages`: 10 files, 30 tests before).                                                                                                                                                                                                                                                 |
+| `pnpm --filter @blackbox/web build`                                                             | Passed after the rebase: 349 pages, plus the static cache policy, brand font and `image-markup:check`.                                                                                                                                                                                                                       |
+| `pnpm test:e2e`                                                                                 | After the rebase: 37 passed, 5 skipped, 0 flaky, against this worktree's `astro dev` on port 4321. Each skipped test targets the other viewport project. Before the rebase: 35 passed, 5 skipped.                                                                                                                            |
+| `pnpm validate:editor`                                                                          | Passed before the rebase, run `2026-10-01T09-39-49-634Z-87828`: staff build, preview policy, and the Chromium and Firefox workspace runs. The rebase changed none of its inputs.                                                                                                                                             |
+| `pnpm openspec -- --allow-worktree validate restore-artist-roster-cards --type change --strict` | Valid.                                                                                                                                                                                                                                                                                                                       |
+| `pnpm agent:check`                                                                              | Agent guidance OK (4 documents).                                                                                                                                                                                                                                                                                             |
+| `node --import tsx scripts/check-module-projects.mjs && pnpm check:boundaries`                  | Passed before the rebase: module test ownership, the module boundary audit, dependency-cruiser (621 modules) and the commerce boundary audit.                                                                                                                                                                                |
+| `pnpm validate`                                                                                 | Before the rebase, two runs hit an Nx plugin worker timeout ("did not receive a load message within 10 seconds") under machine load. A third run with `NX_PLUGIN_NO_TIMEOUTS=true`, which disables only that timeout, passed: `2026-10-01T10-00-43-692Z-73268`. For the final run on the rebased tree, see the pointer file. |
 
 ## Browser observations
 
-Local `astro dev`, viewport emulation in the built-in browser pane. The pane was hidden, so evidence is DOM measurement and one partial screenshot.
+Local `astro dev`, in the built-in browser pane.
 
-**1440 × 900, Artists:**
+**Screenshots after the rebase:**
 
-- The Afterwise, Chronoboros and Ouranopithecus frames are each 345 × 460.
-- Each main photo is loaded, uses `object-fit: contain` and sits above its fill. The fill renders `blur(24px) brightness(0.45)`.
-- Genre and name start below the frame. No card contains a gradient class.
-- The screenshot shows the whole Afterwise landscape photo with blurred bands above and below it, and the whole white Chronoboros logo with a grey blurred fill above it.
-- Hovering Chronoboros sets the photo's `scale` to 1.03 with a 0.5 s transition. The frame clips it, and the fill keeps its static 1.15 transform. The classes match the News card image (`transition-transform duration-500 group-hover:scale-[1.03]`); the artist cards add `motion-safe:` gating.
+- **Artists at 1280 × 800:** three columns. The Afterwise, Chronoboros and Ouranopithecus frames are each 345 × 460, every photo is whole, and the names sit below.
+- **Artists at the pane's 709 px:** two columns. Afterwise shows blurred bands above and below. Chronoboros shows the whole white logo over a grey blurred fill, with no band near the name.
+- **Home featured roster:** the same three cards. The small fill loads first, then the photo appears over it.
+- **Afterwise artist page:** the whole photo, thin blurred bands, and genre, country and name below.
+- **Hover on Chronoboros:** the photo's `scale` reaches 1.03 and the fill does not scale. The classes match the News card image (`transition-transform duration-500 group-hover:scale-[1.03]`); the artist cards add `motion-safe:` gating.
 
-**390 × 844, Artists and Home:**
+**DOM checks before the rebase:**
 
-- Every frame is 356 × 475, with the name below it and no gradients.
-- `scrollWidth` equals `innerWidth` (390), so there is no horizontal overflow.
-- On Home, each fill has `alt=""`, `aria-hidden="true"` and no `fetchpriority`. The page has one high-priority image, the hero.
-
-**Artist detail (Chronoboros):**
-
-- Direct load at 1440: the frame is 553 × 469, with the fill first and then the photo. The photo uses `contain` with `fetchpriority="high"`, and it is the page's only high-priority image.
-- Overlay opened from the Artists card: the frame is 562 × 476 and the fill is loaded.
-
-**Rendered fill:** one 160 px WebP at quality 40 (Chronoboros: `w=160&h=160&q=40&f=webp`), loading the same way as its card.
+- **1440 × 900:** frames are 345 × 460. Main photos use `object-fit: contain` above a `blur(24px) brightness(0.45)` fill, and no card contains a gradient class.
+- **390 × 844:** every frame is 356 × 475, with the name below it. `scrollWidth` equals `innerWidth`.
+- **Home fills:** each has `alt=""`, `aria-hidden="true"` and no `fetchpriority`. Home has one high-priority image, the hero.
+- **Artist detail:** on direct load the photo is the only high-priority image. The overlay renders the fill.
+- **Rendered fill:** one 160 px WebP at quality 40 (Chronoboros: `w=160&h=160&q=40&f=webp`), loading the same way as its card.
 
 ## Not verified
 
-- Full-viewport screenshots. The built-in pane was hidden and its renders timed out, Claude in Chrome had no connected browser, and another session held the DevTools MCP profile.
 - Reduced motion. The `motion-safe:` classes cover it, but it was not emulated.
 - UAT and PRD rendering, which need a release.

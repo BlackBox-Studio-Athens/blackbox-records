@@ -21,7 +21,7 @@
   - no black band sits near any name
   - there is no horizontal overflow
 
-  Evidence: DOM measurements and a partial screenshot ([validation](validation.md)). Full-viewport screenshots were not possible.
+  Evidence: DOM measurements before the rebase, and screenshots after it at 1280 px and the pane's 709 px, covering Artists, Home and the Afterwise page ([validation](validation.md)).
 
-- [x] 3.4 Run the shell continuity checks with `pnpm test:e2e`: Artists → artist overlay → back, and Artists → Home → Artists, keep the player. Evidence: 35 passed and 5 skipped by viewport project, against this worktree's site.
+- [x] 3.4 Run the shell continuity checks with `pnpm test:e2e`: Artists → artist overlay → back, and Artists → Home → Artists, keep the player. Evidence after the rebase: 37 passed and 5 skipped by viewport project, against this worktree's site.
 - [ ] 3.5 When archiving, rewrite the `artist-roster-presentation` Purpose. It still describes prints "without fixed frames".
