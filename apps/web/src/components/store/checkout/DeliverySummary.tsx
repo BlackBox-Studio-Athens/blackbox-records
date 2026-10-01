@@ -51,6 +51,7 @@ export function DeliverySummary({ loading, quote }: Pick<ReturnType<typeof useDe
           Delivery is unavailable for this cart. Please review the items or try again later.
         </p>
       ) : (
+        // Bebas amounts stay inside the 20px rows so the quote replaces the placeholder without moving Checkout.
         <dl className="space-y-2">
           <div className="flex justify-between gap-4">
             <dt>Merchandise</dt>
@@ -58,14 +59,14 @@ export function DeliverySummary({ loading, quote }: Pick<ReturnType<typeof useDe
               {quote.merchandiseGrossMinor === null ? (
                 'Choose amount at payment'
               ) : (
-                <span className="font-display">{money(quote.merchandiseGrossMinor)}</span>
+                <span className="font-display leading-none">{money(quote.merchandiseGrossMinor)}</span>
               )}
             </dd>
           </div>
           <div className="flex justify-between gap-4">
             <dt>Shipping — BOX NOW {quote.tier === 'small' ? 'Small' : 'Medium'}</dt>
             <dd>
-              <span className="font-display">{money(quote.amountMinor)}</span>
+              <span className="font-display leading-none">{money(quote.amountMinor)}</span>
             </dd>
           </div>
           <div className="flex justify-between gap-4 font-semibold">
@@ -74,7 +75,7 @@ export function DeliverySummary({ loading, quote }: Pick<ReturnType<typeof useDe
               {quote.totalAmountMinor === null ? (
                 'Shown before payment'
               ) : (
-                <span className="font-display">{money(quote.totalAmountMinor)}</span>
+                <span className="font-display leading-none">{money(quote.totalAmountMinor)}</span>
               )}
             </dd>
           </div>
