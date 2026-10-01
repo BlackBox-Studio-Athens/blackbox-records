@@ -823,6 +823,7 @@ If a photo looks wrong, replace the source image rather than adding crop or foca
 - Other focused backend/frontend scripts remain available from the terminal, not committed IDE run configs.
 - The static-site launcher remains pinned to `http://127.0.0.1:4321/blackbox-records/`.
 - If port `4321` is already in use, the static-site launcher fails fast instead of silently switching ports.
+- On Windows, the Local Worker launchers fail fast when the checkout path is too long for Durable Object storage: workerd cannot open SQLite files at 256 or more characters. Checkout paths up to 104 characters fit.
 - Local D1 comes from Wrangler automatically during Worker dev; no separate D1 process is part of the run-config flow.
 - The stack launchers run D1 migrations and seed SQL before starting long-running services.
 - `pnpm --filter @blackbox/backend d1:check:stripe-mock:local` verifies every current store item has local mock checkout readiness rows after the mock seed runs.

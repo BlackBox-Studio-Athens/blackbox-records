@@ -7,6 +7,7 @@ import { getPlatformProxy, unstable_dev } from 'wrangler';
 import { readContentSnapshot } from '../../web/src/lib/content-files/content-snapshot.ts';
 import { readFile } from 'node:fs/promises';
 import { storeSnapshotMedia, completeSnapshot } from '../src/cms/snapshot-storage.ts';
+import { validateLocalDurableObjectPaths } from './cms-resources.ts';
 
 export async function startLocalPublicRuntime(input, { signal, port = 4321, persistTo } = {}) {
   const backend = fileURLToPath(new URL('../', import.meta.url));
@@ -53,8 +54,10 @@ export async function startLocalPublicRuntime(input, { signal, port = 4321, pers
     child.once('error', reject);
     child.once('exit', (code) => (code === 0 ? done() : reject(new Error('Local public runtime build failed.'))));
   });
+  const config = resolve(backend, 'dist-public/server/wrangler.json');
+  validateLocalDurableObjectPaths(JSON.parse(await readFile(config, 'utf8')), persistTo);
   return unstable_dev(resolve(backend, 'dist-public/server/entry.mjs'), {
-    config: resolve(backend, 'dist-public/server/wrangler.json'),
+    config,
     ip: '127.0.0.1',
     port,
     local: true,

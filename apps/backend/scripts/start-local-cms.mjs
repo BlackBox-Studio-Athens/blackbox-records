@@ -9,6 +9,7 @@ import { importCmsContent } from '../../../scripts/import-cms-content.mjs';
 import { readBackfillSources } from './backfill-runtime-catalog.ts';
 import { loadStripeCatalogStoreItemContracts } from '../../../scripts/stripe-catalog-contract.ts';
 import { publishInitialLocalContent } from '../../web/scripts/start-local-publication.mjs';
+import { validateLocalDurableObjectPaths } from './cms-resources.ts';
 
 process.chdir(fileURLToPath(new URL('../', import.meta.url)));
 const { values } = parseArgs({
@@ -16,10 +17,12 @@ const { values } = parseArgs({
 });
 if (values.port !== '8787') throw new Error('The Local stack requires port 8787.');
 const config = resolve('dist/server/wrangler.json');
-const bindings = JSON.parse(readFileSync(config, 'utf8')).vars;
+const runtimeConfig = JSON.parse(readFileSync(config, 'utf8'));
+const bindings = runtimeConfig.vars;
 if (bindings.PRODUCT_ENVIRONMENT !== 'LOCAL' || bindings.STRIPE_API_BASE_URL !== 'http://127.0.0.1:12110')
   throw new Error('Build the Local mock CMS before starting this launcher.');
 const persistTo = resolve(values['persist-to'] ?? '.wrangler/state');
+validateLocalDurableObjectPaths(runtimeConfig, persistTo);
 const readyPath = resolve('.emdash/local-ready.json');
 rmSync(readyPath, { force: true });
 const migration = spawnSync(

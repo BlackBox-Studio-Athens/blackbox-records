@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "blackbox-records-backend-local",
+  // Local names stay short: they name Durable Object storage directories, which must fit workerd's Windows path limit.
+  "name": "blackbox-local",
   "main": "src/index.ts",
   "compatibility_date": "2026-08-31",
   "compatibility_flags": ["nodejs_compat"],
@@ -41,7 +42,7 @@
   },
   "env": {
     "mock": {
-      "name": "blackbox-records-backend-local-mock",
+      "name": "blackbox-local-mock",
       "durable_objects": { "bindings": [{ "name": "COMMERCE_RUNTIME", "class_name": "CommerceRuntime" }] },
       "workers_dev": true,
       "observability": {
@@ -82,7 +83,7 @@
       },
     },
     "mock-api": {
-      "name": "blackbox-records-backend-local-mock-api",
+      "name": "blackbox-local-mock-api",
       "durable_objects": { "bindings": [{ "name": "COMMERCE_RUNTIME", "class_name": "CommerceRuntime" }] },
       "workers_dev": true,
       "observability": {

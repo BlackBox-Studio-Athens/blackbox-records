@@ -7,7 +7,7 @@ import emdash from 'emdash/astro';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
-import { validateCmsFreeTier, validateCmsResources } from './scripts/cms-resources.ts';
+import { publicWorkerName, validateCmsFreeTier, validateCmsResources } from './scripts/cms-resources.ts';
 
 const localPath = (name) => fileURLToPath(new URL(name, import.meta.url)).replaceAll('\\', '/');
 // The public renderer owns its styling dependencies, including its Tailwind compiler.
@@ -72,9 +72,7 @@ const runtime = {
     { binding: 'CMS_DB', database_name: cms.database_name, database_id: cms.database_id },
   ],
   r2_buckets: [{ binding: 'MEDIA', bucket_name: cms.bucket_name }],
-  services: [
-    { binding: 'PUBLIC_SITE', service: `blackbox-records-public-${selected.vars.PRODUCT_ENVIRONMENT.toLowerCase()}` },
-  ],
+  services: [{ binding: 'PUBLIC_SITE', service: publicWorkerName(selected.vars.PRODUCT_ENVIRONMENT.toLowerCase()) }],
   durable_objects: {
     bindings: [...selected.durable_objects.bindings, { name: 'CMS_RUNTIME', class_name: 'CmsRuntime' }],
   },

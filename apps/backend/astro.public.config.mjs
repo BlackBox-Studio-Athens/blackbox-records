@@ -4,6 +4,7 @@ import { defineConfig } from 'astro/config';
 import { createRequire } from 'node:module';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { publicWorkerName } from './scripts/cms-resources.ts';
 
 const local = (path) => fileURLToPath(new URL(path, import.meta.url)).replaceAll('\\', '/');
 const { default: tailwindcss } = await import(
@@ -24,7 +25,7 @@ const identity = {
   runNumber: Number(process.env.GITHUB_RUN_NUMBER || 0),
 };
 const config = {
-  name: `blackbox-records-public-${environment}`,
+  name: publicWorkerName(environment),
   main: local('src/cms/public-runtime.ts'),
   compatibility_date: '2026-09-16',
   compatibility_flags: ['nodejs_compat'],

@@ -1,4 +1,31 @@
+import { join } from 'node:path';
+
 type CmsResource = { database_name: string; database_id: string; bucket_name: string; hostname?: string };
+
+type LocalWorkerConfig = { name: string; durable_objects?: { bindings: { class_name: string }[] } };
+
+// Local Worker names stay short: they name Durable Object storage directories (see below).
+export function publicWorkerName(environment: 'local' | 'uat' | 'prd') {
+  return environment === 'local' ? 'blackbox-public-local' : `blackbox-records-public-${environment}`;
+}
+
+// workerd on Windows cannot open SQLite files at 256 or more characters (seen with workerd 1.20260925.1). A Local
+// Durable Object stored that deep fails every request with an opaque "internal error", so refuse to start instead.
+export function validateLocalDurableObjectPaths(
+  config: LocalWorkerConfig,
+  persistTo: string,
+  platform = process.platform,
+) {
+  if (platform !== 'win32') return;
+  for (const { class_name } of config.durable_objects?.bindings ?? []) {
+    const walPath = join(persistTo, 'v3', 'do', `${config.name}-${class_name}`, `${'0'.repeat(64)}.sqlite-wal`);
+    if (walPath.length > 255) {
+      throw new Error(
+        `Local ${class_name} storage needs a ${walPath.length}-character path, but workerd on Windows cannot open SQLite files past 255 characters. Use a checkout path at least ${walPath.length - 255} characters shorter.`,
+      );
+    }
+  }
+}
 
 type CmsWorkerConfig = {
   kv_namespaces?: unknown[];
