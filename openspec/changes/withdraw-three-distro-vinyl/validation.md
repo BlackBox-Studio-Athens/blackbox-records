@@ -10,6 +10,7 @@ Work is on canonical main in `C:/Users/SVall/WebstormProjects/blackbox-records`.
 - Backend type checking passed. Strict OpenSpec validation passed during implementation.
 - Local mock seed: 5 tests passed after correcting its total to 101. The first full validation found the stale 104 assertion and was also invalidated by concurrent changes to main; that run is not completion evidence.
 - `pnpm validate` passed in local mode: `.codex-artifacts/validation/2026-10-01T16-01-10-161Z-2732/summary.json`, source `caee18d04218064de54451092e0c44c86c94d630`, matching before/after fingerprint `d9bbb1fb9f4f405d5e54c56e3e8ce371a88eba8336bf2a4755f1881228181141`, no source changes. The final handoff pointer is `.codex-artifacts/withdrawal/final-validation.json`; refresh after the final tracked acceptance notes.
+- The first final-notes validation (`2026-10-01T16-58-59-224Z-47288`) failed before checks because Nx's package-json plugin process did not receive its load message within ten seconds. Its source fingerprint stayed unchanged. Final verification uses process-scoped `NX_DAEMON=false` and `NX_ISOLATE_PLUGINS=false`, supported by installed Nx 23.2.1, to run the same gates without the failing plugin-process startup. Repository configuration and task selection remain unchanged; the final summary pointer records the outcome.
 
 ## Populated Local
 
