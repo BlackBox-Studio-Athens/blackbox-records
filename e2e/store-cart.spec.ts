@@ -56,6 +56,54 @@ test('add to cart opens the drawer, persists the line and restores it on another
   await expect(trigger).toHaveAccessibleName('Cart, 1 item');
 });
 
+test('the checkout pay control fills in place when the shipping quote arrives', async ({ page }) => {
+  await page.goto(`.${localRepresentativePaths.storeItem}`);
+  await waitForShell(page);
+  await waitForIsland(page, 'StoreItemPurchaseActions');
+  await page.locator('[data-store-item-add-to-cart]').click();
+  await expect(page.getByRole('dialog', { name: 'Cart' })).toBeVisible();
+
+  // Checkout reads capabilities, and its quote is held back until the waiting state is measured.
+  await page.route('**/api/store/capabilities', (route) =>
+    route.fulfill({
+      json: {
+        pricing: { vatDisclosure: 'VAT included', deliveryCharges: { small: 450, medium: 650 }, currencyCode: 'EUR' },
+        nativeCheckout: { enabled: true, unavailableReason: null },
+      },
+    }),
+  );
+  let releaseQuote = () => {};
+  const quoteReleased = new Promise<void>((resolve) => {
+    releaseQuote = resolve;
+  });
+  await page.route('**/api/store/delivery-quote', async (route) => {
+    await quoteReleased;
+    await route.fulfill({
+      json: {
+        quote: {
+          tier: 'small',
+          amountMinor: 450,
+          currencyCode: 'EUR',
+          merchandiseGrossMinor: 2800,
+          totalAmountMinor: 3250,
+        },
+      },
+    });
+  });
+
+  await page.goto('store/checkout/');
+  const pay = page.locator('[data-checkout-pay-state]');
+  await expect(pay).toHaveAttribute('data-checkout-pay-state', 'waiting');
+  await expect(pay).toBeDisabled();
+  const waitingBox = await pay.boundingBox();
+
+  releaseQuote();
+  await expect(pay).toHaveAttribute('data-checkout-pay-state', 'ready');
+  await expect(pay).toContainText('€32.50');
+  // Webfonts are stubbed here, so this guards the layout around the control, not Bebas metrics.
+  expect((await pay.boundingBox())?.y).toBeCloseTo(waitingBox?.y ?? Number.NaN, 0);
+});
+
 test('the header cart control appears only with items or in the store', async ({ page }) => {
   await page.goto('.');
   await waitForShell(page);
