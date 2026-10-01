@@ -45,7 +45,7 @@ env:
   UAT_PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
   PRD_PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
   SOURCE_SHA: ${{ inputs.artifact_commit_sha || github.sha }}
-  CANDIDATE_RUN_ID: ${{ inputs.candidate_run_id }}
+  CANDIDATE_RUN_ID: ${{ inputs.target == 'prd' && inputs.candidate_run_id || '' }}
   CONFIRM_CODE_PROMOTION: ${{ inputs.confirm_code_promotion }}
   RELEASE_TOOLS_DIR: ${{ (inputs.artifact_commit_sha || github.sha) == github.sha && '.' || '.codex-artifacts/release-tools' }}
 jobs:
@@ -212,7 +212,7 @@ jobs:
             echo "save=true" >> "$GITHUB_OUTPUT"
             echo "Publication media cache candidate: bytes=${bytes}, save=true" >> "$GITHUB_STEP_SUMMARY"
           else
-            # ponytail: files are never pruned; past the cap the restored cache keeps serving its still-valid media.
+            # Restore prunes media the current snapshot does not reference, so only an over-budget snapshot lands here.
             echo "save=false" >> "$GITHUB_OUTPUT"
             echo "Publication media cache candidate: bytes=${bytes}, save=false (over 512 MiB)" >> "$GITHUB_STEP_SUMMARY"
           fi

@@ -449,6 +449,27 @@ test('takes media from the cache only when its digest matches and fills the cach
     assert.deepEqual(await readFile(join(mediaCache, media[0].sha256)), files[0]);
     assert.deepEqual(await readFile(join(mediaCache, media[1].sha256)), files[1]);
     assert.equal(await readFile(join(parent, 'repaired', 'snapshot.json'), 'utf8'), json);
+
+    // Media the current snapshot no longer references are pruned, but only after a successful restore
+    // and only among the cache directory's own files.
+    const stale = join(mediaCache, 'f'.repeat(64));
+    const outside = join(parent, 'outside');
+    await writeFile(stale, Buffer.from('retired'));
+    await writeFile(outside, Buffer.from('keep'));
+    await mkdir(join(mediaCache, 'nested'));
+    await assert.rejects(
+      restorePublishedContent({ ...input, directory: join(parent, 'failed') }, async (url, init) =>
+        new URL(url).pathname.endsWith('/snapshot') ? new Response('', { status: 503 }) : send(url, init),
+      ),
+      /\(503\)/,
+    );
+    await access(stale);
+    await restorePublishedContent({ ...input, directory: join(parent, 'pruned') }, send);
+    await assert.rejects(access(stale));
+    await access(outside);
+    await access(join(mediaCache, 'nested'));
+    for (const [index, item] of media.entries())
+      assert.deepEqual(await readFile(join(mediaCache, item.sha256)), files[index]);
   } finally {
     await rm(parent, { recursive: true, force: true });
   }

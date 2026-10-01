@@ -100,6 +100,16 @@ test('Nx plans use affected targets by default and run-many for full validation'
   assert.throws(() => validationPlan({ scope: 'unknown' }), /Unknown scope/);
   assert.throws(() => validationPlan({ editor: true, since: 'HEAD' }), /--since/);
   assert.throws(() => validationPlan({ editor: true, plan: true }), /--plan/);
+  // An admitted editor run must not be judged again when its grant expires before the browser steps start.
+  assert.deepEqual(
+    validationPlan({ editor: true }).map(({ name, env }) => [name, env]),
+    [
+      ['build:staff', undefined],
+      ['preview-policy', undefined],
+      ['editor-chromium', releaseTierEnv],
+      ['editor-firefox', releaseTierEnv],
+    ],
+  );
   assert.deepEqual(nxWatchArguments('stock'), ['exec', 'nx', 'run', 'stock:test-watch']);
   assert.deepEqual(nxWatchArguments('backend', { changed: true, since: 'origin/main' }), [
     'exec',
@@ -141,7 +151,7 @@ test('Nx plans use affected targets by default and run-many for full validation'
   assert.equal(output, 'PARTIAL affected tests: this does not establish implementation completion.');
   assert.deepEqual(changedCommand.args.slice(-1), ['--parallel=2']);
   assert.equal(changedCommand.env.NX_PLUGIN_NO_TIMEOUTS, 'true');
-  assert.deepEqual(slotRequests.at(-1), { cwd: process.cwd(), label: 'test:changed' });
+  assert.deepEqual(slotRequests.at(-1), { cwd: process.cwd(), signal: undefined, label: 'test:changed' });
   const affected = ['exec', 'nx', 'affected', '-t', 'test', '--exclude=workspace,*-tooling'];
   assert.deepEqual(nxTestArguments(), [...affected, '--base=HEAD']);
   assert.deepEqual(nxTestArguments('a/b.ts', 'a/b.ts'), [...affected, '--files=a/b.ts']);
@@ -207,6 +217,29 @@ test('Nx plans use affected targets by default and run-many for full validation'
     testWatchMain(['--changed', '--scope=web', 'backend'], { runCommand: async () => {} }),
     /module once/,
   );
+});
+
+test('cancelling a test run that waits for machine slots ends the wait without running', async () => {
+  const controller = new AbortController();
+  let ran = false;
+  const originalLog = console.log;
+  console.log = () => {};
+  try {
+    const waiting = testWatchMain(['--changed'], {
+      signal: controller.signal,
+      // Waits like acquireSlots behind a held slot until the signal aborts.
+      acquire: ({ signal }) =>
+        new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(signal.reason))),
+      runCommand: async () => {
+        ran = true;
+      },
+    });
+    controller.abort();
+    await assert.rejects(waiting, { name: 'AbortError' });
+  } finally {
+    console.log = originalLog;
+  }
+  assert.equal(ran, false);
 });
 
 test('CLI rejects ignored jobs and unsupported editor combinations', async (t) => {

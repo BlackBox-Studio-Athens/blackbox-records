@@ -58,6 +58,7 @@
 - [x] 8.3 Close matcher gaps: direct `nx affected`, runners by file path, bare package directories, release-tier validation modes, release-tier script files; drop the marker that could lock the maintainer out of granting.
 - [x] 8.4 Fix the report test under the task runner, compute the contention minimum from successful runs, and summarize guard denials.
 - [x] 8.5 Append validations, denials and e2e runs to one shared history log and report a weekly timeline.
+- [x] 8.6 Review the commits adversarially in five dimensions and fix the 16 confirmed findings (recorded in validation.md).
 
 ## 9. Review and acceptance
 

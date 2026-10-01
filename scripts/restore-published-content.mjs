@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { readFileSync, appendFileSync, existsSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -112,6 +112,10 @@ export async function restorePublishedContent(
   await mkdir(resolve(directory, '..'), { recursive: true });
   await writeCmsSnapshot({ json, sha256: content.snapshotSha256, files }, directory, environment);
   await writeFile(resolve(directory, 'identity.json'), JSON.stringify(content), { flag: 'wx' });
+  // After a successful restore the cache keeps only this snapshot's media, so the snapshot budget bounds it.
+  if (mediaCache)
+    for (const entry of await readdir(mediaCache, { withFileTypes: true }).catch(() => []))
+      if (entry.isFile() && !media.has(entry.name)) await rm(join(mediaCache, entry.name), { force: true });
   return {
     source: 'snapshot',
     sha256: content.snapshotSha256,

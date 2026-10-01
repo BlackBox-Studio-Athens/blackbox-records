@@ -71,10 +71,12 @@ function spawnAstroDev(port) {
 
 // 4321 in the primary checkout and in the checkout holding the full stack's lease, whose publication runtime binds
 // it; otherwise this linked worktree's assigned port. strictPort keeps Astro from moving to another port.
+// --background skips the pre-check: Astro reports this checkout's running background server and exits 0, and
+// strictPort still fails it on a port that another process holds.
 let port;
 try {
   port = sitePort(webDir);
-  await assertPortAvailable(HOST, port);
+  if (!background) await assertPortAvailable(HOST, port);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);

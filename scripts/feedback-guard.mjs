@@ -47,6 +47,14 @@ export function guardScript(scriptUrl) {
   process.exit(1);
 }
 
+/**
+ * Environment for the guarded child steps of a run the guard already admitted, so a grant that expires mid-run
+ * cannot stop them. Repository scripts set it for their own children; agents setting it stays denied by the hook.
+ */
+export function admittedRunEnv(policy = loadPolicy()) {
+  return { [policy.releaseTier.overrideEnv]: '1' };
+}
+
 /** The validation wrapper calls this before any work; release-tier modes need CI, the override or a grant. */
 export function assertValidationAllowed(
   args,

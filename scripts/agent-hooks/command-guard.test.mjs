@@ -117,6 +117,19 @@ const denied = [
   ['node --import=tsx ./scripts/validate-local.mjs --editor', 'release-tier:validate --editor'],
   ['tsx scripts/benchmark-validation.mjs --mode commands', 'release-tier:benchmark:validation'],
   ['node --import tsx scripts/run-release-preparation.mjs browsers', 'release-tier:validate:editor'],
+  ['pnpm exec eslint apps/web/src', 'eslint-whole-package'],
+  ['pnpm exec eslint --max-warnings=0 apps/web/src apps/staff/src packages/api-client/src', 'eslint-whole-package'],
+  ['pnpm exec eslint apps/*/src packages/*/src', 'eslint-whole-package'],
+  ['npx eslint "**/*.ts"', 'eslint-whole-package'],
+  ['pnpm exec eslint scripts', 'eslint-whole-package'],
+  ['pnpm exec prettier --check apps packages scripts', 'prettier-whole-repo'],
+  ['pnpm exec prettier --check "**/*"', 'prettier-whole-repo'],
+  ['pnpm exec prettier --write apps/web/src', 'prettier-whole-repo'],
+  ['pnpm exec prettier --check ./packages/*/src', 'prettier-whole-repo'],
+  ['cd apps/web && pnpm exec vitest run -t "cart"', 'vitest-package-wide'],
+  ['pnpm exec vitest run --config vitest.modules.config.ts -t cart', 'vitest-package-wide'],
+  ['npx vitest --testNamePattern=cart', 'vitest-package-wide'],
+  ['git commit -m "docs: run `pnpm build` only under a grant"', 'release-tier:build'],
 ];
 
 const allowed = [
@@ -164,6 +177,12 @@ const allowed = [
   'pnpm exec eslint apps/web/src/lib/site-data.ts packages/api-client/src/index.ts',
   'pnpm exec tsc --version',
   'node --import tsx --test --test-concurrency=1 scripts/feedback-grant.test.mjs',
+  'pnpm exec eslint apps/web/src/components/ui',
+  'pnpm exec eslint scripts/agent-hooks --max-warnings=0',
+  'pnpm exec prettier --write apps/web/src/components/ui apps/web/src/lib/site-data.ts',
+  'pnpm exec prettier --check docs/agent-workflow.md openspec/changes/enforce-scoped-feedback-loop',
+  'pnpm exec vitest run --config vitest.modules.config.ts src/layouts -t "name"',
+  'pnpm exec vitest run apps/web/src/lib/site-data.test.ts -t cart',
 ];
 
 test('statements, subshells and substitutions are command positions', () => {
@@ -178,6 +197,16 @@ test('guarded commands are denied at command positions', () => {
 
 test('scoped commands and mere mentions are allowed', () => {
   for (const command of allowed) assert.equal(rule(command), null, command);
+});
+
+test('under the PowerShell tool a backtick escapes one character instead of substituting', () => {
+  const powershell = (command) => evaluateCommand(command, { policy, allowance: closed, shell: 'powershell' })?.rule;
+  assert.equal(powershell('git commit -m "docs: run `pnpm build` only under a grant"'), undefined);
+  assert.equal(powershell('Write-Output `pnpm build`'), undefined);
+  assert.equal(powershell('pnpm build'), 'release-tier:build');
+  assert.equal(powershell('echo $(pnpm validate:full)'), 'release-tier:validate:full');
+  assert.equal(powershell("bash -c 'echo `pnpm build`'"), 'release-tier:build');
+  assert.equal(rule("pwsh -Command 'echo `pnpm build`'"), null);
 });
 
 test('a grant lifts every rule except lifting the guard itself', () => {
@@ -285,6 +314,27 @@ test('the hook blocks with exit 2, names the alternative and records the denial'
     }),
   );
   assert.equal(write.status, 2, write.stderr);
+});
+
+test('the hook still blocks when neither the denial log nor the history can be written', (t) => {
+  const root = hookCheckout(t);
+  mkdirSync(path.join(root, '.codex-artifacts'));
+  writeFileSync(path.join(root, '.codex-artifacts', 'feedback-guard'), 'not a directory');
+  const shared = path.dirname(historyPath(root, policy));
+  rmSync(shared, { recursive: true, force: true });
+  writeFileSync(shared, 'not a directory');
+  const result = runHook(root, JSON.stringify({ tool_name: 'Bash', tool_input: { command: 'pnpm build' } }));
+  assert.equal(result.status, 2, result.stderr);
+  assert.match(result.stderr, /release-tier:build/);
+});
+
+test('the hook reads backticks by the shell tool that runs the command', (t) => {
+  const root = hookCheckout(t);
+  const command = 'git commit -m "docs: run `pnpm build` only under a grant"';
+  const run = (tool) => runHook(root, JSON.stringify({ tool_name: tool, tool_input: { command } })).status;
+  assert.equal(run('PowerShell'), 0);
+  assert.equal(run('Bash'), 2);
+  assert.equal(run('unknown'), 2);
 });
 
 test('the hook allows scoped commands silently and fails open on bad input or policy', (t) => {

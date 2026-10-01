@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, realpathSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, realpathSync, rmSync, statSync } from 'node:fs';
 import { readdir, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -162,6 +162,34 @@ test('aborting a waiting run removes its ticket', { timeout: 30_000 }, async (t)
   controller.abort();
   await assert.rejects(waiting, { name: 'AbortError' });
   assert.deepEqual(await readdir(path.join(sharedStateDir(primary, policy), 'queue')), []);
+  await held.release();
+});
+
+test('a ticket or slot whose live PID stopped beating is reclaimed', { timeout: 30_000 }, async (t) => {
+  const { primary } = repositoryWithWorktree(t);
+  const state = sharedStateDir(primary, policy);
+  // This process stands in for an unrelated one that reused a crashed holder's PID.
+  const reused = JSON.stringify({ pid: process.pid, checkout: primary, label: 'crashed' });
+  const past = new Date(Date.now() - 120_000);
+  for (const file of [path.join(state, 'queue', '0.json'), path.join(state, 'slots', '0.json')]) {
+    mkdirSync(path.dirname(file), { recursive: true });
+    await writeFile(file, reused);
+    await utimes(file, past, past);
+  }
+  const slots = await acquireSlots({ cwd: primary, policy, signal: AbortSignal.timeout(5000), log: () => {} });
+  assert.equal(slots.count, 2);
+  await slots.release();
+});
+
+test('a holder keeps its slots beating while it runs', { timeout: 30_000 }, async (t) => {
+  const { primary } = repositoryWithWorktree(t);
+  const held = await acquireSlots({ cwd: primary, policy });
+  const slot = path.join(sharedStateDir(primary, policy), 'slots', '0.json');
+  const past = new Date(Date.now() - 120_000);
+  await utimes(slot, past, past);
+  await until(() => statSync(slot).mtimeMs > past.getTime());
+  const focused = await acquireSlots({ cwd: primary, policy, want: 1, wait: false });
+  assert.equal(focused.count, 0);
   await held.release();
 });
 

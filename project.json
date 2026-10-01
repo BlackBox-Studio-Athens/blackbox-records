@@ -40,8 +40,9 @@
       "{workspaceRoot}/CLAUDE.md",
       "{workspaceRoot}/docs/agent-workflow.md",
       "{workspaceRoot}/docs/agent-reference.md",
+      "{workspaceRoot}/scripts/list-tree-files.mjs",
       {
-        "runtime": "git ls-files --cached --deleted --others --exclude-standard -- README.md docs openspec/specs .run"
+        "runtime": "node scripts/list-tree-files.mjs README.md docs openspec/specs .run"
       },
       "moduleBoundaries",
       "scriptRuntime"

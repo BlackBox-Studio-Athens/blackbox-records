@@ -5,12 +5,20 @@
     "test": {
       "command": "pnpm --filter @blackbox/backend exec vitest run --config vitest.modules.config.ts --project=architecture-tests",
       "inputs": [
-        "default",
+        "backendTests",
         "^default",
         "{workspaceRoot}/scripts/**/*",
         "{workspaceRoot}/apps/backend/scripts/**/*",
-        "{workspaceRoot}/apps/backend/vitest*.ts",
-        "{workspaceRoot}/openspec/specs/module-boundaries/**/*"
+        "{workspaceRoot}/apps/backend/src/interfaces/http/**/*",
+        "{workspaceRoot}/apps/backend/src/platform/interfaces/http/**/*",
+        "{workspaceRoot}/apps/**/project.json",
+        "{workspaceRoot}/packages/**/project.json",
+        "{workspaceRoot}/apps/*/package.json",
+        "{workspaceRoot}/packages/*/package.json",
+        "{workspaceRoot}/openspec/specs/module-boundaries/**/*",
+        {
+          "runtime": "node scripts/list-tree-files.mjs apps packages"
+        }
       ]
     }
   }

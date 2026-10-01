@@ -6,7 +6,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 import { parseArgs, stripVTControlCharacters } from 'node:util';
 import { execa } from 'execa';
-import { assertValidationAllowed } from './feedback-guard.mjs';
+import { admittedRunEnv, assertValidationAllowed } from './feedback-guard.mjs';
 import { appendHistory, loadPolicy } from './feedback-policy.mjs';
 import { runFormatCheck } from './format-check.mjs';
 import { runFiniteCommand } from './local-process.ts';
@@ -34,11 +34,17 @@ export function validationPlan({
   if (editor) {
     if (plan || since || scope !== 'all')
       throw new Error('Editor acceptance cannot be combined with --plan, --since, or scoped validation.');
+    const env = admittedRunEnv();
     return [
       { name: 'build:staff', command: 'pnpm', args: ['build:staff'] },
       { name: 'preview-policy', command: process.execPath, args: ['scripts/test-preview-policy.mjs'] },
-      { name: 'editor-chromium', command: process.execPath, args: ['scripts/test-content-workspace.mjs'] },
-      { name: 'editor-firefox', command: process.execPath, args: ['scripts/test-content-workspace.mjs', '--firefox'] },
+      { name: 'editor-chromium', command: process.execPath, args: ['scripts/test-content-workspace.mjs'], env },
+      {
+        name: 'editor-firefox',
+        command: process.execPath,
+        args: ['scripts/test-content-workspace.mjs', '--firefox'],
+        env,
+      },
     ];
   }
   if (lintOnly && scope !== 'all') throw new Error('Lint-only validation cannot be scoped.');

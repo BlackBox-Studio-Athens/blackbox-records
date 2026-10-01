@@ -107,10 +107,17 @@ describe('Pages artifact promotion contract', () => {
     expect(workflow.on.workflow_dispatch.inputs.confirm_code_promotion.default).toBe(false);
     for (const job of [promotion, staticPromotion]) {
       const environment = { ...workflow.env, ...job.env };
-      expect(environment.CANDIDATE_RUN_ID).toBe('${{ inputs.candidate_run_id }}');
+      expect(environment.CANDIDATE_RUN_ID).toBe("${{ inputs.target == 'prd' && inputs.candidate_run_id || '' }}");
       expect(environment.CONFIRM_CODE_PROMOTION).toBe('${{ inputs.confirm_code_promotion }}');
       expect(job.if).toContain('inputs.confirm_code_promotion');
+      expect(job.if).toContain("inputs.target == 'prd'");
     }
+  });
+  it('verifies push and manual UAT candidates against their own run', () => {
+    // An empty CANDIDATE_RUN_ID makes release-candidate.mjs fall back to GITHUB_RUN_ID.
+    expect(workflow.env.CANDIDATE_RUN_ID).toMatch(/^\$\{\{ inputs\.target == 'prd' && /);
+    for (const [name, job] of Object.entries(workflow.jobs) as [string, { env?: Record<string, string> }][])
+      expect(job.env?.CANDIDATE_RUN_ID, name).toBeUndefined();
   });
   it('runs the normal provider and active public-surface smoke without retired-route exceptions', () => {
     expect(workflow.on.workflow_dispatch.inputs.confirm_retired_admin_cache_exception).toBeUndefined();

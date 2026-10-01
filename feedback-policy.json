@@ -219,7 +219,7 @@
     {
       "id": "vitest-package-wide",
       "pattern": "^vitest\\b",
-      "unless": "\\.(test|spec)\\.[cm]?[jt]sx?\\b|(^|\\s)--project(\\s|=)|(^|\\s)(-t|--testNamePattern)(\\s|=)|(^|\\s)(related|list|--version)\\b|(?<!--(config|root|dir)|-[cr])\\s(\\.{1,2}[\\\\/])*((apps|packages)[\\\\/][\\w.-]+[\\\\/])?(src|test|scripts)[\\\\/][\\w.-]",
+      "unless": "\\.(test|spec)\\.[cm]?[jt]sx?\\b|(^|\\s)--project(\\s|=)|(^|\\s)(related|list|--version)\\b|(?<!--(config|root|dir)|-[cr])\\s(\\.{1,2}[\\\\/])*((apps|packages)[\\\\/][\\w.-]+[\\\\/])?(src|test|scripts)[\\\\/][\\w.-]",
       "instead": "Run `pnpm test <module|file>`, or pass Vitest a test file or a directory below a source root, such as `src/layouts`."
     },
     {
@@ -239,8 +239,8 @@
     },
     {
       "id": "eslint-whole-package",
-      "pattern": "^eslint\\s(.*\\s)?(\\.[\\\\/])?(apps|packages)([\\\\/][\\w-]+)?[\\\\/]?(\\s|$)",
-      "instead": "Run `pnpm validate`; it lints affected packages from cache. Pass ESLint the changed files instead of a package."
+      "pattern": "^eslint\\s(.*\\s)?(\\.[\\\\/])?((apps|docs|e2e|openspec|packages|patches|scripts|tools)|(apps|packages)[\\\\/][\\w-]+([\\\\/](src|test|scripts))?|(apps|packages)[\\\\/][^\\s\\\\/]*\\*\\S*|\\*\\*\\S*)[\\\\/]?(\\s|$)",
+      "instead": "Run `pnpm validate`; it lints affected packages from cache. Pass ESLint the changed files or a directory below a source root instead of a package."
     },
     {
       "id": "typecheck-whole-package",
@@ -250,7 +250,7 @@
     },
     {
       "id": "prettier-whole-repo",
-      "pattern": "^prettier\\s(.*\\s)?\\.[\\\\/]?(\\s|$)",
+      "pattern": "^prettier\\s(.*\\s)?(\\.|(\\.[\\\\/])?((apps|docs|e2e|openspec|packages|patches|scripts|tools)|(apps|packages)[\\\\/][\\w-]+([\\\\/](src|test|scripts))?|(apps|packages)[\\\\/][^\\s\\\\/]*\\*\\S*|\\*\\*\\S*))[\\\\/]?(\\s|$)",
       "instead": "Run `pnpm format` (cached) or pass Prettier the changed files."
     }
   ]

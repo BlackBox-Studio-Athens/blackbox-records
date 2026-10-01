@@ -8,6 +8,7 @@ import {
   checkWorkspaceInputs,
   rootTestGroups,
 } from './check-module-projects.mjs';
+import { listTreeFiles } from './list-tree-files.mjs';
 import { moduleTestProjects } from './module-test-projects.ts';
 import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises';
 import os from 'node:os';
@@ -72,6 +73,36 @@ test('the shared toolchain input does not hash root package.json', () => {
     checkToolchainInputs(nx({ runtime: 'pnpm --version' }, '{workspaceRoot}/apps/web/package.json')),
   );
   assert.throws(() => checkToolchainInputs(nx('{workspaceRoot}/package.json')), /toolchain hashes root package\.json/);
+});
+
+test('the file-list runtime input tracks working-tree files, not content or Git index state', async (t) => {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), 'blackbox-tree-'));
+  t.after(async () => {
+    assert.ok(path.resolve(cwd).startsWith(path.join(os.tmpdir(), 'blackbox-tree-')));
+    await rm(cwd, { recursive: true, force: true });
+  });
+  const git = (...args) => execa('git', args, { cwd, windowsHide: true });
+  const put = (file, value = 'x\n') => writeFile(path.join(cwd, file), value);
+  const list = () => listTreeFiles(['README.md', 'docs'], cwd);
+  await mkdir(path.join(cwd, 'docs'));
+  await put('.gitignore', 'docs/ignored.md\n');
+  for (const file of ['README.md', 'docs/a.md', 'docs/b.md', 'docs/ignored.md', 'other.md']) await put(file);
+  await git('init');
+  await git('add', '.');
+  const tracked = ['README.md', 'docs/a.md', 'docs/b.md'];
+  assert.deepEqual(list(), tracked);
+
+  await put('docs/0.md');
+  const added = ['README.md', 'docs/0.md', 'docs/a.md', 'docs/b.md'];
+  assert.deepEqual(list(), added, 'untracked files sort with tracked ones');
+  await git('add', 'docs/0.md');
+  assert.deepEqual(list(), added, 'staging changes nothing');
+  await put('docs/a.md', 'changed\n');
+  assert.deepEqual(list(), added, 'content changes nothing');
+  await rm(path.join(cwd, 'docs/0.md'));
+  assert.deepEqual(list(), tracked, 'a deleted file is listed nowhere');
+  await git('mv', 'docs/b.md', 'docs/c.md');
+  assert.deepEqual(list(), ['README.md', 'docs/a.md', 'docs/c.md']);
 });
 
 test('actual module cycles fail regardless of permitted dependencies', () => {

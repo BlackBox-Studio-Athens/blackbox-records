@@ -1,10 +1,14 @@
-import { mkdir, open, readFile, readdir, stat, unlink } from 'node:fs/promises';
+import { mkdir, open, readFile, readdir, stat, unlink, utimes } from 'node:fs/promises';
 import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { loadPolicy, sharedStateDir } from './feedback-policy.mjs';
 
 const pollMs = 250;
 const unparseableGraceMs = 5000;
+// Holders touch their slot and ticket files; a file untouched far longer than the beat is dead even
+// when its PID was reused. The wide margin keeps a CPU-starved live holder from being reclaimed.
+const heartbeatMs = 5000;
+const staleMs = 60_000;
 let ticketSequence = 0;
 
 export function processAlive(pid) {
@@ -51,22 +55,30 @@ export async function createExclusive(file, record) {
   return true;
 }
 
-/** The recorded holder of a slot, ticket or lock; a file whose process has exited is removed and yields null. */
-export async function liveHolder(file) {
+async function modifiedAt(file) {
+  return stat(file).then(
+    ({ mtimeMs }) => mtimeMs,
+    () => null,
+  );
+}
+
+/**
+ * The recorded holder of a slot, ticket or lock; a file whose process has exited, or that is older
+ * than `maxIdleMs` when given, is removed and yields null.
+ */
+export async function liveHolder(file, { maxIdleMs } = {}) {
   let holder;
   try {
     holder = JSON.parse(await readFile(file, 'utf8'));
   } catch (error) {
     if (error.code === 'ENOENT') return null;
     // An unparseable file is not stolen at once: its writer may sit between open and write.
-    const modified = await stat(file).then(
-      ({ mtimeMs }) => mtimeMs,
-      () => null,
-    );
+    const modified = await modifiedAt(file);
     if (modified === null) return null;
     if (Date.now() - modified < unparseableGraceMs) return { pid: null, checkout: 'unknown', label: 'starting' };
   }
-  if (Number.isSafeInteger(holder?.pid) && holder.pid > 0 && processAlive(holder.pid)) return holder;
+  const fresh = maxIdleMs === undefined || Date.now() - ((await modifiedAt(file)) ?? 0) < maxIdleMs;
+  if (fresh && Number.isSafeInteger(holder?.pid) && holder.pid > 0 && processAlive(holder.pid)) return holder;
   // ponytail: read-then-unlink can race a concurrent reclaim of the same file; acceptable for a few local runs.
   await remove(file);
   return null;
@@ -74,7 +86,8 @@ export async function liveHolder(file) {
 
 async function liveTickets(queue) {
   const live = [];
-  for (const name of await entries(queue)) if (await liveHolder(path.join(queue, name))) live.push(name);
+  for (const name of await entries(queue))
+    if (await liveHolder(path.join(queue, name), { maxIdleMs: staleMs })) live.push(name);
   return live;
 }
 
@@ -88,7 +101,7 @@ export async function listSlots(cwd = process.cwd(), policy = loadPolicy()) {
   const { slots } = directories(cwd, policy);
   const holders = [];
   for (const name of await entries(slots)) {
-    const holder = await liveHolder(path.join(slots, name));
+    const holder = await liveHolder(path.join(slots, name), { maxIdleMs: staleMs });
     if (holder)
       holders.push({ pid: holder.pid, checkout: holder.checkout, label: holder.label, startedAt: holder.startedAt });
   }
@@ -124,7 +137,13 @@ export async function acquireSlots({
   });
   const claimed = [];
   let ticket;
+  // A timer keeps beating while the holder awaits a child process; unref lets a forgotten release exit.
+  const heartbeat = setInterval(() => {
+    const now = new Date();
+    for (const file of [...claimed, ticket]) if (file) utimes(file, now, now).catch(() => {});
+  }, heartbeatMs).unref();
   const release = async () => {
+    clearInterval(heartbeat);
     for (const file of claimed.splice(0)) await remove(file);
     if (ticket) await remove(ticket);
     ticket = undefined;
@@ -132,7 +151,10 @@ export async function acquireSlots({
   const claim = async () => {
     for (let index = 0; index < policy.machine.slots && claimed.length < want; index += 1) {
       const file = path.join(slots, `${index}.json`);
-      if ((await createExclusive(file, record)) || (!(await liveHolder(file)) && (await createExclusive(file, record))))
+      if (
+        (await createExclusive(file, record)) ||
+        (!(await liveHolder(file, { maxIdleMs: staleMs })) && (await createExclusive(file, record)))
+      )
         claimed.push(file);
     }
     if (claimed.length >= min) return true;
@@ -141,7 +163,10 @@ export async function acquireSlots({
   };
   try {
     if (!(await liveTickets(queue)).length && (await claim())) return { count: claimed.length, release };
-    if (!wait) return { count: 0, release: async () => {} };
+    if (!wait) {
+      clearInterval(heartbeat);
+      return { count: 0, release: async () => {} };
+    }
     ticket = path.join(queue, ticketName());
     await createExclusive(ticket, record);
     let reportAt = 0;

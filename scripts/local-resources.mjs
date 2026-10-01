@@ -74,6 +74,9 @@ function liveHolder(file) {
   return null;
 }
 
+// A hard-killed stack leaves its lease behind, and Windows may hand its pid to an unrelated process.
+const staleLeaseHint = (file) => `If no stack runs there, delete the stale lease ${file}.`;
+
 const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
 function withRegistryLock(directory, action) {
@@ -103,12 +106,13 @@ export function sitePort(cwd = process.cwd(), policy = loadPolicy()) {
   const { primary: canonical, first, step, count } = policy.localResources.sitePort;
   const { checkout, primary, worktrees } = checkoutOf(cwd);
   const directory = sharedStateDir(cwd, policy);
-  const stack = liveHolder(path.join(directory, stackLeaseFile));
+  const lease = path.join(directory, stackLeaseFile);
+  const stack = liveHolder(lease);
   if (stack && pathKey(stack.checkout) === pathKey(checkout)) return canonical;
   if (primary) {
     if (stack)
       throw new Error(
-        `Port ${canonical} serves the full Local stack running from ${stack.checkout}; work from that checkout or stop the stack there.`,
+        `Port ${canonical} serves the full Local stack running from ${stack.checkout}; work from that checkout or stop the stack there. ${staleLeaseHint(lease)}`,
       );
     return canonical;
   }
@@ -160,7 +164,7 @@ export function acquireStackLease(cwd = process.cwd(), policy = loadPolicy()) {
     const holder = liveHolder(file);
     if (holder)
       throw new Error(
-        `The full Local stack already runs from ${holder.checkout} (pid ${holder.pid}, since ${holder.startedAt}). Stop it there first; one checkout runs it at a time.`,
+        `The full Local stack already runs from ${holder.checkout} (pid ${holder.pid}, since ${holder.startedAt}). Stop it there first; one checkout runs it at a time. ${staleLeaseHint(file)}`,
       );
   }
 }

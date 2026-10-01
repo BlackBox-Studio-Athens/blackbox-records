@@ -32,13 +32,15 @@ export async function localStatus(
   for (const { checkout, pid, label, startedAt } of slots)
     lines.push(`  ${checkout} (pid ${pid}, ${label}, since ${startedAt})`);
 
-  lines.push('Site ports:');
-  const primary = [checkoutOf(cwd).worktrees[0], policy.localResources.sitePort.primary];
-  for (const [checkout, port] of [primary, ...Object.entries(sitePortRegistry(cwd, policy))])
-    lines.push(`  ${port} ${(await probe(port)) ? 'listening' : 'free'} ${checkout}`);
-
   const stack = stackLease(cwd, policy);
   const running = Number.isSafeInteger(stack?.pid) && processAlive(stack.pid);
+
+  lines.push('Site ports:');
+  // The checkout running the full stack serves the canonical port.
+  const canonical = [running ? stack.checkout : checkoutOf(cwd).worktrees[0], policy.localResources.sitePort.primary];
+  for (const [checkout, port] of [canonical, ...Object.entries(sitePortRegistry(cwd, policy))])
+    lines.push(`  ${port} ${(await probe(port)) ? 'listening' : 'free'} ${checkout}`);
+
   lines.push(
     `Full Local stack: ${
       running

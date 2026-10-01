@@ -46,7 +46,7 @@ test('status lists slot holders, site ports, the stack, the Chrome lease and the
   t.after(() => slots.release());
   const release = acquireStackLease(linked, policy);
   t.after(release);
-  await decideChromeLease({ session_id: 's1', cwd: linked }, { policy, now: now - 60_000 });
+  await decideChromeLease({ session_id: 's1', cwd: linked }, { policy, root: primary, now: now - 60_000 });
   writeFileSync(grantPath(primary, policy), JSON.stringify({ expiresAt: new Date(now + 600_000).toISOString() }));
 
   const status = (await localStatus(primary, { policy, now, probe })).split('\n');
@@ -54,7 +54,8 @@ test('status lists slot holders, site ports, the stack, the Chrome lease and the
   assert.match(status[1], new RegExp(`^  .+linked \\(pid ${process.pid}, validate affected, since `));
   assert.deepEqual(status.slice(2, 5), [
     'Site ports:',
-    `  ${canonical} free ${primary}`,
+    // The stack's checkout serves the canonical port.
+    `  ${canonical} free ${linked}`,
     `  ${first} listening ${linked}`,
   ]);
   assert.match(status[5], new RegExp(`^Full Local stack: .+linked \\(pid ${process.pid}, since `));

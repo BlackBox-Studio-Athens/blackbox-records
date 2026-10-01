@@ -54,8 +54,8 @@ async function projectNodes() {
 }
 
 /** Multi-project runs share the machine slots and wait for them; watch targets take none. */
-async function runWithSlots(command, { cwd, acquire, slotOptions, runCommand }) {
-  const slots = slotOptions ? await acquire({ cwd, ...slotOptions }) : undefined;
+async function runWithSlots(command, { cwd, acquire, slotOptions, runCommand, signal }) {
+  const slots = slotOptions ? await acquire({ cwd, signal, ...slotOptions }) : undefined;
   const parallel = slots && slotOptions.wait !== false ? [`--parallel=${slots.count}`] : [];
   try {
     return await runCommand(
@@ -69,7 +69,7 @@ async function runWithSlots(command, { cwd, acquire, slotOptions, runCommand }) 
 
 export async function main(
   args = process.argv.slice(2),
-  { runCommand = runFiniteCommand, cwd = process.cwd(), nodes = projectNodes, acquire = acquireSlots } = {},
+  { runCommand = runFiniteCommand, cwd = process.cwd(), nodes = projectNodes, acquire = acquireSlots, signal } = {},
 ) {
   const rawArgs = args.filter((arg) => arg !== '--');
   if (rawArgs[0] === '--run') {
@@ -90,6 +90,7 @@ export async function main(
         cwd,
         acquire,
         runCommand,
+        signal,
         slotOptions: arg ? { want: 1, wait: false, label: `test ${arg}` } : { label: 'test' },
       },
     );
@@ -128,6 +129,7 @@ export async function main(
     cwd,
     acquire,
     runCommand,
+    signal,
     slotOptions: changed ? { label: `test:changed${scope ? ` ${scope}` : ''}` } : undefined,
   });
 }
@@ -138,6 +140,7 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   process.on('SIGINT', cancel);
   process.on('SIGTERM', cancel);
   main(process.argv.slice(2), {
+    signal: controller.signal,
     runCommand: (command, options) => runFiniteCommand(command, { ...options, cancelSignal: controller.signal }),
   })
     .then((result) => {

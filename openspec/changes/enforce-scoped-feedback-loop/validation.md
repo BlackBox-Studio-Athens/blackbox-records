@@ -50,8 +50,20 @@ Targets from design.md:
 - `backend-tooling:test` reads workflow files, both `package.json` files and backend configuration without declaring them. Fixed; this predates the change.
 - `pnpm dev:stack:stripe-mock-api` started a root script that did not exist. Added `dev:backend:mock-api` and a test that every root script the launcher starts exists.
 
+## Adversarial review of the commits
+
+Five independent reviewers (guards, runner, cache inputs, CI, local resources) examined commits `657c7247` and `9d1f3bc4`, and a skeptic per dimension tried to refute each finding. 16 findings were confirmed and fixed; 6 were refuted. Detail is in ignored `.codex-artifacts/feedback-loop/review-findings.json`.
+
+- High: `backend-tooling:test` read web content and library files it did not declare as inputs, so it could be restored stale. Its inputs now cover every file its tests read; `architecture-tests:test` had the same gap for the HTTP sources and `project.json` files it checks.
+- Guards: the hook allowed a denied command when its denial log could not be written; ESLint and Prettier on a bare package source root, a top-level directory or a repository-wide glob passed the hook; a Vitest name filter alone exempted a package-wide run; PowerShell commit messages containing a backtick code span were denied; a grant expiring mid-run aborted the editor browser step.
+- Runner: a queue ticket or slot whose PID was reused could block every validation; `pnpm test` and `pnpm test:changed` ignored Ctrl+C while waiting for slots.
+- CI: a manual UAT dispatch with a candidate run id failed its identity check; the publication media cache never pruned, so it would fill and stop saving.
+- Local resources: `site:dev:bg` was no longer idempotent; a stale stack lease gave no recovery hint; the Chrome lease followed the session's working directory instead of this repository; the status command mislabelled port 4321 when a linked worktree ran the stack.
+- Not done, by choice: ignoring a stack lease whose port is unbound (a race could let two stacks start; the error now names the lease file to delete), and a unit test pinning the two test projects' inputs (it would only restate the configuration).
+
 ## Unverified
 
+- A real `pnpm validate:editor` with a grant expiring mid-run, a hard-killed slot holder on Windows, and a second `site:dev:bg` in the primary checkout; each is covered by unit tests or by reading the tool's source.
 - Hosted behavior of the new push and promotion shape, including timings, the media cache, staff previews on retained bytes and the e2e suite on Linux.
 - The Codex hook at runtime (its configuration is covered by the contract test) and the Chrome lease in a live session.
 - A linked worktree serving and testing on its own port in the real repository; it was exercised in a throwaway repository and unit tests.

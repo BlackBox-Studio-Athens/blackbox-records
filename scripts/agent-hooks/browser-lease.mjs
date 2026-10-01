@@ -24,12 +24,16 @@ async function ownSiteUrl(cwd, policy) {
   }
 }
 
+// The lease belongs to this repository's shared state, wherever a session's working directory has moved.
+const projectRoot =
+  process.env.CLAUDE_PROJECT_DIR || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+
 /**
  * Claude Code PreToolUse hook for the Chrome tools: one agent session uses the shared Chrome profile at a time.
  * Use renews the lease; a lease idle for the policy's time is free. A missing or malformed lease is free.
  */
-export async function decideChromeLease(event, { policy = loadPolicy(), now = Date.now() } = {}) {
-  const file = chromeLeasePath(event.cwd, policy);
+export async function decideChromeLease(event, { policy = loadPolicy(), now = Date.now(), root = projectRoot } = {}) {
+  const file = chromeLeasePath(root, policy);
   const lease = readChromeLease(file);
   const idleMs = policy.localResources.chromeLeaseIdleSeconds * 1000;
   const idle = now - Date.parse(lease?.renewedAt);

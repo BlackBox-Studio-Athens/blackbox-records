@@ -38,7 +38,8 @@ const packageRunners = new Map([
 /*
  * The matcher approximates bash, PowerShell and cmd closely enough for commands agents write; it is not a shell.
  * It finds commands at statement starts (after `&&`, `||`, `;`, `|`, `&`, newlines, braces and parentheses) and
- * inside `$(...)` and backticks (a backtick before a PowerShell escape letter counts as an escape), skips quoted
+ * inside `$(...)` and backticks (under the PowerShell tool and in `pwsh -Command` payloads a backtick is always an
+ * escape; elsewhere one before a PowerShell escape letter counts as an escape), skips quoted
  * text, comments, bash heredocs and PowerShell here-strings, strips environment assignments, shell keywords and the
  * `env`, `rtk [proxy|err|test|summary|run]`, `corepack`, `npx`, `pnpm exec|dlx` and `npm exec` wrappers, and reads
  * the payload of `bash|sh -c`, `pwsh|powershell -Command` and `cmd /c`. A `node` or `tsx` script path inside one of
@@ -48,12 +49,19 @@ const packageRunners = new Map([
  * before a bare `pnpm <script>`. Rules marked `anywhere` match the raw text or the path a file tool writes, so they
  * also deny a command that only mentions the grant file or override variable.
  */
-export function commandSegments(text, segments = []) {
-  scan(text, 0, segments, '');
+export function commandSegments(text, segments = [], shell = 'bash') {
+  scan(text, 0, segments, '', shell);
   return segments;
 }
 
-function scan(text, start, segments, closer) {
+// A PowerShell backtick only escapes the next character; elsewhere it starts a substitution unless it looks like one.
+function backtick(text, index, segments, shell) {
+  return shell === 'powershell' || powershellEscapes.has(text[index + 1])
+    ? index + 2
+    : scan(text, index + 1, segments, '`', shell);
+}
+
+function scan(text, start, segments, closer, shell) {
   let segment = '';
   let depth = 0;
   const heredocs = [];
@@ -75,10 +83,10 @@ function scan(text, start, segments, closer) {
     }
     let end;
     if (char === "'") end = closingIndex(text, "'", index + 1) + 1;
-    else if (char === '"') end = scanDoubleQuoted(text, index, segments);
+    else if (char === '"') end = scanDoubleQuoted(text, index, segments, shell);
     else if (char === '\\') end = index + 2;
-    else if (char === '`') end = powershellEscapes.has(next) ? index + 2 : scan(text, index + 1, segments, '`');
-    else if (char === '$' && next === '(') end = scan(text, index + 2, segments, ')');
+    else if (char === '`') end = backtick(text, index, segments, shell);
+    else if (char === '$' && next === '(') end = scan(text, index + 2, segments, ')', shell);
     else if (char === '$' && next === '{') end = closingIndex(text, '}', index) + 1;
     else if (char === '@' && (next === "'" || next === '"') && /[\r\n]/.test(text[index + 2] ?? ''))
       end = closingIndex(text, `\n${next}@`, index) + 3;
@@ -112,14 +120,13 @@ function closingIndex(text, token, from) {
   return found < 0 ? text.length : found;
 }
 
-function scanDoubleQuoted(text, start, segments) {
+function scanDoubleQuoted(text, start, segments, shell) {
   let index = start + 1;
   while (index < text.length && text[index] !== '"') {
     const next = text[index + 1];
     if (text[index] === '\\' && '"\\$`'.includes(next)) index += 2;
-    else if (text[index] === '$' && next === '(') index = scan(text, index + 2, segments, ')');
-    else if (text[index] === '`')
-      index = powershellEscapes.has(next) ? index + 2 : scan(text, index + 1, segments, '`');
+    else if (text[index] === '$' && next === '(') index = scan(text, index + 2, segments, ')', shell);
+    else if (text[index] === '`') index = backtick(text, index, segments, shell);
     else index += 1;
   }
   return index + 1;
@@ -180,9 +187,12 @@ function payloadAfter(list, flagIndex) {
   return rest.length === 1 ? rest[0].value : (list[flagIndex]?.rest ?? '');
 }
 
-function collect(text, context, depth) {
+function collect(text, context, depth, shell = context.shell) {
   if (depth > 6) return;
-  for (const segment of commandSegments(text)) expand(words(segment), context, depth);
+  const outer = context.shell;
+  context.shell = shell;
+  for (const segment of commandSegments(text, [], shell)) expand(words(segment), context, depth);
+  context.shell = outer;
 }
 
 function expand(list, context, depth) {
@@ -208,10 +218,10 @@ function expand(list, context, depth) {
   else if (program === 'pnpm' || program === 'npm') expandPackageManager(program, args, context, depth);
   else if (posixShells.has(program)) {
     const flag = args.findIndex(({ value }) => /^-[a-z]*c[a-z]*$/.test(value));
-    if (flag >= 0 && args[flag + 1]) collect(args[flag + 1].value, context, depth + 1);
+    if (flag >= 0 && args[flag + 1]) collect(args[flag + 1].value, context, depth + 1, 'bash');
   } else if (program === 'pwsh' || program === 'powershell') {
     const flag = args.findIndex(({ value }) => /^-c(o(m(m(a(n(d)?)?)?)?)?)?$/i.test(value));
-    if (flag >= 0) collect(payloadAfter(args, flag), context, depth + 1);
+    if (flag >= 0) collect(payloadAfter(args, flag), context, depth + 1, 'powershell');
   } else if (program === 'cmd') {
     const flag = args.findIndex(({ value }) => /^\/[ck]$/i.test(value));
     if (flag >= 0) collect(payloadAfter(args, flag), context, depth + 1);
@@ -254,14 +264,14 @@ function expandPackageManager(program, args, context, depth) {
 
 /**
  * The first policy rule `command` breaks, or null. `anywhere` rules read `raw`, which is the command or the
- * path a file tool writes. Pure pattern checks run first; the grant, which needs git, is resolved only when a
- * rule other than an `evenWithGrant` rule matched.
+ * path a file tool writes. `shell` is `powershell` for the PowerShell tool and `bash` otherwise. Pure pattern checks
+ * run first; the grant, which needs git, is resolved only when a rule other than an `evenWithGrant` rule matched.
  */
 export function evaluateCommand(
   command,
-  { policy = loadPolicy(), allowance = () => releaseTierAllowance({ policy }), raw = command } = {},
+  { policy = loadPolicy(), allowance = () => releaseTierAllowance({ policy }), raw = command, shell = 'bash' } = {},
 ) {
-  const context = { policy, views: [], scripts: [] };
+  const context = { policy, shell, views: [], scripts: [] };
   collect(command, context, 0);
   const breaks = (rule) => {
     const pattern = new RegExp(rule.pattern);
@@ -301,20 +311,25 @@ async function main() {
       policy,
       allowance: () => releaseTierAllowance({ cwd: checkoutRoot, policy }),
       raw,
+      shell: event.tool_name === 'PowerShell' ? 'powershell' : 'bash',
     });
     if (!verdict) return;
-    const log = path.join(checkoutRoot, '.codex-artifacts', 'feedback-guard', 'denials.jsonl');
-    mkdirSync(path.dirname(log), { recursive: true });
-    appendFileSync(
-      log,
-      `${JSON.stringify({ time: new Date().toISOString(), rule: verdict.rule, session: event.session_id ?? null, command: raw.slice(0, 300) })}\n`,
-    );
+    process.stderr.write(`Feedback guard denied this command (${verdict.rule}). ${verdict.instead}\n`);
+    process.exitCode = 2;
+    try {
+      const log = path.join(checkoutRoot, '.codex-artifacts', 'feedback-guard', 'denials.jsonl');
+      mkdirSync(path.dirname(log), { recursive: true });
+      appendFileSync(
+        log,
+        `${JSON.stringify({ time: new Date().toISOString(), rule: verdict.rule, session: event.session_id ?? null, command: raw.slice(0, 300) })}\n`,
+      );
+    } catch {
+      // The denial log is evidence only; failing to write it never lets the command through.
+    }
     appendHistory(
       { kind: 'denial', rule: verdict.rule, session: event.session_id ?? null },
       { cwd: checkoutRoot, policy },
     );
-    process.stderr.write(`Feedback guard denied this command (${verdict.rule}). ${verdict.instead}\n`);
-    process.exitCode = 2;
   } catch (error) {
     process.stderr.write(`Feedback command guard skipped: ${error.message}\n`);
   }

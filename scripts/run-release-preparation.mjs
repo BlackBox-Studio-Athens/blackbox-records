@@ -1,12 +1,14 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { guardScript } from './feedback-guard.mjs';
+import { admittedRunEnv, guardScript } from './feedback-guard.mjs';
 import { runFiniteCommand } from './local-process.ts';
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 
+// Runs only after guardScript admitted this preparation, so its guarded children are admitted too.
 export async function runParallelCommands(commands, { runner = runFiniteCommand, serial = false, signal } = {}) {
-  const run = (command) => runner(command, { cwd: root, cancelSignal: signal });
+  const run = (command) =>
+    runner({ ...command, env: { ...command.env, ...admittedRunEnv() } }, { cwd: root, cancelSignal: signal });
   if (serial) {
     for (const command of commands) await run(command);
     return;

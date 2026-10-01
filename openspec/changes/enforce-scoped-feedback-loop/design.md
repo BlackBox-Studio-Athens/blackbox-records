@@ -136,6 +136,12 @@ Wiring of scripts and hooks landed last so that it did not block the work that p
 4. Rollback: revert the guard commit to restore unguarded commands; revert the workflow commit to restore per-push suites. Shared state under `<common>/blackbox-feedback/` can be deleted at any time.
 5. `shorten-validation-release-feedback` is unarchived and its deltas say that candidate acceptance waits for provider checks. Archive it first, then add MODIFIED deltas here for "UAT and PRD candidate artifacts are prepared independently" and "Preparation cancellation does not interrupt hosted mutations".
 
+## Decided after implementation
+
+- No commit-time validation gate for now (maintainer, 2026-10-02). "Run `pnpm validate` before finishing" stays an instruction: in a checkout shared by several threads a gate would let another thread's unfinished work block a commit, and an unchanged tree validates in under ten seconds. The history log shows whether commits land without a passing validation; if they do, the gate is a small addition to the command hook.
+- Slots and queue tickets carry a heartbeat. A holder whose file has not been touched for 60 s is reclaimed whatever its PID, so a reused PID cannot block the machine; the per-checkout lock keeps PID-only liveness.
+- The architecture task's existence check for documentation files uses `scripts/list-tree-files.mjs`, which lists files in a stable order independent of the git index.
+
 ## Open Questions
 
 - Whether the Chrome idle time of three minutes suits long visual passes; it is one number in the policy.

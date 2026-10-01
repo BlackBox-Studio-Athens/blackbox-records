@@ -112,22 +112,24 @@ test('concurrent allocations from separate processes never share a port', { time
 test('the stack lease names its owner, is released, and is reclaimed from an exited process', async (t) => {
   const { primary, worktree } = repository(t);
   const linked = worktree('linked');
+  const file = path.join(sharedStateDir(primary, policy), 'stack.lease');
   const release = acquireStackLease(linked, policy);
   assert.equal(stackLease(primary, policy).checkout, linked);
+  // A hard-killed stack can leave a lease whose pid another process reuses, so refusals name the file to delete.
   assert.throws(
     () => acquireStackLease(primary, policy),
-    (error) => error.message.includes(`runs from ${linked}`),
+    (error) =>
+      error.message.includes(`runs from ${linked}`) && error.message.includes(`delete the stale lease ${file}`),
   );
   // The stack binds canonical ports, so its checkout serves there and the primary cannot.
   assert.equal(sitePort(linked, policy), canonical);
   assert.throws(
     () => sitePort(primary, policy),
-    (error) => error.message.includes(linked),
+    (error) => error.message.includes(linked) && error.message.includes(`delete the stale lease ${file}`),
   );
   release();
   assert.equal(stackLease(primary, policy), null);
 
-  const file = path.join(sharedStateDir(primary, policy), 'stack.lease');
   writeFileSync(file, JSON.stringify({ pid: await deadPid(), checkout: linked, startedAt: new Date().toISOString() }));
   assert.equal(sitePort(linked, policy), first);
   acquireStackLease(primary, policy);
