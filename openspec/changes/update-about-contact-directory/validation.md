@@ -25,4 +25,4 @@ Product Environment: Local, `http://127.0.0.1:4321/blackbox-records/about/`. Acc
 
 ## Release boundary
 
-No UAT/PRD Content Publication or Software Release was performed. Hosted About content keeps the old addresses until task 4.1.
+The operator published the three contact edits through PRD staff on 2026-10-01. `https://blackbox-records-web.pages.dev/about/` then served `info@`, `demos@` and `touring@blackboxrecordsathens.com` with the Tour Booking label and no `@blackboxrecords.com` address. The copy buttons are code and reach PRD only with the next Software Release; no UAT publication or release was performed here.

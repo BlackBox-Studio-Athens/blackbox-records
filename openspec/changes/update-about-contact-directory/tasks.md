@@ -16,4 +16,4 @@
 
 ## 4. Production content
 
-- [ ] 4.1 Publish the three About contact edits through PRD staff; verify the public About page shows the new addresses and copy controls.
+- [x] 4.1 Publish the three About contact edits through PRD staff; verify the public About page shows the new addresses and copy controls.
