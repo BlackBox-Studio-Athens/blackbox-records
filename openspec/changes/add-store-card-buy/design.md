@@ -9,7 +9,7 @@ Buy sits at the right of the price, in the card's purchase row; status text take
 
 ## Control
 
-Outline, large (44px), labelled Buy. The store surface's `data-tone` gives outlined controls the Store Blood edge. A filled primary is reserved for one action per view, and a grid of filled buttons would read as a marketplace. The 4.5rem minimum width fits Adding and Added, so the label can change while working without changing the width. `ml-auto` keeps Buy right-aligned when a long price wraps it to its own line.
+Large (44px), labelled Buy, in the button family's filled primary face: Control Ink with Primary Inverse text, the face of Checkout and the item page's Add To Cart. The first build used the store-toned outline, whose Store Blood edge read like the outlined Sold Out status. On 2026-10-01 the label compared four treatments rendered on the real cards (ink outline with the cart's bag icon, ink filled, Store Blood filled, and a price tag joining price and Buy) and chose ink filled. Store cards therefore become the documented exception to one filled primary per view, and Buy never shares a status's look. The 4.5rem minimum width fits Adding and Added, so the label can change while working without changing the width. `ml-auto` keeps Buy right-aligned when a long price wraps it to its own line.
 
 ## Card link cue
 
