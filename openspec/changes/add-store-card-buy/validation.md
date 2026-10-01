@@ -1,6 +1,6 @@
 # Validation
 
-Product Environment: Local, on branch `claude/store-buy-button-854383` rebased onto local `main` at `ca47c42b`. These notes are written before the final `pnpm validate`. Its summary path, source fingerprints, mode, status and exit code are retained in `.codex-artifacts/store-card-buy/final-validation.json`, so recording the result does not change the tested tree.
+Product Environment: Local, on branch `claude/store-buy-button-854383`, last rebased onto local `main` at `a29999dd` before merging. These notes are written before the final `pnpm validate`. Its summary path, source fingerprints, mode, status and exit code are retained in `.codex-artifacts/store-card-buy/final-validation.json`, so recording the result does not change the tested tree.
 
 Acceptance rows: Commerce/checkout/stock (Local mock scenario against the real Worker), Shell/player/routing (the shell snapshot resets Buy; full Playwright run) and Boundaries/tooling/instructions (strict OpenSpec validation). Staff/editor, CMS/publication and Release/environment do not apply: no staff, content or hosted change.
 
@@ -9,6 +9,14 @@ Acceptance rows: Commerce/checkout/stock (Local mock scenario against the real W
 - Store, layout and gallery Vitest projects (`vitest run --config vitest.modules.config.ts src/layouts src/components/store src/pages/_store-item-detail-gallery.test.ts`): 22 files and 175 tests passed on the rebased tree. The source test pinning the Coverflow stage height now expects the taller stage.
 - Playwright, all specs: 38 passed and 5 skipped (project-conditional desktop or phone tests). Port 4321 belonged to another worktree's Astro, so this tree's Astro served 4331 under the ignored override `.codex-artifacts/playwright-4331.config.ts`. Summary: `.codex-artifacts/e2e-4331/summary.json`.
 - `pnpm openspec -- validate add-store-card-buy --type change --strict --allow-worktree`: valid.
+
+## After rebasing onto main
+
+The checks above ran on the `ca47c42b` base. `main` then gained image delivery, edge caching and inert shell snapshots (`a29999dd`), none of which edits a file this change touches. The snapshot capture now clones into an inert document and still calls `sanitizeStoreListingPricePlaceholders`, which hides Buy in the clone.
+
+- Store, layout, shell navigation and gallery Vitest projects: 36 files and 248 tests passed.
+- `pnpm test:e2e` against this tree's Astro on 4321: 40 passed and 5 skipped, including main's check that capturing a Store snapshot fetches no lazy images. Log: `.codex-artifacts/store-card-buy/e2e-rebased.log`.
+- The Local mock scenario and browser observations below were made on the earlier base and were not repeated.
 
 ## Local mock scenario
 
