@@ -372,6 +372,41 @@ describe('shell page snapshots', () => {
     );
   });
 
+  it('restores island server markup and the ssr marker so a cached island hydrates again', () => {
+    const liveIsland = { innerHTML: '<input>' };
+    const cloneIsland = { innerHTML: '', setAttribute: vi.fn() };
+    const selectIslands = (islands: object[]) => (selector: string) => (selector === 'astro-island' ? islands : []);
+    const main = { getAttribute: () => null, querySelectorAll: selectIslands([liveIsland]) };
+    const clone = {
+      querySelectorAll: selectIslands([cloneIsland]),
+      get innerHTML() {
+        return `<astro-island>${cloneIsland.innerHTML}</astro-island>`;
+      },
+    };
+    const targetDocument = {
+      createElement: () => ({
+        content: {
+          ownerDocument: {
+            importNode: () => {
+              cloneIsland.innerHTML = liveIsland.innerHTML;
+              return clone;
+            },
+          },
+        },
+      }),
+      querySelector: (selector: string) => (selector === 'main[data-app-shell-main]' ? main : null),
+      title: 'About',
+    } as unknown as Document;
+    const about = 'https://example.test/blackbox-records/about/';
+    const read = () => readDocumentShellPageSnapshot(targetDocument, about, about);
+
+    read();
+    liveIsland.innerHTML = '<input value="typed">';
+
+    expect(read()?.mainHtml).toBe('<astro-island><input></astro-island>');
+    expect(cloneIsland.setAttribute).toHaveBeenCalledWith('ssr', '');
+  });
+
   it('updates document metadata when a snapshot is applied', () => {
     const description = new FakeElement();
     const canonical = new FakeElement();

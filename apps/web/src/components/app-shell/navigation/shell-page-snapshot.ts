@@ -15,6 +15,25 @@ type ShellPageSnapshotCache = {
   cacheSnapshot: (pageSnapshot: ShellPageSnapshot) => void;
 };
 
+// Astro hydrates an island only while it has `ssr`, and removes it once hydrated. Remember each island's markup from
+// before any interaction so a restored snapshot hydrates afresh instead of staying inert or matching edited DOM.
+const islandServerMarkup = new WeakMap<Element, string>();
+
+function rememberIslandServerMarkup(root: ParentNode) {
+  root.querySelectorAll('astro-island').forEach((island) => {
+    if (!islandServerMarkup.has(island)) islandServerMarkup.set(island, island.innerHTML);
+  });
+}
+
+function restoreIslandServerMarkup(liveRoot: ParentNode, cloneRoot: ParentNode) {
+  const liveIslands = liveRoot.querySelectorAll('astro-island');
+  cloneRoot.querySelectorAll('astro-island').forEach((island, index) => {
+    const serverMarkup = islandServerMarkup.get(liveIslands[index]!);
+    if (serverMarkup !== undefined) island.innerHTML = serverMarkup;
+    island.setAttribute('ssr', '');
+  });
+}
+
 export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-coverflow-group]').forEach((groupElement) => {
     groupElement.dataset.storeCoverflowMode = 'catalog';
@@ -78,6 +97,7 @@ export function readDocumentShellPageSnapshot(
     targetDocument.querySelector<HTMLElement>('main#main');
 
   if (!mainElement) return null;
+  rememberIslandServerMarkup(mainElement);
 
   // A dialog can temporarily hide descendants. Keep the existing clean snapshot
   // instead of persisting its accessibility mask into the next visit.
@@ -87,6 +107,7 @@ export function readDocumentShellPageSnapshot(
   const mainElementClone = targetDocument
     .createElement('template')
     .content.ownerDocument.importNode(mainElement, true) as HTMLElement;
+  restoreIslandServerMarkup(mainElement, mainElementClone);
   mainElementClone.querySelectorAll<HTMLElement>('[data-artists-roster-filters]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';
   });
@@ -182,6 +203,8 @@ export function applyDocumentShellPageSnapshot({
 
   mainElement.className = pageSnapshot.mainClassName;
   mainElement.innerHTML = pageSnapshot.mainHtml;
+  // Islands load their component asynchronously, so this still reads the snapshot's server markup.
+  rememberIslandServerMarkup(mainElement);
   onHrefApplied?.(pageSnapshot.href);
   updateDocumentMetadata(pageSnapshot, targetDocument ?? document);
   onPathnameApplied?.(pageSnapshot.pathname);
