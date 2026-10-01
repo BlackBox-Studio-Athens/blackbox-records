@@ -8,5 +8,5 @@
 
 ## Hosted acceptance
 
-- [ ] 6. Release an accepted UAT software candidate and withdraw the exact UAT entries.
-- [ ] 7. Promote the accepted PRD artifact and withdraw the exact PRD entries; verify public absence and retained operations.
+- [x] 6. Release an accepted UAT software candidate and withdraw the exact UAT entries.
+- [x] 7. Promote the accepted PRD artifact and withdraw the exact PRD entries; verify public absence and retained operations.
