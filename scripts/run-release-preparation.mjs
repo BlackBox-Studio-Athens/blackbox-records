@@ -1,5 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { guardScript } from './feedback-guard.mjs';
 import { runFiniteCommand } from './local-process.ts';
 
 const root = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -54,6 +55,7 @@ async function run(mode, serial) {
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  guardScript(import.meta.url);
   run(process.argv[2], process.argv.includes('--serial')).catch((error) => {
     console.error(error.message);
     process.exitCode = error.exitCode ?? 1;

@@ -2,25 +2,170 @@
   "name": "workspace",
   "namedInputs": {
     "workspaceChecks": ["{workspaceRoot}/**/*", "toolchain"],
-    "workspaceTooling": [
-      "{workspaceRoot}/*",
+    "scriptRuntime": [
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/tsconfig.json",
+      "{workspaceRoot}/scripts/package.json",
+      "toolchain"
+    ],
+    "moduleBoundaries": [
+      "{workspaceRoot}/scripts/module-boundaries-manifest.cjs",
+      "{workspaceRoot}/openspec/specs/module-boundaries/module-boundaries.manifest.json",
+      "{workspaceRoot}/tsconfig.boundaries.json",
+      "{workspaceRoot}/apps/**/project.json",
+      "{workspaceRoot}/packages/**/project.json",
+      "{workspaceRoot}/apps/*/src/components/ui/*"
+    ],
+    "workspaceLint": [
       "{workspaceRoot}/scripts/**/*",
-      "{workspaceRoot}/.codex/**/*",
-      "{workspaceRoot}/.github/**/*",
-      "{workspaceRoot}/**/project.json",
-      "{workspaceRoot}/apps/*/*",
-      "{workspaceRoot}/packages/*/*",
+      "{workspaceRoot}/.codex/hooks/**/*",
+      "{workspaceRoot}/*.mjs",
+      "{workspaceRoot}/.dependency-cruiser.cjs",
+      "{workspaceRoot}/tsconfig.eslint.json",
+      "moduleBoundaries",
+      "scriptRuntime"
+    ],
+    "workspaceArchitecture": [
+      "{workspaceRoot}/apps/**/*",
+      "{workspaceRoot}/packages/**/*",
+      "{workspaceRoot}/project.json",
+      "{workspaceRoot}/scripts/check-module-projects.mjs",
+      "{workspaceRoot}/scripts/check-agent-guidance.mjs",
+      "{workspaceRoot}/scripts/audit-module-boundaries.ts",
+      "{workspaceRoot}/scripts/audit-commerce-boundaries.ts",
+      "{workspaceRoot}/scripts/**/*.test.mjs",
+      "{workspaceRoot}/.codex/hooks/*.test.mjs",
+      "{workspaceRoot}/.dependency-cruiser.cjs",
+      "{workspaceRoot}/AGENTS.md",
+      "{workspaceRoot}/CLAUDE.md",
+      "{workspaceRoot}/docs/agent-workflow.md",
+      "{workspaceRoot}/docs/agent-reference.md",
+      {
+        "runtime": "git ls-files --cached --deleted --others --exclude-standard -- README.md docs openspec/specs .run"
+      },
+      "moduleBoundaries",
+      "scriptRuntime"
+    ],
+    "workspaceEnvironment": [
+      "{workspaceRoot}/scripts/verify-environment-model.ts",
+      "{workspaceRoot}/scripts/stripe-catalog-verify.ts",
+      "{workspaceRoot}/scripts/verify-runtime-config.ts",
+      "{workspaceRoot}/.github/workflows/**/*",
+      "{workspaceRoot}/apps/web/src/env.d.ts",
+      "{workspaceRoot}/apps/web/src/components/Header.astro",
+      "{workspaceRoot}/apps/web/src/layouts/SiteLayout.astro",
+      "{workspaceRoot}/apps/web/src/components/store/checkout/CheckoutOfferStatus.tsx",
+      "{workspaceRoot}/apps/web/src/pages/store/**/checkout/index.astro",
+      "{workspaceRoot}/apps/backend/wrangler.jsonc",
+      "{workspaceRoot}/apps/backend/src/application/email/config.ts",
+      "{workspaceRoot}/apps/backend/src/application/email/routing.ts",
+      "{workspaceRoot}/apps/backend/src/application/email/idempotency.ts",
+      "{workspaceRoot}/apps/backend/src/application/commerce/checkout/feature-flags/cloudflare-feature-flag-reader.ts",
+      "{workspaceRoot}/apps/backend/src/interfaces/http/routes/public-commerce-services.ts",
+      "{workspaceRoot}/apps/backend/src/interfaces/http/routes/stripe-webhook-services.ts",
+      "scriptRuntime"
+    ],
+    "agentTests": [
+      "{workspaceRoot}/feedback-policy.json",
+      "{workspaceRoot}/scripts/check-agent-guidance*.mjs",
+      "{workspaceRoot}/scripts/feedback-*.mjs",
+      "{workspaceRoot}/scripts/machine-slots.mjs",
+      "{workspaceRoot}/scripts/local-process.ts",
+      "{workspaceRoot}/scripts/local-resources*.mjs",
+      "{workspaceRoot}/scripts/local-status*.mjs",
+      "{workspaceRoot}/scripts/run-e2e*.mjs",
+      "{workspaceRoot}/scripts/validate*.mjs",
+      "{workspaceRoot}/scripts/test-content-workspace.mjs",
+      "{workspaceRoot}/scripts/benchmark-validation.mjs",
+      "{workspaceRoot}/scripts/run-release-preparation.mjs",
+      "{workspaceRoot}/scripts/agent-hooks/**/*",
+      "{workspaceRoot}/.codex/hooks.json",
+      "{workspaceRoot}/.codex/hooks/**/*",
+      "{workspaceRoot}/.claude/settings.json",
+      "scriptRuntime"
+    ],
+    "releaseTests": [
+      "{workspaceRoot}/scripts/vitest.contracts.config.ts",
+      "{workspaceRoot}/scripts/validation-reporters.ts",
+      "{workspaceRoot}/scripts/**/*.test.ts",
+      "{workspaceRoot}/scripts/check-frontend-route-isolation.ts",
+      "{workspaceRoot}/scripts/runtime-performance-helpers.ts",
+      "{workspaceRoot}/.github/workflows/**/*",
       "{workspaceRoot}/apps/backend/scripts/build-cms.mjs",
+      "{workspaceRoot}/scripts/release-candidate*.mjs",
+      "{workspaceRoot}/scripts/run-release-preparation*.mjs",
+      "{workspaceRoot}/scripts/feedback-guard.mjs",
+      "{workspaceRoot}/scripts/feedback-policy.mjs",
+      "{workspaceRoot}/feedback-policy.json",
+      "{workspaceRoot}/scripts/local-process.ts",
+      "{workspaceRoot}/scripts/ci-speed-measurement*.mjs",
+      "{workspaceRoot}/scripts/pages-public-gateway*.mjs",
+      "{workspaceRoot}/apps/backend/wrangler.jsonc",
+      "{workspaceRoot}/apps/backend/cms-resources.json",
+      "{workspaceRoot}/apps/backend/astro.config.mjs",
+      "{workspaceRoot}/apps/backend/astro.public.config.mjs",
       "{workspaceRoot}/apps/backend/prisma/migrations/**/*",
       "{workspaceRoot}/apps/backend/cms-migrations/**/*",
-      "toolchain"
+      "{workspaceRoot}/apps/web/package.json",
+      "scriptRuntime"
+    ],
+    "runnerTests": [
+      "{workspaceRoot}/scripts/validate*.mjs",
+      "{workspaceRoot}/scripts/test-watch.mjs",
+      "{workspaceRoot}/scripts/machine-slots*.mjs",
+      "{workspaceRoot}/scripts/feedback-policy.mjs",
+      "{workspaceRoot}/scripts/feedback-guard.mjs",
+      "{workspaceRoot}/scripts/format-check*.mjs",
+      "{workspaceRoot}/scripts/local-process.ts",
+      "{workspaceRoot}/feedback-policy.json",
+      "{workspaceRoot}/prettier.config.mjs",
+      "{workspaceRoot}/.prettierignore",
+      "{workspaceRoot}/.editorconfig",
+      "{workspaceRoot}/.gitignore",
+      "{workspaceRoot}/apps/web/package.json",
+      "scriptRuntime"
+    ],
+    "boundaryTests": [
+      "{workspaceRoot}/scripts/check-module-projects*.mjs",
+      "{workspaceRoot}/scripts/module-boundaries-enforcement.test.mjs",
+      "{workspaceRoot}/eslint.config.mjs",
+      "{workspaceRoot}/apps/backend/src/infrastructure/persistence/prisma/create-prisma-client.ts",
+      "{workspaceRoot}/apps/web/src/components/store/checkout/public-checkout-api.ts",
+      "moduleBoundaries",
+      "scriptRuntime"
+    ],
+    "contentTests": [
+      "{workspaceRoot}/scripts/*cms*",
+      "{workspaceRoot}/scripts/*-content-publication.mjs",
+      "{workspaceRoot}/scripts/restore-published-content.mjs",
+      "{workspaceRoot}/scripts/release-candidate.mjs",
+      "{workspaceRoot}/scripts/editorial-draft-creation.test.mjs",
+      "{workspaceRoot}/scripts/local-publication-poll.test.mjs",
+      "{workspaceRoot}/scripts/fixtures/**/*",
+      "{workspaceRoot}/packages/content-model/**/*",
+      "{workspaceRoot}/apps/backend/src/middleware.ts",
+      "{workspaceRoot}/apps/backend/src/cms/**/*",
+      "{workspaceRoot}/apps/backend/src/platform/interfaces/http/**/*",
+      "{workspaceRoot}/apps/backend/cms-resources.json",
+      "{workspaceRoot}/apps/backend/scripts/cms-backup.mjs",
+      "{workspaceRoot}/apps/backend/scripts/cms-resources.ts",
+      "{workspaceRoot}/apps/backend/scripts/local-public-runtime.mjs",
+      "{workspaceRoot}/apps/backend/scripts/prepare-staff-thumbnails.mjs",
+      "{workspaceRoot}/apps/backend/test/emdash/*.test.mjs",
+      "{workspaceRoot}/apps/web/scripts/local-publication-poll.mjs",
+      "{workspaceRoot}/apps/web/scripts/start-local-publication.mjs",
+      "{workspaceRoot}/apps/web/src/lib/content-files/**/*",
+      "{workspaceRoot}/apps/web/src/content/**/*",
+      "{workspaceRoot}/apps/web/src/content.config.ts",
+      "{workspaceRoot}/apps/web/public/assets/**/*",
+      "scriptRuntime"
     ]
   },
   "targets": {
     "architecture": {
       "command": "node --import tsx scripts/check-module-projects.mjs && pnpm check:boundaries",
       "cache": true,
-      "inputs": ["workspaceChecks"],
+      "inputs": ["workspaceArchitecture"],
       "dependsOn": ["format", "environment"]
     },
     "format": {
@@ -31,23 +176,44 @@
     "environment": {
       "command": "pnpm environment:model:verify",
       "cache": true,
-      "inputs": ["workspaceChecks"]
+      "inputs": ["workspaceEnvironment"]
     },
-    "test-tooling": {
-      "command": "pnpm test:tooling",
+    "test-agent": {
+      "command": "pnpm test:agent",
       "cache": true,
-      "inputs": ["workspaceTooling"]
+      "inputs": [
+        "agentTests",
+        "{workspaceRoot}/apps/*/package.json",
+        "{workspaceRoot}/packages/*/package.json",
+        "{workspaceRoot}/.run/**/*"
+      ]
+    },
+    "test-release": {
+      "command": "pnpm test:release",
+      "cache": true,
+      "inputs": ["releaseTests"]
+    },
+    "test-runner": {
+      "command": "pnpm test:runner",
+      "cache": true,
+      "inputs": ["runnerTests"]
+    },
+    "test-boundaries": {
+      "command": "pnpm test:boundaries",
+      "cache": true,
+      "inputs": ["boundaryTests"]
     },
     "test-content": {
       "command": "pnpm test:content",
       "cache": true,
-      "inputs": ["workspaceChecks"]
+      "inputs": ["contentTests"]
     },
     "test": {
-      "dependsOn": ["test-tooling", "test-content"]
+      "dependsOn": ["test-agent", "test-release", "test-runner", "test-boundaries", "test-content"]
     },
     "lint": {
-      "command": "pnpm exec eslint scripts .codex/hooks *.mjs .dependency-cruiser.cjs --max-warnings=0 --no-warn-ignored"
+      "command": "pnpm exec eslint scripts .codex/hooks *.mjs .dependency-cruiser.cjs --max-warnings=0 --no-warn-ignored",
+      "inputs": ["workspaceLint", "^default"]
     }
   }
 }

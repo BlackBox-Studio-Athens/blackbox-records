@@ -39,9 +39,9 @@
     "prisma:generate": "pnpm exec prisma generate",
     "generate:openapi": "pnpm exec tsx scripts/generate-openapi.ts",
     "webhook:simulate:local": "tsx scripts/simulate-stripe-webhook.ts",
-    "check": "tsc --noEmit --incremental --tsBuildInfoFile ../../.codex-artifacts/typecheck/backend.tsbuildinfo -p tsconfig.json",
-    "test": "vitest run --config vitest.modules.config.ts",
-    "test:node": "vitest run --config vitest.node.config.ts",
+    "check": "node ../../scripts/feedback-guard.mjs @blackbox/backend:check && tsc --noEmit --incremental --tsBuildInfoFile ../../.codex-artifacts/typecheck/backend.tsbuildinfo -p tsconfig.json",
+    "test": "node ../../scripts/feedback-guard.mjs @blackbox/backend:test && vitest run --config vitest.modules.config.ts",
+    "test:node": "node ../../scripts/feedback-guard.mjs @blackbox/backend:test:node && vitest run --config vitest.node.config.ts",
     "test:emdash": "node --import tsx scripts/generate-cms-seed.ts && astro build --root test/emdash && node test/emdash/smoke.mjs",
     "test:cms-render": "node test/emdash/parity-smoke.mjs",
     "build:cms": "node scripts/build-cms.mjs",
@@ -127,6 +127,7 @@
     "namedInputs": {
       "default": [
         "{workspaceRoot}/apps/backend/**/*",
+        "{workspaceRoot}/scripts/**/*",
         "toolchain"
       ]
     }

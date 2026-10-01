@@ -2,7 +2,7 @@
 
 Current results and unresolved acceptance items: [refreshed measurement report](validation-refresh-report.md).
 
-This protocol measures full-suite equivalence with `pnpm validate:full`. The September 28 local default, `pnpm validate`, selects affected checks and is not a full-suite benchmark result. Measure its edit-to-feedback time separately; the full suite remains in CI.
+This protocol measures full-suite equivalence with `pnpm validate:full`. The September 28 local default, `pnpm validate`, selects affected checks and is not a full-suite benchmark result. Measure its edit-to-feedback time separately; the full suite remains in CI. Locally, `pnpm validate:full`, `pnpm benchmark:validation` and the other full-suite commands here run only under a maintainer grant (see [feedback-policy.json](../feedback-policy.json)).
 
 Refreshed baseline: `8b5160c552959751ad95e2053fc9d499dec590fb`. The September 14 report is historical, not acceptance for this revision. Run the protocol from the reviewed checkout; use separate worktrees only for a two-arm comparison.
 

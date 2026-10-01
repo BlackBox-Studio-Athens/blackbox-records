@@ -36,8 +36,7 @@ Start with the relevant row. Use [README](README.md) when setup or product conte
 
 ## Completion
 
-- Run `pnpm test` (tests reached by your working-tree changes), `pnpm test <file>`, or `pnpm test:watch <file>` while editing; `pnpm validate` before completion.
-- Run `pnpm validate` on the final tree. It uses Nx affected tests, package lint/type checks and required architecture checks; CI retains full unit, check and build gates. Reuse evidence only for its recorded source fingerprint.
-- Use `pnpm validate:full` for the full local run. `--no-cache` disables Nx cache reuse for the selected mode; it does not change affected or full selection.
+- Run `pnpm test <module|file>` or `pnpm test:watch <module>` while editing and `pnpm validate` on the final tree. Reuse evidence only for its recorded source fingerprint.
+- [feedback-policy.json](feedback-policy.json) decides what runs locally. Whole-project commands run in CI; locally they need a time-boxed maintainer grant, which only the maintainer issues with `pnpm feedback:grant-full <minutes>`.
 - Use the [acceptance matrix](docs/agent-workflow.md#acceptance-matrix) for additional behavior checks and the [evidence record](docs/agent-workflow.md#completion-evidence) for the handoff. Local validation alone does not establish browser, provider or release acceptance.
 - `pnpm agent:check` checks this entry point and its supporting agent documents. Update the relevant operational owner when commands or contracts change.

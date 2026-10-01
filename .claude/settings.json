@@ -8,6 +8,34 @@
             "type": "command",
             "command": "C:/Users/SVall/.local/bin/graphify.exe hook-check",
             "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/scripts/agent-hooks/command-guard.mjs"],
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/scripts/agent-hooks/command-guard.mjs"],
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__claude-in-chrome__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/scripts/agent-hooks/browser-lease.mjs"],
+            "timeout": 10
           }
         ]
       }

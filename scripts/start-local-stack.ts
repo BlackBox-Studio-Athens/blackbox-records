@@ -5,6 +5,7 @@ import process from 'node:process';
 import { pathToFileURL } from 'node:url';
 
 import { createLongRunningProcessGroup, LocalProcessError, runFiniteCommand } from './local-process';
+import { acquireStackLease } from './local-resources.mjs';
 import { STRIPE_MOCK_HTTP_PORT, STRIPE_MOCK_HTTPS_PORT, STRIPE_MOCK_PROXY_PORT } from './start-stripe-mock';
 
 export type LocalStackMode = 'stripe-test' | 'stripe-mock' | 'stripe-mock-api' | 'uat-connected';
@@ -221,6 +222,8 @@ async function main() {
     process.exit(1);
   }
 
+  // The stack binds canonical ports and shared Local state, so one checkout on the machine runs it at a time.
+  process.on('exit', acquireStackLease(rootDir));
   await assertPortsAvailable(plan.ports);
 
   for (const command of plan.prepare) {

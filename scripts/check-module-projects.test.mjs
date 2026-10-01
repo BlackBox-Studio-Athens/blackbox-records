@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { checkInventory, checkModuleGraph, checkRootTests } from './check-module-projects.mjs';
+import {
+  checkInventory,
+  checkModuleGraph,
+  checkRootTests,
+  checkToolchainInputs,
+  checkWorkspaceInputs,
+  rootTestGroups,
+} from './check-module-projects.mjs';
 import { moduleTestProjects } from './module-test-projects.ts';
 import { mkdtemp, mkdir, writeFile, rm, symlink } from 'node:fs/promises';
 import os from 'node:os';
@@ -26,20 +33,45 @@ test('missing and duplicate native test ownership fail', () => {
 test('root node tests belong to exactly one group and must exist', () => {
   const group = (...files) => `node --test ${files.map((file) => `"${file}"`).join(' ')}`;
   const scripts = {
-    'test:tooling': group('scripts/a.test.mjs', 'hooks/*.test.mjs'),
+    ...Object.fromEntries(rootTestGroups.map((name) => [name, group()])),
+    'test:agent': group('scripts/a.test.mjs', 'scripts/agent-hooks/*.test.mjs'),
     'test:content': group('scripts/b.test.mjs'),
   };
-  const files = ['scripts/a.test.mjs', 'scripts/b.test.mjs', 'hooks/x.test.mjs'];
+  const files = ['scripts/a.test.mjs', 'scripts/b.test.mjs', 'scripts/agent-hooks/x.test.mjs'];
   assert.doesNotThrow(() => checkRootTests(scripts, files));
   assert.throws(() => checkRootTests(scripts, [...files, 'scripts/c.test.mjs']), /c\.test\.mjs: .*found none/);
   assert.throws(
     () => checkRootTests({ ...scripts, 'test:content': group('scripts/b.test.mjs', 'scripts/a.test.mjs') }, files),
-    /a\.test\.mjs: .*found test:tooling, test:content/,
+    /a\.test\.mjs: .*found test:agent, test:content/,
   );
   assert.throws(
     () => checkRootTests({ ...scripts, 'test:content': group('scripts/b.test.mjs', 'scripts/gone.test.mjs') }, files),
     /test:content: no file matches scripts\/gone\.test\.mjs/,
   );
+});
+
+test('root tasks other than formatting do not hash documentation', () => {
+  const plan = (task, ...files) => ({ [task]: [...files.map((file) => `file:${file}`), 'runtime:node --version'] });
+  for (const file of ['docs/validation-feedback.md', 'openspec/changes/x/design.md', 'README.md'])
+    assert.doesNotThrow(() => checkWorkspaceInputs(plan('workspace:format', file, 'scripts/a.mjs')));
+  assert.doesNotThrow(() =>
+    checkWorkspaceInputs(plan('workspace:architecture', 'AGENTS.md', 'docs/agent-workflow.md')),
+  );
+  assert.doesNotThrow(() => checkWorkspaceInputs(plan('workspace:lint', 'scripts/a.mjs', 'openspec/specs/x/spec.md')));
+  for (const file of ['docs/validation-feedback.md', 'openspec/changes/x/tasks.md', 'README.md'])
+    assert.throws(
+      () => checkWorkspaceInputs(plan('workspace:test-runner', 'scripts/a.mjs', file)),
+      new RegExp(`workspace:test-runner hashes documentation \\(${file.replaceAll('.', '\\.')}\\)`),
+    );
+  assert.throws(() => checkWorkspaceInputs(plan('workspace:lint', 'AGENTS.md')), /workspace:lint hashes documentation/);
+});
+
+test('the shared toolchain input does not hash root package.json', () => {
+  const nx = (...toolchain) => ({ namedInputs: { toolchain: ['{workspaceRoot}/pnpm-lock.yaml', ...toolchain] } });
+  assert.doesNotThrow(() =>
+    checkToolchainInputs(nx({ runtime: 'pnpm --version' }, '{workspaceRoot}/apps/web/package.json')),
+  );
+  assert.throws(() => checkToolchainInputs(nx('{workspaceRoot}/package.json')), /toolchain hashes root package\.json/);
 });
 
 test('actual module cycles fail regardless of permitted dependencies', () => {

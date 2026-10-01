@@ -10,6 +10,12 @@
         "{workspaceRoot}/scripts/**/*",
         "{workspaceRoot}/apps/backend/scripts/**/*",
         "{workspaceRoot}/apps/backend/vitest*.ts",
+        "{workspaceRoot}/apps/backend/package.json",
+        "{workspaceRoot}/apps/backend/wrangler.jsonc",
+        "{workspaceRoot}/apps/backend/cms-resources.json",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/.github/workflows/**/*",
+        "backendWorkerTests",
         "{workspaceRoot}/openspec/specs/module-boundaries/**/*"
       ]
     }

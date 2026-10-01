@@ -64,7 +64,7 @@ Share the UAT link with non-technical reviewers using this template:
 
 The temporary public PRD Holding Page is built from the unlinked `/prd-holding/` source route and deployed only by the manual `.github/workflows/prd-holding-page.yml` workflow. The workflow prepares `apps/web/dist-holding`, uploads it as a one-day artifact, and can deploy it to the `holding` branch of the existing `blackbox-records-web` Pages project through the `prd-holding` GitHub Actions environment. That environment restricts deployment sources to `main` but has no required reviewers, so an explicit `deploy=true` dispatch proceeds without a separate approval prompt.
 
-- Build the normal PRD-shaped site: `pnpm build`
+- Build the normal PRD-shaped site: `pnpm build` (locally only under a maintainer grant)
 - Prepare the allowlisted holding artifact: `pnpm prd:holding:prepare`
 - Check route isolation, assets, metadata, and workflow isolation: `pnpm prd:holding:check`
 - Branch alias: `https://holding.blackbox-records-web.pages.dev`
@@ -150,7 +150,7 @@ Notes:
 
 ## Local development
 
-For Codex iteration, reuse `pnpm site:dev:bg` and Astro hot updates for browser checks. `pnpm validate` now selects affected tests, types and lint automatically; full tests and builds run in CI. For an even smaller edit/test loop, use `pnpm test:changed --scope web|staff|backend|api-client`, or keep `pnpm test:watch --scope <package>` warm. CMS, checkout and publication acceptance still use `pnpm dev`. See [validation and release feedback](docs/validation-feedback.md).
+For Codex iteration, reuse `pnpm site:dev:bg` and Astro hot updates for browser checks. `pnpm validate` now selects affected tests, types and lint automatically; full tests and builds run in CI. For an even smaller edit/test loop, run `pnpm test <module|file>` or keep `pnpm test:watch <module>` warm. CMS, checkout and publication acceptance still use `pnpm dev`. See [validation and release feedback](docs/validation-feedback.md).
 
 The normal command is `pnpm dev`, or **BlackBox Local Stack** in WebStorm. Both start the same Local stack described below. The isolated CMS integration diagnostic is:
 
@@ -181,7 +181,7 @@ pnpm site:dev:stop
 
 `pnpm site:dev` remains the foreground static-site launcher for WebStorm and local stack process supervision.
 
-Browser end-to-end checks are opt-in and not part of `pnpm validate`. `pnpm test:e2e` runs the Playwright specs in `e2e/` against the Local URL, reusing whatever serves port 4321 or starting `pnpm site:dev` for the run. Narrow a run with `pnpm test:e2e e2e/<name>.spec.ts` or `-g <text>`. The specs stub Worker reads and third-party requests, so they need neither the stack nor external network. Results, including a trace and `error-context.md` per failure, are in `.codex-artifacts/e2e/`. When the runner started Astro itself, the final `[WebServer] ... exit code 1` line only reports that server stopping.
+Browser end-to-end checks are opt-in and not part of `pnpm validate`. `pnpm test:e2e e2e/<name>.spec.ts` (or `-g <text>`) runs the named Playwright specs against this checkout's Local URL, reusing a site already serving it or starting `pnpm site:dev` for the run. Locally a run must name a spec or title filter; the whole suite runs at PRD promotion. The specs stub Worker reads and third-party requests, so they need neither the stack nor external network. Results, including a trace and `error-context.md` per failure, are in `.codex-artifacts/e2e/`. When the runner started Astro itself, the final `[WebServer] ... exit code 1` line only reports that server stopping.
 
 Run the default full local commerce stack:
 
@@ -189,7 +189,7 @@ Run the default full local commerce stack:
 pnpm dev:stack:stripe-mock
 ```
 
-`pnpm dev` and `BlackBox Local Stack` in WebStorm run this same command. It applies Local D1 migrations, seeds mock commerce only when the store is empty, starts official `stripe-mock` through Go, and builds/starts the combined CMS and commerce Worker. The public Astro site stays at `http://127.0.0.1:4321/blackbox-records/`; Content, Items, Stock and Orders share `http://127.0.0.1:8787/content/` and the same Local operator identity. The Local public service imports initial editorial content only when all CMS collections are empty. Existing content, stock and prices remain in `apps/backend/.wrangler/state` across restarts. The Local mock launcher does not load `.dev.vars` or dotenv credentials. Local newsletter signup uses the committed fake `re_mock_*` Resend config through a no-network provider mock. It does not require Docker, real Stripe keys, real Resend keys, or hosted login.
+`pnpm dev` and `BlackBox Local Stack` in WebStorm run this same command. It applies Local D1 migrations, seeds mock commerce only when the store is empty, starts official `stripe-mock` through Go, and builds/starts the combined CMS and commerce Worker. One checkout runs the stack at a time; a second start names the running checkout. The public Astro site stays at `http://127.0.0.1:4321/blackbox-records/`; Content, Items, Stock and Orders share `http://127.0.0.1:8787/content/` and the same Local operator identity. The Local public service imports initial editorial content only when all CMS collections are empty. Existing content, stock and prices remain in `apps/backend/.wrangler/state` across restarts. The Local mock launcher does not load `.dev.vars` or dotenv credentials. Local newsletter signup uses the committed fake `re_mock_*` Resend config through a no-network provider mock. It does not require Docker, real Stripe keys, real Resend keys, or hosted login.
 
 Local publication polling uses the running CMS Worker's database binding. Temporary API/database failures leave requests pending and keep the last activated public site available, with retries capped at ten-second intervals. The terminal logs failures and recovery. A successful build is acknowledged only after its public receipt is verified; lost acknowledgements retry without rebuilding. These Local-only endpoints are unavailable in UAT and PRD. Do not delete `.wrangler/state` to troubleshoot a polling error. The focused recovery check is `node --test scripts/local-publication-poll.test.mjs`.
 
@@ -262,7 +262,7 @@ Run the UAT static smoke when you need to verify deployed Cloudflare Pages stati
 pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all
 ```
 
-The release workflow runs it after each UAT Pages deployment; the manual **UAT static smoke** workflow takes a site URL, scenario, and screenshot policy. It discovers one artist, release, and news page from the deployed sitemap and one Store Item from the Store listing, and checks code-owned headings and UI copy, so publishing content needs no smoke change. Evidence goes to ignored `.codex-artifacts/smoke/uat/uat-static/<run-id>/`. The supported scenarios are `public_assets`, `checkout_shell`, `public_routes`, and `all`. It never creates provider state.
+The release workflow runs it during PRD promotion, before any PRD mutation; the manual **UAT static smoke** workflow takes a site URL, scenario, and screenshot policy. It discovers one artist, release, and news page from the deployed sitemap and one Store Item from the Store listing, and checks code-owned headings and UI copy, so publishing content needs no smoke change. Evidence goes to ignored `.codex-artifacts/smoke/uat/uat-static/<run-id>/`. The supported scenarios are `public_assets`, `checkout_shell`, `public_routes`, and `all`. It never creates provider state.
 
 The PRD no-payment promotion smoke runner writes ignored evidence to `.codex-artifacts/smoke/prd/stripe-promotion/<run-id>/`. The `not_configured` paid-policy status means live payment was not attempted, not that PRD commerce is open.
 
@@ -439,27 +439,24 @@ pnpm dev:clean
 pnpm validate
 ```
 
-`pnpm check` is the repo-owned quality gate. It runs Prettier format verification, ESLint, and the existing Astro/TypeScript content checks.
+`pnpm validate` is the default local completion check. It compares with `origin/main`, including committed, staged, unstaged, deleted, and untracked files; `--since <ref>` chooses another base. It formats changed files, then runs affected tests, lint and type checks and the required architecture checks through Nx. Logs and `summary.json` live under `.codex-artifacts/validation/<run-id>/`; `mode: local` distinguishes this evidence from full acceptance. Browser/editor/publication checks remain additional when relevant; CMS/publication checks are documented in [content publication](docs/content-publication.md) and [content workspace](docs/content-workspace.md). [Validation feedback](docs/validation-feedback.md) owns slots, convergence and recovery.
 
-`pnpm validate` is the default local completion check. It compares with `origin/main` (HEAD fallback), including committed, staged, unstaged, deleted, and untracked files. Use `--since <ref>` to choose another base. It runs Vitest import dependents, affected-package type checks, changed-file lint, and cached formatting. Content, assets, migrations, and package configuration broaden that package's tests; shared packages/tooling also select repository contracts. Logs and `summary.json` live under `.codex-artifacts/validation/<run-id>/`; `mode: local` distinguishes this evidence from full acceptance, and source changes invalidate the run. Browser/editor/publication checks remain additional when relevant.
-
-CI retains complete tests/checks and checked builds before deployment. `pnpm validate:full` runs that complete suite locally when needed, without catalog generation. The standalone `pnpm test:unit`, `pnpm check`, and `pnpm build` commands remain available. For staff/editor changes run `pnpm validate:editor` too; CMS/publication checks remain as documented in [content publication](docs/content-publication.md) and [content workspace](docs/content-workspace.md).
+CI retains complete tests/checks and checked builds before deployment. Whole-project commands, the `release` tier in [feedback-policy.json](feedback-policy.json), are refused locally unless the maintainer issued a time-boxed grant with `pnpm feedback:grant-full <minutes>`.
 
 Backend and API-client type checks use TypeScript's native incremental mode with separate ignored `.codex-artifacts/typecheck/*.tsbuildinfo` files. They still use `--noEmit` and report errors on warm runs; no validation result or release artifact is reused by this compiler cache.
 
-`pnpm lint` reuses a successful lint phase only while the complete source, configuration, toolchain, environment, and retained evidence still match. It reports partial lint evidence; `pnpm lint --no-cache` forces a fresh run. Full validation and CI run fresh lint by default. `pnpm format` now uses the same configuration/plugin-aware cache and experimental Prettier CLI as formatting checks, with direct invocation of the installed binary; pass filenames to format only those files. `--uncached` disables the formatter cache explicitly.
+`pnpm format` uses the same configuration/plugin-aware cache and experimental Prettier CLI as formatting checks, with direct invocation of the installed binary; pass filenames to format only those files. `--uncached` disables the formatter cache explicitly.
 
-For CI prerequisites without a build, use `pnpm validate:checks`; it is partial and does not establish completion. `pnpm format:check` uses the native content cache under the ignored validation cache directory; use `pnpm format:check:uncached` for parity or diagnosis. The root `pnpm build` overlaps independent web/staff builds and joins both results before returning.
+`pnpm format:check` uses the native content cache under the ignored validation cache directory.
 
-`pnpm validate:fast --scope web|staff|backend|api-client|all` remains a complete package checkpoint: tests and types, plus contracts for `all`. Its result is partial. Full `pnpm validate:full` runs fresh by default; `--resume` reuses only successful checks with matching source, toolchain, and allowlisted environment inputs. `--no-cache` forces a fresh full pass and `--jobs 1` runs it sequentially. The existing `pnpm validate --no-cache` IDE launcher remains a full-suite command. Before completion or push, require a passing targeted `pnpm validate` for the final tree. A stale `.codex-artifacts/validation/active.lock` after a hard kill requires checking that its recorded PID is no longer running before removing that exact lock. Use `pnpm validate:editor --trace` for failure traces.
+Before completion or push, require a passing `pnpm validate` for the final tree. A second validation of the same checkout waits for the running one, and a lock left by a killed run is taken over automatically, so `.codex-artifacts/validation/active.lock` never needs manual removal.
 
 The measurement protocol and acceptance targets are in [the validation benchmark](docs/validation-benchmark.md). Reduced output alone is not proof of reduced total AI usage.
 
-Backend-only verification:
+Backend-only iteration:
 
 ```sh
-pnpm test:backend
-pnpm check:backend
+pnpm test:changed --scope backend
 ```
 
 Generate backend OpenAPI documents and refresh the generated client package:
@@ -696,7 +693,7 @@ CI/deploy credentials and public build variables:
 
 - The static Astro site has one shared deployment workflow:
   - `.github/workflows/pages.yml` runs shared repository gates once, deploys the prebuilt UAT artifact to Cloudflare Pages; a separate confirmed promotion consumes the retained PRD artifacts.
-- `.github/workflows/pages.yml` owns repository gates, catalog preparation, UAT Worker deployment, static deployments, and same-SHA UAT smoke.
+- `.github/workflows/pages.yml` owns repository gates, catalog preparation, UAT Worker deployment, static deployments, and UAT acceptance during PRD promotion.
 - `.github/workflows/uat-smoke.yml` remains available for manual diagnostics.
 - Rerun the release at the same source SHA after correcting its readiness report. See the catalog release runbook for compatible application rollback; routine releases never reset operational data.
 - The UAT `workers.dev` backend is reachable for browser checks, Stripe return URLs, and webhook testing.
@@ -713,7 +710,7 @@ CI/deploy credentials and public build variables:
 - The build step passes `PUBLIC_BACKEND_BASE_URL` from `UAT_PUBLIC_BACKEND_BASE_URL` so the Cloudflare Pages URL serves as the public UAT surface.
 - Pushes go directly to `main` in this repo.
 - The unused-code report runs in its own weekly or manual workflow and does not gate a release.
-- UAT and PRD restore their own published snapshots and build in independent runners. UAT deployment and quick static checks can begin before PRD preparation finishes; the run is promotable only after final bundle assembly and all UAT provider and identity checks pass.
+- UAT and PRD restore their own published snapshots and build in independent runners. UAT deployment can begin before PRD preparation finishes; the run is promotable after final bundle assembly and the hosted UAT release-identity check pass.
 - A failed build blocks UAT deployment. If deployment or acceptance fails, inspect the workflow summary and uploaded smoke evidence before retrying; immediate monotonic run-number checks reject late older candidates.
 - Cloudflare Pages is the UAT static host and must not be described as PRD rollback or legacy production hosting.
 
@@ -724,8 +721,8 @@ CI/deploy credentials and public build variables:
 - The staff artifact is built separately at `apps/staff/dist` and packaged into the combined Worker; no standalone staff Pages upload runs.
 - Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/pages.yml`, not by local manual `wrangler pages deploy`.
 - The candidate workflow runs `pnpm validate:checks` alongside independent UAT and PRD builds from their own published snapshots. Each target restores image transforms and builds its checked staff artifact once inside the CMS build. Passing checks gate UAT deployment and digest-verified assembly of the retained schema-2 `release-<sha>` artifact; PRD promotion consumes that artifact without rebuilding or restamping it.
-- The UAT Pages job reports read-only readiness and static smoke results immediately after deployment. Stripe and email provider smoke follows, then a final release-identity check; quick success alone does not accept a candidate.
-- Automatic checks and target builds cancel older preparation for the same branch and role without waiting for an earlier deployment. The `uat-release` call holds the non-cancelling `blackbox-release` lock across Worker, Pages, and provider acceptance; its called workflow inherits repository secrets and binds Worker/smoke jobs to `catalog-promotion-uat`. PRD, confirmed catalog mutation, content publication, and the holding-page deploy share that lock. Manual preparation uses run-specific concurrency. The monotonic release-order guard rejects late older candidates.
+- The UAT Pages job deploys and verifies the hosted release identity; a push runs no browser or provider smoke. PRD promotion first checks that UAT serves the selected candidate, then runs UAT static smoke, Stripe and email provider smoke, staff previews in Chromium and Firefox and the whole e2e suite before any PRD mutation.
+- Automatic checks and target builds cancel older preparation for the same branch and role without waiting for an earlier deployment. The `uat-release` call holds the non-cancelling `blackbox-release` lock across the Worker and Pages deployments; its called workflow inherits repository secrets and binds the Worker job to `catalog-promotion-uat`. Promotion provider smoke binds `catalog-promotion-uat` too. PRD, confirmed catalog mutation, content publication, and the holding-page deploy share that lock. Manual preparation uses run-specific concurrency. The monotonic release-order guard rejects late older candidates.
 - The workflow sets Cloudflare-root static build values with `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/`.
 - The workflow passes only browser-safe public Astro variables into the frontend runtime: `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`.
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.
@@ -815,7 +812,7 @@ If a photo looks wrong, replace the source image rather than adding crop or foca
 
 ## Build output
 
-`pnpm build` outputs static files to `apps/web/dist/`.
+`pnpm build` (CI, or locally under a maintainer grant) outputs static files to `apps/web/dist/`.
 
 ## WebStorm run configuration
 
@@ -824,8 +821,8 @@ If a photo looks wrong, replace the source image rather than adding crop or foca
 - Real Stripe test mode remains available from the terminal through `pnpm dev:stack:stripe-test`.
 - `pnpm dev:stack:stripe-mock-api` is a terminal alias for the same official stripe-mock API path; do not add a second WebStorm launcher for it unless explicitly requested.
 - Other focused backend/frontend scripts remain available from the terminal, not committed IDE run configs.
-- The static-site launcher remains pinned to `http://127.0.0.1:4321/blackbox-records/`.
-- If port `4321` is already in use, the static-site launcher fails fast instead of silently switching ports.
+- The static-site launcher serves the primary checkout on `http://127.0.0.1:4321/blackbox-records/` and each linked worktree on its own stable port; `pnpm local:status` lists them.
+- If that port is already in use, the static-site launcher fails fast instead of silently switching ports.
 - On Windows, the Local Worker launchers fail fast when the checkout path is too long for Durable Object storage: workerd cannot open SQLite files at 256 or more characters. Checkout paths up to 104 characters fit.
 - Local D1 comes from Wrangler automatically during Worker dev; no separate D1 process is part of the run-config flow.
 - The stack launchers run D1 migrations and seed SQL before starting long-running services.

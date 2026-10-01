@@ -21,6 +21,13 @@
             "command": "graphify hook-check",
             "commandWindows": "C:/Users/SVall/.local/bin/graphify.exe hook-check",
             "timeout": 3
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/scripts/agent-hooks/command-guard.mjs\"",
+            "commandWindows": "node scripts/agent-hooks/command-guard.mjs",
+            "timeout": 10,
+            "statusMessage": "Checking feedback policy"
           }
         ]
       }

@@ -52,6 +52,8 @@ test('real test, formatting, type, boundary and Astro build failures propagate',
       cwd,
       options: { full: true },
       identify: async () => ({ fingerprint: 'isolated acceptance fixtures' }),
+      acquire: async () => ({ count: 1, release: async () => {} }),
+      history: () => {},
       runCommand: (_nx, options) =>
         runFiniteCommand({ ...phase, env: { NODE_TEST_CONTEXT: undefined } }, { ...options, cwd: root }),
       log: () => {},

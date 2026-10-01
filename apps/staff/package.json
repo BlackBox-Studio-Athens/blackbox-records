@@ -7,9 +7,9 @@
     "dev": "astro dev --root . --host 127.0.0.1 --port 4321",
     "build": "astro build --root .",
     "preview": "astro preview --root .",
-    "check": "astro check --root .",
-    "test": "vitest run --config vitest.modules.config.ts",
-    "test:unit": "vitest run --config vitest.modules.config.ts"
+    "check": "node ../../scripts/feedback-guard.mjs @blackbox/staff:check && astro check --root .",
+    "test": "node ../../scripts/feedback-guard.mjs @blackbox/staff:test && vitest run --config vitest.modules.config.ts",
+    "test:unit": "node ../../scripts/feedback-guard.mjs @blackbox/staff:test:unit && vitest run --config vitest.modules.config.ts"
   },
   "dependencies": {
     "@astrojs/react": "^7.0.0",

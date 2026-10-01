@@ -125,6 +125,21 @@ describe('local stack launcher plan', () => {
     ]);
   });
 
+  it('starts only root scripts that exist', () => {
+    const rootPackage = JSON.parse(readFileSync(new URL('../../../../package.json', import.meta.url), 'utf8')) as {
+      scripts: Record<string, string>;
+    };
+
+    for (const mode of ['stripe-test', 'stripe-mock', 'stripe-mock-api', 'uat-connected'] as const) {
+      const plan = buildStackPlan(mode);
+      const rootScripts = [...plan.prepare, ...plan.longRunning]
+        .filter(({ command, args }) => command === 'pnpm' && !args[0].startsWith('-'))
+        .map(({ args }) => args[0]);
+
+      for (const script of rootScripts) expect(rootPackage.scripts, `${mode}: ${script}`).toHaveProperty([script]);
+    }
+  });
+
   it('does not require a publishable key for hosted Checkout redirect stacks', () => {
     expect(
       readRequiredEnvironmentIssues(

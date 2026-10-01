@@ -11,6 +11,9 @@ import { randomUUID } from 'node:crypto';
 import ts from 'typescript';
 import { exampleOrder } from '../apps/staff/src/components/orders/order-fixtures.test-support.ts';
 import { previewPolicy } from '../apps/backend/src/cms/preview-policy.ts';
+import { guardScript } from './feedback-guard.mjs';
+
+guardScript(import.meta.url);
 
 const root = resolve('apps/staff/dist');
 const browserType = process.argv.includes('--firefox') ? firefox : chromium;

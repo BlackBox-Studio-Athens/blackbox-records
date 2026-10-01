@@ -8,7 +8,9 @@
     <arguments value="--no-cache" />
     <node-interpreter value="project" />
     <package-manager value="pnpm" />
-    <envs />
+    <envs>
+      <env name="BLACKBOX_ALLOW_RELEASE_TIER" value="1" />
+    </envs>
     <method v="2" />
   </configuration>
 </component>

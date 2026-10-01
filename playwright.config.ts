@@ -1,7 +1,17 @@
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+
 import { defineConfig } from 'playwright/test';
 
-// Canonical Local URL including the Astro base path (apps/web/scripts/start-static-site-dev.mjs).
-const baseURL = 'http://127.0.0.1:4321/blackbox-records/';
+// This checkout's Local URL including the Astro base path: the port start-static-site-dev.mjs serves on, so a
+// linked worktree never tests the site another checkout serves. Playwright compiles this config to CommonJS, which
+// cannot load the ES module helper, so a child process prints it.
+const baseURL = execFileSync(process.execPath, [path.join(__dirname, 'scripts', 'local-resources.mjs')], {
+  cwd: __dirname,
+  encoding: 'utf8',
+  stdio: ['ignore', 'pipe', 'inherit'],
+  windowsHide: true,
+}).trim();
 const artifacts = '.codex-artifacts/e2e';
 
 export default defineConfig({
@@ -16,7 +26,8 @@ export default defineConfig({
   reporter: [['list'], ['json', { outputFile: `${artifacts}/summary.json` }]],
   use: { baseURL, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   webServer: {
-    // Reuses whatever already serves 4321 (site:dev:bg or the full stack); otherwise runs astro dev for this run only.
+    // Reuses whatever already serves this checkout's URL (site:dev:bg or the full stack); otherwise runs astro dev for
+    // this run only.
     command: 'pnpm site:dev',
     url: baseURL,
     reuseExistingServer: true,

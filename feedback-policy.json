@@ -1,0 +1,257 @@
+{
+  "version": 1,
+  "sharedState": {
+    "directory": "blackbox-feedback"
+  },
+  "history": {
+    "file": "history.jsonl"
+  },
+  "machine": {
+    "slots": 3,
+    "waitReportSeconds": 30
+  },
+  "releaseTier": {
+    "grantFile": "full-run.grant",
+    "grantCommand": "feedback:grant-full",
+    "overrideEnv": "BLACKBOX_ALLOW_RELEASE_TIER",
+    "maxGrantMinutes": 120,
+    "validateModes": ["--full", "--checks", "--editor", "--lint-only", "--no-cache"],
+    "agentEnvMarkers": ["CLAUDE_CODE_CHILD_SESSION", "CODEX_THREAD_ID", "CODEX_CI"],
+    "instead": "Use `pnpm test <module|file>` while editing and `pnpm validate` at completion. Whole-project runs belong to CI; only the maintainer can grant one locally."
+  },
+  "localResources": {
+    "sitePort": {
+      "primary": 4321,
+      "first": 4331,
+      "step": 10,
+      "count": 40
+    },
+    "chromeLeaseIdleSeconds": 180
+  },
+  "commands": {
+    "iterate": ["test", "test:watch", "test:app-shell", "test:e2e"],
+    "complete": [
+      "validate",
+      "validate:fast",
+      "test:changed",
+      "test:contracts",
+      "test:tooling",
+      "test:agent",
+      "test:release",
+      "test:runner",
+      "test:boundaries",
+      "test:content",
+      "check:boundaries",
+      "agent:check",
+      "format",
+      "format:check",
+      "audit:module-boundaries",
+      "audit:commerce-boundaries",
+      "depcruise:boundaries",
+      "environment:model:verify"
+    ],
+    "release": [
+      "validate:full",
+      "validate:checks",
+      "validate:editor",
+      "benchmark:validation",
+      "build",
+      "test:unit",
+      "test:web",
+      "test:staff",
+      "test:backend",
+      "test:api-client",
+      "check",
+      "check:types",
+      "check:web",
+      "check:staff",
+      "check:backend",
+      "check:api-client",
+      "lint",
+      "lint:fix",
+      "format:check:uncached"
+    ],
+    "operational": [
+      "dev",
+      "dev:web",
+      "dev:staff",
+      "site:dev",
+      "site:dev:bg",
+      "site:dev:status",
+      "site:dev:logs",
+      "site:dev:stop",
+      "dev:clean",
+      "cms:inventory",
+      "dev:backend",
+      "dev:backend:mock",
+      "dev:backend:mock-api",
+      "dev:backend:uat",
+      "dev:backend:sandbox",
+      "stripe-mock:local",
+      "dev:stack:stripe-test",
+      "dev:stack:stripe-mock",
+      "dev:stack:stripe-mock-api",
+      "dev:stack:uat-connected",
+      "checkout:preflight:stripe-test",
+      "stripe:catalog:verify",
+      "store:listing-readiness:verify",
+      "catalog:readiness:generate",
+      "prd:catalog-readiness:check",
+      "production:catalog-readiness:check",
+      "catalog:checkout:pause",
+      "runtime:config:verify",
+      "email:previews",
+      "stripe:payment-methods:verify",
+      "stripe:webhooks:verify",
+      "smoke:stripe-uat",
+      "smoke:stripe-sandbox",
+      "smoke:resend-uat",
+      "smoke:stripe-promotion",
+      "smoke:uat-static",
+      "stripe:webhook:simulate:local",
+      "openspec:guard",
+      "openspec",
+      "openspec:readonly",
+      "deploy:backend:sandbox",
+      "deploy:backend:uat",
+      "deploy:backend:prd",
+      "deploy:backend:production",
+      "worker:dev",
+      "worker:dev:uat",
+      "worker:dev:sandbox",
+      "ci:speed",
+      "build:web",
+      "build:content-snapshot",
+      "cms:snapshot:export",
+      "build:staff",
+      "cache:policy:check",
+      "cache:policy:hosted-audit",
+      "brand-font:check",
+      "performance:runtime",
+      "performance:bundles",
+      "generate:api",
+      "assets:check",
+      "store:categories:check",
+      "prd:holding:prepare",
+      "prd:holding:check",
+      "audit:unused",
+      "renovate:validate",
+      "preview",
+      "catalog:bindings:migrate",
+      "cms:import:local",
+      "catalog:backfill",
+      "feedback:grant-full",
+      "feedback:report",
+      "local:status"
+    ]
+  },
+  "filteredOnly": {
+    "commands": ["test:e2e"],
+    "filter": "\\w\\.spec\\.ts\\b|(^|\\s)(-g|--grep)(\\s+|=)\\S*\\w|(^|\\s)--list\\b",
+    "instead": "Name a spec or title filter, for example `pnpm test:e2e e2e/store-cart.spec.ts`. The whole suite runs at PRD promotion."
+  },
+  "packageSuites": {
+    "nxTaskEnv": "NX_TASK_HASH",
+    "packages": {
+      "@blackbox/web": ["check", "test", "test:unit", "test:lightweight", "test:request"],
+      "@blackbox/staff": ["check", "test", "test:unit"],
+      "@blackbox/backend": ["check", "test", "test:node"],
+      "@blackbox/api-client": ["check", "test"]
+    }
+  },
+  "guardedScripts": {
+    "scripts/validate.mjs": { "command": "validate" },
+    "scripts/validate-local.mjs": { "command": "validate" },
+    "scripts/test-content-workspace.mjs": {
+      "command": "validate:editor",
+      "unless": "(^|\\s)--(serve|selling|artist-journey|editor-recovery)(\\s|$)"
+    },
+    "scripts/run-release-preparation.mjs": { "command": "validate:editor" },
+    "scripts/benchmark-validation.mjs": { "command": "benchmark:validation" }
+  },
+  "deny": [
+    {
+      "id": "lift-guard",
+      "pattern": "^(pnpm|npm)\\s(.*\\s)?feedback:grant-full\\b|^(node|tsx)\\s(.*\\s)?\\S*feedback-grant\\.mjs\\b",
+      "evenWithGrant": true,
+      "instead": "Only the maintainer lifts the release-tier guard. Ask them to run `pnpm feedback:grant-full <minutes>` in their own terminal."
+    },
+    {
+      "id": "forge-grant",
+      "anywhere": true,
+      "pattern": "(?i:BLACKBOX_ALLOW_RELEASE_TIER|full-run\\.grant)",
+      "evenWithGrant": true,
+      "instead": "Only the maintainer lifts the release-tier guard. Ask them to run `pnpm feedback:grant-full <minutes>` in their own terminal."
+    },
+    {
+      "id": "forge-nx-task",
+      "anywhere": true,
+      "pattern": "(?i:\\bNX_TASK_HASH\\b)",
+      "instead": "Nx sets this marker only for the tasks it runs. Run `pnpm test <module|file>` while editing and `pnpm validate` at completion."
+    },
+    {
+      "id": "nx-run-many",
+      "pattern": "^nx\\s+run-many\\b",
+      "instead": "Run `pnpm validate` for affected checks or `pnpm test <module|file>` for one module."
+    },
+    {
+      "id": "nx-skip-cache",
+      "pattern": "^nx\\s(.*\\s)?(?i:--skip-?nx-?cache)\\b|^pnpm\\s(.*\\s)?validate(:\\S+)?\\s(.*\\s)?--no-cache\\b",
+      "instead": "Cached results are keyed on task inputs; rerun `pnpm validate`. If a cached result looks wrong, report the task and its inputs."
+    },
+    {
+      "id": "nx-skip-cache-env",
+      "anywhere": true,
+      "pattern": "(?i:\\bNX_SKIP_NX_CACHE\\b)",
+      "instead": "Cached results are keyed on task inputs; rerun `pnpm validate`. If a cached result looks wrong, report the task and its inputs."
+    },
+    {
+      "id": "nx-affected",
+      "pattern": "^nx\\s+affected\\b",
+      "instead": "Direct `nx affected` skips the machine slots and the pre-format step. Run `pnpm validate` at completion, or `pnpm test:changed` or `pnpm test <module|file>` while editing."
+    },
+    {
+      "id": "playwright-whole-suite",
+      "pattern": "^playwright\\s+test\\b",
+      "unless": "\\w\\.spec\\.ts\\b|(^|\\s)(-g|--grep)(\\s+|=)\\S*\\w|(^|\\s)--list\\b",
+      "instead": "Run one spec: `pnpm test:e2e e2e/<name>.spec.ts`. The whole suite runs at PRD promotion."
+    },
+    {
+      "id": "vitest-package-wide",
+      "pattern": "^vitest\\b",
+      "unless": "\\.(test|spec)\\.[cm]?[jt]sx?\\b|(^|\\s)--project(\\s|=)|(^|\\s)(-t|--testNamePattern)(\\s|=)|(^|\\s)(related|list|--version)\\b|(?<!--(config|root|dir)|-[cr])\\s(\\.{1,2}[\\\\/])*((apps|packages)[\\\\/][\\w.-]+[\\\\/])?(src|test|scripts)[\\\\/][\\w.-]",
+      "instead": "Run `pnpm test <module|file>`, or pass Vitest a test file or a directory below a source root, such as `src/layouts`."
+    },
+    {
+      "id": "pnpm-recursive-suite",
+      "pattern": "^pnpm\\s(.*\\s)?(-r|--recursive)\\s(.*\\s)?(test|check|lint|build|typecheck)\\b",
+      "instead": "Run `pnpm validate` for affected checks or `pnpm test <module|file>`."
+    },
+    {
+      "id": "pnpm-filter-suite",
+      "pattern": "^pnpm\\s(.*\\s)?(--filter|-F|-C|--dir)(\\s+|=)\\S+\\s+(run\\s+)?(test(:unit|:node|:lightweight|:request)?|check|lint|typecheck)(\\s|$)",
+      "instead": "Run `pnpm test <module|file>` for tests and `pnpm validate` for lint and type checks."
+    },
+    {
+      "id": "eslint-whole-repo",
+      "pattern": "^eslint\\s(.*\\s)?\\.[\\\\/]?(\\s|$)|^eslint(\\s+--?[\\w-]+(=\\S+)?)*\\s*$",
+      "instead": "Run `pnpm validate`; it lints affected packages from cache."
+    },
+    {
+      "id": "eslint-whole-package",
+      "pattern": "^eslint\\s(.*\\s)?(\\.[\\\\/])?(apps|packages)([\\\\/][\\w-]+)?[\\\\/]?(\\s|$)",
+      "instead": "Run `pnpm validate`; it lints affected packages from cache. Pass ESLint the changed files instead of a package."
+    },
+    {
+      "id": "typecheck-whole-package",
+      "pattern": "^astro\\s+check\\b|^tsc\\b",
+      "unless": "(^|\\s)(-v|--version|-h|--help|--init|--showConfig)(\\s|$)",
+      "instead": "Run `pnpm validate`; it type-checks affected packages from cache."
+    },
+    {
+      "id": "prettier-whole-repo",
+      "pattern": "^prettier\\s(.*\\s)?\\.[\\\\/]?(\\s|$)",
+      "instead": "Run `pnpm format` (cached) or pass Prettier the changed files."
+    }
+  ]
+}

@@ -3,12 +3,13 @@ import net from 'node:net';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { sitePort } from '../../../scripts/local-resources.mjs';
 
 const HOST = '127.0.0.1';
-const PORT = 4321;
 const SITE_PATH = '/blackbox-records/';
 const webDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const foregroundAstroEnv = { ...process.env, ASTRO_DEV_BACKGROUND: '0' };
+const background = process.argv.includes('--background');
+const astroEnv = background ? process.env : { ...process.env, ASTRO_DEV_BACKGROUND: '0' };
 
 function assertPortAvailable(host, port) {
   return new Promise((resolve, reject) => {
@@ -44,39 +45,46 @@ function assertPortAvailable(host, port) {
   });
 }
 
-function spawnAstroDev() {
+function spawnAstroDev(port) {
   const astroCommand = path.join(webDir, 'node_modules', '.bin', process.platform === 'win32' ? 'astro.CMD' : 'astro');
+  const args = ['dev', '--root', '.', '--host', HOST, '--port', String(port), ...(background ? ['--background'] : [])];
 
   if (process.platform === 'win32') {
-    const commandString = `"${astroCommand}" dev --root . --host ${HOST} --port ${PORT}`;
+    const commandString = `"${astroCommand}" ${args.join(' ')}`;
 
     return spawn(commandString, [], {
       cwd: webDir,
       stdio: 'inherit',
-      env: foregroundAstroEnv,
+      env: astroEnv,
       shell: true,
+      windowsHide: true,
     });
   }
 
-  return spawn(astroCommand, ['dev', '--root', '.', '--host', HOST, '--port', String(PORT)], {
+  return spawn(astroCommand, args, {
     cwd: webDir,
     stdio: 'inherit',
-    env: foregroundAstroEnv,
+    env: astroEnv,
+    windowsHide: true,
   });
 }
 
+// 4321 in the primary checkout and in the checkout holding the full stack's lease, whose publication runtime binds
+// it; otherwise this linked worktree's assigned port. strictPort keeps Astro from moving to another port.
+let port;
 try {
-  await assertPortAvailable(HOST, PORT);
+  port = sitePort(webDir);
+  await assertPortAvailable(HOST, port);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);
 }
 
-if (process.env.CMS_LOCAL_PUBLICATION === '1') {
+if (!background && process.env.CMS_LOCAL_PUBLICATION === '1') {
   const { startLocalPublication } = await import('./start-local-publication.mjs');
   await startLocalPublication();
 } else {
-  const astroProcess = spawnAstroDev();
+  const astroProcess = spawnAstroDev(port);
 
   const forwardSignal = (signal) => {
     if (!astroProcess.killed) {

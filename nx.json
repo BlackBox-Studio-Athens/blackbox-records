@@ -55,7 +55,6 @@
         "env": "TZ"
       },
       "{workspaceRoot}/scripts/module-test-projects.ts",
-      "{workspaceRoot}/package.json",
       "{workspaceRoot}/pnpm-workspace.yaml",
       "{workspaceRoot}/nx.json"
     ]

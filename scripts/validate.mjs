@@ -1,11 +1,16 @@
 import { createHash } from 'node:crypto';
 import { createReadStream, watch } from 'node:fs';
-import { mkdir, writeFile, lstat, readlink, open, unlink, readdir, readFile } from 'node:fs/promises';
+import { mkdir, writeFile, lstat, readlink, unlink, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 import { parseArgs, stripVTControlCharacters } from 'node:util';
 import { execa } from 'execa';
+import { assertValidationAllowed } from './feedback-guard.mjs';
+import { appendHistory, loadPolicy } from './feedback-policy.mjs';
+import { runFormatCheck } from './format-check.mjs';
 import { runFiniteCommand } from './local-process.ts';
+import { acquireSlots, createExclusive, liveHolder } from './machine-slots.mjs';
 
 const scopes = ['web', 'staff', 'backend', 'api-client'];
 
@@ -56,14 +61,26 @@ export function validationPlan({
   ];
 }
 
+/** HEAD plus the status and content of every path git reports as changed or untracked. */
 export async function sourceIdentity(cwd) {
   const { stdout: sha } = await execa('git', ['rev-parse', 'HEAD'], { cwd });
-  const { stdout } = await execa('git', ['ls-files', '-z', '--cached', '--others', '--exclude-standard'], { cwd });
-  const names = [...new Set(stdout.split('\0').filter(Boolean))].sort();
+  const { stdout } = await execa(
+    'git',
+    ['--no-optional-locks', 'status', '--porcelain=v1', '-z', '--untracked-files=all'],
+    { cwd },
+  );
+  const fields = stdout.split('\0');
   const hash = createHash('sha256');
-  for (const name of names) {
+  let files = 0;
+  for (let index = 0; index < fields.length; index += 1) {
+    if (!fields[index]) continue;
+    const status = fields[index].slice(0, 2);
+    const name = fields[index].slice(3);
+    // A rename or copy is followed by its source path.
+    const from = /[RC]/.test(status) ? fields[++index] : '';
     const filename = path.join(cwd, name);
-    hash.update(`${name}\0`);
+    files += 1;
+    hash.update(`${name}\0${status}\0${from}\0`);
     try {
       const stat = await lstat(filename);
       hash.update(`${stat.mode & 0o777}\0`);
@@ -72,14 +89,53 @@ export async function sourceIdentity(cwd) {
         const fileHash = createHash('sha256');
         for await (const chunk of createReadStream(filename)) fileHash.update(chunk);
         hash.update(fileHash.digest());
-      } else throw new Error(`Unsupported source entry: ${name}`);
+      } else hash.update('directory');
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
       hash.update('deleted');
     }
     hash.update('\0');
   }
-  return { sha, fingerprint: hash.digest('hex'), files: names.length };
+  return { sha, fingerprint: hash.digest('hex'), files };
+}
+
+/** Existing files changed since the merge base with the affected base, plus untracked files; null without a base. */
+export async function changedFiles(cwd, since) {
+  const base =
+    since ??
+    (await readFile(path.join(cwd, 'nx.json'), 'utf8').then(
+      (text) => JSON.parse(text).defaultBase,
+      () => undefined,
+    ));
+  const mergeBase = base && (await execa('git', ['merge-base', 'HEAD', base], { cwd, reject: false }));
+  if (!mergeBase || mergeBase.exitCode !== 0) return null;
+  const changed = await execa('git', ['diff', '--name-only', '-z', '--no-renames', mergeBase.stdout.trim()], { cwd });
+  const untracked = await execa('git', ['ls-files', '-z', '--others', '--exclude-standard'], { cwd });
+  const files = [];
+  for (const name of new Set(`${changed.stdout}\0${untracked.stdout}`.split('\0').filter(Boolean))) {
+    const stat = await lstat(path.join(cwd, name)).catch(() => null);
+    if (stat?.isFile()) files.push(name);
+  }
+  return files.sort();
+}
+
+/** Format changed files in place before validation records source identity; returns the rewritten files. */
+export async function formatChangedFiles(cwd, { since, log = console.log } = {}) {
+  const files = await changedFiles(cwd, since);
+  if (!files) {
+    log('Skipping changed-file formatting: the affected base cannot be resolved.');
+    return [];
+  }
+  const modified = async (name) =>
+    (await lstat(path.join(cwd, name), { bigint: true }).catch(() => null))?.mtimeNs ?? null;
+  const before = await Promise.all(files.map(modified));
+  // Batches keep each Windows command line well under its length limit.
+  for (let index = 0; index < files.length; index += 100)
+    await runFormatCheck({ cwd, files: files.slice(index, index + 100), write: true });
+  const after = await Promise.all(files.map(modified));
+  const rewritten = files.filter((_name, index) => before[index] !== after[index]);
+  if (rewritten.length) log(`Formatted ${rewritten.length} changed file(s): ${rewritten.join(', ')}`);
+  return rewritten;
 }
 
 export function diagnosticExcerpt(text) {
@@ -143,33 +199,24 @@ export async function monitorSourceChanges(cwd) {
   };
 }
 
-function processAlive(pid) {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error.code !== 'ESRCH';
-  }
-}
-
-async function acquireLock(lockPath) {
-  try {
-    return await open(lockPath, 'wx');
-  } catch (error) {
-    if (error.code !== 'EEXIST') throw error;
-    const pid = Number((await readFile(lockPath, 'utf8').catch(() => '')).trim());
-    const owner = Number.isSafeInteger(pid) && pid > 0 ? pid : null;
-    // An unparseable lock is not stolen: its writer may sit between open and the PID write.
-    if (owner === null || processAlive(owner)) {
-      throw new Error(
-        `Validation lock ${lockPath} is held by ${owner === null ? 'unknown owner' : `PID ${owner}`}; delete it if that process is gone.`,
-        { cause: error },
+/**
+ * Take this checkout's validation lock, queueing behind a live validation; a lock whose process has exited is
+ * reclaimed, and an unparseable one is held briefly because its writer may sit between open and write.
+ */
+async function acquireLock(lockPath, { signal, log }) {
+  const record = JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() });
+  let reportAt = 0;
+  for (;;) {
+    if (await createExclusive(lockPath, record)) return;
+    const holder = await liveHolder(lockPath);
+    if (!holder) continue;
+    if (Date.now() >= reportAt) {
+      log(
+        `Waiting for the validation already running in this checkout (${holder.pid ? `pid ${holder.pid}` : 'starting'}).`,
       );
+      reportAt = Date.now() + loadPolicy().machine.waitReportSeconds * 1000;
     }
-    await unlink(lockPath).catch((unlinkError) => {
-      if (unlinkError.code !== 'ENOENT') throw unlinkError;
-    });
-    return open(lockPath, 'wx');
+    await sleep(250, undefined, { signal });
   }
 }
 
@@ -179,13 +226,27 @@ export async function runValidation({
   signal,
   identify = sourceIdentity,
   runCommand = runFiniteCommand,
+  acquire = acquireSlots,
+  format = formatChangedFiles,
+  history = appendHistory,
+  env = process.env,
   log = console.log,
 } = {}) {
   const commands = validationPlan(options);
+  const local = env.GITHUB_ACTIONS !== 'true';
+  const affected = !options.full && !options.checks && !options.lintOnly && !options.editor;
+  // Nx restores tasks whose inputs did not change, so a second pass costs only what the edit touched.
+  const converges = !options.plan && !options.editor;
   const root = path.join(cwd, '.codex-artifacts', 'validation');
   await mkdir(root, { recursive: true });
   const lockPath = path.join(root, 'active.lock');
-  const lock = await acquireLock(lockPath);
+  // A plan only computes the project graph and writes its own evidence directory, so it never queues behind a run.
+  let lockWaitMs = null;
+  if (!options.plan) {
+    const lockStart = performance.now();
+    await acquireLock(lockPath, { signal, log });
+    lockWaitMs = Math.round(performance.now() - lockStart);
+  }
   const runId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}`;
   const evidenceDir = path.join(root, runId);
   const started = performance.now();
@@ -213,74 +274,103 @@ export async function runValidation({
     sourceBefore: null,
     sourceAfter: null,
     sourceChanges: [],
+    slots: null,
+    lockWaitMs,
+    formatted: [],
+    passes: 0,
     taskAcceptance: 'not established: browser, CMS, publication, asset and task-specific checks remain additional',
   };
   let stopMonitoring;
+  let slots;
   try {
-    await lock.writeFile(String(process.pid));
     await mkdir(evidenceDir);
-    if (identify === sourceIdentity) stopMonitoring = await monitorSourceChanges(cwd);
-    summary.sourceBefore = await identify(cwd);
-    for (const [index, command] of commands.entries()) {
-      const logPath = path.join(evidenceDir, `${index}-${command.name}.log`);
-      await writeFile(logPath, '');
-      const phaseStart = performance.now();
-      const entry = {
-        name: command.name,
-        command: command.command,
-        args: command.args,
-        logPath,
-        status: 'running',
-        exitCode: null,
-      };
-      summary.phases.push(entry);
-      try {
-        await runCommand(
-          {
-            ...command,
-            env: {
-              ...command.env,
-              // A daemon started mid-run inherits the piped stdio and keeps the wrapper waiting forever.
-              NX_DAEMON: 'false',
-              BLACKBOX_VALIDATION_REPORT_DIR: evidenceDir,
-              BLACKBOX_VALIDATION_TRACE: options.trace ? '1' : undefined,
-            },
-          },
-          {
-            cwd,
-            logger: () => {},
-            stdio: [
-              'ignore',
-              [{ file: logPath, append: true }, 'inherit'],
-              [{ file: logPath, append: true }, 'inherit'],
-            ],
-            cancelSignal: controller.signal,
-          },
-        );
-        entry.status = 'passed';
-        entry.exitCode = 0;
-      } catch (error) {
-        entry.status = controller.signal.aborted ? 'cancelled' : 'failed';
-        entry.exitCode = error.exitCode || 1;
-        entry.error = error.message;
-        summary.error = error.message;
-      }
-      const content = await import('node:fs/promises').then(({ readFile }) => readFile(logPath, 'utf8'));
-      entry.outputBytes = Buffer.byteLength(content);
-      entry.logSha256 = createHash('sha256').update(content).digest('hex');
-      entry.diagnostics = diagnosticExcerpt(content);
-      entry.durationMs = Math.round(performance.now() - phaseStart);
-      entry.testSummaries = content
-        .split(/\r?\n/)
-        .filter((line) => /(?:Test Files|Tests)\s+\d|^[#ℹ] (?:tests|pass|fail) \d/.test(line));
-      if (entry.status !== 'passed') break;
-      if (options.plan) break;
+    if (local && !options.plan && !options.editor) {
+      const waitStart = performance.now();
+      slots = await acquire({ cwd, label: `validate ${commands[0].name}`, signal: controller.signal, log });
+      summary.slots = { count: slots.count, waitMs: Math.round(performance.now() - waitStart) };
     }
-    summary.sourceAfter = await identify(cwd);
-    summary.sourceChanges = stopMonitoring ? await stopMonitoring() : [];
-    stopMonitoring = null;
-    const unchanged =
-      !summary.sourceChanges.length && JSON.stringify(summary.sourceBefore) === JSON.stringify(summary.sourceAfter);
+    if (local && affected && !options.plan)
+      summary.formatted = await format(cwd, { since: options.since, log }).catch((error) => {
+        log(`Changed-file formatting failed; the format check reports it. ${error.shortMessage ?? error.message}`);
+        return [];
+      });
+    let unchanged;
+    for (;;) {
+      summary.passes += 1;
+      if (identify === sourceIdentity) stopMonitoring = await monitorSourceChanges(cwd);
+      summary.sourceBefore = await identify(cwd);
+      for (const [index, command] of commands.entries()) {
+        const logPath = path.join(evidenceDir, `${index}-${command.name}${summary.passes > 1 ? '-rerun' : ''}.log`);
+        await writeFile(logPath, '');
+        const phaseStart = performance.now();
+        const entry = {
+          name: command.name,
+          command: command.command,
+          args: slots ? [...command.args, `--parallel=${slots.count}`] : command.args,
+          logPath,
+          status: 'running',
+          exitCode: null,
+        };
+        summary.phases.push(entry);
+        try {
+          await runCommand(
+            {
+              ...command,
+              args: entry.args,
+              env: {
+                ...command.env,
+                // A daemon started mid-run inherits the piped stdio and keeps the wrapper waiting forever.
+                NX_DAEMON: 'false',
+                // Plugin workers start slowly on a loaded machine; waiting beats failing the task.
+                NX_PLUGIN_NO_TIMEOUTS: 'true',
+                BLACKBOX_VALIDATION_REPORT_DIR: evidenceDir,
+                BLACKBOX_VALIDATION_TRACE: options.trace ? '1' : undefined,
+              },
+            },
+            {
+              cwd,
+              logger: () => {},
+              stdio: [
+                'ignore',
+                [{ file: logPath, append: true }, 'inherit'],
+                [{ file: logPath, append: true }, 'inherit'],
+              ],
+              cancelSignal: controller.signal,
+            },
+          );
+          entry.status = 'passed';
+          entry.exitCode = 0;
+        } catch (error) {
+          entry.status = controller.signal.aborted ? 'cancelled' : 'failed';
+          entry.exitCode = error.exitCode || 1;
+          entry.error = error.message;
+          summary.error = error.message;
+        }
+        const content = await readFile(logPath, 'utf8');
+        entry.outputBytes = Buffer.byteLength(content);
+        entry.logSha256 = createHash('sha256').update(content).digest('hex');
+        entry.diagnostics = diagnosticExcerpt(content);
+        entry.durationMs = Math.round(performance.now() - phaseStart);
+        entry.testSummaries = content
+          .split(/\r?\n/)
+          .filter((line) => /(?:Test Files|Tests)\s+\d|^[#ℹ] (?:tests|pass|fail) \d/.test(line));
+        if (entry.status !== 'passed') break;
+        if (options.plan) break;
+      }
+      summary.sourceAfter = await identify(cwd);
+      summary.sourceChanges = stopMonitoring ? await stopMonitoring() : [];
+      stopMonitoring = null;
+      unchanged =
+        !summary.sourceChanges.length && JSON.stringify(summary.sourceBefore) === JSON.stringify(summary.sourceAfter);
+      if (unchanged || !converges || summary.passes > 1 || controller.signal.aborted) break;
+      log(
+        `Source changed during validation${summary.sourceChanges.length ? ` (${summary.sourceChanges.slice(0, 5).join(', ')})` : ''}; running the same selection once more.`,
+      );
+      summary.supersededPhases = summary.phases;
+      summary.firstPassSourceChanges = summary.sourceChanges;
+      summary.phases = [];
+      delete summary.error;
+    }
     const planned =
       options.plan &&
       unchanged &&
@@ -307,6 +397,8 @@ export async function runValidation({
     log(`INCOMPLETE: ${error.message}`);
   } finally {
     if (stopMonitoring) await stopMonitoring().catch(() => {});
+    // A slot left behind is reclaimed once this process exits.
+    await slots?.release().catch(() => {});
     summary.skippedPhases = commands
       .filter(({ name }) => !summary.phases.some((entry) => entry.name === name))
       .map(({ name }) => name);
@@ -317,9 +409,30 @@ export async function runValidation({
       .filter((name) => name.endsWith('.json'))
       .map((name) => path.join(evidenceDir, name));
     await writeFile(path.join(evidenceDir, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`);
+    if (local && !options.plan) {
+      try {
+        await history(
+          {
+            kind: 'validate',
+            mode: summary.mode,
+            scope: summary.scope,
+            status: summary.status,
+            durationMs: summary.durationMs,
+            nxMs: summary.phases.reduce((total, phase) => total + (phase.durationMs ?? 0), 0),
+            slotCount: summary.slots?.count ?? null,
+            slotWaitMs: summary.slots?.waitMs ?? null,
+            lockWaitMs: summary.lockWaitMs,
+            passes: summary.passes,
+            formatted: summary.formatted.length,
+          },
+          { cwd },
+        );
+      } catch {
+        // The history is advisory: failing to record never changes the run's result.
+      }
+    }
     signal?.removeEventListener('abort', cancel);
-    await lock.close();
-    await unlink(lockPath);
+    if (!options.plan) await unlink(lockPath);
   }
   log(
     `${summary.status.toUpperCase()} ${(summary.durationMs / 1000).toFixed(1)}s — ${path.join(evidenceDir, 'summary.json')}`,
@@ -357,6 +470,11 @@ export async function main(args = process.argv.slice(2), dependencies = {}) {
     since: values.since,
     trace: values.trace,
   };
+  // Release-tier modes refuse here too, so invoking this file directly with node cannot skip the package.json guard.
+  assertValidationAllowed(args, {
+    env: dependencies.env ?? process.env,
+    cwd: dependencies.cwd ?? process.cwd(),
+  });
   const controller = new AbortController();
   const cancel = () => controller.abort();
   const signal = dependencies.signal ?? controller.signal;

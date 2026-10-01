@@ -5,7 +5,10 @@ import { parseArgs } from 'node:util';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { execa } from 'execa';
+import { guardScript } from './feedback-guard.mjs';
 import { sourceIdentity } from './validate.mjs';
+
+guardScript(import.meta.url);
 
 function completedGates(commands, arm) {
   if (arm === 'candidate') return completedGates(commands, 'legacy') || completedGates(commands, 'aggregate');

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { runFiniteCommand } from './local-process.ts';
+import { acquireSlots } from './machine-slots.mjs';
 
 export const watchScopes = ['web', 'staff', 'backend', 'api-client'];
 
@@ -52,9 +53,23 @@ async function projectNodes() {
   return Object.values((await createProjectGraphAsync()).nodes);
 }
 
+/** Multi-project runs share the machine slots and wait for them; watch targets take none. */
+async function runWithSlots(command, { cwd, acquire, slotOptions, runCommand }) {
+  const slots = slotOptions ? await acquire({ cwd, ...slotOptions }) : undefined;
+  const parallel = slots && slotOptions.wait !== false ? [`--parallel=${slots.count}`] : [];
+  try {
+    return await runCommand(
+      { ...command, args: [...command.args, ...parallel], env: { NX_PLUGIN_NO_TIMEOUTS: 'true' } },
+      { cwd, stdio: 'inherit' },
+    );
+  } finally {
+    await slots?.release();
+  }
+}
+
 export async function main(
   args = process.argv.slice(2),
-  { runCommand = runFiniteCommand, cwd = process.cwd(), nodes = projectNodes } = {},
+  { runCommand = runFiniteCommand, cwd = process.cwd(), nodes = projectNodes, acquire = acquireSlots } = {},
 ) {
   const rawArgs = args.filter((arg) => arg !== '--');
   if (rawArgs[0] === '--run') {
@@ -68,9 +83,15 @@ export async function main(
     const exclude = !owner || !(owner === 'workspace' || owner.endsWith('-tooling'));
     const label = file ? `tests for ${file}` : arg ? `tests for ${arg}` : 'tests for working-tree changes';
     console.log(`PARTIAL ${label}: this does not establish implementation completion.`);
-    return runCommand(
+    // A focused run takes a slot only when one is free and never waits.
+    return runWithSlots(
       { name: 'test', command: 'pnpm', args: nxTestArguments(arg, file, rest, exclude) },
-      { cwd, stdio: 'inherit' },
+      {
+        cwd,
+        acquire,
+        runCommand,
+        slotOptions: arg ? { want: 1, wait: false, label: `test ${arg}` } : { label: 'test' },
+      },
     );
   }
   const parsed = parseArgs({
@@ -103,7 +124,12 @@ export async function main(
   console.log(
     `PARTIAL ${changed ? 'affected tests' : 'test watch'}${scope ? ` for ${scope}` : ''}: this does not establish implementation completion.`,
   );
-  return runCommand(command, { cwd, stdio: 'inherit' });
+  return runWithSlots(command, {
+    cwd,
+    acquire,
+    runCommand,
+    slotOptions: changed ? { label: `test:changed${scope ? ` ${scope}` : ''}` } : undefined,
+  });
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
