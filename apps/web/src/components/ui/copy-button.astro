@@ -1,0 +1,24 @@
+---
+import { Check, Copy } from 'lucide-react';
+
+import { buttonVariants } from '@/components/ui/button';
+
+interface Props {
+  value: string;
+  class?: string;
+}
+
+// Static markup so it survives shell snapshots without hydration; the shell's connectCopyButtons handles the click.
+const { value, class: className } = Astro.props;
+---
+
+<button
+  type="button"
+  class={buttonVariants({ variant: 'outline', size: 'icon', className: ['group', className] })}
+  aria-label={`Copy ${value}`}
+  data-copy-value={value}
+>
+  <Copy className="group-data-copied:hidden" aria-hidden="true" />
+  <Check className="hidden group-data-copied:block" aria-hidden="true" />
+</button>
+<span role="status" class="sr-only" data-copy-status></span>

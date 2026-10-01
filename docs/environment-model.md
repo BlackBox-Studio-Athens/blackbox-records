@@ -68,6 +68,8 @@ The disabled PRD readiness probe does not require live Stripe secrets. Resend ru
 
 The Worker returns `{"status":"submitted"}` only after provider acceptance. The site confirms inline without redirecting and does not send a visitor receipt. V1 has no CAPTCHA, Turnstile, honeypot, application rate limiting, or D1 inquiry persistence. Strict bounded validation, HTML escaping, pending-submit protection, and content-free logs remain required.
 
+The About contact directory links `info@`, `demos@` and `touring@blackboxrecordsathens.com`; Cloudflare Email Routing must forward each to the same inbox. Do not publish `@blackboxrecords.com` addresses: that domain has a null MX.
+
 ## Origins And API Targets
 
 | Scope                 | `PUBLIC_BACKEND_BASE_URL`                                                | `CHECKOUT_RETURN_ORIGINS`                                                                |

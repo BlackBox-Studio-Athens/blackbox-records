@@ -42,6 +42,7 @@ import {
 } from './store-listing-price-activation';
 import { Spinner } from '@/components/ui/spinner';
 import { connectStorePreviewImages } from './dom/store-preview-images';
+import { connectCopyButtons } from './dom/copy-buttons';
 import type { MainNavigation } from '@/lib/site-data';
 import type { StoreCartState } from '@/components/store/cart/store-cart';
 import { createOverlayFragmentLoader } from './overlay/overlay-fragment-loader';
@@ -343,6 +344,8 @@ export default function AppShellRoot({
       disconnect?.();
     };
   }, []);
+
+  useEffect(() => connectCopyButtons(document), []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

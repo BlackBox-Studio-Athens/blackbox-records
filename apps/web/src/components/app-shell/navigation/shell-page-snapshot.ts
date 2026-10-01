@@ -122,6 +122,13 @@ export function readDocumentShellPageSnapshot(
   mainElementClone.querySelectorAll<HTMLElement>('[data-services-inquiry-form]').forEach((placeholderElement) => {
     placeholderElement.innerHTML = '';
   });
+  // A copy button's two-second feedback timer belongs to the live element, so the cached copy starts idle.
+  mainElementClone.querySelectorAll<HTMLElement>('[data-copied]').forEach((button) => {
+    button.removeAttribute('data-copied');
+  });
+  mainElementClone.querySelectorAll<HTMLElement>('[data-copy-status]').forEach((status) => {
+    status.textContent = '';
+  });
 
   const resolvedUrl = new URL(href, currentHref);
   const canonicalHref =

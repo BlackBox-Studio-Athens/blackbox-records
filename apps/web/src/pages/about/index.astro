@@ -3,6 +3,7 @@ import Prose from '@/components/Prose.astro';
 import InternalPageHero from '@/components/InternalPageHero.astro';
 import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import { Card, CardContent } from '@/components/ui/card';
+import CopyButton from '@/components/ui/copy-button.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { listArtistProfiles, listReleaseCatalog } from '@/lib/catalog-data';
 import { getAboutContent, getLabelSettings } from '@/lib/site-data';
@@ -79,6 +80,7 @@ const {
                       </span>
                       <Mail className="about-contact__icon" aria-hidden="true" size={18} strokeWidth={1.5} />
                     </a>
+                    <CopyButton value={item.value} class="about-contact__copy" />
                   </li>
                 ))}
               </ul>

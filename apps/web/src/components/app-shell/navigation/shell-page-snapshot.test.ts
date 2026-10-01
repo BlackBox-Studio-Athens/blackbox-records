@@ -61,6 +61,27 @@ class FakeElement {
         },
       ];
     }
+    if (selector === '[data-copied]' && this.innerHTML.includes('data-copied')) {
+      return [
+        {
+          removeAttribute: () => {
+            this.innerHTML = this.innerHTML.replace(' data-copied', '');
+          },
+        },
+      ];
+    }
+    if (selector === '[data-copy-status]' && this.innerHTML.includes('data-copy-status')) {
+      const setStatusText = (value: string) => {
+        this.innerHTML = this.innerHTML.replace(/(<span[^>]*data-copy-status[^>]*>)[\s\S]*?(<\/span>)/, `$1${value}$2`);
+      };
+      return [
+        {
+          set textContent(value: string) {
+            setStatusText(value);
+          },
+        },
+      ];
+    }
     if (selector === '[data-distro-search-hidden]' && this.innerHTML.includes('data-distro-search-hidden')) {
       const removeSearchHiddenAttribute = () => {
         this.innerHTML = this.innerHTML.replace(/\s+data-distro-search-hidden(?:="")?/g, '');
@@ -138,7 +159,7 @@ class FakeElement {
 function createSnapshotDocument() {
   const main = new FakeElement(
     { class: 'catalog-page' },
-    '<section>Catalog</section><div data-artists-roster-filters>hydrated filters</div><div data-distro-search><input value="vinyl"></div><a hidden data-distro-search-hidden>Item</a><span data-store-listing-price data-store-listing-price-state="ready">€28.00</span><span hidden data-store-listing-availability data-store-listing-availability-state="stocked">Sold Out</span><img data-store-preview-image data-store-preview-ready>',
+    '<section>Catalog</section><div data-artists-roster-filters>hydrated filters</div><div data-distro-search><input value="vinyl"></div><a hidden data-distro-search-hidden>Item</a><span data-store-listing-price data-store-listing-price-state="ready">€28.00</span><span hidden data-store-listing-availability data-store-listing-availability-state="stocked">Sold Out</span><img data-store-preview-image data-store-preview-ready><button data-copy-value="info@example.test" data-copied></button><span role="status" data-copy-status>Copied</span>',
   );
   const canonical = new FakeElement();
   canonical.href = 'https://example.test/blackbox-records/store/distro/';
@@ -346,6 +367,9 @@ describe('shell page snapshots', () => {
     expect(snapshot?.mainHtml).not.toMatch(/<span[^>]*data-store-listing-availability[^>]*\shidden/);
     expect(snapshot?.mainHtml).toContain('data-store-preview-image');
     expect(snapshot?.mainHtml).not.toContain('data-store-preview-ready');
+    expect(snapshot?.mainHtml).toContain(
+      '<button data-copy-value="info@example.test"></button><span role="status" data-copy-status></span>',
+    );
   });
 
   it('updates document metadata when a snapshot is applied', () => {

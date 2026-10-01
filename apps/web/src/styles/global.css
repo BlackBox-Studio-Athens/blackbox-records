@@ -3105,7 +3105,22 @@ body {
   }
 
   .rich-text-content .about-contact__item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
     border-bottom: 1px solid var(--border);
+    transition: background-color 160ms ease;
+  }
+
+  /* The mailto link and its copy control read as one row, so hovering the link highlights both. */
+  @media (hover: hover) {
+    .about-contact__item:has(.about-contact__link:hover) {
+      background: var(--accent);
+    }
+  }
+
+  .about-contact__copy {
+    margin-inline-end: 1rem;
   }
 
   .rich-text-content .about-contact__item:last-child {
@@ -3163,10 +3178,6 @@ body {
     width: 1.125rem;
     height: 1.125rem;
     color: var(--muted-foreground);
-  }
-
-  .about-contact__link:hover {
-    background: var(--accent);
   }
 
   .about-contact__link:focus-visible {
