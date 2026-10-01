@@ -112,6 +112,15 @@ export async function loadStoreItemPurchaseActionState(
   }
 }
 
+// Store cards are not islands: their Buy reads the authoritative Store Offer only when pressed.
+export async function requestStoreCartAddFromSeed(
+  cartSeed: StoreItemCartSeed,
+  api: PublicCheckoutApi = createPublicCheckoutApi(),
+) {
+  const state = await loadStoreItemPurchaseActionState(api, cartSeed);
+  return { ...state, isQueued: state.cartItem ? requestStoreCartAddItem(state.cartItem) : false };
+}
+
 export default function StoreItemPurchaseActions({
   api,
   cartItem,

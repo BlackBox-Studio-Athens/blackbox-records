@@ -6,6 +6,13 @@ import {
   STORE_LISTING_PRICE_COPY,
 } from './StoreListingPricePresentation';
 
+const { requestStoreCartAddFromSeed } = vi.hoisted(() => ({ requestStoreCartAddFromSeed: vi.fn() }));
+vi.mock('@/components/store/checkout/StoreItemPurchaseActions', () => ({
+  requestStoreCartAddFromSeed,
+  STORE_ITEM_ADDED_CONFIRMATION_MS: 4000,
+  STORE_ITEM_PURCHASE_ACTION_COPY: { added: 'Added' },
+}));
+
 function placeholder(storeItemSlug: string) {
   const attributes = new Map([['aria-busy', 'true']]);
   return {
@@ -34,15 +41,49 @@ function availabilityPlaceholder(storeItemSlug: string) {
   };
 }
 
-function listingRoot(prices: unknown[], availability: unknown[] = []) {
+function buyButton(storeItemSlug: string) {
+  const attributes = new Map<string, string>();
+  let pressListener: ((event: Event) => void) | undefined;
+  const status = { dataset: {} as Record<string, string>, hidden: true, textContent: '' };
+  const cardLink = { focus: vi.fn() };
+  const button = {
+    dataset: { storeItemSlug, storeCardBuy: JSON.stringify({ storeItemSlug, title: 'Item' }) },
+    hidden: false,
+    textContent: STORE_LISTING_PRICE_COPY.buy as string,
+    parentElement: { querySelector: () => status },
+    closest: () => ({ querySelector: () => cardLink }),
+    getAttribute: (name: string) => attributes.get(name) ?? null,
+    removeAttribute: (name: string) => attributes.delete(name),
+    setAttribute: (name: string, value: string) => attributes.set(name, value),
+    addEventListener: (_type: string, listener: (event: Event) => void) => {
+      pressListener = listener;
+    },
+    removeEventListener: () => {
+      pressListener = undefined;
+    },
+    press: () => pressListener?.({ currentTarget: button } as unknown as Event),
+    cardLink,
+    status,
+  };
+  return button;
+}
+
+function listingRoot(prices: unknown[], availability: unknown[] = [], buys: unknown[] = []) {
+  const elementsBySelector: Record<string, unknown[]> = {
+    '[data-store-listing-price]': prices,
+    '[data-store-listing-availability]': availability,
+    '[data-store-card-buy]': buys,
+  };
   return {
-    querySelectorAll: (selector: string) =>
-      (selector === '[data-store-listing-availability]' ? availability : prices) as HTMLElement[],
+    querySelectorAll: (selector: string) => (elementsBySelector[selector] ?? []) as HTMLElement[],
   } as unknown as ParentNode;
 }
 
 describe('Store listing-price presentation', () => {
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
 
   it('uses the single listing projection endpoint and forwards cancellation', async () => {
     const records = [{ displayPrice: '€28.00', presentationState: 'ready' as const, storeItemSlug: 'item' }];
@@ -173,5 +214,66 @@ describe('Store listing-price presentation', () => {
     expect(item.dataset.storeListingPriceState).toBe('unavailable');
     expect(availability.textContent).toBe(STORE_LISTING_PRICE_COPY.availabilityUnknown);
     expect(availability.dataset.storeListingAvailabilityState).toBe('unknown');
+  });
+
+  it('offers Buy only for priced, stocked records once the projection arrives', async () => {
+    const buys = ['stocked', 'sold-out', 'unpriced', 'missing'].map(buyButton);
+    const [stocked, soldOut, unpriced, missing] = buys;
+    let resolveRecords: (records: never) => void = () => {};
+    connectStoreListingPricePresentation({
+      readListingPrices: () =>
+        new Promise((resolve) => {
+          resolveRecords = resolve;
+        }),
+      root: listingRoot([placeholder('stocked')], [], buys),
+    });
+    expect(buys.every((buy) => buy.hidden)).toBe(true);
+
+    resolveRecords([
+      { storeItemSlug: 'stocked', presentationState: 'ready', displayPrice: '€28.00', availabilityState: 'stocked' },
+      { storeItemSlug: 'sold-out', presentationState: 'ready', displayPrice: '€28.00', availabilityState: 'sold_out' },
+      { storeItemSlug: 'unpriced', presentationState: 'unavailable', availabilityState: 'stocked' },
+    ] as never);
+
+    await vi.waitFor(() => expect(stocked?.hidden).toBe(false));
+    expect([soldOut?.hidden, unpriced?.hidden, missing?.hidden]).toEqual([true, true, true]);
+  });
+
+  it('adds through the authoritative offer on press and confirms in place', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('window', globalThis);
+    requestStoreCartAddFromSeed.mockResolvedValueOnce({ cartItem: {}, isQueued: false, label: null });
+    const buy = buyButton('item');
+    connectStoreListingPricePresentation({
+      readListingPrices: async () => [],
+      root: listingRoot([placeholder('item')], [], [buy]),
+    });
+
+    buy.press();
+    expect(buy.textContent).toBe(STORE_LISTING_PRICE_COPY.adding);
+    expect(buy.getAttribute('aria-busy')).toBe('true');
+
+    await vi.waitFor(() => expect(buy.textContent).toBe('Added'));
+    expect(requestStoreCartAddFromSeed).toHaveBeenCalledWith({ storeItemSlug: 'item', title: 'Item' });
+    expect(buy.getAttribute('aria-busy')).toBeNull();
+    vi.advanceTimersByTime(4000);
+    expect(buy.textContent).toBe(STORE_LISTING_PRICE_COPY.buy);
+  });
+
+  it('shows the offer status instead of adding when the item stopped being buyable', async () => {
+    vi.stubGlobal('window', globalThis);
+    requestStoreCartAddFromSeed.mockResolvedValueOnce({ cartItem: null, label: 'Sold Out', statusTone: 'sold-out' });
+    const buy = buyButton('item');
+    connectStoreListingPricePresentation({
+      readListingPrices: async () => [],
+      root: listingRoot([placeholder('item')], [], [buy]),
+    });
+
+    buy.press();
+
+    await vi.waitFor(() => expect(buy.status.textContent).toBe('Sold Out'));
+    expect(buy.status).toMatchObject({ hidden: false, dataset: { storeListingAvailabilityState: 'sold_out' } });
+    expect(buy.hidden).toBe(true);
+    expect(buy.cardLink.focus).toHaveBeenCalledOnce();
   });
 });

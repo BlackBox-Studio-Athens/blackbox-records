@@ -56,6 +56,33 @@ test('add to cart opens the drawer, persists the line and restores it on another
   await expect(trigger).toHaveAccessibleName('Cart, 1 item');
 });
 
+test('Buy on a Store card adds the item and opens the cart', async ({ page }) => {
+  const storeItemSlug = 'disintegration-black-vinyl-lp';
+  // Only this card has a priced, stocked listing record, so it is the only card offering Buy.
+  await page.route('**/api/store/listing-prices', (route) =>
+    route.fulfill({
+      json: [{ storeItemSlug, presentationState: 'ready', displayPrice: '€28.00', availabilityState: 'stocked' }],
+    }),
+  );
+  await page.goto('store/');
+  await waitForShell(page);
+
+  const buy = page.locator(`[data-store-card-buy][data-store-item-slug="${storeItemSlug}"]`);
+  await expect(buy).toBeVisible();
+  await expect(page.locator('[data-store-card-buy]:visible')).toHaveCount(1);
+
+  await buy.click();
+  // Added shows at once and lasts four seconds; the drawer's chunks may still be loading in dev.
+  await expect(buy).toHaveText('Added');
+  const drawer = page.getByRole('dialog', { name: 'Cart' });
+  await expect(drawer.locator('[data-store-cart-line-item]')).toHaveCount(1);
+
+  // Closing the cart returns focus to the card's Buy.
+  await page.keyboard.press('Escape');
+  await expect(drawer).toBeHidden();
+  await expect(buy).toBeFocused();
+});
+
 test('the checkout pay control fills in place when the shipping quote arrives', async ({ page }) => {
   await page.goto(`.${localRepresentativePaths.storeItem}`);
   await waitForShell(page);

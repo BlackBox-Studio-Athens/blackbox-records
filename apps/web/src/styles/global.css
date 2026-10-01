@@ -4685,11 +4685,14 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   font-size: 0.8125rem;
 }
 
+/* The row reserves Buy's 44px (plus its top padding), so cards keep their height when listing prices arrive. */
 .store-item-card__price {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   justify-content: space-between;
   gap: 0.375rem 0.75rem;
+  min-height: 3.25rem;
   margin-top: auto;
   padding-top: 0.5rem;
   font-size: 0.9375rem;

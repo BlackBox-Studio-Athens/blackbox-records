@@ -1,7 +1,9 @@
 ---
 import { Image } from 'astro:assets';
+import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
+import { createPricedCartSeedForStorePage } from '@/components/store/store-page-data';
 import type { StoreCardImageLoadingMode, StoreCollectionEntry } from '@/lib/store-collection';
 interface Props {
   coverflowEnrolled?: boolean;
@@ -13,6 +15,7 @@ const { coverflowEnrolled = false, entry, imageLoadingMode = 'lazy', searchable 
 const { storeItem, primaryAvailability, previewImage } = entry;
 const priority = imageLoadingMode === 'priority';
 const option = primaryAvailability?.optionLabel || entry.distro?.format || entry.distro?.group;
+const cartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const sizes =
   '(min-width: 1440px) 16.9375rem, (min-width: 1280px) calc((100vw - 356px) / 4), (min-width: 1024px) calc((100vw - 336px) / 3), (min-width: 640px) calc((100vw - 80px) / 3), (min-width: 360px) calc((100vw - 48px) / 2), calc(100vw - 32px)';
 const widths = [240, 320, 480, 640, 800, 960];
@@ -92,6 +95,17 @@ const widths = [240, 320, 480, 640, 800, 960];
         >
           Checking availability
         </span>
+        {cartSeed && (
+          <button
+            type="button"
+            class={buttonVariants({ variant: 'outline', size: 'lg', className: 'ml-auto min-w-[4.5rem] px-3' })}
+            data-store-card-buy={JSON.stringify(cartSeed)}
+            data-store-item-slug={storeItem.slug}
+            hidden
+          >
+            Buy
+          </button>
+        )}
       </div>
     </CardContent>
   </Card>
