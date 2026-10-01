@@ -25,7 +25,7 @@ const routeDocuments = {
 // React 19.3 plus Lenis/Motion lifecycle wiring; libraries and dormant surfaces remain lazy.
 // Measured migration output and prior budget: openspec/changes/adopt-lenis-motion-frontends/design.md.
 const eagerGraphBudgetBytes = 100 * 1024;
-const dormantPortalNames = ['ArtistRosterPreview', 'ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton'];
+const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton'];
 const staffRouteDocuments = {
   overview: { document: 'index.html', javascriptBudgetBytes: 122880 },
   website: { document: 'content/index.html', javascriptBudgetBytes: 176128 },

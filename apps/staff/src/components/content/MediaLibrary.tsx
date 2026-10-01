@@ -170,6 +170,7 @@ export function ContentGalleryUploader({
 }
 
 function cropSuitability(item: EditorialMedia, cropRatio?: number) {
+  if (cropRatio === 0.75) return 'Full photo in a portrait frame';
   if (!cropRatio || !item.width || !item.height) return '';
   const ratio = item.width / item.height;
   return Math.abs(ratio - cropRatio) <= 0.08 ? 'Fits this crop' : 'Check the crop';
@@ -454,7 +455,7 @@ export default function MediaLibrary({
                 }}
               >
                 <AspectRatio ratio={cropRatio ?? 4 / 3} className="w-full bg-muted/30 p-2">
-                  <MediaImage item={item} base={base} crop={!!cropRatio} />
+                  <MediaImage item={item} base={base} crop={!!cropRatio && cropRatio !== 0.75} />
                 </AspectRatio>
                 <span className="cms-media-filename w-full truncate border-t border-border p-3 text-sm">
                   {item.filename}
@@ -673,7 +674,9 @@ export function ContentImagePicker({
               <div className="p-4 sm:p-6">
                 {cropRatio && (
                   <p className="mb-4 text-sm text-muted-foreground">
-                    Artwork uses a centered square crop. These previews show what will be visible.
+                    {cropRatio === 0.75
+                      ? 'The full photo fits into a 3:4 frame; any space left around it shows a blurred copy of the photo. Aim for 1800 × 2400 px, at least 1200 × 1600 px. No manual cropping is needed.'
+                      : 'Artwork uses a centered square crop. These previews show what will be visible.'}
                   </p>
                 )}
                 <MediaLibrary

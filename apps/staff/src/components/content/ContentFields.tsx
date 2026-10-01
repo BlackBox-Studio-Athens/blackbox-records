@@ -303,7 +303,7 @@ export default function ContentFields({
         </FieldLegend>
         <FieldGroup className="gap-4">
           <ContentImagePicker
-            cropRatio={['releases', 'distro'].includes(collection) ? 1 : undefined}
+            cropRatio={collection === 'artists' ? 0.75 : ['releases', 'distro'].includes(collection) ? 1 : undefined}
             base={base}
             label={label}
             value={reference?.id ?? ''}
@@ -498,8 +498,8 @@ export default function ContentFields({
         <h2 className="col-span-full text-lg font-semibold">Photography</h2>
         {image('image', 'image_alt', 'Artist image')}
         <p className="col-span-full text-sm text-muted-foreground">
-          Artist photos appear uncropped at their own shape: portrait, square or landscape. Use at least 1200 px on the
-          long edge, ideally 1800 px or more. Originals are preserved.
+          Artist photos fit inside a 3:4 portrait frame without cutting anyone off; any space left around them shows a
+          blurred copy of the photo. Recommended: 1800 × 2400 px; minimum: 1200 × 1600 px. Originals are preserved.
         </p>
         <h2 className="col-span-full text-lg font-semibold">Biography</h2>
         {field('bio', 'Short biography', { multiline: true })}

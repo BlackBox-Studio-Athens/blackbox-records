@@ -1,5 +1,5 @@
 ---
-import ArtistPrint from '@/components/artists/ArtistPrint.astro';
+import ArtistCard from '@/components/artists/ArtistCard.astro';
 import HomeHero from '@/components/editorial/HomeHero.astro';
 import NewsCard from '@/components/editorial/NewsCard.astro';
 import NewsletterSignup from '@/components/NewsletterSignup.astro';
@@ -58,33 +58,9 @@ const homeArtists = homeContent.artists;
           <span class="home-section-header__rule" aria-hidden="true" />
         </div>
         <div class="home-featured-roster-grid">
-          {featuredArtistProfiles.map((artistProfile, index) => {
-            const artistName = artistProfile.data.title || 'Artist';
-            return (
-              <div class="prose-link-card home-featured-roster-card group">
-                <a
-                  class="prose-card-link"
-                  href={createProjectRelativeUrl(`/artists/${artistProfile.data.slug}/`)}
-                  data-astro-prefetch
-                >
-                  <span class="sr-only">{artistName}</span>
-                </a>
-                <ArtistPrint
-                  role="preview"
-                  image={artistProfile.data.image}
-                  alt={artistProfile.data.image_alt || artistName}
-                  name={artistName}
-                  tiltIndex={index}
-                />
-                <div class="home-featured-roster-card__label">
-                  {artistProfile.data.genre && (
-                    <p class="text-[11px] tracking-[0.18em] uppercase text-[#d0d0d0]">{artistProfile.data.genre}</p>
-                  )}
-                  <h3 class="brand-card-title text-foreground">{artistName.toUpperCase()}</h3>
-                </div>
-              </div>
-            );
-          })}
+          {featuredArtistProfiles.map((artistProfile) => (
+            <ArtistCard artist={artistProfile} variant="featured-roster" />
+          ))}
         </div>
         <div class="mt-8 text-center">
           <a

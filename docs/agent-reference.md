@@ -37,7 +37,7 @@ Read the relevant section. [AGENTS.md](../AGENTS.md) routes to current domain sp
 | Overlay fragments            | [app-shell-overlay](../apps/web/src/pages/app-shell-overlay/)                                                                            |
 | Styling and primitives       | [global.css](../apps/web/src/styles/global.css), [UI components](../apps/web/src/components/ui/)                                         |
 
-- Keep the monochrome visual language unless the task changes it. Artist photos render as `ArtistPrint` prints at their native aspect ratio (no fixed frame, crop, or fill bars); sources are at least 1200 px on the long edge, ideally 1800 px or more. Preserve the whole band photo.
+- Keep the monochrome visual language unless the task changes it. Artist frames remain 3:4 with `object-fit: contain` over a blurred copy of the same photo (`.artist-photo-fill`), never black bars or a text scrim; names sit below the photo. Sources are ideally 1800 × 2400, at least 1200 × 1600, with headroom. Preserve the whole band photo.
 - The shell owns player state, mobile navigation, scroll/focus resets and the transition veil. Page-local player state and body-swapping navigation require reconsidering persistence.
 - The minimized player appears after iframe load and real embed interaction. Closing beforehand destroys the session; minimizing afterward retains it; Stop destroys it. Full reloads, new tabs and non-shell navigation cannot preserve third-party iframe playback.
 - News remains routable but hidden from primary navigation. Releases are editorial; Store owns commerce browsing. Follow the [shell/player spec](../openspec/specs/app-shell-and-player/spec.md) and current Store specs for categories and legacy redirects.

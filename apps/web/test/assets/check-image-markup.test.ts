@@ -137,23 +137,15 @@ describe('check-image-markup', () => {
     expect(getSrcsetCandidateUrl(tag, 480)).toBe('/portrait-480.webp');
   });
 
-  it('locates an artist print by the stable roster hook instead of mutable alt copy', () => {
-    const item = (title: string, preview: string) =>
-      `<li data-artist-roster-item data-artist-title="${title}">` +
-      `<span class="artist-print artist-print--thumb"><img class="artist-print__image" data-artist-roster-print="thumb" alt=""></span>` +
-      `<figure class="artist-print artist-print--preview">${preview}</figure></li>`;
+  it('locates an artist image by the stable roster hook instead of mutable alt copy', () => {
     const html = [
-      item('Afterwise', '<img class="artist-print__image" data-artist-roster-print="preview" alt="Afterwise">'),
-      item(
-        'Ouranopithecus',
-        '<img class="artist-print__image" data-artist-roster-print="preview" alt="Three members of Ouranopithecus standing among trees" srcset="/ouranopithecus-360.webp 360w, /ouranopithecus-540.webp 540w">',
-      ),
+      '<div data-artist-roster-item data-artist-title="Afterwise"><img class="artist-roster-card__image" alt="Afterwise"></div>',
+      '<div data-artist-roster-item data-artist-title="Ouranopithecus"><img class="artist-roster-card__image" alt="Three members of Ouranopithecus standing among trees" srcset="/ouranopithecus-480.webp 480w, /ouranopithecus-720.webp 720w"></div>',
     ].join('');
 
     const tag = getArtistRosterImageTag(html, 'Ouranopithecus');
     expect(tag).toContain('alt="Three members of Ouranopithecus standing among trees"');
-    expect(getSrcsetCandidateUrl(tag, 360)).toBe('/ouranopithecus-360.webp');
-    expect(getArtistRosterImageTag(html, 'Ouranopithecus', 'thumb')).toContain('data-artist-roster-print="thumb"');
+    expect(getSrcsetCandidateUrl(tag, 480)).toBe('/ouranopithecus-480.webp');
     expect(getArtistRosterImageTag(html, 'Missing artist')).toBe('');
   });
 });

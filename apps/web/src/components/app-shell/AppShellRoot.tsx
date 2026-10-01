@@ -120,7 +120,6 @@ export default function AppShellRoot({
   const [shellSectionTransitionTarget, setShellSectionTransitionTarget] = useState('');
   const [shellNavigationSource, setShellNavigationSource] = useState<ShellNavigationSource>('programmatic');
   const [artistsRosterFiltersContainer, setArtistsRosterFiltersContainer] = useState<HTMLElement | null>(null);
-  const [artistsRosterPreviewContainer, setArtistsRosterPreviewContainer] = useState<HTMLElement | null>(null);
   const [distroSearchContainer, setDistroSearchContainer] = useState<HTMLElement | null>(null);
   const [servicesInquiryContainer, setServicesInquiryContainer] = useState<HTMLElement | null>(null);
   const [storeCartHeaderContainer, setStoreCartHeaderContainer] = useState<HTMLElement | null>(null);
@@ -370,18 +369,6 @@ export default function AppShellRoot({
       queryTarget: () => document.querySelector<HTMLElement>('[data-artists-roster-filters]'),
       scheduler: window,
       setTarget: setArtistsRosterFiltersContainer,
-      targetPathname: '/artists/',
-    });
-  }, [activeShellPathname]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    return connectShellPortalTarget({
-      activePathname: activeShellPathname,
-      queryTarget: () => document.querySelector<HTMLElement>('[data-artist-roster-preview]'),
-      scheduler: window,
-      setTarget: setArtistsRosterPreviewContainer,
       targetPathname: '/artists/',
     });
   }, [activeShellPathname]);
@@ -877,7 +864,6 @@ export default function AppShellRoot({
       <ShellPortalOutlets
         activeShellPathname={activeShellPathname}
         artistsRosterFiltersContainer={artistsRosterFiltersContainer}
-        artistsRosterPreviewContainer={artistsRosterPreviewContainer}
         distroSearchContainer={distroSearchContainer}
         onOpenStoreCart={openStoreCartDrawer}
         servicesInquiryContainer={servicesInquiryContainer}

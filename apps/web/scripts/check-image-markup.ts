@@ -76,15 +76,8 @@ const routeChecks: RouteCheck[] = [
     maxHighPriorityImages: 1,
     images: [
       {
-        className: 'data-artist-roster-print="thumb"',
+        className: 'artist-roster-card__image',
         firstEagerCount: 3,
-        minCount: 3,
-        minSrcsetCandidates: 2,
-        requireDecoding: true,
-        requireSrcset: true,
-      },
-      {
-        className: 'data-artist-roster-print="preview"',
         minCount: 3,
         minSrcsetCandidates: 2,
         requireDecoding: true,
@@ -161,7 +154,7 @@ const routeChecks: RouteCheck[] = [
     maxHighPriorityImages: 1,
     images: [
       {
-        className: 'artist-print__image',
+        className: 'artist-detail-hero__image',
         minCount: 1,
         minSrcsetCandidates: 2,
         requireDecoding: true,
@@ -210,7 +203,7 @@ const routeChecks: RouteCheck[] = [
     maxHighPriorityImages: 0,
     images: [
       {
-        className: 'artist-print__image',
+        className: 'artist-detail-hero__image',
         firstEagerCount: 1,
         minCount: 1,
         minSrcsetCandidates: 2,
@@ -285,19 +278,15 @@ export function getSrcsetCandidateUrl(tag: string, width: number): string {
   return candidate?.[0] || '';
 }
 
-export function getArtistRosterImageTag(
-  html: string,
-  artistTitle: string,
-  role: 'preview' | 'thumb' = 'preview',
-): string {
-  const itemOpenTags = [...html.matchAll(/<[a-z]+\b[^>]*\bdata-artist-roster-item\b[^>]*>/g)];
+export function getArtistRosterImageTag(html: string, artistTitle: string): string {
+  const itemOpenTags = [...html.matchAll(/<div\b[^>]*\bdata-artist-roster-item\b[^>]*>/g)];
 
   for (const [index, match] of itemOpenTags.entries()) {
     if (readAttribute(match[0], 'data-artist-title') !== artistTitle) continue;
 
     const itemStart = match.index;
     const itemEnd = itemOpenTags[index + 1]?.index ?? html.length;
-    return getImageTags(html.slice(itemStart, itemEnd), `data-artist-roster-print="${role}"`)[0] || '';
+    return getImageTags(html.slice(itemStart, itemEnd), 'artist-roster-card__image')[0] || '';
   }
 
   return '';
@@ -411,15 +400,14 @@ function run() {
   const diagnostics = checkImageMarkup(routeHtmlByPath, routeChecks);
   const artistsHtml = routeHtmlByPath.get('artists/index.html') || '';
   const ouranopithecusTag = getArtistRosterImageTag(artistsHtml, 'Ouranopithecus');
-  // Smallest rung of the preview print ladder (artistPrintWidths.preview).
-  const candidateUrl = ouranopithecusTag ? getSrcsetCandidateUrl(ouranopithecusTag, 360) : '';
+  const candidateUrl = ouranopithecusTag ? getSrcsetCandidateUrl(ouranopithecusTag, 480) : '';
   const candidatePath = candidateUrl ? join(distRoot, candidateUrl.replace(/^.*?\/_astro\//, '_astro/')) : '';
   if (!candidatePath || !existsSync(candidatePath)) {
-    diagnostics.push({ route: 'artists/index.html', message: 'Ouranopithecus 360w candidate is missing.' });
+    diagnostics.push({ route: 'artists/index.html', message: 'Ouranopithecus 480w candidate is missing.' });
   } else if (statSync(candidatePath).size > 100 * 1024) {
     diagnostics.push({
       route: 'artists/index.html',
-      message: `Ouranopithecus 360w candidate exceeds 100 KiB (${statSync(candidatePath).size} bytes).`,
+      message: `Ouranopithecus 480w candidate exceeds 100 KiB (${statSync(candidatePath).size} bytes).`,
     });
   }
   if (diagnostics.length > 0) {

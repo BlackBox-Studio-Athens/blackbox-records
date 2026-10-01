@@ -9,7 +9,6 @@ import {
   applyDocumentShellPageSnapshot,
   cacheDocumentShellPageSnapshot,
   readDocumentShellPageSnapshot,
-  sanitizeArtistRosterSnapshot,
   sanitizeStoreCoverflowSnapshot,
   updateDocumentMetadata,
 } from './shell-page-snapshot';
@@ -470,102 +469,5 @@ describe('shell page snapshots', () => {
     });
 
     expect(applied).toBe(false);
-  });
-});
-
-function createRosterElement(attributes: Record<string, string> = {}) {
-  const attributeMap = new Map(Object.entries(attributes));
-  const element = {
-    attributes: attributeMap,
-    hidden: attributeMap.has('hidden'),
-    innerHTML: '',
-    open: false,
-    orderRemoved: false,
-    removeAttribute(name: string) {
-      attributeMap.delete(name);
-    },
-    setAttribute(name: string, value: string) {
-      attributeMap.set(name, value);
-    },
-    style: {
-      removeProperty(name: string) {
-        if (name === 'order') element.orderRemoved = true;
-      },
-    },
-  };
-  return element;
-}
-
-function createRosterRoot() {
-  const mount = createRosterElement();
-  mount.innerHTML = '<span>hydrated preview</span>';
-  const prints = [
-    createRosterElement({ 'data-print-depth': '1', 'aria-hidden': 'true' }),
-    createRosterElement({ 'data-print-depth': '0' }),
-    createRosterElement({ 'data-print-depth': '2', 'aria-hidden': 'true' }),
-  ];
-  const details = [createRosterElement({ hidden: '' }), createRosterElement(), createRosterElement({ hidden: '' })];
-  const rows = [createRosterElement(), createRosterElement({ 'data-active': '' })];
-  const items = [createRosterElement({ 'data-filter-state': 'hidden', hidden: '' }), createRosterElement()];
-  const disclosure = createRosterElement();
-  disclosure.open = true;
-  const rosterRoot = createRosterElement({ 'data-roster-sort': 'latest' });
-  const root = {
-    querySelectorAll(selector: string) {
-      const bySelector: Record<string, unknown[]> = {
-        '[data-artist-roster-preview]': [mount],
-        '[data-artist-preview-print]': prints,
-        '[data-artist-preview-details]': details,
-        '[data-artist-roster-row]': rows,
-        '[data-artist-roster-item]': items,
-        '[data-artist-roster-disclosure]': [disclosure],
-        '[data-artists-roster-root]': [rosterRoot],
-      };
-      return bySelector[selector] ?? [];
-    },
-  } as unknown as ParentNode;
-  return { details, disclosure, items, mount, prints, root, rosterRoot, rows };
-}
-
-describe('Artists roster snapshots', () => {
-  it('restores the server-default preview, rows, sort, and disclosures', () => {
-    const { details, disclosure, items, mount, prints, root, rosterRoot, rows } = createRosterRoot();
-
-    sanitizeArtistRosterSnapshot(root);
-
-    expect(mount.innerHTML).toBe('');
-    expect(prints.map((print) => print.hidden)).toEqual([false, true, true]);
-    expect(prints.map((print) => print.attributes.get('data-print-depth') ?? null)).toEqual(['0', null, null]);
-    expect(prints.map((print) => print.attributes.has('aria-hidden'))).toEqual([false, false, false]);
-    expect(details.map((block) => block.hidden)).toEqual([false, true, true]);
-    expect(rows.map((row) => row.attributes.has('data-active'))).toEqual([false, false]);
-    expect(items.map((item) => item.hidden)).toEqual([false, false]);
-    expect(items.map((item) => item.attributes.has('data-filter-state'))).toEqual([false, false]);
-    expect(items.map((item) => item.orderRemoved)).toEqual([true, true]);
-    expect(disclosure.open).toBe(false);
-    expect(rosterRoot.attributes.has('data-roster-sort')).toBe(false);
-  });
-
-  it('sanitizes the roster in the cloned main before caching it', () => {
-    const { prints, root } = createRosterRoot();
-    const clone = { ...(root as object), innerHTML: '<ul></ul>' };
-    const main = {
-      cloneNode: () => clone,
-      getAttribute: () => '',
-      querySelectorAll: () => [],
-    };
-    const targetDocument = {
-      title: 'Artists',
-      querySelector: (selector: string) => (selector === 'main[data-app-shell-main]' ? main : null),
-    } as unknown as Document;
-
-    const snapshot = readDocumentShellPageSnapshot(
-      targetDocument,
-      'https://example.test/blackbox-records/artists/',
-      'https://example.test/blackbox-records/',
-    );
-
-    expect(snapshot?.pathname).toBe('/artists/');
-    expect(prints.map((print) => print.hidden)).toEqual([false, true, true]);
   });
 });

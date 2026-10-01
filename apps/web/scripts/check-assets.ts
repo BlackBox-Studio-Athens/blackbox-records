@@ -12,6 +12,7 @@ import {
 } from '../../../scripts/stripe-catalog-contract';
 
 export type AssetRuleId =
+  | 'artist-portrait-ratio'
   | 'favicon-alpha'
   | 'favicon-size'
   | 'missing-image'
@@ -56,6 +57,8 @@ const imageExtensions = new Set(['.gif', '.ico', '.jpg', '.jpeg', '.png', '.svg'
 const contentEntryExtensions = new Set(['.json', '.md', '.mdx']);
 const contentImageKeys = new Set(['cover_image', 'image']);
 const expectedFaviconIcoSizes = new Set(['16x16', '32x32', '48x48']);
+const artistPortraitRatio = 3 / 4;
+const artistPortraitRatioTolerance = 0.025;
 
 type AssetMetadata = Pick<Metadata, 'format'> & Partial<Pick<Metadata, 'channels' | 'hasAlpha' | 'height' | 'width'>>;
 
@@ -122,6 +125,10 @@ export function formatDiagnostic(diagnostic: AssetDiagnostic): string {
   return `[${diagnostic.severity}] ${diagnostic.ruleId} ${diagnostic.assetPath}${source} - ${diagnostic.message}${expected}${actual}`;
 }
 
+function formatRatio(width: number, height: number): string {
+  return `${width}x${height} (${(width / height).toFixed(3)})`;
+}
+
 export function evaluateImageMetadata(asset: ImageAsset, metadata: AssetMetadata): AssetDiagnostic[] {
   const assetPath = normalizePath(asset.path);
   const diagnostics: AssetDiagnostic[] = [];
@@ -182,6 +189,24 @@ export function evaluateImageMetadata(asset: ImageAsset, metadata: AssetMetadata
         actual: `${width}x${height}`,
       }),
     );
+  }
+
+  if (asset.collection === 'artists' && asset.fieldPath === 'image') {
+    const ratio = width / height;
+
+    if (Math.abs(ratio - artistPortraitRatio) > artistPortraitRatioTolerance || width < 1200 || height < 1600) {
+      diagnostics.push(
+        createDiagnostic({
+          severity: 'warning',
+          ruleId: 'artist-portrait-ratio',
+          assetPath,
+          sourcePath: asset.sourcePath,
+          message: 'Artist roster images should be portrait-oriented sources for the documented 3:4 crop.',
+          expected: 'at least 1200x1600 and 3:4 ratio',
+          actual: formatRatio(width, height),
+        }),
+      );
+    }
   }
 
   return diagnostics;
