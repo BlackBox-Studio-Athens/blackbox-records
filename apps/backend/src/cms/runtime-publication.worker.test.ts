@@ -2,7 +2,7 @@ import { applyD1Migrations, env } from 'cloudflare:test';
 import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import { ContentRepository } from 'emdash';
 import type { EmDashRuntime } from 'emdash/middleware';
-import { acceptSelectedPublication, processRuntimePublication } from './runtime-publication';
+import { acceptSelectedPublication, processRuntimePublication, selectedPublicationSchema } from './runtime-publication';
 import {
   activatePublication,
   currentPublicationKey,
@@ -14,11 +14,247 @@ import { createPrismaClient } from '../infrastructure/persistence/prisma';
 import { readPublication } from './publication-journal';
 import { readPublicationHistory } from './publication-journal';
 import { reviewPublication } from './publication-review';
-import { publishedCollection } from '@blackbox/content-model';
+import { publishedCollection, parseContentSnapshot, publicationReviewSchema } from '@blackbox/content-model';
 import { selectPreviewContent, previewDestination } from './preview-selection';
 import { projectArtistReference, readRevisionContent } from './publication-projection';
 
 afterEach(() => vi.restoreAllMocks());
+
+async function withdrawalFixture() {
+  const fixture = await setup();
+  const { deps, runtime } = fixture;
+  const snapshot = await readPublishedSnapshot(deps.bucket, 'local', fixture.pointer.snapshotSha256);
+  const data = {
+    title: 'Withdraw vinyl',
+    artist_or_label: 'Test band',
+    format: 'Vinyl',
+    group: 'Vinyl 12-inch',
+    image: { id: 'withdraw-image' },
+    image_alt: 'Cover',
+    summary: 'Public copy',
+    order: 1,
+  };
+  const records = ['linked', 'unlinked'].map((id) => ({
+    collection: 'distro',
+    id,
+    slug: id,
+    revisionId: `${id}-live`,
+    data,
+  }));
+  const storeItems = [
+    { sourceKind: 'distro', sourceId: 'linked', storeItemSlug: 'linked-vinyl', variantId: 'variant_withdrawal' },
+  ];
+  const stored = await completeSnapshot(
+    deps.bucket,
+    'local',
+    JSON.stringify({
+      ...snapshot,
+      records: [...snapshot.records, ...records],
+      media: [...snapshot.media, { ...snapshot.media[0], id: 'withdraw-image' }],
+      storeItems,
+    }),
+  );
+  const pointer = { ...fixture.pointer, snapshotSha256: stored.sha256 };
+  await deps.bucket.delete(currentPublicationKey('local'));
+  await activatePublication(deps.bucket, 'local', pointer);
+  const items = new Map(
+    records.map(({ id, slug, revisionId }) => [
+      id,
+      {
+        id,
+        slug,
+        version: 1,
+        status: 'published',
+        liveRevisionId: revisionId as string | null,
+        draftRevisionId: `${id}-draft`,
+      },
+    ]),
+  );
+  runtime.handleContentGet.mockImplementation(async (_collection?: string, id = 'linked') => {
+    const item = items.get(id)!;
+    return {
+      success: true,
+      data: { _rev: `version-${item.version}`, item: { ...item, liveRevisionId: item.liveRevisionId ?? '' } },
+    };
+  });
+  runtime.handleRevisionGet.mockImplementation(async (id = 'linked-draft') => ({
+    success: true,
+    data: {
+      item: {
+        id,
+        collection: 'distro',
+        entryId: id?.split('-')[0],
+        data: { ...data, title: 'Private incomplete draft', artist_or_label: '', _slug: id?.split('-')[0] },
+      },
+    },
+  }));
+  const unpublish = vi.fn(async (_collection: string, id: string) => {
+    const item = items.get(id)!;
+    item.status = 'draft';
+    item.liveRevisionId = null;
+    item.version++;
+    return { success: true, data: { item: { ...item }, _rev: `version-${item.version}` } };
+  });
+  deps.runtime = { ...runtime, handleContentUnpublish: unpublish } as unknown as EmDashRuntime;
+  const db = createPrismaClient(env);
+  const where = { variantId: 'variant_withdrawal' };
+  await db.stock.deleteMany({ where });
+  await db.variantStripeMapping.deleteMany({ where });
+  await db.itemAvailability.deleteMany({ where });
+  await db.storeItemOption.deleteMany({ where });
+  await db.storeItemOption.create({
+    data: {
+      variantId: 'variant_withdrawal',
+      sourceKind: 'distro',
+      sourceId: 'linked',
+      cmsSourceId: 'linked',
+      storeItemSlug: 'linked-vinyl',
+      catalogRevision: 0,
+      catalogAvailability: 'published',
+    },
+  });
+  await db.itemAvailability.create({ data: { variantId: 'variant_withdrawal', canBuy: true, status: 'available' } });
+  await db.stock.create({ data: { variantId: 'variant_withdrawal', quantity: 9, onlineQuantity: 7 } });
+  await db.variantStripeMapping.create({
+    data: { variantId: 'variant_withdrawal', stripeProductId: 'prod_withdrawal', stripePriceId: 'price_withdrawal' },
+  });
+  const input = {
+    id: crypto.randomUUID(),
+    action: 'withdraw' as const,
+    baseline: pointer.snapshotSha256,
+    records: records.map(({ id }) => ({ collection: 'distro', recordId: id, expectedRevision: 'version-1' })),
+  };
+  return { ...fixture, pointer, items, unpublish, db, input };
+}
+
+test('withdraws linked and unlinked Distro without publishing incomplete drafts or changing stock and prices', async () => {
+  const { deps, input, db, runtime, unpublish } = await withdrawalFixture();
+  const stock = await db.stock.findUnique({ where: { variantId: 'variant_withdrawal' } });
+  const mapping = await db.variantStripeMapping.findUnique({ where: { variantId: 'variant_withdrawal' } });
+  const { review, candidate } = await reviewPublication(
+    { action: input.action, records: input.records, baseline: input.baseline },
+    deps,
+  );
+  expect(
+    review.entries.every(
+      (entry) => entry.action === 'withdraw' && entry.issues.length === 0 && Object.keys(entry.after).length === 0,
+    ),
+  ).toBe(true);
+  expect(candidate.records.filter((record) => record.collection === 'distro')).toEqual([]);
+  expect(candidate.storeItems).toEqual([]);
+  expect(candidate.media.map((item) => item.id)).toEqual(['image']);
+  expect(() => parseContentSnapshot(JSON.stringify(candidate), 'local')).not.toThrow();
+  expect(() =>
+    parseContentSnapshot(
+      JSON.stringify({
+        ...candidate,
+        storeItems: [
+          { sourceKind: 'distro', sourceId: 'linked', storeItemSlug: 'linked-vinyl', variantId: 'variant_withdrawal' },
+        ],
+      }),
+      'local',
+    ),
+  ).toThrow('no published source');
+  expect(unpublish).not.toHaveBeenCalled();
+  await acceptSelectedPublication(input, 'editor@example.com', deps);
+  await expect(acceptSelectedPublication({ ...input, action: 'publish' }, 'editor@example.com', deps)).rejects.toThrow(
+    'conflicts',
+  );
+  await processRuntimePublication(deps);
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+  const pointer = (await readPublicationPointer(deps.bucket, 'local'))!.pointer;
+  const accepted = await readPublishedSnapshot(deps.bucket, 'local', pointer.snapshotSha256);
+  expect(accepted.records.map((record) => record.id)).toEqual(['news', 'other']);
+  expect(accepted.storeItems).toEqual([]);
+  expect(accepted.media).toEqual(candidate.media);
+  expect(await deps.bucket.head(`snapshots/local/accepted/${input.baseline}`)).not.toBeNull();
+  expect(runtime.handleContentPublish).not.toHaveBeenCalled();
+  expect(unpublish).toHaveBeenCalledTimes(2);
+  expect(await db.stock.findUnique({ where: { variantId: 'variant_withdrawal' } })).toEqual(stock);
+  expect(await db.variantStripeMapping.findUnique({ where: { variantId: 'variant_withdrawal' } })).toEqual(mapping);
+  expect(await db.itemAvailability.findUnique({ where: { variantId: 'variant_withdrawal' } })).toMatchObject({
+    canBuy: false,
+  });
+  expect(await db.storeItemOption.findUnique({ where: { variantId: 'variant_withdrawal' } })).toMatchObject({
+    catalogAvailability: 'withheld',
+  });
+  expect((await acceptSelectedPublication(input, 'editor@example.com', deps)).status).toBe('live');
+  await db.$disconnect();
+});
+
+test.each(['renderer', 'native response', 'confirmation'])('recovers withdrawal after lost %s', async (failure) => {
+  const { deps, input, renderer, unpublish, db } = await withdrawalFixture();
+  await acceptSelectedPublication(input, 'editor@example.com', deps);
+  if (failure === 'renderer') renderer.fetch.mockRejectedValueOnce(new Error('renderer unavailable'));
+  if (failure === 'native response') {
+    const transition = unpublish.getMockImplementation()!;
+    unpublish.mockImplementationOnce(async (...args) => {
+      await transition(...args);
+      throw new Error('lost native response');
+    });
+  }
+  if (failure === 'confirmation') {
+    renderer.fetch.mockImplementationOnce(async (request) =>
+      Response.json({
+        sha: 'c'.repeat(40),
+        snapshotSha256: ((await request.json()) as { snapshotSha256: string }).snapshotSha256,
+      }),
+    );
+    renderer.fetch.mockRejectedValueOnce(new Error('lost confirmation'));
+  }
+  await processRuntimePublication(deps);
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('pending');
+  await processRuntimePublication(deps);
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+  expect(unpublish).toHaveBeenCalledTimes(2);
+  expect(await db.storeItemOption.findUnique({ where: { variantId: 'variant_withdrawal' } })).toMatchObject({
+    catalogRevision: 1,
+  });
+  await db.$disconnect();
+});
+
+test.each(['revision', 'baseline', 'newer draft'])('rejects changed %s during withdrawal', async (conflict) => {
+  const { deps, input, items, renderer, pointer, unpublish, db } = await withdrawalFixture();
+  if (conflict === 'revision') {
+    items.get('unlinked')!.version++;
+    await expect(acceptSelectedPublication(input, 'editor@example.com', deps)).rejects.toThrow('changed');
+    expect(unpublish).not.toHaveBeenCalled();
+  } else {
+    await acceptSelectedPublication(input, 'editor@example.com', deps);
+    if (conflict === 'baseline') {
+      const current = (await readPublicationPointer(deps.bucket, 'local'))!;
+      await activatePublication(
+        deps.bucket,
+        'local',
+        { ...pointer, id: crypto.randomUUID(), generation: 100 },
+        current.etag,
+      );
+    } else
+      renderer.fetch.mockImplementationOnce(async (request) => {
+        items.get('linked')!.version++;
+        return Response.json({
+          sha: 'c'.repeat(40),
+          snapshotSha256: ((await request.json()) as { snapshotSha256: string }).snapshotSha256,
+        });
+      });
+    await processRuntimePublication(deps);
+    expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('failed');
+    expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer.id).not.toBe(input.id);
+  }
+  await db.$disconnect();
+});
+
+test('withdrawal requires Distro and a reviewed baseline', () => {
+  const records = [{ collection: 'news', recordId: 'news', expectedRevision: 'v1' }];
+  expect(publicationReviewSchema.safeParse({ action: 'withdraw', records }).success).toBe(false);
+  expect(
+    selectedPublicationSchema.safeParse({
+      id: crypto.randomUUID(),
+      action: 'withdraw',
+      records: [{ ...records[0], collection: 'distro' }],
+    }).success,
+  ).toBe(false);
+});
 
 test.each(['releases', 'news'])(
   'native %s Artist references override stale columns without reading a newer draft selection',

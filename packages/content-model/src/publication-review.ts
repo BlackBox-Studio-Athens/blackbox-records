@@ -10,6 +10,7 @@ export const publicationRecordSchema = z
   .strict();
 export const publicationReviewSchema = z
   .object({
+    action: z.enum(['publish', 'withdraw']).optional(),
     records: z
       .array(publicationRecordSchema.partial({ expectedRevision: true }))
       .min(1)
@@ -23,11 +24,16 @@ export const publicationReviewSchema = z
   .refine(
     ({ records }) => new Set(records.map((r) => `${r.collection}/${r.recordId}`)).size === records.length,
     'Select each entry once.',
+  )
+  .refine(
+    ({ action, records }) => action !== 'withdraw' || records.every((record) => record.collection === 'distro'),
+    'Only Distro entries can be withdrawn.',
   );
 
 export type PublicationRecord = z.infer<typeof publicationRecordSchema>;
 export type PublicationReviewInput = z.infer<typeof publicationReviewSchema>;
 export type PublicationReviewEntry = PublicationRecord & {
+  action?: 'publish' | 'withdraw';
   title: string;
   slug: string;
   before: Record<string, unknown> | null;

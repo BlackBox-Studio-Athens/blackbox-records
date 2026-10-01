@@ -141,7 +141,16 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
         const pointer = publicationPointerSchema
           .extend({
             records: z
-              .array(z.object({ collection: z.string().refine(isCmsCollection), slug: z.string().min(1).max(256) }))
+              .array(
+                z.object({
+                  collection: z.string().refine(isCmsCollection),
+                  slug: z.string().min(1).max(256),
+                  withdrawnStoreItemSlugs: z
+                    .array(z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/))
+                    .max(20)
+                    .optional(),
+                }),
+              )
               .max(20)
               .optional(),
           })
@@ -152,7 +161,20 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
           pointer.snapshotSha256,
         );
         const paths = [PUBLIC_BASE_PATH];
+        const withdrawnPaths = new Set<string>();
         for (const selected of pointer.records ?? []) {
+          if (selected.withdrawnStoreItemSlugs) {
+            if (
+              selected.collection !== 'distro' ||
+              snapshot.records.some((record) => record.collection === 'distro' && record.slug === selected.slug) ||
+              snapshot.storeItems?.some((item) => item.sourceKind === 'distro' && item.sourceId === selected.slug)
+            )
+              throw new Error('Withdrawn content is still in the candidate.');
+            for (const slug of selected.withdrawnStoreItemSlugs) {
+              withdrawnPaths.add(`${PUBLIC_BASE_PATH}store/${encodeURIComponent(slug)}/`);
+              withdrawnPaths.add(`${PUBLIC_BASE_PATH}store/${encodeURIComponent(slug)}/checkout/`);
+            }
+          }
           if (selected && ['artists', 'releases', 'news'].includes(selected.collection)) {
             paths.push(
               `${PUBLIC_BASE_PATH}${selected.collection}/`,
@@ -171,6 +193,11 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
             throw new Error('Candidate could not render.');
           }
           await readBoundedText(response.body, 4 * 1024 * 1024);
+        }
+        for (const path of withdrawnPaths) {
+          const response = await this.render(new Request(new URL(path, url)), pointer, snapshot);
+          await response.body?.cancel();
+          if (response.status !== 404) throw new Error('Withdrawn product route is still available.');
         }
         return Response.json({ ...PUBLIC_RELEASE_IDENTITY, snapshotSha256: pointer.snapshotSha256 });
       }

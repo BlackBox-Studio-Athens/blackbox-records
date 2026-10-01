@@ -9,14 +9,6 @@
   },
   {
     "collection": "distro",
-    "item_id": "bloed-tranen",
-    "chosen_date": "2025-10-24",
-    "basis": "format_release",
-    "source_url": "https://www.discogs.com/release/35500522-Bloed-2-Tranen",
-    "reviewer_note": "Exact vinyl release date from Discogs."
-  },
-  {
-    "collection": "distro",
     "item_id": "cisnienie-angry-noises-vinyl",
     "chosen_date": "2026-04-24",
     "basis": "format_release",
@@ -38,14 +30,6 @@
     "basis": "format_release",
     "source_url": "https://www.discogs.com/release/21270136-Maha-Sohona-Endless-Searcher",
     "reviewer_note": "Exact vinyl release date from Discogs; earlier digital evidence is original-release only."
-  },
-  {
-    "collection": "distro",
-    "item_id": "in-your-absence",
-    "chosen_date": "2025-09-19",
-    "basis": "format_release",
-    "source_url": "https://www.discogs.com/release/37350498-WeOwnTheSky-In-Your-Absence",
-    "reviewer_note": "Exact vinyl release date matches current content; later vinyl candidates appear to be alternate editions."
   },
   {
     "collection": "distro",
@@ -166,14 +150,6 @@
     "basis": "format_release",
     "source_url": "https://www.discogs.com/release/12526462-Three-Way-Plane-Your-Kingdom-My-Life-",
     "reviewer_note": "Exact vinyl release date from Discogs."
-  },
-  {
-    "collection": "distro",
-    "item_id": "transatlantic-transiberian",
-    "chosen_date": "2025-05-02",
-    "basis": "format_release",
-    "source_url": "https://www.discogs.com/release/34189537-Goodbye-Kings-Transatlantic--Transiberian",
-    "reviewer_note": "Exact vinyl release date from Discogs; same day appears across original-release candidates."
   },
   {
     "collection": "distro",

@@ -1,11 +1,12 @@
 import { z } from 'zod';
-import { changedPublicationFields } from '@blackbox/content-model';
+import { changedPublicationFields, publicationValueKey } from '@blackbox/content-model';
 import type { EmDashRuntime } from 'emdash/middleware';
 import {
   contentMediaIds,
   isCmsCollection,
   validateCmsRevisionContent,
   replacePublishedRecord,
+  removePublishedDistro,
   type ContentSnapshot,
   publicationRecordSchema,
   publicationReviewSchema,
@@ -18,7 +19,7 @@ import {
 } from './published-storage';
 import { storeSnapshotMedia } from './snapshot-storage';
 import { validateImage } from './media-upload';
-import { readPublicationCatalog } from './item-publication-recovery';
+import { guardItemLifecycle, readPublicationCatalog } from './item-publication-recovery';
 import { publicationSummary, readPublication } from './publication-journal';
 import { reviewPublication } from './publication-review';
 import { projectPublicationStoreItems, readPublicationMedia, readRevisionContent } from './publication-projection';
@@ -27,30 +28,49 @@ const identifier = publicationRecordSchema.shape.recordId;
 const selectedRecordSchema = publicationRecordSchema;
 const baselineSchema = publicationReviewSchema.shape.baseline;
 const batchSchema = z
-  .object({ id: z.uuid(), records: z.array(selectedRecordSchema).min(1).max(20), baseline: baselineSchema })
+  .object({
+    id: z.uuid(),
+    records: z.array(selectedRecordSchema).min(1).max(20),
+    baseline: baselineSchema,
+    action: z.enum(['publish', 'withdraw']).optional(),
+  })
   .strict();
 export const selectedPublicationSchema = z
   .union([
     batchSchema,
-    selectedRecordSchema.extend({ id: z.uuid() }).transform(({ id, ...record }) => ({ id, records: [record] })),
+    selectedRecordSchema
+      .extend({ id: z.uuid(), action: z.enum(['publish', 'withdraw']).optional() })
+      .transform(({ id, action, ...record }) => ({ id, action, records: [record] })),
   ])
   .refine(
     ({ records }) =>
       new Set(records.map((record) => `${record.collection}/${record.recordId}`)).size === records.length,
     'Select each record once.',
+  )
+  .refine(
+    (input) =>
+      input.action !== 'withdraw' ||
+      ('baseline' in input && !!input.baseline && input.records.every((record) => record.collection === 'distro')),
+    'Distro withdrawal requires a reviewed baseline.',
   );
+const retainedRecordSchema = selectedRecordSchema.extend({
+  revisionId: identifier,
+  title: z.string().optional(),
+  nativeVersion: z.number().int().optional(),
+  draftRevisionId: z.string().nullable().optional(),
+  withdrawnRevision: z.string().optional(),
+  checkoutPaused: z.boolean().optional(),
+});
 const intentSchema = z.union([
   z.object({
     id: z.uuid(),
+    action: z.enum(['publish', 'withdraw']).optional(),
     baseline: baselineSchema,
-    records: z
-      .array(selectedRecordSchema.extend({ revisionId: identifier, title: z.string().optional() }))
-      .min(1)
-      .max(20),
+    records: z.array(retainedRecordSchema).min(1).max(20),
   }),
-  selectedRecordSchema
-    .extend({ id: z.uuid(), revisionId: identifier })
-    .transform(({ id, ...record }) => ({ id, records: [record] })),
+  retainedRecordSchema
+    .extend({ id: z.uuid(), action: z.enum(['publish', 'withdraw']).optional() })
+    .transform(({ id, action, ...record }) => ({ id, action, records: [record] })),
 ]);
 type Dependencies = {
   db: D1Database;
@@ -84,6 +104,7 @@ export async function acceptSelectedPublication(
     const retained = intentSchema.parse(JSON.parse(existing.request_json ?? 'null'));
     if (
       existing.actor_email !== actorEmail ||
+      (selected.action ?? 'publish') !== (retained.action ?? 'publish') ||
       ('baseline' in selected ? selected.baseline : undefined) !==
         ('baseline' in retained ? retained.baseline : undefined) ||
       JSON.stringify(selected.records) !==
@@ -103,7 +124,7 @@ export async function acceptSelectedPublication(
     if (!deps.bucket) throw new InvalidPublication('Publication review is unavailable.');
     try {
       const { review } = await reviewPublication(
-        { records: selected.records, baseline: reviewedBaseline },
+        { records: selected.records, baseline: reviewedBaseline, action: selected.action },
         { ...deps, bucket: deps.bucket },
       );
       if (!review.entries.some((entry) => changedPublicationFields(entry).length > 0))
@@ -123,11 +144,29 @@ export async function acceptSelectedPublication(
     if (!revisionId) throw new InvalidPublication('Save content before publishing.');
     const revision = successful(await deps.runtime.handleRevisionGet(revisionId)).item;
     const { _slug: _slug, ...content } = await readRevisionContent(deps.runtime, revision);
-    if (!isCmsCollection(record.collection) || validateCmsRevisionContent(record.collection, content).length)
+    if (
+      !isCmsCollection(record.collection) ||
+      (selected.action !== 'withdraw' && validateCmsRevisionContent(record.collection, content).length)
+    )
       throw new InvalidPublication('Complete the highlighted fields before publishing.');
-    records.push({ ...record, revisionId, title: String(content.title ?? content.label_name ?? current.item.slug) });
+    records.push({
+      ...record,
+      revisionId,
+      title: String(content.title ?? content.label_name ?? current.item.slug),
+      ...(selected.action === 'withdraw'
+        ? {
+            nativeVersion: current.item.version,
+            draftRevisionId: current.item.draftRevisionId ?? null,
+          }
+        : {}),
+    });
   }
-  const intent = { id: selected.id, records, ...(reviewedBaseline ? { baseline: reviewedBaseline } : {}) };
+  const intent = {
+    id: selected.id,
+    records,
+    ...(selected.action ? { action: selected.action } : {}),
+    ...(reviewedBaseline ? { baseline: reviewedBaseline } : {}),
+  };
   const inserted = await deps.db
     .prepare(
       `INSERT INTO _blackbox_publications
@@ -213,21 +252,96 @@ export async function processRuntimePublication(deps: Dependencies) {
       await updateStage('preparing');
       const retained = job.requestJson ? intentSchema.parse(JSON.parse(job.requestJson)) : undefined;
       const reviewedBaseline = retained && 'baseline' in retained ? retained.baseline : undefined;
+      const withdrawing = retained?.action === 'withdraw';
       if (reviewedBaseline && reviewedBaseline !== current.pointer.snapshotSha256)
         throw new InvalidPublication('The website changed. Review the latest comparison before publishing.');
       const selections = [...(retained?.records ?? [])].sort(
         (a, b) => Number(b.collection === 'artists') - Number(a.collection === 'artists'),
       );
       // Check the whole batch before any native transition. Public activation remains atomic.
+      const preparedRevisions = new Map<string, string>();
       for (const intent of selections) {
         const record = successful(await deps.runtime.handleContentGet(intent.collection, intent.recordId));
+        if (!record._rev) throw new InvalidPublication('The saved version is unavailable. Reload the entry.');
+        preparedRevisions.set(intent.recordId, record._rev);
+        if (withdrawing) {
+          if (record._rev === (intent.withdrawnRevision ?? intent.expectedRevision)) continue;
+          // A native response can be lost before its receipt is journalled. Exactly one version
+          // increment and an unchanged private draft prove that transition, never a later edit.
+          if (
+            !intent.withdrawnRevision &&
+            intent.nativeVersion !== undefined &&
+            record.item.version === intent.nativeVersion + 1 &&
+            record.item.status === 'draft' &&
+            !record.item.liveRevisionId &&
+            record.item.draftRevisionId
+          ) {
+            const draft = successful(await deps.runtime.handleRevisionGet(record.item.draftRevisionId)).item;
+            const selected = successful(await deps.runtime.handleRevisionGet(intent.revisionId)).item;
+            if (
+              intent.draftRevisionId
+                ? record.item.draftRevisionId === intent.draftRevisionId
+                : publicationValueKey(draft.data) === publicationValueKey(selected.data)
+            )
+              continue;
+          }
+          throw new InvalidPublication('A selected saved version changed. Review the batch before withdrawing.');
+        }
         if (record.item.liveRevisionId !== intent.revisionId && record._rev !== intent.expectedRevision)
           throw new InvalidPublication('A selected saved version changed. Review the batch before publishing.');
       }
       let candidate = current.snapshot;
-      const changedRecords: { collection: string; slug: string }[] = [];
+      const changedRecords: { collection: string; slug: string; withdrawnStoreItemSlugs?: string[] }[] = [];
       let publicationCatalog: Awaited<ReturnType<typeof readPublicationCatalog>> | undefined;
       for (const intent of selections.length ? selections : [{ revisionId: job.revisionId }]) {
+        if (withdrawing && 'collection' in intent) {
+          const before = candidate.records.find(
+            (record) => record.collection === intent.collection && record.id === intent.recordId,
+          );
+          if (!before) throw new InvalidPublication('The selected entry is not on the website.');
+          let record = successful(await deps.runtime.handleContentGet(intent.collection, intent.recordId));
+          if (record._rev !== preparedRevisions.get(intent.recordId))
+            throw new InvalidPublication('A selected draft changed. Review again before withdrawing.');
+          if (!intent.withdrawnRevision) {
+            if (!intent.checkoutPaused) {
+              const lifecycle = await guardItemLifecycle(
+                new Request(`http://localhost/_emdash/api/content/distro/${intent.recordId}/unpublish`, {
+                  method: 'POST',
+                  body: JSON.stringify({ _rev: record._rev }),
+                }),
+                deps.commerce,
+                async () => Response.json({ data: { _rev: record._rev } }),
+              );
+              if (lifecycle) throw new InvalidPublication('Checkout could not be paused.');
+              intent.checkoutPaused = true;
+              await deps.db
+                .prepare("UPDATE _blackbox_publications SET request_json = ? WHERE id = ? AND status = 'pending'")
+                .bind(JSON.stringify(retained), job.id)
+                .run();
+            }
+            if (record.item.status === 'published' || record.item.liveRevisionId) {
+              record = successful(
+                await deps.runtime.handleContentUnpublish(intent.collection, intent.recordId, { _rev: record._rev }),
+              );
+            }
+            intent.withdrawnRevision = record._rev;
+            await deps.db
+              .prepare("UPDATE _blackbox_publications SET request_json = ? WHERE id = ? AND status = 'pending'")
+              .bind(JSON.stringify(retained), job.id)
+              .run();
+          }
+          if (record.item.status !== 'draft' || record.item.liveRevisionId)
+            throw new InvalidPublication('The selected entry is still published.');
+          const removed =
+            candidate.storeItems?.filter((item) => item.sourceKind === 'distro' && item.sourceId === before.slug) ?? [];
+          candidate = removePublishedDistro(candidate, intent.recordId);
+          changedRecords.push({
+            collection: before.collection,
+            slug: before.slug,
+            withdrawnStoreItemSlugs: [...new Set([before.slug, ...removed.map((item) => item.storeItemSlug)])],
+          });
+          continue;
+        }
         const revision = successful(await deps.runtime.handleRevisionGet(intent.revisionId)).item;
         if (!isCmsCollection(revision.collection)) throw new InvalidPublication('Unsupported collection.');
         const { _slug: _validationSlug, ...publicationData } = await readRevisionContent(deps.runtime, revision);
@@ -328,6 +442,11 @@ export async function processRuntimePublication(deps: Dependencies) {
       // Recheck the reviewed versions after rendering, before exposing the candidate.
       for (const intent of selections) {
         const fresh = successful(await deps.runtime.handleContentGet(intent.collection, intent.recordId));
+        if (withdrawing) {
+          if (fresh._rev !== intent.withdrawnRevision || fresh.item.status !== 'draft' || fresh.item.liveRevisionId)
+            throw new InvalidPublication('A selected draft changed. Review again before withdrawing.');
+          continue;
+        }
         if (
           fresh.item.liveRevisionId !== intent.revisionId ||
           (fresh.item.draftRevisionId && fresh.item.draftRevisionId !== intent.revisionId)

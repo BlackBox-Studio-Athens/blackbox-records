@@ -44,7 +44,7 @@ describe('local mock commerce seed generator', () => {
         }),
       ]),
     );
-    expect(storeItems).toHaveLength(104);
+    expect(storeItems).toHaveLength(101);
     expect(storeItems.filter((item) => item.variantId === 'variant_caregivers-vinyl_standard')).toHaveLength(1);
     expect(storeItems.some((item) => item.storeItemSlug === 'chronoboros-caregivers-vinyl')).toBe(false);
   });

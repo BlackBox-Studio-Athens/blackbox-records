@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { EmDashRuntime } from 'emdash/middleware';
 import {
   contentMediaIds,
+  removePublishedDistro,
   isCmsCollection,
   validateCmsRevisionContent,
   publicationReviewSchema,
@@ -51,7 +52,7 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
         .map((record) => [record.id, String(record.data.title ?? record.slug)]),
     ),
   };
-  const candidate: ContentSnapshot = { ...snapshot, records: [...snapshot.records] };
+  let candidate: ContentSnapshot = { ...snapshot, records: [...snapshot.records] };
   let catalog: Awaited<ReturnType<typeof readPublicationCatalog>> | undefined;
   for (const record of selected.records) {
     if (!isCmsCollection(record.collection)) throw new PublicationReviewConflict('Unsupported collection.');
@@ -78,6 +79,22 @@ export async function reviewPublication(input: PublicationReviewInput, deps: Dep
         if (after[key] === 0 || after[key] === 1) after[key] = after[key] === 1;
     const slug = String(_slug ?? item.slug);
     const before = snapshot.records.find((r) => r.collection === record.collection && r.id === record.recordId);
+    if (selected.action === 'withdraw') {
+      if (!before) throw new PublicationReviewConflict('The selected entry is not on the website.');
+      review.entries.push({
+        action: 'withdraw',
+        collection: record.collection,
+        recordId: item.id,
+        expectedRevision: _rev,
+        slug: before.slug,
+        title: String(before.data.title ?? before.slug),
+        before: { ...before.data, slug: before.slug },
+        after: {},
+        issues: [],
+      });
+      candidate = removePublishedDistro(candidate, item.id);
+      continue;
+    }
     review.entries.push({
       collection: record.collection,
       recordId: item.id,

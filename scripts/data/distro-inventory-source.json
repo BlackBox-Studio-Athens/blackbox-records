@@ -197,17 +197,6 @@
       "sourceAliases": []
     },
     {
-      "id": "we-own-the-sky-in-your-absence-vinyl-12-inch",
-      "sourceArtist": "We.own.the.sky",
-      "sourceTitle": "In your absence",
-      "itemType": "Vinyl 12-inch",
-      "sourcePrice": "25",
-      "resolvedPricePolicy": "fixed 2500 EUR",
-      "releaseDate": null,
-      "currentSiteExtra": false,
-      "sourceAliases": []
-    },
-    {
       "id": "unshaped-ahead-8-cantons-vinyl-12-inch",
       "sourceArtist": "Unshaped Ahead",
       "sourceTitle": "8 Cantons",
@@ -253,34 +242,6 @@
         {
           "artist": "Zapetli Popette",
           "title": "Voyage Voyage",
-          "itemType": "Vinyl 12-inch"
-        }
-      ]
-    },
-    {
-      "id": "bloed-tranen-vinyl-12-inch",
-      "sourceArtist": "Bloed",
-      "sourceTitle": "Tranen",
-      "itemType": "Vinyl 12-inch",
-      "sourcePrice": "20",
-      "resolvedPricePolicy": "fixed 2000 EUR",
-      "releaseDate": null,
-      "currentSiteExtra": false,
-      "sourceAliases": []
-    },
-    {
-      "id": "goodbye-kings-transatlantic-transiberian-vinyl-12-inch",
-      "sourceArtist": "Goodbye Kings",
-      "sourceTitle": "Transatlantic // Transiberian",
-      "itemType": "Vinyl 12-inch",
-      "sourcePrice": "20",
-      "resolvedPricePolicy": "fixed 2000 EUR",
-      "releaseDate": null,
-      "currentSiteExtra": false,
-      "sourceAliases": [
-        {
-          "artist": "Goodbye, Kings",
-          "title": "Transatlantic // Transiberian",
           "itemType": "Vinyl 12-inch"
         }
       ]

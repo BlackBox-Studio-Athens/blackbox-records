@@ -33,9 +33,9 @@ export async function guardItemLifecycle(
   }
   const item = await db
     .prepare(
-      `SELECT variantId FROM StoreItemOption WHERE sourceKind = ? AND (cmsSourceId = ? OR sourceId = ?) AND catalogRevision > 0`,
+      `SELECT variantId FROM StoreItemOption WHERE sourceKind = ? AND (cmsSourceId = ? OR sourceId = ?) AND (catalogRevision > 0 OR ? = 'unpublish')`,
     )
-    .bind(collection === 'releases' ? 'release' : 'distro', id, id)
+    .bind(collection === 'releases' ? 'release' : 'distro', id, id, action)
     .first<{ variantId: string }>();
   if (!item) return null;
   const body = z

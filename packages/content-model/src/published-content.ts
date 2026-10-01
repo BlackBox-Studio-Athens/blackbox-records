@@ -31,6 +31,25 @@ export function replacePublishedRecord(
   );
 }
 
+/** Withdraw a Distro record while retaining media objects and historical snapshots. */
+export function removePublishedDistro(previous: ContentSnapshot, id: string) {
+  const selected = previous.records.find((record) => record.collection === 'distro' && record.id === id);
+  if (!selected) throw new Error('The selected entry is not on the website.');
+  const records = previous.records.filter((record) => record !== selected);
+  const referenced = new Set(records.flatMap((record) => contentMediaIds(record.data)));
+  return parseContentSnapshot(
+    JSON.stringify({
+      ...previous,
+      records,
+      media: previous.media.filter((item) => referenced.has(item.id)),
+      storeItems: previous.storeItems?.filter(
+        (item) => item.sourceKind !== 'distro' || item.sourceId !== selected.slug,
+      ),
+    }),
+    previous.environment,
+  );
+}
+
 /** Shared mapping for runtime rendering; callers supply only an accepted, validated snapshot. */
 export function publishedCollection(
   snapshot: PublicContent,

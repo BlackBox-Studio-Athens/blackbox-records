@@ -30,7 +30,13 @@ describe('stripe catalog contract projection', () => {
     const rowsById = new Map(source.rows.map((row) => [row.id, row]));
     const rejectedDuplicate = source.rejectedDuplicateRows[0];
 
-    expect(source.rows).toHaveLength(101);
+    expect(source.rows).toHaveLength(98);
+    for (const removed of [
+      'we-own-the-sky-in-your-absence-vinyl-12-inch',
+      'bloed-tranen-vinyl-12-inch',
+      'goodbye-kings-transatlantic-transiberian-vinyl-12-inch',
+    ])
+      expect(rowsById.has(removed)).toBe(false);
     expect(source.rejectedDuplicateRows).toEqual([
       expect.objectContaining({
         duplicateOf: 'living-under-drones-knot-on-knot-vinyl-12-inch',
@@ -192,7 +198,7 @@ describe('stripe catalog contract projection', () => {
     });
     const contractsBySlug = new Map(contracts.map((contract) => [contract.storeItemSlug, contract]));
 
-    expect(contracts).toHaveLength(104);
+    expect(contracts).toHaveLength(101);
     expect(new Set(contracts.map((contract) => contract.alignmentStatus))).toEqual(new Set(['checkout_eligible']));
     expect(contractsBySlug.get('anarchotribal-vinyl')).toMatchObject({
       alignmentStatus: 'checkout_eligible',
@@ -316,7 +322,7 @@ describe('stripe catalog contract projection', () => {
     });
     expect(
       contracts.filter((contract) => contract.desiredCatalogEntry.targetEnvironments.includes('prd')),
-    ).toHaveLength(104);
+    ).toHaveLength(101);
     expect(contracts.find((contract) => contract.storeItemSlug === 'barren-point')?.desiredCatalogEntry).toMatchObject({
       stockInitialization: {
         initialOnlineQuantity: 0,
