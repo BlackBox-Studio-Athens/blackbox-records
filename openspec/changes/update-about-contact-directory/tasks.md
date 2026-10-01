@@ -1,7 +1,7 @@
 ## 1. Delivery proof
 
 - [x] 1.1 Probe `info@`, `demos@` and `touring@blackboxrecordsathens.com` with the Resend CLI from the verified sender; verify each reports `delivered`.
-- [ ] 1.2 Confirm the three probes reached the label Gmail inbox.
+- [x] 1.2 Confirm the three probes reached the label Gmail inbox.
 
 ## 2. Implementation
 

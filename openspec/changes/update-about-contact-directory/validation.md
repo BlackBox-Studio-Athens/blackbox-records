@@ -12,7 +12,7 @@ Product Environment: provider check from the operator machine, 2026-10-01.
 
 - DNS: `blackboxrecords.com` uses Afternic nameservers, a null MX (`.` priority 0) and `v=spf1 -all`; it cannot receive mail, so no probe was sent there.
 - `resend doctor`: API key valid; `blackboxrecordsathens.com` verified.
-- One probe each from `orders@blackboxrecordsathens.com` to `info@`, `demos@` and `touring@blackboxrecordsathens.com`; `resend emails get` reported `last_event: delivered` for all three. This proves Cloudflare MX acceptance, not a dedicated alias (a catch-all would also accept). Gmail receipt is task 1.2. No CLI output is committed.
+- One probe each from `orders@blackboxrecordsathens.com` to `info@`, `demos@` and `touring@blackboxrecordsathens.com`; `resend emails get` reported `last_event: delivered` for all three. This proves Cloudflare MX acceptance, not a dedicated alias (a catch-all would also accept). The operator confirmed all three probes arrived in the label Gmail inbox. Resend dashboard showed the same three as Delivered. No CLI output is committed.
 
 ## Browser acceptance
 
