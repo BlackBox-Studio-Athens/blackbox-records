@@ -2,7 +2,7 @@
 
 ### Requirement: Store cards offer Buy for stocked items
 
-A Store collection card whose Store Item has a sellable variant SHALL offer a 44px outlined Buy action beside its listing price when the activation's listing projection reports a ready price and stocked availability. In every other state the card SHALL show its price and status text without a Buy action. Buy SHALL be a sibling of the card's single Store Item link and SHALL NOT navigate. Pressing Buy SHALL read the Worker Store Offer before adding one unit to StoreCart; the listing projection SHALL NOT be cart, checkout, stock or payment authority.
+A Store collection card whose Store Item has a sellable variant SHALL offer a 44px outlined Buy action beside its listing price when the activation's listing projection reports a ready price and stocked availability. In every other state, and in Coverflow narrower than 40rem, the card SHALL show its price and status text without a Buy action. Buy SHALL be a sibling of the card's single Store Item link and SHALL NOT navigate, and the card title SHALL read as that link. Pressing Buy SHALL read the Worker Store Offer before adding one unit to StoreCart; the listing projection SHALL NOT be cart, checkout, stock or payment authority.
 
 #### Scenario: Stocked card shows Buy
 
@@ -10,7 +10,21 @@ A Store collection card whose Store Item has a sellable variant SHALL offer a 44
 - **WHEN** the card's price row is presented
 - **THEN** Buy appears beside the price in the store tone
 - **AND** the card keeps its height, because the price row reserves Buy's height
-- **AND** the active Coverflow card shows Buy in its visible purchase row.
+- **AND** the active Coverflow card shows Buy in its visible purchase row at 40rem and wider.
+
+#### Scenario: Phone Coverflow keeps its compact card
+
+- **GIVEN** a viewport narrower than 40rem in Coverflow
+- **WHEN** the active card shows its purchase row
+- **THEN** it shows the price and status without Buy
+- **AND** the cover keeps the size it had before Buy existed.
+
+#### Scenario: Shopper looks for the item page
+
+- **WHEN** a Store card renders
+- **THEN** its title carries a faint text-link underline that turns full when the card's Store Item link is hovered or focused
+- **AND** on hover-capable devices the card's border and surface lift with it
+- **AND** hovering Buy or Listen leaves the card at rest.
 
 #### Scenario: Card cannot be bought
 

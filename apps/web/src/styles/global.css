@@ -4659,7 +4659,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 
 @media (min-width: 40rem) {
   html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] [data-store-coverflow-stage] {
-    height: calc(var(--store-cover-size) + 8rem);
+    height: calc(var(--store-cover-size) + 9.25rem);
   }
 
   html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-item-card__image-frame {
@@ -4667,11 +4667,45 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   }
 }
 
+/* The title reads as the card's link (Buy and Listen are separate actions): faint underline at rest, full when the
+   card link is hovered or focused. Hovering Buy or Listen leaves the card at rest. */
 .store-collection-page .store-item-card--listing .brand-card-title {
   font-family: var(--font-display-brand);
   font-size: clamp(1.25rem, 1.8vw, 1.5rem);
   line-height: 1.12;
   letter-spacing: 0.015em;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, var(--foreground) 30%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.store-collection-page .store-item-card--listing .store-item-card__surface {
+  transition:
+    background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.store-collection-page .store-item-card--listing:has(.prose-card-link:focus-visible) .brand-card-title {
+  text-decoration-color: var(--foreground);
+}
+
+@media (hover: hover) {
+  .store-collection-page .store-item-card--listing:has(.prose-card-link:hover) .brand-card-title {
+    text-decoration-color: var(--foreground);
+  }
+
+  .store-collection-page .store-item-card--listing:has(.prose-card-link:hover) .store-item-card__surface {
+    border-color: var(--control-edge-hover);
+    background-color: var(--accent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .store-collection-page .store-item-card--listing :is(.brand-card-title, .store-item-card__surface) {
+    transition: none;
+  }
 }
 
 .store-item-card__artist {
@@ -4734,6 +4768,18 @@ html[data-store-coverflow-capable]
   .store-item-card__price {
   margin-top: 0;
   padding-top: 0.5rem;
+}
+
+/* Phone Coverflow keeps its compact card, where Buy would squeeze the cover: price and status stay, the cover opens
+   the item page. */
+@media (width < 40rem) {
+  html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] [data-store-card-buy] {
+    display: none;
+  }
+
+  html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-item-card__price {
+    min-height: 0;
+  }
 }
 
 .store-image-gallery__stage {
