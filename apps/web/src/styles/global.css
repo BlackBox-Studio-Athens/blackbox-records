@@ -2762,6 +2762,20 @@ body {
     color: rgba(214, 214, 214, 0.78);
   }
 
+  .release-card-artist-link,
+  .releases-artist-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 4px;
+    transition: color 150ms ease;
+  }
+
+  .release-card-artist-link:is(:hover, :focus-visible),
+  .releases-artist-link:is(:hover, :focus-visible) {
+    color: var(--foreground);
+  }
+
   .release-card-meta-row {
     display: flex;
     flex-direction: column;

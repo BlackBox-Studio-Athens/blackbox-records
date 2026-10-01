@@ -6,6 +6,7 @@ import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamin
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { buttonVariants } from '@/components/ui/button';
 import {
+  createArtistDetailPath,
   createReleaseDetailPath,
   listArtistProfiles,
   listReleaseCatalog,
@@ -101,7 +102,18 @@ function formatReleaseFormats(formats: string[] | undefined) {
                 </a>
               </h2>
               <p class="releases-latest-feature__meta">
-                {latestReleaseArtistName} /{' '}
+                {latestReleaseArtist ? (
+                  <a
+                    class="releases-artist-link"
+                    href={createArtistDetailPath(latestReleaseArtist)}
+                    data-astro-prefetch
+                  >
+                    {latestReleaseArtistName}
+                  </a>
+                ) : (
+                  latestReleaseArtistName
+                )}{' '}
+                /{' '}
                 {latestReleaseDateMachineValue ? (
                   <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time>
                 ) : (
@@ -182,7 +194,18 @@ function formatReleaseFormats(formats: string[] | undefined) {
                 </a>
               </h3>
               <p class="releases-latest-feature__upcoming-meta">
-                {upcomingReleaseArtistName} /{' '}
+                {upcomingReleaseArtist ? (
+                  <a
+                    class="releases-artist-link"
+                    href={createArtistDetailPath(upcomingReleaseArtist)}
+                    data-astro-prefetch
+                  >
+                    {upcomingReleaseArtistName}
+                  </a>
+                ) : (
+                  upcomingReleaseArtistName
+                )}{' '}
+                /{' '}
                 {upcomingReleaseDateMachineValue ? (
                   <time datetime={upcomingReleaseDateMachineValue}>{upcomingReleaseDate}</time>
                 ) : (

@@ -134,6 +134,10 @@ export function createReleaseDetailPath(releaseEntry: ReleaseCatalogEntry) {
   return createProjectRelativeUrl(`/releases/${getReleaseDetailSlug(releaseEntry)}/`);
 }
 
+export function createArtistDetailPath(artistProfile: ArtistProfileEntry) {
+  return createProjectRelativeUrl(`/artists/${artistProfile.data.slug}/`);
+}
+
 export async function resolveArtistProfileForRelease(releaseEntry: ReleaseCatalogEntry) {
   return getEntry(releaseEntry.data.artist);
 }

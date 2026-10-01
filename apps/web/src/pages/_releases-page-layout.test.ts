@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 
 const globalCssPath = fileURLToPath(new URL('../styles/global.css', import.meta.url));
 const releasesPagePath = fileURLToPath(new URL('./releases/index.astro', import.meta.url));
+const releaseCardPath = fileURLToPath(new URL('../components/editorial/ReleaseCard.astro', import.meta.url));
+const proseCssPath = fileURLToPath(new URL('../styles/prose.css', import.meta.url));
 
 describe('Releases page layout', () => {
   it('renders one compact route-local catalog identity', () => {
@@ -40,6 +42,18 @@ describe('Releases page layout', () => {
     expect(css).toMatch(/\.releases-latest-feature\s*{[^}]*grid-column:\s*1 \/ span 9/s);
     expect(css).toMatch(/\.releases-latest-feature__upcoming\s*{[^}]*grid-column:\s*10 \/ span 3/s);
     expect(css).toMatch(/\.releases-catalog-section\s*{[^}]*grid-column:\s*1 \/ -1/s);
+  });
+
+  it('links each release artist name to the artist page', () => {
+    const page = readFileSync(releasesPagePath, 'utf8');
+    const card = readFileSync(releaseCardPath, 'utf8');
+    const proseCss = readFileSync(proseCssPath, 'utf8');
+
+    expect(page).toContain('href={createArtistDetailPath(latestReleaseArtist)}');
+    expect(page).toContain('href={createArtistDetailPath(upcomingReleaseArtist)}');
+    expect(card).toMatch(/class="release-card-artist-link" href=\{createArtistDetailPath\(artist\)\}/);
+    // The card's stretched release link sits at z-index 2; the artist link must stay clickable above it.
+    expect(proseCss).toMatch(/\.prose-link-card :is\([^)]*\.release-card-artist-link[^)]*\)\s*{[^}]*z-index:\s*3/);
   });
 
   it('keeps sparse cards at catalog width and stacks intrinsically below the wide breakpoint', () => {

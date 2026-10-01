@@ -4,7 +4,7 @@ import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import { Card, CardContent } from '@/components/ui/card';
-import { createReleaseDetailPath } from '@/lib/catalog-data';
+import { createArtistDetailPath, createReleaseDetailPath } from '@/lib/catalog-data';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
 
@@ -113,7 +113,15 @@ const dataAttributes = embeddedPlayerData
           />
         ) : null
       ) : (
-        <p class="release-card-artist-text text-sm tracking-[0.03em] text-muted-foreground">{artistName}</p>
+        <p class="release-card-artist-text text-sm tracking-[0.03em] text-muted-foreground">
+          {artist ? (
+            <a class="release-card-artist-link" href={createArtistDetailPath(artist)} data-astro-prefetch>
+              {artistName}
+            </a>
+          ) : (
+            artistName
+          )}
+        </p>
       )}
     </CardContent>
   </Card>
