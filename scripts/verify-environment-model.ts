@@ -115,12 +115,13 @@ export function verifyEnvironmentModel(): CheckResult[] {
         !catalogPromotionWorkflow.includes('-f target=prd'),
     },
     {
-      detail: 'Catalog promotion owns UAT Worker deployment while post-merge provider smoke remains observation-only.',
+      detail:
+        'The release workflow owns UAT Worker deployment; provider smoke runs only before PRD promotion and in the manual workflow.',
       ok:
         uatReleaseWorkflow.includes('- name: Deploy UAT Worker') &&
-        uatReleaseWorkflow.includes('Run UAT provider smoke') &&
+        !uatReleaseWorkflow.includes('smoke:') &&
         uatSequence.jobs['deploy-uat'].environment === 'catalog-promotion-uat' &&
-        uatSequence.jobs['smoke-uat'].environment === 'catalog-promotion-uat' &&
+        verifyPromotionProviderSmoke(releaseWorkflow) &&
         releaseWorkflow.jobs['uat-release'].secrets === 'inherit' &&
         releaseWorkflow.jobs['uat-release'].concurrency?.group === 'blackbox-release' &&
         releaseWorkflow.jobs['uat-release'].concurrency?.['cancel-in-progress'] === false &&
@@ -202,6 +203,23 @@ export function verifyStaticDeployTriggerSources(staticDeployWorkflow: string): 
   } catch {
     return false;
   }
+}
+
+type WorkflowJob = { environment?: string; needs?: string | string[]; steps?: { run?: string }[] };
+
+// Provider smoke binds only UAT credentials, deploys nothing and must pass before any PRD mutation.
+export function verifyPromotionProviderSmoke(releaseWorkflow: { jobs: Record<string, WorkflowJob> }): boolean {
+  const providers = releaseWorkflow.jobs['accept-uat-providers'];
+  const commands = (providers?.steps ?? []).map((step) => step.run ?? '').join('\n');
+  const needs = releaseWorkflow.jobs['deploy-prd']?.needs;
+  return (
+    providers?.environment === 'catalog-promotion-uat' &&
+    commands.includes('pnpm smoke:stripe-uat -- --site-url https://blackbox-records-web-uat.pages.dev') &&
+    commands.includes('pnpm smoke:resend-uat -- --worker-url') &&
+    !/wrangler (deploy|versions|pages deploy)|d1:migrations|deploy:backend/.test(commands) &&
+    Array.isArray(needs) &&
+    needs.includes('accept-uat-providers')
+  );
 }
 
 export function verifyReviewSiteMarkerSources({

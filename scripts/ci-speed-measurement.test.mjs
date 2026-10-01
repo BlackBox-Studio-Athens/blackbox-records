@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { classifyRun, collectMeasurements, measureAttempt, summarizeMeasurements } from './ci-speed-measurement.mjs';
+import {
+  classifyRun,
+  collectMeasurements,
+  jobSetOf,
+  measureAttempt,
+  renderMeasurementReport,
+  summarizeMeasurements,
+} from './ci-speed-measurement.mjs';
 
 const job = (name, start, end, conclusion = 'success', steps = []) => ({
   name,
@@ -9,6 +16,50 @@ const job = (name, start, end, conclusion = 'success', steps = []) => ({
   conclusion,
   steps,
 });
+const at = (seconds) => new Date(Date.parse('2026-10-01T12:00:00.000Z') + seconds * 1000).toISOString();
+const timedJob = (name, start, end, conclusion) => job(name, at(start), at(end), conclusion);
+const skipped = (name) => job(name, at(0), at(0), 'skipped');
+const pagesRun = (event, extra = {}) => ({
+  path: '.github/workflows/pages.yml',
+  event,
+  status: 'completed',
+  conclusion: 'success',
+  created_at: at(0),
+  ...extra,
+});
+const ACCEPTANCE = [
+  'accept-uat-identity',
+  'accept-uat-static',
+  'accept-uat-providers',
+  'accept-staff-previews',
+  'accept-e2e',
+];
+// Shapes follow runs 36859506583 (push with smoke-uat) and 36894123055 (promotion before acceptance moved).
+const pushAcceptancePush = () => [
+  timedJob('check-candidate', 38, 330),
+  timedJob('prepare-uat', 2, 314),
+  timedJob('prepare-prd', 2, 461),
+  skipped('deploy-prd'),
+  skipped('deploy-prd-static'),
+  timedJob('inspect-uat-pages', 333, 352),
+  timedJob('uat-release / deploy-uat', 355, 475),
+  timedJob('assemble-candidate', 463, 503),
+  timedJob('uat-release / deploy-uat-static', 477, 610),
+  timedJob('uat-release / smoke-uat', 612, 718),
+];
+const promotionAcceptancePush = () => [...pushAcceptancePush().slice(0, -1), ...ACCEPTANCE.map(skipped)];
+const promotionAcceptancePromotion = () => [
+  skipped('check-candidate'),
+  skipped('uat-release'),
+  timedJob('accept-uat-identity', 4, 40),
+  timedJob('accept-uat-static', 42, 160),
+  timedJob('accept-uat-providers', 42, 200),
+  timedJob('accept-staff-previews', 42, 260),
+  timedJob('accept-e2e', 42, 300),
+  timedJob('deploy-prd', 304, 460),
+  timedJob('deploy-prd-static', 464, 556),
+];
+const prdDispatch = { inputs: { target: 'prd', confirm_code_promotion: true } };
 
 test('classifies UAT, PRD, catalog, and diagnostic runs without guessing from failures', () => {
   assert.equal(classifyRun({ path: '.github/workflows/pages.yml', event: 'push' }), 'uat-candidate');
@@ -83,7 +134,9 @@ test('measures attempt-specific execution and rejects incomplete or failed requi
   assert.equal(measured.executionMs, 38_000);
   assert.equal(measured.queuedMs, 2_000);
   assert.equal(measured.pushToPromotionReadyMs, 40_000);
-  assert.equal(measured.uatQuickFeedbackMs, 33_500);
+  assert.equal(measured.jobSet, 'push-acceptance');
+  assert.equal(measured.uatLiveMs, 35_000);
+  assert.equal(measured.candidateReadyMs, 20_000);
   assert.equal(measured.artifactTransferElapsedMs, 2_000);
   assert.equal(measured.setupElapsedMs, 500);
   assert.equal(measured.artifactTransferRunnerSeconds, 2);
@@ -121,7 +174,7 @@ test('summaries retain failures and use low confidence below five successes', ()
       runId: '2',
     },
   ];
-  const summary = summarizeMeasurements(measurements)['uat-candidate'];
+  const summary = summarizeMeasurements(measurements)['uat-candidate/unlabelled'];
   assert.equal(summary.successfulCount, 1);
   assert.equal(summary.confidence, 'low');
   assert.deepEqual(summary.failures, [{ runId: '2', attempt: undefined, conclusion: 'cancelled' }]);
@@ -148,7 +201,7 @@ test('missing timestamps stay unavailable and failed runs do not skew successful
   const summary = summarizeMeasurements([
     { ...unavailable, successful: true, valid: true, executionMs: 1000, runId: 'ok' },
     { ...unavailable, successful: false, valid: false, executionMs: 9000, conclusion: 'failure', runId: 'bad' },
-  ])['uat-candidate'];
+  ])['uat-candidate/push-acceptance'];
   assert.equal(summary.executionMs.median, 1000);
   assert.equal(summary.conclusionCounts.failure, 1);
 });
@@ -165,6 +218,81 @@ test('recognizes complete historical candidate job sets without treating them as
     job(name, '2026-09-20T00:00:01.000Z', '2026-09-20T00:00:02.000Z'),
   );
   assert.equal(measureAttempt(run, jobs).valid, true);
+  assert.equal(measureAttempt(run, jobs).jobSet, 'legacy-build');
+});
+
+test('labels each job-set generation from the listed jobs, skipped ones included', () => {
+  assert.equal(jobSetOf(pushAcceptancePush()), 'push-acceptance');
+  assert.equal(jobSetOf(promotionAcceptancePush()), 'promotion-acceptance');
+  assert.equal(jobSetOf(promotionAcceptancePromotion()), 'promotion-acceptance');
+  assert.equal(jobSetOf([skipped('build-candidate'), timedJob('deploy-prd', 1, 2)]), 'legacy-build');
+});
+
+test('a push without smoke-uat is a complete candidate once acceptance moved to promotion', () => {
+  const current = measureAttempt(pagesRun('push'), promotionAcceptancePush());
+  assert.equal(current.jobSet, 'promotion-acceptance');
+  assert.deepEqual(current.missingJobs, []);
+  assert.equal(current.valid, true);
+  assert.equal(current.uatLiveMs, 610_000);
+  assert.equal(current.candidateReadyMs, 503_000);
+  assert.equal(current.pushToPromotionReadyMs, 610_000);
+  assert.equal(current.acceptanceMs, null);
+  const withoutStatic = promotionAcceptancePush().filter(({ name }) => !name.endsWith('deploy-uat-static'));
+  assert.deepEqual(measureAttempt(pagesRun('push'), withoutStatic).missingJobs, ['deploy-uat-static']);
+  // The earlier shape still needs its push smoke.
+  const historical = measureAttempt(pagesRun('push'), pushAcceptancePush().slice(0, -1));
+  assert.equal(historical.jobSet, 'push-acceptance');
+  assert.deepEqual(historical.missingJobs, ['smoke-uat']);
+});
+
+test('promotion reports acceptance separately from PRD deployment', () => {
+  const current = measureAttempt(pagesRun('workflow_dispatch', prdDispatch), promotionAcceptancePromotion());
+  assert.equal(current.classification, 'prd-promotion');
+  assert.equal(current.jobSet, 'promotion-acceptance');
+  assert.equal(current.acceptanceMs, 296_000);
+  assert.equal(current.prdDeployMs, 252_000);
+  assert.equal(current.uatLiveMs, null);
+  const earlier = measureAttempt(pagesRun('workflow_dispatch', prdDispatch), [
+    skipped('check-candidate'),
+    skipped('uat-release'),
+    timedJob('deploy-prd', 4, 156),
+    timedJob('deploy-prd-static', 160, 248),
+  ]);
+  assert.equal(earlier.jobSet, 'push-acceptance');
+  assert.equal(earlier.acceptanceMs, null);
+  assert.equal(earlier.prdDeployMs, 244_000);
+  const failedAcceptance = promotionAcceptancePromotion().map((entry) =>
+    entry.name === 'accept-e2e' ? { ...entry, conclusion: 'failure' } : entry,
+  );
+  assert.equal(
+    measureAttempt(pagesRun('workflow_dispatch', { ...prdDispatch, conclusion: 'failure' }), failedAcceptance).valid,
+    false,
+  );
+});
+
+test('mixed samples summarize per generation so reports stay comparable across the change', () => {
+  const rows = [
+    measureAttempt(pagesRun('push'), pushAcceptancePush()),
+    measureAttempt(pagesRun('push'), promotionAcceptancePush()),
+    measureAttempt(pagesRun('workflow_dispatch', prdDispatch), promotionAcceptancePromotion()),
+    { classification: 'uat-candidate', successful: true, valid: true, executionMs: 900_000, conclusion: 'success' },
+  ];
+  const summary = summarizeMeasurements(rows);
+  assert.deepEqual(Object.keys(summary).sort(), [
+    'prd-promotion/promotion-acceptance',
+    'uat-candidate/promotion-acceptance',
+    'uat-candidate/push-acceptance',
+    'uat-candidate/unlabelled',
+  ]);
+  assert.equal(summary['uat-candidate/push-acceptance'].uatLiveMs, 610_000);
+  assert.equal(summary['uat-candidate/push-acceptance'].pushToPromotionReadyMs, 718_000);
+  assert.equal(summary['uat-candidate/promotion-acceptance'].pushToPromotionReadyMs, 610_000);
+  assert.equal(summary['prd-promotion/promotion-acceptance'].acceptanceMs, 296_000);
+  assert.equal(summary['uat-candidate/unlabelled'].uatLiveMs, null);
+  const report = renderMeasurementReport({ window: { from: 0, to: 1 }, summary });
+  assert.match(report, /\| Job set \|/);
+  assert.match(report, /\| uat-candidate \| promotion-acceptance \| 1 \| 1 \|/);
+  assert.match(report, /\| uat-candidate \| unlabelled \|/);
 });
 
 test('measurement collection reads every attempt and paginates attempt jobs', async () => {
@@ -232,4 +360,25 @@ test('manual UAT classification ignores skipped PRD jobs and empty timing stays 
   assert.equal(rows[0].classification, 'uat-candidate');
   assert.equal(rows[0].jobSeconds, null);
   assert.equal(rows[0].valid, false);
+});
+
+test('a promotion that fails acceptance is still classified as a promotion', async () => {
+  const run = { id: 10, run_attempt: 1, ...pagesRun('workflow_dispatch', { conclusion: 'failure' }) };
+  const [row] = await collectMeasurements({
+    repository: 'owner/repo',
+    from: Date.parse('2026-09-30'),
+    to: Date.parse('2026-10-02'),
+    read: async (endpoint) =>
+      endpoint.includes('/workflows/pages.yml/runs?')
+        ? { workflow_runs: [run] }
+        : {
+            jobs: [
+              timedJob('accept-uat-identity', 1, 20, 'failure'),
+              skipped('deploy-prd'),
+              skipped('check-candidate'),
+            ],
+          },
+  });
+  assert.equal(row.classification, 'prd-promotion');
+  assert.equal(row.successful, false);
 });

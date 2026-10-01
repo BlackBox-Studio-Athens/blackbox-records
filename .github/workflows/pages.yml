@@ -158,6 +158,27 @@ jobs:
             scripts/
             apps/backend/cms-resources.json
           sparse-checkout-cone-mode: false
+      # Restore uses a cached media file only when its sha256 equals the accepted snapshot's digest.
+      - &media-cache-restore
+        name: Restore publication media cache
+        id: media-cache
+        uses: actions/cache/restore@v6.1.0
+        with:
+          path: .codex-artifacts/publication-media
+          key: publication-media-v1-${{ github.job }}-${{ github.run_id }}
+          restore-keys: |
+            publication-media-v1-${{ github.job }}-
+      - &media-cache-restore-report
+        name: Record publication media cache restore
+        id: media-cache-restore-report
+        env:
+          MEDIA_CACHE_FINGERPRINT: ${{ hashFiles('.codex-artifacts/publication-media/**') }}
+          MEDIA_CACHE_MATCHED_KEY: ${{ steps.media-cache.outputs.cache-matched-key }}
+        run: |
+          set -euo pipefail
+          bytes=$(du -sb .codex-artifacts/publication-media 2>/dev/null | cut -f1 || true)
+          echo "fingerprint=${MEDIA_CACHE_FINGERPRINT}" >> "$GITHUB_OUTPUT"
+          echo "Publication media cache restore: key=${MEDIA_CACHE_MATCHED_KEY:-none} bytes=${bytes:-0}" >> "$GITHUB_STEP_SUMMARY"
       - name: Restore current UAT publication
         id: uat-content
         env:
@@ -165,10 +186,44 @@ jobs:
           CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets.UAT_CMS_EXPORT_ACCESS_CLIENT_ID }}
           CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets.UAT_CMS_EXPORT_ACCESS_CLIENT_SECRET }}
           CMS_PUBLICATION_MAX_REQUESTS: ${{ vars.UAT_CMS_PUBLICATION_MAX_REQUESTS }}
+          CMS_PUBLICATION_MEDIA_CACHE: .codex-artifacts/publication-media
         run: |
           tool=scripts/restore-published-content.mjs
           if [[ -f .codex-artifacts/release-tools/scripts/restore-published-content.mjs ]]; then tool=.codex-artifacts/release-tools/scripts/restore-published-content.mjs; fi
           node --import tsx "$tool" uat
+      - &media-cache-candidate
+        name: Measure publication media cache candidate
+        id: media-cache-candidate
+        env:
+          MEDIA_CACHE_FINGERPRINT_BEFORE: ${{ steps.media-cache-restore-report.outputs.fingerprint }}
+          MEDIA_CACHE_FINGERPRINT_AFTER: ${{ hashFiles('.codex-artifacts/publication-media/**') }}
+        run: |
+          set -euo pipefail
+          bytes=$(du -sb .codex-artifacts/publication-media 2>/dev/null | cut -f1 || true)
+          bytes=${bytes:-0}
+          echo "bytes=${bytes}" >> "$GITHUB_OUTPUT"
+          if [[ -z "$MEDIA_CACHE_FINGERPRINT_AFTER" ]]; then
+            echo "save=false" >> "$GITHUB_OUTPUT"
+            echo "Publication media cache candidate: bytes=${bytes}, save=false (empty)" >> "$GITHUB_STEP_SUMMARY"
+          elif [[ "$MEDIA_CACHE_FINGERPRINT_AFTER" == "$MEDIA_CACHE_FINGERPRINT_BEFORE" ]]; then
+            echo "save=false" >> "$GITHUB_OUTPUT"
+            echo "Publication media cache candidate: bytes=${bytes}, save=false (unchanged)" >> "$GITHUB_STEP_SUMMARY"
+          elif (( bytes <= 536870912 )); then
+            echo "save=true" >> "$GITHUB_OUTPUT"
+            echo "Publication media cache candidate: bytes=${bytes}, save=true" >> "$GITHUB_STEP_SUMMARY"
+          else
+            # ponytail: files are never pruned; past the cap the restored cache keeps serving its still-valid media.
+            echo "save=false" >> "$GITHUB_OUTPUT"
+            echo "Publication media cache candidate: bytes=${bytes}, save=false (over 512 MiB)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - &media-cache-save
+        name: Save publication media cache
+        if: ${{ steps.media-cache-candidate.outputs.save == 'true' }}
+        continue-on-error: true
+        uses: actions/cache/save@v6.1.0
+        with:
+          path: .codex-artifacts/publication-media
+          key: ${{ steps.media-cache.outputs.cache-primary-key }}
       - name: Build hosted UAT static frontend
         env:
           CMS_CONTENT_SOURCE: ${{ steps.uat-content.outputs.source }}
@@ -268,7 +323,7 @@ jobs:
       group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}-prd', github.run_id) || 'auto-prd' }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 25
     steps:
       - *immutable-main
       - *checkout
@@ -289,6 +344,8 @@ jobs:
             scripts/
             apps/backend/cms-resources.json
           sparse-checkout-cone-mode: false
+      - *media-cache-restore
+      - *media-cache-restore-report
       - name: Restore current PRD publication
         id: prd-content
         env:
@@ -296,10 +353,13 @@ jobs:
           CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets.PRD_CMS_EXPORT_ACCESS_CLIENT_ID }}
           CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets.PRD_CMS_EXPORT_ACCESS_CLIENT_SECRET }}
           CMS_PUBLICATION_MAX_REQUESTS: ${{ vars.PRD_CMS_PUBLICATION_MAX_REQUESTS }}
+          CMS_PUBLICATION_MEDIA_CACHE: .codex-artifacts/publication-media
         run: |
           tool=scripts/restore-published-content.mjs
           if [[ -f .codex-artifacts/release-tools/scripts/restore-published-content.mjs ]]; then tool=.codex-artifacts/release-tools/scripts/restore-published-content.mjs; fi
           node --import tsx "$tool" prd
+      - *media-cache-candidate
+      - *media-cache-save
       - name: Build hosted PRD static frontend
         env:
           CMS_CONTENT_SOURCE: ${{ steps.prd-content.outputs.source }}
@@ -320,12 +380,6 @@ jobs:
           tool=scripts/release-candidate.mjs
           if [[ -f .codex-artifacts/release-tools/scripts/release-candidate.mjs ]]; then tool=.codex-artifacts/release-tools/scripts/release-candidate.mjs; fi
           node "$tool" pack-target prd
-      - name: Install preview test browsers
-        run: pnpm exec playwright install --with-deps chromium firefox
-      - name: Verify staff previews in Chromium and Firefox
-        env:
-          STAFF_PREVIEW_ENVIRONMENT: prd
-        run: node --import tsx scripts/run-release-preparation.mjs browsers
       - name: Upload verified PRD target bundle
         uses: actions/upload-artifact@v7.0.1
         with:
@@ -431,10 +485,167 @@ jobs:
     uses: ./.github/workflows/uat-release-sequence.yml
     with:
       artifact_commit_sha: ${{ inputs.artifact_commit_sha || github.sha }}
-    # Inherit repository secrets; the called Worker/smoke jobs also bind the UAT environment.
+    # Inherit repository secrets; the called Worker job also binds the UAT environment.
     secrets: inherit
+  # Promotion acceptance: every accept-* job must pass before any PRD mutation. They run inside the workflow's
+  # shared blackbox-release lock and hold no PRD credential; only the provider job binds the UAT environment.
+  accept-uat-identity:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - *immutable-main
+      - name: Checkout trusted promotion tooling
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ github.sha }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .node-version
+      - &download-selected
+        name: Download selected candidate artifacts
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: release-${{ inputs.artifact_commit_sha }}
+          run-id: ${{ inputs.candidate_run_id }}
+          github-token: ${{ github.token }}
+          path: .codex-artifacts/release
+      - name: Verify UAT serves the selected candidate
+        run: node scripts/release-candidate.mjs verify-hosted uat
+  accept-uat-static:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
+    needs: accept-uat-identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - &acceptance-chromium
+        name: Install Chromium for acceptance
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run UAT static smoke
+        run: |
+          pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure
+          echo "UAT static smoke passed for $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload UAT static smoke evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: uat-static-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .codex-artifacts/smoke/uat/uat-static
+          if-no-files-found: ignore
+          retention-days: 7
+  accept-uat-providers:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
+    needs: accept-uat-identity
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-uat
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      actions: read
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
+    steps:
+      - name: Require UAT environment credentials before provider smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in CLOUDFLARE_API_TOKEN STRIPE_SECRET_KEY STRIPE_PAYMENT_METHOD_CONFIGURATION_ID; do
+            [[ -n "${!name}" ]] || { echo "Missing UAT environment credential: $name" >&2; exit 1; }
+          done
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - *release-tools
+      - *download-selected
+      - *acceptance-chromium
+      - name: Run UAT provider smoke
+        run: |
+          pnpm smoke:stripe-uat -- --site-url https://blackbox-records-web-uat.pages.dev --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL" --scenario happy_path_paid,pay_what_you_want_paid --screenshots on-failure
+          pnpm smoke:resend-uat -- --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL"
+      - name: Verify current UAT release identity
+        run: node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" verify-hosted uat
+      - name: Record actual deployed revisions
+        if: ${{ always() }}
+        run: node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" observe uat >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload UAT provider smoke evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: uat-smoke-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .codex-artifacts/smoke/uat
+          if-no-files-found: ignore
+          retention-days: 7
+  accept-staff-previews:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
+    needs: accept-uat-identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - *release-tools
+      - *download-selected
+      # Tests the PRD staff build retained inside the candidate's combined CMS Worker; deploy-prd downloads its own copy.
+      - name: Use the candidate's retained PRD staff build
+        run: |
+          node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" materialize
+          rm -rf apps/staff/dist
+          cp -R .codex-artifacts/release/prd/cms/client apps/staff/dist
+      - name: Install preview test browsers
+        run: pnpm exec playwright install --with-deps chromium firefox
+      - name: Verify staff previews in Chromium and Firefox
+        env:
+          STAFF_PREVIEW_ENVIRONMENT: prd
+        run: node --import tsx scripts/run-release-preparation.mjs browsers
+      - name: Upload staff preview evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: staff-previews-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .codex-artifacts/content-workspace
+          if-no-files-found: ignore
+          retention-days: 7
+  accept-e2e:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
+    needs: accept-uat-identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - *acceptance-chromium
+      - name: Run the whole end-to-end suite
+        run: pnpm test:e2e
+      - name: Upload end-to-end evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: e2e-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .codex-artifacts/e2e
+          if-no-files-found: ignore
+          retention-days: 7
   deploy-prd:
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
+    needs: [accept-uat-identity, accept-uat-static, accept-uat-providers, accept-staff-previews, accept-e2e]
     runs-on: ubuntu-latest
     environment: catalog-promotion-prd
     timeout-minutes: 25
@@ -454,14 +665,7 @@ jobs:
       - *pnpm
       - *node
       - *install
-      - &download-selected
-        name: Download selected candidate artifacts
-        uses: actions/download-artifact@v8.0.1
-        with:
-          name: release-${{ inputs.artifact_commit_sha }}
-          run-id: ${{ inputs.candidate_run_id }}
-          github-token: ${{ github.token }}
-          path: .codex-artifacts/release
+      - *download-selected
       - name: Verify PRD mutation preconditions
         run: node scripts/release-candidate.mjs verify prd
       - name: Apply compatible PRD migrations

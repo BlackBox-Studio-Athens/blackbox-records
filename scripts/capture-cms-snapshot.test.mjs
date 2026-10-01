@@ -267,6 +267,8 @@ test('restores the pinned public snapshot without reading editable CMS content o
     assert.deepEqual(await restorePublishedContent(input, send), {
       source: 'snapshot',
       sha256: content.snapshotSha256,
+      cachedMedia: 0,
+      fetchedMedia: 1,
     });
     assert.equal(calls, 3);
     assert.equal(await readFile(join(input.directory, 'snapshot.json'), 'utf8'), json);
@@ -359,6 +361,94 @@ test('restores media four-wide, settles a failed batch, and never accepts partia
     );
     assert.equal(failedMediaCalls, 4);
     await assert.rejects(access(join(parent, 'failed')));
+  } finally {
+    await rm(parent, { recursive: true, force: true });
+  }
+});
+
+test('takes media from the cache only when its digest matches and fills the cache from verified reads', async () => {
+  const parent = await mkdtemp(join(tmpdir(), 'published-cached-restore-'));
+  const files = Array.from({ length: 3 }, (_, index) => Buffer.concat([imageBytes, Buffer.from([index])]));
+  const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
+  const media = files.map((bytes, index) => ({
+    id: `image-${index}`,
+    filename: `cover-${index}.png`,
+    mimeType: 'image/png',
+    size: bytes.length,
+    width: 1,
+    height: 1,
+    sha256: hash(bytes),
+  }));
+  const json = JSON.stringify({
+    schemaVersion: 1,
+    environment: 'uat',
+    records: media.map((item, index) => ({
+      collection: 'news',
+      id: `news-${index}`,
+      slug: `news-${index}`,
+      revisionId: `live-${index}`,
+      data: { title: 'Published', date: '2026-09-14', summary: 'Copy', image: { id: item.id }, image_alt: 'Cover' },
+    })),
+    media,
+  });
+  const content = {
+    publicationId: '12345678-1234-4234-8234-123456789012',
+    ciRunId: '123',
+    snapshotSha256: hash(Buffer.from(json)),
+  };
+  const mediaCache = join(parent, 'media-cache');
+  const input = {
+    environment: 'uat',
+    target: 'https://staff-uat.blackboxrecordsathens.com/',
+    token: 'a'.repeat(64),
+    accessClientId: 'id',
+    accessClientSecret: 'secret',
+    maxRequests: 4,
+    mediaCache,
+  };
+  const requested = [];
+  let snapshotReads = 0;
+  const send = async (url, init) => {
+    const address = new URL(url);
+    if (address.hostname === 'blackbox-records-web-uat.pages.dev')
+      return Response.json({ sha: 'b'.repeat(40), content });
+    if (address.pathname.endsWith('/snapshot')) {
+      snapshotReads++;
+      return new Response(json);
+    }
+    const sha256 = init.headers['X-Snapshot-Media-SHA256'];
+    requested.push(sha256);
+    return new Response(files[media.findIndex((item) => item.sha256 === sha256)]);
+  };
+  try {
+    // Absent cache: every media object is read once and retained by digest.
+    assert.deepEqual(await restorePublishedContent({ ...input, directory: join(parent, 'cold') }, send), {
+      source: 'snapshot',
+      sha256: content.snapshotSha256,
+      cachedMedia: 0,
+      fetchedMedia: 3,
+    });
+    assert.deepEqual(requested.sort(), media.map((item) => item.sha256).sort());
+    for (const [index, item] of media.entries())
+      assert.deepEqual(await readFile(join(mediaCache, item.sha256)), files[index]);
+
+    // Matching cache: no media read, but the snapshot itself still comes from the target.
+    requested.length = 0;
+    await restorePublishedContent({ ...input, directory: join(parent, 'warm') }, send);
+    assert.deepEqual(requested, []);
+    assert.equal(snapshotReads, 2);
+    assert.equal(await readFile(join(parent, 'warm', 'snapshot.json'), 'utf8'), json);
+
+    // Mismatching or missing cached bytes are fetched again and replaced.
+    await writeFile(join(mediaCache, media[0].sha256), Buffer.from('tampered'));
+    await rm(join(mediaCache, media[1].sha256));
+    const result = await restorePublishedContent({ ...input, directory: join(parent, 'repaired') }, send);
+    assert.equal(result.cachedMedia, 1);
+    assert.equal(result.fetchedMedia, 2);
+    assert.deepEqual(requested.sort(), [media[0].sha256, media[1].sha256].sort());
+    assert.deepEqual(await readFile(join(mediaCache, media[0].sha256)), files[0]);
+    assert.deepEqual(await readFile(join(mediaCache, media[1].sha256)), files[1]);
+    assert.equal(await readFile(join(parent, 'repaired', 'snapshot.json'), 'utf8'), json);
   } finally {
     await rm(parent, { recursive: true, force: true });
   }

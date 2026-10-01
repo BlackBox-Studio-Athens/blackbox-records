@@ -690,6 +690,16 @@ async function main(command, target) {
     return;
   }
 
+  if (command === 'materialize') {
+    // Offline: lets promotion acceptance test the retained candidate bytes without hosted reads or credentials.
+    const candidate = readJson(manifestPath);
+    verifyFiles(candidate);
+    assert.equal(candidate.sha, process.env.SOURCE_SHA, 'Downloaded candidate differs from the selected source.');
+    assert.equal(String(candidate.runId), process.env.CANDIDATE_RUN_ID, 'Downloaded candidate differs from the run.');
+    console.log(`Materialized release bundle: ${candidate.sha} / run ${candidate.runId}`);
+    return;
+  }
+
   assert.ok(['uat', 'prd'].includes(target));
   const candidate = readJson(manifestPath);
   const backend = target === 'uat' ? candidate.configuration.uatBackend : candidate.configuration.prdBackend;
@@ -732,7 +742,8 @@ async function main(command, target) {
     assert.equal(capabilities.nativeCheckout.enabled, false, 'This promotion path is for disabled PRD readiness only.');
   } else {
     assert.equal(candidate.sha, process.env.SOURCE_SHA);
-    assert.equal(String(candidate.runId), process.env.GITHUB_RUN_ID);
+    // Promotion acceptance checks that UAT still serves the selected candidate run; a candidate run checks itself.
+    assert.equal(String(candidate.runId), process.env.CANDIDATE_RUN_ID || process.env.GITHUB_RUN_ID);
   }
   const site = target === 'uat' ? config.uatSite : config.prdSite;
   // Pages access is verified by the preceding job using the separate Pages credential.

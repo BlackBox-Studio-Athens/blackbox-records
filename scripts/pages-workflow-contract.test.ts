@@ -17,17 +17,44 @@ const staticPromotion = workflow.jobs['deploy-prd-static'];
 const publication = parse(
   readFileSync(fileURLToPath(new URL('../.github/workflows/content-publication.yml', import.meta.url)), 'utf8'),
 );
+const workflowsDir = fileURLToPath(new URL('../.github/workflows/', import.meta.url));
+const allWorkflows = readdirSync(workflowsDir)
+  .filter((file) => file.endsWith('.yml'))
+  .map((file) => ({ file, workflow: parse(readFileSync(workflowsDir + file, 'utf8')) }));
+type Step = { name?: string; id?: string; uses?: string; run?: string; if?: string; env?: Record<string, string> };
+type Job = {
+  if?: string;
+  needs?: string | string[];
+  environment?: string;
+  env?: Record<string, string>;
+  concurrency?: unknown;
+  steps: Step[];
+};
+const acceptanceJobs = [
+  'accept-uat-identity',
+  'accept-uat-static',
+  'accept-uat-providers',
+  'accept-staff-previews',
+  'accept-e2e',
+];
+// Jobs a push to main runs: candidate checks, both target builds, assembly, inspection and the UAT deployment sequence.
+const pushJobs: [string, Job][] = [
+  ...['check-candidate', 'prepare-uat', 'prepare-prd', 'assemble-candidate', 'inspect-uat-pages'].map(
+    (name): [string, Job] => [name, workflow.jobs[name]],
+  ),
+  ...Object.entries(uatSequence.jobs as Record<string, Job>),
+];
+// Reusable-workflow callers have no steps of their own.
+const runs = (job: Job) => (job.steps ?? []).map((step) => step.run ?? '').join('\n');
+const stepNamed = (job: Job, name: string) => job.steps.find((step) => step.name === name)!;
 
 describe('Workflow toolchain and checkout policy', () => {
   it('reads toolchain versions from repository files and never persists the checkout token', () => {
-    const workflowsDir = fileURLToPath(new URL('../.github/workflows/', import.meta.url));
-    const steps = readdirSync(workflowsDir)
-      .filter((file) => file.endsWith('.yml'))
-      .flatMap((file) =>
-        Object.values(parse(readFileSync(workflowsDir + file, 'utf8')).jobs).flatMap(
-          (job) => (job as { steps?: { uses?: string; with?: Record<string, unknown> }[] }).steps ?? [],
-        ),
-      );
+    const steps = allWorkflows.flatMap(({ workflow: definition }) =>
+      Object.values(definition.jobs).flatMap(
+        (job) => (job as { steps?: { uses?: string; with?: Record<string, unknown> }[] }).steps ?? [],
+      ),
+    );
     const using = (action: string) => steps.filter((step) => step.uses?.startsWith(`${action}@`));
     expect(using('actions/checkout').length).toBeGreaterThan(0);
     for (const step of using('actions/checkout')) expect(step.with?.['persist-credentials']).toBe(false);
@@ -87,26 +114,110 @@ describe('Pages artifact promotion contract', () => {
   });
   it('runs the normal provider and active public-surface smoke without retired-route exceptions', () => {
     expect(workflow.on.workflow_dispatch.inputs.confirm_retired_admin_cache_exception).toBeUndefined();
-    const steps = uatSequence.jobs['smoke-uat'].steps;
+    const steps = workflow.jobs['accept-uat-providers'].steps;
     const normal = steps.find((step: { name: string }) => step.name === 'Run UAT provider smoke');
     expect(normal.if).toBeUndefined();
     expect(JSON.stringify(steps)).not.toMatch(/admin|retired|legacy|cache exception/i);
   });
-  it('reports static UAT feedback directly after Pages deployment before provider acceptance', () => {
-    const pages = uatSequence.jobs['deploy-uat-static'].steps;
-    const deploy = pages.findIndex((step: { name: string }) => step.name === 'Deploy UAT to Cloudflare Pages');
-    const quick = pages.findIndex((step: { name: string }) => step.name === 'Run UAT quick checks');
-    expect(quick).toBeGreaterThan(deploy);
-    expect(pages[quick].run).toContain('smoke:uat-static -- --site-url');
-    expect(pages[quick].run).toContain('UAT quick checks passed');
-    const evidence = pages.find((step: { name: string }) => step.name === 'Upload UAT quick-check evidence');
-    expect(evidence.if).toBe('${{ always() }}');
-    expect(evidence.with.path).toBe('.codex-artifacts/smoke/uat/uat-static');
-    const providers = uatSequence.jobs['smoke-uat'].steps;
-    expect(providers.some((step: { name: string }) => step.name === 'Run UAT quick checks')).toBe(false);
-    expect(providers.findIndex((step: { name: string }) => step.name === 'Run UAT provider smoke')).toBeLessThan(
-      providers.findIndex((step: { name: string }) => step.name === 'Verify current UAT release identity'),
+  it('ends a push with UAT serving the verified candidate and runs no browser or smoke on the way', () => {
+    for (const [name, job] of pushJobs) {
+      const commands = runs(job);
+      expect(commands, name).not.toMatch(/playwright|smoke:|test:e2e|run-release-preparation\.mjs browsers/);
+      expect(JSON.stringify(job.steps), name).not.toMatch(/codex-artifacts\/(smoke|e2e)/);
+    }
+    expect(Object.keys(uatSequence.jobs)).toEqual(['deploy-uat', 'deploy-uat-static']);
+    const pages = uatSequence.jobs['deploy-uat-static'];
+    const deploy = stepNamed(pages, 'Deploy UAT to Cloudflare Pages').run!;
+    expect(deploy.indexOf('wrangler pages deploy')).toBeLessThan(deploy.indexOf('verify-hosted uat'));
+    expect(deploy.trim().endsWith('release-candidate.mjs" verify-hosted uat')).toBe(true);
+    expect(pages.steps.at(-1)).toMatchObject({ name: 'Record actual deployed revisions', if: '${{ always() }}' });
+  });
+  it('gates every PRD mutation on promotion acceptance of the UAT-served candidate', () => {
+    expect(promotion.needs).toEqual(acceptanceJobs);
+    expect(staticPromotion.needs).toBe('deploy-prd');
+    const identity = workflow.jobs['accept-uat-identity'];
+    for (const name of acceptanceJobs) {
+      const job = workflow.jobs[name];
+      expect(job.if, name).toBe(promotion.if);
+      expect(job.concurrency, name).toBeUndefined();
+      if (name !== 'accept-uat-identity') expect(job.needs, name).toBe('accept-uat-identity');
+    }
+    // UAT must still serve the selected candidate run before any smoke starts.
+    expect(identity.steps[0]).toEqual(checks.steps[0]);
+    expect(identity.steps[1].with.ref).toBe('${{ github.sha }}');
+    const download = stepNamed(identity, 'Download selected candidate artifacts') as Step & {
+      with: Record<string, string>;
+    };
+    expect(download.with).toMatchObject({
+      name: 'release-${{ inputs.artifact_commit_sha }}',
+      'run-id': '${{ inputs.candidate_run_id }}',
+    });
+    expect(identity.steps.at(-1)?.run).toBe('node scripts/release-candidate.mjs verify-hosted uat');
+    expect(runs(workflow.jobs['accept-uat-static'])).toContain(
+      'pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure',
     );
+    const providers = workflow.jobs['accept-uat-providers'];
+    expect(runs(providers)).toContain(
+      'pnpm smoke:stripe-uat -- --site-url https://blackbox-records-web-uat.pages.dev --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL" --scenario happy_path_paid,pay_what_you_want_paid --screenshots on-failure',
+    );
+    expect(runs(providers)).toContain('pnpm smoke:resend-uat -- --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL"');
+    const names = providers.steps.map((step: Step) => step.name);
+    expect(names.indexOf('Run UAT provider smoke')).toBeLessThan(names.indexOf('Verify current UAT release identity'));
+    const staff = workflow.jobs['accept-staff-previews'];
+    const retained = stepNamed(staff, "Use the candidate's retained PRD staff build").run!;
+    expect(retained).toContain('release-candidate.mjs" materialize');
+    expect(retained).toContain('cp -R .codex-artifacts/release/prd/cms/client apps/staff/dist');
+    expect(runs(staff)).not.toMatch(/pnpm build|build:staff|build:cms/);
+    expect(stepNamed(staff, 'Verify staff previews in Chromium and Firefox')).toMatchObject({
+      env: { STAFF_PREVIEW_ENVIRONMENT: 'prd' },
+      run: 'node --import tsx scripts/run-release-preparation.mjs browsers',
+    });
+    expect(runs(staff)).toContain('playwright install --with-deps chromium firefox');
+    const e2e = workflow.jobs['accept-e2e'];
+    expect(stepNamed(e2e, 'Run the whole end-to-end suite').run).toBe('pnpm test:e2e');
+    expect(stepNamed(e2e, 'Upload end-to-end evidence')).toMatchObject({
+      if: '${{ failure() }}',
+      with: { path: '.codex-artifacts/e2e' },
+    });
+    // Suites test the candidate's own source; release tooling still comes from the trusted workflow revision.
+    for (const name of ['accept-uat-static', 'accept-uat-providers', 'accept-staff-previews', 'accept-e2e']) {
+      const checkouts = workflow.jobs[name].steps.filter((step: Step) => step.uses?.startsWith('actions/checkout@'));
+      expect(checkouts[0].with.ref, name).toBe('${{ inputs.artifact_commit_sha || github.sha }}');
+    }
+    // Acceptance never builds or uploads a release artifact, so deploy-prd still downloads the candidate run's bytes.
+    for (const name of acceptanceJobs) {
+      expect(runs(workflow.jobs[name]), name).not.toMatch(/pnpm build|build:(web|staff|cms)|pack-target|assemble/);
+      for (const step of workflow.jobs[name].steps)
+        if (step.uses?.startsWith('actions/upload-artifact@')) expect(step.with.name, name).not.toMatch(/^release-/);
+    }
+  });
+  it('keeps PRD credentials out of acceptance and UAT credentials in the provider job only', () => {
+    for (const name of acceptanceJobs) {
+      const job = workflow.jobs[name];
+      const text = JSON.stringify(job);
+      const secrets = [...new Set(text.match(/secrets\.\w+/g) ?? [])].sort();
+      expect(text, name).not.toMatch(/PRD_|catalog-promotion-prd/);
+      if (name === 'accept-uat-providers') {
+        expect(job.environment).toBe('catalog-promotion-uat');
+        expect(secrets).toEqual(['secrets.CLOUDFLARE_API_TOKEN', 'secrets.STRIPE_SECRET_KEY']);
+        expect(job.steps[0].run).toContain(
+          'CLOUDFLARE_API_TOKEN STRIPE_SECRET_KEY STRIPE_PAYMENT_METHOD_CONFIGURATION_ID',
+        );
+        expect(job.steps[0].run).toContain('exit 1');
+        expect(text).not.toMatch(/wrangler (deploy|versions|pages deploy)|d1:migrations|deploy:backend/);
+      } else {
+        expect(job.environment, name).toBeUndefined();
+        expect(secrets, name).toEqual([]);
+      }
+    }
+  });
+  it('runs provider smoke only in promotion acceptance and the manual smoke workflow', () => {
+    const owners = allWorkflows.flatMap(({ file, workflow: definition }) =>
+      Object.entries(definition.jobs as Record<string, Job>)
+        .filter(([, job]) => /smoke:(stripe|resend)-uat/.test(runs(job)))
+        .map(([name]) => `${file}:${name}`),
+    );
+    expect(owners.sort()).toEqual(['pages.yml:accept-uat-providers', 'uat-smoke.yml:smoke']);
   });
   it('reuses matching trusted tooling and downloads only the required target artifacts', () => {
     for (const sequence of [uatSequence, prdSequence]) {
@@ -116,7 +227,7 @@ describe('Pages artifact promotion contract', () => {
     expect(uatSequence.env.RELEASE_TOOLS_DIR).toBe(
       "${{ (inputs.artifact_commit_sha || github.sha) == github.sha && '.' || '.codex-artifacts/release-tools' }}",
     );
-    for (const jobName of ['deploy-uat', 'deploy-uat-static', 'smoke-uat']) {
+    for (const jobName of ['deploy-uat', 'deploy-uat-static']) {
       const steps = uatSequence.jobs[jobName].steps;
       const checkouts = steps.filter((step: { uses?: string }) => step.uses?.startsWith('actions/checkout@'));
       expect(checkouts[0].with.ref).toBe('${{ inputs.artifact_commit_sha || github.sha }}');
@@ -124,7 +235,12 @@ describe('Pages artifact promotion contract', () => {
       expect(
         steps.find((step: { name?: string }) => step.name === 'Download verified UAT target bundle').with.name,
       ).toBe('release-uat-${{ inputs.artifact_commit_sha || github.sha }}');
-      expect(uatSequence.jobs[jobName].environment === 'catalog-promotion-uat').toBe(jobName !== 'deploy-uat-static');
+      expect(uatSequence.jobs[jobName].environment === 'catalog-promotion-uat').toBe(jobName === 'deploy-uat');
+    }
+    for (const jobName of ['accept-uat-providers', 'accept-staff-previews']) {
+      const checkouts = workflow.jobs[jobName].steps.filter((step: Step) => step.uses?.startsWith('actions/checkout@'));
+      expect(checkouts[1].if).toBe('${{ inputs.artifact_commit_sha && inputs.artifact_commit_sha != github.sha }}');
+      expect(runs(workflow.jobs[jobName])).toContain('"$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs"');
     }
     for (const job of [promotion, staticPromotion]) {
       expect(job.steps[0].with.ref).toBe('${{ github.sha }}');
@@ -253,8 +369,9 @@ describe('Pages artifact promotion contract', () => {
       expect(restore.run).toContain('restore-published-content.mjs');
       expect(restore.run).toContain(`"$tool" ${target}`);
     }
-    expect(prdSteps.join('\n')).toContain('run-release-preparation.mjs browsers');
-    expect(JSON.stringify(prdBuild)).toContain('chromium firefox');
+    // Staff previews moved to promotion acceptance; candidate preparation installs no browser.
+    expect(prdSteps.join('\n')).not.toContain('run-release-preparation.mjs browsers');
+    expect(JSON.stringify(prdBuild)).not.toContain('playwright');
     expect(assembly.needs).toEqual(['check-candidate', 'prepare-uat', 'prepare-prd']);
     expect(
       assembly.steps.find((step: { name: string }) => step.name === 'Setup Node.js for bundle assembly').with.cache,
@@ -274,7 +391,7 @@ describe('Pages artifact promotion contract', () => {
     expect(finalUpload.with['compression-level']).toBe(1);
   });
 
-  it('reuses only the Astro image cache and validates the single target staff build', () => {
+  it('reuses the Astro image cache and validates the single target staff build', () => {
     const cache = (job: typeof uatBuild) =>
       job.steps.find((step: { name?: string }) => step.name === 'Restore Astro image cache');
     expect(cache(prdBuild)).toEqual(cache(uatBuild));
@@ -368,11 +485,10 @@ describe('Pages artifact promotion contract', () => {
     expect(caller.with.artifact_commit_sha).toBe('${{ inputs.artifact_commit_sha || github.sha }}');
     expect(uatSequence.concurrency).toBeUndefined();
     expect(JSON.stringify(uatSequence.env)).not.toContain('secrets.');
-    for (const role of ['deploy-uat', 'deploy-uat-static', 'smoke-uat']) {
+    for (const role of ['deploy-uat', 'deploy-uat-static']) {
       expect(uatSequence.jobs[role].concurrency).toBeUndefined();
     }
-    for (const role of ['deploy-uat', 'smoke-uat']) {
-      const job = uatSequence.jobs[role];
+    for (const job of [uatSequence.jobs['deploy-uat'], workflow.jobs['accept-uat-providers']]) {
       expect(job.environment).toBe('catalog-promotion-uat');
       expect(job.steps[0].run).toContain(
         'CLOUDFLARE_API_TOKEN STRIPE_SECRET_KEY STRIPE_PAYMENT_METHOD_CONFIGURATION_ID',
@@ -385,11 +501,11 @@ describe('Pages artifact promotion contract', () => {
       expect(concurrency.group).toContain('github.ref');
       expect(concurrency.group).toContain('github.run_id');
     }
-    for (const role of ['deploy-prd', 'deploy-prd-static', 'catalog-prd']) {
+    // Acceptance and PRD mutation share the workflow-level release lock; a job-level group would split it.
+    for (const role of ['deploy-prd', 'deploy-prd-static', 'catalog-prd', ...acceptanceJobs]) {
       expect(workflow.jobs[role].concurrency).toBeUndefined();
     }
     expect(uatSequence.jobs['deploy-uat-static'].needs).toBe('deploy-uat');
-    expect(uatSequence.jobs['smoke-uat'].needs).toBe('deploy-uat-static');
     expect(prdSequence.jobs['deploy-prd-static'].needs).toBe('deploy-prd');
     expect(publication.concurrency).toEqual(lock);
     const holding = parse(
@@ -406,5 +522,55 @@ describe('Pages artifact promotion contract', () => {
     expect(prdDeploy.indexOf('release-candidate.mjs verify prd')).toBeLessThan(
       prdDeploy.indexOf('wrangler versions deploy'),
     );
+  });
+});
+
+describe('CI cache reuse and the scheduled backstop', () => {
+  it('carries no Nx cache between candidate check runs', () => {
+    // Nx 23 names its task database after the machine id and does not support a local cache from another
+    // machine, so a restored ~/.nx is never used and only consumes the repository cache quota.
+    expect(JSON.stringify(checks.steps)).not.toContain('.nx');
+    expect(runs(checks)).not.toContain('--skip-nx-cache');
+  });
+
+  it('restores publication media from a digest-checked cache and saves it only when changed and bounded', () => {
+    for (const [target, job] of [
+      ['uat', uatBuild],
+      ['prd', prdBuild],
+    ] as const) {
+      const names = job.steps.map((step: Step) => step.name);
+      const publicationRestore = `Restore current ${target.toUpperCase()} publication`;
+      expect(stepNamed(job, publicationRestore).env?.CMS_PUBLICATION_MEDIA_CACHE).toBe(
+        '.codex-artifacts/publication-media',
+      );
+      expect(names.indexOf('Record publication media cache restore')).toBeLessThan(names.indexOf(publicationRestore));
+      expect(names.indexOf('Measure publication media cache candidate')).toBeGreaterThan(
+        names.indexOf(publicationRestore),
+      );
+      const restore = stepNamed(job, 'Restore publication media cache') as Step & { with: Record<string, string> };
+      expect(restore.with.key).toBe('publication-media-v1-${{ github.job }}-${{ github.run_id }}');
+      // Outside the uploaded release bundle and the must-be-new restore destination.
+      expect(restore.with.path).toBe('.codex-artifacts/publication-media');
+      const save = stepNamed(job, 'Save publication media cache') as Step & { with: Record<string, string> };
+      expect(save.if).toBe("${{ steps.media-cache-candidate.outputs.save == 'true' }}");
+      expect(save.with.key).toBe('${{ steps.media-cache.outputs.cache-primary-key }}');
+      const measure = stepNamed(job, 'Measure publication media cache candidate').run!;
+      expect(measure).toContain('bytes <= 536870912');
+      expect(measure.indexOf('(unchanged)')).toBeLessThan(measure.indexOf('save=true'));
+    }
+  });
+
+  it('runs the complete uncached validation weekly and on demand without credentials', () => {
+    const full = allWorkflows.find(({ file }) => file === 'full-validation.yml')?.workflow;
+    expect(full).toBeDefined();
+    expect(full.on.schedule).toHaveLength(1);
+    expect(full.on.workflow_dispatch).toBeNull();
+    expect(full.permissions).toEqual({ contents: 'read' });
+    const job = full.jobs.validate;
+    expect(job['timeout-minutes']).toBeLessThanOrEqual(60);
+    expect(runs(job)).toContain('pnpm validate:full --no-cache');
+    const upload = job.steps.find((step: Step) => step.uses?.startsWith('actions/upload-artifact@'));
+    expect(upload).toMatchObject({ if: '${{ failure() }}', with: { path: '.codex-artifacts/validation' } });
+    expect(JSON.stringify(full)).not.toMatch(/secrets\.|environment/);
   });
 });

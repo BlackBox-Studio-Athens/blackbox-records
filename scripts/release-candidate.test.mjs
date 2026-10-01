@@ -357,6 +357,24 @@ test('pack-target CLI produces independently verifiable UAT and PRD bundles', (c
     `${directory}/final`,
   );
   assert.equal(result.candidate.schema, 2);
+  // Promotion acceptance materializes the downloaded transport offline, bound to the selected source and run.
+  const materialize = (runId) => {
+    const cwd = path.join(directory, `promotion-${runId}`);
+    cpSync(`${directory}/final`, path.join(cwd, '.codex-artifacts/release'), { recursive: true });
+    execFileSync(
+      process.execPath,
+      [fileURLToPath(new URL('./release-candidate.mjs', import.meta.url)), 'materialize'],
+      {
+        cwd,
+        env: { ...process.env, SOURCE_SHA: sha, CANDIDATE_RUN_ID: runId },
+        stdio: 'pipe',
+        windowsHide: true,
+      },
+    );
+    return path.join(cwd, '.codex-artifacts/release');
+  };
+  assert.ok(existsSync(path.join(materialize('123'), 'prd/cms/client/content/index.html')));
+  assert.throws(() => materialize('999'), /Downloaded candidate differs from the run/);
   verifyFiles(result.candidate, `${directory}/final`);
 });
 

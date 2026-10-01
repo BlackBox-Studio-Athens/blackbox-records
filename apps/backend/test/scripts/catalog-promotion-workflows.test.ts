@@ -116,19 +116,26 @@ describe('one gated release', () => {
     expect(release.jobs['inspect-uat-pages'].needs).toEqual(['check-candidate', 'prepare-uat']);
     expect(release.jobs['uat-release'].needs).toEqual(['check-candidate', 'prepare-uat', 'inspect-uat-pages']);
     expect(uatSequence.jobs['deploy-uat-static'].environment).toBeUndefined();
-    for (const role of ['deploy-uat', 'smoke-uat']) {
-      const job = uatSequence.jobs[role];
+    // Provider credentials serve the UAT deployment on push and provider smoke at promotion, never a PRD job.
+    for (const job of [uatSequence.jobs['deploy-uat'], release.jobs['accept-uat-providers']]) {
       expect(job.environment).toBe('catalog-promotion-uat');
       expect(job.concurrency).toBeUndefined();
       expect(job.env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
       expect(job.env.STRIPE_SECRET_KEY).toBe('${{ secrets.STRIPE_SECRET_KEY }}');
     }
+    expect(Object.keys(uatSequence.jobs)).toEqual(['deploy-uat', 'deploy-uat-static']);
+    expect(release.jobs['deploy-prd'].needs).toEqual([
+      'accept-uat-identity',
+      'accept-uat-static',
+      'accept-uat-providers',
+      'accept-staff-previews',
+      'accept-e2e',
+    ]);
     expect(release.jobs['deploy-prd'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
     expect(uatSequence.jobs['deploy-uat-static'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
     expect(release.jobs['deploy-prd-static'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
     expect(uatSequence.jobs['deploy-uat'].environment).toBe('catalog-promotion-uat');
     expect(uatSequence.jobs['deploy-uat-static'].needs).toBe('deploy-uat');
-    expect(uatSequence.jobs['smoke-uat'].needs).toBe('deploy-uat-static');
     expect(prdSequence.jobs['deploy-prd'].environment).toBe('catalog-promotion-prd');
     expect(prdSequence.jobs['deploy-prd-static'].needs).toBe('deploy-prd');
     expect(release.on.push['paths-ignore']).toEqual(['docs/**', 'openspec/**', '*.md', 'LICENSE']);

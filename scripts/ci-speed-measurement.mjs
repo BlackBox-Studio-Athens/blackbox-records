@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const execFileAsync = promisify(execFile);
 const DEFAULT_WINDOW_DAYS = 30;
-const CURRENT_UAT_JOBS = [
+const SPLIT_UAT_JOBS = [
   'check-candidate',
   'prepare-uat',
   'prepare-prd',
@@ -16,9 +16,30 @@ const CURRENT_UAT_JOBS = [
   'inspect-uat-pages',
   'deploy-uat',
   'deploy-uat-static',
-  'smoke-uat',
 ];
-const LEGACY_UAT_JOBS = ['build-candidate', 'inspect-uat-pages', 'deploy-uat', 'deploy-uat-static', 'smoke-uat'];
+/** Jobs a complete UAT candidate run needs, per workflow generation. Samples carry the generation so reports compare like with like. */
+const UAT_JOBS_BY_JOB_SET = {
+  'legacy-build': ['build-candidate', 'inspect-uat-pages', 'deploy-uat', 'deploy-uat-static', 'smoke-uat'],
+  'push-acceptance': [...SPLIT_UAT_JOBS, 'smoke-uat'],
+  'promotion-acceptance': SPLIT_UAT_JOBS,
+};
+const ACCEPTANCE_JOBS = [
+  'accept-uat-identity',
+  'accept-uat-static',
+  'accept-uat-providers',
+  'accept-staff-previews',
+  'accept-e2e',
+];
+
+/** Reusable-workflow jobs are listed as `<caller> / <job>`. */
+const isJob = (name, required) => name === required || name.endsWith(` / ${required}`);
+
+/** The run lists every job, skipped ones included, so a push of the current workflow still names the acceptance jobs. */
+export function jobSetOf(jobs) {
+  const names = jobs.map(({ name }) => name);
+  if (names.some((name) => isJob(name, 'build-candidate'))) return 'legacy-build';
+  return names.some((name) => isJob(name, 'accept-uat-identity')) ? 'promotion-acceptance' : 'push-acceptance';
+}
 
 export function classifyRun(run) {
   const workflow = String(run.workflow_path ?? run.path ?? run.workflow ?? '');
@@ -62,15 +83,9 @@ export function measureAttempt(run, jobs) {
       .map((job) => timestamp(job.completed_at))
       .filter(Number.isFinite)
       .sort((a, b) => b - a)[0] ?? null;
-  const presentNames = new Set(relevant.map((job) => job.name));
-  const requiredNames =
-    classifyRun(run) !== 'uat-candidate'
-      ? []
-      : presentNames.has('check-candidate')
-        ? CURRENT_UAT_JOBS
-        : LEGACY_UAT_JOBS;
-  const hasJob = (required) => [...presentNames].some((name) => name === required || name.endsWith(` / ${required}`));
-  const missingJobs = requiredNames.filter((name) => !hasJob(name));
+  const jobSet = jobSetOf(jobs);
+  const requiredNames = classifyRun(run) === 'uat-candidate' ? UAT_JOBS_BY_JOB_SET[jobSet] : [];
+  const missingJobs = requiredNames.filter((required) => !relevant.some(({ name }) => isJob(name, required)));
   const executionMs = firstStartedAt !== null && lastCompletedAt !== null ? lastCompletedAt - firstStartedAt : null;
   const queuedMs =
     firstStartedAt === null
@@ -100,11 +115,23 @@ export function measureAttempt(run, jobs) {
   const artifactTransfer = stepMeasure(
     /(?:artifact|bundle).*(?:upload|download)|(?:upload|download).*(?:artifact|bundle)/i,
   );
-  const quickStep = steps.find(({ name, conclusion }) => name === 'Run UAT quick checks' && conclusion === 'success');
+  const timedJob = (required) => timed.find(({ name }) => isJob(name, required));
+  const sinceCreated = (required) => {
+    const job = timedJob(required);
+    return job?.conclusion === 'success' ? duration(run.created_at, job.completed_at) : null;
+  };
+  const span = (first, lasts) => {
+    const start = timedJob(first);
+    const ends = lasts.map(timedJob);
+    return start && ends.every(Boolean)
+      ? Math.max(...ends.map((job) => timestamp(job.completed_at))) - timestamp(start.started_at)
+      : null;
+  };
   return {
     runId: String(run.id ?? ''),
     attempt: Number(run.run_attempt ?? 1),
     classification: classifyRun(run),
+    jobSet,
     sourceSha: run.head_sha ?? null,
     workflowSha: run.workflow_sha ?? null,
     event: run.event ?? null,
@@ -126,7 +153,11 @@ export function measureAttempt(run, jobs) {
     setupRunnerSeconds: setup.runnerSeconds,
     artifactTransferElapsedMs: artifactTransfer.elapsedMs,
     artifactTransferRunnerSeconds: artifactTransfer.runnerSeconds,
-    uatQuickFeedbackMs: quickStep ? duration(run.created_at, quickStep.completed_at) : null,
+    // deploy-uat-static ends with `verify-hosted uat`; under push-acceptance it also ran the UAT quick checks.
+    uatLiveMs: sinceCreated('deploy-uat-static'),
+    candidateReadyMs: sinceCreated('assemble-candidate'),
+    acceptanceMs: span('accept-uat-identity', ACCEPTANCE_JOBS),
+    prdDeployMs: span('deploy-prd', ['deploy-prd-static']),
     jobCount: relevant.length,
     missingJobs,
     jobs: timed.map((job) => ({ name: job.name, conclusion: job.conclusion, durationMs: job.durationMs })),
@@ -145,23 +176,28 @@ function percentile(values, fraction) {
   return sorted[Math.max(0, Math.ceil(sorted.length * fraction) - 1)];
 }
 
+/** Groups by classification and job-set generation (`unlabelled` for samples recorded before generations existed). */
 export function summarizeMeasurements(measurements) {
   const groups = {};
   for (const measurement of measurements) {
-    const key = measurement.classification;
+    const key = `${measurement.classification}/${measurement.jobSet ?? 'unlabelled'}`;
     (groups[key] ??= []).push(measurement);
   }
   return Object.fromEntries(
-    Object.entries(groups).map(([classification, entries]) => {
+    Object.entries(groups).map(([key, entries]) => {
       const successful = entries.filter((entry) => entry.successful && entry.valid);
       const execution = successful.map((entry) => entry.executionMs).filter(Number.isFinite);
       const sumAvailable = (values) => {
         const available = values.filter(Number.isFinite);
         return available.length ? available.reduce((total, value) => total + value, 0) : null;
       };
+      const successfulMedian = (field) =>
+        percentile(successful.map((entry) => entry[field]).filter(Number.isFinite), 0.5);
       return [
-        classification,
+        key,
         {
+          classification: entries[0].classification,
+          jobSet: entries[0].jobSet ?? 'unlabelled',
           sampleCount: entries.length,
           successfulCount: successful.length,
           conclusionCounts: Object.fromEntries(
@@ -177,22 +213,16 @@ export function summarizeMeasurements(measurements) {
             p90: percentile(execution, 0.9),
           },
           totalRunnerSeconds: sumAvailable(entries.map((entry) => entry.jobSeconds)),
-          setupElapsedMs: percentile(successful.map((entry) => entry.setupElapsedMs).filter(Number.isFinite), 0.5),
+          setupElapsedMs: successfulMedian('setupElapsedMs'),
           setupRunnerSeconds: sumAvailable(entries.map((entry) => entry.setupRunnerSeconds)),
-          artifactTransferElapsedMs: percentile(
-            successful.map((entry) => entry.artifactTransferElapsedMs).filter(Number.isFinite),
-            0.5,
-          ),
+          artifactTransferElapsedMs: successfulMedian('artifactTransferElapsedMs'),
           artifactTransferRunnerSeconds: sumAvailable(entries.map((entry) => entry.artifactTransferRunnerSeconds)),
-          queuedMs: percentile(successful.map((entry) => entry.queuedMs).filter(Number.isFinite), 0.5),
-          uatQuickFeedbackMs: percentile(
-            successful.map((entry) => entry.uatQuickFeedbackMs).filter(Number.isFinite),
-            0.5,
-          ),
-          pushToPromotionReadyMs: percentile(
-            successful.map((entry) => entry.pushToPromotionReadyMs).filter(Number.isFinite),
-            0.5,
-          ),
+          queuedMs: successfulMedian('queuedMs'),
+          uatLiveMs: successfulMedian('uatLiveMs'),
+          candidateReadyMs: successfulMedian('candidateReadyMs'),
+          pushToPromotionReadyMs: successfulMedian('pushToPromotionReadyMs'),
+          acceptanceMs: successfulMedian('acceptanceMs'),
+          prdDeployMs: successfulMedian('prdDeployMs'),
           confidence: successful.length >= 5 ? 'high' : successful.length ? 'low' : 'unavailable',
           failures: entries
             .filter((entry) => !entry.successful || !entry.valid)
@@ -209,16 +239,18 @@ export function renderMeasurementReport({ window, summary }) {
     '',
     `Window: ${window.from} → ${window.to}`,
     '',
-    '| Classification | Samples | Successful | Failed | Cancelled | Median | p75 | p90 | Queue | UAT quick | Ready | Setup elapsed | Transfer elapsed | Runner seconds | Setup runner seconds | Transfer runner seconds | Confidence |',
-    '| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
+    '| Classification | Job set | Samples | Successful | Failed | Cancelled | Median | p75 | p90 | Queue | UAT live | Candidate ready | Promotion ready | Acceptance | PRD deploy | Setup elapsed | Transfer elapsed | Runner seconds | Setup runner seconds | Transfer runner seconds | Confidence |',
+    '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |',
   ];
-  for (const [classification, group] of Object.entries(summary)) {
-    const seconds = (value) => (value === null ? 'unavailable' : `${(value / 1000).toFixed(1)}s`);
+  for (const group of Object.values(summary)) {
+    const seconds = (value) => (Number.isFinite(value) ? `${(value / 1000).toFixed(1)}s` : 'unavailable');
     lines.push(
-      `| ${classification} | ${group.sampleCount} | ${group.successfulCount} | ${group.conclusionCounts.failure ?? 0} | ${group.conclusionCounts.cancelled ?? 0} | ${seconds(group.executionMs.median)} | ${seconds(group.executionMs.p75)} | ${seconds(group.executionMs.p90)} | ${seconds(group.queuedMs)} | ${seconds(group.uatQuickFeedbackMs)} | ${seconds(group.pushToPromotionReadyMs)} | ${seconds(group.setupElapsedMs)} | ${seconds(group.artifactTransferElapsedMs)} | ${group.totalRunnerSeconds === null ? 'unavailable' : group.totalRunnerSeconds.toFixed(1)} | ${group.setupRunnerSeconds === null ? 'unavailable' : group.setupRunnerSeconds.toFixed(1)} | ${group.artifactTransferRunnerSeconds === null ? 'unavailable' : group.artifactTransferRunnerSeconds.toFixed(1)} | ${group.confidence} |`,
+      `| ${group.classification} | ${group.jobSet} | ${group.sampleCount} | ${group.successfulCount} | ${group.conclusionCounts.failure ?? 0} | ${group.conclusionCounts.cancelled ?? 0} | ${seconds(group.executionMs.median)} | ${seconds(group.executionMs.p75)} | ${seconds(group.executionMs.p90)} | ${seconds(group.queuedMs)} | ${seconds(group.uatLiveMs)} | ${seconds(group.candidateReadyMs)} | ${seconds(group.pushToPromotionReadyMs)} | ${seconds(group.acceptanceMs)} | ${seconds(group.prdDeployMs)} | ${seconds(group.setupElapsedMs)} | ${seconds(group.artifactTransferElapsedMs)} | ${group.totalRunnerSeconds === null ? 'unavailable' : group.totalRunnerSeconds.toFixed(1)} | ${group.setupRunnerSeconds === null ? 'unavailable' : group.setupRunnerSeconds.toFixed(1)} | ${group.artifactTransferRunnerSeconds === null ? 'unavailable' : group.artifactTransferRunnerSeconds.toFixed(1)} | ${group.confidence} |`,
     );
   }
   lines.push(
+    '',
+    'Milestones are medians of successful attempts, measured from run creation: UAT live is `deploy-uat-static` completion (hosted identity verified; under `push-acceptance` it also includes the UAT quick checks), candidate ready is `assemble-candidate` completion and promotion ready is the last job. Acceptance runs from the start of `accept-uat-identity` to the last acceptance job; PRD deploy from the start of `deploy-prd` to the end of `deploy-prd-static`. Job sets: `legacy-build` (one build job), `push-acceptance` (split preparation, smoke on every push), `promotion-acceptance` (browser and provider suites at PRD promotion).',
     '',
     'Failures, cancellations, reruns, missing timing, and unavailable cache/content metadata remain in `raw.json` and `summary.json`.',
     '',
@@ -275,8 +307,9 @@ export async function collectMeasurements({ repository, workflow = 'pages.yml', 
       if (attemptRun.event === 'workflow_dispatch' && !attemptRun.inputs) {
         const activeJobs = jobs.filter(({ conclusion }) => conclusion !== 'skipped');
         attemptRun.inputs = activeJobs.some(({ name }) =>
-          ['deploy-prd', 'deploy-prd-static', 'prd-release-sequence'].some(
-            (required) => name === required || name.endsWith(` / ${required}`),
+          // A promotion that fails acceptance never reaches deploy-prd.
+          ['accept-uat-identity', 'deploy-prd', 'deploy-prd-static', 'prd-release-sequence'].some((required) =>
+            isJob(name, required),
           ),
         )
           ? { target: 'prd', confirm_code_promotion: true }

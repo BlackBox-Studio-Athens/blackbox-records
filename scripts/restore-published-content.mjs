@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { readFileSync, appendFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseContentSnapshot } from '@blackbox/content-model';
 import { cmsSnapshotTarget } from './cms-snapshot-readers.mjs';
 import { writeCmsSnapshot } from './export-cms-snapshot.mjs';
 
 export async function restorePublishedContent(
-  { environment, target, directory, token, accessClientId, accessClientSecret, maxRequests },
+  { environment, target, directory, token, accessClientId, accessClientSecret, maxRequests, mediaCache },
   send = fetch,
 ) {
   assert.ok(['uat', 'prd'].includes(environment));
@@ -85,7 +85,15 @@ export async function restorePublishedContent(
     'Snapshot media budget exceeded.',
   );
   const files = new Map();
-  const entries = [...media];
+  const entries = [];
+  // Cached bytes stand in for a hosted read only when they hash to the snapshot's digest; anything else is fetched.
+  for (const [sha256, item] of media) {
+    const cached = mediaCache ? await readFile(join(mediaCache, sha256)).catch(() => null) : null;
+    if (cached && cached.length <= item.size && createHash('sha256').update(cached).digest('hex') === sha256)
+      files.set(sha256, cached);
+    else entries.push([sha256, item]);
+  }
+  if (mediaCache && entries.length) await mkdir(mediaCache, { recursive: true });
   for (let index = 0; index < entries.length; index += 4) {
     const results = await Promise.allSettled(
       entries.slice(index, index + 4).map(async ([sha256, item]) => {
@@ -95,6 +103,7 @@ export async function restorePublishedContent(
         });
         assert.equal(createHash('sha256').update(body).digest('hex'), sha256);
         files.set(sha256, body);
+        if (mediaCache) await writeFile(join(mediaCache, sha256), body);
       }),
     );
     const failure = results.find((result) => result.status === 'rejected');
@@ -103,7 +112,12 @@ export async function restorePublishedContent(
   await mkdir(resolve(directory, '..'), { recursive: true });
   await writeCmsSnapshot({ json, sha256: content.snapshotSha256, files }, directory, environment);
   await writeFile(resolve(directory, 'identity.json'), JSON.stringify(content), { flag: 'wx' });
-  return { source: 'snapshot', sha256: content.snapshotSha256 };
+  return {
+    source: 'snapshot',
+    sha256: content.snapshotSha256,
+    cachedMedia: media.size - entries.length,
+    fetchedMedia: entries.length,
+  };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
@@ -118,7 +132,10 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     accessClientId: env.CMS_EXPORT_ACCESS_CLIENT_ID,
     accessClientSecret: env.CMS_EXPORT_ACCESS_CLIENT_SECRET,
     maxRequests: Number(env.CMS_PUBLICATION_MAX_REQUESTS),
+    mediaCache: env.CMS_PUBLICATION_MEDIA_CACHE || undefined,
   });
   if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `source=${result.source}\nsha256=${result.sha256 ?? ''}\n`);
-  console.log(`Selected ${environment} published content: ${result.source}.`);
+  console.log(
+    `Selected ${environment} published content: ${result.source}; media cached=${result.cachedMedia ?? 0} fetched=${result.fetchedMedia ?? 0}.`,
+  );
 }

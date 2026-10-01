@@ -1,4 +1,5 @@
-name: Deploy and accept UAT
+# Browser and provider acceptance run at PRD promotion (pages.yml accept-* jobs), not on every push.
+name: Deploy UAT candidate
 on:
   workflow_call:
     inputs:
@@ -27,8 +28,7 @@ jobs:
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
     steps:
-      - &require-uat-secrets
-        name: Require UAT environment credentials before mutation
+      - name: Require UAT environment credentials before mutation
         shell: bash
         run: |
           set -euo pipefail
@@ -141,58 +141,6 @@ jobs:
           node "$RELEASE_TOOLS_DIR/scripts/configure-public-gateway.mjs" uat
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/uat/public --project-name=blackbox-records-web-uat --branch=main --commit-hash="$SOURCE_SHA"
           node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" verify-hosted uat
-      - name: Install Chromium for UAT quick checks
-        run: pnpm exec playwright install --with-deps chromium
-      - name: Run UAT quick checks
-        run: |
-          pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure
-          echo "UAT quick checks passed for $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload UAT quick-check evidence
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: uat-quick-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .codex-artifacts/smoke/uat/uat-static
-          if-no-files-found: ignore
-          retention-days: 7
       - name: Record actual deployed revisions
         if: ${{ always() }}
         run: node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" observe uat >> "$GITHUB_STEP_SUMMARY"
-  smoke-uat:
-    needs: deploy-uat-static
-    runs-on: ubuntu-latest
-    environment: catalog-promotion-uat
-    timeout-minutes: 40
-    permissions:
-      contents: read
-      actions: read
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
-      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
-    steps:
-      - *require-uat-secrets
-      - *checkout
-      - *pnpm
-      - *node
-      - *install
-      - *release-tools
-      - *download-candidate
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
-      - name: Run UAT provider smoke
-        run: |
-          pnpm smoke:stripe-uat -- --site-url https://blackbox-records-web-uat.pages.dev --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL" --scenario happy_path_paid,pay_what_you_want_paid --screenshots on-failure
-          pnpm smoke:resend-uat -- --worker-url "$UAT_PUBLIC_BACKEND_BASE_URL"
-      - name: Verify current UAT release identity
-        run: node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" verify-hosted uat
-      - name: Record actual deployed revisions
-        if: ${{ always() }}
-        run: node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" observe uat >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload UAT acceptance evidence
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: uat-smoke-${{ github.run_id }}-${{ github.run_attempt }}
-          path: .codex-artifacts/smoke/uat
-          retention-days: 7
