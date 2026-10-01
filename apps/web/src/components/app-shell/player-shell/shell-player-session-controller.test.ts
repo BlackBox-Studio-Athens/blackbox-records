@@ -54,7 +54,22 @@ function createTriggerElement() {
   } as unknown as HTMLElement;
 }
 
+const releasesHref = 'https://example.test/blackbox-records/releases/';
+
+function createHistory(initialState: unknown = null) {
+  const history = {
+    state: initialState,
+    back: vi.fn(),
+    pushState: vi.fn((state: unknown) => {
+      history.state = state;
+    }),
+  };
+
+  return history;
+}
+
 function createController(overrides: Partial<Parameters<typeof createShellPlayerSessionController>[0]> = {}) {
+  const history = createHistory();
   const iframeElement = createIframe();
   const provider: PlayerProvider = {
     embedLayout: 'bandcamp-album',
@@ -67,6 +82,8 @@ function createController(overrides: Partial<Parameters<typeof createShellPlayer
   const options = {
     activePlayerSessionRef,
     activePlayerTriggerElementRef,
+    getCurrentHref: vi.fn(() => releasesHref),
+    getHistory: vi.fn(() => history),
     getIsPlayerModalOpen: vi.fn(() => false),
     getScheduler: vi.fn(() => ({
       requestAnimationFrame: vi.fn((callback: FrameRequestCallback) => {
@@ -79,6 +96,7 @@ function createController(overrides: Partial<Parameters<typeof createShellPlayer
     iframeFrameHostRef: { current: createFrameHost(iframeElement) },
     modalCloseButtonRef: { current: { focus: vi.fn() } as unknown as HTMLButtonElement },
     pendingPlayerProviderRef: { current: null },
+    playerModalHistoryHrefRef: { current: null as string | null },
     providerSelectionByReleaseIdRef: { current: new Map() },
     setActivePlayerEmbedLayout: vi.fn(),
     setActivePlayerProviderId: vi.fn(),
@@ -96,6 +114,7 @@ function createController(overrides: Partial<Parameters<typeof createShellPlayer
 
   return {
     controller: createShellPlayerSessionController(options),
+    history,
     iframeElement,
     options,
     provider,
@@ -249,5 +268,64 @@ describe('shell player session controller', () => {
     expect(activeSession.status).toBe('modal-open');
     expect(options.setIsPlayerModalOpen).toHaveBeenCalledWith(true);
     expect(closeButton.focus).toHaveBeenCalledTimes(1);
+  });
+
+  it('opens the player on its own history entry at the current URL', () => {
+    const { controller, history, options } = createController();
+
+    controller.openPlayerModal(createTriggerElement(), createPlayerElement());
+
+    expect(history.pushState).toHaveBeenCalledTimes(1);
+    expect(history.pushState).toHaveBeenCalledWith({ __appShellPlayerModal: true }, '', releasesHref);
+    expect(options.playerModalHistoryHrefRef.current).toBe(releasesHref);
+  });
+
+  it('adds no history entry when the release has no player provider', () => {
+    const { controller, history, options } = createController();
+    const playerElement = {
+      dataset: {
+        musicStreamingServiceEmbeddedPlayerReleaseId: 'disintegration',
+        musicStreamingServiceEmbeddedPlayerTitle: 'Disintegration',
+      },
+    } as unknown as HTMLElement;
+
+    controller.openPlayerModal(createTriggerElement(), playerElement);
+
+    expect(options.setIsPlayerModalOpen).not.toHaveBeenCalled();
+    expect(history.pushState).not.toHaveBeenCalled();
+    expect(options.playerModalHistoryHrefRef.current).toBeNull();
+  });
+
+  it('reopens from the mini player with one history entry and adds none when already on it', () => {
+    const activeSession = createActiveSession();
+    activeSession.status = 'minimized';
+    const { controller, history, options } = createController({
+      activePlayerSessionRef: { current: activeSession },
+    });
+
+    controller.reopenPlayerModal();
+    controller.reopenPlayerModal();
+
+    expect(history.pushState).toHaveBeenCalledTimes(1);
+    expect(options.playerModalHistoryHrefRef.current).toBe(releasesHref);
+  });
+
+  it('closes through Back on the player entry and directly elsewhere', () => {
+    const activeSession = createActiveSession();
+    activeSession.hasEmbedInteraction = true;
+    const { controller, history, options } = createController({
+      activePlayerSessionRef: { current: activeSession },
+    });
+
+    history.state = { __appShellPlayerModal: true };
+    controller.closePlayerModalWithHistoryBack();
+    expect(history.back).toHaveBeenCalledTimes(1);
+    expect(options.setIsPlayerModalOpen).not.toHaveBeenCalled();
+
+    history.state = { __appShellSection: true };
+    controller.closePlayerModalWithHistoryBack();
+    expect(history.back).toHaveBeenCalledTimes(1);
+    expect(activeSession.status).toBe('minimized');
+    expect(options.setIsPlayerModalOpen).toHaveBeenCalledWith(false);
   });
 });

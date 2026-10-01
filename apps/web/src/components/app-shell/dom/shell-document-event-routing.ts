@@ -42,6 +42,7 @@ export type ShellDocumentEventRoutingOptions = {
   closeOverlayState: (options: { restoreFocus: false }) => void;
   closeOverlayWithHistoryBack: () => void;
   closePlayerModal: () => void;
+  closePlayerModalWithHistoryBack: () => void;
   collapseOverlayHistoryToBackground: () => void;
   currentHref: () => string;
   currentOrigin: () => string;
@@ -73,6 +74,7 @@ export type ShellDocumentEventRoutingOptions = {
         }
       | { historyMode: 'none'; source: Extract<ShellNavigationSource, 'history'> },
   ) => MaybePromise<boolean>;
+  playerModalHistoryHrefRef: { current: string | null };
   prefetchOverlayHref: (href: string) => Promise<void> | void;
   prefetchShellSectionHref: (href: string) => Promise<void> | void;
   readPlayerProvidersFromElement: Parameters<ShellDocumentClickIntentResolver>[1]['readPlayerProvidersFromElement'];
@@ -101,6 +103,7 @@ export function connectShellDocumentEventRouting({
   closeOverlayState,
   closeOverlayWithHistoryBack,
   closePlayerModal,
+  closePlayerModalWithHistoryBack,
   collapseOverlayHistoryToBackground,
   currentHref,
   currentOrigin,
@@ -120,6 +123,7 @@ export function connectShellDocumentEventRouting({
   openPlayerModal,
   reopenPlayerModal,
   openShellSectionHref,
+  playerModalHistoryHrefRef,
   prefetchOverlayHref,
   prefetchShellSectionHref,
   readPlayerProvidersFromElement,
@@ -155,7 +159,7 @@ export function connectShellDocumentEventRouting({
 
     if (clickIntent.kind === 'player-modal-dismiss') {
       event.preventDefault();
-      closePlayerModal();
+      closePlayerModalWithHistoryBack();
       return clickIntent.kind;
     }
 
@@ -240,7 +244,7 @@ export function connectShellDocumentEventRouting({
   function handleKeyDown(event: KeyboardEvent): ShellEscapeDismissalResult {
     return handleEscapeDismissal({
       closeOverlayWithHistoryBack,
-      closePlayerModal,
+      closePlayerModal: closePlayerModalWithHistoryBack,
       hasOverlayState,
       isPlayerModalOpen: isPlayerModalOpen(),
       key: event.key,
@@ -252,12 +256,16 @@ export function connectShellDocumentEventRouting({
     return routePopState({
       closeMobileNavigation,
       closeOverlayState,
+      closePlayerModal,
       currentHref: currentHref(),
       currentPathname: currentPathname(),
       hasCachedShellPage,
       historyState: getHistoryState(),
+      isPlayerModalOpen: isPlayerModalOpen(),
       openOverlayHref,
       openShellSectionHref,
+      playerModalHistoryHref: playerModalHistoryHrefRef,
+      reopenPlayerModal,
       restoreCachedShellPage,
     });
   }

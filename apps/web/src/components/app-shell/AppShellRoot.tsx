@@ -65,6 +65,7 @@ import {
   scheduleOverlayContentFocus,
   scheduleOverlayTriggerFocusRestore,
 } from './overlay/shell-overlay-focus';
+import { isPlayerModalHistoryState } from './player-shell/player-modal-history';
 import { createShellPlayerSessionController } from './player-shell/shell-player-session-controller';
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
 import { MOBILE_NAVIGATION_TRIGGER_SELECTOR } from './navigation/shell-document-click-intent';
@@ -150,6 +151,10 @@ export default function AppShellRoot({
     releaseTitle: string;
   } | null>(null);
   const activePlayerTriggerElementRef = useRef<HTMLElement | null>(null);
+  // A reload on the player's history entry keeps that entry, so the first Back still only steps off it.
+  const playerModalHistoryHrefRef = useRef<string | null>(
+    typeof window !== 'undefined' && isPlayerModalHistoryState(window.history.state) ? window.location.href : null,
+  );
   const iframeCacheByEmbedUrlRef = useRef(new Map<string, HTMLIFrameElement>());
   const providerSelectionByReleaseIdRef = useRef(new Map<string, PlayerProviderId>());
   const warmedOriginsRef = useRef(new Set<string>());
@@ -475,6 +480,7 @@ export default function AppShellRoot({
   const {
     applyPlayerProvider,
     closePlayerModal,
+    closePlayerModalWithHistoryBack,
     connectPlayerSurface,
     markActivePlayerSessionAsInteracted,
     markActivePlayerSurfaceAsInteracted,
@@ -486,6 +492,8 @@ export default function AppShellRoot({
   } = createShellPlayerSessionController({
     activePlayerSessionRef,
     activePlayerTriggerElementRef,
+    getCurrentHref: () => window.location.href,
+    getHistory: () => window.history,
     getIsPlayerModalOpen: () => isPlayerModalOpen,
     getScheduler: () => window,
     getTargetDocument: () => document,
@@ -493,6 +501,7 @@ export default function AppShellRoot({
     iframeFrameHostRef,
     modalCloseButtonRef,
     pendingPlayerProviderRef,
+    playerModalHistoryHrefRef,
     providerSelectionByReleaseIdRef,
     setActivePlayerEmbedLayout,
     setActivePlayerProviderId,
@@ -650,6 +659,7 @@ export default function AppShellRoot({
       closeOverlayState,
       closeOverlayWithHistoryBack,
       closePlayerModal,
+      closePlayerModalWithHistoryBack,
       collapseOverlayHistoryToBackground,
       currentHref: () => window.location.href,
       currentOrigin: () => window.location.origin,
@@ -667,6 +677,7 @@ export default function AppShellRoot({
       openOverlayHref,
       openPlayerModal,
       openShellSectionHref,
+      playerModalHistoryHrefRef,
       prefetchOverlayHref,
       prefetchShellSectionHref,
       readPlayerProvidersFromElement,
@@ -852,7 +863,7 @@ export default function AppShellRoot({
             modalCloseButtonRef={modalCloseButtonRef}
             onModalBackdropClick={(event) => {
               if (event.target === event.currentTarget) {
-                closePlayerModal();
+                closePlayerModalWithHistoryBack();
               }
             }}
             onReady={connectPlayerSurface}

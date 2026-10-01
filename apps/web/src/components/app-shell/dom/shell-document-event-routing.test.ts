@@ -57,6 +57,7 @@ function createOptions(overrides: Partial<ShellDocumentEventRoutingOptions> = {}
     closeOverlayState: vi.fn(),
     closeOverlayWithHistoryBack: vi.fn(),
     closePlayerModal: vi.fn(),
+    closePlayerModalWithHistoryBack: vi.fn(),
     collapseOverlayHistoryToBackground: vi.fn(),
     currentHref: vi.fn(() => 'https://example.test/blackbox-records/releases/'),
     currentOrigin: vi.fn(() => 'https://example.test'),
@@ -74,6 +75,7 @@ function createOptions(overrides: Partial<ShellDocumentEventRoutingOptions> = {}
     openOverlayHref: vi.fn(async () => true),
     openPlayerModal: vi.fn(),
     openShellSectionHref: vi.fn(async () => true),
+    playerModalHistoryHrefRef: { current: null },
     prefetchOverlayHref: vi.fn(),
     prefetchShellSectionHref: vi.fn(),
     readPlayerProvidersFromElement: vi.fn(() => []),
@@ -132,6 +134,22 @@ describe('shell document event routing', () => {
 
     expect(options.reopenPlayerModal).toHaveBeenCalledTimes(1);
     expect(options.stopPlayerSession).toHaveBeenCalledWith({ restoreFocus: true });
+  });
+
+  it('closes the player through its history entry from the modal dismiss control', () => {
+    const options = createOptions({
+      dependencies: {
+        resolveShellDocumentClickIntent: vi.fn(() => ({ kind: 'player-modal-dismiss' as const })),
+      },
+    });
+    connectShellDocumentEventRouting(options);
+    const event = createMouseEvent();
+
+    options.documentHandlers.click?.(event);
+
+    expect(event.preventDefault).toHaveBeenCalledTimes(1);
+    expect(options.closePlayerModalWithHistoryBack).toHaveBeenCalledTimes(1);
+    expect(options.closePlayerModal).not.toHaveBeenCalled();
   });
 
   it('opens player triggers with the resolved trigger and player elements', () => {
@@ -243,6 +261,7 @@ describe('shell document event routing', () => {
 
     expect(handleShellEscapeDismissal).toHaveBeenCalledWith(
       expect.objectContaining({
+        closePlayerModal: options.closePlayerModalWithHistoryBack,
         isPlayerModalOpen: true,
         key: 'Escape',
       }),
@@ -259,6 +278,7 @@ describe('shell document event routing', () => {
         routeShellPopStateNavigation,
       },
       getHistoryState: vi.fn(() => historyState),
+      isPlayerModalOpen: vi.fn(() => true),
     });
     connectShellDocumentEventRouting(options);
 
@@ -266,9 +286,13 @@ describe('shell document event routing', () => {
 
     expect(routeShellPopStateNavigation).toHaveBeenCalledWith(
       expect.objectContaining({
+        closePlayerModal: options.closePlayerModal,
         currentHref: 'https://example.test/blackbox-records/store/distro/',
         currentPathname: '/blackbox-records/store/distro/',
         historyState,
+        isPlayerModalOpen: true,
+        playerModalHistoryHref: options.playerModalHistoryHrefRef,
+        reopenPlayerModal: options.reopenPlayerModal,
       }),
     );
   });

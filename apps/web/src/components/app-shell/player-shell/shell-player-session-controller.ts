@@ -14,6 +14,11 @@ import {
   type ActivePlayerSession,
 } from '../../music/player-iframe-session';
 import { warmPlayerProviderOrigins } from '../../music/player-provider-warmup';
+import {
+  closePlayerModalWithHistoryBack as closePlayerModalHistoryWithBack,
+  pushPlayerModalHistoryEntry,
+  type PlayerModalHistoryTarget,
+} from './player-modal-history';
 import { syncPlayerSessionFrameHost } from './shell-player-frame-host';
 import { restoreConnectedPlayerTriggerFocus, schedulePlayerModalCloseButtonFocus } from './shell-player-focus';
 import { resolvePlayerModalOpenRequest } from './shell-player-modal-open-request';
@@ -38,6 +43,8 @@ type PendingPlayerProvider = {
 type ShellPlayerSessionControllerOptions = {
   activePlayerSessionRef: MutableRef<ActivePlayerSession | null>;
   activePlayerTriggerElementRef: MutableRef<HTMLElement | null>;
+  getCurrentHref: () => string;
+  getHistory: () => PlayerModalHistoryTarget;
   getIsPlayerModalOpen: () => boolean;
   getScheduler: () => PlayerFocusScheduler;
   getTargetDocument: () => Document;
@@ -45,6 +52,8 @@ type ShellPlayerSessionControllerOptions = {
   iframeFrameHostRef: MutableRef<HTMLElement | null>;
   modalCloseButtonRef: MutableRef<HTMLButtonElement | null>;
   pendingPlayerProviderRef: MutableRef<PendingPlayerProvider | null>;
+  /** Href of the player history entry the shell is on, or null. */
+  playerModalHistoryHrefRef: MutableRef<string | null>;
   providerSelectionByReleaseIdRef: MutableRef<Map<string, PlayerProviderId>>;
   setActivePlayerEmbedLayout: (layout: PlayerShellViewState['activePlayerEmbedLayout']) => void;
   setActivePlayerProviderId: (providerId: PlayerShellViewState['activePlayerProviderId']) => void;
@@ -62,6 +71,8 @@ type ShellPlayerSessionControllerOptions = {
 export function createShellPlayerSessionController({
   activePlayerSessionRef,
   activePlayerTriggerElementRef,
+  getCurrentHref,
+  getHistory,
   getIsPlayerModalOpen,
   getScheduler,
   getTargetDocument,
@@ -69,6 +80,7 @@ export function createShellPlayerSessionController({
   iframeFrameHostRef,
   modalCloseButtonRef,
   pendingPlayerProviderRef,
+  playerModalHistoryHrefRef,
   providerSelectionByReleaseIdRef,
   setActivePlayerEmbedLayout,
   setActivePlayerProviderId,
@@ -242,6 +254,19 @@ export function createShellPlayerSessionController({
     stopPlayerSession({ restoreFocus: true });
   }
 
+  // On the player's own history entry, close through Back so no dead entry stays behind; popstate then closes.
+  function closePlayerModalWithHistoryBack() {
+    closePlayerModalHistoryWithBack(getHistory(), closePlayerModal);
+  }
+
+  function showPlayerModal() {
+    setIsPlayerModalOpen(true);
+    const href = getCurrentHref();
+    if (pushPlayerModalHistoryEntry(getHistory(), href)) {
+      playerModalHistoryHrefRef.current = href;
+    }
+  }
+
   function focusPlayerModalCloseButtonSoon() {
     schedulePlayerModalCloseButtonFocus({
       getCloseButton: () => modalCloseButtonRef.current,
@@ -272,7 +297,7 @@ export function createShellPlayerSessionController({
     activeSession.status = reducePlayerSessionMachine(derivePlayerSessionMachineState(activeSession), {
       type: 'reopen-requested',
     }).status as ActivePlayerSession['status'];
-    setIsPlayerModalOpen(true);
+    showPlayerModal();
     syncActivePlayerSessionIntoFrameHost();
     focusPlayerModalCloseButtonSoon();
   }
@@ -299,7 +324,7 @@ export function createShellPlayerSessionController({
     warmProviderOrigins(providers);
     setPlayerProviders(providers);
     setActivePlayerTitle(releaseTitle);
-    setIsPlayerModalOpen(true);
+    showPlayerModal();
 
     if (playerModalOpenRequest.kind === 'reuse-active-session') {
       playerModalOpenRequest.activeSession.status = 'modal-open';
@@ -315,6 +340,7 @@ export function createShellPlayerSessionController({
   return {
     applyPlayerProvider,
     closePlayerModal,
+    closePlayerModalWithHistoryBack,
     connectPlayerSurface,
     markActivePlayerSessionAsInteracted,
     markActivePlayerSurfaceAsInteracted,
