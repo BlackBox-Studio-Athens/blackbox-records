@@ -18,6 +18,14 @@ On PRD (`blackbox-records-web.pages.dev`, desktop Chrome), the open player kept 
 - `pnpm agent:check`: Agent guidance OK.
 - `pnpm openspec -- validate close-player-on-back --type change --strict --allow-worktree`: valid.
 
+## After rebasing onto main
+
+The checks above ran on the `00afb49c` base. Local `main` then gained the Store artist links and the About contact copy buttons (`aaed80b3`); the second also edits `AppShellRoot.tsx`, which merged without conflicts.
+
+- `src/components/app-shell` and `src/components/music` Vitest: 48 files and 252 tests passed. `astro check`: 0 errors and 0 warnings.
+- Playwright on this tree's Astro (4341): `player-continuity`, `about-contact` and `shell-navigation` passed (`.codex-artifacts/back-key/e2e-rebased-2.log` and `e2e-rebased.log`). The first runs after the rebase failed only on Vite's `504 Outdated Optimize Dep`, or on a cold Store compile under two workers. The specs passed once the dev cache had been cleared and the server warmed.
+- The final `pnpm validate`, full Playwright run and browser pass above were made on the earlier base and were not repeated.
+
 ## Browser
 
 DevTools MCP page with 390 × 844 mobile emulation and an Android user agent, against this tree's Astro on 4341 with the real Bandcamp embed. Screenshots are in `.codex-artifacts/back-key/`. Claude in Chrome's tab group window was occluded (`visibilityState` hidden), which pauses animation frames the shell waits on. Focusing the embed iframe stood in for tapping play; it is the shell's own interaction signal and avoids audible playback.
