@@ -1,6 +1,7 @@
 ---
 title: Chronoboros
 slug: chronoboros
+is_active: false
 genre: Hardcore
 country: Greece
 image: ./Chronoboros-band-logo.jpg

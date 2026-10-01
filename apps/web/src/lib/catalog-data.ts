@@ -74,6 +74,14 @@ export async function listArtistProfiles() {
   return (await getCollection('artists')).slice().sort(sortArtistProfilesByName);
 }
 
+export async function listArtistRosterProfiles() {
+  return (await listArtistProfiles()).sort(
+    (left, right) =>
+      Number(right.data.is_active ?? true) - Number(left.data.is_active ?? true) ||
+      sortArtistProfilesByName(left, right),
+  );
+}
+
 export async function listReleaseCatalog() {
   return (await getCollection('releases')).slice().sort(sortReleaseCatalogByDate);
 }

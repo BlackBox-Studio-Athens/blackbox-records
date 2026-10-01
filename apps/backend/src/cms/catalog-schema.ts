@@ -5,6 +5,15 @@ import type { EmDashRuntime } from 'emdash/middleware';
 // Explicit setup operation, never run as a side effect of browsing.
 export async function prepareCatalogSchema(runtime: EmDashRuntime) {
   const registry = new SchemaRegistry(runtime.db);
+  const artistActivity = await registry.getField('artists', 'is_active');
+  if (!artistActivity)
+    await registry.createField('artists', {
+      slug: 'is_active',
+      label: 'Active artist',
+      type: 'boolean',
+      required: false,
+    });
+  else if (artistActivity.type !== 'boolean') throw new Error('Unexpected field type: artists.is_active');
   const newsArtist = await registry.getField('news', 'artist');
   if (!newsArtist)
     await registry.createField('news', {

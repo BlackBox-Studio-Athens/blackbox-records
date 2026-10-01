@@ -1,5 +1,7 @@
 # CMS application migrations
 
+Artist activity uses optional native boolean `artists.is_active`, prepared idempotently by the existing catalog-schema command. Missing/null legacy values mean active, and native 0/1 normalize to false/true. Preparation changes no content or revisions. After the matching release, set Chronoboros inactive and confirm Sidus active through the normal Artist review/publication flow; repository fixtures do not update populated CMS stores.
+
 The application migration runner adds nullable `releases.release_stage` text and `releases.gallery` JSON columns with native field metadata in one D1 batch, only when missing. This runs in the existing Local/UAT/PRD release flow and leaves content, drafts, revisions, media and publication pointers unchanged. Fresh seeds and the explicit catalog-schema setup define the same fields. Missing/null stage values retain the legacy date-based interpretation; gallery remains optional.
 
 These migrations belong to application-owned tables in `CMS_DB`. They are separate from EmDash's core migration manifest and from commerce's Prisma/D1 migrations. Never apply them to `COMMERCE_DB`.

@@ -6,10 +6,10 @@ import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/platform/config/site';
-import { listArtistProfiles, listNewsArticles } from '@/lib/catalog-data';
+import { listArtistRosterProfiles, listNewsArticles } from '@/lib/catalog-data';
 import { getHomeContent } from '@/lib/site-data';
 
-const artistProfiles = await listArtistProfiles();
+const artistProfiles = await listArtistRosterProfiles();
 const newsArticles = await listNewsArticles();
 const latestNewsArticles = newsArticles.slice(0, 3);
 const featuredArtistProfiles = artistProfiles.slice(0, 3);

@@ -86,7 +86,10 @@ export function publishedCollection(
     .map((record) => {
       const { body, ...editorial } = projectProseFields(record.collection, record.data);
       const data = field(editorial) as Record<string, unknown>;
-      if (record.collection === 'artists') data.slug = record.slug;
+      if (record.collection === 'artists') {
+        data.slug = record.slug;
+        data.is_active = data.is_active === 0 ? false : data.is_active === 1 ? true : (data.is_active ?? true);
+      }
       if (record.collection === 'releases' || (record.collection === 'news' && record.data.artist)) {
         const artist = snapshot.records.find((item) => item.collection === 'artists' && item.id === record.data.artist);
         if (!artist) throw new Error('Published Artist is unavailable.');

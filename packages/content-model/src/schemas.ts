@@ -36,6 +36,7 @@ export function createArtistsContentSchema<TImage extends z.ZodType>(image: () =
   return z.object({
     title: requiredText,
     slug: z.string().regex(new RegExp(slugPatternSource), 'Use lowercase kebab-case.'),
+    is_active: z.boolean().default(true),
     genre: requiredText,
     country: artistCountriesSchema.optional(),
     image: image(),

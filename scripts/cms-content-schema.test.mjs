@@ -6,7 +6,57 @@ import {
   validArtistLink,
   publishedCollection,
   parseContentSnapshot,
+  replacePublishedRecord,
 } from '@blackbox/content-model';
+
+test('Artist activity retains legacy defaults and native false through draft and publication', () => {
+  const data = { title: 'Artist', genre: 'Hardcore', bio: 'Biography', image: { id: 'image' }, image_alt: 'Portrait' };
+  const record = { collection: 'artists', id: 'artist', slug: 'artist', revisionId: 'accepted', data };
+  const snapshot = {
+    schemaVersion: 1,
+    environment: 'local',
+    records: [record],
+    media: [
+      {
+        id: 'image',
+        sha256: 'a'.repeat(64),
+        filename: 'image.png',
+        mimeType: 'image/png',
+        size: 1,
+        width: 1,
+        height: 1,
+      },
+    ],
+  };
+  for (const [is_active, expected] of [
+    [undefined, true],
+    [null, true],
+    [true, true],
+    [1, true],
+    [false, false],
+    [0, false],
+  ]) {
+    const stored = { ...data, is_active };
+    assert.deepEqual(validateCmsDraft('artists', stored), []);
+    assert.deepEqual(validateCmsContent('artists', stored), []);
+    const accepted = parseContentSnapshot(
+      JSON.stringify({ ...snapshot, records: [{ ...record, data: stored }] }),
+      'local',
+    );
+    assert.equal(publishedCollection(accepted, 'artists', '/media')[0].data.is_active, expected);
+    assert.equal(stored.is_active, is_active);
+  }
+  for (const is_active of ['false', 'true', '0', '1', 2, -1, {}, []]) {
+    assert.ok(validateCmsDraft('artists', { ...data, is_active }).length);
+    assert.ok(validateCmsContent('artists', { ...data, is_active }).length);
+  }
+  const accepted = parseContentSnapshot(JSON.stringify(snapshot), 'local');
+  const draft = { ...record, revisionId: 'inactive-revision', data: { ...data, is_active: false } };
+  assert.equal(publishedCollection(accepted, 'artists', '/media')[0].data.is_active, true);
+  const published = replacePublishedRecord(accepted, draft, snapshot.media);
+  assert.equal(publishedCollection(published, 'artists', '/media')[0].data.is_active, false);
+  assert.equal(publishedCollection(accepted, 'artists', '/media')[0].data.is_active, true);
+});
 
 test('artist countries and service links preserve valid identities', () => {
   assert.deepEqual(parseArtistCountries('Greece / Germany'), ['GR', 'DE']);

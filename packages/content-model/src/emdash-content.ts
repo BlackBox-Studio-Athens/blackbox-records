@@ -99,9 +99,9 @@ export function isCmsCollection(value: string): value is CmsCollection {
 
 // EmDash stores booleans as INTEGER and returns 0/1; its own field schema accepts both forms.
 function nativeBooleans(collection: CmsCollection, data: Record<string, unknown>): Record<string, unknown> {
-  if (collection !== 'navigation') return data;
+  if (collection !== 'navigation' && collection !== 'artists') return data;
   const result = { ...data };
-  for (const key of ['show_in_header', 'show_in_footer'])
+  for (const key of collection === 'artists' ? ['is_active'] : ['show_in_header', 'show_in_footer'])
     if (result[key] === 0 || result[key] === 1) result[key] = result[key] === 1;
   return result;
 }

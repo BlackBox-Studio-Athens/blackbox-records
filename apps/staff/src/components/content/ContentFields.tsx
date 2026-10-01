@@ -480,10 +480,47 @@ export default function ContentFields({
       </FieldGroup>
     </FieldSet>
   );
+  const isActiveArtist = data.is_active !== false && data.is_active !== 0;
   if (collection === 'artists')
     return (
       <>
         {field('title', 'Artist name')}
+        <Field className="col-span-full" data-invalid={errors('is_active').length > 0}>
+          <label className="flex min-h-11 items-center justify-between gap-4" htmlFor="content-is_active">
+            <span className="grid gap-1">
+              <span id="content-is_active-label" className="font-medium">
+                Active artist
+              </span>
+              <span className="text-sm text-muted-foreground">{isActiveArtist ? 'Active' : 'Inactive'}</span>
+            </span>
+            <input
+              id="content-is_active"
+              data-content-path="is_active"
+              type="checkbox"
+              role="switch"
+              className="peer sr-only"
+              checked={isActiveArtist}
+              disabled={disabled}
+              aria-labelledby="content-is_active-label"
+              aria-invalid={errors('is_active').length > 0 || undefined}
+              aria-describedby={
+                errors('is_active').length
+                  ? 'content-is_active-description content-is_active-error'
+                  : 'content-is_active-description'
+              }
+              onBlur={() => touch('is_active')}
+              onChange={(event) => set('is_active', event.currentTarget.checked)}
+            />
+            <span
+              aria-hidden="true"
+              className="relative inline-flex h-6 w-11 shrink-0 rounded-full border border-border bg-muted transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-background after:content-[''] after:transition-transform peer-checked:border-primary peer-checked:bg-primary peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background peer-disabled:opacity-50 motion-reduce:transition-none motion-reduce:after:transition-none"
+            />
+          </label>
+          <FieldDescription id="content-is_active-description">
+            Inactive artists appear last on the website after you publish changes.
+          </FieldDescription>
+          <FieldError id="content-is_active-error">{errors('is_active').join(' ')}</FieldError>
+        </Field>
         {field('genre', 'Genre', { list: 'artist-genre-suggestions' })}
         <datalist id="artist-genre-suggestions">
           {genreSuggestions.map((genre) => (

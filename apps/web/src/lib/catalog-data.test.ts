@@ -1,4 +1,5 @@
 import type { CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('astro:content', () => ({
@@ -81,6 +82,8 @@ import {
   groupDistroEntries,
   listStoreItems,
   listReleaseCatalog,
+  listArtistProfiles,
+  listArtistRosterProfiles,
   mapStoreItemsBySlug,
   type StoreItem,
 } from './catalog-data';
@@ -94,6 +97,22 @@ type TestImageMetadata = ReleaseEntryData['cover_image'];
 
 function createTestImage(src: string): TestImageMetadata {
   return { src, width: 100, height: 100, format: 'jpg' };
+}
+
+function createArtistEntry(id: string, title: string, is_active = true): CollectionEntry<'artists'> {
+  return {
+    collection: 'artists',
+    id,
+    data: {
+      slug: id,
+      title,
+      is_active,
+      genre: 'Rock',
+      bio: 'Biography',
+      image: createTestImage(`/${id}.jpg`),
+      image_alt: title,
+    },
+  };
 }
 
 function createReleaseEntry(id: string, data: ReleaseEntryData): ReleaseEntry {
@@ -141,6 +160,59 @@ function createStoreItemCollisionRecord(
     storePath: `/blackbox-records/store/${slug}/`,
   };
 }
+
+describe('Artist roster ordering', () => {
+  const makeArtists = (is_active = true) => [
+    createArtistEntry('sidus', 'Sidus', is_active),
+    createArtistEntry('chronoboros', 'Chronoboros', is_active),
+    createArtistEntry('ouranopithecus', 'Ouranopithecus', is_active),
+    createArtistEntry('afterwise', 'Afterwise', is_active),
+  ];
+
+  it('puts inactive profiles last and leaves source and non-roster name ordering intact', async () => {
+    const artists = makeArtists();
+    artists[1]!.data.is_active = false;
+    vi.mocked(getCollection).mockResolvedValueOnce(artists);
+    const roster = await listArtistRosterProfiles();
+    expect(roster.map((artist) => artist.data.title)).toEqual(['Afterwise', 'Ouranopithecus', 'Sidus', 'Chronoboros']);
+    expect(roster.slice(0, 3).map((artist) => artist.id)).toEqual(['afterwise', 'ouranopithecus', 'sidus']);
+    expect(artists[0]!.id).toBe('sidus');
+    vi.mocked(getCollection).mockResolvedValueOnce(artists);
+    expect((await listArtistProfiles()).map((artist) => artist.data.title)).toEqual([
+      'Afterwise',
+      'Chronoboros',
+      'Ouranopithecus',
+      'Sidus',
+    ]);
+  });
+
+  it.each([true, false])('sorts a homogeneous activity group alphabetically (%s)', async (is_active) => {
+    vi.mocked(getCollection).mockResolvedValueOnce(makeArtists(is_active));
+    expect((await listArtistRosterProfiles()).map((artist) => artist.data.title)).toEqual([
+      'Afterwise',
+      'Chronoboros',
+      'Ouranopithecus',
+      'Sidus',
+    ]);
+  });
+
+  it('treats missing legacy activity as active', async () => {
+    const artists = makeArtists();
+    for (const artist of artists) delete (artist.data as Partial<typeof artist.data>).is_active;
+    vi.mocked(getCollection).mockResolvedValueOnce(artists);
+    expect((await listArtistRosterProfiles()).map((artist) => artist.data.title)).toEqual([
+      'Afterwise',
+      'Chronoboros',
+      'Ouranopithecus',
+      'Sidus',
+    ]);
+  });
+
+  it('accepts an empty roster', async () => {
+    vi.mocked(getCollection).mockResolvedValueOnce([]);
+    expect(await listArtistRosterProfiles()).toEqual([]);
+  });
+});
 
 describe('groupDistroEntries', () => {
   it('keeps small-vinyl groups separate, sorts items, and omits empty groups', () => {
