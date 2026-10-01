@@ -3815,6 +3815,10 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     font-size: 0.82rem;
   }
 
+  .site-footer-description span {
+    display: block;
+  }
+
   .site-footer-nav-list {
     gap: 0.35rem 1rem;
   }
