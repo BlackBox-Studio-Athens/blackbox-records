@@ -31,7 +31,7 @@ describe('Button', () => {
         'min-h-9',
         'min-w-24',
         'pointer-coarse:before:absolute',
-        'pointer-coarse:before:-inset-1',
+        'pointer-coarse:before:-inset-[5px]',
         'focus-visible:outline-2',
         'focus-visible:outline-solid',
       ]),
@@ -52,11 +52,11 @@ describe('Button', () => {
       expect.arrayContaining([
         'site-button--chip',
         'min-h-8',
-        'pointer-coarse:before:-inset-1.5',
+        'pointer-coarse:before:-inset-[7px]',
         'aria-pressed:border-foreground',
       ]),
     );
-    expect(classes).not.toContain('pointer-coarse:before:-inset-1');
+    expect(classes).not.toContain('pointer-coarse:before:-inset-[5px]');
     expect(classes).not.toContain('min-w-24');
   });
 
