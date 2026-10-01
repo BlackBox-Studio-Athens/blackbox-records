@@ -733,7 +733,7 @@ export default function ContentFields({
       <>
         {field('hero.section_label', 'Section label')}
         {field('hero.title', 'Page title')}
-        {image('hero.image', 'hero.image_alt', 'About image')}
+        {image('hero.image', 'hero.image_alt', 'Who we are image')}
         {field('lead.text', 'Opening text', { multiline: true })}
         <h2 className="col-span-full text-lg font-semibold">Our story</h2>
         {field('story.title', 'Story heading')}

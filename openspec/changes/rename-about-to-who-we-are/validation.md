@@ -31,6 +31,15 @@ Used the native Chrome extension with the blackbox profile against `http://127.0
 - Captured no browser console errors. Restored the default viewport and stopped the test player.
 - Screenshots: `.codex-artifacts/smoke/local/rename-about/desktop.jpg`, `mobile.jpg` and `player-continuity.jpg`.
 
+## Staff display labels
+
+Prepared in the app-created worktree `claude/who-we-are-content-update-c1b18a` at source SHA `f07cb698ff7bb22029406b2d061d537870156a8f`. PRD showed `About` above The Label because the About page Section label is separate CMS content from the Navigation title an editor had already changed there.
+
+- `pnpm openspec:guard --allow-worktree`: passed. `pnpm openspec -- --allow-worktree validate rename-about-to-who-we-are --type change --strict`: passed.
+- `pnpm validate:editor`: build, preview policy and Chromium editor phases passed; the Firefox phase timed out loading the Artists editor in `assertDirectPublishing` (summary `.codex-artifacts/validation/2026-10-01T10-10-29-803Z-86100/summary.json`). Rerunning `node scripts/test-content-workspace.mjs --firefox` on the same build passed, with screenshots in `.codex-artifacts/content-workspace/firefox/`.
+- Staff fixture server on side port 4419 (4399 was held by another process), in the built-in browser: the Pages card reads Who we are; the editor shows the `Who we are page` heading, search, details legend and `Who we are image` field. The remaining `About preview` control describes the preview and is unchanged.
+- Final-tree `pnpm validate` result is retained in `.codex-artifacts/smoke/local/rename-about/staff-labels-validation.json`.
+
 ## Release boundary
 
 No UAT/PRD content publication or Software Release was performed. Their existing acceptance gates remain separate from this Local result.

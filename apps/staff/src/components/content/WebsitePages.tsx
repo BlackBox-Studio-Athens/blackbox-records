@@ -2,7 +2,7 @@ import { ArrowRight, House, Globe, Boxes, FileText, Menu, ArrowUpRight, Mail } f
 
 const websitePages = [
   ['home', 'Home', 'Opening image, introduction and artist promotion', House],
-  ['about', 'About', 'The label story, contacts and people', Globe],
+  ['about', 'Who we are', 'The label story, contacts and people', Globe],
   ['services', 'Services', 'What the label offers and how to get in touch', Mail],
   ['distro_page', 'Distro introduction', 'Introduction and format descriptions', Boxes],
   ['purchase_information', 'Buying & delivery', 'Purchase terms, delivery and privacy', FileText],

@@ -6,7 +6,7 @@ export const contentSections = {
   distro: 'Distro and merch',
   news: 'News',
   home: 'Home page',
-  about: 'About page',
+  about: 'Who we are page',
   services: 'Services page',
   distro_page: 'Distro page',
   purchase_information: 'Buying & delivery',

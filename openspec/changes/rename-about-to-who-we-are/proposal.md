@@ -7,6 +7,7 @@ The public About label feels corporate beside BlackBox's community-led identity.
 - Rename public About navigation, page section and shell transition labels to Who we are.
 - Derive the browser page title from the existing page section label.
 - Update source fixtures and publish only the corresponding Local CMS label changes through Content Publication.
+- Rename the staff display labels for the About page (Pages card, editor title and image field) to Who we are; the `about` collection identity stays.
 - Preserve `/about/`, internal identities, The Label heading and existing page content.
 
 ## Capabilities
@@ -21,4 +22,4 @@ None.
 
 ## Impact
 
-Public navigation content, About content and template, shell display labels, and the Local accepted content snapshot. No API, schema, route, dependency or hosted publication changes.
+Public navigation content, About content and template, shell and staff display labels, the Local accepted content snapshot and the PRD About Section label, which an editor publishes through PRD staff. No API, schema, route or dependency changes.
