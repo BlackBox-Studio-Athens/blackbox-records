@@ -1,6 +1,6 @@
 # Validation
 
-Base commit: `aaed80b3` (local `main`), rebased on 2026-10-01 from `21e63c1a`, where the first runs below were made. Branch `claude/xenodochial-feynman-abcd02` (worktree `xenodochial-feynman-abcd02`), for a fast-forward into local `main`; not pushed.
+Base commit: `50a41e53` (local `main`), rebased twice on 2026-10-01 from `21e63c1a`, where the first runs below were made. Branch `claude/xenodochial-feynman-abcd02` (worktree `xenodochial-feynman-abcd02`), for a fast-forward into local `main`; not pushed.
 Product Environment: Local, `astro dev` from this worktree on `http://127.0.0.1:4331/blackbox-records/`. Port 4321 was held by the `astro dev` of worktree `press-email-change-443090`, so Playwright ran with an ignored override config (`.codex-artifacts/playwright.side.config.ts`: base URL on 4331, no web server).
 
 ## Repository gates
@@ -10,6 +10,7 @@ Product Environment: Local, `astro dev` from this worktree on `http://127.0.0.1:
 - Full Playwright suite (`pnpm test:e2e` specs through the override config): 41 passed, 5 skipped (desktop-only and mobile-only tests on the other project). Log: `.codex-artifacts/rehydrate/e2e.log` (ignored).
 - `pnpm openspec -- --allow-worktree validate rehydrate-cached-shell-islands --type change --strict`: valid.
 - After the rebase, which brought main's About copy buttons (shell-owned DOM, not an island, with their own snapshot reset): `pnpm test:app-shell` passes 197 tests and the full Playwright suite passes 42 with 5 skipped, including main's `e2e/about-contact.spec.ts`. Logs: `.codex-artifacts/rehydrate/*-rebased.log` (ignored).
+- After the second rebase, which brought main's player Back handling (`close-player-on-back`): `pnpm test:app-shell` passes 213 tests and the full Playwright suite passes 43 with 5 skipped, including its new player-continuity test. Logs: `.codex-artifacts/rehydrate/*-rebased2.log` (ignored).
 - Final `pnpm validate`: run pointer in `.codex-artifacts/rehydrate/final-validation.md` (ignored).
 
 ## Acceptance rows
