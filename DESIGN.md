@@ -18,6 +18,8 @@ colors:
   store-blood: '#922f3f'
   store-blood-hover: '#b4465a'
   store-blood-active: '#cf6b80'
+  preorder-sea-green: '#2d766a'
+  preorder-sea-green-active: '#4ca999'
 typography:
   display:
     fontFamily: 'Veneer, Bebas Neue, Impact, sans-serif'
@@ -111,7 +113,7 @@ The visual system is editorial first and commercial second. Storefront, checkout
 
 ## 2. Colors
 
-The palette is near-black and off-white with two muted red families for section-specific intent.
+The palette is near-black and off-white with two muted red families for section-specific intent and one sea green reserved for pre-orders.
 
 ### Primary
 
@@ -122,6 +124,7 @@ The palette is near-black and off-white with two muted red families for section-
 
 - **Store Blood** (#922f3f): Store and checkout accent. Use for commerce context, never as a general brand wash.
 - **Services Rose** (#8a495a): Services and inquiry accent. Use for service affordances, form focus, and restrained section details.
+- **Preorder Sea Green** (#2d766a, text on dark #4ca999, surface `rgba(45, 118, 106, 0.16)`): The wait for copies that are not on the shelf yet; the complement of Store Blood. Tokens `--preorder-accent`, `--preorder-accent-active` and `--preorder-accent-surface`. Allowed on pre-order badges and the Pre-order filter (outline and tinted text), the 3px base line of the Pre-order button, the 2px top edge of pre-order panels, and the outline of the facts list and ships-together notice. Text on dark uses the active tone (6.5:1 on Charcoal Surface); the only fill is the Pre-order button on hover and focus, with Ink Foreground text (4.9:1). Never on resting controls, page washes or ordinary items.
 
 ### Neutral
 
@@ -138,6 +141,8 @@ The palette is near-black and off-white with two muted red families for section-
 **The Monochrome Owns The Page Rule.** Black, charcoal, off-white, and gray must carry the screen. Accent color clarifies a route or action; it must not recolor the whole product.
 
 **The Commerce Is Subordinate Rule.** Store Blood can identify the store path, but checkout UI must still look like BlackBox, not a payment provider, marketplace, or Shopify theme.
+
+**The Sea Green Marks The Wait Rule.** Preorder Sea Green appears only where an item or order waits for copies. It outlines and underlines; it does not fill resting controls, wash sections or tint ordinary items.
 
 ## 3. Typography
 
@@ -208,6 +213,19 @@ Chips and badges are compact metadata, not decorative pills.
 
 - **Style:** Small uppercase labels, tracked text, subdued gray or section accent, and thin borders.
 - **State:** Selected or active states may use Store Blood or Services Rose only in the route where that meaning is already established.
+
+### Pre-order components
+
+Pre-orders reuse the existing button, chip and card families and add only Sea Green marks. Rules live in `apps/web/src/styles/global.css`.
+
+- **Badge** (`.store-item-card__preorder` on cards in its own element so Sold Out, Out of Stock and Only N left keep the availability chip; `.preorder-badge` elsewhere): the status chip's box with a 1px Sea Green outline and Sea Green active text. `Out now` (`.store-item-card__release-status`) is the neutral twin.
+- **Pre-order button** (`.preorder-action`): the primary button with a 3px Sea Green base line; hover and focus-visible fill the face Sea Green with Ink Foreground text. Footprint unchanged: 224 x 54 px on desktop, full width on mobile.
+- **Facts** (`.preorder-facts`): label and value rows in a Sea Green outline, Inter, 4.5:1 text.
+- **Ships-together notice** (`.preorder-notice`, `.preorder-rail`): outlined, tinted panel with a two-step rail; Today is solid, the arrival step (`--later`) is dashed because its date is an estimate.
+- **Panel edge** (`.preorder-edge`): 2px Sea Green top edge for the return page panel.
+- **Store filter and notes** (`.store-preorder-filter`, `.store-preorder-notes`): a 44px chip with the pre-order count (ink border and check mark when selected) and a three-note strip with a Sea Green top edge.
+- **Home section** (`.home-preorders`): a menu of pre-orders beside one stage with a grayscale artist backdrop, the cover in front, a neutral Play control, facts and a price band with the Pre-order button.
+- No new motion beyond the existing button transition, and none under reduced motion. Existing Veneer and Bebas sizes only; every target is 44px.
 
 ### Cards / Containers
 
@@ -303,6 +321,6 @@ Store Listen actions use the selected Below the artwork placement: a 112 × 44px
 
 Store collections use a 90rem container with 32px desktop and 16px mobile gutters. At 1024px the 13rem Artists pane sits beside the results; below it, Distro formats stay visible as wrapping square chips with counts (selected: ink border and check mark, never a horizontal scroller), and a full-width native Artist select holds the artist filter. Keep Top below it. Cards form a continuous Grid by default: four columns from 1280px, three from 640px, two from 360px, and one below. Optional Coverflow requires explicit selection.
 
-Distro uses one mixed-format catalog, including canonical BlackBox Store items. Released BlackBox titles from the last six calendar months lead newest-first with a quiet New release label; all remaining items follow band A–Z. Format chips filter individual cards and share the artist/text filters. Any active filter uses Grid; optional Coverflow browses the complete unfiltered list. Retained static builds refresh the date window at their next build. Pre-order promotion follows the separately delivered pre-order flow.
+Distro uses one mixed-format catalog, including canonical BlackBox Store items. Released BlackBox titles from the last six calendar months lead newest-first with a quiet New release label; all remaining items follow band A–Z. Format chips filter individual cards and share the artist/text filters. Any active filter uses Grid; optional Coverflow browses the complete unfiltered list. Retained static builds refresh the date window at their next build. Pre-orders are marked on cards (Pre-order badge, Pre-order button) and collected under a Pre-orders filter; see Pre-order components.
 
 Use complete square artwork and the UI display face (Bebas Neue) for prices across cards, item pages, cart, and checkout. Store listing cards follow the Store Listing Exception: Inter item titles above a plain “by” and a Veneer artist or label name. Item pages, cart and checkout retain Veneer item titles and Inter credits; formats and controls retain their existing fonts. Cards contain the purchase facts without repeated descriptions or category labels. On item pages, cap artwork at 26rem and place it beside purchase information on desktop; mobile reads identity, artwork, purchase information. Info and populated format-matching Tracklists share the next row. Preserve More views and existing listening actions.

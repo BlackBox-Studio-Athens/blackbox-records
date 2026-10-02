@@ -27,6 +27,14 @@
         "displayName": "Services Rose",
         "canonical": "#8a495a",
         "tonalRamp": ["#231016", "#3b1d27", "#57303b", "#704050", "#8a495a", "#a76376", "#c78997", "#efd6dd"]
+      },
+      "preorder-sea-green": {
+        "role": "secondary",
+        "displayName": "Preorder Sea Green",
+        "canonical": "#2d766a",
+        "active": "#4ca999",
+        "surface": "rgba(45, 118, 106, 0.16)",
+        "tonalRamp": ["#0c1f1c", "#14352f", "#1e4e45", "#2d766a", "#3a9183", "#4ca999", "#8ccfc3", "#d3efea"]
       }
     },
     "typographyMeta": {
@@ -165,6 +173,11 @@
         "section": "colors"
       },
       {
+        "name": "The Sea Green Marks The Wait Rule",
+        "body": "Preorder Sea Green appears only where an item or order waits for copies. It outlines and underlines; it does not fill resting controls, wash sections or tint ordinary items. The only fill is the Pre-order button on hover and focus.",
+        "section": "colors"
+      },
+      {
         "name": "The Poster Over Dashboard Rule",
         "body": "Use Bebas Neue for identity and rhythm, not for dense controls. When a surface is operational, reduce display scale before it starts reading as a poster.",
         "section": "typography"
@@ -188,6 +201,7 @@
     "dos": [
       "Do preserve the monochrome BlackBox visual language unless the task explicitly changes the visual direction.",
       "Do use Store Blood only for store and checkout context, and Services Rose only for service and inquiry context.",
+      "Do use Preorder Sea Green only for pre-order badges, the Pre-order button, the Pre-orders filter and pre-order panels.",
       "Do keep release, artist, distro, and news cards square, flat, and image-led.",
       "Do keep checkout and shipping states understandable through text, structure, and disabled/action states, not color alone.",
       "Do validate rendered UI changes with Browser Use first, with DevTools only as the documented fallback.",

@@ -130,6 +130,10 @@ body.is-shell-scroll-locked {
   --store-accent-hover: #b4465a;
   --store-accent-active: #cf6b80;
   --store-accent-surface: rgba(146, 47, 63, 0.14);
+  /* Pre-order Sea green, the complement of Store Blood (openspec/changes/add-store-preorders) */
+  --preorder-accent: #2d766a;
+  --preorder-accent-active: #4ca999;
+  --preorder-accent-surface: rgba(45, 118, 106, 0.16);
   /* Public button family (openspec/changes/unify-public-buttons) */
   --control-ink: #e8e8e8;
   --control-ink-pressed: #cfcfcf;
@@ -4847,6 +4851,475 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   letter-spacing: 0.06em;
   line-height: 1;
   text-transform: uppercase;
+}
+
+/* Pre-orders (openspec/changes/add-store-preorders). Sea green marks the wait, as Store Blood marks the shop: outline on
+   badges and a quiet edge on panels, never a fill on a resting control. Text on dark uses --preorder-accent-active
+   (6.5:1 on Charcoal Surface); the only fill is the button on hover and focus, with Ink Foreground text (4.9:1). */
+
+/* Card status chips share the availability chip's box. The pre-order badge has its own element, so a pre-order that is
+   sold out or scarce keeps the Sold Out, Out of Stock or Only N left chip beside it. */
+.store-item-card__preorder,
+.store-item-card__release-status,
+.preorder-badge {
+  align-self: center;
+  border: 1px solid var(--preorder-accent);
+  padding: 0.2rem 0.35rem;
+  color: var(--preorder-accent-active);
+  font-size: 0.625rem;
+  line-height: 1.2;
+}
+
+.store-item-card__preorder {
+  min-width: 0;
+  max-width: 100%;
+  text-wrap: balance;
+}
+
+.store-item-card__release-status {
+  border-color: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+  color: var(--foreground);
+  white-space: nowrap;
+}
+
+/* The same outline badge outside cards: cart chip, facts, home and release pages. */
+.preorder-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.6875rem;
+}
+
+/* Primary button with a 3px Sea green base line. Hover and focus fill the face; the line then disappears into it.
+   Size and footprint stay the button's own. */
+.preorder-action {
+  padding-bottom: 3px;
+  box-shadow: inset 0 -3px 0 var(--preorder-accent);
+}
+
+.preorder-action:focus-visible,
+.preorder-action:active {
+  border-color: var(--preorder-accent);
+  background-color: var(--preorder-accent);
+  color: var(--foreground);
+}
+
+.preorder-action:active {
+  background-color: color-mix(in srgb, var(--preorder-accent) 80%, var(--background));
+  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--preorder-accent) 80%, var(--background));
+}
+
+@media (hover: hover) {
+  .preorder-action:hover:not(:disabled, [aria-disabled='true']) {
+    border-color: var(--preorder-accent);
+    background-color: var(--preorder-accent);
+    color: var(--foreground);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preorder-action {
+    transition: none;
+  }
+}
+
+/* Facts list: Release date, Expected to ship, Payment. */
+.preorder-facts {
+  display: grid;
+  margin: 0;
+  border: 1px solid var(--preorder-accent);
+  padding: 0.25rem 1rem;
+  list-style: none;
+}
+
+.preorder-facts > :where(div, li) {
+  display: grid;
+  grid-template-columns: minmax(7rem, 9rem) minmax(0, 1fr);
+  gap: 0.25rem 1rem;
+  padding-block: 0.625rem;
+}
+
+.preorder-facts > :where(div, li) + :where(div, li) {
+  border-top: 1px solid var(--control-edge-quiet);
+}
+
+.preorder-facts dt {
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+}
+
+.preorder-facts dd {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+@media (width < 24rem) {
+  .preorder-facts > :where(div, li) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* "Ships together" notice for the cart drawer and checkout review: heading, two-step rail, one sentence. */
+.preorder-notice {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--preorder-accent);
+  background: var(--preorder-accent-surface);
+  padding: 0.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.preorder-notice :is(h2, h3, h4) {
+  margin: 0;
+  color: var(--preorder-accent-active);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.preorder-notice p {
+  margin: 0;
+}
+
+/* Two steps along one line: Today is solid, the arrival is dashed because its date is an estimate. */
+.preorder-rail {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.preorder-rail__step {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  border-top: 2px solid var(--preorder-accent-active);
+  padding-top: 0.5rem;
+  color: var(--foreground);
+  overflow-wrap: anywhere;
+}
+
+.preorder-rail__step--later {
+  border-top: 2px dashed color-mix(in srgb, var(--preorder-accent) 78%, transparent);
+}
+
+.preorder-rail__step > :first-child {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.preorder-rail__step > :not(:first-child) {
+  color: var(--muted-foreground);
+}
+
+@media (width < 22.5rem) {
+  .preorder-rail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Top edge of a panel that records a pre-order (return page). */
+.preorder-edge {
+  border-top: 2px solid var(--preorder-accent);
+}
+
+/* Store toolbar toggle. Selected reads as the other chips do: ink border and a check mark, never colour alone. */
+.store-preorder-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border: 1px solid color-mix(in srgb, var(--preorder-accent) 72%, transparent);
+  background: var(--secondary);
+  padding: 1px 0.875rem 0;
+  color: var(--foreground);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.store-preorder-filter:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.store-preorder-filter[aria-pressed='true'] {
+  border-color: var(--foreground);
+  background: var(--preorder-accent-surface);
+}
+
+.store-preorder-filter[aria-pressed='true']::before {
+  content: '✓' / '';
+}
+
+.store-preorder-filter__count {
+  color: var(--preorder-accent-active);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (hover: hover) {
+  .store-preorder-filter:hover {
+    border-color: var(--preorder-accent-active);
+    background: var(--control-face-hover);
+  }
+
+  .store-preorder-filter[aria-pressed='true']:hover {
+    border-color: var(--foreground);
+  }
+}
+
+/* The three notes under the toolbar while the filter is on: one strip, a Sea green top edge, hairline dividers. */
+.store-preorder-notes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  margin: 0 0 1rem;
+  border: 1px solid var(--control-edge);
+  border-top: 2px solid var(--preorder-accent);
+  padding: 0;
+  list-style: none;
+}
+
+.store-preorder-notes > * {
+  display: grid;
+  align-content: start;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0.75rem 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.store-preorder-notes > * + * {
+  border-top: 1px solid var(--control-edge);
+}
+
+.store-preorder-notes :is(h2, h3, h4, strong, dt) {
+  margin: 0;
+  color: var(--foreground);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.store-preorder-notes :is(p, dd) {
+  margin: 0;
+}
+
+@media (min-width: 40rem) {
+  .store-preorder-notes {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .store-preorder-notes > * + * {
+    border-top: 0;
+    border-left: 1px solid var(--control-edge);
+  }
+}
+
+/* Home section below the fixed hero: a menu of pre-orders beside one stage (grayscale artist backdrop, cover in front,
+   Play, then facts and the price band). The band uses the news section's translucent backing so the hero stays behind. */
+.home-preorders {
+  position: relative;
+  z-index: 1;
+}
+
+.home-preorders::before {
+  position: absolute;
+  inset-block: 0;
+  inset-inline: calc(50% - 50vw);
+  z-index: -1;
+  background: rgb(13 13 13 / 76%);
+  content: '';
+  pointer-events: none;
+}
+
+.home-preorders__menu {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  border-top: 1px solid var(--control-edge);
+  padding: 0;
+  list-style: none;
+}
+
+.home-preorders__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.75rem;
+  border: 0;
+  border-bottom: 1px solid var(--control-edge);
+  background: transparent;
+  padding: 0.5rem 0.75rem;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home-preorders__item::before {
+  flex: none;
+  width: 1ch;
+  content: '✓' / '';
+  opacity: 0;
+}
+
+.home-preorders__item:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.home-preorders__item:is([aria-current='true'], [aria-pressed='true'], [aria-selected='true']) {
+  background: var(--control-face-selected);
+  color: var(--foreground);
+  box-shadow: inset 0 0 0 1px var(--foreground);
+}
+
+.home-preorders__item:is([aria-current='true'], [aria-pressed='true'], [aria-selected='true'])::before {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .home-preorders__item:hover {
+    background: var(--accent);
+    color: var(--foreground);
+  }
+}
+
+.home-preorders__stage {
+  min-width: 0;
+  border: 1px solid var(--control-edge);
+  background: var(--card);
+}
+
+.home-preorders__poster {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  background: var(--background);
+}
+
+@media (width < 40rem) {
+  .home-preorders__poster {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+.home-preorders__poster-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: grayscale(1);
+  opacity: 0.55;
+}
+
+/* The cover sits high so Play, centred along the bottom edge, never covers it. */
+.home-preorders__poster-cover {
+  position: absolute;
+  top: 7%;
+  left: 50%;
+  z-index: 1;
+  width: auto;
+  height: 62%;
+  aspect-ratio: 1;
+  translate: -50% 0;
+  border: 1px solid var(--control-edge);
+  background: var(--background);
+  object-fit: contain;
+}
+
+/* Same footprint as Listen (112 x 44px), but neutral: amber means the shell player. */
+.home-preorders__play {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  translate: -50% 0;
+  min-width: 6.6rem;
+  min-height: 2.75rem;
+  border: 1px solid var(--foreground);
+  background: rgb(13 13 13 / 86%);
+  padding: 1px 0.75rem 0;
+  color: var(--foreground);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.home-preorders__play:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) {
+  .home-preorders__play:hover {
+    background: var(--control-face-hover);
+  }
+}
+
+.home-preorders__frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--background);
+}
+
+.home-preorders__facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin: 0;
+  border-top: 1px solid var(--control-edge);
+  padding: 0.75rem 1rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.home-preorders__facts dd {
+  margin: 0;
+  color: var(--foreground);
+}
+
+.home-preorders__buy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  border-top: 1px solid var(--control-edge);
+  background: var(--secondary);
+  padding: 0.75rem 1rem;
+  font-variant-numeric: tabular-nums;
 }
 
 html[data-store-coverflow-capable]

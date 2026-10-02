@@ -12,7 +12,7 @@ Internal operator surfaces such as stock operations are product surfaces by exce
 
 ## Product Purpose
 
-BlackBox Records is a static Astro site for an Athens label and collective. It presents artists, releases, distro entries, news, services, and a native commerce path while preserving the label's direct community posture.
+BlackBox Records is a static Astro site for an Athens label and collective. It presents artists, releases, distro entries, news, services, and a native commerce path while preserving the label's direct community posture. The Store takes pre-orders for records whose copies are not on the shelf yet: shoppers are charged in full at order, every pre-order item says when it expects to ship, and the whole order goes out in one parcel when the copies arrive.
 
 Success means the site feels label-operated and current, not like a generic ecommerce catalog. It should make the roster, music, physical formats, checkout flow, and practical service offers easy to understand without letting commerce or tooling own the identity.
 
@@ -37,7 +37,7 @@ Do not let Stripe, BOX NOW, stock operations, or backend identifiers become the 
 1. Keep the label in charge. Commerce, checkout, shipping, and services must sit inside the BlackBox editorial system.
 2. Make physical music legible. Releases, distro formats, artist context, and listening actions should scan quickly without becoming marketplace-dense.
 3. Preserve the shell. Navigation, overlays, and the persistent player are part of the experience model, not optional decoration.
-4. Use restraint with intent. Monochrome is the default; accent color appears only where it clarifies a section or action.
+4. Use restraint with intent. Monochrome is the default; accent color appears only where it clarifies a section or action. Pre-orders carry their own muted sea green so the wait is never mistaken for stock.
 5. Write like people work here. Copy should be clear, direct, and specific, with no corporate filler or fake hype.
 
 ## Accessibility & Inclusion
