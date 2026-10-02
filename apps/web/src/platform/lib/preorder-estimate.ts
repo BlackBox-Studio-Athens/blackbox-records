@@ -38,15 +38,11 @@ export function shipEstimateText(estimate: ShipEstimate) {
   return `around ${part}${monthName(estimate.month)} ${estimate.month.slice(0, 4)}`;
 }
 
-function shipsText(estimate: ShipEstimate | null) {
-  if (!estimate) return '';
-
-  return estimate.kind === 'date' ? ` · ships ${shortDate(estimate.date)}` : ` · ships ${shipEstimateText(estimate)}`;
-}
-
 // Chip beside a cart line and the post-release badge share one wording.
 export function preorderChipText(shipEstimate: ShipEstimate | null) {
-  return `Pre-order${shipsText(shipEstimate)}`;
+  if (!shipEstimate) return 'Pre-order';
+
+  return `Pre-order · ships ${shipEstimate.kind === 'date' ? shortDate(shipEstimate.date) : shipEstimateText(shipEstimate)}`;
 }
 
 // releaseDate is an ISO date or a Date; "out" follows the UTC-day rule of isReleaseOutNow.
