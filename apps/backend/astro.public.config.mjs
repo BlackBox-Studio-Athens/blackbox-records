@@ -80,13 +80,12 @@ export default defineConfig({
         name: 'published-purchase-reader',
         enforce: 'pre',
         resolveId(id, importer) {
-          const path = (id.startsWith('.') && importer ? resolve(dirname(importer.split('?')[0]), id) : id).replaceAll(
-            '\\',
-            '/',
-          );
+          const path = (id.startsWith('.') && importer ? resolve(dirname(importer.split('?')[0]), id) : id)
+            .replaceAll('\\', '/')
+            .replace(/\.ts$/, '');
           if (
             path === '@/platform/lib/purchase-information' ||
-            path.replace(/\.ts$/, '') === local('../web/src/platform/lib/purchase-information')
+            path === local('../web/src/platform/lib/purchase-information')
           )
             return this.environment.name === 'client'
               ? local('../web/src/lib/published-purchase-browser.ts')
