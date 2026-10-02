@@ -158,6 +158,8 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
         <StoreOfferPriceDisplay
           client:load
           storeItemSlug={storeItem.slug}
+          releaseDate={releaseDate}
+          preorderFacts
           suppressUnavailableHeadline
           className="block font-display text-3xl tracking-[0.08em] uppercase text-foreground"
         />
