@@ -2,6 +2,8 @@
 import Prose from '@/components/Prose.astro';
 import { getImage, Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
+import { tracklistGroups } from '@blackbox/content-model';
+import EditorialContent from '@/components/detail/EditorialContent.astro';
 
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import StoreImageGallery from '@/components/store/StoreImageGallery';
@@ -30,6 +32,8 @@ const releaseDateMachineValue = release.data.release_date?.toISOString().slice(0
 const embeddedPlayerTitle = `${release.data.title} — ${artistName}`;
 const embeddedPlayerData = buildEmbeddedPlayerData(release.id, release.data, embeddedPlayerTitle);
 const commerceLink = await getReleaseCommerceLink(release);
+const hasBody = release.data.editorial_body ? release.data.editorial_body.length > 0 : Boolean(release.body?.trim());
+const trackGroups = tracklistGroups(release.data.tracklist, release.data.tracklist?.format);
 const singles = release.data.singles ?? [];
 const clips = release.data.clips ?? [];
 const gallery = release.data.gallery ?? [];
@@ -147,6 +151,51 @@ const galleryImages =
   </Card>
 </section>
 
+{hasBody && (
+  <section class="layout-container mt-12" aria-labelledby="release-description-title" data-content-path="body">
+    <Card className="surface-card">
+      <CardContent className="space-y-5 p-7 sm:p-9">
+        <h2 id="release-description-title" class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">
+          About this release
+        </h2>
+        <div class="prose">
+          <EditorialContent entry={release} />
+        </div>
+      </CardContent>
+    </Card>
+  </section>
+)}
+
+{trackGroups.length > 0 && (
+  <section class="layout-container mt-12" aria-labelledby="release-tracklist-title" data-content-path="tracklist">
+    <Card className="surface-card">
+      <CardContent className="space-y-6 p-7 sm:p-9">
+        <h2 id="release-tracklist-title" class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">
+          Tracklist
+        </h2>
+        {trackGroups.map((group) => (
+          <div>
+            {group.heading && (
+              <h3 class="mb-3 text-xs tracking-[0.14em] text-muted-foreground uppercase">{group.heading}</h3>
+            )}
+            <ol role="list">
+              {group.tracks.map((track) => (
+                <li class="grid grid-cols-[max-content_minmax(0,1fr)_auto] gap-3 border-t border-border/70 py-3 text-sm">
+                  <span class="min-w-[3ch] text-muted-foreground tabular-nums">{track.position}</span>
+                  <span class="min-w-0 [overflow-wrap:anywhere]">{track.title}</span>
+                  {track.duration && (
+                    <span class="text-right text-muted-foreground tabular-nums">{track.duration}</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  </section>
+)}
+
 {(singles.length > 0 || clips.length > 0) && (
   <section class="layout-container mt-12" aria-labelledby="release-media-title">
     <Card className="surface-card">
@@ -199,7 +248,7 @@ const galleryImages =
   </section>
 )}
 
-{release.data.credits && (
+{release.data.credits && release.data.credits.length > 0 && (
   <section class="layout-container mt-12">
     <Card className="surface-card">
       <CardContent className="p-7 sm:p-9">

@@ -254,10 +254,21 @@ const [selected, other] = await Promise.all(
   items.slice(0, 2).map(async (item) => (await api(`content/artists/${item.id}`)).data.item),
 );
 const tracklistExamples = [];
-const releaseMedia = {
+const releaseDetails = {
   singles: [{ title: 'Local preview single', url: 'https://example.com/listen' }],
   clips: [{ title: 'Local preview clip', youtube_video_id: '1sp213QHLX0' }],
+  body: formattedProse,
+  release_date: '2099-01-01',
 };
+function assertReleaseDetails(html) {
+  assert.ok(html.includes('Local opening track'), 'Release details show the authored tracklist.');
+  assert.ok(html.indexOf('Local opening track') < html.indexOf('Local closing track'), 'Track order is preserved.');
+  assert.ok(html.includes('Side A') && html.includes('Side B'));
+  assert.ok(html.includes('A1') && html.includes('B1') && html.includes('3:42'));
+  assert.match(html, /<strong>Bold description<\/strong>/);
+  assert.match(html, /href="https:\/\/example.com\/band"/);
+  assert.ok(html.indexOf('Bold description') < html.indexOf('Local opening track'));
+}
 for (const [collection, slug, storeSlug, tracklist] of [
   [
     'releases',
@@ -283,6 +294,48 @@ for (const [collection, slug, storeSlug, tracklist] of [
   const original = (await api('content/' + collection + '/' + item.id)).data.item;
   tracklistExamples.push({ collection, item: original, storeSlug, tracklist });
 }
+const releaseExample = tracklistExamples.find((example) => example.collection === 'releases');
+for (const details of [
+  { ...releaseDetails, formats: ['Digital'], tracklist: releaseExample.tracklist },
+  { ...releaseDetails, release_date: '2000-01-01', tracklist: releaseExample.tracklist },
+  { ...releaseDetails, body: [], tracklist: null },
+]) {
+  const preview = await fetch(`${staff}/_emdash/preview?view=detail`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-EmDash-Request': '1', Origin: staff },
+    body: JSON.stringify({
+      collection: 'releases',
+      id: releaseExample.item.id,
+      slug: releaseExample.item.slug,
+      data: editorialWriteData({ ...releaseExample.item.data, ...details }),
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+  assert.equal(preview.status, 200, await preview.clone().text());
+  const document = await preview.json();
+  try {
+    for (const path of ['releases', 'app-shell-overlay/releases']) {
+      const response = await fetch(
+        new URL(`/blackbox-records/${path}/${releaseExample.item.slug}/?__preview=${document.context}`, document.url),
+      );
+      assert.equal(response.status, 200);
+      const html = await response.text();
+      if (details.tracklist) assertReleaseDetails(html);
+      else {
+        assert.doesNotMatch(html, /id="release-description-title"|id="release-tracklist-title"/);
+        assert.ok(!html.includes('Bold description') && !html.includes('Local opening track'));
+      }
+    }
+  } finally {
+    const response = await fetch(`${staff}/_emdash/preview-release`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: staff, 'X-EmDash-Request': '1' },
+      body: JSON.stringify({ context: document.context }),
+    });
+    assert.equal(response.status, 204);
+  }
+}
+console.log('Release previews: future/past dates, authored format, empty fields and overlay parity passed.');
 // Explicit schema setup on populated Local data must be repeatable and preserve records.
 for (let repeat = 0; repeat < 2; repeat++) {
   const response = await fetch(staff + '/_emdash/api/blackbox/catalog-schema', {
@@ -314,7 +367,7 @@ try {
       {
         ...example.item.data,
         tracklist: example.tracklist,
-        ...(example.collection === 'releases' ? releaseMedia : {}),
+        ...(example.collection === 'releases' ? releaseDetails : {}),
       },
       example.collection,
     );
@@ -354,6 +407,7 @@ try {
         );
         assert.equal(release.status, 200);
         const releaseHtml = await release.text();
+        assertReleaseDetails(releaseHtml);
         assert.ok(releaseHtml.includes('Local preview single'));
         assert.ok(releaseHtml.includes('Local preview clip'));
         assert.ok(releaseHtml.includes('youtube-nocookie.com/embed/1sp213QHLX0'));
@@ -377,6 +431,7 @@ try {
       assert.doesNotMatch(html, /<iframe\b/i, 'Published player remains inert until Listen is activated.');
     } else {
       const releaseHtml = await fetch(`${site}/releases/${example.item.slug}/`).then((response) => response.text());
+      assertReleaseDetails(releaseHtml);
       assert.ok(releaseHtml.includes('Local preview single'));
       assert.ok(releaseHtml.includes('Local preview clip'));
     }
@@ -385,9 +440,20 @@ try {
   assert.ok(!unrelated.includes(marker), 'Unrelated draft leaked to the public site.');
   const second = (await api(`content/artists/${other.id}`)).data;
   const latest = (await api(`content/artists/${selected.id}`)).data;
+  const released = await save(
+    releaseExample.item,
+    { ...releaseExample.item.data, ...releaseDetails, tracklist: releaseExample.tracklist, release_date: '2000-01-01' },
+    'releases',
+  );
   const batchElapsedMs = await publish(selected, latest, [
     { collection: 'artists', recordId: other.id, expectedRevision: second._rev },
+    { collection: 'releases', recordId: releaseExample.item.id, expectedRevision: released._rev },
   ]);
+  for (const path of ['releases', 'app-shell-overlay/releases']) {
+    const response = await fetch(`${site}/${path}/${releaseExample.item.slug}/`);
+    assert.equal(response.status, 200);
+    assertReleaseDetails(await response.text());
+  }
   const together = await fetch(`${site}/artists/${other.slug}/`).then((response) => response.text());
   assert.ok(together.includes(marker), 'Selected batch record did not go live.');
   console.log(
@@ -416,7 +482,11 @@ try {
         ...example.item.data,
         tracklist: example.item.data.tracklist ?? null,
         ...(example.collection === 'releases'
-          ? { singles: example.item.data.singles ?? [], clips: example.item.data.clips ?? [] }
+          ? {
+              singles: example.item.data.singles ?? [],
+              clips: example.item.data.clips ?? [],
+              body: example.item.data.body ?? [],
+            }
           : {}),
       },
       example.collection,
