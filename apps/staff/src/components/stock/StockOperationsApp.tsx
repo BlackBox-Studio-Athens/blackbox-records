@@ -25,10 +25,12 @@ import {
   type InternalStockDetail,
   type InternalStockHistoryResponse,
   type InternalVariantSummary,
+  type SetStockPreorderBody,
 } from '../../lib/backend/internal-stock-api';
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 import { cn } from '../ui/utils';
 import FormatFilter, { formatLabel } from './FormatFilter';
+import PreorderControl from './PreorderControl';
 import { editorialRequest, staffThumbnailUrl, type EditorialMedia } from '../../lib/backend/editorial-api';
 import {
   recordProgress,
@@ -65,7 +67,7 @@ type HistoryEntry = InternalStockHistoryResponse['entries'][number];
 export type StockLoadingIntent = 'refresh' | 'search' | 'variant' | 'workspace' | null;
 const LOW_STOCK_NOTICE_THRESHOLD = 5;
 
-type StockSubmittingIntent = 'stockChange' | 'stockCount' | 'restockPlan' | 'lowStockNotice' | null;
+type StockSubmittingIntent = 'stockChange' | 'stockCount' | 'restockPlan' | 'lowStockNotice' | 'preorder' | null;
 
 export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOperationsAppProps) {
   const [otherPending, setOtherPending] = useState(false);
@@ -702,6 +704,27 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
     }
   }
 
+  async function handlePreorderChange(shipEstimate: SetStockPreorderBody['shipEstimate']) {
+    const detail = selectedStockDetail;
+    if (!detail || !canMutateSelectedStock || isSubmitting) return;
+    const variantId = selectedVariantId;
+    setSubmittingIntent('preorder');
+    setErrorMessage(null);
+    setStatusMessage('Saving pre-order.');
+    try {
+      const result = await saveStockPreorder(
+        api,
+        variantId,
+        { expectedRevision: detail.stock.revision, shipEstimate },
+        () => loadVariant(variantId, false, 'refresh'),
+      );
+      setStatusMessage(result.statusMessage);
+      if (result.errorMessage) setErrorMessage(result.errorMessage);
+    } finally {
+      setSubmittingIntent(null);
+    }
+  }
+
   useStaffRead(
     ['stock', backendBaseUrl, selectedVariantId],
     async () => {
@@ -1050,6 +1073,19 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                       label="Show copies left"
                       onChange={(checked) => void handleShowLowStockChange(checked)}
                     />
+                    <PreorderControl
+                      key={
+                        selectedVariantId +
+                        ':' +
+                        selectedStockDetail?.stock.revision +
+                        ':' +
+                        (selectedStockDetail?.stock.preorder?.open ?? false)
+                      }
+                      preorder={selectedStockDetail?.stock.preorder ?? null}
+                      disabled={!canMutateSelectedStock || isSubmitting}
+                      busy={submittingIntent === 'preorder'}
+                      onSave={handlePreorderChange}
+                    />
                   </div>
                 )}
               </CardContent>
@@ -1391,6 +1427,28 @@ export function canSubmitStockMutation(
   stockDetail: Pick<InternalStockDetail, 'variantId'> | null,
 ) {
   return Boolean(selectedVariantId && stockDetail?.variantId === selectedVariantId);
+}
+
+export async function saveStockPreorder(
+  api: Pick<ReturnType<typeof createInternalStockApi>, 'setStockPreorder'>,
+  variantId: string,
+  body: SetStockPreorderBody,
+  refresh: () => Promise<void>,
+): Promise<{ statusMessage: string; errorMessage: string | null }> {
+  try {
+    await api.setStockPreorder(variantId, body);
+    await refresh();
+    return { statusMessage: body.shipEstimate ? 'Pre-order saved.' : 'Pre-order ended.', errorMessage: null };
+  } catch (error) {
+    await refresh();
+    return {
+      statusMessage:
+        error instanceof InternalStockApiError && error.status === 409
+          ? 'Stock changed. Review the current item before retrying the pre-order.'
+          : 'Pre-order was not confirmed. Review the refreshed item before trying again.',
+      errorMessage: readErrorMessage(error),
+    };
+  }
 }
 
 function StockFlagSwitch({

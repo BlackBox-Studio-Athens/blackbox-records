@@ -12,6 +12,9 @@ export type SetRestockPlannedBody = NonNullable<
 export type SetShowLowStockBody = NonNullable<
   InternalApiOperations['setShowLowStock']['requestBody']
 >['content']['application/json'];
+export type SetStockPreorderBody = NonNullable<
+  InternalApiOperations['setStockPreorder']['requestBody']
+>['content']['application/json'];
 export type RecordedStockChangeResponse = InternalApiComponents['schemas']['RecordedStockChangeResponse'];
 export type RecordedStockCountResponse = InternalApiComponents['schemas']['RecordedStockCountResponse'];
 export type CatalogPriceDetail = InternalApiComponents['schemas']['CatalogPriceDetail'];
@@ -158,6 +161,12 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
         `/api/internal/variants/${encodeURIComponent(variantId)}/stock/low-stock-notice`,
         { method: 'PATCH', body: JSON.stringify(body) },
       );
+    },
+    setStockPreorder(variantId: string, body: SetStockPreorderBody) {
+      return fetchJson<InternalStockDetail>(`/api/internal/variants/${encodeURIComponent(variantId)}/stock/preorder`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      });
     },
     readStockHistory(variantId: string, limit = 25) {
       return fetchJson<InternalStockHistoryResponse>(

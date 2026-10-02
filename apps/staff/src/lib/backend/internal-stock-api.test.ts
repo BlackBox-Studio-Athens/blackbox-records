@@ -128,6 +128,41 @@ describe('createInternalStockApi', () => {
     );
   });
 
+  it.each([
+    { kind: 'month' as const, month: '2026-10', part: 'early' as const },
+    { kind: 'date' as const, date: '2026-10-20' },
+    null,
+  ])('saves a pre-order estimate and returns refreshed stock detail: %j', async (shipEstimate) => {
+    const detail = { ...variant, stock: { revision: 3, preorder: shipEstimate } };
+    const fetcher = vi.fn(async () => new Response(JSON.stringify(detail), { status: 200 }));
+    const api = createInternalStockApi({ fetcher });
+    await expect(api.setStockPreorder('variant/one', { expectedRevision: 2, shipEstimate })).resolves.toEqual(detail);
+    expect(fetcher).toHaveBeenCalledWith('/api/internal/variants/variant%2Fone/stock/preorder', {
+      body: JSON.stringify({ expectedRevision: 2, shipEstimate }),
+      cache: 'no-store',
+      credentials: 'same-origin',
+      headers: { 'content-type': 'application/json' },
+      method: 'PATCH',
+    });
+  });
+
+  it('preserves a pre-order revision conflict and safe problem detail', async () => {
+    const api = createInternalStockApi({
+      fetcher: async () =>
+        new Response(
+          JSON.stringify({
+            type: '/problems/conflict',
+            detail: 'Stock revision changed.',
+            status: 409,
+          }),
+          { status: 409 },
+        ),
+    });
+    await expect(api.setStockPreorder(variant.variantId, { expectedRevision: 2, shipEstimate: null })).rejects.toEqual(
+      new InternalStockApiError(409, 'Stock revision changed.'),
+    );
+  });
+
   it('prefers local RFC problem details and ignores foreign extensions', async () => {
     const problemApi = createInternalStockApi({
       fetcher: async () =>
