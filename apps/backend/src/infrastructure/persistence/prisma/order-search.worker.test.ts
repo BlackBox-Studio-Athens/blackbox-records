@@ -3,6 +3,11 @@ import { expect, it } from 'vitest';
 
 import { PrismaOrderStateRepository, createPrismaClient } from './';
 
+it('has the order pagination index', async () => {
+  const { results } = await env.COMMERCE_DB.prepare('PRAGMA index_list("CheckoutOrder")').all<{ name: string }>();
+  expect(results.map(({ name }) => name)).toContain('CheckoutOrder_createdAt_id_idx');
+});
+
 it('searches all matching orders before cursor pagination, including email filters and tied dates', async () => {
   const prisma = createPrismaClient(env);
   const orders = new PrismaOrderStateRepository(prisma);
