@@ -79,3 +79,24 @@ export async function plantSentinel(page: Page): Promise<void> {
 export async function sentinelIntact(page: Page): Promise<boolean> {
   return page.evaluate(() => (window as unknown as { __e2eSentinel?: boolean }).__e2eSentinel === true);
 }
+
+/**
+ * Clicks a shell surface trigger and reports whether the surface committed before the next task. A surface rendered
+ * through React.lazy inside a Suspense boundary created on open appears no sooner than React's 300 ms fallback
+ * throttle, even with its chunk cached; a warmed shell surface commits with the click itself.
+ */
+export async function openSurfaceWithinClickTask(page: Page, triggerSelector: string, surfaceSelector: string) {
+  return page.evaluate(
+    async ([trigger, surface]) => {
+      document.querySelector<HTMLElement>(trigger)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return {
+        loadingStatus: [...document.querySelectorAll('[role="status"]')].some((element) =>
+          /^Loading (menu|cart|detail)$/.test(element.textContent?.trim() ?? ''),
+        ),
+        visible: document.querySelector(surface) !== null,
+      };
+    },
+    [triggerSelector, surfaceSelector] as const,
+  );
+}

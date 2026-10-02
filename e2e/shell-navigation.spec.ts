@@ -1,4 +1,4 @@
-import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+import { expect, openSurfaceWithinClickTask, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
 const main = 'main[data-app-shell-main]';
 
@@ -54,6 +54,27 @@ test('detail link opens an overlay that closes back to the list; a direct load r
   await page.goto(detailUrl);
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator(main).getByRole('heading', { level: 1 })).toBeVisible();
+});
+
+test('detail-link intent warms the overlay panel so the overlay opens in the click task', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'Hover intent is a desktop pointer behaviour.');
+  await page.goto('releases/');
+  await waitForShell(page);
+  const trigger = 'a.prose-card-link[href*="/releases/"]';
+  await page.locator(trigger).first().hover();
+  await page.waitForLoadState('networkidle');
+
+  expect(
+    await openSurfaceWithinClickTask(page, trigger, '.app-shell-content-overlay[data-state="open"] [role="dialog"]'),
+  ).toEqual({ loadingStatus: false, visible: true });
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+  // The closed overlay unmounts once its exit transition ends.
+  await expect(page.locator('.app-shell-content-overlay')).toHaveCount(0);
 });
 
 test('mobile navigation sheet drives shell navigation without horizontal overflow', async ({ page, isMobile }) => {
@@ -113,6 +134,22 @@ test('Escape closes the Menu and returns focus to its button', async ({ page, is
   await expect(page.getByRole('dialog')).toBeHidden();
   await expect(menuButton).toBeFocused();
   await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
+});
+
+test('a warmed Menu opens in the tap task', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'The Menu opens only below the desktop breakpoint.');
+  await page.goto('about/');
+  await waitForShell(page);
+  const trigger = '[data-app-shell-mobile-navigation-trigger]';
+  // The phone layout warms the Menu at idle; pointer intent starts it sooner.
+  await page.locator(trigger).hover();
+  await page.waitForLoadState('networkidle');
+
+  expect(await openSurfaceWithinClickTask(page, trigger, '[data-app-shell-mobile-navigation]')).toEqual({
+    loadingStatus: false,
+    visible: true,
+  });
+  await expect(page.getByRole('navigation', { name: 'Mobile' })).toBeVisible();
 });
 
 test('the Menu closes when the desktop layout starts', async ({ page, isMobile }) => {

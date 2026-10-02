@@ -275,6 +275,31 @@ body {
   }
 }
 
+/* Sheet (Radix Dialog) motion: Radix Presence keeps closing content mounted until animationend. */
+@keyframes ui-sheet-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-sheet-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-sheet-slide-in {
+  from {
+    transform: translate3d(var(--ui-sheet-offset-x, 0), var(--ui-sheet-offset-y, 0), 0);
+  }
+}
+
+@keyframes ui-sheet-slide-out {
+  to {
+    transform: translate3d(var(--ui-sheet-offset-x, 0), var(--ui-sheet-offset-y, 0), 0);
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -2609,6 +2634,39 @@ body {
     transform: scaleY(1.02);
   }
 
+  .ui-sheet-overlay[data-state='open'] {
+    animation: ui-sheet-fade-in 300ms ease-in-out;
+  }
+
+  .ui-sheet-overlay[data-state='closed'] {
+    animation: ui-sheet-fade-out 200ms ease-in-out forwards;
+  }
+
+  .ui-sheet-content[data-side='right'] {
+    --ui-sheet-offset-x: 100%;
+  }
+
+  .ui-sheet-content[data-side='left'] {
+    --ui-sheet-offset-x: -100%;
+  }
+
+  .ui-sheet-content[data-side='top'] {
+    --ui-sheet-offset-y: -100%;
+  }
+
+  .ui-sheet-content[data-side='bottom'] {
+    --ui-sheet-offset-y: 100%;
+  }
+
+  .ui-sheet-content[data-state='open'] {
+    animation: ui-sheet-slide-in 300ms ease-in-out;
+  }
+
+  .ui-sheet-content[data-state='closed'] {
+    animation: ui-sheet-slide-out 200ms ease-in-out forwards;
+  }
+
+  /* The detail overlay stays mounted while it closes; ShellOverlayPanel unmounts it on the opacity transitionend. */
   .app-shell-content-overlay {
     position: fixed;
     inset: 0;
@@ -2620,12 +2678,30 @@ body {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
+    transition:
+      opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 220ms;
   }
 
   .app-shell-content-overlay[data-state='open'] {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
+    transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @starting-style {
+    .app-shell-content-overlay[data-state='open'] {
+      opacity: 0;
+    }
+
+    .app-shell-content-overlay[data-state='open'] .app-shell-content-overlay__panel {
+      transform: translateX(18px);
+    }
+  }
+
+  .app-shell-content-overlay[data-state='closed'] .app-shell-content-overlay__panel {
+    transform: translateX(18px);
   }
 
   .app-shell-content-overlay__backdrop {
@@ -2646,6 +2722,7 @@ body {
     background: linear-gradient(180deg, rgba(17, 17, 17, 0.98) 0%, rgba(10, 10, 10, 0.98) 100%), rgba(13, 13, 13, 0.98);
     box-shadow: 0 28px 90px rgba(0, 0, 0, 0.56);
     overflow: hidden;
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .app-shell-content-overlay__header {
@@ -4074,6 +4151,21 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   .music-streaming-service-embedded-player-mini-player[data-state='open'] {
     transform: none;
     transition: none;
+  }
+
+  .ui-sheet-overlay[data-state],
+  .ui-sheet-content[data-state] {
+    animation: none;
+  }
+
+  .app-shell-content-overlay,
+  .app-shell-content-overlay[data-state],
+  .app-shell-content-overlay__panel {
+    transition: none;
+  }
+
+  .app-shell-content-overlay[data-state] .app-shell-content-overlay__panel {
+    transform: none;
   }
 }
 

@@ -1,4 +1,11 @@
-import { expect, localRepresentativePaths, test, waitForIsland, waitForShell } from './fixtures';
+import {
+  expect,
+  localRepresentativePaths,
+  openSurfaceWithinClickTask,
+  test,
+  waitForIsland,
+  waitForShell,
+} from './fixtures';
 import type { CDPSession, Locator } from 'playwright/test';
 
 async function swipeUp(cdp: CDPSession, x: number, y: number, distance: number) {
@@ -353,4 +360,21 @@ test('the header cart control appears only with items or in the store', async ({
   await page.goto('store/');
   await waitForShell(page);
   await expect(page.locator('[data-store-cart-trigger]').first()).toHaveAccessibleName('Cart');
+});
+
+test('Store routes warm the cart drawer so the header control opens it in the click task', async ({ page }) => {
+  await page.goto(`.${localRepresentativePaths.storeItem}`);
+  await waitForShell(page);
+  const trigger = '[data-store-cart-trigger]';
+  await expect(page.locator(trigger).first()).toBeVisible();
+  await page.waitForLoadState('networkidle');
+
+  expect(await openSurfaceWithinClickTask(page, trigger, '[role="dialog"][data-tone="store"]')).toEqual({
+    loadingStatus: false,
+    visible: true,
+  });
+  await expect(page.getByRole('dialog', { name: 'Cart' })).toBeVisible();
+  await page.getByRole('button', { name: 'Continue Shopping' }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page.locator(trigger).first()).toBeFocused();
 });

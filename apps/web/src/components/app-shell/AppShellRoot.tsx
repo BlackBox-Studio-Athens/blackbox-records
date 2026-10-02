@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   readPlayerProvidersFromElement,
@@ -30,6 +30,7 @@ import {
   type ShellMotionControls,
 } from '@/components/app-shell/navigation/shell-transition';
 import { createProjectRelativeUrl } from '@/platform/config/site';
+import { isCurrentPath } from '@/platform/utils/urls';
 import { normalizeAppPathname, type ShellSectionRoute } from '@/components/app-shell/routing';
 import { parseShellSectionRoute } from '@/components/app-shell/routing';
 import {
@@ -78,12 +79,34 @@ import { enableManualShellScrollRestoration } from './navigation/shell-scroll-re
 import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
 import { connectLenisScrollRoots } from './lenis-scroll';
 import ShellPortalOutlets from './view/ShellPortalOutlets';
+import {
+  connectShellSurfaceIntent,
+  createShellSurfaceLoader,
+  scheduleShellIdleTask,
+  useShellSurface,
+  warmShellSurface,
+} from './view/shell-surface-loader';
 
-const MobileNavigationSheet = lazy(() => import('./view/MobileNavigationSheet'));
-const ShellOverlayPanel = lazy(() => import('./view/ShellOverlayPanel'));
-const ShellPlayerSurface = lazy(() => import('./view/ShellPlayerSurface'));
-const StoreCartDrawer = lazy(() => import('@/components/store/cart/StoreCartDrawer'));
-const CartDeliverySummary = lazy(() => import('@/components/store/checkout/DeliverySummary'));
+// Dormant surfaces stay out of the eager graph and never suspend on open: see shell-surface-loader.
+const mobileNavigationSheetSurface = createShellSurfaceLoader(() =>
+  import('./view/MobileNavigationSheet').then((module) => module.default),
+);
+const shellOverlayPanelSurface = createShellSurfaceLoader(() =>
+  import('./view/ShellOverlayPanel').then((module) => module.default),
+);
+const shellPlayerSurface = createShellSurfaceLoader(() =>
+  import('./view/ShellPlayerSurface').then((module) => module.default),
+);
+const storeCartDrawerSurface = createShellSurfaceLoader(() =>
+  Promise.all([
+    import('@/components/store/cart/StoreCartDrawer'),
+    import('@/components/store/checkout/DeliverySummary'),
+  ]).then(([drawerModule, deliverySummaryModule]) => ({
+    CartDeliverySummary: deliverySummaryModule.default,
+    StoreCartDrawer: drawerModule.default,
+  })),
+);
+const STORE_CART_INTENT_SELECTOR = '[data-store-cart-header-root], [data-store-item-add-to-cart]';
 const preloadStoreDistroSearch = () => import('@/components/store/StoreDistroSearch');
 
 type OverlayState = ShellOverlayState;
@@ -320,6 +343,30 @@ export default function AppShellRoot({
       ?.setAttribute('aria-expanded', String(isMobileNavigationOpen));
   }, [isMobileNavigationOpen]);
 
+  // Surface modules load on trigger intent, and at idle where the trigger is likely: the Menu below `lg`, the
+  // cart drawer where the cart control shows, and the small detail panel everywhere.
+  useEffect(() => {
+    const disconnectIntent = connectShellSurfaceIntent(document, [
+      { selector: MOBILE_NAVIGATION_TRIGGER_SELECTOR, warm: () => warmShellSurface(mobileNavigationSheetSurface) },
+      { selector: STORE_CART_INTENT_SELECTOR, warm: () => warmShellSurface(storeCartDrawerSurface) },
+    ]);
+    const cancelIdleWarmup = scheduleShellIdleTask(window, () => {
+      if (!window.matchMedia('(min-width: 64rem)').matches) warmShellSurface(mobileNavigationSheetSurface);
+      warmShellSurface(shellOverlayPanelSurface);
+    });
+    return () => {
+      disconnectIntent();
+      cancelIdleWarmup();
+    };
+  }, []);
+
+  const hasStoreCartLines = storeCartState.lines.length > 0;
+  useEffect(() => {
+    const isStoreRoute = isCurrentPath(activeShellPathname, '/store/');
+    if (!hasStoreCartLines && !isStoreRoute && !document.querySelector('[data-store-item-add-to-cart]')) return;
+    return scheduleShellIdleTask(window, () => warmShellSurface(storeCartDrawerSurface));
+  }, [activeShellPathname, hasStoreCartLines]);
+
   useEffect(() => {
     return syncShellBodyStateClasses({
       bodyClassList: document.body.classList,
@@ -527,6 +574,7 @@ export default function AppShellRoot({
   }, [activeShellPathname, overlayState]);
 
   async function prefetchOverlayHref(href: string) {
+    warmShellSurface(shellOverlayPanelSurface);
     await overlayFragmentLoader.prefetchHref(href);
   }
 
@@ -630,6 +678,7 @@ export default function AppShellRoot({
     href: string,
     options?: { backgroundHref?: string; pushHistory?: boolean; replaceHistory?: boolean },
   ) {
+    warmShellSurface(shellOverlayPanelSurface);
     return openShellOverlayNavigation({
       activeAbortControllerRef: overlayAbortControllerRef,
       backgroundHref: options?.backgroundHref,
@@ -704,7 +753,10 @@ export default function AppShellRoot({
         overlayTriggerElementRef.current = element;
       },
       stopPlayerSession,
-      warmProviderOrigins,
+      warmProviderOrigins: (providers) => {
+        warmShellSurface(shellPlayerSurface);
+        warmProviderOrigins(providers);
+      },
       windowTarget: window,
     });
 
@@ -725,16 +777,26 @@ export default function AppShellRoot({
     // close no longer re-snapshot main, re-bind document listeners or abort an in-flight navigation.
   }, []);
 
+  const MobileNavigationSheet = useShellSurface(mobileNavigationSheetSurface, isMobileNavigationOpen, () =>
+    setIsMobileNavigationOpen(false),
+  );
+  const storeCartDrawerModules = useShellSurface(storeCartDrawerSurface, isStoreCartDrawerOpen, closeStoreCartDrawer);
+  const ShellOverlayPanel = useShellSurface(shellOverlayPanelSurface, Boolean(overlayState) || hasOpenedOverlay, () => {
+    // A detail that cannot open in place still opens as its page.
+    const overlayHref = overlayStateRef.current?.href;
+    closeOverlayState({ restoreFocus: false });
+    if (overlayHref) window.location.assign(overlayHref);
+  });
+  const ShellPlayerSurface = useShellSurface(
+    shellPlayerSurface,
+    isPlayerModalOpen || isMiniPlayerVisible,
+    closePlayerModalWithHistoryBack,
+  );
+
   return (
     <>
-      {isMobileNavigationOpen && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading menu
-            </span>
-          }
-        >
+      {isMobileNavigationOpen &&
+        (MobileNavigationSheet ? (
           <MobileNavigationSheet
             activeShellPathname={activeShellPathname}
             navigation={navigation}
@@ -743,20 +805,20 @@ export default function AppShellRoot({
             open
             siteTitle={siteTitle}
           />
-        </Suspense>
-      )}
+        ) : (
+          <span className="accessibility-visually-hidden-text" role="status">
+            Loading menu
+          </span>
+        ))}
 
-      {isStoreCartDrawerOpen && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading cart
-            </span>
-          }
-        >
-          <StoreCartDrawer
+      {isStoreCartDrawerOpen &&
+        (storeCartDrawerModules ? (
+          <storeCartDrawerModules.StoreCartDrawer
             deliverySummary={
-              <CartDeliverySummary lines={storeCartState.lines} onTotalDisplayChange={setStoreCartTotalDisplay} />
+              <storeCartDrawerModules.CartDeliverySummary
+                lines={storeCartState.lines}
+                onTotalDisplayChange={setStoreCartTotalDisplay}
+              />
             }
             cartState={storeCartState}
             checkoutAmountDisplay={storeCartTotalDisplay}
@@ -781,8 +843,11 @@ export default function AppShellRoot({
               await applyStoreCartState(restoreCartLine(line, index, storeCartState));
             }}
           />
-        </Suspense>
-      )}
+        ) : (
+          <span className="accessibility-visually-hidden-text" role="status">
+            Loading cart
+          </span>
+        ))}
 
       <div
         className="app-shell-route-loading-indicator"
@@ -824,14 +889,8 @@ export default function AppShellRoot({
         ></span>
       </div>
 
-      {(overlayState || hasOpenedOverlay) && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading detail
-            </span>
-          }
-        >
+      {(overlayState || hasOpenedOverlay) &&
+        (ShellOverlayPanel ? (
           <ShellOverlayPanel
             closeButtonRef={overlayCloseButtonRef}
             onClose={closeOverlayWithHistoryBack}
@@ -850,17 +909,14 @@ export default function AppShellRoot({
             overlayState={overlayState}
             scrollContainerRef={overlayScrollContainerRef}
           />
-        </Suspense>
-      )}
+        ) : (
+          <span className="accessibility-visually-hidden-text" role="status">
+            Loading detail
+          </span>
+        ))}
 
-      {(isPlayerModalOpen || isMiniPlayerVisible) && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading player
-            </span>
-          }
-        >
+      {(isPlayerModalOpen || isMiniPlayerVisible) &&
+        (ShellPlayerSurface ? (
           <ShellPlayerSurface
             activePlayerEmbedLayout={activePlayerEmbedLayout}
             activePlayerProviderId={activePlayerProviderId}
@@ -889,8 +945,11 @@ export default function AppShellRoot({
             playerProviders={playerProviders}
             providerLogoUrls={providerLogoUrls}
           />
-        </Suspense>
-      )}
+        ) : (
+          <span className="accessibility-visually-hidden-text" role="status">
+            Loading player
+          </span>
+        ))}
 
       <ShellPortalOutlets
         activeShellPathname={activeShellPathname}
