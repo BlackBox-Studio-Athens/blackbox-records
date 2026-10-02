@@ -1,4 +1,5 @@
 import type { VariantId } from '../ids';
+import type { StockPreorder } from '../preorder';
 import type { StockStateValue, StockQuantity } from '../quantities';
 
 export type StockRecord = {
@@ -8,6 +9,7 @@ export type StockRecord = {
   onlineQuantity: StockQuantity;
   restockPlanned: boolean;
   showLowStock: boolean;
+  preorder: StockPreorder | null;
   createdAt: Date;
   updatedAt: Date;
 };

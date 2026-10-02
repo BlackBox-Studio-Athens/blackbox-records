@@ -141,6 +141,72 @@ describe('D1OperatorStockRepository idempotency', () => {
     await expect(countRows('StockChange', variantId)).resolves.toBe(0);
   });
 
+  it('keeps the flags and pre-order on stock returned from a change, a count and their replays', async () => {
+    const variantId = parseVariantId(`variant_stock_flags_${crypto.randomUUID()}`);
+    await seedStock(variantId, 5);
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+    await repository.setRestockPlanned({ expectedRevision: 0, restockPlanned: true, variantId });
+    await repository.setShowLowStock({ expectedRevision: 1, showLowStock: true, variantId });
+    await env.COMMERCE_DB.prepare(
+      'UPDATE "Stock" SET "preorderStartedAt" = ?, "preorderShipMonth" = ?, "preorderShipPart" = ? WHERE "variantId" = ?',
+    )
+      .bind('2026-09-01T09:00:00.000Z', '2026-10', 'mid', variantId)
+      .run();
+    const kept = {
+      preorder: {
+        shipEstimate: { kind: 'month', month: '2026-10', part: 'mid' },
+        startedAt: '2026-09-01T09:00:00.000Z',
+      },
+      restockPlanned: true,
+      showLowStock: true,
+    };
+
+    const change = {
+      actorEmail: 'operator@example.com',
+      notes: null,
+      quantityDelta: createStockChangeDelta(1),
+      reason: 'Adjustment',
+      requestIdentity: identity('m', 'n'),
+      variantId,
+    };
+    expect((await repository.recordChange(change))?.stock).toMatchObject(kept);
+    expect((await repository.recordChange(change))?.stock).toMatchObject(kept);
+
+    const count = {
+      actorEmail: 'operator@example.com',
+      countedQuantity: createStockQuantity(6),
+      expectedRevision: 3,
+      notes: null,
+      onlineQuantity: createStockQuantity(6),
+      requestIdentity: identity('o', 'p'),
+      variantId,
+    };
+    expect((await repository.recordCount(count))?.stock).toMatchObject(kept);
+    expect((await repository.recordCount(count))?.stock).toMatchObject(kept);
+  });
+
+  it('rejects pre-order columns that break the combination rule', async () => {
+    const variantId = parseVariantId(`variant_preorder_checks_${crypto.randomUUID()}`);
+    await seedStock(variantId, 5);
+    const update = (set: string) =>
+      env.COMMERCE_DB.prepare(`UPDATE "Stock" SET ${set} WHERE "variantId" = ?`).bind(variantId).run();
+    const started = `"preorderStartedAt" = '2026-09-01T09:00:00.000Z'`;
+
+    await expect(update(started)).rejects.toThrow();
+    await expect(
+      update(`${started}, "preorderShipMonth" = '2026-10', "preorderShipDate" = '2026-10-20'`),
+    ).rejects.toThrow();
+    await expect(update(`${started}, "preorderShipDate" = '2026-10-20', "preorderShipPart" = 'mid'`)).rejects.toThrow();
+    await expect(update(`${started}, "preorderShipMonth" = '2026-10', "preorderShipPart" = 'later'`)).rejects.toThrow();
+    await expect(update(`"preorderShipMonth" = '2026-10'`)).rejects.toThrow();
+    await expect(
+      update(`${started}, "preorderShipMonth" = '2026-10', "preorderShipPart" = 'late'`),
+    ).resolves.toBeTruthy();
+    await expect(
+      update('"preorderStartedAt" = NULL, "preorderShipMonth" = NULL, "preorderShipPart" = NULL'),
+    ).resolves.toBeTruthy();
+  });
+
   it('creates an empty stock row when restock is planned before the first count', async () => {
     const variantId = parseVariantId(`variant_restock_plan_initial_${crypto.randomUUID()}`);
     const repository = new D1OperatorStockRepository(env.COMMERCE_DB);

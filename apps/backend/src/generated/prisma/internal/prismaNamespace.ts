@@ -1457,6 +1457,10 @@ export const StockScalarFieldEnum = {
   onlineQuantity: 'onlineQuantity',
   restockPlanned: 'restockPlanned',
   showLowStock: 'showLowStock',
+  preorderStartedAt: 'preorderStartedAt',
+  preorderShipMonth: 'preorderShipMonth',
+  preorderShipPart: 'preorderShipPart',
+  preorderShipDate: 'preorderShipDate',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

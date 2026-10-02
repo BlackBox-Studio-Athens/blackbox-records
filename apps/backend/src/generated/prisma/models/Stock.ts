@@ -46,6 +46,10 @@ export type StockMinAggregateOutputType = {
   onlineQuantity: number | null
   restockPlanned: boolean | null
   showLowStock: boolean | null
+  preorderStartedAt: string | null
+  preorderShipMonth: string | null
+  preorderShipPart: string | null
+  preorderShipDate: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -58,6 +62,10 @@ export type StockMaxAggregateOutputType = {
   onlineQuantity: number | null
   restockPlanned: boolean | null
   showLowStock: boolean | null
+  preorderStartedAt: string | null
+  preorderShipMonth: string | null
+  preorderShipPart: string | null
+  preorderShipDate: string | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -70,6 +78,10 @@ export type StockCountAggregateOutputType = {
   onlineQuantity: number
   restockPlanned: number
   showLowStock: number
+  preorderStartedAt: number
+  preorderShipMonth: number
+  preorderShipPart: number
+  preorderShipDate: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -96,6 +108,10 @@ export type StockMinAggregateInputType = {
   onlineQuantity?: true
   restockPlanned?: true
   showLowStock?: true
+  preorderStartedAt?: true
+  preorderShipMonth?: true
+  preorderShipPart?: true
+  preorderShipDate?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -108,6 +124,10 @@ export type StockMaxAggregateInputType = {
   onlineQuantity?: true
   restockPlanned?: true
   showLowStock?: true
+  preorderStartedAt?: true
+  preorderShipMonth?: true
+  preorderShipPart?: true
+  preorderShipDate?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -120,6 +140,10 @@ export type StockCountAggregateInputType = {
   onlineQuantity?: true
   restockPlanned?: true
   showLowStock?: true
+  preorderStartedAt?: true
+  preorderShipMonth?: true
+  preorderShipPart?: true
+  preorderShipDate?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -219,6 +243,10 @@ export type StockGroupByOutputType = {
   onlineQuantity: number
   restockPlanned: boolean
   showLowStock: boolean
+  preorderStartedAt: string | null
+  preorderShipMonth: string | null
+  preorderShipPart: string | null
+  preorderShipDate: string | null
   createdAt: Date
   updatedAt: Date
   _count: StockCountAggregateOutputType | null
@@ -254,6 +282,10 @@ export type StockWhereInput = {
   onlineQuantity?: Prisma.IntFilter<"Stock"> | number
   restockPlanned?: Prisma.BoolFilter<"Stock"> | boolean
   showLowStock?: Prisma.BoolFilter<"Stock"> | boolean
+  preorderStartedAt?: Prisma.StringNullableFilter<"Stock"> | string | null
+  preorderShipMonth?: Prisma.StringNullableFilter<"Stock"> | string | null
+  preorderShipPart?: Prisma.StringNullableFilter<"Stock"> | string | null
+  preorderShipDate?: Prisma.StringNullableFilter<"Stock"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Stock"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Stock"> | Date | string
 }
@@ -266,6 +298,10 @@ export type StockOrderByWithRelationInput = {
   onlineQuantity?: Prisma.SortOrder
   restockPlanned?: Prisma.SortOrder
   showLowStock?: Prisma.SortOrder
+  preorderStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipMonth?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipPart?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipDate?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -281,6 +317,10 @@ export type StockWhereUniqueInput = Prisma.AtLeast<{
   onlineQuantity?: Prisma.IntFilter<"Stock"> | number
   restockPlanned?: Prisma.BoolFilter<"Stock"> | boolean
   showLowStock?: Prisma.BoolFilter<"Stock"> | boolean
+  preorderStartedAt?: Prisma.StringNullableFilter<"Stock"> | string | null
+  preorderShipMonth?: Prisma.StringNullableFilter<"Stock"> | string | null
+  preorderShipPart?: Prisma.StringNullableFilter<"Stock"> | string | null
+  preorderShipDate?: Prisma.StringNullableFilter<"Stock"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Stock"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Stock"> | Date | string
 }, "id" | "variantId">
@@ -293,6 +333,10 @@ export type StockOrderByWithAggregationInput = {
   onlineQuantity?: Prisma.SortOrder
   restockPlanned?: Prisma.SortOrder
   showLowStock?: Prisma.SortOrder
+  preorderStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipMonth?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipPart?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipDate?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.StockCountOrderByAggregateInput
@@ -313,6 +357,10 @@ export type StockScalarWhereWithAggregatesInput = {
   onlineQuantity?: Prisma.IntWithAggregatesFilter<"Stock"> | number
   restockPlanned?: Prisma.BoolWithAggregatesFilter<"Stock"> | boolean
   showLowStock?: Prisma.BoolWithAggregatesFilter<"Stock"> | boolean
+  preorderStartedAt?: Prisma.StringNullableWithAggregatesFilter<"Stock"> | string | null
+  preorderShipMonth?: Prisma.StringNullableWithAggregatesFilter<"Stock"> | string | null
+  preorderShipPart?: Prisma.StringNullableWithAggregatesFilter<"Stock"> | string | null
+  preorderShipDate?: Prisma.StringNullableWithAggregatesFilter<"Stock"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Stock"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Stock"> | Date | string
 }
@@ -325,6 +373,10 @@ export type StockCreateInput = {
   onlineQuantity: number
   restockPlanned?: boolean
   showLowStock?: boolean
+  preorderStartedAt?: string | null
+  preorderShipMonth?: string | null
+  preorderShipPart?: string | null
+  preorderShipDate?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -337,6 +389,10 @@ export type StockUncheckedCreateInput = {
   onlineQuantity: number
   restockPlanned?: boolean
   showLowStock?: boolean
+  preorderStartedAt?: string | null
+  preorderShipMonth?: string | null
+  preorderShipPart?: string | null
+  preorderShipDate?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -349,6 +405,10 @@ export type StockUpdateInput = {
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   restockPlanned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showLowStock?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  preorderStartedAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipMonth?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipPart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -361,6 +421,10 @@ export type StockUncheckedUpdateInput = {
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   restockPlanned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showLowStock?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  preorderStartedAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipMonth?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipPart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -373,6 +437,10 @@ export type StockCreateManyInput = {
   onlineQuantity: number
   restockPlanned?: boolean
   showLowStock?: boolean
+  preorderStartedAt?: string | null
+  preorderShipMonth?: string | null
+  preorderShipPart?: string | null
+  preorderShipDate?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -385,6 +453,10 @@ export type StockUpdateManyMutationInput = {
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   restockPlanned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showLowStock?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  preorderStartedAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipMonth?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipPart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -397,6 +469,10 @@ export type StockUncheckedUpdateManyInput = {
   onlineQuantity?: Prisma.IntFieldUpdateOperationsInput | number
   restockPlanned?: Prisma.BoolFieldUpdateOperationsInput | boolean
   showLowStock?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  preorderStartedAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipMonth?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipPart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -409,6 +485,10 @@ export type StockCountOrderByAggregateInput = {
   onlineQuantity?: Prisma.SortOrder
   restockPlanned?: Prisma.SortOrder
   showLowStock?: Prisma.SortOrder
+  preorderStartedAt?: Prisma.SortOrder
+  preorderShipMonth?: Prisma.SortOrder
+  preorderShipPart?: Prisma.SortOrder
+  preorderShipDate?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -427,6 +507,10 @@ export type StockMaxOrderByAggregateInput = {
   onlineQuantity?: Prisma.SortOrder
   restockPlanned?: Prisma.SortOrder
   showLowStock?: Prisma.SortOrder
+  preorderStartedAt?: Prisma.SortOrder
+  preorderShipMonth?: Prisma.SortOrder
+  preorderShipPart?: Prisma.SortOrder
+  preorderShipDate?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -439,6 +523,10 @@ export type StockMinOrderByAggregateInput = {
   onlineQuantity?: Prisma.SortOrder
   restockPlanned?: Prisma.SortOrder
   showLowStock?: Prisma.SortOrder
+  preorderStartedAt?: Prisma.SortOrder
+  preorderShipMonth?: Prisma.SortOrder
+  preorderShipPart?: Prisma.SortOrder
+  preorderShipDate?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -459,6 +547,10 @@ export type StockSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   onlineQuantity?: boolean
   restockPlanned?: boolean
   showLowStock?: boolean
+  preorderStartedAt?: boolean
+  preorderShipMonth?: boolean
+  preorderShipPart?: boolean
+  preorderShipDate?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["stock"]>
@@ -471,6 +563,10 @@ export type StockSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   onlineQuantity?: boolean
   restockPlanned?: boolean
   showLowStock?: boolean
+  preorderStartedAt?: boolean
+  preorderShipMonth?: boolean
+  preorderShipPart?: boolean
+  preorderShipDate?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["stock"]>
@@ -483,6 +579,10 @@ export type StockSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   onlineQuantity?: boolean
   restockPlanned?: boolean
   showLowStock?: boolean
+  preorderStartedAt?: boolean
+  preorderShipMonth?: boolean
+  preorderShipPart?: boolean
+  preorderShipDate?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }, ExtArgs["result"]["stock"]>
@@ -495,11 +595,15 @@ export type StockSelectScalar = {
   onlineQuantity?: boolean
   restockPlanned?: boolean
   showLowStock?: boolean
+  preorderStartedAt?: boolean
+  preorderShipMonth?: boolean
+  preorderShipPart?: boolean
+  preorderShipDate?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type StockOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"revision" | "id" | "variantId" | "quantity" | "onlineQuantity" | "restockPlanned" | "showLowStock" | "createdAt" | "updatedAt", ExtArgs["result"]["stock"]>
+export type StockOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"revision" | "id" | "variantId" | "quantity" | "onlineQuantity" | "restockPlanned" | "showLowStock" | "preorderStartedAt" | "preorderShipMonth" | "preorderShipPart" | "preorderShipDate" | "createdAt" | "updatedAt", ExtArgs["result"]["stock"]>
 
 export type $StockPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Stock"
@@ -512,6 +616,10 @@ export type $StockPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     onlineQuantity: number
     restockPlanned: boolean
     showLowStock: boolean
+    preorderStartedAt: string | null
+    preorderShipMonth: string | null
+    preorderShipPart: string | null
+    preorderShipDate: string | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["stock"]>
@@ -944,6 +1052,10 @@ export interface StockFieldRefs {
   readonly onlineQuantity: Prisma.FieldRef<"Stock", 'Int'>
   readonly restockPlanned: Prisma.FieldRef<"Stock", 'Boolean'>
   readonly showLowStock: Prisma.FieldRef<"Stock", 'Boolean'>
+  readonly preorderStartedAt: Prisma.FieldRef<"Stock", 'String'>
+  readonly preorderShipMonth: Prisma.FieldRef<"Stock", 'String'>
+  readonly preorderShipPart: Prisma.FieldRef<"Stock", 'String'>
+  readonly preorderShipDate: Prisma.FieldRef<"Stock", 'String'>
   readonly createdAt: Prisma.FieldRef<"Stock", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Stock", 'DateTime'>
 }

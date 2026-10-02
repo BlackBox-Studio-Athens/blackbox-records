@@ -1,4 +1,9 @@
-import { createStockChangeDelta, createStockQuantity, parseVariantId } from '../../../domain/commerce';
+import {
+  createStockChangeDelta,
+  createStockQuantity,
+  parseVariantId,
+  stockPreorderFromColumns,
+} from '../../../domain/commerce';
 import type {
   CatalogOperation,
   OperatorStockRepository,
@@ -19,6 +24,10 @@ type StockRow = {
   onlineQuantity: number;
   restockPlanned: number;
   showLowStock: number;
+  preorderStartedAt: string | null;
+  preorderShipMonth: string | null;
+  preorderShipPart: string | null;
+  preorderShipDate: string | null;
   revision: number;
   createdAt: string;
   updatedAt: string;
@@ -399,7 +408,9 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
   private async readStock(variantId: string): Promise<StockRecord | null> {
     const row = await this.db
       .prepare(
-        `SELECT "variantId", "quantity", "onlineQuantity", "revision", "createdAt", "updatedAt"
+        `SELECT "variantId", "quantity", "onlineQuantity", "restockPlanned", "showLowStock",
+                "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate",
+                "revision", "createdAt", "updatedAt"
          FROM "Stock"
          WHERE "variantId" = ?`,
       )
@@ -464,6 +475,7 @@ function mapStock(row: StockRow): StockRecord {
     onlineQuantity: createStockQuantity(row.onlineQuantity),
     restockPlanned: row.restockPlanned === 1,
     showLowStock: row.showLowStock === 1,
+    preorder: stockPreorderFromColumns(row),
     revision: row.revision,
     createdAt: new Date(row.createdAt),
     updatedAt: new Date(row.updatedAt),

@@ -22,3 +22,13 @@ export {
   storeStockAvailabilityLabels,
 } from './stock-availability';
 export type { StoreStockAvailability } from './stock-availability';
+export {
+  athensToday,
+  deriveShopperPreorder,
+  isPreorderOpen,
+  latestShipEstimate,
+  parsePreorderShipEstimate,
+  samePreorderShipEstimate,
+  stockPreorderFromColumns,
+} from './preorder';
+export type { PreorderShipEstimate, ShopperPreorder, StockPreorder } from './preorder';

@@ -80,6 +80,7 @@ class InMemoryStockRepository implements StockRepository {
       quantity: stockQuantity(state.quantity),
       restockPlanned: existing?.restockPlanned ?? false,
       showLowStock: existing?.showLowStock ?? false,
+      preorder: existing?.preorder ?? null,
       updatedAt: new Date('2026-04-24T11:00:00.000Z'),
       variantId: toVariantId(variantId),
     };

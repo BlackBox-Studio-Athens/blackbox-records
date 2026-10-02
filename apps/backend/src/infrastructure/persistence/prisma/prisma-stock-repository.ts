@@ -1,5 +1,5 @@
 import type { StockRecord, StockRepository, StockState } from '../../../domain/commerce/repositories/spi';
-import { createStockQuantity, parseVariantId } from '../../../domain/commerce';
+import { createStockQuantity, parseVariantId, stockPreorderFromColumns } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 type PrismaStockClient = Pick<PrismaClient, 'stock'>;
@@ -11,6 +11,10 @@ function mapStock(record: {
   quantity: number;
   restockPlanned: boolean;
   showLowStock: boolean;
+  preorderStartedAt: string | null;
+  preorderShipMonth: string | null;
+  preorderShipPart: string | null;
+  preorderShipDate: string | null;
   updatedAt: Date;
   variantId: string;
 }): StockRecord {
@@ -21,6 +25,7 @@ function mapStock(record: {
     quantity: createStockQuantity(record.quantity),
     restockPlanned: record.restockPlanned,
     showLowStock: record.showLowStock,
+    preorder: stockPreorderFromColumns(record),
     updatedAt: record.updatedAt,
     variantId: parseVariantId(record.variantId),
   };

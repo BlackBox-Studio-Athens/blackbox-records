@@ -49,3 +49,17 @@ Use **Count stock**, **Counting progress**, and **Finish counting** in staff ins
 ### Flagged ambiguities
 
 A BlackBox **Release** can list several editorial formats, but its Store Item currently sells one selected physical option. A **Tracklist** describes that option's format. A **Track** is not an independently managed Recording or playable embed. A **Side** is not a separate physical disc. Terminology informed by [Discogs](https://support.discogs.com/hc/en-us/articles/360005055373-Database-Guidelines-12-Tracklisting) and [MusicBrainz](https://musicbrainz.org/doc/Medium).
+
+## Pre-orders
+
+| Term                     | Definition                                                                                                                                                            | Aliases to avoid                                |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **Pre-order** (new)      | A Store Item variant sold before its copies arrive. It is a flag on that variant's stock; the expected copies are recorded as stock, and payment is in full at order. | Backorder, reservation, deposit, presale        |
+| **Ship Estimate** (new)  | The month (optionally early, mid or late) or exact date when the physical copies are expected to ship. It stays with stock and is not the release date.               | Delivery date, release date, dispatch guarantee |
+| **Awaiting Stock** (new) | A derived state of a paid order that contains a line from an open pre-order. It is not an order status and replaces no paid, fulfilment or notification state.        | Backordered, on hold status                     |
+
+### Relationships
+
+- A variant has at most one open pre-order at a time; ending it and starting another begins a new cycle.
+- A month estimate keeps the pre-order open until staff end it; an exact date ends it on that day.
+- An order is awaiting stock only while the cycle recorded on one of its lines is still open.

@@ -16,6 +16,7 @@ import {
   parseStoreItemSlug,
   parseStripePriceId,
   parseVariantId,
+  stockPreorderFromColumns,
   type CheckoutSessionId,
   type VariantId,
 } from '../../../domain/commerce';
@@ -106,6 +107,10 @@ type StockRow = {
   quantity: number;
   restockPlanned: number;
   showLowStock: number;
+  preorderStartedAt: string | null;
+  preorderShipMonth: string | null;
+  preorderShipPart: string | null;
+  preorderShipDate: string | null;
   updatedAt: string;
   variantId: string;
 };
@@ -179,7 +184,9 @@ const checkoutOrderLinesSql = [
 ].join('\n');
 
 const stockSelectSql = [
-  'SELECT "variantId", "quantity", "onlineQuantity", "restockPlanned", "showLowStock", "revision", "createdAt", "updatedAt"',
+  'SELECT "variantId", "quantity", "onlineQuantity", "restockPlanned", "showLowStock",',
+  '  "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate",',
+  '  "revision", "createdAt", "updatedAt"',
   'FROM "Stock"',
   'WHERE "variantId" = ?',
 ].join('\n');
@@ -701,6 +708,7 @@ function mapStock(row: StockRow): StockRecord {
     quantity: createStockQuantity(row.quantity),
     restockPlanned: row.restockPlanned === 1,
     showLowStock: row.showLowStock === 1,
+    preorder: stockPreorderFromColumns(row),
     updatedAt: new Date(row.updatedAt),
     variantId: parseVariantId(row.variantId),
   };
