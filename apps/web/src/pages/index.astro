@@ -2,6 +2,7 @@
 import ArtistCard from '@/components/artists/ArtistCard.astro';
 import HomeHero from '@/components/editorial/HomeHero.astro';
 import NewsCard from '@/components/editorial/NewsCard.astro';
+import StorePreorderShowcase from '@/components/store/StorePreorderShowcase';
 import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { buttonVariants } from '@/components/ui/button';
@@ -24,6 +25,12 @@ const homeArtists = homeContent.artists;
     image={homeContent.hero.image}
     imageAlt={homeContent.hero.image_alt}
     scrollIndicatorText={homeContent.hero.scroll_indicator_text}
+  />
+
+  <StorePreorderShowcase
+    client:idle
+    candidatesUrl={createProjectRelativeUrl('/preorder-showcase.json')}
+    storeUrl={createProjectRelativeUrl('/store/')}
   />
 
   {homeNews && latestNewsArticles.length > 0 && (

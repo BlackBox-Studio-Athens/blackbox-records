@@ -889,6 +889,7 @@ body {
   }
 
   .home-news-section,
+  .home-preorders,
   .artists-surface-section,
   #newsletter-signup-area,
   .site-footer-shell {
@@ -897,6 +898,7 @@ body {
   }
 
   .home-news-section::before,
+  .home-preorders::before,
   #newsletter-signup-area::before {
     position: absolute;
     inset-block: 0;
@@ -906,7 +908,8 @@ body {
     pointer-events: none;
   }
 
-  .home-news-section::before {
+  .home-news-section::before,
+  .home-preorders::before {
     background: rgb(13 13 13 / 76%);
   }
 

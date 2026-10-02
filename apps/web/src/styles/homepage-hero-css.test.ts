@@ -38,7 +38,8 @@ describe('Homepage hero CSS', () => {
     const scrolledIndicatorRule = readCssBlock(
       '.homepage-hero-section--scrolled .homepage-hero-section__scroll-indicator {',
     );
-    const homeNewsVeilRule = readCssBlock('.home-news-section::before {');
+    const homeNewsVeilRule = readCssBlock('.home-news-section::before,\n  .home-preorders::before {');
+    const homePreordersVeilRule = readCssBlock('.home-preorders::before {');
     const artistsSurfaceRule = readCssBlock('.artists-surface-section {');
     const newsletterVeilRule = readCssBlock('#newsletter-signup-area::before {', globalCss, true);
     const cardRule = readCssBlock('.catalog-tile-card {');
@@ -69,6 +70,10 @@ describe('Homepage hero CSS', () => {
     expect(reducedMotionRule).toMatch(/\.homepage-hero-section__media-layer::after[\s\S]*?transition:\s*none/i);
 
     expect(homeNewsVeilRule).toMatch(/background:\s*rgb\(13 13 13 \/ 76%\)/i);
+    expect(homePreordersVeilRule).toMatch(/background:\s*rgb\(13 13 13 \/ 76%\)/i);
+    const homeSurfacesRule = readCssBlock('.home-news-section,\n  .home-preorders,\n  .artists-surface-section,');
+    expect(homeSurfacesRule).toMatch(/position:\s*relative/i);
+    expect(homeSurfacesRule).toMatch(/z-index:\s*1/i);
     expect(artistsSurfaceRule).toMatch(/background-color:\s*rgb\(20 20 20 \/ 78%\)/i);
     expect(newsletterVeilRule).toMatch(/background:\s*rgb\(13 13 13 \/ 74%\)/i);
     expect(cardRule).toMatch(/background-color:\s*#141414/i);

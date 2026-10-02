@@ -26,6 +26,7 @@
         "./lib/store-collection.ts",
         "./lib/store-categories.ts",
         "./lib/catalog-data.ts",
+        "./lib/preorder-showcase.ts",
         "./lib/content-loader.ts",
         "./lib/site-data.ts",
         "./components/services/ServicesInquiryForm.tsx",
