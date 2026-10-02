@@ -89,6 +89,7 @@ export function createOrderWorkspace(
         notification,
         awaitingStock,
         cursor,
+        nextCursor: null,
         list: { ...previous, loading: true, error: null },
       });
       try {

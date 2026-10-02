@@ -207,6 +207,39 @@ it('sends complete search filters and cursors to the server', async () => {
 });
 
 describe('Awaiting-stock orders', () => {
+  it('clears the previous page cursor during a new filtered read and after failure, then uses fresh pagination', async () => {
+    const search = vi.fn(async (): Promise<{ items: InternalOrder[]; nextCursor: string | null }> => ({
+      items: [exampleOrder],
+      nextCursor: 'old-next-page',
+    }));
+    const workspace = createOrderWorkspace({ ...api(), search });
+    await workspace.loadList('paid', '', '', 'old-page');
+    expect(workspace.getSnapshot().nextCursor).toBe('old-next-page');
+
+    const pending = deferred<{ items: InternalOrder[]; nextCursor: string | null }>();
+    search.mockReturnValueOnce(pending.promise);
+    const filtered = workspace.loadList('paid', '', '', undefined, true);
+    expect(workspace.getSnapshot()).toMatchObject({
+      awaitingStock: true,
+      cursor: undefined,
+      nextCursor: null,
+      list: { data: null, loading: true },
+    });
+    pending.reject(new InternalOrderApiError(503));
+    await filtered;
+    expect(workspace.getSnapshot()).toMatchObject({ nextCursor: null, list: { loading: false } });
+    expect(workspace.getSnapshot().list.error).toBeTruthy();
+
+    search.mockResolvedValueOnce({ items: [exampleOrder], nextCursor: 'filtered-next-page' });
+    await workspace.loadList();
+    expect(search).toHaveBeenLastCalledWith({ status: 'paid', awaitingStock: 'true' });
+    expect(workspace.getSnapshot().nextCursor).toBe('filtered-next-page');
+    search.mockResolvedValueOnce({ items: [exampleOrder], nextCursor: null });
+    await workspace.loadList('paid', '', '', 'filtered-next-page');
+    expect(search).toHaveBeenLastCalledWith({ status: 'paid', awaitingStock: 'true', cursor: 'filtered-next-page' });
+    expect(workspace.getSnapshot().nextCursor).toBeNull();
+  });
+
   it('keeps the filter across pages and retries, clears old filter rows, and turns it off', async () => {
     const search = vi.fn(async () => ({ items: [exampleOrder], nextCursor: 'next-page' }));
     const workspace = createOrderWorkspace({ ...api(), search });
