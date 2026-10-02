@@ -73,6 +73,25 @@ test('renders readable before/after values and new entry state without internal 
   expect(referenceHtml).toContain('Original artist name');
   expect(referenceHtml).toContain('New artist name');
   expect(referenceHtml).not.toContain('Renamed draft');
+  review.entries[0]!.collection = 'releases';
+  review.entries[0]!.before = { partner_links: [] };
+  const partners = [
+    { label: 'First shop', url: 'https://example.com/record' },
+    { label: 'Second shop', url: 'https://example.org/record' },
+  ];
+  review.entries[0]!.after = { partner_links: partners };
+  const partnerHtml = renderToStaticMarkup(<PublicationComparison review={review} />);
+  expect(partnerHtml).toContain('Partner store links');
+  expect(partnerHtml).toContain('First shop');
+  expect(partnerHtml).toContain('https://example.com/record');
+  expect(partnerHtml.indexOf('First shop')).toBeLessThan(partnerHtml.indexOf('Second shop'));
+  expect(partnerHtml).not.toContain('partner_links');
+  expect(
+    changedPublicationFields({
+      before: { partner_links: partners },
+      after: { partner_links: [...partners].reverse() },
+    }),
+  ).toEqual(['partner_links']);
 });
 test('review input enforces distinct entries, bounded selections and no browser-authored content', () => {
   const entry = { collection: 'news', recordId: 'news' };

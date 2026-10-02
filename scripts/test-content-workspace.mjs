@@ -2778,6 +2778,19 @@ else if (process.argv.includes('--editor-recovery')) {
     await singles.getByRole('button', { name: 'Add row' }).click();
     await singles.getByRole('textbox', { name: 'Single title' }).fill('First single');
     await singles.getByRole('textbox', { name: 'Listening link' }).fill('https://example.com/listen');
+    const partners = page.getByRole('group', { name: 'Partner store links', exact: true });
+    await partners.getByRole('button', { name: 'Add row' }).click();
+    await partners.getByRole('textbox', { name: 'Store name' }).fill('Partner shop');
+    await partners.getByRole('textbox', { name: 'Store link' }).fill('https://example.com/record');
+    await partners.getByRole('button', { name: 'Add row' }).click();
+    await partners.getByRole('textbox', { name: 'Store name' }).nth(1).fill('Second shop');
+    await partners.getByRole('textbox', { name: 'Store link' }).nth(1).fill('https://example.org/record');
+    await partners.getByRole('button', { name: 'Move up' }).nth(1).click();
+    assert.equal(await partners.getByRole('textbox', { name: 'Store name' }).first().inputValue(), 'Second shop');
+    await partners.getByRole('button', { name: 'Move down' }).first().click();
+    await partners.getByRole('textbox', { name: 'Store name' }).nth(1).fill('Updated shop');
+    await partners.getByRole('button', { name: 'Remove row 1', exact: true }).click();
+    assert.equal(await partners.getByRole('textbox', { name: 'Store name' }).count(), 1);
     const clips = page.getByRole('group', { name: 'Clips', exact: true });
     await clips.getByRole('button', { name: 'Add row' }).click();
     await clips.getByRole('textbox', { name: 'Clip title' }).fill('First clip');
@@ -2800,6 +2813,9 @@ else if (process.argv.includes('--editor-recovery')) {
     assert.deepEqual(records.releases.find((item) => item.id === created.id).data.clips, [
       { title: 'Second clip', youtube_video_id: 'abcdefghijk' },
       { title: 'First clip', youtube_video_id: '1sp213QHLX0' },
+    ]);
+    assert.deepEqual(records.releases.find((item) => item.id === created.id).data.partner_links, [
+      { label: 'Updated shop', url: 'https://example.org/record' },
     ]);
     await page.getByRole('button', { name: 'Add tracklist', exact: true }).click();
     await page.getByLabel('Tracklist format', { exact: true }).selectOption('vinyl');

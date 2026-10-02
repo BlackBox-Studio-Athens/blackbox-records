@@ -13,6 +13,7 @@ const publicationFieldLabel = (key: string) =>
     hero: 'Opening section',
     group: 'Format',
     profile_links: 'Profile links',
+    partner_links: 'Partner store links',
     slug: 'URL name',
   })[key.replace(/_rich$/, '')] ??
   key

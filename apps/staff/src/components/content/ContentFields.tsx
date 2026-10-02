@@ -644,6 +644,12 @@ export default function ContentFields({
                   {field(`${path}.url`, 'Listening link', { type: 'url' })}
                 </>
               ))}
+              {rows('partner_links', 'Partner store links', { label: '', url: '' }, (path) => (
+                <>
+                  {field(`${path}.label`, 'Store name')}
+                  {field(`${path}.url`, 'Store link', { type: 'url' })}
+                </>
+              ))}
               {rows('clips', 'Clips', { title: '', youtube_video_id: '' }, (path) => (
                 <>
                   {field(`${path}.title`, 'Clip title')}
