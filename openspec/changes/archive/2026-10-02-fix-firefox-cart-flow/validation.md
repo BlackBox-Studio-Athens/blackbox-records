@@ -28,4 +28,6 @@ The subsequent desktop Chromium persistence test reported `ERR_NO_BUFFER_SPACE` 
 
 ## Pending hosted acceptance
 
+After local integration, worktree artifacts are preserved under `C:/Users/SVall/WebstormProjects/blackbox-records/.codex-artifacts/merged-firefox-cart-flow/`. Paths above remain relative to that preserved artifact tree. Archiving and merging locally do not close the Android incident or authorize PRD promotion.
+
 Earlier isolated UAT desktop Firefox probes passed scrolling, dismissal and a fourth item on release `e818b709a2364aa29dfd54cadcd0433779a1f263`; they do not cover this new source or real Android. The reported Android Firefox UAT incident remains open. Require a real Android Firefox UAT check of all dismissal paths, scrolling and subsequent BUY before PRD promotion. Verify PRD through the existing release gates after promotion. No hosted deployment or checkout was performed for this implementation.
