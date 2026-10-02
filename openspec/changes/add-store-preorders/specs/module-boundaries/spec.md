@@ -10,6 +10,7 @@ Pre-order status rules SHALL be owned by `commerce-domain` and reach other backe
 
 - **WHEN** stock, checkout, order, email or HTTP code derives or validates a pre-order
 - **THEN** it imports the pure pre-order module through the `commerce-domain` root entrypoint
+- **AND** `operator-stock` declares its `commerce-domain` dependency for the staff pre-order projection
 - **AND** the pre-order estimate notice repository is a provided `commerce-persistence` entrypoint consumed by `orders`.
 
 #### Scenario: Web modules word a pre-order
