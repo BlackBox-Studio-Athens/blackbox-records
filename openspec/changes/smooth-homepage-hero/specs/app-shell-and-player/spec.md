@@ -2,7 +2,7 @@
 
 ### Requirement: Homepage hero scroll opacity is transition-free
 
-The app shell SHALL keep the existing responsive homepage hero image fixed and visible for as long as the Home route owns it. Where the browser supports scroll-driven animations, the media layer SHALL fade from opacity `1` to `0.12` while an internal black veil fades from opacity `0` to `0.5`, both proportional to the root scroll position over the first `42vh`, without JavaScript style writes. Elsewhere, the existing coarse hero scrolled state SHALL crossfade the same endpoints over 240 milliseconds. The scroll indicator retains its immediate transition-free state.
+The app shell SHALL keep the existing responsive homepage hero image fixed and visible for as long as the Home route owns it. The media layer SHALL fade from opacity `1` to `0.12` while an internal black veil fades from opacity `0` to `0.5`, both proportional to the root scroll position over the first `42vh`. Where the browser supports scroll-driven animations, a root scroll timeline drives both without JavaScript. Elsewhere, the same keyframes apply paused and the hero scroll synchronization seeks them to its scroll progress. Neither the media layer nor the veil declares a transition. The scroll indicator retains its immediate transition-free state.
 
 #### Scenario: Shopper scrolls through the homepage hero
 
@@ -31,29 +31,31 @@ The app shell SHALL keep the existing responsive homepage hero image fixed and v
 #### Scenario: Shopper returns above the threshold
 
 - **GIVEN** the browser does not support `animation-timeline` and does not request reduced motion
-- **WHEN** the existing coarse hero state changes side
-- **THEN** the media layer opacity transitions from its current value to `0.12` (scrolled) or `1` (not scrolled) and the veil to `0.5` or `0` over 240 milliseconds using `cubic-bezier(0.22, 1, 0.36, 1)`
-- **AND** the media remains fixed and visible
-- **AND** an interrupted native CSS reversal remains bounded without a separate application animation state or timer.
+- **WHEN** the shopper scrolls from the top of Home towards `42vh` and returns above the coarse threshold
+- **THEN** the media layer and the veil take the same values along the same linear path as on a root scroll timeline, updated on the hero scroll synchronization's animation frame
+- **AND** the coarse scrolled class causes no step or transition in either value
+- **AND** the media remains fixed and visible at both endpoints.
 
 #### Scenario: Scroll state changes only at the coarse threshold
 
 - **GIVEN** the homepage hero scroll sync is connected
 - **WHEN** repeated scroll events stay on the same side of the hero scrolled threshold
 - **THEN** the app shell does not mutate the hero class repeatedly
-- **AND** the app shell does not write `--homepage-hero-scroll-progress`, opacity, or any media style property on scroll.
+- **AND** the app shell does not write `--homepage-hero-scroll-progress`, opacity, or any media style property on scroll
+- **AND** it seeks the paused fade only where scroll-driven animations are unsupported, at most once per animation frame and only when the clamped scroll progress changes.
 
 #### Scenario: Shopper leaves and returns to Home
 
 - **WHEN** shell navigation leaves Home
 - **THEN** the Home hero DOM and ghost no longer render on the destination route
 - **AND** the route-scoped scroll synchronization disconnects
-- **AND** returning to Home recreates the opacity-`1` first-viewport composition without global backdrop state or a full document reload.
+- **AND** returning to Home recreates the opacity-`1` first-viewport composition without global backdrop state or a full document reload
+- **AND** the recreated hero's fade follows the scroll.
 
 #### Scenario: Reduced motion remains respected
 
 - **WHEN** the browser reports a reduced-motion preference
-- **THEN** no scroll-linked animation applies
+- **THEN** no scroll-linked animation applies and the app shell seeks nothing
 - **AND** the media reaches opacity `0.12` and the black veil reaches opacity `0.5` in the scrolled state without a transition
 - **AND** the media reaches opacity `1` and the black veil reaches opacity `0` in the not-scrolled state without a transition
 - **AND** the media remains fixed and visible at both endpoints
@@ -62,7 +64,7 @@ The app shell SHALL keep the existing responsive homepage hero image fixed and v
 
 ### Requirement: Homepage hero render work is bounded
 
-The app shell SHALL preserve the homepage hero composition without continuous full-viewport raster effects. One already-loaded fixed image MAY remain behind later Home content. Its media layer and one internal solid-color veil MAY change opacity only along the root scroll timeline or through one bounded coarse-threshold transition, and they SHALL cause no hero-attributable paint, raster, decode, or application work per scroll frame.
+The app shell SHALL preserve the homepage hero composition without continuous full-viewport raster effects. One already-loaded fixed image MAY remain behind later Home content. Its media layer and one internal solid-color veil MAY change opacity only along the root scroll timeline or, where that is unsupported, through the hero scroll synchronization seeking the same paused keyframes. They SHALL cause no hero-attributable layout, image decode, or style-property write per scroll frame, and no hero-attributable paint, raster, or application work where a scroll timeline drives them.
 
 #### Scenario: Homepage hero is visible
 
@@ -78,7 +80,8 @@ The app shell SHALL preserve the homepage hero composition without continuous fu
 - **THEN** only media opacity and the internal black-veil opacity change
 - **AND** media visibility, position, scale, filter, and background position remain unchanged
 - **AND** the hero shade leaves with its containing hero rather than remaining as a second fixed layer
-- **AND** scroll evidence shows no hero-attributable paint, raster, image-decode, or JavaScript style write per frame
+- **AND** where a scroll timeline drives the fade, scroll evidence shows no hero-attributable paint, raster, image-decode, or JavaScript style write per frame
+- **AND** where the fade is seeked, that seek is the only added per-frame application work, it runs only while the clamped progress changes within the first `42vh`, and frame pacing matches the coarse crossfade it replaces
 - **AND** application-attributable main-thread plus style, layout, and paint work remains within the existing performance budget
 - **AND** no application-attributable task or long animation frame of at least 50 milliseconds is introduced.
 

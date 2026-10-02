@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('astro:config/client', () => ({
   base: '/blackbox-records/',
@@ -16,10 +16,13 @@ type FakeHeroElement = Pick<HTMLElement, 'getBoundingClientRect'> & {
     remove: ReturnType<typeof vi.fn<(className: string) => void>>;
     toggle: ReturnType<typeof vi.fn<(className: string, force?: boolean) => boolean>>;
   };
+  getAnimations: ReturnType<typeof vi.fn<(options?: GetAnimationsOptions) => Animation[]>>;
   setTop(top: number): void;
 };
 
-function createHeroElement({ height = 500, top = 0 } = {}): FakeHeroElement {
+type FakeAnimation = { animationName: string; currentTime: number | null };
+
+function createHeroElement({ animations = [] as FakeAnimation[], height = 500, top = 0 } = {}): FakeHeroElement {
   let heroTop = top;
 
   return {
@@ -27,11 +30,24 @@ function createHeroElement({ height = 500, top = 0 } = {}): FakeHeroElement {
       remove: vi.fn<(className: string) => void>(),
       toggle: vi.fn<(className: string, force?: boolean) => boolean>(() => true),
     },
+    getAnimations: vi.fn<(options?: GetAnimationsOptions) => Animation[]>(() => animations as unknown as Animation[]),
     getBoundingClientRect: vi.fn(() => ({ height, top: heroTop }) as DOMRect),
     setTop(nextTop: number) {
       heroTop = nextTop;
     },
   };
+}
+
+function createFadeAnimations() {
+  return {
+    ghost: { animationName: 'homepage-hero-ghost', currentTime: null } as FakeAnimation,
+    veil: { animationName: 'homepage-hero-ghost-veil', currentTime: null } as FakeAnimation,
+    unrelated: { animationName: 'fade-rise', currentTime: null } as FakeAnimation,
+  };
+}
+
+function findScrollListener(scheduler: ReturnType<typeof createScheduler>) {
+  return scheduler.addEventListener.mock.calls.find(([type]) => type === 'scroll')?.[1] as () => void;
 }
 
 function createScheduler({ innerHeight = 1000 } = {}) {
@@ -191,5 +207,65 @@ describe('connectHomepageHeroScrollProgress', () => {
     cleanup();
 
     expect(scheduler.cancelAnimationFrame).toHaveBeenCalledWith(1);
+  });
+});
+
+describe('homepage hero fade without scroll timelines', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('seeks only the paused hero fade to the scroll progress, once per change', () => {
+    vi.stubGlobal('CSS', { supports: () => false });
+    const { ghost, veil, unrelated } = createFadeAnimations();
+    const heroElement = createHeroElement({ animations: [ghost, veil, unrelated], top: -210 });
+    const scheduler = createScheduler();
+
+    connectHomepageHeroScrollProgress({ activePathname: '/', queryHeroElement: () => heroElement, scheduler });
+    scheduler.flushAnimationFrame();
+
+    expect(heroElement.getAnimations).toHaveBeenCalledWith({ subtree: true });
+    expect([ghost.currentTime, veil.currentTime, unrelated.currentTime]).toEqual([500, 500, null]);
+
+    ghost.currentTime = -1;
+    findScrollListener(scheduler)();
+    scheduler.flushAnimationFrame();
+    expect(ghost.currentTime).toBe(-1);
+
+    heroElement.setTop(-900);
+    findScrollListener(scheduler)();
+    scheduler.flushAnimationFrame();
+    expect([ghost.currentTime, veil.currentTime]).toEqual([1000, 1000]);
+    expect(heroElement.getAnimations).toHaveBeenCalledTimes(1);
+  });
+
+  it('reads the fade of a replaced hero element', () => {
+    vi.stubGlobal('CSS', { supports: () => false });
+    const first = createFadeAnimations();
+    const second = createFadeAnimations();
+    let heroElement = createHeroElement({ animations: [first.ghost], top: -210 });
+    const scheduler = createScheduler();
+
+    connectHomepageHeroScrollProgress({ activePathname: '/', queryHeroElement: () => heroElement, scheduler });
+    scheduler.flushAnimationFrame();
+    heroElement = createHeroElement({ animations: [second.ghost], top: -210 });
+    findScrollListener(scheduler)();
+    scheduler.flushAnimationFrame();
+
+    expect([first.ghost.currentTime, second.ghost.currentTime]).toEqual([500, 500]);
+  });
+
+  it('leaves the fade to the scroll timeline where it is supported', () => {
+    vi.stubGlobal('CSS', { supports: () => true });
+    const { ghost } = createFadeAnimations();
+    const heroElement = createHeroElement({ animations: [ghost], top: -210 });
+    const scheduler = createScheduler();
+
+    connectHomepageHeroScrollProgress({ activePathname: '/', queryHeroElement: () => heroElement, scheduler });
+    scheduler.flushAnimationFrame();
+
+    expect(heroElement.getAnimations).not.toHaveBeenCalled();
+    expect(ghost.currentTime).toBeNull();
+    expect(heroElement.classList.toggle).toHaveBeenCalledWith(HOMEPAGE_HERO_SCROLLED_CLASS, true);
   });
 });

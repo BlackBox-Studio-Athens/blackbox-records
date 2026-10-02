@@ -47,13 +47,18 @@ describe('Homepage hero CSS', () => {
 
     expect(mediaRule).toMatch(/position:\s*fixed/i);
     expect(mediaRule).toMatch(/opacity:\s*1/i);
-    expect(mediaRule).toMatch(/transition:\s*opacity 240ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/i);
-    expect(mediaRule).not.toMatch(/visibility|transform|filter|mix-blend-mode/i);
+    // A transition would outrank the fade animation whenever the coarse class flips.
+    expect(mediaRule).toMatch(
+      /animation-name:\s*homepage-hero-ghost;\s*animation-timing-function:\s*linear;\s*animation-fill-mode:\s*both;/,
+    );
+    expect(mediaRule).not.toMatch(/transition|visibility|transform|filter|mix-blend-mode/i);
     expect(mediaBlackVeilRule).toMatch(/position:\s*absolute/i);
     expect(mediaBlackVeilRule).toMatch(/background:\s*#050505/i);
     expect(mediaBlackVeilRule).toMatch(/opacity:\s*0/i);
-    expect(mediaBlackVeilRule).toMatch(/transition:\s*opacity 240ms cubic-bezier\(0\.22, 1, 0\.36, 1\)/i);
-    expect(mediaBlackVeilRule).not.toMatch(/filter|mix-blend-mode/i);
+    expect(mediaBlackVeilRule).toMatch(
+      /animation-name:\s*homepage-hero-ghost-veil;\s*animation-timing-function:\s*linear;\s*animation-fill-mode:\s*both;/,
+    );
+    expect(mediaBlackVeilRule).not.toMatch(/transition|filter|mix-blend-mode/i);
     expect(scrolledMediaRule).toMatch(/opacity:\s*0\.12/i);
     expect(scrolledMediaRule).not.toMatch(/visibility|transform|filter|mix-blend-mode/i);
     expect(scrolledMediaBlackVeilRule).toMatch(/opacity:\s*0\.5/i);
@@ -72,20 +77,22 @@ describe('Homepage hero CSS', () => {
     expect(scrollIndicatorRule).not.toMatch(/transition/i);
     expect(scrolledIndicatorRule).toMatch(/opacity:\s*0/i);
 
-    // Scroll-linked ghost: same endpoints, driven by the root scroll timeline, overridden by reduced motion.
+    // Scroll-linked ghost: the root scroll timeline drives it where supported; elsewhere it is paused for the shell to
+    // seek (1s = full progress, see shell-hero-scroll-progress.ts). Reduced motion overrides both.
     const supportsStart = globalCss.indexOf('@supports (animation-timeline: scroll())');
-    const supportsCss = globalCss.slice(supportsStart, globalCss.indexOf('@keyframes homepage-hero-ghost {'));
+    const supportsNotStart = globalCss.indexOf('@supports not (animation-timeline: scroll())');
+    const fadeDriverCss = globalCss.slice(supportsStart, globalCss.indexOf('@keyframes homepage-hero-ghost {'));
     expect(supportsStart).toBeGreaterThan(-1);
+    expect(supportsNotStart).toBeGreaterThan(supportsStart);
     // The reduced-motion `animation: none` override must come later in the cascade.
-    expect(supportsStart).toBeLessThan(
+    expect(supportsNotStart).toBeLessThan(
       globalCss.search(/\.homepage-hero-section__media-layer::after,\s*\.homepage-hero-section__shade-layer/),
     );
-    expect(supportsCss).toMatch(
-      /\.homepage-hero-section__media-layer,\s*\.homepage-hero-section__media-layer::after \{\s*transition:\s*none;\s*animation-timing-function:\s*linear;\s*animation-fill-mode:\s*both;\s*animation-timeline:\s*scroll\(root block\);\s*animation-range:\s*0 42vh;/,
+    expect(fadeDriverCss).toMatch(
+      /@supports \(animation-timeline: scroll\(\)\) \{\s*\.homepage-hero-section__media-layer,\s*\.homepage-hero-section__media-layer::after \{\s*animation-timeline:\s*scroll\(root block\);\s*animation-range:\s*0 42vh;\s*\}\s*\}/,
     );
-    expect(supportsCss).toMatch(/\.homepage-hero-section__media-layer \{\s*animation-name:\s*homepage-hero-ghost;/);
-    expect(supportsCss).toMatch(
-      /\.homepage-hero-section__media-layer::after \{\s*animation-name:\s*homepage-hero-ghost-veil;/,
+    expect(fadeDriverCss).toMatch(
+      /@supports not \(animation-timeline: scroll\(\)\) \{\s*\.homepage-hero-section__media-layer,\s*\.homepage-hero-section__media-layer::after \{\s*animation-duration:\s*1s;\s*animation-play-state:\s*paused;\s*\}\s*\}/,
     );
     expect(reducedMotionRule).toMatch(/\.homepage-hero-section__media-layer::after[\s\S]*?animation:\s*none/i);
     expect(globalCss.slice(globalCss.indexOf('@keyframes homepage-hero-ghost {'))).toMatch(

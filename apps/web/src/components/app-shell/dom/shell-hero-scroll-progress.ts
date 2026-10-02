@@ -3,6 +3,9 @@ import { isCurrentPath } from '@/platform/utils/urls';
 export const HOMEPAGE_HERO_SCROLLED_CLASS = 'homepage-hero-section--scrolled';
 export const HOMEPAGE_HERO_SELECTOR = '#homepage-hero-section';
 const HOMEPAGE_HERO_SCROLLED_PROGRESS_THRESHOLD = 0.5;
+// The paused fallback fade in global.css lasts 1s, so full scroll progress is 1000 ms.
+const HOMEPAGE_HERO_FADE_ANIMATION_NAMES = ['homepage-hero-ghost', 'homepage-hero-ghost-veil'];
+const HOMEPAGE_HERO_FADE_DURATION_MS = 1000;
 
 type HeroScrollScheduler = {
   addEventListener(type: 'resize' | 'scroll', listener: () => void, options?: AddEventListenerOptions): void;
@@ -12,7 +15,7 @@ type HeroScrollScheduler = {
   requestAnimationFrame(callback: FrameRequestCallback): number;
 };
 
-type HomepageHeroElement = Pick<HTMLElement, 'getBoundingClientRect'> & {
+type HomepageHeroElement = Pick<HTMLElement, 'getAnimations' | 'getBoundingClientRect'> & {
   classList: Pick<DOMTokenList, 'remove' | 'toggle'>;
 };
 
@@ -42,10 +45,31 @@ export function connectHomepageHeroScrollProgress({
 }) {
   if (!isCurrentPath(activePathname, '/')) return () => {};
 
+  // Without scroll-driven animations, global.css applies the hero fade paused; the scroll progress seeks it instead.
+  const seeksHeroFade = typeof CSS !== 'undefined' && !CSS.supports('animation-timeline: scroll()');
   let animationFrameId: number | null = null;
   let currentHeroElement: HomepageHeroElement | null = null;
   let syncedHeroElement: HomepageHeroElement | null = null;
   let isHeroScrolled: boolean | null = null;
+  let fadeHeroElement: HomepageHeroElement | null = null;
+  let fadeAnimations: Animation[] = [];
+  let fadeProgress: number | null = null;
+
+  const seekHeroFade = (heroElement: HomepageHeroElement, progress: number) => {
+    if (fadeHeroElement !== heroElement) {
+      fadeHeroElement = heroElement;
+      fadeAnimations = heroElement
+        .getAnimations({ subtree: true })
+        .filter((animation) => HOMEPAGE_HERO_FADE_ANIMATION_NAMES.includes((animation as CSSAnimation).animationName));
+      fadeProgress = null;
+    }
+    if (fadeProgress === progress) return;
+
+    fadeProgress = progress;
+    for (const animation of fadeAnimations) {
+      animation.currentTime = progress * HOMEPAGE_HERO_FADE_DURATION_MS;
+    }
+  };
 
   const applyHeroScrollProgress = () => {
     animationFrameId = null;
@@ -59,6 +83,8 @@ export function connectHomepageHeroScrollProgress({
       heroTop: heroRect.top,
       viewportHeight: scheduler.innerHeight,
     });
+    if (seeksHeroFade) seekHeroFade(currentHeroElement, progress);
+
     const nextIsHeroScrolled = progress >= HOMEPAGE_HERO_SCROLLED_PROGRESS_THRESHOLD;
     if (syncedHeroElement === currentHeroElement && isHeroScrolled === nextIsHeroScrolled) return;
 

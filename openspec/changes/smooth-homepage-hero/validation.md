@@ -28,9 +28,59 @@ Cause of the layout cost: Veneer brand-font text. Offscreen probes in a fresh re
 
 Local after, cold Artists → Home: Home HTML 239–435 ms; long frame 2973 ms (Veneer, unchanged); hero image requested at 499 ms during that frame and finished at 899 ms; the first Home frame already had the hero `complete`, and the reveal started at 3496 ms with the photo present.
 
+## Firefox fallback
+
+Base commit: `d69c5ec8` (fallback uncommitted on `main` at validation time). Tools: Playwright 1.63 headless Firefox 155 (`firefox-1543`) and Chromium (`chromium-1243`). The after state ran on a Local production preview (`astro preview --root . --port 4399`, started and stopped for this run); the before state used PRD read-only GETs.
+
+- Cause: the PRD and UAT bundles already contain `animation-timeline:scroll(root)`. Firefox 155 returns false for `CSS.supports('animation-timeline: scroll()')` (MDN lists Firefox as `preview`), so it took the coarse crossfade.
+- PRD before, Firefox, 390 px (layer/veil, class): `1/0` (n) from 0 to 0.21 vh, then `0.12/0.5` (S) at 0.22 vh, reached through the 240 ms transition.
+- Local after, Firefox, instant scroll, 390 px:
+
+  | Offset (vh) | Layer/veil    | Class |
+  | ----------- | ------------- | ----- |
+  | 0           | `1.000/0.000` | n     |
+  | 0.1         | `0.791/0.119` | n     |
+  | 0.2         | `0.580/0.239` | n     |
+  | 0.21        | `0.561/0.249` | n     |
+  | 0.22        | `0.539/0.262` | S     |
+  | 0.3         | `0.371/0.357` | S     |
+  | 0.42        | `0.121/0.500` | S     |
+  | 0.6 and 1.5 | `0.120/0.500` | S     |
+
+  1440 px follows the same path: 0.1 → `0.790/0.119`, 0.21 → `0.560/0.250` (S), 0.3 → `0.371/0.357`, 0.42 → `0.120/0.500`. Both match the Chrome table above. Both fade animations report `paused`; the veil's runs on `::after`.
+
+- Lenis wheel scroll to 467 px and back, sampled every frame: opacity never moved against the scroll. The largest change per frame was 0.025–0.041 at 390 px and 0.064–0.083 at 1440 px, against 0.231 and 0.696 on PRD. Nothing was seeked beyond 42vh. A write trace attributed every `currentTime` write to the two hero fades and found none at rest.
+- Shell Home → Artists (scrolled to 1200 px) → Home, with one navigation entry: `1/0`, not scrolled, at the top; `0.371/0.357` at y = 253 on the recreated hero.
+- Reduced motion (`reducedMotion: 'reduce'`): no fade animations; `1/0` up to 0.21 vh and `0.120/0.500` from 0.22 vh, with no seeks.
+- Chromium: table unchanged (0.1 → `0.791/0.118`, 0.3 → `0.372/0.357`, 0.42 → `0.121/0.499`); the fades run on the scroll timeline (`running`) with zero seeks.
+- Cost in Firefox (desktop, unthrottled): seeking both animations plus a forced style flush took 0.05 ms per frame.
+- Pacing A/B: interleaved runs on the same build at 390 px, 4 pairs of 360 frames each. "Before" served the CSS rewritten back to the 240 ms crossfade.
+
+  | Pair | Median frame (before/after) | p95 (before/after) | Frames over 20 ms (before/after) |
+  | ---- | --------------------------- | ------------------ | -------------------------------- |
+  | 1    | 8.3/8.3 ms                  | 16.7/16.7 ms       | 8/14                             |
+  | 2    | 8.3/8.3 ms                  | 16.7/16.7 ms       | 11/12                            |
+  | 3    | 8.3/8.3 ms                  | 25/25 ms           | 37/38                            |
+  | 4    | 8.3/8.3 ms                  | 25/25 ms           | 21/23                            |
+
+  Machine load drives the spread between runs. "After" has 1–6 more slow frames per pair, within that spread. Headless Firefox renders in software.
+
+- Build: the minified CSS keeps:
+  - `@supports (animation-timeline:scroll()){…{animation-timeline:scroll(root);animation-range:0 42vh}}`;
+  - `@supports not (animation-timeline:scroll()){…{animation-duration:1s;animation-play-state:paused}}`;
+  - the base longhands `animation-name`, `animation-timing-function:linear` and `animation-fill-mode:both`.
+
+  No `240ms` remains on the hero.
+
+- Tests: `vitest run --config vitest.modules.config.ts src/components/app-shell/dom src/styles src/components/app-shell/navigation` from `apps/web` passed 27 files and 126 tests. The production build passed `brand-font:check` and the image markup check.
+- `pnpm openspec -- validate smooth-homepage-hero --type change --strict`: valid; the INFO about `reveal-first-screen-images` is unchanged.
+- `pnpm validate` (with `NX_PLUGIN_NO_TIMEOUTS=true`): PASSED, `mode: local`, `scope: all`, 136.7 s. Summary `.codex-artifacts/validation/2026-10-02T10-27-03-874Z-88536-9a00dc/summary.json`; before/after fingerprint `6a005812fe04351f57e8a47f1052adc8cdadb2e3cd5efe19b3dc4aa7eebdc041`. This line was added after the run, so the tracked tree differs only by this note.
+- Probe scripts `hero-fade-firefox.cjs` and `hero-fade-ab.cjs` live in the session scratchpad and are not tracked.
+
 ## Not verified
 
 - PRD after state: requires release and promotion.
-- Firefox or another browser without `animation-timeline` (fallback crossfade path) was not opened; it is the unchanged previous behaviour.
-- Real reduced-motion preference in a browser (CSS order is asserted by the CSS test).
+- Firefox on a real Android device, and Firefox profiler paint and composite numbers; headless Firefox renders in software.
+- Safari before 26: same fallback code path, not opened.
+- Real reduced-motion preference in a browser beyond Playwright emulation (CSS order is asserted by the CSS test).
 - Real phones; CPU throttling only approximates them.

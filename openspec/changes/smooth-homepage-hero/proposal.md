@@ -8,10 +8,13 @@ A label member reported that the photo lags when navigating to Home from another
 
 An earlier JavaScript custom-property writer was removed (commit `45455219`) because per-scroll style writes were costly on mobile, so the fade must not reintroduce per-frame application work.
 
+After release the client still saw the blackout in Firefox, on desktop and mobile. Firefox does not ship `animation-timeline` (Firefox 155 reports it unsupported; MDN lists it as preview only), so it kept the coarse 240 ms crossfade. Safari before 26 takes the same path.
+
 ## What Changes
 
 - Where `animation-timeline` is supported, the media layer and its black veil animate from opacity `1`/`0` to `0.12`/`0.5` along the root scroll timeline over the first `42vh`. Lenis drives the native scroll position, so the fade follows its smoothing without JavaScript. Transitions are disabled there; keyframes declare explicit `from` values so the coarse class cannot become the start value.
-- Browsers without scroll-driven animations keep the existing coarse 240 ms crossfade. Reduced motion keeps the instant endpoint switch.
+- Browsers without scroll-driven animations apply the same keyframes paused, with a 1 s duration. The existing animation-frame hero scroll synchronization seeks them to its scroll progress, only when the clamped progress changes. It writes no style property; the seek costs about 0.05 ms per frame in Firefox. Its frame runs after Lenis's own frame callback, so it reads the position Lenis has just set.
+- The 240 ms crossfade is removed: a transition would outrank the animation whenever the coarse class flips. Reduced motion removes both animations and keeps the instant endpoint switch.
 - A fetched shell section snapshot preloads its eager images as soon as its HTML is parsed, for both link intent and activation, so the image request is queued before the insertion task's layout. Cached snapshots and overlays are unchanged.
 
 ## Capabilities
@@ -26,7 +29,7 @@ None.
 
 ## Impact
 
-CSS in `apps/web/src/styles/global.css` and the shell page loader. No dependency, content, Worker or commerce change.
+CSS in `apps/web/src/styles/global.css`, the hero scroll synchronization and the shell page loader. No dependency, content, Worker or commerce change.
 
 Depends on `reveal-first-screen-images` (implemented, not archived): archive it before this change, because this change modifies its requirement.
 

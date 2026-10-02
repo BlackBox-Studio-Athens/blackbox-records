@@ -2913,7 +2913,9 @@ body {
     overflow: hidden;
     opacity: 1;
     pointer-events: none;
-    transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    animation-name: homepage-hero-ghost;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
   }
 
   .homepage-hero-section__media-layer::after {
@@ -2923,7 +2925,9 @@ body {
     background: #050505;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
+    animation-name: homepage-hero-ghost-veil;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
   }
 
   .homepage-hero-section__media-image {
@@ -3017,25 +3021,23 @@ body {
     animation: none;
   }
 
-  /* Where supported, the ghost fades with the (Lenis-smoothed) root scroll position on the compositor instead of the
-     coarse class crossfade. Transitions outrank animations in the cascade, so they are disabled here. Longhands only:
-     the minifier rewrites an `animation` shorthand next to `animation-timeline` into `animation: none`. */
+  /* The ghost fades with the (Lenis-smoothed) root scroll position: on the compositor along a root scroll timeline
+     where supported, otherwise paused and seeked by shell-hero-scroll-progress.ts (1s = full progress). No transition:
+     it would outrank the animation whenever the coarse class flips. Longhands only: the minifier rewrites an
+     `animation` shorthand next to `animation-timeline` into `animation: none`. */
   @supports (animation-timeline: scroll()) {
     .homepage-hero-section__media-layer,
     .homepage-hero-section__media-layer::after {
-      transition: none;
-      animation-timing-function: linear;
-      animation-fill-mode: both;
       animation-timeline: scroll(root block);
       animation-range: 0 42vh;
     }
+  }
 
-    .homepage-hero-section__media-layer {
-      animation-name: homepage-hero-ghost;
-    }
-
+  @supports not (animation-timeline: scroll()) {
+    .homepage-hero-section__media-layer,
     .homepage-hero-section__media-layer::after {
-      animation-name: homepage-hero-ghost-veil;
+      animation-duration: 1s;
+      animation-play-state: paused;
     }
   }
 
