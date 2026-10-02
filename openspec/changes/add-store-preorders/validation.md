@@ -143,6 +143,11 @@
 - Report `.codex-artifacts/preorders/run5-gate-retry.thread-report.md` and `run5-gate-retry.inventory.json` establish exact ownership. The orchestrator independently read the passed summary and verified all 25 readiness hashes before committing. Public API generation was retained from its single initial execution; B10's meaningful repair received one separate AST-only refresh. Ultra follow-up `run5-review-followup.md` closed the P2; all other review conclusions remain applicable.
 - Local slice commits: `c31f2a01` (B7), `2db914fe` (B10), `e29090f3` (W4), `e3273f16` (W10). Tasks 13.1–13.2, 20.1–20.2, 21.1 and 29.1–29.2 are complete (45/69 total). Validated product bytes are preserved; this acceptance note and task marks follow the gate. Final Local acceptance and the backend removal checkpoint remain outstanding.
 
+## Backend removal checkpoint, task 33.1
+
+- Sol 6.1 ultra traced both local graphs and actual callers within the 73-path accepted backend allowlist. No safe behavior-preserving removal was found: domain helpers, contracts, current projections and saved snapshots have required consumers and distinct semantics. No code or tests were removed; generated clients, migrations and unfinished consumers stayed outside the pass. Report `.codex-artifacts/preorders/backend-removal.thread-report.md` and full before/after manifest `backend-removal.source-hashes.json` record the evidence. The orchestrator independently verified every accepted hash and the clean source state.
+- Normal combined validation passed, Local mode, exit 0, at SHA `ec62fc2760e44e15567c7f03a154cdb772e5d059`, with zero dirty files and matching before/after fingerprint `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`. Summary `.codex-artifacts/validation/2026-10-02T21-08-55-735Z-14640-d3da77/summary.json`; gate report `.codex-artifacts/preorders/backend-removal-gate.thread-report.md`. No skipped phases, formatting edits or source changes; all 73 hashes also matched after validation. Exact prior focused evidence was retained, and no API generation or graph refresh was needed. Task 33.1 is complete (46/69); these notes follow the gate.
+
 ## User follow-up after implementation
 
 - Run `pnpm --filter @blackbox/backend cms:catalog-schema` for `partner_links` in each intended environment using its normal environment selection and release gates.
