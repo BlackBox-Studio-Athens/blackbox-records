@@ -4,37 +4,37 @@ Each group from 2 to 30 is one slice for one delegated implementer (Sonnet 5.5, 
 
 ## 1. Preparation
 
-- [ ] 1.1 Every UI slice brief tells its implementer to load the `impeccable` skill and follow its setup and gates, with the approved canvas as the shape approval; the gate outcomes reported by the implementers are recorded in `validation.md`. Verify the first UI slice report states them.
-- [ ] 1.2 Record the base commit and the open changes on the same capabilities in `validation.md`, and confirm `pnpm openspec -- validate add-store-preorders --type change --strict --allow-worktree` passes.
+- [x] 1.1 Every UI slice brief tells its implementer to load the `impeccable` skill and follow its setup and gates, with the approved canvas as the shape approval; the gate outcomes reported by the implementers are recorded in `validation.md`. Verify the first UI slice report states them.
+- [x] 1.2 Record the base commit and the open changes on the same capabilities in `validation.md`, and confirm `pnpm openspec -- validate add-store-preorders --type change --strict --allow-worktree` passes.
 
 ## 2. B0 Order index migration (run 1, backend agent, first commit)
 
 Owns: `apps/backend/prisma/migrations/0027_checkout_order_created_at_id_index.sql` (new), the folder `apps/backend/prisma/migrations/20260917120000_staff_order_pagination/` (delete), `apps/backend/test/scripts/migration-files.test.ts` (new), `BE/infrastructure/persistence/prisma/order-search.worker.test.ts`.
 
-- [ ] 2.1 Add migration 0027 with `CREATE INDEX IF NOT EXISTS "CheckoutOrder_createdAt_id_idx" ON "CheckoutOrder"("createdAt", "id");` and delete the folder-style migration. Verify with a new assertion in `order-search.worker.test.ts` that `PRAGMA index_list("CheckoutOrder")` contains the index: `pnpm test commerce-persistence`.
-- [ ] 2.2 Add `migration-files.test.ts`: every entry in `prisma/migrations` is a file named `NNNN_snake_case.sql`, numbers are unique and consecutive from 0001 through the last file (0026 is `0026_stock_show_low_stock.sql` of the low-stock change, 0027 the new index migration). Verify it fails when a folder is present and passes now: `pnpm test backend-tooling`.
+- [x] 2.1 Add migration 0027 with `CREATE INDEX IF NOT EXISTS "CheckoutOrder_createdAt_id_idx" ON "CheckoutOrder"("createdAt", "id");` and delete the folder-style migration. Verify with a new assertion in `order-search.worker.test.ts` that `PRAGMA index_list("CheckoutOrder")` contains the index: `pnpm test commerce-persistence`.
+- [x] 2.2 Add `migration-files.test.ts`: every entry in `prisma/migrations` is a file named `NNNN_snake_case.sql`, numbers are unique and consecutive from 0001 through the last file (0026 is `0026_stock_show_low_stock.sql` of the low-stock change, 0027 the new index migration). Verify it fails when a folder is present and passes now: `pnpm test backend-tooling`.
 
 ## 3. B1 Stock pre-order state (run 1, backend agent, second commit)
 
 Owns: `apps/backend/prisma/migrations/0028_stock_preorder.sql` (new), `apps/backend/prisma/schema.prisma`, `BE/generated/prisma/**`, `BE/domain/commerce/preorder.ts` and `preorder.test.ts` (new), `BE/domain/commerce/index.ts`, `BE/domain/commerce/repositories/stock-repository.ts`, `BE/infrastructure/persistence/prisma/prisma-stock-repository.ts`, `BE/infrastructure/persistence/prisma/d1-operator-stock-repository.ts`, `BE/interfaces/http/routes/d1-paid-checkout-finalization-repository.ts`, every backend or script file that builds a `StockRecord` literal (find them with `rg -n "restockPlanned" apps/backend scripts`), `UBIQUITOUS_LANGUAGE.md`.
 
-- [ ] 3.1 Add migration 0028 with the four nullable text columns, the `CHECK`s of design decision 1 and the partial index `"Stock_preorderStartedAt_idx"` on `"preorderStartedAt"` where it is not null; mirror the columns in `schema.prisma` as `String?`; run `pnpm --filter @blackbox/backend prisma:generate`. Verify migrations apply in the worker tests: `pnpm test commerce-persistence`.
-- [ ] 3.2 Add `domain/commerce/preorder.ts` exactly as design decision 2 and export it from the domain `index.ts`. Cover: Athens date across midnight and DST, month current/passed, exact date before/on/after, malformed input, `latestShipEstimate` ordering and nulls. Verify: `pnpm test commerce-domain`.
-- [ ] 3.3 Add `preorder: StockPreorder | null` to `StockRecord` beside `restockPlanned` and `showLowStock`; map it in the three stock row mappers through `stockPreorderFromColumns`, selecting the new columns wherever a column list is explicit (including `readStock` in the operator repository and the finalization repository's stock select). Add `preorder: null` to every `StockRecord` literal in backend tests and fakes. Verify, one command each: `pnpm test commerce-persistence`, `pnpm test public-commerce-http`, `pnpm test stock`, `pnpm test checkout-core`, `pnpm test orders`.
-- [ ] 3.4 Add Pre-order, Ship Estimate and Awaiting Stock to `UBIQUITOUS_LANGUAGE.md` with the definitions of the project-language delta. Verify the three terms appear once each.
+- [x] 3.1 Add migration 0028 with the four nullable text columns, the `CHECK`s of design decision 1 and the partial index `"Stock_preorderStartedAt_idx"` on `"preorderStartedAt"` where it is not null; mirror the columns in `schema.prisma` as `String?`; run `pnpm --filter @blackbox/backend prisma:generate`. Verify migrations apply in the worker tests: `pnpm test commerce-persistence`.
+- [x] 3.2 Add `domain/commerce/preorder.ts` exactly as design decision 2 and export it from the domain `index.ts`. Cover: Athens date across midnight and DST, month current/passed, exact date before/on/after, malformed input, `latestShipEstimate` ordering and nulls. Verify: `pnpm test commerce-domain`.
+- [x] 3.3 Add `preorder: StockPreorder | null` to `StockRecord` beside `restockPlanned` and `showLowStock`; map it in the three stock row mappers through `stockPreorderFromColumns`, selecting the new columns wherever a column list is explicit (including `readStock` in the operator repository and the finalization repository's stock select). Add `preorder: null` to every `StockRecord` literal in backend tests and fakes. Verify, one command each: `pnpm test commerce-persistence`, `pnpm test public-commerce-http`, `pnpm test stock`, `pnpm test checkout-core`, `pnpm test orders`.
+- [x] 3.4 Add Pre-order, Ship Estimate and Awaiting Stock to `UBIQUITOUS_LANGUAGE.md` with the definitions of the project-language delta. Verify the three terms appear once each.
 
 ## 4. W1 Tokens and styles (run 1)
 
 Owns: `WEB/styles/global.css`, `DESIGN.md`, `DESIGN.json`, `PRODUCT.md`.
 
-- [ ] 4.1 Add the three `--preorder-accent*` tokens and every selector of design Appendix A to `global.css`, following the neighbouring Store availability, button and home section rules (the `low_stock` chip and `.store-low-stock*` rules stay as they are); honour the stated rules (outline badges, 3px base line with hover/focus fill, existing Veneer sizes, 44px targets, reduced motion). Verify existing style tests still pass, one command each: `pnpm test storefront-catalog`, `pnpm test web-layouts`, `pnpm test web-pages`, `pnpm test ui-foundation`, `pnpm test app-shell`.
-- [ ] 4.2 Document the accent, its allowed uses and the pre-order components in `DESIGN.md` and `DESIGN.json`, and add pre-orders to the Store description in `PRODUCT.md`. Verify the token values in the documents equal the CSS values.
+- [x] 4.1 Add the three `--preorder-accent*` tokens and every selector of design Appendix A to `global.css`, following the neighbouring Store availability, button and home section rules (the `low_stock` chip and `.store-low-stock*` rules stay as they are); honour the stated rules (outline badges, 3px base line with hover/focus fill, existing Veneer sizes, 44px targets, reduced motion). Verify existing style tests still pass, one command each: `pnpm test storefront-catalog`, `pnpm test web-layouts`, `pnpm test web-pages`, `pnpm test ui-foundation`, `pnpm test app-shell`.
+- [x] 4.2 Document the accent, its allowed uses and the pre-order components in `DESIGN.md` and `DESIGN.json`, and add pre-orders to the Store description in `PRODUCT.md`. Verify the token values in the documents equal the CSS values.
 
 ## 5. W2 Wording helper (run 1)
 
 Owns: `WEB/platform/lib/preorder-estimate.ts` and `preorder-estimate.test.ts` (new), `WEB/platform/project.json`.
 
-- [ ] 5.1 Implement `ShipEstimate`, `shipEstimateText`, `preorderBadges`, `preorderChipText` and `latestShipEstimate` per design decision 10, with no imports outside `web-platform`, and export the file in `project.json`. The test asserts every row of both wording tables, the withheld and no-release-date cases, and the UTC-day release rule. Verify: `pnpm test web-platform`.
+- [x] 5.1 Implement `ShipEstimate`, `shipEstimateText`, `preorderBadges`, `preorderChipText` and `latestShipEstimate` per design decision 10, with no imports outside `web-platform`, and export the file in `project.json`. The test asserts every row of both wording tables, the withheld and no-release-date cases, and the UTC-day release rule. Verify: `pnpm test web-platform`.
 
 ## 6. B2 Offer contract (run 3)
 
@@ -47,7 +47,7 @@ Owns: `BE/application/commerce/checkout/types.ts`, `BE/application/commerce/chec
 
 Owns: `packages/content-model/src/schemas.ts`, `BE/cms/catalog-schema.ts`, `BE/cms/catalog-schema.test.ts`, `scripts/cms-content-schema.test.mjs`, `WEB/lib/content-files/content-snapshot.test.ts`.
 
-- [ ] 7.1 Add `partner_links` to the release schema as in design decision 13 and register it in `prepareCatalogSchema` beside `singles` and `clips` with the same type check. Cover a valid list, an empty label, a non-HTTPS URL and a release without the field. Verify, one command each: `pnpm test cms-runtime`, `pnpm test web-content-files`, `pnpm test scripts/cms-content-schema.test.mjs`.
+- [x] 7.1 Add `partner_links` to the release schema as in design decision 13 and register it in `prepareCatalogSchema` beside `singles` and `clips` with the same type check. Cover a valid list, an empty label, a non-HTTPS URL and a release without the field. Verify, one command each: `pnpm test cms-runtime`, `pnpm test web-content-files`, `pnpm test scripts/cms-content-schema.test.mjs`.
 
 ## 8. W3 Store card markup (run 2)
 
@@ -214,3 +214,11 @@ Owns: `WEB/lib/preorder-showcase.ts` and test (new), `WEB/project.json`, `WEB/pa
 - [ ] 31.5 Browser pass at desktop and 390px (Store grid and filter, Store Item, cart, checkout review, return, home with and without a clip, release page) with keyboard focus and console checks; record observations and any screenshots for uncovered behaviour.
 - [ ] 31.6 If the browser pass finds visual defects, give one correction slice the list with screenshots (owns `WEB/styles/global.css` pre-order selectors and class usage in the pre-order components only), then repeat 31.2 and the affected part of 31.5. Record that none were found otherwise.
 - [ ] 31.7 Run `pnpm performance:bundles` if the feedback policy allows it locally and record the Home and app-shell graph sizes against the 96 KiB budget; otherwise record that the budget check is left to CI.
+
+## 32. Finalization (handed over to Codex on 2 October)
+
+- [ ] 32.1 Continue the run table in design.md Appendix C from run 2, keeping its ownership and gate rules: implement each slice, run its checks, run `pnpm generate:api` once after a run that changed a contract, make `pnpm validate` pass, tick its tasks, make one local Conventional Commit per slice, and record the run in `validation.md`. Verify each run's validation summary reports `passed` with matching source fingerprints.
+- [ ] 32.2 Restore a working Prisma engine install so `pnpm --filter @blackbox/backend prisma:generate` runs without the scratch stand-in used in run 1 (the installed `@prisma/engines` package is empty on this machine). Verify by regenerating: the client in the tree must not change, then slices B5 and B9 generate normally.
+- [ ] 32.3 Complete group 31 (acceptance) and record its evidence in `validation.md`.
+- [ ] 32.4 Apply the commerce D1 migrations, authorized by the user in chat on 2 October: only after 32.3 passes, and from a tree that contains `0026_stock_show_low_stock.sql` through `0030_preorder_estimate_delivery.sql`. For UAT then PRD: record a D1 Time Travel bookmark (`pnpm --filter @blackbox/backend exec wrangler d1 time-travel info COMMERCE_DB --env <uat|prd>`), run `pnpm --filter @blackbox/backend d1:migrations:list:<env>`, then `d1:migrations:apply:<env>`, then list again and run `PRAGMA foreign_key_check` through `wrangler d1 execute COMMERCE_DB --env <env> --remote`. Verify nothing is pending afterwards and record bookmark, applied files and outputs in `validation.md`. Do not deploy, push or dispatch workflows; the deployed Worker ignores the additive columns until its own release.
+- [ ] 32.5 Record what remains for the user in `validation.md`: running `cms:catalog-schema` for `partner_links` per environment, the archive order (`clarify-store-sold-out-presentation`, then `show-low-stock-notice`, then this change), merging the low-stock branch before this one, pre-order content and expected copies per item, and any push or release. Verify the list is present.

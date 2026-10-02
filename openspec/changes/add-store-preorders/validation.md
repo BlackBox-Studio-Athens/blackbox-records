@@ -16,3 +16,13 @@
 ## Open changes on the same capabilities
 
 `clarify-store-sold-out-presentation` (base for availability states and the purchase control; archive first), `alphabetize-distro-by-band`, `fix-mobile-cart-scrolling`, `show-release-editorial-details`, `smooth-homepage-hero`, `show-low-stock-notice` (adds `Stock.showLowStock`, the opt-in `lowStockQuantity` and its Store and staff surfaces; implemented, not archived). This change adds requirements beside theirs and modifies only `store-listing-price-presentation` "Listing-price projection is browser-safe and bounded" (built on the sold-out change's text; the low-stock change only adds a requirement to that capability, and this change's exposure scenario names its `lowStockQuantity`) and `paid-order-delivery` "Delivery retries are leased, bounded, and idempotent".
+
+## Run 1, 2 October 2026
+
+- Slices B0, B1, W1, W2 and S1 implemented by Sonnet 5.5 agents; commits `cf033f7d` (B0), `cfcf6a17` (B1), `ffaf0de6` (W1), `dc41526a` (W2), `3aa31be5` (S1); planning artifacts in `ebe05002`.
+- Gate: two failed `pnpm validate` runs (a web type error under `exactOptionalPropertyTypes` in the W2 test; a duplicated `preorder` property in two backend test fakes), both fixed. Final `pnpm validate` passed, mode `local`, source fingerprints match: `.codex-artifacts/validation/2026-10-02T14-21-55-306Z-17944-d6d3a9/summary.json`.
+- B1 ran `prisma:generate` against a scratch stand-in for the empty `@prisma/engines` package; only the four Stock-related generated files changed. Task 32.2 tracks a clean regeneration.
+- B1 also fixed `readStock` in the operator stock repository, which did not select `restockPlanned` or `showLowStock`, so stock returned after a change or count reported both false.
+- W1 impeccable gates as reported: context, product and shape passed (the canvas is the shape approval); image and browser checks not run in the slice. The new CSS is not visually verified; group 31 covers it.
+- Decision: the Store card pre-order badge has its own element (`store-item-card__preorder`), because the availability slot also carries the low-stock notice.
+- Not verified yet: anything visual, browser, Local stack, email or hosted behaviour.
