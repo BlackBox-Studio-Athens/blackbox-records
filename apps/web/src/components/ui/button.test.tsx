@@ -70,6 +70,23 @@ describe('Button', () => {
     expect(classes).not.toContain('pt-px');
   });
 
+  it('sizes icons at zero specificity without matching on the class attribute', () => {
+    const base = buttonVariants().split(' ');
+    const small = buttonVariants({ size: 'sm' }).split(' ');
+    const large = buttonVariants({ size: 'lg' }).split(' ');
+    const iconLarge = buttonVariants({ variant: 'outline', size: 'icon-lg' }).split(' ');
+
+    expect(base).toContain('[:where(&)_svg]:size-4');
+    expect(small).toContain('[:where(&)_svg]:size-3.5');
+    expect(small).not.toContain('[:where(&)_svg]:size-4');
+    expect(large).toContain('[:where(&)_svg]:size-[18px]');
+    expect(large).not.toContain('[:where(&)_svg]:size-4');
+    expect(iconLarge).toContain('[:where(&)_svg]:size-[18px]');
+    for (const classes of [base, small, large, iconLarge]) {
+      expect(classes.join(' ')).not.toContain('[class');
+    }
+  });
+
   it('marks icon controls so section tone never reaches them', () => {
     const classes = buttonVariants({ variant: 'outline', size: 'icon' }).split(' ');
 

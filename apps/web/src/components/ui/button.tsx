@@ -19,7 +19,9 @@ const buttonVariantClasses = cva(
     'aria-busy:cursor-progress',
     // The touch halo is positioned inside the 1px border, so 5px (7px for S) reaches a 44px target.
     'pointer-coarse:before:absolute pointer-coarse:before:-inset-[5px]',
-    "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+    // Default icon size at zero specificity, so an icon's own size-* class still wins. Avoid an attribute selector such as
+    // :not([class*='size-']) here: it makes every class change on <html> (Lenis rewrites them on scroll) restyle the page.
+    '[&_svg]:pointer-events-none [&_svg]:shrink-0 [:where(&)_svg]:size-4',
   ],
   {
     variants: {
@@ -37,11 +39,11 @@ const buttonVariantClasses = cva(
         chip: 'site-button--chip group border-control-edge-quiet bg-secondary text-muted-foreground hover:border-control-edge-hover hover:text-foreground aria-pressed:border-foreground aria-pressed:bg-control-face-selected aria-pressed:text-foreground',
       },
       size: {
-        sm: "min-h-8 gap-1.5 px-2.5 text-[13px] pointer-coarse:before:-inset-[7px] [&_svg:not([class*='size-'])]:size-3.5",
+        sm: 'min-h-8 gap-1.5 px-2.5 text-[13px] pointer-coarse:before:-inset-[7px] [:where(&)_svg]:size-3.5',
         default: 'min-h-9 px-3 text-sm',
-        lg: "min-h-11 px-4 text-base [&_svg:not([class*='size-'])]:size-[18px]",
+        lg: 'min-h-11 px-4 text-base [:where(&)_svg]:size-[18px]',
         icon: 'site-button--icon size-9 p-0',
-        'icon-lg': "site-button--icon size-11 p-0 [&_svg:not([class*='size-'])]:size-[18px]",
+        'icon-lg': 'site-button--icon size-11 p-0 [:where(&)_svg]:size-[18px]',
       },
     },
     compoundVariants: [

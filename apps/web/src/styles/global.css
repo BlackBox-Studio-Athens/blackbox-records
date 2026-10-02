@@ -2,7 +2,6 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import './prose.css';
-@import 'lenis/dist/lenis.css';
 
 @source '..';
 
@@ -12,6 +11,27 @@
   font-display: swap;
   font-style: normal;
   font-weight: 900;
+}
+
+/* Lenis: the rules this site needs from lenis/dist/lenis.css, which is not imported. Lenis strips and re-adds its
+   classes on the scroll root at every scroll start and end; the packaged rules that match descendants of the lenis
+   class made each rewrite restyle the whole document. These selectors restyle only the root and its iframes, except
+   lenis-stopped (the modal scroll lock), whose root overflow change still restyles the page once per open and close.
+   html and body keep their default auto height, and autoToggle is not used. */
+.lenis-stopped {
+  overflow: clip;
+}
+
+[data-lenis-prevent],
+[data-lenis-prevent-wheel],
+[data-lenis-prevent-touch],
+[data-lenis-prevent-vertical],
+[data-lenis-prevent-horizontal] {
+  overscroll-behavior: contain;
+}
+
+.lenis-smooth iframe {
+  pointer-events: none;
 }
 
 @custom-variant dark (&:is(.dark *));
