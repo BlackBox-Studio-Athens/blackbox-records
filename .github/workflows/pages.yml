@@ -632,7 +632,8 @@ jobs:
       - *pnpm
       - *node
       - *install
-      - *acceptance-chromium
+      - name: Install public end-to-end browsers
+        run: pnpm exec playwright install --with-deps chromium firefox
       - name: Run the whole end-to-end suite
         run: pnpm test:e2e
       - name: Upload end-to-end evidence

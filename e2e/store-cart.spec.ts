@@ -13,6 +13,10 @@ async function swipeUp(cdp: CDPSession, x: number, y: number, distance: number) 
 }
 
 async function expectCartActionsVisible(drawer: Locator, hasCheckout = true) {
+  const close = drawer.getByRole('button', { name: 'Close cart', exact: true });
+  await expect(close).toBeInViewport({ ratio: 1 });
+  expect((await close.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await expect(drawer.getByRole('heading', { name: 'Cart', exact: true })).toBeInViewport({ ratio: 1 });
   if (hasCheckout)
     await expect(drawer.getByRole('link', { name: 'Checkout', exact: true })).toBeInViewport({ ratio: 1 });
   else await expect(drawer.getByRole('link', { name: 'Checkout', exact: true })).toHaveCount(0);
@@ -26,9 +30,10 @@ for (const viewport of [
 ]) {
   test(`cart content scrolls above reachable actions at ${viewport.width}x${viewport.height}`, async ({
     page,
-    isMobile,
+    browserName,
+    hasTouch,
   }, testInfo) => {
-    test.skip(!isMobile, 'Touch overflow coverage runs in the mobile project.');
+    test.skip(!hasTouch, 'Overflow coverage runs in the compact touch projects.');
     await page.setViewportSize(viewport);
     const cartLines = ['disintegration-black-vinyl-lp', 'anarchotribal-vinyl', 'caregivers-vinyl'].map(
       (slug, index) => ({
@@ -47,10 +52,10 @@ for (const viewport of [
         quantity: 1,
       }),
     );
-    await page.addInitScript(
-      (lines) => localStorage.setItem('blackbox.storeCart.v2', JSON.stringify({ lines })),
-      cartLines,
-    );
+    await page.addInitScript((lines) => {
+      if (!localStorage.getItem('blackbox.storeCart.v2'))
+        localStorage.setItem('blackbox.storeCart.v2', JSON.stringify({ lines }));
+    }, cartLines);
 
     let releaseQuote = () => {};
     const quoteReleased = new Promise<void>((resolve) => {
@@ -91,8 +96,12 @@ for (const viewport of [
     await expect.poll(() => scroller.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
     const initialPageScroll = await page.evaluate(() => window.scrollY);
     const box = (await scroller.boundingBox())!;
-    const cdp = await page.context().newCDPSession(page);
-    await swipeUp(cdp, box.x + box.width / 2, box.y + box.height / 2, Math.min(200, box.height / 2));
+    const cdp = browserName === 'chromium' ? await page.context().newCDPSession(page) : null;
+    if (cdp) await swipeUp(cdp, box.x + box.width / 2, box.y + box.height / 2, Math.min(200, box.height / 2));
+    else {
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.wheel(0, 500);
+    }
     await expect.poll(() => scroller.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
     expect(await page.evaluate(() => window.scrollY)).toBe(initialPageScroll);
     await expectCartActionsVisible(drawer);
@@ -105,6 +114,14 @@ for (const viewport of [
     const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('blackbox.storeCart.v2')!));
     expect(stored.lines[0].quantity).toBe(2);
 
+    await page.reload();
+    await waitForShell(page);
+    await expect(trigger).toHaveAccessibleName('Cart, 4 items');
+    await trigger.click();
+    await expect(drawer.locator('[data-store-cart-line-item]')).toHaveCount(3);
+    await expect(summary).toContainText('Delivery is unavailable');
+    await expectCartActionsVisible(drawer);
+
     for (let remaining = cartLines.length - 1; remaining >= 0; remaining--) {
       await drawer
         .locator('[data-store-cart-line-item]')
@@ -115,12 +132,18 @@ for (const viewport of [
       await expectCartActionsVisible(drawer, remaining > 0);
     }
     await expect(drawer).toContainText('Your cart is empty');
-    await drawer.getByRole('button', { name: 'Continue Shopping' }).click();
+    const close = drawer.getByRole('button', { name: 'Close cart' });
+    if (cdp) await close.click();
+    else await close.tap();
     await expect(drawer).toBeHidden();
     await expect(trigger).toBeFocused();
-    await swipeUp(cdp, viewport.width / 2, viewport.height / 2, 200);
+    if (cdp) await swipeUp(cdp, viewport.width / 2, viewport.height / 2, 200);
+    else {
+      await page.mouse.move(viewport.width / 2, viewport.height / 2);
+      await page.mouse.wheel(0, 500);
+    }
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(initialPageScroll);
-    await cdp.detach();
+    await cdp?.detach();
   });
 }
 
@@ -176,19 +199,27 @@ test('add to cart opens the drawer, persists the line and restores it on another
   await expect(reopened).toBeHidden();
   await expect(trigger).toBeFocused();
   // Keyboard focus draws the family ring on the header control.
+  await page.keyboard.press('Tab');
+  await page.keyboard.press('Shift+Tab');
+  await expect(trigger).toBeFocused();
   await expect(trigger).toHaveCSS('outline-style', 'solid');
   await expect(trigger).toHaveAccessibleName('Cart, 1 item');
 });
 
-test('Buy on a Store card adds the item and opens the cart', async ({ page }) => {
+test('Buy on a Store card reopens a three-item cart after every dismissal and preserves the player', async ({
+  page,
+  hasTouch,
+  browserName,
+}) => {
   const storeItemSlug = 'disintegration-black-vinyl-lp';
   const secondSlug = 'anarchotribal-vinyl';
+  const thirdSlug = 'caregivers-vinyl';
   await page.route(/^https:\/\/(bandcamp\.com|embed\.tidal\.com)\//, (route) =>
     route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
   );
   await page.route('**/api/store/listing-prices', (route) =>
     route.fulfill({
-      json: [storeItemSlug, secondSlug].map((slug) => ({
+      json: [storeItemSlug, secondSlug, thirdSlug].map((slug) => ({
         storeItemSlug: slug,
         presentationState: 'ready',
         displayPrice: '€28.00',
@@ -201,12 +232,17 @@ test('Buy on a Store card adds the item and opens the cart', async ({ page }) =>
 
   const buy = page.locator(`[data-store-card-buy][data-store-item-slug="${storeItemSlug}"]`);
   await expect(buy).toBeVisible();
-  await expect(page.locator('[data-store-card-buy]:visible')).toHaveCount(2);
+  await expect(page.locator('[data-store-card-buy]:visible')).toHaveCount(3);
 
   await page.locator('[data-music-streaming-service-embedded-player-trigger]').first().click();
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
   await iframe.contentFrame().getByRole('button', { name: 'Player fixture' }).click();
+  if (browserName === 'firefox') {
+    await expect.poll(() => iframe.evaluate((element) => document.activeElement === element)).toBe(true);
+    // The mocked provider's parent-window blur is not emitted by headless Firefox's frame click.
+    await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  }
   await page.getByRole('button', { name: 'Minimize player' }).click();
   const originalIframe = await iframe.elementHandle();
 
@@ -224,21 +260,46 @@ test('Buy on a Store card adds the item and opens the cart', async ({ page }) =>
   await secondBuy.click();
   await expect(drawer.locator('[data-store-cart-line-item]')).toHaveCount(2);
   await expectCartActionsVisible(drawer);
-  await drawer.getByRole('button', { name: 'Increase quantity for Disintegration', exact: true }).click();
-  await expect
-    .poll(() =>
-      page.evaluate(() =>
-        JSON.parse(localStorage.getItem('blackbox.storeCart.v2')!).lines.map(
-          (line: { quantity: number }) => line.quantity,
-        ),
-      ),
-    )
-    .toEqual([2, 1]);
   await drawer.getByRole('button', { name: 'Continue Shopping' }).click();
-  expect(await originalIframe!.evaluate((element) => element.isConnected)).toBe(true);
+  const thirdBuy = page.locator(`[data-store-card-buy][data-store-item-slug="${thirdSlug}"]`);
+  await thirdBuy.click();
+  await expect(drawer.locator('[data-store-cart-line-item]')).toHaveCount(3);
+  let quantity = 1;
+  let opener = thirdBuy;
+  for (const dismissal of ['Close cart', 'Continue Shopping', 'Escape', 'backdrop']) {
+    await expectCartActionsVisible(drawer);
+    if (dismissal === 'Escape') await page.keyboard.press('Escape');
+    else if (dismissal === 'backdrop') {
+      // The cart spans the phone width below the header; its backdrop remains above it.
+      if (hasTouch) await page.touchscreen.tap(10, 10);
+      else await page.mouse.click(10, 10);
+    } else {
+      const control = drawer.getByRole('button', { name: dismissal, exact: true });
+      if (hasTouch) await control.tap();
+      else await control.click();
+    }
+    await expect(drawer).toBeHidden();
+    await expect(opener).toBeFocused();
+    expect(await originalIframe!.evaluate((element) => element.isConnected)).toBe(true);
+    const previousScroll = await page.evaluate(() => window.scrollY);
+    await page.mouse.move(150, 250);
+    await page.mouse.wheel(0, previousScroll > 0 ? -300 : 300);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).not.toBe(previousScroll);
+    await expect(buy).toHaveText('Buy', { timeout: 6000 });
+    await buy.evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    if (hasTouch) await buy.tap();
+    else await buy.click();
+    quantity++;
+    await expect(drawer.locator('[data-store-cart-line-item]')).toHaveCount(3);
+    await expect
+      .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('blackbox.storeCart.v2')!).lines[0].quantity))
+      .toBe(quantity);
+    opener = buy;
+  }
+  await drawer.getByRole('button', { name: 'Close cart' }).click();
   await page.reload();
   await waitForShell(page);
-  await expect(page.locator('[data-store-cart-trigger]').first()).toHaveAccessibleName('Cart, 3 items');
+  await expect(page.locator('[data-store-cart-trigger]').first()).toHaveAccessibleName('Cart, 7 items');
 });
 
 test('a Store card shows copies left beside its price without hiding Buy', async ({ page }) => {

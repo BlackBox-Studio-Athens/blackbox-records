@@ -194,16 +194,18 @@ export function StoreCartDrawerPanel({
       <p className="sr-only" aria-live="polite">
         {removed ? `${STORE_CART_DRAWER_COPY.removed} ${removed.line.title}` : ''}
       </p>
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" data-lenis-scroll-root>
-        {renderHeader && (
-          <SheetHeader className="border-b border-border/70 px-6 py-5">
+      {renderHeader && (
+        <SheetHeader className="shrink-0 border-b border-border/70 px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
             <SheetTitle className="font-display text-3xl tracking-[0.12em] uppercase">Cart</SheetTitle>
-            <SheetDescription className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-              Cart state stays browser-only. Checkout stays secure through Stripe.
-            </SheetDescription>
-          </SheetHeader>
-        )}
-
+            <Button type="button" variant="outline" size="lg" aria-label="Close cart" onClick={onContinueShopping}>
+              Close
+            </Button>
+          </div>
+          <SheetDescription className="sr-only">Review your items before checkout.</SheetDescription>
+        </SheetHeader>
+      )}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" data-lenis-scroll-root>
         {!hasLines ? (
           <div className="px-6 py-8">
             <div className="space-y-3">

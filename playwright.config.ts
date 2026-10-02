@@ -42,5 +42,15 @@ export default defineConfig({
       use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
       testMatch: /(routes|shell-navigation|store-cart)\.spec\.ts$/,
     },
+    {
+      name: 'firefox-desktop',
+      use: { browserName: 'firefox', viewport: { width: 1440, height: 900 } },
+      testMatch: /store-cart\.spec\.ts$/,
+    },
+    {
+      name: 'firefox-compact',
+      use: { browserName: 'firefox', viewport: { width: 390, height: 844 }, hasTouch: true },
+      testMatch: /store-cart\.spec\.ts$/,
+    },
   ],
 });
