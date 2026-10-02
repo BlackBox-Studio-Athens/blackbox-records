@@ -78,7 +78,7 @@ The Store Distro category SHALL render one server-derived format-navigation land
 
 ### Requirement: Distro format navigation remains progressive and search-safe
 
-The Store Distro format navigation MUST remain usable without client JavaScript and MUST NOT expose stale selection or disclosure state while client-side Distro search is active or after shell snapshot restoration. Distro search SHALL remain the sole writer of card, wrapper, and group `hidden` state.
+The Store Distro format navigation MUST remain usable without client JavaScript and MUST NOT expose stale selection or artist-filter state while client-side Distro search is active or after shell snapshot restoration. Distro search SHALL remain the sole writer of card, wrapper, and group `hidden` state.
 
 #### Scenario: Client JavaScript is unavailable
 

@@ -4544,7 +4544,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 
 .store-browse-content {
   display: grid;
-  gap: 1.5rem;
   padding-block: 0.75rem;
 }
 
@@ -4564,14 +4563,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 .store-artists-picker {
   display: grid;
   gap: 0.5rem;
-}
-
-.store-artists-picker span {
-  color: var(--muted-foreground);
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
 }
 
 .store-artists-picker select {
@@ -5143,7 +5134,8 @@ html[data-store-coverflow-capable]
     border-top: 0;
   }
 
-  .store-format-links h2 {
+  .store-format-links h2,
+  .store-artists-picker span {
     flex-basis: 100%;
     padding-block: 0;
     color: var(--muted-foreground);
