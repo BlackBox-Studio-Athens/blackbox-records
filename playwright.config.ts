@@ -39,7 +39,7 @@ export default defineConfig({
     {
       name: 'chromium-mobile',
       use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
-      testMatch: /(routes|shell-navigation)\.spec\.ts$/,
+      testMatch: /(routes|shell-navigation|store-cart)\.spec\.ts$/,
     },
   ],
 });

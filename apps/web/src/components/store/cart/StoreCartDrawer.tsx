@@ -94,7 +94,7 @@ export default function StoreCartDrawer({
         ref={modalRootRef}
         side="right"
         data-tone="store"
-        className="top-[var(--header-height)] bottom-auto flex h-[calc(100dvh-var(--header-height))] w-[min(100vw,460px)] max-w-none flex-col border-l border-border/80 bg-background/98 p-0 text-foreground sm:max-w-none"
+        className="top-[var(--header-height)] bottom-auto z-[1100] flex h-[calc(100dvh-var(--header-height))] min-h-0 w-[min(100vw,460px)] max-w-none flex-col overflow-hidden border-l border-border/80 bg-background/98 p-0 text-foreground sm:max-w-none"
       >
         <StoreCartDrawerPanel
           deliverySummary={deliverySummary}
@@ -194,149 +194,150 @@ export function StoreCartDrawerPanel({
       <p className="sr-only" aria-live="polite">
         {removed ? `${STORE_CART_DRAWER_COPY.removed} ${removed.line.title}` : ''}
       </p>
-      {renderHeader && (
-        <SheetHeader className="border-b border-border/70 px-6 py-5">
-          <SheetTitle className="font-display text-3xl tracking-[0.12em] uppercase">Cart</SheetTitle>
-          <SheetDescription className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-            Cart state stays browser-only. Checkout stays secure through Stripe.
-          </SheetDescription>
-        </SheetHeader>
-      )}
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" data-lenis-scroll-root>
+        {renderHeader && (
+          <SheetHeader className="border-b border-border/70 px-6 py-5">
+            <SheetTitle className="font-display text-3xl tracking-[0.12em] uppercase">Cart</SheetTitle>
+            <SheetDescription className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              Cart state stays browser-only. Checkout stays secure through Stripe.
+            </SheetDescription>
+          </SheetHeader>
+        )}
 
-      {!hasLines ? (
-        <div className="flex flex-1 flex-col justify-between gap-8 px-6 py-8">
-          <div className="space-y-3">
-            {undoLine}
-            <p className="font-display text-4xl uppercase tracking-[0.1em]">{STORE_CART_DRAWER_COPY.emptyTitle}</p>
-            <p className="max-w-sm text-sm leading-6 text-muted-foreground">{STORE_CART_DRAWER_COPY.emptyDetail}</p>
+        {!hasLines ? (
+          <div className="px-6 py-8">
+            <div className="space-y-3">
+              {undoLine}
+              <p className="font-display text-4xl uppercase tracking-[0.1em]">{STORE_CART_DRAWER_COPY.emptyTitle}</p>
+              <p className="max-w-sm text-sm leading-6 text-muted-foreground">{STORE_CART_DRAWER_COPY.emptyDetail}</p>
+            </div>
           </div>
-          <Button type="button" variant="outline" onClick={onContinueShopping}>
-            {STORE_CART_DRAWER_COPY.continueShopping}
-          </Button>
-        </div>
-      ) : (
-        <div className="flex flex-1 flex-col">
-          <div className="flex-1 overflow-y-auto px-6 py-6" data-lenis-scroll-root>
-            <div className="space-y-6">
-              {visibleLines.map((line, index) => (
-                <React.Fragment key={line.variantId}>
-                  {index === undoIndex && undoLine}
-                  <article className="group grid grid-cols-[88px_1fr] gap-4" data-store-cart-line-item>
-                    <div className="aspect-square overflow-hidden border border-border/70 bg-muted/20">
-                      {/* Runtime Image Snapshot: cart state stores a browser-safe string URL here. */}
-                      {line.image ? (
-                        <img
-                          className="h-full w-full object-cover"
-                          src={line.image}
-                          alt={line.imageAlt || line.title}
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center px-2 text-center text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                          No image
-                        </div>
-                      )}
-                    </div>
-                    <div className="min-w-0 space-y-3">
-                      <div className="space-y-1">
-                        <p className="brand-cart-line-title text-foreground">{line.title}</p>
-                        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{line.subtitle}</p>
-                        {line.optionLabel && (
-                          <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                            {line.optionLabel}
-                          </p>
+        ) : (
+          <div>
+            <div className="px-6 py-6">
+              <div className="space-y-6">
+                {visibleLines.map((line, index) => (
+                  <React.Fragment key={line.variantId}>
+                    {index === undoIndex && undoLine}
+                    <article className="group grid grid-cols-[88px_1fr] gap-4" data-store-cart-line-item>
+                      <div className="aspect-square overflow-hidden border border-border/70 bg-muted/20">
+                        {/* Runtime Image Snapshot: cart state stores a browser-safe string URL here. */}
+                        {line.image ? (
+                          <img
+                            className="h-full w-full object-cover"
+                            src={line.image}
+                            alt={line.imageAlt || line.title}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center px-2 text-center text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                            No image
+                          </div>
                         )}
                       </div>
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="space-y-1 text-right">
-                          <p className="font-display text-2xl uppercase tracking-[0.08em]">
-                            {getCartLineTotalDisplay(line)}
-                          </p>
-                          {line.quantity > 1 && (
-                            <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                              <span className="font-display">{line.priceDisplay}</span> each
+                      <div className="min-w-0 space-y-3">
+                        <div className="space-y-1">
+                          <p className="brand-cart-line-title text-foreground">{line.title}</p>
+                          <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{line.subtitle}</p>
+                          {line.optionLabel && (
+                            <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                              {line.optionLabel}
                             </p>
                           )}
                         </div>
-                        <Button
-                          type="button"
-                          variant="link"
-                          className="[@media(hover:hover)]:text-control-muted-pressed group-focus-within:text-foreground group-hover:text-foreground"
-                          data-store-cart-remove={line.variantId}
-                          onClick={() => removeLine(line, index)}
-                        >
-                          {STORE_CART_DRAWER_COPY.remove}
-                        </Button>
-                      </div>
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <p className="inline-flex border border-border/70 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                          {line.availabilityLabel}
-                        </p>
-                        <div className="inline-flex items-center" aria-label={`Quantity for ${line.title}`}>
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="space-y-1 text-right">
+                            <p className="font-display text-2xl uppercase tracking-[0.08em]">
+                              {getCartLineTotalDisplay(line)}
+                            </p>
+                            {line.quantity > 1 && (
+                              <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                                <span className="font-display">{line.priceDisplay}</span> each
+                              </p>
+                            )}
+                          </div>
                           <Button
                             type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() =>
-                              line.quantity <= 1 ? removeLine(line, index) : onDecrementItem(line.variantId)
-                            }
-                            aria-label={`Decrease quantity for ${line.title}`}
+                            variant="link"
+                            className="[@media(hover:hover)]:text-control-muted-pressed group-focus-within:text-foreground group-hover:text-foreground"
+                            data-store-cart-remove={line.variantId}
+                            onClick={() => removeLine(line, index)}
                           >
-                            <Minus aria-hidden="true" strokeWidth={1.75} />
-                          </Button>
-                          <span className="inline-flex min-w-9 items-center justify-center px-1 pt-px font-display text-lg leading-none tabular-nums">
-                            {line.quantity}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="icon"
-                            onClick={() => onIncrementItem(line.variantId)}
-                            aria-label={`Increase quantity for ${line.title}`}
-                            disabled={line.priceKind === 'pay_what_you_want'}
-                            aria-describedby={
-                              line.priceKind === 'pay_what_you_want'
-                                ? `cart-price-guidance-${line.variantId}`
-                                : undefined
-                            }
-                          >
-                            <Plus aria-hidden="true" strokeWidth={1.75} />
+                            {STORE_CART_DRAWER_COPY.remove}
                           </Button>
                         </div>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <p className="inline-flex border border-border/70 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                            {line.availabilityLabel}
+                          </p>
+                          <div className="inline-flex items-center" aria-label={`Quantity for ${line.title}`}>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={() =>
+                                line.quantity <= 1 ? removeLine(line, index) : onDecrementItem(line.variantId)
+                              }
+                              aria-label={`Decrease quantity for ${line.title}`}
+                            >
+                              <Minus aria-hidden="true" strokeWidth={1.75} />
+                            </Button>
+                            <span className="inline-flex min-w-9 items-center justify-center px-1 pt-px font-display text-lg leading-none tabular-nums">
+                              {line.quantity}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              onClick={() => onIncrementItem(line.variantId)}
+                              aria-label={`Increase quantity for ${line.title}`}
+                              disabled={line.priceKind === 'pay_what_you_want'}
+                              aria-describedby={
+                                line.priceKind === 'pay_what_you_want'
+                                  ? `cart-price-guidance-${line.variantId}`
+                                  : undefined
+                              }
+                            >
+                              <Plus aria-hidden="true" strokeWidth={1.75} />
+                            </Button>
+                          </div>
+                        </div>
+                        {line.priceKind === 'pay_what_you_want' && (
+                          <p
+                            id={`cart-price-guidance-${line.variantId}`}
+                            className="text-xs leading-5 text-muted-foreground"
+                          >
+                            Pay what you want: purchase this item alone, with quantity one.
+                          </p>
+                        )}
                       </div>
-                      {line.priceKind === 'pay_what_you_want' && (
-                        <p
-                          id={`cart-price-guidance-${line.variantId}`}
-                          className="text-xs leading-5 text-muted-foreground"
-                        >
-                          Pay what you want: purchase this item alone, with quantity one.
-                        </p>
-                      )}
-                    </div>
-                  </article>
-                </React.Fragment>
-              ))}
-              {undoIndex === visibleLines.length && visibleLines.length > 0 && undoLine}
+                    </article>
+                  </React.Fragment>
+                ))}
+                {undoIndex === visibleLines.length && visibleLines.length > 0 && undoLine}
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-4 border-t border-border/70 px-6 py-6">
-            {deliverySummary}
-            <Button asChild size="lg" className="w-full justify-between">
-              <a href={view.checkoutHref || undefined} data-store-cart-checkout>
-                <span>{STORE_CART_DRAWER_COPY.checkout}</span>
-                {checkoutAmountDisplay && (
-                  <span className="tabular-nums" aria-hidden="true" data-store-cart-checkout-amount>
-                    {checkoutAmountDisplay}
-                  </span>
-                )}
-              </a>
-            </Button>
-            <Button type="button" variant="outline" className="w-full" onClick={onContinueShopping}>
-              {STORE_CART_DRAWER_COPY.continueShopping}
-            </Button>
+            <div className="space-y-4 border-t border-border/70 px-6 py-6">{deliverySummary}</div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
+      <div className="shrink-0 space-y-4 border-t border-border/70 px-6 py-6">
+        {hasLines && (
+          <Button asChild size="lg" className="w-full justify-between">
+            <a href={view.checkoutHref || undefined} data-store-cart-checkout>
+              <span>{STORE_CART_DRAWER_COPY.checkout}</span>
+              {checkoutAmountDisplay && (
+                <span className="tabular-nums" aria-hidden="true" data-store-cart-checkout-amount>
+                  {checkoutAmountDisplay}
+                </span>
+              )}
+            </a>
+          </Button>
+        )}
+        <Button type="button" variant="outline" className="w-full" onClick={onContinueShopping}>
+          {STORE_CART_DRAWER_COPY.continueShopping}
+        </Button>
+      </div>
     </div>
   );
 }
