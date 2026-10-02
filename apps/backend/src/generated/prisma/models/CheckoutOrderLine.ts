@@ -55,6 +55,10 @@ export type CheckoutOrderLineMinAggregateOutputType = {
   lineAmountMinor: number | null
   lineVatMinor: number | null
   taxRatePercent: number | null
+  preorderStartedAt: string | null
+  preorderShipMonth: string | null
+  preorderShipPart: string | null
+  preorderShipDate: string | null
   createdAt: Date | null
 }
 
@@ -71,6 +75,10 @@ export type CheckoutOrderLineMaxAggregateOutputType = {
   lineAmountMinor: number | null
   lineVatMinor: number | null
   taxRatePercent: number | null
+  preorderStartedAt: string | null
+  preorderShipMonth: string | null
+  preorderShipPart: string | null
+  preorderShipDate: string | null
   createdAt: Date | null
 }
 
@@ -87,6 +95,10 @@ export type CheckoutOrderLineCountAggregateOutputType = {
   lineAmountMinor: number
   lineVatMinor: number
   taxRatePercent: number
+  preorderStartedAt: number
+  preorderShipMonth: number
+  preorderShipPart: number
+  preorderShipDate: number
   createdAt: number
   _all: number
 }
@@ -121,6 +133,10 @@ export type CheckoutOrderLineMinAggregateInputType = {
   lineAmountMinor?: true
   lineVatMinor?: true
   taxRatePercent?: true
+  preorderStartedAt?: true
+  preorderShipMonth?: true
+  preorderShipPart?: true
+  preorderShipDate?: true
   createdAt?: true
 }
 
@@ -137,6 +153,10 @@ export type CheckoutOrderLineMaxAggregateInputType = {
   lineAmountMinor?: true
   lineVatMinor?: true
   taxRatePercent?: true
+  preorderStartedAt?: true
+  preorderShipMonth?: true
+  preorderShipPart?: true
+  preorderShipDate?: true
   createdAt?: true
 }
 
@@ -153,6 +173,10 @@ export type CheckoutOrderLineCountAggregateInputType = {
   lineAmountMinor?: true
   lineVatMinor?: true
   taxRatePercent?: true
+  preorderStartedAt?: true
+  preorderShipMonth?: true
+  preorderShipPart?: true
+  preorderShipDate?: true
   createdAt?: true
   _all?: true
 }
@@ -256,6 +280,10 @@ export type CheckoutOrderLineGroupByOutputType = {
   lineAmountMinor: number | null
   lineVatMinor: number | null
   taxRatePercent: number | null
+  preorderStartedAt: string | null
+  preorderShipMonth: string | null
+  preorderShipPart: string | null
+  preorderShipDate: string | null
   createdAt: Date
   _count: CheckoutOrderLineCountAggregateOutputType | null
   _avg: CheckoutOrderLineAvgAggregateOutputType | null
@@ -295,6 +323,10 @@ export type CheckoutOrderLineWhereInput = {
   lineAmountMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
   lineVatMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
   taxRatePercent?: Prisma.FloatNullableFilter<"CheckoutOrderLine"> | number | null
+  preorderStartedAt?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
+  preorderShipMonth?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
+  preorderShipPart?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
+  preorderShipDate?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrderLine"> | Date | string
   order?: Prisma.XOR<Prisma.CheckoutOrderScalarRelationFilter, Prisma.CheckoutOrderWhereInput>
 }
@@ -312,6 +344,10 @@ export type CheckoutOrderLineOrderByWithRelationInput = {
   lineAmountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
   lineVatMinor?: Prisma.SortOrderInput | Prisma.SortOrder
   taxRatePercent?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipMonth?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipPart?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipDate?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   order?: Prisma.CheckoutOrderOrderByWithRelationInput
 }
@@ -333,6 +369,10 @@ export type CheckoutOrderLineWhereUniqueInput = Prisma.AtLeast<{
   lineAmountMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
   lineVatMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
   taxRatePercent?: Prisma.FloatNullableFilter<"CheckoutOrderLine"> | number | null
+  preorderStartedAt?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
+  preorderShipMonth?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
+  preorderShipPart?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
+  preorderShipDate?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrderLine"> | Date | string
   order?: Prisma.XOR<Prisma.CheckoutOrderScalarRelationFilter, Prisma.CheckoutOrderWhereInput>
 }, "id" | "orderId_variantId">
@@ -350,6 +390,10 @@ export type CheckoutOrderLineOrderByWithAggregationInput = {
   lineAmountMinor?: Prisma.SortOrderInput | Prisma.SortOrder
   lineVatMinor?: Prisma.SortOrderInput | Prisma.SortOrder
   taxRatePercent?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipMonth?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipPart?: Prisma.SortOrderInput | Prisma.SortOrder
+  preorderShipDate?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   _count?: Prisma.CheckoutOrderLineCountOrderByAggregateInput
   _avg?: Prisma.CheckoutOrderLineAvgOrderByAggregateInput
@@ -374,6 +418,10 @@ export type CheckoutOrderLineScalarWhereWithAggregatesInput = {
   lineAmountMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrderLine"> | number | null
   lineVatMinor?: Prisma.IntNullableWithAggregatesFilter<"CheckoutOrderLine"> | number | null
   taxRatePercent?: Prisma.FloatNullableWithAggregatesFilter<"CheckoutOrderLine"> | number | null
+  preorderStartedAt?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrderLine"> | string | null
+  preorderShipMonth?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrderLine"> | string | null
+  preorderShipPart?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrderLine"> | string | null
+  preorderShipDate?: Prisma.StringNullableWithAggregatesFilter<"CheckoutOrderLine"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"CheckoutOrderLine"> | Date | string
 }
 
@@ -389,6 +437,10 @@ export type CheckoutOrderLineCreateInput = {
   lineAmountMinor?: number | null
   lineVatMinor?: number | null
   taxRatePercent?: number | null
+  preorderStartedAt?: string | null
+  preorderShipMonth?: string | null
+  preorderShipPart?: string | null
+  preorderShipDate?: string | null
   createdAt?: Date | string
   order: Prisma.CheckoutOrderCreateNestedOneWithoutLinesInput
 }
@@ -406,6 +458,10 @@ export type CheckoutOrderLineUncheckedCreateInput = {
   lineAmountMinor?: number | null
   lineVatMinor?: number | null
   taxRatePercent?: number | null
+  preorderStartedAt?: string | null
+  preorderShipMonth?: string | null
+  preorderShipPart?: string | null
+  preorderShipDate?: string | null
   createdAt?: Date | string
 }
 
@@ -421,6 +477,10 @@ export type CheckoutOrderLineUpdateInput = {
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  preorderStartedAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipMonth?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipPart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   order?: Prisma.CheckoutOrderUpdateOneRequiredWithoutLinesNestedInput
 }
@@ -438,6 +498,10 @@ export type CheckoutOrderLineUncheckedUpdateInput = {
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  preorderStartedAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipMonth?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipPart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -454,6 +518,10 @@ export type CheckoutOrderLineCreateManyInput = {
   lineAmountMinor?: number | null
   lineVatMinor?: number | null
   taxRatePercent?: number | null
+  preorderStartedAt?: string | null
+  preorderShipMonth?: string | null
+  preorderShipPart?: string | null
+  preorderShipDate?: string | null
   createdAt?: Date | string
 }
 
@@ -469,6 +537,10 @@ export type CheckoutOrderLineUpdateManyMutationInput = {
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  preorderStartedAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipMonth?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipPart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -485,6 +557,10 @@ export type CheckoutOrderLineUncheckedUpdateManyInput = {
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  preorderStartedAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipMonth?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipPart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -516,6 +592,10 @@ export type CheckoutOrderLineCountOrderByAggregateInput = {
   lineAmountMinor?: Prisma.SortOrder
   lineVatMinor?: Prisma.SortOrder
   taxRatePercent?: Prisma.SortOrder
+  preorderStartedAt?: Prisma.SortOrder
+  preorderShipMonth?: Prisma.SortOrder
+  preorderShipPart?: Prisma.SortOrder
+  preorderShipDate?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -540,6 +620,10 @@ export type CheckoutOrderLineMaxOrderByAggregateInput = {
   lineAmountMinor?: Prisma.SortOrder
   lineVatMinor?: Prisma.SortOrder
   taxRatePercent?: Prisma.SortOrder
+  preorderStartedAt?: Prisma.SortOrder
+  preorderShipMonth?: Prisma.SortOrder
+  preorderShipPart?: Prisma.SortOrder
+  preorderShipDate?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -556,6 +640,10 @@ export type CheckoutOrderLineMinOrderByAggregateInput = {
   lineAmountMinor?: Prisma.SortOrder
   lineVatMinor?: Prisma.SortOrder
   taxRatePercent?: Prisma.SortOrder
+  preorderStartedAt?: Prisma.SortOrder
+  preorderShipMonth?: Prisma.SortOrder
+  preorderShipPart?: Prisma.SortOrder
+  preorderShipDate?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
 }
 
@@ -629,6 +717,10 @@ export type CheckoutOrderLineCreateWithoutOrderInput = {
   lineAmountMinor?: number | null
   lineVatMinor?: number | null
   taxRatePercent?: number | null
+  preorderStartedAt?: string | null
+  preorderShipMonth?: string | null
+  preorderShipPart?: string | null
+  preorderShipDate?: string | null
   createdAt?: Date | string
 }
 
@@ -644,6 +736,10 @@ export type CheckoutOrderLineUncheckedCreateWithoutOrderInput = {
   lineAmountMinor?: number | null
   lineVatMinor?: number | null
   taxRatePercent?: number | null
+  preorderStartedAt?: string | null
+  preorderShipMonth?: string | null
+  preorderShipPart?: string | null
+  preorderShipDate?: string | null
   createdAt?: Date | string
 }
 
@@ -688,6 +784,10 @@ export type CheckoutOrderLineScalarWhereInput = {
   lineAmountMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
   lineVatMinor?: Prisma.IntNullableFilter<"CheckoutOrderLine"> | number | null
   taxRatePercent?: Prisma.FloatNullableFilter<"CheckoutOrderLine"> | number | null
+  preorderStartedAt?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
+  preorderShipMonth?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
+  preorderShipPart?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
+  preorderShipDate?: Prisma.StringNullableFilter<"CheckoutOrderLine"> | string | null
   createdAt?: Prisma.DateTimeFilter<"CheckoutOrderLine"> | Date | string
 }
 
@@ -703,6 +803,10 @@ export type CheckoutOrderLineCreateManyOrderInput = {
   lineAmountMinor?: number | null
   lineVatMinor?: number | null
   taxRatePercent?: number | null
+  preorderStartedAt?: string | null
+  preorderShipMonth?: string | null
+  preorderShipPart?: string | null
+  preorderShipDate?: string | null
   createdAt?: Date | string
 }
 
@@ -718,6 +822,10 @@ export type CheckoutOrderLineUpdateWithoutOrderInput = {
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  preorderStartedAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipMonth?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipPart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -733,6 +841,10 @@ export type CheckoutOrderLineUncheckedUpdateWithoutOrderInput = {
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  preorderStartedAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipMonth?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipPart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -748,6 +860,10 @@ export type CheckoutOrderLineUncheckedUpdateManyWithoutOrderInput = {
   lineAmountMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   lineVatMinor?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   taxRatePercent?: Prisma.NullableFloatFieldUpdateOperationsInput | number | null
+  preorderStartedAt?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipMonth?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipPart?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  preorderShipDate?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
@@ -766,6 +882,10 @@ export type CheckoutOrderLineSelect<ExtArgs extends runtime.Types.Extensions.Int
   lineAmountMinor?: boolean
   lineVatMinor?: boolean
   taxRatePercent?: boolean
+  preorderStartedAt?: boolean
+  preorderShipMonth?: boolean
+  preorderShipPart?: boolean
+  preorderShipDate?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["checkoutOrderLine"]>
@@ -783,6 +903,10 @@ export type CheckoutOrderLineSelectCreateManyAndReturn<ExtArgs extends runtime.T
   lineAmountMinor?: boolean
   lineVatMinor?: boolean
   taxRatePercent?: boolean
+  preorderStartedAt?: boolean
+  preorderShipMonth?: boolean
+  preorderShipPart?: boolean
+  preorderShipDate?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["checkoutOrderLine"]>
@@ -800,6 +924,10 @@ export type CheckoutOrderLineSelectUpdateManyAndReturn<ExtArgs extends runtime.T
   lineAmountMinor?: boolean
   lineVatMinor?: boolean
   taxRatePercent?: boolean
+  preorderStartedAt?: boolean
+  preorderShipMonth?: boolean
+  preorderShipPart?: boolean
+  preorderShipDate?: boolean
   createdAt?: boolean
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["checkoutOrderLine"]>
@@ -817,10 +945,14 @@ export type CheckoutOrderLineSelectScalar = {
   lineAmountMinor?: boolean
   lineVatMinor?: boolean
   taxRatePercent?: boolean
+  preorderStartedAt?: boolean
+  preorderShipMonth?: boolean
+  preorderShipPart?: boolean
+  preorderShipDate?: boolean
   createdAt?: boolean
 }
 
-export type CheckoutOrderLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "storeItemSlug" | "variantId" | "stripePriceId" | "quantity" | "displayName" | "optionLabel" | "unitAmountMinor" | "lineAmountMinor" | "lineVatMinor" | "taxRatePercent" | "createdAt", ExtArgs["result"]["checkoutOrderLine"]>
+export type CheckoutOrderLineOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "orderId" | "storeItemSlug" | "variantId" | "stripePriceId" | "quantity" | "displayName" | "optionLabel" | "unitAmountMinor" | "lineAmountMinor" | "lineVatMinor" | "taxRatePercent" | "preorderStartedAt" | "preorderShipMonth" | "preorderShipPart" | "preorderShipDate" | "createdAt", ExtArgs["result"]["checkoutOrderLine"]>
 export type CheckoutOrderLineInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   order?: boolean | Prisma.CheckoutOrderDefaultArgs<ExtArgs>
 }
@@ -849,6 +981,10 @@ export type $CheckoutOrderLinePayload<ExtArgs extends runtime.Types.Extensions.I
     lineAmountMinor: number | null
     lineVatMinor: number | null
     taxRatePercent: number | null
+    preorderStartedAt: string | null
+    preorderShipMonth: string | null
+    preorderShipPart: string | null
+    preorderShipDate: string | null
     createdAt: Date
   }, ExtArgs["result"]["checkoutOrderLine"]>
   composites: {}
@@ -1286,6 +1422,10 @@ export interface CheckoutOrderLineFieldRefs {
   readonly lineAmountMinor: Prisma.FieldRef<"CheckoutOrderLine", 'Int'>
   readonly lineVatMinor: Prisma.FieldRef<"CheckoutOrderLine", 'Int'>
   readonly taxRatePercent: Prisma.FieldRef<"CheckoutOrderLine", 'Float'>
+  readonly preorderStartedAt: Prisma.FieldRef<"CheckoutOrderLine", 'String'>
+  readonly preorderShipMonth: Prisma.FieldRef<"CheckoutOrderLine", 'String'>
+  readonly preorderShipPart: Prisma.FieldRef<"CheckoutOrderLine", 'String'>
+  readonly preorderShipDate: Prisma.FieldRef<"CheckoutOrderLine", 'String'>
   readonly createdAt: Prisma.FieldRef<"CheckoutOrderLine", 'DateTime'>
 }
     

@@ -245,6 +245,10 @@ model CheckoutOrderLine {
   lineAmountMinor Int?
   lineVatMinor    Int?
   taxRatePercent  Float?
+  preorderStartedAt String?
+  preorderShipMonth String?
+  preorderShipPart String?
+  preorderShipDate String?
   createdAt       DateTime      @default(now())
   order           CheckoutOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
 

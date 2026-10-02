@@ -291,6 +291,10 @@ export const CheckoutOrderLineScalarFieldEnum = {
   lineAmountMinor: 'lineAmountMinor',
   lineVatMinor: 'lineVatMinor',
   taxRatePercent: 'taxRatePercent',
+  preorderStartedAt: 'preorderStartedAt',
+  preorderShipMonth: 'preorderShipMonth',
+  preorderShipPart: 'preorderShipPart',
+  preorderShipDate: 'preorderShipDate',
   createdAt: 'createdAt'
 } as const
 

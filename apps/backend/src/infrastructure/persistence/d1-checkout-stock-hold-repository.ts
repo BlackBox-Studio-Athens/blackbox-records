@@ -4,6 +4,7 @@ import {
   parseStoreItemSlug,
   parseCheckoutSessionId,
   parseStripePriceId,
+  parsePreorderShipEstimate,
   parseVariantId,
   type CheckoutSessionId,
   type VariantId,
@@ -48,6 +49,10 @@ type CheckoutRetryAttemptRow = {
 };
 
 type CheckoutRetryLineRow = {
+  preorderStartedAt: string | null;
+  preorderShipMonth: string | null;
+  preorderShipPart: string | null;
+  preorderShipDate: string | null;
   createdAt: string;
   displayName: string | null;
   id: string;
@@ -67,6 +72,7 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
   public async createPendingHold(input: CreateCheckoutStockHoldInput): Promise<CreateCheckoutStockHoldResult> {
     const [primaryLine] = input.lines;
     const lineRecords: CheckoutOrderLineRecord[] = input.lines.map((line) => ({
+      ...(line.preorder ? { preorder: line.preorder } : {}),
       createdAt: input.createdAt,
       displayName: line.displayName,
       id: crypto.randomUUID(),
@@ -122,8 +128,8 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
           [
             'INSERT INTO "CheckoutOrderLine"',
             '  ("id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel",',
-            '   "quantity", "unitAmountMinor", "lineAmountMinor", "createdAt")',
-            'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?',
+            '   "quantity", "unitAmountMinor", "lineAmountMinor", "createdAt", "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate")',
+            'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?',
             'WHERE EXISTS (SELECT 1 FROM "CheckoutOrder" WHERE "id" = ? AND "status" = ?)',
           ].join('\n'),
         )
@@ -139,6 +145,10 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
           line.unitAmountMinor,
           line.lineAmountMinor,
           line.createdAt.toISOString(),
+          line.preorder?.startedAt ?? null,
+          line.preorder?.shipEstimate?.kind === 'month' ? line.preorder.shipEstimate.month : null,
+          line.preorder?.shipEstimate?.kind === 'month' ? line.preorder.shipEstimate.part : null,
+          line.preorder?.shipEstimate?.kind === 'date' ? line.preorder.shipEstimate.date : null,
           input.orderId,
           'pending_payment',
         ),
@@ -294,7 +304,7 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
 
     const lineRows = await this.db
       .prepare(
-        'SELECT "id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel", "quantity", "unitAmountMinor", "lineAmountMinor", "createdAt" FROM "CheckoutOrderLine" WHERE "orderId" = ? ORDER BY "createdAt" ASC, "id" ASC',
+        'SELECT "id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel", "quantity", "unitAmountMinor", "lineAmountMinor", "createdAt", "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate" FROM "CheckoutOrderLine" WHERE "orderId" = ? ORDER BY "createdAt" ASC, "id" ASC',
       )
       .bind(row.id)
       .all<CheckoutRetryLineRow>();
@@ -311,6 +321,21 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
       id: row.id,
       idempotencyFingerprint: row.idempotencyFingerprint,
       lines: lineRows.results.map((line) => ({
+        ...(line.preorderStartedAt
+          ? {
+              preorder: {
+                startedAt: line.preorderStartedAt,
+                shipEstimate:
+                  line.preorderShipDate || line.preorderShipMonth
+                    ? parsePreorderShipEstimate(
+                        line.preorderShipDate
+                          ? { kind: 'date', date: line.preorderShipDate }
+                          : { kind: 'month', month: line.preorderShipMonth, part: line.preorderShipPart },
+                      )
+                    : null,
+              },
+            }
+          : {}),
         createdAt: new Date(line.createdAt),
         displayName: line.displayName,
         id: line.id,

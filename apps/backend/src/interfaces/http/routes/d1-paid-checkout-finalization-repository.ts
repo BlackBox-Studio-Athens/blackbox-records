@@ -15,6 +15,7 @@ import {
   parsePaymentIntentId,
   parseStoreItemSlug,
   parseStripePriceId,
+  parsePreorderShipEstimate,
   parseVariantId,
   stockPreorderFromColumns,
   type CheckoutSessionId,
@@ -73,6 +74,10 @@ type CheckoutOrderRow = {
 };
 
 type CheckoutOrderLineRow = {
+  preorderStartedAt: string | null;
+  preorderShipMonth: string | null;
+  preorderShipPart: string | null;
+  preorderShipDate: string | null;
   lineVatMinor: number | null;
   taxRatePercent: number | null;
   createdAt: string;
@@ -177,6 +182,7 @@ const checkoutOrderLinesSql = [
   '  "unitAmountMinor",',
   '  "lineAmountMinor",',
   '  "lineVatMinor", "taxRatePercent",',
+  '  "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate",',
   '  "createdAt"',
   'FROM "CheckoutOrderLine"',
   'WHERE "orderId" = ?',
@@ -684,6 +690,21 @@ function mapCheckoutOrder(row: CheckoutOrderRow, lines: CheckoutOrderLineRecord[
 
 function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecord {
   return {
+    ...(row.preorderStartedAt
+      ? {
+          preorder: {
+            startedAt: row.preorderStartedAt,
+            shipEstimate:
+              row.preorderShipDate || row.preorderShipMonth
+                ? parsePreorderShipEstimate(
+                    row.preorderShipDate
+                      ? { kind: 'date', date: row.preorderShipDate }
+                      : { kind: 'month', month: row.preorderShipMonth, part: row.preorderShipPart },
+                  )
+                : null,
+          },
+        }
+      : {}),
     createdAt: new Date(row.createdAt),
     displayName: row.displayName,
     id: row.id,

@@ -9,6 +9,8 @@ import type {
 } from '../../../domain/commerce/repositories/spi';
 import {
   createCartQuantity,
+  athensToday,
+  deriveShopperPreorder,
   parseStoreItemSlug,
   parseVariantId,
   type AcceptedMonetaryPolicy,
@@ -218,7 +220,11 @@ export async function startCheckout(
 
     const unitAmountMinor = offerPrice.kind === 'fixed' ? offerPrice.amountMinor : null;
 
+    const preorder = deriveShopperPreorder(currentStock.preorder, athensToday(options.now));
     validatedLines.push({
+      ...(preorder && currentStock.preorder
+        ? { preorder: { ...preorder, startedAt: currentStock.preorder.startedAt } }
+        : {}),
       displayName: productProjection.name,
       lineAmountMinor: unitAmountMinor === null ? null : unitAmountMinor * quantity,
       optionLabel: null,

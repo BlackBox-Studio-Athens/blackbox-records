@@ -1,4 +1,4 @@
-import type { ShippingLockerSnapshot } from '../../../domain/commerce/repositories/spi';
+import type { CheckoutOrderLineRecord, ShippingLockerSnapshot } from '../../../domain/commerce/repositories/spi';
 import type {
   CartQuantity,
   CheckoutSessionId,
@@ -59,6 +59,7 @@ export type HostedCheckoutSessionRequest = {
 };
 
 export type CheckoutSessionLineItem = {
+  preorder?: CheckoutOrderLineRecord['preorder'];
   displayName: string;
   lineAmountMinor: number | null;
   optionLabel: string | null;

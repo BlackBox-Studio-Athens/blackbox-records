@@ -13,6 +13,7 @@ import {
   parsePaymentIntentId,
   parseStoreItemSlug,
   parseStripePriceId,
+  parsePreorderShipEstimate,
   parseVariantId,
 } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
@@ -128,6 +129,10 @@ function mapCheckoutOrder(record: {
 }
 
 type CheckoutOrderLineRow = {
+  preorderStartedAt: string | Date | null;
+  preorderShipMonth: string | null;
+  preorderShipPart: string | null;
+  preorderShipDate: string | null;
   lineVatMinor?: number | null;
   taxRatePercent?: number | null;
   displayName: string | null;
@@ -145,6 +150,22 @@ type CheckoutOrderLineRow = {
 
 function mapCheckoutOrderLine(row: CheckoutOrderLineRow): CheckoutOrderLineRecord {
   return {
+    ...(row.preorderStartedAt
+      ? {
+          preorder: {
+            startedAt:
+              row.preorderStartedAt instanceof Date ? row.preorderStartedAt.toISOString() : row.preorderStartedAt,
+            shipEstimate:
+              row.preorderShipDate || row.preorderShipMonth
+                ? parsePreorderShipEstimate(
+                    row.preorderShipDate
+                      ? { kind: 'date', date: row.preorderShipDate }
+                      : { kind: 'month', month: row.preorderShipMonth, part: row.preorderShipPart },
+                  )
+                : null,
+          },
+        }
+      : {}),
     createdAt: row.createdAt instanceof Date ? row.createdAt : new Date(row.createdAt),
     displayName: row.displayName,
     id: row.id,
@@ -298,7 +319,7 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
       const id = crypto.randomUUID();
 
       await this.prisma.$executeRawUnsafe(
-        'INSERT INTO "CheckoutOrderLine" ("id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel", "quantity", "unitAmountMinor", "lineAmountMinor", "createdAt") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO "CheckoutOrderLine" ("id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel", "quantity", "unitAmountMinor", "lineAmountMinor", "createdAt", "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         id,
         orderId,
         line.storeItemSlug,
@@ -310,9 +331,14 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
         line.unitAmountMinor,
         line.lineAmountMinor,
         createdAt,
+        line.preorder?.startedAt ?? null,
+        line.preorder?.shipEstimate?.kind === 'month' ? line.preorder.shipEstimate.month : null,
+        line.preorder?.shipEstimate?.kind === 'month' ? line.preorder.shipEstimate.part : null,
+        line.preorder?.shipEstimate?.kind === 'date' ? line.preorder.shipEstimate.date : null,
       );
 
       createdLines.push({
+        ...(line.preorder ? { preorder: line.preorder } : {}),
         createdAt,
         displayName: line.displayName,
         id,
@@ -332,7 +358,7 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
 
   private async readCheckoutOrderLines(orderId: string): Promise<CheckoutOrderLineRecord[]> {
     const rows = await this.prisma.$queryRawUnsafe<CheckoutOrderLineRow[]>(
-      'SELECT "id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel", "quantity", "unitAmountMinor", "lineAmountMinor", "lineVatMinor", "taxRatePercent", "createdAt" FROM "CheckoutOrderLine" WHERE "orderId" = ? ORDER BY "createdAt" ASC, "id" ASC',
+      'SELECT "id", "orderId", "storeItemSlug", "variantId", "stripePriceId", "displayName", "optionLabel", "quantity", "unitAmountMinor", "lineAmountMinor", "lineVatMinor", "taxRatePercent", "createdAt", "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate" FROM "CheckoutOrderLine" WHERE "orderId" = ? ORDER BY "createdAt" ASC, "id" ASC',
       orderId,
     );
 

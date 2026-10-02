@@ -6,6 +6,7 @@ import type { RequestIdentity } from './request-identity';
 import type { OrderStatus } from './order-state-repository';
 
 export type CheckoutStockHoldLineInput = {
+  preorder?: CheckoutOrderLineRecord['preorder'];
   displayName: string;
   lineAmountMinor: number | null;
   optionLabel: string | null;

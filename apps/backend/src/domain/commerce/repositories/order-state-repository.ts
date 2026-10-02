@@ -1,6 +1,7 @@
 import type { CheckoutSessionId, PaymentIntentId, StoreItemSlug, StripePriceId, VariantId } from '../ids';
 import type { CartQuantity } from '../quantities';
 import type { OrderMonetaryFields } from '../monetary';
+import type { PreorderShipEstimate } from '../preorder';
 
 export type OrderStatus = 'pending_payment' | 'paid' | 'not_paid' | 'needs_review';
 export type OrderReviewReason = 'stock_unavailable' | 'line_mismatch' | 'incomplete_fulfillment';
@@ -225,6 +226,7 @@ function isValidDate(value: Date | null): value is Date {
 }
 
 export type CheckoutOrderLineRecord = {
+  preorder?: { startedAt: string; shipEstimate: PreorderShipEstimate | null } | null;
   lineVatMinor?: number | null;
   taxRatePercent?: number | null;
   displayName: string | null;
@@ -252,6 +254,7 @@ export type CreatePendingCheckoutOrderInput = {
 };
 
 export type CreatePendingCheckoutOrderLineInput = {
+  preorder?: CheckoutOrderLineRecord['preorder'];
   displayName: string | null;
   lineAmountMinor: number | null;
   optionLabel: string | null;

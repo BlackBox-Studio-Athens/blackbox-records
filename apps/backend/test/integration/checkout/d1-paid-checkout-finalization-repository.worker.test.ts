@@ -23,6 +23,53 @@ import type { StoreItemOptionRepository } from '../../../src/domain/commerce/rep
 import { D1OperatorStockRepository } from '../../../src/infrastructure/persistence/prisma/d1-operator-stock-repository';
 
 describe('D1PaidCheckoutFinalizationRepository', () => {
+  it.each([null, { kind: 'month', month: '2026-10', part: 'early' }, { kind: 'date', date: '2026-10-20' }] as const)(
+    'keeps the pre-order snapshot through stock edits, payment and replay (%j)',
+    async (shipEstimate) => {
+      const seeded = await seedPendingCheckout();
+      const startedAt = '2026-08-01T10:00:00.000Z';
+      const preorder = { startedAt, shipEstimate };
+      await env.COMMERCE_DB.prepare(
+        'UPDATE "CheckoutOrderLine" SET "preorderStartedAt" = ?, "preorderShipMonth" = ?, "preorderShipPart" = ?, "preorderShipDate" = ? WHERE "orderId" = ?',
+      )
+        .bind(
+          startedAt,
+          shipEstimate?.kind === 'month' ? shipEstimate.month : null,
+          shipEstimate?.kind === 'month' ? shipEstimate.part : null,
+          shipEstimate?.kind === 'date' ? shipEstimate.date : null,
+          seeded.orderId,
+        )
+        .run();
+      await env.COMMERCE_DB.prepare(
+        'UPDATE "Stock" SET "preorderStartedAt" = ?, "preorderShipMonth" = ? WHERE "variantId" = ?',
+      )
+        .bind(startedAt, '2026-12', seeded.variantId)
+        .run();
+      const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
+      const orders = new PrismaOrderStateRepository(prisma);
+      const finalization = new D1PaidCheckoutFinalizationRepository(env.COMMERCE_DB);
+      try {
+        expect((await orders.findById(seeded.orderId))?.lines?.[0]?.preorder).toEqual(preorder);
+        const result = await finalization.finalizePaidCheckout(finalizationCommand(seeded));
+        expect(result.kind).toBe('transitioned');
+        expect(result.order.lines?.[0]?.preorder).toEqual(preorder);
+        expect((await orders.findByCheckoutSessionId(seeded.checkoutSessionId))?.lines?.[0]?.preorder).toEqual(
+          preorder,
+        );
+        await env.COMMERCE_DB.prepare(
+          'UPDATE "Stock" SET "preorderStartedAt" = NULL, "preorderShipMonth" = NULL WHERE "variantId" = ?',
+        )
+          .bind(seeded.variantId)
+          .run();
+        const replay = await finalization.finalizePaidCheckout(finalizationCommand(seeded));
+        expect(replay.kind).toBe('replay');
+        expect(replay.order.lines?.[0]?.preorder).toEqual(preorder);
+      } finally {
+        await prisma.$disconnect();
+      }
+    },
+  );
+
   it.each([
     { tier: 'small', delivery: 250, deliveryVat: 48, gross: 2480, quantity: 1, vat: 480, custom: false },
     { tier: 'medium', delivery: 350, deliveryVat: 68, gross: 2480, quantity: 1, vat: 480, custom: false },

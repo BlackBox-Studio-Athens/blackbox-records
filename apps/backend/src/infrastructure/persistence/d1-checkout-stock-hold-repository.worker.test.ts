@@ -9,8 +9,84 @@ import {
   parseVariantId,
 } from '../../domain/commerce';
 import { D1CheckoutStockHoldRepository } from './d1-checkout-stock-hold-repository';
+import { createPrismaClient, PrismaOrderStateRepository } from './prisma';
 
 describe('D1CheckoutStockHoldRepository', () => {
+  it.each([null, { kind: 'month', month: '2026-11', part: 'late' }, { kind: 'date', date: '2026-11-20' }] as const)(
+    'persists and rereads the immutable pre-order snapshot (%j)',
+    async (shipEstimate) => {
+      const variantId = parseVariantId(`variant_preorder_hold_${crypto.randomUUID()}`);
+      await seedStock(variantId, 3);
+      const repository = new D1CheckoutStockHoldRepository(env.COMMERCE_DB);
+      const preorder = { startedAt: '2026-09-01T10:00:00.000Z', shipEstimate };
+      const requestIdentity = {
+        keyDigest: crypto.randomUUID().replaceAll('-', '').repeat(2),
+        productEnvironment: 'LOCAL',
+        requestFingerprint: crypto.randomUUID().replaceAll('-', '').repeat(2),
+      };
+      const result = await repository.createPendingHold({
+        orderId: crypto.randomUUID(),
+        createdAt: new Date('2026-10-02T10:00:00Z'),
+        checkoutExpiresAt: new Date('2026-10-02T10:30:00Z'),
+        requestIdentity,
+        lines: [
+          {
+            displayName: 'Pre-order record',
+            lineAmountMinor: 2500,
+            optionLabel: null,
+            quantity: createCartQuantity(1),
+            storeItemSlug: parseStoreItemSlug('preorder-record'),
+            stripePriceId: parseStripePriceId('price_preorder_record'),
+            unitAmountMinor: 2500,
+            variantId,
+            preorder,
+          },
+        ],
+      });
+      expect(result.kind).toBe('created');
+      if (result.kind !== 'created') throw new Error('Expected a checkout hold');
+      expect(result.hold.lines[0]?.preorder).toEqual(preorder);
+      expect((await repository.findByRequestIdentity(requestIdentity))?.lines[0]?.preorder).toEqual(preorder);
+      const columns = await env.COMMERCE_DB.prepare(
+        'SELECT "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate" FROM "CheckoutOrderLine" WHERE "orderId" = ?',
+      )
+        .bind(result.hold.id)
+        .first();
+      expect(columns).toEqual({
+        preorderStartedAt: preorder.startedAt,
+        preorderShipMonth: shipEstimate?.kind === 'month' ? shipEstimate.month : null,
+        preorderShipPart: shipEstimate?.kind === 'month' ? shipEstimate.part : null,
+        preorderShipDate: shipEstimate?.kind === 'date' ? shipEstimate.date : null,
+      });
+      const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
+      const orders = new PrismaOrderStateRepository(prisma);
+      try {
+        await env.COMMERCE_DB.prepare(
+          'UPDATE "Stock" SET "preorderStartedAt" = ?, "preorderShipMonth" = ? WHERE "variantId" = ?',
+        )
+          .bind('2026-10-01T10:00:00.000Z', '2026-12', variantId)
+          .run();
+        expect((await orders.findById(result.hold.id))?.lines?.[0]?.preorder).toEqual(preorder);
+        expect(
+          (await orders.listRecent({ limit: 100 })).find((order) => order.id === result.hold.id)?.lines?.[0]?.preorder,
+        ).toEqual(preorder);
+        expect((await repository.findByRequestIdentity(requestIdentity))?.lines[0]?.preorder).toEqual(preorder);
+        const sessionId = parseCheckoutSessionId(`cs_preorder_${crypto.randomUUID()}`);
+        const created = await orders.createPending({
+          checkoutSessionId: sessionId,
+          createdAt: result.hold.createdAt,
+          shippingLocker: null,
+          storeItemSlug: result.hold.storeItemSlug,
+          variantId,
+          lines: result.hold.lines,
+        });
+        expect(created.lines?.[0]?.preorder).toEqual(preorder);
+        expect((await orders.findByCheckoutSessionId(sessionId))?.lines?.[0]?.preorder).toEqual(preorder);
+      } finally {
+        await prisma.$disconnect();
+      }
+    },
+  );
   it('lets exactly one concurrent checkout hold win the final unit', async () => {
     const variantId = parseVariantId(`variant_hold_race_${crypto.randomUUID()}`);
     const repository = new D1CheckoutStockHoldRepository(env.COMMERCE_DB);

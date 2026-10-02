@@ -28,7 +28,7 @@ function startCheckout(...args: Parameters<typeof startCheckoutWithPolicy>) {
   return startCheckoutWithPolicy(...args);
 }
 
-import type { CheckoutSessionId, VariantId } from '../../../domain/commerce';
+import type { CheckoutSessionId, VariantId, StockPreorder } from '../../../domain/commerce';
 import type {
   CatalogProductProjectionReader,
   CatalogReconciler,
@@ -1956,6 +1956,88 @@ describe('checkout use cases', () => {
       }),
     );
   });
+
+  it.each([
+    { kind: 'month', month: '2026-11', part: 'early' },
+    { kind: 'month', month: '2026-09', part: null },
+    { kind: 'date', date: '2026-10-20' },
+    { kind: 'date', date: '2026-10-02' },
+    { kind: 'date', date: '2026-10-01' },
+  ] satisfies StockPreorder['shipEstimate'][])(
+    'snapshots the shopper pre-order in a mixed cart (%j) without forwarding it to the gateway',
+    async (shipEstimate) => {
+      const ordinary = {
+        ...storeItem,
+        sourceId: 'ordinary',
+        storeItemSlug: storeItemSlug('ordinary-record'),
+        variantId: toVariantId('variant_ordinary-record_standard'),
+      };
+      storeItems = new InMemoryStoreItemOptionRepository([storeItem, ordinary]);
+      itemAvailability.records.set(ordinary.variantId, {
+        canBuy: true,
+        status: 'available',
+        updatedAt: new Date(),
+        variantId: ordinary.variantId,
+      });
+      await stock.save(ordinary.variantId, { quantity: 3, onlineQuantity: 3 });
+      productProjections.projections.set(ordinary.variantId, {
+        ...productProjections.projections.get(storeItem.variantId)!,
+        name: 'Ordinary record',
+      });
+      catalogReconciler.prices.set(ordinary.variantId, createCatalogPrice({ storeItem: ordinary }));
+      stock.records.get(storeItem.variantId)!.preorder = { startedAt: '2026-09-01T10:00:00.000Z', shipEstimate };
+      const command = {
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
+        lines: [storeItem, ordinary].map((item) => ({
+          storeItemSlug: item.storeItemSlug,
+          variantId: item.variantId,
+          quantity: cartQuantity(1),
+        })),
+      };
+      const options = { now: new Date('2026-10-02T10:00:00Z') };
+      await startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        command,
+        undefined,
+        options,
+      );
+      const lines = orders.records.get('cs_test_123')!.lines!;
+      const expected =
+        shipEstimate.kind === 'date' && shipEstimate.date <= '2026-10-02'
+          ? undefined
+          : {
+              startedAt: '2026-09-01T10:00:00.000Z',
+              shipEstimate: shipEstimate.kind === 'month' && shipEstimate.month < '2026-10' ? null : shipEstimate,
+            };
+      expect(lines[0]?.preorder).toEqual(expected);
+      expect(lines[1]?.preorder).toBeUndefined();
+      stock.records.get(storeItem.variantId)!.preorder = null;
+      expect(lines[0]?.preorder).toEqual(expected);
+      const request = vi.mocked(checkoutGateway.createHostedCheckoutSession).mock.calls[0]![0];
+      expect(request.lineItems?.every((line) => !('preorder' in line))).toBe(true);
+      await startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        command,
+        undefined,
+        options,
+      );
+      const ordinaryRequest = vi.mocked(checkoutGateway.createHostedCheckoutSession).mock.calls[1]![0];
+      expect(request).toEqual({ ...ordinaryRequest, orderId: request.orderId });
+    },
+  );
 
   it('merges duplicate CartLines into one immutable order-line snapshot per variant', async () => {
     await expect(
