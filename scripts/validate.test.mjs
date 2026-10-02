@@ -93,6 +93,20 @@ test('Nx plans use affected targets by default and run-many for full validation'
     '--nxBail',
   ]);
   assert.deepEqual(validationPlan({ plan: true })[0].args.slice(-2), ['--nxBail', '--graph=stdout']);
+  // Bail kills running sibling tasks, which then report as failures; CI lets every task report its own result.
+  assert.deepEqual(validationPlan({ bail: false })[0].args, [
+    'exec',
+    'nx',
+    'affected',
+    '-t',
+    'test',
+    'lint',
+    'typecheck',
+  ]);
+  assert.deepEqual(validationPlan({ full: true, plan: true, bail: false })[0].args.slice(-2), [
+    '--all',
+    '--graph=stdout',
+  ]);
   assert.deepEqual(validationPlan({ since: 'HEAD' })[0].args.slice(-1), ['--base=HEAD']);
   assert.throws(() => validationPlan({ full: true, since: 'HEAD' }), /only valid for affected/);
   assert.throws(() => validationPlan({ full: true, fast: true }), /one validation mode/);
@@ -411,23 +425,27 @@ test('CLI no-cache skips Nx cache without changing affected mode', async (t) => 
 
 test('failed Nx invocation preserves its exit code and stops the run', async (t) => {
   const cwd = await fixture(t);
-  let calls = 0;
-  const summary = await runValidation({
-    ...offline,
-    cwd,
-    options: { full: true },
-    identify: identity,
-    log: () => {},
-    runCommand: async () => {
-      calls += 1;
-      throw Object.assign(new Error('Nx failed'), { exitCode: 9 });
-    },
-  });
-  assert.equal(calls, 1);
-  assert.equal(summary.status, 'failed');
-  assert.equal(summary.exitCode, 9);
-  assert.equal(summary.phases[0].status, 'failed');
-  assert.ok(summary.skippedPhases.length === 0);
+  // CI runs without --nxBail must still fail with the failing task's exit code.
+  for (const env of [{}, { GITHUB_ACTIONS: 'true' }]) {
+    let calls = 0;
+    const summary = await runValidation({
+      ...offline,
+      env,
+      cwd,
+      options: { full: true },
+      identify: identity,
+      log: () => {},
+      runCommand: async () => {
+        calls += 1;
+        throw Object.assign(new Error('Nx failed'), { exitCode: 9 });
+      },
+    });
+    assert.equal(calls, 1);
+    assert.equal(summary.status, 'failed');
+    assert.equal(summary.exitCode, 9);
+    assert.equal(summary.phases[0].status, 'failed');
+    assert.ok(summary.skippedPhases.length === 0);
+  }
 });
 
 const pause = () => new Promise((resolve) => setTimeout(resolve, 40));
@@ -524,11 +542,16 @@ test('slots and formatting apply only to local Nx runs; CI keeps check-only form
       history: () => {},
       runCommand: async (command) => calls.push(command.args.at(-1)),
     });
-  await run({}, { GITHUB_ACTIONS: 'true' });
+  const ci = await run({}, { GITHUB_ACTIONS: 'true' });
+  const ciPlan = await run({ plan: true }, { GITHUB_ACTIONS: 'true' });
+  // CI runs and their plans omit --nxBail, so a failure cannot kill sibling tasks into collateral failures.
+  assert.ok(!ci.phases[0].args.includes('--nxBail'));
+  assert.deepEqual(ciPlan.plannedPhases[0].args.slice(-2), ['typecheck', '--graph=stdout']);
   await run({ plan: true });
   await run({ editor: true });
   assert.deepEqual(calls, [
-    '--nxBail',
+    'typecheck',
+    '--graph=stdout',
     '--graph=stdout',
     'build:staff',
     'scripts/test-preview-policy.mjs',
@@ -551,6 +574,31 @@ test('slots and formatting apply only to local Nx runs; CI keeps check-only form
     '--parallel=1',
     'release',
   ]);
+});
+
+test('runs that start in the same millisecond keep separate evidence', async (t) => {
+  const cwd = await fixture(t);
+  // CI runners start consecutive runs within one millisecond; a frozen clock makes that deterministic.
+  const toISOString = Date.prototype.toISOString;
+  Date.prototype.toISOString = () => '2026-10-02T00:00:00.000Z';
+  t.after(() => {
+    Date.prototype.toISOString = toISOString;
+  });
+  const ran = [];
+  const run = () =>
+    runValidation({
+      ...offline,
+      cwd,
+      options: {},
+      identify: identity,
+      log: () => {},
+      runCommand: async () => ran.push(1),
+    });
+  const [first, second] = [await run(), await run()];
+  assert.equal(first.status, 'passed');
+  assert.equal(second.status, 'passed');
+  assert.equal(ran.length, 2);
+  assert.notEqual(first.runId, second.runId);
 });
 
 test('validation takes and releases real machine slots in its checkout', async (t) => {

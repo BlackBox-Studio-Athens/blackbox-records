@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { createReadStream, watch } from 'node:fs';
 import { mkdir, writeFile, lstat, readlink, unlink, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -27,6 +27,7 @@ export function validationPlan({
   noCache = false,
   plan = false,
   since,
+  bail = true,
 } = {}) {
   if ([fast, full, editor, checks, lintOnly].filter(Boolean).length > 1) throw new Error('Choose one validation mode.');
   if ((full || checks) && scope !== 'all') throw new Error('Complete validation cannot be scoped.');
@@ -53,7 +54,8 @@ export function validationPlan({
   if (since && !affected) throw new Error('--since is only valid for affected validation.');
   const targets = lintOnly ? ['lint'] : ['test', 'lint', 'typecheck', ...(full ? ['build'] : [])];
   const args = affected ? ['affected', '-t', ...targets] : ['run-many', '-t', ...targets, '--all'];
-  args.push('--nxBail');
+  // Nx bail kills tasks already running, which then report as failures; CI lets every task report its own result.
+  if (bail) args.push('--nxBail');
   if (scope !== 'all') args.push('--exclude=*,!tag:scope:' + scope);
   if (since) args.push('--base=' + since);
   if (plan) args.push('--graph=stdout');
@@ -238,8 +240,8 @@ export async function runValidation({
   env = process.env,
   log = console.log,
 } = {}) {
-  const commands = validationPlan(options);
   const local = env.GITHUB_ACTIONS !== 'true';
+  const commands = validationPlan({ ...options, bail: local });
   const affected = !options.full && !options.checks && !options.lintOnly && !options.editor;
   // Nx restores tasks whose inputs did not change, so a second pass costs only what the edit touched.
   const converges = !options.plan && !options.editor;
@@ -253,7 +255,8 @@ export async function runValidation({
     await acquireLock(lockPath, { signal, log });
     lockWaitMs = Math.round(performance.now() - lockStart);
   }
-  const runId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}`;
+  // The random suffix keeps runs that start in the same millisecond of one process from sharing an evidence directory.
+  const runId = `${new Date().toISOString().replace(/[:.]/g, '-')}-${process.pid}-${randomBytes(3).toString('hex')}`;
   const evidenceDir = path.join(root, runId);
   const started = performance.now();
   const controller = new AbortController();
