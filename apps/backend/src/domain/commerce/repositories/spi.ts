@@ -62,6 +62,12 @@ export type {
   PaidOrderDeliverySummary,
 } from './paid-order-delivery-repository';
 export type { StockRecord, StockRepository, StockState } from './stock-repository';
+export type {
+  PreorderEstimateDeliveryRecord,
+  ClaimedPreorderEstimateDelivery,
+  ClaimDuePreorderEstimateDeliveryResult,
+  PreorderEstimateDeliveryRepository,
+} from './preorder-estimate-delivery-repository';
 export type { OperatorStockRepository } from './operator-stock-repository';
 export type { RecordStockChangeInput, StockChangeRecord, StockChangeRepository } from './stock-change-repository';
 export type { RecordStockCountInput, StockCountRecord, StockCountRepository } from './stock-count-repository';

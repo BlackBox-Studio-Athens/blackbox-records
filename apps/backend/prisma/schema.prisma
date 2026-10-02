@@ -225,6 +225,7 @@ model CheckoutOrder {
   updatedAt                    DateTime            @updatedAt
   lines                        CheckoutOrderLine[]
   deliveries                   PaidOrderDelivery[]
+  preorderEstimateDeliveries   PreorderEstimateDelivery[]
 
   @@index([variantId, status])
   @@index([idempotencyEnvironment, idempotencyKeyDigest])
@@ -275,5 +276,29 @@ model PaidOrderDelivery {
   order             CheckoutOrder           @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@unique([orderId, kind])
+  @@index([status, nextAttemptAt, createdAt])
+}
+
+model PreorderEstimateDelivery {
+  id                String                  @id @default(cuid())
+  orderId           String
+  variantId         String
+  shipMonth         String?
+  shipPart          String?
+  shipDate          String?
+  sequence          Int                     @default(1)
+  status            PaidOrderDeliveryStatus
+  attemptCount      Int                     @default(0)
+  nextAttemptAt     DateTime?
+  leaseUntil        DateTime?
+  providerMessageId String?
+  safeReason        String?
+  deliveredAt       DateTime?
+  needsReviewAt     DateTime?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  order             CheckoutOrder           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, variantId])
   @@index([status, nextAttemptAt, createdAt])
 }

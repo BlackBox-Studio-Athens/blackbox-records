@@ -1,7 +1,10 @@
 import {
+  athensToday,
   createStockChangeDelta,
   createStockQuantity,
+  isPreorderOpen,
   parseVariantId,
+  samePreorderShipEstimate,
   stockPreorderFromColumns,
 } from '../../../domain/commerce';
 import type {
@@ -111,29 +114,87 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
   }): Promise<StockRecord | null> {
     const timestamp = new Date().toISOString();
     const estimate = input.preorder?.shipEstimate;
-    const row = await this.db
-      .prepare(
-        [
-          'INSERT INTO "Stock" ("id", "variantId", "quantity", "onlineQuantity", "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate", "revision", "createdAt", "updatedAt")',
-          'SELECT ?, ?, 0, 0, ?, ?, ?, ?, 0, ?, ? WHERE ? IS NULL OR EXISTS (SELECT 1 FROM "Stock" WHERE "variantId" = ?)',
-          'ON CONFLICT ("variantId") DO UPDATE SET "preorderStartedAt" = excluded."preorderStartedAt", "preorderShipMonth" = excluded."preorderShipMonth", "preorderShipPart" = excluded."preorderShipPart", "preorderShipDate" = excluded."preorderShipDate", "revision" = "Stock"."revision" + 1, "updatedAt" = excluded."updatedAt"',
-          'WHERE "Stock"."revision" = ? RETURNING *',
-        ].join('\n'),
-      )
-      .bind(
-        crypto.randomUUID(),
-        input.variantId,
-        input.preorder?.startedAt ?? null,
-        estimate?.kind === 'month' ? estimate.month : null,
-        estimate?.kind === 'month' ? estimate.part : null,
-        estimate?.kind === 'date' ? estimate.date : null,
-        timestamp,
-        timestamp,
-        input.expectedRevision,
-        input.variantId,
-        input.expectedRevision,
-      )
-      .first<StockRow>();
+    const current = await this.readStock(input.variantId);
+    const previous = current?.preorder;
+    if (
+      current?.revision === input.expectedRevision &&
+      ((!previous && !input.preorder) ||
+        (previous &&
+          input.preorder &&
+          previous.startedAt === input.preorder.startedAt &&
+          samePreorderShipEstimate(previous.shipEstimate, input.preorder.shipEstimate)))
+    ) {
+      return current;
+    }
+    const statements = [
+      this.db
+        .prepare(
+          [
+            'INSERT INTO "Stock" ("id", "variantId", "quantity", "onlineQuantity", "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate", "revision", "createdAt", "updatedAt")',
+            'SELECT ?, ?, 0, 0, ?, ?, ?, ?, 0, ?, ? WHERE ? IS NULL OR EXISTS (SELECT 1 FROM "Stock" WHERE "variantId" = ?)',
+            'ON CONFLICT ("variantId") DO UPDATE SET "preorderStartedAt" = excluded."preorderStartedAt", "preorderShipMonth" = excluded."preorderShipMonth", "preorderShipPart" = excluded."preorderShipPart", "preorderShipDate" = excluded."preorderShipDate", "revision" = "Stock"."revision" + 1, "updatedAt" = excluded."updatedAt"',
+            'WHERE "Stock"."revision" = ? RETURNING *',
+          ].join('\n'),
+        )
+        .bind(
+          crypto.randomUUID(),
+          input.variantId,
+          input.preorder?.startedAt ?? null,
+          estimate?.kind === 'month' ? estimate.month : null,
+          estimate?.kind === 'month' ? estimate.part : null,
+          estimate?.kind === 'date' ? estimate.date : null,
+          timestamp,
+          timestamp,
+          input.expectedRevision,
+          input.variantId,
+          input.expectedRevision,
+        ),
+    ];
+    if (!input.preorder) {
+      statements.push(
+        this.db
+          .prepare(
+            'DELETE FROM "PreorderEstimateDelivery" WHERE "variantId" = ? AND "status" = \'pending\' AND changes() = 1',
+          )
+          .bind(input.variantId),
+      );
+    } else if (
+      previous &&
+      previous.startedAt === input.preorder.startedAt &&
+      isPreorderOpen(previous, athensToday(new Date(timestamp))) &&
+      !samePreorderShipEstimate(previous.shipEstimate, input.preorder.shipEstimate)
+    ) {
+      statements.push(
+        this.db
+          .prepare(
+            `
+        INSERT INTO "PreorderEstimateDelivery"
+          ("id", "orderId", "variantId", "shipMonth", "shipPart", "shipDate", "sequence", "status", "attemptCount", "nextAttemptAt", "createdAt", "updatedAt")
+        SELECT lower(hex(randomblob(16))), line."orderId", ?, ?, ?, ?, 1, 'pending', 0, ?, ?, ?
+        FROM "CheckoutOrderLine" line JOIN "CheckoutOrder" orders ON orders."id" = line."orderId"
+        WHERE orders."status" = 'paid' AND line."variantId" = ? AND line."preorderStartedAt" = ? AND changes() = 1
+        ON CONFLICT ("orderId", "variantId") DO UPDATE SET
+          "shipMonth" = excluded."shipMonth", "shipPart" = excluded."shipPart", "shipDate" = excluded."shipDate",
+          "sequence" = "PreorderEstimateDelivery"."sequence" + 1, "status" = 'pending', "attemptCount" = 0,
+          "nextAttemptAt" = excluded."nextAttemptAt", "leaseUntil" = NULL, "providerMessageId" = NULL,
+          "safeReason" = NULL, "deliveredAt" = NULL, "needsReviewAt" = NULL,
+          "createdAt" = excluded."createdAt", "updatedAt" = excluded."updatedAt"`,
+          )
+          .bind(
+            input.variantId,
+            estimate?.kind === 'month' ? estimate.month : null,
+            estimate?.kind === 'month' ? estimate.part : null,
+            estimate?.kind === 'date' ? estimate.date : null,
+            timestamp,
+            timestamp,
+            timestamp,
+            input.variantId,
+            input.preorder.startedAt,
+          ),
+      );
+    }
+    const [written] = await this.db.batch<StockRow>(statements);
+    const row = written?.results[0];
     return row ? mapStock(row) : null;
   }
 

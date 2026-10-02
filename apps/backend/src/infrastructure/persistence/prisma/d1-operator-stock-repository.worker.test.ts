@@ -5,6 +5,155 @@ import { createStockChangeDelta, createStockQuantity, parseVariantId } from '../
 import { RequestIdentityConflictError } from '../../../domain/commerce/repositories/request-identity';
 import type { RequestIdentity } from '../../../domain/commerce/repositories/request-identity';
 import { D1OperatorStockRepository } from './d1-operator-stock-repository';
+import { D1PreorderEstimateDeliveryRepository } from '../d1-preorder-estimate-delivery-repository';
+
+describe('transactional pre-order estimate notices', () => {
+  it('only notifies paid orders in the current cycle, coalesces edits and discards pending notices on end', async () => {
+    const variantId = parseVariantId(`variant_preorder_notices_${crypto.randomUUID()}`);
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const notices = new D1PreorderEstimateDeliveryRepository(env.COMMERCE_DB);
+    const preorder = {
+      startedAt: '2026-09-01T10:00:00.000Z',
+      shipEstimate: { kind: 'month', month: '2099-11', part: null },
+    } as const;
+    const paid = await seedPreorderOrder(variantId, preorder.startedAt);
+    const secondPaid = await seedPreorderOrder(variantId, preorder.startedAt);
+    for (const status of ['pending_payment', 'not_paid', 'needs_review'] as const)
+      await seedPreorderOrder(variantId, preorder.startedAt, status);
+    await seedPreorderOrder(variantId, '2026-08-01T10:00:00.000Z');
+    await seedPreorderOrder(variantId, null);
+    await seedPreorderOrder(`variant_other_${crypto.randomUUID()}`, preorder.startedAt);
+    expect(await repository.setStockPreorder({ variantId, preorder, expectedRevision: null })).toMatchObject({
+      revision: 0,
+    });
+    await expect(readNotices(variantId)).resolves.toEqual([]);
+    expect(await repository.setStockPreorder({ variantId, preorder, expectedRevision: 0 })).toMatchObject({
+      revision: 0,
+    });
+    await expect(readNotices(variantId)).resolves.toEqual([]);
+    const date = { ...preorder, shipEstimate: { kind: 'date', date: '2099-11-20' } } as const;
+    await expect(repository.setStockPreorder({ variantId, preorder: date, expectedRevision: 7 })).resolves.toBeNull();
+    await expect(readNotices(variantId)).resolves.toEqual([]);
+    await repository.setStockPreorder({ variantId, preorder: date, expectedRevision: 0 });
+    const firstRows = await readNotices(variantId);
+    expect(firstRows.map((row) => row.orderId).sort()).toEqual([paid, secondPaid].sort());
+    expect(firstRows.every((row) => row.sequence === 1)).toBe(true);
+    const id = firstRows[0]!.id;
+    const claimedAt = new Date('2099-01-01T10:00:00Z');
+    const firstClaim = await notices.claimDue({ claimedAt, deliveryId: id });
+    expect(firstClaim.kind).toBe('claimed');
+    if (firstClaim.kind !== 'claimed') return;
+    const latest = { ...preorder, shipEstimate: { kind: 'month', month: '2099-12', part: 'late' } } as const;
+    await repository.setStockPreorder({ variantId, preorder: latest, expectedRevision: 1 });
+    const secondRows = await readNotices(variantId);
+    expect(secondRows.map((row) => row.id).sort()).toEqual(firstRows.map((row) => row.id).sort());
+    await expect(notices.findById(id)).resolves.toMatchObject({
+      shipEstimate: latest.shipEstimate,
+      sequence: 2,
+      status: 'pending',
+      attemptCount: 0,
+      leaseUntil: null,
+      providerMessageId: null,
+      deliveredAt: null,
+      needsReviewAt: null,
+    });
+    const secondClaim = await notices.claimDue({ claimedAt, deliveryId: id });
+    expect(secondClaim.kind).toBe('claimed');
+    if (secondClaim.kind !== 'claimed') return;
+    expect(secondClaim.delivery.leaseUntil).toEqual(firstClaim.delivery.leaseUntil);
+    expect(secondClaim.delivery.attemptCount).toBe(firstClaim.delivery.attemptCount);
+    await expect(
+      notices.markDelivered({ delivery: firstClaim.delivery, deliveredAt: claimedAt, providerMessageId: 'old' }),
+    ).resolves.toBe(false);
+    await expect(repository.setStockPreorder({ variantId, preorder: null, expectedRevision: 1 })).resolves.toBeNull();
+    await expect(readNotices(variantId)).resolves.toHaveLength(2);
+    await notices.markDelivered({
+      delivery: secondClaim.delivery,
+      deliveredAt: claimedAt,
+      providerMessageId: 'latest',
+    });
+    await repository.setStockPreorder({ variantId, preorder: null, expectedRevision: 2 });
+    await expect(readNotices(variantId)).resolves.toEqual([expect.objectContaining({ id, status: 'delivered' })]);
+    await repository.setStockPreorder({
+      variantId,
+      preorder: { ...latest, startedAt: '2026-10-02T10:00:00.000Z' },
+      expectedRevision: 3,
+    });
+    await expect(readNotices(variantId)).resolves.toHaveLength(1);
+    await expect(countRows('StockChange', variantId)).resolves.toBe(0);
+    await expect(countRows('StockCount', variantId)).resolves.toBe(0);
+  });
+
+  it('enqueues one notice for the winning concurrent revision and treats a passed month as open', async () => {
+    const variantId = parseVariantId(`variant_preorder_notice_race_${crypto.randomUUID()}`);
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const preorder = {
+      startedAt: '2026-09-01T10:00:00.000Z',
+      shipEstimate: { kind: 'month', month: '2000-01', part: null },
+    } as const;
+    await repository.setStockPreorder({ variantId, preorder, expectedRevision: null });
+    const orderId = await seedPreorderOrder(variantId, preorder.startedAt);
+    const results = await Promise.all(
+      ['early', 'late'].map((part) =>
+        repository.setStockPreorder({
+          variantId,
+          expectedRevision: 0,
+          preorder: { ...preorder, shipEstimate: { kind: 'month', month: '2099-11', part: part as 'early' | 'late' } },
+        }),
+      ),
+    );
+    expect(results.filter(Boolean)).toHaveLength(1);
+    await expect(readNotices(variantId)).resolves.toEqual([expect.objectContaining({ orderId, sequence: 1 })]);
+    await expect(readStock(variantId)).resolves.toMatchObject({ revision: 1 });
+    const closedVariantId = parseVariantId(`variant_preorder_notice_closed_${crypto.randomUUID()}`);
+    const closed = { startedAt: preorder.startedAt, shipEstimate: { kind: 'date', date: '2000-01-01' } } as const;
+    await repository.setStockPreorder({ variantId: closedVariantId, preorder: closed, expectedRevision: null });
+    await seedPreorderOrder(closedVariantId, closed.startedAt);
+    await repository.setStockPreorder({
+      variantId: closedVariantId,
+      expectedRevision: 0,
+      preorder: {
+        startedAt: '2026-10-02T10:00:00.000Z',
+        shipEstimate: { kind: 'month', month: '2099-11', part: null },
+      },
+    });
+    await expect(readNotices(closedVariantId)).resolves.toEqual([]);
+  });
+
+  it('rolls stock back when enqueue or pending-notice cleanup fails', async () => {
+    const variantId = parseVariantId(`variant_preorder_notice_rollback_${crypto.randomUUID()}`);
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const preorder = {
+      startedAt: '2026-09-01T10:00:00.000Z',
+      shipEstimate: { kind: 'month', month: '2099-11', part: null },
+    } as const;
+    const edit = { ...preorder, shipEstimate: { kind: 'date', date: '2099-11-20' } } as const;
+    await repository.setStockPreorder({ variantId, preorder, expectedRevision: null });
+    await seedPreorderOrder(variantId, preorder.startedAt);
+    const trigger = `notice_fail_${crypto.randomUUID().replaceAll('-', '')}`;
+    for (const action of ['INSERT', 'DELETE'] as const) {
+      await env.COMMERCE_DB.prepare(
+        `CREATE TRIGGER "${trigger}" BEFORE ${action} ON "PreorderEstimateDelivery"
+        WHEN ${action === 'INSERT' ? 'NEW' : 'OLD'}."variantId" = '${variantId}'
+        BEGIN SELECT RAISE(ABORT, 'notice mutation failed'); END`,
+      ).run();
+      try {
+        await expect(
+          repository.setStockPreorder({
+            variantId,
+            expectedRevision: action === 'INSERT' ? 0 : 1,
+            preorder: action === 'INSERT' ? edit : null,
+          }),
+        ).rejects.toThrow();
+        await expect(readStock(variantId)).resolves.toMatchObject({ revision: action === 'INSERT' ? 0 : 1 });
+        await expect(readNotices(variantId)).resolves.toHaveLength(action === 'INSERT' ? 0 : 1);
+      } finally {
+        await env.COMMERCE_DB.prepare(`DROP TRIGGER "${trigger}"`).run();
+      }
+      if (action === 'INSERT') await repository.setStockPreorder({ variantId, expectedRevision: 0, preorder: edit });
+    }
+  });
+});
 
 describe('D1OperatorStockRepository idempotency', () => {
   it('revision-checks pre-order writes, creates an empty row and keeps quantities and history', async () => {
@@ -357,4 +506,35 @@ async function countRows(table: 'StockChange' | 'StockCount', variantId: string)
     .bind(variantId)
     .first<{ count: number }>();
   return row?.count ?? 0;
+}
+
+async function readNotices(variantId: string) {
+  const rows = await env.COMMERCE_DB.prepare(
+    'SELECT "id", "orderId", "status", "sequence" FROM "PreorderEstimateDelivery" WHERE "variantId" = ? ORDER BY "orderId"',
+  )
+    .bind(variantId)
+    .all<{ id: string; orderId: string; status: string; sequence: number }>();
+  return rows.results;
+}
+
+async function seedPreorderOrder(
+  variantId: string,
+  cycle: string | null,
+  status: 'paid' | 'pending_payment' | 'not_paid' | 'needs_review' = 'paid',
+) {
+  const id = crypto.randomUUID();
+  const timestamp = '2026-10-02T09:00:00.000Z';
+  await env.COMMERCE_DB.batch([
+    env.COMMERCE_DB.prepare(
+      `INSERT INTO "CheckoutOrder"
+      ("id", "storeItemSlug", "variantId", "checkoutExpiresAt", "status", "statusUpdatedAt", "createdAt", "updatedAt")
+      VALUES (?, 'preorder-notice-item', ?, ?, ?, ?, ?, ?)`,
+    ).bind(id, variantId, timestamp, status, timestamp, timestamp, timestamp),
+    env.COMMERCE_DB.prepare(
+      `INSERT INTO "CheckoutOrderLine"
+      ("id", "orderId", "storeItemSlug", "variantId", "quantity", "preorderStartedAt", "preorderShipMonth", "createdAt")
+      VALUES (?, ?, 'preorder-notice-item', ?, 1, ?, ?, ?)`,
+    ).bind(crypto.randomUUID(), id, variantId, cycle, cycle ? '2099-11' : null, timestamp),
+  ]);
+  return id;
 }

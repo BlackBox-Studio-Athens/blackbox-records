@@ -18,6 +18,7 @@
       "exports": [
         "./d1-checkout-stock-hold-repository.ts",
         "./d1-paid-order-delivery-repository.ts",
+        "./d1-preorder-estimate-delivery-repository.ts",
         "./prisma/index.ts"
       ],
       "namedInterfaces": {},
