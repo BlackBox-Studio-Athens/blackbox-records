@@ -4,6 +4,7 @@ import {
   resolvePublicCheckoutApiBaseUrl,
 } from '@/components/store/checkout/public-checkout-presentation';
 import type { StoreItemCartSeed } from '@/components/store/checkout/StoreItemPurchaseActions';
+import { preorderBadges } from '@/platform/lib/preorder-estimate';
 
 export const STORE_LISTING_PRICE_COPY = {
   loading: 'Checking price',
@@ -15,6 +16,8 @@ export const STORE_LISTING_PRICE_COPY = {
   currentlyUnavailable: 'Currently Unavailable',
   buy: 'Buy',
   adding: 'Adding',
+  preorder: 'Pre-order',
+  outNow: 'Out now',
 } as const;
 
 type ConnectStoreListingPricePresentationOptions = {
@@ -25,6 +28,8 @@ type ConnectStoreListingPricePresentationOptions = {
 const placeholderSelector = '[data-store-listing-price]';
 const availabilitySelector = '[data-store-listing-availability]';
 const buySelector = '[data-store-card-buy]';
+const preorderSelector = '[data-store-listing-preorder]';
+const releaseStatusSelector = '[data-store-listing-release-status]';
 
 /** Snapshots keep the server chrome and reset its state before the next enhancement. */
 export function sanitizeStoreSearchChrome(root: ParentNode) {
@@ -89,7 +94,20 @@ export function sanitizeStoreListingPricePlaceholders(root: ParentNode): void {
   root.querySelectorAll<HTMLButtonElement>(buySelector).forEach((button) => {
     button.hidden = true;
     button.removeAttribute('aria-busy');
+    button.classList.remove('preorder-action');
+    button.dataset.storeCardBuyLabel = STORE_LISTING_PRICE_COPY.buy;
     button.textContent = STORE_LISTING_PRICE_COPY.buy;
+  });
+  root.querySelectorAll<HTMLElement>('[data-store-preorder]').forEach((card) => {
+    delete card.dataset.storePreorder;
+  });
+  root.querySelectorAll<HTMLElement>(preorderSelector).forEach((badge) => {
+    badge.hidden = true;
+    badge.textContent = '';
+  });
+  root.querySelectorAll<HTMLElement>(releaseStatusSelector).forEach((badge) => {
+    badge.hidden = true;
+    badge.textContent = STORE_LISTING_PRICE_COPY.outNow;
   });
 }
 
@@ -112,7 +130,7 @@ async function buyFromStoreCard(button: HTMLButtonElement, confirmationTimers: M
   button.setAttribute('aria-busy', 'true');
   button.textContent = STORE_LISTING_PRICE_COPY.adding;
 
-  let label: string = STORE_LISTING_PRICE_COPY.buy;
+  let label: string = button.dataset.storeCardBuyLabel ?? STORE_LISTING_PRICE_COPY.buy;
   try {
     const purchase = await import('@/components/store/checkout/StoreItemPurchaseActions');
     const result = await purchase.requestStoreCartAddFromSeed(
@@ -123,7 +141,7 @@ async function buyFromStoreCard(button: HTMLButtonElement, confirmationTimers: M
     } else if (!result.isQueued) {
       label = purchase.STORE_ITEM_PURCHASE_ACTION_COPY.added;
       const resetLabel = () => {
-        button.textContent = STORE_LISTING_PRICE_COPY.buy;
+        button.textContent = button.dataset.storeCardBuyLabel ?? STORE_LISTING_PRICE_COPY.buy;
       };
       confirmationTimers.set(button, window.setTimeout(resetLabel, purchase.STORE_ITEM_ADDED_CONFIRMATION_MS));
     }
@@ -185,13 +203,36 @@ export function connectStoreListingPricePresentation({
         placeholder.textContent =
           lowStockLabel ??
           (recognizedState ? availabilityCopy[recognizedState] : STORE_LISTING_PRICE_COPY.availabilityUnknown);
+
+        const card = placeholder.closest<HTMLElement>('.store-item-card--listing');
+        if (card && record?.preorder) {
+          const badges = preorderBadges({
+            releaseDate: placeholder.dataset.storeReleaseDate,
+            shipEstimate: record.preorder.shipEstimate,
+            today: new Date(),
+          });
+          card.dataset.storePreorder = '';
+          const preorderBadge = card.querySelector<HTMLElement>(preorderSelector);
+          if (preorderBadge) {
+            preorderBadge.textContent = badges[badges.length - 1] ?? '';
+            preorderBadge.hidden = false;
+          }
+          const releaseStatus = card.querySelector<HTMLElement>(releaseStatusSelector);
+          if (releaseStatus) releaseStatus.hidden = badges.length < 2;
+        }
       });
 
       // The projection only decides whether Buy is offered; pressing it reads the authoritative offer.
       buyButtons.forEach((button) => {
         const record = recordsBySlug.get(button.dataset.storeItemSlug || '');
         button.hidden = !(record?.presentationState === 'ready' && record.availabilityState === 'stocked');
+        button.dataset.storeCardBuyLabel = record?.preorder
+          ? STORE_LISTING_PRICE_COPY.preorder
+          : STORE_LISTING_PRICE_COPY.buy;
+        button.textContent = button.dataset.storeCardBuyLabel;
+        button.classList.toggle('preorder-action', Boolean(record?.preorder));
       });
+      document.dispatchEvent(new Event('blackbox:store-listing-applied'));
     });
 
   return () => {
@@ -201,13 +242,19 @@ export function connectStoreListingPricePresentation({
   };
 }
 
-export async function readPublicStoreListingPrices(signal?: AbortSignal): Promise<PublicStoreListingPrice[]> {
+export async function readPublicStoreListingPrices(
+  signal?: AbortSignal,
+  options?: { scope: 'preorders' },
+): Promise<PublicStoreListingPrice[]> {
   const backendBaseUrl = resolvePublicCheckoutApiBaseUrl().replace(/\/$/, '');
-  const response = await fetch(`${backendBaseUrl}/api/store/listing-prices`, {
-    cache: 'no-store',
-    headers: { accept: 'application/json' },
-    signal: signal ?? null,
-  });
+  const response = await fetch(
+    `${backendBaseUrl}/api/store/listing-prices${options?.scope === 'preorders' ? '?scope=preorders' : ''}`,
+    {
+      cache: 'no-store',
+      headers: { accept: 'application/json' },
+      signal: signal ?? null,
+    },
+  );
 
   if (!response.ok) throw new Error(`Listing-price request failed with HTTP ${response.status}.`);
   return response.json() as Promise<PublicStoreListingPrice[]>;

@@ -1,8 +1,11 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { PublicStoreListingPrice } from '@/components/store/checkout/public-checkout-api';
 
 import {
   connectStoreListingPricePresentation,
   readPublicStoreListingPrices,
+  sanitizeStoreListingPricePlaceholders,
   STORE_LISTING_PRICE_COPY,
   sanitizeStoreSearchChrome,
 } from './StoreListingPricePresentation';
@@ -16,20 +19,36 @@ vi.mock('@/components/store/checkout/StoreItemPurchaseActions', () => ({
 
 function placeholder(storeItemSlug: string) {
   const attributes = new Map([['aria-busy', 'true']]);
+  const textContent: string = STORE_LISTING_PRICE_COPY.loading;
   return {
     dataset: { storeItemSlug, storeListingPriceState: 'loading' },
     getAttribute: (name: string) => attributes.get(name) ?? null,
     removeAttribute: (name: string) => attributes.delete(name),
     setAttribute: (name: string, value: string) => attributes.set(name, value),
-    textContent: STORE_LISTING_PRICE_COPY.loading,
+    textContent,
   };
 }
 
-function availabilityPlaceholder(storeItemSlug: string) {
+function availabilityPlaceholder(storeItemSlug: string, releaseDate?: string) {
   const attributes = new Map<string, string>();
+  const textContent: string = STORE_LISTING_PRICE_COPY.soldOut;
   let hidden = false;
+  const preorder = { hidden: true, textContent: '' };
+  const releaseStatus = { hidden: true, textContent: 'Out now' };
+  const card = {
+    dataset: {} as Record<string, string>,
+    preorder,
+    releaseStatus,
+    querySelector: (selector: string) => (selector === '[data-store-listing-preorder]' ? preorder : releaseStatus),
+  };
   return {
-    dataset: { storeItemSlug, storeListingAvailabilityState: 'sold_out' },
+    dataset: {
+      storeItemSlug,
+      storeListingAvailabilityState: 'sold_out',
+      ...(releaseDate ? { storeReleaseDate: releaseDate } : {}),
+    },
+    card,
+    closest: () => card,
     get hidden() {
       return hidden;
     },
@@ -38,17 +57,28 @@ function availabilityPlaceholder(storeItemSlug: string) {
     },
     removeAttribute: (name: string) => attributes.delete(name),
     setAttribute: (name: string, value: string) => attributes.set(name, value),
-    textContent: STORE_LISTING_PRICE_COPY.soldOut,
+    textContent,
   };
 }
 
 function buyButton(storeItemSlug: string) {
   const attributes = new Map<string, string>();
+  const classes = new Set<string>();
   let pressListener: ((event: Event) => void) | undefined;
   const status = { dataset: {} as Record<string, string>, hidden: true, textContent: '' };
   const cardLink = { focus: vi.fn() };
   const button = {
-    dataset: { storeItemSlug, storeCardBuy: JSON.stringify({ storeItemSlug, title: 'Item' }) },
+    dataset: {
+      storeItemSlug,
+      storeCardBuy: JSON.stringify({ storeItemSlug, title: 'Item' }),
+      storeCardBuyLabel: STORE_LISTING_PRICE_COPY.buy as string,
+    },
+    classList: {
+      contains: (name: string) => classes.has(name),
+      add: (name: string) => classes.add(name),
+      remove: (name: string) => classes.delete(name),
+      toggle: (name: string, enabled: boolean) => (enabled ? classes.add(name) : classes.delete(name)),
+    },
     hidden: false,
     textContent: STORE_LISTING_PRICE_COPY.buy as string,
     parentElement: { querySelector: () => status },
@@ -69,18 +99,30 @@ function buyButton(storeItemSlug: string) {
   return button;
 }
 
-function listingRoot(prices: unknown[], availability: unknown[] = [], buys: unknown[] = []) {
+function listingRoot(
+  prices: unknown[],
+  availability: ReturnType<typeof availabilityPlaceholder>[] = [],
+  buys: unknown[] = [],
+) {
   const elementsBySelector: Record<string, unknown[]> = {
     '[data-store-listing-price]': prices,
     '[data-store-listing-availability]': availability,
     '[data-store-card-buy]': buys,
+    '[data-store-listing-preorder]': availability.map((item) => item.card.preorder),
+    '[data-store-listing-release-status]': availability.map((item) => item.card.releaseStatus),
   };
   return {
-    querySelectorAll: (selector: string) => (elementsBySelector[selector] ?? []) as HTMLElement[],
+    querySelectorAll: (selector: string) =>
+      (selector === '[data-store-preorder]'
+        ? availability.map((item) => item.card).filter((card) => 'storePreorder' in card.dataset)
+        : (elementsBySelector[selector] ?? [])) as HTMLElement[],
   } as unknown as ParentNode;
 }
 
 describe('Store listing-price presentation', () => {
+  beforeEach(() => {
+    vi.stubGlobal('document', { dispatchEvent: vi.fn(), querySelector: () => null });
+  });
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.useRealTimers();
@@ -139,6 +181,246 @@ describe('Store listing-price presentation', () => {
       headers: { accept: 'application/json' },
       signal: abortController.signal,
     });
+  });
+
+  it('requests the narrowed projection only when the preorders scope is supplied', async () => {
+    const fetchRequest = vi.fn(async () => ({ ok: true, json: async () => [] }));
+    const abortController = new AbortController();
+    vi.stubGlobal('fetch', fetchRequest);
+
+    await expect(readPublicStoreListingPrices(abortController.signal, { scope: 'preorders' })).resolves.toEqual([]);
+    expect(fetchRequest).toHaveBeenCalledWith('/api/store/listing-prices?scope=preorders', {
+      headers: { accept: 'application/json' },
+      signal: abortController.signal,
+    });
+    await readPublicStoreListingPrices();
+    expect(fetchRequest).toHaveBeenLastCalledWith('/api/store/listing-prices', {
+      headers: { accept: 'application/json' },
+      signal: null,
+    });
+  });
+
+  it.each([
+    {
+      state: 'before release',
+      today: '2026-10-15T23:59:59Z',
+      releaseDate: '2026-10-16',
+      shipEstimate: { kind: 'month', month: '2026-10', part: null } as const,
+      badge: 'Pre-order · out 16 Oct 2026',
+      outNow: false,
+    },
+    {
+      state: 'on release day',
+      today: '2026-10-16T00:00:00Z',
+      releaseDate: '2026-10-16',
+      shipEstimate: { kind: 'month', month: '2026-10', part: null } as const,
+      badge: 'Pre-order · ships around October 2026',
+      outNow: true,
+    },
+    {
+      state: 'after release with an exact date',
+      today: '2026-10-17T12:00:00Z',
+      releaseDate: '2026-10-16',
+      shipEstimate: { kind: 'date', date: '2026-10-20' } as const,
+      badge: 'Pre-order · ships 20 Oct 2026',
+      outNow: true,
+    },
+    {
+      state: 'after release with a withheld estimate',
+      today: '2026-10-17T12:00:00Z',
+      releaseDate: '2026-10-16',
+      shipEstimate: null,
+      badge: 'Pre-order',
+      outNow: true,
+    },
+    {
+      state: 'without a release date',
+      today: '2026-10-17T12:00:00Z',
+      releaseDate: undefined,
+      shipEstimate: { kind: 'month', month: '2026-10', part: 'mid' } as const,
+      badge: 'Pre-order · ships around mid October 2026',
+      outNow: false,
+    },
+  ])(
+    'uses the dedicated preorder badge $state while retaining the low-stock slot',
+    async ({ today, releaseDate, shipEstimate, badge, outNow }) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(today));
+      const availability = availabilityPlaceholder('item', releaseDate);
+      const buy = buyButton('item');
+      connectStoreListingPricePresentation({
+        readListingPrices: async () => [
+          {
+            storeItemSlug: 'item',
+            presentationState: 'ready',
+            displayPrice: '€28.00',
+            availabilityState: 'stocked',
+            lowStockQuantity: 3,
+            preorder: { shipEstimate },
+          },
+        ],
+        root: listingRoot([], [availability], [buy]),
+      });
+
+      await vi.waitFor(() => expect(availability.card.preorder.hidden).toBe(false));
+      expect(availability.card.preorder.textContent).toBe(badge);
+      expect(availability.card.dataset.storePreorder).toBe('');
+      expect(availability.card.releaseStatus).toEqual({ hidden: !outNow, textContent: 'Out now' });
+      expect(availability).toMatchObject({
+        hidden: false,
+        textContent: 'Only 3 left',
+        dataset: { storeListingAvailabilityState: 'low_stock' },
+      });
+      expect(buy.hidden).toBe(false);
+      expect(buy.textContent).toBe('Pre-order');
+      expect(buy.dataset.storeCardBuyLabel).toBe('Pre-order');
+      expect(buy.classList.contains('preorder-action')).toBe(true);
+      expect(document.dispatchEvent).toHaveBeenCalledOnce();
+      expect(document.dispatchEvent).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'blackbox:store-listing-applied' }),
+      );
+    },
+  );
+
+  it.each(['sold_out', 'out_of_stock'] as const)(
+    'keeps the preorder badge and %s status without offering the button',
+    async (availabilityState) => {
+      const availability = availabilityPlaceholder('item');
+      const buy = buyButton('item');
+      connectStoreListingPricePresentation({
+        readListingPrices: async () => [
+          {
+            storeItemSlug: 'item',
+            presentationState: 'ready',
+            displayPrice: '€28.00',
+            availabilityState,
+            preorder: { shipEstimate: null },
+          },
+        ],
+        root: listingRoot([], [availability], [buy]),
+      });
+
+      await vi.waitFor(() => expect(availability.card.preorder.hidden).toBe(false));
+      expect(availability.card.preorder.textContent).toBe('Pre-order');
+      expect(availability.card.dataset.storePreorder).toBe('');
+      expect(availability.hidden).toBe(false);
+      expect(availability.dataset.storeListingAvailabilityState).toBe(availabilityState);
+      expect(availability.textContent).toBe(availabilityState === 'sold_out' ? 'Sold Out' : 'Out of Stock');
+      expect(buy.hidden).toBe(true);
+    },
+  );
+
+  it.each(['ordinary', 'older', 'missing', 'failed'] as const)(
+    'does not retain preorder presentation for a %s projection',
+    async (state) => {
+      const availability = availabilityPlaceholder('item');
+      const buy = buyButton('item');
+      availability.card.dataset.storePreorder = '';
+      Object.assign(availability.card.preorder, { hidden: false, textContent: 'Pre-order' });
+      availability.card.releaseStatus.hidden = false;
+      buy.classList.add('preorder-action');
+      buy.dataset.storeCardBuyLabel = 'Pre-order';
+      buy.textContent = 'Pre-order';
+      connectStoreListingPricePresentation({
+        readListingPrices: async () => {
+          if (state === 'failed') throw new Error('Worker unavailable');
+          if (state === 'missing') return [];
+          return [
+            {
+              storeItemSlug: 'item',
+              presentationState: 'ready',
+              displayPrice: '€28.00',
+              availabilityState: 'stocked',
+              ...(state === 'ordinary' ? { preorder: null } : {}),
+            },
+          ] as PublicStoreListingPrice[];
+        },
+        root: listingRoot([], [availability], [buy]),
+      });
+
+      await vi.waitFor(() => expect(document.dispatchEvent).toHaveBeenCalledOnce());
+      expect(availability.card.dataset).not.toHaveProperty('storePreorder');
+      expect(availability.card.preorder).toEqual({ hidden: true, textContent: '' });
+      expect(availability.card.releaseStatus).toEqual({ hidden: true, textContent: 'Out now' });
+      expect(buy.classList.contains('preorder-action')).toBe(false);
+      expect(buy.textContent).toBe('Buy');
+      expect(buy.dataset.storeCardBuyLabel).toBe('Buy');
+      expect(buy.hidden).toBe(state === 'missing' || state === 'failed');
+    },
+  );
+
+  it('sanitizes the complete live presentation for a shell snapshot', () => {
+    const price = placeholder('item');
+    const availability = availabilityPlaceholder('item', '2026-10-16');
+    const buy = buyButton('item');
+    price.dataset.storeListingPriceState = 'ready';
+    price.textContent = '€28.00';
+    availability.dataset.storeListingAvailabilityState = 'low_stock';
+    availability.textContent = 'Only 3 left';
+    availability.card.dataset.storePreorder = '';
+    Object.assign(availability.card.preorder, { hidden: false, textContent: 'Pre-order · ships around October 2026' });
+    availability.card.releaseStatus.hidden = false;
+    buy.classList.add('preorder-action');
+    buy.dataset.storeCardBuyLabel = 'Pre-order';
+    buy.textContent = 'Added';
+    buy.setAttribute('aria-busy', 'true');
+
+    sanitizeStoreListingPricePlaceholders(listingRoot([price], [availability], [buy]));
+
+    expect(price.dataset.storeListingPriceState).toBe('loading');
+    expect(price.textContent).toBe('Checking price');
+    expect(price.getAttribute('aria-busy')).toBe('true');
+    expect(availability).toMatchObject({
+      hidden: false,
+      textContent: 'Checking availability',
+      dataset: { storeListingAvailabilityState: 'pending', storeReleaseDate: '2026-10-16' },
+    });
+    expect(availability.card.dataset).not.toHaveProperty('storePreorder');
+    expect(availability.card.preorder).toEqual({ hidden: true, textContent: '' });
+    expect(availability.card.releaseStatus).toEqual({ hidden: true, textContent: 'Out now' });
+    expect(buy.hidden).toBe(true);
+    expect(buy.getAttribute('aria-busy')).toBeNull();
+    expect(buy.classList.contains('preorder-action')).toBe(false);
+    expect(buy.dataset.storeCardBuyLabel).toBe('Buy');
+    expect(buy.textContent).toBe('Buy');
+    expect(document.dispatchEvent).not.toHaveBeenCalled();
+  });
+
+  it('keeps preorder slots empty while pending and ignores a projection after cleanup', async () => {
+    const availability = availabilityPlaceholder('item');
+    const buy = buyButton('item');
+    let resolveRecords: (records: PublicStoreListingPrice[]) => void = () => {};
+    const cleanup = connectStoreListingPricePresentation({
+      readListingPrices: () =>
+        new Promise((resolve) => {
+          resolveRecords = resolve;
+        }),
+      root: listingRoot([], [availability], [buy]),
+    });
+    expect(availability.dataset.storeListingAvailabilityState).toBe('pending');
+    expect(availability.card.dataset).not.toHaveProperty('storePreorder');
+    expect(availability.card.preorder).toEqual({ hidden: true, textContent: '' });
+    expect(availability.card.releaseStatus.hidden).toBe(true);
+    expect(buy.hidden).toBe(true);
+    expect(buy.classList.contains('preorder-action')).toBe(false);
+    expect(document.dispatchEvent).not.toHaveBeenCalled();
+
+    cleanup();
+    resolveRecords([
+      {
+        storeItemSlug: 'item',
+        presentationState: 'ready',
+        displayPrice: '€28.00',
+        availabilityState: 'stocked',
+        preorder: { shipEstimate: null },
+      },
+    ]);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(availability.dataset.storeListingAvailabilityState).toBe('pending');
+    expect(availability.card.preorder.hidden).toBe(true);
+    expect(buy.hidden).toBe(true);
+    expect(document.dispatchEvent).not.toHaveBeenCalled();
   });
 
   it('uses one projection read and renders ready, unavailable, and missing records honestly', async () => {
@@ -315,26 +597,39 @@ describe('Store listing-price presentation', () => {
     expect([soldOut?.hidden, unpriced?.hidden, missing?.hidden]).toEqual([true, true, true]);
   });
 
-  it('adds through the authoritative offer on press and confirms in place', async () => {
-    vi.useFakeTimers();
-    vi.stubGlobal('window', globalThis);
-    requestStoreCartAddFromSeed.mockResolvedValueOnce({ cartItem: {}, isQueued: false, label: null });
-    const buy = buyButton('item');
-    connectStoreListingPricePresentation({
-      readListingPrices: async () => [],
-      root: listingRoot([placeholder('item')], [], [buy]),
-    });
+  it.each([false, true])(
+    'adds through the authoritative offer and restores the label after Added (preorder: %s)',
+    async (preorder) => {
+      vi.useFakeTimers();
+      vi.stubGlobal('window', globalThis);
+      requestStoreCartAddFromSeed.mockResolvedValueOnce({ cartItem: {}, isQueued: false, label: null });
+      const buy = buyButton('item');
+      connectStoreListingPricePresentation({
+        readListingPrices: async () => [
+          {
+            storeItemSlug: 'item',
+            presentationState: 'ready',
+            displayPrice: '€28.00',
+            availabilityState: 'stocked',
+            preorder: preorder ? { shipEstimate: null } : null,
+          },
+        ],
+        root: listingRoot([placeholder('item')], [availabilityPlaceholder('item')], [buy]),
+      });
 
-    buy.press();
-    expect(buy.textContent).toBe(STORE_LISTING_PRICE_COPY.adding);
-    expect(buy.getAttribute('aria-busy')).toBe('true');
+      await vi.waitFor(() => expect(buy.hidden).toBe(false));
+      buy.press();
+      expect(buy.textContent).toBe(STORE_LISTING_PRICE_COPY.adding);
+      expect(buy.getAttribute('aria-busy')).toBe('true');
 
-    await vi.waitFor(() => expect(buy.textContent).toBe('Added'));
-    expect(requestStoreCartAddFromSeed).toHaveBeenCalledWith({ storeItemSlug: 'item', title: 'Item' });
-    expect(buy.getAttribute('aria-busy')).toBeNull();
-    vi.advanceTimersByTime(4000);
-    expect(buy.textContent).toBe(STORE_LISTING_PRICE_COPY.buy);
-  });
+      await vi.waitFor(() => expect(buy.textContent).toBe('Added'));
+      expect(requestStoreCartAddFromSeed).toHaveBeenCalledWith({ storeItemSlug: 'item', title: 'Item' });
+      expect(buy.getAttribute('aria-busy')).toBeNull();
+      vi.advanceTimersByTime(4000);
+      expect(buy.textContent).toBe(preorder ? 'Pre-order' : 'Buy');
+      expect(buy.classList.contains('preorder-action')).toBe(preorder);
+    },
+  );
 
   it('shows the offer status instead of adding when the item stopped being buyable', async () => {
     vi.stubGlobal('window', globalThis);
