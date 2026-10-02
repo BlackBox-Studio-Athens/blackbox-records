@@ -11,6 +11,9 @@ export default defineConfig({
   site,
   base,
   output: 'static',
+  devToolbar: {
+    enabled: process.env.BLACKBOX_E2E !== '1',
+  },
   prefetch: {
     prefetchAll: false,
   },

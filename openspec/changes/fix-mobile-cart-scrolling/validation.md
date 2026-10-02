@@ -18,7 +18,7 @@ The focused pre-fix command `pnpm test:e2e e2e/store-cart.spec.ts --project=chro
 - The first integration run passed 20 checks, including all three phone overflow cases, but both repeated-BUY checks found the minimized player covering Continue Shopping. The cart surface now uses the existing content-overlay layer above the mini-player; the final run above verifies the correction.
 - `pnpm validate` passed after the final cart edit with a stable source fingerprint in `.codex-artifacts/validation/2026-10-02T11-56-57-532Z-44540-0d475c/summary.json` (158.9s). The final evidence/task-note validation is retained at `.codex-artifacts/validation/mobile-cart-final-summary.json`.
 
-Final browser source SHA-256 values:
+Cart implementation and initial browser source SHA-256 values:
 
 - `StoreCartDrawer.tsx`: `7ff3a2bccb001e5ab000fe12fbfff98eabccd7f15af1fbab81d1c43389389bc8`
 - `e2e/store-cart.spec.ts`: `a70669fdac6c0745573e2160eb32b84df900e0625c22cde5dbe39f9e93072aee`
@@ -30,4 +30,16 @@ An initial synthetic CDP scroll gesture did not move content; explicit trusted t
 
 ## Release
 
-UAT candidate, hosted mobile acceptance and PRD promotion are pending. Local checks do not establish provider or release acceptance.
+Code commit: `720826b671278931fdd6193790f019a66f4e31e3` on primary `main`. Only the three implementation/test files and this change's artifacts were committed; unrelated work remains intact.
+
+UAT candidate [37004571941](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/37004571941) passed repository checks, both environment preparations, bundle retention, UAT Worker/Pages deployment and hosted identity verification. Public `release.json` serves the exact code SHA and candidate run; the identity is retained in `.codex-artifacts/mobile-cart-uat-release.json`.
+
+Native Chrome hosted UAT checks passed at the requested 390x844, 390x667 and 320x568 sizes. Trusted touch events moved cart content while Checkout and Continue Shopping stayed visible. At 390x667, content scrollTop moved 0→115, with action bottoms 592 and 643. At 320x568, it moved 115→214, with action bottoms 492 and 544; both action centers hit their own elements. Native Chrome rounded the requested 390px width to 391 CSS pixels; the Local browser regression uses exactly 390px.
+
+Continue Shopping returned focus to the Disintegration BUY control, and a Store touch swipe moved window scrollY from 797→982. A second BUY added Anarchotribal; Disintegration quantity two and Anarchotribal quantity one survived a reload. Removing both probe items left no stored cart or Checkout action; empty-cart Continue Shopping remained visible at y508–544. The probe cart was cleaned up and the viewport reset.
+
+PRD promotion [37006018017](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/37006018017) was dispatched for that exact retained candidate with only code promotion confirmed. Live catalog mutation, CMS cutover and shopper launch remain outside this release. Its acceptance/deployment and hosted PRD checks are pending.
+
+The first promotion stopped before PRD deployment: identity, static, provider and Chromium/Firefox staff-preview acceptance passed, while four mobile cart tests timed out because CI's `astro-dev-toolbar` intercepted Continue Shopping. The built Local and hosted UAT sites contain no development toolbar. The Playwright-owned Astro server now disables it using the documented native `devToolbar.enabled` setting and a scoped test-server environment flag; cart clicks remain unforced. Context7 returned the unversioned [official Astro toolbar documentation](https://github.com/withastro/docs/blob/main/src/content/docs/en/guides/dev-toolbar.mdx), and the installed Astro 7.3.5 schema confirms the boolean option. A new candidate and full acceptance are required.
+
+The follow-up configuration passed an inline Node assertion that imports the Astro config with and without the test flag: normal development enables the toolbar and automated development disables it. Strict OpenSpec validation passed. `pnpm validate` passed all 29 affected tasks for 18 projects in 80.3s with a stable source fingerprint, recorded in `.codex-artifacts/validation/2026-10-02T12-32-27-621Z-85364-49502a/summary.json`.
