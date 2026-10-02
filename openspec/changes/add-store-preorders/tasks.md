@@ -151,7 +151,7 @@ Owns: `BE/application/commerce/checkout/types.ts`, `read-checkout-state.ts`, `re
 
 Owns: `WEB/components/store/checkout/CheckoutOrderSummary.tsx`, `CheckoutOrderSummary.test.tsx`, `WEB/components/store/checkout/CheckoutOfferStatus.tsx`, `CheckoutOfferStatus.test.ts`.
 
-- [ ] 22.1 Show the pre-order chip on summary lines and `PreorderCartNotice` above the delivery summary in Review and Pay when any cart line is a pre-order; nothing changes otherwise. Verify: `pnpm test checkout-web`.
+- [x] 22.1 Show the pre-order chip on summary lines and `PreorderCartNotice` above the delivery summary in Review and Pay when any cart line is a pre-order; nothing changes otherwise. Verify: `pnpm test checkout-web`.
 
 ## 23. B8 Email content (run 3)
 
@@ -164,8 +164,8 @@ Owns: `BE/application/email/types.ts`, `ship-estimate-format.ts` and test (new),
 
 Owns: `STAFF/lib/staff-navigation.ts`, `staff-navigation.test.ts`, `STAFF/components/orders/internal-order-api.ts`, `internal-order-api.test.ts`, `order-workspace.ts`, `order-workspace.test.tsx`, `OrderWorkspace.tsx`, `OrderDetail.tsx`.
 
-- [ ] 24.1 Allow `awaitingStock=true` for `/orders/` in `staffTarget` and reject other values. Verify: `pnpm test staff-platform`.
-- [ ] 24.2 Add the filter to the API client, workspace state, URL sync and toolbar (`Awaiting stock` checkbox), the chip on list rows, and the banner and per-line estimate in detail, all read-only. Cover filter on/off, URL restore, pagination with the filter, access denial clearing it, and the empty state. Verify: `pnpm test staff-orders`.
+- [x] 24.1 Allow `awaitingStock=true` for `/orders/` in `staffTarget` and reject other values. Verify: `pnpm test staff-platform`.
+- [x] 24.2 Add the filter to the API client, workspace state, URL sync and toolbar (`Awaiting stock` checkbox), the chip on list rows, and the banner and per-line estimate in detail, all read-only. Cover filter on/off, URL restore, pagination with the filter, access denial clearing it, and the empty state. Verify: `pnpm test staff-orders`.
 
 ## 25. W12 Home showcase island (run 6)
 
@@ -190,8 +190,8 @@ Owns: `WEB/components/store/checkout/checkout-return-status-state.ts`, `Checkout
 
 Owns: `WEB/components/editorial/ReleaseStoreLink.tsx` and test (new), `WEB/components/editorial/project.json`, `WEB/components/editorial/ReleaseDetailContent.astro`, `WEB/pages/releases/index.astro`, `WEB/pages/_releases-page-layout.test.ts`, `e2e/fixtures.ts`.
 
-- [ ] 28.1 Add `ReleaseStoreLink` (server output equals today's `Shop release` link; after one narrowed listing read a stocked pre-order becomes `Pre-order` with `preorder-action` and the badges) and mount it with `client:idle` for native Store links on the release detail and the Releases feature; external merch links stay as they are. Verify label switching, failure fallback and unchanged server markup: `pnpm test web-editorial`, then `pnpm test web-pages`.
-- [ ] 28.2 In `e2e/fixtures.ts`, make the listing-prices stub also match the narrowed URL with its query string and answer an empty list for `scope=preorders`, so existing specs stay free of console errors now that the Home and release pages issue that read. This slice runs no e2e (the run's e2e slot is W13's); 31.3 runs the existing specs.
+- [x] 28.1 Add `ReleaseStoreLink` (server output equals today's `Shop release` link; after one narrowed listing read a stocked pre-order becomes `Pre-order` with `preorder-action` and the badges) and mount it with `client:idle` for native Store links on the release detail and the Releases feature; external merch links stay as they are. Verify label switching, failure fallback and unchanged server markup: `pnpm test web-editorial`, then `pnpm test web-pages`.
+- [x] 28.2 In `e2e/fixtures.ts`, make the listing-prices stub also match the narrowed URL with its query string and answer an empty list for `scope=preorders`, so existing specs stay free of console errors now that the Home and release pages issue that read. This slice runs no e2e (the run's e2e slot is W13's); 31.3 runs the existing specs.
 
 ## 29. B10 Notice drain (run 5)
 
@@ -204,8 +204,8 @@ Owns: `BE/application/commerce/orders/preorder-estimate-notice.ts` and test (new
 
 Owns: `WEB/lib/preorder-showcase.ts` and test (new), `WEB/project.json`, `WEB/pages/preorder-showcase.json.ts` (new), `WEB/pages/index.astro`, `WEB/styles/global.css` (hero layering rules only), `WEB/styles/homepage-hero-css.test.ts`, `e2e/home-preorders.spec.ts` (new).
 
-- [ ] 30.1 Add the candidate builder (release-sourced Store Items with slug, title, artist, option, store path, release date, first clip id; pure, image URLs passed in) and the static JSON endpoint, which resolves the optimised cover and artist photo URLs; keep it out of the sitemap. Verify: `pnpm test storefront-catalog`, then `pnpm test web-pages`.
-- [ ] 30.2 Mount `StorePreorderShowcase` between the hero and News with `client:idle`, extend the hero layering rules and their test to the new section, and add `e2e/home-preorders.spec.ts` with its own stubs: absent without pre-orders, present with one, clip stage with no provider request before Play, no-clip stage, link to `/store/#preorders`, shell navigation away and back, 390px (this case sets the viewport inside the test, because the mobile Playwright project only runs routes, shell-navigation and store-cart). Verify: `pnpm test storefront-catalog`, then `pnpm test:e2e e2e/home-preorders.spec.ts`.
+- [x] 30.1 Add the candidate builder (release-sourced Store Items with slug, title, artist, option, store path, release date, first clip id; pure, image URLs passed in) and the static JSON endpoint, which resolves the optimised cover and artist photo URLs; keep it out of the sitemap. Verify: `pnpm test storefront-catalog`, then `pnpm test web-pages`.
+- [x] 30.2 Mount `StorePreorderShowcase` between the hero and News with `client:idle`, extend the hero layering rules and their test to the new section, and add `e2e/home-preorders.spec.ts` with its own stubs: absent without pre-orders, present with one, clip stage with no provider request before Play, no-clip stage, link to `/store/#preorders`, shell navigation away and back, 390px (this case sets the viewport inside the test, because the mobile Playwright project only runs routes, shell-navigation and store-cart). Verify: `pnpm test storefront-catalog`, then `pnpm test:e2e e2e/home-preorders.spec.ts`.
 
 ## 31. Acceptance (delegated runs, orchestrator reviews the evidence)
 
