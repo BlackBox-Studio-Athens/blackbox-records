@@ -2,28 +2,52 @@
 
 ## Reference images
 
-| File                                                       | Shows                                             |
-| ---------------------------------------------------------- | ------------------------------------------------- |
-| [design/notice-variants.png](design/notice-variants.png)   | Strip, line and card variants with the email spec |
-| [design/store-desktop.png](design/store-desktop.png)       | Strip under the Store heading, desktop            |
-| [design/store-390.png](design/store-390.png)               | Strip stacked at 390px                            |
-| [design/item-desktop.png](design/item-desktop.png)         | Line under the purchase action                    |
-| [design/cart-390.png](design/cart-390.png)                 | Card in the cart drawer footer, above Checkout    |
-| [design/checkout-desktop.png](design/checkout-desktop.png) | Card inside the checkout shipping step            |
+Canvas: https://claude.ai/artifact/MMtaHRBeRrdi5jHxZzfNBe (version 5, 2026-10-02). The exports below are tied to that version.
 
-Rendered at 1x from the canvas source with the repository's logo, Veneer font and covers. The images are visual intent, not markup. Headers, navigation, prices and product data in them are placeholders. Match the hierarchy, copy, spacing rhythm and colour roles using existing tokens, Tailwind utilities and components; do not copy hex values or inline styles.
+| File                                                       | Source                                                              | Shows                                             |
+| ---------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------- |
+| [design/notice-variants.png](design/notice-variants.png)   | [source/notice-variants.html](design/source/notice-variants.html)   | Strip, line and card variants with the email spec |
+| [design/store-desktop.png](design/store-desktop.png)       | [source/store-desktop.html](design/source/store-desktop.html)       | Strip under the Store heading, desktop            |
+| [design/store-390.png](design/store-390.png)               | [source/store-390.html](design/source/store-390.html)               | Strip stacked at 390px                            |
+| [design/item-desktop.png](design/item-desktop.png)         | [source/item-desktop.html](design/source/item-desktop.html)         | Line under the purchase action                    |
+| [design/cart-390.png](design/cart-390.png)                 | [source/cart-390.html](design/source/cart-390.html)                 | Card in the cart drawer footer, above Checkout    |
+| [design/checkout-desktop.png](design/checkout-desktop.png) | [source/checkout-desktop.html](design/source/checkout-desktop.html) | Card inside the checkout shipping step            |
+
+The sources are the canvas boards with asset paths pointing at the repository's logo, Veneer font and covers; they open directly in a browser from the checkout. Each PNG is a 1x headless Chrome render of its source at the board size (desktop 1440 or 1280 wide, phone 390 × 844). If the canvas changes, update the sources and re-render the PNGs together.
+
+The images are visual intent, not markup. Headers, navigation, prices and product data in them are placeholders. Match the hierarchy, copy, spacing rhythm and colour roles using existing tokens, Tailwind utilities and components; do not copy hex values or inline styles. The mocks show the notice as it appears to a shopper outside Greece; shoppers in Greece see none of it.
 
 ## Decisions
 
-- **Show to everyone.** No geolocation: the site is static Pages on the Cloudflare Free tier, and IP country misreads VPN and travelling shoppers. Greek shoppers can ignore one quiet line.
+Owner answers, 2026-10-02:
+
+1. Orders go to `orders@blackboxrecordsathens.com`.
+2. Keep "for now" in the copy.
+3. Shoppers in Greece MUST NOT see the notice. Use the simplest Cloudflare geolocation (see Country gate).
+4. Keep all four placements.
+
+Design decisions:
+
 - **Place it at the decision.** Shoppers overlook site-wide banners (Baymard), so the line sits under the purchase action and the card sits beside Checkout, not only on collection pages.
 - **Stay quiet.** Not dismissible, no popup, no modal, no live region, no animation. Browsing and Greek checkout stay unchanged.
 - **Email, not a form.** A `mailto:` link needs no backend and keeps the closed country scope intact.
-- **One component.** `InternationalOrderNotice` with `variant: 'strip' | 'line' | 'card'` and an optional `itemTitles: string[]`. One copy object, one mailto builder.
+- **One component.** `InternationalOrderNotice` with `variant: 'strip' | 'line' | 'card'` and an optional `itemTitles: string[]`. One copy object, one mailto builder, one country gate.
+
+## Country gate
+
+Cloudflare already geolocates every request. Its managed same-origin endpoint `/cdn-cgi/trace` returns plain `key=value` lines including `loc=<ISO 3166-1 alpha-2>`. It needs no Worker, Pages Function, binding or setting, and its requests do not count against Worker quotas. Verified 2026-10-02 on `blackbox-records-web.pages.dev` and `blackboxrecordsathens.com`; confirm on the UAT host during acceptance.
+
+- Fetch `GET /cdn-cgi/trace` from the origin root, not the Astro base path, with a short timeout (about 3 seconds). Read only `loc`; never store or log the rest of the response (it includes the visitor IP).
+- Show the notice only when `loc` matches `^[A-Z]{2}$` and is neither `GR` nor `XX`. Greece, unknown, Tor (`T1`), a non-OK response, a timeout or a parse failure all keep it hidden. Failing hidden protects the hard rule for Greek shoppers; checkout still rejects non-Greek addresses.
+- Resolve once per tab: one shared module-level promise for all placements, cached in `sessionStorage` under `blackbox:shopper-country` (wrap every access in `try/catch`). Cache only a successful lookup.
+- Render nothing until the country resolves. Static HTML contains no notice, so shoppers in Greece never see a flash. Shoppers abroad see it appear after hydration; keep it out of the first-paint path rather than reserving space.
+- The persistent shell keeps the resolved value across in-shell navigation; a full reload reads the `sessionStorage` cache.
+- Local: Astro dev has no `/cdn-cgi/trace`, so the notice is hidden. For a manual check, set `sessionStorage['blackbox:shopper-country'] = 'US'` and reload. E2E stubs the route (`page.route('**/cdn-cgi/trace', ...)`) with `loc=GR` and `loc=US`.
+- Ceiling: Cloudflare documents `/cdn-cgi/trace` as a troubleshooting endpoint, not a geolocation API. If its format changes, the notice fails hidden. Upgrade path: return `request.cf.country` from an existing Worker read.
 
 ## Copy
 
-Use this text exactly. Owner may still adjust "for now" and the address (see Open questions); keep both in the one copy object so a change is a one-line edit.
+Use this text exactly, kept in one copy object.
 
 | Variant | Text                                                                                                                                                                                                                    |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -33,7 +57,7 @@ Use this text exactly. Owner may still adjust "for now" and the address (see Ope
 
 ## Email link
 
-- Address: `support@blackboxrecordsathens.com`, the reply-to address order emails already use (`RESEND_REPLY_TO_EMAIL` in `apps/backend/wrangler.jsonc`). Do not read `purchase_information.seller.support_email`; it is a placeholder and returns null in production until that content is approved.
+- Address: `orders@blackboxrecordsathens.com`. Inbound mail for the domain goes through Cloudflare Email Routing (MX `route*.mx.cloudflare.net`); Resend only sends. Verified 2026-10-02: Resend email `01a0fcfc-1f15-7a19-bca2-5441b92df292` from and to `orders@` reached `last_event: delivered`. Do not read `purchase_information.seller.support_email`; it is a placeholder and returns null in production until that content is approved.
 - Subject: `Order from outside Greece`.
 - Body template, one field per line:
 
@@ -62,18 +86,9 @@ Use this text exactly. Owner may still adjust "for now" and the address (see Ope
 
 | Placement                               | Variant | Edit point                                                                                                     | Position                                                                                     |
 | --------------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Store collection pages (all categories) | Strip   | `apps/web/src/layouts/StoreCollectionPage.astro`                                                               | Below the page heading and category navigation, above results                                |
-| Store Item                              | Line    | `apps/web/src/pages/store/[slug]/index.astro`                                                                  | Directly after `StoreItemPurchaseActions`, before `PurchaseInformation`                      |
+| Store collection pages (all categories) | Strip   | `apps/web/src/layouts/StoreCollectionPage.astro` (client island)                                               | Below the page heading and category navigation, above results                                |
+| Store Item                              | Line    | `apps/web/src/pages/store/[slug]/index.astro` (client island)                                                  | Directly after `StoreItemPurchaseActions`, before `PurchaseInformation`                      |
 | Cart drawer                             | Card    | `apps/web/src/components/store/cart/StoreCartDrawer.tsx`                                                       | Footer, after the delivery summary, before the Checkout action. Only when the cart has lines |
 | Checkout shipping step                  | Card    | Component that renders `CHECKOUT_SHIPPING_COPY` (`checkout-shipping-step-state.ts`, `CheckoutOfferStatus.tsx`) | Inside the shipping step, after the Greece-only delivery text, before the continue action    |
 
-On the Store Item page, the notice must not split the fused copies-left notice and Add To Cart control; it goes after the whole purchase-actions block. At 390px the cart Checkout action must stay reachable (see `fix-mobile-cart-scrolling`).
-
-## Open questions
-
-Defaults are implemented unless the owner answers otherwise before acceptance:
-
-1. Address: `support@` (default) or `info@`?
-2. Keep "for now"? It suggests international shipping is planned.
-3. Show to everyone without geolocation (default yes)?
-4. Keep the Store Item line (default yes)?
+On the Store Item page, the notice must not split the copies-left notice fused to Add To Cart (`show-low-stock-notice`); it goes after the whole purchase-actions block. At 390px the cart Checkout action must stay reachable (see `fix-mobile-cart-scrolling`).

@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Notice variants</title>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Geist+Mono:wght@400;500&amp;family=Inter:wght@400;500;600&amp;display=swap"
+        />
+        <style>
+          @font-face {
+            font-family: 'Veneer';
+            src: url('../../../../../apps/web/public/assets/fonts/brand/veneer_regular.woff2') format('woff2');
+            font-display: swap;
+          }
+          body {
+            margin: 0;
+            background: #0d0d0d;
+          }
+          a {
+            color: #f5f5f5;
+          }
+          a:hover {
+            color: #ffffff;
+          }
+        </style>
+      </helmet>
+      <div
+        style="
+          width: 1280px;
+          height: 1040px;
+          box-sizing: border-box;
+          padding: 56px 64px;
+          background: #0d0d0d;
+          color: #f5f5f5;
+          font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+          display: flex;
+          flex-direction: column;
+          gap: 40px;
+        "
+      >
+        <div style="display: flex; flex-direction: column; gap: 14px">
+          <div
+            style="font-size: 12px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: #b3b3b3"
+          >
+            A · Strip · Store page, under the hero
+          </div>
+          <aside
+            aria-label="Shipping outside Greece"
+            style="
+              padding: 14px 20px;
+              background: #141414;
+              border: 1px solid #922f3f;
+              display: flex;
+              align-items: center;
+              gap: 24px;
+            "
+          >
+            <span
+              style="
+                flex-shrink: 0;
+                font-size: 12px;
+                font-weight: 500;
+                letter-spacing: 0.16em;
+                text-transform: uppercase;
+                color: #cf6b80;
+              "
+              >Shipping</span
+            >
+            <p style="margin: 0; flex-grow: 1; font-size: 15px; line-height: 1.5; color: #f5f5f5">
+              We ship within Greece only, for now.
+              <span style="color: #b3b3b3">Ordering from abroad? Email us and we'll arrange it with you.</span>
+            </p>
+            <a
+              href="mailto:orders@blackboxrecordsathens.com?subject=Order%20from%20outside%20Greece&amp;body=Items%3A%0ACountry%3A%0ACity%3A"
+              style="
+                flex-shrink: 0;
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                color: #f5f5f5;
+                text-underline-offset: 4px;
+              "
+              >Email us to order
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+              >
+                <path d="M3 8h10M9 4l4 4-4 4"></path></svg
+            ></a>
+          </aside>
+          <p style="margin: 0; font-size: 13px; color: #b3b3b3">
+            One line. Explains the rule before browsing; never the only place it appears.
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px; align-items: start">
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <div
+              style="
+                font-size: 12px;
+                font-weight: 500;
+                letter-spacing: 0.16em;
+                text-transform: uppercase;
+                color: #b3b3b3;
+              "
+            >
+              B · Line · item page, under Add to cart
+            </div>
+            <div style="padding: 24px; border: 1px solid #262626; display: flex; flex-direction: column; gap: 12px">
+              <button
+                type="button"
+                style="
+                  min-height: 52px;
+                  background: #f5f5f5;
+                  color: #090909;
+                  border: 0;
+                  font-family: 'Inter', sans-serif;
+                  font-size: 15px;
+                  font-weight: 600;
+                "
+              >
+                Add to cart
+              </button>
+              <p
+                style="
+                  margin: 0;
+                  display: flex;
+                  flex-wrap: wrap;
+                  align-items: center;
+                  column-gap: 6px;
+                  font-size: 14px;
+                  line-height: 1.5;
+                  color: #b3b3b3;
+                "
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  aria-hidden="true"
+                >
+                  <rect x="1.5" y="4" width="9" height="7"></rect>
+                  <path d="M10.5 6.5h2.5l1.5 2v2.5h-4"></path>
+                  <circle cx="4.5" cy="12" r="1.2"></circle>
+                  <circle cx="12" cy="12" r="1.2"></circle>
+                </svg>
+                Ships within Greece only. Outside Greece?
+                <a
+                  href="mailto:orders@blackboxrecordsathens.com?subject=Order%20from%20outside%20Greece"
+                  style="
+                    min-height: 44px;
+                    display: inline-flex;
+                    align-items: center;
+                    color: #f5f5f5;
+                    font-weight: 500;
+                    text-underline-offset: 4px;
+                  "
+                  >Email us to order</a
+                >
+              </p>
+            </div>
+            <p style="margin: 0; font-size: 13px; color: #b3b3b3">
+              Sits where the buy decision happens; Baymard's fix for banner blindness.
+            </p>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 14px">
+            <div
+              style="
+                font-size: 12px;
+                font-weight: 500;
+                letter-spacing: 0.16em;
+                text-transform: uppercase;
+                color: #b3b3b3;
+              "
+            >
+              C · Card · cart drawer and checkout
+            </div>
+            <aside
+              aria-label="Ordering from outside Greece"
+              style="
+                padding: 18px 18px 6px;
+                background: #141414;
+                border: 1px solid #922f3f;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+              "
+            >
+              <div
+                style="
+                  font-family: 'Bebas Neue', Impact, sans-serif;
+                  font-size: 22px;
+                  letter-spacing: 0.03em;
+                  color: #cf6b80;
+                "
+              >
+                Ordering from outside Greece?
+              </div>
+              <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #b3b3b3">
+                Online checkout ships within Greece only for now. Email us what you'd like and where it's going, and
+                we'll confirm shipping and payment with you.
+              </p>
+              <a
+                href="mailto:orders@blackboxrecordsathens.com?subject=Order%20from%20outside%20Greece"
+                style="
+                  align-self: flex-start;
+                  min-height: 44px;
+                  display: inline-flex;
+                  align-items: center;
+                  gap: 8px;
+                  font-size: 14px;
+                  font-weight: 500;
+                  color: #f5f5f5;
+                  text-underline-offset: 4px;
+                "
+                >Email us to order
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  aria-hidden="true"
+                >
+                  <path d="M3 8h10M9 4l4 4-4 4"></path></svg
+              ></a>
+            </aside>
+            <p style="margin: 0; font-size: 13px; color: #b3b3b3">
+              Last chance before payment. The cart never blocks; Checkout stays available.
+            </p>
+          </div>
+        </div>
+
+        <section
+          style="
+            margin-top: auto;
+            padding-top: 24px;
+            border-top: 1px solid #262626;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 48px;
+          "
+        >
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <h2 style="margin: 0; font-family: 'Bebas Neue', Impact, sans-serif; font-weight: 400; font-size: 24px">
+              Email
+            </h2>
+            <dl
+              style="
+                margin: 0;
+                display: grid;
+                grid-template-columns: max-content minmax(0, 1fr);
+                column-gap: 16px;
+                row-gap: 8px;
+                font-size: 13px;
+                line-height: 1.4;
+              "
+            >
+              <dt style="color: #b3b3b3">To</dt>
+              <dd style="margin: 0; font-family: 'Geist Mono', monospace">orders@blackboxrecordsathens.com</dd>
+              <dt style="color: #b3b3b3">Subject</dt>
+              <dd style="margin: 0; font-family: 'Geist Mono', monospace">Order from outside Greece</dd>
+              <dt style="color: #b3b3b3">Body</dt>
+              <dd style="margin: 0; font-family: 'Geist Mono', monospace">Items:<br />Country:<br />City:</dd>
+            </dl>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <h2 style="margin: 0; font-family: 'Bebas Neue', Impact, sans-serif; font-weight: 400; font-size: 24px">
+              Tokens
+            </h2>
+            <dl
+              style="
+                margin: 0;
+                display: grid;
+                grid-template-columns: max-content minmax(0, 1fr);
+                column-gap: 16px;
+                row-gap: 8px;
+                font-size: 13px;
+                line-height: 1.4;
+              "
+            >
+              <dt style="font-family: 'Geist Mono', monospace; color: #b3b3b3">secondary</dt>
+              <dd style="margin: 0">Notice ground #141414</dd>
+              <dt style="font-family: 'Geist Mono', monospace; color: #b3b3b3">store-accent</dt>
+              <dd style="margin: 0">1px frame #922F3F</dd>
+              <dt style="font-family: 'Geist Mono', monospace; color: #b3b3b3">store-accent-active</dt>
+              <dd style="margin: 0">Label and card title #CF6B80</dd>
+              <dt style="font-family: 'Geist Mono', monospace; color: #b3b3b3">muted-foreground</dt>
+              <dd style="margin: 0">Supporting copy #B3B3B3</dd>
+            </dl>
+          </div>
+        </section>
+      </div>
+    </x-dc>
+    <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1040}}'>
+      class Component extends DCLogic {
+      renderVals() {
+      return {};
+      }
+      }
+    </script>
+  </body>
+</html>

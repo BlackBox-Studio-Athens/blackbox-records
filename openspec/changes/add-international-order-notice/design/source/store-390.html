@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Store with notice, phone</title>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Geist+Mono:wght@400;500&amp;family=Inter:wght@400;500;600&amp;display=swap"
+        />
+        <style>
+          @font-face {
+            font-family: 'Veneer';
+            src: url('../../../../../apps/web/public/assets/fonts/brand/veneer_regular.woff2') format('woff2');
+            font-display: swap;
+          }
+          body {
+            margin: 0;
+            background: #0d0d0d;
+          }
+          a {
+            color: #f5f5f5;
+          }
+          a:hover {
+            color: #ffffff;
+          }
+        </style>
+      </helmet>
+      <div
+        style="
+          width: 390px;
+          height: 844px;
+          box-sizing: border-box;
+          overflow: hidden;
+          background: #0d0d0d;
+          color: #f5f5f5;
+          font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+          display: flex;
+          flex-direction: column;
+        "
+      >
+        <header
+          style="
+            height: 64px;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            padding: 0 16px;
+            border-bottom: 1px solid #262626;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+          <a href="#" aria-label="BlackBox Records home" style="display: flex"
+            ><img
+              src="../../../../../apps/web/public/assets/images/brand/logo-horizontal.png"
+              alt="BlackBox Records"
+              style="width: 124px; height: auto"
+          /></a>
+          <div style="display: flex; gap: 8px">
+            <button
+              type="button"
+              style="
+                min-height: 44px;
+                padding: 0 12px;
+                background: transparent;
+                border: 1px solid #262626;
+                color: #f5f5f5;
+                font-family: 'Bebas Neue', Impact, sans-serif;
+                font-size: 18px;
+                letter-spacing: 0.04em;
+              "
+            >
+              Cart · 2
+            </button>
+            <button
+              type="button"
+              aria-label="Open menu"
+              style="
+                width: 44px;
+                height: 44px;
+                background: transparent;
+                border: 1px solid #262626;
+                color: #f5f5f5;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+              "
+            >
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+              >
+                <path d="M2 4h12M2 8h12M2 12h12"></path>
+              </svg>
+            </button>
+          </div>
+        </header>
+
+        <main style="padding: 28px 16px 0; display: flex; flex-direction: column; gap: 20px">
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <h1
+              style="
+                margin: 0;
+                font-family: 'Veneer', 'Bebas Neue', Impact, sans-serif;
+                font-weight: 400;
+                font-size: 64px;
+                line-height: 0.94;
+                text-transform: uppercase;
+              "
+            >
+              Store
+            </h1>
+            <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #b3b3b3">
+              Records, tapes and merch from the label and the distro table.
+            </p>
+          </div>
+
+          <aside
+            aria-label="Shipping outside Greece"
+            style="
+              padding: 14px 16px 4px;
+              background: #141414;
+              border: 1px solid #922f3f;
+              display: flex;
+              flex-direction: column;
+              gap: 6px;
+            "
+          >
+            <span
+              style="
+                font-size: 11px;
+                font-weight: 500;
+                letter-spacing: 0.16em;
+                text-transform: uppercase;
+                color: #cf6b80;
+              "
+              >Shipping</span
+            >
+            <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #f5f5f5">
+              We ship within Greece only, for now.
+              <span style="color: #b3b3b3">Ordering from abroad? Email us and we'll arrange it with you.</span>
+            </p>
+            <a
+              href="mailto:orders@blackboxrecordsathens.com?subject=Order%20from%20outside%20Greece&amp;body=Items%3A%0ACountry%3A%0ACity%3A"
+              style="
+                align-self: flex-start;
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                color: #f5f5f5;
+                text-underline-offset: 4px;
+              "
+              >Email us to order
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+              >
+                <path d="M3 8h10M9 4l4 4-4 4"></path></svg
+            ></a>
+          </aside>
+
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+            <article style="border: 1px solid #262626; background: #141414">
+              <img
+                src="../../../../../apps/web/src/content/releases/anarchotribal-cover.webp"
+                alt="Anarchotribal cover"
+                style="width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block"
+              />
+              <div style="padding: 10px">
+                <h3
+                  style="
+                    margin: 0;
+                    font-family: 'Veneer', 'Bebas Neue', Impact, sans-serif;
+                    font-weight: 400;
+                    font-size: 20px;
+                    line-height: 1;
+                    text-transform: uppercase;
+                  "
+                >
+                  Anarchotribal
+                </h3>
+              </div>
+            </article>
+            <article style="border: 1px solid #262626; background: #141414">
+              <img
+                src="../../../../../apps/web/src/content/releases/mass-culture-barren-point-cover.jpg"
+                alt="Barren Point cover"
+                style="width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block"
+              />
+              <div style="padding: 10px">
+                <h3
+                  style="
+                    margin: 0;
+                    font-family: 'Veneer', 'Bebas Neue', Impact, sans-serif;
+                    font-weight: 400;
+                    font-size: 20px;
+                    line-height: 1;
+                    text-transform: uppercase;
+                  "
+                >
+                  Barren Point
+                </h3>
+              </div>
+            </article>
+            <article style="border: 1px solid #262626; background: #141414">
+              <img
+                src="../../../../../apps/web/src/content/releases/651165517_1798070461631923_2184094727995022471_n.jpg"
+                alt="Caregivers cover"
+                style="width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block"
+              />
+              <div style="padding: 10px">
+                <h3
+                  style="
+                    margin: 0;
+                    font-family: 'Veneer', 'Bebas Neue', Impact, sans-serif;
+                    font-weight: 400;
+                    font-size: 20px;
+                    line-height: 1;
+                    text-transform: uppercase;
+                  "
+                >
+                  Caregivers
+                </h3>
+              </div>
+            </article>
+            <article style="border: 1px solid #262626; background: #141414">
+              <img
+                src="../../../../../apps/web/src/content/releases/656856327_18427527979186423_8617747121554203403_n.jpg"
+                alt="Disintegration cover"
+                style="width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block"
+              />
+              <div style="padding: 10px">
+                <h3
+                  style="
+                    margin: 0;
+                    font-family: 'Veneer', 'Bebas Neue', Impact, sans-serif;
+                    font-weight: 400;
+                    font-size: 20px;
+                    line-height: 1;
+                    text-transform: uppercase;
+                  "
+                >
+                  Disintegration
+                </h3>
+              </div>
+            </article>
+          </div>
+        </main>
+      </div>
+    </x-dc>
+    <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+      class Component extends DCLogic {
+      renderVals() {
+      return {};
+      }
+      }
+    </script>
+  </body>
+</html>

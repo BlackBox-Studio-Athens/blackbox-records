@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Item page with shipping line, desktop</title>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Geist+Mono:wght@400;500&amp;family=Inter:wght@400;500;600&amp;display=swap"
+        />
+        <style>
+          @font-face {
+            font-family: 'Veneer';
+            src: url('../../../../../apps/web/public/assets/fonts/brand/veneer_regular.woff2') format('woff2');
+            font-display: swap;
+          }
+          body {
+            margin: 0;
+            background: #0d0d0d;
+          }
+          a {
+            color: #f5f5f5;
+          }
+          a:hover {
+            color: #ffffff;
+          }
+        </style>
+      </helmet>
+      <div
+        style="
+          width: 1440px;
+          height: 960px;
+          box-sizing: border-box;
+          overflow: hidden;
+          background: #0d0d0d;
+          color: #f5f5f5;
+          font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+          display: flex;
+          flex-direction: column;
+        "
+      >
+        <header
+          style="
+            height: 80px;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            padding: 0 80px;
+            border-bottom: 1px solid #262626;
+            display: flex;
+            align-items: center;
+            gap: 48px;
+          "
+        >
+          <a href="#" aria-label="BlackBox Records home" style="display: flex"
+            ><img
+              src="../../../../../apps/web/public/assets/images/brand/logo-horizontal.png"
+              alt="BlackBox Records"
+              style="width: 150px; height: auto"
+          /></a>
+          <nav
+            aria-label="Primary"
+            style="
+              flex-grow: 1;
+              display: flex;
+              gap: 32px;
+              font-size: 13px;
+              font-weight: 500;
+              letter-spacing: 0.14em;
+              text-transform: uppercase;
+            "
+          >
+            <a href="#" style="color: #b3b3b3; text-decoration: none">Artists</a>
+            <a href="#" style="color: #b3b3b3; text-decoration: none">Releases</a>
+            <a
+              href="#"
+              aria-current="page"
+              style="color: #f5f5f5; text-decoration: none; padding-bottom: 6px; border-bottom: 2px solid #922f3f"
+              >Store</a
+            >
+            <a href="#" style="color: #b3b3b3; text-decoration: none">Services</a>
+            <a href="#" style="color: #b3b3b3; text-decoration: none">About</a>
+          </nav>
+          <button
+            type="button"
+            style="
+              min-height: 44px;
+              padding: 0 16px;
+              background: transparent;
+              border: 1px solid #262626;
+              color: #f5f5f5;
+              font-family: 'Bebas Neue', Impact, sans-serif;
+              font-size: 20px;
+              letter-spacing: 0.04em;
+            "
+          >
+            Cart · 2
+          </button>
+        </header>
+
+        <main
+          style="
+            padding: 56px 80px;
+            display: grid;
+            grid-template-columns: 640px minmax(0, 1fr);
+            gap: 64px;
+            align-items: start;
+          "
+        >
+          <img
+            src="../../../../../apps/web/src/content/releases/anarchotribal-cover.webp"
+            alt="Anarchotribal cover"
+            style="width: 640px; height: 640px; object-fit: cover; display: block; border: 1px solid #262626"
+          />
+          <div style="display: flex; flex-direction: column; gap: 24px; max-width: 520px">
+            <a
+              href="#"
+              style="
+                font-size: 12px;
+                font-weight: 500;
+                letter-spacing: 0.16em;
+                text-transform: uppercase;
+                color: #b3b3b3;
+                text-decoration: none;
+              "
+              >Store / Releases</a
+            >
+            <div style="display: flex; flex-direction: column; gap: 10px">
+              <h1
+                style="
+                  margin: 0;
+                  font-family: 'Veneer', 'Bebas Neue', Impact, sans-serif;
+                  font-weight: 400;
+                  font-size: 72px;
+                  line-height: 0.94;
+                  text-transform: uppercase;
+                "
+              >
+                Anarchotribal
+              </h1>
+              <div style="font-size: 17px; color: #b3b3b3">Ouranopithecus · [FORMAT]</div>
+            </div>
+            <div style="font-family: 'Bebas Neue', Impact, sans-serif; font-size: 40px">[PRICE]</div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px">
+              <button
+                type="button"
+                style="
+                  min-height: 52px;
+                  background: #f5f5f5;
+                  color: #090909;
+                  border: 0;
+                  font-family: 'Inter', sans-serif;
+                  font-size: 15px;
+                  font-weight: 600;
+                "
+              >
+                Add to cart
+              </button>
+              <p
+                style="
+                  margin: 0;
+                  display: flex;
+                  flex-wrap: wrap;
+                  align-items: center;
+                  column-gap: 6px;
+                  font-size: 14px;
+                  line-height: 1.5;
+                  color: #b3b3b3;
+                "
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.4"
+                  aria-hidden="true"
+                >
+                  <rect x="1.5" y="4" width="9" height="7"></rect>
+                  <path d="M10.5 6.5h2.5l1.5 2v2.5h-4"></path>
+                  <circle cx="4.5" cy="12" r="1.2"></circle>
+                  <circle cx="12" cy="12" r="1.2"></circle>
+                </svg>
+                Ships within Greece only. Outside Greece?
+                <a
+                  href="mailto:orders@blackboxrecordsathens.com?subject=Order%20from%20outside%20Greece&amp;body=Items%3A%20Anarchotribal%0ACountry%3A%0ACity%3A"
+                  style="
+                    min-height: 44px;
+                    display: inline-flex;
+                    align-items: center;
+                    color: #f5f5f5;
+                    font-weight: 500;
+                    text-underline-offset: 4px;
+                  "
+                  >Email us to order</a
+                >
+              </p>
+            </div>
+
+            <div
+              style="padding-top: 20px; border-top: 1px solid #262626; display: flex; flex-direction: column; gap: 10px"
+            >
+              <div
+                style="
+                  font-size: 12px;
+                  font-weight: 500;
+                  letter-spacing: 0.16em;
+                  text-transform: uppercase;
+                  color: #b3b3b3;
+                "
+              >
+                Delivery
+              </div>
+              <p style="margin: 0; font-size: 14px; line-height: 1.55; color: #b3b3b3">
+                BOX NOW locker in Greece, including supported islands, with no island surcharge. We arrange your locker
+                with you before dispatch.
+              </p>
+            </div>
+          </div>
+        </main>
+      </div>
+    </x-dc>
+    <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+      class Component extends DCLogic {
+      renderVals() {
+      return {};
+      }
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Checkout shipping step with notice</title>
+  </head>
+  <body>
+    <x-dc>
+      <helmet>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Geist+Mono:wght@400;500&amp;family=Inter:wght@400;500;600&amp;display=swap"
+        />
+        <style>
+          @font-face {
+            font-family: 'Veneer';
+            src: url('../../../../../apps/web/public/assets/fonts/brand/veneer_regular.woff2') format('woff2');
+            font-display: swap;
+          }
+          body {
+            margin: 0;
+            background: #0d0d0d;
+          }
+          a {
+            color: #f5f5f5;
+          }
+          a:hover {
+            color: #ffffff;
+          }
+        </style>
+      </helmet>
+      <div
+        style="
+          width: 1280px;
+          height: 860px;
+          box-sizing: border-box;
+          overflow: hidden;
+          background: #0d0d0d;
+          color: #f5f5f5;
+          font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+          display: flex;
+          flex-direction: column;
+        "
+      >
+        <header
+          style="
+            height: 80px;
+            flex-shrink: 0;
+            box-sizing: border-box;
+            padding: 0 64px;
+            border-bottom: 1px solid #262626;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          "
+        >
+          <a href="#" aria-label="BlackBox Records home" style="display: flex"
+            ><img
+              src="../../../../../apps/web/public/assets/images/brand/logo-horizontal.png"
+              alt="BlackBox Records"
+              style="width: 150px; height: auto"
+          /></a>
+          <a
+            href="#"
+            style="
+              font-size: 13px;
+              font-weight: 500;
+              letter-spacing: 0.14em;
+              text-transform: uppercase;
+              color: #b3b3b3;
+              text-decoration: none;
+            "
+            >Back to store</a
+          >
+        </header>
+
+        <main style="padding: 48px 64px 0; display: flex; flex-direction: column; gap: 32px">
+          <h1
+            style="
+              margin: 0;
+              font-family: 'Veneer', 'Bebas Neue', Impact, sans-serif;
+              font-weight: 400;
+              font-size: 72px;
+              line-height: 0.94;
+              text-transform: uppercase;
+            "
+          >
+            Checkout
+          </h1>
+
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 40px; align-items: start">
+            <div style="display: flex; flex-direction: column; gap: 16px">
+              <div
+                style="
+                  padding: 18px 22px;
+                  border: 1px solid #262626;
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                "
+              >
+                <span
+                  style="
+                    font-family: 'Bebas Neue', Impact, sans-serif;
+                    font-size: 24px;
+                    letter-spacing: 0.03em;
+                    color: #b3b3b3;
+                  "
+                  >1 · Cart</span
+                >
+                <span style="font-size: 13px; color: #b3b3b3">2 items</span>
+              </div>
+
+              <section
+                aria-labelledby="ship-title"
+                style="
+                  padding: 24px 22px;
+                  background: #141414;
+                  border: 1px solid #922f3f;
+                  display: flex;
+                  flex-direction: column;
+                  gap: 18px;
+                "
+              >
+                <div style="display: flex; align-items: center; justify-content: space-between">
+                  <h2
+                    id="ship-title"
+                    style="
+                      margin: 0;
+                      font-family: 'Bebas Neue', Impact, sans-serif;
+                      font-weight: 400;
+                      font-size: 28px;
+                      letter-spacing: 0.03em;
+                    "
+                  >
+                    2 · Shipping
+                  </h2>
+                  <span
+                    style="
+                      padding: 4px 10px;
+                      border: 1px solid #922f3f;
+                      border-radius: 0.35rem;
+                      font-size: 12px;
+                      font-weight: 500;
+                      letter-spacing: 0.08em;
+                      text-transform: uppercase;
+                    "
+                    >Greece only</span
+                  >
+                </div>
+                <p style="margin: 0; max-width: 64ch; font-size: 15px; line-height: 1.55; color: #b3b3b3">
+                  Delivery is to a BOX NOW locker in Greece, including supported island destinations, with no island
+                  surcharge. We arrange your locker with you before dispatch.
+                </p>
+
+                <aside
+                  aria-label="Ordering from outside Greece"
+                  style="
+                    padding: 16px 18px 6px;
+                    background: #0d0d0d;
+                    border: 1px solid #262626;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 6px;
+                  "
+                >
+                  <div
+                    style="
+                      font-family: 'Bebas Neue', Impact, sans-serif;
+                      font-size: 20px;
+                      letter-spacing: 0.03em;
+                      color: #cf6b80;
+                    "
+                  >
+                    Ordering from outside Greece?
+                  </div>
+                  <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #b3b3b3">
+                    Online checkout ships within Greece only for now. Email us what you'd like and where it's going, and
+                    we'll confirm shipping and payment with you.
+                  </p>
+                  <a
+                    href="mailto:orders@blackboxrecordsathens.com?subject=Order%20from%20outside%20Greece&amp;body=Items%3A%20Anarchotribal%2C%20Barren%20Point%0ACountry%3A%0ACity%3A"
+                    style="
+                      min-height: 44px;
+                      align-self: flex-start;
+                      display: inline-flex;
+                      align-items: center;
+                      gap: 8px;
+                      font-size: 14px;
+                      font-weight: 500;
+                      color: #f5f5f5;
+                      text-underline-offset: 4px;
+                    "
+                    >Email us to order
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 16 16"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 8h10M9 4l4 4-4 4"></path></svg
+                  ></a>
+                </aside>
+
+                <a
+                  href="#"
+                  style="
+                    align-self: flex-start;
+                    min-height: 48px;
+                    box-sizing: border-box;
+                    padding: 0 28px;
+                    display: inline-flex;
+                    align-items: center;
+                    background: #f5f5f5;
+                    color: #090909;
+                    font-size: 15px;
+                    font-weight: 600;
+                    text-decoration: none;
+                  "
+                  >Continue to payment</a
+                >
+              </section>
+
+              <div style="padding: 18px 22px; border: 1px solid #262626">
+                <span
+                  style="
+                    font-family: 'Bebas Neue', Impact, sans-serif;
+                    font-size: 24px;
+                    letter-spacing: 0.03em;
+                    color: #b3b3b3;
+                  "
+                  >3 · Payment</span
+                >
+              </div>
+            </div>
+
+            <aside
+              aria-label="Order summary"
+              style="
+                padding: 22px;
+                background: #0f0f0f;
+                border: 1px solid #262626;
+                display: flex;
+                flex-direction: column;
+                gap: 14px;
+              "
+            >
+              <h2
+                style="
+                  margin: 0;
+                  font-family: 'Bebas Neue', Impact, sans-serif;
+                  font-weight: 400;
+                  font-size: 24px;
+                  letter-spacing: 0.03em;
+                "
+              >
+                Order
+              </h2>
+              <div style="display: flex; gap: 12px; align-items: center">
+                <img
+                  src="../../../../../apps/web/src/content/releases/anarchotribal-cover.webp"
+                  alt=""
+                  style="width: 56px; height: 56px; object-fit: cover"
+                />
+                <span
+                  style="
+                    flex-grow: 1;
+                    font-family: 'Veneer', 'Bebas Neue', Impact, sans-serif;
+                    font-size: 18px;
+                    text-transform: uppercase;
+                  "
+                  >Anarchotribal</span
+                >
+                <span style="font-family: 'Bebas Neue', Impact, sans-serif; font-size: 18px">[PRICE]</span>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: center">
+                <img
+                  src="../../../../../apps/web/src/content/releases/mass-culture-barren-point-cover.jpg"
+                  alt=""
+                  style="width: 56px; height: 56px; object-fit: cover"
+                />
+                <span
+                  style="
+                    flex-grow: 1;
+                    font-family: 'Veneer', 'Bebas Neue', Impact, sans-serif;
+                    font-size: 18px;
+                    text-transform: uppercase;
+                  "
+                  >Barren Point</span
+                >
+                <span style="font-family: 'Bebas Neue', Impact, sans-serif; font-size: 18px">[PRICE]</span>
+              </div>
+              <div
+                style="
+                  padding-top: 14px;
+                  border-top: 1px solid #262626;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: baseline;
+                "
+              >
+                <span
+                  style="
+                    font-size: 12px;
+                    font-weight: 500;
+                    letter-spacing: 0.14em;
+                    text-transform: uppercase;
+                    color: #b3b3b3;
+                  "
+                  >Total</span
+                >
+                <span style="font-family: 'Bebas Neue', Impact, sans-serif; font-size: 28px">[PRICE]</span>
+              </div>
+            </aside>
+          </div>
+        </main>
+      </div>
+    </x-dc>
+    <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":860}}'>
+      class Component extends DCLogic {
+      renderVals() {
+      return {};
+      }
+      }
+    </script>
+  </body>
+</html>
