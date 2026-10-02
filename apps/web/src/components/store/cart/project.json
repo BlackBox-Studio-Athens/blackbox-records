@@ -15,7 +15,13 @@
   "metadata": {
     "boundaries": {
       "status": "closed",
-      "exports": ["./store-cart.ts", "./store-cart-events.ts", "./StoreCartButton.tsx", "./StoreCartDrawer.tsx"],
+      "exports": [
+        "./store-cart.ts",
+        "./store-cart-events.ts",
+        "./StoreCartButton.tsx",
+        "./StoreCartDrawer.tsx",
+        "./PreorderCartNotice.tsx"
+      ],
       "namedInterfaces": {},
       "dependsOn": ["ui-foundation", "web-platform"],
       "workspaceInterfaces": {}

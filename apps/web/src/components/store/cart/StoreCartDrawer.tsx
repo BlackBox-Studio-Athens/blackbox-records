@@ -4,6 +4,8 @@ import { Minus, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { acquireLenisModalLock } from '@/platform/lib/lenis-scroll';
+import { preorderChipText } from '@/platform/lib/preorder-estimate';
+import { PreorderCartNotice } from './PreorderCartNotice';
 import {
   createCartCheckoutPath,
   getCartLineTotalDisplay,
@@ -271,8 +273,14 @@ export function StoreCartDrawerPanel({
                           </Button>
                         </div>
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                          <p className="inline-flex border border-border/70 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                            {line.availabilityLabel}
+                          <p
+                            className={
+                              line.preorder
+                                ? 'preorder-badge'
+                                : 'inline-flex border border-border/70 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground'
+                            }
+                          >
+                            {line.preorder ? preorderChipText(line.preorder.shipEstimate) : line.availabilityLabel}
                           </p>
                           <div className="inline-flex items-center" aria-label={`Quantity for ${line.title}`}>
                             <Button
@@ -322,7 +330,10 @@ export function StoreCartDrawerPanel({
               </div>
             </div>
 
-            <div className="space-y-4 border-t border-border/70 px-6 py-6">{deliverySummary}</div>
+            <div className="space-y-4 border-t border-border/70 px-6 py-6">
+              <PreorderCartNotice lines={visibleLines} />
+              {deliverySummary}
+            </div>
           </div>
         )}
       </div>

@@ -28,6 +28,81 @@ const cartItem: CartLineItemSnapshot = {
 const resolveHref = (path: string) => `/blackbox-records${path}`;
 
 describe('StoreCartDrawer', () => {
+  it('marks only pre-order lines and places one latest-estimate notice before delivery', () => {
+    const earlier: CartLineItemSnapshot = {
+      ...cartItem,
+      variantId: 'variant_earlier',
+      preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: 'early' } },
+    };
+    const later: CartLineItemSnapshot = {
+      ...cartItem,
+      variantId: 'variant_later',
+      preorder: { shipEstimate: { kind: 'date', date: '2026-11-20' } },
+    };
+    const markup = renderToStaticMarkup(
+      <StoreCartDrawerPanel
+        cartState={addStoreCartItem(later, addStoreCartItem(earlier, addStoreCartItem(cartItem)))}
+        renderHeader={false}
+        deliverySummary={<p>Delivery summary fixture</p>}
+        onContinueShopping={() => undefined}
+        onDecrementItem={() => undefined}
+        onIncrementItem={() => undefined}
+        onRemoveItem={() => undefined}
+        resolveHref={resolveHref}
+      />,
+    );
+    expect(markup.match(/class="preorder-badge"/g)).toHaveLength(2);
+    expect(markup).toContain('Pre-order · ships around early October 2026');
+    expect(markup).toContain('Pre-order · ships 20 Nov 2026');
+    expect(markup).toContain('>Available</p>');
+    expect(markup.match(/Pre-order in this order/g)).toHaveLength(1);
+    expect(markup).toContain('On 20 November 2026');
+    expect(markup.indexOf('Pre-order in this order')).toBeLessThan(markup.indexOf('Delivery summary fixture'));
+    expect(markup).toContain('href="/blackbox-records/store/checkout/"');
+    expect(markup).toContain('Decrease quantity for Disintegration');
+  });
+
+  it('marks a withheld line without claiming a parcel date', () => {
+    const markup = renderToStaticMarkup(
+      <StoreCartDrawerPanel
+        cartState={addStoreCartItem({ ...cartItem, preorder: { shipEstimate: null } })}
+        renderHeader={false}
+        onContinueShopping={() => undefined}
+        onDecrementItem={() => undefined}
+        onIncrementItem={() => undefined}
+        onRemoveItem={() => undefined}
+        resolveHref={resolveHref}
+      />,
+    );
+    expect(markup).toContain('class="preorder-badge">Pre-order</p>');
+    expect(markup).toContain('When it arrives');
+    expect(markup).not.toContain(' · ships');
+  });
+
+  it('keeps ordinary, legacy and empty carts free of pre-order copy', () => {
+    const carts = [
+      createEmptyStoreCartState(),
+      addStoreCartItem(cartItem),
+      addStoreCartItem({ ...cartItem, preorder: null }),
+    ];
+    for (const cartState of carts) {
+      const markup = renderToStaticMarkup(
+        <StoreCartDrawerPanel
+          cartState={cartState}
+          renderHeader={false}
+          onContinueShopping={() => undefined}
+          onDecrementItem={() => undefined}
+          onIncrementItem={() => undefined}
+          onRemoveItem={() => undefined}
+          resolveHref={resolveHref}
+        />,
+      );
+      expect(markup).not.toContain('preorder-badge');
+      expect(markup).not.toContain('preorder-notice');
+      expect(markup).not.toContain('Charged in full');
+    }
+  });
+
   it('explains custom-Price restrictions and disables only quantity increases', () => {
     const markup = renderToStaticMarkup(
       <StoreCartDrawerPanel
