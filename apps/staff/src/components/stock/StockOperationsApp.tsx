@@ -1,6 +1,6 @@
 import { ArrowDownUp, ClipboardCheck, Disc3, ChevronLeft } from 'lucide-react';
 import * as React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import StaffBack from '../../lib/StaffBack';
 import {
   followStaffHistory,
@@ -63,7 +63,9 @@ interface StockOperationsAppProps {
 
 type HistoryEntry = InternalStockHistoryResponse['entries'][number];
 export type StockLoadingIntent = 'refresh' | 'search' | 'variant' | 'workspace' | null;
-type StockSubmittingIntent = 'stockChange' | 'stockCount' | 'restockPlan' | null;
+const LOW_STOCK_NOTICE_THRESHOLD = 5;
+
+type StockSubmittingIntent = 'stockChange' | 'stockCount' | 'restockPlan' | 'lowStockNotice' | null;
 
 export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOperationsAppProps) {
   const [otherPending, setOtherPending] = useState(false);
@@ -672,6 +674,33 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
       setSubmittingIntent(null);
     }
   }
+  async function handleShowLowStockChange(showLowStock: boolean) {
+    const detail = selectedStockDetail;
+    if (!detail || !canMutateSelectedStock || isSubmitting) return;
+
+    const variantId = selectedVariantId;
+    setSubmittingIntent('lowStockNotice');
+    setErrorMessage(null);
+    setStatusMessage('Saving copies-left notice.');
+    try {
+      await api.setShowLowStock(variantId, {
+        expectedRevision: detail.stock.revision,
+        showLowStock,
+      });
+      await loadVariant(variantId, false, 'refresh');
+      setStatusMessage('Copies-left notice saved.');
+    } catch (error) {
+      await loadVariant(variantId, false, 'refresh');
+      setStatusMessage(
+        error instanceof InternalStockApiError && error.status === 409
+          ? 'Stock changed. Review the current item before retrying the copies-left notice.'
+          : 'Copies-left notice was not confirmed. Refresh the item before trying again.',
+      );
+      setErrorMessage(readErrorMessage(error));
+    } finally {
+      setSubmittingIntent(null);
+    }
+  }
 
   useStaffRead(
     ['stock', backendBaseUrl, selectedVariantId],
@@ -998,34 +1027,29 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                       <StockMetric label="Available to buy online" value={selectedStockDetail?.stock.onlineQuantity} />
                       <StockMetric label="Updated" value={formatDate(selectedStockDetail?.stock.updatedAt)} isText />
                     </div>
-                    <label
-                      className={cn(
-                        'flex items-center justify-between gap-4 border-t border-border pt-4',
-                        canMutateSelectedStock && !isSubmitting ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
-                      )}
-                      aria-busy={submittingIntent === 'restockPlan' ? 'true' : undefined}
-                    >
-                      <span className="grid gap-1">
-                        <span className="font-medium">Restock planned</span>
-                        <span id="restock-planned-description" className="text-sm text-muted-foreground">
+                    <StockFlagSwitch
+                      busy={submittingIntent === 'restockPlan'}
+                      checked={selectedStockDetail?.stock.restockPlanned ?? false}
+                      description={
+                        <>
                           At zero online stock, shoppers see{' '}
                           {selectedStockDetail?.stock.restockPlanned ? 'Out of Stock.' : 'Sold Out.'}
-                        </span>
-                      </span>
-                      <input
-                        checked={selectedStockDetail?.stock.restockPlanned ?? false}
-                        className="peer sr-only"
-                        disabled={!canMutateSelectedStock || isSubmitting}
-                        onChange={(event) => void handleRestockPlannedChange(event.currentTarget.checked)}
-                        role="switch"
-                        aria-describedby="restock-planned-description"
-                        type="checkbox"
-                      />
-                      <span
-                        aria-hidden="true"
-                        className="relative inline-flex h-6 w-11 shrink-0 rounded-full border border-border bg-muted transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-background after:content-[''] after:transition-transform peer-checked:border-primary peer-checked:bg-primary peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background peer-disabled:opacity-50"
-                      />
-                    </label>
+                        </>
+                      }
+                      descriptionId="restock-planned-description"
+                      disabled={!canMutateSelectedStock || isSubmitting}
+                      label="Restock planned"
+                      onChange={(checked) => void handleRestockPlannedChange(checked)}
+                    />
+                    <StockFlagSwitch
+                      busy={submittingIntent === 'lowStockNotice'}
+                      checked={selectedStockDetail?.stock.showLowStock ?? false}
+                      description={`When ${LOW_STOCK_NOTICE_THRESHOLD} or fewer are left online, shoppers see how many copies remain.`}
+                      descriptionId="show-low-stock-description"
+                      disabled={!canMutateSelectedStock || isSubmitting}
+                      label="Show copies left"
+                      onChange={(checked) => void handleShowLowStockChange(checked)}
+                    />
                   </div>
                 )}
               </CardContent>
@@ -1367,6 +1391,54 @@ export function canSubmitStockMutation(
   stockDetail: Pick<InternalStockDetail, 'variantId'> | null,
 ) {
   return Boolean(selectedVariantId && stockDetail?.variantId === selectedVariantId);
+}
+
+function StockFlagSwitch({
+  busy,
+  checked,
+  description,
+  descriptionId,
+  disabled,
+  label,
+  onChange,
+}: {
+  busy: boolean;
+  checked: boolean;
+  description: ReactNode;
+  descriptionId: string;
+  disabled: boolean;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label
+      className={cn(
+        'flex items-center justify-between gap-4 border-t border-border pt-4',
+        disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer',
+      )}
+      aria-busy={busy ? 'true' : undefined}
+    >
+      <span className="grid gap-1">
+        <span className="font-medium">{label}</span>
+        <span id={descriptionId} className="text-sm text-muted-foreground">
+          {description}
+        </span>
+      </span>
+      <input
+        checked={checked}
+        className="peer sr-only"
+        disabled={disabled}
+        onChange={(event) => onChange(event.currentTarget.checked)}
+        role="switch"
+        aria-describedby={descriptionId}
+        type="checkbox"
+      />
+      <span
+        aria-hidden="true"
+        className="relative inline-flex h-6 w-11 shrink-0 rounded-full border border-border bg-muted transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-background after:content-[''] after:transition-transform peer-checked:border-primary peer-checked:bg-primary peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background peer-disabled:opacity-50"
+      />
+    </label>
+  );
 }
 
 function StockMetric({

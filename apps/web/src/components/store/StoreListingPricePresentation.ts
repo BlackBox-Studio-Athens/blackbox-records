@@ -1,5 +1,8 @@
 import type { PublicStoreListingPrice } from '@/components/store/checkout/public-checkout-api';
-import { resolvePublicCheckoutApiBaseUrl } from '@/components/store/checkout/public-checkout-api';
+import {
+  formatStoreLowStockLabel,
+  resolvePublicCheckoutApiBaseUrl,
+} from '@/components/store/checkout/public-checkout-api';
 import type { StoreItemCartSeed } from '@/components/store/checkout/StoreItemPurchaseActions';
 
 export const STORE_LISTING_PRICE_COPY = {
@@ -127,12 +130,19 @@ export function connectStoreListingPricePresentation({
             ? (availabilityState as PublicStoreListingPrice['availabilityState'])
             : undefined;
 
+        const lowStockLabel =
+          recognizedState === 'stocked' && record?.presentationState === 'ready'
+            ? formatStoreLowStockLabel(record.lowStockQuantity)
+            : null;
+
         placeholder.removeAttribute('aria-busy');
-        placeholder.dataset.storeListingAvailabilityState = recognizedState ?? 'unknown';
-        placeholder.hidden = recognizedState === 'stocked';
-        placeholder.textContent = recognizedState
-          ? availabilityCopy[recognizedState]
-          : STORE_LISTING_PRICE_COPY.availabilityUnknown;
+        placeholder.dataset.storeListingAvailabilityState = lowStockLabel
+          ? 'low_stock'
+          : (recognizedState ?? 'unknown');
+        placeholder.hidden = recognizedState === 'stocked' && !lowStockLabel;
+        placeholder.textContent =
+          lowStockLabel ??
+          (recognizedState ? availabilityCopy[recognizedState] : STORE_LISTING_PRICE_COPY.availabilityUnknown);
       });
 
       // The projection only decides whether Buy is offered; pressing it reads the authoritative offer.

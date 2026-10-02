@@ -68,6 +68,7 @@ export class PrismaStoreOfferSnapshotRepository
         canBuy: number | null;
         effectiveQuantity: number | null;
         restockPlanned: number | null;
+        showLowStock: number | null;
       }[]
     >`
       SELECT snapshot."amountMinor", snapshot."currencyCode", snapshot."freshUntil",
@@ -75,7 +76,7 @@ export class PrismaStoreOfferSnapshotRepository
         availability."status" AS "availabilityStatus", availability."canBuy",
         CASE WHEN stock."variantId" IS NULL THEN NULL
           ELSE MAX(0, MIN(stock."quantity", stock."onlineQuantity") - COALESCE(holds."quantity", 0))
-        END AS "effectiveQuantity", stock."restockPlanned"
+        END AS "effectiveQuantity", stock."restockPlanned", stock."showLowStock"
       FROM "StoreOfferSnapshot" snapshot
       INNER JOIN "StoreItemOption" item ON item."storeItemSlug" = snapshot."storeItemSlug"
         AND item."variantId" = snapshot."variantId"
@@ -111,6 +112,7 @@ export class PrismaStoreOfferSnapshotRepository
           : {
               onlineQuantity: createStockQuantity(Number(record.effectiveQuantity)),
               restockPlanned: Boolean(record.restockPlanned),
+              showLowStock: Boolean(record.showLowStock),
             },
     }));
   }

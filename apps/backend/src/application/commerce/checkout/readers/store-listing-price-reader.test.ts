@@ -8,7 +8,7 @@ import { storeItemSlug } from '../../../../../test/support/commerce-value-object
 function snapshot(overrides: Partial<StoreOfferListingPriceSnapshotRecord> = {}): StoreOfferListingPriceSnapshotRecord {
   return {
     availability: { status: 'available', canBuy: true },
-    stock: { onlineQuantity: createStockQuantity(3), restockPlanned: false },
+    stock: { onlineQuantity: createStockQuantity(3), restockPlanned: false, showLowStock: false },
     amountMinor: 2800,
     currencyCode: 'EUR',
     freshUntil: new Date('2026-07-16T13:00:00.000Z'),
@@ -89,7 +89,10 @@ describe('Store listing-price reader', () => {
         listForListingPricePresentation: async () => [
           snapshot({
             availability: status === null ? null : { status, canBuy },
-            stock: quantity === null ? null : { onlineQuantity: createStockQuantity(quantity), restockPlanned },
+            stock:
+              quantity === null
+                ? null
+                : { onlineQuantity: createStockQuantity(quantity), restockPlanned, showLowStock: false },
           }),
         ],
       });
@@ -101,4 +104,40 @@ describe('Store listing-price reader', () => {
       });
     },
   );
+
+  it.each([
+    ['notice off', false, 3, 'stocked', undefined],
+    ['notice on with three left', true, 3, 'stocked', 3],
+    ['notice on at the threshold', true, 5, 'stocked', 5],
+    ['notice on with one left', true, 1, 'stocked', 1],
+    ['notice on above the threshold', true, 6, 'stocked', undefined],
+    ['notice on when sold out', true, 0, 'sold_out', undefined],
+  ] as const)('exposes copies left only when %s qualifies', async (_case, showLowStock, quantity, state, expected) => {
+    const [record] = await readStoreListingPrices({
+      listForListingPricePresentation: async () => [
+        snapshot({ stock: { onlineQuantity: createStockQuantity(quantity), restockPlanned: false, showLowStock } }),
+      ],
+    });
+
+    expect(record).toEqual({
+      availabilityState: state,
+      displayPrice: '€28.00',
+      ...(expected === undefined ? {} : { lowStockQuantity: expected }),
+      presentationState: 'ready',
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+    });
+  });
+
+  it('omits copies left when the price is not presentable', async () => {
+    const [record] = await readStoreListingPrices({
+      listForListingPricePresentation: async () => [
+        snapshot({
+          priceActive: false,
+          stock: { onlineQuantity: createStockQuantity(2), restockPlanned: false, showLowStock: true },
+        }),
+      ],
+    });
+
+    expect(record).not.toHaveProperty('lowStockQuantity');
+  });
 });

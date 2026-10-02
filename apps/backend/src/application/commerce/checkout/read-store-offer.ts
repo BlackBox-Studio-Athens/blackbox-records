@@ -6,6 +6,7 @@ import type {
 import {
   classifyStoreStockAvailability,
   parseStoreItemSlug,
+  readLowStockQuantity,
   storeStockAvailabilityLabels,
   type StoreItemSlug,
   type VariantId,
@@ -57,6 +58,7 @@ function readyOffer(
   storeItemSlug: StoreItemSlug,
   variantId: VariantId,
   price: Extract<StoreOffer, { catalogStatus: 'ready' }>['price'],
+  lowStockQuantity: number | undefined,
 ): Extract<StoreOffer, { catalogStatus: 'ready' }> {
   return {
     storeItemSlug,
@@ -67,6 +69,7 @@ function readyOffer(
     },
     canCheckout: true,
     catalogStatus: 'ready',
+    ...(lowStockQuantity === undefined ? {} : { lowStockQuantity }),
     price,
   };
 }
@@ -115,7 +118,12 @@ export async function readStoreOffer(
     return catalogDriftOffer(storeItem.storeItemSlug, storeItem.variantId);
   }
 
-  return readyOffer(storeItem.storeItemSlug, storeItem.variantId, price);
+  return readyOffer(
+    storeItem.storeItemSlug,
+    storeItem.variantId,
+    price,
+    readLowStockQuantity(stockAvailability, currentStock),
+  );
 }
 
 export async function listVariantOffersForStoreItem(

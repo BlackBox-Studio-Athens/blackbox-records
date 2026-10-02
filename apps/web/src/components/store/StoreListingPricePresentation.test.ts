@@ -163,6 +163,36 @@ describe('Store listing-price presentation', () => {
     expect(older.dataset.storeListingAvailabilityState).toBe('unknown');
   });
 
+  it('shows copies left on stocked cards while keeping Buy available', async () => {
+    const scarce = availabilityPlaceholder('scarce');
+    const plenty = availabilityPlaceholder('plenty');
+    const unpriced = availabilityPlaceholder('unpriced');
+    const scarceBuy = buyButton('scarce');
+    const records = [
+      {
+        storeItemSlug: 'scarce',
+        presentationState: 'ready',
+        displayPrice: '€28.00',
+        availabilityState: 'stocked',
+        lowStockQuantity: 2,
+      },
+      { storeItemSlug: 'plenty', presentationState: 'ready', displayPrice: '€28.00', availabilityState: 'stocked' },
+      { storeItemSlug: 'unpriced', presentationState: 'unavailable', availabilityState: 'stocked' },
+    ];
+
+    connectStoreListingPricePresentation({
+      readListingPrices: async () => records as never,
+      root: listingRoot([], [scarce, plenty, unpriced], [scarceBuy]),
+    });
+
+    await vi.waitFor(() => expect(scarce.textContent).toBe('Only 2 left'));
+    expect(scarce.hidden).toBe(false);
+    expect(scarce.dataset.storeListingAvailabilityState).toBe('low_stock');
+    expect(scarceBuy.hidden).toBe(false);
+    expect(plenty.hidden).toBe(true);
+    expect(unpriced.hidden).toBe(true);
+  });
+
   it('consumes one already-prepared projection without creating a second read', async () => {
     const item = placeholder('item');
     const prepareProjection = vi.fn(async () => [

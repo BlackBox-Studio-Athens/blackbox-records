@@ -1,6 +1,7 @@
 import type { StoreOfferListingPriceSnapshotRepository } from '../../../../domain/commerce/repositories/spi';
 import {
   classifyStoreStockAvailability,
+  readLowStockQuantity,
   type StoreItemSlug,
   type StoreStockAvailability,
 } from '../../../../domain/commerce';
@@ -10,6 +11,7 @@ export type StoreListingPricePresentation =
   | {
       displayPrice: string;
       availabilityState: StoreStockAvailability;
+      lowStockQuantity?: number;
       presentationState: 'ready';
       storeItemSlug: StoreItemSlug;
     }
@@ -37,8 +39,10 @@ export async function readStoreListingPrices(
       };
     }
 
+    const lowStockQuantity = readLowStockQuantity(availabilityState, snapshot.stock);
     return {
       availabilityState,
+      ...(lowStockQuantity === undefined ? {} : { lowStockQuantity }),
       displayPrice:
         snapshot.amountMinor === null
           ? 'Pay what you want'

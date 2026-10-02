@@ -240,6 +240,24 @@ describe('StoreItemPurchaseActions', () => {
     });
   });
 
+  it('carries the Worker copies-left count only with a buyable offer', async () => {
+    const readStoreOffer = vi
+      .fn<PublicCheckoutApi['readStoreOffer']>()
+      .mockResolvedValueOnce({ ...readyOffer, lowStockQuantity: 3 })
+      .mockResolvedValueOnce({ ...readyOffer, lowStockQuantity: 1 })
+      .mockResolvedValueOnce(readyOffer);
+    const api = createApi({ readStoreOffer });
+
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toMatchObject({
+      cartItem: { variantId: readyOffer.variantId },
+      lowStockLabel: 'Only 3 left',
+    });
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toMatchObject({
+      lowStockLabel: 'Only 1 left',
+    });
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.not.toHaveProperty('lowStockLabel');
+  });
+
   it('uses neutral tone for planned restock and checkout pauses', async () => {
     const readStoreOffer = vi
       .fn<PublicCheckoutApi['readStoreOffer']>()

@@ -10,7 +10,16 @@ describe('Prisma listing price presentation', () => {
   it('reads listing prices and effective stock in one query, matching checkout holds', async () => {
     const prisma = createPrismaClient(env);
     const suffix = crypto.randomUUID();
-    const names = ['stocked', 'held', 'restock', 'missing-stock', 'missing-availability', 'physical-cap', 'paused'];
+    const names = [
+      'stocked',
+      'held',
+      'restock',
+      'missing-stock',
+      'missing-availability',
+      'physical-cap',
+      'paused',
+      'scarce',
+    ];
     const ids = names.map((name) => `variant_listing_${name}_${suffix}`);
     const slugs = names.map((name) => `listing-${name}-${suffix}`);
     const date = new Date('2020-01-01T00:00:00Z');
@@ -47,6 +56,7 @@ describe('Prisma listing price presentation', () => {
                   quantity: name === 'physical-cap' ? 0 : 2,
                   onlineQuantity: name === 'restock' || name === 'paused' || name === 'physical-cap' ? 0 : 2,
                   restockPlanned: name === 'restock',
+                  showLowStock: name === 'scarce' || name === 'stocked' || name === 'restock',
                 },
               ],
         ),
@@ -100,7 +110,14 @@ describe('Prisma listing price presentation', () => {
         'unavailable',
         'sold_out',
         'unavailable',
+        'stocked',
       ]);
+      const lowStockBySlug = slugs.map(
+        (slug) =>
+          (records.find((record) => record.storeItemSlug === slug) as { lowStockQuantity?: number } | undefined)
+            ?.lowStockQuantity,
+      );
+      expect(lowStockBySlug).toEqual([2, undefined, undefined, undefined, undefined, undefined, undefined, 2]);
       expect(records.every((record) => record.presentationState === 'ready' && record.displayPrice === '€28.00')).toBe(
         true,
       );

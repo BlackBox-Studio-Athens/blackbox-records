@@ -15,5 +15,10 @@ export {
 export type { CheckoutSessionId, PaymentIntentId, StoreItemSlug, StripePriceId, VariantId } from './ids';
 export type { CartQuantity, OnlineStockQuantity, StockChangeDelta, StockQuantity, StockStateValue } from './quantities';
 export type { AcceptedMonetaryPolicy, OrderMonetarySnapshot, OrderMonetaryFields } from './monetary';
-export { classifyStoreStockAvailability, storeStockAvailabilityLabels } from './stock-availability';
+export {
+  classifyStoreStockAvailability,
+  LOW_STOCK_THRESHOLD,
+  readLowStockQuantity,
+  storeStockAvailabilityLabels,
+} from './stock-availability';
 export type { StoreStockAvailability } from './stock-availability';

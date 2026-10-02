@@ -268,6 +268,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/internal/variants/{variantId}/stock/low-stock-notice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["setShowLowStock"];
+        trace?: never;
+    };
     "/api/internal/variants/{variantId}/stock/restock-plan": {
         parameters: {
             query?: never;
@@ -613,6 +629,7 @@ export type components = {
             quantity: number;
             restockPlanned: boolean;
             revision: number | null;
+            showLowStock: boolean;
             /** Format: date-time */
             updatedAt: string | null;
         };
@@ -663,6 +680,10 @@ export type components = {
         SetRestockPlannedBody: {
             expectedRevision: number | null;
             restockPlanned: boolean;
+        };
+        SetShowLowStockBody: {
+            expectedRevision: number | null;
+            showLowStock: boolean;
         };
     };
     responses: never;
@@ -1810,6 +1831,77 @@ export interface operations {
             };
             /** @description Variant not found. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    setShowLowStock: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SetShowLowStockBody"];
+            };
+        };
+        responses: {
+            /** @description Updated whether shoppers see copies left. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalStockDetail"];
+                };
+            };
+            /** @description Invalid copies-left setting. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Variant not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Stock changed since the current revision was read. */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

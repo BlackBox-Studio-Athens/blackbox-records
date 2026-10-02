@@ -853,6 +853,9 @@
           "restockPlanned": {
             "type": "boolean"
           },
+          "showLowStock": {
+            "type": "boolean"
+          },
           "updatedAt": {
             "type": [
               "string",
@@ -866,6 +869,7 @@
           "onlineQuantity",
           "quantity",
           "restockPlanned",
+          "showLowStock",
           "updatedAt"
         ]
       },
@@ -886,6 +890,25 @@
         "required": [
           "expectedRevision",
           "restockPlanned"
+        ]
+      },
+      "SetShowLowStockBody": {
+        "type": "object",
+        "properties": {
+          "expectedRevision": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "showLowStock": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "showLowStock"
         ]
       },
       "InternalStockHistoryResponse": {
@@ -2394,6 +2417,96 @@
           },
           "400": {
             "description": "Invalid restock plan.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Operator authentication failed.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Variant not found.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Stock changed since the current revision was read.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Operator authentication is temporarily unavailable.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/internal/variants/{variantId}/stock/low-stock-notice": {
+      "patch": {
+        "operationId": "setShowLowStock",
+        "tags": [
+          "Internal Stock"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "variantId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetShowLowStockBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated whether shoppers see copies left.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalStockDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid copies-left setting.",
             "content": {
               "application/problem+json": {
                 "schema": {

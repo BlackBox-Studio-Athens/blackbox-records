@@ -79,6 +79,7 @@ class InMemoryStockRepository implements StockRepository {
       onlineQuantity: stockQuantity(state.onlineQuantity),
       quantity: stockQuantity(state.quantity),
       restockPlanned: existing?.restockPlanned ?? false,
+      showLowStock: existing?.showLowStock ?? false,
       updatedAt: new Date('2026-04-24T11:00:00.000Z'),
       variantId: toVariantId(variantId),
     };
@@ -195,6 +196,7 @@ describe('commerce stock use cases', () => {
         onlineQuantity: 0,
         quantity: 0,
         restockPlanned: false,
+        showLowStock: false,
         updatedAt: null,
       },
     });

@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 
+import { LOW_STOCK_THRESHOLD } from '../../../domain/commerce';
 import { SERVICES_INQUIRY_FIELD_LIMITS, SERVICES_INQUIRY_SERVICES } from '../../../application/email';
 import {
   hypermediaLinkSchema,
@@ -73,6 +74,13 @@ const offerPriceSchema = z
   .discriminatedUnion('kind', [fixedOfferPriceSchema, payWhatYouWantOfferPriceSchema])
   .openapi('PublicStoreOfferPrice');
 
+const lowStockQuantitySchema = z
+  .number()
+  .int()
+  .min(1)
+  .max(LOW_STOCK_THRESHOLD)
+  .describe('Copies left, present only when staff enabled the notice and few copies remain.');
+
 const storeOfferIdentitySchema = z.object({
   storeItemSlug: z.string(),
   variantId: z.string(),
@@ -84,6 +92,7 @@ const storeOfferSchema = z
       availability: z.object({ label: z.string(), status: z.literal('available') }),
       canCheckout: z.literal(true),
       catalogStatus: z.literal('ready'),
+      lowStockQuantity: lowStockQuantitySchema.optional(),
       price: offerPriceSchema,
       ...hypermediaMetadataShape,
     }),
@@ -125,6 +134,7 @@ const storeListingPriceSchema = z
     z.object({
       displayPrice: z.string().trim().min(1),
       availabilityState: z.enum(['stocked', 'sold_out', 'out_of_stock', 'unavailable']),
+      lowStockQuantity: lowStockQuantitySchema.optional(),
       presentationState: z.literal('ready'),
       storeItemSlug: z.string().trim().min(1),
     }),

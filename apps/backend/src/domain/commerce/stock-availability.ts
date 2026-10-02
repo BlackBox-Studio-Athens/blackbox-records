@@ -20,3 +20,13 @@ export function classifyStoreStockAvailability(
   if (stock.onlineQuantity <= 0) return stock.restockPlanned ? 'out_of_stock' : 'sold_out';
   return availability.status === 'available' && availability.canBuy ? 'stocked' : 'unavailable';
 }
+
+export const LOW_STOCK_THRESHOLD = 5;
+
+export function readLowStockQuantity(
+  state: StoreStockAvailability,
+  stock: Pick<StockRecord, 'onlineQuantity' | 'showLowStock'> | null,
+): number | undefined {
+  if (state !== 'stocked' || !stock?.showLowStock) return undefined;
+  return stock.onlineQuantity >= 1 && stock.onlineQuantity <= LOW_STOCK_THRESHOLD ? stock.onlineQuantity : undefined;
+}

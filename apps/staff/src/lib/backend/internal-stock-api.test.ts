@@ -76,6 +76,24 @@ describe('createInternalStockApi', () => {
     );
   });
 
+  it('updates the per-item copies-left notice with the revision from stock detail', async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ ...variant, stock: {} }), { status: 200 }));
+    const api = createInternalStockApi({ fetcher });
+
+    await api.setShowLowStock(variant.variantId, { expectedRevision: 2, showLowStock: true });
+
+    expect(fetcher).toHaveBeenCalledWith(
+      '/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/low-stock-notice',
+      {
+        body: JSON.stringify({ expectedRevision: 2, showLowStock: true }),
+        cache: 'no-store',
+        credentials: 'same-origin',
+        headers: { 'content-type': 'application/json' },
+        method: 'PATCH',
+      },
+    );
+  });
+
   it('updates the per-item restock plan with the revision from stock detail', async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify({ ...variant, stock: {} }), { status: 200 }));
     const api = createInternalStockApi({ fetcher });

@@ -18,6 +18,7 @@ type StockRow = {
   quantity: number;
   onlineQuantity: number;
   restockPlanned: number;
+  showLowStock: number;
   revision: number;
   createdAt: string;
   updatedAt: string;
@@ -53,20 +54,36 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
     restockPlanned: boolean;
     variantId: StockRecord['variantId'];
   }): Promise<StockRecord | null> {
+    return this.setStockFlag('restockPlanned', input.restockPlanned, input);
+  }
+
+  public async setShowLowStock(input: {
+    expectedRevision: number | null;
+    showLowStock: boolean;
+    variantId: StockRecord['variantId'];
+  }): Promise<StockRecord | null> {
+    return this.setStockFlag('showLowStock', input.showLowStock, input);
+  }
+
+  private async setStockFlag(
+    column: 'restockPlanned' | 'showLowStock',
+    value: boolean,
+    input: { expectedRevision: number | null; variantId: StockRecord['variantId'] },
+  ): Promise<StockRecord | null> {
     const timestamp = new Date().toISOString();
     const row = await this.db
       .prepare(
         [
-          `INSERT INTO "Stock" ("id", "variantId", "quantity", "onlineQuantity", "restockPlanned", "revision", "createdAt", "updatedAt")`,
+          `INSERT INTO "Stock" ("id", "variantId", "quantity", "onlineQuantity", "${column}", "revision", "createdAt", "updatedAt")`,
           `SELECT ?, ?, 0, 0, ?, 0, ?, ? WHERE ? IS NULL OR EXISTS (SELECT 1 FROM "Stock" WHERE "variantId" = ?)`,
-          `ON CONFLICT ("variantId") DO UPDATE SET "restockPlanned" = excluded."restockPlanned", "revision" = "Stock"."revision" + 1, "updatedAt" = excluded."updatedAt"`,
+          `ON CONFLICT ("variantId") DO UPDATE SET "${column}" = excluded."${column}", "revision" = "Stock"."revision" + 1, "updatedAt" = excluded."updatedAt"`,
           `WHERE "Stock"."revision" = ? RETURNING *`,
         ].join('\n'),
       )
       .bind(
         crypto.randomUUID(),
         input.variantId,
-        input.restockPlanned ? 1 : 0,
+        value ? 1 : 0,
         timestamp,
         timestamp,
         input.expectedRevision,
@@ -446,6 +463,7 @@ function mapStock(row: StockRow): StockRecord {
     quantity: createStockQuantity(row.quantity),
     onlineQuantity: createStockQuantity(row.onlineQuantity),
     restockPlanned: row.restockPlanned === 1,
+    showLowStock: row.showLowStock === 1,
     revision: row.revision,
     createdAt: new Date(row.createdAt),
     updatedAt: new Date(row.updatedAt),

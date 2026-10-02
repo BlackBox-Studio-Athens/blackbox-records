@@ -16,6 +16,11 @@ export interface OperatorStockRepository {
     restockPlanned: boolean;
     variantId: StockRecord['variantId'];
   }): Promise<StockRecord | null>;
+  setShowLowStock(input: {
+    expectedRevision: number | null;
+    showLowStock: boolean;
+    variantId: StockRecord['variantId'];
+  }): Promise<StockRecord | null>;
   recordChange(input: RecordStockChangeInput): Promise<{ stock: StockRecord; entry: StockChangeRecord } | null>;
   recordCount(input: RecordStockCountInput & { expectedRevision: number | null }): Promise<{
     stock: StockRecord;

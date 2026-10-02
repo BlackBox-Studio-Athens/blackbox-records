@@ -120,6 +120,27 @@ describe('D1OperatorStockRepository idempotency', () => {
     await expect(countRows('StockCount', variantId)).resolves.toBe(0);
   });
 
+  it('persists the copies-left notice without changing quantities or restock intent', async () => {
+    const variantId = parseVariantId(`variant_low_stock_${crypto.randomUUID()}`);
+    await seedStock(variantId, 4);
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+
+    const enabled = await repository.setShowLowStock({ expectedRevision: 0, showLowStock: true, variantId });
+    expect(enabled).toMatchObject({
+      onlineQuantity: 4,
+      quantity: 4,
+      restockPlanned: false,
+      revision: 1,
+      showLowStock: true,
+    });
+    await expect(
+      repository.setShowLowStock({ expectedRevision: 0, showLowStock: false, variantId }),
+    ).resolves.toBeNull();
+    const disabled = await repository.setShowLowStock({ expectedRevision: 1, showLowStock: false, variantId });
+    expect(disabled).toMatchObject({ revision: 2, showLowStock: false });
+    await expect(countRows('StockChange', variantId)).resolves.toBe(0);
+  });
+
   it('creates an empty stock row when restock is planned before the first count', async () => {
     const variantId = parseVariantId(`variant_restock_plan_initial_${crypto.randomUUID()}`);
     const repository = new D1OperatorStockRepository(env.COMMERCE_DB);

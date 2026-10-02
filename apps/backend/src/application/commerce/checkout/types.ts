@@ -26,6 +26,7 @@ export type StoreOffer = StoreOfferIdentity &
         availability: { label: string; status: 'available' };
         canCheckout: true;
         catalogStatus: 'ready';
+        lowStockQuantity?: number;
         price: StoreOfferPrice;
       }
     | {

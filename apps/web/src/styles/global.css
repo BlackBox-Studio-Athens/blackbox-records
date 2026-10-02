@@ -4820,6 +4820,55 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   border-color: var(--store-accent);
 }
 
+/* Copies left: a commerce status in Store Blood with a quiet pulse, never a control. */
+.store-low-stock,
+.store-collection-page .store-item-card__availability[data-store-listing-availability-state='low_stock'] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--store-accent);
+  background: var(--store-accent-surface);
+  color: var(--foreground);
+}
+
+.store-low-stock::before,
+.store-collection-page .store-item-card__availability[data-store-listing-availability-state='low_stock']::before {
+  content: '';
+  flex: none;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  background: var(--store-accent-active);
+}
+
+.store-low-stock {
+  justify-self: start;
+  width: fit-content;
+  padding: 0.35rem 0.6rem 0.3rem;
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .store-low-stock::before,
+  .store-collection-page .store-item-card__availability[data-store-listing-availability-state='low_stock']::before {
+    animation: store-low-stock-pulse 2.4s ease-out infinite;
+  }
+}
+
+@keyframes store-low-stock-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--store-accent-active) 65%, transparent);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 0.375rem transparent;
+  }
+}
+
 html[data-store-coverflow-capable]
   [data-store-coverflow-mode='preview']
   [data-store-coverflow-position='active']
@@ -4992,7 +5041,8 @@ html[data-store-coverflow-capable]
   :is(p, button, a, [data-store-purchase-group] > span):not(
     .site-button,
     .music-listen-trigger,
-    [data-store-item-purchase-status]
+    [data-store-item-purchase-status],
+    .store-low-stock
   ) {
   font-family: var(--font-sans);
   letter-spacing: normal;

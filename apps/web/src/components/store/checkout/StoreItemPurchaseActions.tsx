@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { LoadingButtonContent } from '@/components/ui/loading-feedback';
 import {
   createPublicCheckoutApi,
+  formatStoreLowStockLabel,
   type PublicCheckoutApi,
   type PublicStoreOffer,
 } from '@/components/store/checkout/public-checkout-api';
@@ -29,6 +30,7 @@ type StoreItemPurchaseActionsProps = {
 type StoreItemPurchaseActionState = {
   cartItem: CartLineItemSnapshot | null;
   label: string | null;
+  lowStockLabel?: string;
   statusTone: StoreItemPurchaseStatusTone;
 };
 
@@ -92,6 +94,8 @@ export async function loadStoreItemPurchaseActionState(
   try {
     const offer = await api.readStoreOffer(cartSeed.storeItemSlug);
     const resolvedCartItem = createCartLineItemSnapshotFromWorkerOffer(cartSeed, offer);
+    const lowStockLabel =
+      resolvedCartItem && offer.catalogStatus === 'ready' ? formatStoreLowStockLabel(offer.lowStockQuantity) : null;
     const label = resolvedCartItem
       ? null
       : offer.catalogStatus === 'ready'
@@ -101,6 +105,7 @@ export async function loadStoreItemPurchaseActionState(
     return {
       cartItem: resolvedCartItem,
       label,
+      ...(lowStockLabel ? { lowStockLabel } : {}),
       statusTone: getStoreItemPurchaseStatusTone(label),
     };
   } catch {
@@ -234,6 +239,11 @@ export default function StoreItemPurchaseActions({
 
   return (
     <>
+      {purchaseState.lowStockLabel && (
+        <p className="store-low-stock" data-store-item-low-stock>
+          {purchaseState.lowStockLabel}
+        </p>
+      )}
       <Button
         type="button"
         size="lg"

@@ -115,6 +115,7 @@ class InMemoryStockRepository implements StockRepository {
       onlineQuantity: stockQuantity(state.onlineQuantity),
       quantity: stockQuantity(state.quantity),
       restockPlanned: current?.restockPlanned ?? false,
+      showLowStock: current?.showLowStock ?? false,
       updatedAt: new Date('2026-04-24T10:00:00.000Z'),
       variantId: toVariantId(variantId),
     };
@@ -1028,6 +1029,31 @@ describe('checkout use cases', () => {
     });
     expect(offer?.price).not.toBeNull();
   });
+
+  it.each([
+    [false, 3, undefined],
+    [true, 3, 3],
+    [true, 6, undefined],
+  ] as const)(
+    'exposes copies left on a ready offer only when enabled and low (notice %s, %i online)',
+    async (showLowStock, onlineQuantity, expected) => {
+      const saved = await stock.save(storeItem.variantId, { onlineQuantity, quantity: onlineQuantity });
+      stock.records.set(storeItem.variantId, { ...saved, showLowStock });
+
+      const offer = await readStoreOffer(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        storeItem.storeItemSlug,
+      );
+
+      expect(offer).toMatchObject({ catalogStatus: 'ready' });
+      if (expected === undefined) expect(offer).not.toHaveProperty('lowStockQuantity');
+      else expect(offer).toMatchObject({ lowStockQuantity: expected });
+    },
+  );
 
   it('pauses Store Offer checkout when Product Projection cannot be confirmed', async () => {
     catalogReconciler.issues.set(storeItem.variantId, [

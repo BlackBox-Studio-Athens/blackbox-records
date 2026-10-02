@@ -7,6 +7,7 @@ export type StockRecord = {
   quantity: StockQuantity;
   onlineQuantity: StockQuantity;
   restockPlanned: boolean;
+  showLowStock: boolean;
   createdAt: Date;
   updatedAt: Date;
 };

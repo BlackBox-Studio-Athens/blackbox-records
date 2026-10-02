@@ -4,6 +4,11 @@ import { getPublicBackendBaseUrl } from '../../../platform/lib/backend/public-ba
 
 export type PublicStoreOffer = PublicApiComponents['schemas']['PublicStoreOffer'];
 export type PublicStoreListingPrice = PublicApiComponents['schemas']['PublicStoreListingPrice'];
+
+// The Worker sends a count only when staff enabled the notice for the item and few copies remain online.
+export function formatStoreLowStockLabel(lowStockQuantity: number | undefined): string | null {
+  return lowStockQuantity && lowStockQuantity > 0 ? `Only ${lowStockQuantity} left` : null;
+}
 export type StoreCapabilities = PublicApiComponents['schemas']['StoreCapabilities'];
 export type CheckoutState = PublicApiComponents['schemas']['CheckoutState'];
 export type NewsletterRegistrationBody = PublicApiComponents['schemas']['NewsletterRegistrationBody'];

@@ -307,6 +307,8 @@ export type components = {
             /** @enum {string} */
             availabilityState: "stocked" | "sold_out" | "out_of_stock" | "unavailable";
             displayPrice: string;
+            /** @description Copies left, present only when staff enabled the notice and few copies remain. */
+            lowStockQuantity?: number;
             /** @enum {string} */
             presentationState: "ready";
             storeItemSlug: string;
@@ -329,6 +331,8 @@ export type components = {
             /** @enum {string} */
             catalogStatus: "ready";
             links?: components["schemas"]["ApiLink"][];
+            /** @description Copies left, present only when staff enabled the notice and few copies remain. */
+            lowStockQuantity?: number;
             price: components["schemas"]["PublicStoreOfferPrice"];
             storeItemSlug: string;
             variantId: string;

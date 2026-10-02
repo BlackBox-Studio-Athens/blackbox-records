@@ -241,6 +241,33 @@ test('Buy on a Store card adds the item and opens the cart', async ({ page }) =>
   await expect(page.locator('[data-store-cart-trigger]').first()).toHaveAccessibleName('Cart, 3 items');
 });
 
+test('a Store card shows copies left beside its price without hiding Buy', async ({ page }) => {
+  const storeItemSlug = 'disintegration-black-vinyl-lp';
+  const secondSlug = 'anarchotribal-vinyl';
+  await page.route('**/api/store/listing-prices', (route) =>
+    route.fulfill({
+      json: [
+        {
+          storeItemSlug,
+          presentationState: 'ready',
+          displayPrice: '€28.00',
+          availabilityState: 'stocked',
+          lowStockQuantity: 3,
+        },
+        { storeItemSlug: secondSlug, presentationState: 'ready', displayPrice: '€28.00', availabilityState: 'stocked' },
+      ],
+    }),
+  );
+  await page.goto('store/');
+  await waitForShell(page);
+
+  const notice = page.locator(`[data-store-listing-availability][data-store-item-slug="${storeItemSlug}"]`);
+  await expect(notice).toHaveText('Only 3 left');
+  await expect(notice).toHaveAttribute('data-store-listing-availability-state', 'low_stock');
+  await expect(page.locator(`[data-store-card-buy][data-store-item-slug="${storeItemSlug}"]`)).toBeVisible();
+  await expect(page.locator(`[data-store-listing-availability][data-store-item-slug="${secondSlug}"]`)).toBeHidden();
+});
+
 test('the checkout pay control fills in place when the shipping quote arrives', async ({ page }) => {
   await page.goto(`.${localRepresentativePaths.storeItem}`);
   await waitForShell(page);

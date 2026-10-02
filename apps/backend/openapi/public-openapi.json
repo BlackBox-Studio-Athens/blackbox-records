@@ -266,6 +266,12 @@
                   "unavailable"
                 ]
               },
+              "lowStockQuantity": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5,
+                "description": "Copies left, present only when staff enabled the notice and few copies remain."
+              },
               "presentationState": {
                 "type": "string",
                 "enum": [
@@ -355,6 +361,12 @@
                 "enum": [
                   "ready"
                 ]
+              },
+              "lowStockQuantity": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5,
+                "description": "Copies left, present only when staff enabled the notice and few copies remain."
               },
               "price": {
                 "$ref": "#/components/schemas/PublicStoreOfferPrice"
