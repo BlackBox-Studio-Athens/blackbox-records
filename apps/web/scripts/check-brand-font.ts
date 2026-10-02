@@ -4,7 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const webRoot = fileURLToPath(new URL('..', import.meta.url));
-const expectedVeneerSha256 = 'f02b74cb53a1640c6cbfc9a2aa5f5ce0609fa358231a9b30b93c1e0072622939';
+// Outline-simplified derivative made by scripts/simplify-veneer.py; see that script for its source and settings.
+const expectedVeneerSha256 = '92be7827d6c18ddf62ea4e84709f42700025c07059842e13158ea9bcfee50e2d';
 const stableFontPath = '/assets/fonts/brand/veneer_regular.woff2';
 
 function sha256(filePath: string): string {
@@ -77,7 +78,7 @@ export function checkBrandFontBuild(root = webRoot): void {
 function main(): void {
   checkBrandFontSources();
   checkBrandFontBuild();
-  console.log(`Veneer delivery validation passed (${expectedVeneerSha256}, 312816 bytes).`);
+  console.log(`Veneer delivery validation passed (${expectedVeneerSha256}, 78616 bytes).`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) main();
