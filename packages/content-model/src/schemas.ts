@@ -97,6 +97,7 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
     summary: z.string().optional(),
     summary_rich: richTextSchema.nullish(),
     singles: z.array(z.object({ title: requiredText, url: httpsUrl })).optional(),
+    partner_links: z.array(z.object({ label: requiredText, url: httpsUrl })).optional(),
     clips: z
       .array(
         z.object({ title: requiredText, youtube_video_id: z.string().regex(new RegExp(youtubeVideoIdPatternSource)) }),

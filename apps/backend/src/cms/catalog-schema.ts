@@ -49,7 +49,7 @@ export async function prepareCatalogSchema(runtime: EmDashRuntime) {
       await registry.createField(collection, { slug: 'tracklist', label: 'Tracklist', type: 'json', required: false });
     else if (existing.type !== 'json') throw new Error(`Unexpected field type: ${collection}.tracklist`);
   }
-  for (const slug of ['singles', 'clips']) {
+  for (const slug of ['singles', 'clips', 'partner_links']) {
     const existing = await registry.getField('releases', slug);
     if (!existing) await registry.createField('releases', { slug, label: slug, type: 'json', required: false });
     else if (existing.type !== 'json') throw new Error(`Unexpected field type: releases.${slug}`);

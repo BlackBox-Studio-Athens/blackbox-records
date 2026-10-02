@@ -123,6 +123,16 @@ it('loads only checksum-bound content, maps stable references and rejects altere
       releaseSchema.safeParse({ ...upcomingRelease, clips: [{ title: 'Broken', youtube_video_id: 'invalid' }] })
         .success,
     ).toBe(false);
+    const partnerLinks = [{ label: 'Bandcamp', url: 'https://sidus.bandcamp.com/album/lotus' }];
+    expect(releaseSchema.parse({ ...upcomingRelease, partner_links: partnerLinks }).partner_links).toEqual(
+      partnerLinks,
+    );
+    expect(releaseSchema.parse(upcomingRelease).partner_links).toBeUndefined();
+    for (const partner_links of [
+      [{ label: '', url: 'https://sidus.bandcamp.com/album/lotus' }],
+      [{ label: 'Bandcamp', url: 'http://sidus.bandcamp.com/album/lotus' }],
+    ])
+      expect(releaseSchema.safeParse({ ...upcomingRelease, partner_links }).success).toBe(false);
     for (const date of ['', null]) {
       releaseData.release_date = date;
       expect(releaseSchema.parse(snapshotCollection(loaded, 'releases')[0]!.data).release_date).toBeUndefined();

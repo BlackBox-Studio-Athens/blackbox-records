@@ -388,6 +388,19 @@ test('structured issues cover URLs, email, dates, enums, arrays, media, and rela
   assert.ok(paths('news', { ...news, date: '2026-02-30' }).includes('date'));
   assert.ok(paths('distro', distro).includes('group'));
   assert.ok(paths('releases', { ...releases, formats: [''] }).includes('formats.0'));
+  assert.deepEqual(paths('releases', releases), []);
+  const partnerLink = { label: 'Bandcamp', url: 'https://sidus.bandcamp.com/album/lotus' };
+  assert.deepEqual(paths('releases', { ...releases, partner_links: [partnerLink] }), []);
+  assert.ok(
+    paths('releases', { ...releases, partner_links: [{ ...partnerLink, label: '' }] }).includes(
+      'partner_links.0.label',
+    ),
+  );
+  assert.ok(
+    paths('releases', { ...releases, partner_links: [{ ...partnerLink, url: 'http://sidus.bandcamp.com/' }] }).includes(
+      'partner_links.0.url',
+    ),
+  );
   assert.ok(paths('news', { ...news, image: null }).includes('image'));
   assert.ok(paths('releases', { ...releases, artist: '' }).includes('artist'));
 });
