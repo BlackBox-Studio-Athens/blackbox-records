@@ -22,11 +22,11 @@ export type StoreOfferListingPriceSnapshotRecord = Pick<
   'amountMinor' | 'currencyCode' | 'freshUntil' | 'priceActive' | 'productActive' | 'storeItemSlug'
 > & {
   availability: Pick<ItemAvailabilityRecord, 'status' | 'canBuy'> | null;
-  stock: Pick<StockRecord, 'onlineQuantity' | 'restockPlanned' | 'showLowStock'> | null;
+  stock: Pick<StockRecord, 'onlineQuantity' | 'restockPlanned' | 'showLowStock' | 'preorder'> | null;
 };
 
 export interface StoreOfferListingPriceSnapshotRepository {
-  listForListingPricePresentation(): Promise<StoreOfferListingPriceSnapshotRecord[]>;
+  listForListingPricePresentation(scope?: 'preorders'): Promise<StoreOfferListingPriceSnapshotRecord[]>;
 }
 
 export interface StoreOfferSnapshotRepository {

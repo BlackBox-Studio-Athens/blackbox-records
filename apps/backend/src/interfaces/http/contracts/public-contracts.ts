@@ -152,11 +152,13 @@ const storeListingPriceSchema = z
       displayPrice: z.string().trim().min(1),
       availabilityState: z.enum(['stocked', 'sold_out', 'out_of_stock', 'unavailable']),
       lowStockQuantity: lowStockQuantitySchema.optional(),
+      preorder: publicStorePreorderSchema,
       presentationState: z.literal('ready'),
       storeItemSlug: z.string().trim().min(1),
     }),
     z.object({
       presentationState: z.literal('unavailable'),
+      preorder: publicStorePreorderSchema,
       availabilityState: z.enum(['stocked', 'sold_out', 'out_of_stock', 'unavailable']),
       storeItemSlug: z.string().trim().min(1),
     }),
@@ -337,6 +339,7 @@ export const getStoreListingPricesRoute = createRoute({
   method: 'get',
   path: '/api/store/listing-prices',
   operationId: 'listStoreListingPrices',
+  request: { query: z.object({ scope: z.literal('preorders').optional() }) },
   responses: {
     200: {
       headers: linkResponseHeaders,

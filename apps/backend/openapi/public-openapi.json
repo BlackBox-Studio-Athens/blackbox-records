@@ -272,6 +272,9 @@
                 "maximum": 5,
                 "description": "Copies left, present only when staff enabled the notice and few copies remain."
               },
+              "preorder": {
+                "$ref": "#/components/schemas/PublicStorePreorder"
+              },
               "presentationState": {
                 "type": "string",
                 "enum": [
@@ -286,6 +289,7 @@
             "required": [
               "displayPrice",
               "availabilityState",
+              "preorder",
               "presentationState",
               "storeItemSlug"
             ]
@@ -298,6 +302,9 @@
                 "enum": [
                   "unavailable"
                 ]
+              },
+              "preorder": {
+                "$ref": "#/components/schemas/PublicStorePreorder"
               },
               "availabilityState": {
                 "type": "string",
@@ -315,9 +322,80 @@
             },
             "required": [
               "presentationState",
+              "preorder",
               "availabilityState",
               "storeItemSlug"
             ]
+          }
+        ]
+      },
+      "PublicStorePreorder": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "shipEstimate": {
+            "$ref": "#/components/schemas/PublicShipEstimate"
+          }
+        },
+        "required": [
+          "shipEstimate"
+        ]
+      },
+      "PublicShipEstimate": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "month"
+                ]
+              },
+              "month": {
+                "type": "string"
+              },
+              "part": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "early",
+                  "mid",
+                  "late",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "month",
+              "part"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "date"
+                ]
+              },
+              "date": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "date"
+            ]
+          },
+          {
+            "type": "null"
           }
         ]
       },
@@ -530,76 +608,6 @@
               "catalogStatus",
               "price"
             ]
-          }
-        ]
-      },
-      "PublicStorePreorder": {
-        "type": [
-          "object",
-          "null"
-        ],
-        "properties": {
-          "shipEstimate": {
-            "$ref": "#/components/schemas/PublicShipEstimate"
-          }
-        },
-        "required": [
-          "shipEstimate"
-        ]
-      },
-      "PublicShipEstimate": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "month"
-                ]
-              },
-              "month": {
-                "type": "string"
-              },
-              "part": {
-                "type": [
-                  "string",
-                  "null"
-                ],
-                "enum": [
-                  "early",
-                  "mid",
-                  "late",
-                  null
-                ]
-              }
-            },
-            "required": [
-              "kind",
-              "month",
-              "part"
-            ]
-          },
-          {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "date"
-                ]
-              },
-              "date": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "kind",
-              "date"
-            ]
-          },
-          {
-            "type": "null"
           }
         ]
       },
@@ -1117,6 +1125,19 @@
         "operationId": "listStoreListingPrices",
         "tags": [
           "Store"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "preorders"
+              ]
+            },
+            "required": false,
+            "name": "scope",
+            "in": "query"
+          }
         ],
         "responses": {
           "200": {

@@ -5,8 +5,14 @@ import type {
   StoreOfferSnapshotRepository,
   StoreOfferSnapshotState,
 } from '../../../domain/commerce/repositories/spi';
-import { createStockQuantity, parseStoreItemSlug, parseStripePriceId, parseVariantId } from '../../../domain/commerce';
-import type { PrismaClient } from '../../../generated/prisma/client';
+import {
+  createStockQuantity,
+  parseStoreItemSlug,
+  parseStripePriceId,
+  parseVariantId,
+  stockPreorderFromColumns,
+} from '../../../domain/commerce';
+import { Prisma, type PrismaClient } from '../../../generated/prisma/client';
 
 function mapStoreOfferSnapshot(record: {
   amountMinor: number | null;
@@ -55,7 +61,7 @@ export class PrismaStoreOfferSnapshotRepository
     return record ? mapStoreOfferSnapshot(record) : null;
   }
 
-  public async listForListingPricePresentation(): Promise<StoreOfferListingPriceSnapshotRecord[]> {
+  public async listForListingPricePresentation(scope?: 'preorders'): Promise<StoreOfferListingPriceSnapshotRecord[]> {
     const records = await this.prisma.$queryRaw<
       {
         amountMinor: number | null;
@@ -69,6 +75,10 @@ export class PrismaStoreOfferSnapshotRepository
         effectiveQuantity: number | null;
         restockPlanned: number | null;
         showLowStock: number | null;
+        preorderStartedAt: string | Date | null;
+        preorderShipMonth: string | null;
+        preorderShipPart: string | null;
+        preorderShipDate: string | null;
       }[]
     >`
       SELECT snapshot."amountMinor", snapshot."currencyCode", snapshot."freshUntil",
@@ -76,7 +86,8 @@ export class PrismaStoreOfferSnapshotRepository
         availability."status" AS "availabilityStatus", availability."canBuy",
         CASE WHEN stock."variantId" IS NULL THEN NULL
           ELSE MAX(0, MIN(stock."quantity", stock."onlineQuantity") - COALESCE(holds."quantity", 0))
-        END AS "effectiveQuantity", stock."restockPlanned", stock."showLowStock"
+        END AS "effectiveQuantity", stock."restockPlanned", stock."showLowStock",
+        stock."preorderStartedAt", stock."preorderShipMonth", stock."preorderShipPart", stock."preorderShipDate"
       FROM "StoreOfferSnapshot" snapshot
       INNER JOIN "StoreItemOption" item ON item."storeItemSlug" = snapshot."storeItemSlug"
         AND item."variantId" = snapshot."variantId"
@@ -89,6 +100,7 @@ export class PrismaStoreOfferSnapshotRepository
         WHERE checkout."status" = 'pending_payment'
         GROUP BY line."variantId"
       ) holds ON holds."variantId" = item."variantId"
+      ${scope === 'preorders' ? Prisma.sql`WHERE stock."preorderStartedAt" IS NOT NULL` : Prisma.empty}
       ORDER BY snapshot."storeItemSlug" ASC
     `;
 
@@ -113,6 +125,13 @@ export class PrismaStoreOfferSnapshotRepository
               onlineQuantity: createStockQuantity(Number(record.effectiveQuantity)),
               restockPlanned: Boolean(record.restockPlanned),
               showLowStock: Boolean(record.showLowStock),
+              preorder: stockPreorderFromColumns({
+                ...record,
+                preorderStartedAt:
+                  record.preorderStartedAt instanceof Date
+                    ? record.preorderStartedAt.toISOString()
+                    : record.preorderStartedAt,
+              }),
             },
     }));
   }

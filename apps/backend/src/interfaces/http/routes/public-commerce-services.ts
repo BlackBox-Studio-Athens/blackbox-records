@@ -146,7 +146,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
       if (totalAmountMinor !== null && !Number.isSafeInteger(totalAmountMinor)) return null;
       return { ...quote, merchandiseGrossMinor, totalAmountMinor };
     },
-    readStoreListingPrices: async () => readStoreListingPrices(storeOfferSnapshots),
+    readStoreListingPrices: async (scope?: 'preorders') => readStoreListingPrices(storeOfferSnapshots, scope),
     readStoreOffer: async (storeItemSlug: string) =>
       readStoreOffer(
         storeItems,

@@ -127,6 +127,7 @@ describe('Store listing-price activation', () => {
       {
         availabilityState: 'stocked' as const,
         displayPrice: '€28.00',
+        preorder: null,
         presentationState: 'ready' as const,
         storeItemSlug: 'item',
       },

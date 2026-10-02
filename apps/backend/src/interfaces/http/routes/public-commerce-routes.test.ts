@@ -13,7 +13,7 @@ import {
 import { CatalogDriftError } from '../../../application/commerce/catalog-sync';
 import { createHttpApp } from '../app';
 import { createPublicCommerceServices } from './public-commerce-services';
-import { getStoreItemRoute } from '../contracts/public-contracts';
+import { getStoreItemRoute, getStoreListingPricesRoute } from '../contracts/public-contracts';
 
 const mockDisconnect = vi.fn(async () => {});
 const mockReadStoreOffer = vi.fn();
@@ -274,12 +274,14 @@ describe('public commerce routes', () => {
       {
         availabilityState: 'sold_out',
         displayPrice: '€28.00',
+        preorder: { shipEstimate: null },
         presentationState: 'ready',
         storeItemSlug: 'disintegration-black-vinyl-lp',
       },
       {
         availabilityState: 'unavailable',
         presentationState: 'unavailable',
+        preorder: null,
         storeItemSlug: 'afterglow-tape',
       },
     ]);
@@ -288,6 +290,7 @@ describe('public commerce routes', () => {
     const response = await app.request('http://backend.test/api/store/listing-prices', {}, testBindings);
 
     expect(mockReadStoreListingPrices).toHaveBeenCalledOnce();
+    expect(mockReadStoreListingPrices).toHaveBeenCalledWith(undefined);
     expect(mockReadStoreOffer).not.toHaveBeenCalled();
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
@@ -297,18 +300,86 @@ describe('public commerce routes', () => {
       {
         availabilityState: 'sold_out',
         displayPrice: '€28.00',
+        preorder: { shipEstimate: null },
         presentationState: 'ready',
         storeItemSlug: 'disintegration-black-vinyl-lp',
       },
       {
         availabilityState: 'unavailable',
         presentationState: 'unavailable',
+        preorder: null,
         storeItemSlug: 'afterglow-tape',
       },
     ]);
     expect(JSON.stringify(body)).not.toMatch(
-      /variantId|canCheckout|stripe|onlineQuantity|restockPlanned|amountMinor|currencyCode/,
+      /variantId|canCheckout|stripe|onlineQuantity|restockPlanned|amountMinor|currencyCode|preorderStartedAt|startedAt|"quantity"/,
     );
+  });
+
+  it('forwards the preorders scope and preserves a scoped no-store self link', async () => {
+    const records = [
+      {
+        availabilityState: 'stocked',
+        displayPrice: '€28.00',
+        lowStockQuantity: 2,
+        presentationState: 'ready',
+        preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: 'late' } },
+        storeItemSlug: 'item',
+      },
+    ];
+    mockReadStoreListingPrices.mockResolvedValueOnce(records);
+    const app = createHttpApp();
+    const response = await app.request(
+      'http://backend.test/api/store/listing-prices?scope=preorders',
+      {},
+      testBindings,
+    );
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    expect(mockReadStoreListingPrices).toHaveBeenCalledExactlyOnceWith('preorders');
+    expect(response.headers.get('Link')).toContain('</api/store/listing-prices?scope=preorders>; rel="self"');
+    await expect(response.json()).resolves.toEqual(records);
+    expect(mockReadStoreOffer).not.toHaveBeenCalled();
+  });
+
+  it.each(['all', '', 'Preorders'])('rejects unsupported listing scope %s before reading', async (scope) => {
+    const response = await createHttpApp().request(
+      `http://backend.test/api/store/listing-prices?scope=${scope}`,
+      {},
+      testBindings,
+    );
+    expect(response.status).toBe(400);
+    expect(mockReadStoreListingPrices).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    null,
+    { shipEstimate: null },
+    { shipEstimate: { kind: 'month', month: '2026-10', part: 'early' } },
+    { shipEstimate: { kind: 'date', date: '2026-10-04' } },
+  ])('requires shopper preorder metadata on both listing branches: %j', (preorder) => {
+    const schema = getStoreListingPricesRoute.responses[200].content['application/json'].schema;
+    for (const presentationState of ['ready', 'unavailable']) {
+      const record = {
+        availabilityState: 'sold_out',
+        presentationState,
+        storeItemSlug: 'item',
+        preorder,
+        ...(presentationState === 'ready' ? { displayPrice: '€28.00', lowStockQuantity: 2 } : {}),
+      };
+      expect(schema.parse([record])).toEqual([record]);
+      const { preorder: _preorder, ...withoutPreorder } = record;
+      expect(schema.safeParse([withoutPreorder]).success).toBe(false);
+      const allowed = [
+        'availabilityState',
+        'displayPrice',
+        'lowStockQuantity',
+        'preorder',
+        'presentationState',
+        'storeItemSlug',
+      ];
+      expect(Object.keys(record).every((key) => allowed.includes(key))).toBe(true);
+    }
   });
 
   it('returns variant offers as an array-shaped contract', async () => {

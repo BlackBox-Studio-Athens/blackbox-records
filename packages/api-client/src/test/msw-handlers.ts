@@ -10,6 +10,7 @@ type NewsletterRegistrationBody = PublicApiComponents['schemas']['NewsletterRegi
 type NewsletterRegistrationResponse = PublicApiComponents['schemas']['NewsletterRegistrationResponse'];
 type PublicBackendErrorResponse = PublicApiComponents['schemas']['BackendErrorResponse'];
 type PublicStoreOffer = PublicApiComponents['schemas']['PublicStoreOffer'];
+type PublicStoreListingPrice = PublicApiComponents['schemas']['PublicStoreListingPrice'];
 type StartCheckoutBody = PublicApiComponents['schemas']['StartCheckoutBody'];
 type StartCheckoutResponse = PublicApiComponents['schemas']['StartCheckoutResponse'];
 type StoreCapabilities = PublicApiComponents['schemas']['StoreCapabilities'];
@@ -76,6 +77,13 @@ export const publicCheckoutFixtures = {
     storeItemSlug: 'disintegration-black-vinyl-lp',
     variantId: 'variant_disintegration-black-vinyl-lp_standard',
   } satisfies PublicStoreOffer,
+  storeListingPrice: {
+    availabilityState: 'stocked',
+    displayPrice: '€28.00',
+    presentationState: 'ready',
+    preorder: null,
+    storeItemSlug: 'disintegration-black-vinyl-lp',
+  } satisfies PublicStoreListingPrice,
 };
 
 export const internalStockFixtures = {
@@ -118,6 +126,13 @@ export const internalStockFixtures = {
 
 export function createPublicCheckoutHandlers(): HttpHandler[] {
   return [
+    http.get<Record<string, never>, never, PublicStoreListingPrice[]>('*/api/store/listing-prices', ({ request }) =>
+      HttpResponse.json(
+        new URL(request.url).searchParams.get('scope') === 'preorders'
+          ? []
+          : [publicCheckoutFixtures.storeListingPrice],
+      ),
+    ),
     http.get<Record<string, never>, never, StoreCapabilities>('*/api/store/capabilities', () =>
       HttpResponse.json(publicCheckoutFixtures.storeCapabilities),
     ),

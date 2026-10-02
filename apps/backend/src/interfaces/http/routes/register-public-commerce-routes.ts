@@ -74,9 +74,13 @@ export function registerPublicCommerceRoutes(app: AppOpenApi, getPublicOpenApiDo
     const services = createPublicCommerceServices(context.env);
 
     try {
-      const response = jsonNoStore(context.json(await services.readStoreListingPrices(), 200));
+      const { scope } = context.req.valid('query');
+      const response = jsonNoStore(context.json(await services.readStoreListingPrices(scope), 200));
       return addLinkHeader(response, [
-        apiLink({ href: '/api/store/listing-prices', rel: 'self' }),
+        apiLink({
+          href: scope ? '/api/store/listing-prices?scope=preorders' : '/api/store/listing-prices',
+          rel: 'self',
+        }),
         apiLink({ href: '/api/store/openapi.json', rel: 'service-desc' }),
       ]);
     } finally {

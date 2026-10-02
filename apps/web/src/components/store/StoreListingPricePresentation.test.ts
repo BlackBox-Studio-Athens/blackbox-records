@@ -150,11 +150,13 @@ describe('Store listing-price presentation', () => {
         availabilityState: 'stocked' as const,
         displayPrice: '€28.00',
         presentationState: 'ready' as const,
+        preorder: null,
         storeItemSlug: 'ready-item',
       },
       {
         availabilityState: 'unavailable' as const,
         presentationState: 'unavailable' as const,
+        preorder: null,
         storeItemSlug: 'unavailable-item',
       },
     ]);
@@ -242,6 +244,7 @@ describe('Store listing-price presentation', () => {
       {
         availabilityState: 'stocked' as const,
         displayPrice: '€24.00',
+        preorder: null,
         presentationState: 'ready' as const,
         storeItemSlug: 'item',
       },

@@ -320,12 +320,14 @@ export type components = {
             displayPrice: string;
             /** @description Copies left, present only when staff enabled the notice and few copies remain. */
             lowStockQuantity?: number;
+            preorder: components["schemas"]["PublicStorePreorder"];
             /** @enum {string} */
             presentationState: "ready";
             storeItemSlug: string;
         } | {
             /** @enum {string} */
             availabilityState: "stocked" | "sold_out" | "out_of_stock" | "unavailable";
+            preorder: components["schemas"]["PublicStorePreorder"];
             /** @enum {string} */
             presentationState: "unavailable";
             storeItemSlug: string;
@@ -733,7 +735,9 @@ export interface operations {
     };
     listStoreListingPrices: {
         parameters: {
-            query?: never;
+            query?: {
+                scope?: "preorders";
+            };
             header?: never;
             path?: never;
             cookie?: never;
