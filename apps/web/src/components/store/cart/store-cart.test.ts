@@ -8,6 +8,7 @@ import {
   incrementCartLineQuantityByVariant,
   decrementCartLineQuantityByVariant,
   getStoreCartCount,
+  parseCartLineItemSnapshot,
   parseSerializedStoreCartState,
   readStoreCartState,
   removeCartLineByVariant,
@@ -48,6 +49,57 @@ function createMemoryStorage() {
 }
 
 describe('store cart state', () => {
+  it('parses saved carts without a pre-order field', () => {
+    const state = parseSerializedStoreCartState(JSON.stringify({ lines: [{ ...canonicalItem, quantity: 2 }] }));
+    expect(state.lines).toEqual([{ ...canonicalItem, quantity: 2 }]);
+    expect(state.primaryLineItem).toEqual(canonicalItem);
+  });
+
+  it.each([
+    null,
+    { shipEstimate: null },
+    { shipEstimate: { kind: 'month', month: '2026-10', part: null } },
+    ...(['early', 'mid', 'late'] as const).map((part) => ({
+      shipEstimate: { kind: 'month' as const, month: '2026-10', part },
+    })),
+    { shipEstimate: { kind: 'date', date: '2028-02-29' } },
+  ])('round-trips a valid pre-order snapshot: %j', (preorder) => {
+    const item = parseCartLineItemSnapshot({ ...canonicalItem, preorder });
+    expect(item).toEqual({ ...canonicalItem, preorder });
+    const storage = createMemoryStorage();
+    writeStoreCartState(storage, addStoreCartItem(item!));
+    expect(readStoreCartState(storage)).toEqual({
+      lines: [{ ...canonicalItem, preorder, quantity: 1 }],
+      primaryLineItem: { ...canonicalItem, preorder },
+    });
+  });
+
+  it.each([
+    true,
+    {},
+    { shipEstimate: {} },
+    { shipEstimate: { kind: 'week', month: '2026-10', part: null } },
+    { shipEstimate: { kind: 'month', month: '2026-13', part: null } },
+    { shipEstimate: { kind: 'month', month: '2026-1', part: null } },
+    { shipEstimate: { kind: 'month', month: '2026-10', part: 'middle' } },
+    { shipEstimate: { kind: 'month', month: '2026-10' } },
+    { shipEstimate: { kind: 'date', date: '2026-02-29' } },
+    { shipEstimate: { kind: 'date', date: '2026-04-31' } },
+    { shipEstimate: { kind: 'date', date: '2026-10-20T00:00:00Z' } },
+  ])('rejects malformed pre-order data without dropping other saved lines: %j', (preorder) => {
+    expect(parseCartLineItemSnapshot({ ...canonicalItem, preorder })).toBeNull();
+    expect(
+      parseSerializedStoreCartState(
+        JSON.stringify({
+          lines: [
+            { ...canonicalItem, preorder, quantity: 1 },
+            { ...canonicalItem, quantity: 2 },
+          ],
+        }),
+      ).lines,
+    ).toEqual([{ ...canonicalItem, quantity: 2 }]);
+  });
+
   it('guards custom-Price increments without removing mixed cart contents', () => {
     const custom = {
       ...canonicalItem,

@@ -85,7 +85,35 @@ describe('StoreItemPurchaseActions', () => {
     expect(html).not.toContain('Buy Now');
     expect(html).not.toContain('href=');
     expect(html).not.toContain('data-store-item-added');
+    expect(html).not.toContain('preorder-action');
     expect(html).toContain('aria-live="polite"');
+  });
+
+  it.each([
+    { shipEstimate: null },
+    { shipEstimate: { kind: 'month' as const, month: '2026-10', part: 'mid' as const } },
+    { shipEstimate: { kind: 'date' as const, date: '2026-10-20' } },
+  ])('renders the pre-order action and exact hint for an active snapshot: %j', (preorder) => {
+    const html = renderToStaticMarkup(
+      <StoreItemPurchaseActions cartItem={{ ...cartItem, preorder }} cartSeed={null} purchaseHint="Ordinary hint" />,
+    );
+    expect(html).toContain('>Pre-order</button>');
+    expect(html).toContain('preorder-action');
+    expect(html).toContain(STORE_ITEM_PURCHASE_ACTION_COPY.preorderHint);
+    expect(html).not.toContain('Ordinary hint');
+    expect(html).toContain('data-store-item-add-to-cart="true"');
+    expect(html).toContain('sm:w-56');
+    expect(html).toContain('min-h-11');
+  });
+
+  it('keeps a stale pre-order hidden while a fresh Worker offer is pending', () => {
+    const html = renderToStaticMarkup(
+      <StoreItemPurchaseActions cartItem={{ ...cartItem, preorder: { shipEstimate: null } }} cartSeed={cartSeed} />,
+    );
+    expect(html).toContain(STORE_ITEM_PURCHASE_ACTION_COPY.checking);
+    expect(html).toContain('aria-busy="true"');
+    expect(html).not.toContain('preorder-action');
+    expect(html).not.toContain(STORE_ITEM_PURCHASE_ACTION_COPY.preorderHint);
   });
 
   it('keeps an older cart snapshot disabled while a fresh Worker offer is pending', () => {
@@ -174,6 +202,7 @@ describe('StoreItemPurchaseActions', () => {
     expect(workerCartItem).toEqual({
       ...cartItem,
       availabilityLabel: 'Available',
+      preorder: null,
     });
     expect(JSON.stringify(workerCartItem)).not.toContain('price_');
     expect(JSON.stringify(workerCartItem)).not.toContain('clientSecret');
@@ -259,6 +288,30 @@ describe('StoreItemPurchaseActions', () => {
       lowStockLabel: 'Only 1 left',
     });
     await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.not.toHaveProperty('lowStockLabel');
+  });
+
+  it('takes the live pre-order from the Worker and preserves its copies-left label', async () => {
+    const preorder = { shipEstimate: { kind: 'month' as const, month: '2026-10', part: null } };
+    const readStoreOffer = vi
+      .fn<PublicCheckoutApi['readStoreOffer']>()
+      .mockResolvedValueOnce({ ...readyOffer, preorder, lowStockQuantity: 3 })
+      .mockResolvedValueOnce(readyOffer)
+      .mockResolvedValueOnce(soldOutOffer);
+    const api = createApi({ readStoreOffer });
+    const staleSeed = { ...cartSeed, preorder: { shipEstimate: null } };
+    await expect(loadStoreItemPurchaseActionState(api, staleSeed)).resolves.toMatchObject({
+      cartItem: { preorder },
+      lowStockLabel: 'Only 3 left',
+      label: null,
+    });
+    await expect(loadStoreItemPurchaseActionState(api, staleSeed)).resolves.toMatchObject({
+      cartItem: { preorder: null },
+    });
+    await expect(loadStoreItemPurchaseActionState(api, staleSeed)).resolves.toEqual({
+      cartItem: null,
+      label: 'Sold Out',
+      statusTone: 'sold-out',
+    });
   });
 
   it('uses neutral tone for planned restock and checkout pauses', async () => {

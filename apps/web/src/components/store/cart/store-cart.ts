@@ -9,11 +9,21 @@ export const STORE_CART_MAX_QUANTITY = 9;
 
 const cartQuantitySchema = z.number().int().min(1).max(STORE_CART_MAX_QUANTITY).brand<'CartQuantity'>();
 
+const cartShipEstimateSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('month'),
+    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+    part: z.enum(['early', 'mid', 'late']).nullable(),
+  }),
+  z.object({ kind: z.literal('date'), date: z.iso.date() }),
+]);
+
 export type CartLineItemSnapshot = {
   availabilityLabel: string;
   image: string | null;
   imageAlt: string | null;
   optionLabel: string | null;
+  preorder?: { shipEstimate: z.infer<typeof cartShipEstimateSchema> | null } | null | undefined;
   priceAmountMinor: number | null;
   priceCurrencyCode: string;
   priceDisplay: string;
@@ -56,6 +66,7 @@ const cartLineItemSnapshotSchema = z
     image: nullableStringSchema,
     imageAlt: nullableStringSchema,
     optionLabel: nullableStringSchema,
+    preorder: z.object({ shipEstimate: cartShipEstimateSchema.nullable() }).nullable().optional(),
     priceAmountMinor: z.number().int().min(0).nullable(),
     priceCurrencyCode: z.string().trim().length(3),
     priceDisplay: z.string().trim().min(1),
@@ -140,6 +151,7 @@ export function normalizeStoreCartState(state: StoreCartState | CartDraft): Stor
         image: firstLine.image,
         imageAlt: firstLine.imageAlt,
         optionLabel: firstLine.optionLabel,
+        ...(firstLine.preorder !== undefined ? { preorder: firstLine.preorder } : {}),
         priceKind: firstLine.priceKind,
         priceDisplay: firstLine.priceDisplay,
         storeItemSlug: firstLine.storeItemSlug,

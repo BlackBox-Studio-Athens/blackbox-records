@@ -101,7 +101,12 @@ afterEach(() => {
 });
 
 describe('store purchase happy path', () => {
-  it('lets a customer discover an item, add it to cart, and reach the hosted checkout handoff', async () => {
+  it.each<Extract<PublicStoreOffer, { catalogStatus: 'ready' }>['preorder']>([
+    null,
+    { shipEstimate: null },
+    { shipEstimate: { kind: 'month', month: '2026-10', part: 'early' } },
+    { shipEstimate: { kind: 'date', date: '2026-10-20' } },
+  ])('lets a customer discover, persist and check out an item with pre-order snapshot %j', async (preorder) => {
     // Arrange: the customer starts from real store collection/page data.
     const storeEntries = await listStoreCollectionEntries();
     const selectedEntry = storeEntries.find((entry) => entry.storeItem.slug === 'disintegration-black-vinyl-lp');
@@ -134,7 +139,7 @@ describe('store purchase happy path', () => {
       pageEntry!.primaryAvailability,
       readImageSrc(pageEntry!.storeItem.image),
     );
-    const workerOffer = createWorkerStoreOffer();
+    const workerOffer = { ...createWorkerStoreOffer(), preorder };
     const cartItem = createCartLineItemSnapshotFromWorkerOffer(cartSeed, workerOffer);
 
     expect(staticCartItem).toBeNull();
@@ -147,6 +152,7 @@ describe('store purchase happy path', () => {
       priceCurrencyCode: 'EUR',
       priceDisplay: '€28.00',
       priceKind: 'fixed',
+      preorder,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       subtitle: 'Afterwise',
       title: 'Disintegration',
@@ -170,6 +176,8 @@ describe('store purchase happy path', () => {
     const drawerView = createStoreCartDrawerView(persistedCartState, (path) => `/blackbox-records${path}`);
 
     expect(getStoreCartCount(persistedCartState)).toBe(1);
+    expect(persistedCartState.lines[0]?.preorder).toEqual(preorder);
+    expect(persistedCartState.primaryLineItem?.preorder).toEqual(preorder);
     expect(drawerView).toMatchObject({
       checkoutHref: '/blackbox-records/store/checkout/',
       primaryLineItem: {
@@ -186,7 +194,7 @@ describe('store purchase happy path', () => {
     });
 
     // Act: the checkout shell uses the real public API client and ReadCheckoutState helpers.
-    const fetchStub = createCheckoutFetchStub();
+    const fetchStub = createCheckoutFetchStub(workerOffer);
     vi.stubGlobal('fetch', fetchStub);
     const api = createPublicCheckoutApi('');
 
@@ -267,9 +275,7 @@ function createMemoryStorage() {
   };
 }
 
-function createCheckoutFetchStub() {
-  const workerOffer = createWorkerStoreOffer();
-
+function createCheckoutFetchStub(workerOffer = createWorkerStoreOffer()) {
   return vi.fn(async (url: string, init?: RequestInit) => {
     if (url === '/api/store/capabilities') {
       return jsonResponse({

@@ -46,6 +46,8 @@ export const STORE_ITEM_PURCHASE_ACTION_COPY = {
   added: 'Added',
   addedAnnouncement: 'Added to cart',
   addToCart: 'Add To Cart',
+  preorder: 'Pre-order',
+  preorderHint: 'We send it when the copies arrive. If the estimate changes we email you.',
   checking: 'Checking availability',
   unavailable: 'Currently Unavailable',
 } as const;
@@ -86,6 +88,7 @@ export function createCartLineItemSnapshotFromWorkerOffer(
     priceCurrencyCode: price.currencyCode,
     priceDisplay: price.display,
     priceKind,
+    preorder: offer.preorder,
     storeItemSlug: offer.storeItemSlug,
     variantId: offer.variantId,
   };
@@ -246,12 +249,19 @@ export default function StoreItemPurchaseActions({
       type="button"
       size="lg"
       variant={isAddedVisible ? 'outline' : 'default'}
-      className={purchaseState.lowStockLabel ? 'w-full whitespace-normal' : purchaseActionLayoutClasses}
+      className={cn(
+        purchaseState.lowStockLabel ? 'w-full whitespace-normal' : purchaseActionLayoutClasses,
+        activeCartItem.preorder && 'preorder-action',
+      )}
       data-store-item-add-to-cart
       data-store-item-added={isAddedVisible ? '' : undefined}
       onClick={() => requestStoreCartAddItem(activeCartItem)}
     >
-      {isAddedVisible ? STORE_ITEM_PURCHASE_ACTION_COPY.added : STORE_ITEM_PURCHASE_ACTION_COPY.addToCart}
+      {isAddedVisible
+        ? STORE_ITEM_PURCHASE_ACTION_COPY.added
+        : activeCartItem.preorder
+          ? STORE_ITEM_PURCHASE_ACTION_COPY.preorder
+          : STORE_ITEM_PURCHASE_ACTION_COPY.addToCart}
       {isAddedVisible && (
         <span key={addedCount} className="site-feedback-hairline" data-duration="4s" aria-hidden="true" />
       )}
@@ -274,7 +284,11 @@ export default function StoreItemPurchaseActions({
       <span className="sr-only" aria-live="polite">
         {isAddedVisible ? STORE_ITEM_PURCHASE_ACTION_COPY.addedAnnouncement : ''}
       </span>
-      {purchaseHint && <p className="text-sm leading-relaxed text-muted-foreground">{purchaseHint}</p>}
+      {(activeCartItem.preorder || purchaseHint) && (
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {activeCartItem.preorder ? STORE_ITEM_PURCHASE_ACTION_COPY.preorderHint : purchaseHint}
+        </p>
+      )}
     </>
   );
 }
