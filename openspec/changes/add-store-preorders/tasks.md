@@ -110,14 +110,14 @@ Owns: `apps/backend/prisma/migrations/0029_order_line_preorder.sql` (new), `apps
 
 Owns: `WEB/components/store/StoreDistroSearch.tsx`, `StoreDistroSearch.test.ts`, `e2e/store-preorders.spec.ts` (new).
 
-- [ ] 16.1 Count `data-store-preorder` cards on mount and on `blackbox:store-listing-applied`; render the `Pre-orders` toggle with its count only when the count is positive; filter with the existing hidden attribute alongside search, artist and format; render the three notes while on; start on for `#preorders`; turn off when the count drops to zero; include it in Clear filters. Verify: `pnpm test web-store`.
-- [ ] 16.2 Add `e2e/store-preorders.spec.ts` with its own `page.route` stub of the listing projection: badges before and after the release date, the toggle appearing, filtering, the notes, keyboard operation, the `#preorders` entry, and no toggle when the stub has no pre-order; any 390px case sets the viewport inside the test, because the mobile Playwright project only runs routes, shell-navigation and store-cart. Verify: `pnpm test:e2e e2e/store-preorders.spec.ts`.
+- [x] 16.1 Count `data-store-preorder` cards on mount and on `blackbox:store-listing-applied`; render the `Pre-orders` toggle with its count only when the count is positive; filter with the existing hidden attribute alongside search, artist and format; render the three notes while on; start on for `#preorders`; turn off when the count drops to zero; include it in Clear filters. Verify: `pnpm test web-store`.
+- [x] 16.2 Add `e2e/store-preorders.spec.ts` with its own `page.route` stub of the listing projection: badges before and after the release date, the toggle appearing, filtering, the notes, keyboard operation, the `#preorders` entry, and no toggle when the stub has no pre-order; any 390px case sets the viewport inside the test, because the mobile Playwright project only runs routes, shell-navigation and store-cart. Verify: `pnpm test:e2e e2e/store-preorders.spec.ts`.
 
 ## 17. W7 Cart drawer (run 6)
 
 Owns: `WEB/components/store/cart/PreorderCartNotice.tsx` and its test (new), `WEB/components/store/cart/StoreCartDrawer.tsx`, `StoreCartDrawer.test.tsx`, `WEB/components/store/cart/project.json`.
 
-- [ ] 17.1 Add `PreorderCartNotice` (heading, two-step rail, sentence; latest estimate across lines; `When it arrives` when withheld) and export it. In the drawer, pre-order lines show the pre-order chip text with `preorder-badge`, and the notice appears once above the delivery summary when any line is a pre-order. Verify: `pnpm test store-cart`.
+- [x] 17.1 Add `PreorderCartNotice` (heading, two-step rail, sentence; latest estimate across lines; `When it arrives` when withheld) and export it. In the drawer, pre-order lines show the pre-order chip text with `preorder-badge`, and the notice appears once above the delivery summary when any line is a pre-order. Verify: `pnpm test store-cart`.
 
 ## 18. B6 Awaiting stock (run 4)
 
@@ -171,7 +171,7 @@ Owns: `STAFF/lib/staff-navigation.ts`, `staff-navigation.test.ts`, `STAFF/compon
 
 Owns: `WEB/components/store/StorePreorderShowcase.tsx` and test (new), `WEB/components/store/project.json`.
 
-- [ ] 25.1 Build the island per design decision 11: one narrowed listing read, then the static candidates file only when a stocked pre-order exists; menu with selection, stage with clip poster and Play, artist-photo poster, cover-only poster, facts strip, price and `Pre-order` link; renders nothing on empty or failed reads; the video frame is created only after Play. Props: the candidates URL and the Store URL. It imports nothing from cart or checkout presentation. Verify with stubbed fetches for each stage and the empty and failure cases: `pnpm test web-store`.
+- [x] 25.1 Build the island per design decision 11: one narrowed listing read, then the static candidates file only when a stocked pre-order exists; menu with selection, stage with clip poster and Play, artist-photo poster, cover-only poster, facts strip, price and `Pre-order` link; renders nothing on empty or failed reads; the video frame is created only after Play. Props: the candidates URL and the Store URL. It imports nothing from cart or checkout presentation. Verify with stubbed fetches for each stage and the empty and failure cases: `pnpm test web-store`.
 
 ## 26. B9 Estimate notice outbox (run 3)
 
@@ -184,7 +184,7 @@ Owns: `apps/backend/prisma/migrations/0030_preorder_estimate_delivery.sql` (new)
 
 Owns: `WEB/components/store/checkout/checkout-return-status-state.ts`, `CheckoutReturnStatus.tsx`, `CheckoutReturnStatus.test.tsx`.
 
-- [ ] 27.1 When the paid state carries `preorder`, use the title, detail and fulfilment step of design Appendix B and the `preorder-edge` class; every other state is unchanged. Cover with and without an estimate and an ordinary paid order. Verify: `pnpm test checkout-web`.
+- [x] 27.1 When the paid state carries `preorder`, use the title, detail and fulfilment step of design Appendix B and the `preorder-edge` class; every other state is unchanged. Cover with and without an estimate and an ordinary paid order. Verify: `pnpm test checkout-web`.
 
 ## 28. W14 Release Store link (run 7)
 
