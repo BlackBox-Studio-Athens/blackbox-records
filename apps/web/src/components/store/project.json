@@ -33,11 +33,13 @@
         "./StoreItemCard.astro",
         "./StoreListingPricePresentation.ts",
         "./StoreOfferPriceDisplay.tsx",
+        "./StorePreorderShowcase.tsx",
         "./store-page-data.ts"
       ],
       "namedInterfaces": {},
       "dependsOn": ["player", "store-cart", "checkout-web", "storefront-catalog", "ui-foundation", "web-platform"],
       "workspaceInterfaces": {
+        "@blackbox/api-client": ["./public"],
         "@blackbox/content-model": ["."]
       }
     }
