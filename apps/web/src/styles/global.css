@@ -17,8 +17,10 @@
    classes on the scroll root at every scroll start and end; the packaged rules that match descendants of the lenis
    class made each rewrite restyle the whole document. These selectors restyle only the root and its iframes, except
    lenis-stopped (the modal scroll lock), whose root overflow change still restyles the page once per open and close.
-   html and body keep their default auto height, and autoToggle is not used. */
-.lenis-stopped {
+   html and body keep their default auto height, and autoToggle is not used. lenis-stopped keeps the packaged (0,2,0)
+   specificity so it still beats later single-class overflow rules on nested scroll roots, such as .store-artists-list,
+   without depending on the lenis class that every rewrite strips and re-adds. */
+.lenis-stopped:not(.lenis-autoToggle) {
   overflow: clip;
 }
 

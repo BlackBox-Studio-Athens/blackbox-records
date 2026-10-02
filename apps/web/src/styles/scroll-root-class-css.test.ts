@@ -13,7 +13,7 @@ describe('scroll root class changes stay cheap', () => {
   });
 
   it('keeps the Lenis rules keyed on the root state class or the element itself', () => {
-    expect(css).toMatch(/^\.lenis-stopped\s*{\s*overflow:\s*clip;\s*}/m);
+    expect(css).toMatch(/^\.lenis-stopped:not\(\.lenis-autoToggle\)\s*{\s*overflow:\s*clip;\s*}/m);
     expect(css).toMatch(
       /^\[data-lenis-prevent\],[^{]*\[data-lenis-prevent-touch\][^{]*{\s*overscroll-behavior:\s*contain;/m,
     );
