@@ -1,4 +1,12 @@
-import { expect, openSurfaceWithinClickTask, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+import {
+  expect,
+  openSurfaceWithinClickTask,
+  plantSentinel,
+  sentinelIntact,
+  test,
+  waitForShell,
+  watchSurfaceWarmup,
+} from './fixtures';
 
 const main = 'main[data-app-shell-main]';
 
@@ -61,11 +69,12 @@ test('detail-link intent warms the overlay panel so the overlay opens in the cli
   isMobile,
 }) => {
   test.skip(isMobile, 'Hover intent is a desktop pointer behaviour.');
+  const panelWarmed = watchSurfaceWarmup(page, 'ShellOverlayPanel');
   await page.goto('releases/');
   await waitForShell(page);
   const trigger = 'a.prose-card-link[href*="/releases/"]';
   await page.locator(trigger).first().hover();
-  await page.waitForLoadState('networkidle');
+  await panelWarmed();
 
   expect(
     await openSurfaceWithinClickTask(page, trigger, '.app-shell-content-overlay[data-state="open"] [role="dialog"]'),
@@ -138,18 +147,23 @@ test('Escape closes the Menu and returns focus to its button', async ({ page, is
 
 test('a warmed Menu opens in the tap task', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'The Menu opens only below the desktop breakpoint.');
+  const menuWarmed = watchSurfaceWarmup(page, 'MobileNavigationSheet');
   await page.goto('about/');
   await waitForShell(page);
   const trigger = '[data-app-shell-mobile-navigation-trigger]';
   // The phone layout warms the Menu at idle; pointer intent starts it sooner.
   await page.locator(trigger).hover();
-  await page.waitForLoadState('networkidle');
+  await menuWarmed();
 
   expect(await openSurfaceWithinClickTask(page, trigger, '[data-app-shell-mobile-navigation]')).toEqual({
     loadingStatus: false,
     visible: true,
   });
   await expect(page.getByRole('navigation', { name: 'Mobile' })).toBeVisible();
+  // The portalled sheet still takes the Lenis modal lock, and releases it on close.
+  await expect(page.locator('html')).toHaveClass(/\blenis-stopped\b/);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('html')).not.toHaveClass(/\blenis-stopped\b/);
 });
 
 test('the Menu closes when the desktop layout starts', async ({ page, isMobile }) => {

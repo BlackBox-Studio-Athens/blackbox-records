@@ -100,3 +100,37 @@ export async function openSurfaceWithinClickTask(page: Page, triggerSelector: st
     [triggerSelector, surfaceSelector] as const,
   );
 }
+
+/**
+ * Starts watching for a speculative surface load before navigation. The returned wait resolves once a request whose
+ * URL contains `moduleName` has been made and the network has then stayed quiet, so the module graph has loaded.
+ * `waitForLoadState('networkidle')` cannot serve here: it resolves at once when the page was already idle earlier.
+ */
+export function watchSurfaceWarmup(page: Page, moduleName: string, quietMs = 500) {
+  const inflight = new Set<unknown>();
+  let requested = false;
+  let lastChange = Date.now();
+  page.on('request', (request) => {
+    inflight.add(request);
+    lastChange = Date.now();
+    if (request.url().includes(moduleName)) requested = true;
+  });
+  const settle = (request: unknown) => {
+    inflight.delete(request);
+    lastChange = Date.now();
+  };
+  page.on('requestfinished', settle);
+  page.on('requestfailed', settle);
+
+  return async (timeout = 30_000) => {
+    const deadline = Date.now() + timeout;
+    while (!requested || inflight.size > 0 || Date.now() - lastChange < quietMs) {
+      if (Date.now() > deadline) {
+        throw new Error(
+          `${moduleName} was ${requested ? 'requested but the network never settled' : 'never requested'}`,
+        );
+      }
+      await page.waitForTimeout(50);
+    }
+  };
+}
