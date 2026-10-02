@@ -12,25 +12,24 @@ const socialImageUrl = new URL(siteBrandAssets.badgeLogo, pageUrl).toString();
 const veneerCssUrl = createProjectRelativeUrl('/assets/fonts/brand/veneer.css');
 const veneerFontUrl = createProjectRelativeUrl('/assets/fonts/brand/veneer_regular.woff2');
 
+// Every hosted site build renders this page, so editorial content must not fail the build here.
+// A missing action is omitted with a warning; check-prd-holding.ts still requires both actions
+// before the holding artifact itself can be published.
 const [servicesContent, socialItems] = await Promise.all([getServicesContent(), getSocialItems()]);
-const inquiryEmail = servicesContent.inquiry.email.trim();
-const instagramUrl = socialItems.find((item) => {
-  if (item.id !== 'instagram' || !item.url || item.url === '#') return false;
-
+const isInstagramUrl = (value: string | undefined) => {
   try {
-    return new URL(item.url).protocol === 'https:';
+    const url = new URL(value ?? '');
+    return url.protocol === 'https:' && (url.hostname === 'instagram.com' || url.hostname.endsWith('.instagram.com'));
   } catch {
     return false;
   }
-})?.url;
+};
+const instagramUrl = socialItems.find((item) => isInstagramUrl(item.url))?.url;
+const candidateEmail = servicesContent.inquiry.email.trim();
+const inquiryEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(candidateEmail) ? candidateEmail : undefined;
 
-if (!instagramUrl) {
-  throw new Error('PRD Holding Page requires a valid HTTPS Instagram URL in the socials collection.');
-}
-
-if (!inquiryEmail || inquiryEmail === '#' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inquiryEmail)) {
-  throw new Error('PRD Holding Page requires a valid inquiry email in the services collection.');
-}
+if (!instagramUrl) console.warn('PRD Holding Page: no HTTPS Instagram URL in the socials collection; link omitted.');
+if (!inquiryEmail) console.warn('PRD Holding Page: no valid inquiry email in the services collection; link omitted.');
 ---
 
 <!doctype html>
@@ -75,16 +74,22 @@ if (!inquiryEmail || inquiryEmail === '#' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
 
         <div class="holding-page__footer">
           <p class="holding-page__status">BLACKBOX RECORDS IS ACTIVE.</p>
-          <nav class="holding-page__actions" aria-label="Contact BlackBox Records">
-            <a href={instagramUrl} rel="noreferrer noopener">
-              <InstagramIcon class="holding-page__action-icon" />
-              FOLLOW ON INSTAGRAM
-            </a>
-            <a href={`mailto:${inquiryEmail}`}>
-              <Mail className="holding-page__action-icon" aria-hidden="true" />
-              EMAIL THE LABEL
-            </a>
-          </nav>
+          {(instagramUrl || inquiryEmail) && (
+            <nav class="holding-page__actions" aria-label="Contact BlackBox Records">
+              {instagramUrl && (
+                <a href={instagramUrl} rel="noreferrer noopener">
+                  <InstagramIcon class="holding-page__action-icon" />
+                  FOLLOW ON INSTAGRAM
+                </a>
+              )}
+              {inquiryEmail && (
+                <a href={`mailto:${inquiryEmail}`}>
+                  <Mail className="holding-page__action-icon" aria-hidden="true" />
+                  EMAIL THE LABEL
+                </a>
+              )}
+            </nav>
+          )}
         </div>
       </section>
     </main>

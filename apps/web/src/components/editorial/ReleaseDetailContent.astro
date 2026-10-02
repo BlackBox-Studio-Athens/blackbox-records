@@ -33,6 +33,7 @@ const commerceLink = await getReleaseCommerceLink(release);
 const singles = release.data.singles ?? [];
 const clips = release.data.clips ?? [];
 const gallery = release.data.gallery ?? [];
+const releaseTitle = release.data.title;
 const galleryImages =
   gallery.length > 0
     ? await Promise.all(
@@ -58,7 +59,7 @@ const galleryImages =
     <CardContent className="grid gap-8 p-0 lg:grid-cols-[0.85fr_1.15fr]">
       <div class="relative overflow-hidden border-b border-border/70 lg:border-r lg:border-b-0">
         {galleryImages.length > 1 ? (
-          <StoreImageGallery client:load images={galleryImages} title={release.data.title} />
+          <StoreImageGallery client:load images={galleryImages} title={releaseTitle} priority={showRouteNavigation} />
         ) : (
           <>
             <Image

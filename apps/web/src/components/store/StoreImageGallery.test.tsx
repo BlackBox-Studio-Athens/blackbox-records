@@ -21,4 +21,32 @@ describe('Store image gallery', () => {
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('srcSet="/front.webp 720w"');
   });
+
+  const images = [
+    { src: '/front.webp', srcSet: '/front.webp 720w', alt: 'Front', width: 720, height: 720 },
+    { src: '/back.webp', srcSet: '/back.webp 720w', alt: 'Back', width: 720, height: 1080 },
+  ];
+  const imageTags = (html: string) => [...html.matchAll(/<img\b[^>]*>/g)].map((match) => match[0]);
+
+  it('server-renders the first image with the single cover loading priority and keeps thumbnails lazy', () => {
+    const [main, ...thumbnails] = imageTags(renderToStaticMarkup(<StoreImageGallery title="2016" images={images} />));
+
+    expect(main).toContain('class="store-image-gallery__image"');
+    expect(main).toContain('loading="eager"');
+    expect(main).toContain('fetchPriority="high"');
+    expect(main).toContain('decoding="async"');
+    expect(main).toContain('sizes="(min-width: 768px) 26rem, calc(100vw - 32px)"');
+    expect(thumbnails).toHaveLength(2);
+    for (const thumbnail of thumbnails) {
+      expect(thumbnail).toContain('loading="lazy"');
+      expect(thumbnail.toLowerCase()).not.toContain('fetchpriority="high"');
+    }
+  });
+
+  it('keeps the first image eager without high priority inside an overlay fragment', () => {
+    const html = renderToStaticMarkup(<StoreImageGallery title="2016" images={images} priority={false} />);
+
+    expect(imageTags(html)[0]).toContain('loading="eager"');
+    expect(html.toLowerCase()).not.toContain('fetchpriority="high"');
+  });
 });

@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   buildUatStaticSmokeEvidence,
   checkReviewSiteMarker,
+  discoverRepresentativeCandidates,
   discoverRepresentativePaths,
   findPublicMediaPath,
+  findSectionMediaPath,
   parseUatStaticSmokeArgs,
   resolveSelectedUatStaticSmokeScenarios,
 } from '../../../../scripts/smoke-uat-static';
@@ -30,6 +32,35 @@ describe('UAT static smoke', () => {
       findPublicMediaPath('<main><img src="https://foreign.test/a.webp"></main>', 'https://example.test/'),
     ).toThrow();
     expect(() => findPublicMediaPath('<main></main>', 'https://example.test/')).toThrow();
+  });
+  it('samples media from the first published page that renders a content image', async () => {
+    const pages: Record<string, string> = {
+      // The layout renders a footer logo after </main> on every page; it is not a content image.
+      '/news/text-only/':
+        '<main><p>No image</p></main><footer><img class="site-footer-logo" src="/assets/logo.webp"></footer>',
+      '/news/with-photo/': '<main><img src="/assets/photo.webp"></main>',
+      '/news/foreign/': '<main><img src="https://foreign.test/a.webp"></main>',
+    };
+    const read = async (path: string) => pages[path] ?? '';
+    const site = 'https://example.test/';
+
+    await expect(findSectionMediaPath('news', ['/news/text-only/', '/news/with-photo/'], read, site)).resolves.toBe(
+      '/assets/photo.webp',
+    );
+    await expect(findSectionMediaPath('news', ['/news/text-only/'], read, site)).rejects.toThrow(
+      'No published news page renders a content image',
+    );
+    // Off-base media is a defect, not a reason to try the next page.
+    await expect(findSectionMediaPath('news', ['/news/foreign/', '/news/with-photo/'], read, site)).rejects.toThrow(
+      'site base',
+    );
+  });
+  it('lists every published candidate per section in sitemap order', () => {
+    const sitemap = '<loc>https://x.test/news/a/</loc><loc>https://x.test/news/b/</loc>';
+    const sitemapAll = `${sitemap}<loc>https://x.test/artists/a/</loc><loc>https://x.test/releases/r/</loc>`;
+    expect(discoverRepresentativeCandidates(sitemapAll, '<a href="/store/item/"></a>', 'https://x.test/').news).toEqual(
+      ['/news/a/', '/news/b/'],
+    );
   });
   it('discovers representative pages from published content under the site base', () => {
     const sitemap = [

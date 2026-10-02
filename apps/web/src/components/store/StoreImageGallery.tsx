@@ -12,7 +12,16 @@ export type StoreGalleryImage = {
   height: number;
 };
 
-export default function StoreImageGallery({ images, title }: { images: StoreGalleryImage[]; title: string }) {
+/** `priority` matches the single cover: high fetch priority on routed pages, none inside overlay fragments. */
+export default function StoreImageGallery({
+  images,
+  title,
+  priority = true,
+}: {
+  images: StoreGalleryImage[];
+  title: string;
+  priority?: boolean;
+}) {
   const [selected, setSelected] = useState(0);
   const [direction, setDirection] = useState(1);
   const reducedMotion = useReducedMotion();
@@ -46,7 +55,9 @@ export default function StoreImageGallery({ images, title }: { images: StoreGall
             alt={image.alt}
             width={image.width}
             height={image.height}
-            fetchPriority={selected === 0 ? 'high' : 'auto'}
+            loading={selected === 0 ? 'eager' : 'lazy'}
+            fetchPriority={priority && selected === 0 ? 'high' : 'auto'}
+            decoding="async"
             draggable={false}
             className="store-image-gallery__image"
             variants={{

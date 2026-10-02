@@ -1,0 +1,17 @@
+# Tasks
+
+## 1. Repository gates
+
+- [x] 1.1 Give validation runs unique ids and omit `--nxBail` in CI; cover both in `scripts/validate.test.mjs`.
+- [x] 1.2 Select image-markup detail pages by route pattern and the first page that renders the checked classes, treating single cover and gallery as alternatives; cover it in `apps/web/test/assets/check-image-markup.test.ts`.
+- [x] 1.3 Sample UAT static media from the first published page per section with a content image; cover it in `apps/backend/test/scripts/smoke-uat-static.test.ts`.
+- [x] 1.4 Omit a missing PRD Holding Page action with a build warning; keep `apps/web/scripts/check-prd-holding.ts` failing when either action is missing.
+
+## 2. Remaining
+
+- [ ] 2.1 Make the UAT provider smoke content-independent. `scripts/stripe-sandbox-smoke/constants.ts` pins `disintegration-black-vinyl-lp` and `atopia-atopia-cd`, and expected price, name and image come from repository content through `loadStripeCatalogStoreItemContracts`. `pages.yml` `accept-uat-providers` gates `deploy-prd`, so withdrawing, renaming or repricing either item on UAT, or draining its online stock, blocks PRD promotion. Select the first checkout-ready fixed-price item and the first pay-what-you-want item from the UAT Worker (`/api/store/listing-prices`, `/api/store/items/<slug>`), thread slug and variant through `scenario-policy.ts`, `d1-sql.ts` and `checkout-surface.ts`, take expected values from the Worker offer and runtime catalog, and add a failing-first test in `apps/backend/test/scripts/stripe-sandbox-smoke.test.ts` with a catalog lacking both slugs. Until then, release gates are not content-independent.
+
+## 3. Acceptance
+
+- [ ] 3.1 Run `pnpm validate` on the final tree and `pnpm openspec -- validate decouple-release-gates-from-content --type change --strict`; record evidence in `validation.md`.
+- [ ] 3.2 Confirm the next Release BlackBox run passes validate, the image-markup check and UAT static smoke.

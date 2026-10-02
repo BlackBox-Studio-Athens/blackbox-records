@@ -307,8 +307,12 @@ async function runUatStaticSmokeScenario(input: {
       input.scenario.name === 'checkout_shell'
         ? [await checkCheckoutShellPage(page, input.options)]
         : input.scenario.name === 'public_assets'
-          ? await checkPublicAssets(input.options, await discoverUatStaticRepresentativePaths(input.options))
-          : await checkPublicRoutes(page, input.options, await discoverUatStaticRepresentativePaths(input.options));
+          ? await checkPublicAssets(input.options, await discoverUatStaticCandidates(input.options))
+          : await checkPublicRoutes(
+              page,
+              input.options,
+              firstRepresentativePaths(await discoverUatStaticCandidates(input.options)),
+            );
 
     const consoleErrors = diagnostics.consoleErrors.slice();
     const pageErrors = diagnostics.pageErrors.slice();
@@ -425,21 +429,48 @@ async function checkCheckoutShellPage(page: Page, options: UatStaticSmokeOptions
 
 async function checkPublicAssets(
   options: UatStaticSmokeOptions,
-  paths: RepresentativePaths,
+  candidates: RepresentativeCandidates,
 ): Promise<UatStaticSmokeCheck[]> {
-  const checks: UatStaticSmokeCheck[] = [];
-  checks.push(await checkBinaryAsset(options, '/favicon.svg', 'image/'));
-  for (const route of ['/', paths.artist, paths.release, paths.storeItem, paths.news]) {
+  const read = async (route: string) => {
     const response = await fetchSmokeResponse(createRouteUrl(options.siteUrl, route), options.timeoutMs);
     if (!response.ok) throw new Error('Public media source page did not return HTTP 200: ' + route);
-    checks.push(await checkBinaryAsset(options, findPublicMediaPath(await response.text(), options.siteUrl), 'image/'));
+    return response.text();
+  };
+  const checks: UatStaticSmokeCheck[] = [];
+  checks.push(await checkBinaryAsset(options, '/favicon.svg', 'image/'));
+  checks.push(await checkBinaryAsset(options, findPublicMediaPath(await read('/'), options.siteUrl), 'image/'));
+  for (const section of ['artist', 'release', 'storeItem', 'news'] as const) {
+    const mediaPath = await findSectionMediaPath(section, candidates[section], read, options.siteUrl);
+    checks.push(await checkBinaryAsset(options, mediaPath, 'image/'));
   }
   return checks;
 }
 
-export function findPublicMediaPath(html: string, siteUrl: string): string {
+/** Published pages may be text-only, so sample the first candidate in publication order that renders a content image. */
+export async function findSectionMediaPath(
+  section: string,
+  candidates: readonly string[],
+  read: (route: string) => Promise<string>,
+  siteUrl: string,
+): Promise<string> {
+  for (const route of candidates) {
+    const html = await read(route);
+    if (findMainImageSource(html)) return findPublicMediaPath(html, siteUrl);
+  }
+  throw new Error(
+    `No published ${section} page renders a content image (checked ${candidates.length}: ${candidates.join(', ')}).`,
+  );
+}
+
+function findMainImageSource(html: string): string | undefined {
   // ponytail: inspect generated Astro img markup only; use an HTML parser if that output format changes.
-  const source = /<main\b[\s\S]*?<img\b[^>]*\ssrc=(["'])(.*?)\1/i.exec(html)?.[2];
+  // Confine the search to <main>: the footer logo after </main> is not a content image.
+  const main = /<main\b[^>]*>([\s\S]*?)<\/main>/i.exec(html)?.[1] ?? '';
+  return /<img\b[^>]*\ssrc=(["'])(.*?)\1/i.exec(main)?.[2];
+}
+
+export function findPublicMediaPath(html: string, siteUrl: string): string {
+  const source = findMainImageSource(html);
   if (!source) throw new Error('Public media source page has no rendered content image.');
   const root = new URL(createRouteUrl(siteUrl));
   const asset = new URL(source, root);
@@ -449,11 +480,31 @@ export function findPublicMediaPath(html: string, siteUrl: string): string {
   return '/' + asset.pathname.slice(root.pathname.length) + asset.search;
 }
 
+/** Every published detail page per section, in publication order; route checks use the first, media checks the first with an image. */
+export type RepresentativeCandidates = { [Section in keyof RepresentativePaths]: string[] };
+
 export function discoverRepresentativePaths(
   sitemapXml: string,
   storeHtml: string,
   siteUrl: string,
 ): RepresentativePaths {
+  return firstRepresentativePaths(discoverRepresentativeCandidates(sitemapXml, storeHtml, siteUrl));
+}
+
+function firstRepresentativePaths(candidates: RepresentativeCandidates): RepresentativePaths {
+  return {
+    artist: candidates.artist[0]!,
+    news: candidates.news[0]!,
+    release: candidates.release[0]!,
+    storeItem: candidates.storeItem[0]!,
+  };
+}
+
+export function discoverRepresentativeCandidates(
+  sitemapXml: string,
+  storeHtml: string,
+  siteUrl: string,
+): RepresentativeCandidates {
   // ponytail: scan generated sitemap and Store listing markup; use XML/HTML parsers if those formats change.
   const root = new URL(createRouteUrl(siteUrl));
   const toSitePaths = (urls: readonly URL[]) =>
@@ -469,17 +520,17 @@ export function discoverRepresentativePaths(
       .map((match) => new URL(match[2] ?? '', root))
       .filter((url) => url.origin === root.origin),
   );
-  const first = (section: string, paths: readonly string[], pattern: RegExp): string => {
-    const found = paths.find((candidate) => pattern.test(candidate));
-    if (!found) throw new Error(`Could not discover a published ${section} page for UAT static smoke.`);
+  const all = (section: string, paths: readonly string[], pattern: RegExp): string[] => {
+    const found = [...new Set(paths.filter((candidate) => pattern.test(candidate)))];
+    if (!found.length) throw new Error(`Could not discover a published ${section} page for UAT static smoke.`);
     return found;
   };
 
   return {
-    artist: first('artist', sitemapPaths, /^\/artists\/[^/]+\/$/),
-    news: first('news', sitemapPaths, /^\/news\/[^/]+\/$/),
-    release: first('release', sitemapPaths, /^\/releases\/[^/]+\/$/),
-    storeItem: first(
+    artist: all('artist', sitemapPaths, /^\/artists\/[^/]+\/$/),
+    news: all('news', sitemapPaths, /^\/news\/[^/]+\/$/),
+    release: all('release', sitemapPaths, /^\/releases\/[^/]+\/$/),
+    storeItem: all(
       'Store Item',
       storePaths.filter((path) => !reservedStoreRouteSegments.has(path.split('/')[2] ?? '')),
       /^\/store\/[^/]+\/$/,
@@ -487,7 +538,7 @@ export function discoverRepresentativePaths(
   };
 }
 
-async function discoverUatStaticRepresentativePaths(options: UatStaticSmokeOptions): Promise<RepresentativePaths> {
+async function discoverUatStaticCandidates(options: UatStaticSmokeOptions): Promise<RepresentativeCandidates> {
   const read = async (routePath: string) => {
     const response = await fetchSmokeResponse(createRouteUrl(options.siteUrl, routePath), options.timeoutMs);
     if (!response.ok) throw new Error(`Page discovery could not read ${routePath}: HTTP ${response.status}.`);
@@ -495,7 +546,7 @@ async function discoverUatStaticRepresentativePaths(options: UatStaticSmokeOptio
   };
   const [sitemapXml, storeHtml] = await Promise.all([read('/sitemap.xml'), read('/store/')]);
 
-  return discoverRepresentativePaths(sitemapXml, storeHtml, options.siteUrl);
+  return discoverRepresentativeCandidates(sitemapXml, storeHtml, options.siteUrl);
 }
 
 async function checkPublicRoutes(
