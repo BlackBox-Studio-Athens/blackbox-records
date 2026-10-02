@@ -200,62 +200,60 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
         </div>
       </header>
       {!state.selected && (
-        <>
-          <div className="order-toolbar">
-            <label className="col-span-full">
-              <span className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={state.awaitingStock}
-                  onChange={(event) => {
-                    setPreviousCursors([]);
-                    void workspace.loadList(state.status, search, notification, undefined, event.target.checked);
-                  }}
-                />
-                Awaiting stock
-              </span>
-            </label>
-            <label>
-              Payment status
-              <select
-                value={state.status}
+        <div className="order-toolbar">
+          <label className="col-span-full">
+            <span className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={state.awaitingStock}
                 onChange={(event) => {
                   setPreviousCursors([]);
-                  void workspace.loadList(event.target.value as OrderStatus | '');
+                  void workspace.loadList(state.status, search, notification, undefined, event.target.checked);
                 }}
-              >
-                <option value="">All statuses</option>
-                {Object.entries(paymentLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Email status
-              <select
-                value={notification}
-                onChange={(event) => setNotification(event.target.value as typeof notification)}
-              >
-                <option value="">All emails</option>
-                <option value="pending">Pending</option>
-                <option value="needs_review">Needs review</option>
-              </select>
-            </label>
-            <label htmlFor="order-search">
-              Search orders
-              <Input
-                id="order-search"
-                maxLength={200}
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Name, email or order reference"
-                autoComplete="off"
               />
-            </label>
-          </div>
-        </>
+              Awaiting stock
+            </span>
+          </label>
+          <label>
+            Payment status
+            <select
+              value={state.status}
+              onChange={(event) => {
+                setPreviousCursors([]);
+                void workspace.loadList(event.target.value as OrderStatus | '');
+              }}
+            >
+              <option value="">All statuses</option>
+              {Object.entries(paymentLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Email status
+            <select
+              value={notification}
+              onChange={(event) => setNotification(event.target.value as typeof notification)}
+            >
+              <option value="">All emails</option>
+              <option value="pending">Pending</option>
+              <option value="needs_review">Needs review</option>
+            </select>
+          </label>
+          <label htmlFor="order-search">
+            Search orders
+            <Input
+              id="order-search"
+              maxLength={200}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Name, email or order reference"
+              autoComplete="off"
+            />
+          </label>
+        </div>
       )}
       {read.error && (
         <div className="order-error" role="alert">

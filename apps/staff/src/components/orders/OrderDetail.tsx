@@ -190,50 +190,48 @@ export default function OrderDetail({ order }: { order: InternalOrder }) {
         </p>
       )}
       {fulfillment.kind === 'current' && (
-        <>
-          <section className="order-section" aria-labelledby="items-heading">
-            <h2 id="items-heading">
-              <Disc3 aria-hidden="true" />
-              Items
-            </h2>
-            <ul className="order-lines">
-              {fulfillment.lines.map((line, index) => (
-                <li key={`${line.variantId}-${index}`}>
-                  <Disc3 className="order-item-icon" size={28} aria-hidden="true" />
-                  <div>
-                    <strong>{line.displayName}</strong>
-                    <span>{line.optionLabel ?? 'No option label recorded'}</span>
-                    {line.preorder && (
-                      <small>
-                        Pre-order
-                        {line.preorder.shipEstimate
-                          ? ` · ships ${orderShipEstimateText(line.preorder.shipEstimate)}`
-                          : ''}{' '}
-                        (shown at order time)
-                      </small>
-                    )}
+        <section className="order-section" aria-labelledby="items-heading">
+          <h2 id="items-heading">
+            <Disc3 aria-hidden="true" />
+            Items
+          </h2>
+          <ul className="order-lines">
+            {fulfillment.lines.map((line, index) => (
+              <li key={`${line.variantId}-${index}`}>
+                <Disc3 className="order-item-icon" size={28} aria-hidden="true" />
+                <div>
+                  <strong>{line.displayName}</strong>
+                  <span>{line.optionLabel ?? 'No option label recorded'}</span>
+                  {line.preorder && (
                     <small>
-                      Unit {money(line.unitAmountMinor)} · VAT {money(line.lineVatMinor)} · Tax rate{' '}
-                      {line.taxRatePercent === null ? 'Unknown' : `${line.taxRatePercent}%`}
+                      Pre-order
+                      {line.preorder.shipEstimate
+                        ? ` · ships ${orderShipEstimateText(line.preorder.shipEstimate)}`
+                        : ''}{' '}
+                      (shown at order time)
                     </small>
-                  </div>
-                  <span>Qty {line.quantity}</span>
-                  <strong>{money(line.lineAmountMinor)}</strong>
-                </li>
-              ))}
-            </ul>
-            <dl className="order-totals">
-              <Fact label="Merchandise">{money(fulfillment.merchandiseGrossMinor)}</Fact>
-              <Fact label="Delivery">{money(fulfillment.deliveryGrossMinor)}</Fact>
-              <Fact label="Delivery VAT">{money(fulfillment.deliveryVatMinor)}</Fact>
-              <Fact label="Total">{money(fulfillment.amountTotalMinor)}</Fact>
-              <Fact label="Total VAT (included)">{money(fulfillment.totalVatMinor)}</Fact>
-            </dl>
-            <p className="order-muted order-money-note">
-              Amounts are the saved EUR order facts. Unknown historical values do not mean zero or tax-exempt.
-            </p>
-          </section>
-        </>
+                  )}
+                  <small>
+                    Unit {money(line.unitAmountMinor)} · VAT {money(line.lineVatMinor)} · Tax rate{' '}
+                    {line.taxRatePercent === null ? 'Unknown' : `${line.taxRatePercent}%`}
+                  </small>
+                </div>
+                <span>Qty {line.quantity}</span>
+                <strong>{money(line.lineAmountMinor)}</strong>
+              </li>
+            ))}
+          </ul>
+          <dl className="order-totals">
+            <Fact label="Merchandise">{money(fulfillment.merchandiseGrossMinor)}</Fact>
+            <Fact label="Delivery">{money(fulfillment.deliveryGrossMinor)}</Fact>
+            <Fact label="Delivery VAT">{money(fulfillment.deliveryVatMinor)}</Fact>
+            <Fact label="Total">{money(fulfillment.amountTotalMinor)}</Fact>
+            <Fact label="Total VAT (included)">{money(fulfillment.totalVatMinor)}</Fact>
+          </dl>
+          <p className="order-muted order-money-note">
+            Amounts are the saved EUR order facts. Unknown historical values do not mean zero or tax-exempt.
+          </p>
+        </section>
       )}
       <div className={fulfillment.kind === 'current' ? 'order-detail-columns' : ''}>
         {fulfillment.kind === 'current' && (
