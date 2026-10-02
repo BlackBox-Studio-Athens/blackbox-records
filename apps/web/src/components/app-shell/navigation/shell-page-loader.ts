@@ -30,6 +30,7 @@ export function createShellPageSnapshotLoader({
 }: ShellPageSnapshotLoaderOptions = {}) {
   // Eager images a speculative prefetch left cold, requested once the page is actually opened.
   const deferredImageSources = new Map<string, EagerImageSource[]>();
+  const inFlightRequestSignals = new WeakMap<Promise<ShellPageSnapshot>, AbortSignal>();
 
   function cacheSnapshot(pageSnapshot: ShellPageSnapshot) {
     cache.set(pageSnapshot.pathname, pageSnapshot);
@@ -62,8 +63,10 @@ export function createShellPageSnapshotLoader({
     const cachedSnapshot = cache.get(normalizedPathname);
     if (cachedSnapshot) return cachedSnapshot;
 
+    // A request whose navigation was aborted is about to reject; a later caller starts its own instead of joining it.
+    // The aborting activation starts its fetch in the same task, before that rejection has cleared the entry.
     const existingRequest = inFlightRequests.get(normalizedPathname);
-    if (existingRequest) return existingRequest;
+    if (existingRequest && !inFlightRequestSignals.get(existingRequest)?.aborted) return existingRequest;
 
     const request = fetchPage(href, {
       credentials: 'same-origin',
@@ -98,10 +101,11 @@ export function createShellPageSnapshotLoader({
         return pageSnapshot;
       })
       .finally(() => {
-        inFlightRequests.delete(normalizedPathname);
+        if (inFlightRequests.get(normalizedPathname) === request) inFlightRequests.delete(normalizedPathname);
       });
 
     inFlightRequests.set(normalizedPathname, request);
+    if (signal) inFlightRequestSignals.set(request, signal);
     return request;
   }
 

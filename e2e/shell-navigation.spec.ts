@@ -190,3 +190,29 @@ test('a quick mouse pass over the header prefetches nothing; resting on a link p
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Artists' }).hover();
   await expect.poll(() => sectionFetches).toEqual(['/blackbox-records/artists/']);
 });
+
+test('a second click on a link whose page is still loading stays in the shell', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'The primary header navigation is desktop only.');
+  await page.goto('about/');
+  await waitForShell(page);
+  await plantSentinel(page);
+  // Hold the shell's fetch so the second click lands while the first click's request is still in flight.
+  await page.route('**/blackbox-records/artists/', async (route) => {
+    if (route.request().resourceType() === 'fetch') {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
+    await route.continue();
+  });
+
+  // Clicked from script, so no hover or focus prefetch starts a request first: the second click must not join the
+  // first click's aborted request and fall back to a full document load.
+  await page.evaluate(() => {
+    const link = document.querySelector<HTMLAnchorElement>('nav[aria-label="Primary"] a[href$="/artists/"]')!;
+    link.click();
+    setTimeout(() => link.click(), 60);
+  });
+
+  await expect(page).toHaveURL(/\/blackbox-records\/artists\/$/);
+  await expect(page.locator(main).getByRole('heading', { level: 1 })).toBeVisible();
+  expect(await sentinelIntact(page)).toBe(true);
+});

@@ -58,6 +58,44 @@ describe('shell page snapshot loader', () => {
     expect(loader.hasCachedSnapshot('/blackbox-records/store/')).toBe(true);
   });
 
+  it('starts a fresh request instead of joining one whose navigation was aborted', async () => {
+    const fetchPage = vi.fn(
+      (_href: string, init: RequestInit) =>
+        new Promise<{ ok: boolean; text: () => Promise<string>; url: string }>((resolve, reject) => {
+          if (init.signal?.aborted) {
+            reject(new DOMException('aborted', 'AbortError'));
+            return;
+          }
+          init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+          queueMicrotask(() =>
+            resolve({ ok: true, text: async () => '', url: 'https://example.test/blackbox-records/store/' }),
+          );
+        }),
+    );
+    const inFlightRequests = new Map<string, Promise<ShellPageSnapshot>>();
+    const loader = createShellPageSnapshotLoader({
+      fetchPage,
+      inFlightRequests,
+      parseHtml: () => ({}) as Document,
+      preloadImages: vi.fn(),
+      readSnapshot: () => createSnapshot('/store/'),
+    });
+    const href = 'https://example.test/blackbox-records/store/';
+
+    // A second click on the same link aborts the first activation and fetches in the same task.
+    const firstController = new AbortController();
+    const firstRequest = loader.fetchSnapshot('/store/', href, firstController.signal);
+    firstController.abort();
+    const secondRequest = loader.fetchSnapshot('/store/', href, new AbortController().signal);
+
+    await expect(firstRequest).rejects.toThrow('aborted');
+    await expect(secondRequest).resolves.toEqual(createSnapshot('/store/'));
+    expect(fetchPage).toHaveBeenCalledTimes(2);
+    // The aborted request's cleanup must not drop the entry the second request registered while it ran.
+    expect(inFlightRequests.size).toBe(0);
+    expect(loader.hasCachedSnapshot('/store/')).toBe(true);
+  });
+
   it('keeps each Store category snapshot distinct', async () => {
     const categories = ['/store/', '/store/blackbox-releases/', '/store/distro/', '/store/merch/'];
     const cache = new Map(categories.map((pathname) => [pathname, createSnapshot(pathname)]));
