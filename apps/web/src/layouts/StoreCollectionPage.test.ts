@@ -70,6 +70,28 @@ describe('Store collection category surfaces', () => {
     expect(storeItemCardSource).not.toContain('iframe');
   });
 
+  it('keeps separate pre-order hooks hidden until fresh listing data is applied', () => {
+    const availabilityPlaceholder = /<span\b[^>]*\sdata-store-listing-availability\s[^>]*>[\s\S]*?<\/span>/.exec(
+      storeItemCardSource,
+    )?.[0];
+    expect(availabilityPlaceholder).toContain('class="store-item-card__availability"');
+    expect(availabilityPlaceholder).toContain('data-store-listing-availability-state="pending"');
+    expect(availabilityPlaceholder).toContain(
+      'data-store-release-date={storeItem.releaseDate?.toISOString().slice(0, 10)}',
+    );
+    expect(availabilityPlaceholder).toContain('Checking availability');
+    expect(availabilityPlaceholder).not.toContain('data-store-listing-preorder');
+    expect(storeItemCardSource).toMatch(
+      /<span\s+class="store-item-card__release-status"\s+data-store-listing-release-status\s+hidden\s*>\s*Out now\s*<\/span>/,
+    );
+    expect(storeItemCardSource).toMatch(
+      /<span\s+class="store-item-card__preorder"\s+data-store-listing-preorder\s+hidden\s*>\s*<\/span>/,
+    );
+    const buyButton = /<button\b[^>]*\sdata-store-card-buy=[^>]*>[\s\S]*?<\/button>/.exec(storeItemCardSource)?.[0];
+    expect(buyButton).toContain('data-store-card-buy-label="Buy"');
+    expect(buyButton).toMatch(/\shidden\s*>\s*Buy\s*<\/button>/);
+  });
+
   it('links a Release item artist above the card link', () => {
     expect(storeItemCardSource).toMatch(
       /storeItem\.artistPath \? \(\s*<a class="store-item-card__artist-link" href=\{storeItem\.artistPath\}/,

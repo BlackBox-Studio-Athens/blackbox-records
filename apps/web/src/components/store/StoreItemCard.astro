@@ -102,6 +102,10 @@ const widths = [240, 360, 480, 640, 720];
       </p>
       {promoted && <p class="store-item-card__option">New release</p>}
       {option && <p class="store-item-card__option">{option}</p>}
+      <span class="store-item-card__release-status" data-store-listing-release-status hidden>
+        Out now
+      </span>
+      <span class="store-item-card__preorder" data-store-listing-preorder hidden></span>
       <div class="store-item-card__price">
         <span
           aria-busy="true"
@@ -118,6 +122,7 @@ const widths = [240, 360, 480, 640, 720];
           data-store-item-slug={storeItem.slug}
           data-store-listing-availability
           data-store-listing-availability-state="pending"
+          data-store-release-date={storeItem.releaseDate?.toISOString().slice(0, 10)}
         >
           Checking availability
         </span>
@@ -126,6 +131,7 @@ const widths = [240, 360, 480, 640, 720];
             type="button"
             class={buttonVariants({ size: 'lg', className: 'ml-auto min-w-[4.5rem] px-3' })}
             data-store-card-buy={JSON.stringify(cartSeed)}
+            data-store-card-buy-label="Buy"
             data-store-item-slug={storeItem.slug}
             hidden
           >
