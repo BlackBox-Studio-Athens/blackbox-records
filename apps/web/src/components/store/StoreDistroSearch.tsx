@@ -265,8 +265,6 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     const selected = matches.filter((item) => !artist || normalizeStoreArtist(item.artist) === artist);
     const visibleCount = applyDistroSearch(dom, filtered ? new Set(selected.map((item) => item.element)) : null);
     setCount(visibleCount);
-    const current = document.querySelector<HTMLElement>('[data-store-browse-current]');
-    if (current) current.textContent = choices.find((choice) => choice.key === artist)?.label || 'All artists';
     if (!pendingFocus.current) return;
     pendingFocus.current = false;
     const frame = requestAnimationFrame(() => {
@@ -275,9 +273,11 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       if (target) scrollElementWithLenis(target, { block: 'start' });
     });
     return () => cancelAnimationFrame(frame);
-  }, [ready, query, artist, format, filtered, choices, scope]);
+  }, [ready, query, artist, format, filtered, scope]);
 
   if (!ready) return null;
+  const artistChoices = [{ key: '', label: 'All artists', count: domRef.current?.items.length || 0 }, ...choices];
+  const resultsId = scope === 'all' ? 'all-store-catalog' : 'distro-search-results';
   const clearFilters = () => {
     setQuery('');
     setArtist('');
@@ -288,12 +288,23 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     <>
       {artistHost &&
         createPortal(
-          <fieldset className="store-artists">
-            <legend>Artists</legend>
-            <p id="store-artists-help">Artist or label credits from this catalogue.</p>
-            <div className="store-artists-list" data-lenis-scroll-root>
-              {[{ key: '', label: 'All artists', count: domRef.current?.items.length || 0 }, ...choices].map(
-                (choice) => (
+          <>
+            {/* Phones get the native picker; the desktop pane keeps the radio list. CSS shows one. */}
+            <label className="store-artists-picker">
+              <span>Artist</span>
+              <select value={artist} onChange={(event) => setArtist(event.target.value)} aria-controls={resultsId}>
+                {artistChoices.map((choice) => (
+                  <option key={choice.key} value={choice.key}>
+                    {choice.label} ({choice.count})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <fieldset className="store-artists">
+              <legend>Artists</legend>
+              <p id="store-artists-help">Artist or label credits from this catalogue.</p>
+              <div className="store-artists-list" data-lenis-scroll-root>
+                {artistChoices.map((choice) => (
                   <label key={choice.key}>
                     <input
                       type="radio"
@@ -307,10 +318,10 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
                       {choice.label} <span className="text-muted-foreground">({choice.count})</span>
                     </span>
                   </label>
-                ),
-              )}
-            </div>
-          </fieldset>,
+                ))}
+              </div>
+            </fieldset>
+          </>,
           artistHost,
         )}
       <div className="store-search-toolbar">
@@ -326,7 +337,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search Store"
             aria-label="Search Store"
-            aria-controls={scope === 'all' ? 'all-store-catalog' : 'distro-search-results'}
+            aria-controls={resultsId}
             className="h-11 rounded-none pl-10"
           />
         </div>

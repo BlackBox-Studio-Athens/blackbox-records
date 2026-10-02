@@ -11,7 +11,7 @@ The Store Distro category SHALL render one server-derived format-navigation land
 - **AND** its active responsive presentation contains `All formats` followed by exactly one format entry for each populated derived browse group in the same order
 - **AND** every format entry displays and exposes its group name and current Distro-category item count
 - **AND** `All formats` is the default current selection when no valid initial group fragment is present
-- **AND** one separately identified `Top` link targets the Store Distro intro and remains outside the Artist disclosure
+- **AND** one separately identified `Top` link targets the Store Distro intro and remains outside the artist filter
 - **AND** empty groups produce neither a format entry nor a section
 - **AND** desktop and mobile presentations derive from the same server-created group list while CSS exposes only one presentation to layout, assistive technology, and keyboard focus at a time.
 
@@ -29,8 +29,8 @@ The Store Distro category SHALL render one server-derived format-navigation land
 - **AND** the current selection is exposed by the selected chip face, which has an ink border and a check mark, and by `aria-current`
 - **AND** the chips wrap onto further rows when text size, zoom, or available width requires it
 - **AND** no format requires horizontal scrolling, a hidden scrollbar, a clipped-edge inference, a swipe hint, or a custom carousel control
-- **AND** only the artist filter stays in a closed native `Artist` disclosure
-- **AND** every chip, the `Artist` summary and `Top` remain at least 44 CSS pixels high with visible focus.
+- **AND** the artist filter is a visible, full-width native `Artist` select showing the current artist and its count, with no disclosure
+- **AND** every chip, the `Artist` select and `Top` remain at least 44 CSS pixels high with visible focus.
 
 #### Scenario: Navigation link targets a group
 
@@ -105,7 +105,7 @@ The Store Distro format navigation MUST remain usable without client JavaScript 
 #### Scenario: Shell snapshot is cached and restored
 
 - **WHEN** the app shell caches or restores `/store/distro/`
-- **THEN** snapshot sanitation removes stale selected-format/current markers and closes the Artist disclosure while existing search sanitation owns `hidden` restoration
+- **THEN** snapshot sanitation removes stale selected-format/current markers and the client-rendered artist filter while existing search sanitation owns `hidden` restoration
 - **AND** route reconnection selects the valid current group fragment or falls back to `All formats`
 - **AND** a valid selected group receives its final target scroll/focus only after it is presented
 - **AND** the restored route exposes the narrow chips or desktop pane appropriate to the current viewport.
@@ -113,6 +113,6 @@ The Store Distro format navigation MUST remain usable without client JavaScript 
 #### Scenario: Visitor uses the keyboard
 
 - **WHEN** a visitor tabs through the visible format navigation
-- **THEN** Tab reaches each visible format entry, the `Artist` summary and `Top`, Enter activates the focused entry, and Enter or Space toggles the native summary
+- **THEN** Tab reaches each visible format entry, the `Artist` select and `Top`, Enter activates the focused entry, and the select opens the platform's native picker
 - **AND** the current selection remains programmatically exposed
 - **AND** no custom arrow-key model, carousel, scroll button, menu widget, or roving tabindex is required.

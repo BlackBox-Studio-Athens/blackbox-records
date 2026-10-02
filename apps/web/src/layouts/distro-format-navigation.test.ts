@@ -14,9 +14,9 @@ const browse = readFileSync(
   'utf8',
 );
 describe('Distro format navigation', () => {
-  it('renders one ordinary link per format, visible outside the Artist disclosure', () => {
+  it('renders one ordinary link per format before the Artist picker', () => {
     expect(source).toContain('<nav slot="formats"');
-    expect(browse.indexOf('<slot name="formats" />')).toBeLessThan(browse.indexOf('<details'));
+    expect(browse.indexOf('<slot name="formats" />')).toBeLessThan(browse.indexOf('data-store-artists'));
     expect(source.match(/data-distro-format-navigation/g)).toHaveLength(1);
     expect(source.match(/formats.map/g)).toHaveLength(1);
     expect(source).toContain('aria-label="Browse Distro formats"');
@@ -24,15 +24,14 @@ describe('Distro format navigation', () => {
     expect(source).toContain("href={'#' + format.target}");
     expect(source).toContain('data-distro-format-key={format.key}');
     expect(source).toContain('{format.count}');
-    expect(browse).toContain('data-store-browse-disclosure');
-    expect(browse).toContain('data-store-artists');
-    expect(browse.indexOf('</details>')).toBeLessThan(browse.indexOf('href="#store-page-top"'));
+    expect(browse).not.toContain('<details');
+    expect(browse.indexOf('data-store-artists')).toBeLessThan(browse.indexOf('href="#store-page-top"'));
   });
-  it('keeps the desktop pane sticky and the mobile disclosure in normal flow', () => {
+  it('keeps the desktop pane sticky with radios and gives phones the Artist select', () => {
     expect(cssSource).toMatch(/@media \(min-width: 64rem\)[\s\S]*?\.store-browse-pane\s*\{\s*position: sticky/);
-    expect(cssSource).toContain('.store-browse-disclosure::details-content');
+    expect(cssSource).toMatch(/@media \(min-width: 64rem\)[\s\S]*?\.store-artists-picker\s*\{\s*display: none/);
     expect(cssSource).toMatch(
-      /@media \(max-width: 63\.99rem\)\s*\{\s*\.store-format-links\s*\{\s*display: flex;\s*flex-wrap: wrap;/,
+      /@media \(max-width: 63\.99rem\)\s*\{\s*\.store-artists\s*\{\s*display: none;\s*\}\s*\.store-format-links\s*\{\s*display: flex;\s*flex-wrap: wrap;/,
     );
     expect(cssSource).not.toContain('[data-distro-search-root][data-distro-selected-format]');
   });

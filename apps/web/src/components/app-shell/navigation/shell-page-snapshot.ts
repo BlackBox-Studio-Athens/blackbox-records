@@ -69,9 +69,6 @@ export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-coverflow-summary]').forEach((summaryElement) => {
     summaryElement.textContent = summaryElement.dataset.storeCoverflowInitialLabel || '';
   });
-  root.querySelectorAll<HTMLDetailsElement>('[data-store-browse-disclosure]').forEach((detailsElement) => {
-    detailsElement.open = false;
-  });
   root.querySelectorAll<HTMLElement>('[data-distro-selected-format]').forEach((element) => {
     element.removeAttribute('data-distro-selected-format');
   });
@@ -125,9 +122,6 @@ export function readDocumentShellPageSnapshot(
   });
   mainElementClone.querySelectorAll<HTMLElement>('[data-store-result-total]').forEach((element) => {
     element.hidden = false;
-  });
-  mainElementClone.querySelectorAll<HTMLElement>('[data-store-browse-current]').forEach((element) => {
-    element.textContent = 'All artists';
   });
   mainElementClone.querySelectorAll<HTMLImageElement>('img[data-store-grid-sizes]').forEach((image) => {
     image.sizes = image.dataset.storeGridSizes!;

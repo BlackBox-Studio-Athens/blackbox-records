@@ -55,10 +55,7 @@ async function run() {
     if (countOccurrences(source, 'data-store-result-total') !== 1 || !source.includes(renderedCount + ' items')) {
       throw new Error('Expected one source-derived collection total on ' + expectation.path);
     }
-    if (
-      !source.includes('data-store-browse-disclosure') ||
-      source.includes('data-store-coverflow-initial-mode="preview"')
-    ) {
+    if (!source.includes('data-store-artists') || source.includes('data-store-coverflow-initial-mode="preview"')) {
       throw new Error('Expected progressive Grid with one shared Browse panel on ' + expectation.path);
     }
   }

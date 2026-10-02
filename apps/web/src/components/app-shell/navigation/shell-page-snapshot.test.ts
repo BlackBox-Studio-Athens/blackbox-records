@@ -256,7 +256,6 @@ describe('shell page snapshots', () => {
       dataset: { storeCoverflowInitialLabel: "You're viewing 1 of 53." },
       textContent: "You're viewing 34 of 53.",
     };
-    const browseDisclosure = { open: true };
     const selectedRoot = { removeAttribute: (name: string) => removed.add(name) };
     const currentSection = { removeAttribute: (name: string) => removed.add(name) };
     const allFormatLink = {
@@ -290,7 +289,6 @@ describe('shell page snapshots', () => {
         if (selector === '[data-store-coverflow-card]') return [card];
         if (selector === '[data-store-coverflow-initial-value]') return [currentValue, remainingValue];
         if (selector === '[data-store-coverflow-summary]') return [summary];
-        if (selector === '[data-store-browse-disclosure]') return [browseDisclosure];
         if (selector === '[data-distro-selected-format]') return [selectedRoot];
         if (selector === '[data-distro-format-current]') return [currentSection, selectedFormatLink];
         if (selector === '[data-distro-format-link]') return [allFormatLink, selectedFormatLink];
@@ -331,7 +329,6 @@ describe('shell page snapshots', () => {
     expect(currentValue.textContent).toBe('1');
     expect(remainingValue.textContent).toBe('52');
     expect(summary.textContent).toBe("You're viewing 1 of 53.");
-    expect(browseDisclosure.open).toBe(false);
     expect(allFormatLinkCurrent).toBe(true);
     expect(allFormatLinkAriaCurrent).toBe('true');
     expect(selectedFormatLinkCurrent).toBe(false);

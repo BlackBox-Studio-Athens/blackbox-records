@@ -4542,19 +4542,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   min-width: 0;
 }
 
-.store-browse-disclosure summary {
-  min-height: 2.75rem;
-  padding-block: 0.5rem;
-  cursor: pointer;
-}
-
-.store-browse-disclosure summary span {
-  margin-left: 0.5rem;
-  color: var(--muted-foreground);
-  font-size: 0.8125rem;
-  overflow-wrap: anywhere;
-}
-
 .store-browse-content {
   display: grid;
   gap: 1.5rem;
@@ -4572,6 +4559,39 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 .store-format-links h2 {
   font-size: 1rem;
   font-weight: 600;
+}
+
+.store-artists-picker {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.store-artists-picker span {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.store-artists-picker select {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--control-edge-quiet);
+  border-radius: 0;
+  background: var(--secondary);
+  padding-inline: 0.875rem;
+  color: var(--foreground);
+  font-size: 0.875rem;
+}
+
+.store-artists-picker select:hover {
+  border-color: var(--control-edge-hover);
+}
+
+.store-artists-picker select:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
 }
 
 .store-artists p {
@@ -4933,17 +4953,8 @@ html[data-store-coverflow-capable]
     align-self: start;
   }
 
-  .store-browse-disclosure > summary {
+  .store-artists-picker {
     display: none;
-  }
-
-  .store-browse-disclosure::details-content {
-    display: block;
-    content-visibility: visible;
-  }
-
-  .store-browse-disclosure > .store-browse-content {
-    display: grid;
   }
 
   .store-artists-list {
@@ -5119,8 +5130,12 @@ html[data-store-coverflow-capable]
   margin-block: 0.75rem;
 }
 
-/* Below the desktop pane, formats stay visible as wrapping chips; only Artist collapses. */
+/* Below the desktop pane, formats are wrapping chips and Artist is a native select. */
 @media (max-width: 63.99rem) {
+  .store-artists {
+    display: none;
+  }
+
   .store-format-links {
     display: flex;
     flex-wrap: wrap;

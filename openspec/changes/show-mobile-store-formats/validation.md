@@ -27,3 +27,11 @@ Before the change, PRD (`https://blackbox-records-web.pages.dev/store/distro/`) 
 
 - UAT and PRD presentation until the change is released and promoted. PRD is the target environment.
 - The baseline scenario "Distro search query is active" says the format landmark hides during search. No current code does this; the gap predates this change and is left unchanged.
+
+## Follow-up: native mobile artist select (2026-10-02)
+
+- Base source: `23b2161e`, branch `main`. Changed `StoreBrowsePane.astro`, `StoreDistroSearch.tsx`, `global.css`, `shell-page-snapshot.ts`, their unit tests and `scripts/check-store-category-output.ts`.
+- Problem: PRD at 390px showed `Artist` as a bare text summary below bordered chips; opening it revealed about 100 radios in a nested 22rem scroller.
+- Vitest (web config): `distro-format-navigation.test.ts` and `shell-page-snapshot.test.ts` passed 2 files and 11 tests.
+- Local side-port Astro (4335, this tree; the stack on 4321 served an older build), Playwright Chromium: at 390px the `ARTIST` select is 44px high with 83 options and no horizontal overflow; choosing Afterwise left `1 item`, synced the hidden radio, and Clear filters reset the select to All artists. At 320px no overflow. At 1280px the select is `display: none` and the radio list shows.
+- Unverified: real iOS and Android pickers, UAT and PRD until release.
