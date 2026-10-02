@@ -7,6 +7,7 @@ import { LoadingButtonContent, LoadingInline } from '@/components/ui/loading-fee
 import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/components/store/checkout/public-checkout-api';
 import { readStoreCartState, type CartLine, type CartLineItemSnapshot } from '@/components/store/cart/store-cart';
 import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/cart/store-cart-events';
+import { PreorderCartNotice } from '@/components/store/cart/PreorderCartNotice';
 import { cn } from '@/components/ui/utils';
 import {
   createCartCheckoutOfferView,
@@ -246,6 +247,9 @@ export default function CheckoutOfferStatus({
           </Badge>
         </div>
 
+        <PreorderCartNotice
+          lines={cartLines.length ? cartLines : workerFallbackLineItem ? [workerFallbackLineItem] : []}
+        />
         <DeliverySummary {...delivery} />
 
         <div className="grid gap-3 border-t border-border/60 pt-4">

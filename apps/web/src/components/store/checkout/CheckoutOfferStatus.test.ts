@@ -1,4 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import * as React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { createCartQuantity, type CartLine } from '@/components/store/cart/store-cart';
 
 import {
   createCheckoutOfferView,
@@ -14,7 +18,37 @@ import {
   STRIPE_CHECKOUT_CTA_COPY,
   WAITING_FOR_SHIPPING_QUOTE_COPY,
 } from './CheckoutOfferStatus';
+import CheckoutOfferStatus from './CheckoutOfferStatus';
 import { PublicCheckoutApiError, type PublicCheckoutApi, type PublicStoreOffer } from './public-checkout-api';
+
+const cartState = vi.hoisted(() => {
+  const state: { lines: CartLine[] } = { lines: [] };
+  return state;
+});
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof React>();
+  return {
+    ...actual,
+    useState: (initialValue: unknown) =>
+      actual.useState<unknown>(Array.isArray(initialValue) ? cartState.lines : initialValue),
+  };
+});
+
+const ordinaryLine: CartLine = {
+  availabilityLabel: 'Available',
+  image: null,
+  imageAlt: null,
+  optionLabel: 'Standard',
+  priceAmountMinor: 2800,
+  priceCurrencyCode: 'EUR',
+  priceDisplay: '€28.00',
+  priceKind: 'fixed',
+  quantity: createCartQuantity(1),
+  storeItemSlug: 'disintegration-black-vinyl-lp',
+  subtitle: 'Afterwise',
+  title: 'Disintegration',
+  variantId: 'variant_disintegration-black-vinyl-lp_standard',
+};
 
 const initialAvailability: CheckoutOfferInitialAvailability = {
   canBuy: true,
@@ -80,6 +114,9 @@ function createUnavailableStoreOffer(overrides: Partial<SoldOutStoreOffer> = {})
 }
 
 describe('CheckoutOfferStatus helpers', () => {
+  beforeEach(() => {
+    cartState.lines = [];
+  });
   it('uses Stripe-aware CTA copy and the self-hosted official badge asset', () => {
     expect(createStripeCheckoutCtaView(false)).toEqual({
       badgeSrc: STRIPE_CHECKOUT_BADGE_SRC,
@@ -392,5 +429,108 @@ describe('CheckoutOfferStatus helpers', () => {
       kind: 'error',
       message: 'Checkout is not available.',
     });
+  });
+
+  it.each([
+    {
+      lines: [
+        ordinaryLine,
+        {
+          ...ordinaryLine,
+          variantId: 'variant_month',
+          preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } },
+        },
+      ],
+      expected: 'Around October 2026',
+    },
+    {
+      lines: [
+        ordinaryLine,
+        {
+          ...ordinaryLine,
+          variantId: 'variant_date',
+          preorder: { shipEstimate: { kind: 'date', date: '2026-10-20' } },
+        },
+      ],
+      expected: 'On 20 October 2026',
+    },
+    {
+      lines: [{ ...ordinaryLine, preorder: { shipEstimate: null } }],
+      expected: 'When it arrives',
+    },
+    {
+      lines: [
+        { ...ordinaryLine, preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: 'late' } } },
+        {
+          ...ordinaryLine,
+          variantId: 'variant_later',
+          preorder: { shipEstimate: { kind: 'date', date: '2026-11-05' } },
+        },
+      ],
+      expected: 'On 5 November 2026',
+    },
+    {
+      lines: [
+        { ...ordinaryLine, preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } } },
+        { ...ordinaryLine, variantId: 'variant_withheld', preorder: { shipEstimate: null } },
+      ],
+      expected: 'When it arrives',
+    },
+  ] satisfies { lines: CartLine[]; expected: string }[])(
+    'shows one shared notice before delivery, using $expected',
+    ({ lines, expected }) => {
+      cartState.lines = lines;
+      const markup = renderToStaticMarkup(React.createElement(CheckoutOfferStatus, { initialAvailability }));
+
+      expect(markup).toContain('Review and Pay');
+      expect(markup.match(/Pre-order in this order/g)).toHaveLength(1);
+      expect(markup.match(/class="preorder-notice"/g)).toHaveLength(1);
+      expect(markup).toContain('class="preorder-rail"');
+      expect(markup).toContain('Charged in full');
+      expect(markup).toContain(expected);
+      expect(markup).toContain('One parcel to your BOX NOW locker');
+      expect(markup).toContain(
+        'Your whole order, in-stock items included, ships in one parcel when the pre-order arrives. If the estimate changes we email you.',
+      );
+      expect(markup.indexOf('class="preorder-notice"')).toBeLessThan(markup.indexOf('data-delivery-summary'));
+      expect(markup).toContain('Calculating delivery and current prices');
+      expect(markup).toContain('Confirming price and availability before payment opens.');
+      if (expected === 'When it arrives') expect(markup).not.toContain('October 2026');
+    },
+  );
+
+  it('uses the Worker fallback snapshot when there are no cart lines', () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(CheckoutOfferStatus, {
+        initialAvailability,
+        fallbackLineItem: { ...ordinaryLine, preorder: { shipEstimate: null } },
+      }),
+    );
+    expect(markup.match(/Pre-order in this order/g)).toHaveLength(1);
+    expect(markup).toContain('When it arrives');
+    expect(markup.indexOf('class="preorder-notice"')).toBeLessThan(markup.indexOf('data-delivery-summary'));
+  });
+
+  it('keeps ordinary cart review unchanged and ignores a fallback that is not in the cart', () => {
+    cartState.lines = [ordinaryLine, { ...ordinaryLine, variantId: 'variant_ordinary', preorder: null }];
+    const markup = renderToStaticMarkup(
+      React.createElement(CheckoutOfferStatus, {
+        initialAvailability,
+        fallbackLineItem: { ...ordinaryLine, preorder: { shipEstimate: null } },
+      }),
+    );
+    expect(markup).not.toContain('Pre-order in this order');
+    expect(markup).not.toContain('preorder-notice');
+    expect(markup).toContain('Review and Pay');
+    expect(markup).toContain('data-delivery-summary');
+    expect(markup).toContain('Calculating delivery and current prices');
+    expect(markup).toContain('Confirming price and availability before payment opens.');
+  });
+
+  it('does not show a preorder notice for an empty review', () => {
+    const markup = renderToStaticMarkup(React.createElement(CheckoutOfferStatus, { initialAvailability }));
+    expect(markup).not.toContain('preorder-notice');
+    expect(markup).toContain('Add a priced item to the cart before checkout.');
+    expect(markup).toContain('data-delivery-summary');
   });
 });

@@ -15,6 +15,7 @@ import {
 } from '@/components/store/cart/store-cart';
 import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/cart/store-cart-events';
 import { cn } from '@/components/ui/utils';
+import { preorderChipText } from '@/platform/lib/preorder-estimate';
 
 export type CheckoutOrderSummaryInput = {
   availabilityLabel: string;
@@ -127,6 +128,7 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
                 {line.optionLabel && (
                   <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{line.optionLabel}</p>
                 )}
+                {line.preorder && <p className="preorder-badge">{preorderChipText(line.preorder.shipEstimate)}</p>}
                 <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
                   <div className="space-y-1">
                     <p className="font-display text-2xl uppercase tracking-[0.08em] text-foreground">
