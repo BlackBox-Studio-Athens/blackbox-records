@@ -9,6 +9,7 @@ import {
   searchVariants,
   setRestockPlanned,
   setShowLowStock,
+  setStockPreorder,
   VariantNotFoundError,
 } from '../../../application/commerce/stock';
 import type { AppBindings } from '../../../platform/env';
@@ -75,6 +76,8 @@ export function createInternalStockServices(bindings: AppBindings) {
       setRestockPlanned(storeItemOptions, operatorStock, command),
     setShowLowStock: async (command: { expectedRevision: unknown; showLowStock: unknown; variantId: unknown }) =>
       setShowLowStock(storeItemOptions, operatorStock, command),
+    setStockPreorder: async (command: { expectedRevision: unknown; shipEstimate: unknown; variantId: unknown }) =>
+      setStockPreorder(storeItemOptions, stock, operatorStock, command),
     searchVariants: async (query: string | null, limit: number) => searchVariants(storeItemOptions, query, limit),
   };
 }

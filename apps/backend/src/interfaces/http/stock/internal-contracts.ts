@@ -58,6 +58,7 @@ const internalContractModules = [
       '/api/internal/variants/{variantId}/stock',
       '/api/internal/variants/{variantId}/stock/restock-plan',
       '/api/internal/variants/{variantId}/stock/low-stock-notice',
+      '/api/internal/variants/{variantId}/stock/preorder',
       '/api/internal/variants/{variantId}/stock/history',
       '/api/internal/variants/{variantId}/stock/changes',
       '/api/internal/variants/{variantId}/stock/counts',

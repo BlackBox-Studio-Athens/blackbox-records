@@ -23,6 +23,7 @@ const mockReadVariantStock = vi.fn();
 const mockReadVariantStockHistory = vi.fn();
 const mockRecordStockChange = vi.fn();
 const mockRecordStockCount = vi.fn();
+const mockSetStockPreorder = vi.fn();
 const VariantNotFoundError = class VariantNotFoundError extends Error {};
 const InvalidStockOperationError = class InvalidStockOperationError extends Error {};
 const StockConflictError = class StockConflictError extends Error {};
@@ -49,6 +50,7 @@ vi.mock('./stock/internal-stock-services', () => ({
       readVariantStockHistory: mockReadVariantStockHistory,
       recordStockChange: mockRecordStockChange,
       recordStockCount: mockRecordStockCount,
+      setStockPreorder: mockSetStockPreorder,
       searchVariants: mockSearchVariants,
       readInventory: mockReadInventory,
     };
@@ -56,6 +58,93 @@ vi.mock('./stock/internal-stock-services', () => ({
 }));
 
 describe('internal stock routes', () => {
+  it('returns the pre-order state and action, rejects stale revisions and protects hosted writes', async () => {
+    const app = createHttpApp();
+    const url = 'http://127.0.0.1/api/internal/variants/variant_test/stock/preorder';
+    const shipEstimate = { kind: 'month', month: '2099-10', part: null };
+    const body = { expectedRevision: 0, shipEstimate };
+    const request = { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) };
+    mockReadVariantStock.mockResolvedValueOnce({
+      sourceId: 'test',
+      sourceKind: 'release',
+      storeItemSlug: 'test',
+      variantId: 'variant_test',
+      stock: {
+        revision: 1,
+        quantity: 3,
+        onlineQuantity: 3,
+        restockPlanned: false,
+        showLowStock: false,
+        preorder: { shipEstimate, startedAt: '2026-10-02T10:00:00.000Z' },
+        updatedAt: new Date('2026-10-02T10:00:00Z'),
+      },
+    });
+    const response = await app.request(url, request, LOCAL_ENV);
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    const result = (await response.json()) as { stock: unknown; actions: unknown[] };
+    expect(result.stock).toMatchObject({ preorder: { shipEstimate, open: true } });
+    expect(result.actions).toContainEqual(
+      expect.objectContaining({
+        rel: 'set-stock-preorder',
+        operationRef: 'setStockPreorder',
+        method: 'PATCH',
+        href: '/api/internal/variants/variant_test/stock/preorder',
+        parameters: { path: { variantId: 'variant_test' }, body: { expectedRevision: 1 } },
+      }),
+    );
+    expect(mockSetStockPreorder).toHaveBeenCalledWith({ ...body, variantId: 'variant_test' });
+    mockSetStockPreorder.mockRejectedValueOnce(new StockConflictError('Stock changed.'));
+    expect((await app.request(url, request, LOCAL_ENV)).status).toBe(409);
+    mockSetStockPreorder.mockRejectedValueOnce(new InvalidStockOperationError('Date has passed.'));
+    expect((await app.request(url, request, LOCAL_ENV)).status).toBe(400);
+    mockSetStockPreorder.mockRejectedValueOnce(new VariantNotFoundError());
+    expect((await app.request(url, request, LOCAL_ENV)).status).toBe(404);
+    expect((await app.request(url, { ...request, body: JSON.stringify({ shipEstimate }) }, LOCAL_ENV)).status).toBe(
+      400,
+    );
+    expect(
+      (await app.request(url.replace('http://127.0.0.1', 'https://ops.example'), request, HOSTED_ENV)).status,
+    ).toBe(401);
+  });
+  it('derives the open flag from the Athens day on every stock read', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-31T22:30:00Z'));
+    try {
+      const app = createHttpApp();
+      const detail = {
+        sourceId: 'test',
+        sourceKind: 'release',
+        storeItemSlug: 'test',
+        variantId: 'variant_test',
+        stock: {
+          revision: 1,
+          quantity: 3,
+          onlineQuantity: 3,
+          restockPlanned: false,
+          showLowStock: false,
+          updatedAt: new Date(),
+        },
+      };
+      for (const [shipEstimate, open] of [
+        [{ kind: 'month', month: '2026-10', part: null }, true],
+        [{ kind: 'date', date: '2026-11-01' }, false],
+        [{ kind: 'date', date: '2026-11-02' }, true],
+      ] as const) {
+        const preorder = { shipEstimate, startedAt: '2026-09-01T10:00:00.000Z' };
+        mockReadVariantStock.mockResolvedValueOnce({ ...detail, stock: { ...detail.stock, preorder } });
+        const response = await app.request(
+          'http://127.0.0.1/api/internal/variants/variant_test/stock',
+          undefined,
+          LOCAL_ENV,
+        );
+        expect(response.status).toBe(200);
+        expect(await response.json()).toMatchObject({ stock: { preorder: { ...preorder, open } } });
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
   it('protects inventory access and validates pagination before reading', async () => {
     const app = createHttpApp();
     expect((await app.request('https://ops.example/api/internal/inventory', undefined, HOSTED_ENV)).status).toBe(401);
@@ -327,6 +416,7 @@ describe('internal stock routes', () => {
         revision: 5,
         onlineQuantity: 1,
         quantity: 2,
+        preorder: null,
         updatedAt: '2026-04-24T12:05:00.000Z',
       },
       variantId: 'variant_disintegration-black-vinyl-lp_standard',

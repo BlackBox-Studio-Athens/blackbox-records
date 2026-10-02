@@ -104,6 +104,39 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
     return row ? mapStock(row) : null;
   }
 
+  public async setStockPreorder(input: {
+    expectedRevision: number | null;
+    preorder: StockRecord['preorder'];
+    variantId: StockRecord['variantId'];
+  }): Promise<StockRecord | null> {
+    const timestamp = new Date().toISOString();
+    const estimate = input.preorder?.shipEstimate;
+    const row = await this.db
+      .prepare(
+        [
+          'INSERT INTO "Stock" ("id", "variantId", "quantity", "onlineQuantity", "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate", "revision", "createdAt", "updatedAt")',
+          'SELECT ?, ?, 0, 0, ?, ?, ?, ?, 0, ?, ? WHERE ? IS NULL OR EXISTS (SELECT 1 FROM "Stock" WHERE "variantId" = ?)',
+          'ON CONFLICT ("variantId") DO UPDATE SET "preorderStartedAt" = excluded."preorderStartedAt", "preorderShipMonth" = excluded."preorderShipMonth", "preorderShipPart" = excluded."preorderShipPart", "preorderShipDate" = excluded."preorderShipDate", "revision" = "Stock"."revision" + 1, "updatedAt" = excluded."updatedAt"',
+          'WHERE "Stock"."revision" = ? RETURNING *',
+        ].join('\n'),
+      )
+      .bind(
+        crypto.randomUUID(),
+        input.variantId,
+        input.preorder?.startedAt ?? null,
+        estimate?.kind === 'month' ? estimate.month : null,
+        estimate?.kind === 'month' ? estimate.part : null,
+        estimate?.kind === 'date' ? estimate.date : null,
+        timestamp,
+        timestamp,
+        input.expectedRevision,
+        input.variantId,
+        input.expectedRevision,
+      )
+      .first<StockRow>();
+    return row ? mapStock(row) : null;
+  }
+
   public async initializeOpeningStock(
     operation: CatalogOperation,
     quantity: ReturnType<typeof createStockQuantity>,

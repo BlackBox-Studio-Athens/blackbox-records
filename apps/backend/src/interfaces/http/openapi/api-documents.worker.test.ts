@@ -64,9 +64,28 @@ describe('OpenAPI documents', () => {
       'setRestockPlanned',
     );
     expect(document.paths?.['/api/internal/variants/{variantId}/price']?.post?.operationId).toBe('changeCatalogPrice');
+    expect(document.paths?.['/api/internal/variants/{variantId}/stock/preorder']?.patch?.operationId).toBe(
+      'setStockPreorder',
+    );
     expect(document.paths?.['/api/internal/variants/{variantId}/publication']?.post?.operationId).toBe(
       'publishCatalogItem',
     );
     expect(document.paths?.['/api/internal/variants']?.get?.responses?.['200']?.headers?.Link).toBeDefined();
+    const paths = Object.keys(document.paths ?? {});
+    expect(paths.indexOf('/api/internal/variants/{variantId}/stock/preorder')).toBe(
+      paths.indexOf('/api/internal/variants/{variantId}/stock/low-stock-notice') + 1,
+    );
+    const preorder = document.paths?.['/api/internal/variants/{variantId}/stock/preorder']?.patch;
+    expect(Object.keys(preorder?.responses ?? {})).toEqual(['200', '400', '401', '404', '409', '503']);
+    expect(preorder?.requestBody).toMatchObject({
+      content: { 'application/json': { schema: { $ref: '#/components/schemas/SetStockPreorderBody' } } },
+    });
+    expect(document.components?.schemas?.SetStockPreorderBody).toMatchObject({
+      required: ['expectedRevision', 'shipEstimate'],
+    });
+    expect(document.components?.schemas?.InternalStockState).toMatchObject({
+      required: expect.arrayContaining(['showLowStock', 'preorder']),
+      properties: { preorder: expect.any(Object) },
+    });
   });
 });

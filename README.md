@@ -534,6 +534,7 @@ pnpm audit:commerce-boundaries
 - JWT-free operator identity exists only for Product Environment Local on `localhost` or `127.0.0.1`, using the committed local-only `LOCAL_OPERATOR_EMAIL` binding.
 - EmDash and staff operations use the existing verified Access identity; retired GitHub CMS authentication is not a runtime dependency.
 - The internal Worker API now exposes operator-only stock lookup and stock-write routes under `/api/internal/variants/*`.
+- `PATCH /api/internal/variants/{variantId}/stock/preorder` starts, changes or ends a revision-checked pre-order. Enter expected copies as stock and recount on arrival; see [the staff procedure](docs/commerce-operations.md#pre-orders-in-selling).
 - The internal Worker API now exposes read-only checkout order inspection under `/api/internal/orders*` for low-volume reconciliation. It is Access-protected, not a shopper API, and does not mutate order or stock state.
 - The protected stock operations UI is built from `apps/staff` at `/stock/`; it calls same-origin `/api/internal/*` on the protected operator hostname.
 - For local split-port development, set `PUBLIC_BACKEND_BASE_URL=http://127.0.0.1:8787` so the static UI can call the local Worker; the Worker allows browser API calls only from origins listed in `CHECKOUT_RETURN_ORIGINS`.

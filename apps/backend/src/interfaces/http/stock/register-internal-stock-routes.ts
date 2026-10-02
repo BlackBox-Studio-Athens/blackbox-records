@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { inventoryQuerySchema } from '../../../application/commerce/stock';
+import { athensToday, isPreorderOpen, type StockPreorder } from '../../../domain/commerce';
 
 import { areCommerceIdempotencyKeysRequired, type AppBindings, type AppOpenApi } from '../../../platform/env';
 import type { AppLogger } from '../../../platform/observability';
@@ -30,7 +31,7 @@ function logStockOutcome(
   logger: Pick<AppLogger, 'error' | 'info' | 'warn'>,
   severity: 'error' | 'info' | 'warn',
   record: {
-    operation: 'count' | 'history' | 'read' | 'search' | 'change' | 'restock_plan' | 'low_stock_notice';
+    operation: 'count' | 'history' | 'read' | 'search' | 'change' | 'restock_plan' | 'low_stock_notice' | 'preorder';
     outcome: string;
     safeReason?: string;
     variantId?: string;
@@ -102,6 +103,15 @@ const variantSummarySchema = z
   })
   .openapi('InternalVariantSummary');
 
+const shipEstimateSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('month'),
+    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+    part: z.enum(['early', 'mid', 'late']).nullable(),
+  }),
+  z.object({ kind: z.literal('date'), date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) }),
+]);
+
 const stockStateSchema = z
   .object({
     revision: z.number().int().min(0).nullable(),
@@ -109,6 +119,9 @@ const stockStateSchema = z
     quantity: z.number().int().min(0),
     restockPlanned: z.boolean(),
     showLowStock: z.boolean(),
+    preorder: z
+      .object({ shipEstimate: shipEstimateSchema, startedAt: z.string().datetime(), open: z.boolean() })
+      .nullable(),
     updatedAt: z.string().datetime().nullable(),
   })
   .openapi('InternalStockState');
@@ -198,6 +211,13 @@ const recordedStockChangeResponseSchema = z
     ...hypermediaMetadataShape,
   })
   .openapi('RecordedStockChangeResponse');
+
+const setStockPreorderBodySchema = z
+  .object({
+    expectedRevision: z.number().int().min(0).nullable(),
+    shipEstimate: shipEstimateSchema.nullable(),
+  })
+  .openapi('SetStockPreorderBody');
 
 const recordedStockCountResponseSchema = z
   .object({
@@ -477,6 +497,24 @@ const patchShowLowStockRoute = createRoute({
   tags: ['Internal Stock'],
 });
 
+const patchStockPreorderRoute = createRoute({
+  method: 'patch',
+  path: '/api/internal/variants/{variantId}/stock/preorder',
+  operationId: 'setStockPreorder',
+  request: {
+    params: variantParamsSchema,
+    body: { content: { 'application/json': { schema: setStockPreorderBodySchema } } },
+  },
+  responses: {
+    200: { content: { 'application/json': { schema: stockDetailSchema } }, description: 'Updated the pre-order.' },
+    400: { content: problemContent, description: 'Invalid ship estimate.' },
+    404: { content: problemContent, description: 'Variant not found.' },
+    409: { content: problemContent, description: 'Stock changed since the current revision was read.' },
+    ...operatorAccessErrorResponses,
+  },
+  tags: ['Internal Stock'],
+});
+
 export function registerInternalStockRoutes(app: AppOpenApi): void {
   app.openapi(inventoryRoute, async (context) =>
     withInternalStockServices(context.env, async (services) =>
@@ -672,6 +710,62 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
             message: routeError.message,
             status: routeError.status,
           });
+        }
+        throw error;
+      }
+    });
+  });
+
+  app.openapi(patchStockPreorderRoute, async (context) => {
+    const logger = requestLogger(context);
+    return withInternalStockServices(context.env, async (services) => {
+      const { variantId } = context.req.valid('param');
+      try {
+        const body = context.req.valid('json');
+        await runWithTraceSpan(
+          traceContextFromHono(context),
+          'stock.mutate',
+          {
+            operation: 'stock_preorder',
+            productEnvironment: context.env.PRODUCT_ENVIRONMENT,
+            variantId,
+          },
+          () => services.setStockPreorder({ ...body, variantId }),
+        );
+        const detail = await services.readVariantStock(variantId);
+        logStockOutcome(logger, 'info', { operation: 'preorder', outcome: 'ok', variantId });
+        return jsonNoStore(
+          context.json(
+            addHypermedia(
+              toStockDetailResponse(detail),
+              variantLinks(variantId),
+              variantActions(variantId, detail.stock.revision),
+            ),
+            200,
+          ),
+        );
+      } catch (error) {
+        if (error instanceof services.errors.StockConflictError) {
+          logStockOutcome(logger, 'warn', {
+            operation: 'preorder',
+            outcome: 'conflict',
+            safeReason: 'stock_changed',
+            variantId,
+          });
+          return jsonError(context, { code: 'stock_conflict', message: error.message, status: 409 });
+        }
+        const routeError = toInternalStockRouteError(services, error, {
+          includeInvalidStockOperation: true,
+          invalidRequestMessage: 'Invalid pre-order request.',
+        });
+        if (routeError) {
+          logStockOutcome(logger, 'warn', {
+            operation: 'preorder',
+            outcome: 'failed',
+            safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
+            variantId,
+          });
+          return jsonError(context, routeError);
         }
         throw error;
       }
@@ -922,6 +1016,7 @@ function toStockDetailResponse(detail: {
     quantity: number;
     restockPlanned: boolean;
     showLowStock: boolean;
+    preorder: StockPreorder | null;
     updatedAt: Date | null;
   };
   storeItemSlug: string;
@@ -1000,6 +1095,13 @@ function variantActions(variantId: string, revision: number | null) {
       parameters: { body: { expectedRevision: revision }, path: { variantId } },
       rel: 'set-show-low-stock',
     }),
+    apiAction({
+      href: apiPath('api', 'internal', 'variants', variantId, 'stock', 'preorder'),
+      method: 'PATCH',
+      operationRef: 'setStockPreorder',
+      parameters: { body: { expectedRevision: revision }, path: { variantId } },
+      rel: 'set-stock-preorder',
+    }),
   ];
 }
 
@@ -1009,6 +1111,7 @@ function toStockStateResponse(stock: {
   quantity: number;
   restockPlanned: boolean;
   showLowStock: boolean;
+  preorder: StockPreorder | null;
   updatedAt: Date | null;
 }) {
   return {
@@ -1017,6 +1120,7 @@ function toStockStateResponse(stock: {
     quantity: stock.quantity,
     restockPlanned: stock.restockPlanned,
     showLowStock: stock.showLowStock,
+    preorder: stock.preorder ? { ...stock.preorder, open: isPreorderOpen(stock.preorder, athensToday()) } : null,
     updatedAt: stock.updatedAt?.toISOString() ?? null,
   };
 }

@@ -22,6 +22,11 @@ export interface OperatorStockRepository {
     variantId: StockRecord['variantId'];
   }): Promise<StockRecord | null>;
   recordChange(input: RecordStockChangeInput): Promise<{ stock: StockRecord; entry: StockChangeRecord } | null>;
+  setStockPreorder(input: {
+    expectedRevision: number | null;
+    preorder: StockRecord['preorder'];
+    variantId: StockRecord['variantId'];
+  }): Promise<StockRecord | null>;
   recordCount(input: RecordStockCountInput & { expectedRevision: number | null }): Promise<{
     stock: StockRecord;
     entry: StockCountRecord;

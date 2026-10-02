@@ -284,6 +284,22 @@ export type paths = {
         patch: operations["setShowLowStock"];
         trace?: never;
     };
+    "/api/internal/variants/{variantId}/stock/preorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["setStockPreorder"];
+        trace?: never;
+    };
     "/api/internal/variants/{variantId}/stock/restock-plan": {
         parameters: {
             query?: never;
@@ -626,6 +642,22 @@ export type components = {
         };
         InternalStockState: {
             onlineQuantity: number;
+            preorder: {
+                open: boolean;
+                shipEstimate: {
+                    /** @enum {string} */
+                    kind: "month";
+                    month: string;
+                    /** @enum {string|null} */
+                    part: "early" | "mid" | "late" | null;
+                } | {
+                    date: string;
+                    /** @enum {string} */
+                    kind: "date";
+                };
+                /** Format: date-time */
+                startedAt: string;
+            } | null;
             quantity: number;
             restockPlanned: boolean;
             revision: number | null;
@@ -684,6 +716,20 @@ export type components = {
         SetShowLowStockBody: {
             expectedRevision: number | null;
             showLowStock: boolean;
+        };
+        SetStockPreorderBody: {
+            expectedRevision: number | null;
+            shipEstimate: {
+                /** @enum {string} */
+                kind: "month";
+                month: string;
+                /** @enum {string|null} */
+                part: "early" | "mid" | "late" | null;
+            } | {
+                date: string;
+                /** @enum {string} */
+                kind: "date";
+            } | null;
         };
     };
     responses: never;
@@ -1874,6 +1920,77 @@ export interface operations {
                 };
             };
             /** @description Invalid copies-left setting. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication failed. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Variant not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Stock changed since the current revision was read. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Operator authentication is temporarily unavailable. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    setStockPreorder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                variantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SetStockPreorderBody"];
+            };
+        };
+        responses: {
+            /** @description Updated the pre-order. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InternalStockDetail"];
+                };
+            };
+            /** @description Invalid ship estimate. */
             400: {
                 headers: {
                     [name: string]: unknown;

@@ -2,6 +2,14 @@
 
 This is the launch runbook for paid orders, review exceptions, delivery, and manual Greece-only BOX NOW fulfillment. The label must name the on-duty operator and backup before launch; owner approval and hosted rehearsals remain launch gates. Local test results do not approve PRD checkout.
 
+## Pre-orders in Selling
+
+Enter the number of expected copies as the ordinary stock quantity and set how many may be bought online. In Selling, switch Pre-order on and choose a ship month (optionally Early, Mid or Late) or an exact date, then Save pre-order. Saving checks the stock revision; refresh and retry a conflict. This changes neither quantities nor stock history.
+
+Change the estimate while the copies are delayed. A month estimate remains open until Copies arrived; once the month passes, shoppers see Pre-order without a date. An exact date ends the pre-order automatically on that Athens calendar date, whether or not the copies arrived. Use it only when sure, and update it before that date if the plant slips.
+
+When copies arrive, press Copies arrived (or switch Pre-order off), then count stock again to reconcile the physical copies and online quantity. Orders from that pre-order stop awaiting stock. A later pre-order starts a new cycle and does not hold earlier orders again.
+
 ## Daily checks
 
 The on-duty operator checks the correct Stripe account and Product Environment, failed webhook deliveries, protected `/api/internal/orders?status=needs_review`, and paid orders with pending or exhausted delivery attempts. Use Access-protected reads and provider dashboards. Keep addresses, contact details, payment references, and raw payloads out of public evidence and logs. Record environment, accepted commit, redacted order reference, outcome, operator, and time.

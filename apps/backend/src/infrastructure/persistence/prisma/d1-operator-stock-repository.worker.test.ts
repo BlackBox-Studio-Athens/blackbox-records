@@ -7,6 +7,108 @@ import type { RequestIdentity } from '../../../domain/commerce/repositories/requ
 import { D1OperatorStockRepository } from './d1-operator-stock-repository';
 
 describe('D1OperatorStockRepository idempotency', () => {
+  it('revision-checks pre-order writes, creates an empty row and keeps quantities and history', async () => {
+    const variantId = parseVariantId(`variant_preorder_write_${crypto.randomUUID()}`);
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const preorder = {
+      startedAt: '2026-10-02T10:00:00.000Z',
+      shipEstimate: { kind: 'month', month: '2026-11', part: 'mid' },
+    } as const;
+    const start = await repository.setStockPreorder({ expectedRevision: null, preorder, variantId });
+    expect(start).toMatchObject({ preorder, revision: 0, quantity: 0, onlineQuantity: 0 });
+    await expect(
+      repository.setStockPreorder({ expectedRevision: null, preorder: null, variantId }),
+    ).resolves.toBeNull();
+    await expect(repository.setStockPreorder({ expectedRevision: 7, preorder: null, variantId })).resolves.toBeNull();
+    const changed = await repository.setStockPreorder({
+      expectedRevision: 0,
+      preorder: { ...preorder, shipEstimate: { kind: 'date', date: '2026-11-20' } },
+      variantId,
+    });
+    expect(changed).toMatchObject({
+      revision: 1,
+      preorder: { startedAt: preorder.startedAt, shipEstimate: { kind: 'date', date: '2026-11-20' } },
+    });
+    expect(await repository.setStockPreorder({ expectedRevision: 1, preorder: null, variantId })).toMatchObject({
+      preorder: null,
+      revision: 2,
+      quantity: 0,
+      onlineQuantity: 0,
+    });
+    await expect(countRows('StockChange', variantId)).resolves.toBe(0);
+    await expect(countRows('StockCount', variantId)).resolves.toBe(0);
+  });
+  it('allows only one concurrent pre-order edit and preserves stock, flags and ledger rows', async () => {
+    const variantId = parseVariantId(`variant_preorder_race_${crypto.randomUUID()}`);
+    const repository = new D1OperatorStockRepository(env.COMMERCE_DB);
+    const preorder = {
+      startedAt: '2026-10-02T10:00:00.000Z',
+      shipEstimate: { kind: 'month', month: '2026-11', part: 'mid' },
+    } as const;
+    await expect(repository.setStockPreorder({ variantId, expectedRevision: 1, preorder })).resolves.toBeNull();
+    await expect(
+      env.COMMERCE_DB.prepare('SELECT * FROM "Stock" WHERE "variantId" = ?').bind(variantId).first(),
+    ).resolves.toBeNull();
+    await seedStock(variantId, 9);
+    await env.COMMERCE_DB.prepare(
+      'UPDATE "Stock" SET "onlineQuantity" = 4, "restockPlanned" = 1, "showLowStock" = 1 WHERE "variantId" = ?',
+    )
+      .bind(variantId)
+      .run();
+    await repository.recordChange({
+      actorEmail: 'operator@example.com',
+      variantId,
+      quantityDelta: createStockChangeDelta(1),
+      reason: 'Inbound',
+      notes: null,
+    });
+    const started = await repository.setStockPreorder({ variantId, expectedRevision: 1, preorder });
+    expect(started).toMatchObject({
+      quantity: 10,
+      onlineQuantity: 5,
+      restockPlanned: true,
+      showLowStock: true,
+      revision: 2,
+      preorder,
+    });
+    const edits = await Promise.all(
+      ['2026-11-20', '2026-11-21'].map((date) =>
+        repository.setStockPreorder({
+          variantId,
+          expectedRevision: 2,
+          preorder: { ...preorder, shipEstimate: { kind: 'date', date } },
+        }),
+      ),
+    );
+    expect(edits.filter(Boolean)).toHaveLength(1);
+    const edited = edits.find(Boolean)!;
+    expect(edited).toMatchObject({
+      quantity: 10,
+      onlineQuantity: 5,
+      revision: 3,
+      preorder: { startedAt: preorder.startedAt },
+    });
+    expect(edited.createdAt).toEqual(started?.createdAt);
+    await repository.setStockPreorder({ variantId, expectedRevision: 3, preorder: null });
+    await expect(
+      env.COMMERCE_DB.prepare(
+        'SELECT "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate", "quantity", "onlineQuantity", "restockPlanned", "showLowStock" FROM "Stock" WHERE "variantId" = ?',
+      )
+        .bind(variantId)
+        .first(),
+    ).resolves.toEqual({
+      preorderStartedAt: null,
+      preorderShipMonth: null,
+      preorderShipPart: null,
+      preorderShipDate: null,
+      quantity: 10,
+      onlineQuantity: 5,
+      restockPlanned: 1,
+      showLowStock: 1,
+    });
+    await expect(countRows('StockChange', variantId)).resolves.toBe(1);
+    await expect(countRows('StockCount', variantId)).resolves.toBe(0);
+  });
   it('applies one keyed change for concurrent identical requests', async () => {
     const variantId = parseVariantId(`variant_idempotent_change_${crypto.randomUUID()}`);
     await seedStock(variantId, 5);

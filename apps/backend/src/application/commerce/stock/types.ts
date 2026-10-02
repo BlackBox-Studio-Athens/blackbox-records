@@ -14,6 +14,7 @@ export type VariantStockDetail = VariantSummary & {
     onlineQuantity: number;
     restockPlanned: boolean;
     showLowStock: boolean;
+    preorder: StockRecord['preorder'];
     updatedAt: Date | null;
   };
 };

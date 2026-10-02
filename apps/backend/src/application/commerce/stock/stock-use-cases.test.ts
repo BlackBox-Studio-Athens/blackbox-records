@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   InvalidStockOperationError,
@@ -7,6 +7,8 @@ import {
   recordStockChange,
   recordStockCount,
   searchVariants,
+  setStockPreorder,
+  StockConflictError,
   VariantNotFoundError,
 } from './';
 import type {
@@ -198,9 +200,253 @@ describe('commerce stock use cases', () => {
         quantity: 0,
         restockPlanned: false,
         showLowStock: false,
+        preorder: null,
         updatedAt: null,
       },
     });
+  });
+
+  it('starts, edits, ends and restarts a pre-order without changing stock quantities', async () => {
+    const now = new Date('2026-10-02T10:00:00Z');
+    const month = { kind: 'month', month: '2026-10', part: null } as const;
+    const write = vi.fn(async (input: Parameters<OperatorStockRepository['setStockPreorder']>[0]) => {
+      const old = await stock.findByVariantId(input.variantId);
+      const record = await stock.save(input.variantId, {
+        quantity: old?.quantity ?? 0,
+        onlineQuantity: old?.onlineQuantity ?? 0,
+      });
+      record.preorder = input.preorder;
+      return record;
+    });
+    const command = { variantId: storeItem.variantId, expectedRevision: null, shipEstimate: month };
+    const start = await setStockPreorder(storeItems, stock, { setStockPreorder: write }, command, now);
+    expect(start).toMatchObject({
+      quantity: 0,
+      onlineQuantity: 0,
+      revision: 0,
+      preorder: { startedAt: now.toISOString(), shipEstimate: month },
+    });
+    await setStockPreorder(storeItems, stock, { setStockPreorder: write }, { ...command, expectedRevision: 0 }, now);
+    expect(write).toHaveBeenCalledTimes(1);
+    await expect(setStockPreorder(storeItems, stock, { setStockPreorder: write }, command, now)).rejects.toBeInstanceOf(
+      StockConflictError,
+    );
+    const changed = await setStockPreorder(
+      storeItems,
+      stock,
+      { setStockPreorder: write },
+      { ...command, expectedRevision: 0, shipEstimate: { kind: 'date', date: '2026-10-20' } },
+      now,
+    );
+    expect(changed?.preorder?.startedAt).toBe(now.toISOString());
+    const restarted = await setStockPreorder(
+      storeItems,
+      stock,
+      { setStockPreorder: write },
+      { ...command, expectedRevision: 1, shipEstimate: { kind: 'month', month: '2026-11', part: 'late' } },
+      new Date('2026-10-21T10:00:00Z'),
+    );
+    expect(restarted?.preorder?.startedAt).toBe('2026-10-21T10:00:00.000Z');
+    const ended = await setStockPreorder(
+      storeItems,
+      stock,
+      { setStockPreorder: write },
+      { ...command, expectedRevision: 2, shipEstimate: null },
+      now,
+    );
+    expect(ended).toMatchObject({ preorder: null, quantity: 0, onlineQuantity: 0, revision: 3 });
+    for (const shipEstimate of [
+      undefined,
+      {},
+      { kind: 'month', month: '2026-09', part: null },
+      { kind: 'date', date: '2026-10-02' },
+      { kind: 'date', date: '2026-02-30' },
+    ]) {
+      await expect(
+        setStockPreorder(
+          storeItems,
+          stock,
+          { setStockPreorder: write },
+          { ...command, expectedRevision: 3, shipEstimate },
+          now,
+        ),
+      ).rejects.toBeInstanceOf(InvalidStockOperationError);
+    }
+    for (const expectedRevision of [undefined, -1, 1.5, '0', NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+      await expect(
+        setStockPreorder(storeItems, stock, { setStockPreorder: write }, { ...command, expectedRevision }, now),
+      ).rejects.toBeInstanceOf(InvalidStockOperationError);
+    }
+    await expect(
+      setStockPreorder(
+        storeItems,
+        stock,
+        { setStockPreorder: write },
+        { ...command, variantId: 'variant_missing' },
+        now,
+      ),
+    ).rejects.toBeInstanceOf(VariantNotFoundError);
+    expect(write).toHaveBeenCalledTimes(4);
+  });
+
+  it('keeps an open cycle through month, part and date edits without changing stock or history', async () => {
+    await stock.save(storeItem.variantId, { quantity: 9, onlineQuantity: 4 });
+    const now = new Date('2026-10-02T10:00:00Z');
+    const write = vi.fn(async (input: Parameters<OperatorStockRepository['setStockPreorder']>[0]) => {
+      const current = stock.records.get(input.variantId)!;
+      const updated = await stock.save(input.variantId, current);
+      updated.preorder = input.preorder;
+      return updated;
+    });
+    for (const [index, shipEstimate] of [
+      { kind: 'month', month: '2026-10', part: null },
+      { kind: 'month', month: '2026-10', part: 'early' },
+      { kind: 'month', month: '2026-11', part: 'early' },
+      { kind: 'date', date: '2026-11-20' },
+    ].entries()) {
+      const result = await setStockPreorder(
+        storeItems,
+        stock,
+        { setStockPreorder: write },
+        {
+          variantId: storeItem.variantId,
+          expectedRevision: index,
+          shipEstimate,
+        },
+        new Date(now.getTime() + index * 1000),
+      );
+      expect(result).toMatchObject({
+        quantity: 9,
+        onlineQuantity: 4,
+        revision: index + 1,
+        preorder: { startedAt: now.toISOString(), shipEstimate },
+      });
+    }
+    const current = stock.records.get(storeItem.variantId)!;
+    await expect(
+      setStockPreorder(
+        storeItems,
+        stock,
+        { setStockPreorder: write },
+        {
+          variantId: storeItem.variantId,
+          expectedRevision: 4,
+          shipEstimate: { kind: 'date', date: '2026-11-20' },
+        },
+        now,
+      ),
+    ).resolves.toBe(current);
+    expect(write).toHaveBeenCalledTimes(4);
+    expect(stockChanges.records).toHaveLength(0);
+    expect(stockCounts.records).toHaveLength(0);
+  });
+
+  it('ends an absent pre-order without writing and rejects races after the initial revision read', async () => {
+    const write = vi.fn(async () => null);
+    const command = { variantId: storeItem.variantId, expectedRevision: null, shipEstimate: null };
+    await expect(setStockPreorder(storeItems, stock, { setStockPreorder: write }, command)).resolves.toBeNull();
+    expect(write).not.toHaveBeenCalled();
+    const current = await stock.save(storeItem.variantId, { quantity: 9, onlineQuantity: 4 });
+    await expect(
+      setStockPreorder(
+        storeItems,
+        stock,
+        { setStockPreorder: write },
+        {
+          ...command,
+          expectedRevision: 0,
+        },
+      ),
+    ).resolves.toBe(current);
+    await expect(
+      setStockPreorder(
+        storeItems,
+        stock,
+        { setStockPreorder: write },
+        {
+          ...command,
+          expectedRevision: null,
+        },
+      ),
+    ).rejects.toBeInstanceOf(StockConflictError);
+    expect(write).not.toHaveBeenCalled();
+    await expect(
+      setStockPreorder(
+        storeItems,
+        stock,
+        { setStockPreorder: write },
+        {
+          ...command,
+          expectedRevision: 0,
+          shipEstimate: { kind: 'month', month: '2026-10', part: null },
+        },
+        new Date('2026-10-02T10:00:00Z'),
+      ),
+    ).rejects.toBeInstanceOf(StockConflictError);
+    expect(write).toHaveBeenCalledTimes(1);
+    expect(stock.records.get(storeItem.variantId)).toBe(current);
+  });
+
+  it('validates against Athens midnight and starts a new cycle on the old exact date', async () => {
+    const now = new Date('2026-10-31T22:30:00Z'); // Already 1 November in Athens.
+    const current = await stock.save(storeItem.variantId, { quantity: 5, onlineQuantity: 2 });
+    current.preorder = { startedAt: '2026-09-01T10:00:00.000Z', shipEstimate: { kind: 'date', date: '2026-11-01' } };
+    const write = vi.fn(async (input: Parameters<OperatorStockRepository['setStockPreorder']>[0]) => ({
+      ...current,
+      revision: 1,
+      preorder: input.preorder,
+    }));
+    const command = { variantId: storeItem.variantId, expectedRevision: 0 };
+    for (const shipEstimate of [
+      { kind: 'month', month: '2026-10', part: null },
+      { kind: 'date', date: '2026-10-31' },
+      { kind: 'date', date: '2026-11-01' },
+      { kind: 'month', month: '2026-13', part: null },
+      { kind: 'month', month: '2026-11', part: 'later' },
+    ]) {
+      await expect(
+        setStockPreorder(
+          storeItems,
+          stock,
+          { setStockPreorder: write },
+          {
+            ...command,
+            shipEstimate,
+          },
+          now,
+        ),
+      ).rejects.toBeInstanceOf(InvalidStockOperationError);
+    }
+    expect(write).not.toHaveBeenCalled();
+    const shipEstimate = { kind: 'month', month: '2026-11', part: null } as const;
+    await expect(
+      setStockPreorder(
+        storeItems,
+        stock,
+        { setStockPreorder: write },
+        {
+          ...command,
+          shipEstimate,
+        },
+        now,
+      ),
+    ).resolves.toMatchObject({ preorder: { startedAt: now.toISOString(), shipEstimate } });
+    current.preorder = {
+      startedAt: '2026-09-01T10:00:00.000Z',
+      shipEstimate: { kind: 'month', month: '2026-10', part: null },
+    };
+    await expect(
+      setStockPreorder(
+        storeItems,
+        stock,
+        { setStockPreorder: write },
+        {
+          ...command,
+          shipEstimate,
+        },
+        now,
+      ),
+    ).resolves.toMatchObject({ preorder: { startedAt: current.preorder.startedAt, shipEstimate } });
   });
 
   it('records a stock change and updates current stock totals', async () => {

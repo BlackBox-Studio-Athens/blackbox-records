@@ -23,7 +23,7 @@
       "namedInterfaces": {
         "internal-contracts": "./internal-contracts.ts"
       },
-      "dependsOn": ["stock", "orders", "commerce-persistence", "backend-platform"],
+      "dependsOn": ["stock", "orders", "commerce-domain", "commerce-persistence", "backend-platform"],
       "workspaceInterfaces": {}
     }
   }
