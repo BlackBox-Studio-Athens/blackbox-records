@@ -1,5 +1,6 @@
 import { createBlackBoxEmailTemplate } from './templates';
 import type { EmailMessageContent, PaidOrderEmailInput } from './types';
+import { latestEmailShipEstimate, shipEstimateText } from './ship-estimate-format';
 
 export type PaidOrderEmailBrand = {
   homeUrl: string;
@@ -58,6 +59,13 @@ export function buildPaidOrderShopperEmail(input: {
   const preheader = `Payment received for ${input.order.orderReference}. BlackBox Records will prepare fulfillment.`;
   const shopperLineItems = formatShopperLineItems(input.order);
   const totalPaid = formatTotalPaid(input.order);
+  const preorder = orderPreorder(input.order);
+  const thankYou = preorder
+    ? 'Thank you for your order. We have received your payment in full.'
+    : shopperPaymentThankYouCopy;
+  const preorderCopy = preorder
+    ? `Your order includes a pre-order. Everything is sent in one parcel when it arrives${preorder.shipEstimate ? `, expected ${shipEstimateText(preorder.shipEstimate)}` : ''}. We email you if that changes.`
+    : '';
 
   return createBlackBoxEmailTemplate({
     bodyHtml: renderEmailFrame({
@@ -66,7 +74,8 @@ export function buildPaidOrderShopperEmail(input: {
         renderReferenceBlock('Order reference', input.order.orderReference),
         renderLineItemSummary(input.order, { includeVariant: false }),
         renderDetailTable([...monetaryRows(input.order), ['Total paid', totalPaid]]),
-        renderParagraph(shopperPaymentThankYouCopy),
+        renderParagraph(thankYou),
+        preorderCopy ? renderParagraph(preorderCopy) : '',
         renderSupportCta(input.replyToEmail),
         renderPaymentDocumentNote(),
       ].join(''),
@@ -82,7 +91,8 @@ export function buildPaidOrderShopperEmail(input: {
       `Total paid: ${totalPaid}`,
       ...monetaryRows(input.order).map(([label, amount]) => `${label}: ${amount}`),
       '',
-      shopperPaymentThankYouCopy,
+      thankYou,
+      preorderCopy,
       `Support: ${input.replyToEmail}`,
       '',
       paymentDocumentCopy,
@@ -101,19 +111,30 @@ export function buildPaidOrderOpsEmail(input: {
   shopperNotification?: ShopperNotificationStatus;
 }): EmailMessageContent {
   const subject = createPaidOrderOpsSubject(input.order.orderReference);
-  const preheader = `Paid order ${input.order.orderReference} is ready for manual fulfillment.`;
+  const preorder = orderPreorder(input.order);
+  const preheader = preorder
+    ? `Paid order ${input.order.orderReference} is awaiting stock.`
+    : `Paid order ${input.order.orderReference} is ready for manual fulfillment.`;
   const warnings = input.shopperNotification ? collectOpsWarnings(input.shopperNotification) : [];
+  const actions = preorder
+    ? [
+        'Hold this order: it includes a pre-order.',
+        `Ship nothing until the pre-order copies arrive${preorder.shipEstimate ? ` (expected ${shipEstimateText(preorder.shipEstimate)})` : ''}.`,
+        'Send everything in one parcel.',
+        'Find it in Orders under Awaiting stock.',
+      ]
+    : [
+        'Confirm stock movement already recorded by the Worker.',
+        'Pack the paid item.',
+        'Use the shopper contact and shipping address to arrange fulfillment.',
+        'Keep manual shipment notes in operator records.',
+      ];
 
   return createBlackBoxEmailTemplate({
     bodyHtml: renderEmailFrame({
       brand: input.brand,
       contentHtml: [
-        renderActionList([
-          'Confirm stock movement already recorded by the Worker.',
-          'Pack the paid item.',
-          'Use the shopper contact and shipping address to arrange fulfillment.',
-          'Keep manual shipment notes in operator records.',
-        ]),
+        renderActionList(actions),
         warnings.length ? renderWarningList(warnings) : '',
         renderLineItemSummary(input.order, { includeVariant: true }),
         monetaryRows(input.order).length ? renderDetailTable(monetaryRows(input.order)) : '',
@@ -129,18 +150,16 @@ export function buildPaidOrderOpsEmail(input: {
         ]),
         renderDetailSection('Shipping address', formatShippingAddressRows(input.order.shippingAddress)),
       ].join(''),
-      sectionLabel: 'Order to ship',
-      title: 'Paid order ready',
+      sectionLabel: preorder ? 'Order to hold' : 'Order to ship',
+      title: preorder ? 'Paid order · awaiting stock' : 'Paid order ready',
     }),
     bodyText: [
       'BlackBox Records',
       subject,
       '',
+      preorder ? 'Order to hold\nPaid order · awaiting stock' : '',
       'Fulfillment actions:',
-      '- Confirm stock movement already recorded by the Worker.',
-      '- Pack the paid item.',
-      '- Use the shopper contact and shipping address to arrange fulfillment.',
-      '- Keep manual shipment notes in operator records.',
+      ...actions.map((action) => `- ${action}`),
       '',
       warnings.length ? ['Warnings:', ...warnings.map((warning) => `- ${warning}`), ''].join('\n') : '',
       `Order reference: ${input.order.orderReference}`,
@@ -164,7 +183,7 @@ export function buildPaidOrderOpsEmail(input: {
   });
 }
 
-function renderEmailFrame(input: {
+export function renderEmailFrame(input: {
   brand: PaidOrderEmailBrand;
   contentHtml: string;
   sectionLabel: string;
@@ -208,7 +227,7 @@ function renderReferenceBlock(label: string, value: string): string {
   ].join('');
 }
 
-function renderDetailTable(rows: Array<[string, string]>): string {
+export function renderDetailTable(rows: Array<[string, string]>): string {
   return renderDetailSection(
     null,
     rows.map(([label, value]) => [label, [value]]),
@@ -305,6 +324,9 @@ function renderLineItemRow(
     `<td${lineItem.productImage ? '' : ' colspan="2"'} style="padding:0 16px 16px ${lineItem.productImage ? '0' : '16px'};vertical-align:top;color:${emailDesignTokens.text};">`,
     `<div style="font-size:15px;line-height:1.45;font-weight:800;word-break:break-word;">${escapeHtml(itemName)}</div>`,
     `<div style="margin-top:6px;color:${emailDesignTokens.metadata};font-size:12px;line-height:1.45;word-break:break-word;">${escapeHtml(itemMeta)}</div>`,
+    lineItem.preorder
+      ? `<div style="margin-top:6px;color:#4ca999;font-size:12px;line-height:1.45;">${escapeHtml(preorderLineText(lineItem))}</div>`
+      : '',
     '</td>',
     '</tr>',
   ].join('');
@@ -331,7 +353,7 @@ function renderWarningList(warnings: string[]): string {
   ].join('');
 }
 
-function renderParagraph(message: string): string {
+export function renderParagraph(message: string): string {
   return `<p style="margin:0 0 16px 0;color:${emailDesignTokens.text};font-size:14px;line-height:1.7;">${escapeHtml(message)}</p>`;
 }
 
@@ -343,19 +365,38 @@ function renderPaymentDocumentNote(): string {
   ].join('');
 }
 
-function renderSupportCta(replyToEmail: string): string {
+export function renderSupportCta(replyToEmail: string): string {
   const escapedEmail = escapeHtml(replyToEmail);
   return `<p style="margin:0 0 16px 0;"><a href="mailto:${escapedEmail}" style="display:inline-block;border:1px solid ${emailDesignTokens.borderStrong};background:${emailDesignTokens.text};color:#090909;font-size:13px;line-height:1.2;font-weight:800;text-decoration:none;padding:11px 14px;">Reply to support</a><span style="display:block;margin-top:8px;color:${emailDesignTokens.metadata};font-size:12px;line-height:1.5;">${escapedEmail}</span></p>`;
 }
 
 function formatShopperLineItems(order: PaidOrderEmailInput): string {
-  return order.lineItems.map((lineItem) => `${lineItem.quantity} x ${lineItem.displayName}`).join('; ');
+  return order.lineItems
+    .map(
+      (lineItem) =>
+        `${lineItem.quantity} x ${lineItem.displayName}${lineItem.preorder ? `\n${preorderLineText(lineItem)}` : ''}`,
+    )
+    .join('; ');
 }
 
 function formatOpsLineItems(order: PaidOrderEmailInput): string {
   return order.lineItems
-    .map((lineItem) => `${lineItem.quantity} x ${lineItem.displayName} (${lineItem.variantId})`)
+    .map(
+      (lineItem) =>
+        `${lineItem.quantity} x ${lineItem.displayName} (${lineItem.variantId})${lineItem.preorder ? `\n${preorderLineText(lineItem)}` : ''}`,
+    )
     .join('; ');
+}
+
+function preorderLineText(line: PaidOrderEmailInput['lineItems'][number]): string {
+  return line.preorder?.shipEstimate
+    ? `Pre-order, expected to ship ${shipEstimateText(line.preorder.shipEstimate)}`
+    : 'Pre-order, expected to ship: To be confirmed';
+}
+
+function orderPreorder(order: PaidOrderEmailInput) {
+  const estimates = order.lineItems.flatMap((line) => (line.preorder ? [line.preorder.shipEstimate] : []));
+  return estimates.length ? { shipEstimate: latestEmailShipEstimate(estimates) } : null;
 }
 
 function formatTotalPaid(order: PaidOrderEmailInput): string {

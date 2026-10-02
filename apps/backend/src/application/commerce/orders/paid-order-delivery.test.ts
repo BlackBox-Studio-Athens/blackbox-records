@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { attemptPaidOrderDelivery, type ClaimedPaidOrderDelivery } from './';
 import { readEmailRuntimeConfig, type EmailProviderGateway } from '../../email';
 import { currentPaidCheckoutOrder } from '../../../../test/fixtures/current-paid-checkout-order';
+import type { PreorderShipEstimate } from '../../../domain/commerce';
 
 const config = readEmailRuntimeConfig({
   EMAIL_BRAND_HOME_URL: 'https://blackbox-records-web-uat.pages.dev/',
@@ -17,6 +18,38 @@ const config = readEmailRuntimeConfig({
 });
 
 describe('paid order delivery routing', () => {
+  it.each([
+    [{ kind: 'month', month: '2026-10', part: null }, 'Pre-order, expected to ship around October 2026'],
+    [null, 'Pre-order, expected to ship: To be confirmed'],
+  ] satisfies Array<[PreorderShipEstimate | null, string]>)(
+    'maps the saved line estimate into both emails for %j',
+    async (shipEstimate, copy) => {
+      const order = currentPaidCheckoutOrder();
+      order.lines[0].preorder = { startedAt: '2026-08-30T12:00:00.000Z', shipEstimate };
+      order.lines.push({ ...order.lines[0], id: 'ordinary-line', preorder: null });
+      const original = structuredClone(order);
+      const sendEmail = vi.fn<EmailProviderGateway['sendEmail']>(async () => ({ ok: true }));
+      const provider = { sendEmail, registerNewsletterContact: vi.fn() };
+      for (const kind of ['shopper_confirmation', 'ops_fulfillment'] as const) {
+        await attemptPaidOrderDelivery({
+          config,
+          delivery: claimedDelivery(kind),
+          logger: { info: vi.fn(), warn: vi.fn() },
+          order,
+          provider,
+        });
+      }
+      expect(sendEmail).toHaveBeenCalledTimes(2);
+      for (const [message] of sendEmail.mock.calls) {
+        expect(message.html).toContain(copy);
+        expect(message.text).toContain(copy);
+        expect(message.html).not.toContain('2026-08-30T12:00:00.000Z');
+      }
+      expect(order).toEqual(original);
+      expect(sendEmail.mock.calls[1]![0].html).toContain('Order to hold');
+    },
+  );
+
   it('routes fixed kinds independently and keeps email identities stable', async () => {
     const sendEmail = vi.fn<EmailProviderGateway['sendEmail']>(async (message) =>
       message.tags.some(({ name, value }) => name === 'purpose' && value === 'paid-order-shopper')

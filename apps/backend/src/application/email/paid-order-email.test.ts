@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from 'vitest';
 import { buildPaidOrderEmailPreviews, readEmailRuntimeConfig, sendPaidOrderEmailNotifications } from './';
 import type { EmailProviderGateway, ProviderEmailMessage } from './spi';
 import type { PaidOrderEmailInput } from './';
+import { buildPaidOrderOpsEmail, buildPaidOrderShopperEmail } from './paid-order-templates';
+import { buildPreorderEstimateEmail } from './preorder-estimate-email';
 
 const sandboxConfig = readEmailRuntimeConfig({
   EMAIL_BRAND_HOME_URL: 'https://blackbox-records-web-uat.pages.dev/',
@@ -185,7 +187,13 @@ describe('paid-order email notifications', () => {
   it('builds preview fixtures for long content and mobile-safe markup', () => {
     const previews = buildPaidOrderEmailPreviews();
 
-    expect(previews.map((preview) => preview.name)).toEqual(['shopper-long-content', 'ops-ready']);
+    expect(previews.map((preview) => preview.name)).toEqual([
+      'shopper-long-content',
+      'ops-ready',
+      'shopper-preorder',
+      'ops-preorder',
+      'preorder-estimate-changed',
+    ]);
 
     for (const preview of previews) {
       expect(preview.message.subject).toContain(preview.order.orderReference);
@@ -195,9 +203,11 @@ describe('paid-order email notifications', () => {
       expect(preview.message.html).not.toContain('>BlackBox Records</span>');
       expect(preview.message.html).not.toContain('Open the site');
       expect(preview.message.html).toContain('BlackBox Records, Athens</td>');
-      expect(preview.message.html).toContain(
-        'alt="Disintegration Black Vinyl Lp With Extra Long Preview Title product image"',
-      );
+      if (preview.name !== 'preorder-estimate-changed') {
+        expect(preview.message.html).toContain(
+          'alt="Disintegration Black Vinyl Lp With Extra Long Preview Title product image"',
+        );
+      }
       expect(preview.message.html).toContain('color-scheme');
       expect(preview.message.html).toContain('@media (max-width: 600px)');
       expect(preview.message.html).toContain('email-stack');
@@ -220,6 +230,87 @@ describe('paid-order email notifications', () => {
         text: preview.message.text,
       })),
     ).toMatchSnapshot('paid-order-email-previews');
+  });
+  it('marks mixed pre-order lines and holds the whole parcel until the latest estimate', () => {
+    const ordinary = paidOrder().lineItems[0]!;
+    const order = paidOrder({
+      lineItems: [
+        ordinary,
+        {
+          ...ordinary,
+          displayName: 'First pressing',
+          preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } },
+        },
+        {
+          ...ordinary,
+          displayName: 'Later pressing',
+          preorder: { shipEstimate: { kind: 'date', date: '2026-11-20' } },
+        },
+      ],
+    });
+    const preview = buildPaidOrderEmailPreviews()[0]!;
+    const brand = { homeUrl: sandboxConfig.emailBrandHomeUrl, logoUrl: sandboxConfig.emailBrandLogoUrl };
+    const recipient = { intendedRecipient: order.shopperContact.email, isSinkRouted: false };
+    const shopper = buildPaidOrderShopperEmail({ brand, order, recipient, replyToEmail: sandboxConfig.replyToEmail });
+    const ops = buildPaidOrderOpsEmail({ brand, order, recipient });
+    for (const body of [shopper.html, shopper.text, ops.html, ops.text]) {
+      expect(body).toContain('Pre-order, expected to ship around October 2026');
+      expect(body).toContain('Pre-order, expected to ship on 20 November 2026');
+    }
+    expect(shopper.text).toContain('We have received your payment in full.');
+    expect(shopper.text).toContain(
+      'Your order includes a pre-order. Everything is sent in one parcel when it arrives, expected on 20 November 2026. We email you if that changes.',
+    );
+    expect(ops.html).toContain('Order to hold');
+    expect(ops.html).toContain('Paid order · awaiting stock');
+    expect(ops.text).toContain('Ship nothing until the pre-order copies arrive (expected on 20 November 2026).');
+    expect(ops.text).toContain('Find it in Orders under Awaiting stock.');
+    expect(ops.text).not.toContain('Pack the paid item.');
+    const withheld = { ...order, lineItems: [...order.lineItems, { ...ordinary, preorder: { shipEstimate: null } }] };
+    const withheldShopper = buildPaidOrderShopperEmail({
+      brand,
+      order: withheld,
+      recipient,
+      replyToEmail: sandboxConfig.replyToEmail,
+    });
+    const withheldOps = buildPaidOrderOpsEmail({ brand, order: withheld, recipient });
+    expect(withheldShopper.text).toContain('Pre-order, expected to ship: To be confirmed');
+    expect(withheldShopper.text).toContain(
+      'Everything is sent in one parcel when it arrives. We email you if that changes.',
+    );
+    expect(withheldOps.text).toContain('Ship nothing until the pre-order copies arrive.');
+    expect(withheldOps.text).not.toContain('(expected');
+    const withoutPreorder = {
+      ...preview.order,
+      lineItems: preview.order.lineItems.map((line) => ({ ...line, preorder: null })),
+    };
+    expect(
+      buildPaidOrderShopperEmail({
+        brand,
+        order: withoutPreorder,
+        recipient,
+        replyToEmail: sandboxConfig.replyToEmail,
+      }),
+    ).toEqual(preview.message);
+  });
+
+  it('escapes notice fields and states both estimates, including unknown estimates', () => {
+    const notice = buildPreorderEstimateEmail({
+      brand: { homeUrl: sandboxConfig.emailBrandHomeUrl, logoUrl: sandboxConfig.emailBrandLogoUrl },
+      orderReference: 'BBR-ORDER1',
+      itemName: '<script>record</script>',
+      whenOrdered: null,
+      shipEstimate: { kind: 'month', month: '2026-11', part: 'late' },
+      replyToEmail: sandboxConfig.replyToEmail,
+    });
+    expect(notice.subject).toBe('New ship estimate for your pre-order · BBR-ORDER1');
+    expect(notice.html).toContain('&lt;script&gt;record&lt;/script&gt;');
+    expect(notice.html).not.toContain('<script>record</script>');
+    expect(notice.text).toContain('When you ordered: To be confirmed');
+    expect(notice.text).toContain('Now expected: around late November 2026');
+    expect(notice.text).toContain(
+      'Nothing else changes: everything is still sent in one parcel when the pre-order arrives. If you have a question, reply to this email.',
+    );
   });
 });
 

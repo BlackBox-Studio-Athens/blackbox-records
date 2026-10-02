@@ -96,6 +96,7 @@ function toPaidOrderEmailInput(order: CurrentPaidCheckoutOrder): PaidOrderEmailI
     lineItems: order.lines.map((line) => ({
       displayName: line.displayName,
       optionLabel: line.optionLabel,
+      ...(line.preorder ? { preorder: { shipEstimate: line.preorder.shipEstimate } } : {}),
       productImage: null,
       quantity: line.quantity,
       storeItemSlug: line.storeItemSlug,

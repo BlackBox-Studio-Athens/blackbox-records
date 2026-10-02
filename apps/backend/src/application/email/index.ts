@@ -4,6 +4,8 @@ export type { EmailRuntimeBindingValues, EmailRuntimeConfig } from './config';
 export { buildPaidOrderEmailPreviews } from './paid-order-email-previews';
 export type { PaidOrderEmailPreview, PaidOrderEmailPreviewName } from './paid-order-email-previews';
 export { sendPaidOrderEmailNotifications, sendPaidOrderOpsEmail, sendPaidOrderShopperEmail } from './paid-order-email';
+export { buildPreorderEstimateEmail, sendPreorderEstimateEmail } from './preorder-estimate-email';
+export type { PreorderEstimateEmailInput } from './preorder-estimate-email';
 export { logNewsletterRegistrationOutcome, registerNewsletterContact } from './newsletter-registration';
 export { routeTransactionalEmailRecipient } from './routing';
 export {
@@ -26,6 +28,7 @@ export type {
 } from './spi';
 export type {
   EmailMessageContent,
+  EmailShipEstimate,
   EmailOperationResult,
   EmailTag,
   NewsletterContactRouting,

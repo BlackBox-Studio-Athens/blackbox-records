@@ -6,6 +6,7 @@ import {
   registerNewsletterContact,
   routeTransactionalEmailRecipient,
   sendTransactionalEmail,
+  sendPreorderEstimateEmail,
 } from './';
 import type { EmailProviderGateway } from './spi';
 import { productEnvironmentProfiles } from '../../platform/env';
@@ -28,6 +29,40 @@ const sandboxBindings = {
 };
 
 describe('email application module', () => {
+  it.each([localBindings, sandboxBindings])(
+    'sends estimate notices through normal recipient routing with caller-owned retry identity',
+    async (bindings) => {
+      const sendEmail = vi
+        .fn<EmailProviderGateway['sendEmail']>()
+        .mockResolvedValueOnce({ ok: false, retryable: true, reason: 'rate_limited' })
+        .mockResolvedValue({ ok: true });
+      const config = readEmailRuntimeConfig(bindings);
+      const input = {
+        config,
+        provider: { sendEmail, registerNewsletterContact: vi.fn() },
+        shopperEmail: 'buyer@example.com',
+        orderReference: 'BBR-ORDER1',
+        itemName: 'Record',
+        whenOrdered: null,
+        shipEstimate: { kind: 'date' as const, date: '2026-11-20' },
+        idempotencyEntityId: 'notice-row-1',
+      };
+      const failed = await sendPreorderEstimateEmail(input);
+      expect(failed).toMatchObject({ status: 'failed', retryable: true, providerSafeReason: 'rate_limited' });
+      const retried = await sendPreorderEstimateEmail(input);
+      expect(retried.status).toBe('sent');
+      expect(retried.idempotencyKey).toBe(failed.idempotencyKey);
+      await sendPreorderEstimateEmail({ ...input, idempotencyEntityId: 'notice-row-2' });
+      expect(sendEmail.mock.calls[2]![0].idempotencyKey).not.toBe(retried.idempotencyKey);
+      expect(sendEmail.mock.calls[0]![0]).toMatchObject({
+        to: bindings.PRODUCT_ENVIRONMENT === 'UAT' ? 'uat-sink@ambkime.resend.app' : 'buyer@example.com',
+        replyTo: 'support@blackboxrecordsathens.com',
+        tags: expect.arrayContaining([{ name: 'purpose', value: 'preorder-estimate-changed' }]),
+        subject: 'New ship estimate for your pre-order · BBR-ORDER1',
+      });
+    },
+  );
+
   it('validates required runtime config without exposing provider values in errors', () => {
     expect(readEmailRuntimeConfig(localBindings)).toEqual({
       apiKey: 're_mock_blackbox_local',

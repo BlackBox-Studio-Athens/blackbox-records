@@ -4,8 +4,10 @@ import {
   type ShopperNotificationStatus,
 } from './paid-order-templates';
 import type { EmailMessageContent, PaidOrderEmailInput } from './types';
+import { buildPreorderEstimateEmail } from './preorder-estimate-email';
 
-export type PaidOrderEmailPreviewName = 'ops-ready' | 'shopper-long-content';
+export type PaidOrderEmailPreviewName =
+  'ops-ready' | 'shopper-long-content' | 'shopper-preorder' | 'ops-preorder' | 'preorder-estimate-changed';
 
 export type PaidOrderEmailPreview = {
   message: EmailMessageContent;
@@ -60,6 +62,13 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
     homeUrl: 'https://blackbox-records-web-uat.pages.dev/',
     logoUrl: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-horizontal.png',
   };
+  const preorderOrder: PaidOrderEmailInput = {
+    ...longContentOrder,
+    lineItems: longContentOrder.lineItems.map((line) => ({
+      ...line,
+      preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } },
+    })),
+  };
 
   return [
     {
@@ -81,6 +90,38 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
       }),
       name: 'ops-ready',
       order: longContentOrder,
+    },
+    {
+      message: buildPaidOrderShopperEmail({
+        brand: previewBrand,
+        order: preorderOrder,
+        recipient: shopperRecipient,
+        replyToEmail: 'support@blackboxrecordsathens.com',
+      }),
+      name: 'shopper-preorder',
+      order: preorderOrder,
+    },
+    {
+      message: buildPaidOrderOpsEmail({
+        brand: previewBrand,
+        order: preorderOrder,
+        recipient: opsRecipient,
+        shopperNotification: sentShopperNotification,
+      }),
+      name: 'ops-preorder',
+      order: preorderOrder,
+    },
+    {
+      message: buildPreorderEstimateEmail({
+        brand: previewBrand,
+        orderReference: preorderOrder.orderReference,
+        itemName: preorderOrder.lineItems[0]!.displayName,
+        whenOrdered: preorderOrder.lineItems[0]!.preorder!.shipEstimate,
+        shipEstimate: { kind: 'month', month: '2026-11', part: 'mid' },
+        replyToEmail: 'support@blackboxrecordsathens.com',
+      }),
+      name: 'preorder-estimate-changed',
+      order: preorderOrder,
     },
   ];
 }

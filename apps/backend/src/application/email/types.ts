@@ -61,7 +61,11 @@ export type NewsletterRegistrationResult = {
   status: 'failed' | 'registered';
 };
 
+export type EmailShipEstimate =
+  { kind: 'month'; month: string; part: 'early' | 'mid' | 'late' | null } | { kind: 'date'; date: string };
+
 export type PaidOrderEmailLineItem = {
+  preorder?: { shipEstimate: EmailShipEstimate | null } | null;
   displayName: string;
   optionLabel: string | null;
   productImage?: {
