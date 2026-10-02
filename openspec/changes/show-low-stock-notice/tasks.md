@@ -19,7 +19,7 @@
 
 - [x] 4.1 Cover the classifier, readers, D1 repository, staff client, card presenter and item purchase state with focused tests, and the card in `e2e/store-cart.spec.ts`.
 - [x] 4.2 Run strict OpenSpec validation and `pnpm validate` on the final tree; record evidence in validation.md.
-- [ ] 4.3 Repair the stale button typography assertion and include its global stylesheet in the test cache inputs; verify locally and through the UAT release checks.
+- [x] 4.3 Repair the stale button typography assertion and include its global stylesheet in the test cache inputs; verify locally and through the UAT release checks.
 
 ## 5. Release
 
