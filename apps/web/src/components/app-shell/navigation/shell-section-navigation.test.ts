@@ -150,6 +150,28 @@ describe('shell section navigation', () => {
     expect(options.cacheDocumentSnapshot).not.toHaveBeenCalled();
   });
 
+  it('warms the images a joined hover prefetch left cold before applying the fetched page', async () => {
+    const order: string[] = [];
+    const options = createOptions({
+      applyShellPageSnapshot: vi.fn(() => {
+        order.push('apply');
+        return true;
+      }),
+      shellPageLoader: {
+        fetchSnapshot: vi.fn(async () => createSnapshot('/artists/')),
+        getCachedSnapshot: vi.fn(() => null),
+        hasCachedSnapshot: vi.fn(() => false),
+        warmSnapshotImages: vi.fn((pathname: string) => {
+          order.push(`warm ${pathname}`);
+        }),
+      },
+    });
+
+    await expect(openShellSectionNavigation(options)).resolves.toBe(true);
+
+    expect(order).toEqual(['warm /artists/', 'apply']);
+  });
+
   it('runs the scroll reset and the first-screen image wait together', async () => {
     const order: string[] = [];
     let finishScroll!: () => void;

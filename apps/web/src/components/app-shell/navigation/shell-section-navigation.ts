@@ -162,6 +162,9 @@ export async function openShellSectionNavigation({
       return true;
     }
 
+    // A click that joined a hover prefetch still in flight requests the eager images that prefetch left cold.
+    shellPageLoader.warmSnapshotImages?.(route.pathname);
+
     const applied = applyShellPageSnapshot(pageSnapshot);
     if (!applied) {
       throw new Error(`Unable to apply shell page snapshot for ${route.pathname}`);

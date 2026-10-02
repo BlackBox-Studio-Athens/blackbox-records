@@ -531,8 +531,10 @@ export default function AppShellRoot({
   }
 
   async function prefetchShellSectionHref(href: string, options?: ShellPrefetchOptions) {
-    const pagePrefetch = shellPageLoader.prefetchHref(href, options);
     const route = parseShellSectionRoute(new URL(href, window.location.href).pathname);
+    // The rendered page is snapshotted from the live DOM (at idle or on leaving), so it is never fetched.
+    if (route?.pathname === renderedPagePathnameRef.current) return;
+    const pagePrefetch = shellPageLoader.prefetchHref(href, options);
     if (route?.kind === 'store') void preloadStoreDistroSearch().catch(() => undefined);
     await pagePrefetch;
   }
