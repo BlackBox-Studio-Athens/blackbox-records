@@ -9,6 +9,7 @@ import {
   applyDocumentShellPageSnapshot,
   cacheDocumentShellPageSnapshot,
   readDocumentShellPageSnapshot,
+  readParsedShellPageSnapshot,
   rememberDocumentIslandServerMarkup,
   sanitizeStoreCoverflowSnapshot,
   scheduleIdleShellTask,
@@ -16,11 +17,58 @@ import {
   updateDocumentMetadata,
 } from './shell-page-snapshot';
 
+// Fragment fake: nodes appended to it are `{ html }` records, and `html` reads them back as markup.
+class FakeFragment {
+  public readonly nodes: Array<{ html: string }> = [];
+
+  append(...nodes: Array<{ html: string }>) {
+    this.nodes.push(...nodes);
+  }
+
+  cloneNode() {
+    const clone = new FakeFragment();
+    clone.append(...this.nodes.map((node) => ({ ...node })));
+    return clone;
+  }
+
+  get html() {
+    return this.nodes.map((node) => node.html).join('');
+  }
+
+  querySelectorAll() {
+    return [];
+  }
+}
+
+const fakeInertDocument = { createDocumentFragment: () => new FakeFragment() };
+
+function fakeFragment(html: string) {
+  const fragment = new FakeFragment();
+  fragment.append({ html });
+  return fragment as unknown as DocumentFragment;
+}
+
+function fragmentHtml(fragment: DocumentFragment | undefined) {
+  return (fragment as unknown as FakeFragment | undefined)?.html;
+}
+
 class FakeElement {
   public className = '';
   public innerHTML: string;
   public href = '';
   public content = '';
+  public ownerDocument = fakeInertDocument;
+
+  public readonly insertedNodes: FakeFragment[] = [];
+
+  get childNodes() {
+    return [{ html: this.innerHTML }];
+  }
+
+  replaceChildren(...nodes: FakeFragment[]) {
+    this.insertedNodes.push(...nodes);
+    this.innerHTML = nodes.map((node) => node.html).join('');
+  }
 
   constructor(
     private readonly attributes: Record<string, string> = {},
@@ -356,23 +404,50 @@ describe('shell page snapshots', () => {
       pathname: '/store/distro/',
       title: 'Distro | Store | BlackBox',
     });
-    expect(snapshot?.mainHtml).toContain('Catalog');
-    expect(snapshot?.mainHtml).not.toContain('hydrated filters');
-    expect(snapshot?.mainHtml).not.toContain('value="vinyl"');
-    expect(snapshot?.mainHtml).not.toContain('data-distro-search-hidden');
-    expect(snapshot?.mainHtml).toContain('<a hidden>Item</a>');
-    expect(snapshot?.mainHtml).toContain('data-store-listing-price-state="loading"');
-    expect(snapshot?.mainHtml).toContain('Checking price');
-    expect(snapshot?.mainHtml).not.toContain('€28.00');
-    expect(snapshot?.mainHtml).toContain('data-store-listing-availability-state="pending"');
-    expect(snapshot?.mainHtml).toContain('Checking availability');
-    expect(snapshot?.mainHtml).not.toContain('Sold Out');
-    expect(snapshot?.mainHtml).not.toMatch(/<span[^>]*data-store-listing-availability[^>]*\shidden/);
-    expect(snapshot?.mainHtml).toContain('data-store-preview-image');
-    expect(snapshot?.mainHtml).not.toContain('data-store-preview-ready');
-    expect(snapshot?.mainHtml).toContain(
+    expect(fragmentHtml(snapshot?.mainContent)).toContain('Catalog');
+    expect(fragmentHtml(snapshot?.mainContent)).not.toContain('hydrated filters');
+    expect(fragmentHtml(snapshot?.mainContent)).not.toContain('value="vinyl"');
+    expect(fragmentHtml(snapshot?.mainContent)).not.toContain('data-distro-search-hidden');
+    expect(fragmentHtml(snapshot?.mainContent)).toContain('<a hidden>Item</a>');
+    expect(fragmentHtml(snapshot?.mainContent)).toContain('data-store-listing-price-state="loading"');
+    expect(fragmentHtml(snapshot?.mainContent)).toContain('Checking price');
+    expect(fragmentHtml(snapshot?.mainContent)).not.toContain('€28.00');
+    expect(fragmentHtml(snapshot?.mainContent)).toContain('data-store-listing-availability-state="pending"');
+    expect(fragmentHtml(snapshot?.mainContent)).toContain('Checking availability');
+    expect(fragmentHtml(snapshot?.mainContent)).not.toContain('Sold Out');
+    expect(fragmentHtml(snapshot?.mainContent)).not.toMatch(/<span[^>]*data-store-listing-availability[^>]*\shidden/);
+    expect(fragmentHtml(snapshot?.mainContent)).toContain('data-store-preview-image');
+    expect(fragmentHtml(snapshot?.mainContent)).not.toContain('data-store-preview-ready');
+    expect(fragmentHtml(snapshot?.mainContent)).toContain(
       '<button data-copy-value="info@example.test"></button><span role="status" data-copy-status></span>',
     );
+  });
+
+  it('re-creates cloned form controls from their markup so typed values are not cached', () => {
+    let markup = '<input name="email" value="">';
+    const control = {
+      get outerHTML() {
+        return markup;
+      },
+      set outerHTML(value: string) {
+        markup = `reparsed:${value}`;
+      },
+    };
+    const controlQuery = vi
+      .spyOn(FakeFragment.prototype, 'querySelectorAll')
+      .mockImplementation(((selector: string) => (selector === 'input, select, textarea' ? [control] : [])) as never);
+
+    try {
+      readDocumentShellPageSnapshot(
+        createSnapshotDocument(),
+        'https://example.test/blackbox-records/store/distro/',
+        'https://example.test/blackbox-records/',
+      );
+    } finally {
+      controlQuery.mockRestore();
+    }
+
+    expect(markup).toBe('reparsed:<input name="email" value="">');
   });
 
   it('restores island server markup and the ssr marker so a cached island hydrates again', () => {
@@ -381,10 +456,11 @@ describe('shell page snapshots', () => {
     const selectIslands = (islands: object[]) => (selector: string) => (selector === 'astro-island' ? islands : []);
     const main = { getAttribute: () => null, querySelectorAll: selectIslands([liveIsland]) };
     const clone = {
-      querySelectorAll: selectIslands([cloneIsland]),
-      get innerHTML() {
-        return `<astro-island>${cloneIsland.innerHTML}</astro-island>`;
+      get childNodes() {
+        return [{ html: `<astro-island>${cloneIsland.innerHTML}</astro-island>` }];
       },
+      ownerDocument: fakeInertDocument,
+      querySelectorAll: selectIslands([cloneIsland]),
     };
     const targetDocument = {
       createElement: () => ({
@@ -406,7 +482,7 @@ describe('shell page snapshots', () => {
     read();
     liveIsland.innerHTML = '<input value="typed">';
 
-    expect(read()?.mainHtml).toBe('<astro-island><input></astro-island>');
+    expect(fragmentHtml(read()?.mainContent)).toBe('<astro-island><input></astro-island>');
     expect(cloneIsland.setAttribute).toHaveBeenCalledWith('ssr', '');
   });
 
@@ -429,7 +505,7 @@ describe('shell page snapshots', () => {
         canonicalHref: 'https://example.test/blackbox-records/store/',
         href: 'https://example.test/blackbox-records/store/',
         mainClassName: '',
-        mainHtml: '',
+        mainContent: fakeFragment(''),
         pageDescription: 'Store page',
         pathname: '/store/',
         title: 'Store | BlackBox',
@@ -498,7 +574,7 @@ describe('shell page snapshots', () => {
         canonicalHref: 'https://example.test/blackbox-records/artists/',
         href: 'https://example.test/blackbox-records/artists/',
         mainClassName: 'artists-page',
-        mainHtml: '<section>Artists</section>',
+        mainContent: fakeFragment('<section>Artists</section>'),
         pageDescription: 'Artists',
         pathname: '/artists/',
         title: 'Artists | BlackBox',
@@ -516,6 +592,35 @@ describe('shell page snapshots', () => {
     expect(onPathnameApplied).toHaveBeenCalledWith('/artists/');
   });
 
+  it('applies a fresh clone of the cached fragment on every return', () => {
+    const main = new FakeElement();
+    const mainContent = fakeFragment('<section>Store</section>');
+    const pageSnapshot = {
+      canonicalHref: '',
+      href: 'https://example.test/blackbox-records/store/',
+      mainClassName: 'store-page',
+      mainContent,
+      pageDescription: '',
+      pathname: '/store/',
+      title: '',
+    };
+    const apply = () =>
+      applyDocumentShellPageSnapshot({
+        getMainElement: () => main as unknown as HTMLElement,
+        pageSnapshot,
+        targetDocument: { head: { querySelector: () => null }, title: '' } as unknown as Document,
+      });
+
+    expect(apply()).toBe(true);
+    expect(apply()).toBe(true);
+
+    expect(main.insertedNodes).toHaveLength(2);
+    expect(main.insertedNodes[0]).not.toBe(mainContent);
+    expect(main.insertedNodes[1]).not.toBe(main.insertedNodes[0]);
+    expect(main.innerHTML).toBe('<section>Store</section>');
+    expect(fragmentHtml(mainContent)).toBe('<section>Store</section>');
+  });
+
   it('does not apply a snapshot when the shell main element is missing', () => {
     const applied = applyDocumentShellPageSnapshot({
       getMainElement: () => null,
@@ -525,7 +630,7 @@ describe('shell page snapshots', () => {
         canonicalHref: 'https://example.test/blackbox-records/artists/',
         href: 'https://example.test/blackbox-records/artists/',
         mainClassName: 'artists-page',
-        mainHtml: '<section>Artists</section>',
+        mainContent: fakeFragment('<section>Artists</section>'),
         pageDescription: 'Artists',
         pathname: '/artists/',
         title: 'Artists | BlackBox',
@@ -533,6 +638,108 @@ describe('shell page snapshots', () => {
     });
 
     expect(applied).toBe(false);
+  });
+
+  it('reads a fetched page in place: no clone, no serialization, no second parse', () => {
+    const forbidden = (operation: string) => () => {
+      throw new Error(`parsed snapshot must not ${operation}`);
+    };
+    const fragment = new FakeFragment();
+    const children = [{ html: '<section data-store-search-active>Store</section>' }, { html: '<img loading="eager">' }];
+    const sanitized: string[] = [];
+    const main = {
+      get childNodes() {
+        return children;
+      },
+      getAttribute: (name: string) => (name === 'class' ? 'store-page' : null),
+      get innerHTML() {
+        return forbidden('serialize main')();
+      },
+      ownerDocument: { createDocumentFragment: () => fragment },
+      querySelectorAll(selector: string) {
+        if (selector === '[data-store-search-active]') {
+          return [{ removeAttribute: (name: string) => sanitized.push(name) }];
+        }
+        return [];
+      },
+    };
+    const canonical = { href: 'https://example.test/blackbox-records/store/' };
+    const parsedDocument = {
+      createElement: forbidden('create elements'),
+      importNode: forbidden('clone main'),
+      querySelector(selector: string) {
+        if (selector === 'main[data-app-shell-main]') return main;
+        if (selector === 'link[rel="canonical"]') return canonical;
+        return null;
+      },
+      replaceChildren: vi.fn(),
+      title: 'Store | BlackBox',
+    };
+
+    const snapshot = readParsedShellPageSnapshot(
+      parsedDocument as unknown as Document,
+      'https://example.test/blackbox-records/store/',
+      'https://example.test/blackbox-records/',
+    );
+
+    expect(snapshot).toMatchObject({
+      canonicalHref: 'https://example.test/blackbox-records/store/',
+      mainClassName: 'store-page',
+      pathname: '/store/',
+      title: 'Store | BlackBox',
+    });
+    expect(snapshot?.mainContent).toBe(fragment);
+    expect(fragment.nodes).toEqual(children);
+    expect(sanitized).toEqual(['data-store-search-active']);
+    // The rest of the fetched page is released once main has moved into the snapshot.
+    expect(parsedDocument.replaceChildren).toHaveBeenCalledWith();
+  });
+
+  it('keeps parsed scripts inert and noscript content as text, as innerHTML did', () => {
+    const replaced: unknown[][] = [];
+    const reparsed = { tag: 'reparsed script' };
+    const script = {
+      outerHTML: '<script>window.ran = true</script>',
+      ownerDocument: {
+        createElement: () => ({
+          childNodes: [reparsed],
+          set innerHTML(value: string) {
+            expect(value).toBe('<script>window.ran = true</script>');
+          },
+        }),
+      },
+      replaceWith: (...nodes: unknown[]) => replaced.push(nodes),
+    };
+    const noscript = { innerHTML: '<img src="/fallback.jpg">', textContent: '' };
+    const main = {
+      childNodes: [],
+      getAttribute: () => null,
+      ownerDocument: { createDocumentFragment: () => new FakeFragment() },
+      querySelectorAll(selector: string) {
+        if (selector === 'script') return [script];
+        if (selector === 'noscript') return [noscript];
+        return [];
+      },
+    };
+    const parsedDocument = {
+      querySelector: (selector: string) => (selector === 'main[data-app-shell-main]' ? main : null),
+      replaceChildren: vi.fn(),
+      title: 'Home',
+    } as unknown as Document;
+
+    readParsedShellPageSnapshot(parsedDocument, 'https://example.test/', 'https://example.test/');
+
+    expect(replaced).toEqual([[reparsed]]);
+    expect(noscript.textContent).toBe('<img src="/fallback.jpg">');
+  });
+
+  it('does not read a parsed page whose main is masked by a dialog', () => {
+    const parsedDocument = {
+      querySelector: () => ({ querySelectorAll: () => [{}] }),
+      replaceChildren: vi.fn(),
+    } as unknown as Document;
+
+    expect(readParsedShellPageSnapshot(parsedDocument, 'https://example.test/', 'https://example.test/')).toBeNull();
   });
 
   it('records island markup without reading a full snapshot', () => {

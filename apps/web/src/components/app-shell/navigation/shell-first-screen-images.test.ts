@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  preloadEagerImageElements,
   preloadEagerImages,
   preloadImageSources,
   SHELL_FIRST_SCREEN_IMAGE_WAIT_MS,
@@ -80,11 +81,11 @@ describe('shell first-screen images', () => {
       };
       vi.stubGlobal('Image', FakeImage);
       vi.stubGlobal('document', { createElement: vi.fn(() => template) });
-      return created;
+      return { created, template };
     }
 
     it('requests every eager image with sizes and srcset before src', () => {
-      const created = stubDocument([{ sizes: '50vw', src: '/a.jpg', srcset: '/a.jpg 1x' }, { src: '/b.jpg' }]);
+      const { created } = stubDocument([{ sizes: '50vw', src: '/a.jpg', srcset: '/a.jpg 1x' }, { src: '/b.jpg' }]);
 
       expect(preloadEagerImages('<main></main>')).toEqual([]);
       expect(created).toEqual([
@@ -98,7 +99,7 @@ describe('shell first-screen images', () => {
     });
 
     it('requests only the first images up to the limit and returns the rest for later', () => {
-      const created = stubDocument([{ src: '/a.jpg' }, { src: '/b.jpg' }, { src: '/c.jpg' }]);
+      const { created } = stubDocument([{ src: '/a.jpg' }, { src: '/b.jpg' }, { src: '/c.jpg' }]);
 
       const remaining = preloadEagerImages('<main></main>', 1);
 
@@ -107,6 +108,19 @@ describe('shell first-screen images', () => {
 
       preloadImageSources(remaining);
       expect(created).toHaveLength(3);
+    });
+
+    it('reads eager images from an already parsed root without parsing markup again', () => {
+      const { created, template } = stubDocument([]);
+      const root = {
+        querySelectorAll: vi.fn(() => [{ getAttribute: (name: string) => ({ src: '/a.jpg' })[name] ?? null }]),
+      } as unknown as ParentNode;
+
+      expect(preloadEagerImageElements(root)).toEqual([]);
+      expect(root.querySelectorAll).toHaveBeenCalledWith('img[loading="eager"]');
+      expect(created).toEqual([[['src', '/a.jpg']]]);
+      expect(document.createElement).not.toHaveBeenCalled();
+      expect(template.innerHTML).toBe('');
     });
   });
 });

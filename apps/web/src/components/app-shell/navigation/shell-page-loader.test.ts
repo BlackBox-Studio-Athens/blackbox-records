@@ -13,7 +13,7 @@ function createSnapshot(pathname: string): ShellPageSnapshot {
     canonicalHref: `https://example.test/blackbox-records${pathname}`,
     href: `https://example.test/blackbox-records${pathname}`,
     mainClassName: 'page-main-content-region',
-    mainHtml: `<section>${pathname}</section>`,
+    mainContent: { markup: `<section>${pathname}</section>` } as unknown as DocumentFragment,
     pageDescription: `${pathname} description`,
     pathname,
     title: `${pathname} | BlackBox`,
@@ -21,6 +21,34 @@ function createSnapshot(pathname: string): ShellPageSnapshot {
 }
 
 describe('shell page snapshot loader', () => {
+  it('parses a fetched page once and reads its eager images from the parsed nodes', async () => {
+    const parsedDocument = { parsed: true } as unknown as Document;
+    const parseHtml = vi.fn(() => parsedDocument);
+    const snapshot = createSnapshot('/store/');
+    const readSnapshot = vi.fn(() => snapshot);
+    const preloadImages = vi.fn();
+    const loader = createShellPageSnapshotLoader({
+      currentHref: () => 'https://example.test/blackbox-records/',
+      fetchPage: vi.fn(async () => ({
+        ok: true,
+        text: async () => '<main data-app-shell-main>Store</main>',
+        url: 'https://example.test/blackbox-records/store/',
+      })),
+      parseHtml,
+      preloadImages,
+      readSnapshot,
+    });
+
+    await loader.fetchSnapshot('/store/', 'https://example.test/blackbox-records/store/');
+
+    expect(parseHtml).toHaveBeenCalledTimes(1);
+    expect(parseHtml).toHaveBeenCalledWith('<main data-app-shell-main>Store</main>');
+    expect(readSnapshot).toHaveBeenCalledWith(parsedDocument, 'https://example.test/blackbox-records/store/');
+    // The same fragment the snapshot caches, not markup to parse again.
+    expect(preloadImages.mock.calls[0]?.[0]).toBe(snapshot.mainContent);
+    expect(loader.getCachedSnapshot('/store/')).toBe(snapshot);
+  });
+
   it('returns cached shell section snapshots without fetching', async () => {
     const cache = new Map([['/releases/', createSnapshot('/releases/')]]);
     const fetchPage = vi.fn();
@@ -142,7 +170,7 @@ describe('shell page snapshot loader', () => {
 
     await loader
       .fetchSnapshot('/store/', 'https://example.test/blackbox-records/store/')
-      .then(() => expect(preloadImages).toHaveBeenCalledWith('<section>/store/</section>'));
+      .then(() => expect(preloadImages).toHaveBeenCalledWith(createSnapshot('/store/').mainContent));
 
     await loader.fetchSnapshot('/store/', 'https://example.test/blackbox-records/store/');
     await loader.prefetchHref('https://example.test/blackbox-records/store/');
@@ -170,7 +198,7 @@ describe('shell page snapshot loader', () => {
     await loader.prefetchHref('https://example.test/blackbox-records/store/', { speculative: true });
 
     expect(fetchPage.mock.calls[0]?.[1]).toMatchObject({ priority: 'low' });
-    expect(preloadImages).toHaveBeenCalledWith('<section>/store/</section>', 1);
+    expect(preloadImages).toHaveBeenCalledWith(createSnapshot('/store/').mainContent, 1);
     expect(preloadImageSources).not.toHaveBeenCalled();
 
     loader.warmSnapshotImages('/blackbox-records/store/');
@@ -199,7 +227,7 @@ describe('shell page snapshot loader', () => {
     await loader.prefetchHref('https://example.test/blackbox-records/store/');
 
     expect(fetchPage.mock.calls[0]?.[1]).not.toHaveProperty('priority');
-    expect(preloadImages).toHaveBeenCalledWith('<section>/store/</section>');
+    expect(preloadImages).toHaveBeenCalledWith(createSnapshot('/store/').mainContent);
     loader.warmSnapshotImages('/store/');
     expect(preloadImageSources).not.toHaveBeenCalled();
   });

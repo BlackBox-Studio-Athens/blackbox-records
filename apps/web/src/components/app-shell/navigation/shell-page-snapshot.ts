@@ -5,7 +5,9 @@ export type ShellPageSnapshot = {
   canonicalHref: string;
   href: string;
   mainClassName: string;
-  mainHtml: string;
+  // Sanitized children of main, owned by an inert document. Apply a clone, never the fragment itself: a snapshot is
+  // applied again on every cached return.
+  mainContent: DocumentFragment;
   pageDescription: string;
   pathname: string;
   title: string;
@@ -118,6 +120,101 @@ export function scheduleIdleShellTask(task: () => void, scheduler: IdleTaskSched
   return () => scheduler.clearTimeout(handle);
 }
 
+// Restores the server-rendered state of a snapshot's main element; `root` is a copy that no page listener touches.
+function sanitizeShellMainSnapshot(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>('[data-artists-roster-filters]').forEach((placeholderElement) => {
+    placeholderElement.innerHTML = '';
+  });
+  root.querySelectorAll<HTMLElement>('[data-distro-search]').forEach((placeholderElement) => {
+    placeholderElement.innerHTML = '';
+  });
+  root.querySelectorAll<HTMLElement>('[data-store-search]').forEach((placeholderElement) => {
+    placeholderElement.innerHTML = '';
+  });
+  root.querySelectorAll<HTMLElement>('[data-store-search-active]').forEach((element) => {
+    element.removeAttribute('data-store-search-active');
+  });
+  root.querySelectorAll<HTMLElement>('[data-store-artists]').forEach((element) => {
+    element.innerHTML = '';
+  });
+  root.querySelectorAll<HTMLElement>('[data-store-result-total]').forEach((element) => {
+    element.hidden = false;
+  });
+  root.querySelectorAll<HTMLImageElement>('img[data-store-grid-sizes]').forEach((image) => {
+    image.sizes = image.dataset.storeGridSizes!;
+  });
+  root.querySelectorAll<HTMLElement>('[data-distro-search-hidden]').forEach((hiddenElement) => {
+    hiddenElement.removeAttribute('data-distro-search-hidden');
+  });
+  sanitizeStoreCoverflowSnapshot(root);
+  sanitizeStoreListingPricePlaceholders(root);
+  root.querySelectorAll<HTMLElement>('[data-store-preview-ready]').forEach((image) => {
+    image.removeAttribute('data-store-preview-ready');
+  });
+  root.querySelectorAll<HTMLElement>('[data-services-inquiry-form]').forEach((placeholderElement) => {
+    placeholderElement.innerHTML = '';
+  });
+  // A copy button's two-second feedback timer belongs to the live element, so the cached copy starts idle.
+  root.querySelectorAll<HTMLElement>('[data-copied]').forEach((button) => {
+    button.removeAttribute('data-copied');
+  });
+  root.querySelectorAll<HTMLElement>('[data-copy-status]').forEach((status) => {
+    status.textContent = '';
+  });
+}
+
+// A clone keeps what a visitor typed or picked in a form control; markup holds only the defaults. Re-create each
+// remaining control from its attributes so a restored page starts from its server state.
+function resetClonedFormControls(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>('input, select, textarea').forEach((control) => {
+    const markup = control.outerHTML;
+    control.outerHTML = markup;
+  });
+}
+
+// DOMParser parses with scripting disabled, unlike the live document. Make parsed main behave as markup set through
+// innerHTML did: a script stays inert (fragment parsing marks it already started, whereas some engines run a
+// DOMParser script once it is inserted into the page) and noscript content stays text.
+function matchLiveFragmentParsing(root: Element) {
+  root.querySelectorAll('noscript').forEach((element) => {
+    element.textContent = element.innerHTML;
+  });
+  root.querySelectorAll('script').forEach((script) => {
+    const holder = script.ownerDocument.createElement('div');
+    holder.innerHTML = script.outerHTML;
+    script.replaceWith(...holder.childNodes);
+  });
+}
+
+// Sanitizes `contentRoot`, a main element in an inert document, and moves its children into the snapshot.
+function createShellPageSnapshot(
+  targetDocument: Document,
+  mainElement: HTMLElement,
+  contentRoot: HTMLElement,
+  href: string,
+  currentHref: string,
+): ShellPageSnapshot {
+  sanitizeShellMainSnapshot(contentRoot);
+  const mainContent = contentRoot.ownerDocument.createDocumentFragment();
+  mainContent.append(...contentRoot.childNodes);
+
+  const resolvedUrl = new URL(href, currentHref);
+  const canonicalHref =
+    targetDocument.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href || resolvedUrl.toString();
+  const pageDescription = targetDocument.querySelector<HTMLMetaElement>('meta[name="description"]')?.content || '';
+
+  return {
+    canonicalHref,
+    href: resolvedUrl.toString(),
+    mainClassName: mainElement.getAttribute('class') || '',
+    mainContent,
+    pageDescription,
+    pathname: normalizeAppPathname(resolvedUrl.pathname),
+    title: targetDocument.title,
+  };
+}
+
+// Snapshot of the page the shell renders. Live main stays untouched: the snapshot holds a sanitized clone.
 export function readDocumentShellPageSnapshot(
   targetDocument: Document,
   href: string,
@@ -137,60 +234,28 @@ export function readDocumentShellPageSnapshot(
     .createElement('template')
     .content.ownerDocument.importNode(mainElement, true) as HTMLElement;
   restoreIslandServerMarkup(mainElement, mainElementClone);
-  mainElementClone.querySelectorAll<HTMLElement>('[data-artists-roster-filters]').forEach((placeholderElement) => {
-    placeholderElement.innerHTML = '';
-  });
-  mainElementClone.querySelectorAll<HTMLElement>('[data-distro-search]').forEach((placeholderElement) => {
-    placeholderElement.innerHTML = '';
-  });
-  mainElementClone.querySelectorAll<HTMLElement>('[data-store-search]').forEach((placeholderElement) => {
-    placeholderElement.innerHTML = '';
-  });
-  mainElementClone.querySelectorAll<HTMLElement>('[data-store-search-active]').forEach((element) => {
-    element.removeAttribute('data-store-search-active');
-  });
-  mainElementClone.querySelectorAll<HTMLElement>('[data-store-artists]').forEach((element) => {
-    element.innerHTML = '';
-  });
-  mainElementClone.querySelectorAll<HTMLElement>('[data-store-result-total]').forEach((element) => {
-    element.hidden = false;
-  });
-  mainElementClone.querySelectorAll<HTMLImageElement>('img[data-store-grid-sizes]').forEach((image) => {
-    image.sizes = image.dataset.storeGridSizes!;
-  });
-  mainElementClone.querySelectorAll<HTMLElement>('[data-distro-search-hidden]').forEach((hiddenElement) => {
-    hiddenElement.removeAttribute('data-distro-search-hidden');
-  });
-  sanitizeStoreCoverflowSnapshot(mainElementClone);
-  sanitizeStoreListingPricePlaceholders(mainElementClone);
-  mainElementClone.querySelectorAll<HTMLElement>('[data-store-preview-ready]').forEach((image) => {
-    image.removeAttribute('data-store-preview-ready');
-  });
-  mainElementClone.querySelectorAll<HTMLElement>('[data-services-inquiry-form]').forEach((placeholderElement) => {
-    placeholderElement.innerHTML = '';
-  });
-  // A copy button's two-second feedback timer belongs to the live element, so the cached copy starts idle.
-  mainElementClone.querySelectorAll<HTMLElement>('[data-copied]').forEach((button) => {
-    button.removeAttribute('data-copied');
-  });
-  mainElementClone.querySelectorAll<HTMLElement>('[data-copy-status]').forEach((status) => {
-    status.textContent = '';
-  });
+  const snapshot = createShellPageSnapshot(targetDocument, mainElement, mainElementClone, href, currentHref);
+  resetClonedFormControls(snapshot.mainContent);
+  return snapshot;
+}
 
-  const resolvedUrl = new URL(href, currentHref);
-  const canonicalHref =
-    targetDocument.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.href || resolvedUrl.toString();
-  const pageDescription = targetDocument.querySelector<HTMLMetaElement>('meta[name="description"]')?.content || '';
+// Snapshot of a fetched page that DOMParser parsed. That document is inert and belongs to the caller, so main is
+// sanitized in place and its nodes become the snapshot: the page is parsed once and never cloned or serialized.
+export function readParsedShellPageSnapshot(
+  parsedDocument: Document,
+  href: string,
+  currentHref = window.location.href,
+): ShellPageSnapshot | null {
+  const mainElement = queryShellMainElement(parsedDocument);
 
-  return {
-    canonicalHref,
-    href: resolvedUrl.toString(),
-    mainClassName: mainElement.getAttribute('class') || '',
-    mainHtml: mainElementClone.innerHTML,
-    pageDescription,
-    pathname: normalizeAppPathname(resolvedUrl.pathname),
-    title: targetDocument.title,
-  };
+  if (!mainElement) return null;
+  if (mainElement.querySelectorAll('[data-aria-hidden]').length > 0) return null;
+
+  matchLiveFragmentParsing(mainElement);
+  const snapshot = createShellPageSnapshot(parsedDocument, mainElement, mainElement, href, currentHref);
+  // The fragment keeps its owner document alive; release the rest of the fetched page.
+  parsedDocument.replaceChildren();
+  return snapshot;
 }
 
 export function cacheDocumentShellPageSnapshot({
@@ -228,7 +293,9 @@ export function applyDocumentShellPageSnapshot({
   if (!mainElement) return false;
 
   mainElement.className = pageSnapshot.mainClassName;
-  mainElement.innerHTML = pageSnapshot.mainHtml;
+  // The clone is made in the snapshot's inert document, so it fetches nothing; inserting adopts it into the page,
+  // where loading="lazy" applies as usual. The cached fragment stays intact for the next return.
+  mainElement.replaceChildren(pageSnapshot.mainContent.cloneNode(true));
   // Islands load their component asynchronously, so this still reads the snapshot's server markup.
   rememberIslandServerMarkup(mainElement);
   onHrefApplied?.(pageSnapshot.href);

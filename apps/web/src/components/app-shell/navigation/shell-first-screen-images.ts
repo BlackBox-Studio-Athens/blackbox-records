@@ -24,8 +24,12 @@ export function preloadImageSources(sources: readonly EagerImageSource[]) {
 export function preloadEagerImages(html: string, limit = Number.POSITIVE_INFINITY): EagerImageSource[] {
   const template = document.createElement('template');
   template.innerHTML = html;
+  return preloadEagerImageElements(template.content, limit);
+}
 
-  const sources = Array.from(template.content.querySelectorAll<HTMLImageElement>(EAGER_IMAGE_SELECTOR), (image) => {
+// The same for markup that is already parsed into an inert root, such as a cached shell page fragment.
+export function preloadEagerImageElements(root: ParentNode, limit = Number.POSITIVE_INFINITY): EagerImageSource[] {
+  const sources = Array.from(root.querySelectorAll<HTMLImageElement>(EAGER_IMAGE_SELECTOR), (image) => {
     const source: EagerImageSource = {};
     for (const attribute of PRELOAD_ATTRIBUTES) {
       const value = image.getAttribute(attribute);

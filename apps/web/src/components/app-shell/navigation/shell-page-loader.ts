@@ -1,8 +1,8 @@
 import { normalizeAppPathname, parseShellSectionRoute } from '@/components/app-shell/routing';
 import { previewUrl } from '@/platform/lib/private-preview';
 
-import { type EagerImageSource, preloadEagerImages, preloadImageSources } from './shell-first-screen-images';
-import { readDocumentShellPageSnapshot, type ShellPageSnapshot } from './shell-page-snapshot';
+import { type EagerImageSource, preloadEagerImageElements, preloadImageSources } from './shell-first-screen-images';
+import { readParsedShellPageSnapshot, type ShellPageSnapshot } from './shell-page-snapshot';
 import type { ShellPrefetchOptions } from './shell-prefetch-intent';
 
 type ShellPageSnapshotResponse = Pick<Response, 'ok' | 'text' | 'url'>;
@@ -13,9 +13,9 @@ type ShellPageSnapshotLoaderOptions = {
   fetchPage?: (href: string, init: RequestInit) => Promise<ShellPageSnapshotResponse>;
   inFlightRequests?: Map<string, Promise<ShellPageSnapshot>>;
   parseHtml?: (html: string) => Document;
-  preloadImages?: (html: string, limit?: number) => EagerImageSource[] | void;
+  preloadImages?: (root: ParentNode, limit?: number) => EagerImageSource[] | void;
   preloadImageSources?: (sources: readonly EagerImageSource[]) => void;
-  readSnapshot?: typeof readDocumentShellPageSnapshot;
+  readSnapshot?: typeof readParsedShellPageSnapshot;
 };
 
 export function createShellPageSnapshotLoader({
@@ -24,9 +24,9 @@ export function createShellPageSnapshotLoader({
   fetchPage = (href, init) => fetch(previewUrl(href), init),
   inFlightRequests = new Map<string, Promise<ShellPageSnapshot>>(),
   parseHtml = (html) => new DOMParser().parseFromString(html, 'text/html'),
-  preloadImages = preloadEagerImages,
+  preloadImages = preloadEagerImageElements,
   preloadImageSources: preloadDeferredImageSources = preloadImageSources,
-  readSnapshot = readDocumentShellPageSnapshot,
+  readSnapshot = readParsedShellPageSnapshot,
 }: ShellPageSnapshotLoaderOptions = {}) {
   // Eager images a speculative prefetch left cold, requested once the page is actually opened.
   const deferredImageSources = new Map<string, EagerImageSource[]>();
@@ -81,6 +81,7 @@ export function createShellPageSnapshotLoader({
           throw new Error(`Shell page request failed for ${normalizedPathname}`);
         }
 
+        // The page is parsed once: the snapshot keeps the parsed nodes, and eager images are read from them.
         const html = await response.text();
         const pageSnapshot = readSnapshot(parseHtml(html), response.url || href);
 
@@ -93,8 +94,8 @@ export function createShellPageSnapshotLoader({
         // which can take seconds on a phone for brand-font text.
         // A speculative prefetch warms only the first image; the rest wait until the page is opened.
         const remainingSources = speculative
-          ? preloadImages(pageSnapshot.mainHtml, 1)
-          : preloadImages(pageSnapshot.mainHtml);
+          ? preloadImages(pageSnapshot.mainContent, 1)
+          : preloadImages(pageSnapshot.mainContent);
         if (remainingSources && remainingSources.length > 0) {
           deferredImageSources.set(normalizedPathname, remainingSources);
         }
