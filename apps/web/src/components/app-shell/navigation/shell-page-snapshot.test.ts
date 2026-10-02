@@ -424,14 +424,29 @@ describe('shell page snapshots', () => {
   });
 
   it('re-creates cloned form controls from their markup so typed values are not cached', () => {
-    let markup = '<input name="email" value="">';
+    // A control placed directly in main has the fragment as parent, where the outerHTML setter throws.
+    const reparsed = { tag: 'reparsed control' };
+    const parsedMarkup: string[] = [];
+    const replaced: unknown[] = [];
     const control = {
       get outerHTML() {
-        return markup;
+        return '<input name="email" value="">';
       },
-      set outerHTML(value: string) {
-        markup = `reparsed:${value}`;
+      set outerHTML(_value: string) {
+        throw new Error('the outerHTML setter throws for a fragment child');
       },
+      ownerDocument: {
+        createElement: (tagName: string) => {
+          expect(tagName).toBe('template');
+          return {
+            content: reparsed,
+            set innerHTML(value: string) {
+              parsedMarkup.push(value);
+            },
+          };
+        },
+      },
+      replaceWith: (node: unknown) => replaced.push(node),
     };
     const controlQuery = vi
       .spyOn(FakeFragment.prototype, 'querySelectorAll')
@@ -447,12 +462,13 @@ describe('shell page snapshots', () => {
       controlQuery.mockRestore();
     }
 
-    expect(markup).toBe('reparsed:<input name="email" value="">');
+    expect(parsedMarkup).toEqual(['<input name="email" value="">']);
+    expect(replaced).toEqual([reparsed]);
   });
 
   it('restores island server markup and the ssr marker so a cached island hydrates again', () => {
     const liveIsland = { innerHTML: '<input>' };
-    const cloneIsland = { innerHTML: '', setAttribute: vi.fn() };
+    const cloneIsland = { innerHTML: '', querySelectorAll: () => [], setAttribute: vi.fn() };
     const selectIslands = (islands: object[]) => (selector: string) => (selector === 'astro-island' ? islands : []);
     const main = { getAttribute: () => null, querySelectorAll: selectIslands([liveIsland]) };
     const clone = {
@@ -484,6 +500,30 @@ describe('shell page snapshots', () => {
 
     expect(fragmentHtml(read()?.mainContent)).toBe('<astro-island><input></astro-island>');
     expect(cloneIsland.setAttribute).toHaveBeenCalledWith('ssr', '');
+  });
+
+  it('keeps noscript content in restored island markup as text, as the live page has it', () => {
+    const noscript = { innerHTML: '<img src="/fallback.jpg">', textContent: '' };
+    const liveIsland = { innerHTML: '<noscript><img src="/fallback.jpg"></noscript>' };
+    const cloneIsland = {
+      innerHTML: '',
+      querySelectorAll: (selector: string) => (selector === 'noscript' ? [noscript] : []),
+      setAttribute: vi.fn(),
+    };
+    const selectIslands = (islands: object[]) => (selector: string) => (selector === 'astro-island' ? islands : []);
+    const main = { getAttribute: () => null, querySelectorAll: selectIslands([liveIsland]) };
+    const clone = { childNodes: [], ownerDocument: fakeInertDocument, querySelectorAll: selectIslands([cloneIsland]) };
+    const targetDocument = {
+      createElement: () => ({ content: { ownerDocument: { importNode: () => clone } } }),
+      querySelector: (selector: string) => (selector === 'main[data-app-shell-main]' ? main : null),
+      title: 'About',
+    } as unknown as Document;
+    const about = 'https://example.test/blackbox-records/about/';
+
+    readDocumentShellPageSnapshot(targetDocument, about, about);
+
+    expect(cloneIsland.innerHTML).toBe('<noscript><img src="/fallback.jpg"></noscript>');
+    expect(noscript.textContent).toBe('<img src="/fallback.jpg">');
   });
 
   it('updates document metadata when a snapshot is applied', () => {

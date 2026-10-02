@@ -31,7 +31,14 @@ function restoreIslandServerMarkup(liveRoot: ParentNode, cloneRoot: ParentNode) 
   const liveIslands = liveRoot.querySelectorAll('astro-island');
   cloneRoot.querySelectorAll('astro-island').forEach((island, index) => {
     const serverMarkup = islandServerMarkup.get(liveIslands[index]!);
-    if (serverMarkup !== undefined) island.innerHTML = serverMarkup;
+    if (serverMarkup !== undefined) {
+      island.innerHTML = serverMarkup;
+      // The clone's inert document parses with scripting disabled; keep noscript content as text, as the live page has
+      // it, so inserting the snapshot cannot fetch a noscript image.
+      island.querySelectorAll('noscript').forEach((element) => {
+        element.textContent = element.innerHTML;
+      });
+    }
     island.setAttribute('ssr', '');
   });
 }
@@ -165,10 +172,13 @@ function sanitizeShellMainSnapshot(root: ParentNode) {
 
 // A clone keeps what a visitor typed or picked in a form control; markup holds only the defaults. Re-create each
 // remaining control from its attributes so a restored page starts from its server state.
+// Parses through a template rather than the outerHTML setter, which throws for a control whose parent is the
+// fragment itself (a control placed directly in main).
 function resetClonedFormControls(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('input, select, textarea').forEach((control) => {
-    const markup = control.outerHTML;
-    control.outerHTML = markup;
+    const holder = control.ownerDocument.createElement('template');
+    holder.innerHTML = control.outerHTML;
+    control.replaceWith(holder.content);
   });
 }
 
