@@ -450,7 +450,7 @@ describe('Store Coverflow controller', () => {
     expect(stage.listenerCount('wheel')).toBe(0);
   });
 
-  it('handles touch and intentional wheel without consuming vertical wheel input', () => {
+  it('handles touch and consumes intentional wheel input', () => {
     const { cards, controller, element, previewButton, stage } = createHarness();
 
     element.dispatch('click', previewButton);
@@ -470,13 +470,51 @@ describe('Store Coverflow controller', () => {
 
     const verticalWheel = stage.dispatch('wheel', stage, { deltaY: 48, timeStamp: 200 });
     expect(verticalWheel.preventDefault).toHaveBeenCalledOnce();
+    expect(verticalWheel.stopPropagation).toHaveBeenCalledOnce();
     expect(cards[3]!.dataset.storeCoverflowPosition).toBe('active');
     const horizontalWheel = stage.dispatch('wheel', stage, { deltaX: 48, deltaY: 2, timeStamp: 400 });
     expect(horizontalWheel.preventDefault).toHaveBeenCalledOnce();
+    expect(horizontalWheel.stopPropagation).toHaveBeenCalledOnce();
     expect(cards[4]!.dataset.storeCoverflowPosition).toBe('active');
     const ctrlWheel = stage.dispatch('wheel', stage, { deltaY: 48, ctrlKey: true, timeStamp: 500 });
     expect(ctrlWheel.preventDefault).not.toHaveBeenCalled();
+    expect(ctrlWheel.stopPropagation).not.toHaveBeenCalled();
     expect(cards[4]!.dataset.storeCoverflowPosition).toBe('active');
+
+    controller.cleanup();
+  });
+
+  it('contains wheel input below the threshold and during repeat throttling', () => {
+    const { cards, controller, element, previewButton, stage } = createHarness();
+    element.dispatch('click', previewButton);
+
+    const belowThreshold = stage.dispatch('wheel', stage, { deltaY: 20, timeStamp: 200 });
+    expect(cards[0]!.dataset.storeCoverflowPosition).toBe('active');
+    const accumulated = stage.dispatch('wheel', stage, { deltaY: 28, timeStamp: 210 });
+    expect(cards[1]!.dataset.storeCoverflowPosition).toBe('active');
+    const throttled = stage.dispatch('wheel', stage, { deltaY: 48, timeStamp: 220 });
+    expect(cards[1]!.dataset.storeCoverflowPosition).toBe('active');
+    for (const event of [belowThreshold, accumulated, throttled]) {
+      expect(event.preventDefault).toHaveBeenCalledOnce();
+      expect(event.stopPropagation).toHaveBeenCalledOnce();
+    }
+
+    controller.cleanup();
+  });
+
+  it('preserves browser-owned wheel input in Grid, preview, and search modes', () => {
+    const { cards, controller, element, previewButton, stage } = createHarness();
+    const catalogWheel = stage.dispatch('wheel', stage, { deltaY: 48 });
+    element.dispatch('click', previewButton);
+    const zeroWheel = stage.dispatch('wheel', stage);
+    const ctrlWheel = stage.dispatch('wheel', stage, { deltaY: 48, ctrlKey: true });
+    expect(cards[0]!.dataset.storeCoverflowPosition).toBe('active');
+    controller.setSearchActive(true);
+    const searchWheel = stage.dispatch('wheel', stage, { deltaY: 48 });
+    for (const event of [catalogWheel, zeroWheel, ctrlWheel, searchWheel]) {
+      expect(event.preventDefault).not.toHaveBeenCalled();
+      expect(event.stopPropagation).not.toHaveBeenCalled();
+    }
 
     controller.cleanup();
   });

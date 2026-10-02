@@ -1,5 +1,71 @@
 import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
+for (const route of ['store/', 'store/distro/']) {
+  test(`${route} Coverflow wheel navigation keeps the page still`, async ({ page }) => {
+    await page.goto(route);
+    await waitForShell(page);
+    await expect(page.locator('html')).toHaveClass(/\blenis\b/);
+    await page.getByRole('button', { name: 'Coverflow', exact: true }).click();
+    const group = page.locator('[data-store-coverflow-group]');
+    const stage = group.locator('[data-store-coverflow-stage]');
+    const wheelSurface = group.locator('.store-coverflow-shell');
+    const active = stage.locator('[data-store-coverflow-position="active"]');
+    await expect(group).toHaveAttribute('data-store-coverflow-mode', 'preview');
+    await wheelSurface.scrollIntoViewIfNeeded();
+    const labels = await stage
+      .locator('[data-store-coverflow-card]')
+      .evaluateAll((cards) => cards.map((card) => card.getAttribute('aria-label')!));
+
+    const wheelWithoutPageScroll = async (deltaY: number, expectedLabel: string) => {
+      const initialScroll = await page.evaluate(() => window.scrollY);
+      await page.mouse.wheel(0, deltaY);
+      const positions = await page.evaluate(async () => {
+        const positions = [window.scrollY];
+        const started = performance.now();
+        while (performance.now() - started < 750) {
+          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+          positions.push(window.scrollY);
+        }
+        return positions;
+      });
+      expect(Math.max(...positions.map((position) => Math.abs(position - initialScroll)))).toBeLessThanOrEqual(1);
+      await expect(active).toHaveAttribute('aria-label', expectedLabel);
+    };
+
+    const coverBox = (await active.boundingBox())!;
+    await page.mouse.move(coverBox.x + coverBox.width / 2, coverBox.y + coverBox.height / 2);
+    await wheelWithoutPageScroll(8, labels[0]!);
+    await wheelWithoutPageScroll(120, labels[1]!);
+
+    const stageBox = (await wheelSurface.boundingBox())!;
+    const gap = { x: stageBox.x + 8, y: stageBox.y + stageBox.height / 2 };
+    expect(
+      await wheelSurface.evaluate((element, point) => {
+        const target = document.elementFromPoint(point.x, point.y);
+        return Boolean(target && element.contains(target) && !target.closest('[data-store-coverflow-card]'));
+      }, gap),
+    ).toBe(true);
+    await page.mouse.move(gap.x, gap.y);
+    await wheelWithoutPageScroll(-120, labels[0]!);
+
+    const outsideScroll = await page.evaluate(() => window.scrollY);
+    await page.mouse.move(8, page.viewportSize()!.height / 2);
+    await page.mouse.wheel(0, 120);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(outsideScroll + 1);
+
+    await page.getByRole('button', { name: 'Grid', exact: true }).click();
+    await expect(group).toHaveAttribute('data-store-coverflow-mode', 'catalog');
+    await expect(page.locator('[data-store-coverflow-transitioning]')).toHaveCount(0);
+    const gridCard = stage.locator('[data-store-coverflow-card]').first();
+    await gridCard.scrollIntoViewIfNeeded();
+    const gridBox = (await gridCard.boundingBox())!;
+    const gridScroll = await page.evaluate(() => window.scrollY);
+    await page.mouse.move(gridBox.x + gridBox.width / 2, gridBox.y + gridBox.height / 2);
+    await page.mouse.wheel(0, 120);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(gridScroll + 1);
+  });
+}
+
 test('phone Store shows Distro formats without opening a disclosure and selects one', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('store/distro/');
