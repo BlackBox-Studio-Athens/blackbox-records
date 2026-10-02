@@ -44,7 +44,7 @@ const catalogId = 'all-store-catalog';
       <div class="layout-container store-browse-layout" data-store-search-root>
         <StoreBrowsePane>
           {distroGroups.length > 0 && (
-            <nav aria-label="Browse Distro formats" class="store-format-links">
+            <nav slot="formats" aria-label="Browse Distro formats" class="store-format-links">
               <h2>Browse Distro formats</h2>
               {distroGroups.map((group) => (
                 <a

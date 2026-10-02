@@ -1,17 +1,10 @@
----
-interface Props {
-  distro?: boolean;
-}
-const { distro = false } = Astro.props;
----
-
 <aside class="store-browse-pane">
+  <slot name="formats" />
   <details class="store-browse-disclosure" data-store-browse-disclosure>
     <summary>
-      Browse <span data-store-browse-current>All artists{distro ? ' · All formats' : ''}</span>
+      Artist <span data-store-browse-current>All artists</span>
     </summary>
     <div class="store-browse-content">
-      <slot />
       <div data-store-artists></div>
     </div>
   </details>

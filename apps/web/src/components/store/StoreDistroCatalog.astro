@@ -27,8 +27,8 @@ const formats = [
 ---
 
 <div class="layout-container store-browse-layout">
-  <StoreBrowsePane distro>
-    <nav aria-label="Browse Distro formats" class="store-format-links" data-distro-format-navigation>
+  <StoreBrowsePane>
+    <nav slot="formats" aria-label="Browse Distro formats" class="store-format-links" data-distro-format-navigation>
       <h2>Browse Distro formats</h2>
       {formats.map((format) => (
         <a

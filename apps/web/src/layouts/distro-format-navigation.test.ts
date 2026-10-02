@@ -14,7 +14,9 @@ const browse = readFileSync(
   'utf8',
 );
 describe('Distro format navigation', () => {
-  it('renders one ordinary link per format in a shared native Browse disclosure', () => {
+  it('renders one ordinary link per format, visible outside the Artist disclosure', () => {
+    expect(source).toContain('<nav slot="formats"');
+    expect(browse.indexOf('<slot name="formats" />')).toBeLessThan(browse.indexOf('<details'));
     expect(source.match(/data-distro-format-navigation/g)).toHaveLength(1);
     expect(source.match(/formats.map/g)).toHaveLength(1);
     expect(source).toContain('aria-label="Browse Distro formats"');
@@ -29,6 +31,9 @@ describe('Distro format navigation', () => {
   it('keeps the desktop pane sticky and the mobile disclosure in normal flow', () => {
     expect(cssSource).toMatch(/@media \(min-width: 64rem\)[\s\S]*?\.store-browse-pane\s*\{\s*position: sticky/);
     expect(cssSource).toContain('.store-browse-disclosure::details-content');
+    expect(cssSource).toMatch(
+      /@media \(max-width: 63\.99rem\)\s*\{\s*\.store-format-links\s*\{\s*display: flex;\s*flex-wrap: wrap;/,
+    );
     expect(cssSource).not.toContain('[data-distro-search-root][data-distro-selected-format]');
   });
 });

@@ -5113,6 +5113,62 @@ html[data-store-coverflow-capable]
   background: var(--store-accent-surface);
 }
 
+.store-browse-pane > .store-format-links {
+  margin-block: 0.75rem;
+}
+
+/* Below the desktop pane, formats stay visible as wrapping chips; only Artist collapses. */
+@media (max-width: 63.99rem) {
+  .store-format-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border-top: 0;
+  }
+
+  .store-format-links h2 {
+    flex-basis: 100%;
+    padding-block: 0;
+    color: var(--muted-foreground);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .store-format-links a {
+    justify-content: flex-start;
+    border: 1px solid var(--control-edge-quiet);
+    background: var(--secondary);
+    padding: 0 0.875rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+  }
+
+  .store-format-links a span:last-child {
+    font-variant-numeric: tabular-nums;
+    opacity: 0.7;
+  }
+
+  .store-format-links a:hover,
+  .store-format-links a:focus-visible {
+    border-color: var(--control-edge-hover);
+    background: var(--secondary);
+    color: var(--foreground);
+  }
+
+  .store-format-links a[aria-current='true'] {
+    border-color: var(--foreground);
+    background: var(--control-face-selected);
+    color: var(--foreground);
+    text-decoration: none;
+  }
+
+  .store-format-links a[aria-current='true']::before {
+    content: '✓' / '';
+  }
+}
+
 .store-item-purchase .font-display:not([data-store-offer-price], [data-store-item-purchase-status], .site-button) {
   font-family: var(--font-sans);
   letter-spacing: normal;

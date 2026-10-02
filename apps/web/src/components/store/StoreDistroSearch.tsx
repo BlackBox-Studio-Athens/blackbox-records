@@ -41,7 +41,6 @@ type DistroFormatGroup = {
 
 export type DistroSearchDom = {
   formatLinks: DistroFormatLink[];
-  formatDisclosure: HTMLDetailsElement | null;
   groups: DistroFormatGroup[];
   items: DistroSearchItem[];
   navigation: HTMLElement | null;
@@ -92,7 +91,6 @@ export function readDistroSearchDom(
 
   return {
     formatLinks,
-    formatDisclosure: navigation?.closest<HTMLDetailsElement>('[data-store-browse-disclosure]') ?? null,
     groups,
     items,
     navigation,
@@ -226,8 +224,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       event.preventDefault();
       event.stopPropagation();
       pendingFocus.current = true;
-      if (dom.formatDisclosure) dom.formatDisclosure.open = false;
-      // A repeated choice still closes Browse and focuses the current results.
+      // A repeated choice still focuses the current results.
       if (link.dataset.distroFormatKey === (dom.root.dataset.distroSelectedFormat || 'all')) {
         controllerRef.current?.setFocusedGroup(
           dom.groups.find((group) => group.formatKey === link.dataset.distroFormatKey)?.element ?? null,
@@ -269,15 +266,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     const visibleCount = applyDistroSearch(dom, filtered ? new Set(selected.map((item) => item.element)) : null);
     setCount(visibleCount);
     const current = document.querySelector<HTMLElement>('[data-store-browse-current]');
-    if (current)
-      current.textContent = [
-        choices.find((choice) => choice.key === artist)?.label || 'All artists',
-        scope === 'distro'
-          ? dom.groups.find((group) => group.formatKey === format)?.target.textContent?.trim() || 'All formats'
-          : '',
-      ]
-        .filter(Boolean)
-        .join(' · ');
+    if (current) current.textContent = choices.find((choice) => choice.key === artist)?.label || 'All artists';
     if (!pendingFocus.current) return;
     pendingFocus.current = false;
     const frame = requestAnimationFrame(() => {

@@ -57,7 +57,6 @@ function createDom() {
   const targets = [new FakeElement(), new FakeElement()];
   const navigation = new FakeElement();
   const root = new FakeElement();
-  const formatDisclosure = { open: true };
   const formatKeys = ['distro-group-vinyl-12-inch', 'distro-group-vinyl-7-inch'];
   targets[0]!.textContent = 'Vinyl 12-inch';
   targets[1]!.textContent = 'Vinyl 7-inch';
@@ -73,7 +72,6 @@ function createDom() {
     artist: index === 1 ? 'Other' : 'Band',
   }));
   const dom: DistroSearchDom = {
-    formatDisclosure: formatDisclosure as HTMLDetailsElement,
     formatLinks,
     groups: [
       {
@@ -169,7 +167,6 @@ describe('Distro search DOM filtering', () => {
       dom.groups = [];
       dom.formatLinks = [];
       dom.navigation = null;
-      dom.formatDisclosure = null;
     }
     dom.items.forEach((item, index) => {
       item.searchText = ['Disintegration Black Vinyl LP', 'Disintegraton LP', 'Disintegration CD'][index]!;
