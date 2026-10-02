@@ -13,7 +13,7 @@ import {
 import { CatalogDriftError } from '../../../application/commerce/catalog-sync';
 import { createHttpApp } from '../app';
 import { createPublicCommerceServices } from './public-commerce-services';
-import { getStoreItemRoute, getStoreListingPricesRoute } from '../contracts/public-contracts';
+import { getCheckoutStateRoute, getStoreItemRoute, getStoreListingPricesRoute } from '../contracts/public-contracts';
 
 const mockDisconnect = vi.fn(async () => {});
 const mockReadStoreOffer = vi.fn();
@@ -1075,11 +1075,17 @@ describe('public commerce routes', () => {
     });
   });
 
-  it('returns app-owned ReadCheckoutState output for return and retry UI', async () => {
+  it.each([
+    null,
+    { shipEstimate: null },
+    { shipEstimate: { kind: 'month', month: '2026-10', part: 'late' } },
+    { shipEstimate: { kind: 'date', date: '2026-10-20' } },
+  ])('returns the checkout pre-order summary for return and retry UI: %j', async (preorder) => {
     mockReadCheckoutState.mockResolvedValueOnce({
       checkoutSessionId: 'cs_test_123',
       orderStatus: 'paid',
       paymentStatus: 'paid',
+      preorder,
       shippingLocker,
       state: 'paid',
       status: 'complete',
@@ -1095,6 +1101,7 @@ describe('public commerce routes', () => {
       checkoutSessionId: 'cs_test_123',
       orderStatus: 'paid',
       paymentStatus: 'paid',
+      preorder,
       shippingLocker,
       state: 'paid',
       status: 'complete',
@@ -1103,5 +1110,19 @@ describe('public commerce routes', () => {
     expect(JSON.stringify(body)).not.toContain('deliveries');
     expect(JSON.stringify(body)).not.toContain('shopperEmail');
     expect(JSON.stringify(body)).not.toContain('shippingAddress');
+    expect(JSON.stringify(body)).not.toMatch(/startedAt|preorderStartedAt|lines/);
+    const schema = getCheckoutStateRoute.responses[200].content['application/json'].schema;
+    expect(schema.safeParse(body).success).toBe(true);
+    expect(
+      schema.safeParse({
+        checkoutSessionId: 'cs_test_123',
+        orderStatus: 'paid',
+        paymentStatus: 'paid',
+        shippingLocker,
+        state: 'paid',
+        status: 'complete',
+      }).success,
+    ).toBe(false);
+    expect(mockReadCheckoutState).toHaveBeenCalledExactlyOnceWith('cs_test_123');
   });
 });

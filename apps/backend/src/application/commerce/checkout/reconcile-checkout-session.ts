@@ -33,6 +33,7 @@ export function reconcileCheckoutSession(
       checkoutSessionId: session.checkoutSessionId,
       orderStatus: null,
       paymentStatus: session.paymentStatus,
+      preorder: null,
       shippingLocker: null,
       state: mapCheckoutState(session),
       status: session.status,

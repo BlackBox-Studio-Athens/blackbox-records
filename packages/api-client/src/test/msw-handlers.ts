@@ -27,6 +27,7 @@ export const publicCheckoutFixtures = {
     checkoutSessionId: 'cs_test_123',
     orderStatus: 'paid',
     paymentStatus: 'paid',
+    preorder: null,
     shippingLocker: null,
     state: 'paid',
     status: 'complete',

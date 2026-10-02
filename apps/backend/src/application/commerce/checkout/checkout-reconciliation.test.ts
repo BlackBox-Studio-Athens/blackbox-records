@@ -39,6 +39,7 @@ describe('checkout reconciliation', () => {
         checkoutSessionId: 'cs_test_123',
         orderStatus: null,
         paymentStatus: 'paid',
+        preorder: null,
         shippingLocker: null,
         state: 'paid',
         status: 'complete',
@@ -105,6 +106,7 @@ describe('checkout reconciliation', () => {
     expect(reconcileCheckoutSession(input)).toEqual(
       expect.objectContaining({
         checkoutState: expect.objectContaining({
+          preorder: null,
           state,
         }),
         isAuthoritative: false,

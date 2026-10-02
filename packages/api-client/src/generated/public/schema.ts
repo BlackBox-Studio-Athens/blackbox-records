@@ -256,6 +256,7 @@ export type components = {
             orderStatus: "pending_payment" | "paid" | "not_paid" | "needs_review" | null;
             /** @enum {string} */
             paymentStatus: "paid" | "unpaid" | "no_payment_required";
+            preorder: components["schemas"]["PublicStorePreorder"];
             shippingLocker: components["schemas"]["CheckoutStateShippingLocker"] | null;
             /** @enum {string} */
             state: "open" | "paid" | "processing" | "expired" | "unknown";

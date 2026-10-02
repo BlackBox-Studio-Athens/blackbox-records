@@ -138,6 +138,7 @@ export type CheckoutState = {
   checkoutSessionId: CheckoutSessionId;
   orderStatus: OrderStatus | null;
   paymentStatus: StripeCheckoutPaymentStatus;
+  preorder: ShopperPreorder | null;
   shippingLocker: ShippingLockerSnapshot | null;
   state: 'open' | 'paid' | 'processing' | 'expired' | 'unknown';
   status: StripeCheckoutSessionStatus;

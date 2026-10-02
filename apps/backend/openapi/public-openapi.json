@@ -835,6 +835,9 @@
               "no_payment_required"
             ]
           },
+          "preorder": {
+            "$ref": "#/components/schemas/PublicStorePreorder"
+          },
           "shippingLocker": {
             "anyOf": [
               {
@@ -872,6 +875,7 @@
           "checkoutSessionId",
           "orderStatus",
           "paymentStatus",
+          "preorder",
           "shippingLocker",
           "state",
           "status"

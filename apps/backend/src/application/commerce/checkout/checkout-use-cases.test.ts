@@ -29,7 +29,13 @@ function startCheckout(...args: Parameters<typeof startCheckoutWithPolicy>) {
   return startCheckoutWithPolicy(...args);
 }
 
-import type { CheckoutSessionId, VariantId, StockPreorder } from '../../../domain/commerce';
+import type {
+  CheckoutSessionId,
+  VariantId,
+  StockPreorder,
+  PreorderShipEstimate,
+  ShopperPreorder,
+} from '../../../domain/commerce';
 import type {
   CatalogProductProjectionReader,
   CatalogReconciler,
@@ -41,6 +47,7 @@ import type {
 import type { CheckoutRetryAttempt } from '../../../domain/commerce/repositories/spi';
 import type {
   CheckoutOrderRecord,
+  CheckoutOrderLineRecord,
   CheckoutOrderTransitionInput,
   CheckoutStockHoldRepository,
   CreateCheckoutStockHoldInput,
@@ -2209,12 +2216,90 @@ describe('checkout use cases', () => {
       checkoutSessionId: 'cs_test_123',
       orderStatus: null,
       paymentStatus: 'paid',
+      preorder: null,
       shippingLocker: null,
       state: 'paid',
       status: 'complete',
     });
 
     expect(checkoutGateway.readCheckoutSession).toHaveBeenCalledWith('cs_test_123');
+  });
+
+  it.each([
+    { name: 'legacy order without lines', estimates: [], expected: null },
+    { name: 'ordinary line', estimates: [undefined], expected: null },
+    {
+      name: 'mixed order uses the later exact date',
+      estimates: [undefined, { kind: 'month', month: '2026-10', part: 'early' }, { kind: 'date', date: '2026-10-15' }],
+      expected: { shipEstimate: { kind: 'date', date: '2026-10-15' } },
+    },
+    {
+      name: 'whole month sorts after an exact date in that month',
+      estimates: [
+        { kind: 'month', month: '2026-10', part: null },
+        { kind: 'date', date: '2026-10-20' },
+      ],
+      expected: { shipEstimate: { kind: 'month', month: '2026-10', part: null } },
+    },
+    {
+      name: 'month parts sort in order',
+      estimates: [
+        { kind: 'month', month: '2026-10', part: 'late' },
+        { kind: 'month', month: '2026-10', part: 'mid' },
+      ],
+      expected: { shipEstimate: { kind: 'month', month: '2026-10', part: 'late' } },
+    },
+    {
+      name: 'withheld estimate makes the order estimate unknown',
+      estimates: [{ kind: 'date', date: '2026-10-20' }, null],
+      expected: { shipEstimate: null },
+    },
+    {
+      name: 'past snapshot stays immutable after stock is no longer a pre-order',
+      estimates: [{ kind: 'date', date: '2020-01-01' }],
+      expected: { shipEstimate: { kind: 'date', date: '2020-01-01' } },
+    },
+  ] satisfies {
+    name: string;
+    estimates: (PreorderShipEstimate | null | undefined)[];
+    expected: ShopperPreorder | null;
+  }[])('summarizes saved pre-order lines: $name', async ({ estimates, expected }) => {
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      {
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      },
+    );
+    const order = orders.records.get('cs_test_123')!;
+    const line = order.lines![0]!;
+    order.lines = estimates.length
+      ? estimates.map((shipEstimate, index): CheckoutOrderLineRecord => ({
+          ...line,
+          id: `snapshot_${index}`,
+          preorder: shipEstimate === undefined ? null : { startedAt: '2020-01-01T10:00:00.000Z', shipEstimate },
+        }))
+      : undefined;
+    const before = structuredClone(order);
+    const saveTransition = vi.spyOn(orders, 'saveTransition');
+    const createPending = vi.spyOn(orders, 'createPending');
+
+    const state = await readCheckoutState(checkoutGateway, orders, checkoutSessionId('cs_test_123'));
+
+    expect(state.preorder).toEqual(expected);
+    expect(state).not.toHaveProperty('lines');
+    expect(JSON.stringify(state)).not.toMatch(/startedAt|snapshot_/);
+    expect(order).toEqual(before);
+    expect(saveTransition).not.toHaveBeenCalled();
+    expect(createPending).not.toHaveBeenCalled();
   });
 
   it('surfaces manual BOX NOW return state without a persisted locker snapshot', async () => {
@@ -2238,6 +2323,7 @@ describe('checkout use cases', () => {
       checkoutSessionId: 'cs_test_123',
       orderStatus: 'pending_payment',
       paymentStatus: 'paid',
+      preorder: null,
       shippingLocker: null,
       state: 'paid',
       status: 'complete',
