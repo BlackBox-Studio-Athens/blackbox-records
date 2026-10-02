@@ -110,4 +110,59 @@ describe('shell page snapshot loader', () => {
     await loader.prefetchHref('https://example.test/blackbox-records/store/');
     expect(preloadImages).toHaveBeenCalledTimes(1);
   });
+
+  it('prefetches speculatively at low priority and warms only the first eager image until the page opens', async () => {
+    const fetchPage = vi.fn(async (_href: string, _init: RequestInit) => ({
+      ok: true,
+      text: async () => '',
+      url: 'https://example.test/blackbox-records/store/',
+    }));
+    const remainingSources = [{ src: '/b.jpg' }, { src: '/c.jpg' }];
+    const preloadImages = vi.fn(() => remainingSources);
+    const preloadImageSources = vi.fn();
+    const loader = createShellPageSnapshotLoader({
+      currentHref: () => 'https://example.test/blackbox-records/',
+      fetchPage,
+      parseHtml: () => ({}) as unknown as Document,
+      preloadImageSources,
+      preloadImages,
+      readSnapshot: () => createSnapshot('/store/'),
+    });
+
+    await loader.prefetchHref('https://example.test/blackbox-records/store/', { speculative: true });
+
+    expect(fetchPage.mock.calls[0]?.[1]).toMatchObject({ priority: 'low' });
+    expect(preloadImages).toHaveBeenCalledWith('<section>/store/</section>', 1);
+    expect(preloadImageSources).not.toHaveBeenCalled();
+
+    loader.warmSnapshotImages('/blackbox-records/store/');
+    loader.warmSnapshotImages('/store/');
+    expect(preloadImageSources).toHaveBeenCalledTimes(1);
+    expect(preloadImageSources).toHaveBeenCalledWith(remainingSources);
+  });
+
+  it('keeps default fetch priority and warms every eager image for an intentional prefetch', async () => {
+    const fetchPage = vi.fn(async (_href: string, _init: RequestInit) => ({
+      ok: true,
+      text: async () => '',
+      url: 'https://example.test/blackbox-records/store/',
+    }));
+    const preloadImages = vi.fn(() => []);
+    const preloadImageSources = vi.fn();
+    const loader = createShellPageSnapshotLoader({
+      currentHref: () => 'https://example.test/blackbox-records/',
+      fetchPage,
+      parseHtml: () => ({}) as unknown as Document,
+      preloadImageSources,
+      preloadImages,
+      readSnapshot: () => createSnapshot('/store/'),
+    });
+
+    await loader.prefetchHref('https://example.test/blackbox-records/store/');
+
+    expect(fetchPage.mock.calls[0]?.[1]).not.toHaveProperty('priority');
+    expect(preloadImages).toHaveBeenCalledWith('<section>/store/</section>');
+    loader.warmSnapshotImages('/store/');
+    expect(preloadImageSources).not.toHaveBeenCalled();
+  });
 });

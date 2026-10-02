@@ -86,14 +86,44 @@ export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
   });
 }
 
+function queryShellMainElement(targetDocument: Document) {
+  return (
+    targetDocument.querySelector<HTMLElement>('main[data-app-shell-main]') ||
+    targetDocument.querySelector<HTMLElement>('main#main')
+  );
+}
+
+// Cheap part of a snapshot, kept synchronous at mount: it records island markup before any interaction can change it,
+// so the full snapshot can wait for an idle period.
+export function rememberDocumentIslandServerMarkup(targetDocument: Document = document) {
+  const mainElement = queryShellMainElement(targetDocument);
+  if (mainElement) rememberIslandServerMarkup(mainElement);
+}
+
+// Tuning knob: longest the mount snapshot waits for an idle period before it runs anyway.
+export const SHELL_IDLE_SNAPSHOT_TIMEOUT_MS = 2000;
+
+type IdleTaskScheduler = Pick<Window, 'clearTimeout' | 'setTimeout'> &
+  Partial<Pick<Window, 'cancelIdleCallback' | 'requestIdleCallback'>>;
+
+// Runs a task when the main thread is idle (Safari lacks requestIdleCallback, so it falls back to a short timer).
+// Returns a cancel function.
+export function scheduleIdleShellTask(task: () => void, scheduler: IdleTaskScheduler = window) {
+  if (typeof scheduler.requestIdleCallback === 'function') {
+    const handle = scheduler.requestIdleCallback(task, { timeout: SHELL_IDLE_SNAPSHOT_TIMEOUT_MS });
+    return () => scheduler.cancelIdleCallback?.(handle);
+  }
+
+  const handle = scheduler.setTimeout(task, 200);
+  return () => scheduler.clearTimeout(handle);
+}
+
 export function readDocumentShellPageSnapshot(
   targetDocument: Document,
   href: string,
   currentHref = window.location.href,
 ): ShellPageSnapshot | null {
-  const mainElement =
-    targetDocument.querySelector<HTMLElement>('main[data-app-shell-main]') ||
-    targetDocument.querySelector<HTMLElement>('main#main');
+  const mainElement = queryShellMainElement(targetDocument);
 
   if (!mainElement) return null;
   rememberIslandServerMarkup(mainElement);

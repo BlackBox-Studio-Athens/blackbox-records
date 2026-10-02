@@ -242,6 +242,26 @@ describe('shell document event routing', () => {
     expect(primeShellPrefetchIntent).toHaveBeenCalledWith(expect.objectContaining({ eventTarget: focusTarget }));
   });
 
+  it('applies the hover dwell to mouse pointers only, so focus and touch prefetch at once', () => {
+    const primeShellPrefetchIntent = vi.fn();
+    const options = createOptions({
+      dependencies: {
+        primeShellPrefetchIntent,
+      },
+    });
+    connectShellDocumentEventRouting(options);
+    const target = {} as EventTarget;
+
+    options.documentHandlers.pointerover?.({ pointerType: 'mouse', target } as unknown as PointerEvent);
+    options.documentHandlers.pointerover?.({ pointerType: 'touch', target } as unknown as PointerEvent);
+    options.documentHandlers.focusin?.({ target } as unknown as FocusEvent);
+
+    const [mouseCall, touchCall, focusCall] = primeShellPrefetchIntent.mock.calls.map(([call]) => call);
+    expect(mouseCall.hoverDwell).toEqual(expect.objectContaining({ cancel: expect.any(Function) }));
+    expect(touchCall.hoverDwell).toBeUndefined();
+    expect(focusCall.hoverDwell).toBeUndefined();
+  });
+
   it('delegates Escape key dismissal with live modal and overlay state', () => {
     const handleShellEscapeDismissal = vi.fn(() => 'player-modal' as const);
     const options = createOptions({

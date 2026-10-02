@@ -154,10 +154,39 @@ test('capturing the live Store snapshot does not fetch its lazy images', async (
   });
   await page.goto('store/');
   await waitForShell(page);
-  // The shell snapshots the live page right after it mounts; give any fetches that clone starts time to appear.
-  await page.waitForTimeout(1_000);
+  // The shell snapshots the live page once the main thread is idle after mount (capped at 2 s); give any fetches that
+  // clone starts time to appear.
+  await page.waitForTimeout(2_500);
 
   const imageCount = await page.locator(`${main} img`).count();
   expect(imageCount).toBeGreaterThan(20);
   expect(imageRequests.length).toBeLessThan(imageCount / 2);
+});
+
+test('a quick mouse pass over the header prefetches nothing; resting on a link prefetches it', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'Hover prefetch applies to mouse pointers on the desktop header.');
+  await page.goto('about/');
+  await waitForShell(page);
+  const sectionFetches: string[] = [];
+  page.on('request', (request) => {
+    if (request.resourceType() === 'fetch' && request.headers().accept === 'text/html') {
+      sectionFetches.push(new URL(request.url()).pathname);
+    }
+  });
+
+  // One synchronous sweep: each link is entered and left within the same task, well inside the dwell.
+  await page.evaluate(() => {
+    const links = document.querySelectorAll('nav[aria-label="Primary"] a[href]');
+    for (const target of [...links, document.body]) {
+      target.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' }));
+    }
+  });
+  await page.waitForTimeout(400);
+  expect(sectionFetches).toEqual([]);
+
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Artists' }).hover();
+  await expect.poll(() => sectionFetches).toEqual(['/blackbox-records/artists/']);
 });

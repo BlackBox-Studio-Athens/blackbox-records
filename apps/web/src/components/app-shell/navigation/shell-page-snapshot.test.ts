@@ -9,7 +9,10 @@ import {
   applyDocumentShellPageSnapshot,
   cacheDocumentShellPageSnapshot,
   readDocumentShellPageSnapshot,
+  rememberDocumentIslandServerMarkup,
   sanitizeStoreCoverflowSnapshot,
+  scheduleIdleShellTask,
+  SHELL_IDLE_SNAPSHOT_TIMEOUT_MS,
   updateDocumentMetadata,
 } from './shell-page-snapshot';
 
@@ -530,5 +533,49 @@ describe('shell page snapshots', () => {
     });
 
     expect(applied).toBe(false);
+  });
+
+  it('records island markup without reading a full snapshot', () => {
+    const island = { innerHTML: '<button>server</button>' };
+    const main = { querySelectorAll: vi.fn(() => [island]) };
+    const targetDocument = {
+      querySelector: vi.fn((selector: string) => (selector === 'main[data-app-shell-main]' ? main : null)),
+    } as unknown as Document;
+
+    rememberDocumentIslandServerMarkup(targetDocument);
+
+    expect(main.querySelectorAll).toHaveBeenCalledTimes(1);
+    expect(main.querySelectorAll).toHaveBeenCalledWith('astro-island');
+  });
+
+  it('schedules idle work with a timeout and cancels it', () => {
+    const task = vi.fn();
+    const scheduler = {
+      cancelIdleCallback: vi.fn(),
+      clearTimeout: vi.fn(),
+      requestIdleCallback: vi.fn(() => 42),
+      setTimeout: vi.fn(),
+    };
+
+    const cancel = scheduleIdleShellTask(task, scheduler as unknown as Window);
+    expect(scheduler.requestIdleCallback).toHaveBeenCalledWith(task, { timeout: SHELL_IDLE_SNAPSHOT_TIMEOUT_MS });
+    expect(scheduler.setTimeout).not.toHaveBeenCalled();
+
+    cancel();
+    expect(scheduler.cancelIdleCallback).toHaveBeenCalledWith(42);
+  });
+
+  it('falls back to a timer where requestIdleCallback is missing', () => {
+    const task = vi.fn();
+    const scheduler = {
+      clearTimeout: vi.fn(),
+      setTimeout: vi.fn(() => 7),
+    };
+
+    const cancel = scheduleIdleShellTask(task, scheduler as unknown as Window);
+    expect(scheduler.setTimeout).toHaveBeenCalledWith(task, expect.any(Number));
+
+    cancel();
+    expect(scheduler.clearTimeout).toHaveBeenCalledWith(7);
   });
 });

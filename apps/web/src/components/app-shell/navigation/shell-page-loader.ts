@@ -1,8 +1,9 @@
 import { normalizeAppPathname, parseShellSectionRoute } from '@/components/app-shell/routing';
 import { previewUrl } from '@/platform/lib/private-preview';
 
-import { preloadEagerImages } from './shell-first-screen-images';
+import { type EagerImageSource, preloadEagerImages, preloadImageSources } from './shell-first-screen-images';
 import { readDocumentShellPageSnapshot, type ShellPageSnapshot } from './shell-page-snapshot';
+import type { ShellPrefetchOptions } from './shell-prefetch-intent';
 
 type ShellPageSnapshotResponse = Pick<Response, 'ok' | 'text' | 'url'>;
 
@@ -12,7 +13,8 @@ type ShellPageSnapshotLoaderOptions = {
   fetchPage?: (href: string, init: RequestInit) => Promise<ShellPageSnapshotResponse>;
   inFlightRequests?: Map<string, Promise<ShellPageSnapshot>>;
   parseHtml?: (html: string) => Document;
-  preloadImages?: (html: string) => void;
+  preloadImages?: (html: string, limit?: number) => EagerImageSource[] | void;
+  preloadImageSources?: (sources: readonly EagerImageSource[]) => void;
   readSnapshot?: typeof readDocumentShellPageSnapshot;
 };
 
@@ -23,8 +25,12 @@ export function createShellPageSnapshotLoader({
   inFlightRequests = new Map<string, Promise<ShellPageSnapshot>>(),
   parseHtml = (html) => new DOMParser().parseFromString(html, 'text/html'),
   preloadImages = preloadEagerImages,
+  preloadImageSources: preloadDeferredImageSources = preloadImageSources,
   readSnapshot = readDocumentShellPageSnapshot,
 }: ShellPageSnapshotLoaderOptions = {}) {
+  // Eager images a speculative prefetch left cold, requested once the page is actually opened.
+  const deferredImageSources = new Map<string, EagerImageSource[]>();
+
   function cacheSnapshot(pageSnapshot: ShellPageSnapshot) {
     cache.set(pageSnapshot.pathname, pageSnapshot);
   }
@@ -37,7 +43,21 @@ export function createShellPageSnapshotLoader({
     return cache.has(normalizeAppPathname(pathname));
   }
 
-  async function fetchSnapshot(pathname: string, href: string, signal?: AbortSignal) {
+  function warmSnapshotImages(pathname: string) {
+    const normalizedPathname = normalizeAppPathname(pathname);
+    const sources = deferredImageSources.get(normalizedPathname);
+    if (!sources) return;
+
+    deferredImageSources.delete(normalizedPathname);
+    preloadDeferredImageSources(sources);
+  }
+
+  async function fetchSnapshot(
+    pathname: string,
+    href: string,
+    signal?: AbortSignal,
+    { speculative = false }: ShellPrefetchOptions = {},
+  ) {
     const normalizedPathname = normalizeAppPathname(pathname);
     const cachedSnapshot = cache.get(normalizedPathname);
     if (cachedSnapshot) return cachedSnapshot;
@@ -51,6 +71,7 @@ export function createShellPageSnapshotLoader({
         accept: 'text/html',
       },
       signal: signal ?? null,
+      ...(speculative ? { priority: 'low' as const } : {}),
     })
       .then(async (response) => {
         if (!response.ok) {
@@ -67,7 +88,13 @@ export function createShellPageSnapshotLoader({
         cache.set(normalizedPathname, pageSnapshot);
         // Queue eager image requests now: an inserted <img> only requests after the insertion task's layout,
         // which can take seconds on a phone for brand-font text.
-        preloadImages(pageSnapshot.mainHtml);
+        // A speculative prefetch warms only the first image; the rest wait until the page is opened.
+        const remainingSources = speculative
+          ? preloadImages(pageSnapshot.mainHtml, 1)
+          : preloadImages(pageSnapshot.mainHtml);
+        if (remainingSources && remainingSources.length > 0) {
+          deferredImageSources.set(normalizedPathname, remainingSources);
+        }
         return pageSnapshot;
       })
       .finally(() => {
@@ -78,13 +105,13 @@ export function createShellPageSnapshotLoader({
     return request;
   }
 
-  async function prefetchHref(href: string) {
+  async function prefetchHref(href: string, options?: ShellPrefetchOptions) {
     const resolvedUrl = new URL(href, currentHref());
     const route = parseShellSectionRoute(resolvedUrl.pathname);
     if (!route || cache.has(route.pathname)) return;
 
     try {
-      await fetchSnapshot(route.pathname, resolvedUrl.toString());
+      await fetchSnapshot(route.pathname, resolvedUrl.toString(), undefined, options);
     } catch {
       // Ignore speculative prefetch failures and let click fallback to real navigation.
     }
@@ -96,5 +123,6 @@ export function createShellPageSnapshotLoader({
     getCachedSnapshot,
     hasCachedSnapshot,
     prefetchHref,
+    warmSnapshotImages,
   };
 }

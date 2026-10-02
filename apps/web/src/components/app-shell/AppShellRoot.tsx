@@ -16,6 +16,8 @@ import {
 import {
   applyDocumentShellPageSnapshot,
   cacheDocumentShellPageSnapshot,
+  rememberDocumentIslandServerMarkup,
+  scheduleIdleShellTask,
   type ShellPageSnapshot,
 } from '@/components/app-shell/navigation/shell-page-snapshot';
 import { createShellPageSnapshotLoader } from '@/components/app-shell/navigation/shell-page-loader';
@@ -70,6 +72,7 @@ import { createShellPlayerSessionController } from './player-shell/shell-player-
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
 import { MOBILE_NAVIGATION_TRIGGER_SELECTOR } from './navigation/shell-document-click-intent';
 import { waitForEagerImages } from './navigation/shell-first-screen-images';
+import type { ShellPrefetchOptions } from './navigation/shell-prefetch-intent';
 import { openShellSectionNavigation, type ShellSectionActivationOutcome } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
@@ -224,6 +227,9 @@ export default function AppShellRoot({
   );
 
   overlayStateRef.current = overlayState;
+  // The document listeners connect once; they and the player controller read the modal state through this ref.
+  const isPlayerModalOpenRef = useRef(isPlayerModalOpen);
+  isPlayerModalOpenRef.current = isPlayerModalOpen;
 
   async function applyStoreCartState(nextState: StoreCartState) {
     const { applyStoreCartStateAndPersist, getStoreCartBrowserStorage } =
@@ -494,7 +500,7 @@ export default function AppShellRoot({
     activePlayerTriggerElementRef,
     getCurrentHref: () => window.location.href,
     getHistory: () => window.history,
-    getIsPlayerModalOpen: () => isPlayerModalOpen,
+    getIsPlayerModalOpen: () => isPlayerModalOpenRef.current,
     getScheduler: () => window,
     getTargetDocument: () => document,
     iframeCacheByEmbedUrlRef,
@@ -524,8 +530,8 @@ export default function AppShellRoot({
     await overlayFragmentLoader.prefetchHref(href);
   }
 
-  async function prefetchShellSectionHref(href: string) {
-    const pagePrefetch = shellPageLoader.prefetchHref(href);
+  async function prefetchShellSectionHref(href: string, options?: ShellPrefetchOptions) {
+    const pagePrefetch = shellPageLoader.prefetchHref(href, options);
     const route = parseShellSectionRoute(new URL(href, window.location.href).pathname);
     if (route?.kind === 'store') void preloadStoreDistroSearch().catch(() => undefined);
     await pagePrefetch;
@@ -546,6 +552,7 @@ export default function AppShellRoot({
       collapseOverlayHistoryToBackground,
       currentHref: window.location.href,
       currentPathname: window.location.pathname,
+      getRenderedPathname: () => renderedPagePathnameRef.current,
       hasOverlayState: () => Boolean(overlayStateRef.current),
       historyMode: options?.historyMode,
       href,
@@ -651,7 +658,12 @@ export default function AppShellRoot({
 
     renderedPageHrefRef.current = window.location.href;
     syncShellNavigationState(normalizeAppPathname(window.location.pathname));
-    cacheDocumentSnapshot();
+    // Island markup is recorded now, before interaction; the full snapshot waits for idle time. Leaving the page
+    // earlier takes it after the transition veil has painted (openShellSectionNavigation).
+    rememberDocumentIslandServerMarkup(document);
+    const cancelIdleSnapshot = scheduleIdleShellTask(() => {
+      if (!shellPageLoader.hasCachedSnapshot(renderedPagePathnameRef.current)) cacheDocumentSnapshot();
+    });
     markCurrentHistoryEntryForShellSection(window.location.pathname);
 
     const disconnectShellDocumentListeners = connectShellDocumentEventRouting({
@@ -671,7 +683,7 @@ export default function AppShellRoot({
       getOverlayBackgroundHref: () => overlayStateRef.current?.backgroundHref,
       hasCachedShellPage: shellPageLoader.hasCachedSnapshot,
       hasOverlayState: () => overlayStateRef.current !== null,
-      isPlayerModalOpen: () => isPlayerModalOpen,
+      isPlayerModalOpen: () => isPlayerModalOpenRef.current,
       markActivePlayerSessionAsInteracted,
       navigateDocumentTo: (href) => window.location.assign(href),
       openOverlayHref,
@@ -695,6 +707,7 @@ export default function AppShellRoot({
     });
 
     return () => {
+      cancelIdleSnapshot();
       disconnectShellDocumentListeners();
       clearRouteLoadingTimer();
       clearScheduledRouteLoadingTimer(storeLoadingFeedbackTimerRef, window);
@@ -706,7 +719,9 @@ export default function AppShellRoot({
 
       restoreShellScrollRestoration();
     };
-  }, [isPlayerModalOpen]);
+    // Connected once per mount: every value it reads is a ref, a state setter or a stable loader, so player open and
+    // close no longer re-snapshot main, re-bind document listeners or abort an in-flight navigation.
+  }, []);
 
   return (
     <>

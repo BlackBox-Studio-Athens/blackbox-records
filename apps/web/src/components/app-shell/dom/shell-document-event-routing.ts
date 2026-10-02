@@ -20,7 +20,11 @@ import {
   routeShellPopStateNavigation,
   type ShellPopStateNavigationResult,
 } from '../navigation/shell-popstate-navigation';
-import { primeShellPrefetchIntent } from '../navigation/shell-prefetch-intent';
+import {
+  createShellHoverPrefetchDwell,
+  primeShellPrefetchIntent,
+  type ShellPrefetchOptions,
+} from '../navigation/shell-prefetch-intent';
 import { schedulePlayerIframeBlurInteractionCheck } from '../player-shell/shell-player-iframe-blur-interaction';
 import { connectShellDocumentListeners } from './shell-document-listeners';
 import { handleShellEscapeDismissal, type ShellEscapeDismissalResult } from './shell-escape-dismissal';
@@ -76,7 +80,7 @@ export type ShellDocumentEventRoutingOptions = {
   ) => MaybePromise<boolean>;
   playerModalHistoryHrefRef: { current: string | null };
   prefetchOverlayHref: (href: string) => Promise<void> | void;
-  prefetchShellSectionHref: (href: string) => Promise<void> | void;
+  prefetchShellSectionHref: (href: string, options?: ShellPrefetchOptions) => Promise<void> | void;
   readPlayerProvidersFromElement: Parameters<ShellDocumentClickIntentResolver>[1]['readPlayerProvidersFromElement'];
   restoreCachedShellPage: (
     pathname: string,
@@ -221,9 +225,12 @@ export function connectShellDocumentEventRouting({
     });
   }
 
-  function primeMusicAndOverlayPrefetch(eventTarget: EventTarget | null) {
+  const hoverPrefetchDwell = createShellHoverPrefetchDwell();
+
+  function primeMusicAndOverlayPrefetch(eventTarget: EventTarget | null, hoverDwell?: typeof hoverPrefetchDwell) {
     primePrefetchIntent({
       eventTarget,
+      hoverDwell,
       isNavigableOverlayAnchor,
       isNavigableShellSectionAnchor,
       prefetchOverlayHref,
@@ -233,8 +240,9 @@ export function connectShellDocumentEventRouting({
     });
   }
 
+  // A mouse hover waits for the dwell; touch and pen fire pointerover as the press begins, so they prefetch at once.
   function handleDocumentPointerOver(event: PointerEvent) {
-    primeMusicAndOverlayPrefetch(event.target);
+    primeMusicAndOverlayPrefetch(event.target, event.pointerType === 'mouse' ? hoverPrefetchDwell : undefined);
   }
 
   function handleDocumentFocusIn(event: FocusEvent) {
@@ -279,7 +287,7 @@ export function connectShellDocumentEventRouting({
     });
   }
 
-  return connectShellDocumentListeners({
+  const disconnectListeners = connectShellDocumentListeners({
     documentTarget,
     onBlur: handleWindowBlur,
     onClick: handleDocumentClick,
@@ -289,4 +297,9 @@ export function connectShellDocumentEventRouting({
     onPopState: handlePopState,
     windowTarget,
   });
+
+  return () => {
+    hoverPrefetchDwell.cancel();
+    disconnectListeners();
+  };
 }
