@@ -31,3 +31,12 @@
 - `wrangler d1 migrations apply COMMERCE_DB --local` on an empty scratch D1 applied 0001–0026. `pragma_table_info('Stock')` reports `showLowStock` `NOT NULL DEFAULT 0`, matching `restockPlanned`.
 - Old-Worker compatibility: `origin/main` was checked out in a scratch worktree with only `0026` added to its migrations folder. Its worker-pool setup applies every migration in that folder. Its commerce-persistence, checkout, stock, catalog-sync and orders suites passed (29 files, 130 tests) with its old Prisma client against the new column. This covers the UAT/PRD window where migrations run before the Worker deploys.
 - `pnpm agent:check`, strict OpenSpec validation and the full `e2e/store-cart.spec.ts` (15 tests, desktop and mobile) passed.
+
+## UAT release repair — 2026-10-02
+
+- Source `78b0ef3870b038dcdfb5046745725e9a6499035b` failed Release BlackBox run `37014522234` in `check-candidate`, before hosted mutation. Both target builds passed, but `ui-foundation:test` still expected the typography selector without the new `.store-low-stock` exception.
+- `pnpm test ui-foundation` initially replayed a passing local Nx cache entry. With `NX_SKIP_NX_CACHE=true`, the same command reproduced CI's failed assertion (one failure, ten passes). The test reads `global.css`, which was absent from its declared cache inputs.
+- The repair updates the existing typography assertion to include copies-left notices and adds the stylesheet to `ui-foundation:test` inputs. Product CSS and purchase behavior are unchanged. The existing failing test is the regression check.
+- After repair, `pnpm test ui-foundation` executed without a cache hit and passed both files and all 11 tests. Strict OpenSpec validation passed. Before retry, UAT public release identity and Worker headers both reported source `aa2bfae91890d074e4efa99e777c057d38500c2f`, candidate `37007627632`, release number `488`.
+- `pnpm exec nx show projects --affected --files=apps/web/src/styles/global.css --json` includes `ui-foundation`, confirming stylesheet-only edits select the repaired test. Final local validation and hosted release evidence are retained in ignored `.codex-artifacts/uat-release-repair/`.
+- Acceptance rows: boundaries/tooling/instructions and release/environment. Prior product browser evidence above remains applicable to unchanged product code; staff switch acceptance is still pending. PRD promotion remains a separate user-triggered task.

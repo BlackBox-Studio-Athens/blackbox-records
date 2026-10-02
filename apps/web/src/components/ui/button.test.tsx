@@ -88,12 +88,12 @@ describe('Button family CSS', () => {
     expect(globalCss).toMatch(/\[data-store-cart-header-root\] \{[^}]*min-width: 2\.25rem;[^}]*min-height: 2\.25rem;/);
   });
 
-  it('keeps Bebas on buttons, Listen and purchase status inside store item pages', () => {
+  it('keeps Bebas on buttons, Listen, purchase status and copies-left notices inside store item pages', () => {
     expect(flatCss).toContain(
       '.store-item-purchase .font-display:not([data-store-offer-price], [data-store-item-purchase-status], .site-button) {',
     );
     expect(flatCss).toContain(
-      '.store-item-page :is(p, button, a, [data-store-purchase-group] > span):not(.site-button, .music-listen-trigger, [data-store-item-purchase-status]) {',
+      '.store-item-page :is(p, button, a, [data-store-purchase-group] > span):not(.site-button, .music-listen-trigger, [data-store-item-purchase-status], .store-low-stock) {',
     );
   });
 });
