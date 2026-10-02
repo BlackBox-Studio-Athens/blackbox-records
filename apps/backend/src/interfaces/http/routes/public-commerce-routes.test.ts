@@ -13,6 +13,7 @@ import {
 import { CatalogDriftError } from '../../../application/commerce/catalog-sync';
 import { createHttpApp } from '../app';
 import { createPublicCommerceServices } from './public-commerce-services';
+import { getStoreItemRoute } from '../contracts/public-contracts';
 
 const mockDisconnect = vi.fn(async () => {});
 const mockReadStoreOffer = vi.fn();
@@ -147,6 +148,7 @@ describe('public commerce routes', () => {
         status: 'available',
       },
       canCheckout: true,
+      preorder: null,
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
     });
@@ -167,6 +169,7 @@ describe('public commerce routes', () => {
         status: 'available',
       },
       canCheckout: true,
+      preorder: null,
       links: [
         {
           href: '/api/store/items/disintegration-black-vinyl-lp',
@@ -206,6 +209,64 @@ describe('public commerce routes', () => {
         unavailableReason: 'Native checkout is temporarily unavailable.',
       },
     });
+  });
+
+  it.each([
+    null,
+    { shipEstimate: null },
+    { shipEstimate: { kind: 'month', month: '2026-10', part: 'late' } },
+    { shipEstimate: { kind: 'date', date: '2026-10-20' } },
+  ] as const)('returns the ready pre-order contract without a private cycle key (%j)', async (preorder) => {
+    const offer = {
+      availability: { label: 'Available', status: 'available' },
+      canCheckout: true,
+      catalogStatus: 'ready',
+      lowStockQuantity: 2,
+      preorder,
+      price: { amountMinor: 2800, currencyCode: 'EUR', display: '€28.00', kind: 'fixed' },
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+    };
+    const schema = getStoreItemRoute.responses[200].content['application/json'].schema;
+    expect(schema.safeParse(offer).success).toBe(true);
+    expect(schema.safeParse({ ...offer, preorder: undefined }).success).toBe(false);
+    const app = createHttpApp();
+    mockReadStoreOffer.mockResolvedValueOnce(offer);
+    mockListVariantOffersForStoreItem.mockResolvedValueOnce([offer]);
+    for (const suffix of ['', '/variants']) {
+      const response = await app.request(
+        `http://backend.test/api/store/items/disintegration-black-vinyl-lp${suffix}`,
+        {},
+        testBindings,
+      );
+      expect(response.status).toBe(200);
+      expectNoStoreCacheControl(response);
+      const body = await response.json();
+      if (suffix && !Array.isArray(body)) throw new Error('Expected variant offers');
+      const returnedOffer: unknown = suffix && Array.isArray(body) ? body[0] : body;
+      if (
+        !returnedOffer ||
+        typeof returnedOffer !== 'object' ||
+        !('preorder' in returnedOffer) ||
+        !('lowStockQuantity' in returnedOffer)
+      )
+        throw new Error('Expected a ready offer');
+      expect(returnedOffer.preorder).toEqual(preorder);
+      expect(returnedOffer.lowStockQuantity).toBe(2);
+      expect(JSON.stringify(returnedOffer)).not.toContain('startedAt');
+      expect(schema.safeParse(returnedOffer).success).toBe(true);
+    }
+    for (const catalogStatus of ['sold_out', 'catalog_drift'] as const) {
+      const unavailable = {
+        ...offer,
+        availability: { label: 'Unavailable', status: catalogStatus === 'sold_out' ? 'sold_out' : 'unavailable' },
+        canCheckout: false,
+        catalogStatus,
+        price: null,
+        preorder: undefined,
+      };
+      expect(schema.parse(unavailable)).not.toHaveProperty('preorder');
+    }
   });
 
   it('returns one browser-safe no-store listing-price projection without Store Offer reads', async () => {
@@ -303,6 +364,7 @@ describe('public commerce routes', () => {
       availability: { label: 'Available', status: 'available' },
       canCheckout: true,
       catalogStatus: 'ready',
+      preorder: null,
       price: { amountMinor: 2800, currencyCode: 'EUR', display: '€28.00', kind: 'fixed' },
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_disintegration-black-vinyl-lp_standard',
@@ -323,8 +385,13 @@ describe('public commerce routes', () => {
 
     const description = await app.request('http://backend.test/api/store/openapi.json', {}, testBindings);
     expect(description.status).toBe(200);
-    const document = (await description.json()) as { paths: Record<string, unknown> };
+    const document = (await description.json()) as {
+      paths: Record<string, unknown>;
+      components: { schemas: Record<string, unknown> };
+    };
     expect(document.paths['/api/internal']).toBeUndefined();
+    expect(document.components.schemas.PublicShipEstimate).toBeDefined();
+    expect(document.components.schemas.PublicStorePreorder).toBeDefined();
     expect(JSON.stringify(document)).not.toMatch(/CMS_RUNTIME|stripe_secret|\/api\/internal/);
 
     const item = await app.request(
@@ -343,6 +410,7 @@ describe('public commerce routes', () => {
       availability: { label: 'Available', status: 'available' },
       canCheckout: true,
       catalogStatus: 'ready',
+      preorder: null,
       price: { amountMinor: 2800, currencyCode: 'EUR', display: '€28.00', kind: 'fixed' },
       storeItemSlug: 'disintegration-black-vinyl-lp',
       variantId: 'variant_disintegration-black-vinyl-lp_standard',

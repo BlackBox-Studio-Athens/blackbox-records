@@ -368,6 +368,9 @@
                 "maximum": 5,
                 "description": "Copies left, present only when staff enabled the notice and few copies remain."
               },
+              "preorder": {
+                "$ref": "#/components/schemas/PublicStorePreorder"
+              },
               "price": {
                 "$ref": "#/components/schemas/PublicStoreOfferPrice"
               },
@@ -392,6 +395,7 @@
               "availability",
               "canCheckout",
               "catalogStatus",
+              "preorder",
               "price"
             ]
           },
@@ -526,6 +530,76 @@
               "catalogStatus",
               "price"
             ]
+          }
+        ]
+      },
+      "PublicStorePreorder": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "shipEstimate": {
+            "$ref": "#/components/schemas/PublicShipEstimate"
+          }
+        },
+        "required": [
+          "shipEstimate"
+        ]
+      },
+      "PublicShipEstimate": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "month"
+                ]
+              },
+              "month": {
+                "type": "string"
+              },
+              "part": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "enum": [
+                  "early",
+                  "mid",
+                  "late",
+                  null
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "month",
+              "part"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "date"
+                ]
+              },
+              "date": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "date"
+            ]
+          },
+          {
+            "type": "null"
           }
         ]
       },

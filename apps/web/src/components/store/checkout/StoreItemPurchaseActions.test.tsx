@@ -44,6 +44,7 @@ const readyOffer: PublicStoreOffer = {
   availability: { label: 'Available', status: 'available' },
   canCheckout: true,
   catalogStatus: 'ready',
+  preorder: null,
   price: { amountMinor: 2800, currencyCode: 'EUR', display: '€28.00', kind: 'fixed' },
   storeItemSlug: 'disintegration-black-vinyl-lp',
   variantId: 'variant_disintegration-black-vinyl-lp_standard',
@@ -159,6 +160,7 @@ describe('StoreItemPurchaseActions', () => {
       },
       canCheckout: true,
       catalogStatus: 'ready',
+      preorder: null,
       price: {
         amountMinor: 2800,
         currencyCode: 'EUR',
@@ -186,6 +188,7 @@ describe('StoreItemPurchaseActions', () => {
         },
         canCheckout: true,
         catalogStatus: 'ready',
+        preorder: null,
         price: {
           currencyCode: 'EUR',
           display: 'Pay what you want',
@@ -305,6 +308,7 @@ describe('StoreItemPurchaseActions', () => {
         },
         canCheckout: true,
         catalogStatus: 'ready',
+        preorder: null,
         price: {
           amountMinor: 2800,
           currencyCode: 'EUR',

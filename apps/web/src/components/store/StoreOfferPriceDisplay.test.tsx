@@ -16,6 +16,7 @@ const workerOffer: PublicStoreOffer = {
   },
   canCheckout: true,
   catalogStatus: 'ready',
+  preorder: null,
   price: {
     amountMinor: 2800,
     currencyCode: 'EUR',

@@ -4,7 +4,9 @@ import type {
   StoreItemOptionRepository,
 } from '../../../domain/commerce/repositories/spi';
 import {
+  athensToday,
   classifyStoreStockAvailability,
+  deriveShopperPreorder,
   parseStoreItemSlug,
   readLowStockQuantity,
   storeStockAvailabilityLabels,
@@ -59,6 +61,7 @@ function readyOffer(
   variantId: VariantId,
   price: Extract<StoreOffer, { catalogStatus: 'ready' }>['price'],
   lowStockQuantity: number | undefined,
+  preorder: Extract<StoreOffer, { catalogStatus: 'ready' }>['preorder'],
 ): Extract<StoreOffer, { catalogStatus: 'ready' }> {
   return {
     storeItemSlug,
@@ -70,6 +73,7 @@ function readyOffer(
     canCheckout: true,
     catalogStatus: 'ready',
     ...(lowStockQuantity === undefined ? {} : { lowStockQuantity }),
+    preorder,
     price,
   };
 }
@@ -81,6 +85,7 @@ export async function readStoreOffer(
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   productProjections: CatalogProductProjectionReader,
   storeItemSlug: unknown,
+  now?: Date,
 ): Promise<StoreOffer | null> {
   const parsedStoreItemSlug = parseStoreItemSlug(storeItemSlug);
   const storeItem = await storeItems.findByStoreItemSlug(parsedStoreItemSlug);
@@ -123,6 +128,7 @@ export async function readStoreOffer(
     storeItem.variantId,
     price,
     readLowStockQuantity(stockAvailability, currentStock),
+    deriveShopperPreorder(currentStock?.preorder ?? null, athensToday(now)),
   );
 }
 
@@ -133,6 +139,7 @@ export async function listVariantOffersForStoreItem(
   catalogReconciler: Pick<CatalogReconciler, 'reconcileVariant'>,
   productProjections: CatalogProductProjectionReader,
   storeItemSlug: unknown,
+  now?: Date,
 ): Promise<StoreOffer[] | null> {
   const offer = await readStoreOffer(
     storeItems,
@@ -141,6 +148,7 @@ export async function listVariantOffersForStoreItem(
     catalogReconciler,
     productProjections,
     storeItemSlug,
+    now,
   );
 
   return offer ? [offer] : null;

@@ -619,6 +619,7 @@ describe('checkout use cases', () => {
       },
       canCheckout: true,
       catalogStatus: 'ready',
+      preorder: null,
       price: {
         amountMinor: 2800,
         currencyCode: 'EUR',
@@ -633,6 +634,76 @@ describe('checkout use cases', () => {
     );
     expect(catalogReconciler.calls[0]?.options.applyProductProjection).toBe(false);
     expect(catalogReconciler.calls[0]?.options.apply).toBe(false);
+  });
+
+  const currentMonthEstimate = { kind: 'month', month: '2026-10', part: 'mid' } as const;
+  const futureDateEstimate = { kind: 'date', date: '2026-10-20' } as const;
+  it.each([
+    ['ordinary', null, null],
+    ['current month', currentMonthEstimate, { shipEstimate: currentMonthEstimate }],
+    ['withheld month', { kind: 'month', month: '2026-09', part: null }, { shipEstimate: null }],
+    ['future exact date', futureDateEstimate, { shipEstimate: futureDateEstimate }],
+    ['exact date reached in Athens', { kind: 'date', date: '2026-10-03' }, null],
+    ['exact date passed', { kind: 'date', date: '2026-10-01' }, null],
+  ] as const)(
+    'reports %s on ready offers and variant offers beside copies left',
+    async (_name, shipEstimate, expected) => {
+      const saved = stock.records.get(storeItem.variantId)!;
+      stock.records.set(storeItem.variantId, {
+        ...saved,
+        showLowStock: true,
+        preorder: shipEstimate ? { startedAt: '2026-09-01T10:00:00.000Z', shipEstimate } : null,
+      });
+      const now = new Date('2026-10-02T21:01:00Z');
+      const offer = await readStoreOffer(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        storeItem.storeItemSlug,
+        now,
+      );
+      expect(offer).toMatchObject({ catalogStatus: 'ready', lowStockQuantity: 2 });
+      if (offer?.catalogStatus !== 'ready') throw new Error('Expected a ready offer');
+      expect(offer.preorder).toEqual(expected);
+      await expect(
+        listVariantOffersForStoreItem(
+          storeItems,
+          itemAvailability,
+          stock,
+          catalogReconciler,
+          productProjections,
+          storeItem.storeItemSlug,
+          now,
+        ),
+      ).resolves.toEqual([offer]);
+    },
+  );
+
+  it.each([false, true])('keeps a depleted pre-order non-ready (restock planned %s)', async (restockPlanned) => {
+    const saved = await stock.save(storeItem.variantId, { onlineQuantity: 0, quantity: 0 });
+    stock.records.set(storeItem.variantId, {
+      ...saved,
+      restockPlanned,
+      preorder: { startedAt: '2026-09-01T10:00:00.000Z', shipEstimate: currentMonthEstimate },
+    });
+    const offer = await readStoreOffer(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      storeItem.storeItemSlug,
+      new Date('2026-10-02T10:00:00Z'),
+    );
+    expect(offer).toMatchObject({
+      catalogStatus: 'sold_out',
+      canCheckout: false,
+      price: null,
+      availability: { label: restockPlanned ? 'Out of Stock' : 'Sold Out' },
+    });
+    expect(offer).not.toHaveProperty('preorder');
   });
 
   it('reads Store Offer price from a replacement Stripe Price without content changes', async () => {

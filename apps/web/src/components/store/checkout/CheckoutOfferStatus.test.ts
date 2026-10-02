@@ -48,6 +48,7 @@ function createReadyStoreOffer(overrides: Partial<ReadyStoreOffer> = {}): ReadyS
     },
     canCheckout: true,
     catalogStatus: 'ready',
+    preorder: null,
     price: workerOfferPrice,
     storeItemSlug: 'disintegration-black-vinyl-lp',
     variantId: 'variant_disintegration-black-vinyl-lp_standard',

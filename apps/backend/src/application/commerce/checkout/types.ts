@@ -3,6 +3,7 @@ import type {
   CartQuantity,
   CheckoutSessionId,
   PaymentIntentId,
+  ShopperPreorder,
   StoreItemSlug,
   StripePriceId,
   VariantId,
@@ -27,6 +28,7 @@ export type StoreOffer = StoreOfferIdentity &
         canCheckout: true;
         catalogStatus: 'ready';
         lowStockQuantity?: number;
+        preorder: ShopperPreorder | null;
         price: StoreOfferPrice;
       }
     | {

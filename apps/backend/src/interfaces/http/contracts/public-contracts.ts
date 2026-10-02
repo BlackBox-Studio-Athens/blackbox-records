@@ -86,6 +86,22 @@ const storeOfferIdentitySchema = z.object({
   variantId: z.string(),
 });
 
+const publicShipEstimateSchema = z
+  .discriminatedUnion('kind', [
+    z.object({
+      kind: z.literal('month'),
+      month: z.string(),
+      part: z.enum(['early', 'mid', 'late']).nullable(),
+    }),
+    z.object({ kind: z.literal('date'), date: z.string() }),
+  ])
+  .openapi('PublicShipEstimate');
+
+const publicStorePreorderSchema = z
+  .object({ shipEstimate: publicShipEstimateSchema.nullable() })
+  .nullable()
+  .openapi('PublicStorePreorder');
+
 const storeOfferSchema = z
   .discriminatedUnion('catalogStatus', [
     storeOfferIdentitySchema.extend({
@@ -93,6 +109,7 @@ const storeOfferSchema = z
       canCheckout: z.literal(true),
       catalogStatus: z.literal('ready'),
       lowStockQuantity: lowStockQuantitySchema.optional(),
+      preorder: publicStorePreorderSchema,
       price: offerPriceSchema,
       ...hypermediaMetadataShape,
     }),

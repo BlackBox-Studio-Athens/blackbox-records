@@ -303,6 +303,17 @@ export type components = {
         PublicApiDiscovery: {
             links: components["schemas"]["ApiLink"][];
         };
+        PublicShipEstimate: {
+            /** @enum {string} */
+            kind: "month";
+            month: string;
+            /** @enum {string|null} */
+            part: "early" | "mid" | "late" | null;
+        } | {
+            date: string;
+            /** @enum {string} */
+            kind: "date";
+        } | null;
         PublicStoreListingPrice: {
             /** @enum {string} */
             availabilityState: "stocked" | "sold_out" | "out_of_stock" | "unavailable";
@@ -333,6 +344,7 @@ export type components = {
             links?: components["schemas"]["ApiLink"][];
             /** @description Copies left, present only when staff enabled the notice and few copies remain. */
             lowStockQuantity?: number;
+            preorder: components["schemas"]["PublicStorePreorder"];
             price: components["schemas"]["PublicStoreOfferPrice"];
             storeItemSlug: string;
             variantId: string;
@@ -382,6 +394,9 @@ export type components = {
             minimumAmountMinor: number;
             presetAmountMinor: number;
         };
+        PublicStorePreorder: {
+            shipEstimate: components["schemas"]["PublicShipEstimate"];
+        } | null;
         ServicesInquiryBody: {
             bandOrProject?: string;
             /** Format: email */
