@@ -13,3 +13,13 @@ describe('SiteLayout public backend connection hints', () => {
     expect(source).toContain('<link rel="preconnect" href={publicBackendOrigin} crossorigin="anonymous" />');
   });
 });
+
+describe('SiteLayout purchase information', () => {
+  it('inlines the entry only when the build ships a browser reader for it', () => {
+    expect(source).toContain(
+      "import { getPurchaseInformation, inlinesPurchaseInformation } from '@/platform/lib/purchase-information';",
+    );
+    expect(source).toMatch(/\{inlinesPurchaseInformation && \(\s*<script[^>]*id="purchase-information"/);
+    expect(source.match(/id="purchase-information"/g)).toHaveLength(1);
+  });
+});
