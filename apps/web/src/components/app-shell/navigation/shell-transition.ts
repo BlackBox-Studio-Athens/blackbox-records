@@ -208,12 +208,10 @@ export function triggerShellPageEnterTransition(options: ShellPageTransitionOpti
   if (options.shouldReduceMotion()) return;
   if (!animate) return;
 
+  // Opacity only: any transform on <main>, even a settled translateY(0), makes it the containing block of fixed
+  // descendants and stretches the Home hero image over the whole page.
   options.animationsRef.current = [
-    animate(
-      mainElement,
-      { opacity: [0.68, 1], transform: ['translateY(8px)', 'translateY(0px)'] },
-      { duration: 0.22, ease: [0.22, 1, 0.36, 1] },
-    ),
+    animate(mainElement, { opacity: [0.68, 1] }, { duration: 0.22, ease: [0.22, 1, 0.36, 1] }),
   ];
 }
 
