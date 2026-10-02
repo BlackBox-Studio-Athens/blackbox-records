@@ -230,4 +230,4 @@ Limits:
 - Google Fonts could not load here (TLS-intercepting proxy) and no backend ran, so Google-font effects and price arrival times are inferred.
 - Some runs shared a 4-CPU machine with other agents. Figures are medians of repeated runs, and A/B comparisons ran within one browser session.
 - Headless Chromium cannot measure GPU and raster cost (backdrop-filter, blend modes, blur); those findings stay low until checked on a real mid-range phone.
-- Raw data sits in .codex-artifacts/runtime-performance/review-e818b70/ and the session scratchpad of this ephemeral cloud session; nothing was committed.
+- Raw data sits in `.codex-artifacts/runtime-performance/review-e818b70/` (ignored); working notes from the review session were not retained, and no raw data is committed.
