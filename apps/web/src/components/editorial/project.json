@@ -22,6 +22,7 @@
         "./NewsDetailContent.astro",
         "./ReleaseCard.astro",
         "./ReleaseDetailContent.astro",
+        "./ReleaseStoreLink.tsx",
         "./release-commerce.ts"
       ],
       "namedInterfaces": {},

@@ -39,7 +39,7 @@ export const test = base.extend({
     );
     // The harness runs without the Worker: stub the Store reads (listing prices, item offer, cart delivery quote)
     // so every serving mode behaves alike.
-    await page.route('**/api/store/listing-prices', (route) => route.fulfill({ json: [] }));
+    await page.route(/\/api\/store\/listing-prices(?:\?.*)?$/, (route) => route.fulfill({ json: [] }));
     await page.route('**/api/store/delivery-quote', (route) => route.fulfill({ json: { quote: null } }));
     await page.route(/\/api\/store\/items\/[^/?]+$/, (route) => {
       const slug = decodeURIComponent(new URL(route.request().url()).pathname.split('/').pop() ?? '');

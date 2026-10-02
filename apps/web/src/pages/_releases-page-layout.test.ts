@@ -6,8 +6,24 @@ const globalCssPath = fileURLToPath(new URL('../styles/global.css', import.meta.
 const releasesPagePath = fileURLToPath(new URL('./releases/index.astro', import.meta.url));
 const releaseCardPath = fileURLToPath(new URL('../components/editorial/ReleaseCard.astro', import.meta.url));
 const proseCssPath = fileURLToPath(new URL('../styles/prose.css', import.meta.url));
+const releaseDetailPath = fileURLToPath(new URL('../components/editorial/ReleaseDetailContent.astro', import.meta.url));
 
 describe('Releases page layout', () => {
+  it('hydrates native Store links at idle while preserving external merch anchors', () => {
+    for (const path of [releasesPagePath, releaseDetailPath]) {
+      const page = readFileSync(path, 'utf8');
+      expect(page).toMatch(/\.isNativeStoreLink \? \(\s*<ReleaseStoreLink\s+client:idle/s);
+      expect(page).toMatch(/<ReleaseStoreLink[\s\S]*?href=\{(?:latestReleaseCommerceLink|commerceLink)\.href\}/);
+      expect(page).toMatch(
+        /<ReleaseStoreLink[\s\S]*?releaseDate=\{(?:latestReleaseDateMachineValue|releaseDateMachineValue)\}/,
+      );
+      expect(page).toMatch(/\) : \(\s*(?:latestReleaseCommerceLink|commerceLink) && \(/);
+      expect(page).toContain('site-button-external-mark');
+      expect(page).toMatch(/target=\{(?:latestReleaseCommerceLink|commerceLink)\.target\}/);
+      expect(page).toMatch(/rel=\{(?:latestReleaseCommerceLink|commerceLink)\.rel\}/);
+    }
+  });
+
   it('renders one compact route-local catalog identity', () => {
     const page = readFileSync(releasesPagePath, 'utf8');
 

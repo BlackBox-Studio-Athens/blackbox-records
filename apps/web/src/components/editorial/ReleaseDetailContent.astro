@@ -13,6 +13,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { resolveArtistProfileForRelease, resolveReleaseArtistDisplayName } from '@/lib/catalog-data';
 import { getReleaseCommerceLink } from './release-commerce';
+import ReleaseStoreLink from './ReleaseStoreLink';
 import { formatDayMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
 import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
@@ -136,20 +137,29 @@ const galleryImages =
           </ul>
         )}
         <div class="flex flex-wrap items-center gap-3 pt-1">
-          {commerceLink && (
-            <a
+          {commerceLink?.isNativeStoreLink ? (
+            <ReleaseStoreLink
+              client:idle
               href={commerceLink.href}
-              target={commerceLink.target}
-              rel={commerceLink.rel}
-              class={buttonVariants({ size: 'lg', className: commerceLink.target ? 'pr-6' : undefined })}
-            >
-              {commerceLink.label}
-              {commerceLink.target && (
-                <span class="site-button-external-mark" aria-hidden="true">
-                  ↗
-                </span>
-              )}
-            </a>
+              className={buttonVariants({ size: 'lg' })}
+              releaseDate={releaseDateMachineValue}
+            />
+          ) : (
+            commerceLink && (
+              <a
+                href={commerceLink.href}
+                target={commerceLink.target}
+                rel={commerceLink.rel}
+                class={buttonVariants({ size: 'lg', className: commerceLink.target ? 'pr-6' : undefined })}
+              >
+                {commerceLink.label}
+                {commerceLink.target && (
+                  <span class="site-button-external-mark" aria-hidden="true">
+                    ↗
+                  </span>
+                )}
+              </a>
+            )
           )}
           {embeddedPlayerData && (
             <MusicStreamingServiceListenTrigger

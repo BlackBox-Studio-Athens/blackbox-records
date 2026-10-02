@@ -14,6 +14,7 @@ import {
   resolveReleaseArtistDisplayName,
 } from '@/lib/catalog-data';
 import { getReleaseCommerceLink } from '@/components/editorial/release-commerce';
+import ReleaseStoreLink from '@/components/editorial/ReleaseStoreLink';
 import { isReleaseOutNow, selectReleasePageEntries } from '@/lib/release-feature';
 import { formatDayMonthYear, formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
@@ -153,24 +154,33 @@ function formatReleaseFormats(formats: string[] | undefined) {
                   >
                     View Release
                   </a>
-                  {latestReleaseCommerceLink && (
-                    <a
-                      class={buttonVariants({
-                        variant: 'outline',
-                        size: 'lg',
-                        className: latestReleaseCommerceLink.target ? 'pr-6' : undefined,
-                      })}
+                  {latestReleaseCommerceLink?.isNativeStoreLink ? (
+                    <ReleaseStoreLink
+                      client:idle
                       href={latestReleaseCommerceLink.href}
-                      rel={latestReleaseCommerceLink.rel}
-                      target={latestReleaseCommerceLink.target}
-                    >
-                      {latestReleaseCommerceLink.label}
-                      {latestReleaseCommerceLink.target && (
-                        <span class="site-button-external-mark" aria-hidden="true">
-                          ↗
-                        </span>
-                      )}
-                    </a>
+                      className={buttonVariants({ variant: 'outline', size: 'lg' })}
+                      releaseDate={latestReleaseDateMachineValue}
+                    />
+                  ) : (
+                    latestReleaseCommerceLink && (
+                      <a
+                        class={buttonVariants({
+                          variant: 'outline',
+                          size: 'lg',
+                          className: latestReleaseCommerceLink.target ? 'pr-6' : undefined,
+                        })}
+                        href={latestReleaseCommerceLink.href}
+                        rel={latestReleaseCommerceLink.rel}
+                        target={latestReleaseCommerceLink.target}
+                      >
+                        {latestReleaseCommerceLink.label}
+                        {latestReleaseCommerceLink.target && (
+                          <span class="site-button-external-mark" aria-hidden="true">
+                            ↗
+                          </span>
+                        )}
+                      </a>
+                    )
                   )}
                 </div>
               )}
