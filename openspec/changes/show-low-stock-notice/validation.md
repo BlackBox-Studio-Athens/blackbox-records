@@ -23,3 +23,11 @@
 - Item page: a 28 px tab is fused to Add To Cart. Measured at 1280 px and 390 px (2× DPR), the tab's x and width equal the button's (224 px and 358 px), and the tab's bottom edge equals the button's top.
 - `e2e/store-cart.spec.ts` asserts this alignment. Both copies-left specs passed in chromium-desktop and chromium-mobile.
 - `pnpm validate` (`mode: local`) passed with before/after fingerprint `90534c1ad253f57d6b227e55215aa190ef0045afc7f27e5e251a3b3064cb929c`. Strict OpenSpec validation passed.
+
+## Pre-landing proof — 2026-10-02
+
+- Rebased onto `origin/main` `df2ceae0b8ac6934d1f44662e6e79ad189580905` (unchanged at fetch). Commits were reworded to conventional subjects; the tree is identical to the pushed `4a4595a`.
+- Re-running `prisma generate` and `pnpm generate:api` left the tree clean, so the committed generated files are current.
+- `wrangler d1 migrations apply COMMERCE_DB --local` on an empty scratch D1 applied 0001–0026. `pragma_table_info('Stock')` reports `showLowStock` `NOT NULL DEFAULT 0`, matching `restockPlanned`.
+- Old-Worker compatibility: `origin/main` was checked out in a scratch worktree with only `0026` added to its migrations folder. Its worker-pool setup applies every migration in that folder. Its commerce-persistence, checkout, stock, catalog-sync and orders suites passed (29 files, 130 tests) with its old Prisma client against the new column. This covers the UAT/PRD window where migrations run before the Worker deploys.
+- `pnpm agent:check`, strict OpenSpec validation and the full `e2e/store-cart.spec.ts` (15 tests, desktop and mobile) passed.
