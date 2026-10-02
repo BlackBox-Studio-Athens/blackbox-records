@@ -12,9 +12,9 @@ import {
   type PaidOrderDeliverySafeReason,
 } from './paid-order-delivery';
 
-const DELIVERY_RETRY_DELAY_MS = 15 * 60 * 1000;
-const DELIVERY_WINDOW_MS = 24 * 60 * 60 * 1000;
-const SCHEDULED_DELIVERY_LIMIT = 5;
+export const DELIVERY_RETRY_DELAY_MS = 15 * 60 * 1000;
+export const DELIVERY_WINDOW_MS = 24 * 60 * 60 * 1000;
+export const SCHEDULED_DELIVERY_LIMIT = 5;
 
 type PaidOrderReader = {
   findById(orderId: string): Promise<CheckoutOrderRecord | null>;

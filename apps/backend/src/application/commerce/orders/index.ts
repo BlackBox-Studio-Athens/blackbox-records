@@ -34,10 +34,12 @@ export type {
   PaidOrderDeliverySummary,
 } from './paid-order-delivery';
 export { attemptPaidOrderDelivery, createPaidOrderDeliveryId } from './paid-order-delivery';
+export { drainDuePreorderEstimateNotices } from './preorder-estimate-notice';
 export {
   drainDuePaidOrderDeliveries,
   processPaidOrderDeliveriesForOrder,
   processPaidOrderDelivery,
+  SCHEDULED_DELIVERY_LIMIT,
 } from './paid-order-delivery-processing';
 export type { ProcessPaidOrderDeliveryResult } from './paid-order-delivery-processing';
 export type { OrderTransitionDecision, OrderTransitionOrigin } from './order-state';

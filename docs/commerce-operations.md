@@ -10,6 +10,14 @@ Change the estimate while the copies are delayed. A month estimate remains open 
 
 When copies arrive, press Copies arrived (or switch Pre-order off), then count stock again to reconcile the physical copies and online quantity. Orders from that pre-order stop awaiting stock. A later pre-order starts a new cycle and does not hold earlier orders again.
 
+### Estimate-change notices
+
+Editing an open pre-order's estimate queues one shopper email per paid order and item, using the estimate saved when ordered and the new estimate. Starting a pre-order queues no notices; ending it removes pending notices. A later edit replaces the pending estimate and starts a new retry identity.
+
+The Worker orders application owns this outbox. Its existing 15-minute schedule shares five processed rows per run between paid-order deliveries and estimate notices, with paid-order deliveries first. Transient provider failures retry after 15 minutes with the same idempotency key; five attempts, a 24-hour window, permanent errors or uncertain provider acceptance stop automatic delivery and mark the notice needs review. An order that is no longer paid or lacks the saved pre-order line also goes to review without sending.
+
+The on-duty operator checks `preorder_estimate_notice_schedule_outcome` in the [Worker logs](worker-observability.md). Estimate notices with `status = 'needs_review'` are retained in the environment's D1 `PreorderEstimateDelivery` table; the staff Orders notification filters show paid-order delivery rows only. Use an authorized private D1 read and provider records to investigate the notice's safe reason and sequence before any manual contact. Scheduled recovery does not resend needs-review notices or authorize a new payment or stock change. See the [delivery schedule](../apps/backend/src/application/commerce/orders/run-paid-order-delivery-schedule.ts) and [notice processor](../apps/backend/src/application/commerce/orders/preorder-estimate-notice.ts).
+
 ## Daily checks
 
 The on-duty operator checks the correct Stripe account and Product Environment, failed webhook deliveries, protected `/api/internal/orders?status=needs_review`, and paid orders with pending or exhausted delivery attempts. Use Access-protected reads and provider dashboards. Keep addresses, contact details, payment references, and raw payloads out of public evidence and logs. Record environment, accepted commit, redacted order reference, outcome, operator, and time.
