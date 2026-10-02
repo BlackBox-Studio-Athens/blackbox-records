@@ -90,8 +90,8 @@ Owns: `BE/application/commerce/stock/set-stock-preorder.ts` (new), `BE/applicati
 
 Owns: `WEB/components/store/StoreListingPricePresentation.ts`, `StoreListingPricePresentation.test.ts`.
 
-- [ ] 13.1 Apply pre-order presentation from the projection per design decision 11: badges through the wording helper and the card's release date (the pre-order badge is written into the `data-store-listing-preorder` span and un-hidden, not into the availability slot), `data-store-preorder` on the card root, `Pre-order` label and `preorder-action` on the button (shown only when ready and stocked), the correct label after Added, and the `blackbox:store-listing-applied` event. The `low_stock` state and `Only N left` text stay as they are. `sanitizeStoreListingPricePlaceholders` clears every one of these. The file gains no import other than the wording helper. Cover pending, failed, missing item, older response without the field, sold-out pre-order, a stocked pre-order with `lowStockQuantity`, withheld estimate, before and after the release date, and snapshot sanitising. Verify: `pnpm test web-store`, then `pnpm test app-shell`.
-- [ ] 13.2 Give `readPublicStoreListingPrices` an optional `{ scope: 'preorders' }` that requests the narrowed projection; Store collection activation keeps the complete read. Verify the requested URL in both modes: `pnpm test web-store`.
+- [x] 13.1 Apply pre-order presentation from the projection per design decision 11: badges through the wording helper and the card's release date (the pre-order badge is written into the `data-store-listing-preorder` span and un-hidden, not into the availability slot), `data-store-preorder` on the card root, `Pre-order` label and `preorder-action` on the button (shown only when ready and stocked), the correct label after Added, and the `blackbox:store-listing-applied` event. The `low_stock` state and `Only N left` text stay as they are. `sanitizeStoreListingPricePlaceholders` clears every one of these. The file gains no import other than the wording helper. Cover pending, failed, missing item, older response without the field, sold-out pre-order, a stocked pre-order with `lowStockQuantity`, withheld estimate, before and after the release date, and snapshot sanitising. Verify: `pnpm test web-store`, then `pnpm test app-shell`.
+- [x] 13.2 Give `readPublicStoreListingPrices` an optional `{ scope: 'preorders' }` that requests the narrowed projection; Store collection activation keeps the complete read. Verify the requested URL in both modes: `pnpm test web-store`.
 
 ## 14. W9 Store Item facts panel (run 4)
 
@@ -138,14 +138,14 @@ Owns: `STAFF/lib/backend/internal-stock-api.ts`, `STAFF/lib/backend/internal-sto
 
 Owns: `WEB/pages/store/[slug]/index.astro`, `WEB/pages/_store-item-detail-gallery.test.ts` or a new sibling page test, `e2e/store-item-preorders.spec.ts` (new).
 
-- [ ] 20.1 Render partner links (`Outside Greece? Order <title> from …`, safe external links) under the purchase information and a `Singles` list reusing the release page's list markup, both static and only when the source release has them. Verify with page markup tests: `pnpm test web-pages`.
-- [ ] 20.2 Add `e2e/store-item-preorders.spec.ts`, covering the Store Item page only, with its own stub of a ready pre-order offer: facts panel, `Pre-order` control, partner links, singles, and the cart count after adding; the 390px case sets the viewport inside the test, because the mobile Playwright project only runs routes, shell-navigation and store-cart. Verify: `pnpm test:e2e e2e/store-item-preorders.spec.ts`.
+- [x] 20.1 Render partner links (`Outside Greece? Order <title> from …`, safe external links) under the purchase information and a `Singles` list reusing the release page's list markup, both static and only when the source release has them. Verify with page markup tests: `pnpm test web-pages`.
+- [x] 20.2 Add `e2e/store-item-preorders.spec.ts`, covering the Store Item page only, with its own stub of a ready pre-order offer: facts panel, `Pre-order` control, partner links, singles, and the cart count after adding; the 390px case sets the viewport inside the test, because the mobile Playwright project only runs routes, shell-navigation and store-cart. Verify: `pnpm test:e2e e2e/store-item-preorders.spec.ts`.
 
 ## 21. B7 Checkout state summary (run 5)
 
-Owns: `BE/application/commerce/checkout/types.ts`, `read-checkout-state.ts`, `checkout-use-cases.test.ts`, `BE/interfaces/http/contracts/public-contracts.ts`, `BE/interfaces/http/routes/public-commerce-routes.test.ts`, `packages/api-client/src/test/msw-handlers.ts`, typed `CheckoutState` fixtures in `WEB/components/store/checkout/CheckoutReturnStatus.test.tsx`.
+Owns: `BE/application/commerce/checkout/types.ts`, `read-checkout-state.ts`, `reconcile-checkout-session.ts`, `checkout-reconciliation.test.ts`, `checkout-use-cases.test.ts`, `BE/interfaces/http/contracts/public-contracts.ts`, `BE/interfaces/http/routes/public-commerce-routes.test.ts`, `packages/api-client/src/test/msw-handlers.ts`, typed `CheckoutState` fixtures in `WEB/components/store/checkout/CheckoutReturnStatus.test.tsx`.
 
-- [ ] 21.1 Add `preorder` to `CheckoutState` from the order's line snapshots with `latestShipEstimate` (null without pre-order lines or without an order), add it to the contract, repair msw and the return-page fixtures by hand. Verify, one command each: `pnpm test checkout-core`, `pnpm test public-commerce-http`, `pnpm test checkout-web`.
+- [x] 21.1 Add `preorder` to `CheckoutState` from the order's line snapshots with `latestShipEstimate` (null without pre-order lines or without an order), add it to the contract, repair msw and the return-page fixtures by hand. Verify, one command each: `pnpm test checkout-core`, `pnpm test public-commerce-http`, `pnpm test checkout-web`.
 
 ## 22. W8 Checkout review (run 7)
 
@@ -197,8 +197,8 @@ Owns: `WEB/components/editorial/ReleaseStoreLink.tsx` and test (new), `WEB/compo
 
 Owns: `BE/application/commerce/orders/preorder-estimate-notice.ts` and test (new), `run-paid-order-delivery-schedule.ts`, `paid-order-delivery-processing.ts`, `BE/application/commerce/orders/index.ts`, `BE/paid-order-delivery-schedule.worker.test.ts`, `docs/commerce-operations.md`.
 
-- [ ] 29.1 Add `drainDuePreorderEstimateNotices({ limit })` (claim, load the paid order and line, send through `sendPreorderEstimateEmail` with entity `<row id>-<sequence>`, mark delivered, reschedule or needs review with the paid-delivery bounds) and call it from the schedule with the budget left after paid deliveries (`SCHEDULED_DELIVERY_LIMIT`, which this slice exports from `paid-order-delivery-processing.ts`), logging `preorder_estimate_notice_schedule_outcome`. The schedule's return value is unchanged. Verify budget sharing, order no longer paid, retry and review: `pnpm test orders`, then `pnpm test backend-runtime`.
-- [ ] 29.2 Document the notice in `docs/commerce-operations.md`: purpose, owner, the shared five-per-run budget, behaviour on provider failure and where needs-review rows are seen. Verify every relative link added to the document resolves to an existing file.
+- [x] 29.1 Add `drainDuePreorderEstimateNotices({ limit })` (claim, load the paid order and line, send through `sendPreorderEstimateEmail` with entity `<row id>-<sequence>`, mark delivered, reschedule or needs review with the paid-delivery bounds) and call it from the schedule with the budget left after paid deliveries (`SCHEDULED_DELIVERY_LIMIT`, which this slice exports from `paid-order-delivery-processing.ts`), logging `preorder_estimate_notice_schedule_outcome`. The schedule's return value is unchanged. Verify budget sharing, order no longer paid, retry and review: `pnpm test orders`, then `pnpm test backend-runtime`.
+- [x] 29.2 Document the notice in `docs/commerce-operations.md`: purpose, owner, the shared five-per-run budget, behaviour on provider failure and where needs-review rows are seen. Verify every relative link added to the document resolves to an existing file.
 
 ## 30. W13 Home section (run 7, runs e2e)
 
