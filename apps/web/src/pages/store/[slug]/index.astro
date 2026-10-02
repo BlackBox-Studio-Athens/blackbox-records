@@ -96,6 +96,8 @@ const hasBody =
     : Boolean(sourceRelease.body?.trim()));
 const releaseDate = sourceRelease?.data.release_date ?? distroSource?.data.release_date;
 const credits = sourceRelease?.data.credits ?? [];
+const partnerLinks = sourceRelease?.data.partner_links ?? [];
+const singles = sourceRelease?.data.singles ?? [];
 const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 0;
 ---
 
@@ -170,6 +172,24 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
           purchaseHint="Add it to the cart to review this item before checkout."
         />
         <PurchaseInformation />
+        {partnerLinks.length > 0 && (
+          <p class="text-sm leading-relaxed text-muted-foreground" data-store-item-partner-links>
+            Outside Greece? Order {sourceRelease?.data.title} from{' '}
+            {partnerLinks.map((partner, index) => (
+              <>
+                {index > 0 && ' or '}
+                <a
+                  href={partner.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-block min-h-11 content-center underline underline-offset-4 hover:text-foreground"
+                >
+                  {partner.label} <span aria-hidden="true">↗</span>
+                </a>
+              </>
+            ))}
+          </p>
+        )}
       </div>
       <div class="store-item-artwork">
         {galleryImages.length > 1 ? (
@@ -188,6 +208,26 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
       </div>
     </div>
     <div class="store-item-information">
+      {singles.length > 0 && (
+        <section aria-labelledby="store-item-singles" data-content-path="singles">
+          <h2 id="store-item-singles">Singles</h2>
+          <ul>
+            {singles.map((single) => (
+              <li class="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 py-3">
+                <span class="text-sm text-foreground">{single.title}</span>
+                <a
+                  href={single.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="min-h-11 content-center text-sm underline underline-offset-4 hover:text-foreground"
+                >
+                  Listen <span aria-hidden="true">↗</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {hasInfo && (
         <section aria-labelledby="store-item-info" data-store-item-description>
           <h2 id="store-item-info">Info</h2>

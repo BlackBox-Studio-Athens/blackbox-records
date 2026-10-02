@@ -91,6 +91,35 @@ describe('Store Item detail gallery contract', () => {
 });
 
 describe('Store Item listening context contract', () => {
+  it('shows source-release partners below purchase information with safe ordered links', () => {
+    expect(source).toContain('const partnerLinks = sourceRelease?.data.partner_links ?? [];');
+    const partners = /\{partnerLinks.length > 0 && \([\s\S]*?\n {8}\)\}/.exec(source)?.[0];
+    expect(partners).toBeDefined();
+    expect(source.indexOf('data-store-item-partner-links')).toBeGreaterThan(source.indexOf('<PurchaseInformation />'));
+    expect(partners).toContain('Outside Greece? Order {sourceRelease?.data.title} from');
+    expect(partners).toContain('partnerLinks.map((partner, index)');
+    expect(partners).toContain("index > 0 && ' or '");
+    expect(partners).toContain('href={partner.url}');
+    expect(partners).toContain('{partner.label}');
+    expect(partners).toContain('target="_blank"');
+    expect(partners).toContain('rel="noopener noreferrer"');
+    expect(partners).not.toContain('client:');
+  });
+
+  it('conditionally reuses the release Singles list without clips or a new island', () => {
+    expect(source).toContain('const singles = sourceRelease?.data.singles ?? [];');
+    const singles = /\{singles.length > 0 && \([\s\S]*?\n {6}\)\}/.exec(source)?.[0];
+    expect(singles).toBeDefined();
+    expect(singles).toContain('aria-labelledby="store-item-singles"');
+    expect(singles).toContain('<h2 id="store-item-singles">Singles</h2>');
+    const list = /<ul>\s*\{singles.map\([\s\S]*?<\/ul>/.exec(singles ?? '')?.[0];
+    const releaseList = /<ul>\s*\{singles.map\([\s\S]*?<\/ul>/.exec(releaseDetail)?.[0];
+    expect(list).toBeDefined();
+    expect(list?.replace(/\s+/g, ' ')).toBe(releaseList?.replace(/\s+/g, ' '));
+    expect(singles).not.toContain('client:');
+    expect(singles).not.toContain('<iframe');
+  });
+
   it('resolves release identity through the content reader and fails on a missing source', () => {
     expect(source).toContain(
       "storeItem.sourceKind === 'release' ? await getEntry('releases', storeItem.sourceId) : null",
