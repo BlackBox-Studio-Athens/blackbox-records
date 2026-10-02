@@ -1,4 +1,5 @@
 import type { CheckoutState, PublicCheckoutApi } from '@/components/store/checkout/public-checkout-api';
+import { shipEstimateText } from '@/platform/lib/preorder-estimate';
 
 export type CheckoutReturnLoadState =
   | { kind: 'loading' }
@@ -12,6 +13,7 @@ export type CheckoutReturnStatusView = {
   badgeLabel: string;
   detail: string;
   isFinal: boolean;
+  isPreorder?: boolean;
   kicker: string;
   nextStep: string;
   nextSteps: CheckoutReturnNextStepsView | null;
@@ -128,15 +130,19 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   }
 
   if (paymentReceived && checkoutState.orderStatus === 'paid') {
+    const preorder = checkoutState.preorder;
     return {
       badgeLabel: 'Confirmed',
-      detail: 'Payment is confirmed and your order is recorded.',
+      detail: preorder
+        ? 'Payment is confirmed and your pre-order is recorded.'
+        : 'Payment is confirmed and your order is recorded.',
       isFinal: true,
+      ...(preorder ? { isPreorder: true } : {}),
       kicker: 'Order Complete',
       nextStep: '',
-      nextSteps: createCheckoutReturnNextStepsView(),
+      nextSteps: createCheckoutReturnNextStepsView(preorder),
       shippingLocker,
-      title: 'Thanks for the order',
+      title: preorder ? 'Pre-order confirmed' : 'Thanks for the order',
       tone: 'success',
     };
   }
@@ -218,7 +224,8 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
   };
 }
 
-function createCheckoutReturnNextStepsView(): CheckoutReturnNextStepsView {
+function createCheckoutReturnNextStepsView(preorder: CheckoutState['preorder']): CheckoutReturnNextStepsView {
+  const estimate = preorder?.shipEstimate;
   return {
     heading: 'What happens next',
     items: [
@@ -230,7 +237,9 @@ function createCheckoutReturnNextStepsView(): CheckoutReturnNextStepsView {
       {
         icon: 'fulfillment',
         label: 'Fulfillment',
-        value: 'BlackBox will prepare the shipment manually.',
+        value: preorder
+          ? `Your whole order is sent in one parcel when the pre-order arrives${estimate ? `, expected ${shipEstimateText(estimate)}` : ''}. We email you if that changes.`
+          : 'BlackBox will prepare the shipment manually.',
       },
       {
         icon: 'delivery',

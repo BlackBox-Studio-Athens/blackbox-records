@@ -191,7 +191,110 @@ describe('CheckoutReturnStatus', () => {
     expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.backToItem);
     expect(html).not.toContain('Need help');
     expect(html).not.toContain('Order Summary');
+    expect(html).not.toContain('preorder-edge');
+    expect(view).not.toHaveProperty('isPreorder');
   });
+
+  it.each([
+    {
+      estimate: 'month',
+      shipEstimate: { kind: 'month', month: '2026-10', part: null },
+      fulfillment:
+        'Your whole order is sent in one parcel when the pre-order arrives, expected around October 2026. We email you if that changes.',
+    },
+    {
+      estimate: 'month part',
+      shipEstimate: { kind: 'month', month: '2026-10', part: 'mid' },
+      fulfillment:
+        'Your whole order is sent in one parcel when the pre-order arrives, expected around mid October 2026. We email you if that changes.',
+    },
+    {
+      estimate: 'exact date',
+      shipEstimate: { kind: 'date', date: '2026-10-20' },
+      fulfillment:
+        'Your whole order is sent in one parcel when the pre-order arrives, expected on 20 October 2026. We email you if that changes.',
+    },
+    {
+      estimate: 'withheld',
+      shipEstimate: null,
+      fulfillment: 'Your whole order is sent in one parcel when the pre-order arrives. We email you if that changes.',
+    },
+  ] satisfies {
+    estimate: string;
+    shipEstimate: NonNullable<CheckoutState['preorder']>['shipEstimate'];
+    fulfillment: string;
+  }[])('confirms a paid preorder with a $estimate estimate', ({ shipEstimate, fulfillment }) => {
+    const paidPreorder: CheckoutState = {
+      ...checkoutState,
+      state: 'paid',
+      paymentStatus: 'paid',
+      orderStatus: 'paid',
+      status: 'complete',
+      preorder: { shipEstimate },
+    };
+    const view = createCheckoutReturnStatusView({ checkoutState: paidPreorder, kind: 'ready' });
+    expect(view).toMatchObject({
+      badgeLabel: 'Confirmed',
+      detail: 'Payment is confirmed and your pre-order is recorded.',
+      isFinal: true,
+      isPreorder: true,
+      title: 'Pre-order confirmed',
+      tone: 'success',
+    });
+    expect(view.nextSteps).toEqual({
+      heading: 'What happens next',
+      items: [
+        {
+          icon: 'receipt',
+          label: 'Receipt',
+          value: 'Check the email used at checkout for the Stripe payment receipt.',
+        },
+        { icon: 'fulfillment', label: 'Fulfillment', value: fulfillment },
+        { icon: 'delivery', label: 'Delivery', value: 'BOX NOW details will follow once the shipment is arranged.' },
+      ],
+    });
+
+    const html = renderToStaticMarkup(<CheckoutSuccessScreen storePath="/blackbox-records/store/" view={view} />);
+    expect(html).toContain('Pre-order confirmed');
+    expect(html).toContain('Payment is confirmed and your pre-order is recorded.');
+    expect(html).toContain(fulfillment);
+    expect(html).toContain('preorder-edge');
+    expect(html.match(/Continue Shopping/g)).toHaveLength(1);
+    expect(html).not.toContain('Thanks for the order');
+    expect(html).not.toContain('BlackBox will prepare the shipment manually.');
+    expect(html).not.toContain('cs_mock');
+    expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.retryCheckout);
+  });
+
+  it.each([
+    { ...checkoutState },
+    { ...checkoutState, state: 'processing' },
+    { ...checkoutState, state: 'expired', orderStatus: 'not_paid' },
+    { ...checkoutState, state: 'unknown', orderStatus: null },
+    { ...checkoutState, state: 'paid', paymentStatus: 'paid', orderStatus: null },
+    { ...checkoutState, state: 'paid', paymentStatus: 'paid' },
+    { ...checkoutState, state: 'paid', paymentStatus: 'paid', orderStatus: 'needs_review' },
+    { ...checkoutState, state: 'paid', paymentStatus: 'paid', orderStatus: 'not_paid' },
+    { ...checkoutState, state: 'processing', orderStatus: 'not_paid' },
+    { ...checkoutState, state: 'paid', orderStatus: 'paid' },
+  ] satisfies CheckoutState[])(
+    'keeps non-final preorder state unchanged: $state/$paymentStatus/$orderStatus',
+    (nonFinalState) => {
+      const ordinaryView = createCheckoutReturnStatusView({ checkoutState: nonFinalState, kind: 'ready' });
+      const view = createCheckoutReturnStatusView({
+        checkoutState: { ...nonFinalState, preorder: { shipEstimate: null } },
+        kind: 'ready',
+      });
+      expect(view).toEqual(ordinaryView);
+      expect(view.isFinal).toBe(false);
+      expect(view).not.toHaveProperty('isPreorder');
+      const html = renderToStaticMarkup(
+        <CheckoutReturnStatusScreen checkoutPath="/store/checkout/" storePath="/store/" view={view} />,
+      );
+      expect(html).not.toContain('Pre-order confirmed');
+      expect(html).not.toContain('preorder-edge');
+    },
+  );
 
   it('keeps recovery actions on non-final checkout states', () => {
     const view = createCheckoutReturnStatusView({

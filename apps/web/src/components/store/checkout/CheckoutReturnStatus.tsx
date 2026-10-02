@@ -164,7 +164,12 @@ export function CheckoutSuccessScreen({ storePath, view }: { storePath: string; 
         <CheckoutReturnBadge view={view} />
       </div>
 
-      <div className="grid overflow-hidden border border-border/70 bg-card/35 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.8fr)]">
+      <div
+        className={cn(
+          'grid overflow-hidden border border-border/70 bg-card/35 lg:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.8fr)]',
+          view.isPreorder && 'preorder-edge',
+        )}
+      >
         <div className="flex min-h-[25rem] flex-col justify-between p-6 sm:p-8 lg:p-10">
           <div className="space-y-7">
             <div
