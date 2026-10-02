@@ -26,6 +26,7 @@
         "./lib/lenis-scroll.ts",
         "./lib/editorial-image.ts",
         "./lib/public-image-fallback.ts",
+        "./lib/preorder-estimate.ts",
         "./utils/urls.ts"
       ],
       "namedInterfaces": {},
