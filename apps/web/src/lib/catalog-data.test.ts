@@ -281,6 +281,8 @@ describe('StoreItem projection contract', () => {
       embeddedPlayerData: null,
       title: 'Caregivers',
       subtitle: 'Afterwise',
+      releaseDate: new Date('2024-11-02T00:00:00.000Z'),
+      releaseStage: undefined,
       artistPath: '/blackbox-records/artists/afterwise/',
       summary: 'Release summary',
       summaryRich: null,

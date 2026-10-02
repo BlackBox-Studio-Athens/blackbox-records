@@ -10,8 +10,17 @@ interface Props {
   entry: StoreCollectionEntry;
   imageLoadingMode?: StoreCardImageLoadingMode;
   searchable?: boolean;
+  formatKey?: string;
+  promoted?: boolean;
 }
-const { coverflowEnrolled = false, entry, imageLoadingMode = 'lazy', searchable = false } = Astro.props;
+const {
+  coverflowEnrolled = false,
+  entry,
+  imageLoadingMode = 'lazy',
+  searchable = false,
+  formatKey,
+  promoted = false,
+} = Astro.props;
 const { storeItem, primaryAvailability, previewImage } = entry;
 const priority = imageLoadingMode === 'priority';
 const option = primaryAvailability?.optionLabel || entry.distro?.format || entry.distro?.group;
@@ -27,6 +36,8 @@ const widths = [240, 320, 480, 640, 800, 960];
   aria-label={storeItem.title + ' — ' + storeItem.subtitle}
   data-distro-search-item={searchable ? '' : undefined}
   data-store-artist={searchable ? storeItem.subtitle : undefined}
+  data-distro-format-key={formatKey}
+  data-store-promotion={promoted ? 'recent' : undefined}
   data-distro-search-text={
     searchable
       ? [storeItem.title, storeItem.subtitle, ...storeItem.metadata, entry.distro?.group].filter(Boolean).join(' ')
@@ -83,6 +94,7 @@ const widths = [240, 320, 480, 640, 800, 960];
           storeItem.subtitle
         )}
       </p>
+      {promoted && <p class="store-item-card__option">New release</p>}
       {option && <p class="store-item-card__option">{option}</p>}
       <div class="store-item-card__price">
         <span

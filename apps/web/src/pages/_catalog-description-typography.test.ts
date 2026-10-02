@@ -52,7 +52,8 @@ describe('Catalog description typography', () => {
   });
 
   it('keeps summaries conditional and detail prose on body typography', () => {
-    expect(distroCatalog).toContain('value={content.group_intros[group.introKey]}');
+    expect(distroCatalog).toContain('value={content.hero.intro}');
+    expect(distroCatalog).not.toContain('content.group_intros');
     expect(releaseCard).toContain('class="release-card-summary-text text-sm leading-relaxed text-muted-foreground"');
 
     expect(releasesPage).toMatch(

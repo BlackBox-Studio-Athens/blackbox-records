@@ -3,6 +3,9 @@ import { groupDistroEntries } from './distro-data';
 import type { DistroGroupName, DistroIntroKey } from '@blackbox/content-model';
 import { getPrimaryAvailabilityForStoreItem, type ItemAvailability } from './item-availability';
 import { type StoreCatalogCategoryId } from './store-categories';
+import { isReleaseOutNow } from './release-feature';
+
+const bandCollator = new Intl.Collator('en', { sensitivity: 'base', numeric: true });
 
 export type StoreCatalogMembership = Exclude<StoreCatalogCategoryId, 'all'>;
 export type StoreCardImageLoadingMode = 'priority' | 'eager' | 'lazy';
@@ -34,7 +37,7 @@ type StoreCatalogMembershipInput = {
 };
 
 export function classifyStoreCatalogMembership(input: StoreCatalogMembershipInput): StoreCatalogMembership[] {
-  if (input.sourceKind === 'release') return ['blackbox-releases'];
+  if (input.sourceKind === 'release') return ['blackbox-releases', 'distro'];
 
   if (input.sourceKind !== 'distro') {
     throw new Error(`Unsupported Store Item source kind: ${input.sourceKind}.`);
@@ -61,12 +64,62 @@ export function selectStoreCollectionEntries(
   return selectedEntries;
 }
 
+export function isRecentBlackboxRelease(storeItem: StoreItem, referenceDate = new Date()): boolean {
+  if (
+    storeItem.sourceKind !== 'release' ||
+    storeItem.releaseStage === 'upcoming' ||
+    !isReleaseOutNow(storeItem.releaseDate, referenceDate)
+  ) {
+    return false;
+  }
+
+  const year = referenceDate.getUTCFullYear();
+  const month = referenceDate.getUTCMonth();
+  const lastDay = new Date(Date.UTC(year, month - 5, 0)).getUTCDate();
+  const cutoff = Date.UTC(year, month - 6, Math.min(referenceDate.getUTCDate(), lastDay));
+  return storeItem.releaseDate!.getTime() >= cutoff;
+}
+
+export function sortStoreDistroCollectionEntries(
+  entries: readonly StoreCollectionEntry[],
+  referenceDate = new Date(),
+): StoreCollectionEntry[] {
+  assertStoreCollectionInvariants(entries, 'distro');
+  const recent = new Set(entries.filter((entry) => isRecentBlackboxRelease(entry.storeItem, referenceDate)));
+  const credit = (value: string) => value.normalize('NFC').trim().replace(/\s+/gu, ' ');
+
+  return [...entries].sort(
+    (left, right) =>
+      Number(recent.has(right)) - Number(recent.has(left)) ||
+      (recent.has(left) && recent.has(right)
+        ? right.storeItem.releaseDate!.getTime() - left.storeItem.releaseDate!.getTime()
+        : 0) ||
+      bandCollator.compare(credit(left.storeItem.subtitle), credit(right.storeItem.subtitle)) ||
+      bandCollator.compare(left.storeItem.title, right.storeItem.title) ||
+      left.storeItem.slug.localeCompare(right.storeItem.slug, 'en'),
+  );
+}
+
+export function getStoreDistroFormatGroup(entry: StoreCollectionEntry): DistroGroupName {
+  if (entry.distro) return entry.distro.group;
+  const option = entry.primaryAvailability?.optionLabel?.toLowerCase() ?? '';
+  if (/\bvinyl\b|\blp\b/.test(option)) {
+    if (/\b7\b/.test(option)) return 'Vinyl 7-inch';
+    if (/\b10\b/.test(option)) return 'Vinyl 10-inch';
+    return 'Vinyl 12-inch';
+  }
+  if (/\bcds?\b/.test(option)) return 'CDs';
+  if (/\bcassette\b|\btapes?\b/.test(option)) return 'Tapes';
+  if (/\bshirt\b|\btee\b|\bclothes\b/.test(option)) return 'Clothes';
+  return 'Other';
+}
+
 export function groupStoreDistroCollectionEntries(
   entries: readonly StoreCollectionEntry[],
 ): StoreDistroCollectionGroup[] {
   const groupedEntries = groupDistroEntries(
     entries.map((entry) => {
-      if (!entry.distro) {
+      if (entry.storeItem.sourceKind === 'distro' && !entry.distro) {
         throw new Error(
           `Store Item ${entry.storeItem.slug} cannot appear in the Distro collection without Distro facets.`,
         );
@@ -74,8 +127,8 @@ export function groupStoreDistroCollectionEntries(
 
       return {
         data: {
-          group: entry.distro.group,
-          order: entry.distro.order,
+          group: getStoreDistroFormatGroup(entry),
+          order: entry.distro?.order ?? 0,
           title: entry.storeItem.title,
         },
         entry,

@@ -116,8 +116,8 @@ describe('Store collection category surfaces', () => {
     expect(collectionPageSource).toContain(
       "imageLoadingMode={index === 0 ? 'priority' : index < 4 ? 'eager' : 'lazy'}",
     );
-    expect(distroCatalogSource).toContain('groupIndex === 0 && index === 0');
-    expect(distroCatalogSource).toContain('groupIndex === 0 && index < 4');
+    expect(distroCatalogSource).toContain("index === 0 ? 'priority'");
+    expect(distroCatalogSource).toContain("index < 4 ? 'eager'");
     expect(storeItemCardSource).toContain("fetchpriority={priority ? 'high' : 'auto'}");
     expect(storeItemCardSource).toContain('loading="lazy"');
     expect(storeItemCardSource).toContain('fetchpriority="low"');

@@ -24,6 +24,10 @@ describe('Distro format navigation', () => {
     expect(source).toContain("href={'#' + format.target}");
     expect(source).toContain('data-distro-format-key={format.key}');
     expect(source).toContain('{format.count}');
+    expect(source).toContain('id={createStoreDistroGroupHeadingId(group.groupName)}');
+    expect(source).toContain('formatKey={createStoreDistroGroupHeadingId(getStoreDistroFormatGroup(entry))}');
+    expect(source).not.toContain('group.entries.map');
+    expect(source).not.toContain('content.group_intros');
     expect(browse).not.toContain('<details');
     expect(browse.indexOf('data-store-artists')).toBeLessThan(browse.indexOf('href="#store-page-top"'));
   });

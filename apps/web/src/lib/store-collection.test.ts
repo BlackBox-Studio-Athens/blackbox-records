@@ -82,8 +82,11 @@ import {
   classifyStoreCatalogMembership,
   createStoreDistroGroupHeadingId,
   groupStoreDistroCollectionEntries,
+  getStoreDistroFormatGroup,
+  isRecentBlackboxRelease,
   listStoreCollectionEntries,
   selectStoreCollectionEntries,
+  sortStoreDistroCollectionEntries,
   type StoreCollectionEntry,
 } from './store-collection';
 
@@ -145,8 +148,8 @@ describe('store collection entries', () => {
     });
 
     expect(collectionEntries.map((entry) => [entry.storeItem.slug, entry.categoryIds])).toEqual([
-      ['disintegration-black-vinyl-lp', ['blackbox-releases']],
-      ['caregivers-vinyl', ['blackbox-releases']],
+      ['disintegration-black-vinyl-lp', ['blackbox-releases', 'distro']],
+      ['caregivers-vinyl', ['blackbox-releases', 'distro']],
       ['afterglow-tape', ['distro']],
     ]);
 
@@ -163,14 +166,14 @@ describe('store collection entries', () => {
         sourceId: 'disintegration',
         sourceKind: 'release',
       }),
-    ).toEqual(['blackbox-releases']);
+    ).toEqual(['blackbox-releases', 'distro']);
 
     expect(
       classifyStoreCatalogMembership({
         sourceId: 'caregivers',
         sourceKind: 'release',
       }),
-    ).toEqual(['blackbox-releases']);
+    ).toEqual(['blackbox-releases', 'distro']);
 
     expect(
       classifyStoreCatalogMembership({
@@ -216,6 +219,8 @@ describe('store collection entries', () => {
       'caregivers-vinyl',
     ]);
     expect(selectStoreCollectionEntries(entries, 'distro').map((entry) => entry.storeItem.slug)).toEqual([
+      'disintegration-black-vinyl-lp',
+      'caregivers-vinyl',
       'afterglow-tape',
     ]);
     expect(selectStoreCollectionEntries(entries, 'merch')).toEqual([]);
@@ -224,16 +229,129 @@ describe('store collection entries', () => {
     );
   });
 
-  it('keeps classified Distro entries in the authored group and item order', async () => {
+  it('includes canonical BlackBox items in the shared format counts without fabricating Distro sources', async () => {
     const entries = await listStoreCollectionEntries('distro');
 
     expect(groupStoreDistroCollectionEntries(entries)).toEqual([
+      {
+        groupName: 'Vinyl 12-inch',
+        introKey: 'vinyl_12_inch',
+        entries: [
+          expect.objectContaining({ distro: null, storeItem: expect.objectContaining({ slug: 'caregivers-vinyl' }) }),
+          expect.objectContaining({
+            distro: null,
+            storeItem: expect.objectContaining({ slug: 'disintegration-black-vinyl-lp' }),
+          }),
+        ],
+      },
       {
         groupName: 'Tapes',
         introKey: 'Tapes',
         entries: [expect.objectContaining({ storeItem: expect.objectContaining({ slug: 'afterglow-tape' }) })],
       },
     ]);
+  });
+
+  it('orders mixed formats by band with recent BlackBox releases first and stable title/slug ties', async () => {
+    const [release, , distro] = await listStoreCollectionEntries();
+    const entry = (
+      slug: string,
+      artist: string,
+      title: string,
+      group: NonNullable<StoreCollectionEntry['distro']>['group'] = 'Tapes',
+    ): StoreCollectionEntry => ({
+      ...distro!,
+      distro: { format: group, group, order: slug.startsWith('alpha') ? 999 : 0 },
+      storeItem: { ...distro!.storeItem, slug, subtitle: artist, title },
+    });
+    const own = (slug: string, artist: string, date?: string, upcoming = false): StoreCollectionEntry => ({
+      ...release!,
+      storeItem: {
+        ...release!.storeItem,
+        slug,
+        subtitle: artist,
+        releaseDate: date ? new Date(date) : undefined,
+        releaseStage: upcoming ? 'upcoming' : 'released',
+      },
+    });
+    const entries = [
+      entry('zulu', 'Zulu', 'A title', 'CDs'),
+      entry('alpha-title-z', 'Alpha', 'Z title', 'Vinyl 7-inch'),
+      own('older', 'Aardvark', '2024-01-01'),
+      entry('cafe-beta', '  Café   Band ', 'Beta'),
+      own('recent-older', 'A band', '2026-08-01'),
+      entry('alpha-tie-b', 'alpha', 'A title', 'Vinyl 10-inch'),
+      own('undated', 'Band'),
+      entry('cafe-alpha', 'CAFE\u0301 BAND', 'Alpha', 'CDs'),
+      own('recent-newer', 'Z band', '2026-09-01'),
+      entry('alpha-tie-a', 'ALPHA', 'A title', 'Other'),
+      own('future', 'Future', '2026-12-01'),
+      own('upcoming', 'Ahead', '2026-09-30', true),
+    ];
+    const original = [...entries];
+    const sorted = sortStoreDistroCollectionEntries(entries, new Date('2026-10-02T23:00:00Z'));
+    expect(sorted.map(({ storeItem }) => storeItem.slug)).toEqual([
+      'recent-newer',
+      'recent-older',
+      'older',
+      'upcoming',
+      'alpha-tie-a',
+      'alpha-tie-b',
+      'alpha-title-z',
+      'undated',
+      'cafe-alpha',
+      'cafe-beta',
+      'future',
+      'zulu',
+    ]);
+    expect(entries).toEqual(original);
+    expect(new Set(sorted).size).toBe(entries.length);
+    expect(() => sortStoreDistroCollectionEntries([...entries, entries[0]!])).toThrow('more than once');
+    expect(release!.storeItem.releaseDate).toEqual(new Date('2026-09-01T00:00:00Z'));
+  });
+
+  it.each([
+    ['2026-10-02T23:59:59Z', '2026-04-02', true],
+    ['2026-10-02T23:59:59Z', '2026-04-01', false],
+    ['2026-10-02T00:00:00Z', '2026-10-02T23:59:59Z', true],
+    ['2026-10-02T23:59:59Z', '2026-10-03', false],
+    ['2026-08-31', '2026-02-28', true],
+    ['2026-08-31', '2026-02-27', false],
+    ['2024-08-31', '2024-02-29', true],
+    ['2024-08-31', '2024-02-28', false],
+    ['2026-01-31', '2025-07-31', true],
+    ['2026-01-31', '2025-07-30', false],
+  ])('applies the UTC six-calendar-month window at %s for %s: %s', async (reference, date, expected) => {
+    const [release] = await listStoreCollectionEntries();
+    expect(isRecentBlackboxRelease({ ...release!.storeItem, releaseDate: new Date(date) }, new Date(reference))).toBe(
+      expected,
+    );
+  });
+
+  it('does not promote undated, explicitly upcoming, or external items', async () => {
+    const [release, , distro] = await listStoreCollectionEntries();
+    const reference = new Date('2026-10-02');
+    expect(isRecentBlackboxRelease({ ...release!.storeItem, releaseDate: undefined }, reference)).toBe(false);
+    expect(isRecentBlackboxRelease({ ...release!.storeItem, releaseStage: 'upcoming' }, reference)).toBe(false);
+    expect(isRecentBlackboxRelease({ ...distro!.storeItem, releaseDate: new Date('2026-09-01') }, reference)).toBe(
+      false,
+    );
+  });
+
+  it.each([
+    ['Black Vinyl LP', 'Vinyl 12-inch'],
+    ['Vinyl 7-inch', 'Vinyl 7-inch'],
+    ['10-inch vinyl', 'Vinyl 10-inch'],
+    ['CD', 'CDs'],
+    ['Cassette', 'Tapes'],
+    ['T-shirt', 'Clothes'],
+    ['Unknown', 'Other'],
+  ] as const)('derives the existing primary option %s as %s', async (option, group) => {
+    const [release, , distro] = await listStoreCollectionEntries();
+    release!.primaryAvailability!.optionLabel = option;
+    expect(getStoreDistroFormatGroup(release!)).toBe(group);
+    distro!.primaryAvailability!.optionLabel = option;
+    expect(getStoreDistroFormatGroup(distro!)).toBe('Tapes');
   });
 
   it('retains exact physical group order, separate small vinyl formats, intros, and title tie-breakers', () => {

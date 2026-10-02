@@ -53,13 +53,9 @@ class FakeElement {
 
 function createDom() {
   const cards = [new FakeElement(), new FakeElement(), new FakeElement()];
-  const groups = [new FakeElement(), new FakeElement()];
-  const targets = [new FakeElement(), new FakeElement()];
   const navigation = new FakeElement();
   const root = new FakeElement();
   const formatKeys = ['distro-group-vinyl-12-inch', 'distro-group-vinyl-7-inch'];
-  targets[0]!.textContent = 'Vinyl 12-inch';
-  targets[1]!.textContent = 'Vinyl 7-inch';
   const linkKeys = ['all', ...formatKeys];
   const formatLinkElements = linkKeys.map(() => new FakeElement());
   const formatLinks = formatLinkElements.map((element, index) => ({
@@ -70,29 +66,16 @@ function createDom() {
     element: element as unknown as HTMLElement,
     searchText: `item ${index + 1}`,
     artist: index === 1 ? 'Other' : 'Band',
+    formatKey: formatKeys[index < 2 ? 0 : 1]!,
   }));
   const dom: DistroSearchDom = {
     formatLinks,
-    groups: [
-      {
-        element: groups[0] as unknown as HTMLElement,
-        formatKey: formatKeys[0]!,
-        items: items.slice(0, 2),
-        target: targets[0] as unknown as HTMLElement,
-      },
-      {
-        element: groups[1] as unknown as HTMLElement,
-        formatKey: formatKeys[1]!,
-        items: items.slice(2),
-        target: targets[1] as unknown as HTMLElement,
-      },
-    ],
     items,
     navigation: navigation as unknown as HTMLElement,
     root: root as unknown as HTMLElement,
   };
 
-  return { cards, dom, formatKeys, formatLinkElements, groups, navigation, root };
+  return { cards, dom, formatKeys, formatLinkElements, navigation, root };
 }
 
 describe('Distro format selection', () => {
@@ -105,27 +88,23 @@ describe('Distro format selection', () => {
     expect(resolveInitialDistroFormatKey('', dom)).toBe('all');
   });
 
-  it('updates format links and section semantics without changing visibility', () => {
-    const { dom, formatKeys, formatLinkElements, groups, root } = createDom();
-    const hiddenWritesBefore = [root, ...groups, ...formatLinkElements].map((element) => element.hiddenWrites);
+  it('updates format links and the catalog marker without changing native visibility', () => {
+    const { dom, formatKeys, formatLinkElements, root } = createDom();
+    const hiddenWritesBefore = [root, ...formatLinkElements].map((element) => element.hiddenWrites);
 
     applyDistroFormatSelection(dom, formatKeys[1]!);
 
     expect(root.getAttribute('data-distro-selected-format')).toBe(formatKeys[1]);
-    expect(groups.map((group) => group.hasAttribute('data-distro-format-current'))).toEqual([false, true]);
-    expect(groups.map((group) => group.getAttribute('aria-current'))).toEqual([null, 'true']);
     expect(formatLinkElements.map((link) => link.hasAttribute('data-distro-format-current'))).toEqual([
       false,
       false,
       true,
     ]);
     expect(formatLinkElements.map((link) => link.getAttribute('aria-current'))).toEqual([null, null, 'true']);
-    expect([root, ...groups, ...formatLinkElements].map((element) => element.hiddenWrites)).toEqual(hiddenWritesBefore);
+    expect([root, ...formatLinkElements].map((element) => element.hiddenWrites)).toEqual(hiddenWritesBefore);
 
     applyDistroFormatSelection(dom, 'invalid');
     expect(root.hasAttribute('data-distro-selected-format')).toBe(false);
-    expect(groups.every((group) => !group.hasAttribute('data-distro-format-current'))).toBe(true);
-    expect(groups.every((group) => group.getAttribute('aria-current') === null)).toBe(true);
     expect(formatLinkElements.map((link) => link.hasAttribute('data-distro-format-current'))).toEqual([
       true,
       false,
@@ -143,10 +122,27 @@ describe('Distro format selection', () => {
     expect(applyDistroSearch(dom, band)).toBe(1);
     expect(navigation.hidden).toBe(false);
     expect(applyDistroSearch(dom, new Set([dom.items[2]!.element]))).toBe(0);
+    expect(dom.root.hasAttribute('data-distro-search-hidden')).toBe(false);
+    expect(applyDistroFormatSelection(dom, formatKeys[0]!).target).toBe(dom.root);
     expect(dom.root.dataset.distroSelectedFormat).toBe(formatKeys[0]);
     expect(applyDistroSearch(dom, null)).toBe(2);
     applyDistroFormatSelection(dom, 'all');
     expect(applyDistroSearch(dom, band)).toBe(2);
+    expect(applyDistroSearch(dom, null)).toBe(3);
+    expect(dom.items).toEqual(original);
+  });
+
+  it('filters interleaved formats and promoted cards with the same rules', () => {
+    const { cards, dom, formatKeys } = createDom();
+    dom.items[1]!.formatKey = formatKeys[1]!;
+    dom.items[2]!.formatKey = formatKeys[0]!;
+    cards[1]!.setAttribute('data-store-promotion', 'recent');
+    const original = [...dom.items];
+    applyDistroFormatSelection(dom, formatKeys[0]!);
+    expect(applyDistroSearch(dom, null)).toBe(2);
+    expect(cards.map((card) => card.hasAttribute('data-distro-search-hidden'))).toEqual([false, true, false]);
+    expect(applyDistroSearch(dom, new Set([dom.items[1]!.element]))).toBe(0);
+    applyDistroFormatSelection(dom, 'all');
     expect(applyDistroSearch(dom, null)).toBe(3);
     expect(dom.items).toEqual(original);
   });
@@ -164,7 +160,6 @@ describe('Distro search DOM filtering', () => {
   it.each(['all', 'distro'])('matches and clears the %s catalog without replacing or reordering cards', (scope) => {
     const { dom } = createDom();
     if (scope === 'all') {
-      dom.groups = [];
       dom.formatLinks = [];
       dom.navigation = null;
     }
@@ -193,7 +188,7 @@ describe('Distro search DOM filtering', () => {
     ['distro', 1],
   ] as const)('filters %s with %i cards and missing optional text', (scope, count) => {
     const { dom } = createDom();
-    if (scope === 'all') dom.groups = [];
+    if (scope === 'all') dom.formatLinks = [];
     dom.items = dom.items.slice(0, count);
     const searcher = createExactFirstSearcher(dom.items, () => 'Title');
     expect(applyDistroSearch(dom, new Set(searcher.search('Title').map((item) => item.element)))).toBe(count);
@@ -201,14 +196,14 @@ describe('Distro search DOM filtering', () => {
     expect(applyDistroSearch(dom, null)).toBe(count);
   });
 
-  it('hides unmatched cards and empty groups without changing order', () => {
-    const { cards, dom, groups } = createDom();
+  it('hides unmatched cards without hiding the catalog or changing order', () => {
+    const { cards, dom } = createDom();
     const originalOrder = dom.items.slice();
 
     expect(applyDistroSearch(dom, new Set([dom.items[2]!.element]))).toBe(1);
 
     expect(cards.map((card) => card.hasAttribute('data-distro-search-hidden'))).toEqual([true, true, false]);
-    expect(groups.map((group) => group.hasAttribute('data-distro-search-hidden'))).toEqual([true, false]);
+    expect(dom.root.hasAttribute('data-distro-search-hidden')).toBe(false);
     expect(dom.items).toEqual(originalOrder);
   });
 

@@ -4,7 +4,10 @@ import StoreItemCard from './StoreItemCard.astro';
 import { getDistroPageContent } from '@/lib/site-data';
 import {
   createStoreDistroGroupHeadingId,
+  getStoreDistroFormatGroup,
   groupStoreDistroCollectionEntries,
+  isRecentBlackboxRelease,
+  sortStoreDistroCollectionEntries,
   type StoreCollectionEntry,
 } from '@/lib/store-collection';
 import StoreBrowsePane from './StoreBrowsePane.astro';
@@ -12,9 +15,13 @@ import StoreCoverflowControls from './StoreCoverflowControls.astro';
 interface Props {
   entries: StoreCollectionEntry[];
 }
-const { entries } = Astro.props;
+const { entries: sourceEntries } = Astro.props;
+const referenceDate = new Date();
+const entries = sortStoreDistroCollectionEntries(sourceEntries, referenceDate);
 const content = await getDistroPageContent();
 const groups = groupStoreDistroCollectionEntries(entries);
+const enrolled = entries.length > 6;
+const catalogId = 'distro-catalog';
 const formats = [
   { key: 'all', target: 'distro-search-results', label: 'All formats', count: entries.length },
   ...groups.map((group) => ({
@@ -52,53 +59,37 @@ const formats = [
     <p data-store-result-total>
       {entries.length} {entries.length === 1 ? 'item' : 'items'}
     </p>
-    <div id="distro-search-results" class="distro-page-groups" data-distro-search-root tabindex="-1">
-      {groups.map((group, groupIndex) => {
-        const headingId = createStoreDistroGroupHeadingId(group.groupName);
-        const enrolled = group.entries.length >= 2;
-        return (
-          <section
-            class="distro-group-section"
-            aria-labelledby={headingId}
-            data-distro-search-group
-            data-distro-format-key={headingId}
-            data-store-coverflow-group={enrolled ? '' : undefined}
-            data-store-coverflow-mode={enrolled ? 'catalog' : undefined}
-            data-store-coverflow-total={enrolled ? group.entries.length : undefined}
-          >
-            <div class="distro-group-section__header">
-              <h2 class="distro-group-section__title" id={headingId} data-distro-format-target tabindex="-1">
-                {group.groupName}
-              </h2>
-              <Prose
-                class="distro-group-section__copy"
-                value={content.group_intros[group.introKey]}
-                data-content-path={'group_intros.' + group.introKey}
+    <div id="distro-search-results" class="distro-page-groups relative" data-distro-search-root tabindex="-1">
+      {groups.map((group) => (
+        <span
+          id={createStoreDistroGroupHeadingId(group.groupName)}
+          class="absolute top-0 scroll-mt-40"
+          aria-hidden="true"
+        />
+      ))}
+      <div
+        data-store-coverflow-group={enrolled ? '' : undefined}
+        data-store-coverflow-mode={enrolled ? 'catalog' : undefined}
+        data-store-coverflow-total={enrolled ? entries.length : undefined}
+      >
+        {enrolled && <StoreCoverflowControls catalogId={catalogId} total={entries.length} />}
+        <div class="store-coverflow-shell">
+          {enrolled && <span class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true" />}
+          <div id={catalogId} class="distro-group-grid" data-store-coverflow-stage={enrolled ? '' : undefined}>
+            {entries.map((entry, index) => (
+              <StoreItemCard
+                entry={entry}
+                searchable
+                formatKey={createStoreDistroGroupHeadingId(getStoreDistroFormatGroup(entry))}
+                promoted={isRecentBlackboxRelease(entry.storeItem, referenceDate)}
+                coverflowEnrolled={enrolled}
+                imageLoadingMode={index === 0 ? 'priority' : index < 4 ? 'eager' : 'lazy'}
               />
-            </div>
-            {enrolled && <StoreCoverflowControls catalogId={headingId + '-catalog'} total={group.entries.length} />}
-            <div class="store-coverflow-shell">
-              {enrolled && <span class="store-coverflow-reveal" data-store-coverflow-reveal-mask aria-hidden="true" />}
-              <div
-                id={headingId + '-catalog'}
-                class="distro-group-grid"
-                data-store-coverflow-stage={enrolled ? '' : undefined}
-              >
-                {group.entries.map((entry, index) => (
-                  <StoreItemCard
-                    entry={entry}
-                    searchable
-                    coverflowEnrolled={enrolled}
-                    imageLoadingMode={
-                      groupIndex === 0 && index === 0 ? 'priority' : groupIndex === 0 && index < 4 ? 'eager' : 'lazy'
-                    }
-                  />
-                ))}
-              </div>
-            </div>
-          </section>
-        );
-      })}
+            ))}
+          </div>
+        </div>
+      </div>
+      {entries.length === 0 && <p>No Store items currently available.</p>}
     </div>
   </section>
 </div>

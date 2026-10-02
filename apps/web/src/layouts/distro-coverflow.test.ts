@@ -35,10 +35,13 @@ const controls = readFileSync(
   'utf8',
 );
 describe('Distro Coverflow progressive enhancement', () => {
-  it('starts complete groups in Grid and offers explicit views only after readiness', () => {
-    expect(pageSource).toContain('const enrolled = group.entries.length >= 2');
+  it('starts one complete mixed catalog in Grid and offers explicit views only after readiness', () => {
+    expect(pageSource).toContain('const enrolled = entries.length > 6');
     expect(pageSource).toContain("data-store-coverflow-mode={enrolled ? 'catalog' : undefined}");
-    expect(pageSource).toContain('group.entries.map');
+    expect(pageSource).toContain('entries.map');
+    expect(pageSource).not.toContain('data-distro-search-group');
+    expect(pageSource.match(/data-store-coverflow-group=/g)).toHaveLength(1);
+    expect(searchSource).toContain('setSearchActive(hasFilters)');
     expect(pageSource).not.toContain('getStoreCoverflowPosition');
     expect(controls).toMatch(/>\s*Grid\s*<\/button>[\s\S]*>\s*Coverflow\s*<\/button>/);
     expect(controls).toContain('data-store-coverflow-controls hidden');

@@ -26,6 +26,8 @@ export type StoreItem = {
   embeddedPlayerData: EmbeddedPlayerData | null;
   title: string;
   subtitle: string;
+  releaseDate?: Date | undefined;
+  releaseStage?: 'upcoming' | 'released' | undefined;
   /** Artist page for the subtitle; only Release items by a roster artist have one. */
   artistPath?: string;
   summary: string | null;
@@ -215,6 +217,8 @@ export async function createStoreItemFromRelease(releaseEntry: ReleaseCatalogEnt
     ),
     title: releaseEntry.data.title,
     subtitle: artistDisplayName,
+    releaseDate: releaseEntry.data.release_date,
+    releaseStage: releaseEntry.data.release_stage,
     ...(artistProfile ? { artistPath: createArtistDetailPath(artistProfile) } : {}),
     summary: proseText(resolveProse(releaseEntry.data.summary, releaseEntry.data.summary_rich)) || null,
     summaryRich: releaseEntry.data.summary_rich ?? null,

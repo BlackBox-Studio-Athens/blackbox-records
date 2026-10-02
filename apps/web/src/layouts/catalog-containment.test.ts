@@ -14,7 +14,7 @@ describe('catalog containment', () => {
     expect(css).not.toMatch(/\.store-item-card--listing\s*{[^}]*content-visibility/s);
     expect(css).not.toMatch(/\.distro-group-grid\s*{[^}]*contain-intrinsic-block-size/s);
     expect(distroCatalog).toContain('class="distro-group-grid"');
-    expect(distroCatalog).toContain('group.entries.map');
+    expect(distroCatalog).toContain('entries.map');
     expect(distroCatalog).not.toContain('data-distro-search-chunk');
   });
 

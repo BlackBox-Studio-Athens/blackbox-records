@@ -25,6 +25,7 @@ type DistroSearchItem = {
   element: HTMLElement;
   searchText: string;
   artist: string;
+  formatKey: string;
 };
 
 type DistroFormatLink = {
@@ -32,16 +33,8 @@ type DistroFormatLink = {
   formatKey: string;
 };
 
-type DistroFormatGroup = {
-  element: HTMLElement;
-  formatKey: string;
-  items: DistroSearchItem[];
-  target: HTMLElement;
-};
-
 export type DistroSearchDom = {
   formatLinks: DistroFormatLink[];
-  groups: DistroFormatGroup[];
   items: DistroSearchItem[];
   navigation: HTMLElement | null;
   root: HTMLElement;
@@ -59,24 +52,8 @@ export function readDistroSearchDom(
     element,
     searchText: element.dataset.distroSearchText || '',
     artist: element.dataset.storeArtist || '',
+    formatKey: element.dataset.distroFormatKey || '',
   }));
-  const itemsByElement = new Map(items.map((item) => [item.element, item]));
-  const groups = [...root.querySelectorAll<HTMLElement>('[data-distro-search-group]')]
-    .map((element): DistroFormatGroup | null => {
-      const formatKey = element.dataset.distroFormatKey;
-      const target = element.querySelector<HTMLElement>('[data-distro-format-target]');
-      if (!formatKey || !target) return null;
-
-      return {
-        element,
-        formatKey,
-        items: [...element.querySelectorAll<HTMLElement>('[data-distro-search-item]')]
-          .map((itemElement) => itemsByElement.get(itemElement))
-          .filter((item): item is DistroSearchItem => Boolean(item)),
-        target,
-      };
-    })
-    .filter((group): group is DistroFormatGroup => group !== null);
   const formatLinkElements = navigation
     ? [...navigation.querySelectorAll<HTMLElement>('[data-distro-format-link]')]
     : [];
@@ -86,19 +63,17 @@ export function readDistroSearchDom(
       return formatKey ? { element, formatKey } : null;
     })
     .filter((link): link is DistroFormatLink => link !== null);
-  if (groups.length !== root.querySelectorAll('[data-distro-search-group]').length) return null;
   if (formatLinks.length !== formatLinkElements.length) return null;
 
   return {
     formatLinks,
-    groups,
     items,
     navigation,
     root,
   };
 }
 
-export function resolveInitialDistroFormatKey(hash: string, dom: Pick<DistroSearchDom, 'groups'>) {
+export function resolveInitialDistroFormatKey(hash: string, dom: Pick<DistroSearchDom, 'formatLinks'>) {
   let requestedKey = '';
   try {
     requestedKey = decodeURIComponent(hash.replace(/^#/, ''));
@@ -106,29 +81,24 @@ export function resolveInitialDistroFormatKey(hash: string, dom: Pick<DistroSear
     return ALL_DISTRO_FORMATS_KEY;
   }
 
-  return dom.groups.some((group) => group.formatKey === requestedKey) ? requestedKey : ALL_DISTRO_FORMATS_KEY;
+  return dom.formatLinks.some((link) => link.formatKey === requestedKey) ? requestedKey : ALL_DISTRO_FORMATS_KEY;
 }
 
 export function applyDistroFormatSelection(dom: DistroSearchDom, requestedKey: string) {
-  const selectedGroup = dom.groups.find((group) => group.formatKey === requestedKey) ?? null;
-  const formatKey = selectedGroup?.formatKey ?? ALL_DISTRO_FORMATS_KEY;
+  const formatKey = dom.formatLinks.some((link) => link.formatKey === requestedKey)
+    ? requestedKey
+    : ALL_DISTRO_FORMATS_KEY;
 
-  if (selectedGroup) dom.root.setAttribute('data-distro-selected-format', formatKey);
+  if (formatKey !== ALL_DISTRO_FORMATS_KEY) dom.root.setAttribute('data-distro-selected-format', formatKey);
   else dom.root.removeAttribute('data-distro-selected-format');
 
-  dom.groups.forEach((group) => {
-    const isCurrent = group === selectedGroup;
-    group.element.toggleAttribute('data-distro-format-current', isCurrent);
-    if (isCurrent) group.element.setAttribute('aria-current', 'true');
-    else group.element.removeAttribute('aria-current');
-  });
   dom.formatLinks.forEach((link) => {
     const isCurrent = link.formatKey === formatKey;
     link.element.toggleAttribute('data-distro-format-current', isCurrent);
     if (isCurrent) link.element.setAttribute('aria-current', 'true');
     else link.element.removeAttribute('aria-current');
   });
-  return { target: selectedGroup?.target ?? dom.root };
+  return { target: dom.root };
 }
 
 function setSearchHidden(element: HTMLElement, shouldHide: boolean) {
@@ -138,24 +108,18 @@ function setSearchHidden(element: HTMLElement, shouldHide: boolean) {
 
 export function applyDistroSearch(dom: DistroSearchDom, matchedElements: ReadonlySet<HTMLElement> | null) {
   const selectedFormat = dom.root.dataset.distroSelectedFormat;
-  const formatItems = selectedFormat
-    ? new Set(dom.groups.find((group) => group.formatKey === selectedFormat)?.items)
-    : null;
   const visibleElements = new Set(
     dom.items
       .filter(
         (item) =>
           !item.element.hidden &&
           (!matchedElements || matchedElements.has(item.element)) &&
-          (!formatItems || formatItems.has(item)),
+          (!selectedFormat || item.formatKey === selectedFormat),
       )
       .map((item) => item.element),
   );
 
   dom.items.forEach((item) => setSearchHidden(item.element, !visibleElements.has(item.element)));
-  dom.groups.forEach((group) => {
-    setSearchHidden(group.element, !group.items.some((item) => visibleElements.has(item.element)));
-  });
 
   return visibleElements.size;
 }
@@ -226,13 +190,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       pendingFocus.current = true;
       // A repeated choice still focuses the current results.
       if (link.dataset.distroFormatKey === (dom.root.dataset.distroSelectedFormat || 'all')) {
-        controllerRef.current?.setFocusedGroup(
-          dom.groups.find((group) => group.formatKey === link.dataset.distroFormatKey)?.element ?? null,
-        );
-        const target = dom.groups.find((group) => group.formatKey === link.dataset.distroFormatKey)?.target;
-        const visibleTarget = target?.closest('[data-distro-search-hidden]')
-          ? summaryRef.current
-          : target || summaryRef.current;
+        const visibleTarget = summaryRef.current ?? dom.root;
         visibleTarget?.focus({ preventScroll: true });
         if (visibleTarget) scrollElementWithLenis(visibleTarget, { block: 'start' });
         pendingFocus.current = false;
@@ -258,9 +216,8 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
   useEffect(() => {
     const dom = domRef.current;
     if (!ready || !dom) return;
-    controllerRef.current?.setSearchActive(filtered);
+    controllerRef.current?.setSearchActive(hasFilters);
     const selection = applyDistroFormatSelection(dom, format);
-    controllerRef.current?.setFocusedGroup(dom.groups.find((group) => group.formatKey === format)?.element ?? null);
     const matches = query.trim() ? searcherRef.current?.search(query) || [] : dom.items;
     const selected = matches.filter((item) => !artist || normalizeStoreArtist(item.artist) === artist);
     const visibleCount = applyDistroSearch(dom, filtered ? new Set(selected.map((item) => item.element)) : null);
@@ -273,7 +230,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       if (target) scrollElementWithLenis(target, { block: 'start' });
     });
     return () => cancelAnimationFrame(frame);
-  }, [ready, query, artist, format, filtered, scope]);
+  }, [ready, query, artist, format, filtered, hasFilters, scope]);
 
   if (!ready) return null;
   const artistChoices = [{ key: '', label: 'All artists', count: domRef.current?.items.length || 0 }, ...choices];
