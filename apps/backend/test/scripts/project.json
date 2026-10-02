@@ -15,6 +15,7 @@
         "{workspaceRoot}/apps/backend/cms-resources.json",
         "{workspaceRoot}/apps/web/src/content/**/*",
         "{workspaceRoot}/apps/web/src/lib/**/*",
+        "{workspaceRoot}/apps/web/src/**/*.astro",
         "{workspaceRoot}/apps/web/src/components/store/cart/**/*",
         "{workspaceRoot}/package.json",
         "{workspaceRoot}/.github/workflows/**/*",

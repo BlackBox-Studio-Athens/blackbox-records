@@ -34,6 +34,12 @@ const config = {
   assets: { binding: 'ASSETS', run_worker_first: true },
   vars: {
     PRODUCT_ENVIRONMENT: environment,
+    // Canonical Images source: an approved origin in the Images zone settings, independent of the public hostname.
+    PUBLIC_IMAGE_SOURCE_ORIGIN: {
+      local: '',
+      uat: 'https://blackbox-records-web-uat.pages.dev',
+      prd: 'https://blackbox-records-web.pages.dev',
+    }[environment],
     PUBLIC_IMAGE_TRANSFORM_ORIGIN: environment === 'local' ? '' : 'https://images.blackboxrecordsathens.com',
   },
   r2_buckets: [{ binding: 'MEDIA', bucket_name: resources.bucket_name }],
