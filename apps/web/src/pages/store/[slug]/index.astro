@@ -13,6 +13,7 @@ import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import StoreItemPurchaseActions from '@/components/store/checkout/StoreItemPurchaseActions';
 import PurchaseInformation from '@/platform/components/PurchaseInformation';
 import { createProjectRelativeUrl } from '@/platform/config/site';
+import { largestImageWidth } from '@/platform/lib/editorial-image';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import {
   createReleaseDetailPath,
@@ -61,12 +62,19 @@ if (storeItem.sourceKind === 'distro' && !distroSource) {
   throw new Error(`Missing Distro source entry for Store Item ${storeItem.slug}: ${storeItem.sourceId}.`);
 }
 
+const storeItemDetailImageWidths = [720, 1080, 1440, 1800];
 const gallery = sourceRelease?.data.gallery ?? distroSource?.data.gallery ?? [];
 const galleryImages =
   gallery.length > 0
     ? await Promise.all(
         [{ image: storeItem.image, image_alt: storeItem.imageAlt }, ...gallery].map(async ({ image, image_alt }) => {
-          const optimized = await getImage({ src: image, widths: [96, 480, 720, 960, 1200], format: 'webp' });
+          const widths = [96, 480, 720, 960, 1200];
+          const optimized = await getImage({
+            src: image,
+            widths,
+            width: largestImageWidth(image, widths),
+            format: 'webp',
+          });
           return {
             src: optimized.src,
             srcSet: optimized.srcSet.attribute,
@@ -170,7 +178,8 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
             alt={storeItem.imageAlt}
             class="store-item-detail__image aspect-square h-auto w-full object-contain"
             priority
-            widths={[720, 1080, 1440, 1800]}
+            widths={storeItemDetailImageWidths}
+            width={largestImageWidth(storeItem.image, storeItemDetailImageWidths)}
             sizes="(min-width: 768px) 26rem, calc(100vw - 32px)"
           />
         )}

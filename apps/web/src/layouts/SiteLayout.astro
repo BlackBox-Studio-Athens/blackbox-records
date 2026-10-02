@@ -2,6 +2,7 @@
 import '@/styles/global.css';
 
 import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
 
 import AppShell from '@/layouts/AppShell.astro';
 import Footer from '@/components/Footer.astro';
@@ -50,8 +51,17 @@ const metadataTitle = pageTitle || siteConfig.title;
 const metadataDescription = pageDescription || pageSummary || siteConfig.description;
 const metadataUrl = Astro.url.toString();
 const metadataImageRaw = ogImage || coverImage || image || siteConfig.socialImage;
-const metadataImagePath = typeof metadataImageRaw === 'string' ? metadataImageRaw : metadataImageRaw.src;
-const metadataImage = metadataImagePath.includes('://') ? metadataImagePath : createAbsoluteSiteUrl(metadataImagePath);
+// Link unfurls fetch og:image and twitter:image in full, so a Content Image becomes a 1200 px JPEG instead of the
+// original upload (1-4.6 MB). Its URL already carries the base path, so it resolves against the site origin only.
+const metadataImage =
+  typeof metadataImageRaw !== 'string'
+    ? new URL(
+        (await getImage({ src: metadataImageRaw, width: Math.min(metadataImageRaw.width, 1200), format: 'jpg' })).src,
+        Astro.site ?? Astro.url,
+      ).toString()
+    : metadataImageRaw.includes('://')
+      ? metadataImageRaw
+      : createAbsoluteSiteUrl(metadataImageRaw);
 const metadataImageAlt = coverImageAlt || imageAlt || siteConfig.socialImageAlt || siteConfig.title;
 const metadataType = layoutType === 'news' ? 'article' : 'website';
 const configuredPublicBackendBaseUrl = import.meta.env.PUBLIC_BACKEND_BASE_URL?.trim();

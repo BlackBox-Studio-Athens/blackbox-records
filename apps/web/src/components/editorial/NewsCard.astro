@@ -6,16 +6,28 @@ import { createProjectRelativeUrl } from '@/platform/config/site';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatMonthYear } from '@/utils/content';
 import { getEntry } from '@/lib/content-reader';
+import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 
 interface Props {
   item: CollectionEntry<'news'>;
   imageLoading?: 'eager' | 'lazy';
+  /** The expected LCP card: eager with high fetch priority. */
+  imagePriority?: boolean;
+  /** The grid the card sits in: the News index (`grid gap-5 md:grid-cols-2 xl:grid-cols-3`) or home's `.home-news-grid`. */
+  grid?: 'index' | 'home';
   showSummary?: boolean;
 }
 
-const { item, imageLoading = 'lazy', showSummary = true } = Astro.props;
+const { item, imageLoading = 'lazy', imagePriority = false, grid = 'index', showSummary = true } = Astro.props;
 const artist = item.data.artist ? await getEntry(item.data.artist) : undefined;
 const newsCardImageWidths = [360, 540, 720, 960, 1200];
+// Card width (minus its 1px borders) in .layout-container: one column, then two (from 48rem on the index, 40rem on
+// home), then three 21.75rem columns from 80rem.
+const newsCardImageSizes = {
+  index:
+    '(min-width: 80rem) 21.75rem, (min-width: 64rem) calc(50vw - 2.75rem), (min-width: 48rem) calc(50vw - 2.25rem), (min-width: 40rem) calc(100vw - 3.125rem), calc(100vw - 2.125rem)',
+  home: '(min-width: 80rem) 21.75rem, (min-width: 64rem) calc(50vw - 2.75rem), (min-width: 40rem) calc(50vw - 2.25rem), calc(100vw - 2.125rem)',
+}[grid];
 ---
 
 <div class="prose-link-card group block h-full">
@@ -29,8 +41,11 @@ const newsCardImageWidths = [360, 540, 720, 960, 1200];
         alt={item.data.image_alt || item.data.title}
         class="news-card__image h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
         widths={newsCardImageWidths}
-        sizes="(min-width: 1280px) 30vw, (min-width: 768px) 50vw, 100vw"
-        loading={imageLoading}
+        width={largestImageWidth(item.data.image, newsCardImageWidths)}
+        sizes={newsCardImageSizes}
+        quality={editorialImageQuality}
+        loading={imagePriority ? 'eager' : imageLoading}
+        priority={imagePriority}
       />
     </div>
     <CardContent className="space-y-3 p-5">

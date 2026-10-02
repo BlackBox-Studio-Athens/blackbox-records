@@ -13,6 +13,7 @@ import { cn } from '@/components/ui/utils';
 import { splitReleaseCatalogByAvailability } from '@/lib/release-feature';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
+import { createImageSizes, editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 
 interface Props {
   artist: CollectionEntry<'artists'>;
@@ -51,6 +52,18 @@ const previousReleases = latestRelease
   ? artistReleases.filter((release) => release.id !== latestRelease.id)
   : artistReleases;
 const discographyLabel = 'Previous releases';
+const heroImageWidths = [360, 480, 720, 1080, 1440, 1800];
+// The hero photo is drawn with object-contain in .artist-detail-hero__image-frame (16:13, 1.18:1 from 64rem), so a
+// portrait or square photo paints narrower than the frame. Frame widths: .layout-container minus the frame border, then
+// the 1.08fr column of the two-column hero grid (5vw gap, capped at 72rem).
+const heroImageSizes = createImageSizes(artist.data.image, [
+  { media: '(min-width: 72rem)', width: '34.75rem', frameAspectRatio: 1.18 },
+  { media: '(min-width: 64rem)', width: '51.5vw - 2.2rem', frameAspectRatio: 1.18 },
+  { media: '(min-width: 40rem)', width: '100vw - 3.125rem', frameAspectRatio: 16 / 13 },
+  { width: '100vw - 2.125rem', frameAspectRatio: 16 / 13 },
+]);
+const latestReleaseArtworkWidths = [160, 240, 320, 480];
+const previousReleaseArtworkWidths = [96, 160, 240];
 const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBody && !artist.data.bio);
 ---
 
@@ -76,8 +89,10 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
           src={artist.data.image}
           alt={artist.data.image_alt || artistName}
           class="artist-detail-hero__image relative h-full w-full object-contain object-center"
-          widths={[720, 1080, 1440, 1800]}
-          sizes="(min-width: 1024px) 34rem, 100vw"
+          widths={heroImageWidths}
+          width={largestImageWidth(artist.data.image, heroImageWidths)}
+          sizes={heroImageSizes}
+          quality={editorialImageQuality}
           loading="eager"
           priority={showRouteNavigation}
         />
@@ -149,8 +164,10 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
           src={latestRelease.data.cover_image}
           alt={latestRelease.data.cover_image_alt || latestRelease.data.title}
           class="artist-latest-release-panel__artwork h-full w-full object-cover"
-          widths={[160, 240, 320, 480]}
+          widths={latestReleaseArtworkWidths}
+          width={largestImageWidth(latestRelease.data.cover_image, latestReleaseArtworkWidths)}
           sizes="(min-width: 1024px) 13rem, 42vw"
+          quality={editorialImageQuality}
         />
       </a>
       <div class="artist-latest-release-panel__copy">
@@ -285,8 +302,10 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
               src={release.data.cover_image}
               alt={release.data.cover_image_alt || release.data.title}
               class="artist-previous-release__artwork h-full w-full object-cover"
-              widths={[96, 160, 240]}
+              widths={previousReleaseArtworkWidths}
+              width={largestImageWidth(release.data.cover_image, previousReleaseArtworkWidths)}
               sizes="5rem"
+              quality={editorialImageQuality}
             />
             <span class="artist-previous-release__copy">
               <span class="artist-previous-release__title">{release.data.title}</span>

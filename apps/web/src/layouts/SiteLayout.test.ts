@@ -23,3 +23,14 @@ describe('SiteLayout purchase information', () => {
     expect(source.match(/id="purchase-information"/g)).toHaveLength(1);
   });
 });
+
+describe('SiteLayout social image', () => {
+  it('publishes a Content Image as a 1200 px JPEG resolved against the site origin, not the original upload', () => {
+    expect(source).toContain("import { getImage } from 'astro:assets';");
+    expect(source).toContain(
+      "await getImage({ src: metadataImageRaw, width: Math.min(metadataImageRaw.width, 1200), format: 'jpg' })",
+    );
+    expect(source).toContain('Astro.site ?? Astro.url');
+    expect(source).not.toContain('metadataImageRaw.src');
+  });
+});

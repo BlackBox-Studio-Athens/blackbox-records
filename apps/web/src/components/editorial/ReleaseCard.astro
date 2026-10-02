@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { createArtistDetailPath, createReleaseDetailPath } from '@/lib/catalog-data';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
+import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 
 interface Props {
   release: CollectionEntry<'releases'>;
@@ -74,7 +75,9 @@ const dataAttributes = embeddedPlayerData
               : 'release-card-artwork h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]'
           }
           widths={releaseCardImageWidths}
+          width={largestImageWidth(release.data.cover_image, releaseCardImageWidths)}
           sizes="(min-width: 1280px) 260px, (min-width: 768px) 50vw, 100vw"
+          quality={editorialImageQuality}
           loading={imageLoading}
         />
         <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div>

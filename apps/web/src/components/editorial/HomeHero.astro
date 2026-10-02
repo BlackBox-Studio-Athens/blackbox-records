@@ -2,6 +2,7 @@
 import Prose from '@/components/Prose.astro';
 import type { ImageMetadata } from 'astro';
 import { Image } from 'astro:assets';
+import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 interface Props {
   tagline: import('@blackbox/content-model').Prose;
   image: ImageMetadata;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 const { tagline, image, imageAlt, scrollIndicatorText = 'Scroll' } = Astro.props;
+const heroImageWidths = [900, 1400];
 ---
 
 <section class="homepage-hero-section border-b border-border/70" id="homepage-hero-section">
@@ -19,8 +21,10 @@ const { tagline, image, imageAlt, scrollIndicatorText = 'Scroll' } = Astro.props
       alt={imageAlt}
       class="homepage-hero-section__media-image"
       priority
-      widths={[900, 1400]}
+      widths={heroImageWidths}
+      width={largestImageWidth(image, heroImageWidths)}
       sizes="100vw"
+      quality={editorialImageQuality}
     />
   </div>
   <div class="homepage-hero-section__shade-layer" aria-hidden="true"></div>
