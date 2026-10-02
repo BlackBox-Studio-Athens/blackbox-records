@@ -1,6 +1,6 @@
 import { ArrowDownUp, ClipboardCheck, Disc3, ChevronLeft } from 'lucide-react';
 import * as React from 'react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import StaffBack from '../../lib/StaffBack';
 import {
   followStaffHistory,
@@ -30,8 +30,7 @@ import {
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 import { cn } from '../ui/utils';
 import FormatFilter, { formatLabel } from './FormatFilter';
-import PreorderControl from './PreorderControl';
-import { editorialRequest, staffThumbnailUrl, type EditorialMedia } from '../../lib/backend/editorial-api';
+import type { EditorialMedia } from '../../lib/backend/editorial-api';
 import {
   recordProgress,
   stocktakeKey,
@@ -54,6 +53,8 @@ import {
   AlertDialogCancel,
   AlertDialogAction,
 } from '../ui/alert-dialog';
+
+const PreorderControl = lazy(() => import('./PreorderControl'));
 
 interface StockOperationsAppProps {
   backendBaseUrl: string;
@@ -160,19 +161,20 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
         restorePosition.current = false;
         restoreStaffPosition(inventoryRef.current);
       }
-      void editorialRequest<{ items: { variantId: string; image: EditorialMedia | null }[] }>(
-        backendBaseUrl,
-        `blackbox/inventory-artwork?items=${encodeURIComponent(
-          JSON.stringify(
-            results.map((item) => ({
-              variantId: item.variantId,
-              sourceKind: item.sourceKind,
-              sourceId: item.cmsSourceId ?? item.sourceId,
-            })),
-          ),
-        )}`,
-      )
-        .then((result) => {
+      void import('../../lib/backend/editorial-api')
+        .then(async ({ editorialRequest, staffThumbnailUrl }) => {
+          const result = await editorialRequest<{ items: { variantId: string; image: EditorialMedia | null }[] }>(
+            backendBaseUrl,
+            `blackbox/inventory-artwork?items=${encodeURIComponent(
+              JSON.stringify(
+                results.map((item) => ({
+                  variantId: item.variantId,
+                  sourceKind: item.sourceKind,
+                  sourceId: item.cmsSourceId ?? item.sourceId,
+                })),
+              ),
+            )}`,
+          );
           if (requestId === searchRequest.current)
             setArtwork(
               Object.fromEntries(
@@ -1073,19 +1075,21 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                       label="Show copies left"
                       onChange={(checked) => void handleShowLowStockChange(checked)}
                     />
-                    <PreorderControl
-                      key={
-                        selectedVariantId +
-                        ':' +
-                        selectedStockDetail?.stock.revision +
-                        ':' +
-                        (selectedStockDetail?.stock.preorder?.open ?? false)
-                      }
-                      preorder={selectedStockDetail?.stock.preorder ?? null}
-                      disabled={!canMutateSelectedStock || isSubmitting}
-                      busy={submittingIntent === 'preorder'}
-                      onSave={handlePreorderChange}
-                    />
+                    <Suspense fallback={<p role="status">Loading pre-order settings…</p>}>
+                      <PreorderControl
+                        key={
+                          selectedVariantId +
+                          ':' +
+                          selectedStockDetail?.stock.revision +
+                          ':' +
+                          (selectedStockDetail?.stock.preorder?.open ?? false)
+                        }
+                        preorder={selectedStockDetail?.stock.preorder ?? null}
+                        disabled={!canMutateSelectedStock || isSubmitting}
+                        busy={submittingIntent === 'preorder'}
+                        onSave={handlePreorderChange}
+                      />
+                    </Suspense>
                   </div>
                 )}
               </CardContent>
