@@ -17,8 +17,9 @@ import {
   parseVariantId,
 } from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
+import { PrismaStockRepository } from './prisma-stock-repository';
 
-type PrismaOrderStateClient = Pick<PrismaClient, 'checkoutOrder' | '$executeRawUnsafe' | '$queryRawUnsafe'>;
+type PrismaOrderStateClient = Pick<PrismaClient, 'checkoutOrder' | 'stock' | '$executeRawUnsafe' | '$queryRawUnsafe'>;
 
 function mapCheckoutOrder(record: {
   acceptedDeliveryAmountMinor?: number | null;
@@ -241,6 +242,9 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
   }
 
   public async listRecent(input: ListRecentCheckoutOrdersInput): Promise<CheckoutOrderRecord[]> {
+    const openPreorders = input.awaitingStock ? await new PrismaStockRepository(this.prisma).listOpenPreorders() : [];
+    if (input.awaitingStock && (openPreorders.length === 0 || (input.status && input.status !== 'paid'))) return [];
+    // ponytail: D1's 100 parameters fit about 40 open cycles; use a SQL join if that ceiling matters.
     const records = await this.prisma.checkoutOrder.findMany({
       orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       take: input.limit,
@@ -249,6 +253,21 @@ export class PrismaOrderStateRepository implements OrderStateRepository {
         ...(input.status ? { status: input.status } : {}),
         ...(input.notification ? { deliveries: { some: { status: input.notification } } } : {}),
         AND: [
+          ...(input.awaitingStock
+            ? [
+                {
+                  status: 'paid' as const,
+                  lines: {
+                    some: {
+                      OR: openPreorders.map((stock) => ({
+                        variantId: stock.variantId,
+                        preorderStartedAt: stock.preorder!.startedAt,
+                      })),
+                    },
+                  },
+                },
+              ]
+            : []),
           ...(input.cursor
             ? [
                 {

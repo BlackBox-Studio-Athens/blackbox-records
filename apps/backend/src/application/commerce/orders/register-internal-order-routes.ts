@@ -17,6 +17,11 @@ import {
 } from '../../../platform/interfaces/http/responses';
 import { createInternalOrderServices, type InternalOrderRead } from './internal-order-services';
 
+const preorderShipEstimateSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('month'), month: z.string(), part: z.enum(['early', 'mid', 'late']).nullable() }),
+  z.object({ kind: z.literal('date'), date: z.string() }),
+]);
+
 const orderStatusSchema = z
   .enum(['pending_payment', 'paid', 'not_paid', 'needs_review'])
   .openapi('InternalOrderStatus');
@@ -62,6 +67,12 @@ const paidOrderFulfillmentSchema = z.discriminatedUnion('kind', [
     kind: z.literal('current'),
     lines: z.array(
       z.object({
+        preorder: z
+          .object({
+            startedAt: z.string().datetime(),
+            shipEstimate: preorderShipEstimateSchema.nullable(),
+          })
+          .nullable(),
         displayName: z.string().min(1),
         lineAmountMinor: z.number().int().positive(),
         lineVatMinor: z.number().int().positive().nullable(),
@@ -101,6 +112,7 @@ const paidOrderFulfillmentSchema = z.discriminatedUnion('kind', [
 const checkoutOrderSchema = z
   .object({
     orderReference: z.string().optional(),
+    awaitingStock: z.boolean(),
     checkoutExpiresAt: z.string().datetime(),
     checkoutSessionId: z.string().nullable(),
     createdAt: z.string().datetime(),
@@ -184,6 +196,7 @@ const searchOrdersRoute = createRoute({
     query: orderListQuerySchema.extend({
       q: z.string().trim().max(200).optional(),
       notification: z.enum(['pending', 'needs_review']).optional(),
+      awaitingStock: z.literal('true').optional(),
       cursor: z
         .string()
         .regex(/^\d{4}-\d{2}-\d{2}T[\d:.]+Z~[A-Za-z0-9_-]{1,128}$/)
@@ -222,6 +235,7 @@ export function registerInternalOrderRoutes(app: AppOpenApi): void {
         status: query.status ?? null,
         ...(query.q ? { q: query.q } : {}),
         ...(query.notification ? { notification: query.notification } : {}),
+        ...(query.awaitingStock ? { awaitingStock: true } : {}),
         ...(createdAt && id ? { cursor: { createdAt: new Date(createdAt), id } } : {}),
       });
       const page = results.slice(0, limit);
@@ -285,6 +299,7 @@ function toCheckoutOrderResponse(read: InternalOrderRead) {
   const { deliveries, order } = read;
 
   return {
+    awaitingStock: read.awaitingStock,
     orderReference: order.id,
     checkoutExpiresAt: order.checkoutExpiresAt.toISOString(),
     checkoutSessionId: order.checkoutSessionId,
@@ -339,6 +354,7 @@ function toCurrentPaidFulfillmentResponse(order: CurrentPaidCheckoutOrder) {
     currencyCode: order.currencyCode,
     kind: 'current' as const,
     lines: order.lines.map((line) => ({
+      preorder: line.preorder ?? null,
       displayName: line.displayName,
       lineAmountMinor: line.lineAmountMinor,
       lineVatMinor: line.lineVatMinor ?? null,

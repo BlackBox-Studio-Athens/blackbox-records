@@ -1,6 +1,7 @@
 import type { InternalOrder } from './internal-order-api';
 
 export const exampleOrder: InternalOrder = {
+  awaitingStock: false,
   checkoutExpiresAt: '2026-09-11T15:00:00.000Z',
   checkoutSessionId: 'cs_test_example',
   createdAt: '2026-09-11T12:00:00.000Z',
@@ -53,6 +54,7 @@ export const exampleOrder: InternalOrder = {
     newsletterConsent: { optedIn: false },
     lines: [
       {
+        preorder: null,
         displayName: 'Example LP',
         optionLabel: 'Black vinyl',
         quantity: 1,
@@ -64,6 +66,7 @@ export const exampleOrder: InternalOrder = {
         variantId: 'example-vinyl',
       },
       {
+        preorder: null,
         displayName: 'Example tape',
         optionLabel: 'Cassette',
         quantity: 1,

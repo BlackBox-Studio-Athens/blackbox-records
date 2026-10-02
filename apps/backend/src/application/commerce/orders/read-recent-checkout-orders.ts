@@ -1,6 +1,7 @@
 import type { CheckoutOrderRecord, OrderStateRepository, OrderStatus } from '../../../domain/commerce/repositories/spi';
 
 export type ReadRecentCheckoutOrdersQuery = {
+  awaitingStock?: boolean;
   limit: number;
   status?: OrderStatus | null;
   q?: string;

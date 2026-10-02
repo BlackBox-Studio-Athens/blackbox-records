@@ -65,12 +65,12 @@ describe('internal order routes', () => {
     const first = currentPaidCheckoutOrder();
     const second = { ...first, id: 'older_order', createdAt: new Date(first.createdAt.getTime() - 1000) };
     mockReadRecentCheckoutOrders.mockResolvedValueOnce([
-      { order: first, deliveries: [] },
-      { order: second, deliveries: [] },
+      { order: first, deliveries: [], awaitingStock: true },
+      { order: second, deliveries: [], awaitingStock: true },
     ]);
     const app = createHttpApp();
     const response = await app.request(
-      'http://127.0.0.1/api/internal/orders/search?limit=1&q=Example&status=paid&notification=pending',
+      'http://127.0.0.1/api/internal/orders/search?limit=1&q=Example&status=paid&notification=pending&awaitingStock=true',
       undefined,
       LOCAL_ENV,
     );
@@ -84,19 +84,24 @@ describe('internal order routes', () => {
       status: 'paid',
       q: 'Example',
       notification: 'pending',
+      awaitingStock: true,
     });
-    mockReadRecentCheckoutOrders.mockResolvedValueOnce([{ order: second, deliveries: [] }]);
+    mockReadRecentCheckoutOrders.mockResolvedValueOnce([{ order: second, deliveries: [], awaitingStock: true }]);
     const next = await app.request(
-      `http://127.0.0.1/api/internal/orders/search?limit=1&q=Example&status=paid&notification=pending&cursor=${encodeURIComponent(result.nextCursor)}`,
+      `http://127.0.0.1/api/internal/orders/search?limit=1&q=Example&status=paid&notification=pending&awaitingStock=true&cursor=${encodeURIComponent(result.nextCursor)}`,
       undefined,
       LOCAL_ENV,
     );
-    expect(await next.json()).toMatchObject({ nextCursor: null, items: [{ orderReference: second.id }] });
+    expect(await next.json()).toMatchObject({
+      nextCursor: null,
+      items: [{ orderReference: second.id, awaitingStock: true }],
+    });
     expect(mockReadRecentCheckoutOrders).toHaveBeenLastCalledWith({
       limit: 2,
       status: 'paid',
       q: 'Example',
       notification: 'pending',
+      awaitingStock: true,
       cursor: { createdAt: first.createdAt, id: first.id },
     });
   });
@@ -109,6 +114,35 @@ describe('internal order routes', () => {
     );
     expect(response.status).toBe(401);
     expect(mockCreateInternalOrderServices).not.toHaveBeenCalled();
+  });
+
+  it.each(['false', '1', 'yes'])('rejects awaitingStock=%s before constructing services', async (value) => {
+    const response = await createHttpApp().request(
+      `http://127.0.0.1/api/internal/orders/search?awaitingStock=${value}`,
+      undefined,
+      LOCAL_ENV,
+    );
+    expect(response.status).toBe(400);
+    expect(mockCreateInternalOrderServices).not.toHaveBeenCalled();
+  });
+
+  it('exposes the immutable line estimate and derived awaiting flag in detail', async () => {
+    const order = currentPaidCheckoutOrder();
+    order.lines[0]!.preorder = {
+      startedAt: '2026-09-01T00:00:00.000Z',
+      shipEstimate: { kind: 'month', month: '2026-11', part: 'mid' },
+    };
+    mockReadCheckoutOrder.mockResolvedValueOnce({ order, deliveries: [], awaitingStock: true });
+    const response = await createHttpApp().request(
+      'http://127.0.0.1/api/internal/orders/checkout-sessions/cs_test_paid',
+      undefined,
+      LOCAL_ENV,
+    );
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      awaitingStock: true,
+      fulfillment: { kind: 'current', lines: [{ preorder: order.lines[0]!.preorder }] },
+    });
   });
 
   it('lists recent checkout orders for operators on the protected internal surface', async () => {
@@ -126,6 +160,7 @@ describe('internal order routes', () => {
     Object.assign(paidOrder.lines[0]!, { lineVatMinor: 484, taxRatePercent: 24 });
     mockReadRecentCheckoutOrders.mockResolvedValueOnce([
       {
+        awaitingStock: false,
         deliveries: [
           {
             attemptCount: 1,
@@ -222,6 +257,7 @@ describe('internal order routes', () => {
 
   it('returns checkout order detail by checkout session id', async () => {
     mockReadCheckoutOrder.mockResolvedValueOnce({
+      awaitingStock: false,
       deliveries: [],
       order: {
         checkoutExpiresAt: new Date('2026-04-25T11:30:00.000Z'),
@@ -253,6 +289,7 @@ describe('internal order routes', () => {
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
     await expect(response.json()).resolves.toEqual({
+      awaitingStock: false,
       orderReference: 'order_2',
       acceptedDeliveryAmountMinor: null,
       acceptedParcelTier: null,
@@ -278,6 +315,7 @@ describe('internal order routes', () => {
 
   it('does not expose partial fulfillment fields from an incomplete paid row', async () => {
     mockReadCheckoutOrder.mockResolvedValueOnce({
+      awaitingStock: false,
       deliveries: [],
       order: {
         ...currentPaidCheckoutOrder(),

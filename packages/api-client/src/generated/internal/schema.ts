@@ -487,6 +487,7 @@ export type components = {
             acceptedDeliveryAmountMinor: number | null;
             /** @enum {string|null} */
             acceptedParcelTier: "small" | "medium" | null;
+            awaitingStock: boolean;
             /** Format: date-time */
             checkoutExpiresAt: string;
             checkoutSessionId: string | null;
@@ -531,6 +532,21 @@ export type components = {
                     lineAmountMinor: number;
                     lineVatMinor: number | null;
                     optionLabel: string | null;
+                    preorder: {
+                        shipEstimate: {
+                            /** @enum {string} */
+                            kind: "month";
+                            month: string;
+                            /** @enum {string|null} */
+                            part: "early" | "mid" | "late" | null;
+                        } | {
+                            date: string;
+                            /** @enum {string} */
+                            kind: "date";
+                        } | null;
+                        /** Format: date-time */
+                        startedAt: string;
+                    } | null;
                     quantity: number;
                     storeItemSlug: string;
                     taxRatePercent: number | null;
@@ -1070,6 +1086,7 @@ export interface operations {
     searchInternalOrders: {
         parameters: {
             query?: {
+                awaitingStock?: "true";
                 cursor?: string;
                 limit?: number;
                 notification?: "pending" | "needs_review";

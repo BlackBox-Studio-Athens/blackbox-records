@@ -17,6 +17,7 @@ export type StockRecord = {
 export type StockState = StockStateValue;
 
 export interface StockRepository {
+  listOpenPreorders(): Promise<StockRecord[]>;
   findByVariantId(variantId: VariantId): Promise<StockRecord | null>;
   save(variantId: VariantId, state: StockState): Promise<StockRecord>;
 }

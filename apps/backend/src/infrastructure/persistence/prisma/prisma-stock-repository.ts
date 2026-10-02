@@ -1,5 +1,11 @@
 import type { StockRecord, StockRepository, StockState } from '../../../domain/commerce/repositories/spi';
-import { createStockQuantity, parseVariantId, stockPreorderFromColumns } from '../../../domain/commerce';
+import {
+  athensToday,
+  createStockQuantity,
+  isPreorderOpen,
+  parseVariantId,
+  stockPreorderFromColumns,
+} from '../../../domain/commerce';
 import type { PrismaClient } from '../../../generated/prisma/client';
 
 type PrismaStockClient = Pick<PrismaClient, 'stock'>;
@@ -33,6 +39,12 @@ function mapStock(record: {
 
 export class PrismaStockRepository implements StockRepository {
   public constructor(private readonly prisma: PrismaStockClient) {}
+
+  public async listOpenPreorders(): Promise<StockRecord[]> {
+    const today = athensToday();
+    const records = await this.prisma.stock.findMany({ where: { preorderStartedAt: { not: null } } });
+    return records.map(mapStock).filter((stock) => stock.preorder && isPreorderOpen(stock.preorder, today));
+  }
 
   public async findByVariantId(variantId: string): Promise<StockRecord | null> {
     const record = await this.prisma.stock.findUnique({

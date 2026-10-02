@@ -110,6 +110,9 @@
           "orderReference": {
             "type": "string"
           },
+          "awaitingStock": {
+            "type": "boolean"
+          },
           "checkoutExpiresAt": {
             "type": "string",
             "format": "date-time"
@@ -288,6 +291,78 @@
                     "items": {
                       "type": "object",
                       "properties": {
+                        "preorder": {
+                          "type": [
+                            "object",
+                            "null"
+                          ],
+                          "properties": {
+                            "startedAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            },
+                            "shipEstimate": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "month"
+                                      ]
+                                    },
+                                    "month": {
+                                      "type": "string"
+                                    },
+                                    "part": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ],
+                                      "enum": [
+                                        "early",
+                                        "mid",
+                                        "late",
+                                        null
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "month",
+                                    "part"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "date"
+                                      ]
+                                    },
+                                    "date": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "kind",
+                                    "date"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "startedAt",
+                            "shipEstimate"
+                          ]
+                        },
                         "displayName": {
                           "type": "string",
                           "minLength": 1
@@ -334,6 +409,7 @@
                         }
                       },
                       "required": [
+                        "preorder",
                         "displayName",
                         "lineAmountMinor",
                         "lineVatMinor",
@@ -578,6 +654,7 @@
           }
         },
         "required": [
+          "awaitingStock",
           "checkoutExpiresAt",
           "checkoutSessionId",
           "createdAt",
@@ -2073,6 +2150,17 @@
             },
             "required": false,
             "name": "notification",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true"
+              ]
+            },
+            "required": false,
+            "name": "awaitingStock",
             "in": "query"
           },
           {

@@ -274,6 +274,7 @@ export type CheckoutOrderTransitionInput = {
 };
 
 export type ListRecentCheckoutOrdersInput = {
+  awaitingStock?: boolean;
   limit: number;
   status?: OrderStatus | null;
   q?: string;

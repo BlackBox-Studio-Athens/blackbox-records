@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { athensToday, isPreorderOpen } from '../../../domain/commerce';
 
 import {
   InvalidStockOperationError,
@@ -71,6 +72,11 @@ class InMemoryStockRepository implements StockRepository {
 
   public async findByVariantId(variantId: string): Promise<StockRecord | null> {
     return this.records.get(variantId) ?? null;
+  }
+
+  public async listOpenPreorders(): Promise<StockRecord[]> {
+    const today = athensToday();
+    return [...this.records.values()].filter((stock) => stock.preorder && isPreorderOpen(stock.preorder, today));
   }
 
   public async save(variantId: string, state: { onlineQuantity: number; quantity: number }): Promise<StockRecord> {

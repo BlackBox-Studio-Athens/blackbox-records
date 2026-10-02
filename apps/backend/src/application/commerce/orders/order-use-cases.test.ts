@@ -1,10 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   CheckoutOrderNotFoundError,
   createPendingCheckoutOrder,
   InvalidOrderTransitionError,
   readCheckoutOrder,
+  readRecentCheckoutOrders,
   transitionCheckoutOrder,
 } from './';
 import type {
@@ -15,6 +16,9 @@ import type {
   OrderStatus,
 } from '../../../domain/commerce/repositories/spi';
 import { EMPTY_PAID_CHECKOUT_ORDER_FIELDS } from '../../../domain/commerce/repositories/spi';
+import { isAwaitingStock } from './read-checkout-order';
+import { currentPaidCheckoutOrder } from '../../../../test/fixtures/current-paid-checkout-order';
+import { createStockQuantity } from '../../../domain/commerce';
 import {
   checkoutSessionId,
   paymentIntentId,
@@ -91,6 +95,43 @@ class InMemoryOrderStateRepository implements OrderStateRepository {
 }
 
 describe('order lifecycle use cases', () => {
+  it('derives awaiting stock only from paid lines matching a current open cycle', () => {
+    const order = currentPaidCheckoutOrder();
+    const cycle = '2026-09-01T00:00:00.000Z';
+    order.lines[0]!.preorder = { startedAt: cycle, shipEstimate: null };
+    const stock = {
+      revision: 0,
+      variantId: order.lines[0]!.variantId,
+      quantity: createStockQuantity(0),
+      onlineQuantity: createStockQuantity(0),
+      restockPlanned: false,
+      showLowStock: false,
+      preorder: { startedAt: cycle, shipEstimate: { kind: 'month' as const, month: '2000-01', part: null } },
+      createdAt: order.createdAt,
+      updatedAt: order.createdAt,
+    };
+    expect(isAwaitingStock(order, [stock])).toBe(true);
+    expect(isAwaitingStock(order, [])).toBe(false);
+    expect(isAwaitingStock(order, [{ ...stock, preorder: { ...stock.preorder, startedAt: 'new-cycle' } }])).toBe(false);
+    expect(isAwaitingStock(order, [{ ...stock, variantId: variantId('variant_other') }])).toBe(false);
+    expect(isAwaitingStock({ ...order, status: 'pending_payment' }, [stock])).toBe(false);
+    expect(isAwaitingStock({ ...order, lines: [] }, [stock])).toBe(false);
+  });
+
+  it('passes the awaiting filter and combined search options to persistence', async () => {
+    const listRecent = vi.fn().mockResolvedValue([]);
+    const query = {
+      limit: 26,
+      awaitingStock: true,
+      status: 'paid' as const,
+      q: 'Buyer',
+      notification: 'pending' as const,
+    };
+    const repository = new InMemoryOrderStateRepository();
+    repository.listRecent = listRecent;
+    await expect(readRecentCheckoutOrders(repository, query)).resolves.toEqual([]);
+    expect(listRecent).toHaveBeenCalledWith(query);
+  });
   const shippingLocker = {
     country_code: 'GR' as const,
     locker_id: '4',
