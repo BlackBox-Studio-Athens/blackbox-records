@@ -213,12 +213,15 @@ describe('shell page snapshots', () => {
         if (selector === '[data-store-coverflow-controls]') return controls;
         if (selector === '[data-store-coverflow-toggle]') return toggle;
         if (selector === '[data-store-coverflow-status]') return status;
+        if (selector === '[data-store-coverflow-disclosure-rail]') return disclosureRail;
         return null;
       },
       querySelectorAll(selector: string) {
         if (selector.includes('[data-store-coverflow-next]')) return [previousButton, nextButton, toggle];
         return [];
       },
+    };
+    const disclosureRail = {
       style: {
         removeProperty: (name: string) => styleProperties.delete(name),
       },

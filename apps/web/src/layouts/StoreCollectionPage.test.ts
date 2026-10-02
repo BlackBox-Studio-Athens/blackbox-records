@@ -98,7 +98,7 @@ describe('Store collection category surfaces', () => {
       '.store-item-card__listen .music-listen-trigger {\n  position: relative;\n  z-index: 3;',
     );
     expect(cssSource).toContain('height: calc(var(--store-cover-size) + 9.25rem)');
-    expect(cssSource).toContain('> :not(.store-item-card__price)');
+    expect(cssSource).toContain('> :is(.brand-card-title, .store-item-card__artist, .store-item-card__option)');
     expect(cssSource).toContain(
       "[data-store-coverflow-position='active']\n  .store-item-card__content {\n  display: flex;",
     );

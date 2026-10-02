@@ -37,7 +37,9 @@ function restoreIslandServerMarkup(liveRoot: ParentNode, cloneRoot: ParentNode) 
 export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-coverflow-group]').forEach((groupElement) => {
     groupElement.dataset.storeCoverflowMode = 'catalog';
-    groupElement.style.removeProperty('--store-coverflow-position-ratio');
+    groupElement
+      .querySelector<HTMLElement>('[data-store-coverflow-disclosure-rail]')
+      ?.style.removeProperty('--store-coverflow-position-ratio');
     groupElement.removeAttribute('data-store-coverflow-ready');
     groupElement.removeAttribute('data-store-coverflow-reveal');
     groupElement.removeAttribute('data-store-coverflow-transitioning');

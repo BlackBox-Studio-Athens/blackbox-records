@@ -4863,7 +4863,9 @@ html[data-store-coverflow-capable]
   [data-store-coverflow-mode='preview']
   [data-store-coverflow-position='active']
   .store-item-card__content
-  > :not(.store-item-card__price) {
+  > :is(.brand-card-title, .store-item-card__artist, .store-item-card__option) {
+  /* Named children, not :not(.store-item-card__price): a featureless rightmost compound makes every
+     coverflow mode change restyle the whole catalog. */
   display: none;
 }
 
