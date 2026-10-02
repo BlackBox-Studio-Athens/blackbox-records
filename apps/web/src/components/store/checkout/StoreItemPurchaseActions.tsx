@@ -237,27 +237,36 @@ export default function StoreItemPurchaseActions({
     );
   }
 
+  const addToCartButton = (
+    <Button
+      type="button"
+      size="lg"
+      variant={isAddedVisible ? 'outline' : 'default'}
+      className={purchaseState.lowStockLabel ? 'w-full whitespace-normal' : purchaseActionLayoutClasses}
+      data-store-item-add-to-cart
+      data-store-item-added={isAddedVisible ? '' : undefined}
+      onClick={() => requestStoreCartAddItem(activeCartItem)}
+    >
+      {isAddedVisible ? STORE_ITEM_PURCHASE_ACTION_COPY.added : STORE_ITEM_PURCHASE_ACTION_COPY.addToCart}
+      {isAddedVisible && (
+        <span key={addedCount} className="site-feedback-hairline" data-duration="4s" aria-hidden="true" />
+      )}
+    </Button>
+  );
+
   return (
     <>
-      {purchaseState.lowStockLabel && (
-        <p className="store-low-stock" data-store-item-low-stock>
-          {purchaseState.lowStockLabel}
-        </p>
+      {purchaseState.lowStockLabel ? (
+        // The notice and Add To Cart read as one unit: the tab shares the button's width and top edge.
+        <div className={cn(purchaseActionLayoutClasses, 'store-low-stock-purchase')}>
+          <p className="store-low-stock" data-store-item-low-stock>
+            {purchaseState.lowStockLabel}
+          </p>
+          {addToCartButton}
+        </div>
+      ) : (
+        addToCartButton
       )}
-      <Button
-        type="button"
-        size="lg"
-        variant={isAddedVisible ? 'outline' : 'default'}
-        className={purchaseActionLayoutClasses}
-        data-store-item-add-to-cart
-        data-store-item-added={isAddedVisible ? '' : undefined}
-        onClick={() => requestStoreCartAddItem(activeCartItem)}
-      >
-        {isAddedVisible ? STORE_ITEM_PURCHASE_ACTION_COPY.added : STORE_ITEM_PURCHASE_ACTION_COPY.addToCart}
-        {isAddedVisible && (
-          <span key={addedCount} className="site-feedback-hairline" data-duration="4s" aria-hidden="true" />
-        )}
-      </Button>
       <span className="sr-only" aria-live="polite">
         {isAddedVisible ? STORE_ITEM_PURCHASE_ACTION_COPY.addedAnnouncement : ''}
       </span>

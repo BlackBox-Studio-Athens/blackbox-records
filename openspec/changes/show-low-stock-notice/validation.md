@@ -15,3 +15,11 @@
   - Migration `0026` on UAT/PRD D1.
   - The staff switch against a running Local stack.
   - Real fonts. The screenshots used the fallback typeface.
+
+## Redesign without the dot — 2026-10-02
+
+- At the label's request, the pulsing dot was removed. DESIGN.md forbids fake urgency, and Baymard-style guidance favours real counts of 1–5 shown next to the buy action without decoration.
+- Cards: the notice keeps the status chip's exact box. It measured 20.375 px high at the same y as Sold Out, and differs only by its Store Blood fill.
+- Item page: a 28 px tab is fused to Add To Cart. Measured at 1280 px and 390 px (2× DPR), the tab's x and width equal the button's (224 px and 358 px), and the tab's bottom edge equals the button's top.
+- `e2e/store-cart.spec.ts` asserts this alignment. Both copies-left specs passed in chromium-desktop and chromium-mobile.
+- `pnpm validate` (`mode: local`) passed with before/after fingerprint `90534c1ad253f57d6b227e55215aa190ef0045afc7f27e5e251a3b3064cb929c`. Strict OpenSpec validation passed.

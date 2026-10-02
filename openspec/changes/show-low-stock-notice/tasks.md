@@ -13,7 +13,7 @@
 
 ## 3. Storefront
 
-- [x] 3.1 Show "Only N left" in the Store card status slot while keeping Buy, and above Add To Cart on the item page, styled as a Store Blood status with a reduced-motion-safe pulse.
+- [x] 3.1 Show "Only N left" in the Store card status slot while keeping Buy, and above Add To Cart on the item page, styled as a static Store Blood status: the card chip's box on cards and a tab fused to Add To Cart on the item page.
 
 ## 4. Acceptance
 

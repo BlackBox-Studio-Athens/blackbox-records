@@ -9,7 +9,7 @@ The label wants shoppers to see a clear "x copies left" notice when an item is n
 - A per-variant **Show copies left** switch sits beside Restock planned in the protected stock detail, which the item editor's Price & stock tab also shows. It is stored as `Stock.showLowStock` and defaults to off for new and existing items. Writes are revision-checked and leave quantities and the stock ledger unchanged.
 - When the switch is on, the item is stocked, and its effective available-to-buy-online stock is between 1 and 5, the Worker adds an optional `lowStockQuantity` to the ready listing-price record and to the ready item Store Offer. Every other item still receives no stock count.
 - Store collection cards show "Only N left" in the status slot beside the price, and Buy stays available. The item page shows the same notice above Add To Cart.
-- The notice uses the Store Blood outline on its tinted surface, with a small accent dot that pulses gently unless reduced motion is requested. It is status text, not a control.
+- On cards the notice keeps the status chip's exact box and differs from Sold Out only by its Store Blood fill. On the item page it is a 28px tab fused to the top edge of Add To Cart, sharing its width, square 1px edge and display type. It never animates: no dot or pulse, following the rule against fake urgency. It is status text, not a control.
 
 ## Scope
 

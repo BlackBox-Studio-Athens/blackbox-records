@@ -268,6 +268,35 @@ test('a Store card shows copies left beside its price without hiding Buy', async
   await expect(page.locator(`[data-store-listing-availability][data-store-item-slug="${secondSlug}"]`)).toBeHidden();
 });
 
+test('the item page fuses copies left to the top edge of Add To Cart', async ({ page }) => {
+  const storeItemSlug = 'disintegration-black-vinyl-lp';
+  await page.route(`**/api/store/items/${storeItemSlug}`, (route) =>
+    route.fulfill({
+      json: {
+        storeItemSlug,
+        variantId: `${storeItemSlug}_standard`,
+        availability: { label: 'Available', status: 'available' },
+        canCheckout: true,
+        catalogStatus: 'ready',
+        lowStockQuantity: 2,
+        price: { kind: 'fixed', amountMinor: 2800, currencyCode: 'EUR', display: '€28.00' },
+      },
+    }),
+  );
+  await page.goto(`store/${storeItemSlug}/`);
+  await waitForShell(page);
+
+  const notice = page.locator('[data-store-item-low-stock]');
+  const addToCart = page.locator('[data-store-item-add-to-cart]');
+  await expect(notice).toHaveText('Only 2 left');
+  await expect(addToCart).toBeEnabled();
+  const [tab, button] = await Promise.all([notice.boundingBox(), addToCart.boundingBox()]);
+  expect(tab && button).toBeTruthy();
+  expect(tab!.x).toBe(button!.x);
+  expect(tab!.width).toBe(button!.width);
+  expect(tab!.y + tab!.height).toBeCloseTo(button!.y, 2);
+});
+
 test('the checkout pay control fills in place when the shipping quote arrives', async ({ page }) => {
   await page.goto(`.${localRepresentativePaths.storeItem}`);
   await waitForShell(page);
