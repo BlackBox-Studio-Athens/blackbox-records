@@ -440,6 +440,7 @@ export function createStoreCoverflowController(
   };
 
   const groupListeners = dom.groups.map((group) => {
+    const wheelSurface = group.stage.closest<HTMLElement>('.store-coverflow-shell') ?? group.stage;
     let suppressClick = false;
     let wheelState: StoreCoverflowWheelState = {
       accumulatedDelta: 0,
@@ -631,6 +632,7 @@ export function createStoreCoverflowController(
       const delta = getStoreCoverflowWheelDelta(event, group.stage.clientWidth);
       if (delta === null) return;
       event.preventDefault();
+      event.stopPropagation();
       const result = advanceStoreCoverflowWheelGesture(wheelState, delta, event.timeStamp);
       wheelState = result.state;
       if (result.move) {
@@ -647,13 +649,14 @@ export function createStoreCoverflowController(
     group.element.addEventListener('keydown', onKeyDown);
     group.stage.addEventListener('pointercancel', onPointerCancel);
     group.stage.addEventListener('pointerdown', onPointerDown);
-    group.stage.addEventListener('pointerleave', resetWheelState);
+    wheelSurface.addEventListener('pointerleave', resetWheelState);
     group.stage.addEventListener('pointermove', onPointerMove);
     group.stage.addEventListener('pointerup', onPointerUp);
-    group.stage.addEventListener('wheel', onWheel, { passive: false });
+    wheelSurface.addEventListener('wheel', onWheel, { passive: false });
     renderGroup(group);
     return {
       group,
+      wheelSurface,
       onClick,
       onFocusIn,
       onFocusOut,
@@ -692,6 +695,7 @@ export function createStoreCoverflowController(
       groupListeners.forEach(
         ({
           group,
+          wheelSurface,
           onClick,
           onFocusIn,
           onFocusOut,
@@ -709,10 +713,10 @@ export function createStoreCoverflowController(
           group.element.removeEventListener('keydown', onKeyDown);
           group.stage.removeEventListener('pointercancel', onPointerCancel);
           group.stage.removeEventListener('pointerdown', onPointerDown);
-          group.stage.removeEventListener('pointerleave', onPointerLeave);
+          wheelSurface.removeEventListener('pointerleave', onPointerLeave);
           group.stage.removeEventListener('pointermove', onPointerMove);
           group.stage.removeEventListener('pointerup', onPointerUp);
-          group.stage.removeEventListener('wheel', onWheel);
+          wheelSurface.removeEventListener('wheel', onWheel);
           group.lastActiveIndex = 0;
           group.state = { mode: 'catalog' };
           renderGroup(group);
