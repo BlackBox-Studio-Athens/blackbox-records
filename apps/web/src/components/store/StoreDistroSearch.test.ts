@@ -195,6 +195,40 @@ describe('Distro search DOM filtering', () => {
     await loadExactFirstFuzzySearch();
   });
 
+  it.each(['all', 'distro'])('combines pre-orders with %s text, artist and format filters', (scope) => {
+    const { cards, dom, formatKeys } = createDom();
+    if (scope === 'all') dom.formatLinks = [];
+    cards[0]!.setAttribute('data-store-preorder');
+    cards[2]!.setAttribute('data-store-preorder');
+    const original = [...dom.items];
+    expect(applyDistroSearch(dom, null, true)).toBe(2);
+    expect(cards.map((card) => card.hasAttribute('data-distro-search-hidden'))).toEqual([false, true, false]);
+    const band = new Set(dom.items.filter((item) => item.artist === 'Band').map((item) => item.element));
+    if (scope === 'distro') applyDistroFormatSelection(dom, formatKeys[0]!);
+    expect(applyDistroSearch(dom, band, true)).toBe(scope === 'distro' ? 1 : 2);
+    expect(applyDistroSearch(dom, new Set([dom.items[1]!.element]), true)).toBe(0);
+    applyDistroFormatSelection(dom, 'all');
+    expect(applyDistroSearch(dom, null)).toBe(3);
+    expect(dom.items).toEqual(original);
+  });
+
+  it('reads refreshed pre-order membership and preserves native hidden cards', () => {
+    const { cards, dom } = createDom();
+    cards[0]!.setAttribute('data-store-preorder');
+    cards[2]!.setAttribute('data-store-preorder');
+    cards[2]!.hidden = true;
+    expect(applyDistroSearch(dom, null, true)).toBe(1);
+    cards[0]!.removeAttribute('data-store-preorder');
+    cards[1]!.setAttribute('data-store-preorder');
+    expect(applyDistroSearch(dom, null, true)).toBe(1);
+    expect(cards.map((card) => card.hasAttribute('data-distro-search-hidden'))).toEqual([true, false, true]);
+    cards[1]!.removeAttribute('data-store-preorder');
+    cards[2]!.removeAttribute('data-store-preorder');
+    expect(applyDistroSearch(dom, null, true)).toBe(0);
+    expect(applyDistroSearch(dom, null)).toBe(2);
+    expect(cards[2]!.hidden).toBe(true);
+  });
+
   it.each(['all', 'distro'])('matches and clears the %s catalog without replacing or reordering cards', (scope) => {
     const { dom } = createDom();
     if (scope === 'all') {

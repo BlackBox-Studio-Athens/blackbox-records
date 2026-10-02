@@ -112,12 +112,14 @@ export function getDistroSearchVisibleElements(
   dom: Pick<DistroSearchDom, 'items'>,
   matchedElements: ReadonlySet<HTMLElement> | null,
   selectedFormat: string | undefined,
+  preordersOnly = false,
 ) {
   return new Set(
     dom.items
       .filter(
         (item) =>
           !item.element.hidden &&
+          (!preordersOnly || item.element.hasAttribute('data-store-preorder')) &&
           (!matchedElements || matchedElements.has(item.element)) &&
           (!selectedFormat || item.formatKey === selectedFormat),
       )
@@ -129,8 +131,12 @@ function applyDistroSearchVisibility(dom: DistroSearchDom, visibleElements: Read
   dom.items.forEach((item) => setSearchHidden(item.element, !visibleElements.has(item.element)));
 }
 
-export function applyDistroSearch(dom: DistroSearchDom, matchedElements: ReadonlySet<HTMLElement> | null) {
-  const visibleElements = getDistroSearchVisibleElements(dom, matchedElements, dom.root.dataset.distroSelectedFormat);
+export function applyDistroSearch(
+  dom: DistroSearchDom,
+  matchedElements: ReadonlySet<HTMLElement> | null,
+  preordersOnly = false,
+) {
+  const visibleElements = getDistroSearchVisibleElements(dom, matchedElements, dom.root.dataset.distroSelectedFormat, preordersOnly);
   applyDistroSearchVisibility(dom, visibleElements);
   return visibleElements.size;
 }
@@ -273,10 +279,37 @@ export function StoreSearchToolbar({ resultsId }: { resultsId: string }) {
         <Button type="button" variant="ghost" disabled hidden data-store-clear-search>
           Clear search
         </Button>
+        <Button
+          type="button"
+          variant="chip"
+          size="lg"
+          className="store-preorder-filter"
+          aria-pressed="false"
+          aria-controls={resultsId}
+          disabled
+          hidden
+          data-store-preorder-filter
+        >
+          Pre-orders <span className="store-preorder-filter__count" data-store-preorder-count>0</span>
+        </Button>
         <Button type="button" variant="ghost" disabled hidden data-store-clear-filters>
           Clear filters
         </Button>
       </div>
+      <dl className="store-preorder-notes" aria-label="About pre-orders" data-store-preorder-notes hidden>
+        <div>
+          <dt>You pay today</dt>
+          <dd>Charged in full at order, like any other purchase.</dd>
+        </div>
+        <div>
+          <dt>We wait for the copies</dt>
+          <dd>Every item states when we expect to ship. If that changes, we email you.</dd>
+        </div>
+        <div>
+          <dt>One parcel</dt>
+          <dd>Your whole order is sent together by BOX NOW when the pre-order arrives.</dd>
+        </div>
+      </dl>
       <p className="store-empty-results" data-store-empty-results hidden>
         No Store items match these filters.
       </p>
@@ -296,9 +329,11 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
   const [artist, setArtist] = useState('');
   const [format, setFormat] = useState('all');
   const [fuzzyRevision, setFuzzyRevision] = useState(0);
+  const [preorders, setPreorders] = useState({ count: 0, active: false });
   const [artistHost, setArtistHost] = useState<HTMLElement | null>(null);
   const [choices, setChoices] = useState<StoreArtistChoice[]>([]);
-  const filtered = Boolean(query.trim() || artist);
+  const preordersOnly = preorders.active && preorders.count > 0;
+  const filtered = Boolean(query.trim() || artist || preordersOnly);
   const hasFilters = filtered || format !== 'all';
   // Derive the visible set while rendering so each keystroke commits once, count included.
   const visibleElements = useMemo(() => {
@@ -311,10 +346,11 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       dom,
       filtered ? new Set(selected.map((item) => item.element)) : null,
       formatKey === ALL_DISTRO_FORMATS_KEY ? undefined : formatKey,
+      preordersOnly,
     );
     // choices changes whenever the island reads a new catalog DOM; fuzzyRevision reruns the search
     // once the lazily loaded fuzzy matcher is available.
-  }, [ready, choices, query, artist, format, filtered, fuzzyRevision]);
+  }, [ready, choices, query, artist, format, filtered, fuzzyRevision, preorders]);
   const count = visibleElements?.size ?? 0;
 
   useEffect(() => {
@@ -334,6 +370,13 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     });
     setArtistHost(document.querySelector<HTMLElement>('[data-store-artists]'));
     setChoices(getStoreArtistChoices(dom.items));
+    const countPreorders = () => dom.items.filter((item) => item.element.hasAttribute('data-store-preorder')).length;
+    setPreorders({ count: countPreorders(), active: window.location.hash === '#preorders' });
+    const onListingApplied = () => {
+      const count = countPreorders();
+      setPreorders((current) => ({ count, active: count > 0 && current.active }));
+    };
+    document.addEventListener('blackbox:store-listing-applied', onListingApplied);
     const initialFormat = resolveInitialDistroFormatKey(window.location.hash, dom);
     setFormat(initialFormat);
     pendingFocus.current = initialFormat !== 'all';
@@ -360,6 +403,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     const summary = toolbar?.querySelector<HTMLParagraphElement>('[data-store-search-summary]');
     const clearSearch = toolbar?.querySelector<HTMLButtonElement>('[data-store-clear-search]');
     const clearAll = toolbar?.querySelector<HTMLButtonElement>('[data-store-clear-filters]');
+    const preorderFilter = toolbar?.querySelector<HTMLButtonElement>('[data-store-preorder-filter]');
     inputRef.current = input ?? null;
     summaryRef.current = summary ?? null;
     const onInput = () => setQuery(input?.value ?? '');
@@ -371,25 +415,30 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       setQuery('');
       setArtist('');
       setFormat('all');
+      setPreorders((current) => ({ ...current, active: false }));
       input?.focus();
     };
+    const onPreorderFilter = () => setPreorders((current) => ({ ...current, active: !current.active }));
     input?.addEventListener('input', onInput);
     clearSearch?.addEventListener('click', onClearSearch);
     clearAll?.addEventListener('click', onClearAll);
+    preorderFilter?.addEventListener('click', onPreorderFilter);
     if (input) input.disabled = false;
     if (clearSearch) clearSearch.disabled = false;
     if (clearAll) clearAll.disabled = false;
+    if (preorderFilter) preorderFilter.disabled = false;
     toolbar?.setAttribute('data-store-search-ready', '');
     return () => {
       input?.removeEventListener('input', onInput);
       clearSearch?.removeEventListener('click', onClearSearch);
       clearAll?.removeEventListener('click', onClearAll);
+      preorderFilter?.removeEventListener('click', onPreorderFilter);
       if (input) {
         input.disabled = true;
         input.value = '';
       }
       if (summary) summary.textContent = '';
-      for (const button of [clearSearch, clearAll])
+      for (const button of [clearSearch, clearAll, preorderFilter])
         if (button) {
           button.disabled = true;
           button.hidden = true;
@@ -397,6 +446,9 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       toolbar?.removeAttribute('data-store-search-ready');
       const empty = document.querySelector<HTMLElement>('[data-store-empty-results]');
       if (empty) empty.hidden = true;
+      const notes = document.querySelector<HTMLElement>('[data-store-preorder-notes]');
+      if (notes) notes.hidden = true;
+      document.removeEventListener('blackbox:store-listing-applied', onListingApplied);
       dom.navigation?.removeEventListener('click', onFormat);
       applyDistroFormatSelection(dom, 'all');
       controllerRef.current?.cleanup();
@@ -431,11 +483,20 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     const toolbar = document.querySelector<HTMLElement>('[data-store-search-toolbar]');
     const clearSearch = toolbar?.querySelector<HTMLButtonElement>('[data-store-clear-search]');
     const clearAll = toolbar?.querySelector<HTMLButtonElement>('[data-store-clear-filters]');
+    const preorderFilter = toolbar?.querySelector<HTMLButtonElement>('[data-store-preorder-filter]');
+    const preorderCount = toolbar?.querySelector<HTMLElement>('[data-store-preorder-count]');
+    if (preorderFilter) {
+      preorderFilter.hidden = preorders.count === 0;
+      preorderFilter.setAttribute('aria-pressed', String(preordersOnly));
+    }
+    if (preorderCount) preorderCount.textContent = String(preorders.count);
+    const notes = document.querySelector<HTMLElement>('[data-store-preorder-notes]');
+    if (notes) notes.hidden = !preordersOnly;
     if (clearSearch) clearSearch.hidden = !query;
     if (clearAll) clearAll.hidden = !hasFilters;
     const empty = document.querySelector<HTMLElement>('[data-store-empty-results]');
     if (empty) empty.hidden = count !== 0;
-  }, [ready, query, count, hasFilters]);
+  }, [ready, query, count, hasFilters, preorders, preordersOnly]);
 
   if (!ready) return null;
   return artistHost ? <StoreArtistPicker artist={artist} host={artistHost} onArtistChange={setArtist} /> : null;
