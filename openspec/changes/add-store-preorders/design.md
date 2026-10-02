@@ -252,3 +252,5 @@ One agent per slice. A slice edits only its files and, for the slice that edits 
 | 7   | W13 (e2e), W14, W8, S5                       |
 
 Task groups in tasks.md carry each slice's files and checks.
+
+The user added targeted removal passes on 2 October 2026 and selected ultra effort for them. After run 5, a Sol 6.1 ultra chat simplifies completed pre-order backend code; after run 7, Sol 6.1 ultra chats simplify completed web and staff code with disjoint file ownership. Each pass traces actual callers and required remaining consumers before removing dead code, needless wrappers or duplication. It preserves behavior, trust-boundary validation, accessibility and module ownership. Concrete affected files are recorded before editing; focused checks, source-bound validation and local commits follow any removals. Ordinary implementation, fixes and gates remain high effort. These passes are task group 33 and do not add product requirements.
