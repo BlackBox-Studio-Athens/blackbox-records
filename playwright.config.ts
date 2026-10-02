@@ -27,8 +27,9 @@ export default defineConfig({
   use: { baseURL, trace: 'retain-on-failure', screenshot: 'only-on-failure' },
   webServer: {
     // Reuses whatever already serves this checkout's URL (site:dev:bg or the full stack); otherwise runs astro dev for
-    // this run only.
-    command: 'pnpm site:dev',
+    // this run only. Plain node, not `pnpm site:dev`: pnpm runs its script in another process group, which Playwright's
+    // teardown does not stop, so on Linux the run never exits after the last test.
+    command: 'node --import tsx apps/web/scripts/start-static-site-dev.mjs',
     url: baseURL,
     reuseExistingServer: true,
     timeout: 180_000,

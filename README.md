@@ -181,7 +181,7 @@ pnpm site:dev:stop
 
 `pnpm site:dev` remains the foreground static-site launcher for WebStorm and local stack process supervision.
 
-Browser end-to-end checks are opt-in and not part of `pnpm validate`. `pnpm test:e2e e2e/<name>.spec.ts` (or `-g <text>`) runs the named Playwright specs against this checkout's Local URL, reusing a site already serving it or starting `pnpm site:dev` for the run. Locally a run must name a spec or title filter; the whole suite runs at PRD promotion. The specs stub Worker reads and third-party requests, so they need neither the stack nor external network. Results, including a trace and `error-context.md` per failure, are in `.codex-artifacts/e2e/`. When the runner started Astro itself, the final `[WebServer] ... exit code 1` line only reports that server stopping.
+Browser end-to-end checks are opt-in and not part of `pnpm validate`. `pnpm test:e2e e2e/<name>.spec.ts` (or `-g <text>`) runs the named Playwright specs against this checkout's Local URL, reusing a site already serving it or starting the static-site launcher for the run. Locally a run must name a spec or title filter; the whole suite runs at PRD promotion. The specs stub Worker reads and third-party requests, so they need neither the stack nor external network. Results, including a trace and `error-context.md` per failure, are in `.codex-artifacts/e2e/`. When the runner started Astro itself, the final `[WebServer] ... exit code 1` line only reports that server stopping.
 
 Run the default full local commerce stack:
 
