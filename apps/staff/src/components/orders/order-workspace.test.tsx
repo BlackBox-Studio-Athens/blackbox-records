@@ -1,10 +1,30 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { InternalOrderApiError, type InternalOrder } from './internal-order-api';
 import { createOrderWorkspace } from './order-workspace';
 import OrderDetail, { money, notificationStatus } from './OrderDetail';
 import { exampleOrder } from './order-fixtures.test-support.ts';
+import OrderWorkspace from './OrderWorkspace';
+import { writeStaffLocation } from '../../lib/staff-navigation';
+
+vi.mock('react', async (importOriginal) => ({
+  ...(await importOriginal<typeof React>()),
+  useEffect: vi.fn(),
+}));
+vi.mock('./order-workspace', async (importOriginal) => {
+  const actual = await importOriginal<{ createOrderWorkspace: typeof createOrderWorkspace }>();
+  return { ...actual, createOrderWorkspace: vi.fn(actual.createOrderWorkspace) };
+});
+vi.mock('../../lib/staff-query', () => ({ useStaffRead: vi.fn() }));
+vi.mock('../../lib/staff-navigation', () => ({
+  writeStaffLocation: vi.fn(),
+  staffPages: vi.fn(() => []),
+  rememberStaffPosition: vi.fn(),
+  restoreStaffPosition: vi.fn(),
+  returnStaffTask: vi.fn(),
+}));
+afterEach(() => vi.unstubAllGlobals());
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -183,5 +203,135 @@ it('sends complete search filters and cursors to the server', async () => {
     q: 'customer@example.com',
     notification: 'pending',
     cursor: 'next-page',
+  });
+});
+
+describe('Awaiting-stock orders', () => {
+  it('keeps the filter across pages and retries, clears old filter rows, and turns it off', async () => {
+    const search = vi.fn(async () => ({ items: [exampleOrder], nextCursor: 'next-page' }));
+    const workspace = createOrderWorkspace({ ...api(), search });
+    await workspace.loadList('paid', '', '', undefined, true);
+    await workspace.loadList('paid', '', '', 'next-page');
+    expect(search).toHaveBeenLastCalledWith({ status: 'paid', awaitingStock: 'true', cursor: 'next-page' });
+    await workspace.loadList();
+    expect(search).toHaveBeenLastCalledWith({ status: 'paid', awaitingStock: 'true' });
+    search.mockRejectedValueOnce(new InternalOrderApiError(503));
+    await workspace.loadList('paid', '', '', undefined, false);
+    expect(search).toHaveBeenLastCalledWith({ status: 'paid' });
+    expect(workspace.getSnapshot()).toMatchObject({ awaitingStock: false, list: { data: null } });
+  });
+
+  it.each([401, 403])('clears awaiting stock on access denial %i', async (status) => {
+    const search = vi.fn(async () => ({ items: [exampleOrder], nextCursor: null }));
+    const workspace = createOrderWorkspace({ ...api(), search });
+    await workspace.loadList('paid', '', '', undefined, true);
+    search.mockRejectedValueOnce(new InternalOrderApiError(status));
+    await workspace.loadList();
+    expect(workspace.getSnapshot()).toMatchObject({ denied: true, awaitingStock: false, list: { data: null } });
+    vi.mocked(React.useEffect).mockClear();
+    vi.mocked(createOrderWorkspace).mockReturnValueOnce(workspace);
+    const html = renderToStaticMarkup(<OrderWorkspace backendBaseUrl="" />);
+    vi.mocked(React.useEffect).mock.calls[1]?.[0]();
+    expect(writeStaffLocation).toHaveBeenLastCalledWith('/orders/');
+    expect(html).toContain('Access required');
+    expect(html).not.toContain('Awaiting stock');
+  });
+
+  it.each(['true', 'false', 'unknown', ''])(
+    'restores only the exact URL filter %j and writes it back',
+    async (value) => {
+      const search = vi.fn(async () => ({ items: [{ ...exampleOrder, awaitingStock: true }], nextCursor: null }));
+      const workspace = createOrderWorkspace({ ...api(), search });
+      const events = new Map<string, EventListener>();
+      vi.stubGlobal('window', {
+        location: { search: `?awaitingStock=${value}&cursor=page-two` },
+        addEventListener: (name: string, listener: EventListener) => events.set(name, listener),
+        removeEventListener: (name: string) => events.delete(name),
+      });
+      const render = () => {
+        vi.mocked(React.useEffect).mockClear();
+        vi.mocked(createOrderWorkspace).mockReturnValueOnce(workspace);
+        return renderToStaticMarkup(<OrderWorkspace backendBaseUrl="" />);
+      };
+      render();
+      const stop = vi.mocked(React.useEffect).mock.calls[0]?.[0]();
+      await vi.waitFor(() => expect(workspace.getSnapshot().list.loading).toBe(false));
+      expect(search).toHaveBeenLastCalledWith({
+        cursor: 'page-two',
+        ...(value === 'true' ? { awaitingStock: 'true' } : {}),
+      });
+      const html = render();
+      expect(html).toContain('<span class="order-status">Awaiting stock</span>');
+      expect(html).toContain('Paid, Awaiting stock"');
+      expect(html.includes('checked=""')).toBe(value === 'true');
+      vi.mocked(React.useEffect).mock.calls[2]?.[0]();
+      expect(writeStaffLocation).toHaveBeenLastCalledWith(
+        `/orders/?${value === 'true' ? 'awaitingStock=true&' : ''}cursor=page-two`,
+        { pages: ['page-two'] },
+      );
+      // Browser history follows the same URL restore path.
+      window.location.search = '?awaitingStock=true';
+      events.get('popstate')?.(new Event('popstate'));
+      await vi.waitFor(() => expect(workspace.getSnapshot().list.loading).toBe(false));
+      expect(search).toHaveBeenLastCalledWith({ awaitingStock: 'true' });
+      if (stop) stop();
+    },
+  );
+
+  it('renders a meaningful empty filtered list and no awaiting-stock chip for ordinary rows', async () => {
+    const search = vi.fn(async () => ({ items: [] as InternalOrder[], nextCursor: null }));
+    const workspace = createOrderWorkspace({ ...api(), search });
+    await workspace.loadList('', '', '', undefined, true);
+    vi.mocked(createOrderWorkspace).mockReturnValueOnce(workspace);
+    const html = renderToStaticMarkup(<OrderWorkspace backendBaseUrl="" />);
+    expect(html).toContain('No orders awaiting stock match these filters.');
+    expect(html).toContain('Clear filters');
+    search.mockResolvedValueOnce({ items: [exampleOrder], nextCursor: null });
+    await workspace.loadList('', '', '', undefined, false);
+    vi.mocked(createOrderWorkspace).mockReturnValueOnce(workspace);
+    const ordinary = renderToStaticMarkup(<OrderWorkspace backendBaseUrl="" />);
+    expect(ordinary).not.toContain('<span class="order-status">Awaiting stock</span>');
+    expect(ordinary).not.toContain('checked=""');
+  });
+
+  type Estimate = NonNullable<
+    NonNullable<Extract<InternalOrder['fulfillment'], { kind: 'current' }>['lines'][number]['preorder']>['shipEstimate']
+  >;
+  it.each<[Estimate | null, string]>([
+    [{ kind: 'month', month: '2026-10', part: null }, 'Pre-order · ships around October 2026 (shown at order time)'],
+    [
+      { kind: 'month', month: '2026-10', part: 'early' },
+      'Pre-order · ships around early October 2026 (shown at order time)',
+    ],
+    [
+      { kind: 'month', month: '2026-10', part: 'mid' },
+      'Pre-order · ships around mid October 2026 (shown at order time)',
+    ],
+    [
+      { kind: 'month', month: '2026-10', part: 'late' },
+      'Pre-order · ships around late October 2026 (shown at order time)',
+    ],
+    [{ kind: 'date', date: '2026-10-20' }, 'Pre-order · ships on 20 October 2026 (shown at order time)'],
+    [null, 'Pre-order (shown at order time)'],
+  ])('renders the saved line estimate %j even after the hold ends', (shipEstimate, text) => {
+    if (exampleOrder.fulfillment.kind !== 'current') throw new Error('Expected current fulfillment');
+    const order: InternalOrder = {
+      ...exampleOrder,
+      awaitingStock: true,
+      fulfillment: {
+        ...exampleOrder.fulfillment,
+        lines: exampleOrder.fulfillment.lines.map((line, index) =>
+          index === 0 ? { ...line, preorder: { startedAt: '2026-09-01T00:00:00Z', shipEstimate } } : line,
+        ),
+      },
+    };
+    const waiting = renderToStaticMarkup(<OrderDetail order={order} />);
+    expect(waiting).toContain('Awaiting stock. Hold this order until the pre-order copies arrive.');
+    expect(waiting).toContain(text);
+    expect(waiting.match(/shown at order time/g)).toHaveLength(1);
+    expect(waiting).not.toContain('type="checkbox"');
+    const released = renderToStaticMarkup(<OrderDetail order={{ ...order, awaitingStock: false }} />);
+    expect(released).not.toContain('Hold this order');
+    expect(released).toContain(text);
   });
 });

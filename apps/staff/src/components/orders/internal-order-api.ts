@@ -53,6 +53,7 @@ export function createInternalOrderApi(baseUrl = '') {
       cursor?: string;
       status?: OrderStatus;
       notification?: 'pending' | 'needs_review';
+      awaitingStock?: 'true';
     }) {
       return read(() => search({ limit: 25, ...query }, init));
     },

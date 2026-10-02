@@ -107,12 +107,35 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+type OrderShipEstimate = NonNullable<
+  NonNullable<Extract<InternalOrder['fulfillment'], { kind: 'current' }>['lines'][number]['preorder']>['shipEstimate']
+>;
+
+function orderShipEstimateText(estimate: OrderShipEstimate): string {
+  const date = estimate.kind === 'date' ? estimate.date : `${estimate.month}-01`;
+  const formatted = new Intl.DateTimeFormat('en-GB', {
+    ...(estimate.kind === 'date' ? { day: 'numeric' as const } : {}),
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(`${date}T00:00:00Z`));
+  return estimate.kind === 'date'
+    ? `on ${formatted}`
+    : `around ${estimate.part ? `${estimate.part} ` : ''}${formatted}`;
+}
+
 export default function OrderDetail({ order }: { order: InternalOrder }) {
   const fulfillment = order.fulfillment;
   const attention = notificationStatus(order);
   const reviewReason = order.needsReviewReason ?? (fulfillment.kind === 'incomplete' ? fulfillment.reason : null);
   return (
     <>
+      {order.awaitingStock && (
+        <p className="order-notice">
+          <Package aria-hidden="true" size={21} />
+          <span>Awaiting stock. Hold this order until the pre-order copies arrive.</span>
+        </p>
+      )}
       <div className="order-facts" aria-label="Order status summary">
         <div>
           <span className="order-eyebrow">Payment</span>
@@ -180,6 +203,15 @@ export default function OrderDetail({ order }: { order: InternalOrder }) {
                   <div>
                     <strong>{line.displayName}</strong>
                     <span>{line.optionLabel ?? 'No option label recorded'}</span>
+                    {line.preorder && (
+                      <small>
+                        Pre-order
+                        {line.preorder.shipEstimate
+                          ? ` · ships ${orderShipEstimateText(line.preorder.shipEstimate)}`
+                          : ''}{' '}
+                        (shown at order time)
+                      </small>
+                    )}
                     <small>
                       Unit {money(line.unitAmountMinor)} · VAT {money(line.lineVatMinor)} · Tax rate{' '}
                       {line.taxRatePercent === null ? 'Unknown' : `${line.taxRatePercent}%`}

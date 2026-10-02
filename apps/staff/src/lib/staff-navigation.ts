@@ -25,7 +25,7 @@ export function staffTarget(value: string, origin: string): string | null {
       '/items/': ['variantId', 'tab'],
       '/items/new/': ['kind', 'collection', 'id'],
       '/stock/': ['variantId', 'q', 'area', 'format', 'cursor'],
-      '/orders/': ['checkoutSessionId', 'status', 'q', 'notification', 'cursor'],
+      '/orders/': ['checkoutSessionId', 'status', 'q', 'notification', 'cursor', 'awaitingStock'],
       '/review/': ['q', 'scope', 'cursor'],
     };
     const allowed = keys[url.pathname];
@@ -47,6 +47,7 @@ export function staffTarget(value: string, origin: string): string | null {
     };
     for (const [key, entry] of url.searchParams) {
       if (!allowed.includes(key) || url.searchParams.getAll(key).length !== 1) return null;
+      if (key === 'awaitingStock' && entry !== 'true') return null;
       if (entry.length > (key === 'cursor' ? 2048 : key === 'q' ? 200 : 128)) return null;
       if (enums[key] && entry && !enums[key].includes(entry)) return null;
       if (['id', 'variantId', 'checkoutSessionId'].includes(key) && !/^[\w-]{1,128}$/.test(entry)) return null;

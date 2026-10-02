@@ -5,6 +5,19 @@ import { exampleOrder } from './order-fixtures.test-support.ts';
 afterEach(() => vi.unstubAllGlobals());
 
 describe('Protected order reads', () => {
+  it('sends awaiting-stock search only when enabled and keeps cursors and private GET options', async () => {
+    const fetcher = vi.fn<typeof fetch>(async () => Response.json({ items: [exampleOrder], nextCursor: null }));
+    vi.stubGlobal('fetch', fetcher);
+    const api = createInternalOrderApi();
+    await api.search({ awaitingStock: 'true', cursor: 'next/page', status: 'paid' });
+    await api.search({ status: 'paid' });
+    expect(fetcher.mock.calls[0]?.[0]).toBe(
+      '/api/internal/orders/search?limit=25&awaitingStock=true&cursor=next%2Fpage&status=paid',
+    );
+    expect(fetcher.mock.calls[1]?.[0]).toBe('/api/internal/orders/search?limit=25&status=paid');
+    for (const [, init] of fetcher.mock.calls)
+      expect(init).toMatchObject({ method: 'GET', cache: 'no-store', credentials: 'same-origin' });
+  });
   it('uses the generated client for bounded filters, encoded exact lookup and private GETs', async () => {
     const fetcher = vi
       .fn()

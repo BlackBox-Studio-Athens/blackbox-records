@@ -55,7 +55,13 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
       const filter = notification === 'pending' || notification === 'needs_review' ? notification : '';
       setSearch(q);
       setNotification(filter);
-      void workspace.loadList(status, q, filter, params.get('cursor') ?? undefined);
+      void workspace.loadList(
+        status,
+        q,
+        filter,
+        params.get('cursor') ?? undefined,
+        params.get('awaitingStock') === 'true',
+      );
     };
     followUrl();
     window.addEventListener('popstate', followUrl);
@@ -108,6 +114,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
     if (state.status) params.set('status', state.status);
     if (state.query) params.set('q', state.query);
     if (state.notification) params.set('notification', state.notification);
+    if (state.awaitingStock) params.set('awaitingStock', 'true');
     if (state.cursor) params.set('cursor', state.cursor);
     writeStaffLocation(`/orders/${params.size ? `?${params}` : ''}`, {
       pages: [...previousCursors.map((cursor) => cursor ?? ''), state.cursor ?? ''],
@@ -122,6 +129,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
     state.status,
     state.query,
     state.notification,
+    state.awaitingStock,
     state.cursor,
     state.list.data,
     state.list.loading,
@@ -129,7 +137,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
   const read = state.selected ? state.detail : state.list;
   const orders = state.list.data ?? [];
   useStaffRead(
-    ['orders', state.session, state.status, state.query, state.notification, state.cursor],
+    ['orders', state.session, state.status, state.query, state.notification, state.awaitingStock, state.cursor],
     () =>
       state.selected && state.session
         ? workspace.lookup(state.session)
@@ -194,6 +202,19 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
       {!state.selected && (
         <>
           <div className="order-toolbar">
+            <label className="col-span-full">
+              <span className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={state.awaitingStock}
+                  onChange={(event) => {
+                    setPreviousCursors([]);
+                    void workspace.loadList(state.status, search, notification, undefined, event.target.checked);
+                  }}
+                />
+                Awaiting stock
+              </span>
+            </label>
             <label>
               Payment status
               <select
@@ -329,7 +350,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                         onClick={() => inspect(order)}
                         className="order-row"
                         data-staff-row={order.checkoutSessionId ?? `${order.variantId}:${order.createdAt}`}
-                        aria-label={`Open order: ${order.storeItemSlug}, ${formatOrderTime(order.createdAt)}, ${paymentLabels[order.status]}`}
+                        aria-label={`Open order: ${order.storeItemSlug}, ${formatOrderTime(order.createdAt)}, ${paymentLabels[order.status]}${order.awaitingStock ? ', Awaiting stock' : ''}`}
                       >
                         <span className="order-row-created">
                           <time dateTime={order.createdAt}>{formatOrderTime(order.createdAt)}</time>
@@ -338,6 +359,7 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
                               ? order.fulfillment.lines.map((line) => line.displayName).join(', ')
                               : order.storeItemSlug}
                           </small>
+                          {order.awaitingStock && <span className="order-status">Awaiting stock</span>}
                         </span>
                         <span>
                           {order.fulfillment.kind === 'current' ? (
@@ -378,13 +400,18 @@ export default function OrderWorkspace({ backendBaseUrl }: { backendBaseUrl: str
             <div className="order-empty">
               <Inbox size={32} aria-hidden="true" />
               <h2>No matching orders</h2>
-              <p>Try a different name, email, reference or filter.</p>
+              <p>
+                {state.awaitingStock
+                  ? 'No orders awaiting stock match these filters. Try another filter or clear filters to see all orders.'
+                  : 'Try a different name, email, reference or filter.'}
+              </p>
               <Button
                 variant="outline"
                 onClick={() => {
                   setSearch('');
                   setNotification('');
-                  void workspace.loadList('', '', '');
+                  setPreviousCursors([]);
+                  void workspace.loadList('', '', '', undefined, false);
                 }}
               >
                 <X aria-hidden="true" />

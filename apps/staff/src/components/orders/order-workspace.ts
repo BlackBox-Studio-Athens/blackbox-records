@@ -17,6 +17,7 @@ export function createOrderWorkspace(
     status: '' as OrderStatus | '',
     query: '',
     notification: '' as '' | 'pending' | 'needs_review',
+    awaitingStock: false,
     nextCursor: null as string | null,
     cursor: undefined as string | undefined,
     selected: false,
@@ -39,6 +40,7 @@ export function createOrderWorkspace(
         denied: true,
         query: '',
         notification: '',
+        awaitingStock: false,
         cursor: undefined,
         nextCursor: null,
         list: emptyRead(),
@@ -65,17 +67,37 @@ export function createOrderWorkspace(
       listRequest++;
       detailRequest++;
     },
-    async loadList(status = state.status, query = state.query, notification = state.notification, cursor?: string) {
+    async loadList(
+      status = state.status,
+      query = state.query,
+      notification = state.notification,
+      cursor?: string,
+      awaitingStock = state.awaitingStock,
+    ) {
       if (state.denied) return;
       const request = ++listRequest;
-      const previous = status === state.status ? state.list : emptyRead<InternalOrder[]>();
-      publish({ status, query, notification, cursor, list: { ...previous, loading: true, error: null } });
+      const previous =
+        status === state.status &&
+        query === state.query &&
+        notification === state.notification &&
+        awaitingStock === state.awaitingStock
+          ? state.list
+          : emptyRead<InternalOrder[]>();
+      publish({
+        status,
+        query,
+        notification,
+        awaitingStock,
+        cursor,
+        list: { ...previous, loading: true, error: null },
+      });
       try {
         const page = api.search
           ? await api.search({
               ...(status ? { status } : {}),
               ...(query ? { q: query } : {}),
               ...(notification ? { notification } : {}),
+              ...(awaitingStock ? { awaitingStock: 'true' as const } : {}),
               ...(cursor ? { cursor } : {}),
             })
           : { items: await api.list(status || undefined), nextCursor: null };

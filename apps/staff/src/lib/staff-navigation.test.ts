@@ -26,6 +26,12 @@ test('return targets accept only bounded same-origin staff navigation', () => {
     '/content/?tab=admin',
     '/content/?id=../secret',
     '/content/?q=a&q=b',
+    '/orders/?awaitingStock=false',
+    '/orders/?awaitingStock=',
+    '/orders/?awaitingStock=1',
+    '/orders/?awaitingStock=TRUE',
+    '/orders/?awaitingStock=true&awaitingStock=true',
+    '/stock/?awaitingStock=true',
     `/content/?q=${'x'.repeat(201)}`,
     `/content/?cursor=${'x'.repeat(2049)}`,
   ]) {
@@ -37,6 +43,17 @@ test('return targets accept only bounded same-origin staff navigation', () => {
   expect(staffTarget('/items/new/?kind=release&collection=releases&id=one', origin)).toBe(
     '/items/new/?kind=release&collection=releases&id=one',
   );
+  expect(staffTarget('/orders/?awaitingStock=true&cursor=page-two', origin)).toBe(
+    '/orders/?awaitingStock=true&cursor=page-two',
+  );
+});
+
+test('an order task retains the awaiting-stock filter and pagination in its return entry', () => {
+  browser('/orders/?awaitingStock=true&cursor=page-two');
+  writeStaffLocation('/orders/?awaitingStock=true&cursor=page-two', { pages: ['', 'page-two'] });
+  writeStaffLocation('/orders/?checkoutSessionId=cs_one', { push: true, task: true });
+  expect(staffReturn()).toEqual({ url: '/orders/?awaitingStock=true&cursor=page-two', label: 'Orders', delta: -1 });
+  expect(staffPages('page-two')).toEqual(['', 'page-two']);
 });
 
 test('direct entries have named parents across the staff surface matrix', () => {
