@@ -3017,6 +3017,49 @@ body {
     animation: none;
   }
 
+  /* Where supported, the ghost fades with the (Lenis-smoothed) root scroll position on the compositor instead of the
+     coarse class crossfade. Transitions outrank animations in the cascade, so they are disabled here. Longhands only:
+     the minifier rewrites an `animation` shorthand next to `animation-timeline` into `animation: none`. */
+  @supports (animation-timeline: scroll()) {
+    .homepage-hero-section__media-layer,
+    .homepage-hero-section__media-layer::after {
+      transition: none;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root block);
+      animation-range: 0 42vh;
+    }
+
+    .homepage-hero-section__media-layer {
+      animation-name: homepage-hero-ghost;
+    }
+
+    .homepage-hero-section__media-layer::after {
+      animation-name: homepage-hero-ghost-veil;
+    }
+  }
+
+  /* Explicit `from` keyframes: an implicit one would take the coarse scrolled class's opacity as its start. */
+  @keyframes homepage-hero-ghost {
+    from {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0.12;
+    }
+  }
+
+  @keyframes homepage-hero-ghost-veil {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 0.5;
+    }
+  }
+
   .homepage-hero-section__scroll-indicator-line {
     position: relative;
     width: 1px;

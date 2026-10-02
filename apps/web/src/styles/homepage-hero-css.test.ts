@@ -72,6 +72,29 @@ describe('Homepage hero CSS', () => {
     expect(scrollIndicatorRule).not.toMatch(/transition/i);
     expect(scrolledIndicatorRule).toMatch(/opacity:\s*0/i);
 
+    // Scroll-linked ghost: same endpoints, driven by the root scroll timeline, overridden by reduced motion.
+    const supportsStart = globalCss.indexOf('@supports (animation-timeline: scroll())');
+    const supportsCss = globalCss.slice(supportsStart, globalCss.indexOf('@keyframes homepage-hero-ghost {'));
+    expect(supportsStart).toBeGreaterThan(-1);
+    // The reduced-motion `animation: none` override must come later in the cascade.
+    expect(supportsStart).toBeLessThan(
+      globalCss.search(/\.homepage-hero-section__media-layer::after,\s*\.homepage-hero-section__shade-layer/),
+    );
+    expect(supportsCss).toMatch(
+      /\.homepage-hero-section__media-layer,\s*\.homepage-hero-section__media-layer::after \{\s*transition:\s*none;\s*animation-timing-function:\s*linear;\s*animation-fill-mode:\s*both;\s*animation-timeline:\s*scroll\(root block\);\s*animation-range:\s*0 42vh;/,
+    );
+    expect(supportsCss).toMatch(/\.homepage-hero-section__media-layer \{\s*animation-name:\s*homepage-hero-ghost;/);
+    expect(supportsCss).toMatch(
+      /\.homepage-hero-section__media-layer::after \{\s*animation-name:\s*homepage-hero-ghost-veil;/,
+    );
+    expect(reducedMotionRule).toMatch(/\.homepage-hero-section__media-layer::after[\s\S]*?animation:\s*none/i);
+    expect(globalCss.slice(globalCss.indexOf('@keyframes homepage-hero-ghost {'))).toMatch(
+      /^@keyframes homepage-hero-ghost \{\s*from \{\s*opacity:\s*1;\s*\}\s*to \{\s*opacity:\s*0\.12;/,
+    );
+    expect(globalCss.slice(globalCss.indexOf('@keyframes homepage-hero-ghost-veil {'))).toMatch(
+      /^@keyframes homepage-hero-ghost-veil \{\s*from \{\s*opacity:\s*0;\s*\}\s*to \{\s*opacity:\s*0\.5;/,
+    );
+
     expect(globalCss).not.toContain('--homepage-hero-scroll-progress');
     expect(globalCss).not.toContain('hero-ken-burns');
     expect(globalCss).not.toContain('hero-grain-drift');

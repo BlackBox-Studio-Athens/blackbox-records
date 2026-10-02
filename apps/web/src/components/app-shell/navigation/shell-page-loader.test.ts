@@ -42,6 +42,7 @@ describe('shell page snapshot loader', () => {
     const loader = createShellPageSnapshotLoader({
       fetchPage,
       parseHtml: (html) => ({ html }) as unknown as Document,
+      preloadImages: vi.fn(),
       readSnapshot,
     });
 
@@ -87,7 +88,7 @@ describe('shell page snapshot loader', () => {
     expect(fetchPage).toHaveBeenCalledTimes(1);
   });
 
-  it('preloads eager images from prefetched snapshots only', async () => {
+  it('preloads eager images once per fetched snapshot, before callers continue', async () => {
     const preloadImages = vi.fn();
     const loader = createShellPageSnapshotLoader({
       currentHref: () => 'https://example.test/blackbox-records/',
@@ -101,10 +102,12 @@ describe('shell page snapshot loader', () => {
       readSnapshot: () => createSnapshot('/store/'),
     });
 
-    await loader.fetchSnapshot('/store/', 'https://example.test/blackbox-records/store/');
-    expect(preloadImages).not.toHaveBeenCalled();
+    await loader
+      .fetchSnapshot('/store/', 'https://example.test/blackbox-records/store/')
+      .then(() => expect(preloadImages).toHaveBeenCalledWith('<section>/store/</section>'));
 
-    await loader.prefetchHref('https://example.test/blackbox-records/about/');
-    expect(preloadImages).toHaveBeenCalledWith('<section>/store/</section>');
+    await loader.fetchSnapshot('/store/', 'https://example.test/blackbox-records/store/');
+    await loader.prefetchHref('https://example.test/blackbox-records/store/');
+    expect(preloadImages).toHaveBeenCalledTimes(1);
   });
 });

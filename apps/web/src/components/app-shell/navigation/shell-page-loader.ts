@@ -65,6 +65,9 @@ export function createShellPageSnapshotLoader({
         }
 
         cache.set(normalizedPathname, pageSnapshot);
+        // Queue eager image requests now: an inserted <img> only requests after the insertion task's layout,
+        // which can take seconds on a phone for brand-font text.
+        preloadImages(pageSnapshot.mainHtml);
         return pageSnapshot;
       })
       .finally(() => {
@@ -81,7 +84,7 @@ export function createShellPageSnapshotLoader({
     if (!route || cache.has(route.pathname)) return;
 
     try {
-      preloadImages((await fetchSnapshot(route.pathname, resolvedUrl.toString())).mainHtml);
+      await fetchSnapshot(route.pathname, resolvedUrl.toString());
     } catch {
       // Ignore speculative prefetch failures and let click fallback to real navigation.
     }
