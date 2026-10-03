@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
@@ -162,6 +162,7 @@ it.each(['uat', 'local'] as const)(
       ]);
       const native = await (await worker.dispatchFetch('http://site.invalid/__test/capability')).json();
       // Keep this local capability observation separate from tests of the provider-result boundary.
+      mkdirSync(new URL('../../../../.codex-artifacts/performance-resume/', import.meta.url), { recursive: true });
       writeFileSync(
         new URL('../../../../.codex-artifacts/performance-resume/purge-runtime-capability.json', import.meta.url),
         JSON.stringify(native, null, 2) + '\n',

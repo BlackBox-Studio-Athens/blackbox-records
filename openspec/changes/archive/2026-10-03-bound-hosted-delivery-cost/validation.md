@@ -40,7 +40,7 @@ Repository validation includes restarted actor/cache, media, image service, rout
 
 ## Hosted verification
 
-Not yet run. Requires an owner-authorized release and the Free-tier preflight.
+The user authorized UAT and PRD code deployment on 2026-10-03. Candidate [37139817582](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/37139817582), source `13df313e037497376f73c98f5dc99623aab7feab`, built both target bundles but failed repository validation before deployment. Two default-handler tests attempted to write the native cache capability observation into an absent ignored artifact directory on the fresh CI checkout. The test now creates that directory recursively before writing; runtime code and assertions are unchanged. Replacement candidate and promotion results will be recorded after completion. The separate account-usage pilot and native purge acceptance remain open.
 
 ## Not verified
 
