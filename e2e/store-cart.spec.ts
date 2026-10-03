@@ -8,6 +8,7 @@ import {
   watchSurfaceWarmup,
 } from './fixtures';
 import type { CDPSession, Locator } from 'playwright/test';
+import type { PublicApiComponents } from '../packages/api-client/src/public-client';
 
 async function swipeUp(cdp: CDPSession, x: number, y: number, distance: number) {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
@@ -460,4 +461,69 @@ test('the open cart drawer holds the page behind it still', async ({ page, isMob
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
   await expect(page.locator('body')).not.toHaveClass(/\bis-shell-scroll-locked\b/);
+});
+
+test('paid pre-order return fixture keeps its rail and keyboard action usable at 390px', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const consoleIssues: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'warning' || message.type() === 'error') consoleIssues.push(message.text());
+  });
+  // Named UI fixture only: the actual mixed payment and return are recorded in acceptance-local.
+  const checkoutState = {
+    checkoutSessionId: 'cs_fixture_preorder_paid_390',
+    orderStatus: 'paid',
+    paymentStatus: 'paid',
+    state: 'paid',
+    status: 'complete',
+    preorder: { shipEstimate: { kind: 'month', month: '2026-11', part: 'mid' } },
+    shippingLocker: {
+      country_code: 'GR',
+      locker_id: '4',
+      locker_name_or_label: 'ΛΕΩΦΟΡΟΣ ΠΕΝΤΕΛΗΣ 125, 15234',
+    },
+  } satisfies PublicApiComponents['schemas']['CheckoutState'];
+  await page.route(`**/api/checkout/sessions/${checkoutState.checkoutSessionId}/state`, (route) =>
+    route.fulfill({ json: checkoutState }),
+  );
+  await page.goto(`store/checkout/return/?session_id=${checkoutState.checkoutSessionId}`);
+  await waitForShell(page);
+  await waitForIsland(page, 'CheckoutReturnStatus');
+
+  const screen = page.locator('[data-checkout-success-screen]');
+  await expect(screen.getByRole('heading', { name: /pre-order confirmed/i })).toBeVisible();
+  await expect(screen.getByText('Payment is confirmed and your pre-order is recorded.', { exact: true })).toBeVisible();
+  const rail = screen.locator('[data-checkout-next-steps]');
+  await expect(rail.getByRole('heading', { name: /what happens next/i })).toBeVisible();
+  await expect(rail.getByRole('listitem')).toHaveCount(3);
+  await expect(
+    rail.getByText(
+      'Your whole order is sent in one parcel when the pre-order arrives, expected around mid November 2026. We email you if that changes.',
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(
+    rail.getByText('BOX NOW details will follow once the shipment is arranged.', { exact: true }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => window.innerWidth)).toBe(390);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  for (const item of await rail.getByRole('listitem').all()) {
+    const bounds = await item.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+  }
+
+  const shopping = screen.getByRole('link', { name: /continue shopping/i });
+  await shopping.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  await expect(shopping).toBeFocused();
+  await expect(shopping).toBeInViewport({ ratio: 1 });
+  expect(await shopping.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+  expect(await shopping.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe('solid');
+  expect(consoleIssues).toEqual([]);
+  await page.screenshot({
+    path: `.codex-artifacts/preorders/paid-return-390fixture-${testInfo.project.name}.png`,
+    fullPage: true,
+  });
 });
