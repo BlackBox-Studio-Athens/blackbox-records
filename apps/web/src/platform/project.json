@@ -24,6 +24,7 @@
         "./lib/backend/public-backend-config.ts",
         "./lib/private-preview.ts",
         "./lib/lenis-scroll.ts",
+        "./lib/editorial-image.ts",
         "./utils/urls.ts"
       ],
       "namedInterfaces": {},

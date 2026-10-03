@@ -24,18 +24,18 @@ export default function MobileNavigationSheet({
   open,
   siteTitle,
 }: MobileNavigationSheetProps) {
-  const scrollRootRef = React.useRef<HTMLDivElement | null>(null);
+  // Radix portals the content after its first commit, so the lock waits for the mounted node, not a ref read on mount.
+  const [scrollRoot, setScrollRoot] = React.useState<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
-    const scrollRoot = scrollRootRef.current;
     if (!open || !scrollRoot) return;
     return acquireLenisModalLock(scrollRoot);
-  }, [open]);
+  }, [open, scrollRoot]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        ref={scrollRootRef}
+        ref={setScrollRoot}
         data-lenis-scroll-root
         // Radix returns focus only to its own Trigger; the Menu button is rendered by Astro.
         onCloseAutoFocus={(event) => {

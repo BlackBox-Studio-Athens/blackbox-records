@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { createExactFirstSearcher } from '@/lib/exact-first-search';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { createExactFirstSearcher, loadExactFirstFuzzySearch } from '@/lib/exact-first-search';
 
 import {
   applyDistroFormatSelection,
   applyDistroSearch,
   getDistroSearchResultState,
+  getDistroSearchVisibleElements,
   getStoreArtistChoices,
   normalizeStoreArtist,
   resolveInitialDistroFormatKey,
@@ -157,6 +158,10 @@ describe('Distro format selection', () => {
 });
 
 describe('Distro search DOM filtering', () => {
+  beforeAll(async () => {
+    await loadExactFirstFuzzySearch();
+  });
+
   it.each(['all', 'distro'])('matches and clears the %s catalog without replacing or reordering cards', (scope) => {
     const { dom } = createDom();
     if (scope === 'all') {
@@ -194,6 +199,21 @@ describe('Distro search DOM filtering', () => {
     expect(applyDistroSearch(dom, new Set(searcher.search('Title').map((item) => item.element)))).toBe(count);
     expect(applyDistroSearch(dom, new Set())).toBe(0);
     expect(applyDistroSearch(dom, null)).toBe(count);
+  });
+
+  it('derives the visible set during render without touching the cards', () => {
+    const { cards, dom, formatKeys } = createDom();
+    const visible = getDistroSearchVisibleElements(
+      dom,
+      new Set([dom.items[0]!.element, dom.items[2]!.element]),
+      formatKeys[1],
+    );
+
+    expect([...visible]).toEqual([dom.items[2]!.element]);
+    expect(cards.every((card) => !card.hasAttribute('data-distro-search-hidden') && card.hiddenWrites === 0)).toBe(
+      true,
+    );
+    expect(getDistroSearchVisibleElements(dom, null, undefined).size).toBe(3);
   });
 
   it('hides unmatched cards without hiding the catalog or changing order', () => {

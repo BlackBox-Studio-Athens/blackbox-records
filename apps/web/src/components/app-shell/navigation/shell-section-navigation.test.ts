@@ -13,7 +13,7 @@ function createSnapshot(pathname: string): ShellPageSnapshot {
     canonicalHref: `https://example.test/blackbox-records${pathname}`,
     href: `https://example.test/blackbox-records${pathname}`,
     mainClassName: 'page-main-content-region',
-    mainHtml: `<section>${pathname}</section>`,
+    mainContent: { markup: `<section>${pathname}</section>` } as unknown as DocumentFragment,
     pageDescription: `${pathname} description`,
     pathname,
     title: `${pathname} | BlackBox`,
@@ -28,6 +28,7 @@ function createOptions(overrides: Partial<OpenShellSectionNavigationOptions> = {
     collapseOverlayHistoryToBackground: vi.fn(),
     currentHref: 'https://example.test/blackbox-records/releases/',
     currentPathname: '/blackbox-records/releases/',
+    getRenderedPathname: vi.fn(() => '/releases/'),
     hasOverlayState: vi.fn(() => false),
     href: 'https://example.test/blackbox-records/artists/',
     navigateDocumentTo: vi.fn(),
@@ -40,6 +41,7 @@ function createOptions(overrides: Partial<OpenShellSectionNavigationOptions> = {
     shellPageLoader: {
       fetchSnapshot: vi.fn(async () => createSnapshot('/artists/')),
       getCachedSnapshot: vi.fn(() => null),
+      hasCachedSnapshot: vi.fn(() => false),
     },
     shellSectionTransition: {
       begin: vi.fn(() => 7),
@@ -84,6 +86,115 @@ describe('shell section navigation', () => {
     );
     expect(options.shellPageLoader.fetchSnapshot).not.toHaveBeenCalled();
     expect(options.onSectionActivationStart).not.toHaveBeenCalled();
+    expect(options.cacheDocumentSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('snapshots the leaving page only after the veil frames, and starts the fetch before them', async () => {
+    const order: string[] = [];
+    const options = createOptions({
+      cacheDocumentSnapshot: vi.fn(() => {
+        order.push('snapshot');
+        return createSnapshot('/releases/');
+      }),
+      shellPageLoader: {
+        fetchSnapshot: vi.fn(async () => {
+          order.push('fetch');
+          return createSnapshot('/artists/');
+        }),
+        getCachedSnapshot: vi.fn(() => null),
+        hasCachedSnapshot: vi.fn(() => false),
+      },
+      shellSectionTransition: {
+        begin: vi.fn(() => {
+          order.push('veil');
+          return 7;
+        }),
+        finish: vi.fn(async () => undefined),
+        reset: vi.fn(),
+      },
+      waitForAnimationFrames: vi.fn(async () => {
+        order.push('frames');
+      }),
+    });
+
+    await expect(openShellSectionNavigation(options)).resolves.toBe(true);
+
+    expect(order).toEqual(['veil', 'fetch', 'frames', 'snapshot']);
+    expect(options.shellPageLoader.hasCachedSnapshot).toHaveBeenCalledWith('/releases/');
+  });
+
+  it('skips the leaving-page snapshot when one is already cached', async () => {
+    const options = createOptions({
+      shellPageLoader: {
+        fetchSnapshot: vi.fn(async () => createSnapshot('/artists/')),
+        getCachedSnapshot: vi.fn(() => null),
+        hasCachedSnapshot: vi.fn((pathname: string) => pathname === '/releases/'),
+      },
+    });
+
+    await expect(openShellSectionNavigation(options)).resolves.toBe(true);
+
+    expect(options.cacheDocumentSnapshot).not.toHaveBeenCalled();
+    expect(options.applyShellPageSnapshot).toHaveBeenCalledWith(createSnapshot('/artists/'));
+  });
+
+  it('does not snapshot when the activation is superseded during the veil frames', async () => {
+    const activeAbortControllerRef = { current: null as AbortController | null };
+    const options = createOptions({
+      activeAbortControllerRef,
+      waitForAnimationFrames: vi.fn(async () => activeAbortControllerRef.current?.abort()),
+    });
+
+    await expect(openShellSectionNavigation(options)).resolves.toBe(true);
+
+    expect(options.cacheDocumentSnapshot).not.toHaveBeenCalled();
+  });
+
+  it('warms the images a joined hover prefetch left cold before applying the fetched page', async () => {
+    const order: string[] = [];
+    const options = createOptions({
+      applyShellPageSnapshot: vi.fn(() => {
+        order.push('apply');
+        return true;
+      }),
+      shellPageLoader: {
+        fetchSnapshot: vi.fn(async () => createSnapshot('/artists/')),
+        getCachedSnapshot: vi.fn(() => null),
+        hasCachedSnapshot: vi.fn(() => false),
+        warmSnapshotImages: vi.fn((pathname: string) => {
+          order.push(`warm ${pathname}`);
+        }),
+      },
+    });
+
+    await expect(openShellSectionNavigation(options)).resolves.toBe(true);
+
+    expect(order).toEqual(['warm /artists/', 'apply']);
+  });
+
+  it('runs the scroll reset and the first-screen image wait together', async () => {
+    const order: string[] = [];
+    let finishScroll!: () => void;
+    const options = createOptions({
+      scrollShellViewportToTop: vi.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            order.push('scroll-start');
+            finishScroll = () => {
+              order.push('scroll-end');
+              resolve();
+            };
+          }),
+      ),
+      waitForFirstScreenImages: vi.fn(async () => {
+        order.push('images');
+        finishScroll();
+      }),
+    });
+
+    await expect(openShellSectionNavigation(options)).resolves.toBe(true);
+
+    expect(order).toEqual(['scroll-start', 'images', 'scroll-end']);
   });
 
   it('fetches uncached shell section snapshots through transition, history, and scroll reset', async () => {
@@ -164,6 +275,8 @@ describe('shell section navigation', () => {
       shellPageLoader: {
         fetchSnapshot: vi.fn(),
         getCachedSnapshot: vi.fn(() => cachedSnapshot),
+        hasCachedSnapshot: vi.fn(() => false),
+        warmSnapshotImages: vi.fn(),
       },
     });
 
@@ -176,6 +289,7 @@ describe('shell section navigation', () => {
       pathname: '/artists/',
     });
     expect(options.shellPageLoader.fetchSnapshot).not.toHaveBeenCalled();
+    expect(options.shellPageLoader.warmSnapshotImages).toHaveBeenCalledWith('/artists/');
     expect(options.applyShellPageSnapshot).toHaveBeenCalledWith(cachedSnapshot);
     expect(finishSectionActivation).toHaveBeenCalledWith('complete');
   });
@@ -207,6 +321,7 @@ describe('shell section navigation', () => {
           return createSnapshot('/artists/');
         }),
         getCachedSnapshot: vi.fn(() => null),
+        hasCachedSnapshot: vi.fn(() => false),
       },
     });
 

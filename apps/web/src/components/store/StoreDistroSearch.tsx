@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Search } from 'lucide-react';
 
@@ -84,10 +84,12 @@ export function resolveInitialDistroFormatKey(hash: string, dom: Pick<DistroSear
   return dom.formatLinks.some((link) => link.formatKey === requestedKey) ? requestedKey : ALL_DISTRO_FORMATS_KEY;
 }
 
+function resolveDistroFormatKey(dom: Pick<DistroSearchDom, 'formatLinks'>, requestedKey: string) {
+  return dom.formatLinks.some((link) => link.formatKey === requestedKey) ? requestedKey : ALL_DISTRO_FORMATS_KEY;
+}
+
 export function applyDistroFormatSelection(dom: DistroSearchDom, requestedKey: string) {
-  const formatKey = dom.formatLinks.some((link) => link.formatKey === requestedKey)
-    ? requestedKey
-    : ALL_DISTRO_FORMATS_KEY;
+  const formatKey = resolveDistroFormatKey(dom, requestedKey);
 
   if (formatKey !== ALL_DISTRO_FORMATS_KEY) dom.root.setAttribute('data-distro-selected-format', formatKey);
   else dom.root.removeAttribute('data-distro-selected-format');
@@ -106,9 +108,13 @@ function setSearchHidden(element: HTMLElement, shouldHide: boolean) {
   element.toggleAttribute(SEARCH_HIDDEN_ATTRIBUTE, shouldHide);
 }
 
-export function applyDistroSearch(dom: DistroSearchDom, matchedElements: ReadonlySet<HTMLElement> | null) {
-  const selectedFormat = dom.root.dataset.distroSelectedFormat;
-  const visibleElements = new Set(
+/** Pure read of which cards a search shows; applying it is a separate write-only DOM pass. */
+export function getDistroSearchVisibleElements(
+  dom: Pick<DistroSearchDom, 'items'>,
+  matchedElements: ReadonlySet<HTMLElement> | null,
+  selectedFormat: string | undefined,
+) {
+  return new Set(
     dom.items
       .filter(
         (item) =>
@@ -118,9 +124,15 @@ export function applyDistroSearch(dom: DistroSearchDom, matchedElements: Readonl
       )
       .map((item) => item.element),
   );
+}
 
+function applyDistroSearchVisibility(dom: DistroSearchDom, visibleElements: ReadonlySet<HTMLElement>) {
   dom.items.forEach((item) => setSearchHidden(item.element, !visibleElements.has(item.element)));
+}
 
+export function applyDistroSearch(dom: DistroSearchDom, matchedElements: ReadonlySet<HTMLElement> | null) {
+  const visibleElements = getDistroSearchVisibleElements(dom, matchedElements, dom.root.dataset.distroSelectedFormat);
+  applyDistroSearchVisibility(dom, visibleElements);
   return visibleElements.size;
 }
 
@@ -147,6 +159,63 @@ export function getStoreArtistChoices(items: readonly Pick<DistroSearchItem, 'ar
   return [...choices.values()].sort((a, b) => a.label.localeCompare(b.label));
 }
 
+type StoreArtistChoice = ReturnType<typeof getStoreArtistChoices>[number];
+
+type StoreArtistPickerProps = {
+  artist: string;
+  choices: readonly StoreArtistChoice[];
+  host: HTMLElement;
+  onArtistChange: (artist: string) => void;
+  resultsId: string;
+};
+
+/** The artist list only changes with the artist choice, so typing a query never re-renders it. */
+const StoreArtistPicker = memo(function StoreArtistPicker({
+  artist,
+  choices,
+  host,
+  onArtistChange,
+  resultsId,
+}: StoreArtistPickerProps) {
+  return createPortal(
+    <>
+      {/* Phones get the native picker; the desktop pane keeps the radio list. CSS shows one. */}
+      <label className="store-artists-picker">
+        <span>Artist</span>
+        <select value={artist} onChange={(event) => onArtistChange(event.target.value)} aria-controls={resultsId}>
+          {choices.map((choice) => (
+            <option key={choice.key} value={choice.key}>
+              {choice.label} ({choice.count})
+            </option>
+          ))}
+        </select>
+      </label>
+      <fieldset className="store-artists">
+        <legend>Artists</legend>
+        <p id="store-artists-help">Artist or label credits from this catalogue.</p>
+        <div className="store-artists-list" data-lenis-scroll-root>
+          {choices.map((choice) => (
+            <label key={choice.key}>
+              <input
+                type="radio"
+                name="store-artist"
+                value={choice.key}
+                checked={artist === choice.key}
+                onChange={() => onArtistChange(choice.key)}
+                aria-describedby="store-artists-help"
+              />
+              <span>
+                {choice.label} <span className="text-muted-foreground">({choice.count})</span>
+              </span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+    </>,
+    host,
+  );
+});
+
 function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const summaryRef = useRef<HTMLParagraphElement>(null);
@@ -158,11 +227,31 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
   const [query, setQuery] = useState('');
   const [artist, setArtist] = useState('');
   const [format, setFormat] = useState('all');
-  const [count, setCount] = useState(0);
+  const [fuzzyRevision, setFuzzyRevision] = useState(0);
   const [artistHost, setArtistHost] = useState<HTMLElement | null>(null);
-  const [choices, setChoices] = useState<ReturnType<typeof getStoreArtistChoices>>([]);
+  const [choices, setChoices] = useState<StoreArtistChoice[]>([]);
   const filtered = Boolean(query.trim() || artist);
   const hasFilters = filtered || format !== 'all';
+  const artistChoices = useMemo(
+    () => [{ key: '', label: 'All artists', count: domRef.current?.items.length || 0 }, ...choices],
+    [choices],
+  );
+  // Derive the visible set while rendering so each keystroke commits once, count included.
+  const visibleElements = useMemo(() => {
+    const dom = domRef.current;
+    if (!ready || !dom) return null;
+    const matches = query.trim() ? searcherRef.current?.search(query) || [] : dom.items;
+    const selected = matches.filter((item) => !artist || normalizeStoreArtist(item.artist) === artist);
+    const formatKey = resolveDistroFormatKey(dom, format);
+    return getDistroSearchVisibleElements(
+      dom,
+      filtered ? new Set(selected.map((item) => item.element)) : null,
+      formatKey === ALL_DISTRO_FORMATS_KEY ? undefined : formatKey,
+    );
+    // choices changes whenever the island reads a new catalog DOM; fuzzyRevision reruns the search
+    // once the lazily loaded fuzzy matcher is available.
+  }, [ready, choices, query, artist, format, filtered, fuzzyRevision]);
+  const count = visibleElements?.size ?? 0;
 
   useEffect(() => {
     const dom = readDistroSearchDom(
@@ -174,10 +263,13 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     ensureStoreCoverflowCapability();
     const coverflow = readStoreCoverflowDom(dom.root);
     controllerRef.current = coverflow ? createStoreCoverflowController(coverflow) : null;
-    searcherRef.current = createExactFirstSearcher(dom.items, (item) => item.searchText);
+    searcherRef.current = createExactFirstSearcher(dom.items, (item) => item.searchText, {
+      onFuzzyReady: () => {
+        if (domRef.current === dom) setFuzzyRevision((revision) => revision + 1);
+      },
+    });
     setArtistHost(document.querySelector<HTMLElement>('[data-store-artists]'));
     setChoices(getStoreArtistChoices(dom.items));
-    setCount(dom.items.length);
     const initialFormat = resolveInitialDistroFormatKey(window.location.hash, dom);
     setFormat(initialFormat);
     pendingFocus.current = initialFormat !== 'all';
@@ -215,13 +307,11 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
 
   useEffect(() => {
     const dom = domRef.current;
-    if (!ready || !dom) return;
+    if (!ready || !dom || !visibleElements) return;
     controllerRef.current?.setSearchActive(hasFilters);
     const selection = applyDistroFormatSelection(dom, format);
-    const matches = query.trim() ? searcherRef.current?.search(query) || [] : dom.items;
-    const selected = matches.filter((item) => !artist || normalizeStoreArtist(item.artist) === artist);
-    const visibleCount = applyDistroSearch(dom, filtered ? new Set(selected.map((item) => item.element)) : null);
-    setCount(visibleCount);
+    applyDistroSearchVisibility(dom, visibleElements);
+    const visibleCount = visibleElements.size;
     if (!pendingFocus.current) return;
     pendingFocus.current = false;
     const frame = requestAnimationFrame(() => {
@@ -230,10 +320,9 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
       if (target) scrollElementWithLenis(target, { block: 'start' });
     });
     return () => cancelAnimationFrame(frame);
-  }, [ready, query, artist, format, filtered, hasFilters, scope]);
+  }, [ready, visibleElements, format, hasFilters, scope]);
 
   if (!ready) return null;
-  const artistChoices = [{ key: '', label: 'All artists', count: domRef.current?.items.length || 0 }, ...choices];
   const resultsId = scope === 'all' ? 'all-store-catalog' : 'distro-search-results';
   const clearFilters = () => {
     setQuery('');
@@ -243,44 +332,15 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
   };
   return (
     <>
-      {artistHost &&
-        createPortal(
-          <>
-            {/* Phones get the native picker; the desktop pane keeps the radio list. CSS shows one. */}
-            <label className="store-artists-picker">
-              <span>Artist</span>
-              <select value={artist} onChange={(event) => setArtist(event.target.value)} aria-controls={resultsId}>
-                {artistChoices.map((choice) => (
-                  <option key={choice.key} value={choice.key}>
-                    {choice.label} ({choice.count})
-                  </option>
-                ))}
-              </select>
-            </label>
-            <fieldset className="store-artists">
-              <legend>Artists</legend>
-              <p id="store-artists-help">Artist or label credits from this catalogue.</p>
-              <div className="store-artists-list" data-lenis-scroll-root>
-                {artistChoices.map((choice) => (
-                  <label key={choice.key}>
-                    <input
-                      type="radio"
-                      name="store-artist"
-                      value={choice.key}
-                      checked={artist === choice.key}
-                      onChange={() => setArtist(choice.key)}
-                      aria-describedby="store-artists-help"
-                    />
-                    <span>
-                      {choice.label} <span className="text-muted-foreground">({choice.count})</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          </>,
-          artistHost,
-        )}
+      {artistHost && (
+        <StoreArtistPicker
+          artist={artist}
+          choices={artistChoices}
+          host={artistHost}
+          onArtistChange={setArtist}
+          resultsId={resultsId}
+        />
+      )}
       <div className="store-search-toolbar">
         <div className="relative">
           <Search

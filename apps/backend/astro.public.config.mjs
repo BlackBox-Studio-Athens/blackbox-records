@@ -3,6 +3,7 @@ import react from '@astrojs/react';
 import { defineConfig } from 'astro/config';
 import { createRequire } from 'node:module';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { publicWorkerName } from './scripts/cms-resources.ts';
 
@@ -33,6 +34,12 @@ const config = {
   assets: { binding: 'ASSETS', run_worker_first: true },
   vars: {
     PRODUCT_ENVIRONMENT: environment,
+    // Canonical Images source: an approved origin in the Images zone settings, independent of the public hostname.
+    PUBLIC_IMAGE_SOURCE_ORIGIN: {
+      local: '',
+      uat: 'https://blackbox-records-web-uat.pages.dev',
+      prd: 'https://blackbox-records-web.pages.dev',
+    }[environment],
     PUBLIC_IMAGE_TRANSFORM_ORIGIN: environment === 'local' ? '' : 'https://images.blackboxrecordsathens.com',
   },
   r2_buckets: [{ binding: 'MEDIA', bucket_name: resources.bucket_name }],
@@ -78,10 +85,13 @@ export default defineConfig({
       {
         name: 'published-purchase-reader',
         enforce: 'pre',
-        resolveId(id) {
+        resolveId(id, importer) {
+          const path = (id.startsWith('.') && importer ? resolve(dirname(importer.split('?')[0]), id) : id)
+            .replaceAll('\\', '/')
+            .replace(/\.ts$/, '');
           if (
-            id === '@/lib/purchase-information' ||
-            id.replaceAll('\\', '/').replace(/\.ts$/, '') === local('../web/src/lib/purchase-information')
+            path === '@/platform/lib/purchase-information' ||
+            path === local('../web/src/platform/lib/purchase-information')
           )
             return this.environment.name === 'client'
               ? local('../web/src/lib/published-purchase-browser.ts')

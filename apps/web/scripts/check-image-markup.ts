@@ -93,10 +93,11 @@ const routeChecks: RouteCheck[] = [
   },
   {
     route: 'news/index.html',
-    maxHighPriorityImages: 0,
+    maxHighPriorityImages: 1,
     images: [
       {
         className: 'news-card__image',
+        firstPriorityCount: 1,
         firstEagerCount: 1,
         minCount: 1,
         minSrcsetCandidates: 2,
@@ -366,6 +367,216 @@ export function checkRosterPortraitBudgets(
   });
 }
 
+/** A viewport the srcset selection check emulates: CSS width and device pixel ratio. */
+export type ViewportProbe = { width: number; dpr: number };
+
+export const srcsetViewportProbes: readonly ViewportProbe[] = [
+  { width: 390, dpr: 2 },
+  { width: 390, dpr: 3 },
+  { width: 1440, dpr: 1 },
+];
+
+type SlotContext = { html: string; tag: string };
+
+export type SrcsetSlotCheck = {
+  /** A built page, or a pattern whose `*` matches one path segment; a pattern checks every matching page. */
+  route: string;
+  className: string;
+  /**
+   * The CSS px [min, max] the image paints at a probe viewport width, from global.css. `sizes` must not fall below
+   * min, and the picked candidate must not exceed the one that covers max at the probe's pixel ratio.
+   */
+  slot: (viewportWidth: number, context: SlotContext) => readonly [number, number];
+};
+
+const rootFontSize = 16;
+
+function splitTopLevel(value: string): string[] {
+  const parts: string[] = [];
+  let depth = 0;
+  let current = '';
+  for (const character of value) {
+    if (character === '(') depth += 1;
+    if (character === ')') depth -= 1;
+    if (character === ',' && depth === 0) {
+      parts.push(current.trim());
+      current = '';
+    } else {
+      current += character;
+    }
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts;
+}
+
+/** Evaluates a CSS length (px, rem, em, vw, unitless 0) or a calc() of them, as `sizes` uses it, in CSS px. */
+export function evaluateCssLength(expression: string, viewportWidth: number): number {
+  const tokens = expression.match(/[\d.]+(?:px|rem|em|vw)?|calc|[()*/+-]/g) ?? [];
+  let index = 0;
+  const peek = () => tokens[index];
+  const next = () => tokens[index++];
+
+  function primary(): number {
+    const token = next();
+    if (token === 'calc') return primary();
+    if (token === '(') {
+      const value = sum();
+      if (next() !== ')') throw new Error(`Unbalanced length: ${expression}`);
+      return value;
+    }
+    if (token === '-') return -primary();
+    const match = /^([\d.]+)(px|rem|em|vw)?$/.exec(token ?? '');
+    if (!match) throw new Error(`Unsupported length: ${expression}`);
+    const amount = Number(match[1]);
+    if (match[2] === 'vw') return (amount * viewportWidth) / 100;
+    if (match[2] === 'rem' || match[2] === 'em') return amount * rootFontSize;
+    return amount;
+  }
+  function product(): number {
+    let value = primary();
+    while (peek() === '*' || peek() === '/') value = next() === '*' ? value * primary() : value / primary();
+    return value;
+  }
+  function sum(): number {
+    let value = product();
+    while (peek() === '+' || peek() === '-') value = next() === '+' ? value + product() : value - product();
+    return value;
+  }
+
+  const value = sum();
+  if (index !== tokens.length) throw new Error(`Unsupported length: ${expression}`);
+  return value;
+}
+
+function matchesMediaCondition(condition: string, viewportWidth: number): boolean {
+  return condition.split(/\s+and\s+/).every((feature) => {
+    const match = /^\(\s*(min|max)-width:\s*([^)]+)\)$/.exec(feature.trim());
+    if (!match) throw new Error(`Unsupported sizes media condition: ${condition}`);
+    const limit = evaluateCssLength(match[2]!, viewportWidth);
+    return match[1] === 'min' ? viewportWidth >= limit : viewportWidth <= limit;
+  });
+}
+
+/** The slot width in CSS px that a `sizes` attribute selects at a viewport width. */
+export function evaluateSizes(sizes: string, viewportWidth: number): number {
+  for (const entry of splitTopLevel(sizes)) {
+    const match = /^((?:\([^()]*\)(?:\s+and\s+)?)+)\s+(\S.*)$/.exec(entry);
+    if (!match) return evaluateCssLength(entry, viewportWidth);
+    if (matchesMediaCondition(match[1]!, viewportWidth)) return evaluateCssLength(match[2]!, viewportWidth);
+  }
+  return viewportWidth;
+}
+
+/** `w` candidates of an img tag, narrowest first. */
+export function getSrcsetCandidates(tag: string): { url: string; width: number }[] {
+  return readAttribute(tag, 'srcset')
+    .split(',')
+    .map((value) => value.trim().split(/\s+/))
+    .filter(([url, descriptor]) => url && /^\d+w$/.test(descriptor ?? ''))
+    .map(([url, descriptor]) => ({ url: url!, width: Number.parseInt(descriptor!, 10) }))
+    .sort((left, right) => left.width - right.width);
+}
+
+/**
+ * The candidate a browser fetches for a slot: the narrowest at least slot x pixel ratio wide, else the widest.
+ * Chromium selects this way for these ladders, as the review's mobile traces showed.
+ */
+export function pickSrcsetCandidate(tag: string, slotWidth: number, dpr: number) {
+  const candidates = getSrcsetCandidates(tag);
+  return candidates.find((candidate) => candidate.width >= slotWidth * dpr) ?? candidates.at(-1);
+}
+
+export function checkSrcsetSelections(
+  routeHtmlByPath: Map<string, string>,
+  checks: readonly SrcsetSlotCheck[],
+  probes: readonly ViewportProbe[] = srcsetViewportProbes,
+): ImageMarkupDiagnostic[] {
+  const diagnostics: ImageMarkupDiagnostic[] = [];
+
+  for (const check of checks) {
+    const pattern = routePatternToRegExp(check.route);
+    const pages = [...routeHtmlByPath.entries()]
+      .filter(([route, html]) => pattern.test(route) && getImageTags(html, check.className).length > 0)
+      .sort(([left], [right]) => left.localeCompare(right));
+    if (pages.length === 0) {
+      diagnostics.push({ route: check.route, message: `No built page renders ${check.className}.` });
+      continue;
+    }
+
+    for (const [route, html] of pages) {
+      const tag = getImageTags(html, check.className)[0]!;
+      const sizes = readAttribute(tag, 'sizes');
+      for (const { width, dpr } of probes) {
+        const probe = `${width}@${dpr}`;
+        const [minSlot, maxSlot] = check.slot(width, { html, tag });
+        const sizesWidth = evaluateSizes(sizes, width);
+        if (sizesWidth < minSlot - 1) {
+          diagnostics.push({
+            route,
+            message: `${check.className} sizes gives ${Math.round(sizesWidth)}px at ${probe}, below its ${Math.round(minSlot)}px slot.`,
+          });
+        }
+        const picked = pickSrcsetCandidate(tag, sizesWidth, dpr);
+        const enough = pickSrcsetCandidate(tag, maxSlot, dpr);
+        if (picked && enough && picked.width > enough.width) {
+          diagnostics.push({
+            route,
+            message: `${check.className} fetches ${picked.width}w at ${probe} where ${enough.width}w covers its ${Math.round(maxSlot)}px slot.`,
+          });
+        }
+      }
+    }
+  }
+
+  return diagnostics;
+}
+
+/** Painted width of an object-contain image in a frame, from the img tag's intrinsic width and height. */
+function containedWidth(tag: string, frameWidth: number, frameHeight: number): number {
+  const aspectRatio = Number(readAttribute(tag, 'width')) / Number(readAttribute(tag, 'height'));
+  return aspectRatio > 0 ? Math.min(frameWidth, frameHeight * aspectRatio) : frameWidth;
+}
+
+const byViewport = (phone: readonly [number, number], desktop: readonly [number, number]) => (viewportWidth: number) =>
+  viewportWidth < 640 ? phone : desktop;
+
+/** First-viewport and card slots measured in Chromium at 390 and 1440 CSS px (global.css and the components). */
+export const srcsetSlotChecks: SrcsetSlotCheck[] = [
+  {
+    route: 'releases/index.html',
+    className: 'releases-latest-feature__artwork',
+    // Includes the artwork's 1.026 resting scale; beside the upcoming release the feature spans 9 of 12 columns.
+    slot: (viewportWidth, { html }) =>
+      byViewport(
+        [330, 336],
+        html.includes('releases-page-layout--single-column') ? [617, 626] : [450, 458],
+      )(viewportWidth),
+  },
+  {
+    route: 'releases/*/index.html',
+    className: 'release-detail-cover__image',
+    // On desktop the cover stretches to the copy column's height with object-cover.
+    slot: byViewport([356, 360], [447, 576]),
+  },
+  {
+    route: 'news/*/index.html',
+    className: 'news-detail-lead__image',
+    slot: byViewport([298, 302], [1012, 1016]),
+  },
+  { route: 'news/index.html', className: 'news-card__image', slot: byViewport([356, 360], [347, 352]) },
+  { route: 'index.html', className: 'news-card__image', slot: byViewport([356, 360], [345, 350]) },
+  {
+    route: 'artists/*/index.html',
+    className: 'artist-detail-hero__image',
+    // The photo is contained in a 16:13 frame (1.18:1 on desktop), so it paints narrower when portrait or square.
+    slot: (viewportWidth, { tag }) => {
+      const painted =
+        viewportWidth < 640 ? containedWidth(tag, 356, 356 / (16 / 13)) : containedWidth(tag, 551, 551 / 1.18);
+      return [painted, painted * 1.03 + 2];
+    },
+  },
+];
+
 function routePatternToRegExp(pattern: string): RegExp {
   return new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replaceAll('*', '[^/]+')}$`);
 }
@@ -530,6 +741,7 @@ function run() {
 
   const diagnostics = [
     ...checkImageMarkup(routeHtmlByPath, routeChecks),
+    ...checkSrcsetSelections(routeHtmlByPath, srcsetSlotChecks),
     ...checkRosterPortraitBudgets(routeHtmlByPath.get('artists/index.html') || '', (candidateUrl) => {
       const candidatePath = join(distRoot, candidateUrl.replace(/^.*?\/_astro\//, '_astro/'));
       return existsSync(candidatePath) ? statSync(candidatePath).size : undefined;

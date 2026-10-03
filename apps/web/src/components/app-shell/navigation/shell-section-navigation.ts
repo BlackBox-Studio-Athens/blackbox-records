@@ -16,6 +16,8 @@ type MutableRef<T> = {
 type ShellPageSnapshotLoader = {
   fetchSnapshot: (pathname: string, href: string, signal?: AbortSignal) => Promise<ShellPageSnapshot>;
   getCachedSnapshot: (pathname: string) => ShellPageSnapshot | null;
+  hasCachedSnapshot: (pathname: string) => boolean;
+  warmSnapshotImages?: ((pathname: string) => void) | undefined;
 };
 
 type ShellSectionTransitionController = {
@@ -39,6 +41,8 @@ export type OpenShellSectionNavigationOptions = {
   collapseOverlayHistoryToBackground: () => void;
   currentHref: string;
   currentPathname: string;
+  // Pathname of the page the shell currently renders, which can differ from the URL while an overlay is open.
+  getRenderedPathname?: (() => string) | undefined;
   hasOverlayState: () => boolean;
   historyMode?: 'push' | 'replace' | 'none' | undefined;
   href: string;
@@ -69,6 +73,7 @@ export async function openShellSectionNavigation({
   collapseOverlayHistoryToBackground,
   currentHref,
   currentPathname,
+  getRenderedPathname = () => normalizeAppPathname(currentPathname),
   hasOverlayState,
   historyMode,
   href,
@@ -104,8 +109,9 @@ export async function openShellSectionNavigation({
     collapseOverlayHistoryToBackground();
   }
 
-  const currentSnapshot = cacheDocumentSnapshot();
-  const activePathname = currentSnapshot?.pathname || normalizeAppPathname(currentPathname);
+  // The leaving page is snapshotted only after the veil has painted, and only when no snapshot exists yet: reading
+  // and sanitizing a large main element takes tens of milliseconds and must not sit inside the click task.
+  const activePathname = getRenderedPathname();
   if (route.pathname === activePathname) {
     syncShellNavigationState(activePathname);
     await scrollToDestination();
@@ -131,16 +137,33 @@ export async function openShellSectionNavigation({
   }
 
   const sectionTransitionToken = shellSectionTransition.begin(SHELL_SECTION_LABELS[route.kind], source);
+  // An uncached page starts loading now, while the veil paints, instead of after the frame wait.
+  const pageSnapshotRequest = cachedSnapshot
+    ? Promise.resolve(cachedSnapshot)
+    : shellPageLoader.fetchSnapshot(route.pathname, resolvedUrl.toString(), abortController.signal);
+  // Awaited below; this only keeps a rejection during the frame wait from surfacing as unhandled.
+  pageSnapshotRequest.catch(() => undefined);
+  if (cachedSnapshot) shellPageLoader.warmSnapshotImages?.(route.pathname);
   await waitForAnimationFramesCallback(2);
 
   try {
-    const pageSnapshot =
-      cachedSnapshot ||
-      (await shellPageLoader.fetchSnapshot(route.pathname, resolvedUrl.toString(), abortController.signal));
+    if (abortController.signal.aborted) {
+      return true;
+    }
+
+    // Read at this point, not at click time: another activation may have replaced main during the frame wait.
+    if (!shellPageLoader.hasCachedSnapshot(getRenderedPathname())) {
+      cacheDocumentSnapshot();
+    }
+
+    const pageSnapshot = await pageSnapshotRequest;
 
     if (abortController.signal.aborted) {
       return true;
     }
+
+    // A click that joined a hover prefetch still in flight requests the eager images that prefetch left cold.
+    shellPageLoader.warmSnapshotImages?.(route.pathname);
 
     const applied = applyShellPageSnapshot(pageSnapshot);
     if (!applied) {
@@ -153,8 +176,8 @@ export async function openShellSectionNavigation({
       replaceShellSectionHistoryState(route.pathname, resolvedUrl.toString());
     }
 
-    await scrollToDestination();
-    await waitForFirstScreenImages();
+    // The scroll reset waits three frames; the first-screen images decode meanwhile instead of afterwards.
+    await Promise.all([scrollToDestination(), waitForFirstScreenImages()]);
     if (abortController.signal.aborted) {
       return true;
     }

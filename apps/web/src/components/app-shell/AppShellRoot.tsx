@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   readPlayerProvidersFromElement,
@@ -16,6 +16,8 @@ import {
 import {
   applyDocumentShellPageSnapshot,
   cacheDocumentShellPageSnapshot,
+  rememberDocumentIslandServerMarkup,
+  scheduleIdleShellTask,
   type ShellPageSnapshot,
 } from '@/components/app-shell/navigation/shell-page-snapshot';
 import { createShellPageSnapshotLoader } from '@/components/app-shell/navigation/shell-page-loader';
@@ -28,6 +30,7 @@ import {
   type ShellMotionControls,
 } from '@/components/app-shell/navigation/shell-transition';
 import { createProjectRelativeUrl } from '@/platform/config/site';
+import { isCurrentPath } from '@/platform/utils/urls';
 import { normalizeAppPathname, type ShellSectionRoute } from '@/components/app-shell/routing';
 import { parseShellSectionRoute } from '@/components/app-shell/routing';
 import {
@@ -70,17 +73,40 @@ import { createShellPlayerSessionController } from './player-shell/shell-player-
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
 import { MOBILE_NAVIGATION_TRIGGER_SELECTOR } from './navigation/shell-document-click-intent';
 import { waitForEagerImages } from './navigation/shell-first-screen-images';
+import type { ShellPrefetchOptions } from './navigation/shell-prefetch-intent';
 import { openShellSectionNavigation, type ShellSectionActivationOutcome } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
 import { connectLenisScrollRoots } from './lenis-scroll';
 import ShellPortalOutlets from './view/ShellPortalOutlets';
+import {
+  connectShellSurfaceIntent,
+  createShellSurfaceLoader,
+  scheduleShellIdleTask,
+  useShellSurface,
+  warmShellSurface,
+} from './view/shell-surface-loader';
 
-const MobileNavigationSheet = lazy(() => import('./view/MobileNavigationSheet'));
-const ShellOverlayPanel = lazy(() => import('./view/ShellOverlayPanel'));
-const ShellPlayerSurface = lazy(() => import('./view/ShellPlayerSurface'));
-const StoreCartDrawer = lazy(() => import('@/components/store/cart/StoreCartDrawer'));
-const CartDeliverySummary = lazy(() => import('@/components/store/checkout/DeliverySummary'));
+// Dormant surfaces stay out of the eager graph and never suspend on open: see shell-surface-loader.
+const mobileNavigationSheetSurface = createShellSurfaceLoader(() =>
+  import('./view/MobileNavigationSheet').then((module) => module.default),
+);
+const shellOverlayPanelSurface = createShellSurfaceLoader(() =>
+  import('./view/ShellOverlayPanel').then((module) => module.default),
+);
+const shellPlayerSurface = createShellSurfaceLoader(() =>
+  import('./view/ShellPlayerSurface').then((module) => module.default),
+);
+const storeCartDrawerSurface = createShellSurfaceLoader(() =>
+  Promise.all([
+    import('@/components/store/cart/StoreCartDrawer'),
+    import('@/components/store/checkout/DeliverySummary'),
+  ]).then(([drawerModule, deliverySummaryModule]) => ({
+    CartDeliverySummary: deliverySummaryModule.default,
+    StoreCartDrawer: drawerModule.default,
+  })),
+);
+const STORE_CART_INTENT_SELECTOR = '[data-store-cart-header-root], [data-store-item-add-to-cart]';
 const preloadStoreDistroSearch = () => import('@/components/store/StoreDistroSearch');
 
 type OverlayState = ShellOverlayState;
@@ -224,6 +250,9 @@ export default function AppShellRoot({
   );
 
   overlayStateRef.current = overlayState;
+  // The document listeners connect once; they and the player controller read the modal state through this ref.
+  const isPlayerModalOpenRef = useRef(isPlayerModalOpen);
+  isPlayerModalOpenRef.current = isPlayerModalOpen;
 
   async function applyStoreCartState(nextState: StoreCartState) {
     const { applyStoreCartStateAndPersist, getStoreCartBrowserStorage } =
@@ -313,6 +342,30 @@ export default function AppShellRoot({
       .querySelector(MOBILE_NAVIGATION_TRIGGER_SELECTOR)
       ?.setAttribute('aria-expanded', String(isMobileNavigationOpen));
   }, [isMobileNavigationOpen]);
+
+  // Surface modules load on trigger intent, and at idle where the trigger is likely: the Menu below `lg`, the
+  // cart drawer where the cart control shows, and the small detail panel everywhere.
+  useEffect(() => {
+    const disconnectIntent = connectShellSurfaceIntent(document, [
+      { selector: MOBILE_NAVIGATION_TRIGGER_SELECTOR, warm: () => warmShellSurface(mobileNavigationSheetSurface) },
+      { selector: STORE_CART_INTENT_SELECTOR, warm: () => warmShellSurface(storeCartDrawerSurface) },
+    ]);
+    const cancelIdleWarmup = scheduleShellIdleTask(window, () => {
+      if (!window.matchMedia('(min-width: 64rem)').matches) warmShellSurface(mobileNavigationSheetSurface);
+      warmShellSurface(shellOverlayPanelSurface);
+    });
+    return () => {
+      disconnectIntent();
+      cancelIdleWarmup();
+    };
+  }, []);
+
+  const hasStoreCartLines = storeCartState.lines.length > 0;
+  useEffect(() => {
+    const isStoreRoute = isCurrentPath(activeShellPathname, '/store/');
+    if (!hasStoreCartLines && !isStoreRoute && !document.querySelector('[data-store-item-add-to-cart]')) return;
+    return scheduleShellIdleTask(window, () => warmShellSurface(storeCartDrawerSurface));
+  }, [activeShellPathname, hasStoreCartLines]);
 
   useEffect(() => {
     return syncShellBodyStateClasses({
@@ -494,7 +547,7 @@ export default function AppShellRoot({
     activePlayerTriggerElementRef,
     getCurrentHref: () => window.location.href,
     getHistory: () => window.history,
-    getIsPlayerModalOpen: () => isPlayerModalOpen,
+    getIsPlayerModalOpen: () => isPlayerModalOpenRef.current,
     getScheduler: () => window,
     getTargetDocument: () => document,
     iframeCacheByEmbedUrlRef,
@@ -521,12 +574,15 @@ export default function AppShellRoot({
   }, [activeShellPathname, overlayState]);
 
   async function prefetchOverlayHref(href: string) {
+    warmShellSurface(shellOverlayPanelSurface);
     await overlayFragmentLoader.prefetchHref(href);
   }
 
-  async function prefetchShellSectionHref(href: string) {
-    const pagePrefetch = shellPageLoader.prefetchHref(href);
+  async function prefetchShellSectionHref(href: string, options?: ShellPrefetchOptions) {
     const route = parseShellSectionRoute(new URL(href, window.location.href).pathname);
+    // The rendered page is snapshotted from the live DOM (at idle or on leaving), so it is never fetched.
+    if (route?.pathname === renderedPagePathnameRef.current) return;
+    const pagePrefetch = shellPageLoader.prefetchHref(href, options);
     if (route?.kind === 'store') void preloadStoreDistroSearch().catch(() => undefined);
     await pagePrefetch;
   }
@@ -546,6 +602,7 @@ export default function AppShellRoot({
       collapseOverlayHistoryToBackground,
       currentHref: window.location.href,
       currentPathname: window.location.pathname,
+      getRenderedPathname: () => renderedPagePathnameRef.current,
       hasOverlayState: () => Boolean(overlayStateRef.current),
       historyMode: options?.historyMode,
       href,
@@ -621,6 +678,7 @@ export default function AppShellRoot({
     href: string,
     options?: { backgroundHref?: string; pushHistory?: boolean; replaceHistory?: boolean },
   ) {
+    warmShellSurface(shellOverlayPanelSurface);
     return openShellOverlayNavigation({
       activeAbortControllerRef: overlayAbortControllerRef,
       backgroundHref: options?.backgroundHref,
@@ -651,7 +709,12 @@ export default function AppShellRoot({
 
     renderedPageHrefRef.current = window.location.href;
     syncShellNavigationState(normalizeAppPathname(window.location.pathname));
-    cacheDocumentSnapshot();
+    // Island markup is recorded now, before interaction; the full snapshot waits for idle time. Leaving the page
+    // earlier takes it after the transition veil has painted (openShellSectionNavigation).
+    rememberDocumentIslandServerMarkup(document);
+    const cancelIdleSnapshot = scheduleIdleShellTask(() => {
+      if (!shellPageLoader.hasCachedSnapshot(renderedPagePathnameRef.current)) cacheDocumentSnapshot();
+    });
     markCurrentHistoryEntryForShellSection(window.location.pathname);
 
     const disconnectShellDocumentListeners = connectShellDocumentEventRouting({
@@ -671,7 +734,7 @@ export default function AppShellRoot({
       getOverlayBackgroundHref: () => overlayStateRef.current?.backgroundHref,
       hasCachedShellPage: shellPageLoader.hasCachedSnapshot,
       hasOverlayState: () => overlayStateRef.current !== null,
-      isPlayerModalOpen: () => isPlayerModalOpen,
+      isPlayerModalOpen: () => isPlayerModalOpenRef.current,
       markActivePlayerSessionAsInteracted,
       navigateDocumentTo: (href) => window.location.assign(href),
       openOverlayHref,
@@ -690,11 +753,15 @@ export default function AppShellRoot({
         overlayTriggerElementRef.current = element;
       },
       stopPlayerSession,
-      warmProviderOrigins,
+      warmProviderOrigins: (providers) => {
+        warmShellSurface(shellPlayerSurface);
+        warmProviderOrigins(providers);
+      },
       windowTarget: window,
     });
 
     return () => {
+      cancelIdleSnapshot();
       disconnectShellDocumentListeners();
       clearRouteLoadingTimer();
       clearScheduledRouteLoadingTimer(storeLoadingFeedbackTimerRef, window);
@@ -706,18 +773,30 @@ export default function AppShellRoot({
 
       restoreShellScrollRestoration();
     };
-  }, [isPlayerModalOpen]);
+    // Connected once per mount: every value it reads is a ref, a state setter or a stable loader, so player open and
+    // close no longer re-snapshot main, re-bind document listeners or abort an in-flight navigation.
+  }, []);
+
+  const MobileNavigationSheet = useShellSurface(mobileNavigationSheetSurface, isMobileNavigationOpen, () =>
+    setIsMobileNavigationOpen(false),
+  );
+  const storeCartDrawerModules = useShellSurface(storeCartDrawerSurface, isStoreCartDrawerOpen, closeStoreCartDrawer);
+  const ShellOverlayPanel = useShellSurface(shellOverlayPanelSurface, Boolean(overlayState) || hasOpenedOverlay, () => {
+    // A detail that cannot open in place still opens as its page.
+    const overlayHref = overlayStateRef.current?.href;
+    closeOverlayState({ restoreFocus: false });
+    if (overlayHref) window.location.assign(overlayHref);
+  });
+  const ShellPlayerSurface = useShellSurface(
+    shellPlayerSurface,
+    isPlayerModalOpen || isMiniPlayerVisible,
+    closePlayerModalWithHistoryBack,
+  );
 
   return (
     <>
-      {isMobileNavigationOpen && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading menu
-            </span>
-          }
-        >
+      {isMobileNavigationOpen &&
+        (MobileNavigationSheet ? (
           <MobileNavigationSheet
             activeShellPathname={activeShellPathname}
             navigation={navigation}
@@ -726,20 +805,20 @@ export default function AppShellRoot({
             open
             siteTitle={siteTitle}
           />
-        </Suspense>
-      )}
+        ) : (
+          <span className="accessibility-visually-hidden-text" role="status">
+            Loading menu
+          </span>
+        ))}
 
-      {isStoreCartDrawerOpen && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading cart
-            </span>
-          }
-        >
-          <StoreCartDrawer
+      {isStoreCartDrawerOpen &&
+        (storeCartDrawerModules ? (
+          <storeCartDrawerModules.StoreCartDrawer
             deliverySummary={
-              <CartDeliverySummary lines={storeCartState.lines} onTotalDisplayChange={setStoreCartTotalDisplay} />
+              <storeCartDrawerModules.CartDeliverySummary
+                lines={storeCartState.lines}
+                onTotalDisplayChange={setStoreCartTotalDisplay}
+              />
             }
             cartState={storeCartState}
             checkoutAmountDisplay={storeCartTotalDisplay}
@@ -764,8 +843,11 @@ export default function AppShellRoot({
               await applyStoreCartState(restoreCartLine(line, index, storeCartState));
             }}
           />
-        </Suspense>
-      )}
+        ) : (
+          <span className="accessibility-visually-hidden-text" role="status">
+            Loading cart
+          </span>
+        ))}
 
       <div
         className="app-shell-route-loading-indicator"
@@ -807,14 +889,8 @@ export default function AppShellRoot({
         ></span>
       </div>
 
-      {(overlayState || hasOpenedOverlay) && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading detail
-            </span>
-          }
-        >
+      {(overlayState || hasOpenedOverlay) &&
+        (ShellOverlayPanel ? (
           <ShellOverlayPanel
             closeButtonRef={overlayCloseButtonRef}
             onClose={closeOverlayWithHistoryBack}
@@ -833,17 +909,14 @@ export default function AppShellRoot({
             overlayState={overlayState}
             scrollContainerRef={overlayScrollContainerRef}
           />
-        </Suspense>
-      )}
+        ) : (
+          <span className="accessibility-visually-hidden-text" role="status">
+            Loading detail
+          </span>
+        ))}
 
-      {(isPlayerModalOpen || isMiniPlayerVisible) && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading player
-            </span>
-          }
-        >
+      {(isPlayerModalOpen || isMiniPlayerVisible) &&
+        (ShellPlayerSurface ? (
           <ShellPlayerSurface
             activePlayerEmbedLayout={activePlayerEmbedLayout}
             activePlayerProviderId={activePlayerProviderId}
@@ -872,8 +945,11 @@ export default function AppShellRoot({
             playerProviders={playerProviders}
             providerLogoUrls={providerLogoUrls}
           />
-        </Suspense>
-      )}
+        ) : (
+          <span className="accessibility-visually-hidden-text" role="status">
+            Loading player
+          </span>
+        ))}
 
       <ShellPortalOutlets
         activeShellPathname={activeShellPathname}

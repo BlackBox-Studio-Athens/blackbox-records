@@ -10,6 +10,7 @@ const staticCopiedPaths = [
   'assets/fonts/brand/veneer.css',
   'assets/fonts/brand/veneer_regular.woff2',
   'assets/images/brand/logo.png',
+  'assets/images/brand/logo-240.webp',
   'favicon.svg',
   'favicon-96x96.png',
   'favicon.ico',

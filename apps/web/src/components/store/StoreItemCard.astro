@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import { createPricedCartSeedForStorePage } from '@/components/store/store-page-data';
 import type { StoreCardImageLoadingMode, StoreCollectionEntry } from '@/lib/store-collection';
+import { largestImageWidth } from '@/platform/lib/editorial-image';
 interface Props {
   coverflowEnrolled?: boolean;
   entry: StoreCollectionEntry;
@@ -52,6 +53,7 @@ const widths = [240, 320, 480, 640, 800, 960];
         alt={storeItem.imageAlt}
         class="store-item-card__image"
         widths={widths}
+        width={largestImageWidth(storeItem.image, widths)}
         sizes={sizes}
         data-store-grid-sizes={sizes}
         loading={priority ? 'eager' : imageLoadingMode}
@@ -65,6 +67,7 @@ const widths = [240, 320, 480, 640, 800, 960];
           class="store-item-card__preview"
           data-store-preview-image
           widths={widths}
+          width={largestImageWidth(previewImage.image, widths)}
           sizes={sizes}
           data-store-grid-sizes={sizes}
           loading="lazy"

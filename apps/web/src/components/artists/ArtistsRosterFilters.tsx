@@ -20,6 +20,7 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [visibleCount, setVisibleCount] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
+  const [fuzzyRevision, setFuzzyRevision] = useState(0);
 
   const hasActiveFilters = searchQuery.trim().length > 0;
 
@@ -58,7 +59,9 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
       : [];
 
     itemsRef.current = domItems;
-    searcherRef.current = createArtistRosterSearcher(domItems);
+    searcherRef.current = createArtistRosterSearcher(domItems, {
+      onFuzzyReady: () => setFuzzyRevision((revision) => revision + 1),
+    });
     setSearchQuery('');
     setTotalCount(domItems.length);
     applyFilters('', domItems);
@@ -74,7 +77,7 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
 
   useEffect(() => {
     applyFilters(searchQuery, itemsRef.current);
-  }, [searchQuery]);
+  }, [searchQuery, fuzzyRevision]);
 
   return (
     <div className="artists-roster-filters-panel space-y-4">

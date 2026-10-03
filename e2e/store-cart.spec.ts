@@ -1,4 +1,12 @@
-import { expect, localRepresentativePaths, test, waitForIsland, waitForShell } from './fixtures';
+import {
+  expect,
+  localRepresentativePaths,
+  openSurfaceWithinClickTask,
+  test,
+  waitForIsland,
+  waitForShell,
+  watchSurfaceWarmup,
+} from './fixtures';
 import type { CDPSession, Locator } from 'playwright/test';
 
 async function swipeUp(cdp: CDPSession, x: number, y: number, distance: number) {
@@ -353,4 +361,42 @@ test('the header cart control appears only with items or in the store', async ({
   await page.goto('store/');
   await waitForShell(page);
   await expect(page.locator('[data-store-cart-trigger]').first()).toHaveAccessibleName('Cart');
+});
+
+test('Store routes warm the cart drawer so the header control opens it in the click task', async ({ page }) => {
+  const cartDrawerWarmed = watchSurfaceWarmup(page, 'StoreCartDrawer');
+  await page.goto(`.${localRepresentativePaths.storeItem}`);
+  await waitForShell(page);
+  const trigger = '[data-store-cart-trigger]';
+  await expect(page.locator(trigger).first()).toBeVisible();
+  // Idle warm-up, with no pointer or focus intent on the cart control.
+  await cartDrawerWarmed();
+
+  expect(await openSurfaceWithinClickTask(page, trigger, '[role="dialog"][data-tone="store"]')).toEqual({
+    loadingStatus: false,
+    visible: true,
+  });
+  await expect(page.getByRole('dialog', { name: 'Cart' })).toBeVisible();
+  await page.getByRole('button', { name: 'Continue Shopping' }).click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page.locator(trigger).first()).toBeFocused();
+});
+
+test('the open cart drawer holds the page behind it still', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'Wheel input over the backdrop is a desktop pointer behaviour.');
+  await page.goto('store/');
+  await waitForShell(page);
+  await page.locator('[data-store-cart-trigger]').first().click();
+  await expect(page.getByRole('dialog', { name: 'Cart' })).toBeVisible();
+  // Radix portals the drawer after its first commit; the Lenis modal lock must still find it.
+  await expect(page.locator('html')).toHaveClass(/\blenis-stopped\b/);
+
+  await page.mouse.move(80, 400);
+  await page.mouse.wheel(0, 800);
+  await page.waitForTimeout(600);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page.locator('html')).not.toHaveClass(/\blenis-stopped\b/);
 });

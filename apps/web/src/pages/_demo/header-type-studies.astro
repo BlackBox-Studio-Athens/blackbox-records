@@ -13,6 +13,8 @@ import {
   resolveReleaseArtistDisplayName,
 } from '@/lib/catalog-data';
 import { formatYear } from '@/utils/content';
+// The Druk trial font is a development-only review asset: Vite serves it next to this page, never from public/.
+import './fonts/druk-text-wide.css';
 
 type SelfHostedFontDirectory = 'brand' | 'type-studies';
 
@@ -37,7 +39,7 @@ const selfHostedFontDirectories = {
     directory: new URL('../../../public/assets/fonts/brand/', import.meta.url),
   },
   'type-studies': {
-    directory: new URL('../../../public/assets/fonts/type-studies/', import.meta.url),
+    directory: new URL('./fonts/', import.meta.url),
   },
 };
 
@@ -148,7 +150,6 @@ const mockNewsTitle = newsEntry?.data.title || 'Caregivers by Chronoboros';
       rel="stylesheet"
     />
     <link rel="stylesheet" href={createProjectRelativeUrl('/assets/fonts/brand/veneer.css')} />
-    <link rel="stylesheet" href={createProjectRelativeUrl('/assets/fonts/type-studies/druk-text-wide.css')} />
     <script id="font-preview-candidates" is:inline type="application/json" set:html={previewCandidateJson} />
   </head>
   <body>

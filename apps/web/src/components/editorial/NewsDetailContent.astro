@@ -8,6 +8,7 @@ import InternalPageHero from '@/components/InternalPageHero.astro';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatMonthYear } from '@/utils/content';
+import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 
 interface Props {
   item: CollectionEntry<'news'>;
@@ -16,6 +17,10 @@ interface Props {
 
 const { item, imagePriority = true } = Astro.props;
 const sectionLabel = item.data.section_label || 'News';
+const leadImageWidths = [720, 1080, 1440, 1800];
+// .layout-container, the card border and its p-7 / sm:p-9 padding, and the image frame border.
+const leadImageSizes =
+  '(min-width: 72rem) 63.25rem, (min-width: 64rem) calc(100vw - 8.75rem), (min-width: 40rem) calc(100vw - 7.75rem), calc(100vw - 5.75rem)';
 ---
 
 <InternalPageHero sectionLabel={sectionLabel} title={item.data.title} />
@@ -34,8 +39,10 @@ const sectionLabel = item.data.section_label || 'News';
             src={item.data.image}
             alt={item.data.image_alt || item.data.title}
             class="news-detail-lead__image h-auto w-full object-cover"
-            widths={[720, 1080, 1440, 1800]}
-            sizes="(min-width: 1024px) 72rem, 100vw"
+            widths={leadImageWidths}
+            width={largestImageWidth(item.data.image, leadImageWidths)}
+            sizes={leadImageSizes}
+            quality={editorialImageQuality}
             loading="eager"
             priority={imagePriority}
           />

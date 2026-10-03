@@ -1,6 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
+import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 interface Props {
   node: {
     _type: string;
@@ -12,11 +13,19 @@ interface Props {
   };
 }
 const { node } = Astro.props;
+const bodyImageWidths = [720, 1080, 1440];
 if (node._type === 'image' && !node.asset?.image) throw new Error('Missing snapshot body image.');
 ---
 
 {node._type === 'image' && node.asset?.image ? (
-  <Image src={node.asset.image} alt={node.alt!} widths={[720, 1080, 1440]} sizes="(min-width: 1024px) 72rem, 100vw" />
+  <Image
+    src={node.asset.image}
+    alt={node.alt!}
+    widths={bodyImageWidths}
+    width={largestImageWidth(node.asset.image, bodyImageWidths)}
+    sizes="(min-width: 1024px) 72rem, 100vw"
+    quality={editorialImageQuality}
+  />
 ) : (
   <div>
     {node.filename && <p>{node.filename}</p>}

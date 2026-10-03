@@ -8,9 +8,19 @@ const portalSource = readFileSync(fileURLToPath(new URL('./view/ShellPortalOutle
 
 describe('app shell startup closure', () => {
   it('keeps dormant presentation behind direct intent-owned imports', () => {
-    for (const moduleName of ['MobileNavigationSheet', 'StoreCartDrawer', 'ShellOverlayPanel', 'ShellPlayerSurface']) {
-      expect(source).toContain(`const ${moduleName} = lazy(`);
+    for (const [loaderName, modulePath] of [
+      ['mobileNavigationSheetSurface', './view/MobileNavigationSheet'],
+      ['shellOverlayPanelSurface', './view/ShellOverlayPanel'],
+      ['shellPlayerSurface', './view/ShellPlayerSurface'],
+      ['storeCartDrawerSurface', '@/components/store/cart/StoreCartDrawer'],
+    ]) {
+      expect(source).toContain(`const ${loaderName} = createShellSurfaceLoader(`);
+      expect(source).toContain(`import('${modulePath}')`);
     }
+    expect(source).toContain("import('@/components/store/checkout/DeliverySummary')");
+    // Opening a surface never suspends: React reveals a Suspense fallback no sooner than 300 ms later.
+    expect(source).not.toMatch(/\bSuspense\b/);
+    expect(source).not.toMatch(/\blazy\(/);
 
     expect(source).toContain('connectShellDocumentEventRouting');
     expect(source).toContain('openShellSectionNavigation');

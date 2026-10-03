@@ -27,7 +27,7 @@ import {
 } from './smoke-core';
 import { attachSmokePageDiagnostics, captureSmokePageScreenshot, probeSmokeRoute } from './smoke-browser';
 
-export type UatStaticSmokeScenarioName = 'public_assets' | 'checkout_shell' | 'public_routes';
+export type UatStaticSmokeScenarioName = 'public_assets' | 'checkout_shell' | 'public_routes' | 'image_transform';
 export type UatStaticSmokeScenarioSelection = UatStaticSmokeScenarioName | 'all';
 
 export type UatStaticSmokeOptions = {
@@ -106,7 +106,20 @@ const reviewSiteMarkerTexts = [
 const reviewSiteTitlePrefix = '[UAT] ';
 const reviewSiteCheckoutWarning = 'Test checkout. No real payment will be taken.';
 
-const allScenarioNames: readonly UatStaticSmokeScenarioName[] = ['public_assets', 'checkout_shell', 'public_routes'];
+const allScenarioNames: readonly UatStaticSmokeScenarioName[] = [
+  'public_assets',
+  'checkout_shell',
+  'public_routes',
+  'image_transform',
+];
+// `all` is the release smoke set. image_transform runs by name, e.g. against a new public hostname at cutover.
+const releaseScenarioNames: readonly UatStaticSmokeScenarioName[] = [
+  'public_assets',
+  'checkout_shell',
+  'public_routes',
+];
+// A 480 px AVIF or WebP of a content photo is tens of kilobytes; an original is hundreds or more.
+export const imageTransformByteBudget = 250 * 1024;
 
 const UAT_STATIC_SMOKE_SCENARIOS: Record<UatStaticSmokeScenarioName, UatStaticSmokeScenarioDefinition> = {
   public_assets: {
@@ -120,6 +133,10 @@ const UAT_STATIC_SMOKE_SCENARIOS: Record<UatStaticSmokeScenarioName, UatStaticSm
   public_routes: {
     description: 'Verify the public routes, sitemap, and robots output.',
     name: 'public_routes',
+  },
+  image_transform: {
+    description: 'Verify that /_image?w=480 returns a small, immutable AVIF or WebP transformation of public media.',
+    name: 'image_transform',
   },
 };
 
@@ -142,7 +159,7 @@ export function parseUatStaticSmokeArgs(args: string[]): UatStaticSmokeOptions {
 
     if (arg === '--help' || arg === '-h') {
       console.log(
-        'Usage: pnpm smoke:uat-static -- --site-url <url> --scenario public_assets|checkout_shell|public_routes|all [--timeout-ms <ms>] [--evidence-dir <dir>] [--screenshots on-failure|always|never] [--headed]',
+        'Usage: pnpm smoke:uat-static -- --site-url <url> --scenario public_assets|checkout_shell|public_routes|image_transform|all [--timeout-ms <ms>] [--evidence-dir <dir>] [--screenshots on-failure|always|never] [--headed]',
       );
       process.exit(0);
     }
@@ -235,7 +252,9 @@ export function checkReviewSiteMarker(bodyText: string, documentTitle: string | 
 export function resolveSelectedUatStaticSmokeScenarios(
   selection: UatStaticSmokeScenarioSelection,
 ): UatStaticSmokeScenarioDefinition[] {
-  return selection === 'all' ? [...Object.values(UAT_STATIC_SMOKE_SCENARIOS)] : [UAT_STATIC_SMOKE_SCENARIOS[selection]];
+  return selection === 'all'
+    ? releaseScenarioNames.map((name) => UAT_STATIC_SMOKE_SCENARIOS[name])
+    : [UAT_STATIC_SMOKE_SCENARIOS[selection]];
 }
 
 export async function runUatStaticSmoke(
@@ -308,11 +327,13 @@ async function runUatStaticSmokeScenario(input: {
         ? [await checkCheckoutShellPage(page, input.options)]
         : input.scenario.name === 'public_assets'
           ? await checkPublicAssets(input.options, await discoverUatStaticCandidates(input.options))
-          : await checkPublicRoutes(
-              page,
-              input.options,
-              firstRepresentativePaths(await discoverUatStaticCandidates(input.options)),
-            );
+          : input.scenario.name === 'image_transform'
+            ? await checkImageTransform(input.options)
+            : await checkPublicRoutes(
+                page,
+                input.options,
+                firstRepresentativePaths(await discoverUatStaticCandidates(input.options)),
+              );
 
     const consoleErrors = diagnostics.consoleErrors.slice();
     const pageErrors = diagnostics.pageErrors.slice();
@@ -321,7 +342,7 @@ async function runUatStaticSmokeScenario(input: {
       consoleErrors.length > 0 ||
       pageErrors.length > 0;
     const screenshotPath =
-      input.scenario.name === 'public_assets'
+      input.scenario.name === 'public_assets' || input.scenario.name === 'image_transform'
         ? null
         : await maybeCaptureStaticSmokeScreenshot(
             page,
@@ -444,6 +465,84 @@ async function checkPublicAssets(
     checks.push(await checkBinaryAsset(options, mediaPath, 'image/'));
   }
   return checks;
+}
+
+async function checkImageTransform(options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck[]> {
+  const home = await fetchSmokeResponse(createRouteUrl(options.siteUrl, '/'), options.timeoutMs);
+  if (!home.ok) throw new Error(`Image transform source page did not return HTTP 200: ${home.status}.`);
+  const { mediaPath, transformPath } = imageTransformProbePaths(await home.text(), options.siteUrl);
+  const url = createRouteUrl(options.siteUrl, transformPath);
+  const issues: string[] = [];
+  const response = await fetchSmokeResponse(url, options.timeoutMs, { Accept: 'image/avif,image/webp,*/*' });
+  const bytes = (await response.arrayBuffer()).byteLength;
+  const original = await fetchSmokeResponse(createRouteUrl(options.siteUrl, mediaPath), options.timeoutMs);
+  const originalBytes = (await original.arrayBuffer()).byteLength;
+  issues.push(
+    ...imageTransformIssues({
+      bytes,
+      cacheControl: response.headers.get('cache-control'),
+      contentType: response.headers.get('content-type'),
+      fallback: response.headers.get('x-blackbox-image'),
+      originalBytes: original.ok ? originalBytes : null,
+      status: response.status,
+    }),
+  );
+  return [
+    {
+      bodyTextSnippet: `${bytes} bytes transformed; original ${original.ok ? `${originalBytes} bytes` : `HTTP ${original.status}`}`,
+      contentType: response.headers.get('content-type'),
+      issues,
+      kind: 'binary-asset',
+      path: transformPath,
+      status: response.status,
+      title: null,
+      url,
+    },
+  ];
+}
+
+/** The 480 px transformation request for the first published CMS image a page renders in `<main>`. */
+export function imageTransformProbePaths(html: string, siteUrl: string) {
+  const root = new URL(createRouteUrl(siteUrl));
+  const main = /<main\b[^>]*>([\s\S]*?)<\/main>/i.exec(html)?.[1] ?? '';
+  for (const [, , source] of main.matchAll(/<img\b[^>]*\ssrc=(["'])(.*?)\1/gi)) {
+    const rendered = new URL(source!.replaceAll('&amp;', '&'), root);
+    const href = rendered.pathname.endsWith('/_image') ? rendered.searchParams.get('href') : rendered.pathname;
+    const media = href ? new URL(href, root) : null;
+    if (
+      media?.origin === root.origin &&
+      media.pathname.startsWith(root.pathname) &&
+      /\/media\/content\/(?:[a-f0-9]{64}\/)?[a-f0-9]{64}$/.test(media.pathname)
+    )
+      return {
+        mediaPath: '/' + media.pathname.slice(root.pathname.length),
+        transformPath: `/_image?href=${encodeURIComponent(media.pathname)}&w=480`,
+      };
+  }
+  throw new Error('The page renders no published CMS image under the site base.');
+}
+
+export function imageTransformIssues(input: {
+  bytes: number;
+  cacheControl: string | null;
+  contentType: string | null;
+  fallback: string | null;
+  originalBytes: number | null;
+  status: number;
+}): string[] {
+  const issues: string[] = [];
+  if (input.status !== 200)
+    issues.push(`Expected the 480 px transformation to return HTTP 200; received ${input.status}.`);
+  if (!/^image\/(?:avif|webp)\b/i.test(input.contentType ?? ''))
+    issues.push(`Expected AVIF or WebP; received ${input.contentType ?? 'no content type'}.`);
+  if (input.fallback) issues.push(`The renderer served the original instead of a transformation (${input.fallback}).`);
+  if (!input.cacheControl?.includes('immutable'))
+    issues.push(`Expected an immutable transformation; received Cache-Control ${input.cacheControl ?? 'none'}.`);
+  if (input.bytes > imageTransformByteBudget)
+    issues.push(`Expected at most ${imageTransformByteBudget} bytes; received ${input.bytes}.`);
+  if (input.originalBytes !== null && input.bytes >= input.originalBytes)
+    issues.push(`Expected the transformation to be smaller than the ${input.originalBytes}-byte original.`);
+  return issues;
 }
 
 /** Published pages may be text-only, so sample the first candidate in publication order that renders a content image. */
@@ -760,12 +859,12 @@ async function checkBinaryAsset(
   };
 }
 
-async function fetchSmokeResponse(url: string, timeoutMs: number): Promise<Response> {
+async function fetchSmokeResponse(url: string, timeoutMs: number, headers?: HeadersInit): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
-    return await fetch(url, { method: 'GET', signal: controller.signal });
+    return await fetch(url, { headers, method: 'GET', signal: controller.signal });
   } finally {
     clearTimeout(timeout);
   }

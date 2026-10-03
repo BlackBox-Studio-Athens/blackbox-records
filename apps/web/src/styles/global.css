@@ -2,7 +2,6 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import './prose.css';
-@import 'lenis/dist/lenis.css';
 
 @source '..';
 
@@ -12,6 +11,29 @@
   font-display: swap;
   font-style: normal;
   font-weight: 900;
+}
+
+/* Lenis: the rules this site needs from lenis/dist/lenis.css, which is not imported. Lenis strips and re-adds its
+   classes on the scroll root at every scroll start and end; the packaged rules that match descendants of the lenis
+   class made each rewrite restyle the whole document. These selectors restyle only the root and its iframes, except
+   lenis-stopped (the modal scroll lock), whose root overflow change still restyles the page once per open and close.
+   html and body keep their default auto height, and autoToggle is not used. lenis-stopped keeps the packaged (0,2,0)
+   specificity so it still beats later single-class overflow rules on nested scroll roots, such as .store-artists-list,
+   without depending on the lenis class that every rewrite strips and re-adds. */
+.lenis-stopped:not(.lenis-autoToggle) {
+  overflow: clip;
+}
+
+[data-lenis-prevent],
+[data-lenis-prevent-wheel],
+[data-lenis-prevent-touch],
+[data-lenis-prevent-vertical],
+[data-lenis-prevent-horizontal] {
+  overscroll-behavior: contain;
+}
+
+.lenis-smooth iframe {
+  pointer-events: none;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -250,6 +272,31 @@ body {
   52% {
     transform: scale(1.18);
     opacity: 1;
+  }
+}
+
+/* Sheet (Radix Dialog) motion: Radix Presence keeps closing content mounted until animationend. */
+@keyframes ui-sheet-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-sheet-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-sheet-slide-in {
+  from {
+    transform: translate3d(var(--ui-sheet-offset-x, 0), var(--ui-sheet-offset-y, 0), 0);
+  }
+}
+
+@keyframes ui-sheet-slide-out {
+  to {
+    transform: translate3d(var(--ui-sheet-offset-x, 0), var(--ui-sheet-offset-y, 0), 0);
   }
 }
 
@@ -2587,6 +2634,39 @@ body {
     transform: scaleY(1.02);
   }
 
+  .ui-sheet-overlay[data-state='open'] {
+    animation: ui-sheet-fade-in 300ms ease-in-out;
+  }
+
+  .ui-sheet-overlay[data-state='closed'] {
+    animation: ui-sheet-fade-out 200ms ease-in-out forwards;
+  }
+
+  .ui-sheet-content[data-side='right'] {
+    --ui-sheet-offset-x: 100%;
+  }
+
+  .ui-sheet-content[data-side='left'] {
+    --ui-sheet-offset-x: -100%;
+  }
+
+  .ui-sheet-content[data-side='top'] {
+    --ui-sheet-offset-y: -100%;
+  }
+
+  .ui-sheet-content[data-side='bottom'] {
+    --ui-sheet-offset-y: 100%;
+  }
+
+  .ui-sheet-content[data-state='open'] {
+    animation: ui-sheet-slide-in 300ms ease-in-out;
+  }
+
+  .ui-sheet-content[data-state='closed'] {
+    animation: ui-sheet-slide-out 200ms ease-in-out forwards;
+  }
+
+  /* The detail overlay stays mounted while it closes; ShellOverlayPanel unmounts it on the opacity transitionend. */
   .app-shell-content-overlay {
     position: fixed;
     inset: 0;
@@ -2598,12 +2678,30 @@ body {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
+    transition:
+      opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 220ms;
   }
 
   .app-shell-content-overlay[data-state='open'] {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
+    transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @starting-style {
+    .app-shell-content-overlay[data-state='open'] {
+      opacity: 0;
+    }
+
+    .app-shell-content-overlay[data-state='open'] .app-shell-content-overlay__panel {
+      transform: translateX(18px);
+    }
+  }
+
+  .app-shell-content-overlay[data-state='closed'] .app-shell-content-overlay__panel {
+    transform: translateX(18px);
   }
 
   .app-shell-content-overlay__backdrop {
@@ -2624,6 +2722,7 @@ body {
     background: linear-gradient(180deg, rgba(17, 17, 17, 0.98) 0%, rgba(10, 10, 10, 0.98) 100%), rgba(13, 13, 13, 0.98);
     box-shadow: 0 28px 90px rgba(0, 0, 0, 0.56);
     overflow: hidden;
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .app-shell-content-overlay__header {
@@ -4053,6 +4152,21 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     transform: none;
     transition: none;
   }
+
+  .ui-sheet-overlay[data-state],
+  .ui-sheet-content[data-state] {
+    animation: none;
+  }
+
+  .app-shell-content-overlay,
+  .app-shell-content-overlay[data-state],
+  .app-shell-content-overlay__panel {
+    transition: none;
+  }
+
+  .app-shell-content-overlay[data-state] .app-shell-content-overlay__panel {
+    transform: none;
+  }
 }
 
 @media (min-width: 40rem) and (prefers-reduced-motion: reduce) {
@@ -4863,7 +4977,9 @@ html[data-store-coverflow-capable]
   [data-store-coverflow-mode='preview']
   [data-store-coverflow-position='active']
   .store-item-card__content
-  > :not(.store-item-card__price) {
+  > :is(.brand-card-title, .store-item-card__artist, .store-item-card__option) {
+  /* Named children, not :not(.store-item-card__price): a featureless rightmost compound makes every
+     coverflow mode change restyle the whole catalog. */
   display: none;
 }
 

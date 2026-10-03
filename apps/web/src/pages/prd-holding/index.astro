@@ -7,7 +7,9 @@ import { Mail } from 'lucide-react';
 const pageTitle = 'BlackBox Records | Site Coming Online';
 const pageDescription = 'BlackBox Records is active. The full site is coming online soon.';
 const pageUrl = 'https://blackboxrecordsathens.com/';
-const logoUrl = createProjectRelativeUrl(siteBrandAssets.badgeLogo);
+// The logo renders at 72-120 CSS px, so a 240 px lossless WebP (20 KB) replaces the 1024 px PNG (101 KB) on the page;
+// og:image keeps the PNG for link unfurls.
+const logoUrl = createProjectRelativeUrl('/assets/images/brand/logo-240.webp');
 const socialImageUrl = new URL(siteBrandAssets.badgeLogo, pageUrl).toString();
 const veneerCssUrl = createProjectRelativeUrl('/assets/fonts/brand/veneer.css');
 const veneerFontUrl = createProjectRelativeUrl('/assets/fonts/brand/veneer_regular.woff2');
@@ -64,7 +66,7 @@ if (!inquiryEmail) console.warn('PRD Holding Page: no valid inquiry email in the
   <body>
     <main class="holding-page">
       <section class="holding-page__info" aria-labelledby="holding-title">
-        <img class="holding-page__logo" src={logoUrl} alt="BlackBox Records" width="384" height="384" />
+        <img class="holding-page__logo" src={logoUrl} alt="BlackBox Records" width="240" height="240" />
 
         <div class="holding-page__message">
           <p class="holding-page__kicker">BLACKBOX RECORDS · ATHENS</p>

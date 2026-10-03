@@ -8,4 +8,8 @@ export function getPurchaseInformation(): ApprovedPurchaseInformation | null {
 
 export const isPurchaseInformationDraft = publication !== 'approved';
 
+// Browser readers bundle this module's entry, so pages need no inline copy. The hosted
+// build replaces this module and inlines the published entry for its browser reader.
+export const inlinesPurchaseInformation = false;
+
 export { purchaseTermsHeadings, purchasePrivacyHeadings } from '@blackbox/content-model';
