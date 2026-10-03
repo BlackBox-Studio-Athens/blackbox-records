@@ -25,13 +25,10 @@ describe('Store collection category surfaces', () => {
     expect(categoryNavigationSource).toContain('href={createProjectRelativeUrl(category.path)}');
     expect(categoryNavigationSource).toContain('style={`--store-category-count: ${discoverableCategories.length}`}');
     expect(categoryNavigationSource).toContain('data-store-category-active');
-    expect(cssSource).toContain('grid-template-columns: repeat(2, minmax(0, 1fr))');
-    expect(cssSource).toContain('grid-template-columns: repeat(var(--store-category-count), minmax(0, 1fr))');
-    expect(cssSource).toContain('.store-category-signal__item:last-child:nth-child(odd)');
+    // Store-format browser coverage checks responsive category layout and target sizes.
     expect(cssSource).toContain('border-bottom: 3px solid transparent');
     expect(cssSource).toContain('border-bottom-color: var(--store-accent-active)');
     expect(cssSource).toContain('background: var(--store-accent-surface)');
-    expect(cssSource).toContain('min-height: 3.5rem');
     expect(cssSource).toContain('outline: 2px solid var(--foreground)');
   });
 

@@ -1,5 +1,125 @@
 import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
+test('Store categories center and reflow with complete touch-sized labels', async ({ page }, testInfo) => {
+  await page.goto('store/');
+  await waitForShell(page);
+  const categories = page.getByRole('navigation', { name: 'Store categories' });
+  const list = categories.locator('ul');
+  const links = categories.getByRole('link');
+
+  // The fourth destination is a layout fixture only; published catalog membership stays unchanged.
+  await list.evaluate((list) => list.querySelector('a[href$="/merch/"]')?.parentElement?.remove());
+  for (const count of [3, 4]) {
+    if (count === 4) {
+      await list.evaluate((list) => {
+        const item = list.firstElementChild!.cloneNode(true) as HTMLElement;
+        const link = item.querySelector('a')!;
+        link.href = new URL('merch/', link.href).href;
+        link.textContent = 'Merch';
+        link.removeAttribute('aria-current');
+        link.removeAttribute('data-store-category-active');
+        list.append(item);
+      });
+    }
+    await expect(links).toHaveText(['All', 'BlackBox Releases', 'Distro', 'Merch'].slice(0, count));
+    for (const textScale of [1, 2]) {
+      await page.evaluate((scale) => (document.documentElement.style.fontSize = `${scale * 100}%`), textScale);
+      for (const width of [320, 390, 640, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        const layout = await list.evaluate((list) => {
+          const box = list.getBoundingClientRect();
+          const rows = new Map<number, { left: number; right: number }>();
+          const links = Array.from(list.querySelectorAll('a'), (link) => {
+            const rect = link.getBoundingClientRect();
+            const text = document.createRange();
+            text.selectNodeContents(link);
+            const textBox = text.getBoundingClientRect();
+            const style = getComputedStyle(link);
+            const top = Math.round(rect.top);
+            const row = rows.get(top);
+            rows.set(top, {
+              left: Math.min(row?.left ?? rect.left, rect.left),
+              right: Math.max(row?.right ?? rect.right, rect.right),
+            });
+            return {
+              left: rect.left,
+              right: rect.right,
+              height: rect.height,
+              textLeft: textBox.left,
+              textRight: textBox.right,
+              fontSize: style.fontSize,
+              fontWeight: style.fontWeight,
+            };
+          });
+          return {
+            center: box.left + box.width / 2,
+            rows: [...rows.values()],
+            links,
+            viewport: window.innerWidth,
+            overflow: document.documentElement.scrollWidth > window.innerWidth,
+          };
+        });
+        for (const row of layout.rows)
+          expect(Math.abs((row.left + row.right) / 2 - layout.center)).toBeLessThanOrEqual(1);
+        for (const link of layout.links) {
+          expect(link.height).toBeGreaterThanOrEqual(width < 640 ? 48 : 52);
+          expect(link.left).toBeGreaterThanOrEqual(0);
+          expect(link.right).toBeLessThanOrEqual(layout.viewport);
+          expect(link.textLeft).toBeGreaterThanOrEqual(link.left);
+          expect(link.textRight).toBeLessThanOrEqual(link.right + 1);
+          expect(link.fontSize).toBe(`${(width < 640 ? 16 : 18) * textScale}px`);
+          expect(link.fontWeight).toBe('600');
+        }
+        if (textScale === 1) {
+          expect(layout.overflow).toBe(false);
+          if ([320, 390, 1280].includes(width))
+            await page.screenshot({ path: testInfo.outputPath(`categories-${count}-${width}.png`) });
+        }
+      }
+    }
+  }
+});
+
+test('Store categories retain current state, keyboard focus and shell navigation', async ({ page }) => {
+  await page.goto('store/');
+  await waitForShell(page);
+  await plantSentinel(page);
+  const categories = page.getByRole('navigation', { name: 'Store categories' });
+  const all = categories.getByRole('link', { name: 'All', exact: true });
+  const releases = categories.getByRole('link', { name: 'BlackBox Releases', exact: true });
+  await expect(all).toHaveAttribute('aria-current', 'page');
+  await all.focus();
+  await page.keyboard.press('Tab');
+  await expect(releases).toBeFocused();
+  await expect(releases).toHaveCSS('outline-width', '2px');
+  await expect(releases).toHaveCSS('outline-style', 'solid');
+  await releases.hover();
+  await expect(all).toHaveAttribute('aria-current', 'page');
+  await expect(releases).not.toHaveAttribute('aria-current', 'page');
+  await expect(releases).not.toHaveCSS(
+    'border-bottom-color',
+    await all.evaluate((link) => getComputedStyle(link).borderBottomColor),
+  );
+  for (const [label, route] of [
+    ['BlackBox Releases', 'blackbox-releases/'],
+    ['Distro', 'distro/'],
+    ['All', ''],
+  ]) {
+    await categories.getByRole('link', { name: label, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/store/${route}$`));
+    await expect(categories.locator('[aria-current="page"]')).toHaveCount(1);
+    await expect(categories.getByRole('link', { name: label, exact: true })).toHaveAttribute('aria-current', 'page');
+    expect(await sentinelIntact(page)).toBe(true);
+  }
+  await releases.focus();
+  await page.keyboard.press('Shift+Tab');
+  await expect(all).toBeFocused();
+  await expect(all).toHaveCSS('outline-width', '2px');
+  await expect(all).toHaveCSS('outline-style', 'solid');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(all).toHaveCSS('transition-duration', '0s');
+});
+
 for (const route of ['store/', 'store/distro/']) {
   test(`${route} Coverflow wheel navigation keeps the page still`, async ({ page }) => {
     await page.goto(route);
@@ -174,10 +294,23 @@ test('mixed catalog keeps its canonical order through format, search and Coverfl
   expect(await cards.locator('visible=true').count()).toBe(original.length);
 });
 
-test('Distro remains complete without JavaScript including legacy fragments', async ({ browser }, testInfo) => {
-  const context = await browser.newContext({ javaScriptEnabled: false, baseURL: testInfo.project.use.baseURL });
-  try {
-    const page = await context.newPage();
+test.describe('Native Store navigation', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('Distro and Store categories remain complete without JavaScript including legacy fragments', async ({
+    page,
+  }) => {
+    // Four complete document loads take longer than shell navigation on the local dev server.
+    test.setTimeout(180_000);
+    // Without scripting, browsers eagerly fetch every catalogue image; this test covers native navigation.
+    await page.route('**/*', (route) =>
+      route.request().resourceType() === 'image'
+        ? route.fulfill({
+            contentType: 'image/svg+xml',
+            body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>',
+          })
+        : route.fallback(),
+    );
     await page.goto('store/distro/#distro-group-cds');
     const cards = page.locator('[data-distro-search-item]');
     expect(await cards.count()).toBeGreaterThan(6);
@@ -185,12 +318,23 @@ test('Distro remains complete without JavaScript including legacy fragments', as
     await expect(page.getByRole('button', { name: 'Coverflow', exact: true })).toBeHidden();
     await expect(page.locator('.store-item-card__artist-link').first()).toBeVisible();
     await expect(page.locator('#distro-group-cds')).toHaveCount(1);
-  } finally {
-    await context.close();
-  }
+    // The legacy fragment starts below the category bar; return above the fixed header before choosing a shelf.
+    await page.keyboard.press('Control+Home');
+    for (const [label, route] of [
+      ['BlackBox Releases', 'blackbox-releases/'],
+      ['All', ''],
+      ['Distro', 'distro/'],
+    ]) {
+      const categories = page.getByRole('navigation', { name: 'Store categories' });
+      await categories.getByRole('link', { name: label, exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`/store/${route}$`));
+      await expect(categories.getByRole('link', { name: label, exact: true })).toHaveAttribute('aria-current', 'page');
+    }
+  });
 });
 
 test('Distro shell navigation and filters preserve the playing iframe', async ({ page }) => {
+  test.setTimeout(180_000);
   await page.route(/^https:\/\/(bandcamp\.com|embed\.tidal\.com)\//, (route) =>
     route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
   );
@@ -204,7 +348,7 @@ test('Distro shell navigation and filters preserve the playing iframe', async ({
   await page.getByRole('button', { name: 'Minimize player' }).click();
   const original = await iframe.elementHandle();
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Store' }).click();
-  await expect(page).toHaveURL(/\/store\/$/);
+  await expect(page).toHaveURL(/\/store\/$/, { timeout: 60_000 });
   await expect(page.locator('#all-store-catalog')).toBeVisible();
   await page
     .getByRole('navigation', { name: 'Store categories' })

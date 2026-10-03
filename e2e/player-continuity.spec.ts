@@ -4,6 +4,7 @@ import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fix
 const providerEmbeds = /^https:\/\/(bandcamp\.com|embed\.tidal\.com)\//;
 
 test('player survives shell navigation, minimize/reopen and history; Stop destroys it', async ({ page }) => {
+  test.setTimeout(180_000);
   await page.route(providerEmbeds, (route) =>
     route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
   );
@@ -24,6 +25,8 @@ test('player survives shell navigation, minimize/reopen and history; Stop destro
   const isOriginalIframeConnected = () => originalIframe.evaluate((element) => element.isConnected);
 
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Store' }).click();
+  // The local server renders a complete Store document before the shell can commit this route.
+  await expect(page).toHaveURL(/\/store\/$/, { timeout: 60_000 });
   await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeVisible();
   expect(await isOriginalIframeConnected()).toBe(true);
 
