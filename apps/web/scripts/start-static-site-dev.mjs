@@ -47,7 +47,16 @@ function assertPortAvailable(host, port) {
 
 function spawnAstroDev(port) {
   const astroCommand = path.join(webDir, 'node_modules', '.bin', process.platform === 'win32' ? 'astro.CMD' : 'astro');
-  const args = ['dev', '--root', '.', '--host', HOST, '--port', String(port), ...(background ? ['--background'] : [])];
+  const args = [
+    process.argv.includes('--preview') ? 'preview' : 'dev',
+    '--root',
+    '.',
+    '--host',
+    HOST,
+    '--port',
+    String(port),
+    ...(background ? ['--background'] : []),
+  ];
 
   if (process.platform === 'win32') {
     const commandString = `"${astroCommand}" ${args.join(' ')}`;

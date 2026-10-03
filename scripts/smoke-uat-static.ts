@@ -572,7 +572,18 @@ export function findPublicMediaPath(html: string, siteUrl: string): string {
   const source = findMainImageSource(html);
   if (!source) throw new Error('Public media source page has no rendered content image.');
   const root = new URL(createRouteUrl(siteUrl));
-  const asset = new URL(source, root);
+  const asset = new URL(source.replaceAll('&amp;', '&'), root);
+  if (asset.origin === 'https://images.blackboxrecordsathens.com') {
+    const sourcePath = /^\/cdn-cgi\/image\/[^/]+\/(https:\/\/.*)$/.exec(asset.pathname)?.[1];
+    const original = sourcePath ? new URL(sourcePath) : null;
+    if (
+      original?.origin === root.origin &&
+      original.pathname.startsWith(root.pathname) &&
+      /\/media\/content\/[a-f0-9]{64}$/.test(original.pathname)
+    ) {
+      return asset.href;
+    }
+  }
   if (asset.origin !== root.origin || !asset.pathname.startsWith(root.pathname)) {
     throw new Error('Public media must be served under the site base.');
   }
@@ -823,7 +834,7 @@ async function checkBinaryAsset(
   routePath: string,
   expectedContentTypePrefix: string,
 ): Promise<UatStaticSmokeCheck> {
-  const url = createRouteUrl(options.siteUrl, routePath);
+  const url = routePath.startsWith('https://') ? routePath : createRouteUrl(options.siteUrl, routePath);
   const issues: string[] = [];
   let response: Response | null = null;
   let contentType: string | null = null;

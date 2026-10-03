@@ -634,7 +634,11 @@ jobs:
       - *install
       - name: Install public end-to-end browsers
         run: pnpm exec playwright install --with-deps chromium firefox
+      - name: Build Local production fixture for end-to-end acceptance
+        run: pnpm --filter @blackbox/web build
       - name: Run the whole end-to-end suite
+        env:
+          BLACKBOX_E2E_PREVIEW: '1'
         run: pnpm test:e2e
       - name: Upload end-to-end evidence
         if: ${{ failure() }}

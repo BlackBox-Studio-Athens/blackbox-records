@@ -182,7 +182,13 @@ describe('Pages artifact promotion contract', () => {
     expect(runs(staff)).toContain('playwright install --with-deps chromium firefox');
     const e2e = workflow.jobs['accept-e2e'];
     expect(runs(e2e)).toContain('playwright install --with-deps chromium firefox');
-    expect(stepNamed(e2e, 'Run the whole end-to-end suite').run).toBe('pnpm test:e2e');
+    expect(stepNamed(e2e, 'Build Local production fixture for end-to-end acceptance').run).toBe(
+      'pnpm --filter @blackbox/web build',
+    );
+    expect(stepNamed(e2e, 'Run the whole end-to-end suite')).toMatchObject({
+      env: { BLACKBOX_E2E_PREVIEW: '1' },
+      run: 'pnpm test:e2e',
+    });
     expect(stepNamed(e2e, 'Upload end-to-end evidence')).toMatchObject({
       if: '${{ failure() }}',
       with: { path: '.codex-artifacts/e2e' },

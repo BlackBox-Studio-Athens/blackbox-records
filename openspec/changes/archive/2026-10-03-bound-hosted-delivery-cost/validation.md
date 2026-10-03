@@ -44,6 +44,10 @@ The user authorized UAT and PRD code deployment on 2026-10-03. Candidate [371398
 
 ## Not verified
 
+The same promotion's end-to-end job failed before performance assertions because `apps/web/dist/_astro` was absent on the fresh runner. Performance acceptance requires compiled production files. Promotion now builds the Local production fixture and selects Astro preview for the full suite; ordinary Local development remains available. No performance assertion or release gate is removed.
+
+Candidate [37140526950](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/37140526950), source `db30dfc66b116b5e0c8e9d9aee94c4c6655514f9`, passed repository gates, built both target bundles, deployed UAT Worker/renderer/Pages and verified hosted identity. Promotion [37141121984](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/37141121984) passed UAT identity, provider smoke and staff previews, but static smoke rejected the approved direct Images origin before PRD mutation. A regression test reproduced that failure. The smoke now accepts only the configured Images host carrying a media-SHA source from the tested deployment and fetches that direct URL; foreign hosts and other environments remain rejected. Replacement candidate acceptance remains required.
+
 Unverified: native/global tag-purge propagation; actual edge hits/Age/304, placement and account-wide usage; real encoding and quota-failure behavior for script-disabled browsers/metadata crawlers. Task 5.1's local source integration is complete and the 30+30 s window stays. Owner release, bounded UAT/PRD pilot, apex smoke and conditional predecessor archival remain open. The retained CI/static publication path changes deployed version identity rather than activating the runtime R2 pointer; it is unchanged and is not claimed as extra runtime-purge coverage.
 
 ## Recovery on 2026-10-03
