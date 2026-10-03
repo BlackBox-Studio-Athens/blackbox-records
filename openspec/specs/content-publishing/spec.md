@@ -219,3 +219,49 @@ The content workspace SHALL render the selected unsaved record with the public s
 - **THEN** the affected editor field shows its validation message
 - **AND** no preview request is sent for the invalid data
 - **AND** the last successful preview remains visible and is labeled outdated when one exists.
+
+### Requirement: Published content reads are linear and snapshot-scoped
+
+Static and hosted page renders SHALL read published content with work linear in the records they use, and any reuse SHALL be scoped to one accepted snapshot.
+
+#### Scenario: A Store collection page renders
+
+- **WHEN** a Store collection or category page lists its Store Items
+- **THEN** each Store Item's availability is computed once from that item without rebuilding the Store Item list
+- **AND** the category navigation reuses the listing already computed for the page
+- **AND** the rendered output is identical to the previous implementation's.
+
+#### Scenario: A snapshot is parsed
+
+- **WHEN** the reader parses an accepted snapshot or a publication candidate
+- **THEN** its schemas are built once per process, not once per record
+- **AND** the final publication candidate still receives one full parse with the same validation errors, messages, and paths.
+
+#### Scenario: A page reads a collection or entry
+
+- **WHEN** a render calls `getCollection` or `getEntry` for an accepted snapshot
+- **THEN** projections may be reused only for that same snapshot object and media base, with an id index for entries
+- **AND** a new snapshot never sees another snapshot's projections
+- **AND** staff previews with preview overrides bypass the reuse.
+
+### Requirement: Hosted pages render accepted purchase information
+
+Hosted public pages and islands SHALL render the purchase information of the accepted snapshot, not the repository's static copy.
+
+#### Scenario: Purchase information is published
+
+- **WHEN** a publication containing changed purchase information is accepted and becomes live
+- **THEN** a fresh hosted page load renders the new purchase information on the server and in the islands that read it
+- **AND** static output continues to render the repository copy it was built from.
+
+#### Scenario: A web module the hosted build overrides moves
+
+- **WHEN** a module the hosted build configuration replaces is moved or renamed in the web app
+- **THEN** an automated check fails because the override no longer resolves to an existing module with the same exports
+- **AND** hosted output never silently falls back to the static module.
+
+#### Scenario: A page needs inline purchase information
+
+- **WHEN** a build's browser reader needs the inline purchase-information data
+- **THEN** that build emits it on the pages where that reader can hydrate
+- **AND** builds whose islands bundle the data do not inline it.

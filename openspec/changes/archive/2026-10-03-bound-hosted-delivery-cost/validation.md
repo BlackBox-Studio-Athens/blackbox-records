@@ -1,12 +1,12 @@
 # Validation
 
-Baseline: `e818b709a2364aa29dfd54cadcd0433779a1f263`, reviewed in [PERF-004](../improve-site-performance-round-three/reports/PERF-004-review-e818b70.md). Hosted costs at the baseline are inferred from code, Node 24 benchmarks of the real published reader, and Cloudflare documentation; UAT and PRD were not contacted.
+Baseline: `e818b709a2364aa29dfd54cadcd0433779a1f263`, reviewed in [PERF-004](../2026-10-03-improve-site-performance-round-three/reports/PERF-004-review-e818b70.md). Hosted costs at the baseline are inferred from code, Node 24 benchmarks of the real published reader, and Cloudflare documentation; UAT and PRD were not contacted.
 Product Environment: Local, for every implementation slice. Worker tests run in the Workers pool; `pnpm --filter @blackbox/backend build:public` produces the hosted build locally. UAT and then PRD only after an owner-authorized release, under the Free-tier rule.
-Final implementation: uncommitted work above `fe099b01cea42266cdf21c2318851af361db1210`. Accepted repository summary: `.codex-artifacts/validation/2026-10-03T06-10-39-963Z-58624-e99ed2/summary.json`, `mode: local`, PASSED, matching before/after fingerprint `b99b893b7b0ff73d59d32bd82e4fb5b94bf5c17d7619c3bf86125b6222b70823`. The last rerun pointer and fingerprints after note reconciliation are in `.codex-artifacts/performance-resume/completion-evidence.json`.
+Measured implementation before Git integration: resumed work above `fe099b01cea42266cdf21c2318851af361db1210`. Accepted repository summary: `.codex-artifacts/validation/2026-10-03T06-10-39-963Z-58624-e99ed2/summary.json`, `mode: local`, PASSED, matching before/after fingerprint `b99b893b7b0ff73d59d32bd82e4fb5b94bf5c17d7619c3bf86125b6222b70823`. The last pre-integration rerun pointer and fingerprints remain in `.codex-artifacts/performance-resume/completion-evidence.json`; rebased checks have a separate integration record.
 
 ## Acceptance rows
 
-From the [acceptance matrix](../../../docs/agent-workflow.md#acceptance-matrix):
+From the [acceptance matrix](../../../../docs/agent-workflow.md#acceptance-matrix):
 
 - **CMS/schema/publication:** groups 2, 3 and 5. Draft privacy for media, stable media URLs across a text-only publication, accepted-snapshot purchase information, and activation-driven cache invalidation, all through worker tests and a local hosted build. Local results do not prove hosted publication.
 - **Boundaries/tooling/instructions:** groups 4 and 6. Gateway and release-build tests in `test:tooling`, the `dist-public` checks, and this change's strict OpenSpec validation.
@@ -48,6 +48,10 @@ Unverified: native/global tag-purge propagation; actual edge hits/Age/304, place
 
 ## Recovery on 2026-10-03
 
-The user authorized restoring and continuing `claude/upbeat-mayer-2nikhm` from remote tip `fe099b01cea42266cdf21c2318851af361db1210`, the integration base for all resumed slices. Baseline remains `e818b709a2364aa29dfd54cadcd0433779a1f263`. The sibling's [recovery record](../improve-site-performance-round-three/validation.md#recovery-on-2026-10-03) records the recovered commits, missing historical raw artifacts, graph/browser setup, parallel file ownership and preorder overlap policy.
+The user later requested commit, rebase, local merge and archival. This change's four delta capabilities are synced and verified against main specs. The archive retains four unchecked acceptance or conditional reconciliation tasks, the short HTML freshness window, and all owner/account/pilot gates. Current integration results and the preserved artifact path mapping are in the sibling's local integration record and `.codex-artifacts/performance-integration-2026-10-03/integration-evidence.json` in the primary checkout. Earlier emulation and timing records keep their original source identities.
+
+After rebase, `build:public uat` and a fresh isolated local capture pass against the same validated synthetic snapshot. Bundle and image-markup gates pass against `rebase-hosted-documents` and the rebuilt `dist-public/client`; raw logs and `rebase-hosted-bundles.json` are retained. This verifies current local output, not hosted activation, encoding, quota behavior or global purge propagation.
+
+The user authorized restoring and continuing `claude/upbeat-mayer-2nikhm` from remote tip `fe099b01cea42266cdf21c2318851af361db1210`, the integration base for all resumed slices. Baseline remains `e818b709a2364aa29dfd54cadcd0433779a1f263`. The sibling's [recovery record](../2026-10-03-improve-site-performance-round-three/validation.md#recovery-on-2026-10-03) records the recovered commits, missing historical raw artifacts, graph/browser setup, parallel file ownership and preorder overlap policy.
 
 `complete-image-delivery` is present and unarchived in this branch; its artifacts remain untouched. Existing commits `a56da66b`, `14f98a5b`, and `119a9952` implement the purchase-information alias correction, media-SHA addressing, canonical image source and recent-media lookup. Their missing acceptance is audited alongside the remaining gateway, direct-image, durable-cache and hosted-build work. The hosted implementation remains Local only: no UAT/PRD request, deployment or provider call is made. Release, bounded UAT pilot, apex cutover checks and closure remain separate pending gates.

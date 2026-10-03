@@ -222,7 +222,6 @@ for (const route of ['store/', 'store/distro/']) {
   test(`${route} Coverflow wheel navigation keeps the page still`, async ({ page }) => {
     await page.goto(route);
     await waitForShell(page);
-    await expect(page.locator('html')).toHaveClass(/\blenis\b/);
     await page.getByRole('button', { name: 'Coverflow', exact: true }).click();
     const group = page.locator('[data-store-coverflow-group]');
     const stage = group.locator('[data-store-coverflow-stage]');

@@ -391,3 +391,121 @@ Home featured roster print photos SHALL use the existing News image hover treatm
 - **WHEN** the visitor enables reduced motion and hovers a Home featured artist card
 - **THEN** its photo remains at its original scale without a transform transition
 - **AND** the card retains visible focus feedback and normal link activation.
+
+### Requirement: Cart and checkout thumbnails use a bounded derivative
+
+The system SHALL show StoreCart and checkout line images from a small derivative of the Store Item image, never the original upload.
+
+#### Scenario: Shopper adds a Store Item to the cart
+
+- **WHEN** a Store card, Store Item page, or checkout page seeds a StoreCart line
+- **THEN** the line image URL points to one 176 px WebP derivative computed once per Store Item, or the nearest hosted width rung
+- **AND** the cart seed keeps its existing field names and types
+- **AND** the rendered thumbnail declares its 88 px width and height and decodes asynchronously.
+
+#### Scenario: A stored cart line predates the derivative
+
+- **WHEN** a StoreCart line already in localStorage carries an earlier image URL
+- **THEN** it keeps rendering until the line is rewritten
+- **AND** no storage migration is required.
+
+### Requirement: Editorial image candidates match their rendered slots
+
+The system SHALL describe each editorial and Store image's rendered slot in `sizes` and SHALL keep width ladders, quality, and fallback sources proportional to what browsers request.
+
+#### Scenario: Built pages are checked for picked candidates
+
+- **WHEN** the built image-markup check evaluates the LCP and lead images of releases, release detail, news, news detail, artist hero, and Store card roles
+- **THEN** the candidate a browser picks at 390×844 DPR 2, 390×844 DPR 3, and 1440×900 DPR 1 is the smallest one covering the slot measured from the site CSS, including gutters, padding, frames, and grid columns
+- **AND** the first `/news/` card receives high fetch priority.
+
+#### Scenario: A contained photo sits in a fixed frame
+
+- **WHEN** the artist hero shows a photo with `object-fit: contain` inside its frame
+- **THEN** `sizes` follows the painted image from its aspect ratio against the frame's, with small rungs available for portrait and square photos
+- **AND** the contain-over-blur presentation is unchanged.
+
+#### Scenario: Editorial images are encoded
+
+- **WHEN** an editorial or LCP image is encoded through Astro
+- **THEN** it uses one shared editorial WebP quality, 68 unless a recorded visual check sets another value
+- **AND** the `src` fallback reuses the largest `srcset` transform instead of encoding an extra full-resolution file.
+
+#### Scenario: Store cards and gallery thumbnails render
+
+- **WHEN** a Store card or a Store Item gallery thumbnail renders
+- **THEN** card candidates are 240, 360, 480, 640, and 720 pixels wide
+- **AND** 72 px gallery thumbnails offer 144 and 216 pixel candidates.
+
+### Requirement: Link previews, small brand marks, and the header logo are fit for their role
+
+The system SHALL keep link-preview and small brand-mark images within derivative sizes appropriate to their use, and SHALL never lazy-load the header logo.
+
+#### Scenario: A page publishes link-preview metadata
+
+- **WHEN** a page with a Content Image emits `og:image` and `twitter:image`
+- **THEN** both reference a 1200 px JPEG derivative resolved against the site origin
+- **AND** the original upload is not referenced solely for link previews.
+
+#### Scenario: The PRD Holding Page shows its logo
+
+- **WHEN** the Holding Page renders its logo at 72 to 120 CSS pixels
+- **THEN** it uses a derivative no wider than 240 pixels
+- **AND** its stable metadata image and closed asset set remain valid.
+
+#### Scenario: The header renders on any page
+
+- **WHEN** the header brand logo renders
+- **THEN** it loads eagerly, because it can be the first-viewport LCP element
+- **AND** it keeps its fingerprinted derivative and stable geometry.
+
+### Requirement: Hosted CMS media is addressed by media identity
+
+The hosted renderer SHALL address CMS media by the media's own content SHA, SHALL serve and transform only media that the live or a bounded number of recent accepted snapshots reference, and SHALL keep each transformation request within the widths the image components emit.
+
+#### Scenario: A text-only publication is activated
+
+- **WHEN** an accepted publication changes text but no media
+- **THEN** every hosted media and image URL stays the same as before the publication
+- **AND** no Images transformation is requested again for unchanged media.
+
+#### Scenario: A media SHA is requested
+
+- **WHEN** a request names a media SHA referenced by the live snapshot or one of the three most recently accepted snapshots
+- **THEN** the media or its transformation is served with immutable caching
+- **AND** a draft, failed-candidate, retired, or unknown media SHA returns 404 `no-store`
+- **AND** checking the SHA costs constant time per request after the recent-snapshot index is built.
+
+#### Scenario: A transformation width is requested
+
+- **WHEN** an `/_image` request names a width
+- **THEN** it is accepted only for a width the image components emit, including each image's intrinsic `src` width, and snaps to the declared ladder
+- **AND** any other width returns 404 `no-store`.
+
+#### Scenario: A transformation fails or the monthly allowance is spent
+
+- **WHEN** Cloudflare Images cannot return a transformation
+- **THEN** the renderer serves the verified original with a short shared cache lifetime and a marker header
+- **AND** the original is never cached immutably under a transformation URL.
+
+#### Scenario: A legacy snapshot-prefixed media URL is requested
+
+- **WHEN** a cached page requests media through the earlier snapshot-prefixed URL shape
+- **THEN** it is served only for the live or recent accepted snapshots, without re-parsing a full snapshot per request.
+
+### Requirement: Hosted image transformations use a canonical source and direct URLs
+
+Hosted pages SHALL reference CMS image transformations on the images host directly, and every transformation SHALL use one canonical source URL from configuration rather than the request host.
+
+#### Scenario: A hosted page renders a CMS image
+
+- **WHEN** the hosted renderer emits an image element for CMS media
+- **THEN** its `src` and `srcset` point to transformation URLs on the configured images host
+- **AND** the page preconnects to that host
+- **AND** repo-owned ESM images use plain fingerprinted `/_astro` URLs.
+
+#### Scenario: The public hostname changes
+
+- **WHEN** the site is served from a new public hostname such as the apex domain
+- **THEN** transformations keep working, because their source is the configured `PUBLIC_IMAGE_SOURCE_ORIGIN`
+- **AND** the `image_transform` smoke scenario confirms that a 480 px request returns a small AVIF or WebP with immutable caching on that hostname.

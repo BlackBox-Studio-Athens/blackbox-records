@@ -46,13 +46,16 @@ The Worker SHALL expose one read-only listing-price projection backed only by St
 
 ### Requirement: Store collection prices use one projection read
 
-Store collection cards SHALL obtain displayed listing prices from exactly one listing-price projection network read per Store collection activation, rather than per-card Store Offer reads. A shell-managed Store activation SHALL prepare that one read at activation start so it can run concurrently with Store HTML retrieval or cached snapshot application, and the current listing presentation SHALL consume the same prepared result without issuing another request.
+Store collection cards SHALL obtain displayed listing prices from exactly one listing-price projection network read per Store collection activation, rather than per-card Store Offer reads. A shell-managed Store activation SHALL prepare that one read at activation start so it can run concurrently with Store HTML retrieval or cached snapshot application, and the current listing presentation SHALL consume the same prepared result without issuing another request. A direct document load MAY start that one read from the document before the shell hydrates.
 
 #### Scenario: Visitor opens a populated Store collection directly
 
 - **GIVEN** a Store collection document renders multiple canonical Store Item cards without a prepared shell activation
-- **WHEN** the persistent Store shell becomes active
-- **THEN** it makes one fresh listing-price projection read for that collection activation
+- **WHEN** the document is parsed
+- **THEN** a small inline script may start one fresh `no-store` listing-price projection read for that collection and keep its pending result for the shell
+- **AND** when the persistent Store shell becomes active it consumes that pending result, or makes the one read itself if none was started
+- **AND** the activation makes exactly one listing-price projection read in total
+- **AND** only the activation of that same document consumes the document-started result; a later activation starts its own read
 - **AND** it does not read `/api/store/items/:storeItemSlug` once per card solely to render listing prices.
 
 #### Scenario: Shell navigation replaces a Store collection

@@ -1,6 +1,6 @@
 # PERF-005: Resumed round-three implementation
 
-Date: 2026-10-03. Review baseline: `e818b709a2364aa29dfd54cadcd0433779a1f263`. Recovered remote branch and integration base: `claude/upbeat-mayer-2nikhm`, `fe099b01cea42266cdf21c2318851af361db1210`. Implementation remains uncommitted in the explicitly authorized worktree. Twelve `gpt-6.1-sol` agents at high reasoning assisted bounded slices, integration, browser acceptance and interaction measurement.
+Date: 2026-10-03. Review baseline: `e818b709a2364aa29dfd54cadcd0433779a1f263`. Recovered remote branch and measurement integration base: `claude/upbeat-mayer-2nikhm`, `fe099b01cea42266cdf21c2318851af361db1210`. Measurements below cover the resumed implementation before rebasing; the committed source, archive and current checks are recorded in [validation.md](validation.md). Twelve `gpt-6.1-sol` agents at high reasoning assisted bounded slices, integration, browser acceptance and interaction measurement.
 
 ## Recovery and scope
 
@@ -17,7 +17,7 @@ Completed local mechanisms:
 - Self-hosted licensed font subsets, fingerprinted head discovery, eager header logo, 404 motion gates, dead CSS cleanup, production demo/trial exclusion and apex Holding artifact verification.
 - One cached 176 px cart derivative (hosted rung 240), mutation-free Store Offer reads, a 3 s/zero-retry public provider bound, in-flight offer sharing, latest-wins 250 ms delivery quotes, entry OPTIONS bypass, lazy instance-scoped Prisma, and static delivery constants.
 
-Hosted delivery is reported separately in [PERF-006](../bound-hosted-delivery-cost/performance-report.md). No hosted request, provider transaction, publication, deployment, push or promotion was performed.
+Hosted delivery is reported separately in [PERF-006](../2026-10-03-bound-hosted-delivery-cost/performance-report.md). No hosted request, provider transaction, publication, deployment, push or promotion was performed.
 
 ## Mechanism measurements
 

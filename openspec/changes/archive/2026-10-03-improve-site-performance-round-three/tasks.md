@@ -162,11 +162,15 @@
 - [x] 25.2 Run `pnpm test:app-shell` and the shell-navigation, shell-islands, player-continuity and store-cart e2e specs, plus the Store specs touched by groups 8-11, on the final tree.
 - [x] 25.3 Run `pnpm validate` on the final tree and record the summary path, mode and fingerprint in `validation.md`.
 - [x] 25.4 Run `pnpm openspec -- validate improve-site-performance-round-three --type change --strict`.
-- [x] 25.5 Write the round-three implementation report and append `PERF-004` (this review) and `PERF-005` (the implementation) to `../archive/2026-08-31-site-performance-program/performance-report-log.md` without rewriting earlier entries.
-- [ ] 25.6 Confirm no pagination, virtualization, batch Store Offer API, payload-shape change, service worker, custom RUM or framework change entered the diff; then archive.
+- [x] 25.5 Write the round-three implementation report and append `PERF-004` (this review) and `PERF-005` (the implementation) to `../2026-08-31-site-performance-program/performance-report-log.md` without rewriting earlier entries.
+- [x] 25.6 Confirm no pagination, virtualization, batch Store Offer API, payload-shape change, service worker, custom RUM or framework change entered the diff; then archive.
 
 ## Final local evidence and open gates
 
 The recovered implementation, final measurements, strict validations and 72 passing scoped browser checks are recorded in validation.md and PERF-005. Profile execution/source integrity passes; first-traversal long tasks and real-input frame outliers remain reported residuals, not numerical passes. Current style/action counters and historical review figures are explicitly directional; the original raw traces cannot be reconstructed.
 
-Open tasks: 1.1 lacks original raw evidence; 4.2 has current bounded counters/icon inventories but no equivalent before-state visual proof; 7.4 and18.7 retain maintainer visual acceptance; 13.2 proves cached island/inert behavior but lacks equivalent before/after Store-prefetch task timing. Conditional predecessor/preorder reconciliations (24.1,24.6) remain pending. Task25.6 passed the forbidden-scope audit, but archival waits for visual/performance acceptance. No hosted/provider release was performed.
+Open tasks: 1.1 lacks original raw evidence; 4.2 has current bounded counters/icon inventories but no equivalent before-state visual proof; 7.4 and18.7 retain maintainer visual acceptance; 13.2 proves cached island/inert behavior but lacks equivalent before/after Store-prefetch task timing. Conditional predecessor/preorder reconciliations (24.1,24.6) remain pending. No hosted/provider release was performed.
+
+## Archive disposition on 2026-10-03
+
+The user explicitly requested local commit, rebase, merge and archival. Task25.6 closes the completed scope audit and archive operation. The seven unchecked tasks above remain evidence, visual-acceptance or future overlap follow-ups; archival does not waive them or change performance budgets. The sibling hosted archive retains its own release and account gates. Current delta requirements are synced to main specs without archiving unrelated predecessor changes.

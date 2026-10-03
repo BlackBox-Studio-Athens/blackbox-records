@@ -1,6 +1,6 @@
 ## Context
 
-This change is the hosted sibling of `improve-site-performance-round-three`. Both come from the `e818b70` review (`PERF-004`), the post-commerce measurement that the closed performance program requires before a new child starts. The program wrapper is archived at `../archive/2026-08-31-site-performance-program/`.
+This change is the hosted sibling of `improve-site-performance-round-three`. Both come from the `e818b70` review (`PERF-004`), the post-commerce measurement that the closed performance program requires before a new child starts. The program wrapper is archived at `../2026-08-31-site-performance-program/`.
 
 Hosted topology today:
 

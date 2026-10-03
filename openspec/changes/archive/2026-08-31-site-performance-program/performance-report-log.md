@@ -31,3 +31,13 @@ Every future entry records:
 | PERF-006 | 2026-10-03 | Local hosted-delivery implementation record | 3 | `bound-hosted-delivery-cost` | `fe099b01cea42266cdf21c2318851af361db1210` plus recorded uncommitted source fingerprints | Local UAT-shaped SSR emulation | Persisted byte LRU, activation invalidation, direct bounded Images URLs, gateway and actual local rendered-output gates; native purge, provider bytes/account cost, quota-failure crawler fallback and release/pilot acceptance remain open | [Hosted report](../../bound-hosted-delivery-cost/performance-report.md) |
 
 PERF-005 records URL, production build, Chromium153 version, device/DPR, CPU/network, fresh-context state and run counts; individual artifacts retain source/build hashes. The Node and same-build feature comparisons are local lab evidence with shared-machine noise excluded from causal claims. PERF-006 records snapshot and renderer identities for local-only capture. Neither report claims field Core Web Vitals, hosted publication, provider acceptance or archival. Earlier entries and measurements above remain unchanged.
+
+## Archive locations after local integration on 2026-10-03
+
+The user requested local commit, rebase, merge and archival. Earlier ledger rows retain their source identities and paths as recorded; current report locations are below. The archives preserve seven performance and four hosted acceptance or conditional reconciliation tasks. Timed pre-integration profiles do not measure the rebased tree. Current checks and the retained artifact path mapping are recorded in the archived validation notes and the primary checkout's ignored integration evidence.
+
+| Record | Archived report |
+| --- | --- |
+| PERF-004 | [Recovered review](../2026-10-03-improve-site-performance-round-three/reports/PERF-004-review-e818b70.md) |
+| PERF-005 | [Round-three report](../2026-10-03-improve-site-performance-round-three/performance-report.md) |
+| PERF-006 | [Hosted report](../2026-10-03-bound-hosted-delivery-cost/performance-report.md) |

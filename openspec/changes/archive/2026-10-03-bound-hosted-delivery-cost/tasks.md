@@ -50,10 +50,14 @@
 - [x] 8.1 Run `pnpm validate` on the final tree and `pnpm openspec -- validate bound-hosted-delivery-cost --type change --strict`; record both in `validation.md`.
 - [ ] 8.2 After an owner-authorized release, follow the Free-tier rule on UAT: record account-wide usage, then run a bounded pilot measuring Worker requests per page view, transformations, `/_image` sizes and formats, HTML cache status and `Age`, 304 revalidation, the static 404 path and hosted purchase information; repeat on PRD after UAT succeeds.
 - [ ] 8.3 Run the `image_transform` smoke scenario on the apex at cutover.
-- [ ] 8.4 Write the hosted implementation report, append `PERF-006` to `../archive/2026-08-31-site-performance-program/performance-report-log.md` without rewriting earlier entries, and archive.
+- [x] 8.4 Write the hosted implementation report, append `PERF-006` to `../2026-08-31-site-performance-program/performance-report-log.md` without rewriting earlier entries, and archive.
 
 ## Final local evidence and open gates
 
 PERF-006 and validation.md record the actual local SSR capture, published purchase-information fixture, unchanged output budgets and source-bound passing repository tests. Task3.2 remains partial: media-SHA addressing/compatibility fallback and native browser recovery work, but cross-zone direct images lack script-disabled/crawler quota fallback. Task5.1 source integration is complete: persistent byte LRU and default-entrypoint activation invalidation are tested. Native purge propagation remains unverified because the installed emulator lacks its API; keep 30+30s HTML reuse until the authorized hosted pilot.
 
-Task7.3 is reconciled with Free-available purge, best-effort eeur placement and unchanged document revalidation; 7.1 waits on complete-image-delivery. Tasks8.2–8.3 require owner-authorized release/account preflight/pilot/apex smoke. The implementation report and PERF-006 ledger entry for8.4 are written; archival remains pending. No task was waived by a synthetic local publication or Sharp byte model.
+Task7.3 is reconciled with Free-available purge, best-effort eeur placement and unchanged document revalidation; 7.1 waits on complete-image-delivery. Tasks8.2–8.3 require owner-authorized release/account preflight/pilot/apex smoke. No task was waived by a synthetic local publication or Sharp byte model.
+
+## Archive disposition on 2026-10-03
+
+The user explicitly requested local integration and archival. Task8.4 closes the completed report, ledger and archive operation. The four unchecked tasks remain follow-ups: quota-failure original delivery for crawlers or script-disabled browsers, predecessor-spec reconciliation, owner-authorized UAT/PRD account/cache pilot, and apex image smoke. The synced specs retain these requirements; this archive establishes no hosted acceptance or launch approval.

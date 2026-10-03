@@ -1,6 +1,6 @@
 ## Context
 
-This is the third bounded child of the site performance program. Round one (`../archive/2026-07-12-improve-site-runtime-performance/`) and round two (`../archive/2026-07-15-improve-site-runtime-performance-round-two/`) are archived, and the program wrapper was closed on 2026-08-31 (`../archive/2026-08-31-site-performance-program/`). The closure rule allows a fresh child only after post-commerce measurement proves a reproducible user-facing miss. The `e818b70` review is that measurement. It is registered as `PERF-004`, and its full text is in [reports/PERF-004-review-e818b70.md](reports/PERF-004-review-e818b70.md).
+This is the third bounded child of the site performance program. Round one (`../2026-07-12-improve-site-runtime-performance/`) and round two (`../2026-07-15-improve-site-runtime-performance-round-two/`) are archived, and the program wrapper was closed on 2026-08-31 (`../2026-08-31-site-performance-program/`). The closure rule allows a fresh child only after post-commerce measurement proves a reproducible user-facing miss. The `e818b70` review is that measurement. It is registered as `PERF-004`, and its full text is in [reports/PERF-004-review-e818b70.md](reports/PERF-004-review-e818b70.md).
 
 The review covered the whole main site. Its hosted findings (quota, media addressing, hosted HTML caching, gateway) and the hosted purchase-information bug form the sibling child `bound-hosted-delivery-cost`. The two children add different requirements and can be applied, verified and archived in either order.
 
@@ -173,7 +173,7 @@ The deltas here modify only "Store collection prices use one projection read", w
 
 ### 15. Report ledger
 
-The program ledger stays at `../archive/2026-08-31-site-performance-program/performance-report-log.md`, append-only. At closure this child appends `PERF-004` (the review, stored here) and its own implementation report as `PERF-005`. The sibling records `PERF-006`. Entries already in the ledger are never rewritten.
+The program ledger stays at `../2026-08-31-site-performance-program/performance-report-log.md`, append-only. At closure this child appends `PERF-004` (the review, stored here) and its own implementation report as `PERF-005`. The sibling records `PERF-006`. Entries already in the ledger are never rewritten.
 
 ## Risks / Trade-offs
 

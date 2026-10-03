@@ -18,7 +18,7 @@ Worker tests prove restart reuse, byte LRU, ETags, 304, single-flight refresh, r
 
 ## Cost and unresolved limits
 
-The [Free-tier rule](../../../docs/cloudflare-free-tier.md) keeps the shared 5,000 monthly transformation allowance. The conservative emitted/compatibility ceiling is 53 source/options combinations per media SHA per environment: 17 default WebP, 17 editorial WebP68, one blur, one JPEG and 17 legacy auto. Actual monthly use includes the union of prior configurations/removed media and both environments; the builder ceiling is not a provider abuse control.
+The [Free-tier rule](../../../../docs/cloudflare-free-tier.md) keeps the shared 5,000 monthly transformation allowance. The conservative emitted/compatibility ceiling is 53 source/options combinations per media SHA per environment: 17 default WebP, 17 editorial WebP68, one blur, one JPEG and 17 legacy auto. Actual monthly use includes the union of prior configurations/removed media and both environments; the builder ceiling is not a provider abuse control.
 
 The local gateway model budgets two Worker invocations per document visit, cold or warm. Direct browser Images URLs remove per-image Pages requests, but Images source-cache fills and original fallbacks still add origin requests. There is no local account-wide usage, cache-hit or hosted per-page-view measurement; the authorized pilot must measure it.
 

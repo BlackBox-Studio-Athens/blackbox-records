@@ -1,12 +1,12 @@
 # Validation
 
 Baseline: `e818b709a2364aa29dfd54cadcd0433779a1f263`, measured in the [PERF-004 review](reports/PERF-004-review-e818b70.md). Its historical ignored raw directory was absent from the remote at recovery.
-Product Environment: Local. Final production static output is served at `http://127.0.0.1:4371/blackbox-records/`; Playwright Chromium 153.0.8010.12. Hosted UAT/PRD and providers were not contacted.
-Final implementation: uncommitted work above `fe099b01cea42266cdf21c2318851af361db1210`. Public measurement source/build fingerprints are `b0425c1c2c0580ca12bcf26b41db58b43adb8ff3ed2e2397d3d742352b9638b6` / `727c26d8d20629d3f62766fa39b1ec595f4ea843535281675e7b27c5d4f3472f`, unchanged before/after all eight final profiles and accepted interaction contexts. The last repository validation pointer and its full-tree fingerprints are in `.codex-artifacts/performance-resume/completion-evidence.json`.
+Product Environment: Local. The pre-integration measurements used production static output at `http://127.0.0.1:4371/blackbox-records/` and Playwright Chromium 153.0.8010.12. Hosted UAT/PRD and providers were not contacted.
+Measured implementation before Git integration: resumed work above `fe099b01cea42266cdf21c2318851af361db1210`. Public measurement source/build fingerprints are `b0425c1c2c0580ca12bcf26b41db58b43adb8ff3ed2e2397d3d742352b9638b6` / `727c26d8d20629d3f62766fa39b1ec595f4ea843535281675e7b27c5d4f3472f`, unchanged before/after all eight profiles and accepted interaction contexts. These measurements cover that earlier tree; the rebased integration has separate checks below. The pre-integration repository pointer and fingerprints remain in `.codex-artifacts/performance-resume/completion-evidence.json`.
 
 ## Acceptance rows
 
-From the [acceptance matrix](../../../docs/agent-workflow.md#acceptance-matrix):
+From the [acceptance matrix](../../../../docs/agent-workflow.md#acceptance-matrix):
 
 - **Shell/player/routing:** groups 4, 5, 12, 13 and 20-23. `pnpm test:app-shell` plus the shell-navigation, shell-islands, player-continuity and store-cart e2e specs; Menu at 390 px; player minimize, reopen and stop; console errors.
 - **Commerce/checkout/stock:** groups 14-17. Focused backend and web tests prove Worker authority, read-only public Store Offer reads, one read per Store Item view, and that checkout start still revalidates. No hosted or provider scenario runs.
@@ -49,7 +49,17 @@ See [PERF-005](performance-report.md) for measurements and limits. Raw evidence:
 
 ## Not verified
 
-Unverified: maintainer quality 68 visual approval/broad visual parity; original raw counters and before/after prefetch duration; real-device/GPU attribution, Firefox/Safari and field Core Web Vitals; real provider/checkout and sibling hosted/account/release acceptance. First scripted traversal still has 1–2 median long tasks on Store/Distro; real wheel Distro first p95 is 50 ms and touch Store p95 is 33.3 ms. These residuals remain non-passing or unattributed, with no budget waiver or speculative GPU change. Both children remain unarchived.
+Unverified: maintainer quality 68 visual approval/broad visual parity; original raw counters and before/after prefetch duration; real-device/GPU attribution, broad Firefox/Safari and field Core Web Vitals; real provider/checkout and sibling hosted/account/release acceptance. First scripted traversal still has 1–2 median long tasks on Store/Distro; real wheel Distro first p95 is 50 ms and touch Store p95 is 33.3 ms. These residuals remain non-passing or unattributed, with no budget waiver or speculative GPU change. User-requested archival preserves these limits and the unchecked tasks.
+
+## Local integration and archive on 2026-10-03
+
+The recovered commit sequence and resumed implementation were consolidated into `0de657c643e912d72da12574e69128c31d80f6ce` and rebased onto local main `c58246b57d471628d685975028cdd4b5c1fa5b89`. That main already contained the fetched `origin/main` and twelve additional local commits. The rebase preserves main's Coverflow wheel isolation, cart dismissal, centered category navigation and Inter-title/Veneer-artist typography. Preview-only wheel registration and measured card paint skipping were combined with those changes. Focused Store and layout checks pass 69 and 20 tests.
+
+The delta contracts are synced to all eight matching main capabilities; the hosted sibling adds its four capability deltas. Every requirement and surviving scenario was compared after sync. Both changes strict-validate; normal whole-spec validation passes all 54 specs. Strict whole-spec validation retains 18 pre-existing placeholder Purpose warnings. Existing authoritative Purpose text and unrelated baseline specs were preserved.
+
+Current build, scoped browser and repository results are recorded in `.codex-artifacts/performance-integration-2026-10-03/integration-evidence.json` in the primary checkout. Retained worktree artifacts are under `.codex-artifacts/performance-integration-2026-10-03/retained/`: replace the original `.codex-artifacts/` prefix with this directory. Historical absolute paths inside raw records are preserved as provenance. Earlier timed profiles are not relabelled as measurements of the rebased tree.
+
+The rebased production static build and unchanged eager-JavaScript budgets pass. The six named production browser specs record 94 passes and 16 device-specific exclusions; their only two failures were newer Coverflow checks waiting for the obsolete Lenis class. The SOL-6.1-high review identified that prerequisite. After its removal, all ten Store-format cases pass, including the unchanged wheel containment, outside-scroll and Grid-scroll assertions. Together the source-scoped records cover 96 accepted cases, including the selected Firefox cart flows, with no unresolved browser failure. The initial development-server run is retained separately and supplies no production performance acceptance. Final `pnpm validate --since c58246b57d471628d685975028cdd4b5c1fa5b89` identity, before/after fingerprint, status and logs are retained in the ignored integration record.
 
 ## Recovery on 2026-10-03
 
