@@ -47,13 +47,16 @@ export default function NewsletterSignupForm({
   note,
   placeholder,
 }: NewsletterSignupFormProps) {
+  const [hydrated, setHydrated] = React.useState(false);
   const [email, setEmail] = React.useState('');
   const [consentAccepted, setConsentAccepted] = React.useState(false);
   const [state, setState] = React.useState<NewsletterSignupState>({ kind: 'idle' });
+  React.useEffect(() => setHydrated(true), []);
   const statusId = `${formId}-status`;
   const errorId = `${formId}-error`;
   const consentId = `${formId}-consent`;
   const view = readNewsletterSignupView(state);
+  const disabled = !hydrated || view.isSubmitting;
 
   async function handleSubmit(event: Parameters<NonNullable<React.ComponentProps<'form'>['onSubmit']>>[0]) {
     event.preventDefault();
@@ -101,7 +104,7 @@ export default function NewsletterSignupForm({
           required
           value={email}
           className="h-11 rounded-none border-border/70 bg-background/85"
-          disabled={view.isSubmitting}
+          disabled={disabled}
           aria-describedby={view.emailInvalid ? errorId : undefined}
           aria-invalid={view.emailInvalid ? 'true' : undefined}
           onChange={(event) => {
@@ -123,7 +126,7 @@ export default function NewsletterSignupForm({
           type="submit"
           size="lg"
           className="min-w-36"
-          disabled={view.isSubmitting}
+          disabled={disabled}
           aria-busy={view.isSubmitting ? 'true' : undefined}
         >
           {view.isSubmitting ? <LoadingButtonContent label="Subscribing" /> : buttonLabel}
@@ -136,7 +139,7 @@ export default function NewsletterSignupForm({
           type="checkbox"
           className="newsletter-signup-consent-checkbox mt-0.5 size-4 shrink-0 accent-foreground"
           checked={consentAccepted}
-          disabled={view.isSubmitting}
+          disabled={disabled}
           aria-describedby={view.consentInvalid ? errorId : undefined}
           aria-invalid={view.consentInvalid ? 'true' : undefined}
           onChange={(event) => {

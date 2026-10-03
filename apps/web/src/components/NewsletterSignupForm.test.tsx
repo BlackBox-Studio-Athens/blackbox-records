@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { RichText } from '@blackbox/content-model';
 
 import NewsletterSignupForm, {
@@ -14,7 +14,42 @@ import NewsletterSignupForm, {
 } from './NewsletterSignupForm';
 import { PublicCheckoutApiError } from '@/components/store/checkout/public-checkout-api';
 
+vi.mock('react', { spy: true });
+
 describe('NewsletterSignupForm', () => {
+  it('keeps email, consent and submit disabled until the hydration effect runs', () => {
+    const form = (
+      <NewsletterSignupForm
+        buttonLabel="Subscribe"
+        formId="newsletter-email"
+        note="No spam. Unsubscribe anytime."
+        placeholder="your@email.com"
+      />
+    );
+    const disabledControls = (html: string) =>
+      [...html.matchAll(/<(?:input|button)\b[^>]*>/g)].map(([tag]) => /\bdisabled(?:=|\s|>)/.test(tag));
+    expect(disabledControls(renderToStaticMarkup(form))).toEqual([true, true, true]);
+
+    const setHydrated = vi.fn();
+    let hydrate: React.EffectCallback | undefined;
+    const state = vi.mocked(React.useState).mockReturnValueOnce([false, setHydrated]);
+    const effect = vi.mocked(React.useEffect).mockImplementation((callback) => {
+      hydrate = callback;
+    });
+    try {
+      expect(disabledControls(renderToStaticMarkup(form))).toEqual([true, true, true]);
+      expect(hydrate).toBeDefined();
+      hydrate?.();
+      expect(setHydrated).toHaveBeenCalledWith(true);
+
+      state.mockReturnValueOnce([true, setHydrated]);
+      expect(disabledControls(renderToStaticMarkup(form))).toEqual([false, false, false]);
+    } finally {
+      state.mockRestore();
+      effect.mockRestore();
+    }
+  });
+
   it('renders idle controls, hard-edged layout classes, and pre-mounted live regions', () => {
     const html = renderToStaticMarkup(
       <NewsletterSignupForm
