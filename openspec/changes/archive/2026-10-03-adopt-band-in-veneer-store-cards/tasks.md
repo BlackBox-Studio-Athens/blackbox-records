@@ -11,3 +11,7 @@
 
 - [ ] 2.1 Inspect the real fonts, long-title/credit wrapping and actions at 320px, 390px, desktop and 200% zoom; verify the unchanged item-page boundary.
 - [x] 2.2 Refresh Graphify after the code batch, pass strict OpenSpec validation and pnpm validate, and record source-bound evidence for worktree review.
+
+## Archive disposition
+
+Archived at the user's explicit request on 2026-10-03 after local rebase and merge. Task 2.1 remains unchecked for actual Inter glyph inspection and native browser zoom; automated layout, reflow and navigation results are recorded in validation.md.

@@ -1,9 +1,9 @@
 # Validation
 
-## Source and environment
+## Implementation review source and environment
 
 - Worktree: `C:/Users/SVall/.codex/worktrees/store-typography/blackbox-records`.
-- HEAD: `ca68529457d8a3e34085a1c75038823a72ddac0a`; no merge or deployment.
+- Review baseline HEAD: `ca68529457d8a3e34085a1c75038823a72ddac0a`; these original checks preceded the local merge.
 - Product Environment: Local, standalone Astro at `http://127.0.0.1:4361/blackbox-records/`, committed content and deterministic Worker/player fixtures.
 - Implementation validation: `.codex-artifacts/validation/2026-10-03T02-12-53-810Z-72412-43443b/summary.json`, `mode: local`, `status: passed`. Before and after fingerprints both equal `f3124300cc1db4c084c784060838e624eeffeb83825d85fdc574c04ec08e9387`.
 - The final validation summary, source identity and equal before/after fingerprints after these documentation updates are recorded in `.codex-artifacts/e2e/store-typography/final-validation.json`.
@@ -35,3 +35,21 @@ The browser fixture suppresses Google Fonts, so it checks the configured Inter s
 Selected acceptance covers public presentation and shell/player continuity, plus the focused commerce UI fixture. APIs, content schemas, stored data and commerce authority did not change. CMS publication, provider transactions and hosted release acceptance are excluded because this is a Local presentation change.
 
 Graphify was refreshed locally with AST-only extraction. CodeGraph was unavailable in this worktree; the primary index supplied unchanged baseline source, checked against the worktree before edits. Graphify reported a pre-existing partial extraction of `scripts/pages-workflow-contract.test.ts`; that file is outside this change.
+
+## Local merge and archive
+
+On 2026-10-03 the user requested a local commit, rebase onto latest main, tidy merge, worktree removal and OpenSpec archive. Fetching `origin` found no incoming main commits: local `main` at `85763384` was ten commits ahead of `origin/main`.
+
+The implementation was rebased onto `85763384` and fast-forwarded onto main as `dbfe6ec2c3c881877baacbd69be1ab0895da8628`. The one rebase conflict joined adjacent browser tests; both category-navigation tests and the typography regression were retained.
+
+Post-rebase `pnpm test web-store` passed all 56 tests. Repository validation passed all 28 targets for 17 projects at `cc6957a8a88832fbec152b901faee40edbc4fa7a`, before the native-navigation harness adjustment. Summary: `.codex-artifacts/validation/2026-10-03T12-26-54-885Z-28968-f15490/summary.json`; mode `local`, status `passed`, equal before/after fingerprints `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`, zero uncommitted files. That report does not cover the later harness adjustment.
+
+The initial combined Store browser run passed eight cases and stalled in Chromium's click stability wait for the no-JavaScript category navigation; an isolated retry reproduced the same stall. Native keyboard activation passed without production changes. The no-JavaScript case now verifies focus and Enter activation; the scripted category test retains pointer-click coverage. The final full command `pnpm test:e2e e2e/store-formats.spec.ts --workers=1 --timeout=180000` passed all nine tests at `dbfe6ec2c3c881877baacbd69be1ab0895da8628`. Report: `.codex-artifacts/e2e/store-typography/merged-store-formats-summary.json`. Both original failure traces are retained in `rebase-native-timeout/` and `rebase-native-retry-timeout/` beneath the same evidence directory.
+
+Graphify was refreshed after the rebase and harness adjustment. The checkout hook bootstrapped the worktree's CodeGraph index; the native-navigation investigation used the worktree graph and current source. The existing partial-extraction warning above remains unrelated to this change.
+
+The Store listing requirement is synced into the main Store catalog spec. Archive proceeds under the user's explicit request with task 2.1 still unchecked: actual Inter glyph inspection and native browser zoom remain unverified. Automated reflow and local Veneer checks passed.
+
+Strict validation passed for both this change and the updated `store-catalog-categories` spec. Standard `openspec validate --specs` passed all 54 baseline specs. The additional `--specs --strict` run passed 36 and rejected 18 unchanged specs for pre-existing placeholder Purpose warnings. Those unrelated specs were preserved. Reports: `.codex-artifacts/e2e/store-typography/main-specs-validation.json` and `main-specs-strict-validation.json`.
+
+Review screenshots, browser reports and the referenced validation runs were copied into the primary checkout at their existing `.codex-artifacts/` paths before worktree cleanup. Original implementation validation is also retained as `.codex-artifacts/e2e/store-typography/implementation-validation.json`; the review canvas files are preserved under `.codex-artifacts/design/store-typography-review/`. The final validation result for main, including its source SHA and equal before/after fingerprint, is recorded in `.codex-artifacts/e2e/store-typography/final-validation.json` after the archive commit.
