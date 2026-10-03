@@ -1191,7 +1191,9 @@ body {
   }
 
   .store-item-card--listing .brand-card-title {
-    font-family: var(--font-display-brand);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    text-transform: none;
   }
 
   .artists-roster-section {
@@ -4719,10 +4721,12 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 /* The title reads as the card's link (Buy and Listen are separate actions): faint underline at rest, full when the
    card link is hovered or focused. Hovering Buy or Listen leaves the card at rest. */
 .store-collection-page .store-item-card--listing .brand-card-title {
-  font-family: var(--font-display-brand);
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-size: clamp(1.25rem, 1.8vw, 1.5rem);
   line-height: 1.12;
   letter-spacing: 0.015em;
+  text-transform: none;
   text-decoration-line: underline;
   text-decoration-color: color-mix(in srgb, var(--foreground) 30%, transparent);
   text-decoration-thickness: 1px;
@@ -4758,9 +4762,16 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 }
 
 .store-item-card__artist {
+  font-family: var(--font-sans);
+  font-weight: 400;
   color: var(--muted-foreground);
   font-size: 0.875rem;
   line-height: 1.4;
+}
+
+.store-item-card__artist-name {
+  font-family: var(--font-display-brand);
+  font-weight: 900;
 }
 
 .store-item-card__option {

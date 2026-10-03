@@ -33,7 +33,7 @@ const widths = [240, 320, 480, 640, 800, 960];
 <div
   class="store-item-card--listing prose-link-card group flex flex-col"
   role="group"
-  aria-label={storeItem.title + ' — ' + storeItem.subtitle}
+  aria-label={storeItem.title + ' by ' + storeItem.subtitle}
   data-distro-search-item={searchable ? '' : undefined}
   data-store-artist={searchable ? storeItem.subtitle : undefined}
   data-distro-format-key={formatKey}
@@ -75,7 +75,7 @@ const widths = [240, 320, 480, 640, 800, 960];
     <a
       class="prose-card-link"
       href={storeItem.storePath}
-      aria-label={storeItem.title + ' — ' + storeItem.subtitle}
+      aria-label={storeItem.title + ' by ' + storeItem.subtitle}
       data-astro-prefetch
     ></a>
     <div class="store-item-card__listen">
@@ -86,13 +86,16 @@ const widths = [240, 320, 480, 640, 800, 960];
     <CardContent className="store-item-card__content">
       <h2 class="brand-card-title">{storeItem.title}</h2>
       <p class="store-item-card__artist">
-        {storeItem.artistPath ? (
-          <a class="store-item-card__artist-link" href={storeItem.artistPath} data-astro-prefetch>
-            {storeItem.subtitle}
-          </a>
-        ) : (
-          storeItem.subtitle
-        )}
+        by{' '}
+        <span class="store-item-card__artist-name">
+          {storeItem.artistPath ? (
+            <a class="store-item-card__artist-link" href={storeItem.artistPath} data-astro-prefetch>
+              {storeItem.subtitle}
+            </a>
+          ) : (
+            storeItem.subtitle
+          )}
+        </span>
       </p>
       {promoted && <p class="store-item-card__option">New release</p>}
       {option && <p class="store-item-card__option">{option}</p>}

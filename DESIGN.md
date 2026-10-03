@@ -161,6 +161,8 @@ The palette is near-black and off-white with two muted red families for section-
 
 **The Public Title Rule.** Veneer owns public content titles: artist names, release names, distro/store item names, cart and checkout line item names, service offering titles, group headings, route heroes, and major editorial feature titles. Bebas Neue remains the compact UI display face for navigation, buttons, prices, cart/checkout chrome, totals, controls, labels, stock operations, order-state surfaces, metadata-heavy panels, and any surface where texture would slow scanning.
 
+**The Store Listing Exception.** Store listing cards use Inter weight 600 for source-cased item titles at the existing responsive 20–24px size. The credit underneath reads “by” in Inter weight 400 followed by the unchanged artist or label name in Veneer weight 900; both retain the existing 14px size, 1.4 line height and muted color. Existing artist links remain independent. This applies across All, BlackBox Releases, Distro and populated Merch; item pages, cart, checkout and order confirmation retain their existing typography.
+
 **The Metadata Is Quiet Rule.** Labels may be uppercase and tracked, but they stay small. Do not let metadata compete with release, artist, or item names.
 
 ## 4. Elevation
@@ -241,7 +243,7 @@ The embedded player is a shell-level continuity feature, not page-local decorati
 
 ### Signature Component: Catalog Tile
 
-Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, Veneer content titles, and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.
+Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, Veneer content titles (with the Store Listing Exception above), and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.
 
 ## Staff workspace
 
@@ -303,4 +305,4 @@ Store collections use a 90rem container with 32px desktop and 16px mobile gutter
 
 Distro uses one mixed-format catalog, including canonical BlackBox Store items. Released BlackBox titles from the last six calendar months lead newest-first with a quiet New release label; all remaining items follow band A–Z. Format chips filter individual cards and share the artist/text filters. Any active filter uses Grid; optional Coverflow browses the complete unfiltered list. Retained static builds refresh the date window at their next build. Pre-order promotion follows the separately delivered pre-order flow.
 
-Use complete square artwork, Veneer titles, Inter for artist credits, formats, and controls, and the UI display face (Bebas Neue) for prices across cards, item pages, cart, and checkout. Cards contain the purchase facts without repeated descriptions or category labels. On item pages, cap artwork at 26rem and place it beside purchase information on desktop; mobile reads identity, artwork, purchase information. Info and populated format-matching Tracklists share the next row. Preserve More views and existing listening actions.
+Use complete square artwork and the UI display face (Bebas Neue) for prices across cards, item pages, cart, and checkout. Store listing cards follow the Store Listing Exception: Inter item titles above a plain “by” and a Veneer artist or label name. Item pages, cart and checkout retain Veneer item titles and Inter credits; formats and controls retain their existing fonts. Cards contain the purchase facts without repeated descriptions or category labels. On item pages, cap artwork at 26rem and place it beside purchase information on desktop; mobile reads identity, artwork, purchase information. Info and populated format-matching Tracklists share the next row. Preserve More views and existing listening actions.

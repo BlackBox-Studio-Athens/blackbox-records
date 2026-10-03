@@ -120,6 +120,104 @@ test('Store categories retain current state, keyboard focus and shell navigation
   await expect(all).toHaveCSS('transition-duration', '0s');
 });
 
+test('Store listing cards use Band in Veneer with connected credits and unchanged sizes', async ({ page }) => {
+  await page.goto('store/distro/');
+  await waitForShell(page);
+  await page.evaluate(() => document.fonts.ready);
+  const linked = page.getByRole('group', { name: 'Disintegration by Afterwise', exact: true }).first();
+  const unlinked = page
+    .locator('.store-item-card--listing')
+    .filter({ has: page.locator('.store-item-card__artist-name:not(:has(a))') })
+    .first();
+  await expect(linked.locator('.store-item-card__artist-link')).toHaveText('Afterwise');
+  await expect(linked.locator('.store-item-card__artist-link')).toHaveAttribute('href', /\/artists\/afterwise\/$/);
+  await expect(unlinked.locator('.store-item-card__artist-link')).toHaveCount(0);
+  expect(await page.evaluate(() => document.fonts.check('900 14px Veneer'))).toBe(true);
+  const longNames = await page.locator('.store-item-card--listing').evaluateAll((cards) => {
+    const byLength = (selector: string) =>
+      [...cards]
+        .sort(
+          (a, b) =>
+            (b.querySelector(selector)?.textContent?.length ?? 0) -
+            (a.querySelector(selector)?.textContent?.length ?? 0),
+        )[0]!
+        .getAttribute('aria-label')!;
+    return [...new Set([byLength('h2'), byLength('.store-item-card__artist-name')])];
+  });
+
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const card of [linked, unlinked]) {
+      const title = card.locator('h2');
+      const credit = card.locator('.store-item-card__artist');
+      const name = card.locator('.store-item-card__artist-name');
+      const artist = (await name.textContent())!.trim();
+      await expect(title).toHaveCSS('font-family', /Inter/);
+      await expect(title).toHaveCSS('font-weight', '600');
+      await expect(title).toHaveCSS('text-transform', 'none');
+      await expect(title).toHaveCSS('font-size', width === 1440 ? '24px' : '20px');
+      await expect(credit).toHaveText(`by ${artist}`);
+      await expect(credit).toHaveCSS('font-family', /Inter/);
+      await expect(credit).toHaveCSS('font-weight', '400');
+      await expect(name).toHaveCSS('font-family', /Veneer/);
+      await expect(name).toHaveCSS('font-weight', '900');
+      await expect(name).toHaveCSS('font-size', '14px');
+      await expect(name).toHaveCSS('line-height', '19.6px');
+      await expect(card).toHaveAttribute('data-store-artist', artist);
+      await expect(card.locator('.prose-card-link')).toHaveAccessibleName(`${await title.textContent()} by ${artist}`);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await linked
+      .locator('.store-item-card__content')
+      .evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    await page.screenshot({ path: `.codex-artifacts/e2e/store-typography/${width}.png` });
+    for (const [index, label] of longNames.entries()) {
+      const card = page.getByRole('group', { name: label, exact: true }).first();
+      for (const selector of ['h2', '.store-item-card__artist']) {
+        expect(await card.locator(selector).evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(
+          true,
+        );
+      }
+      await card
+        .locator('.store-item-card__content')
+        .evaluate((element) => element.scrollIntoView({ block: 'center' }));
+      await page.screenshot({ path: `.codex-artifacts/e2e/store-typography/${width}-long-${index}.png` });
+    }
+  }
+
+  // Model 200% zoom from a 1440x900 desktop: half the CSS viewport and double the pixel scale.
+  // Native browser zoom remains a separate visual acceptance check.
+  const zoom = await page.context().newCDPSession(page);
+  await page.setViewportSize({ width: 720, height: 450 });
+  await zoom.send('Emulation.setDeviceMetricsOverride', {
+    width: 720,
+    height: 450,
+    deviceScaleFactor: 2,
+    mobile: false,
+  });
+  expect(await page.evaluate(() => [window.innerWidth, window.devicePixelRatio])).toEqual([720, 2]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  for (const [index, label] of longNames.entries()) {
+    const card = page.getByRole('group', { name: label, exact: true }).first();
+    for (const selector of ['h2', '.store-item-card__artist']) {
+      expect(await card.locator(selector).evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    }
+    await card.locator('h2').evaluate((element) => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
+    await page.screenshot({ path: `.codex-artifacts/e2e/store-typography/200-percent-reflow-long-${index}.png` });
+  }
+  await zoom.send('Emulation.clearDeviceMetricsOverride');
+  await zoom.detach();
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  await linked.locator('.store-item-card__artist-link').click();
+  await expect(page).toHaveURL(/\/artists\/afterwise\/$/);
+  await page.goBack();
+  await waitForShell(page);
+  await linked.locator('.prose-card-link').click();
+  await expect(page).toHaveURL(/\/store\/disintegration-black-vinyl-lp\/$/);
+  await expect(page.locator('h1.brand-display-title')).toHaveCSS('font-family', /Veneer/);
+});
+
 for (const route of ['store/', 'store/distro/']) {
   test(`${route} Coverflow wheel navigation keeps the page still`, async ({ page }) => {
     await page.goto(route);
@@ -326,7 +424,11 @@ test.describe('Native Store navigation', () => {
       ['Distro', 'distro/'],
     ]) {
       const categories = page.getByRole('navigation', { name: 'Store categories' });
-      await categories.getByRole('link', { name: label, exact: true }).click();
+      // Exercise native keyboard activation; the scripted case above covers pointer activation.
+      const link = categories.getByRole('link', { name: label, exact: true });
+      await link.focus();
+      await expect(link).toBeFocused();
+      await link.press('Enter');
       await expect(page).toHaveURL(new RegExp(`/store/${route}$`));
       await expect(categories.getByRole('link', { name: label, exact: true })).toHaveAttribute('aria-current', 'page');
     }
