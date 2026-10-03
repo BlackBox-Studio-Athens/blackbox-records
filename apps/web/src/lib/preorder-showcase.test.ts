@@ -68,7 +68,7 @@ describe('pre-order showcase candidates', () => {
     expect(() => buildPreorderShowcaseCandidates([item()], [release], new Map())).toThrow('Missing pre-order showcase');
   });
 
-  it('mounts the idle island between Hero and News and keeps the static endpoint outside the explicit sitemap', () => {
+  it('mounts the island between Hero and News and lets the endpoint inherit the static or published runtime', () => {
     const home = readFileSync(new URL('../pages/index.astro', import.meta.url), 'utf8');
     const endpoint = readFileSync(new URL('../pages/preorder-showcase.json.ts', import.meta.url), 'utf8');
     const sitemap = readFileSync(new URL('../pages/sitemap.xml.ts', import.meta.url), 'utf8');
@@ -76,7 +76,7 @@ describe('pre-order showcase candidates', () => {
     expect(home.indexOf('<StorePreorderShowcase')).toBeLessThan(home.indexOf('id="news"'));
     expect(home).toContain('client:idle');
     expect(home).toContain("createProjectRelativeUrl('/preorder-showcase.json')");
-    expect(endpoint).toContain('export const prerender = true');
+    expect(endpoint).not.toMatch(/export\s+const\s+prerender\s*=\s*true/);
     expect(endpoint).toContain("getImage({ src: item.image, width: 720, format: 'webp' })");
     expect(endpoint).toContain("getImage({ src: artist.data.image, width: 1200, format: 'webp' })");
     expect(sitemap).not.toContain('preorder-showcase.json');

@@ -3,8 +3,6 @@ import { listArtistProfiles, listReleaseCatalog, listStoreItems } from '@/lib/ca
 import { buildPreorderShowcaseCandidates } from '@/lib/preorder-showcase';
 import type { StorePreorderShowcaseCandidate } from '@/components/store/StorePreorderShowcase';
 
-export const prerender = true;
-
 export async function GET() {
   const [items, releases, artists] = await Promise.all([listStoreItems(), listReleaseCatalog(), listArtistProfiles()]);
   const releasesById = new Map(releases.map((release) => [release.id, release]));
