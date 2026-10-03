@@ -53,7 +53,7 @@ function createStoreItemOptionLabel(storeItem: StoreItem): string | null {
   return storeItem.metadata.at(-1) ?? null;
 }
 
-function createStoreItemAvailability(storeItem: StoreItem): ItemAvailability {
+export function createStoreItemAvailability(storeItem: StoreItem): ItemAvailability {
   return {
     variantId: createStoreItemVariantId(storeItem),
     storeItemSlug: storeItem.slug,

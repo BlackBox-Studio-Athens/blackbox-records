@@ -6,7 +6,12 @@ import sharp from 'sharp';
 import { expect, it } from 'vitest';
 import { z } from 'zod';
 import { readContentSnapshot, snapshotCollection } from './content-snapshot';
-import { createReleasesContentSchema, parseContentSnapshot, publishedCollection } from '@blackbox/content-model';
+import {
+  createReleasesContentSchema,
+  parseContentSnapshot,
+  publishedCollection,
+  validateCmsRevisionContent,
+} from '@blackbox/content-model';
 
 it('loads only checksum-bound content, maps stable references and rejects altered media and targets', async () => {
   const directory = await mkdtemp(join(tmpdir(), 'blackbox-snapshot-'));
@@ -198,4 +203,45 @@ it('loads only checksum-bound content, maps stable references and rejects altere
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
+});
+
+it('retains literal environment errors, strict manifest paths and enriched revision validation', () => {
+  const manifest = { schemaVersion: 1, environment: 'prd', records: [], media: [] };
+  const issues = (input: unknown) => {
+    try {
+      parseContentSnapshot(JSON.stringify(input), 'local');
+    } catch (error) {
+      if (error instanceof z.ZodError) return error.issues;
+      throw error;
+    }
+    throw new Error('Expected validation to fail.');
+  };
+  expect(issues(manifest)).toEqual([
+    { code: 'invalid_value', values: ['local'], path: ['environment'], message: 'Invalid input: expected "local"' },
+  ]);
+  expect(
+    issues({
+      ...manifest,
+      environment: 'local',
+      records: [{ collection: 'artists', id: '', revisionId: 'accepted', slug: 'artist', data: {} }],
+    })[0],
+  ).toMatchObject({ path: ['records', 0, 'id'], code: 'too_small' });
+  expect(issues({ ...manifest, environment: 'local', extra: true })).toEqual([
+    { code: 'unrecognized_keys', keys: ['extra'], path: [], message: 'Unrecognized key: "extra"' },
+  ]);
+  expect(() => parseContentSnapshot(JSON.stringify({ ...manifest, environment: 'local' }), 'local', 'missing')).toThrow(
+    'Requested publication revision is absent from the snapshot.',
+  );
+  const data = {
+    title: 'Artist',
+    genre: 'Hardcore',
+    bio: 'Biography',
+    image_alt: 'Portrait',
+    image: { id: 'image', provider: 'local', width: 2, height: 3, meta: { storageKey: 'image.png', caption: null } },
+  };
+  expect(validateCmsRevisionContent('artists', data)).toEqual([]);
+  expect(validateCmsRevisionContent('artists', { ...data, image: { ...data.image, unexpected: true } })).toEqual([
+    'image: Unrecognized keys: "provider", "width", "height", "meta", "unexpected"',
+  ]);
+  expect(validateCmsRevisionContent('artists', { ...data, image: { ...data.image, width: 0 } })).not.toEqual([]);
 });

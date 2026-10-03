@@ -16,6 +16,7 @@ import {
   VariantMismatchError,
 } from './';
 import { CatalogDriftError } from '../catalog-sync';
+import { CatalogReconciler as RealCatalogReconciler } from '../catalog-sync';
 import type { CheckoutGateway } from './spi';
 
 function startCheckout(...args: Parameters<typeof startCheckoutWithPolicy>) {
@@ -630,6 +631,7 @@ describe('checkout use cases', () => {
       productProjections.projections.get(storeItem.variantId),
     );
     expect(catalogReconciler.calls[0]?.options.applyProductProjection).toBe(false);
+    expect(catalogReconciler.calls[0]?.options.apply).toBe(false);
   });
 
   it('reads Store Offer price from a replacement Stripe Price without content changes', async () => {
@@ -663,7 +665,7 @@ describe('checkout use cases', () => {
     );
   });
 
-  it('can read Store Offer price while refreshing D1 catalog state', async () => {
+  it('can read Store Offer price without refreshing D1 catalog state', async () => {
     await expect(
       readStoreOffer(
         storeItems,
@@ -680,8 +682,45 @@ describe('checkout use cases', () => {
       }),
     );
 
-    expect(catalogReconciler.calls[0]?.options.apply).toBe(true);
+    expect(catalogReconciler.calls[0]?.options.apply).toBe(false);
     expect(catalogReconciler.calls[0]?.options.applyProductProjection).toBe(false);
+  });
+
+  it('does not perform catalog writes when a public read discovers a replacement price', async () => {
+    const saveMapping = vi.fn();
+    const saveSnapshot = vi.fn();
+    const createPrice = vi.fn();
+    const updateProduct = vi.fn();
+    const oldPrice = createCatalogPrice({ storeItem });
+    const replacement = createCatalogPrice({ storeItem, priceId: 'price_replacement', amountMinor: 3200 });
+    const reconciler = new RealCatalogReconciler({
+      environment: 'uat',
+      storeItems,
+      variantStripeMappings: {
+        findByVariantId: async () => ({
+          variantId: storeItem.variantId,
+          stripePriceId: oldPrice.priceId,
+          stripeProductId: oldPrice.productId,
+        }),
+        findByStripeProductId: async () => null,
+        save: saveMapping,
+      },
+      storeOfferSnapshots: {
+        findByVariantId: async () => null,
+        findByStoreItemSlug: async () => null,
+        save: saveSnapshot,
+      },
+      stripeCatalog: {
+        retrieveDefaultPrice: async () => replacement,
+        retrievePrice: async () => oldPrice,
+        createCatalogPrice: createPrice,
+        updateProductProjection: updateProduct,
+      },
+    });
+    await expect(
+      readStoreOffer(storeItems, itemAvailability, stock, reconciler, productProjections, storeItem.storeItemSlug),
+    ).resolves.toMatchObject({ canCheckout: true, price: { amountMinor: 3200 } });
+    for (const write of [saveMapping, saveSnapshot, createPrice, updateProduct]) expect(write).not.toHaveBeenCalled();
   });
 
   it('reads pay-what-you-want Store Offers from Stripe custom prices', async () => {

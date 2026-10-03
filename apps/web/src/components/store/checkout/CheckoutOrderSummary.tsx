@@ -106,7 +106,14 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
               <div className="aspect-square overflow-hidden border border-border/70 bg-muted/20">
                 {/* Runtime Image Snapshot: checkout summary renders the stored string URL only. */}
                 {line.image ? (
-                  <img className="h-full w-full object-cover" src={line.image} alt={line.imageAlt || line.title} />
+                  <img
+                    width={88}
+                    height={88}
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                    src={line.image}
+                    alt={line.imageAlt || line.title}
+                  />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center px-2 text-center text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                     No image

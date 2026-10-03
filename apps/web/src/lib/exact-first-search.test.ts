@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { createExactFirstSearcher } from './exact-first-search';
+import { createExactFirstSearcher, loadExactFirstFuzzySearch } from './exact-first-search';
 
 const distroItems = [
   {
@@ -19,7 +19,30 @@ const distroItems = [
 const readDistroSearchText = (item: (typeof distroItems)[number]) =>
   [item.title, item.artistOrLabel, item.group, item.format].join(' ');
 
+describe('exact-first search before the fuzzy matcher loads', () => {
+  // Runs first: the module-level Fuse import has not been requested yet in this test file.
+  it('answers exact queries synchronously and reports when a typo can be retried', async () => {
+    const items = ['Anarchotribal Ouranopithecus Vinyl LP', 'Barren Point Tape'];
+    const onFuzzyReady = vi.fn();
+    const searcher = createExactFirstSearcher(items, (item) => item, { onFuzzyReady });
+
+    expect(searcher.search('barren')).toEqual([items[1]]);
+    expect(searcher.search('pethicus')).toEqual([]);
+    expect(searcher.search('pethicus vinyl')).toEqual([]);
+    expect(onFuzzyReady).not.toHaveBeenCalled();
+
+    await loadExactFirstFuzzySearch();
+    await Promise.resolve();
+    expect(onFuzzyReady).toHaveBeenCalledOnce();
+    expect(searcher.search('pethicus')).toEqual([items[0]]);
+  });
+});
+
 describe('exact-first search', () => {
+  beforeAll(async () => {
+    await loadExactFirstFuzzySearch();
+  });
+
   it.each(['pethicus', 'pithecus', 'vinyl pethicus', 'ANARCHOTRIBAL   vinyl', 'ouranopithecus anarchotribal'])(
     'finds partial names, typos, and reordered terms for %s',
     (query) => {

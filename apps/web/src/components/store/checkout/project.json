@@ -17,6 +17,7 @@
       "status": "closed",
       "exports": [
         "./public-checkout-api.ts",
+        "./public-checkout-presentation.ts",
         "./CheckoutOrderSummary.tsx",
         "./DeliverySummary.tsx",
         "./DeliveryRates.tsx",

@@ -3,8 +3,10 @@ import react from '@astrojs/react';
 import { defineConfig } from 'astro/config';
 import { createRequire } from 'node:module';
 import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { publicWorkerName } from './scripts/cms-resources.ts';
+import { publicRoutePatterns } from './scripts/public-route-patterns.mjs';
 
 const local = (path) => fileURLToPath(new URL(path, import.meta.url)).replaceAll('\\', '/');
 const { default: tailwindcss } = await import(
@@ -33,6 +35,12 @@ const config = {
   assets: { binding: 'ASSETS', run_worker_first: true },
   vars: {
     PRODUCT_ENVIRONMENT: environment,
+    // Canonical Images source: an approved origin in the Images zone settings, independent of the public hostname.
+    PUBLIC_IMAGE_SOURCE_ORIGIN: {
+      local: '',
+      uat: 'https://blackbox-records-web-uat.pages.dev',
+      prd: 'https://blackbox-records-web.pages.dev',
+    }[environment],
     PUBLIC_IMAGE_TRANSFORM_ORIGIN: environment === 'local' ? '' : 'https://images.blackboxrecordsathens.com',
   },
   r2_buckets: [{ binding: 'MEDIA', bucket_name: resources.bucket_name }],
@@ -56,7 +64,16 @@ export default defineConfig({
   base: process.env.ASTRO_BASE_PATH || '/blackbox-records/',
   output: 'server',
   session: false,
-  adapter: cloudflare({ configPath: '.emdash/wrangler.public.json', imageService: 'passthrough' }),
+  adapter: cloudflare({ configPath: '.emdash/wrangler.public.json', imageService: 'custom' }),
+  image: {
+    service: {
+      entrypoint: local('src/cms/public-image-service.ts'),
+      config: {
+        sourceOrigin: config.vars.PUBLIC_IMAGE_SOURCE_ORIGIN,
+        transformationOrigin: config.vars.PUBLIC_IMAGE_TRANSFORM_ORIGIN,
+      },
+    },
+  },
   integrations: [
     react(),
     {
@@ -68,20 +85,32 @@ export default defineConfig({
             route.prerender = false;
           }
         },
+        'astro:routes:resolved': ({ routes }) => {
+          writeFileSync(local('.emdash/public-route-patterns.json'), JSON.stringify(publicRoutePatterns(routes)));
+        },
       },
     },
   ],
   vite: {
-    build: { rolldownOptions: { output: { strictExecutionOrder: true } } },
     plugins: [
       tailwindcss(),
       {
+        name: 'public-ssr-execution-order',
+        configEnvironment(name) {
+          if (['ssr', 'astro', 'prerender'].includes(name))
+            return { build: { rolldownOptions: { output: { strictExecutionOrder: true } } } };
+        },
+      },
+      {
         name: 'published-purchase-reader',
         enforce: 'pre',
-        resolveId(id) {
+        resolveId(id, importer) {
+          const path = (id.startsWith('.') && importer ? resolve(dirname(importer.split('?')[0]), id) : id)
+            .replaceAll('\\', '/')
+            .replace(/\.ts$/, '');
           if (
-            id === '@/lib/purchase-information' ||
-            id.replaceAll('\\', '/').replace(/\.ts$/, '') === local('../web/src/lib/purchase-information')
+            path === '@/platform/lib/purchase-information' ||
+            path === local('../web/src/platform/lib/purchase-information')
           )
             return this.environment.name === 'client'
               ? local('../web/src/lib/published-purchase-browser.ts')

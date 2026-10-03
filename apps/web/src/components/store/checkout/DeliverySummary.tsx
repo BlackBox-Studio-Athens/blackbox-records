@@ -17,19 +17,25 @@ export function useDeliveryQuote(lines: Lines) {
   const [result, setResult] = React.useState<{ key: string; quote: DeliveryQuoteResponse['quote'] } | null>(null);
   React.useEffect(() => {
     let active = true;
+    setResult(null);
+    const controller = new AbortController();
     const requestedLines: Lines = JSON.parse(key);
-    if (requestedLines.length) {
-      void readDeliveryQuote(requestedLines).then(
-        ({ quote }) => {
-          if (active) setResult({ key, quote });
-        },
-        () => {
-          if (active) setResult({ key, quote: null });
-        },
-      );
-    }
+    const timer = requestedLines.length
+      ? setTimeout(() => {
+          void readDeliveryQuote(requestedLines, controller.signal).then(
+            ({ quote }) => {
+              if (active) setResult({ key, quote });
+            },
+            () => {
+              if (active) setResult({ key, quote: null });
+            },
+          );
+        }, 250)
+      : undefined;
     return () => {
       active = false;
+      clearTimeout(timer);
+      controller.abort();
     };
   }, [key]);
   const quote = result?.key === key ? result.quote : null;

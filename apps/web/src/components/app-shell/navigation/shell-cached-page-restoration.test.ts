@@ -13,7 +13,7 @@ function createSnapshot(pathname: string): ShellPageSnapshot {
     canonicalHref: `https://example.test/blackbox-records${pathname}`,
     href: `https://example.test/blackbox-records${pathname}`,
     mainClassName: 'page-main-content-region',
-    mainHtml: `<section>${pathname}</section>`,
+    mainContent: { markup: `<section>${pathname}</section>` } as unknown as DocumentFragment,
     pageDescription: `${pathname} description`,
     pathname,
     title: `${pathname} | BlackBox`,

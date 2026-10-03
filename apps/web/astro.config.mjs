@@ -4,6 +4,8 @@ import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'astro/config';
 
+import { devDemoRoutes } from './src/pages/_demo/dev-routes.mjs';
+
 const site = process.env.ASTRO_SITE_URL?.trim() || 'https://blackbox-studio-athens.github.io';
 const base = process.env.ASTRO_BASE_PATH?.trim() || '/blackbox-records/';
 
@@ -17,7 +19,7 @@ export default defineConfig({
   prefetch: {
     prefetchAll: false,
   },
-  integrations: [react()],
+  integrations: [react(), devDemoRoutes()],
   vite: {
     plugins: [tailwindcss()],
     server: { strictPort: true },

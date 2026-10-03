@@ -1,15 +1,12 @@
-import { motion, useReducedMotion } from 'motion/react';
+import { createPortal } from 'react-dom';
 import { Square } from 'lucide-react';
 import * as React from 'react';
-import type { MouseEvent } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { LoadingStateBlock } from '@/components/ui/loading-feedback';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
-import { type PlayerEmbedLayout, type PlayerProvider, type PlayerProviderId } from '../../music/player-provider-data';
+import { type PlayerProvider, type PlayerProviderId } from '../../music/player-provider-data';
 import { OPEN_PLAYER_ACTION_LABEL } from '../../music/player-session-ui';
 import { PLAYER_PROVIDER_LABELS } from '../player-shell/shell-player-view-state';
-import { acquireLenisModalLock } from '../lenis-scroll';
 
 type ProviderLogoUrls = Record<PlayerProviderId, string>;
 
@@ -19,18 +16,14 @@ export const STOP_ARMED_LABEL = 'Stop?';
 export const STOP_ARMED_ANNOUNCEMENT = 'Press Stop again to end the player.';
 
 type ShellPlayerSurfaceProps = {
-  activePlayerEmbedLayout: PlayerEmbedLayout | '';
   activePlayerProviderId: PlayerProviderId | '';
   activePlayerTitle: string;
   applyPlayerProvider: (provider: PlayerProvider) => void;
-  iframeFrameHostRef: { current: HTMLDivElement | null };
+  headerContainer: HTMLElement | null;
   isMiniPlayerVisible: boolean;
   isPlayerLoading: boolean;
-  isPlayerModalOpen: boolean;
-  markActivePlayerSurfaceAsInteracted: () => void;
   miniPlayerStatusLabel: string;
   modalCloseButtonRef: { current: HTMLButtonElement | null };
-  onModalBackdropClick: (event: MouseEvent<HTMLDivElement>) => void;
   onReady: () => void;
   playerModalDismissActionLabel: 'Close' | 'Minimize';
   playerModalDismissAriaLabel: 'Close player' | 'Minimize player';
@@ -39,26 +32,20 @@ type ShellPlayerSurfaceProps = {
 };
 
 export default function ShellPlayerSurface({
-  activePlayerEmbedLayout,
   activePlayerProviderId,
   activePlayerTitle,
   applyPlayerProvider,
-  iframeFrameHostRef,
+  headerContainer,
   isMiniPlayerVisible,
   isPlayerLoading,
-  isPlayerModalOpen,
-  markActivePlayerSurfaceAsInteracted,
   miniPlayerStatusLabel,
   modalCloseButtonRef,
-  onModalBackdropClick,
   onReady,
   playerModalDismissActionLabel,
   playerModalDismissAriaLabel,
   playerProviders,
   providerLogoUrls,
 }: ShellPlayerSurfaceProps) {
-  const playerModalRootRef = React.useRef<HTMLDivElement | null>(null);
-  const shouldReduceMotion = useReducedMotion() === true;
   const onReadyRef = React.useRef(onReady);
   onReadyRef.current = onReady;
   const [isStopArmed, setIsStopArmed] = React.useState(false);
@@ -77,127 +64,71 @@ export default function ShellPlayerSurface({
     onReadyRef.current();
   }, []);
 
-  React.useEffect(() => {
-    const modalRoot = playerModalRootRef.current;
-    if (!isPlayerModalOpen || !modalRoot) return;
-    return acquireLenisModalLock(modalRoot);
-  }, [isPlayerModalOpen]);
+  const header = (
+    <div className="music-streaming-service-embedded-player-modal-header">
+      <div className="music-streaming-service-embedded-player-modal-topbar">
+        <div className="music-player-heading">
+          <MusicEqualizer />
+          <div className="music-player-heading__copy">
+            <p className="music-player-heading__title">{activePlayerTitle}</p>
+            <p className="music-player-heading__status" role="status">
+              {isPlayerLoading ? 'Loading player' : miniPlayerStatusLabel}
+            </p>
+          </div>
+        </div>
+        <Button
+          ref={modalCloseButtonRef}
+          aria-label={playerModalDismissAriaLabel}
+          data-music-streaming-service-embedded-player-modal-dismiss
+          type="button"
+          variant="outline"
+        >
+          {playerModalDismissActionLabel}
+        </Button>
+      </div>
+      <div
+        className="music-streaming-service-embedded-player-provider-switcher grid grid-cols-2 gap-2"
+        hidden={playerProviders.length < 2}
+      >
+        {(['bandcamp', 'tidal'] as PlayerProviderId[]).map((providerId) => {
+          const provider = playerProviders.find((item) => item.id === providerId);
 
+          return (
+            <Button
+              key={providerId}
+              className="music-streaming-service-embedded-player-provider-button"
+              type="button"
+              variant="chip"
+              aria-pressed={activePlayerProviderId === providerId}
+              data-state={activePlayerProviderId === providerId ? 'active' : 'inactive'}
+              aria-label={PLAYER_PROVIDER_LABELS[providerId]}
+              hidden={!provider}
+              onClick={() => {
+                if (!provider) return;
+                applyPlayerProvider(provider);
+              }}
+            >
+              <img
+                className="music-streaming-service-embedded-player-provider-button-logo h-4 w-auto"
+                src={providerLogoUrls[providerId]}
+                alt=""
+                aria-hidden="true"
+              />
+              <span className="accessibility-visually-hidden-text">{PLAYER_PROVIDER_LABELS[providerId]}</span>
+            </Button>
+          );
+        })}
+      </div>
+    </div>
+  );
   return (
     <>
-      <motion.div
-        className="music-streaming-service-embedded-player-modal-overlay"
-        data-state={isPlayerModalOpen ? 'open' : 'closed'}
-        aria-hidden={!isPlayerModalOpen}
-        inert={!isPlayerModalOpen}
-        initial={shouldReduceMotion ? false : { opacity: 0 }}
-        animate={{ opacity: isPlayerModalOpen ? 1 : 0 }}
-        transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: 'easeOut' }}
-        onClick={onModalBackdropClick}
-      >
-        <motion.div
-          aria-labelledby="music-streaming-service-embedded-player-modal-title"
-          aria-modal="true"
-          aria-busy={isPlayerLoading ? 'true' : 'false'}
-          ref={playerModalRootRef}
-          className="music-streaming-service-embedded-player-modal-card"
-          role="dialog"
-          data-lenis-scroll-root
-          data-music-streaming-service-embedded-player-active-provider={activePlayerProviderId}
-          data-music-streaming-service-embedded-player-embed-layout={activePlayerEmbedLayout}
-          data-music-streaming-service-embedded-player-loading={isPlayerLoading ? 'true' : 'false'}
-          initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
-          animate={{ opacity: isPlayerModalOpen ? 1 : 0, y: isPlayerModalOpen ? 0 : 16 }}
-          transition={{ duration: shouldReduceMotion ? 0 : 0.18, ease: 'easeOut' }}
-        >
-          <h2 className="accessibility-visually-hidden-text" id="music-streaming-service-embedded-player-modal-title">
-            Music player
-          </h2>
-          <div className="music-streaming-service-embedded-player-modal-header">
-            <div className="music-streaming-service-embedded-player-modal-topbar">
-              <div className="music-player-heading">
-                <MusicEqualizer />
-                <div className="music-player-heading__copy">
-                  <p className="music-player-heading__title">{activePlayerTitle}</p>
-                  <p className="music-player-heading__status">
-                    {isPlayerLoading ? 'Loading player' : miniPlayerStatusLabel}
-                  </p>
-                </div>
-              </div>
-              <Button
-                ref={modalCloseButtonRef}
-                aria-label={playerModalDismissAriaLabel}
-                data-music-streaming-service-embedded-player-modal-dismiss
-                type="button"
-                variant="outline"
-              >
-                {playerModalDismissActionLabel}
-              </Button>
-            </div>
-            <div
-              className="music-streaming-service-embedded-player-provider-switcher grid grid-cols-2 gap-2"
-              hidden={playerProviders.length < 2}
-            >
-              {(['bandcamp', 'tidal'] as PlayerProviderId[]).map((providerId) => {
-                const provider = playerProviders.find((item) => item.id === providerId);
-
-                return (
-                  <Button
-                    key={providerId}
-                    className="music-streaming-service-embedded-player-provider-button"
-                    type="button"
-                    variant="chip"
-                    aria-pressed={activePlayerProviderId === providerId}
-                    data-state={activePlayerProviderId === providerId ? 'active' : 'inactive'}
-                    aria-label={PLAYER_PROVIDER_LABELS[providerId]}
-                    hidden={!provider}
-                    aria-pressed={activePlayerProviderId === providerId}
-                    onClick={() => {
-                      if (!provider) return;
-                      applyPlayerProvider(provider);
-                    }}
-                  >
-                    <img
-                      className="music-streaming-service-embedded-player-provider-button-logo h-4 w-auto"
-                      src={providerLogoUrls[providerId]}
-                      alt=""
-                      aria-hidden="true"
-                    />
-                    <span className="accessibility-visually-hidden-text">{PLAYER_PROVIDER_LABELS[providerId]}</span>
-                  </Button>
-                );
-              })}
-            </div>
-          </div>
-          <div
-            className="music-streaming-service-embedded-player-modal-frame"
-            onPointerDownCapture={markActivePlayerSurfaceAsInteracted}
-            onMouseDownCapture={markActivePlayerSurfaceAsInteracted}
-            onTouchStartCapture={markActivePlayerSurfaceAsInteracted}
-          >
-            <div className="music-streaming-service-embedded-player-modal-loading-state absolute inset-0 flex items-center justify-center bg-background/92 px-3 py-3 text-center">
-              <LoadingStateBlock
-                className="min-h-40 w-full max-w-sm bg-background/70"
-                title="Loading player"
-                description="Preparing the embedded player. Playback starts after you interact with the provider frame."
-              />
-            </div>
-            <div
-              ref={iframeFrameHostRef}
-              className="music-streaming-service-embedded-player-modal-frame-host flex w-full justify-center"
-            ></div>
-          </div>
-        </motion.div>
-      </motion.div>
-
-      <motion.div
+      {headerContainer ? createPortal(header, headerContainer) : header}
+      <div
         className="music-streaming-service-embedded-player-mini-player"
         data-state={isMiniPlayerVisible ? 'open' : 'closed'}
         aria-hidden={!isMiniPlayerVisible}
         inert={!isMiniPlayerVisible}
-        initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
-        animate={{ opacity: isMiniPlayerVisible ? 1 : 0, y: isMiniPlayerVisible ? 0 : 8 }}
-        transition={{ duration: shouldReduceMotion ? 0 : 0.2, ease: 'easeOut' }}
       >
         <div className="music-streaming-service-embedded-player-mini-player-copy">
           <p className="music-streaming-service-embedded-player-mini-player-provider uppercase text-muted-foreground">
@@ -241,7 +172,7 @@ export default function ShellPlayerSurface({
             {isStopArmed ? STOP_ARMED_ANNOUNCEMENT : ''}
           </span>
         </div>
-      </motion.div>
+      </div>
     </>
   );
 }

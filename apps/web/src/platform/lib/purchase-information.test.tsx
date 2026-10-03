@@ -3,7 +3,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import source from '@/platform/content/purchase-information/site.json';
 import PurchaseInformation, { PrivacyLink } from '@/platform/components/PurchaseInformation';
 import PurchaseDocument from '@/platform/components/PurchaseDocument';
-import { getPurchaseInformation, purchasePrivacyHeadings, purchaseTermsHeadings } from './purchase-information';
+import {
+  getPurchaseInformation,
+  inlinesPurchaseInformation,
+  purchasePrivacyHeadings,
+  purchaseTermsHeadings,
+} from './purchase-information';
 import { purchaseInformationSchema } from '@blackbox/content-model';
 import { formattedProse } from '../../../../../scripts/fixtures/prose';
 import Prose from '@/platform/components/Prose';
@@ -98,4 +103,8 @@ describe('purchase information publication', () => {
       expect(html).not.toContain('mailto:support@example.invalid');
     }
   });
+});
+
+it('keeps static pages free of an inline copy because static browser islands bundle the entry', () => {
+  expect(inlinesPurchaseInformation).toBe(false);
 });

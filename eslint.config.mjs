@@ -28,6 +28,7 @@ export default tseslint.config(
       '**/.wrangler/**',
       '**/.vite/**',
       '**/coverage/**',
+      '**/*.woff2',
       'apps/backend/openapi/*.json',
       'apps/backend/src/generated/**',
       'packages/api-client/src/generated/**',

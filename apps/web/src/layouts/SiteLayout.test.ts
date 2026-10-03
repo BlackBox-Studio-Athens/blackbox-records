@@ -13,3 +13,24 @@ describe('SiteLayout public backend connection hints', () => {
     expect(source).toContain('<link rel="preconnect" href={publicBackendOrigin} crossorigin="anonymous" />');
   });
 });
+
+describe('SiteLayout purchase information', () => {
+  it('inlines the entry only when the build ships a browser reader for it', () => {
+    expect(source).toContain(
+      "import { getPurchaseInformation, inlinesPurchaseInformation } from '@/platform/lib/purchase-information';",
+    );
+    expect(source).toMatch(/\{inlinesPurchaseInformation && \(\s*<script[^>]*id="purchase-information"/);
+    expect(source.match(/id="purchase-information"/g)).toHaveLength(1);
+  });
+});
+
+describe('SiteLayout social image', () => {
+  it('publishes a Content Image as a 1200 px JPEG resolved against the site origin, not the original upload', () => {
+    expect(source).toContain("import { getImage } from 'astro:assets';");
+    expect(source).toContain(
+      "await getImage({ src: metadataImageRaw, width: Math.min(metadataImageRaw.width, 1200), format: 'jpg' })",
+    );
+    expect(source).toContain('Astro.site ?? Astro.url');
+    expect(source).not.toContain('metadataImageRaw.src');
+  });
+});

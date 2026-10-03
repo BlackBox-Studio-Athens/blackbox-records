@@ -1,11 +1,14 @@
 import { http, HttpResponse } from 'msw';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { apiClientMswBaseUrl, publicCheckoutFixtures } from '@blackbox/api-client/test/msw-handlers';
 import { webMswServer } from '@/test/msw-server';
+import { loadStoreOfferPriceDisplayView } from '@/components/store/StoreOfferPriceDisplay';
+import { loadStoreItemPurchaseActionState } from '@/components/store/checkout/StoreItemPurchaseActions';
 import {
   type BackendErrorResponse,
   createPublicCheckoutApi,
+  readDeliveryQuote,
   type PublicCheckoutApiError,
   type NewsletterRegistrationBody,
   type NewsletterRegistrationResponse,
@@ -28,6 +31,40 @@ describe('resolvePublicCheckoutApiBaseUrl', () => {
 });
 
 describe('createPublicCheckoutApi', () => {
+  it('passes delivery cancellation to the underlying no-store request', async () => {
+    let received!: (request: Request) => void;
+    let release!: () => void;
+    const started = new Promise<Request>((resolve) => {
+      received = resolve;
+    });
+    const response = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    webMswServer.use(
+      http.post('*/api/store/delivery-quote', async ({ request }) => {
+        received(request);
+        await response;
+        return HttpResponse.json({ quote: null });
+      }),
+    );
+    vi.stubEnv('PUBLIC_BACKEND_BASE_URL', apiClientMswBaseUrl);
+    try {
+      const controller = new AbortController();
+      const result = readDeliveryQuote(
+        [{ storeItemSlug: 'record', variantId: 'variant_record', quantity: 1 }],
+        controller.signal,
+      );
+      const failed = expect(result).rejects.toMatchObject({ status: 0 });
+      const request = await started;
+      expect(request.cache).toBe('no-store');
+      controller.abort();
+      expect(request.signal.aborted).toBe(true);
+      await failed;
+    } finally {
+      release();
+      vi.unstubAllEnvs();
+    }
+  });
   it('rejects an unhandled MSW request', async () => {
     await expect(fetch('https://unmocked.invalid/')).rejects.toThrow();
   });
@@ -45,6 +82,63 @@ describe('createPublicCheckoutApi', () => {
 
     expect(result).toEqual(publicCheckoutFixtures.storeOffer);
   });
+
+  it('serves one item view price and purchase control from one offer request', async () => {
+    let requests = 0;
+    webMswServer.use(
+      http.get('*/api/store/items/:slug', () => {
+        requests++;
+        return HttpResponse.json(publicCheckoutFixtures.storeOffer);
+      }),
+    );
+    const slug = publicCheckoutFixtures.storeOffer.storeItemSlug;
+    const [price, purchase] = await Promise.all([
+      loadStoreOfferPriceDisplayView(createPublicCheckoutApi(apiClientMswBaseUrl), slug),
+      loadStoreItemPurchaseActionState(createPublicCheckoutApi(apiClientMswBaseUrl), {
+        availabilityLabel: 'Available',
+        image: '/cart-176.webp',
+        imageAlt: 'Record',
+        optionLabel: null,
+        storeItemSlug: slug,
+        subtitle: 'Artist',
+        title: 'Record',
+        variantId: publicCheckoutFixtures.storeOffer.variantId,
+      }),
+    ]);
+    expect(requests).toBe(1);
+    expect(price.tone).toBe('ready');
+    expect(purchase.cartItem?.image).toBe('/cart-176.webp');
+  });
+
+  it.each([false, true])(
+    'shares concurrent offer reads and releases them after settlement (failure=%s)',
+    async (failure) => {
+      let requests = 0;
+      const caches: RequestCache[] = [];
+      webMswServer.use(
+        http.get('*/api/store/items/:slug', ({ request }) => {
+          requests++;
+          caches.push(request.cache);
+          return failure && requests === 1
+            ? HttpResponse.error()
+            : HttpResponse.json(publicCheckoutFixtures.storeOffer);
+        }),
+      );
+      const price = createPublicCheckoutApi(apiClientMswBaseUrl);
+      const purchase = createPublicCheckoutApi(apiClientMswBaseUrl);
+      const first = price.readStoreOffer('shared-view');
+      const second = purchase.readStoreOffer('shared-view');
+      expect(second).toBe(first);
+      const results = await Promise.allSettled([first, second]);
+      expect(results.map(({ status }) => status)).toEqual(
+        failure ? ['rejected', 'rejected'] : ['fulfilled', 'fulfilled'],
+      );
+      expect(requests).toBe(1);
+      await expect(price.readStoreOffer('shared-view')).resolves.toEqual(publicCheckoutFixtures.storeOffer);
+      expect(requests).toBe(2);
+      expect(caches).toEqual(['no-store', 'no-store']);
+    },
+  );
 
   it('uses the configured backend base URL for split-port development', async () => {
     const api = createPublicCheckoutApi(apiClientMswBaseUrl);

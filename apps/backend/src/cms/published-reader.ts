@@ -8,11 +8,33 @@ export const publishedContext = new AsyncLocalStorage<{
 }>();
 
 type Entry = { id: string; collection: string; data: Record<string, unknown> };
-export async function getCollection(collection: string, filter?: (entry: Entry) => boolean): Promise<Entry[]> {
+type Projection = { entries: Entry[]; byId: Map<string, Entry> };
+const projections = new WeakMap<PublicContent, Map<string, Map<string, Projection>>>();
+
+function collectionProjection(collection: string): Projection {
   const context = publishedContext.getStore();
   if (!context) throw new Error('Published content context required.');
-  const entries = publishedCollection(context.snapshot, collection, context.mediaBase, context.images);
-  return filter ? entries.filter(filter) : entries;
+  // Even an empty override object identifies a staff preview and must bypass reuse.
+  if (context.images !== undefined) {
+    const entries = publishedCollection(context.snapshot, collection, context.mediaBase, context.images);
+    return { entries, byId: new Map(entries.map((entry) => [entry.id, entry] as const).reverse()) };
+  }
+  let bases = projections.get(context.snapshot);
+  if (!bases) projections.set(context.snapshot, (bases = new Map()));
+  let collections = bases.get(context.mediaBase);
+  if (!collections) bases.set(context.mediaBase, (collections = new Map()));
+  let projection = collections.get(collection);
+  if (!projection) {
+    const entries = publishedCollection(context.snapshot, collection, context.mediaBase);
+    projection = { entries, byId: new Map(entries.map((entry) => [entry.id, entry] as const).reverse()) };
+    collections.set(collection, projection);
+  }
+  return projection;
+}
+
+export async function getCollection(collection: string, filter?: (entry: Entry) => boolean): Promise<Entry[]> {
+  const { entries } = collectionProjection(collection);
+  return filter ? entries.filter(filter) : entries.slice();
 }
 
 export async function getEntry(
@@ -21,5 +43,6 @@ export async function getEntry(
 ): Promise<Entry | undefined> {
   const name = typeof collection === 'string' ? collection : collection.collection;
   const key = typeof collection === 'string' ? id : collection.id;
-  return (await getCollection(name)).find((entry) => entry.id === key);
+  const { byId } = collectionProjection(name);
+  return key === undefined ? undefined : byId.get(key);
 }

@@ -2,7 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import './prose.css';
-@import 'lenis/dist/lenis.css';
+@import './fonts.css';
 
 @source '..';
 
@@ -12,6 +12,40 @@
   font-display: swap;
   font-style: normal;
   font-weight: 900;
+}
+
+/* Lenis: the rules this site needs from lenis/dist/lenis.css, which is not imported. Lenis strips and re-adds its
+   classes on the scroll root at every scroll start and end; the packaged rules that match descendants of the lenis
+   class made each rewrite restyle the whole document. These selectors restyle only the root and its iframes, except
+   lenis-stopped (the modal scroll lock), whose root overflow change still restyles the page once per open and close.
+   html and body keep their default auto height, and autoToggle is not used. lenis-stopped keeps the packaged (0,2,0)
+   specificity so it still beats later single-class overflow rules on nested scroll roots, such as .store-artists-list,
+   without depending on the lenis class that every rewrite strips and re-adds. */
+.lenis-stopped:not(.lenis-autoToggle) {
+  overflow: clip;
+}
+
+[data-lenis-prevent],
+[data-lenis-prevent-wheel],
+[data-lenis-prevent-touch],
+[data-lenis-prevent-vertical],
+[data-lenis-prevent-horizontal] {
+  overscroll-behavior: contain;
+}
+
+body.is-shell-modal-open,
+body.is-shell-scroll-locked {
+  overflow: clip;
+  overscroll-behavior: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .music-streaming-service-embedded-player-modal-overlay,
+  .music-streaming-service-embedded-player-modal-card,
+  .music-streaming-service-embedded-player-mini-player {
+    transition: none !important;
+    transform: none !important;
+  }
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -114,27 +148,6 @@ html {
 
 body {
   background: #0d0d0d;
-}
-
-@keyframes hero-orbit {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes hero-pulse {
-  0%,
-  100% {
-    opacity: 0.45;
-  }
-
-  50% {
-    opacity: 0.88;
-  }
 }
 
 @keyframes music-equalizer-levels {
@@ -250,6 +263,31 @@ body {
   52% {
     transform: scale(1.18);
     opacity: 1;
+  }
+}
+
+/* Sheet (Radix Dialog) motion: Radix Presence keeps closing content mounted until animationend. */
+@keyframes ui-sheet-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-sheet-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes ui-sheet-slide-in {
+  from {
+    transform: translate3d(var(--ui-sheet-offset-x, 0), var(--ui-sheet-offset-y, 0), 0);
+  }
+}
+
+@keyframes ui-sheet-slide-out {
+  to {
+    transform: translate3d(var(--ui-sheet-offset-x, 0), var(--ui-sheet-offset-y, 0), 0);
   }
 }
 
@@ -475,24 +513,6 @@ body {
     text-wrap: balance;
   }
 
-  .brand-feature-title {
-    font-family: var(--font-display-brand);
-    font-size: clamp(2.65rem, 12vw, 4.85rem);
-    line-height: 0.94;
-    letter-spacing: 0.025em;
-    text-transform: uppercase;
-    text-wrap: balance;
-  }
-
-  .brand-section-title {
-    font-family: var(--font-display-brand);
-    font-size: clamp(1.7rem, 6vw, 2.65rem);
-    line-height: 0.98;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    text-wrap: balance;
-  }
-
   .brand-card-title {
     font-family: var(--font-display-brand);
     font-size: clamp(1.55rem, 4.6vw, 2.05rem);
@@ -500,12 +520,6 @@ body {
     letter-spacing: 0.035em;
     text-transform: uppercase;
     text-wrap: balance;
-  }
-
-  .brand-card-title--compact {
-    font-size: clamp(1.1rem, 3vw, 1.45rem);
-    line-height: 1.04;
-    letter-spacing: 0.03em;
   }
 
   .brand-cart-line-title {
@@ -1188,6 +1202,8 @@ body {
 
   .store-item-card--listing {
     contain: layout inline-size;
+    content-visibility: auto;
+    contain-intrinsic-block-size: auto 520px;
   }
 
   .store-item-card--listing .brand-card-title {
@@ -1290,16 +1306,6 @@ body {
     padding: 0.65rem 0.55rem;
   }
 
-  .artist-release-stat--hero {
-    min-width: 5.9rem;
-    min-height: 5.9rem;
-    padding: 0.78rem 0.68rem;
-  }
-
-  .artist-release-stat--hero .artist-release-stat__value {
-    font-size: clamp(2.35rem, 6vw, 3rem);
-  }
-
   .artist-latest-teaser {
     display: flex;
     min-width: 0;
@@ -1332,15 +1338,6 @@ body {
     text-wrap: balance;
   }
 
-  .artist-latest-teaser__title--linked {
-    transition: color 0.2s ease;
-  }
-
-  .artist-latest-teaser__title--linked:hover,
-  .artist-latest-teaser__title--linked:focus-visible {
-    color: #d8d8d8;
-  }
-
   .artist-latest-teaser__title--muted {
     color: var(--muted-foreground);
   }
@@ -1351,13 +1348,6 @@ body {
     line-height: 1.3;
     letter-spacing: 0.22em;
     text-transform: uppercase;
-  }
-
-  .artist-latest-teaser--hero {
-    justify-content: center;
-    min-height: 100%;
-    border-top: 1px solid #2b2b2b;
-    padding: 0.85rem 0 0;
   }
 
   .artist-detail {
@@ -1409,7 +1399,6 @@ body {
     justify-content: center;
   }
 
-  .artist-detail-eyebrow,
   .artist-detail-section-label {
     color: #a7a7a7;
     font-size: 0.64rem;
@@ -1450,12 +1439,6 @@ body {
     letter-spacing: 0.015em;
     text-transform: none;
     text-wrap: balance;
-  }
-
-  .artist-detail-hero__context {
-    display: grid;
-    gap: 0.9rem;
-    padding-top: 0.1rem;
   }
 
   .artist-detail-actions {
@@ -1709,11 +1692,6 @@ body {
     letter-spacing: 0.04em;
     text-transform: uppercase;
     text-wrap: balance;
-  }
-
-  .artist-detail-discography-grid {
-    display: grid;
-    gap: 1.25rem;
   }
 
   .artist-previous-release-list {
@@ -1977,20 +1955,6 @@ body {
   .home-section-header--centered .home-section-header__rule {
     flex-basis: clamp(2.75rem, 10vw, 8rem);
     max-width: 8rem;
-  }
-
-  .featured-releases-grid {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 2rem;
-    justify-content: center;
-  }
-
-  .featured-releases-grid > .release-card-link {
-    flex: 0 1 16.25rem;
-    width: 16.25rem;
-    max-width: 100%;
-    margin-inline: auto;
   }
 
   .home-news-grid {
@@ -2364,8 +2328,7 @@ body {
     line-height: 1;
   }
 
-  .music-listen-trigger--standalone,
-  .release-card-listen-trigger--standalone {
+  .music-listen-trigger--standalone {
     gap: 0.625rem;
     min-width: 9.5rem;
     min-height: 2.75rem;
@@ -2589,6 +2552,39 @@ body {
     transform: scaleY(1.02);
   }
 
+  .ui-sheet-overlay[data-state='open'] {
+    animation: ui-sheet-fade-in 300ms ease-in-out;
+  }
+
+  .ui-sheet-overlay[data-state='closed'] {
+    animation: ui-sheet-fade-out 200ms ease-in-out forwards;
+  }
+
+  .ui-sheet-content[data-side='right'] {
+    --ui-sheet-offset-x: 100%;
+  }
+
+  .ui-sheet-content[data-side='left'] {
+    --ui-sheet-offset-x: -100%;
+  }
+
+  .ui-sheet-content[data-side='top'] {
+    --ui-sheet-offset-y: -100%;
+  }
+
+  .ui-sheet-content[data-side='bottom'] {
+    --ui-sheet-offset-y: 100%;
+  }
+
+  .ui-sheet-content[data-state='open'] {
+    animation: ui-sheet-slide-in 300ms ease-in-out;
+  }
+
+  .ui-sheet-content[data-state='closed'] {
+    animation: ui-sheet-slide-out 200ms ease-in-out forwards;
+  }
+
+  /* The detail overlay stays mounted while it closes; ShellOverlayPanel unmounts it on the opacity transitionend. */
   .app-shell-content-overlay {
     position: fixed;
     inset: 0;
@@ -2600,12 +2596,30 @@ body {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
+    transition:
+      opacity 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0s linear 220ms;
   }
 
   .app-shell-content-overlay[data-state='open'] {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
+    transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @starting-style {
+    .app-shell-content-overlay[data-state='open'] {
+      opacity: 0;
+    }
+
+    .app-shell-content-overlay[data-state='open'] .app-shell-content-overlay__panel {
+      transform: translateX(18px);
+    }
+  }
+
+  .app-shell-content-overlay[data-state='closed'] .app-shell-content-overlay__panel {
+    transform: translateX(18px);
   }
 
   .app-shell-content-overlay__backdrop {
@@ -2626,6 +2640,7 @@ body {
     background: linear-gradient(180deg, rgba(17, 17, 17, 0.98) 0%, rgba(10, 10, 10, 0.98) 100%), rgba(13, 13, 13, 0.98);
     box-shadow: 0 28px 90px rgba(0, 0, 0, 0.56);
     overflow: hidden;
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .app-shell-content-overlay__header {
@@ -2679,6 +2694,7 @@ body {
     backdrop-filter: blur(10px);
     opacity: 0;
     pointer-events: none;
+    transition: opacity 0.18s ease-out;
   }
 
   .music-streaming-service-embedded-player-modal-overlay[data-state='open'] {
@@ -2702,6 +2718,13 @@ body {
     border: 0;
     background-color: rgba(13, 13, 13, 0.96);
     overflow: hidden;
+    transform: translateY(16px);
+    transition: transform 0.18s ease-out;
+  }
+
+  .music-streaming-service-embedded-player-modal-overlay[data-state='open']
+    .music-streaming-service-embedded-player-modal-card {
+    transform: translateY(0);
   }
 
   .music-streaming-service-embedded-player-modal-header {
@@ -2825,10 +2848,16 @@ body {
     box-shadow: 0 14px 30px rgba(0, 0, 0, 0.32);
     opacity: 0;
     pointer-events: none;
+    transform: translateY(8px);
+    transition:
+      opacity 0.2s ease-out,
+      transform 0.2s ease-out;
   }
 
   .music-streaming-service-embedded-player-mini-player[data-state='open'] {
     pointer-events: auto;
+    opacity: 1;
+    transform: translateY(0);
   }
 
   .music-streaming-service-embedded-player-mini-player[data-state='closed'] {
@@ -3283,20 +3312,6 @@ body {
 
   .news-markdown-content ul {
     @apply grid list-disc gap-2 pl-5;
-  }
-}
-
-@layer utilities {
-  .animate-hero-orbit {
-    animation: hero-orbit 24s linear infinite;
-  }
-
-  .animate-hero-pulse {
-    animation: hero-pulse 4.8s ease-in-out infinite;
-  }
-
-  .animate-fade-rise {
-    animation: fade-rise 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
 }
 
@@ -4045,6 +4060,21 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     transform: none;
     transition: none;
   }
+
+  .ui-sheet-overlay[data-state],
+  .ui-sheet-content[data-state] {
+    animation: none;
+  }
+
+  .app-shell-content-overlay,
+  .app-shell-content-overlay[data-state],
+  .app-shell-content-overlay__panel {
+    transition: none;
+  }
+
+  .app-shell-content-overlay[data-state] .app-shell-content-overlay__panel {
+    transform: none;
+  }
 }
 
 @media (min-width: 40rem) and (prefers-reduced-motion: reduce) {
@@ -4213,17 +4243,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     padding-top: 1.6rem;
   }
 
-  .artist-detail-hero__context {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-  }
-
-  .artist-latest-teaser--hero {
-    border-top: 0;
-    border-left: 1px solid #2b2b2b;
-    padding: 0.2rem 0 0.2rem 1rem;
-  }
-
   .artist-detail-actions {
     flex-direction: row;
     flex-wrap: wrap;
@@ -4253,10 +4272,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 
   .artist-detail-actions--latest {
     grid-column: 2;
-  }
-
-  .artist-detail-discography-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .artist-video-grid {
@@ -4430,11 +4445,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   }
 
   .artists-roster-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.5rem;
-  }
-
-  .artist-detail-discography-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.5rem;
   }
@@ -4850,7 +4860,9 @@ html[data-store-coverflow-capable]
   [data-store-coverflow-mode='preview']
   [data-store-coverflow-position='active']
   .store-item-card__content
-  > :not(.store-item-card__price) {
+  > :is(.brand-card-title, .store-item-card__artist, .store-item-card__option) {
+  /* Named children, not :not(.store-item-card__price): a featureless rightmost compound makes every
+     coverflow mode change restyle the whole catalog. */
   display: none;
 }
 

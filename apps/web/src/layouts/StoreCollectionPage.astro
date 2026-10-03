@@ -13,11 +13,14 @@ import {
 import StoreCategoryNavigation from '@/components/store/StoreCategoryNavigation.astro';
 import StoreBrowsePane from '@/components/store/StoreBrowsePane.astro';
 import StoreCoverflowControls from '@/components/store/StoreCoverflowControls.astro';
+import { StoreSearchToolbar } from '@/components/store/StoreDistroSearch';
+import StoreListingPricePrefetch from './StoreListingPricePrefetch.astro';
 interface Props {
   category: StoreCatalogCategory;
   entries: StoreCollectionEntry[];
+  discoverableCategories: readonly StoreCatalogCategory[];
 }
-const { category, entries } = Astro.props;
+const { category, entries, discoverableCategories } = Astro.props;
 const distroGroups = groupStoreDistroCollectionEntries(
   category.id === 'all' ? selectStoreCollectionEntries(entries, 'distro') : [],
 );
@@ -26,11 +29,12 @@ const catalogId = 'all-store-catalog';
 ---
 
 <SiteLayout pageTitle={category.title} pageDescription={category.description} mainClass="store-collection-page">
+  {entries.length > 0 && <StoreListingPricePrefetch pathname={category.path} />}
   <div data-tone="store">
     <div id="store-page-top">
       <InternalPageHero sectionLabel="Store" title={category.heading} />
     </div>
-    <StoreCategoryNavigation activeCategoryId={category.id} />
+    <StoreCategoryNavigation activeCategoryId={category.id} categories={discoverableCategories} />
     <p class="layout-container store-purchase-note">
       VAT included. Shipping calculated in your cart.{' '}
       <a class="underline" href={createProjectRelativeUrl('/terms/')}>
@@ -42,7 +46,7 @@ const catalogId = 'all-store-catalog';
       <slot name="distro" />
     ) : (
       <div class="layout-container store-browse-layout" data-store-search-root>
-        <StoreBrowsePane>
+        <StoreBrowsePane entries={entries} resultsId={catalogId}>
           {distroGroups.length > 0 && (
             <nav slot="formats" aria-label="Browse Distro formats" class="store-format-links">
               <h2>Browse Distro formats</h2>
@@ -59,8 +63,10 @@ const catalogId = 'all-store-catalog';
         </StoreBrowsePane>
         <section class="store-browse-results" aria-label={category.label + ' Store collection'}>
           {category.id !== 'all' && <p class="store-category-description">{category.description}</p>}
-          <div data-store-search />
-          <p data-store-result-total>
+          <div data-store-search>
+            <StoreSearchToolbar resultsId={catalogId} />
+          </div>
+          <p data-store-result-total hidden>
             {entries.length} {entries.length === 1 ? 'item' : 'items'}
           </p>
           <div

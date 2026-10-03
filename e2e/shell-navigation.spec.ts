@@ -1,4 +1,12 @@
-import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
+import {
+  expect,
+  openSurfaceWithinClickTask,
+  plantSentinel,
+  sentinelIntact,
+  test,
+  waitForShell,
+  watchSurfaceWarmup,
+} from './fixtures';
 
 const main = 'main[data-app-shell-main]';
 
@@ -54,6 +62,28 @@ test('detail link opens an overlay that closes back to the list; a direct load r
   await page.goto(detailUrl);
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator(main).getByRole('heading', { level: 1 })).toBeVisible();
+});
+
+test('detail-link intent warms the overlay panel so the overlay opens in the click task', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'Hover intent is a desktop pointer behaviour.');
+  const panelWarmed = watchSurfaceWarmup(page, 'ShellOverlayPanel');
+  await page.goto('releases/');
+  await waitForShell(page);
+  const trigger = 'a.prose-card-link[href*="/releases/"]';
+  await page.locator(trigger).first().hover();
+  await panelWarmed();
+
+  expect(
+    await openSurfaceWithinClickTask(page, trigger, '.app-shell-content-overlay[data-state="open"] [role="dialog"]'),
+  ).toEqual({ loadingStatus: false, visible: true });
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toBeHidden();
+  // The closed overlay unmounts once its exit transition ends.
+  await expect(page.locator('.app-shell-content-overlay')).toHaveCount(0);
 });
 
 test('mobile navigation sheet drives shell navigation without horizontal overflow', async ({ page, isMobile }) => {
@@ -115,6 +145,32 @@ test('Escape closes the Menu and returns focus to its button', async ({ page, is
   await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
 });
 
+test('a warmed Menu opens in the tap task', async ({ page, isMobile }) => {
+  test.skip(!isMobile, 'The Menu opens only below the desktop breakpoint.');
+  const menuWarmed = watchSurfaceWarmup(page, 'MobileNavigationSheet');
+  await page.goto('about/');
+  await waitForShell(page);
+  const trigger = '[data-app-shell-mobile-navigation-trigger]';
+  // The phone layout warms the Menu at idle; pointer intent starts it sooner.
+  await page.locator(trigger).hover();
+  await menuWarmed();
+
+  expect(await openSurfaceWithinClickTask(page, trigger, '[data-app-shell-mobile-navigation]')).toEqual({
+    loadingStatus: false,
+    visible: true,
+  });
+  await expect(page.getByRole('navigation', { name: 'Mobile' })).toBeVisible();
+  // Coarse pointers use native scrolling; the shell owns the viewport lock before the sheet mounts.
+  await expect(page.locator('body')).toHaveClass(/\bis-shell-scroll-locked\b/);
+  await expect(page.locator('html')).not.toHaveClass(/\blenis\b/);
+  const scrollY = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, 500);
+  await page.waitForTimeout(150);
+  expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('body')).not.toHaveClass(/\bis-shell-scroll-locked\b/);
+});
+
 test('the Menu closes when the desktop layout starts', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'The Menu opens only below the desktop breakpoint.');
   await page.goto('./');
@@ -154,10 +210,65 @@ test('capturing the live Store snapshot does not fetch its lazy images', async (
   });
   await page.goto('store/');
   await waitForShell(page);
-  // The shell snapshots the live page right after it mounts; give any fetches that clone starts time to appear.
-  await page.waitForTimeout(1_000);
+  // The shell snapshots the live page once the main thread is idle after mount (capped at 2 s); give any fetches that
+  // clone starts time to appear.
+  await page.waitForTimeout(2_500);
 
   const imageCount = await page.locator(`${main} img`).count();
   expect(imageCount).toBeGreaterThan(20);
   expect(imageRequests.length).toBeLessThan(imageCount / 2);
+});
+
+test('a quick mouse pass over the header prefetches nothing; resting on a link prefetches it', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(isMobile, 'Hover prefetch applies to mouse pointers on the desktop header.');
+  await page.goto('about/');
+  await waitForShell(page);
+  const sectionFetches: string[] = [];
+  page.on('request', (request) => {
+    if (request.resourceType() === 'fetch' && request.headers().accept === 'text/html') {
+      sectionFetches.push(new URL(request.url()).pathname);
+    }
+  });
+
+  // One synchronous sweep: each link is entered and left within the same task, well inside the dwell.
+  await page.evaluate(() => {
+    const links = document.querySelectorAll('nav[aria-label="Primary"] a[href]');
+    for (const target of [...links, document.body]) {
+      target.dispatchEvent(new PointerEvent('pointerover', { bubbles: true, pointerType: 'mouse' }));
+    }
+  });
+  await page.waitForTimeout(400);
+  expect(sectionFetches).toEqual([]);
+
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Artists' }).hover();
+  await expect.poll(() => sectionFetches).toEqual(['/blackbox-records/artists/']);
+});
+
+test('a second click on a link whose page is still loading stays in the shell', async ({ page, isMobile }) => {
+  test.skip(isMobile, 'The primary header navigation is desktop only.');
+  await page.goto('about/');
+  await waitForShell(page);
+  await plantSentinel(page);
+  // Hold the shell's fetch so the second click lands while the first click's request is still in flight.
+  await page.route('**/blackbox-records/artists/', async (route) => {
+    if (route.request().resourceType() === 'fetch') {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+    }
+    await route.continue();
+  });
+
+  // Clicked from script, so no hover or focus prefetch starts a request first: the second click must not join the
+  // first click's aborted request and fall back to a full document load.
+  await page.evaluate(() => {
+    const link = document.querySelector<HTMLAnchorElement>('nav[aria-label="Primary"] a[href$="/artists/"]')!;
+    link.click();
+    setTimeout(() => link.click(), 60);
+  });
+
+  await expect(page).toHaveURL(/\/blackbox-records\/artists\/$/);
+  await expect(page.locator(main).getByRole('heading', { level: 1 })).toBeVisible();
+  expect(await sentinelIntact(page)).toBe(true);
 });

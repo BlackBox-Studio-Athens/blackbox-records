@@ -8,13 +8,20 @@ const holdingRoot = path.join(webRoot, 'dist-holding');
 const canonicalUrl = 'https://blackboxrecordsathens.com/';
 const canonicalOrigin = new URL(canonicalUrl).origin;
 const referencedFiles = new Set<string>();
-const allowedImageFiles = new Set(['assets/images/brand/logo.png', 'favicon-96x96.png', 'favicon.ico', 'favicon.svg']);
+const allowedImageFiles = new Set([
+  'assets/images/brand/logo.png',
+  'assets/images/brand/logo-240.webp',
+  'favicon-96x96.png',
+  'favicon.ico',
+  'favicon.svg',
+]);
 const requiredFiles = new Set([
   '404.html',
   '_headers',
   'assets/fonts/brand/veneer.css',
   'assets/fonts/brand/veneer_regular.woff2',
   'assets/images/brand/logo.png',
+  'assets/images/brand/logo-240.webp',
   'favicon-96x96.png',
   'favicon.ico',
   'favicon.svg',

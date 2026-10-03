@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('astro:assets', () => ({ getImage: vi.fn(async () => ({ src: '/cart-176.webp' })) }));
+
 vi.mock('astro:content', () => ({
   getCollection: vi.fn(async (collectionName: string) => {
     if (collectionName === 'releases') {
@@ -127,7 +129,7 @@ describe('store purchase happy path', () => {
       pageEntry!.primaryAvailability,
       readImageSrc(pageEntry!.storeItem.image),
     );
-    const cartSeed = createPricedCartSeedForStorePage(
+    const cartSeed = await createPricedCartSeedForStorePage(
       pageEntry!.storeItem,
       pageEntry!.primaryAvailability,
       readImageSrc(pageEntry!.storeItem.image),
@@ -138,7 +140,7 @@ describe('store purchase happy path', () => {
     expect(staticCartItem).toBeNull();
     expect(cartItem).toEqual({
       availabilityLabel: 'Available',
-      image: '/blackbox-records/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp',
+      image: '/cart-176.webp',
       imageAlt: 'Disintegration by Afterwise',
       optionLabel: 'Black Vinyl LP',
       priceAmountMinor: 2800,

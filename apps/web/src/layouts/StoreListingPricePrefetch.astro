@@ -1,0 +1,28 @@
+---
+interface Props {
+  pathname: string;
+}
+const collectionPathname = Astro.props.pathname;
+const backendBaseUrl = (import.meta.env.PUBLIC_BACKEND_BASE_URL ?? '').trim().replace(/\/+$/, '');
+---
+
+<script is:inline type="module" define:vars={{ backendBaseUrl, collectionPathname }}>
+  // Private previews resolve their read gateway at runtime; the shell prepares those reads.
+  if (
+    !document.querySelector('meta[name="blackbox-preview"]') &&
+    !window.blackboxStoreListingPriceDocument &&
+    window.blackboxStoreListingPriceDocumentHandled !== document
+  ) {
+    const abortController = new AbortController();
+    const promise = fetch(`${backendBaseUrl}/api/store/listing-prices`, {
+      cache: 'no-store',
+      headers: { accept: 'application/json' },
+      signal: abortController.signal,
+    }).then((response) => {
+      if (!response.ok) throw new Error(`Listing-price request failed with HTTP ${response.status}.`);
+      return response.json();
+    });
+    void promise.catch(() => undefined);
+    window.blackboxStoreListingPriceDocument = { document, pathname: collectionPathname, abortController, promise };
+  }
+</script>

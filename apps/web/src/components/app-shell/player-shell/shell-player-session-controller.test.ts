@@ -140,7 +140,13 @@ describe('shell player session controller', () => {
     const triggers = ['disintegration', 'disintegration', 'distro:disintegration'].map((id, index) => ({
       dataset: { musicListenSourceId: id, musicListenDefaultLabel: 'Listen', musicListenSession: 'idle' },
       querySelector: vi.fn(() => labels[index]),
-      toggleAttribute: vi.fn(),
+      disabled: false,
+      hasAttribute() {
+        return this.disabled;
+      },
+      toggleAttribute: vi.fn(function (this: { disabled: boolean }, _name: string, value: boolean) {
+        this.disabled = value;
+      }),
     }));
     const targetDocument = {
       ...createTargetDocument(),
@@ -151,7 +157,9 @@ describe('shell player session controller', () => {
     controller.syncPlayerTriggers();
     expect(labels.map((label) => label.textContent)).toEqual(['In player', 'In player', 'Listen']);
     expect(triggers[0]?.toggleAttribute).toHaveBeenLastCalledWith('disabled', true);
-    expect(triggers[2]?.toggleAttribute).toHaveBeenLastCalledWith('disabled', false);
+    expect(triggers[2]?.toggleAttribute).not.toHaveBeenCalled();
+    controller.syncPlayerTriggers();
+    expect(triggers[0]?.toggleAttribute).toHaveBeenCalledTimes(1);
 
     options.activePlayerSessionRef.current.releaseId = 'distro:disintegration';
     controller.syncPlayerTriggers();

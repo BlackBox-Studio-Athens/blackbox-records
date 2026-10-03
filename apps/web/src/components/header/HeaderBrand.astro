@@ -11,6 +11,6 @@ interface Props {
 const { href = createProjectRelativeUrl('/'), logoAlt = 'BlackBox Records' } = Astro.props;
 ---
 
-<a class="header-brand-link" href={href} aria-label={logoAlt} data-astro-prefetch transition:name="site-brand">
-  <Image class="header-brand-logo" src={logo} alt={logoAlt} width={308} />
+<a class="header-brand-link" href={href} aria-label={logoAlt} data-astro-prefetch>
+  <Image class="header-brand-logo" src={logo} alt={logoAlt} width={308} loading="eager" />
 </a>

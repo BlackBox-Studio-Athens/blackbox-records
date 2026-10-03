@@ -1,14 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it } from 'vitest';
+import { runInNewContext } from 'node:vm';
+import { describe, expect, it, vi } from 'vitest';
+import { largestImageWidth } from '@/platform/lib/editorial-image';
+import { storeGalleryThumbnailSource } from '@/components/store/StoreImageGallery';
 
 const source = readFileSync(fileURLToPath(new URL('./store/[slug]/index.astro', import.meta.url)), 'utf8');
 const releaseDetail = readFileSync(
   fileURLToPath(new URL('../components/editorial/ReleaseDetailContent.astro', import.meta.url)),
-  'utf8',
-);
-const gallerySource = readFileSync(
-  fileURLToPath(new URL('../components/store/StoreImageGallery.tsx', import.meta.url)),
   'utf8',
 );
 const storeCard = readFileSync(
@@ -34,23 +33,60 @@ describe('Store Item detail gallery contract', () => {
     expect(source).toContain('const gallery = sourceRelease?.data.gallery ?? distroSource?.data.gallery ?? [];');
   });
 
-  it('enhances multiple source-ordered images with shadcn controls and leaves single images static', () => {
-    expect(source).toContain('gallery.length > 0');
-    expect(source).toContain('...gallery');
-    expect(source).toContain('galleryImages.length > 1');
-    expect(source).toContain('<StoreImageGallery client:load');
-    expect(gallerySource).toContain('loading="lazy"');
-    expect(gallerySource).not.toContain('aspect-[4/5]');
-    expect(gallerySource).toContain("from '@/components/ui/button'");
-    expect(gallerySource).toContain('useReducedMotion');
-    expect(gallerySource).toContain('onPanEnd');
-    expect(gallerySource).toContain('ArrowLeft');
+  it.each([
+    ['Store', source, 'storeItem.title'],
+    ['Release', releaseDetail, 'releaseTitle'],
+  ])('leaves single %s images static and supplies a server placeholder for shell enhancement', (_name, page, title) => {
+    expect(page).toMatch(/galleryImages\.length\s*>\s*1\s*\?\s*\(\s*<StoreImageGalleryPlaceholder\b/);
+    const placeholder = /<StoreImageGalleryPlaceholder\b([^>]*?)\/>/s.exec(page)?.[1];
+    expect(placeholder).toBeDefined();
+    expect(placeholder).toMatch(/\bimages=\{galleryImages\}/);
+    expect(placeholder).toContain(`title={${title}}`);
+    expect(placeholder).not.toMatch(/\bclient:/);
+    expect(page).not.toMatch(/<StoreImageGallery\b/);
+    expect(page).toMatch(/\)\s*:\s*\(\s*(?:<>\s*)?<Image\b/);
+    if (_name === 'Release') expect(placeholder).toMatch(/\bpriority=\{showRouteNavigation\}/);
   });
 
-  it('shows optional Release gallery images on the public detail and storefront pages', () => {
-    expect(releaseDetail).toContain('const gallery = release.data.gallery ?? [];');
-    expect(releaseDetail).toContain('<StoreImageGallery client:load images={galleryImages}');
-    expect(source).toContain('const gallery = sourceRelease?.data.gallery ?? distroSource?.data.gallery ?? [];');
+  it.each([
+    ['Store', source],
+    ['Release', releaseDetail],
+  ])('prepares %s gallery images in cover-first order with actual thumbnail derivatives', async (_name, page) => {
+    // Execute only the real media projection, with a local image-service fixture.
+    const expression = /const galleryImages\s*=\s*([\s\S]*?);\s*(?:const trackGroups|---)/.exec(page)?.[1];
+    expect(expression).toBeDefined();
+    const widthsMatch = /(?:const widths|const galleryImageWidths)\s*=\s*\[([^\]]+)\]/.exec(page);
+    const widths = widthsMatch?.[1]!.split(',').map(Number) ?? [];
+    expect(widths).toEqual([144, 216, 480, 720, 960, 1200]);
+    const cover = { src: '/cover.jpg', width: 1600, height: 1600, format: 'jpg' };
+    const alternate = { src: '/back.jpg', width: 1600, height: 2400, format: 'jpg' };
+    const getImage = vi.fn(async ({ src, widths: candidates }: { src: typeof cover; widths: number[] }) => ({
+      src: `${src.src}-1200.webp`,
+      srcSet: { attribute: candidates.map((width) => `${src.src}-${width}.webp ${width}w`).join(', ') },
+    }));
+    const context = {
+      storeItem: { image: cover, imageAlt: 'Cover' },
+      release: { data: { cover_image: cover, cover_image_alt: 'Cover', title: 'Album' } },
+      gallery: [{ image: alternate, image_alt: 'Back' }],
+      galleryImageWidths: widths,
+      editorialImageQuality: 68,
+      largestImageWidth,
+      getImage,
+    };
+    const projection = `(async () => (${expression}))()`;
+    const images = await runInNewContext(projection, context);
+    expect(images.map((image: { alt: string }) => image.alt)).toEqual(['Cover', 'Back']);
+    expect(images[1]).toMatchObject({ width: 1600, height: 2400 });
+    expect(getImage.mock.calls.map(([options]) => options.src)).toEqual([cover, alternate]);
+    expect(getImage).toHaveBeenCalledWith(expect.objectContaining({ width: 1200, format: 'webp' }));
+    for (const image of images) {
+      const thumbnail = storeGalleryThumbnailSource(image);
+      expect(thumbnail.src).toBe(`${image === images[0] ? cover.src : alternate.src}-216.webp`);
+      expect(thumbnail.srcSet.split(', ').map((candidate) => candidate.split(' ').at(-1))).toEqual(['144w', '216w']);
+    }
+    getImage.mockClear();
+    expect(await runInNewContext(projection, { ...context, gallery: [] })).toEqual([]);
+    expect(getImage).not.toHaveBeenCalled();
   });
 });
 

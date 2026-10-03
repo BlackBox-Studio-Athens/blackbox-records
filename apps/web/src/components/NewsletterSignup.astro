@@ -1,7 +1,7 @@
 ---
 import Prose from '@/components/Prose.astro';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import NewsletterSignupForm from '@/components/NewsletterSignupForm';
+import { PrivacyLink } from '@/platform/components/PurchaseInformation';
 import { getNewsletterContent } from '@/lib/site-data';
 
 interface Props {
@@ -29,13 +29,20 @@ const newsletterContent = await getNewsletterContent();
           rich={newsletterContent.description_rich}
           data-content-path="description"
         />
-        <NewsletterSignupForm
-          client:load
-          buttonLabel={newsletterContent.button_label}
-          formId={formId}
-          note={newsletterContent.note_rich ?? newsletterContent.note}
-          placeholder={newsletterContent.placeholder}
+        <div
+          data-newsletter-form
+          data-form-id={formId}
+          data-button-label={newsletterContent.button_label}
+          data-placeholder={newsletterContent.placeholder}
+        ></div>
+        <Prose
+          class="mt-3 text-xs uppercase tracking-[0.08em] text-muted-foreground"
+          value={newsletterContent.note}
+          rich={newsletterContent.note_rich}
         />
+        <div class="text-xs text-muted-foreground">
+          <PrivacyLink />
+        </div>
       </CardContent>
     </Card>
   </div>

@@ -1,4 +1,18 @@
 (function () {
+  const illustration = document.querySelector('.error-404__illustration');
+  if (illustration && 'IntersectionObserver' in window) {
+    let isVisible = false;
+    const updateMotion = function () {
+      illustration.toggleAttribute('data-motion-visible', isVisible && !document.hidden);
+    };
+    const observer = new IntersectionObserver(function (entries) {
+      isVisible = entries[0].isIntersecting;
+      updateMotion();
+    });
+    observer.observe(illustration);
+    document.addEventListener('visibilitychange', updateMotion);
+  }
+
   function getRequestedPathLabel() {
     const path = window.location.pathname || '/';
     const query = window.location.search || '';

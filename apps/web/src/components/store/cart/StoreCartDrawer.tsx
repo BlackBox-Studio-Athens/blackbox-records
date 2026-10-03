@@ -80,18 +80,18 @@ export default function StoreCartDrawer({
   onRestoreItem,
   resolveHref,
 }: StoreCartDrawerProps) {
-  const modalRootRef = React.useRef<HTMLDivElement | null>(null);
+  // Radix portals the content after its first commit, so the lock waits for the mounted node, not a ref read on mount.
+  const [modalRoot, setModalRoot] = React.useState<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
-    const modalRoot = modalRootRef.current;
     if (!open || !modalRoot) return;
     return acquireLenisModalLock(modalRoot);
-  }, [open]);
+  }, [open, modalRoot]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        ref={modalRootRef}
+        ref={setModalRoot}
         side="right"
         data-tone="store"
         className="top-[var(--header-height)] bottom-auto z-[1100] flex h-[calc(100dvh-var(--header-height))] min-h-0 w-[min(100vw,460px)] max-w-none flex-col overflow-hidden border-l border-border/80 bg-background/98 p-0 text-foreground sm:max-w-none"
@@ -226,6 +226,9 @@ export function StoreCartDrawerPanel({
                         {/* Runtime Image Snapshot: cart state stores a browser-safe string URL here. */}
                         {line.image ? (
                           <img
+                            width={88}
+                            height={88}
+                            decoding="async"
                             className="h-full w-full object-cover"
                             src={line.image}
                             alt={line.imageAlt || line.title}

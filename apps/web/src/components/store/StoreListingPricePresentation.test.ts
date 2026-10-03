@@ -4,6 +4,7 @@ import {
   connectStoreListingPricePresentation,
   readPublicStoreListingPrices,
   STORE_LISTING_PRICE_COPY,
+  sanitizeStoreSearchChrome,
 } from './StoreListingPricePresentation';
 
 const { requestStoreCartAddFromSeed } = vi.hoisted(() => ({ requestStoreCartAddFromSeed: vi.fn() }));
@@ -85,6 +86,47 @@ describe('Store listing-price presentation', () => {
     vi.useRealTimers();
   });
 
+  it('resets cached server chrome in place without collapsing its control boxes', () => {
+    const input = { disabled: false, value: 'band', removeAttribute: vi.fn() };
+    const summary = { textContent: '1 item' };
+    const clear = { disabled: false, hidden: false };
+    const toolbar = {
+      removeAttribute: vi.fn(),
+      querySelector: (selector: string) => (selector === 'input[type="search"]' ? input : summary),
+      querySelectorAll: () => [clear],
+    };
+    const select = { disabled: false, value: 'band' };
+    const fieldset = { disabled: false };
+    const radios = [
+      { value: '', checked: false, toggleAttribute: vi.fn() },
+      { value: 'band', checked: true, toggleAttribute: vi.fn() },
+    ];
+    const artistHost = {
+      querySelector: (selector: string) => (selector === 'select' ? select : fieldset),
+      querySelectorAll: () => radios,
+    };
+    const total = { hidden: false };
+    const view = { disabled: false };
+    const controls = { hidden: true, querySelectorAll: () => [view] };
+    const elements: Record<string, unknown[]> = {
+      '[data-store-search-toolbar]': [toolbar],
+      '[data-store-artists]': [artistHost],
+      '[data-store-empty-results], [data-store-result-total]': [total],
+      '[data-store-coverflow-controls]': [controls],
+    };
+    const root = { querySelectorAll: (selector: string) => elements[selector] ?? [] } as unknown as ParentNode;
+    sanitizeStoreSearchChrome(root);
+    expect(input).toMatchObject({ disabled: true, value: '' });
+    expect(summary.textContent).toBe('');
+    expect(clear).toEqual({ disabled: true, hidden: true });
+    expect(select).toEqual({ disabled: true, value: '' });
+    expect(fieldset.disabled).toBe(true);
+    expect(radios.map(({ checked }) => checked)).toEqual([true, false]);
+    expect(total.hidden).toBe(true);
+    expect(controls.hidden).toBe(false);
+    expect(view.disabled).toBe(true);
+  });
+
   it('uses the single listing projection endpoint and forwards cancellation', async () => {
     const records = [{ displayPrice: '€28.00', presentationState: 'ready' as const, storeItemSlug: 'item' }];
     const fetchRequest = vi.fn(async () => ({ ok: true, json: async () => records }));
@@ -93,6 +135,7 @@ describe('Store listing-price presentation', () => {
 
     await expect(readPublicStoreListingPrices(abortController.signal)).resolves.toEqual(records);
     expect(fetchRequest).toHaveBeenCalledWith('/api/store/listing-prices', {
+      cache: 'no-store',
       headers: { accept: 'application/json' },
       signal: abortController.signal,
     });

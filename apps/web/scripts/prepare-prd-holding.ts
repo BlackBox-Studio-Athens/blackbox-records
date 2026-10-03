@@ -3,13 +3,15 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const webRoot = fileURLToPath(new URL('..', import.meta.url));
-const buildRoot = path.join(webRoot, 'dist');
+const selectedDist = process.argv.find((argument) => argument.startsWith('--dist='))?.slice('--dist='.length);
+const buildRoot = selectedDist ? path.resolve(webRoot, selectedDist) : path.join(webRoot, 'dist');
 const holdingRoot = path.join(webRoot, 'dist-holding');
 const holdingDocument = path.join(buildRoot, 'prd-holding', 'index.html');
 const staticCopiedPaths = [
   'assets/fonts/brand/veneer.css',
   'assets/fonts/brand/veneer_regular.woff2',
   'assets/images/brand/logo.png',
+  'assets/images/brand/logo-240.webp',
   'favicon.svg',
   'favicon-96x96.png',
   'favicon.ico',

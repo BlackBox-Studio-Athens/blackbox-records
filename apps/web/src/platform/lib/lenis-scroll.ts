@@ -1,130 +1,21 @@
-import type Lenis from 'lenis';
-
-type ScrollRoot = Window | HTMLElement;
 type ScrollTarget = number | HTMLElement;
-type ScrollPort = Pick<Lenis, 'destroy' | 'resize' | 'scrollTo' | 'start' | 'stop'>;
-type ScrollFactory = (root: ScrollRoot, prevent: (element: HTMLElement) => boolean) => ScrollPort;
-
-const active = new Map<ScrollRoot, ScrollPort>();
-const stoppedRoots = new Set<ScrollRoot>();
-const modalLocks = new Map<symbol, HTMLElement>();
-
-function preventsNativeSurface(element: HTMLElement, root: ScrollRoot) {
-  const nestedRoot = element.closest<HTMLElement>('[data-lenis-scroll-root]');
-  if (nestedRoot && nestedRoot !== root) return true;
-  return Boolean(
-    element.closest('input, textarea, select, iframe, video, audio, [contenteditable], [data-lenis-prevent]'),
-  );
-}
+const modalLocks = new Set<symbol>();
 
 function syncModalLocks() {
-  for (const [root, lenis] of active) {
-    const blocked =
-      modalLocks.size > 0 &&
-      (root === window || [...modalLocks.values()].some((modalRoot) => !modalRoot.contains(root as HTMLElement)));
-
-    if (blocked && !stoppedRoots.has(root)) {
-      lenis.stop();
-      stoppedRoots.add(root);
-    } else if (!blocked && stoppedRoots.has(root)) {
-      lenis.start();
-      stoppedRoots.delete(root);
-    }
-  }
+  document.body.classList.toggle('is-shell-scroll-locked', modalLocks.size > 0);
 }
 
-export function connectLenisScrollRoots(scope: HTMLElement, factory?: ScrollFactory) {
-  if (!factory) {
-    let cancelled = false;
-    let disconnect: (() => void) | undefined;
-    void import('lenis')
-      .then(({ default: Lenis }) => {
-        if (cancelled) return;
-        disconnect = connectLenisScrollRoots(
-          scope,
-          (root, prevent) =>
-            new Lenis({
-              autoRaf: true,
-              anchors: false,
-              content: root instanceof HTMLElement ? root : document.documentElement,
-              prevent,
-              respectReducedMotion: true,
-              smoothWheel: true,
-              stopInertiaOnNavigate: true,
-              wrapper: root,
-            }),
-        );
-      })
-      .catch(() => {
-        /* Native scrolling remains available if initialization fails. */
-      });
-    return () => {
-      cancelled = true;
-      disconnect?.();
-    };
-  }
-  const owned = new Set<ScrollRoot>();
-  const create = factory;
-
-  function register(root: ScrollRoot) {
-    if (active.has(root)) return;
-    active.set(
-      root,
-      create(root, (element) => preventsNativeSurface(element, root)),
-    );
-    owned.add(root);
-    syncModalLocks();
-  }
-
-  function reconcile() {
-    register(window);
-    const roots = new Set(scope.querySelectorAll<HTMLElement>('[data-lenis-scroll-root]'));
-    if (scope.matches('[data-lenis-scroll-root]')) roots.add(scope);
-
-    for (const root of roots) register(root);
-    for (const root of owned) {
-      if (
-        root !== window &&
-        (!scope.contains(root as HTMLElement) || !(root as HTMLElement).matches('[data-lenis-scroll-root]'))
-      ) {
-        active.get(root)?.destroy();
-        active.delete(root);
-        stoppedRoots.delete(root);
-        owned.delete(root);
-      }
-    }
-  }
-
-  reconcile();
-  const observer = new MutationObserver(reconcile);
-  observer.observe(scope, {
-    attributes: true,
-    attributeFilter: ['data-lenis-scroll-root'],
-    childList: true,
-    subtree: true,
-  });
-
-  return () => {
-    observer.disconnect();
-    for (const root of owned) {
-      active.get(root)?.destroy();
-      active.delete(root);
-      stoppedRoots.delete(root);
-    }
-  };
+// Keep the existing public scroll interface; measured native input uses less main-thread work.
+export function connectLenisScrollRoots(_scope: HTMLElement, _factory?: unknown) {
+  return () => {};
 }
 
-export function acquireLenisModalLock(modalRoot: HTMLElement) {
-  const lock = Symbol('lenis-modal-lock');
-  modalLocks.set(lock, modalRoot);
+export function acquireLenisModalLock(_modalRoot: HTMLElement) {
+  const lock = Symbol('shell-modal-lock');
+  modalLocks.add(lock);
   syncModalLocks();
-
-  let released = false;
   return () => {
-    if (released) return;
-    released = true;
-    modalLocks.delete(lock);
-    syncModalLocks();
+    if (modalLocks.delete(lock)) syncModalLocks();
   };
 }
 
@@ -158,27 +49,21 @@ export function scrollWithLenis(
   target: ScrollTarget,
   options: { immediate?: boolean; offset?: number } = {},
 ) {
-  const scrollRoot = root ?? window;
-  const lenis = active.get(scrollRoot);
-
-  if (lenis) {
-    lenis.resize();
-    lenis.scrollTo(target, { force: true, ...options });
-    return true;
-  }
+  const nativeBehavior =
+    options.immediate || window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 
   if (root) {
     if (typeof target === 'number' && typeof root.scrollTo === 'function') {
-      root.scrollTo({ top: target, behavior: options.immediate ? 'auto' : 'smooth' });
+      root.scrollTo({ top: target, behavior: nativeBehavior });
     } else if (typeof target === 'number') {
       root.scrollTop = target;
     } else {
-      target.scrollIntoView({ behavior: options.immediate ? 'auto' : 'smooth', block: 'start' });
+      target.scrollIntoView({ behavior: nativeBehavior, block: 'start' });
     }
   } else if (typeof target === 'number') {
-    window.scrollTo({ top: target, behavior: options.immediate ? 'auto' : 'smooth' });
+    window.scrollTo({ top: target, behavior: nativeBehavior });
   } else {
-    target.scrollIntoView({ behavior: options.immediate ? 'auto' : 'smooth', block: 'start' });
+    target.scrollIntoView({ behavior: nativeBehavior, block: 'start' });
   }
 
   return false;

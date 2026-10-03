@@ -1,12 +1,18 @@
 ---
 import StoreCollectionPage from '@/layouts/StoreCollectionPage.astro';
 import StoreDistroCatalog from '@/components/store/StoreDistroCatalog.astro';
-import { getStoreCatalogCategory } from '@/lib/store-categories';
-import { listStoreCollectionEntries } from '@/lib/store-collection';
+import { getDiscoverableStoreCatalogCategories, getStoreCatalogCategory } from '@/lib/store-categories';
+import { listStoreCollectionEntries, selectStoreCollectionEntries } from '@/lib/store-collection';
 
-const collectionEntries = await listStoreCollectionEntries('distro');
+const allEntries = await listStoreCollectionEntries();
+const collectionEntries = selectStoreCollectionEntries(allEntries, 'distro');
+const discoverableCategories = getDiscoverableStoreCatalogCategories(allEntries.flatMap((entry) => entry.categoryIds));
 ---
 
-<StoreCollectionPage category={getStoreCatalogCategory('distro')} entries={collectionEntries}>
+<StoreCollectionPage
+  category={getStoreCatalogCategory('distro')}
+  entries={collectionEntries}
+  discoverableCategories={discoverableCategories}
+>
   <StoreDistroCatalog slot="distro" entries={collectionEntries} />
 </StoreCollectionPage>

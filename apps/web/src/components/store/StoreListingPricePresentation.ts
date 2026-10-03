@@ -2,7 +2,7 @@ import type { PublicStoreListingPrice } from '@/components/store/checkout/public
 import {
   formatStoreLowStockLabel,
   resolvePublicCheckoutApiBaseUrl,
-} from '@/components/store/checkout/public-checkout-api';
+} from '@/components/store/checkout/public-checkout-presentation';
 import type { StoreItemCartSeed } from '@/components/store/checkout/StoreItemPurchaseActions';
 
 export const STORE_LISTING_PRICE_COPY = {
@@ -25,6 +25,48 @@ type ConnectStoreListingPricePresentationOptions = {
 const placeholderSelector = '[data-store-listing-price]';
 const availabilitySelector = '[data-store-listing-availability]';
 const buySelector = '[data-store-card-buy]';
+
+/** Snapshots keep the server chrome and reset its state before the next enhancement. */
+export function sanitizeStoreSearchChrome(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>('[data-store-search-toolbar]').forEach((toolbar) => {
+    toolbar.removeAttribute('data-store-search-ready');
+    const input = toolbar.querySelector<HTMLInputElement>('input[type="search"]');
+    if (input) {
+      input.disabled = true;
+      input.value = '';
+      input.removeAttribute('value');
+    }
+    const summary = toolbar.querySelector<HTMLElement>('[data-store-search-summary]');
+    if (summary) summary.textContent = '';
+    toolbar.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      button.disabled = true;
+      button.hidden = true;
+    });
+  });
+  root.querySelectorAll<HTMLElement>('[data-store-artists]').forEach((host) => {
+    const select = host.querySelector<HTMLSelectElement>('select');
+    if (select) {
+      select.disabled = true;
+      select.value = '';
+    }
+    const fieldset = host.querySelector<HTMLFieldSetElement>('fieldset');
+    if (fieldset) fieldset.disabled = true;
+    host.querySelectorAll<HTMLInputElement>('input[name="store-artist"]').forEach((radio) => {
+      radio.checked = radio.value === '';
+      radio.toggleAttribute('checked', radio.value === '');
+    });
+  });
+  root.querySelectorAll<HTMLElement>('[data-store-empty-results], [data-store-result-total]').forEach((element) => {
+    element.hidden = true;
+  });
+  root.querySelectorAll<HTMLElement>('[data-store-coverflow-controls]').forEach((controls) => {
+    controls.hidden = false;
+    controls.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      button.disabled = true;
+    });
+  });
+}
+
 const availabilityCopy: Record<PublicStoreListingPrice['availabilityState'], string> = {
   stocked: '',
   sold_out: STORE_LISTING_PRICE_COPY.soldOut,
@@ -162,6 +204,7 @@ export function connectStoreListingPricePresentation({
 export async function readPublicStoreListingPrices(signal?: AbortSignal): Promise<PublicStoreListingPrice[]> {
   const backendBaseUrl = resolvePublicCheckoutApiBaseUrl().replace(/\/$/, '');
   const response = await fetch(`${backendBaseUrl}/api/store/listing-prices`, {
+    cache: 'no-store',
     headers: { accept: 'application/json' },
     signal: signal ?? null,
   });

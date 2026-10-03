@@ -4,7 +4,12 @@ export type TraceEvent = {
   ts?: number;
   pid?: number;
   tid?: number;
-  args?: { name?: string };
+  args?: {
+    name?: string;
+    elementCount?: number;
+    data?: { elementCount?: number };
+    beginData?: { elementCount?: number };
+  };
 };
 
 export type StoreActivationMilestones = {
@@ -184,6 +189,10 @@ export function summarizeTrace(events: TraceEvent[]) {
     }
   }
   const fontEvents = mainEvents.filter((event) => /font/i.test(event.name)).map((event) => event.name);
+  const elementCounts = mainEvents
+    .filter((event) => event.name === 'UpdateLayoutTree' || event.name === 'RecalculateStyles')
+    .map((event) => event.args?.elementCount ?? event.args?.data?.elementCount ?? event.args?.beginData?.elementCount)
+    .filter((count): count is number => typeof count === 'number');
   return {
     style: summarize(style),
     layout: summarize(layout),
@@ -191,6 +200,9 @@ export function summarizeTrace(events: TraceEvent[]) {
     mainStyleLayoutPaint: summarize(workByWindow),
     script: summarize(script),
     tasks: summarize(tasks),
+    animationFrameCallbacks: mainEvents.filter((event) => event.name === 'FireAnimationFrame').length,
+    styleRecalcElements: summarize(elementCounts),
+    styleRecalcElementSamples: elementCounts.length,
     taskCount: tasks.length,
     longTaskCount: tasks.filter((duration) => duration >= 50).length,
     longTaskTime: tasks.filter((duration) => duration >= 50).reduce((total, duration) => total + duration, 0),

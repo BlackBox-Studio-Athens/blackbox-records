@@ -1,5 +1,8 @@
 import { Fetcher } from 'openapi-typescript-fetch';
 
+export const deliveryCharges = { small: 250, medium: 350 };
+export const vatDisclosure = 'VAT included. Shipping calculated in your cart.';
+
 import type {
   components as PublicApiComponents,
   operations as PublicApiOperations,

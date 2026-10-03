@@ -2,13 +2,13 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 
 import type { StoreCartState } from '@/components/store/cart/store-cart';
-import { buttonVariants } from '@/components/ui/button';
 import { isCurrentPath } from '@/platform/utils/urls';
 
 const ArtistsRosterFilters = React.lazy(() => import('@/components/artists/ArtistsRosterFilters'));
 const StoreDistroSearch = React.lazy(() => import('@/components/store/StoreDistroSearch'));
 const ServicesInquiryForm = React.lazy(() => import('@/components/services/ServicesInquiryForm'));
 const StoreCartButton = React.lazy(() => import('@/components/store/cart/StoreCartButton'));
+const NewsletterSignupForm = React.lazy(() => import('@/components/NewsletterSignupForm'));
 
 class PortalErrorBoundary extends React.Component<
   React.PropsWithChildren<{ fallback: React.ReactNode; onError?: () => void }>,
@@ -54,6 +54,7 @@ type ShellPortalOutletsProps = {
   storeCartHeaderContainer: HTMLElement | null;
   storeCartBridgeFailed: boolean;
   storeCartState: StoreCartState;
+  newsletterContainer?: HTMLElement | null;
 };
 
 export default function ShellPortalOutlets({
@@ -66,9 +67,28 @@ export default function ShellPortalOutlets({
   storeCartHeaderContainer,
   storeCartBridgeFailed,
   storeCartState,
+  newsletterContainer,
 }: ShellPortalOutletsProps) {
   return (
     <>
+      {newsletterContainer
+        ? createPortal(
+            <PortalErrorBoundary
+              key={activeShellPathname}
+              fallback={<p role="alert">Newsletter signup is unavailable. Reload the page and try again.</p>}
+            >
+              <React.Suspense fallback={loadingStatus('newsletter signup')}>
+                <NewsletterSignupForm
+                  key={activeShellPathname}
+                  formId={newsletterContainer.dataset.formId ?? 'newsletter-email'}
+                  buttonLabel={newsletterContainer.dataset.buttonLabel ?? 'Subscribe'}
+                  placeholder={newsletterContainer.dataset.placeholder ?? 'your@email.com'}
+                />
+              </React.Suspense>
+            </PortalErrorBoundary>,
+            newsletterContainer,
+          )
+        : null}
       {artistsRosterFiltersContainer
         ? createPortal(
             <PortalErrorBoundary fallback={<p role="alert">Artist filters are unavailable.</p>}>
@@ -119,7 +139,11 @@ export default function ShellPortalOutlets({
             ) : (
               <PortalErrorBoundary
                 fallback={
-                  <button type="button" className={buttonVariants({ variant: 'outline' })} onClick={onOpenStoreCart}>
+                  <button
+                    type="button"
+                    className="site-button site-button--outline border border-border px-3 py-2"
+                    onClick={onOpenStoreCart}
+                  >
                     Cart
                   </button>
                 }

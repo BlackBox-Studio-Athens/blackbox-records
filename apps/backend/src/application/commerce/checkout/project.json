@@ -20,7 +20,7 @@
         "checkout-spi": "./spi.ts"
       },
       "dependsOn": ["catalog-sync", "commerce-domain", "orders", "stock", "backend-platform"],
-      "workspaceInterfaces": {}
+      "workspaceInterfaces": { "@blackbox/api-client": ["./public"] }
     }
   }
 }

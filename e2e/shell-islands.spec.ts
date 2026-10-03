@@ -1,21 +1,19 @@
-import { expect, plantSentinel, sentinelIntact, test, waitForIsland, waitForShell } from './fixtures';
+import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
-const newsletter = 'NewsletterSignupForm';
-
-test('React islands in cached shell pages hydrate again when the page returns', async ({ page }) => {
+test('shell portal forms mount again with clean state when cached pages return', async ({ page }) => {
   const registrations: unknown[] = [];
   await page.route('**/api/newsletter/registrations', (route) => {
     registrations.push(route.request().postDataJSON());
     return route.fulfill({ status: 202, json: { status: 'registered' } });
   });
-  const island = page.locator(`astro-island[component-url*="${newsletter}"]`);
+  const island = page.locator('[data-newsletter-form]');
   const email = island.getByRole('textbox', { name: 'Email address' });
   const primary = page.getByRole('navigation', { name: 'Primary' });
   const home = page.getByRole('banner').getByRole('link', { name: 'BlackBox Records' });
   const about = primary.getByRole('link', { name: 'Who we are' });
 
   async function subscribe(address: string) {
-    await waitForIsland(page, newsletter);
+    await expect(email).toBeVisible();
     // The typed address left before navigating away must not come back with the cached page.
     await expect(email).toHaveValue('');
     await email.fill(address);
@@ -27,12 +25,12 @@ test('React islands in cached shell pages hydrate again when the page returns', 
   // Home is the initial document (snapshotted when the shell mounts); About arrives as a fetched snapshot.
   await page.goto('./');
   await waitForShell(page);
-  await waitForIsland(page, newsletter);
+  await expect(email).toBeVisible();
   await plantSentinel(page);
   await email.fill('left@example.com');
   await about.click();
   await expect(page).toHaveURL(/\/about\/$/);
-  await waitForIsland(page, newsletter);
+  await expect(email).toBeVisible();
   await email.fill('left@example.com');
   await primary.getByRole('link', { name: 'Releases' }).click();
   await expect(page).toHaveURL(/\/releases\/$/);

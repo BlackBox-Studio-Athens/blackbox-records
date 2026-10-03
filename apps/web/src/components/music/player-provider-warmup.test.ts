@@ -54,11 +54,11 @@ describe('warmPlayerProviderOrigins', () => {
     });
 
     expect(targetDocument.appendedLinks).toMatchObject([
-      { crossOrigin: 'anonymous', href: 'https://bandcamp.com', rel: 'preconnect' },
+      { crossOrigin: '', href: 'https://bandcamp.com', rel: 'preconnect' },
       { crossOrigin: '', href: 'https://bandcamp.com', rel: 'dns-prefetch' },
-      { crossOrigin: 'anonymous', href: 'https://embed.tidal.com', rel: 'preconnect' },
+      { crossOrigin: '', href: 'https://embed.tidal.com', rel: 'preconnect' },
       { crossOrigin: '', href: 'https://embed.tidal.com', rel: 'dns-prefetch' },
-      { crossOrigin: 'anonymous', href: 'https://tidal.com', rel: 'preconnect' },
+      { crossOrigin: '', href: 'https://tidal.com', rel: 'preconnect' },
       { crossOrigin: '', href: 'https://tidal.com', rel: 'dns-prefetch' },
     ]);
     expect([...warmedOrigins]).toEqual(['https://bandcamp.com', 'https://embed.tidal.com', 'https://tidal.com']);

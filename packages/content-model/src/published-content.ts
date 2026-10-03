@@ -58,6 +58,15 @@ export function publishedCollection(
   privateImages: Record<string, { src: string; width: number; height: number; format: string }> = {},
 ) {
   const images = new Map(snapshot.media.map((item) => [item.id, item]));
+  const artists = new Map(
+    snapshot.records
+      .filter((record) => record.collection === 'artists')
+      .map((record) => [record.id, record] as const)
+      .reverse(),
+  );
+  const storeItems = new Map(
+    (snapshot.storeItems ?? []).map((item) => [`${item.sourceKind}/${item.sourceId}`, item] as const).reverse(),
+  );
   function image(id: string) {
     if (privateImages[id]) return privateImages[id];
     const item = images.get(id);
@@ -91,7 +100,7 @@ export function publishedCollection(
         data.is_active = data.is_active === 0 ? false : data.is_active === 1 ? true : (data.is_active ?? true);
       }
       if (record.collection === 'releases' || (record.collection === 'news' && record.data.artist)) {
-        const artist = snapshot.records.find((item) => item.collection === 'artists' && item.id === record.data.artist);
+        const artist = artists.get(record.data.artist as string);
         if (!artist) throw new Error('Published Artist is unavailable.');
         data.artist = { collection: 'artists', id: artist.slug };
       }
@@ -104,11 +113,7 @@ export function publishedCollection(
         data.content_media = Object.fromEntries(contentMediaIds(body).map((id) => [id, image(id)]));
       }
       if (snapshot.storeItems && ['releases', 'distro'].includes(record.collection)) {
-        const item = snapshot.storeItems.find(
-          (item) =>
-            item.sourceKind === (record.collection === 'releases' ? 'release' : 'distro') &&
-            item.sourceId === record.slug,
-        );
+        const item = storeItems.get(`${record.collection === 'releases' ? 'release' : 'distro'}/${record.slug}`);
         data.store_item = item ? { storeItemSlug: item.storeItemSlug, variantId: item.variantId } : null;
       }
       return {

@@ -8,8 +8,12 @@ import {
   type PublicCheckoutApi,
   type PublicStoreOffer,
 } from '@/components/store/checkout/public-checkout-api';
-import { STORE_CART_ADD_ITEM_EVENT, type CartLineItemSnapshot } from '@/components/store/cart/store-cart';
-import { queuePendingStoreCartAddItem, STORE_CART_ITEM_ADDED_EVENT } from '@/components/store/cart/store-cart-events';
+import type { CartLineItemSnapshot } from '@/components/store/cart/store-cart';
+import {
+  queuePendingStoreCartAddItem,
+  STORE_CART_ADD_ITEM_EVENT,
+  STORE_CART_ITEM_ADDED_EVENT,
+} from '@/components/store/cart/store-cart-events';
 import { cn } from '@/components/ui/utils';
 
 export type StoreItemCartSeed = Omit<

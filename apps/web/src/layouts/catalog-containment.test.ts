@@ -11,7 +11,6 @@ describe('catalog containment', () => {
     const distroCatalog = source('../components/store/StoreDistroCatalog.astro');
 
     expect(css).not.toMatch(/\.store-item-card--listing\s*{[^}]*(?:block-size:\s*40rem|contain:\s*strict)/s);
-    expect(css).not.toMatch(/\.store-item-card--listing\s*{[^}]*content-visibility/s);
     expect(css).not.toMatch(/\.distro-group-grid\s*{[^}]*contain-intrinsic-block-size/s);
     expect(distroCatalog).toContain('class="distro-group-grid"');
     expect(distroCatalog).toContain('entries.map');
@@ -30,12 +29,13 @@ describe('catalog containment', () => {
     expect(source('./SiteLayout.astro')).not.toContain('display=swap');
   });
 
-  it('keeps the eager Store listing server-rendered with its listing-price projection', () => {
+  it('keeps complete Store listings server-rendered while skipping offscreen paint', () => {
     const css = source('../styles/global.css');
     const storePage = source('./StoreCollectionPage.astro');
     const storeCard = source('../components/store/StoreItemCard.astro');
 
-    expect(css).not.toMatch(/\.store-item-card--listing\s*{[^}]*(?:content-visibility|contain-intrinsic)/s);
+    expect(css).toMatch(/\.store-item-card--listing\s*{[^}]*content-visibility:\s*auto;/s);
+    expect(css).toMatch(/\.store-item-card--listing\s*{[^}]*contain-intrinsic-block-size:\s*auto 520px;/s);
     expect(css).toMatch(/\.store-item-card--listing \.brand-card-title\s*{[^}]*font-family:\s*var\(--font-sans\)/s);
     expect(storePage).toContain('entries.map');
     expect(storeCard).toContain('data-store-listing-price');

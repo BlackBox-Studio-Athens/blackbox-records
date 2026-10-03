@@ -377,13 +377,14 @@ export class StripeCatalogGatewayClient
 
 export function createStripeCatalogGateway(
   bindings: Pick<AppBindings, 'STRIPE_API_BASE_URL' | 'STRIPE_SECRET_KEY'>,
+  options: Pick<NonNullable<ConstructorParameters<typeof Stripe>[1]>, 'timeout' | 'maxNetworkRetries'> = {},
 ): StripeCatalogGateway & StripeCatalogPriceChangeGateway & StripeCatalogSetupGateway {
   if (!bindings.STRIPE_SECRET_KEY) {
     throw new CheckoutConfigurationError('Stripe secret key is not configured.');
   }
 
   return new StripeCatalogGatewayClient(
-    new Stripe(bindings.STRIPE_SECRET_KEY, createStripeClientOptions(bindings.STRIPE_API_BASE_URL)),
+    new Stripe(bindings.STRIPE_SECRET_KEY, { ...createStripeClientOptions(bindings.STRIPE_API_BASE_URL), ...options }),
     /^[sr]k_live_/.test(bindings.STRIPE_SECRET_KEY)
       ? true
       : /^[sr]k_test_/.test(bindings.STRIPE_SECRET_KEY)

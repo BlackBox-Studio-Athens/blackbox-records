@@ -215,32 +215,33 @@ export function contentMediaIds(data: unknown): string[] {
   return [...ids];
 }
 
+const revisionImage = z
+  .object({
+    id: mediaId,
+    provider: z.literal('local'),
+    width: z.number().int().positive().optional(),
+    height: z.number().int().positive().optional(),
+    filename: z.string().min(1).max(200).optional(),
+    mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']).optional(),
+    blurhash: z.string().optional(),
+    dominantColor: z.string().optional(),
+    alt: z.string().optional(),
+    focalX: z.number().min(0).max(1).optional(),
+    focalY: z.number().min(0).max(1).optional(),
+    meta: z
+      .object({
+        storageKey: z.string().min(1),
+        caption: z.string().nullable().optional(),
+        blurhash: z.string().nullable().optional(),
+        dominantColor: z.string().nullable().optional(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
 // Validate native revision enrichment without weakening the editorial write contract.
 export function validateCmsRevisionContent(collection: CmsCollection, data: Record<string, unknown>) {
-  const revisionImage = z
-    .object({
-      id: mediaId,
-      provider: z.literal('local'),
-      width: z.number().int().positive().optional(),
-      height: z.number().int().positive().optional(),
-      filename: z.string().min(1).max(200).optional(),
-      mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']).optional(),
-      blurhash: z.string().optional(),
-      dominantColor: z.string().optional(),
-      alt: z.string().optional(),
-      focalX: z.number().min(0).max(1).optional(),
-      focalY: z.number().min(0).max(1).optional(),
-      meta: z
-        .object({
-          storageKey: z.string().min(1),
-          caption: z.string().nullable().optional(),
-          blurhash: z.string().nullable().optional(),
-          dominantColor: z.string().nullable().optional(),
-        })
-        .strict()
-        .optional(),
-    })
-    .strict();
   function editorialValue(value: unknown): unknown {
     if (Array.isArray(value)) return value.map(editorialValue);
     if (!value || typeof value !== 'object') return value;

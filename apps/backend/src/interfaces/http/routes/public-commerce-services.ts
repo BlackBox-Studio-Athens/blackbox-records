@@ -73,12 +73,12 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
   const storeOfferSnapshots = new PrismaStoreOfferSnapshotRepository(prisma);
   const orders = new PrismaOrderStateRepository(prisma);
   const productProjections = createRuntimeCatalogProductProjectionReader(storeItems, target);
-  const createCatalogReconciler = () =>
+  const createCatalogReconciler = (publicRead = false) =>
     new CatalogReconciler({
       environment: productEnvironmentProfile.workerDeploymentTarget,
       storeItems,
       storeOfferSnapshots,
-      stripeCatalog: createStripeCatalogGateway(bindings),
+      stripeCatalog: createStripeCatalogGateway(bindings, publicRead ? { timeout: 3000, maxNetworkRetries: 0 } : {}),
       variantStripeMappings,
     });
 
@@ -100,7 +100,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
         storeItems,
         itemAvailability,
         effectiveStock,
-        createCatalogReconciler(),
+        createCatalogReconciler(true),
         productProjections,
         storeItemSlug,
       ),
@@ -128,7 +128,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
           storeItems,
           itemAvailability,
           effectiveStock,
-          createCatalogReconciler(),
+          createCatalogReconciler(true),
           productProjections,
           line.storeItemSlug,
         );
@@ -152,7 +152,7 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
         storeItems,
         itemAvailability,
         effectiveStock,
-        createCatalogReconciler(),
+        createCatalogReconciler(true),
         productProjections,
         storeItemSlug,
       ),

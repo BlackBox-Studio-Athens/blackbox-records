@@ -1,7 +1,7 @@
 import type { ItemPackingProfile, PackagePackingProfile, PackingPolicy } from './packing';
+import { deliveryCharges } from '@blackbox/api-client/public';
 
-export const deliveryCharges = { small: 250, medium: 350 };
-export const vatDisclosure = 'VAT included. Shipping calculated in your cart.';
+export { deliveryCharges, vatDisclosure } from '@blackbox/api-client/public';
 
 // Replace with measured, explicitly assigned profiles before production acceptance.
 const measuredItems = new Map<string, ItemPackingProfile>();

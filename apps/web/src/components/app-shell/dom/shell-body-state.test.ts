@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { OVERLAY_OPEN_BODY_CLASS, PLAYER_MODAL_OPEN_BODY_CLASS, syncShellBodyStateClasses } from './shell-body-state';
 
 describe('syncShellBodyStateClasses', () => {
+  it.each([{ isCartOpen: true }, { isMenuOpen: true }])('locks native background scrolling for %o', (state) => {
+    const bodyClassList = { remove: vi.fn(), toggle: vi.fn() };
+    syncShellBodyStateClasses({ bodyClassList, isOverlayOpen: false, isPlayerModalOpen: false, ...state });
+    expect(bodyClassList.toggle).toHaveBeenCalledWith('is-shell-modal-open', true);
+  });
   it('toggles the player modal and overlay body classes from shell state', () => {
     const bodyClassList = {
       remove: vi.fn(),

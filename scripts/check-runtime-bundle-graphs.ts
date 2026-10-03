@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { brotliCompressSync, constants } from 'node:zlib';
@@ -15,6 +15,13 @@ const scope = args.get('scope') ?? 'web';
 if (scope !== 'web' && scope !== 'staff')
   throw new Error(`Unknown bundle graph scope "${scope}". Use "web" or "staff".`);
 const distRoot = resolve(args.get('dist') ?? (scope === 'staff' ? 'apps/staff/dist' : 'apps/web/dist'));
+const documentsRoot = resolve(args.get('documents') ?? distRoot);
+for (const [label, root] of [
+  ['Document', documentsRoot],
+  ['Client asset', distRoot],
+]) {
+  if (!statSync(root!).isDirectory()) throw new Error(`${label} directory is missing: ${root}`);
+}
 const output = args.get('output');
 const routeDocuments = {
   home: 'index.html',
@@ -25,7 +32,7 @@ const routeDocuments = {
 // React 19.3 plus Lenis/Motion lifecycle wiring; libraries and dormant surfaces remain lazy.
 // Measured migration output and prior budget: openspec/changes/adopt-lenis-motion-frontends/design.md.
 const eagerGraphBudgetBytes = 100 * 1024;
-const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton'];
+const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton', 'StoreImageGallery'];
 const staffRouteDocuments = {
   overview: { document: 'index.html', javascriptBudgetBytes: 122880 },
   website: { document: 'content/index.html', javascriptBudgetBytes: 176128 },
@@ -145,7 +152,7 @@ if (scope === 'staff') {
   const routes = Object.fromEntries(
     Object.entries(staffRouteDocuments).map(([route, { document, javascriptBudgetBytes }]) => {
       const routeDiagnostics: string[] = [];
-      const documentPath = join(distRoot, document);
+      const documentPath = join(documentsRoot, document);
       let html: Buffer;
       try {
         html = readFileSync(documentPath);
@@ -216,7 +223,7 @@ if (scope === 'staff') {
       ];
     }),
   );
-  const report = { scope, distRoot, htmlBudgetBytes: staffHtmlBudgetBytes, routes, diagnostics };
+  const report = { scope, distRoot, documentsRoot, htmlBudgetBytes: staffHtmlBudgetBytes, routes, diagnostics };
   const json = `${JSON.stringify(report, null, 2)}\n`;
   if (output) {
     const outputPath = resolve(output);
@@ -228,12 +235,55 @@ if (scope === 'staff') {
   }
   if (diagnostics.length > 0) throw new Error(diagnostics.join('\n'));
 } else {
+  // Select actual built item routes so catalog slug changes do not silently remove coverage.
+  const itemDocuments = readdirSync(join(documentsRoot, 'store'), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => `store/${entry.name}/index.html`)
+    .toSorted()
+    .flatMap((document) => {
+      try {
+        const html = readFileSync(join(documentsRoot, document), 'utf8');
+        return /class=["'][^"']*\bstore-item-page\b/.test(html)
+          ? [{ document, gallery: /\bdata-store-image-gallery\b|class=["']store-image-gallery["']/.test(html) }]
+          : [];
+      } catch {
+        return [];
+      }
+    });
+  const diagnostics: string[] = [];
+  const singleItem = itemDocuments.find((item) => !item.gallery);
+  const galleryItem = itemDocuments.find((item) => item.gallery);
+  if (!singleItem)
+    diagnostics.push('Missing a built single-image Store Item page; item-route budget coverage is incomplete.');
+  if (!galleryItem)
+    diagnostics.push('Missing a built gallery Store Item page; gallery-route budget coverage is incomplete.');
+  // Both item classes use the unchanged public 100 KiB budget. A measured exception requires a recorded decision.
+  const documents = {
+    ...routeDocuments,
+    ...(args.has('documents')
+      ? {
+          storeCategory: 'store/distro/index.html',
+          news: 'news/index.html',
+          releases: 'releases/index.html',
+          ...Object.fromEntries(
+            ['artists', 'releases', 'news'].flatMap((section) =>
+              readdirSync(join(documentsRoot, section), { withFileTypes: true })
+                .filter((entry) => entry.isDirectory())
+                .map((entry) => [`${section}/${entry.name}`, `${section}/${entry.name}/index.html`]),
+            ),
+          ),
+        }
+      : {}),
+    ...(singleItem ? { storeItem: singleItem.document } : {}),
+    ...(galleryItem ? { storeGalleryItem: galleryItem.document } : {}),
+  };
   const routes = Object.fromEntries(
-    Object.entries(routeDocuments).map(([route, document]) => {
-      const html = readFileSync(join(distRoot, document), 'utf8');
+    Object.entries(documents).map(([route, document]) => {
+      const html = readFileSync(join(documentsRoot, document), 'utf8');
       return [
         route,
         {
+          document,
           graph: summarize(closure(initialEntries(html))),
           thirdPartyScripts: [...html.matchAll(/<script[^>]+src="(https?:\/\/[^"]+)"/g)].map((match) => match[1]),
         },
@@ -252,22 +302,32 @@ if (scope === 'staff') {
     : [];
   const storeCartEntry = shellDynamicEntries.find((file) => /[\\/]store-cart\.[^\\/]+\.js$/.test(file));
   const storeCart = storeCartEntry ? summarize(closure([storeCartEntry])) : null;
-  const diagnostics: string[] = [];
-  if (routes.home.graph.brotliBytes > eagerGraphBudgetBytes) {
-    diagnostics.push(`Home eager graph is ${routes.home.graph.brotliBytes} bytes (budget ${eagerGraphBudgetBytes}).`);
-  }
   if (!shell || shell.brotliBytes > eagerGraphBudgetBytes) {
     diagnostics.push(
       `Shell eager graph is ${shell?.brotliBytes ?? 'missing'} bytes (budget ${eagerGraphBudgetBytes}).`,
     );
   }
   for (const [route, result] of Object.entries(routes)) {
+    if (result.graph.fileCount === 0) {
+      diagnostics.push(`${route} has no discoverable eager JavaScript entries; route budget coverage is incomplete.`);
+    }
+    if (result.graph.brotliBytes > eagerGraphBudgetBytes) {
+      diagnostics.push(`${route} eager graph is ${result.graph.brotliBytes} bytes (budget ${eagerGraphBudgetBytes}).`);
+    }
     const dormantFiles = result.graph.files.filter((row) => dormantPortalNames.some((name) => row.file.includes(name)));
     if (dormantFiles.length > 0) {
       diagnostics.push(`${route} eagerly includes dormant portals: ${dormantFiles.map((row) => row.file).join(', ')}.`);
     }
   }
-  const report = { distRoot, eagerGraphBudgetBytes, routes, shell, storeCart, diagnostics };
+  if (args.has('documents')) {
+    // strictExecutionOrder belongs to SSR only. Inspect all client chunks, including dormant island entries.
+    for (const file of readdirSync(join(distRoot, '_astro')).filter((file) => file.endsWith('.js'))) {
+      const source = readFileSync(join(distRoot, '_astro', file), 'utf8');
+      if (/\b__esm(?:Min)?\b|\b__init_\w+\b/.test(source))
+        diagnostics.push(`Hosted client chunk ${file} contains an SSR execution-order wrapper.`);
+    }
+  }
+  const report = { distRoot, documentsRoot, eagerGraphBudgetBytes, routes, shell, storeCart, diagnostics };
   const json = `${JSON.stringify(report, null, 2)}\n`;
   if (output) {
     const outputPath = resolve(output);

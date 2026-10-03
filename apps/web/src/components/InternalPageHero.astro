@@ -1,6 +1,7 @@
 ---
 import type { ImageMetadata } from 'astro';
 import { Image } from 'astro:assets';
+import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { Badge } from '@/components/ui/badge';
 import { resolveSupportingLabel } from '@/lib/page-identity';
@@ -16,6 +17,7 @@ interface Props {
 
 const { sectionLabel, title, image, imageAlt, imageColor = false, firstViewportPriority = false } = Astro.props;
 const resolvedSectionLabel = resolveSupportingLabel(sectionLabel, title);
+const heroImageWidths = [720, 1080, 1200, 1440, 1800];
 const heroImageClass = `internal-page-hero__image h-[20rem] w-full object-cover sm:h-[24rem]${imageColor ? '' : ' grayscale'}`;
 ---
 
@@ -29,17 +31,12 @@ const heroImageClass = `internal-page-hero__image h-[20rem] w-full object-cover 
         {resolvedSectionLabel}
       </Badge>
     )}
-    <h1 class="internal-page-hero__title mt-4 uppercase text-foreground" transition:name="internal-page-hero-title">
-      {title.toUpperCase()}
-    </h1>
+    <h1 class="internal-page-hero__title mt-4 uppercase text-foreground">{title.toUpperCase()}</h1>
   </div>
 </section>
 {image && (
   <section class="layout-container">
-    <div
-      class="relative overflow-hidden rounded-xl border border-border/70 bg-card shadow-2xl shadow-black/35"
-      transition:name="internal-page-hero-image"
-    >
+    <div class="relative overflow-hidden rounded-xl border border-border/70 bg-card shadow-2xl shadow-black/35">
       {typeof image === 'string' ? (
         <img
           src={createProjectRelativeUrl(image)}
@@ -53,8 +50,10 @@ const heroImageClass = `internal-page-hero__image h-[20rem] w-full object-cover 
           src={image}
           alt={imageAlt || title}
           class={heroImageClass}
-          widths={[720, 1080, 1200, 1440, 1800]}
+          widths={heroImageWidths}
+          width={largestImageWidth(image, heroImageWidths)}
           sizes="(min-width: 1024px) 72rem, 100vw"
+          quality={editorialImageQuality}
           priority={firstViewportPriority}
         />
       )}

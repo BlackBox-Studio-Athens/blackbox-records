@@ -1,7 +1,7 @@
 import { listDistroEntries, listStoreItems, type DistroCatalogEntry, type StoreItem } from './catalog-data';
 import { groupDistroEntries } from './distro-data';
 import type { DistroGroupName, DistroIntroKey } from '@blackbox/content-model';
-import { getPrimaryAvailabilityForStoreItem, type ItemAvailability } from './item-availability';
+import { createStoreItemAvailability, type ItemAvailability } from './item-availability';
 import { type StoreCatalogCategoryId } from './store-categories';
 import { isReleaseOutNow } from './release-feature';
 
@@ -152,34 +152,32 @@ export async function listStoreCollectionEntries(
 ): Promise<StoreCollectionEntry[]> {
   const [storeItems, distroEntries] = await Promise.all([listStoreItems(), listDistroEntries()]);
   const distroEntriesById = new Map(distroEntries.map((entry) => [entry.id, entry]));
-  const entries = await Promise.all(
-    storeItems.map(async (storeItem): Promise<StoreCollectionEntry> => {
-      const distroEntry = storeItem.sourceKind === 'distro' ? distroEntriesById.get(storeItem.sourceId) : undefined;
-      if (storeItem.sourceKind === 'distro' && !distroEntry) {
-        throw new Error(`Distro Store Item ${storeItem.slug} has no matching Distro source entry.`);
-      }
+  const entries = storeItems.map((storeItem): StoreCollectionEntry => {
+    const distroEntry = storeItem.sourceKind === 'distro' ? distroEntriesById.get(storeItem.sourceId) : undefined;
+    if (storeItem.sourceKind === 'distro' && !distroEntry) {
+      throw new Error(`Distro Store Item ${storeItem.slug} has no matching Distro source entry.`);
+    }
 
-      const distro = distroEntry
-        ? {
-            format: distroEntry.data.format || null,
-            group: distroEntry.data.group,
-            order: distroEntry.data.order,
-          }
-        : null;
+    const distro = distroEntry
+      ? {
+          format: distroEntry.data.format || null,
+          group: distroEntry.data.group,
+          order: distroEntry.data.order,
+        }
+      : null;
 
-      return {
-        categoryIds: classifyStoreCatalogMembership({
-          distroGroup: distro?.group,
-          sourceId: storeItem.sourceId,
-          sourceKind: storeItem.sourceKind,
-        }),
-        distro,
-        previewImage: distroEntry?.data.gallery?.find(({ image }) => image.src !== storeItem.image.src) ?? null,
-        primaryAvailability: await getPrimaryAvailabilityForStoreItem(storeItem.slug),
-        storeItem,
-      };
-    }),
-  );
+    return {
+      categoryIds: classifyStoreCatalogMembership({
+        distroGroup: distro?.group,
+        sourceId: storeItem.sourceId,
+        sourceKind: storeItem.sourceKind,
+      }),
+      distro,
+      previewImage: distroEntry?.data.gallery?.find(({ image }) => image.src !== storeItem.image.src) ?? null,
+      primaryAvailability: createStoreItemAvailability(storeItem),
+      storeItem,
+    };
+  });
 
   assertStoreCollectionInvariants(entries, 'all');
 

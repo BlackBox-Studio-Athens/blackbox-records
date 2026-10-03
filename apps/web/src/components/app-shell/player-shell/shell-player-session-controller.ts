@@ -102,10 +102,12 @@ export function createShellPlayerSessionController({
     const activeId = activePlayerSessionRef.current?.releaseId;
     for (const trigger of getTargetDocument().querySelectorAll<HTMLElement>('[data-music-listen-source-id]')) {
       const selected = Boolean(activeId && trigger.dataset.musicListenSourceId === activeId);
-      trigger.dataset.musicListenSession = selected ? 'active' : 'idle';
-      trigger.toggleAttribute('disabled', selected);
+      const sessionState = selected ? 'active' : 'idle';
+      if (trigger.dataset.musicListenSession !== sessionState) trigger.dataset.musicListenSession = sessionState;
+      if (trigger.hasAttribute('disabled') !== selected) trigger.toggleAttribute('disabled', selected);
       const label = trigger.querySelector<HTMLElement>('[data-music-listen-label]');
-      if (label) label.textContent = selected ? 'In player' : trigger.dataset.musicListenDefaultLabel || 'Listen';
+      const labelText = selected ? 'In player' : trigger.dataset.musicListenDefaultLabel || 'Listen';
+      if (label && label.textContent !== labelText) label.textContent = labelText;
     }
   }
 

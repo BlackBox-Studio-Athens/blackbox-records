@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { getCollection } from 'astro:content';
 import distroPage from '../content/distro-page/site.json';
 
 const galleryFixture = vi.hoisted(() => ({
@@ -91,6 +92,14 @@ import {
 } from './store-collection';
 
 describe('store collection entries', () => {
+  it('reads collections a bounded number of times without a lookup per Store Item', async () => {
+    vi.mocked(getCollection).mockClear();
+    await listStoreCollectionEntries();
+    expect(getCollection).toHaveBeenCalledTimes(3);
+    expect(getCollection).toHaveBeenNthCalledWith(1, 'releases');
+    expect(getCollection).toHaveBeenNthCalledWith(2, 'distro');
+    expect(getCollection).toHaveBeenNthCalledWith(3, 'distro');
+  });
   it('selects the first different gallery source without changing primary or commerce projections', async () => {
     const baseline = await listStoreCollectionEntries();
     expect(baseline.every((entry) => entry.previewImage === null)).toBe(true);

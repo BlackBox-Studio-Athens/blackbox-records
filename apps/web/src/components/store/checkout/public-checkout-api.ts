@@ -1,14 +1,12 @@
 import { createPublicApiFetcher, type PublicApiComponents } from '@blackbox/api-client/public';
 
-import { getPublicBackendBaseUrl } from '../../../platform/lib/backend/public-backend-config';
+import { resolvePublicCheckoutApiBaseUrl } from './public-checkout-presentation';
+
+export { formatStoreLowStockLabel, resolvePublicCheckoutApiBaseUrl } from './public-checkout-presentation';
 
 export type PublicStoreOffer = PublicApiComponents['schemas']['PublicStoreOffer'];
 export type PublicStoreListingPrice = PublicApiComponents['schemas']['PublicStoreListingPrice'];
 
-// The Worker sends a count only when staff enabled the notice for the item and few copies remain online.
-export function formatStoreLowStockLabel(lowStockQuantity: number | undefined): string | null {
-  return lowStockQuantity && lowStockQuantity > 0 ? `Only ${lowStockQuantity} left` : null;
-}
 export type StoreCapabilities = PublicApiComponents['schemas']['StoreCapabilities'];
 export type CheckoutState = PublicApiComponents['schemas']['CheckoutState'];
 export type NewsletterRegistrationBody = PublicApiComponents['schemas']['NewsletterRegistrationBody'];
@@ -22,10 +20,14 @@ export type DeliveryQuoteResponse = PublicApiComponents['schemas']['DeliveryQuot
 
 export async function readDeliveryQuote(
   lines: NonNullable<StartCheckoutBody['lines']>,
+  signal?: AbortSignal,
 ): Promise<DeliveryQuoteResponse> {
   const fetcher = createPublicApiFetcher(resolvePublicCheckoutApiBaseUrl());
   const request = fetcher.path('/api/store/delivery-quote').method('post').create();
-  return readPublicCheckoutResponse(() => request({ lines }), 'Could not calculate delivery.');
+  return readPublicCheckoutResponse(
+    () => request({ lines }, signal ? { signal } : undefined),
+    'Could not calculate delivery.',
+  );
 }
 
 type OpenApiErrorLike = {
@@ -54,9 +56,7 @@ export class PublicCheckoutApiError extends Error {
   }
 }
 
-export function resolvePublicCheckoutApiBaseUrl(configuredValue = import.meta.env.PUBLIC_BACKEND_BASE_URL): string {
-  return getPublicBackendBaseUrl(configuredValue) ?? '';
-}
+const storeOfferReads = new Map<string, Promise<PublicStoreOffer>>();
 
 export function createPublicCheckoutApi(
   configuredBackendBaseUrl = import.meta.env.PUBLIC_BACKEND_BASE_URL,
@@ -84,11 +84,16 @@ export function createPublicCheckoutApi(
         'Could not load checkout capabilities.',
       );
     },
-    async readStoreOffer(storeItemSlug: string) {
-      return readPublicCheckoutResponse(
+    readStoreOffer(storeItemSlug: string) {
+      const key = JSON.stringify([backendBaseUrl, storeItemSlug]);
+      const existing = storeOfferReads.get(key);
+      if (existing) return existing;
+      const pending = readPublicCheckoutResponse(
         () => readStoreOfferRequest({ storeItemSlug }),
         'Could not load the store offer.',
-      );
+      ).finally(() => storeOfferReads.delete(key));
+      storeOfferReads.set(key, pending);
+      return pending;
     },
     async readStoreOfferVariants(storeItemSlug: string) {
       return readPublicCheckoutResponse(

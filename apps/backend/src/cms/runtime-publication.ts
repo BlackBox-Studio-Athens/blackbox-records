@@ -13,6 +13,7 @@ import {
 } from '@blackbox/content-model';
 import {
   activatePublication,
+  publicationPointerSchema,
   readPublicationPointer,
   readPublishedSnapshot,
   type PublicationEnvironment,
@@ -23,6 +24,7 @@ import { guardItemLifecycle, readPublicationCatalog } from './item-publication-r
 import { publicationSummary, readPublication } from './publication-journal';
 import { reviewPublication } from './publication-review';
 import { projectPublicationStoreItems, readPublicationMedia, readRevisionContent } from './publication-projection';
+import { publicInvalidationPath } from './public-publication-cache';
 
 const identifier = publicationRecordSchema.shape.recordId;
 const selectedRecordSchema = publicationRecordSchema;
@@ -462,6 +464,25 @@ export async function processRuntimePublication(deps: Dependencies) {
     await deps.bucket.put(`snapshots/${deps.environment}/accepted/${pointer.snapshotSha256}`, job.id, {
       onlyIf: { etagDoesNotMatch: '*' },
     });
+    const invalidation = await deps.renderer.fetch(
+      new Request(new URL(publicInvalidationPath, deps.publicOrigin), {
+        method: 'POST',
+        body: JSON.stringify(pointer),
+        headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(10000),
+      }),
+    );
+    if (!invalidation.ok) {
+      await invalidation.body?.cancel();
+      throw new Error('Publication cache invalidation unavailable.');
+    }
+    publicationPointerSchema
+      .extend({
+        id: z.literal(job.id),
+        snapshotSha256: z.literal(pointer.snapshotSha256),
+        generation: z.literal(pointer.generation),
+      })
+      .parse(await invalidation.json());
     const confirmation = new Request(new URL('/content-version.json', deps.publicOrigin), {
       cache: 'no-store',
       signal: AbortSignal.timeout(10000),
@@ -477,6 +498,13 @@ export async function processRuntimePublication(deps: Dependencies) {
         content: z.object({ publicationId: z.literal(job.id), snapshotSha256: z.literal(pointer.snapshotSha256) }),
       })
       .parse(await response.json());
+    const active = await readPublicationPointer(deps.bucket, deps.environment);
+    if (
+      active?.pointer.id !== job.id ||
+      active.pointer.snapshotSha256 !== pointer.snapshotSha256 ||
+      active.pointer.generation !== pointer.generation
+    )
+      throw new InvalidPublication('A newer publication is already active.');
     await deps.db
       .prepare(
         `UPDATE _blackbox_publications SET status = 'live', stage = 'live', completed_at = ?, snapshot_sha256 = ?, code_sha = ?, ci_run_id = 'runtime', deployment_id = ?, failure_code = NULL WHERE id = ? AND environment = ? AND status = 'pending'`,

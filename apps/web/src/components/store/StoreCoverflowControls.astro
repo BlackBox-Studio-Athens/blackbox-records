@@ -2,6 +2,7 @@
 import { Check } from 'lucide-react';
 
 import { buttonVariants } from '@/components/ui/button';
+import './store-chrome.css';
 
 interface Props {
   catalogId: string;
@@ -12,9 +13,16 @@ const viewToggle = buttonVariants({ variant: 'chip', size: 'sm' });
 const stepButton = buttonVariants({ variant: 'outline', size: 'sm' });
 ---
 
-<div class="store-coverflow-controls" data-store-coverflow-controls hidden>
+<div class="store-coverflow-controls" data-store-coverflow-controls>
   <div class="store-coverflow-actions" role="group" aria-label="Catalogue view">
-    <button type="button" class={viewToggle} aria-controls={catalogId} aria-pressed="true" data-store-coverflow-toggle>
+    <button
+      type="button"
+      class={viewToggle}
+      aria-controls={catalogId}
+      aria-pressed="true"
+      data-store-coverflow-toggle
+      disabled
+    >
       <Check className="hidden size-3 group-aria-pressed:inline-block" aria-hidden="true" />
       Grid
     </button>
@@ -24,14 +32,15 @@ const stepButton = buttonVariants({ variant: 'outline', size: 'sm' });
       aria-controls={catalogId}
       aria-pressed="false"
       data-store-coverflow-preview
+      disabled
     >
       <Check className="hidden size-3 group-aria-pressed:inline-block" aria-hidden="true" />
       Coverflow
     </button>
-    <button type="button" class={stepButton} aria-controls={catalogId} data-store-coverflow-previous>
+    <button type="button" class={stepButton} aria-controls={catalogId} data-store-coverflow-previous disabled>
       Previous
     </button>
-    <button type="button" class={stepButton} aria-controls={catalogId} data-store-coverflow-next>
+    <button type="button" class={stepButton} aria-controls={catalogId} data-store-coverflow-next disabled>
       Next
     </button>
   </div>

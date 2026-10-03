@@ -21,3 +21,13 @@ Every future entry records:
 - comparison classification: like-for-like, directional, or incomparable;
 - measured outcome, field-data confidence, detailed report path, and accepted follow-up;
 - explicit unavailable data and excluded tooling or browser noise.
+
+## Entries registered after recovery
+
+| Report | Date | Type | Round | Change ID | Tested reference | Environment | Comparison and outcome | Detail |
+| --- | --- | --- | ---: | --- | --- | --- | --- | --- |
+| PERF-004 | 2026-10-02 | Independent post-commerce audit | 3 | `improve-site-performance-round-three` and `bound-hosted-delivery-cost` | `e818b709a2364aa29dfd54cadcd0433779a1f263` | Local production static | Historical Chromium141 audit justified both children; ignored raw traces were absent on remote recovery, so fresh browser comparisons are directional or incomparable | [Recovered review](../../improve-site-performance-round-three/reports/PERF-004-review-e818b70.md) |
+| PERF-005 | 2026-10-03 | Local implementation and acceptance record | 3 | `improve-site-performance-round-three` | `fe099b01cea42266cdf21c2318851af361db1210` plus recorded uncommitted source fingerprints | Local production static | Linear data reads, smaller eager graphs, native scrolling and bounded images/surfaces; like-for-like Node/current-build A/B evidence, source-bound final checks; visual/history/predecessor gates remain open | [Round-three report](../../improve-site-performance-round-three/performance-report.md) |
+| PERF-006 | 2026-10-03 | Local hosted-delivery implementation record | 3 | `bound-hosted-delivery-cost` | `fe099b01cea42266cdf21c2318851af361db1210` plus recorded uncommitted source fingerprints | Local UAT-shaped SSR emulation | Persisted byte LRU, activation invalidation, direct bounded Images URLs, gateway and actual local rendered-output gates; native purge, provider bytes/account cost, quota-failure crawler fallback and release/pilot acceptance remain open | [Hosted report](../../bound-hosted-delivery-cost/performance-report.md) |
+
+PERF-005 records URL, production build, Chromium153 version, device/DPR, CPU/network, fresh-context state and run counts; individual artifacts retain source/build hashes. The Node and same-build feature comparisons are local lab evidence with shared-machine noise excluded from causal claims. PERF-006 records snapshot and renderer identities for local-only capture. Neither report claims field Core Web Vitals, hosted publication, provider acceptance or archival. Earlier entries and measurements above remain unchanged.

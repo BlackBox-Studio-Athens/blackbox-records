@@ -63,6 +63,7 @@ function createScheduler({ innerHeight = 1000 } = {}) {
       animationFrameCallbacks.get(id)?.(performance.now());
     },
     innerHeight,
+    scrollY: 0,
     removeEventListener: vi.fn(),
     requestAnimationFrame: vi.fn((callback: FrameRequestCallback) => {
       const id = nextAnimationFrameId;
@@ -154,6 +155,8 @@ describe('connectHomepageHeroScrollProgress', () => {
     scheduler.flushAnimationFrame();
 
     expect(heroElement.classList.toggle).toHaveBeenCalledTimes(1);
+    expect(heroElement.getBoundingClientRect).toHaveBeenCalledTimes(1);
+    expect(scheduler.requestAnimationFrame).toHaveBeenCalledTimes(1);
   });
 
   it('toggles the hero when the threshold state changes', () => {
@@ -168,6 +171,7 @@ describe('connectHomepageHeroScrollProgress', () => {
 
     scheduler.flushAnimationFrame();
     heroElement.setTop(-210);
+    scheduler.scrollY = 210;
     const scrollListener = scheduler.addEventListener.mock.calls.find(([type]) => type === 'scroll')?.[1] as
       (() => void) | undefined;
     scrollListener?.();
@@ -233,6 +237,7 @@ describe('homepage hero fade without scroll timelines', () => {
     expect(ghost.currentTime).toBe(-1);
 
     heroElement.setTop(-900);
+    scheduler.scrollY = 690;
     findScrollListener(scheduler)();
     scheduler.flushAnimationFrame();
     expect([ghost.currentTime, veil.currentTime]).toEqual([1000, 1000]);

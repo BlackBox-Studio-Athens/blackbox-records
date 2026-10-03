@@ -1,6 +1,23 @@
+---
+import { getStoreArtistChoices, StoreArtistControls } from './StoreDistroSearch';
+import type { StoreCollectionEntry } from '@/lib/store-collection';
+import './store-chrome.css';
+interface Props {
+  entries: StoreCollectionEntry[];
+  resultsId: string;
+}
+const { entries, resultsId } = Astro.props;
+const choices = [
+  { key: '', label: 'All artists', count: entries.length },
+  ...getStoreArtistChoices(entries.map(({ storeItem }) => ({ artist: storeItem.subtitle }))),
+];
+---
+
 <aside class="store-browse-pane">
   <slot name="formats" />
-  <div class="store-browse-content" data-store-artists></div>
+  <div class="store-browse-content" data-store-artists>
+    <StoreArtistControls choices={choices} resultsId={resultsId} />
+  </div>
   <a class="store-browse-top" href="#store-page-top" data-scroll-to-target="store-page-top">
     Top ↑
   </a>

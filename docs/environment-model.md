@@ -4,6 +4,12 @@ BlackBox Records uses three Product Environments: Local, UAT, and PRD. Other nam
 
 Public HTML renders from accepted snapshots behind the existing Pages origins. Pages retains static assets and the public GET/HEAD gateway. Each environment has its own renderer and R2 pointer; commerce and staff remain in the backend. See [content publication](content-publication.md).
 
+The hosted release derives its gateway allowlist from Astro's resolved routes and excludes `/favicon*`, `/_astro/*`, `/assets/*` and `/robots.txt` from the Function. CMS image markup references the Images host directly, always using the environment's configured canonical Pages source origin. Public and publication work use separate disposable cache instances (`public-v2`, `publication-v2`) with an Eastern Europe placement hint; accepted state remains in R2 and the CMS journal.
+
+### Static fallback decision remains open
+
+The release continues retaining the complete static frontend alongside the hosted renderer. Choosing Pages fail-open can keep that static surface available if the Function quota is exhausted, with additional build/upload cost and the risk of serving older editorial content. Choosing fail-closed removes that recovery surface and returns an explicit unavailable response, reducing build/upload work but making renderer or quota outages visible to shoppers. A gateway response of 503 does not itself choose the platform's quota-exhaustion behavior. The owner must decide and verify the Pages policy before pruning static artifacts (HOST-11). This change selects neither option and retains the existing build artifacts and platform configuration.
+
 ## Matrix
 
 | Product Environment | Normal mode or surface   | Static frontend                                                   | Worker runtime target                       | D1 store                  | Stripe/provider mode                 | CI credential scope     | Secret store                                                                                    | Validation gates                                                                                                                                              |
@@ -44,7 +50,7 @@ Activation order is fixed:
 4. Add the proxied `www` CNAME and exact-host `308` rules for HTTP apex and `www` canonicalization, preserving path and query.
 5. Immediately verify target identity, TLS, redirects, canonical/noindex headers, 404 behavior, and absence of registrar parking.
 
-If activation exposes the wrong target, the full site, invalid TLS, broken metadata, or incorrect redirects, remove only the newly added holding redirect rules and `www` record, then restore the recorded apex target only if it changed. At approved full-site launch, repoint the apex to production `main` only after every production-go-live gate passes, and keep the verified holding branch available as rollback until launch stability is accepted.
+If activation exposes the wrong target, the full site, invalid TLS, broken metadata, or incorrect redirects, remove only the newly added holding redirect rules and `www` record, then restore the recorded apex target only if it changed. At approved full-site launch, repoint the apex to production `main` only after every production-go-live gate passes, and keep the verified holding branch available as rollback until launch stability is accepted. Public image transformations need no code change for the apex: the renderer always uses the environment's configured Images source (`PUBLIC_IMAGE_SOURCE_ORIGIN`, the Pages origin approved in the Images settings). Right after the apex serves `main`, run `pnpm smoke:uat-static -- --site-url https://blackboxrecordsathens.com --scenario image_transform`.
 
 The disabled PRD readiness probe does not require live Stripe secrets. Resend runtime config is still environment-scoped because email delivery and newsletter Contact writes are backend-owned. Confirmed PRD catalog runs use `pnpm runtime:config:verify --env prd --require-live-secrets` before live provider mutation.
 

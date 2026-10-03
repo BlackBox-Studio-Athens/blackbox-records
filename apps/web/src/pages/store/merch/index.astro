@@ -2,10 +2,12 @@
 import StoreCollectionPage from '@/layouts/StoreCollectionPage.astro';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import RedirectLayout from '@/layouts/RedirectLayout.astro';
-import { getStoreCatalogCategory } from '@/lib/store-categories';
-import { listStoreCollectionEntries } from '@/lib/store-collection';
+import { getDiscoverableStoreCatalogCategories, getStoreCatalogCategory } from '@/lib/store-categories';
+import { listStoreCollectionEntries, selectStoreCollectionEntries } from '@/lib/store-collection';
 
-const collectionEntries = await listStoreCollectionEntries('merch');
+const allEntries = await listStoreCollectionEntries();
+const collectionEntries = selectStoreCollectionEntries(allEntries, 'merch');
+const discoverableCategories = getDiscoverableStoreCatalogCategories(allEntries.flatMap((entry) => entry.categoryIds));
 const redirectUrl = createProjectRelativeUrl('/store/');
 ---
 
@@ -24,5 +26,9 @@ const redirectUrl = createProjectRelativeUrl('/store/');
     </p>
   </RedirectLayout>
 ) : (
-  <StoreCollectionPage category={getStoreCatalogCategory('merch')} entries={collectionEntries} />
+  <StoreCollectionPage
+    category={getStoreCatalogCategory('merch')}
+    entries={collectionEntries}
+    discoverableCategories={discoverableCategories}
+  />
 )}

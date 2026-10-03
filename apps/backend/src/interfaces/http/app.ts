@@ -14,7 +14,7 @@ import { registerPublicRoutes } from './routes/register-public-routes';
 declare const RELEASE_SOURCE_SHA: string;
 declare const RELEASE_RUN_NUMBER: string;
 
-export function createHttpApp(): AppOpenApi {
+export function createHttpApp({ preflightOnly = false } = {}): AppOpenApi {
   const app = new OpenAPIHono<AppEnv>({
     defaultHook(result, context) {
       if (!result.success) {
@@ -53,8 +53,10 @@ export function createHttpApp(): AppOpenApi {
     }),
   );
 
-  registerPublicRoutes(app, getPublicOpenApiDocument);
-  registerInternalRoutes(app, getInternalOpenApiDocument);
+  if (!preflightOnly) {
+    registerPublicRoutes(app, getPublicOpenApiDocument);
+    registerInternalRoutes(app, getInternalOpenApiDocument);
+  }
 
   app.notFound(notFoundHandler);
   app.onError(errorHandler);

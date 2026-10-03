@@ -1,4 +1,8 @@
-import { createExactFirstSearcher, getExactFirstMatches } from '@/lib/exact-first-search';
+import {
+  createExactFirstSearcher,
+  getExactFirstMatches,
+  type ExactFirstSearcherOptions,
+} from '@/lib/exact-first-search';
 
 type ArtistRosterSearchable = {
   title: string;
@@ -8,6 +12,9 @@ export function getArtistRosterExactMatches<T extends ArtistRosterSearchable>(it
   return getExactFirstMatches(items, query, (item) => item.title);
 }
 
-export function createArtistRosterSearcher<T extends ArtistRosterSearchable>(items: T[]) {
-  return createExactFirstSearcher(items, (item) => item.title);
+export function createArtistRosterSearcher<T extends ArtistRosterSearchable>(
+  items: T[],
+  options?: ExactFirstSearcherOptions,
+) {
+  return createExactFirstSearcher(items, (item) => item.title, options);
 }

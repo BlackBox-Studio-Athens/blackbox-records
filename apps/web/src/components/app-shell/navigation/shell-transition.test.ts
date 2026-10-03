@@ -6,7 +6,9 @@ vi.mock('astro:config/client', () => ({ base: '/blackbox-records/', site: 'https
 
 describe('shell page enter transition', () => {
   it('fades <main> without a transform, so fixed descendants stay viewport-fixed', async () => {
-    const { triggerShellPageEnterTransition } = await import('./shell-transition');
+    const { triggerShellPageEnterTransition, warmShellNavigationMotion } = await import('./shell-transition');
+    expect(animate).not.toHaveBeenCalled();
+    await warmShellNavigationMotion();
     const mainElement = { style: { removeProperty: vi.fn() } } as unknown as HTMLElement;
 
     // motion/mini loads through a dynamic import, so retry until the animation runs.

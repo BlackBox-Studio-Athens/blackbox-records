@@ -1,6 +1,12 @@
-import { animate } from 'motion';
+type CoverflowAnimation = { finished: Promise<unknown>; stop: () => void };
 
-type MotionControls = ReturnType<typeof animate>;
+const POSITION_DURATION_MS = 360;
+const POSITION_EASING = 'cubic-bezier(0.22, 1, 0.36, 1)';
+// Motion's named easeOut curve, kept from the previous Motion-driven opacity fade.
+const OPACITY_DURATION_MS = 180;
+const OPACITY_EASING = 'cubic-bezier(0, 0, 0.58, 1)';
+const STAGE_FADE_DURATION_MS = 220;
+const PREVIEW_IMAGE_SIZES = '(min-width: 40rem) 16rem, 56vw';
 
 const COVERFLOW_POSITIONS = ['active', 'right-near', 'right-far', 'back', 'left-far', 'left-near'] as const;
 const POINTER_INTENT_DISTANCE = 10;
@@ -9,6 +15,22 @@ const TOUCH_HORIZONTAL_DOMINANCE = 1.25;
 const WHEEL_THRESHOLD = 48;
 const WHEEL_GESTURE_GAP_MS = 160;
 const WHEEL_REPEAT_GAP_MS = 120;
+
+/**
+ * Runs native Web Animations without fill, so the CSS destination applies once they end and
+ * no inline style needs to be committed or cleared. Browsers without element.animate skip motion.
+ */
+function animateElement(
+  element: HTMLElement,
+  animations: readonly { keyframes: Keyframe[]; options: KeyframeAnimationOptions }[],
+): CoverflowAnimation | null {
+  if (typeof element.animate !== 'function') return null;
+  const running = animations.map(({ keyframes, options }) => element.animate(keyframes, options));
+  return {
+    finished: Promise.all(running.map((animation) => animation.finished)),
+    stop: () => running.forEach((animation) => animation.cancel()),
+  };
+}
 
 export type StoreCoverflowState =
   { mode: 'preview'; activeIndex: number } | { mode: 'catalog'; selectedIndex?: number } | { mode: 'search-results' };
@@ -212,25 +234,31 @@ export function createStoreCoverflowController(
   if (dom.groups.length === 0 || !documentElement.hasAttribute('data-store-coverflow-capable')) return null;
 
   let revision = 0;
-  let inFlight: MotionControls[] | null = null;
-  const positionAnimations = new Map<HTMLElement, MotionControls>();
+  let inFlight: CoverflowAnimation[] | null = null;
+  const positionAnimations = new Map<HTMLElement, CoverflowAnimation>();
+  const wheelListenerSyncs = new Map<StoreCoverflowGroup, () => void>();
   const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
   const prefersReducedMotion = () => motionPreference.matches;
   let focusedGroupElement: HTMLElement | null = null;
   let searchActive = false;
 
   const renderGroup = (group: StoreCoverflowGroup) => {
+    for (const button of [group.toggleButton, group.previewButton, group.previousButton, group.nextButton]) {
+      button.disabled = false;
+    }
     group.element.toggleAttribute('data-store-coverflow-ready', true);
     if (group.state.mode === 'preview') group.element.setAttribute('aria-roledescription', 'carousel');
     else group.element.removeAttribute('aria-roledescription');
-    if (group.element.dataset.storeCoverflowMode !== group.state.mode) {
+    // Catalog and search results share the grid sizes, so only entering or leaving preview rewrites them.
+    if ((group.element.dataset.storeCoverflowMode === 'preview') !== (group.state.mode === 'preview')) {
       group.element.querySelectorAll<HTMLImageElement>('img[data-store-grid-sizes]').forEach((image) => {
-        image.sizes = group.state.mode === 'preview' ? '(min-width: 40rem) 16rem, 56vw' : image.dataset.storeGridSizes!;
+        image.sizes = group.state.mode === 'preview' ? PREVIEW_IMAGE_SIZES : image.dataset.storeGridSizes!;
       });
     }
     group.toggleButton.setAttribute('aria-pressed', String(group.state.mode !== 'preview'));
     group.previewButton.setAttribute('aria-pressed', String(group.state.mode === 'preview'));
     group.element.dataset.storeCoverflowMode = group.state.mode;
+    wheelListenerSyncs.get(group)?.();
 
     if (group.state.mode === 'preview') {
       const activeIndex = group.state.activeIndex;
@@ -269,7 +297,11 @@ export function createStoreCoverflowController(
       if (group.currentValue) group.currentValue.textContent = String(currentPosition);
       if (group.remainingValue) group.remainingValue.textContent = String(group.cards.length - currentPosition);
       group.summary.textContent = `You're viewing ${currentPosition} of ${group.cards.length}.`;
-      group.element.style.setProperty('--store-coverflow-position-ratio', String(currentPosition / group.cards.length));
+      // Only the rail fill reads the ratio; setting it on the group would restyle every card below it.
+      group.disclosureRail.style.setProperty(
+        '--store-coverflow-position-ratio',
+        String(currentPosition / group.cards.length),
+      );
       group.status.textContent = group.cards[group.state.activeIndex]!.getAttribute('aria-label') || '';
       return;
     }
@@ -285,9 +317,29 @@ export function createStoreCoverflowController(
     if (!group.element.hasAttribute('data-store-coverflow-transitioning')) setAriaDisabled(group.toggleButton, false);
   };
 
+  const getPositionedCards = (group: StoreCoverflowGroup, state: StoreCoverflowState) =>
+    state.mode === 'preview'
+      ? group.cards.filter((_, cardIndex) =>
+          Boolean(getStoreCoverflowPosition(cardIndex, state.activeIndex, group.cards.length)),
+        )
+      : [];
+
   const setGroupState = (group: StoreCoverflowGroup, state: StoreCoverflowState, animatePositions = true) => {
+    // Unpositioned cards keep the default opacity and transform in every mode, so only cards that are
+    // positioned, still animating or about to be positioned can move. Reading just those keeps a step
+    // or a search switch from measuring the whole catalog.
+    const shouldAnimate = animatePositions && !prefersReducedMotion();
+    const movingCards = shouldAnimate
+      ? [
+          ...new Set([
+            ...group.positionedCards,
+            ...group.cards.filter((card) => positionAnimations.has(card)),
+            ...getPositionedCards(group, state),
+          ]),
+        ]
+      : [];
     const previousStyles = new Map(
-      group.cards.map((card) => {
+      movingCards.map((card) => {
         const style = getComputedStyle(card);
         const opacity = Number.parseFloat(style.opacity);
         return [
@@ -299,16 +351,16 @@ export function createStoreCoverflowController(
         ] as const;
       }),
     );
-    // Read the current frame, then release Motion's inline styles before measuring the CSS destination.
+    // Read the current frame, then cancel running animations before measuring the CSS destination.
     stopPositionAnimations(group);
     group.state = state;
     if (state.mode === 'preview') group.lastActiveIndex = state.activeIndex;
     if (state.mode === 'catalog' && state.selectedIndex !== undefined) group.lastActiveIndex = state.selectedIndex;
     renderGroup(group);
-    if (!animatePositions || prefersReducedMotion()) return [];
+    if (!shouldAnimate) return [];
 
-    const animations: MotionControls[] = [];
-    for (const card of group.cards) {
+    const animations: CoverflowAnimation[] = [];
+    for (const card of movingCards) {
       const previous = previousStyles.get(card)!;
       const style = getComputedStyle(card);
       const opacity = Number.parseFloat(style.opacity);
@@ -319,32 +371,22 @@ export function createStoreCoverflowController(
       if (previous.opacity === target.opacity && previous.transform === target.transform) continue;
 
       positionAnimations.get(card)?.stop();
-      const animation = animate(
-        card,
-        { opacity: [previous.opacity, target.opacity], transform: [previous.transform, target.transform] },
+      const animation = animateElement(card, [
         {
-          duration: 0.36,
-          ease: [0.22, 1, 0.36, 1],
-          opacity: { duration: 0.18, ease: 'easeOut' },
+          keyframes: [{ transform: previous.transform }, { transform: target.transform }],
+          options: { duration: POSITION_DURATION_MS, easing: POSITION_EASING },
         },
-      );
+        {
+          keyframes: [{ opacity: previous.opacity }, { opacity: target.opacity }],
+          options: { duration: OPACITY_DURATION_MS, easing: OPACITY_EASING },
+        },
+      ]);
+      if (!animation) continue;
       positionAnimations.set(card, animation);
-      void animation.finished.then(
-        () => {
-          if (positionAnimations.get(card) === animation) {
-            positionAnimations.delete(card);
-            card.style.removeProperty('transform');
-            card.style.removeProperty('opacity');
-          }
-        },
-        () => {
-          if (positionAnimations.get(card) === animation) {
-            positionAnimations.delete(card);
-            card.style.removeProperty('transform');
-            card.style.removeProperty('opacity');
-          }
-        },
-      );
+      const release = () => {
+        if (positionAnimations.get(card) === animation) positionAnimations.delete(card);
+      };
+      void animation.finished.then(release, release);
       animations.push(animation);
     }
     return animations;
@@ -355,12 +397,10 @@ export function createStoreCoverflowController(
   };
 
   const stopPositionAnimations = (group?: StoreCoverflowGroup) => {
-    const cards = group ? group.cards : [...positionAnimations.keys()];
-    for (const card of cards) {
-      positionAnimations.get(card)?.stop();
+    for (const [card, animation] of [...positionAnimations]) {
+      if (group && !group.cards.includes(card)) continue;
+      animation.stop();
       positionAnimations.delete(card);
-      card.style.removeProperty('transform');
-      card.style.removeProperty('opacity');
     }
   };
 
@@ -414,12 +454,17 @@ export function createStoreCoverflowController(
 
       stopPositionAnimations(group);
       const positionAnimationsForDisclosure = setGroupState(group, targetState, targetState.mode !== 'catalog');
+      const stageFade =
+        targetState.mode === 'catalog' && !prefersReducedMotion()
+          ? animateElement(group.stage, [
+              {
+                keyframes: [{ opacity: 0.4 }, { opacity: 1 }],
+                options: { duration: STAGE_FADE_DURATION_MS, easing: POSITION_EASING },
+              },
+            ])
+          : null;
       const animations =
-        targetState.mode === 'catalog'
-          ? prefersReducedMotion()
-            ? []
-            : [animate(group.stage, { opacity: [0.4, 1] }, { duration: 0.22, ease: [0.22, 1, 0.36, 1] })]
-          : positionAnimationsForDisclosure;
+        targetState.mode === 'catalog' ? (stageFade ? [stageFade] : []) : positionAnimationsForDisclosure;
       inFlight = animations;
       if (targetState.mode === 'catalog' && activeCard) {
         // Let the browser lay out the catalog before focus can force synchronous layout.
@@ -652,7 +697,20 @@ export function createStoreCoverflowController(
     wheelSurface.addEventListener('pointerleave', resetWheelState);
     group.stage.addEventListener('pointermove', onPointerMove);
     group.stage.addEventListener('pointerup', onPointerUp);
-    wheelSurface.addEventListener('wheel', onWheel, { passive: false });
+    // The non-passive wheel listener exists only while the preview can consume wheel input.
+    let wheelListening = false;
+    const syncWheelListener = () => {
+      const shouldListen = group.state.mode === 'preview';
+      if (shouldListen === wheelListening) return;
+      wheelListening = shouldListen;
+      if (shouldListen) {
+        wheelSurface.addEventListener('wheel', onWheel, { passive: false });
+      } else {
+        wheelSurface.removeEventListener('wheel', onWheel);
+        resetWheelState();
+      }
+    };
+    wheelListenerSyncs.set(group, syncWheelListener);
     renderGroup(group);
     return {
       group,
@@ -717,10 +775,13 @@ export function createStoreCoverflowController(
           group.stage.removeEventListener('pointermove', onPointerMove);
           group.stage.removeEventListener('pointerup', onPointerUp);
           wheelSurface.removeEventListener('wheel', onWheel);
+          wheelListenerSyncs.delete(group);
           group.lastActiveIndex = 0;
           group.state = { mode: 'catalog' };
           renderGroup(group);
-          group.controls.hidden = true;
+          for (const button of [group.toggleButton, group.previewButton, group.previousButton, group.nextButton]) {
+            button.disabled = true;
+          }
           group.element.removeAttribute('data-store-coverflow-ready');
           group.element.removeAttribute('data-store-coverflow-visited');
           group.element.removeAttribute('aria-roledescription');

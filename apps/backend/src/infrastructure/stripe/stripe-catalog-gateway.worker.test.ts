@@ -1,9 +1,30 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { createStripeCatalogMutationContext } from '../../application/commerce/catalog-sync';
-import { StripeCatalogGatewayClient } from './stripe-catalog-gateway';
+import { createStripeCatalogGateway, StripeCatalogGatewayClient } from './stripe-catalog-gateway';
 
 describe('StripeCatalogGatewayClient', () => {
+  it('bounds an unresponsive public provider read and propagates its unavailable error without retries', async () => {
+    const fetch = vi.fn(
+      (_url: unknown, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+        }),
+    );
+    vi.stubGlobal('fetch', fetch);
+    try {
+      const gateway = createStripeCatalogGateway(
+        { STRIPE_SECRET_KEY: 'sk_test_mock', STRIPE_API_BASE_URL: 'http://127.0.0.1:9999' },
+        { timeout: 30, maxNetworkRetries: 0 },
+      );
+      const started = Date.now();
+      await expect(gateway.retrieveDefaultPrice('prod_mock')).rejects.toMatchObject({ type: 'StripeConnectionError' });
+      expect(Date.now() - started).toBeLessThan(1000);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it('distinguishes absent Products from deleted or unpriced identities without treating service errors as absence', async () => {
     const retrieve = vi.fn();
     const gateway = new StripeCatalogGatewayClient({ products: { retrieve } } as never, false);

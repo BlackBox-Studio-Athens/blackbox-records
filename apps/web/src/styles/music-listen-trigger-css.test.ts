@@ -80,6 +80,6 @@ describe('Listen trigger CSS', () => {
     expect(triggerRule).toContain('font-family: var(--font-display-ui);');
     expect(triggerRule).toContain('letter-spacing: 0.06em;');
     expect(labelRule).toContain('margin-right: -0.06em;');
-    expect(readCssBlock('.music-listen-trigger--standalone,')).toContain('min-height: 2.75rem;');
+    expect(readCssBlock('.music-listen-trigger--standalone {')).toContain('min-height: 2.75rem;');
   });
 });

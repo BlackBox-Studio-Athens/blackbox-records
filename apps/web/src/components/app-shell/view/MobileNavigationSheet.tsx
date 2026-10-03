@@ -24,23 +24,31 @@ export default function MobileNavigationSheet({
   open,
   siteTitle,
 }: MobileNavigationSheetProps) {
-  const scrollRootRef = React.useRef<HTMLDivElement | null>(null);
+  // Radix portals the content after its first commit, so the lock waits for the mounted node, not a ref read on mount.
+  const [scrollRoot, setScrollRoot] = React.useState<HTMLDivElement | null>(null);
+  const closingForNavigation = React.useRef(false);
 
   React.useEffect(() => {
-    const scrollRoot = scrollRootRef.current;
+    if (open) closingForNavigation.current = false;
+  }, [open]);
+
+  React.useEffect(() => {
     if (!open || !scrollRoot) return;
     return acquireLenisModalLock(scrollRoot);
-  }, [open]);
+  }, [open, scrollRoot]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
-        ref={scrollRootRef}
+        ref={setScrollRoot}
         data-lenis-scroll-root
         // Radix returns focus only to its own Trigger; the Menu button is rendered by Astro.
         onCloseAutoFocus={(event) => {
           event.preventDefault();
-          document.querySelector<HTMLElement>(MOBILE_NAVIGATION_TRIGGER_SELECTOR)?.focus();
+          const destination = closingForNavigation.current
+            ? 'main[data-app-shell-main]'
+            : MOBILE_NAVIGATION_TRIGGER_SELECTOR;
+          document.querySelector<HTMLElement>(destination)?.focus({ preventScroll: true });
         }}
         side="right"
         className="top-[var(--header-height)] bottom-auto h-[calc(100dvh-var(--header-height))] w-[min(92vw,320px)] overflow-y-auto border-l border-border/80 bg-background/95 pt-6"
@@ -57,7 +65,10 @@ export default function MobileNavigationSheet({
                 key={link.id}
                 className="site-nav-link site-nav-link--menu"
                 {...navigationLinkAttributes(link.url, activeShellPathname)}
-                onClick={onNavigate}
+                onClick={() => {
+                  closingForNavigation.current = true;
+                  onNavigate();
+                }}
               >
                 <span className="site-nav-link__label">{link.title}</span>
               </a>

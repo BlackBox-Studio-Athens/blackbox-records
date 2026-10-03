@@ -1,4 +1,7 @@
 ---
+import '@/styles/fonts.css';
+import interFontUrl from '@/assets/fonts/ui/inter-latin.woff2?url';
+import bebasNeueFontUrl from '@/assets/fonts/ui/bebas-neue-latin.woff2?url';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 ---
 
@@ -9,9 +12,8 @@ import { createProjectRelativeUrl } from '@/platform/config/site';
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>404 | Blackbox Records</title>
     <link rel="icon" href="data:," />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=optional" rel="stylesheet" />
+    <link rel="preload" href={interFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href={bebasNeueFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
     <link rel="stylesheet" href={createProjectRelativeUrl('/assets/404/tokens.css')} />
     <link rel="stylesheet" href={createProjectRelativeUrl('/assets/404/blackbox-monochrome.css')} />
     <link rel="stylesheet" href={createProjectRelativeUrl('/assets/404/404.css')} />

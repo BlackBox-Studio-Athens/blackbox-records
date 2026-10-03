@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import { createPricedCartSeedForStorePage } from '@/components/store/store-page-data';
 import type { StoreCardImageLoadingMode, StoreCollectionEntry } from '@/lib/store-collection';
+import { largestImageWidth } from '@/platform/lib/editorial-image';
 interface Props {
   coverflowEnrolled?: boolean;
   entry: StoreCollectionEntry;
@@ -24,10 +25,10 @@ const {
 const { storeItem, primaryAvailability, previewImage } = entry;
 const priority = imageLoadingMode === 'priority';
 const option = primaryAvailability?.optionLabel || entry.distro?.format || entry.distro?.group;
-const cartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
+const cartSeed = await createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const sizes =
   '(min-width: 1440px) 16.9375rem, (min-width: 1280px) calc((100vw - 356px) / 4), (min-width: 1024px) calc((100vw - 336px) / 3), (min-width: 640px) calc((100vw - 80px) / 3), (min-width: 360px) calc((100vw - 48px) / 2), calc(100vw - 32px)';
-const widths = [240, 320, 480, 640, 800, 960];
+const widths = [240, 360, 480, 640, 720];
 ---
 
 <div
@@ -52,6 +53,7 @@ const widths = [240, 320, 480, 640, 800, 960];
         alt={storeItem.imageAlt}
         class="store-item-card__image"
         widths={widths}
+        width={largestImageWidth(storeItem.image, widths)}
         sizes={sizes}
         data-store-grid-sizes={sizes}
         loading={priority ? 'eager' : imageLoadingMode}
@@ -65,6 +67,7 @@ const widths = [240, 320, 480, 640, 800, 960];
           class="store-item-card__preview"
           data-store-preview-image
           widths={widths}
+          width={largestImageWidth(previewImage.image, widths)}
           sizes={sizes}
           data-store-grid-sizes={sizes}
           loading="lazy"

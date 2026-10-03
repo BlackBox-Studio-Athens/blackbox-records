@@ -20,7 +20,8 @@ describe('Store collection category surfaces', () => {
   it('renders semantic category navigation with an active ordinary link', () => {
     expect(categoryNavigationSource).toContain('<nav aria-label="Store categories"');
     expect(categoryNavigationSource).toContain('discoverableCategories.map');
-    expect(categoryNavigationSource).toContain('getDiscoverableStoreCatalogCategories');
+    expect(categoryNavigationSource).toContain('categories: discoverableCategories');
+    expect(collectionPageSource).toContain('categories={discoverableCategories}');
     expect(categoryNavigationSource).toContain("aria-current={category.id === activeCategoryId ? 'page' : undefined}");
     expect(categoryNavigationSource).toContain('href={createProjectRelativeUrl(category.path)}');
     expect(categoryNavigationSource).toContain('style={`--store-category-count: ${discoverableCategories.length}`}');
@@ -40,7 +41,7 @@ describe('Store collection category surfaces', () => {
     expect(collectionPageSource).toContain('createStoreDistroGroupHeadingId(group.groupName)');
     expect(collectionPageSource).toContain("selectStoreCollectionEntries(entries, 'distro')");
     expect(collectionPageSource).toContain('data-store-search');
-    expect(collectionPageSource).toContain('<StoreBrowsePane>');
+    expect(collectionPageSource).toContain('<StoreBrowsePane entries={entries} resultsId={catalogId}>');
     expect(collectionPageSource.match(/<StoreItemCard/g)).toHaveLength(1);
     expect(collectionPageSource).toContain('coverflowEnrolled={coverflowEligible}');
     expect(collectionPageSource).not.toContain('getDistroPageContent');
@@ -95,7 +96,7 @@ describe('Store collection category surfaces', () => {
       '.store-item-card__listen .music-listen-trigger {\n  position: relative;\n  z-index: 3;',
     );
     expect(cssSource).toContain('height: calc(var(--store-cover-size) + 9.25rem)');
-    expect(cssSource).toContain('> :not(.store-item-card__price)');
+    expect(cssSource).toContain('> :is(.brand-card-title, .store-item-card__artist, .store-item-card__option)');
     expect(cssSource).toContain(
       "[data-store-coverflow-position='active']\n  .store-item-card__content {\n  display: flex;",
     );

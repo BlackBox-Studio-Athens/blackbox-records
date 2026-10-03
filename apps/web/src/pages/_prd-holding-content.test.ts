@@ -27,4 +27,10 @@ describe('PRD Holding Page content dependence', () => {
     expect(template).toMatch(/\{inquiryEmail && \(\s*<a href=\{`mailto:\$\{inquiryEmail\}`\}/);
     expect(template).toMatch(/\(instagramUrl \|\| inquiryEmail\) && \(\s*<nav class="holding-page__actions"/);
   });
+
+  it('shows the logo as a 240 px WebP sized for its 72-120 CSS px slot and keeps the PNG for link unfurls', () => {
+    expect(frontmatter).toContain("createProjectRelativeUrl('/assets/images/brand/logo-240.webp')");
+    expect(frontmatter).toContain('new URL(siteBrandAssets.badgeLogo, pageUrl)');
+    expect(template).toContain('src={logoUrl} alt="BlackBox Records" width="240" height="240"');
+  });
 });

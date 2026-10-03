@@ -19,6 +19,10 @@ import {
 type Profile =
   | 'desktop-distro-disclosure'
   | 'desktop-load'
+  | 'desktop-idle'
+  | 'touch-idle'
+  | 'wheel-scroll'
+  | 'touch-scroll'
   | 'desktop-store-activation'
   | 'legacy-scroll'
   | 'mobile-distro-disclosure'
@@ -37,6 +41,15 @@ const profile = (args.get('profile') ?? 'desktop-load') as Profile;
 const baseUrl = args.get('base-url') ?? 'http://127.0.0.1:4321/blackbox-records/';
 const routes = (args.get('routes') ?? 'home,store,store/distro').split(/[,\s]+/);
 const runs = Number(args.get('runs') ?? (profile.startsWith('desktop-') ? 5 : 3));
+if (!Number.isInteger(runs) || runs < 1) throw new Error('Run count must be a positive integer.');
+const scrollRuntime = args.get('scroll-runtime') ?? 'enabled';
+if (!['enabled', 'native'].includes(scrollRuntime)) throw new Error('Unknown scroll runtime comparison.');
+const veneerPreload = args.get('veneer-preload') ?? 'build';
+const contentVisibility = args.get('content-visibility') ?? 'build';
+if (![veneerPreload, contentVisibility].every((value) => ['build', 'enabled', 'disabled'].includes(value)))
+  throw new Error('A/B options must be build, enabled or disabled.');
+if (['desktop-idle', 'touch-idle', 'wheel-scroll', 'touch-scroll'].includes(profile) && runs < 3)
+  throw new Error('Input and idle profiles require at least three runs.');
 const output = args.get('output') ?? `.codex-artifacts/runtime-performance/${Date.now()}-${profile}.json`;
 const blockThirdPartyAnalytics = args.get('block-third-party-analytics') === 'true';
 const expectedStoreCardCount = Number(args.get('store-card-count') ?? 104);
@@ -50,7 +63,7 @@ const buildMode = args.get('build-mode') ?? 'production-static';
 const STORE_ACTIVATION_TIMEOUT_MS = 120_000;
 
 async function measurementTree() {
-  const revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  const revision = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8', windowsHide: true }).trim();
   const files = execFileSync(
     'git',
     [
@@ -60,18 +73,19 @@ async function measurementTree() {
       '--others',
       '--exclude-standard',
       '--',
-      'apps',
+      'apps/web',
       'packages',
-      'scripts',
+      'scripts/measure-runtime-performance.ts',
+      'scripts/runtime-performance-helpers.ts',
       'package.json',
       'pnpm-lock.yaml',
       'pnpm-workspace.yaml',
     ],
-    { encoding: 'utf8' },
+    { encoding: 'utf8', windowsHide: true },
   )
     .split('\0')
-    .filter(Boolean);
-  const dirtyFiles = execFileSync('git', ['diff', 'HEAD', '--name-only', '-z'], { encoding: 'utf8' })
+    .filter((path) => Boolean(path) && !/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(path));
+  const dirtyFiles = execFileSync('git', ['diff', 'HEAD', '--name-only', '-z'], { encoding: 'utf8', windowsHide: true })
     .split('\0')
     .filter(Boolean);
   const hashFiles = async (paths: string[]) => {
@@ -92,6 +106,8 @@ async function measurementTree() {
     .map((entry) => join(entry.parentPath, entry.name));
   return {
     revision,
+    sourceScope:
+      'public frontend, shared packages, profile implementation and package configuration; test files excluded',
     sourceHash: await hashFiles(files),
     buildHash: await hashFiles(artifacts),
     dirtyFiles: await Promise.all(
@@ -101,6 +117,16 @@ async function measurementTree() {
 }
 
 const profiles = {
+  'desktop-idle': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 4 },
+  'touch-idle': { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, cpu: 4, hasTouch: true, isMobile: true },
+  'wheel-scroll': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 4 },
+  'touch-scroll': {
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    cpu: 4,
+    hasTouch: true,
+    isMobile: true,
+  },
   'desktop-distro-disclosure': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
   'desktop-load': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
   'desktop-store-activation': { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1, cpu: 1 },
@@ -126,6 +152,7 @@ const profiles = {
   },
   'legacy-scroll': { viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, cpu: 4, step: 48, frames: 240 },
 } as const;
+if (!(profile in profiles)) throw new Error(`Unknown runtime profile: ${profile}`);
 
 async function readTrace(cdp: CDPSession) {
   const complete = new Promise<string>((resolve) =>
@@ -144,6 +171,27 @@ async function readTrace(cdp: CDPSession) {
 }
 
 async function configure(context: BrowserContext, page: Page) {
+  // Both A/B arms use the same document interception; only the declared feature changes.
+  if (veneerPreload !== 'build' || contentVisibility !== 'build')
+    await context.route('**/*', async (route) => {
+      if (route.request().resourceType() !== 'document') return route.fallback();
+      const response = await route.fetch();
+      if (!response.headers()['content-type']?.includes('text/html')) return route.fulfill({ response });
+      let body = await response.text();
+      if (veneerPreload === 'disabled')
+        body = body.replace(/<link\b(?=[^>]*\brel=["']preload["'])(?=[^>]*veneer)[^>]*>/gi, '');
+      if (contentVisibility === 'disabled')
+        body = body.replace(
+          '</head>',
+          '<style>.store-item-card--listing{content-visibility:visible!important}</style></head>',
+        );
+      if (contentVisibility === 'enabled')
+        body = body.replace(
+          '</head>',
+          '<style>.store-item-card--listing{content-visibility:auto!important;contain-intrinsic-block-size:auto 520px}</style></head>',
+        );
+      await route.fulfill({ response, body });
+    });
   const cdp = await context.newCDPSession(page);
   const settings = profiles[profile];
   if (settings.cpu > 1) await cdp.send('Emulation.setCPUThrottlingRate', { rate: settings.cpu });
@@ -205,7 +253,8 @@ async function configure(context: BrowserContext, page: Page) {
 
 async function startTrace(cdp: CDPSession) {
   await cdp.send('Tracing.start', {
-    categories: 'devtools.timeline,disabled-by-default-devtools.timeline,blink.user_timing,loading',
+    categories:
+      'devtools.timeline,disabled-by-default-devtools.timeline,disabled-by-default-devtools.timeline.invalidationTracking,blink.user_timing,loading',
     transferMode: 'ReturnAsStream',
   });
 }
@@ -733,6 +782,104 @@ async function scrollTraversal(page: Page, cdp: CDPSession, label: 'first' | 're
   };
 }
 
+async function inputProfileRun(page: Page, cdp: CDPSession, tracePath: string, label: 'first' | 'repeat' | 'idle') {
+  const inputType = profile.startsWith('touch-') ? 'touch' : 'wheel';
+  if (label !== 'idle') {
+    // tsx preserves nested callback names with __name; serialized browser callbacks need that helper locally.
+    await page.evaluate(
+      'globalThis.__name = (value, name) => Object.defineProperty(value, "name", { value: name, configurable: true })',
+    );
+    // Instrument frame cadence only during input. Idle tracing deliberately creates no rAF observer loop.
+    await page.evaluate(() => {
+      const state = { intervals: [] as number[], previous: 0, running: true, handle: 0 };
+      Object.assign(window, { __inputFrames: state });
+      const frame = (time: number) => {
+        if (!state.running) return;
+        if (state.previous) state.intervals.push(time - state.previous);
+        state.previous = time;
+        state.handle = requestAnimationFrame(frame);
+      };
+      state.handle = requestAnimationFrame(frame);
+    });
+  }
+  await startTrace(cdp);
+  const startedAt = await page.evaluate(() => performance.now());
+  if (label === 'idle') {
+    await page.waitForTimeout(5000);
+  } else if (inputType === 'wheel') {
+    await page.mouse.move(720, 500);
+    for (let step = 0; step < 24; step += 1) {
+      await page.mouse.wheel(0, 240);
+      await page.waitForTimeout(32);
+    }
+    await page.waitForTimeout(1000);
+  } else {
+    for (let drag = 0; drag < 12; drag += 1) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 195, y: 680 }] });
+      for (let step = 1; step <= 8; step += 1) {
+        await cdp.send('Input.dispatchTouchEvent', {
+          type: 'touchMove',
+          touchPoints: [{ x: 195, y: 680 - step * 55 }],
+        });
+        await page.waitForTimeout(16);
+      }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+      await page.waitForTimeout(100);
+    }
+    await page.waitForTimeout(1000);
+  }
+  const browser = await page.evaluate(
+    ({ startedAt, idle }) => {
+      const endedAt = performance.now();
+      const root = window as unknown as {
+        __inputFrames?: { intervals: number[]; running: boolean; handle: number };
+        __runtimePerformance: { longTaskEntries: Array<{ startTime: number; duration: number }> };
+      };
+      if (root.__inputFrames) {
+        root.__inputFrames.running = false;
+        cancelAnimationFrame(root.__inputFrames.handle);
+      }
+      return {
+        startedAt,
+        endedAt,
+        durationMs: endedAt - startedAt,
+        scrollY,
+        intervals: idle ? [] : (root.__inputFrames?.intervals ?? []),
+        pointer: {
+          fine: matchMedia('(pointer: fine)').matches,
+          hover: matchMedia('(hover: hover)').matches,
+          coarse: matchMedia('(pointer: coarse)').matches,
+        },
+        smoothRuntimePresent: document.documentElement.classList.contains('lenis'),
+        longTasks: root.__runtimePerformance.longTaskEntries.filter(
+          (entry) => entry.startTime < endedAt && entry.startTime + entry.duration > startedAt,
+        ),
+      };
+    },
+    { startedAt, idle: label === 'idle' },
+  );
+  const events = await readTrace(cdp);
+  await mkdir(dirname(tracePath), { recursive: true });
+  await writeFile(tracePath, JSON.stringify({ traceEvents: events }));
+  if (label !== 'idle' && browser.scrollY <= 0) throw new Error('Real input traversal did not scroll the document.');
+  if (inputType === 'touch' && (!browser.pointer.coarse || browser.pointer.hover))
+    throw new Error('Touch profile did not emulate a coarse hoverless pointer.');
+  if (inputType === 'wheel' && (!browser.pointer.fine || !browser.pointer.hover))
+    throw new Error('Wheel profile requires a fine pointer with hover.');
+  if (scrollRuntime === 'native' && browser.smoothRuntimePresent)
+    throw new Error('Native comparison still constructed Lenis.');
+  return {
+    label,
+    inputType,
+    ...browser,
+    frameIntervals: summarize(browser.intervals),
+    trace: summarizeTrace(events),
+    tracePath,
+    instrumentation:
+      label === 'idle' ? 'trace only; no measurement rAF loop' : 'one measurement rAF callback per frame',
+  };
+}
+
 function routeUrl(route: string) {
   const path = route === 'home' ? '' : `${route}/`;
   return new URL(path, baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`).href;
@@ -743,7 +890,51 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
   const results = [];
   try {
-    if (profile.endsWith('distro-disclosure')) {
+    if (['desktop-idle', 'touch-idle', 'wheel-scroll', 'touch-scroll'].includes(profile)) {
+      for (const route of routes) {
+        for (let run = 1; run <= runs; run += 1) {
+          const settings = profiles[profile];
+          const context = await browser.newContext({
+            viewport: settings.viewport,
+            deviceScaleFactor: settings.deviceScaleFactor,
+            hasTouch: 'hasTouch' in settings && settings.hasTouch,
+            isMobile: 'isMobile' in settings && settings.isMobile,
+          });
+          const blockedRuntimeAssets: string[] = [];
+          if (scrollRuntime === 'native')
+            await context.route(/\/lenis[^/]*\.js(?:\?|$)/, async (route) => {
+              blockedRuntimeAssets.push(route.request().url());
+              await route.abort();
+            });
+          const page = await context.newPage();
+          const cdp = await configure(context, page);
+          await page.goto(routeUrl(route), { waitUntil: 'networkidle' });
+          await page.waitForTimeout(5000);
+          const tracePrefix = `${output}.${route.replaceAll('/', '-')}-${run}`;
+          if (profile.endsWith('idle')) {
+            results.push({
+              route,
+              run,
+              profile,
+              scrollRuntime,
+              blockedRuntimeAssets,
+              result: await inputProfileRun(page, cdp, `${tracePrefix}-idle.trace.json`, 'idle'),
+            });
+          } else {
+            const setup = await prepareTraversal(page);
+            await page.waitForTimeout(1000);
+            const first = await inputProfileRun(page, cdp, `${tracePrefix}-first.trace.json`, 'first');
+            await page.evaluate(() => {
+              window.scrollTo({ top: 0, behavior: 'instant' });
+            });
+            await page.waitForTimeout(1000);
+            const repeat = await inputProfileRun(page, cdp, `${tracePrefix}-repeat.trace.json`, 'repeat');
+            results.push({ route, run, profile, scrollRuntime, blockedRuntimeAssets, setup, first, repeat });
+          }
+          await context.close();
+        }
+      }
+    } else if (profile.endsWith('distro-disclosure')) {
       for (let run = 1; run <= runs; run += 1) {
         for (const entry of ['direct', 'shell'] as const) {
           const settings = profiles[profile];
@@ -816,7 +1007,7 @@ async function main() {
   await mkdir(dirname(output), { recursive: true });
   await writeFile(
     output,
-    `${JSON.stringify({ commit: tree.revision, tree, finalTree, treeUnchanged, browserVersion: browser.version(), buildDirectory, buildMode, cacheState: 'fresh browser context per run', traversalMode, catalogGroup, baseUrl, productEnvironment, profile, settings: profiles[profile], runs, routes, expectedStoreCardCount, blockThirdPartyAnalytics, capturedAt: new Date().toISOString(), method: profile.endsWith('distro-disclosure') ? 'fresh-context delayed and ready Store Distro disclosure' : profile.endsWith('store-activation') ? 'fresh-context same-document Store activation' : 'existing runtime profile', runOrder: results.map((result) => ('run' in result ? result.run : null)), summary: profile.endsWith('store-activation') ? summarizeStoreActivationRuns(results.map((entry) => entry.result)) : undefined, results }, null, 2)}\n`,
+    `${JSON.stringify({ commit: tree.revision, tree, finalTree, treeUnchanged, browserVersion: browser.version(), buildDirectory, buildMode, cacheState: 'fresh browser context per run', traversalMode, catalogGroup, baseUrl, productEnvironment, profile, scrollRuntime, veneerPreload, contentVisibility, settings: profiles[profile], runs, routes, expectedStoreCardCount, blockThirdPartyAnalytics, capturedAt: new Date().toISOString(), method: profile.endsWith('distro-disclosure') ? 'fresh-context delayed and ready Store Distro disclosure' : profile.endsWith('store-activation') ? 'fresh-context same-document Store activation' : 'existing runtime profile', runOrder: results.map((result) => ('run' in result ? result.run : null)), summary: profile.endsWith('store-activation') ? summarizeStoreActivationRuns(results.map((entry) => entry.result)) : undefined, results }, null, 2)}\n`,
   );
   console.log(output);
   if (!treeUnchanged) throw new Error('Measurement inputs changed during the run; evidence is invalid.');

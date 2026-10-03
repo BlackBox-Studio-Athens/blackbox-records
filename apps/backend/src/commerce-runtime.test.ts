@@ -1,7 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 
-const { handleRequest, deliver } = vi.hoisted(() => ({ handleRequest: vi.fn(), deliver: vi.fn() }));
-vi.mock('./interfaces/http/app', () => ({ createHttpApp: () => ({ fetch: handleRequest }) }));
+const { handleRequest, preflight, deliver, scope } = vi.hoisted(() => ({
+  handleRequest: vi.fn(),
+  preflight: vi.fn(),
+  deliver: vi.fn(),
+  scope: vi.fn((env) => ({ ...env })),
+}));
+vi.mock('./interfaces/http/app', () => ({
+  createHttpApp: (options?: { preflightOnly?: boolean }) => ({
+    fetch: options?.preflightOnly ? preflight : handleRequest,
+  }),
+}));
+vi.mock('./infrastructure/persistence/prisma', () => ({ createPrismaClientScope: scope }));
 vi.mock('./application/commerce/orders/run-paid-order-delivery-schedule', () => ({
   runPaidOrderDeliverySchedule: deliver,
 }));
@@ -33,12 +43,25 @@ describe('free-tier commerce execution', () => {
     const response = new Response('ok');
     handleRequest.mockResolvedValueOnce(response);
     expect(await worker.fetch(request as Parameters<typeof worker.fetch>[0], bindings)).toBe(response);
-    expect(handleRequest).toHaveBeenCalledExactlyOnceWith(request, env, ctx);
+    const scopedBindings = scope.mock.results.at(-1)!.value;
+    expect(scopedBindings).not.toBe(env);
+    expect(handleRequest).toHaveBeenCalledExactlyOnceWith(request, scopedBindings, ctx);
     await worker.scheduled({ scheduledTime: 1234 } as ScheduledController, bindings);
-    expect(deliver).toHaveBeenCalledExactlyOnceWith(env, new Date(1234));
+    expect(deliver).toHaveBeenCalledExactlyOnceWith(scopedBindings, new Date(1234));
     deliver.mockRejectedValueOnce(new Error('Retry later'));
     await expect(worker.scheduled({ scheduledTime: 5678 } as ScheduledController, bindings)).rejects.toThrow(
       'Retry later',
     );
+  });
+
+  it('answers API preflights without resolving the Durable Object', async () => {
+    const getByName = vi.fn();
+    const bindings = { COMMERCE_RUNTIME: { getByName } } as unknown as Parameters<typeof worker.fetch>[1];
+    const request = new Request('https://shop.example/api/store/items/record', { method: 'OPTIONS' });
+    const response = new Response(null, { status: 204 });
+    preflight.mockResolvedValueOnce(response);
+    expect(await worker.fetch(request as Parameters<typeof worker.fetch>[0], bindings)).toBe(response);
+    expect(preflight).toHaveBeenCalledExactlyOnceWith(request, bindings);
+    expect(getByName).not.toHaveBeenCalled();
   });
 });

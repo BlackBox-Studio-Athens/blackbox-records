@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   readPlayerProvidersFromElement,
@@ -16,6 +16,8 @@ import {
 import {
   applyDocumentShellPageSnapshot,
   cacheDocumentShellPageSnapshot,
+  rememberDocumentIslandServerMarkup,
+  scheduleIdleShellTask,
   type ShellPageSnapshot,
 } from '@/components/app-shell/navigation/shell-page-snapshot';
 import { createShellPageSnapshotLoader } from '@/components/app-shell/navigation/shell-page-loader';
@@ -25,9 +27,11 @@ import {
   createShellSectionTransitionController,
   scrollShellViewportToTop,
   triggerShellPageEnterTransition,
+  warmShellNavigationMotion,
   type ShellMotionControls,
 } from '@/components/app-shell/navigation/shell-transition';
 import { createProjectRelativeUrl } from '@/platform/config/site';
+import { isCurrentPath } from '@/platform/utils/urls';
 import { normalizeAppPathname, type ShellSectionRoute } from '@/components/app-shell/routing';
 import { parseShellSectionRoute } from '@/components/app-shell/routing';
 import {
@@ -70,17 +74,43 @@ import { createShellPlayerSessionController } from './player-shell/shell-player-
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
 import { MOBILE_NAVIGATION_TRIGGER_SELECTOR } from './navigation/shell-document-click-intent';
 import { waitForEagerImages } from './navigation/shell-first-screen-images';
+import type { ShellPrefetchOptions } from './navigation/shell-prefetch-intent';
 import { openShellSectionNavigation, type ShellSectionActivationOutcome } from './navigation/shell-section-navigation';
 import { enableManualShellScrollRestoration } from './navigation/shell-scroll-restoration';
 import { scrollShellTargetIntoView } from './navigation/shell-target-scroll';
-import { connectLenisScrollRoots } from './lenis-scroll';
+import { acquireLenisModalLock, connectLenisScrollRoots } from './lenis-scroll';
 import ShellPortalOutlets from './view/ShellPortalOutlets';
+import {
+  connectShellSurfaceIntent,
+  createShellSurfaceLoader,
+  scheduleShellIdleTask,
+  useShellSurface,
+  warmShellSurface,
+} from './view/shell-surface-loader';
 
-const MobileNavigationSheet = lazy(() => import('./view/MobileNavigationSheet'));
-const ShellOverlayPanel = lazy(() => import('./view/ShellOverlayPanel'));
-const ShellPlayerSurface = lazy(() => import('./view/ShellPlayerSurface'));
-const StoreCartDrawer = lazy(() => import('@/components/store/cart/StoreCartDrawer'));
-const CartDeliverySummary = lazy(() => import('@/components/store/checkout/DeliverySummary'));
+// Dormant surfaces stay out of the eager graph and never suspend on open: see shell-surface-loader.
+const mobileNavigationSheetSurface = createShellSurfaceLoader(() =>
+  import('./view/MobileNavigationSheet').then((module) => module.default),
+);
+const shellOverlayPanelSurface = createShellSurfaceLoader(() =>
+  import('./view/ShellOverlayPanel').then((module) => module.default),
+);
+const shellPlayerSurface = createShellSurfaceLoader(() =>
+  import('./view/ShellPlayerSurface').then((module) => module.default),
+);
+const storeGallerySurface = createShellSurfaceLoader(() =>
+  import('@/components/store/StoreImageGallery').then((module) => module.StoreImageGalleryPortals),
+);
+const storeCartDrawerSurface = createShellSurfaceLoader(() =>
+  Promise.all([
+    import('@/components/store/cart/StoreCartDrawer'),
+    import('@/components/store/checkout/DeliverySummary'),
+  ]).then(([drawerModule, deliverySummaryModule]) => ({
+    CartDeliverySummary: deliverySummaryModule.default,
+    StoreCartDrawer: drawerModule.default,
+  })),
+);
+const STORE_CART_INTENT_SELECTOR = '[data-store-cart-header-root], [data-store-item-add-to-cart]';
 const preloadStoreDistroSearch = () => import('@/components/store/StoreDistroSearch');
 
 type OverlayState = ShellOverlayState;
@@ -124,6 +154,9 @@ export default function AppShellRoot({
   const [artistsRosterFiltersContainer, setArtistsRosterFiltersContainer] = useState<HTMLElement | null>(null);
   const [distroSearchContainer, setDistroSearchContainer] = useState<HTMLElement | null>(null);
   const [servicesInquiryContainer, setServicesInquiryContainer] = useState<HTMLElement | null>(null);
+  const [newsletterContainer, setNewsletterContainer] = useState<HTMLElement | null>(null);
+  const [hasGalleryTargets, setHasGalleryTargets] = useState(false);
+  const [galleryRevision, setGalleryRevision] = useState(0);
   const [storeCartHeaderContainer, setStoreCartHeaderContainer] = useState<HTMLElement | null>(null);
   const [storeCartBridgeFailed, setStoreCartBridgeFailed] = useState(false);
   const [storeCartState, setStoreCartState] = useState<StoreCartState>(() => ({ lines: [], primaryLineItem: null }));
@@ -144,6 +177,7 @@ export default function AppShellRoot({
 
   const modalCloseButtonRef = useRef<HTMLButtonElement | null>(null);
   const iframeFrameHostRef = useRef<HTMLDivElement | null>(null);
+  const [playerHeaderContainer, setPlayerHeaderContainer] = useState<HTMLDivElement | null>(null);
   const pendingPlayerProviderRef = useRef<{
     nextStatus: ActivePlayerSession['status'] | undefined;
     provider: PlayerProvider;
@@ -224,11 +258,14 @@ export default function AppShellRoot({
   );
 
   overlayStateRef.current = overlayState;
+  // The document listeners connect once; they and the player controller read the modal state through this ref.
+  const isPlayerModalOpenRef = useRef(isPlayerModalOpen);
+  isPlayerModalOpenRef.current = isPlayerModalOpen;
 
   async function applyStoreCartState(nextState: StoreCartState) {
     const { applyStoreCartStateAndPersist, getStoreCartBrowserStorage } =
       await import('@/components/app-shell/store-cart/store-cart-bridge');
-    applyStoreCartStateAndPersist({
+    await applyStoreCartStateAndPersist({
       readStorage: getStoreCartBrowserStorage,
       setStoreCartState,
       state: nextState,
@@ -274,7 +311,7 @@ export default function AppShellRoot({
   }
 
   function applyShellPageSnapshot(pageSnapshot: ShellPageSnapshot) {
-    return applyDocumentShellPageSnapshot({
+    const applied = applyDocumentShellPageSnapshot({
       getMainElement: getCurrentMainElement,
       onHrefApplied: (href) => {
         renderedPageHrefRef.current = href;
@@ -283,7 +320,18 @@ export default function AppShellRoot({
       pageSnapshot,
       targetDocument: document,
     });
+    if (applied) refreshGalleryTargets();
+    return applied;
   }
+
+  function refreshGalleryTargets() {
+    setHasGalleryTargets(Boolean(document.querySelector('[data-store-image-gallery]')));
+    setGalleryRevision((revision) => revision + 1);
+  }
+
+  useEffect(() => {
+    refreshGalleryTargets();
+  }, [activeShellPathname]);
 
   useEffect(() => connectLenisScrollRoots(document.body), []);
 
@@ -314,13 +362,47 @@ export default function AppShellRoot({
       ?.setAttribute('aria-expanded', String(isMobileNavigationOpen));
   }, [isMobileNavigationOpen]);
 
+  // Surface modules load on trigger intent, and at idle where the trigger is likely: the Menu below `lg`, the
+  // cart drawer where the cart control shows, and the small detail panel everywhere.
   useEffect(() => {
-    return syncShellBodyStateClasses({
+    const disconnectIntent = connectShellSurfaceIntent(document, [
+      { selector: MOBILE_NAVIGATION_TRIGGER_SELECTOR, warm: () => warmShellSurface(mobileNavigationSheetSurface) },
+      { selector: STORE_CART_INTENT_SELECTOR, warm: () => warmShellSurface(storeCartDrawerSurface) },
+    ]);
+    const cancelIdleWarmup = scheduleShellIdleTask(window, () => {
+      if (!window.matchMedia('(min-width: 64rem)').matches) warmShellSurface(mobileNavigationSheetSurface);
+      warmShellSurface(shellOverlayPanelSurface);
+    });
+    return () => {
+      disconnectIntent();
+      cancelIdleWarmup();
+    };
+  }, []);
+
+  const hasStoreCartLines = storeCartState.lines.length > 0;
+  useEffect(() => {
+    const isStoreRoute = isCurrentPath(activeShellPathname, '/store/');
+    if (!hasStoreCartLines && !isStoreRoute && !document.querySelector('[data-store-item-add-to-cart]')) return;
+    return scheduleShellIdleTask(window, () => warmShellSurface(storeCartDrawerSurface));
+  }, [activeShellPathname, hasStoreCartLines]);
+
+  useEffect(() => {
+    const clearClasses = syncShellBodyStateClasses({
       bodyClassList: document.body.classList,
       isOverlayOpen: overlayState !== null,
       isPlayerModalOpen,
+      isCartOpen: isStoreCartDrawerOpen,
+      isMenuOpen: isMobileNavigationOpen,
     });
-  }, [isPlayerModalOpen, overlayState]);
+    const releaseLock =
+      isPlayerModalOpen || overlayState || isStoreCartDrawerOpen || isMobileNavigationOpen
+        ? acquireLenisModalLock(document.body)
+        : undefined;
+    return () => {
+      clearClasses();
+      releaseLock?.();
+    };
+  }, [isPlayerModalOpen, overlayState, isStoreCartDrawerOpen, isMobileNavigationOpen]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -338,6 +420,7 @@ export default function AppShellRoot({
           setStoreCartDrawerOpen: (open) => (open ? openStoreCartDrawer() : closeStoreCartDrawer()),
           setStoreCartHeaderContainer,
           setStoreCartState,
+          onError: () => setStoreCartBridgeFailed(true),
         });
       })
       .catch(() => {
@@ -356,6 +439,9 @@ export default function AppShellRoot({
     if (typeof window === 'undefined') return;
 
     if (parseShellSectionRoute(activeShellPathname)?.kind !== 'store') return;
+    void import('./store-cart/store-cart-bridge')
+      .then(({ warmStoreCartParser }) => warmStoreCartParser())
+      .catch(() => setStoreCartBridgeFailed(true));
     const disconnectPreviewImages = connectStorePreviewImages(document);
     const disconnectPrices = connectStoreListingPricePresentation({
       readListingPrices:
@@ -422,6 +508,18 @@ export default function AppShellRoot({
       scheduler: window,
     });
   }, [activeShellPathname]);
+
+  useEffect(
+    () =>
+      connectShellPortalTarget({
+        activePathname: activeShellPathname,
+        queryTarget: () => document.querySelector<HTMLElement>('[data-newsletter-form]'),
+        scheduler: window,
+        setTarget: setNewsletterContainer,
+        targetPathname: activeShellPathname,
+      }),
+    [activeShellPathname],
+  );
 
   function clearRouteLoadingTimer() {
     clearScheduledRouteLoadingTimer(routeLoadingTimerRef, window);
@@ -494,7 +592,7 @@ export default function AppShellRoot({
     activePlayerTriggerElementRef,
     getCurrentHref: () => window.location.href,
     getHistory: () => window.history,
-    getIsPlayerModalOpen: () => isPlayerModalOpen,
+    getIsPlayerModalOpen: () => isPlayerModalOpenRef.current,
     getScheduler: () => window,
     getTargetDocument: () => document,
     iframeCacheByEmbedUrlRef,
@@ -521,12 +619,16 @@ export default function AppShellRoot({
   }, [activeShellPathname, overlayState]);
 
   async function prefetchOverlayHref(href: string) {
+    warmShellSurface(shellOverlayPanelSurface);
     await overlayFragmentLoader.prefetchHref(href);
   }
 
-  async function prefetchShellSectionHref(href: string) {
-    const pagePrefetch = shellPageLoader.prefetchHref(href);
+  async function prefetchShellSectionHref(href: string, options?: ShellPrefetchOptions) {
+    void warmShellNavigationMotion();
     const route = parseShellSectionRoute(new URL(href, window.location.href).pathname);
+    // The rendered page is snapshotted from the live DOM (at idle or on leaving), so it is never fetched.
+    if (route?.pathname === renderedPagePathnameRef.current) return;
+    const pagePrefetch = shellPageLoader.prefetchHref(href, options);
     if (route?.kind === 'store') void preloadStoreDistroSearch().catch(() => undefined);
     await pagePrefetch;
   }
@@ -546,6 +648,7 @@ export default function AppShellRoot({
       collapseOverlayHistoryToBackground,
       currentHref: window.location.href,
       currentPathname: window.location.pathname,
+      getRenderedPathname: () => renderedPagePathnameRef.current,
       hasOverlayState: () => Boolean(overlayStateRef.current),
       historyMode: options?.historyMode,
       href,
@@ -621,6 +724,7 @@ export default function AppShellRoot({
     href: string,
     options?: { backgroundHref?: string; pushHistory?: boolean; replaceHistory?: boolean },
   ) {
+    warmShellSurface(shellOverlayPanelSurface);
     return openShellOverlayNavigation({
       activeAbortControllerRef: overlayAbortControllerRef,
       backgroundHref: options?.backgroundHref,
@@ -651,7 +755,12 @@ export default function AppShellRoot({
 
     renderedPageHrefRef.current = window.location.href;
     syncShellNavigationState(normalizeAppPathname(window.location.pathname));
-    cacheDocumentSnapshot();
+    // Island markup is recorded now, before interaction; the full snapshot waits for idle time. Leaving the page
+    // earlier takes it after the transition veil has painted (openShellSectionNavigation).
+    rememberDocumentIslandServerMarkup(document);
+    const cancelIdleSnapshot = scheduleIdleShellTask(() => {
+      if (!shellPageLoader.hasCachedSnapshot(renderedPagePathnameRef.current)) cacheDocumentSnapshot();
+    });
     markCurrentHistoryEntryForShellSection(window.location.pathname);
 
     const disconnectShellDocumentListeners = connectShellDocumentEventRouting({
@@ -671,7 +780,7 @@ export default function AppShellRoot({
       getOverlayBackgroundHref: () => overlayStateRef.current?.backgroundHref,
       hasCachedShellPage: shellPageLoader.hasCachedSnapshot,
       hasOverlayState: () => overlayStateRef.current !== null,
-      isPlayerModalOpen: () => isPlayerModalOpen,
+      isPlayerModalOpen: () => isPlayerModalOpenRef.current,
       markActivePlayerSessionAsInteracted,
       navigateDocumentTo: (href) => window.location.assign(href),
       openOverlayHref,
@@ -690,11 +799,15 @@ export default function AppShellRoot({
         overlayTriggerElementRef.current = element;
       },
       stopPlayerSession,
-      warmProviderOrigins,
+      warmProviderOrigins: (providers) => {
+        warmShellSurface(shellPlayerSurface);
+        warmProviderOrigins(providers);
+      },
       windowTarget: window,
     });
 
     return () => {
+      cancelIdleSnapshot();
       disconnectShellDocumentListeners();
       clearRouteLoadingTimer();
       clearScheduledRouteLoadingTimer(storeLoadingFeedbackTimerRef, window);
@@ -706,66 +819,82 @@ export default function AppShellRoot({
 
       restoreShellScrollRestoration();
     };
-  }, [isPlayerModalOpen]);
+    // Connected once per mount: every value it reads is a ref, a state setter or a stable loader, so player open and
+    // close no longer re-snapshot main, re-bind document listeners or abort an in-flight navigation.
+  }, []);
+
+  const MobileNavigationSheet = useShellSurface(mobileNavigationSheetSurface, isMobileNavigationOpen, () =>
+    setIsMobileNavigationOpen(false),
+  );
+  const storeCartDrawerModules = useShellSurface(storeCartDrawerSurface, isStoreCartDrawerOpen, closeStoreCartDrawer);
+  const ShellOverlayPanel = useShellSurface(shellOverlayPanelSurface, Boolean(overlayState) || hasOpenedOverlay, () => {
+    // A detail that cannot open in place still opens as its page.
+    const overlayHref = overlayStateRef.current?.href;
+    closeOverlayState({ restoreFocus: false });
+    if (overlayHref) window.location.assign(overlayHref);
+  });
+  const ShellPlayerSurface = useShellSurface(
+    shellPlayerSurface,
+    isPlayerModalOpen || isMiniPlayerVisible,
+    closePlayerModalWithHistoryBack,
+  );
+  const StoreImageGalleryPortals = useShellSurface(storeGallerySurface, hasGalleryTargets, () =>
+    setHasGalleryTargets(false),
+  );
 
   return (
     <>
-      {isMobileNavigationOpen && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading menu
-            </span>
-          }
-        >
-          <MobileNavigationSheet
-            activeShellPathname={activeShellPathname}
-            navigation={navigation}
-            onNavigate={() => setIsMobileNavigationOpen(false)}
-            onOpenChange={setIsMobileNavigationOpen}
-            open
-            siteTitle={siteTitle}
-          />
-        </Suspense>
-      )}
+      {MobileNavigationSheet ? (
+        <MobileNavigationSheet
+          activeShellPathname={activeShellPathname}
+          navigation={navigation}
+          onNavigate={() => setIsMobileNavigationOpen(false)}
+          onOpenChange={setIsMobileNavigationOpen}
+          open={isMobileNavigationOpen}
+          siteTitle={siteTitle}
+        />
+      ) : isMobileNavigationOpen ? (
+        <span className="accessibility-visually-hidden-text" role="status">
+          Loading menu
+        </span>
+      ) : null}
 
-      {isStoreCartDrawerOpen && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading cart
-            </span>
+      {storeCartDrawerModules ? (
+        <storeCartDrawerModules.StoreCartDrawer
+          deliverySummary={
+            <storeCartDrawerModules.CartDeliverySummary
+              lines={storeCartState.lines}
+              onTotalDisplayChange={setStoreCartTotalDisplay}
+            />
           }
-        >
-          <StoreCartDrawer
-            deliverySummary={
-              <CartDeliverySummary lines={storeCartState.lines} onTotalDisplayChange={setStoreCartTotalDisplay} />
-            }
-            cartState={storeCartState}
-            checkoutAmountDisplay={storeCartTotalDisplay}
-            open
-            resolveHref={createProjectRelativeUrl}
-            onContinueShopping={closeStoreCartDrawer}
-            onDecrementItem={async (variantId) => {
-              const { decrementCartLineQuantityByVariant } = await import('@/components/store/cart/store-cart');
-              await applyStoreCartState(decrementCartLineQuantityByVariant(variantId, storeCartState));
-            }}
-            onIncrementItem={async (variantId) => {
-              const { incrementCartLineQuantityByVariant } = await import('@/components/store/cart/store-cart');
-              await applyStoreCartState(incrementCartLineQuantityByVariant(variantId, storeCartState));
-            }}
-            onOpenChange={(open) => (open ? setIsStoreCartDrawerOpen(true) : closeStoreCartDrawer())}
-            onRemoveItem={async (variantId) => {
-              const { removeCartLineByVariant } = await import('@/components/store/cart/store-cart');
-              await applyStoreCartState(removeCartLineByVariant(variantId, storeCartState));
-            }}
-            onRestoreItem={async (line, index) => {
-              const { restoreCartLine } = await import('@/components/store/cart/store-cart');
-              await applyStoreCartState(restoreCartLine(line, index, storeCartState));
-            }}
-          />
-        </Suspense>
-      )}
+          cartState={storeCartState}
+          checkoutAmountDisplay={storeCartTotalDisplay}
+          open={isStoreCartDrawerOpen}
+          resolveHref={createProjectRelativeUrl}
+          onContinueShopping={closeStoreCartDrawer}
+          onDecrementItem={async (variantId) => {
+            const { decrementCartLineQuantityByVariant } = await import('@/components/store/cart/store-cart');
+            await applyStoreCartState(decrementCartLineQuantityByVariant(variantId, storeCartState));
+          }}
+          onIncrementItem={async (variantId) => {
+            const { incrementCartLineQuantityByVariant } = await import('@/components/store/cart/store-cart');
+            await applyStoreCartState(incrementCartLineQuantityByVariant(variantId, storeCartState));
+          }}
+          onOpenChange={(open) => (open ? setIsStoreCartDrawerOpen(true) : closeStoreCartDrawer())}
+          onRemoveItem={async (variantId) => {
+            const { removeCartLineByVariant } = await import('@/components/store/cart/store-cart');
+            await applyStoreCartState(removeCartLineByVariant(variantId, storeCartState));
+          }}
+          onRestoreItem={async (line, index) => {
+            const { restoreCartLine } = await import('@/components/store/cart/store-cart');
+            await applyStoreCartState(restoreCartLine(line, index, storeCartState));
+          }}
+        />
+      ) : isStoreCartDrawerOpen ? (
+        <span className="accessibility-visually-hidden-text" role="status">
+          Loading cart
+        </span>
+      ) : null}
 
       <div
         className="app-shell-route-loading-indicator"
@@ -807,22 +936,18 @@ export default function AppShellRoot({
         ></span>
       </div>
 
-      {(overlayState || hasOpenedOverlay) && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading detail
-            </span>
-          }
-        >
+      {(overlayState || hasOpenedOverlay) &&
+        (ShellOverlayPanel ? (
           <ShellOverlayPanel
             closeButtonRef={overlayCloseButtonRef}
             onClose={closeOverlayWithHistoryBack}
             onExitComplete={() => {
               if (!overlayStateRef.current) setHasOpenedOverlay(false);
+              window.requestAnimationFrame(refreshGalleryTargets);
             }}
             onReady={() => {
               setHasOpenedOverlay(true);
+              refreshGalleryTargets();
               syncPlayerTriggers();
               scheduleOverlayContentFocus({
                 getCloseButton: () => overlayCloseButtonRef.current,
@@ -833,46 +958,93 @@ export default function AppShellRoot({
             overlayState={overlayState}
             scrollContainerRef={overlayScrollContainerRef}
           />
-        </Suspense>
-      )}
+        ) : (
+          <span className="accessibility-visually-hidden-text" role="status">
+            Loading detail
+          </span>
+        ))}
 
-      {(isPlayerModalOpen || isMiniPlayerVisible) && (
-        <Suspense
-          fallback={
-            <span className="accessibility-visually-hidden-text" role="status">
-              Loading player
-            </span>
-          }
+      {/* This host is always mounted. The Listen handler appends the iframe here before presentation loads. */}
+      <div
+        className="music-streaming-service-embedded-player-modal-overlay"
+        data-state={isPlayerModalOpen ? 'open' : 'closed'}
+        aria-hidden={!isPlayerModalOpen}
+        inert={!isPlayerModalOpen}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closePlayerModalWithHistoryBack();
+        }}
+      >
+        <div
+          aria-labelledby="music-streaming-service-embedded-player-modal-title"
+          aria-modal="true"
+          aria-busy={isPlayerLoading ? 'true' : 'false'}
+          className="music-streaming-service-embedded-player-modal-card"
+          role="dialog"
+          data-lenis-scroll-root
+          data-music-streaming-service-embedded-player-active-provider={activePlayerProviderId}
+          data-music-streaming-service-embedded-player-embed-layout={activePlayerEmbedLayout}
+          data-music-streaming-service-embedded-player-loading={isPlayerLoading ? 'true' : 'false'}
         >
-          <ShellPlayerSurface
-            activePlayerEmbedLayout={activePlayerEmbedLayout}
-            activePlayerProviderId={activePlayerProviderId}
-            activePlayerTitle={activePlayerTitle}
-            applyPlayerProvider={(provider) => {
-              const activeSession = activePlayerSessionRef.current;
-              if (activeSession) {
-                applyPlayerProvider(provider, activeSession.releaseId, activeSession.releaseTitle);
-              }
-            }}
-            iframeFrameHostRef={iframeFrameHostRef}
-            isMiniPlayerVisible={isMiniPlayerVisible}
-            isPlayerLoading={isPlayerLoading}
-            isPlayerModalOpen={isPlayerModalOpen}
-            markActivePlayerSurfaceAsInteracted={markActivePlayerSurfaceAsInteracted}
-            miniPlayerStatusLabel={miniPlayerStatusLabel}
-            modalCloseButtonRef={modalCloseButtonRef}
-            onModalBackdropClick={(event) => {
-              if (event.target === event.currentTarget) {
-                closePlayerModalWithHistoryBack();
-              }
-            }}
-            onReady={connectPlayerSurface}
-            playerModalDismissActionLabel={playerModalDismissActionLabel}
-            playerModalDismissAriaLabel={playerModalDismissAriaLabel}
-            playerProviders={playerProviders}
-            providerLogoUrls={providerLogoUrls}
-          />
-        </Suspense>
+          <h2 className="accessibility-visually-hidden-text" id="music-streaming-service-embedded-player-modal-title">
+            Music player
+          </h2>
+          <div ref={setPlayerHeaderContainer}>
+            {!ShellPlayerSurface && isPlayerModalOpen && (
+              <div className="music-streaming-service-embedded-player-modal-header">
+                <p role="status">Loading player controls</p>
+                <button
+                  ref={modalCloseButtonRef}
+                  type="button"
+                  aria-label="Close player"
+                  data-music-streaming-service-embedded-player-modal-dismiss
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+          <div
+            className="music-streaming-service-embedded-player-modal-frame"
+            onPointerDownCapture={markActivePlayerSurfaceAsInteracted}
+            onMouseDownCapture={markActivePlayerSurfaceAsInteracted}
+            onTouchStartCapture={markActivePlayerSurfaceAsInteracted}
+          >
+            <div className="music-streaming-service-embedded-player-modal-loading-state absolute inset-0 flex items-center justify-center bg-background/92 px-3 py-3 text-center">
+              <div role="status">
+                <Spinner className="mx-auto size-5" />
+                <p>Loading player</p>
+                <p>Preparing the embedded player. Playback starts after you interact with the provider frame.</p>
+              </div>
+            </div>
+            <div
+              ref={iframeFrameHostRef}
+              className="music-streaming-service-embedded-player-modal-frame-host flex w-full justify-center"
+            />
+          </div>
+        </div>
+      </div>
+
+      {ShellPlayerSurface && (
+        <ShellPlayerSurface
+          activePlayerProviderId={activePlayerProviderId}
+          activePlayerTitle={activePlayerTitle}
+          applyPlayerProvider={(provider) => {
+            const activeSession = activePlayerSessionRef.current;
+            if (activeSession) {
+              applyPlayerProvider(provider, activeSession.releaseId, activeSession.releaseTitle);
+            }
+          }}
+          headerContainer={playerHeaderContainer}
+          isMiniPlayerVisible={isMiniPlayerVisible}
+          isPlayerLoading={isPlayerLoading}
+          miniPlayerStatusLabel={miniPlayerStatusLabel}
+          modalCloseButtonRef={modalCloseButtonRef}
+          onReady={connectPlayerSurface}
+          playerModalDismissActionLabel={playerModalDismissActionLabel}
+          playerModalDismissAriaLabel={playerModalDismissAriaLabel}
+          playerProviders={playerProviders}
+          providerLogoUrls={providerLogoUrls}
+        />
       )}
 
       <ShellPortalOutlets
@@ -882,10 +1054,14 @@ export default function AppShellRoot({
         onOpenStoreCart={openStoreCartDrawer}
         servicesInquiryContainer={servicesInquiryContainer}
         servicesInquirySubmitText={servicesInquirySubmitText}
+        newsletterContainer={newsletterContainer}
         storeCartHeaderContainer={storeCartHeaderContainer}
         storeCartBridgeFailed={storeCartBridgeFailed}
         storeCartState={storeCartState}
       />
+      {hasGalleryTargets && StoreImageGalleryPortals && (
+        <StoreImageGalleryPortals pageKey={`${activeShellPathname}:${galleryRevision}`} />
+      )}
     </>
   );
 }

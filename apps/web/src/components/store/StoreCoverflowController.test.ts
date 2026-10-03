@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const animateMock = vi.hoisted(() => vi.fn());
-vi.mock('motion', () => ({ animate: animateMock }));
+const animateMock = vi.fn();
 
 import {
   advanceStoreCoverflowWheelGesture,
@@ -17,14 +16,18 @@ import {
 
 beforeEach(() => {
   animateMock.mockReset();
-  animateMock.mockImplementation(() => ({ finished: Promise.resolve(), stop: vi.fn() }));
+  animateMock.mockImplementation(() => ({ finished: Promise.resolve(), cancel: vi.fn() }));
 });
+
+// Each card runs separate transform and opacity animations, so the disclosure settles after a macrotask.
+const settlePositionAnimations = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 afterEach(() => {
   vi.unstubAllGlobals();
 });
 
 class FakeElement {
+  animate = (...args: unknown[]) => animateMock(this, ...args);
   clientWidth = 320;
   dataset: Record<string, string> = {};
   focus = vi.fn();
@@ -126,17 +129,36 @@ function createHarness(cardCount = 8, pendingDisclosure = false, reducedMotion =
     removeEventListener: (_event: string, listener: () => void) => motionPreferenceListeners.delete(listener),
   };
   vi.stubGlobal('window', { matchMedia: () => motionPreference });
-  vi.stubGlobal('getComputedStyle', (element: FakeElement) => ({
-    color: 'white',
-    opacity:
-      element.dataset.storeCoverflowPosition === 'active' ? '1' : element.dataset.storeCoverflowPosition ? '0.5' : '1',
-    transform: element.dataset.storeCoverflowPosition ? 'translate3d(10px, 0px, 0px)' : 'none',
+  const computedStyleReads: FakeElement[] = [];
+  vi.stubGlobal(
+    'getComputedStyle',
+    (element: FakeElement) => (
+      computedStyleReads.push(element),
+      {
+        color: 'white',
+        opacity:
+          element.dataset.storeCoverflowPosition === 'active'
+            ? '1'
+            : element.dataset.storeCoverflowPosition
+              ? '0.5'
+              : '1',
+        transform: element.dataset.storeCoverflowPosition ? 'translate3d(10px, 0px, 0px)' : 'none',
+      }
+    ),
+  );
+  const images = [{ dataset: { storeGridSizes: 'grid' }, sizesWrites: [] as string[] }].map((image) => ({
+    ...image,
+    set sizes(value: string) {
+      image.sizesWrites.push(value);
+    },
   }));
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
     callback(0);
     return 1;
   });
   const element = new FakeElement();
+  element.querySelectorAll.mockImplementation(((selector: string) =>
+    selector === 'img[data-store-grid-sizes]' ? images : []) as unknown as () => never[]);
   element.toggleAttribute('data-store-coverflow-pending-disclosure', pendingDisclosure);
   const stage = new FakeElement();
   const controls = new FakeElement();
@@ -194,9 +216,12 @@ function createHarness(cardCount = 8, pendingDisclosure = false, reducedMotion =
 
   return {
     cards,
+    computedStyleReads,
     controller,
     controls,
+    disclosureRail,
     element,
+    images,
     nextButton,
     previousButton,
     previewButton,
@@ -317,8 +342,7 @@ describe('Store Coverflow controller', () => {
   it('applies catalog state immediately but cancels deferred focus when search takes over', async () => {
     const { cards, controller, element, previewButton, toggleButton } = createHarness();
     element.dispatch('click', previewButton);
-    await Promise.resolve();
-    await Promise.resolve();
+    await settlePositionAnimations();
     let nextFrame: FrameRequestCallback | undefined;
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       nextFrame = callback;
@@ -342,6 +366,8 @@ describe('Store Coverflow controller', () => {
     const { controller, element, previewButton, toggleButton, cards, controls } = createHarness();
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
     expect(controls.hidden).toBe(false);
+    expect((previewButton as unknown as HTMLButtonElement).disabled).toBe(false);
+    expect((toggleButton as unknown as HTMLButtonElement).disabled).toBe(false);
     expect(cards.every((card) => !card.dataset.storeCoverflowPosition)).toBe(true);
     expect(toggleButton.getAttribute('aria-pressed')).toBe('true');
     element.dispatch('click', previewButton);
@@ -351,14 +377,15 @@ describe('Store Coverflow controller', () => {
     await Promise.resolve();
     controller.cleanup();
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
-    expect(controls.hidden).toBe(true);
+    expect(controls.hidden).toBe(false);
+    expect((previewButton as unknown as HTMLButtonElement).disabled).toBe(true);
+    expect((toggleButton as unknown as HTMLButtonElement).disabled).toBe(true);
   });
 
   it('returns to Grid without animations under reduced motion', async () => {
     const { element, previewButton, toggleButton } = createHarness(8, false, true);
     element.dispatch('click', previewButton);
-    await Promise.resolve();
-    await Promise.resolve();
+    await settlePositionAnimations();
     element.dispatch('click', toggleButton);
     await Promise.resolve();
     await Promise.resolve();
@@ -373,12 +400,12 @@ describe('Store Coverflow controller', () => {
   it('cancels active card motion when reduced motion changes live', () => {
     const { controller, element, previewButton, setReducedMotion, motionPreferenceListenerCount } = createHarness();
     element.dispatch('click', previewButton);
-    const controls = animateMock.mock.results.map((result) => result.value as { stop: ReturnType<typeof vi.fn> });
+    const controls = animateMock.mock.results.map((result) => result.value as { cancel: ReturnType<typeof vi.fn> });
     expect(controls.length).toBeGreaterThan(0);
 
     setReducedMotion(true);
 
-    expect(controls.some((control) => control.stop.mock.calls.length > 0)).toBe(true);
+    expect(controls.some((control) => control.cancel.mock.calls.length > 0)).toBe(true);
     expect(element.hasAttribute('data-store-coverflow-transitioning')).toBe(false);
     controller.cleanup();
     expect(motionPreferenceListenerCount()).toBe(0);
@@ -564,8 +591,7 @@ describe('Store Coverflow controller', () => {
     const { cards, controller, element, previewButton, toggleButton } = createHarness();
 
     element.dispatch('click', previewButton);
-    await Promise.resolve();
-    await Promise.resolve();
+    await settlePositionAnimations();
     element.dispatch('click', toggleButton);
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
     expect(cards[0]!.hasAttribute('data-store-coverflow-selected')).toBe(true);
@@ -582,5 +608,76 @@ describe('Store Coverflow controller', () => {
     expect(element.dataset.storeCoverflowMode).toBe('catalog');
     expect(cards.every((card) => !card.dataset.storeCoverflowPosition)).toBe(true);
     controller.cleanup();
+  });
+
+  it('animates position changes natively with the Coverflow easing and separate opacity timing', () => {
+    const { cards, controller, element, nextButton, previewButton } = createHarness();
+    element.dispatch('click', previewButton);
+    animateMock.mockClear();
+
+    element.dispatch('click', nextButton);
+
+    const activeCalls = animateMock.mock.calls.filter(([target]) => target === cards[1]);
+    expect(activeCalls).toEqual([
+      [
+        cards[1],
+        [{ transform: 'translate3d(10px, 0px, 0px)' }, { transform: 'translate3d(10px, 0px, 0px)' }],
+        { duration: 360, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+      ],
+      [cards[1], [{ opacity: 0.5 }, { opacity: 1 }], { duration: 180, easing: 'cubic-bezier(0, 0, 0.58, 1)' }],
+    ]);
+    controller.cleanup();
+  });
+
+  it('keeps the rail ratio off the group so a step restyles only the rail', () => {
+    const { controller, disclosureRail, element, nextButton, previewButton } = createHarness();
+    element.dispatch('click', previewButton);
+    element.dispatch('click', nextButton);
+
+    expect(disclosureRail.style.getPropertyValue('--store-coverflow-position-ratio')).toBe(String(2 / 8));
+    expect(element.style.getPropertyValue('--store-coverflow-position-ratio')).toBe('');
+    controller.cleanup();
+  });
+
+  it('measures only positioned and newly positioned cards for a step and none for search', () => {
+    const { cards, computedStyleReads, controller, element, images, nextButton, previewButton } = createHarness(20);
+
+    computedStyleReads.length = 0;
+    controller.setSearchActive(true);
+    controller.setSearchActive(false);
+    expect(computedStyleReads).toHaveLength(0);
+    expect(images[0]!.sizesWrites).toEqual([]);
+
+    element.dispatch('click', previewButton);
+    expect(images[0]!.sizesWrites).toEqual(['(min-width: 40rem) 16rem, 56vw']);
+    computedStyleReads.length = 0;
+    element.dispatch('click', nextButton);
+    const measuredCards = new Set(computedStyleReads);
+    // Six positioned before the step plus the one card that enters the far-right slot.
+    expect(measuredCards.size).toBe(7);
+    expect([...measuredCards].every((card) => cards.includes(card))).toBe(true);
+
+    controller.setSearchActive(true);
+    expect(images[0]!.sizesWrites).toEqual(['(min-width: 40rem) 16rem, 56vw', 'grid']);
+    controller.cleanup();
+  });
+
+  it('listens for wheel input only while the preview is shown', async () => {
+    const { controller, element, previewButton, stage, toggleButton } = createHarness();
+    expect(stage.listenerCount('wheel')).toBe(0);
+
+    element.dispatch('click', previewButton);
+    expect(stage.listenerCount('wheel')).toBe(1);
+    await settlePositionAnimations();
+
+    element.dispatch('click', toggleButton);
+    expect(element.dataset.storeCoverflowMode).toBe('catalog');
+    expect(stage.listenerCount('wheel')).toBe(0);
+
+    element.dispatch('click', previewButton);
+    controller.setSearchActive(true);
+    expect(stage.listenerCount('wheel')).toBe(0);
+    controller.cleanup();
+    expect(stage.listenerCount('wheel')).toBe(0);
   });
 });

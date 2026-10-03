@@ -11,56 +11,66 @@ export const snapshotStoreItemSchema = z
   })
   .strict();
 
+const environmentSchema = z.enum(['local', 'uat', 'prd']);
+const id = z.string().min(1).max(128);
+const manifestSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    environment: environmentSchema,
+    storeItems: z.array(snapshotStoreItemSchema).max(1000).optional(),
+    records: z
+      .array(
+        z
+          .object({
+            collection: z.string().refine(isCmsCollection),
+            id,
+            revisionId: id,
+            slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+            data: z.record(z.string(), z.json()),
+          })
+          .strict(),
+      )
+      .max(1000),
+    media: z
+      .array(
+        z
+          .object({
+            id,
+            sha256: z.string().regex(/^[a-f0-9]{64}$/),
+            filename: z.string().min(1).max(200),
+            mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
+            size: z
+              .number()
+              .int()
+              .positive()
+              .max(20 * 1024 * 1024),
+            width: z.number().int().positive(),
+            height: z.number().int().positive(),
+          })
+          .strict(),
+      )
+      .max(1000),
+  })
+  .strict();
+// Literal environment schemas retain the original validation messages and issue paths.
+const snapshotSchemas = {
+  local: manifestSchema.extend({ environment: z.literal('local') }),
+  uat: manifestSchema.extend({ environment: z.literal('uat') }),
+  prd: manifestSchema.extend({ environment: z.literal('prd') }),
+};
+const encoder = new TextEncoder();
+
 export function parseContentSnapshot(json: string, environment: 'local' | 'uat' | 'prd', requiredRevision?: string) {
-  z.enum(['local', 'uat', 'prd']).parse(environment);
-  if (new TextEncoder().encode(json).byteLength > 4 * 1024 * 1024) throw new Error('Invalid snapshot manifest size.');
-  const id = z.string().min(1).max(128);
-  const snapshot = z
-    .object({
-      schemaVersion: z.literal(1),
-      environment: z.literal(environment),
-      storeItems: z.array(snapshotStoreItemSchema).max(1000).optional(),
-      records: z
-        .array(
-          z
-            .object({
-              collection: z.string().refine(isCmsCollection),
-              id,
-              revisionId: id,
-              slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-              data: z.record(z.string(), z.json()),
-            })
-            .strict(),
-        )
-        .max(1000),
-      media: z
-        .array(
-          z
-            .object({
-              id,
-              sha256: z.string().regex(/^[a-f0-9]{64}$/),
-              filename: z.string().min(1).max(200),
-              mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']),
-              size: z
-                .number()
-                .int()
-                .positive()
-                .max(20 * 1024 * 1024),
-              width: z.number().int().positive(),
-              height: z.number().int().positive(),
-            })
-            .strict(),
-        )
-        .max(1000),
-    })
-    .strict()
-    .parse(JSON.parse(json));
+  environmentSchema.parse(environment);
+  if (encoder.encode(json).byteLength > 4 * 1024 * 1024) throw new Error('Invalid snapshot manifest size.');
+  const snapshot = snapshotSchemas[environment].parse(JSON.parse(json));
   if (requiredRevision !== undefined && !snapshot.records.some((record) => record.revisionId === requiredRevision))
     throw new Error('Requested publication revision is absent from the snapshot.');
   const identities = new Set<string>();
   const sources = new Set<string>();
   const slugs = new Set<string>();
   const variants = new Set<string>();
+  const publishedSources = new Set(snapshot.records.map((record) => `${record.collection}/${record.slug}`));
   for (const item of snapshot.storeItems ?? []) {
     const source = `${item.sourceKind}/${item.sourceId}`;
     if (sources.has(source) || slugs.has(item.storeItemSlug) || variants.has(item.variantId))
@@ -68,13 +78,7 @@ export function parseContentSnapshot(json: string, environment: 'local' | 'uat' 
     sources.add(source);
     slugs.add(item.storeItemSlug);
     variants.add(item.variantId);
-    if (
-      !snapshot.records.some(
-        (record) =>
-          record.collection === (item.sourceKind === 'release' ? 'releases' : 'distro') &&
-          record.slug === item.sourceId,
-      )
-    )
+    if (!publishedSources.has(`${item.sourceKind === 'release' ? 'releases' : 'distro'}/${item.sourceId}`))
       throw new Error('Snapshot Store Item has no published source.');
   }
   const paths = new Set<string>();

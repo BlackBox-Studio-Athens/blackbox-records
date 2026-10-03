@@ -19,6 +19,23 @@ function expectNoStoreCacheControl(response: Response): void {
 }
 
 describe('createHttpApp', () => {
+  it.each(['http://127.0.0.1:4321', 'https://denied.example', ''])(
+    'keeps entry preflight CORS parity for origin %s',
+    async (origin) => {
+      const init = {
+        method: 'OPTIONS',
+        headers: { Origin: origin, 'Access-Control-Request-Method': 'POST', 'X-Request-Id': 'preflight-parity' },
+      };
+      const ordinary = await createHttpApp().request('http://backend.test/api/store/items/record', init, testBindings);
+      const entry = await createHttpApp({ preflightOnly: true }).request(
+        'http://backend.test/api/store/items/record',
+        init,
+        testBindings,
+      );
+      expect(entry.status).toBe(ordinary.status);
+      expect([...entry.headers]).toEqual([...ordinary.headers]);
+    },
+  );
   it('returns 404 for unmatched routes', async () => {
     const app = createHttpApp();
 

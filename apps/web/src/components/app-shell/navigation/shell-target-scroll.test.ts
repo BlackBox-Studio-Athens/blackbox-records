@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { scrollShellTargetIntoView } from './shell-target-scroll';
 
@@ -38,6 +38,7 @@ function createOverlayScrollContainer({
 }
 
 afterEach(() => vi.unstubAllGlobals());
+beforeEach(() => vi.stubGlobal('window', { matchMedia: () => ({ matches: false }) }));
 
 describe('scrollShellTargetIntoView', () => {
   it('returns false when no target exists', () => {
@@ -57,7 +58,7 @@ describe('scrollShellTargetIntoView', () => {
   it('smooth-scrolls the document target through Lenis when there is no overlay root', () => {
     const targetElement = createTargetElement(80);
     const scrollTo = vi.fn();
-    vi.stubGlobal('window', { scrollY: 20, scrollTo });
+    vi.stubGlobal('window', { scrollY: 20, scrollTo, matchMedia: () => ({ matches: false }) });
     const documentRoot = {
       querySelector: vi.fn(() => targetElement),
     };

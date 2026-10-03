@@ -13,13 +13,16 @@ type MutableRef<T> = {
 
 export type ShellMotionControls = ReturnType<typeof animateMotion>;
 let animate: typeof animateMotion | undefined;
-void import('motion/mini')
-  .then((motion) => {
-    animate = motion.animate;
-  })
-  .catch(() => {
-    // Navigation remains usable if animation code cannot load.
-  });
+let motionLoad: Promise<void> | undefined;
+export function warmShellNavigationMotion() {
+  return (motionLoad ??= import('motion/mini')
+    .then((motion) => {
+      animate = motion.animate;
+    })
+    .catch(() => {
+      // Navigation remains usable if animation code cannot load.
+    }));
+}
 
 type ShellSectionTransitionControllerOptions = {
   animationsRef: MutableRef<ShellMotionControls[]>;
@@ -125,6 +128,7 @@ export function createShellSectionTransitionController({
   }
 
   function begin(target: string, source: ShellNavigationSource) {
+    void warmShellNavigationMotion();
     const nextToken = tokenRef.current + 1;
     tokenRef.current = nextToken;
     clearTimer();

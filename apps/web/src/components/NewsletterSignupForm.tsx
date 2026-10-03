@@ -6,17 +6,13 @@ import { PrivacyLink } from '@/platform/components/PurchaseInformation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LoadingButtonContent } from '@/components/ui/loading-feedback';
-import {
-  createPublicCheckoutApi,
-  PublicCheckoutApiError,
-  type PublicCheckoutApi,
-} from '@/components/store/checkout/public-checkout-api';
+import type { PublicCheckoutApi } from '@/components/store/checkout/public-checkout-api';
 
 type NewsletterSignupFormProps = {
   api?: PublicCheckoutApi;
   buttonLabel: string;
   formId: string;
-  note: ProseValue;
+  note?: ProseValue;
   placeholder: string;
 };
 
@@ -74,7 +70,8 @@ export default function NewsletterSignupForm({
     setState({ kind: 'submitting' });
 
     try {
-      await (api ?? createPublicCheckoutApi()).registerNewsletterSignup({
+      const client = api ?? (await import('@/components/store/checkout/public-checkout-api')).createPublicCheckoutApi();
+      await client.registerNewsletterSignup({
         consentAccepted: true,
         email,
       });
@@ -152,10 +149,14 @@ export default function NewsletterSignupForm({
         <span>{NEWSLETTER_CONSENT_LABEL}</span>
       </label>
 
-      <Prose className="text-xs uppercase tracking-[0.08em] text-muted-foreground" value={note} />
-      <div className="text-xs text-muted-foreground">
-        <PrivacyLink />
-      </div>
+      {note !== undefined && (
+        <Prose className="text-xs uppercase tracking-[0.08em] text-muted-foreground" value={note} />
+      )}
+      {note !== undefined && (
+        <div className="text-xs text-muted-foreground">
+          <PrivacyLink />
+        </div>
+      )}
 
       <p id={statusId} role="status" aria-live="polite" aria-atomic="true" className={view.statusClassName}>
         {view.statusMessage}
@@ -199,14 +200,18 @@ export function readNewsletterSignupErrorState(error: unknown): Extract<Newslett
   return {
     kind: 'error',
     message: readNewsletterSignupErrorMessage(error),
-    target: error instanceof PublicCheckoutApiError && error.status === 400 ? 'email' : 'form',
+    target: isNewsletterValidationError(error) ? 'email' : 'form',
   };
 }
 
 export function readNewsletterSignupErrorMessage(error: unknown): string {
-  if (error instanceof PublicCheckoutApiError && error.status === 400) {
+  if (isNewsletterValidationError(error)) {
     return NEWSLETTER_INVALID_EMAIL_MESSAGE;
   }
 
   return NEWSLETTER_PROVIDER_UNAVAILABLE_MESSAGE;
+}
+
+function isNewsletterValidationError(error: unknown) {
+  return error instanceof Error && error.name === 'PublicCheckoutApiError' && 'status' in error && error.status === 400;
 }

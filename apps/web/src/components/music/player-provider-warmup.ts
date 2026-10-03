@@ -22,7 +22,7 @@ export function warmPlayerProviderOrigins({
     .flatMap((provider) => EMBED_PROVIDER_WARMUP_ORIGINS[provider.id] || [])
     .forEach((origin) => {
       if (!origin || warmedOrigins.has(origin)) return;
-      appendHeadLink(targetDocument, 'preconnect', origin, true);
+      appendHeadLink(targetDocument, 'preconnect', origin, false);
       appendHeadLink(targetDocument, 'dns-prefetch', origin, false);
       warmedOrigins.add(origin);
     });

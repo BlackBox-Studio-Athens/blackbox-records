@@ -4,7 +4,7 @@ import EditorialContent from '@/components/detail/EditorialContent.astro';
 import { formatDayMonthYear } from '@/utils/content';
 import Prose from '@/components/Prose.astro';
 import { getImage, Image } from 'astro:assets';
-import StoreImageGallery from '@/components/store/StoreImageGallery';
+import { StoreImageGalleryPlaceholder } from '@/components/store/StoreImageGallery';
 import { buttonVariants } from '@/components/ui/button';
 import { getEntry } from '@/lib/content-reader';
 
@@ -13,6 +13,7 @@ import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import StoreItemPurchaseActions from '@/components/store/checkout/StoreItemPurchaseActions';
 import PurchaseInformation from '@/platform/components/PurchaseInformation';
 import { createProjectRelativeUrl } from '@/platform/config/site';
+import { largestImageWidth } from '@/platform/lib/editorial-image';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import {
   createReleaseDetailPath,
@@ -39,7 +40,7 @@ const entry = Astro.props.entry ?? (await getStorePageEntryBySlug(Astro.params.s
 if (!entry) return new Response('Not found', { status: 404 });
 const { storeItem, primaryAvailability } = entry;
 const cartItem = createCartLineItemSnapshotForStorePage(storeItem, primaryAvailability, storeItem.image.src);
-const cartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
+const cartSeed = await createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const sourceRelease = storeItem.sourceKind === 'release' ? await getEntry('releases', storeItem.sourceId) : null;
 
 if (storeItem.sourceKind === 'release' && !sourceRelease) {
@@ -61,12 +62,19 @@ if (storeItem.sourceKind === 'distro' && !distroSource) {
   throw new Error(`Missing Distro source entry for Store Item ${storeItem.slug}: ${storeItem.sourceId}.`);
 }
 
+const storeItemDetailImageWidths = [720, 1080, 1440, 1800];
 const gallery = sourceRelease?.data.gallery ?? distroSource?.data.gallery ?? [];
 const galleryImages =
   gallery.length > 0
     ? await Promise.all(
         [{ image: storeItem.image, image_alt: storeItem.imageAlt }, ...gallery].map(async ({ image, image_alt }) => {
-          const optimized = await getImage({ src: image, widths: [96, 480, 720, 960, 1200], format: 'webp' });
+          const widths = [144, 216, 480, 720, 960, 1200];
+          const optimized = await getImage({
+            src: image,
+            widths,
+            width: largestImageWidth(image, widths),
+            format: 'webp',
+          });
           return {
             src: optimized.src,
             srcSet: optimized.srcSet.attribute,
@@ -163,14 +171,15 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
       </div>
       <div class="store-item-artwork">
         {galleryImages.length > 1 ? (
-          <StoreImageGallery client:load images={galleryImages} title={storeItem.title} />
+          <StoreImageGalleryPlaceholder images={galleryImages} title={storeItem.title} />
         ) : (
           <Image
             src={storeItem.image}
             alt={storeItem.imageAlt}
             class="store-item-detail__image aspect-square h-auto w-full object-contain"
             priority
-            widths={[720, 1080, 1440, 1800]}
+            widths={storeItemDetailImageWidths}
+            width={largestImageWidth(storeItem.image, storeItemDetailImageWidths)}
             sizes="(min-width: 768px) 26rem, calc(100vw - 32px)"
           />
         )}

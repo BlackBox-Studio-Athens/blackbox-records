@@ -12,6 +12,7 @@ import {
 } from '@/lib/store-collection';
 import StoreBrowsePane from './StoreBrowsePane.astro';
 import StoreCoverflowControls from './StoreCoverflowControls.astro';
+import { StoreSearchToolbar } from './StoreDistroSearch';
 interface Props {
   entries: StoreCollectionEntry[];
 }
@@ -34,7 +35,7 @@ const formats = [
 ---
 
 <div class="layout-container store-browse-layout">
-  <StoreBrowsePane>
+  <StoreBrowsePane entries={entries} resultsId="distro-search-results">
     <nav slot="formats" aria-label="Browse Distro formats" class="store-format-links" data-distro-format-navigation>
       <h2>Browse Distro formats</h2>
       {formats.map((format) => (
@@ -55,8 +56,10 @@ const formats = [
   </StoreBrowsePane>
   <section class="store-browse-results" aria-label="Distro">
     <Prose class="store-category-description" value={content.hero.intro} data-content-path="hero.intro" />
-    <div data-distro-search></div>
-    <p data-store-result-total>
+    <div data-distro-search>
+      <StoreSearchToolbar resultsId="distro-search-results" />
+    </div>
+    <p data-store-result-total hidden>
       {entries.length} {entries.length === 1 ? 'item' : 'items'}
     </p>
     <div id="distro-search-results" class="distro-page-groups relative" data-distro-search-root tabindex="-1">

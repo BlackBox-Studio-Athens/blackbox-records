@@ -35,7 +35,7 @@ const controls = readFileSync(
   'utf8',
 );
 describe('Distro Coverflow progressive enhancement', () => {
-  it('starts one complete mixed catalog in Grid and offers explicit views only after readiness', () => {
+  it('starts one complete mixed catalog in Grid with disabled view controls before readiness', () => {
     expect(pageSource).toContain('const enrolled = entries.length > 6');
     expect(pageSource).toContain("data-store-coverflow-mode={enrolled ? 'catalog' : undefined}");
     expect(pageSource).toContain('entries.map');
@@ -44,7 +44,8 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(searchSource).toContain('setSearchActive(hasFilters)');
     expect(pageSource).not.toContain('getStoreCoverflowPosition');
     expect(controls).toMatch(/>\s*Grid\s*<\/button>[\s\S]*>\s*Coverflow\s*<\/button>/);
-    expect(controls).toContain('data-store-coverflow-controls hidden');
+    expect(controls).not.toContain('data-store-coverflow-controls hidden');
+    for (const button of controls.match(/<button\b[^>]*>/g) ?? []) expect(button).toMatch(/\bdisabled\b/);
     for (const hook of [
       'data-store-coverflow-current-value',
       'data-store-coverflow-remaining-value',
@@ -111,7 +112,18 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(cssSource).toContain('.store-item-card__image');
     expect(cssSource).not.toMatch(/\.distro-group-grid[^{}]*\{[^}]*content-visibility/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?transform-style: flat/);
-    const reducedMotionCss = cssSource.slice(cssSource.indexOf('@media (prefers-reduced-motion: reduce)'));
+    const reducedMotionCss = [...cssSource.matchAll(/@media\s*\(prefers-reduced-motion:\s*reduce\)\s*\{/g)]
+      .map((match) => {
+        let end = match.index! + match[0].length;
+        let depth = 1;
+        while (end < cssSource.length && depth) {
+          if (cssSource[end] === '{') depth++;
+          if (cssSource[end] === '}') depth--;
+          end++;
+        }
+        return cssSource.slice(match.index, end);
+      })
+      .join('\n');
     expect(reducedMotionCss).not.toMatch(/\.store-coverflow-controls[^{}]*\{[^}]*display:\s*none/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?position: static/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?\.store-item-card__content[\s\S]*?display: grid/);

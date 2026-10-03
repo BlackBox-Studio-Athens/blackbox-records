@@ -4,7 +4,7 @@
   "targets": {
     "test": {
       "command": "pnpm --filter @blackbox/web exec vitest run --project=app-shell --project=app-shell:worker --project=app-shell:request --config vitest.modules.config.ts",
-      "inputs": ["webTests", "^default"]
+      "inputs": ["webTests", "^default", "{workspaceRoot}/apps/web/src/layouts/StoreListingPricePrefetch.astro"]
     },
     "test-watch": {
       "command": "pnpm --filter @blackbox/web exec vitest --watch --project=app-shell --project=app-shell:worker --project=app-shell:request --config vitest.modules.config.ts",

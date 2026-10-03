@@ -1,15 +1,49 @@
-import { describe, expect, it } from 'vitest';
-import { createExactFirstSearcher } from '@/lib/exact-first-search';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { createExactFirstSearcher, loadExactFirstFuzzySearch } from '@/lib/exact-first-search';
 
 import {
   applyDistroFormatSelection,
   applyDistroSearch,
   getDistroSearchResultState,
+  getDistroSearchVisibleElements,
   getStoreArtistChoices,
   normalizeStoreArtist,
   resolveInitialDistroFormatKey,
+  StoreSearchToolbar,
+  StoreArtistControls,
   type DistroSearchDom,
 } from './StoreDistroSearch';
+
+describe('server Store chrome', () => {
+  it('renders the final disabled search controls with an empty reserved result box', () => {
+    const html = renderToStaticMarkup(createElement(StoreSearchToolbar, { resultsId: 'all-store-catalog' }));
+    expect(html).toContain('data-store-search-toolbar');
+    expect(html).toMatch(/<input[^>]*type="search"[^>]*disabled/);
+    expect(html).toContain('aria-controls="all-store-catalog"');
+    expect(html).toMatch(/data-store-search-summary="[^"]*"><\/p>/);
+    expect(html).toMatch(/<button[^>]*disabled[^>]*hidden[^>]*data-store-clear-search/);
+    expect(html).toMatch(/data-store-empty-results="[^"]*" hidden/);
+  });
+
+  it('renders complete native artist choices before enhancement', () => {
+    const html = renderToStaticMarkup(
+      createElement(StoreArtistControls, {
+        resultsId: 'distro-search-results',
+        choices: [
+          { key: '', label: 'All artists', count: 2 },
+          { key: 'band', label: 'Band', count: 2 },
+        ],
+      }),
+    );
+    expect(html).toMatch(/<select[^>]*disabled/);
+    expect(html).toContain('All artists (2)');
+    expect(html).toContain('Band (2)');
+    expect(html).toContain('<fieldset class="store-artists" disabled');
+    expect(html).toMatch(/<input[^>]*type="radio"[^>]*checked=""[^>]*value=""/);
+  });
+});
 
 class FakeElement {
   dataset: Record<string, string> = {};
@@ -157,6 +191,10 @@ describe('Distro format selection', () => {
 });
 
 describe('Distro search DOM filtering', () => {
+  beforeAll(async () => {
+    await loadExactFirstFuzzySearch();
+  });
+
   it.each(['all', 'distro'])('matches and clears the %s catalog without replacing or reordering cards', (scope) => {
     const { dom } = createDom();
     if (scope === 'all') {
@@ -194,6 +232,21 @@ describe('Distro search DOM filtering', () => {
     expect(applyDistroSearch(dom, new Set(searcher.search('Title').map((item) => item.element)))).toBe(count);
     expect(applyDistroSearch(dom, new Set())).toBe(0);
     expect(applyDistroSearch(dom, null)).toBe(count);
+  });
+
+  it('derives the visible set during render without touching the cards', () => {
+    const { cards, dom, formatKeys } = createDom();
+    const visible = getDistroSearchVisibleElements(
+      dom,
+      new Set([dom.items[0]!.element, dom.items[2]!.element]),
+      formatKeys[1],
+    );
+
+    expect([...visible]).toEqual([dom.items[2]!.element]);
+    expect(cards.every((card) => !card.hasAttribute('data-distro-search-hidden') && card.hiddenWrites === 0)).toBe(
+      true,
+    );
+    expect(getDistroSearchVisibleElements(dom, null, undefined).size).toBe(3);
   });
 
   it('hides unmatched cards without hiding the catalog or changing order', () => {

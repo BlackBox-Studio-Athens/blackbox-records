@@ -28,7 +28,9 @@ export function checkBrandFontSources(root = webRoot): void {
   const bundledFont = path.join(root, 'src', 'assets', 'fonts', 'brand', 'veneer_regular.woff2');
   const publicCss = readFileSync(path.join(root, 'public', 'assets', 'fonts', 'brand', 'veneer.css'), 'utf8');
   const globalCss = readFileSync(path.join(root, 'src', 'styles', 'global.css'), 'utf8');
+  const uiCss = readFileSync(path.join(root, 'src', 'styles', 'fonts.css'), 'utf8').replaceAll('\r\n', '\n');
   const siteLayout = readFileSync(path.join(root, 'src', 'layouts', 'SiteLayout.astro'), 'utf8');
+  const notFoundPage = readFileSync(path.join(root, 'src', 'pages', '404.astro'), 'utf8');
 
   for (const fontPath of [publicFont, bundledFont]) {
     if (sha256(fontPath) !== expectedVeneerSha256) throw new Error(`Veneer byte parity failed for ${fontPath}.`);
@@ -36,6 +38,30 @@ export function checkBrandFontSources(root = webRoot): void {
   requireText(publicCss, 'font-display: swap', 'Stable Veneer CSS');
   requireText(globalCss, "url('../assets/fonts/brand/veneer_regular.woff2')", 'Bundled Veneer CSS');
   requireText(globalCss, 'font-display: swap', 'Bundled Veneer CSS');
+  requireText(globalCss, "@import './fonts.css'", 'Main font stylesheet');
+  requireText(siteLayout, '@/assets/fonts/brand/veneer_regular.woff2?url', 'Veneer URL import');
+  requireText(siteLayout, 'href={veneerFontUrl} as="font" type="font/woff2" crossorigin="anonymous"', 'Veneer preload');
+  requireText(notFoundPage, "import '@/styles/fonts.css'", '404 font stylesheet');
+  for (const [family, weight] of [
+    ['Inter', '400 600'],
+    ['Geist Mono', '400 500'],
+    ['Bebas Neue', '400'],
+  ]) {
+    if (
+      !uiCss.includes(
+        `font-family: '${family}';\n  font-style: normal;\n  font-weight: ${weight};\n  font-display: swap;`,
+      )
+    ) {
+      throw new Error(`Self-hosted ${family} must declare weights ${weight} with swap display.`);
+    }
+  }
+  for (const [, asset] of uiCss.matchAll(/url\('\.\.\/assets\/fonts\/ui\/([^']+)'\)/g)) {
+    const font = readFileSync(path.join(root, 'src', 'assets', 'fonts', 'ui', asset!));
+    if (font.subarray(0, 4).toString() !== 'wOF2') throw new Error(`Invalid UI WOFF2: ${asset}.`);
+  }
+  for (const source of [siteLayout, notFoundPage, globalCss, uiCss]) {
+    if (/fonts\.(?:googleapis|gstatic)\.com/.test(source)) throw new Error('Public fonts must be self-hosted.');
+  }
   if (siteLayout.includes('/assets/fonts/brand/veneer.css')) {
     throw new Error('The main SiteLayout must not request the stable Holding Page Veneer stylesheet.');
   }
@@ -61,6 +87,15 @@ export function checkBrandFontBuild(root = webRoot): void {
   requireText(generatedCss, path.basename(generatedFonts[0]!), 'Generated main-site CSS');
   requireText(generatedCss, 'font-display:swap', 'Generated main-site CSS');
 
+  const uiFonts = ['inter-latin', 'geist-mono-latin', 'bebas-neue-latin'].map((name) => {
+    const assets = listFiles(astroRoot).filter(
+      (file) => path.basename(file).startsWith(`${name}.`) && file.endsWith('.woff2'),
+    );
+    if (assets.length !== 1) throw new Error(`Expected one fingerprinted ${name} asset, found ${assets.length}.`);
+    requireText(generatedCss, path.basename(assets[0]!), 'Generated UI font CSS');
+    return path.basename(assets[0]!);
+  });
+
   const normalRouteHtml = listFiles(distRoot).filter(
     (file) =>
       file.endsWith('.html') &&
@@ -72,6 +107,33 @@ export function checkBrandFontBuild(root = webRoot): void {
   );
   if (stableFontReferences.length > 0) {
     throw new Error(`Normal routes request the stable Holding Page font CSS: ${stableFontReferences.join(', ')}`);
+  }
+  for (const file of normalRouteHtml) {
+    const html = readFileSync(file, 'utf8');
+    if (/fonts\.(?:googleapis|gstatic)\.com/.test(html)) throw new Error(`Third-party font request in ${file}.`);
+    if (html.includes('view-transition-name') || html.includes('data-astro-transition-scope')) {
+      throw new Error(`Unused view-transition output in ${file}.`);
+    }
+    // Redirect-only documents have no font CSS. Only Releases preloads Geist for its first-screen catalog eyebrow.
+    const isNotFound = path.basename(file) === '404.html';
+    if (!html.includes('<body') || (!isNotFound && !html.includes('data-app-shell-main'))) continue;
+    const expected = isNotFound ? [uiFonts[0]!, uiFonts[2]!] : [path.basename(generatedFonts[0]!), uiFonts[0]!];
+    if (path.relative(distRoot, file).split(path.sep).join('/') === 'releases/index.html') expected.push(uiFonts[1]!);
+    const links = html.match(/<link\b[^>]*>/g) ?? [];
+    for (const font of expected) {
+      if (
+        !links.some(
+          (link) =>
+            link.includes(font) &&
+            link.includes('rel="preload"') &&
+            link.includes('as="font"') &&
+            link.includes('type="font/woff2"') &&
+            /\bcrossorigin(?:[\s=>])/.test(link),
+        )
+      ) {
+        throw new Error(`Missing CORS font preload matching bundled CSS for ${font} in ${file}.`);
+      }
+    }
   }
 }
 

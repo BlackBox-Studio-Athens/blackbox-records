@@ -1,14 +1,18 @@
 ---
 import '@/styles/global.css';
+import veneerFontUrl from '@/assets/fonts/brand/veneer_regular.woff2?url';
+import interFontUrl from '@/assets/fonts/ui/inter-latin.woff2?url';
+import geistMonoFontUrl from '@/assets/fonts/ui/geist-mono-latin.woff2?url';
 
 import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
 
 import AppShell from '@/layouts/AppShell.astro';
 import Footer from '@/components/Footer.astro';
 import Header from '@/components/Header.astro';
 import { createAbsoluteSiteUrl, createProjectRelativeUrl, siteBrandAssets, siteConfig } from '@/platform/config/site';
 import { getLabelSettings, getSocialItems } from '@/lib/site-data';
-import { getPurchaseInformation } from '@/platform/lib/purchase-information';
+import { getPurchaseInformation, inlinesPurchaseInformation } from '@/platform/lib/purchase-information';
 
 interface Props {
   pageTitle?: string;
@@ -50,8 +54,17 @@ const metadataTitle = pageTitle || siteConfig.title;
 const metadataDescription = pageDescription || pageSummary || siteConfig.description;
 const metadataUrl = Astro.url.toString();
 const metadataImageRaw = ogImage || coverImage || image || siteConfig.socialImage;
-const metadataImagePath = typeof metadataImageRaw === 'string' ? metadataImageRaw : metadataImageRaw.src;
-const metadataImage = metadataImagePath.includes('://') ? metadataImagePath : createAbsoluteSiteUrl(metadataImagePath);
+// Link unfurls fetch og:image and twitter:image in full, so a Content Image becomes a 1200 px JPEG instead of the
+// original upload (1-4.6 MB). Its URL already carries the base path, so it resolves against the site origin only.
+const metadataImage =
+  typeof metadataImageRaw !== 'string'
+    ? new URL(
+        (await getImage({ src: metadataImageRaw, width: Math.min(metadataImageRaw.width, 1200), format: 'jpg' })).src,
+        Astro.site ?? Astro.url,
+      ).toString()
+    : metadataImageRaw.includes('://')
+      ? metadataImageRaw
+      : createAbsoluteSiteUrl(metadataImageRaw);
 const metadataImageAlt = coverImageAlt || imageAlt || siteConfig.socialImageAlt || siteConfig.title;
 const metadataType = layoutType === 'news' ? 'article' : 'website';
 const configuredPublicBackendBaseUrl = import.meta.env.PUBLIC_BACKEND_BASE_URL?.trim();
@@ -63,6 +76,7 @@ const sameAs = socialItems.filter((item) => item.url && item.url !== '#').map((i
 const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true';
 const baseHtmlTitle = pageTitle ? `${pageTitle} | ${siteConfig.title}` : siteConfig.title;
 const htmlTitle = showReviewSiteMarker ? `[UAT] ${baseHtmlTitle}` : baseHtmlTitle;
+const preloadGeistMono = Astro.url.pathname === createProjectRelativeUrl('/releases/');
 const resolvedBodyClass = ['min-h-screen flex flex-col overflow-x-clip bg-background text-foreground', bodyClass]
   .filter(Boolean)
   .join(' ');
@@ -76,15 +90,19 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
   <head>
     <script>
       import { connectPrivatePreview } from '@/platform/lib/private-preview';
+      import { connectPublicImageFallback } from '@/platform/lib/public-image-fallback';
       connectPrivatePreview();
+      connectPublicImageFallback();
     </script>
     <meta charset="utf-8" />
-    <script
-      is:inline
-      type="application/json"
-      id="purchase-information"
-      set:html={JSON.stringify(getPurchaseInformation()).replaceAll('<', '\\u003c')}
-    />
+    {inlinesPurchaseInformation && (
+      <script
+        is:inline
+        type="application/json"
+        id="purchase-information"
+        set:html={JSON.stringify(getPurchaseInformation()).replaceAll('<', '\\u003c')}
+      />
+    )}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{htmlTitle}</title>
     <meta name="description" content={metadataDescription} />
@@ -131,22 +149,14 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
         sameAs,
       })}
     />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+    <link rel="preload" href={veneerFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href={interFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
+    {preloadGeistMono && (
+      <link rel="preload" href={geistMonoFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />
+    )}
     {publicBackendOrigin && <link rel="dns-prefetch" href={publicBackendOrigin} />}
+    {inlinesPurchaseInformation && <link rel="preconnect" href="https://images.blackboxrecordsathens.com" />}
     {publicBackendOrigin && <link rel="preconnect" href={publicBackendOrigin} crossorigin="anonymous" />}
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500;600&display=optional"
-      rel="preload"
-      as="style"
-      onload="this.onload=null;this.rel='stylesheet'"
-    />
-    <noscript>
-      <link
-        href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Geist+Mono:wght@400;500&family=Inter:wght@400;500;600&display=optional"
-        rel="stylesheet"
-      />
-    </noscript>
   </head>
   <body class={resolvedBodyClass}>
     <a class="accessibility-skip-to-content-link" href="#main">

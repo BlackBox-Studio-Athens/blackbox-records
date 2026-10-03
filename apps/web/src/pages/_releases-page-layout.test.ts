@@ -14,9 +14,7 @@ describe('Releases page layout', () => {
     expect(page).not.toContain('InternalPageHero');
     expect(page).toMatch(/<header class="layout-container releases-page-intro">/);
     expect(page).toMatch(/<p class="releases-page-intro__eyebrow">Catalog<\/p>/);
-    expect(page).toMatch(
-      /<h1 class="releases-page-intro__title internal-page-hero__title" transition:name="internal-page-hero-title">\s*Releases\s*<\/h1>/s,
-    );
+    expect(page).toMatch(/<h1 class="releases-page-intro__title internal-page-hero__title">\s*Releases\s*<\/h1>/s);
   });
 
   it('keeps latest, Upcoming, and Our Releases in source order', () => {

@@ -8,7 +8,18 @@ import {
   type SnapshotInput,
 } from './content-files/content-snapshot';
 
-let loaded: Promise<LoadedSnapshot> | undefined;
+let loaded: { key: string; snapshot: Promise<LoadedSnapshot> } | undefined;
+
+export function loadContentSnapshot(input: SnapshotInput): Promise<LoadedSnapshot> {
+  const key = JSON.stringify([resolve(input.path), input.sha256, input.environment]);
+  if (loaded?.key === key) return loaded.snapshot;
+  const snapshot = readContentSnapshot(input).catch((error) => {
+    if (loaded?.snapshot === snapshot) loaded = undefined;
+    throw error;
+  });
+  loaded = { key, snapshot };
+  return snapshot;
+}
 export function contentSnapshotInput(): SnapshotInput | undefined {
   const source = process.env.CMS_CONTENT_SOURCE;
   // Removed at the authorized source cutover; existing deployments still use their current content input.
@@ -36,7 +47,7 @@ export function publicContentLoader(collection: string, pattern: string, base: s
   return {
     name: `blackbox-snapshot-${collection}`,
     async load({ store, meta, parseData, config, generateDigest }) {
-      const snapshot = await (loaded ??= readContentSnapshot(input));
+      const snapshot = await loadContentSnapshot(input);
       const entries = await Promise.all(
         snapshotCollection(snapshot, collection).map(async ({ id, data }) => ({
           id,

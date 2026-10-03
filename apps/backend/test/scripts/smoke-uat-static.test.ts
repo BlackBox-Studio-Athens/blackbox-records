@@ -6,6 +6,9 @@ import {
   discoverRepresentativePaths,
   findPublicMediaPath,
   findSectionMediaPath,
+  imageTransformByteBudget,
+  imageTransformIssues,
+  imageTransformProbePaths,
   parseUatStaticSmokeArgs,
   resolveSelectedUatStaticSmokeScenarios,
 } from '../../../../scripts/smoke-uat-static';
@@ -18,6 +21,9 @@ describe('UAT static smoke', () => {
       'public_routes',
     ]);
     expect(parseUatStaticSmokeArgs(['--scenario', 'public_assets']).scenario).toBe('public_assets');
+    // The image transformation check runs by name (e.g. at a hostname cutover), not in the release smoke set.
+    expect(parseUatStaticSmokeArgs(['--scenario', 'image_transform']).scenario).toBe('image_transform');
+    expect(resolveSelectedUatStaticSmokeScenarios('image_transform').map((s) => s.name)).toEqual(['image_transform']);
     expect(() => parseUatStaticSmokeArgs(['--scenario', 'cms_admin'])).toThrow();
     expect(() => parseUatStaticSmokeArgs(['--scenario', 'cms_assets'])).toThrow();
   });
@@ -32,6 +38,55 @@ describe('UAT static smoke', () => {
       findPublicMediaPath('<main><img src="https://foreign.test/a.webp"></main>', 'https://example.test/'),
     ).toThrow();
     expect(() => findPublicMediaPath('<main></main>', 'https://example.test/')).toThrow();
+  });
+  it('probes a 480 px transformation of the first published CMS image under the site base', () => {
+    const media = 'b'.repeat(64);
+    const html = [
+      '<header><img src="/_image?href=%2Fmedia%2Fcontent%2Fignored&w=96"></header><main>',
+      '<img src="/_image?href=%2F_astro%2Flogo.png&amp;w=308">',
+      `<img src="/_image?href=%2Fmedia%2Fcontent%2F${media}&amp;w=1400&amp;h=800">`,
+      '</main>',
+    ].join('');
+    expect(imageTransformProbePaths(html, 'https://blackboxrecordsathens.com/')).toEqual({
+      mediaPath: `/media/content/${media}`,
+      transformPath: `/_image?href=%2Fmedia%2Fcontent%2F${media}&w=480`,
+    });
+    expect(
+      imageTransformProbePaths(
+        `<main><img src="/blackbox-records/media/content/${media}"></main>`,
+        'http://127.0.0.1:4321/blackbox-records/',
+      ),
+    ).toEqual({
+      mediaPath: `/media/content/${media}`,
+      transformPath: `/_image?href=%2Fblackbox-records%2Fmedia%2Fcontent%2F${media}&w=480`,
+    });
+    expect(() => imageTransformProbePaths('<main><img src="/assets/a.webp"></main>', 'https://x.test/')).toThrow(
+      'no published CMS image',
+    );
+  });
+  it('accepts only a small immutable AVIF or WebP transformation', () => {
+    const passing = {
+      bytes: 30_000,
+      cacheControl: 'public, max-age=31536000, immutable',
+      contentType: 'image/avif',
+      fallback: null,
+      originalBytes: 900_000,
+      status: 200,
+    };
+    expect(imageTransformIssues(passing)).toEqual([]);
+    expect(imageTransformIssues({ ...passing, contentType: 'image/webp' })).toEqual([]);
+    const original = imageTransformIssues({
+      ...passing,
+      bytes: 900_000,
+      cacheControl: 'public, max-age=300',
+      contentType: 'image/jpeg',
+      fallback: 'original-fallback',
+    });
+    expect(original).toHaveLength(5);
+    expect(imageTransformIssues({ ...passing, bytes: imageTransformByteBudget + 1, originalBytes: null })).toHaveLength(
+      1,
+    );
+    expect(imageTransformIssues({ ...passing, status: 404 })[0]).toContain('HTTP 200');
   });
   it('samples media from the first published page that renders a content image', async () => {
     const pages: Record<string, string> = {

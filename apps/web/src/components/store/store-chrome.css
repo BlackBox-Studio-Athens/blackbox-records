@@ -1,0 +1,16 @@
+/* Capability is known before hydration; disabled controls retain their final boxes. */
+@supports (transform-style: preserve-3d) {
+  .store-collection-page [data-store-coverflow-group] .store-coverflow-controls[data-store-coverflow-controls] {
+    display: grid;
+  }
+}
+
+.store-search-toolbar .store-result-count {
+  width: 9ch;
+  flex: none;
+  min-height: 1.25rem;
+}
+
+.store-search-toolbar:not([data-store-search-ready]) .store-result-count {
+  visibility: hidden;
+}

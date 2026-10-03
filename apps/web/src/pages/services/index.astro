@@ -6,8 +6,10 @@ import { buttonVariants } from '@/components/ui/button';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { resolveLinkAttributes } from '@/platform/config/site';
 import { getServicesContent } from '@/lib/site-data';
+import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 
 const servicesContent = await getServicesContent();
+const serviceImageWidths = [720, 1200, 1600];
 const { services: servicesListSection, process: processSection, inquiry: inquirySection } = servicesContent;
 ---
 
@@ -48,8 +50,10 @@ const { services: servicesListSection, process: processSection, inquiry: inquiry
                   src={service.image}
                   alt={service.image_alt}
                   class="services-service-section__image"
-                  widths={[720, 1200, 1600]}
+                  widths={serviceImageWidths}
+                  width={largestImageWidth(service.image, serviceImageWidths)}
                   sizes="(min-width: 80rem) 54rem, (min-width: 48rem) 60vw, calc(100vw - 2rem)"
+                  quality={editorialImageQuality}
                   priority={index === 0}
                 />
                 <div class="services-service-section__media-overlay">

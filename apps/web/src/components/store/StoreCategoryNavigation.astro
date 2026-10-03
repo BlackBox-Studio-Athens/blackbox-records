@@ -1,18 +1,13 @@
 ---
 import { createProjectRelativeUrl } from '@/platform/config/site';
-import { getDiscoverableStoreCatalogCategories, type StoreCatalogCategoryId } from '@/lib/store-categories';
-import { listStoreCollectionEntries } from '@/lib/store-collection';
+import type { StoreCatalogCategory, StoreCatalogCategoryId } from '@/lib/store-categories';
 
 interface Props {
   activeCategoryId: StoreCatalogCategoryId;
+  categories: readonly StoreCatalogCategory[];
 }
 
-const { activeCategoryId } = Astro.props;
-const allEntries = await listStoreCollectionEntries();
-const discoverableCategories = getDiscoverableStoreCatalogCategories([
-  'all',
-  ...allEntries.flatMap((entry) => entry.categoryIds),
-]);
+const { activeCategoryId, categories: discoverableCategories } = Astro.props;
 ---
 
 <nav aria-label="Store categories" class="store-category-signal">

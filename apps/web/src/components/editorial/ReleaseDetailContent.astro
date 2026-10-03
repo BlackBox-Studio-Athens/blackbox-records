@@ -6,7 +6,7 @@ import { tracklistGroups } from '@blackbox/content-model';
 import EditorialContent from '@/components/detail/EditorialContent.astro';
 
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
-import StoreImageGallery from '@/components/store/StoreImageGallery';
+import { StoreImageGalleryPlaceholder } from '@/components/store/StoreImageGallery';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { resolveArtistProfileForRelease, resolveReleaseArtistDisplayName } from 
 import { getReleaseCommerceLink } from './release-commerce';
 import { formatDayMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
+import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 
 interface Props {
   release: CollectionEntry<'releases'>;
@@ -38,6 +39,11 @@ const singles = release.data.singles ?? [];
 const clips = release.data.clips ?? [];
 const gallery = release.data.gallery ?? [];
 const releaseTitle = release.data.title;
+const galleryImageWidths = [144, 216, 480, 720, 960, 1200];
+const coverImageWidths = [720, 1080, 1440, 1800];
+// Card in .layout-container; from 64rem the cover column is 0.85fr of 0.85fr + 1.15fr beside a 2rem gap and stretches
+// to the copy's height with object-cover, so its desktop slot allows for crops up to 36rem.
+const coverImageSizes = '(min-width: 64rem) 36rem, (min-width: 40rem) calc(100vw - 3.125rem), calc(100vw - 2.125rem)';
 const galleryImages =
   gallery.length > 0
     ? await Promise.all(
@@ -45,7 +51,13 @@ const galleryImages =
           { image: release.data.cover_image, image_alt: release.data.cover_image_alt || release.data.title },
           ...gallery,
         ].map(async ({ image, image_alt }) => {
-          const optimized = await getImage({ src: image, widths: [96, 480, 720, 960, 1200], format: 'webp' });
+          const optimized = await getImage({
+            src: image,
+            widths: galleryImageWidths,
+            width: largestImageWidth(image, galleryImageWidths),
+            format: 'webp',
+            quality: editorialImageQuality,
+          });
           return {
             src: optimized.src,
             srcSet: optimized.srcSet.attribute,
@@ -63,15 +75,17 @@ const galleryImages =
     <CardContent className="grid gap-8 p-0 lg:grid-cols-[0.85fr_1.15fr]">
       <div class="relative overflow-hidden border-b border-border/70 lg:border-r lg:border-b-0">
         {galleryImages.length > 1 ? (
-          <StoreImageGallery client:load images={galleryImages} title={releaseTitle} priority={showRouteNavigation} />
+          <StoreImageGalleryPlaceholder images={galleryImages} title={releaseTitle} priority={showRouteNavigation} />
         ) : (
           <>
             <Image
               src={release.data.cover_image}
               alt={release.data.cover_image_alt || release.data.title}
               class="release-detail-cover__image h-full w-full object-cover"
-              widths={[720, 1080, 1440, 1800]}
-              sizes="(min-width: 1024px) 36vw, 100vw"
+              widths={coverImageWidths}
+              width={largestImageWidth(release.data.cover_image, coverImageWidths)}
+              sizes={coverImageSizes}
+              quality={editorialImageQuality}
               loading="eager"
               priority={showRouteNavigation}
             />

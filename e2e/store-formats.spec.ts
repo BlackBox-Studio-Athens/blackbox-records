@@ -413,7 +413,8 @@ test.describe('Native Store navigation', () => {
     const cards = page.locator('[data-distro-search-item]');
     expect(await cards.count()).toBeGreaterThan(6);
     expect(await cards.locator('visible=true').count()).toBe(await cards.count());
-    await expect(page.getByRole('button', { name: 'Coverflow', exact: true })).toBeHidden();
+    await expect(page.getByRole('button', { name: 'Coverflow', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Coverflow', exact: true })).toBeDisabled();
     await expect(page.locator('.store-item-card__artist-link').first()).toBeVisible();
     await expect(page.locator('#distro-group-cds')).toHaveCount(1);
     // The legacy fragment starts below the category bar; return above the fixed header before choosing a shelf.
@@ -467,4 +468,55 @@ test('Distro shell navigation and filters preserve the playing iframe', async ({
   await page.getByRole('button', { name: 'Open player' }).click();
   await expect(page.getByRole('dialog', { name: 'Music player' })).toBeVisible();
   expect(await original!.evaluate((element) => element.isConnected)).toBe(true);
+});
+
+test('Coverflow steps settle on CSS positions and a first typo query waits for the lazy fuzzy matcher', async ({
+  page,
+}) => {
+  await page.goto('store/distro/');
+  await waitForShell(page);
+  const search = page.getByRole('searchbox', { name: 'Search Store' });
+  await expect(search).toBeVisible();
+  const root = page.locator('[data-distro-search-root]');
+  const group = root.locator('[data-store-coverflow-group]').first();
+  const cards = group.locator('[data-store-coverflow-card]');
+  const total = await cards.count();
+
+  await page.getByRole('button', { name: 'Coverflow', exact: true }).click();
+  await expect(group).toHaveAttribute('data-store-coverflow-mode', 'preview');
+  await group.locator('[data-store-coverflow-next]').click();
+  await expect(cards.nth(1)).toHaveAttribute('data-store-coverflow-position', 'active');
+  // Native position animations run without fill, so settled cards carry no inline styles and only the rail
+  // fill holds the position ratio.
+  await expect
+    .poll(() =>
+      group.evaluate((element) => ({
+        animatedCards: document
+          .getAnimations()
+          .filter((animation) =>
+            (animation.effect as KeyframeEffect | null)?.target?.hasAttribute('data-store-coverflow-card'),
+          ).length,
+        inlineCards: [...element.querySelectorAll<HTMLElement>('[data-store-coverflow-card]')].filter(
+          (card) => card.style.transform || card.style.opacity,
+        ).length,
+        groupRatio: element.style.getPropertyValue('--store-coverflow-position-ratio'),
+        railRatio: element
+          .querySelector<HTMLElement>('[data-store-coverflow-disclosure-rail]')!
+          .style.getPropertyValue('--store-coverflow-position-ratio'),
+      })),
+    )
+    .toEqual({ animatedCards: 0, inlineCards: 0, groupRatio: '', railRatio: String(2 / total) });
+  await expect(cards.nth(1).locator('.store-item-card__price')).toBeVisible();
+  await expect(cards.nth(1).locator('.brand-card-title')).toBeHidden();
+  await page.getByRole('button', { name: 'Grid', exact: true }).click();
+  await expect(group).toHaveAttribute('data-store-coverflow-mode', 'catalog');
+
+  // A pasted typo is the first query, so the fuzzy fallback must wait for fuse.js and then search again.
+  const title = (await cards.nth(1).locator('h2').innerText()).trim();
+  const word = title.split(/\s+/).reduce((longest, part) => (part.length > longest.length ? part : longest), '');
+  expect(word.length).toBeGreaterThanOrEqual(5);
+  const typo = word.slice(0, 2) + word[3] + word[2] + word.slice(4);
+  await search.fill(typo);
+  await expect(root.locator('[data-distro-search-item]:visible h2', { hasText: title }).first()).toBeVisible();
+  await expect(page.locator('.store-empty-results')).toBeHidden();
 });

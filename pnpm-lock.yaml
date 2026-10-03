@@ -250,6 +250,9 @@ importers:
       '@astrojs/react':
         specifier: 7.0.0
         version: 7.0.0(@types/node@24.19.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(esbuild@0.28.2)(jiti@2.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(tsx@4.23.15)(yaml@2.9.1)
+      '@blackbox/api-client':
+        specifier: workspace:*
+        version: link:../../packages/api-client
       '@blackbox/content-model':
         specifier: workspace:*
         version: link:../../packages/content-model

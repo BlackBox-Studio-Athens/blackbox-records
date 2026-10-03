@@ -8,12 +8,19 @@ import { readBoundedText } from './preview-content';
 import { previewRenderContent, previewRenderSchema } from './preview-render-contract';
 import {
   publicationPointerSchema,
-  readPublicationPointer,
+  PublicSnapshotSelection,
   readPublishedSnapshot,
   type PublicationPointer,
   type PublicationEnvironment,
 } from './published-storage';
-import { deliverPublicCmsImage } from './public-image-transform';
+import { notFound, PublicMedia, publicMediaBase } from './public-media';
+import { invalidatePublicPublication, publicInvalidationPath, publicPublicationTags } from './public-publication-cache';
+import {
+  PublicRenderCache,
+  publicPageEtag,
+  publicPageNotModified,
+  publicCachedPageResponse,
+} from './public-render-cache';
 
 declare const PUBLIC_RELEASE_IDENTITY: { sha: string; runId: string; runNumber: number };
 declare const PUBLIC_BOOTSTRAP: PublicationPointer | null;
@@ -22,65 +29,64 @@ type Bindings = {
   MEDIA: R2Bucket;
   ASSETS: Fetcher;
   PRODUCT_ENVIRONMENT: PublicationEnvironment;
+  PUBLIC_IMAGE_SOURCE_ORIGIN?: string;
   PUBLIC_IMAGE_TRANSFORM_ORIGIN: string;
   PUBLIC_SITE_RUNTIME: DurableObjectNamespace<PublicSiteRuntime>;
 };
-// Workers Caching stores header-less 404s heuristically; a not-found answer must never be reused.
-const notFound = () => new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
-
 export default {
   async fetch(request: Request, env: Bindings, context: ExecutionContext) {
     const path = new URL(request.url).pathname.replace(/^\/blackbox-records(?=\/)/, '');
-    if (/(?:^|\/)(?:assets|_astro)\//.test(path)) return env.ASSETS.fetch(request);
+    if (path === publicInvalidationPath)
+      return invalidatePublicPublication(
+        request,
+        (pointer) =>
+          env.PUBLIC_SITE_RUNTIME.getByName('public-v2', { locationHint: 'eeur' }).invalidatePublication(pointer),
+        context.cache,
+        env.PRODUCT_ENVIRONMENT,
+      );
+    if (/(?:^|\/)(?:assets|_astro)\//.test(path) || /^\/favicon[^/]*$/.test(path) || path === '/robots.txt')
+      return env.ASSETS.fetch(request);
     if (path === '/_image') return context.exports.PublicImageRenderer.fetch(request);
-    return env.PUBLIC_SITE_RUNTIME.getByName('public').fetch(request);
+    // The old object held only disposable caches. Publication validation and previews cannot block shopper SSR.
+    return env.PUBLIC_SITE_RUNTIME.getByName(path.startsWith('/__publication/') ? 'publication-v2' : 'public-v2', {
+      locationHint: 'eeur',
+    }).fetch(request);
   },
 } satisfies ExportedHandler<Bindings>;
 
 export class PublicImageRenderer extends WorkerEntrypoint<Bindings> {
   fetch(request: Request): Promise<Response> {
-    return this.env.PUBLIC_SITE_RUNTIME.getByName('public').fetch(request);
+    return this.env.PUBLIC_SITE_RUNTIME.getByName('public-v2', { locationHint: 'eeur' }).fetch(request);
   }
 }
 
 export class PublicSiteRuntime extends DurableObject<Bindings> {
-  private current: { pointer: PublicationPointer; snapshot: ContentSnapshot; checkedAt: number } | undefined;
-  private pages = new Map<string, { body: string; headers: [string, string][]; status: number }>();
-  private pageBytes = 0;
+  private selection = new PublicSnapshotSelection(
+    this.env.MEDIA,
+    this.env.PRODUCT_ENVIRONMENT,
+    PUBLIC_BOOTSTRAP,
+    (work) => this.ctx.waitUntil(work),
+  );
+  private pages: PublicRenderCache | undefined;
+  private media = new PublicMedia(this.env.MEDIA, this.env.PRODUCT_ENVIRONMENT, {
+    sourceOrigin: this.env.PUBLIC_IMAGE_SOURCE_ORIGIN ?? '',
+    transformationOrigin: this.env.PUBLIC_IMAGE_TRANSFORM_ORIGIN,
+  });
 
-  private async selected() {
-    if (this.current && Date.now() - this.current.checkedAt < 5000) return this.current;
-    let stored;
-    try {
-      stored = await readPublicationPointer(this.env.MEDIA, this.env.PRODUCT_ENVIRONMENT);
-    } catch (error) {
-      if (!this.current) throw error;
-      this.current.checkedAt = Date.now();
-      return this.current;
-    }
-    const pointer = stored?.pointer ?? PUBLIC_BOOTSTRAP;
-    if (!pointer) throw new Error('No accepted publication.');
-    const snapshot =
-      this.current?.pointer.snapshotSha256 === pointer.snapshotSha256
-        ? this.current.snapshot
-        : await readPublishedSnapshot(this.env.MEDIA, this.env.PRODUCT_ENVIRONMENT, pointer.snapshotSha256);
-    if (this.current?.pointer.snapshotSha256 !== pointer.snapshotSha256) {
-      this.pages.clear();
-      this.pageBytes = 0;
-    }
-    return (this.current = { pointer, snapshot, checkedAt: Date.now() });
+  private renderCache() {
+    return (this.pages ??= new PublicRenderCache(this.ctx.storage.sql));
   }
 
-  private async render(request: Request, pointer: PublicationPointer, snapshot: ContentSnapshot) {
-    const base = new URL(request.url).pathname.startsWith('/blackbox-records/') ? '/blackbox-records' : '';
-    return publishedContext.run(
-      { snapshot, mediaBase: `${base}/media/content/${pointer.snapshotSha256}` },
-      async () => {
-        const state = new FetchState(request);
-        const asset = await cf(state, this.env, this.ctx as unknown as ExecutionContext);
-        return asset ?? finalize(state, await astro(state));
-      },
-    );
+  invalidatePublication(pointer: PublicationPointer) {
+    return this.selection.invalidate(publicationPointerSchema.parse(pointer));
+  }
+
+  private async render(request: Request, snapshot: ContentSnapshot) {
+    return publishedContext.run({ snapshot, mediaBase: publicMediaBase(new URL(request.url)) }, async () => {
+      const state = new FetchState(request);
+      const asset = await cf(state, this.env, this.ctx as unknown as ExecutionContext);
+      return asset ?? finalize(state, await astro(state));
+    });
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -187,7 +193,7 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
             paths.push(`${PUBLIC_BASE_PATH}store/`);
         }
         for (const path of new Set(paths)) {
-          const response = await this.render(new Request(new URL(path, url)), pointer, snapshot);
+          const response = await this.render(new Request(new URL(path, url)), snapshot);
           if (!response.ok) {
             await response.body?.cancel();
             throw new Error('Candidate could not render.');
@@ -195,7 +201,7 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
           await readBoundedText(response.body, 4 * 1024 * 1024);
         }
         for (const path of withdrawnPaths) {
-          const response = await this.render(new Request(new URL(path, url)), pointer, snapshot);
+          const response = await this.render(new Request(new URL(path, url)), snapshot);
           await response.body?.cancel();
           if (response.status !== 404) throw new Error('Withdrawn product route is still available.');
         }
@@ -206,26 +212,12 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
       if (path === '/_image') {
         const source = new URL(url.searchParams.get('href') ?? '', url);
         const imagePath = source.pathname.replace(/^\/blackbox-records(?=\/)/, '');
-        const publicMedia = /^\/media\/content\/[a-f0-9]{64}\/[a-f0-9]{64}$/.test(imagePath);
-        const staticAsset = /^\/(?:_astro|assets)\//.test(imagePath);
-        if (
-          source.origin !== url.origin ||
-          (!publicMedia && !staticAsset) ||
-          (publicMedia && (source.search || source.hash))
-        )
-          return notFound();
-        const original = new Request(source, { method: request.method });
-        return publicMedia
-          ? deliverPublicCmsImage(
-              request,
-              source,
-              this.env.PRODUCT_ENVIRONMENT,
-              this.env.PUBLIC_IMAGE_TRANSFORM_ORIGIN,
-              () => this.fetch(original),
-            )
-          : this.env.ASSETS.fetch(original);
+        if (source.origin === url.origin && /^\/(?:_astro|assets)\//.test(imagePath))
+          return this.env.ASSETS.fetch(new Request(source, { method: request.method }));
+        return this.media.transformed(request, source, () => this.selection.content());
       }
-      const { pointer, snapshot } = await this.selected();
+      if (path.startsWith('/media/')) return this.media.media(request, path, () => this.selection.content());
+      const { pointer } = await this.selection.selected();
       if (path === '/content-version.json' || path === '/release.json')
         return Response.json(
           {
@@ -239,58 +231,53 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
           },
           { headers: { 'Cache-Control': 'no-store', 'X-Content-SHA256': pointer.snapshotSha256 } },
         );
-      const media = /^\/media\/content\/([a-f0-9]{64})\/([a-f0-9]{64})$/.exec(path);
-      if (media) {
-        const accepted =
-          media[1] === pointer.snapshotSha256 ||
-          (await this.env.MEDIA.head(`snapshots/${this.env.PRODUCT_ENVIRONMENT}/accepted/${media[1]}`));
-        if (!accepted) return notFound();
-        const manifest =
-          media[1] === pointer.snapshotSha256
-            ? snapshot
-            : await readPublishedSnapshot(this.env.MEDIA, this.env.PRODUCT_ENVIRONMENT, media[1]);
-        const item = manifest.media.find((item) => item.sha256 === media[2]);
-        if (!item) return notFound();
-        const object = await this.env.MEDIA.get(`snapshots/${this.env.PRODUCT_ENVIRONMENT}/media/${item.sha256}`);
-        if (!object || object.size !== item.size || object.checksums.toJSON().sha256 !== item.sha256) {
-          await object?.body.cancel();
-          throw new Error('Published media unavailable.');
-        }
-        if (request.method === 'HEAD') await object.body.cancel();
-        return new Response(request.method === 'HEAD' ? null : object.body, {
-          headers: {
-            'Content-Type': item.mimeType,
-            'Cache-Control': 'public, max-age=31536000, immutable',
-            'X-Content-Type-Options': 'nosniff',
-          },
-        });
+      const key = `${PUBLIC_RELEASE_IDENTITY.sha}/${pointer.snapshotSha256}/${url.origin}${url.pathname}`;
+      let cached;
+      try {
+        if (!url.search) cached = this.renderCache().get(key);
+      } catch {
+        console.warn('Public render cache unavailable');
       }
-      const key = `${PUBLIC_RELEASE_IDENTITY.sha}/${pointer.snapshotSha256}/${url.pathname}`;
-      const cached = this.pages.get(key);
-      if (cached)
-        return new Response(request.method === 'HEAD' ? null : cached.body, {
-          status: cached.status,
-          headers: cached.headers,
+      if (cached) {
+        // Also tag persisted pages written before tag invalidation was introduced.
+        const headers = new Headers(cached.headers);
+        headers.set('Cache-Tag', publicPublicationTags(PUBLIC_RELEASE_IDENTITY.sha, pointer.snapshotSha256).join(','));
+        return publicCachedPageResponse(request, { ...cached, headers: [...headers] });
+      }
+      const { snapshot, pointer: selectedPointer } = await this.selection.content();
+      // A refresh may have completed while reading the cache; render and identity must use the same snapshot.
+      const renderKey = `${PUBLIC_RELEASE_IDENTITY.sha}/${selectedPointer.snapshotSha256}/${url.origin}${url.pathname}`;
+      const response = await this.render(new Request(url, { method: 'GET' }), snapshot);
+      if (!response.headers.get('Content-Type')?.includes('text/html'))
+        return new Response(request.method === 'HEAD' ? null : response.body, {
+          status: response.status,
+          headers: response.headers,
         });
-      const response = await this.render(new Request(url, { method: 'GET' }), pointer, snapshot);
       const headers = new Headers(response.headers);
+      const cacheable = response.status === 200 && !url.search && !headers.has('Set-Cookie');
       // ponytail: 30 s fresh + 30 s stale-while-revalidate keeps edge staleness inside the 60 s publication target.
       headers.set(
         'Cache-Control',
-        response.ok ? 'public, max-age=0, s-maxage=30, stale-while-revalidate=30' : 'no-store',
+        cacheable ? 'public, max-age=0, s-maxage=30, stale-while-revalidate=30' : 'no-store',
       );
-      headers.set('X-Content-SHA256', pointer.snapshotSha256);
+      headers.set('X-Content-SHA256', selectedPointer.snapshotSha256);
       headers.set('X-Release-SHA', PUBLIC_RELEASE_IDENTITY.sha);
-      const body = await readBoundedText(response.body, 4 * 1024 * 1024);
-      // ponytail: bounded whole-page cache behind the 60 s edge cache; it absorbs edge misses and revalidations.
-      if (response.ok && body.length <= 2 * 1024 * 1024) {
-        if (this.pages.size >= 64 || this.pageBytes + body.length * 2 > 8 * 1024 * 1024) {
-          this.pages.clear();
-          this.pageBytes = 0;
-        }
-        this.pages.set(key, { body, status: response.status, headers: [...headers] });
-        this.pageBytes += body.length * 2;
+      if (cacheable) {
+        headers.set('ETag', await publicPageEtag(renderKey));
+        headers.set(
+          'Cache-Tag',
+          publicPublicationTags(PUBLIC_RELEASE_IDENTITY.sha, selectedPointer.snapshotSha256).join(','),
+        );
       }
+      const body = await readBoundedText(response.body, 4 * 1024 * 1024);
+      // ponytail: retain bounded buffering so render/read failures still return 503 before any HTML is sent.
+      try {
+        if (cacheable) this.renderCache().put(renderKey, { body, status: response.status, headers: [...headers] });
+      } catch {
+        console.warn('Public render cache unavailable');
+      }
+      if (cacheable && publicPageNotModified(request, headers.get('ETag')!))
+        return new Response(null, { status: 304, headers });
       return new Response(request.method === 'HEAD' ? null : body, { status: response.status, headers });
     } catch (error) {
       console.error('Public render failed', error instanceof Error ? error.message : 'Unknown error');

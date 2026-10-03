@@ -1,8 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 import type { APIRoute } from 'astro';
-import { contentSnapshotInput } from '../../../../lib/content-loader';
-import { readContentSnapshot } from '../../../../lib/content-files/content-snapshot';
+import { contentSnapshotInput, loadContentSnapshot } from '../../../../lib/content-loader';
 
 export const prerender = true;
 
@@ -20,7 +19,7 @@ export async function getStaticPaths() {
   const paths = [];
   const input = contentSnapshotInput();
   if (input) {
-    const { snapshot, media } = await readContentSnapshot(input);
+    const { snapshot, media } = await loadContentSnapshot(input);
     const aliases = new Map<string, string>();
     for (const record of snapshot.records.filter((record) => ['distro', 'releases'].includes(record.collection))) {
       const fields =

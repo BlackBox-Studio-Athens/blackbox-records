@@ -8,7 +8,9 @@ import {
   currentPublicationKey,
   readPublicationPointer,
   readPublishedSnapshot,
+  PublicSnapshotSelection,
 } from './published-storage';
+import { invalidatePublicPublication, publicInvalidationPath } from './public-publication-cache';
 import { completeSnapshot, storeSnapshotMedia } from './snapshot-storage';
 import { createPrismaClient } from '../infrastructure/persistence/prisma';
 import { readPublication } from './publication-journal';
@@ -194,12 +196,14 @@ test.each(['renderer', 'native response', 'confirmation'])('recovers withdrawal 
     });
   }
   if (failure === 'confirmation') {
+    const send = renderer.fetch.getMockImplementation()!;
     renderer.fetch.mockImplementationOnce(async (request) =>
       Response.json({
         sha: 'c'.repeat(40),
         snapshotSha256: ((await request.json()) as { snapshotSha256: string }).snapshotSha256,
       }),
     );
+    renderer.fetch.mockImplementationOnce(send);
     renderer.fetch.mockRejectedValueOnce(new Error('lost confirmation'));
   }
   await processRuntimePublication(deps);
@@ -405,6 +409,8 @@ async function setup() {
   };
   const renderer = {
     fetch: vi.fn(async (request: Request) => {
+      if (new URL(request.url).pathname === publicInvalidationPath)
+        return invalidatePublicPublication(request, (pointer) => selection.invalidate(pointer), cache);
       if (request.method === 'POST')
         return Response.json({
           sha: 'c'.repeat(40),
@@ -417,6 +423,9 @@ async function setup() {
       });
     }),
   };
+  const selection = new PublicSnapshotSelection(env.TEST_SNAPSHOTS, 'local', null);
+  await selection.selected();
+  const cache = { purge: vi.fn(async () => ({ success: true, errors: [] })) };
   const deps = {
     db: env.TEST_CMS_DB,
     commerce: env.COMMERCE_DB,
@@ -432,8 +441,116 @@ async function setup() {
     recordId: 'news',
     expectedRevision: 'version-1',
   };
-  return { deps, runtime, renderer, input, pointer };
+  return { deps, runtime, renderer, input, pointer, selection, cache };
 }
+
+test('activation refreshes warm public selection then purges through the private service before becoming live', async () => {
+  const { deps, runtime, renderer, input, pointer, selection, cache } = await setup();
+  expect((await selection.selected()).pointer).toEqual(pointer);
+  cache.purge.mockImplementation(async () => {
+    const active = (await readPublicationPointer(deps.bucket, 'local'))!.pointer;
+    expect(active.id).toBe(input.id);
+    expect((await selection.selected()).pointer).toEqual(active);
+    expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('pending');
+    return { success: true, errors: [] };
+  });
+  await acceptSelectedPublication(input, 'editor@example.com', deps);
+  expect(await processRuntimePublication(deps)).toBe(true);
+  expect(cache.purge).toHaveBeenCalledExactlyOnceWith({ tags: ['blackbox-publication'] });
+  expect(renderer.fetch.mock.calls.map(([request]) => new URL(request.url).pathname)).toEqual([
+    '/__publication/validate',
+    publicInvalidationPath,
+    '/content-version.json',
+  ]);
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+  expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
+  expect(await processRuntimePublication(deps)).toBe(false);
+});
+
+test.each(['rejected', 'lost response', 'unavailable API'])(
+  'recovers %s purge after activation without replaying native content',
+  async (failure) => {
+    const { deps, runtime, renderer, input, selection, cache } = await setup();
+    if (failure === 'rejected') cache.purge.mockResolvedValue({ success: false, errors: [] });
+    else cache.purge.mockRejectedValue(new Error(failure));
+    await acceptSelectedPublication(input, 'editor@example.com', deps);
+    // An accepted pointer stays confirming even past the pre-activation retry limit.
+    for (let i = 0; i < 7; i++) {
+      expect(await processRuntimePublication(deps)).toBeGreaterThan(0);
+      expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer.id).toBe(input.id);
+      expect(await readPublication(deps.db, 'local', input.id)).toMatchObject({
+        status: 'pending',
+        stage: 'confirming',
+      });
+    }
+    const active = (await readPublicationPointer(deps.bucket, 'local'))!.pointer;
+    expect((await selection.selected()).pointer).toEqual(active);
+    expect(renderer.fetch.mock.calls.filter(([request]) => request.method === 'GET')).toHaveLength(0);
+    cache.purge.mockResolvedValue({ success: true, errors: [] });
+    expect(await processRuntimePublication(deps)).toBe(true);
+    expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+    expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
+    expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer).toEqual(active);
+  },
+);
+
+test('a pending purge retry never replaces or confirms a newer accepted pointer', async () => {
+  const { deps, input, cache } = await setup();
+  await acceptSelectedPublication(input, 'editor@example.com', deps);
+  cache.purge.mockResolvedValueOnce({ success: false, errors: [] });
+  await processRuntimePublication(deps);
+  const active = (await readPublicationPointer(deps.bucket, 'local'))!;
+  const newer = { ...active.pointer, id: crypto.randomUUID(), generation: active.pointer.generation + 1 };
+  await activatePublication(deps.bucket, 'local', newer, active.etag);
+  expect(await processRuntimePublication(deps)).toBe(true);
+  expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer).toEqual(newer);
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('failed');
+  expect(cache.purge).toHaveBeenCalledTimes(1);
+});
+
+test('retries a lost successful private purge receipt idempotently before public confirmation', async () => {
+  const { deps, input, renderer, runtime, cache } = await setup();
+  const send = renderer.fetch.getMockImplementation()!;
+  let lost = true;
+  renderer.fetch.mockImplementation(async (request) => {
+    const response = await send(request);
+    if (new URL(request.url).pathname === publicInvalidationPath && lost) {
+      lost = false;
+      expect(response.status).toBe(200);
+      await response.body?.cancel();
+      throw new Error('Lost private purge receipt');
+    }
+    return response;
+  });
+  await acceptSelectedPublication(input, 'editor@example.com', deps);
+  await processRuntimePublication(deps);
+  const active = (await readPublicationPointer(deps.bucket, 'local'))!.pointer;
+  expect(await readPublication(deps.db, 'local', input.id)).toMatchObject({ status: 'pending', stage: 'confirming' });
+  expect(await processRuntimePublication(deps)).toBe(true);
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+  expect(cache.purge).toHaveBeenCalledTimes(2);
+  expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
+  expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer).toEqual(active);
+});
+
+test('does not mark an older publication live if a newer pointer wins during public confirmation', async () => {
+  const { deps, input, renderer } = await setup();
+  const send = renderer.fetch.getMockImplementation()!;
+  let newer;
+  renderer.fetch.mockImplementation(async (request) => {
+    const response = await send(request);
+    if (request.method === 'GET') {
+      const active = (await readPublicationPointer(deps.bucket, 'local'))!;
+      newer = { ...active.pointer, id: crypto.randomUUID(), generation: active.pointer.generation + 1 };
+      await activatePublication(deps.bucket, 'local', newer, active.etag);
+    }
+    return response;
+  });
+  await acceptSelectedPublication(input, 'editor@example.com', deps);
+  expect(await processRuntimePublication(deps)).toBe(true);
+  expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('failed');
+  expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer).toEqual(newer);
+});
 
 test('durably deduplicates selected revisions before native mutation and preserves other records', async () => {
   const { deps, runtime, input, pointer: originalPointer } = await setup();
@@ -459,6 +576,7 @@ test('durably deduplicates selected revisions before native mutation and preserv
 
 test('recovers a lost post-activation response without republishing and never replaces the last valid site on verification failure', async () => {
   const { deps, runtime, renderer, input, pointer } = await setup();
+  const send = renderer.fetch.getMockImplementation()!;
   await acceptSelectedPublication(input, 'editor@example.com', deps);
   renderer.fetch.mockRejectedValueOnce(new Error('renderer unavailable'));
   await processRuntimePublication(deps);
@@ -467,6 +585,7 @@ test('recovers a lost post-activation response without republishing and never re
   renderer.fetch.mockImplementationOnce(async (request) =>
     Response.json({ sha: 'c'.repeat(40), snapshotSha256: ((await request.json()) as typeof pointer).snapshotSha256 }),
   );
+  renderer.fetch.mockImplementationOnce(send);
   renderer.fetch.mockRejectedValueOnce(new Error('lost confirmation'));
   await processRuntimePublication(deps);
   expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer.id).toBe(input.id);

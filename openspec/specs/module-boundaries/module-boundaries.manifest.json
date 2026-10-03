@@ -8,6 +8,9 @@
     "audit": "all-claimed-roots"
   },
   "ownershipGranularity": "native-nx-project-roots",
+  "contractNotes": {
+    "performance-resume": "Native project.json contracts provide lightweight checkout presentation, the lazy newsletter form and bundled public font assets, permit checkout-core to consume @blackbox/api-client/public delivery constants, and permit backend-runtime to create a commerce-persistence binding scope."
+  },
   "compatibilityFacades": "disallowed",
   "entrypointPolicy": {
     "default": "root-first",

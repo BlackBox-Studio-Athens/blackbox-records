@@ -27,7 +27,7 @@ const { storeItem, primaryAvailability } = entry;
 const priceLabel = STORE_OFFER_PRICE_DISPLAY_COPY.loading;
 const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
 const canBuy = primaryAvailability?.canBuy ?? false;
-const fallbackCartSeed = createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
+const fallbackCartSeed = await createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const initialCheckoutAvailability = {
   canBuy: true,
   label: 'Cart checkout',
@@ -37,7 +37,7 @@ const initialCheckoutAvailability = {
 const summaryItem = {
   availabilityLabel,
   canBuy,
-  image: storeItem.image.src,
+  image: fallbackCartSeed?.image ?? null,
   imageAlt: storeItem.imageAlt,
   itemHref: storeItem.storePath,
   optionLabel: primaryAvailability?.optionLabel ?? null,

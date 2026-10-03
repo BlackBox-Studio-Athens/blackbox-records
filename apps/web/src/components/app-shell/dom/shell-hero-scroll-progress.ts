@@ -11,6 +11,7 @@ type HeroScrollScheduler = {
   addEventListener(type: 'resize' | 'scroll', listener: () => void, options?: AddEventListenerOptions): void;
   cancelAnimationFrame(id: number): void;
   innerHeight: number;
+  scrollY: number;
   removeEventListener(type: 'resize' | 'scroll', listener: () => void): void;
   requestAnimationFrame(callback: FrameRequestCallback): number;
 };
@@ -54,6 +55,9 @@ export function connectHomepageHeroScrollProgress({
   let fadeHeroElement: HomepageHeroElement | null = null;
   let fadeAnimations: Animation[] = [];
   let fadeProgress: number | null = null;
+  let measureHero = true;
+  let heroHeight = 0;
+  let heroDocumentTop = 0;
 
   const seekHeroFade = (heroElement: HomepageHeroElement, progress: number) => {
     if (fadeHeroElement !== heroElement) {
@@ -73,14 +77,21 @@ export function connectHomepageHeroScrollProgress({
 
   const applyHeroScrollProgress = () => {
     animationFrameId = null;
-    currentHeroElement = queryHeroElement();
+    const nextHeroElement = queryHeroElement();
+    if (currentHeroElement !== nextHeroElement) measureHero = true;
+    currentHeroElement = nextHeroElement;
 
     if (!currentHeroElement) return;
 
-    const heroRect = currentHeroElement.getBoundingClientRect();
+    if (measureHero) {
+      const heroRect = currentHeroElement.getBoundingClientRect();
+      heroHeight = heroRect.height;
+      heroDocumentTop = heroRect.top + scheduler.scrollY;
+      measureHero = false;
+    }
     const progress = calculateHomepageHeroScrollProgress({
-      heroHeight: heroRect.height,
-      heroTop: heroRect.top,
+      heroHeight,
+      heroTop: heroDocumentTop - scheduler.scrollY,
       viewportHeight: scheduler.innerHeight,
     });
     if (seeksHeroFade) seekHeroFade(currentHeroElement, progress);
@@ -98,17 +109,18 @@ export function connectHomepageHeroScrollProgress({
   };
 
   const queueHeroScrollSync = () => {
+    measureHero = true;
     if (animationFrameId !== null) return;
 
     animationFrameId = scheduler.requestAnimationFrame(applyHeroScrollProgress);
   };
 
   queueHeroScrollSync();
-  scheduler.addEventListener('scroll', queueHeroScrollSync, { passive: true });
+  scheduler.addEventListener('scroll', applyHeroScrollProgress, { passive: true });
   scheduler.addEventListener('resize', queueHeroScrollSync);
 
   return () => {
-    scheduler.removeEventListener('scroll', queueHeroScrollSync);
+    scheduler.removeEventListener('scroll', applyHeroScrollProgress);
     scheduler.removeEventListener('resize', queueHeroScrollSync);
 
     if (animationFrameId !== null) {

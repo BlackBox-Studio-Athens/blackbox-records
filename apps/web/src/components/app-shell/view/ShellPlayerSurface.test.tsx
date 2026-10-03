@@ -22,18 +22,14 @@ const providers: PlayerProvider[] = [bandcampProvider, tidalProvider];
 function renderPlayerSurface(overrides: Partial<React.ComponentProps<typeof ShellPlayerSurface>> = {}) {
   return renderToStaticMarkup(
     <ShellPlayerSurface
-      activePlayerEmbedLayout="bandcamp-album"
       activePlayerProviderId="bandcamp"
       activePlayerTitle="Disintegration"
       applyPlayerProvider={vi.fn()}
-      iframeFrameHostRef={{ current: null }}
+      headerContainer={null}
       isMiniPlayerVisible={false}
       isPlayerLoading={false}
-      isPlayerModalOpen={false}
-      markActivePlayerSurfaceAsInteracted={vi.fn()}
       miniPlayerStatusLabel="Player Ready · Bandcamp"
       modalCloseButtonRef={{ current: null }}
-      onModalBackdropClick={vi.fn()}
       onReady={vi.fn()}
       playerModalDismissActionLabel="Close"
       playerModalDismissAriaLabel="Close player"
@@ -52,7 +48,6 @@ describe('ShellPlayerSurface', () => {
     const html = renderPlayerSurface();
 
     expect(html).toContain('data-state="closed"');
-    expect(html).toContain('aria-busy="false"');
     expect(html).toContain('aria-label="Close player"');
     expect(html).toContain('data-state="active"');
     expect(html).toContain('data-state="inactive"');
@@ -93,13 +88,10 @@ describe('ShellPlayerSurface', () => {
   it('renders player loading as a visible busy status without implying playback started', () => {
     const html = renderPlayerSurface({
       isPlayerLoading: true,
-      isPlayerModalOpen: true,
     });
 
-    expect(html).toContain('aria-busy="true"');
     expect(html).toContain('role="status"');
     expect(html).toContain('Loading player');
-    expect(html).toContain('Playback starts after you interact with the provider frame.');
     expect(html).not.toContain('Playing');
   });
 });

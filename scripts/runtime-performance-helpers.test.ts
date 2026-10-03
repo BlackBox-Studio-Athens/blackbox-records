@@ -12,6 +12,17 @@ import {
 } from './runtime-performance-helpers';
 
 describe('runtime performance helpers', () => {
+  it('reports runtime callbacks and style element counts on the target main thread', () => {
+    const result = summarizeTrace([
+      { name: 'thread_name', pid: 1, tid: 1, args: { name: 'CrRendererMain' } },
+      { name: 'RunTask', pid: 1, tid: 1, ts: 0, dur: 1000 },
+      { name: 'FireAnimationFrame', pid: 1, tid: 1, ts: 0, dur: 100 },
+      { name: 'UpdateLayoutTree', pid: 1, tid: 1, ts: 100, dur: 100, args: { data: { elementCount: 12 } } },
+      { name: 'FireAnimationFrame', pid: 1, tid: 2, ts: 0, dur: 100 },
+    ]);
+    expect(result.animationFrameCallbacks).toBe(1);
+    expect(result.styleRecalcElements.total).toBe(12);
+  });
   it('rejects missing readiness and incomplete expanded traversal setup', () => {
     expect(() => assertTraversalSetup([], false)).toThrow();
     expect(() => assertTraversalSetup([{ ready: false, mode: 'preview', cardCount: 6 }], false)).toThrow();

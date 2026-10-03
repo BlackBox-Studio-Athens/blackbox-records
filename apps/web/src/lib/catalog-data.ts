@@ -9,6 +9,7 @@ import type { StoreItemTaxCategory } from './store-tax-category';
 import { sortDistroEntries } from './distro-data';
 import { createPhysicalEditionKey, createValidatedStoreItemProjection } from './store-item-ownership';
 import { reservedStoreRouteSegments } from './store-categories';
+import { formatMonthYear } from '@/utils/content';
 
 export { groupDistroEntries } from './distro-data';
 
@@ -51,11 +52,6 @@ export type ArtistRosterReleaseContext = {
 };
 
 const nonPhysicalReleaseFormats = new Set(['digital']);
-
-function formatMonthYear(value: Date | undefined) {
-  if (!value) return 'Date to be announced';
-  return value.toLocaleDateString('en-US', { month: 'short', timeZone: 'Europe/Athens', year: 'numeric' });
-}
 
 function sortArtistProfilesByName(left: ArtistProfileEntry, right: ArtistProfileEntry) {
   return left.data.title.localeCompare(right.data.title);

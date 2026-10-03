@@ -79,3 +79,58 @@ export async function plantSentinel(page: Page): Promise<void> {
 export async function sentinelIntact(page: Page): Promise<boolean> {
   return page.evaluate(() => (window as unknown as { __e2eSentinel?: boolean }).__e2eSentinel === true);
 }
+
+/**
+ * Clicks a shell surface trigger and reports whether the surface committed before the next task. A surface rendered
+ * through React.lazy inside a Suspense boundary created on open appears no sooner than React's 300 ms fallback
+ * throttle, even with its chunk cached; a warmed shell surface commits with the click itself.
+ */
+export async function openSurfaceWithinClickTask(page: Page, triggerSelector: string, surfaceSelector: string) {
+  return page.evaluate(
+    async ([trigger, surface]) => {
+      document.querySelector<HTMLElement>(trigger)?.click();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      return {
+        loadingStatus: [...document.querySelectorAll('[role="status"]')].some((element) =>
+          /^Loading (menu|cart|detail)$/.test(element.textContent?.trim() ?? ''),
+        ),
+        visible: document.querySelector(surface) !== null,
+      };
+    },
+    [triggerSelector, surfaceSelector] as const,
+  );
+}
+
+/**
+ * Starts watching for a speculative surface load before navigation. The returned wait resolves once a request whose
+ * URL contains `moduleName` has been made and the network has then stayed quiet, so the module graph has loaded.
+ * `waitForLoadState('networkidle')` cannot serve here: it resolves at once when the page was already idle earlier.
+ */
+export function watchSurfaceWarmup(page: Page, moduleName: string, quietMs = 500) {
+  const inflight = new Set<unknown>();
+  let requested = false;
+  let lastChange = Date.now();
+  page.on('request', (request) => {
+    inflight.add(request);
+    lastChange = Date.now();
+    if (request.url().includes(moduleName)) requested = true;
+  });
+  const settle = (request: unknown) => {
+    inflight.delete(request);
+    lastChange = Date.now();
+  };
+  page.on('requestfinished', settle);
+  page.on('requestfailed', settle);
+
+  return async (timeout = 30_000) => {
+    const deadline = Date.now() + timeout;
+    while (!requested || inflight.size > 0 || Date.now() - lastChange < quietMs) {
+      if (Date.now() > deadline) {
+        throw new Error(
+          `${moduleName} was ${requested ? 'requested but the network never settled' : 'never requested'}`,
+        );
+      }
+      await page.waitForTimeout(50);
+    }
+  };
+}

@@ -7,11 +7,15 @@ import {
   getStorePageEntryBySlug,
 } from './store-page-data';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
+import type * as ItemAvailabilityModule from '@/lib/item-availability';
 
 const mockCatalogData = vi.hoisted(() => ({
   getStoreItemBySlug: vi.fn(),
   listStoreItems: vi.fn(),
 }));
+
+const getImage = vi.hoisted(() => vi.fn(async () => ({ src: '/cart-176.webp' })));
+vi.mock('astro:assets', () => ({ getImage }));
 
 const mockItemAvailability = vi.hoisted(() => ({
   getPrimaryAvailabilityForStoreItem: vi.fn(),
@@ -22,7 +26,8 @@ vi.mock('@/lib/catalog-data', () => ({
   listStoreItems: mockCatalogData.listStoreItems,
 }));
 
-vi.mock('@/lib/item-availability', () => ({
+vi.mock('@/lib/item-availability', async (importOriginal) => ({
+  ...(await importOriginal<typeof ItemAvailabilityModule>()),
   getPrimaryAvailabilityForStoreItem: mockItemAvailability.getPrimaryAvailabilityForStoreItem,
   hasStructuredItemPrice: (price: { amountMinor?: unknown; currencyCode?: unknown } | null | undefined) =>
     Boolean(price && typeof price.amountMinor === 'number' && typeof price.currencyCode === 'string'),
@@ -55,22 +60,6 @@ describe('store page data helper', () => {
       eyebrow: 'Release',
       metadata: ['2024', 'LP'],
       storePath: '/blackbox-records/store/disintegration-black-vinyl-lp/',
-    });
-
-    mockItemAvailability.getPrimaryAvailabilityForStoreItem.mockResolvedValue({
-      variantId: 'variant_disintegration-black-vinyl-lp_standard',
-      storeItemSlug: 'disintegration-black-vinyl-lp',
-      optionLabel: 'Black Vinyl LP',
-      price: {
-        amountMinor: 2800,
-        currencyCode: 'EUR',
-        display: 'EUR 28.00',
-      },
-      availability: {
-        status: 'available',
-        label: 'Available',
-      },
-      canBuy: true,
     });
 
     await expect(getStorePageEntryBySlug('disintegration-black-vinyl-lp')).resolves.toMatchObject({
@@ -141,32 +130,6 @@ describe('store page data helper', () => {
       },
     ]);
 
-    mockItemAvailability.getPrimaryAvailabilityForStoreItem
-      .mockResolvedValueOnce({
-        variantId: 'variant_disintegration-black-vinyl-lp_standard',
-        storeItemSlug: 'disintegration-black-vinyl-lp',
-        optionLabel: 'Black Vinyl LP',
-        price: { amountMinor: 2800, currencyCode: 'EUR', display: 'EUR 28.00' },
-        availability: { status: 'available', label: 'Available' },
-        canBuy: true,
-      })
-      .mockResolvedValueOnce({
-        variantId: 'variant_afterglow-tape_standard',
-        storeItemSlug: 'afterglow-tape',
-        optionLabel: 'Cassette',
-        price: { amountMinor: 1400, currencyCode: 'EUR', display: 'EUR 14.00' },
-        availability: { status: 'sold_out', label: 'Sold Out' },
-        canBuy: false,
-      })
-      .mockResolvedValueOnce({
-        variantId: 'variant_caregivers-vinyl_standard',
-        storeItemSlug: 'caregivers-vinyl',
-        optionLabel: null,
-        price: { display: 'Price soon' },
-        availability: { status: 'sold_out', label: 'Unavailable' },
-        canBuy: false,
-      });
-
     await expect(createStorePageStaticPaths()).resolves.toEqual([
       {
         params: { slug: 'disintegration-black-vinyl-lp' },
@@ -206,12 +169,15 @@ describe('store page data helper', () => {
             }),
             primaryAvailability: expect.objectContaining({
               storeItemSlug: 'caregivers-vinyl',
-              canBuy: false,
+              canBuy: true,
             }),
           },
         },
       },
     ]);
+    expect(mockCatalogData.listStoreItems).toHaveBeenCalledTimes(1);
+    expect(mockCatalogData.getStoreItemBySlug).not.toHaveBeenCalled();
+    expect(mockItemAvailability.getPrimaryAvailabilityForStoreItem).not.toHaveBeenCalled();
   });
 
   it('does not create a static CartLineItemSnapshot for an eligible store page', () => {
@@ -280,7 +246,7 @@ describe('store page data helper', () => {
     expect(cartItem).toBeNull();
   });
 
-  it('creates a priced cart seed for Worker-confirmed checkout without making sold out static pages buyable', () => {
+  it('creates a priced cart seed for Worker-confirmed checkout without making sold out static pages buyable', async () => {
     const storeItem = {
       slug: 'afterglow-tape',
       taxCategory: 'physical_goods' as const,
@@ -313,11 +279,16 @@ describe('store page data helper', () => {
     };
 
     expect(createCartLineItemSnapshotForStorePage(storeItem, availability, '/afterglow.webp')).toBeNull();
-    const seed = createPricedCartSeedForStorePage(storeItem, availability, '/afterglow.webp');
+    const [seed, repeated] = await Promise.all([
+      createPricedCartSeedForStorePage(storeItem, availability, '/afterglow.webp'),
+      createPricedCartSeedForStorePage(storeItem, availability, '/afterglow.webp'),
+    ]);
+    expect(repeated).toEqual(seed);
+    expect(getImage).toHaveBeenCalledExactlyOnceWith({ src: storeItem.image, width: 176, format: 'webp' });
 
     expect(seed).toMatchObject({
       availabilityLabel: 'Sold Out',
-      image: '/afterglow.webp',
+      image: '/cart-176.webp',
       optionLabel: 'Cassette',
       storeItemSlug: 'afterglow-tape',
       variantId: 'variant_afterglow-tape_standard',
@@ -328,7 +299,7 @@ describe('store page data helper', () => {
     expect(seed).not.toHaveProperty('embeddedPlayerData');
   });
 
-  it('creates a metadata cart seed for Price soon store pages when a variant is known', () => {
+  it('creates a metadata cart seed for Price soon store pages when a variant is known', async () => {
     const storeItem = {
       slug: 'aftermaths',
       taxCategory: 'physical_goods' as const,
@@ -346,7 +317,7 @@ describe('store page data helper', () => {
     };
 
     expect(
-      createPricedCartSeedForStorePage(
+      await createPricedCartSeedForStorePage(
         storeItem,
         {
           variantId: 'variant_aftermaths_standard',

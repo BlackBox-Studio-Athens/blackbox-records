@@ -1,7 +1,19 @@
 const GREECE_TIME_ZONE = 'Europe/Athens';
+const yearFormatter = new Intl.DateTimeFormat('en-US', { timeZone: GREECE_TIME_ZONE, year: 'numeric' });
+const monthYearFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  timeZone: GREECE_TIME_ZONE,
+  year: 'numeric',
+});
+const dayMonthYearFormatter = new Intl.DateTimeFormat('en-US', {
+  day: 'numeric',
+  month: 'short',
+  timeZone: GREECE_TIME_ZONE,
+  year: 'numeric',
+});
 
 function getGreeceYear(value: Date) {
-  return Number(new Intl.DateTimeFormat('en-US', { timeZone: GREECE_TIME_ZONE, year: 'numeric' }).format(value));
+  return Number(yearFormatter.format(value));
 }
 
 export function calculateYearsActive(establishedYear: number, currentYear = getGreeceYear(new Date())) {
@@ -16,17 +28,12 @@ export function calculateCountryCount(countries: string[]) {
 
 export function formatMonthYear(value: Date | undefined) {
   if (!value) return 'Date to be announced';
-  return value.toLocaleDateString('en-US', { month: 'short', timeZone: GREECE_TIME_ZONE, year: 'numeric' });
+  return monthYearFormatter.format(value);
 }
 
 export function formatDayMonthYear(value: Date | undefined) {
   if (!value) return 'Date to be announced';
-  return value.toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'short',
-    timeZone: GREECE_TIME_ZONE,
-    year: 'numeric',
-  });
+  return dayMonthYearFormatter.format(value);
 }
 
 export function formatYear(value: Date | undefined) {

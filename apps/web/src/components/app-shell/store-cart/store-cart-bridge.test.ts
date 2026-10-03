@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   addStoreCartItem,
@@ -58,13 +58,13 @@ const cartItem: CartLineItemSnapshot = {
   variantId: 'variant_dsn_black_lp',
 };
 
-describe('store cart bridge', () => {
-  it('applies StoreCart state and persists it through the configured storage', () => {
+describe('store cart bridge', async () => {
+  it('applies StoreCart state and persists it through the configured storage', async () => {
     const storage = createMemoryStorage();
     const nextState = addStoreCartItem(cartItem, addStoreCartItem(cartItem));
     const seenStates: StoreCartState[] = [];
 
-    applyStoreCartStateAndPersist({
+    await applyStoreCartStateAndPersist({
       readStorage: () => storage,
       setStoreCartState: (state) => {
         seenStates.push(state);
@@ -76,11 +76,11 @@ describe('store cart bridge', () => {
     expect(readStoreCartState(storage).lines).toMatchObject([{ variantId: cartItem.variantId, quantity: 2 }]);
   });
 
-  it('still applies StoreCart state when browser storage is unavailable', () => {
+  it('still applies StoreCart state when browser storage is unavailable', async () => {
     const nextState = addStoreCartItem(cartItem, addStoreCartItem(cartItem));
     const seenStates: StoreCartState[] = [];
 
-    applyStoreCartStateAndPersist({
+    await applyStoreCartStateAndPersist({
       readStorage: () => undefined,
       setStoreCartState: (state) => {
         seenStates.push(state);
@@ -91,7 +91,7 @@ describe('store cart bridge', () => {
     expect(seenStates).toEqual([nextState]);
   });
 
-  it('persists add-item events and opens the cart drawer', () => {
+  it('persists add-item events and opens the cart drawer', async () => {
     const eventTarget = new EventTarget() as Window;
     const storage = createMemoryStorage();
     const seenStates: StoreCartState[] = [];
@@ -111,14 +111,17 @@ describe('store cart bridge', () => {
     });
 
     eventTarget.dispatchEvent(new CustomEvent(STORE_CART_ADD_ITEM_EVENT, { detail: cartItem }));
+    eventTarget.dispatchEvent(new CustomEvent(STORE_CART_ADD_ITEM_EVENT, { detail: cartItem }));
+    await vi.dynamicImportSettled();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     disconnect();
 
     expect(drawerOpen).toBe(true);
-    expect(readStoreCartState(storage).lines).toMatchObject([{ variantId: cartItem.variantId, quantity: 1 }]);
+    expect(readStoreCartState(storage).lines).toMatchObject([{ variantId: cartItem.variantId, quantity: 2 }]);
     expect(seenStates.at(-1)?.lines).toHaveLength(1);
   });
 
-  it('acknowledges add requests and confirms each added item', () => {
+  it('acknowledges add requests and confirms each added item', async () => {
     const eventTarget = new EventTarget() as Window;
     const storage = createMemoryStorage();
     const confirmed: unknown[] = [];
@@ -137,13 +140,15 @@ describe('store cart bridge', () => {
 
     const request = new CustomEvent(STORE_CART_ADD_ITEM_EVENT, { cancelable: true, detail: cartItem });
     expect(eventTarget.dispatchEvent(request)).toBe(false);
+    await vi.dynamicImportSettled();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     disconnect();
 
     expect(request.defaultPrevented).toBe(true);
     expect(confirmed).toEqual([{ variantId: cartItem.variantId }]);
   });
 
-  it('applies adds requested before it connected', () => {
+  it('applies adds requested before it connected', async () => {
     takePendingStoreCartAddItems();
     queuePendingStoreCartAddItem(cartItem);
     const eventTarget = new EventTarget() as Window;
@@ -160,6 +165,8 @@ describe('store cart bridge', () => {
       setStoreCartHeaderContainer: () => undefined,
       setStoreCartState: () => undefined,
     });
+    await vi.dynamicImportSettled();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     disconnect();
 
     expect(drawerOpen).toBe(true);
@@ -167,7 +174,7 @@ describe('store cart bridge', () => {
     expect(takePendingStoreCartAddItems()).toEqual([]);
   });
 
-  it('opens the drawer on checkout return requests without changing state', () => {
+  it('opens the drawer on checkout return requests without changing state', async () => {
     const eventTarget = new EventTarget() as Window;
     const storage = createMemoryStorage();
     let drawerOpen = false;
@@ -184,13 +191,15 @@ describe('store cart bridge', () => {
     });
 
     eventTarget.dispatchEvent(new Event(STORE_CART_OPEN_REQUESTED_EVENT));
+    await vi.dynamicImportSettled();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     disconnect();
 
     expect(drawerOpen).toBe(true);
     expect(readStoreCartState(storage)).toEqual(createEmptyStoreCartState());
   });
 
-  it('refreshes state after checkout-web updates persisted cart data', () => {
+  it('refreshes state after checkout-web updates persisted cart data', async () => {
     const eventTarget = new EventTarget() as Window;
     const storage = createMemoryStorage();
     const seenStates: StoreCartState[] = [];
@@ -208,6 +217,8 @@ describe('store cart bridge', () => {
 
     storage.setItem('blackbox.storeCart.v2', JSON.stringify({ lines: [{ ...cartItem, quantity: 3 }] }));
     eventTarget.dispatchEvent(new CustomEvent(CHECKOUT_CART_UPDATED_EVENT));
+    await vi.dynamicImportSettled();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     disconnect();
 
     expect(seenStates.at(-1)?.lines).toMatchObject([{ variantId: cartItem.variantId, quantity: 3 }]);

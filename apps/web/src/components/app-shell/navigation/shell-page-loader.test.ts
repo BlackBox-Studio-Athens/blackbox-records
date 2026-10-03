@@ -13,7 +13,7 @@ function createSnapshot(pathname: string): ShellPageSnapshot {
     canonicalHref: `https://example.test/blackbox-records${pathname}`,
     href: `https://example.test/blackbox-records${pathname}`,
     mainClassName: 'page-main-content-region',
-    mainHtml: `<section>${pathname}</section>`,
+    mainContent: { markup: `<section>${pathname}</section>` } as unknown as DocumentFragment,
     pageDescription: `${pathname} description`,
     pathname,
     title: `${pathname} | BlackBox`,
@@ -21,6 +21,34 @@ function createSnapshot(pathname: string): ShellPageSnapshot {
 }
 
 describe('shell page snapshot loader', () => {
+  it('parses a fetched page once and reads its eager images from the parsed nodes', async () => {
+    const parsedDocument = { parsed: true } as unknown as Document;
+    const parseHtml = vi.fn(() => parsedDocument);
+    const snapshot = createSnapshot('/store/');
+    const readSnapshot = vi.fn(() => snapshot);
+    const preloadImages = vi.fn();
+    const loader = createShellPageSnapshotLoader({
+      currentHref: () => 'https://example.test/blackbox-records/',
+      fetchPage: vi.fn(async () => ({
+        ok: true,
+        text: async () => '<main data-app-shell-main>Store</main>',
+        url: 'https://example.test/blackbox-records/store/',
+      })),
+      parseHtml,
+      preloadImages,
+      readSnapshot,
+    });
+
+    await loader.fetchSnapshot('/store/', 'https://example.test/blackbox-records/store/');
+
+    expect(parseHtml).toHaveBeenCalledTimes(1);
+    expect(parseHtml).toHaveBeenCalledWith('<main data-app-shell-main>Store</main>');
+    expect(readSnapshot).toHaveBeenCalledWith(parsedDocument, 'https://example.test/blackbox-records/store/');
+    // The same fragment the snapshot caches, not markup to parse again.
+    expect(preloadImages.mock.calls[0]?.[0]).toBe(snapshot.mainContent);
+    expect(loader.getCachedSnapshot('/store/')).toBe(snapshot);
+  });
+
   it('returns cached shell section snapshots without fetching', async () => {
     const cache = new Map([['/releases/', createSnapshot('/releases/')]]);
     const fetchPage = vi.fn();
@@ -56,6 +84,44 @@ describe('shell page snapshot loader', () => {
     expect(fetchPage).toHaveBeenCalledTimes(1);
     expect(readSnapshot).toHaveBeenCalledTimes(1);
     expect(loader.hasCachedSnapshot('/blackbox-records/store/')).toBe(true);
+  });
+
+  it('starts a fresh request instead of joining one whose navigation was aborted', async () => {
+    const fetchPage = vi.fn(
+      (_href: string, init: RequestInit) =>
+        new Promise<{ ok: boolean; text: () => Promise<string>; url: string }>((resolve, reject) => {
+          if (init.signal?.aborted) {
+            reject(new DOMException('aborted', 'AbortError'));
+            return;
+          }
+          init.signal?.addEventListener('abort', () => reject(new DOMException('aborted', 'AbortError')));
+          queueMicrotask(() =>
+            resolve({ ok: true, text: async () => '', url: 'https://example.test/blackbox-records/store/' }),
+          );
+        }),
+    );
+    const inFlightRequests = new Map<string, Promise<ShellPageSnapshot>>();
+    const loader = createShellPageSnapshotLoader({
+      fetchPage,
+      inFlightRequests,
+      parseHtml: () => ({}) as Document,
+      preloadImages: vi.fn(),
+      readSnapshot: () => createSnapshot('/store/'),
+    });
+    const href = 'https://example.test/blackbox-records/store/';
+
+    // A second click on the same link aborts the first activation and fetches in the same task.
+    const firstController = new AbortController();
+    const firstRequest = loader.fetchSnapshot('/store/', href, firstController.signal);
+    firstController.abort();
+    const secondRequest = loader.fetchSnapshot('/store/', href, new AbortController().signal);
+
+    await expect(firstRequest).rejects.toThrow('aborted');
+    await expect(secondRequest).resolves.toEqual(createSnapshot('/store/'));
+    expect(fetchPage).toHaveBeenCalledTimes(2);
+    // The aborted request's cleanup must not drop the entry the second request registered while it ran.
+    expect(inFlightRequests.size).toBe(0);
+    expect(loader.hasCachedSnapshot('/store/')).toBe(true);
   });
 
   it('keeps each Store category snapshot distinct', async () => {
@@ -104,10 +170,65 @@ describe('shell page snapshot loader', () => {
 
     await loader
       .fetchSnapshot('/store/', 'https://example.test/blackbox-records/store/')
-      .then(() => expect(preloadImages).toHaveBeenCalledWith('<section>/store/</section>'));
+      .then(() => expect(preloadImages).toHaveBeenCalledWith(createSnapshot('/store/').mainContent));
 
     await loader.fetchSnapshot('/store/', 'https://example.test/blackbox-records/store/');
     await loader.prefetchHref('https://example.test/blackbox-records/store/');
     expect(preloadImages).toHaveBeenCalledTimes(1);
+  });
+
+  it('prefetches speculatively at low priority and warms only the first eager image until the page opens', async () => {
+    const fetchPage = vi.fn(async (_href: string, _init: RequestInit) => ({
+      ok: true,
+      text: async () => '',
+      url: 'https://example.test/blackbox-records/store/',
+    }));
+    const remainingSources = [{ src: '/b.jpg' }, { src: '/c.jpg' }];
+    const preloadImages = vi.fn(() => remainingSources);
+    const preloadImageSources = vi.fn();
+    const loader = createShellPageSnapshotLoader({
+      currentHref: () => 'https://example.test/blackbox-records/',
+      fetchPage,
+      parseHtml: () => ({}) as unknown as Document,
+      preloadImageSources,
+      preloadImages,
+      readSnapshot: () => createSnapshot('/store/'),
+    });
+
+    await loader.prefetchHref('https://example.test/blackbox-records/store/', { speculative: true });
+
+    expect(fetchPage.mock.calls[0]?.[1]).toMatchObject({ priority: 'low' });
+    expect(preloadImages).toHaveBeenCalledWith(createSnapshot('/store/').mainContent, 1);
+    expect(preloadImageSources).not.toHaveBeenCalled();
+
+    loader.warmSnapshotImages('/blackbox-records/store/');
+    loader.warmSnapshotImages('/store/');
+    expect(preloadImageSources).toHaveBeenCalledTimes(1);
+    expect(preloadImageSources).toHaveBeenCalledWith(remainingSources);
+  });
+
+  it('keeps default fetch priority and warms every eager image for an intentional prefetch', async () => {
+    const fetchPage = vi.fn(async (_href: string, _init: RequestInit) => ({
+      ok: true,
+      text: async () => '',
+      url: 'https://example.test/blackbox-records/store/',
+    }));
+    const preloadImages = vi.fn(() => []);
+    const preloadImageSources = vi.fn();
+    const loader = createShellPageSnapshotLoader({
+      currentHref: () => 'https://example.test/blackbox-records/',
+      fetchPage,
+      parseHtml: () => ({}) as unknown as Document,
+      preloadImageSources,
+      preloadImages,
+      readSnapshot: () => createSnapshot('/store/'),
+    });
+
+    await loader.prefetchHref('https://example.test/blackbox-records/store/');
+
+    expect(fetchPage.mock.calls[0]?.[1]).not.toHaveProperty('priority');
+    expect(preloadImages).toHaveBeenCalledWith(createSnapshot('/store/').mainContent);
+    loader.warmSnapshotImages('/store/');
+    expect(preloadImageSources).not.toHaveBeenCalled();
   });
 });

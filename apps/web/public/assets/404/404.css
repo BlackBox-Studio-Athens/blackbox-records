@@ -213,6 +213,14 @@ svg [fill='#0E0620'] {
   animation: c404-shine 10s ease-in-out infinite;
 }
 
+.error-404__illustration svg * {
+  animation-play-state: var(--ct-404-animation-state, paused) !important;
+}
+
+.error-404__illustration[data-motion-visible] {
+  --ct-404-animation-state: running;
+}
+
 @keyframes c404-wobble {
   0%,
   100% {
@@ -382,8 +390,7 @@ svg [fill='#0E0620'] {
   *,
   *::before,
   *::after {
-    animation-duration: 0ms !important;
-    animation-iteration-count: 1 !important;
+    animation: none !important;
     transition-duration: 0ms !important;
   }
 }
