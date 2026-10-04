@@ -25,17 +25,29 @@ async function stubShowcase(page: Page, stage: 'clip' | 'photo' | 'cover') {
   expect(Object.keys(source).sort()).toEqual([
     'artist',
     'artistPhotoUrl',
+    'clips',
     'coverUrl',
     'firstClipId',
+    'listen',
     'option',
+    'recording',
     'releaseDate',
     'slug',
     'storePath',
+    'summary',
     'title',
+    'trackCount',
   ]);
   const candidate: StorePreorderShowcaseCandidate = {
     ...source,
     firstClipId: stage === 'clip' ? 'abcdefghijk' : null,
+    clips:
+      stage === 'clip'
+        ? [
+            { id: 'abcdefghijk', title: 'First official video', posterUrl: source.coverUrl },
+            { id: '01234567890', title: 'Second official video', posterUrl: source.coverUrl },
+          ]
+        : [],
     artistPhotoUrl: stage === 'cover' ? null : source.artistPhotoUrl,
   };
   let listingReads = 0;
@@ -68,6 +80,44 @@ async function waitForShowcaseImages(showcase: Locator) {
   }
 }
 
+test('Home no-video poster presents the selected record and opens the existing shell player', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 920 });
+  await page.clock.setFixedTime(new Date('2026-10-03T12:00:00Z'));
+  const fixture = await stubShowcase(page, 'photo');
+  const candidate = {
+    ...fixture.candidate,
+    option: "Black Vinyl LP 12''",
+    trackCount: 6,
+    recording: 'BlackBox Studio',
+    summary: "Afterwise's six-track debut album blends instrumental post-rock atmosphere with post-metal weight.",
+  };
+  await page.route('**/preorder-showcase.json', (route) =>
+    route.fulfill({ json: [{ ...candidate, slug: 'other-record', title: 'Other record' }, candidate] }),
+  );
+  await page.route('**/api/store/listing-prices*', (route) =>
+    route.fulfill({ json: [{ ...listing, storeItemSlug: 'other-record' }, listing] }),
+  );
+  await page.route('https://bandcamp.com/EmbeddedPlayer/**', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<p>Local player fixture</p>' }),
+  );
+  await page.goto('./');
+  await waitForShell(page);
+  const showcase = page.getByRole('region', { name: 'Pre-orders', exact: true });
+  await showcase.getByRole('button', { name: /Disintegration Afterwise/ }).click();
+  await expect(showcase.getByRole('heading', { name: 'Disintegration', exact: true })).toBeVisible();
+  await expect(showcase.locator('dl dt')).toHaveText(['Format', 'Tracks', 'Recorded and mixed', 'Vinyl ships']);
+  await expect(showcase.getByText('Six', { exact: true })).toBeVisible();
+  await expect(showcase.getByText('BlackBox Studio', { exact: true })).toBeVisible();
+  await expect(showcase.locator('iframe')).toHaveCount(0);
+  await waitForShowcaseImages(showcase);
+  await showcase.scrollIntoViewIfNeeded();
+  await showcase.screenshot({ path: '.codex-artifacts/preorders/home-no-video-desktop.png' });
+  expect(fixture.providerRequests).toEqual([]);
+  await showcase.getByRole('button', { name: 'Listen', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('dialog').locator('iframe')).toHaveAttribute('src', /bandcamp\.com\/EmbeddedPlayer\//);
+});
+
 test('Home stays empty without pre-orders and never reads static candidates or a video provider', async ({ page }) => {
   let listingReads = 0;
   let candidateReads = 0;
@@ -99,15 +149,37 @@ test('Home stays empty without pre-orders and never reads static candidates or a
 test('Home clip stage uses Worker price and waits for Play, then survives shell navigation away and back', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1280, height: 920 });
   await page.clock.setFixedTime(new Date('2026-10-03T12:00:00Z'));
   const fixture = await stubShowcase(page, 'clip');
+  const noVideo = {
+    ...fixture.candidate,
+    slug: 'no-video-record',
+    title: 'No-video record',
+    firstClipId: null,
+    clips: [],
+  };
+  await page.route('**/preorder-showcase.json', (route) => route.fulfill({ json: [fixture.candidate, noVideo] }));
+  await page.route('**/api/store/listing-prices*', (route) =>
+    route.fulfill({ json: [listing, { ...listing, storeItemSlug: noVideo.slug }] }),
+  );
   await page.goto('./');
   await waitForShell(page);
   await plantSentinel(page);
   const showcase = page.getByRole('region', { name: 'Pre-orders', exact: true });
   await expect(showcase).toBeVisible();
   await expect(showcase.locator('.home-preorders__buy').getByText('€28.00', { exact: true })).toBeVisible();
-  await expect(showcase.getByText('Charged today · ships around October 2026', { exact: true })).toBeVisible();
+  await expect(showcase.getByText('Ships around October 2026 · charged today', { exact: true })).toBeVisible();
+  await expect(showcase.getByRole('heading', { name: 'Disintegration', exact: true })).toBeVisible();
+  await expect(showcase.locator('dl')).toHaveCount(0);
+  const videos = showcase.getByRole('group', { name: 'Official videos' });
+  const firstClip = videos.getByRole('button', { name: 'First official video', exact: true });
+  const secondClip = videos.getByRole('button', { name: 'Second official video', exact: true });
+  await expect(firstClip).toHaveAttribute('aria-pressed', 'true');
+  await secondClip.click();
+  await expect(secondClip).toHaveAttribute('aria-pressed', 'true');
+  expect(fixture.providerRequests).toEqual([]);
+  await firstClip.click();
   await expect(showcase.getByRole('link', { name: 'Pre-order', exact: true })).toHaveAttribute(
     'href',
     fixture.candidate.storePath,
@@ -116,7 +188,6 @@ test('Home clip stage uses Worker price and waits for Play, then survives shell 
     'href',
     /\/store\/#preorders$/,
   );
-  expect(fixture.reads()).toEqual({ listingReads: 1, candidateReads: 1 });
   expect(fixture.providerRequests).toEqual([]);
   await expect(showcase.locator('iframe')).toHaveCount(0);
   await showcase.scrollIntoViewIfNeeded();
@@ -132,6 +203,23 @@ test('Home clip stage uses Worker price and waits for Play, then survives shell 
     'https://www.youtube-nocookie.com/embed/abcdefghijk?autoplay=1',
   );
   await expect.poll(() => fixture.providerRequests.length).toBe(1);
+  await secondClip.click();
+  await expect(showcase.locator('iframe')).toHaveCount(0);
+  expect(fixture.providerRequests).toHaveLength(1);
+  await play.click();
+  await expect(showcase.getByTitle('Disintegration video')).toHaveAttribute(
+    'src',
+    'https://www.youtube-nocookie.com/embed/01234567890?autoplay=1',
+  );
+  await expect.poll(() => fixture.providerRequests.length).toBe(2);
+  await secondClip.click();
+  await expect(showcase.locator('iframe')).toHaveCount(1);
+  await showcase.getByRole('button', { name: /No-video record Afterwise/ }).click();
+  await expect(showcase.locator('iframe')).toHaveCount(0);
+  await expect(videos).toHaveCount(0);
+  await expect(showcase.locator('dl dt')).toHaveText(['Format', 'Tracks', 'Recorded and mixed', 'Vinyl ships']);
+  await showcase.getByRole('button', { name: /Disintegration Afterwise/ }).click();
+  await expect(firstClip).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Services', exact: true }).click();
   await expect(page).toHaveURL(/\/services\/$/);
   await expect(page.locator('.home-preorders')).toHaveCount(0);
@@ -141,8 +229,7 @@ test('Home clip stage uses Worker price and waits for Play, then survives shell 
   await expect(showcase.getByRole('button', { name: 'Play Disintegration', exact: true })).toBeVisible();
   await expect(showcase.locator('iframe')).toHaveCount(0);
   expect(await sentinelIntact(page)).toBe(true);
-  expect(fixture.providerRequests).toHaveLength(1);
-  expect(fixture.reads()).toEqual({ listingReads: 2, candidateReads: 2 });
+  expect(fixture.providerRequests).toHaveLength(2);
 });
 
 for (const stage of ['photo', 'cover'] as const) {
@@ -174,13 +261,27 @@ for (const stage of ['photo', 'cover'] as const) {
 test('390px Home showcase keeps the stage, facts and purchase link usable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const fixture = await stubShowcase(page, 'photo');
+  const video = {
+    ...fixture.candidate,
+    slug: 'mobile-video-record',
+    title: 'Mobile video record',
+    firstClipId: 'abcdefghijk',
+    clips: [
+      { id: 'abcdefghijk', title: 'First official video with a long title', posterUrl: fixture.candidate.coverUrl },
+      { id: '01234567890', title: 'Second official video', posterUrl: null },
+    ],
+  };
+  await page.route('**/preorder-showcase.json', (route) => route.fulfill({ json: [fixture.candidate, video] }));
+  await page.route('**/api/store/listing-prices*', (route) =>
+    route.fulfill({ json: [listing, { ...listing, storeItemSlug: video.slug }] }),
+  );
   await page.goto('./');
   await waitForShell(page);
   const showcase = page.getByRole('region', { name: 'Pre-orders', exact: true });
   await expect(showcase).toBeVisible();
   await showcase.scrollIntoViewIfNeeded();
   await waitForShowcaseImages(showcase);
-  await expect(showcase.locator('dl dt')).toHaveText(['Release date', 'Format', 'Expected to ship']);
+  await expect(showcase.locator('dl dt')).toHaveText(['Format', 'Tracks', 'Recorded and mixed', 'Vinyl ships']);
   await expect(showcase.locator('.home-preorders__buy').getByText('€28.00', { exact: true })).toBeVisible();
   const purchase = showcase.getByRole('link', { name: 'Pre-order', exact: true });
   expect((await purchase.boundingBox())?.height).toBeGreaterThanOrEqual(44);
@@ -188,5 +289,13 @@ test('390px Home showcase keeps the stage, facts and purchase link usable', asyn
   const capture = `.codex-artifacts/preorders/run7-W13-mobile-${Date.now()}.png`;
   await showcase.screenshot({ path: capture });
   console.log('W13 capture:', capture);
+  expect(fixture.providerRequests).toEqual([]);
+  await showcase.getByRole('button', { name: /Mobile video record Afterwise/ }).click();
+  await expect(showcase.getByRole('heading', { name: 'Mobile video record', exact: true })).toBeVisible();
+  for (const choice of await showcase.getByRole('group', { name: 'Official videos' }).getByRole('button').all()) {
+    expect((await choice.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await showcase.screenshot({ path: '.codex-artifacts/preorders/home-video-mobile.png' });
   expect(fixture.providerRequests).toEqual([]);
 });

@@ -47,48 +47,72 @@ export function useDeliveryQuote(lines: Lines) {
   };
 }
 
-export function DeliverySummary({ loading, quote }: Pick<ReturnType<typeof useDeliveryQuote>, 'loading' | 'quote'>) {
+export function DeliverySummary({
+  loading,
+  quote,
+  presentation = 'review',
+}: Pick<ReturnType<typeof useDeliveryQuote>, 'loading' | 'quote'> & {
+  presentation?: 'drawer' | 'review';
+}) {
+  const isDrawer = presentation === 'drawer';
+  const waitingReview = loading && !isDrawer;
   return (
-    <div className="space-y-3 text-sm" aria-live="polite" aria-busy={loading} data-delivery-summary>
-      {loading ? (
+    <div
+      className={isDrawer ? 'store-cart-drawer__delivery' : 'checkout-review__delivery'}
+      aria-live="polite"
+      aria-busy={loading}
+      data-delivery-summary
+    >
+      {loading && isDrawer ? (
         <p className="min-h-[4.75rem]">Calculating delivery and current prices…</p>
-      ) : !quote ? (
+      ) : !quote && !waitingReview ? (
         <p className="min-h-[4.75rem]">
           Delivery is unavailable for this cart. Please review the items or try again later.
         </p>
       ) : (
-        // Bebas amounts stay inside the 20px rows so the quote replaces the placeholder without moving Checkout.
-        <dl className="space-y-2">
+        // Review reserves the real rows, including their font metrics, while the Worker quote is pending.
+        <dl
+          className={isDrawer ? 'space-y-2' : 'checkout-review__amounts'}
+          aria-label={waitingReview ? 'Calculating delivery and current prices…' : undefined}
+        >
           <div className="flex justify-between gap-4">
-            <dt>Merchandise</dt>
+            <dt>Items</dt>
             <dd>
-              {quote.merchandiseGrossMinor === null ? (
+              {quote?.merchandiseGrossMinor === null ? (
                 'Choose amount at payment'
               ) : (
-                <span className="font-display leading-none">{money(quote.merchandiseGrossMinor)}</span>
+                <span className="font-display leading-none">{quote ? money(quote.merchandiseGrossMinor) : '…'}</span>
               )}
             </dd>
           </div>
           <div className="flex justify-between gap-4">
-            <dt>Shipping — BOX NOW {quote.tier === 'small' ? 'Small' : 'Medium'}</dt>
+            <dt>BOX NOW locker delivery</dt>
             <dd>
-              <span className="font-display leading-none">{money(quote.amountMinor)}</span>
+              <span className="font-display leading-none">{quote ? money(quote.amountMinor) : '…'}</span>
             </dd>
           </div>
-          <div className="flex justify-between gap-4 font-semibold">
-            <dt>Total, VAT included</dt>
-            <dd>
-              {quote.totalAmountMinor === null ? (
-                'Shown before payment'
-              ) : (
-                <span className="font-display leading-none">{money(quote.totalAmountMinor)}</span>
-              )}
-            </dd>
-          </div>
+          {!isDrawer && (
+            <div className="checkout-review__total flex justify-between gap-4 font-semibold">
+              <dt>Total, charged today</dt>
+              <dd>
+                {quote?.totalAmountMinor === null ? (
+                  'Shown before payment'
+                ) : (
+                  <span className="font-display leading-none">{quote ? money(quote.totalAmountMinor) : '…'}</span>
+                )}
+              </dd>
+            </div>
+          )}
         </dl>
       )}
-      <p className="text-xs leading-5 text-muted-foreground">VAT is included, never added again.</p>
-      <PurchaseInformation />
+      {isDrawer ? (
+        <p>
+          VAT is included, never added again. Greece-only BOX NOW locker delivery. We arrange your locker with you
+          before dispatch.
+        </p>
+      ) : (
+        <PurchaseInformation presentation="checkout" />
+      )}
     </div>
   );
 }
@@ -107,5 +131,5 @@ export default function CartDeliverySummary({
     onTotalDisplayChange?.(delivery.totalDisplay);
   }, [onTotalDisplayChange, delivery.totalDisplay]);
 
-  return <DeliverySummary {...delivery} />;
+  return <DeliverySummary {...delivery} presentation="drawer" />;
 }

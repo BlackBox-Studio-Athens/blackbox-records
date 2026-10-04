@@ -4,7 +4,8 @@ import {
   acknowledgeVerifiedStripeWebhookEvent,
   type StripeWebhookAcknowledgementServices,
 } from './stripe-webhook-acknowledgement';
-import { createCheckoutOrderReferenceToken, type CheckoutOrderPaid } from '../../../application/commerce/orders';
+import type { CheckoutOrderPaid } from '../../../application/commerce/orders';
+import { createCheckoutOrderReferenceToken } from '../../../domain/commerce';
 import type { CatalogSyncIssue, CatalogSyncVariantResult } from '../../../application/commerce/catalog-sync';
 import type { VerifiedStripeWebhookEvent } from '../../../infrastructure/stripe';
 import type { StoreItemOptionRecord } from '../../../domain/commerce/repositories/spi';

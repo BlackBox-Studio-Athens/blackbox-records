@@ -27,6 +27,7 @@ type StoreOfferPriceDisplayProps = {
   api?: PublicCheckoutApi;
   className?: string;
   releaseDate?: Date | string | null | undefined;
+  isVinyl?: boolean;
   preorderFacts?: boolean;
   suppressUnavailableHeadline?: boolean;
   storeItemSlug: string;
@@ -75,6 +76,7 @@ export default function StoreOfferPriceDisplay({
   api,
   className,
   releaseDate,
+  isVinyl = false,
   preorderFacts = false,
   storeItemSlug,
   suppressUnavailableHeadline = false,
@@ -108,19 +110,27 @@ export default function StoreOfferPriceDisplay({
 
   return (
     <Wrapper>
-      <span
-        aria-busy={view.isLoading ? 'true' : undefined}
-        aria-hidden={hideUnavailableHeadline ? 'true' : undefined}
-        className={cn(
-          className,
-          view.tone === 'loading' && 'text-muted-foreground',
-          (view.tone === 'unavailable' || view.tone === 'error') && 'text-muted-foreground',
-          hideUnavailableHeadline && 'invisible',
+      <span className={preorderFacts ? 'flex flex-wrap items-center gap-3' : undefined}>
+        <span
+          aria-busy={view.isLoading ? 'true' : undefined}
+          aria-hidden={hideUnavailableHeadline ? 'true' : undefined}
+          className={cn(
+            className,
+            view.tone === 'loading' && 'text-muted-foreground',
+            (view.tone === 'unavailable' || view.tone === 'error') && 'text-muted-foreground',
+            hideUnavailableHeadline && 'invisible',
+          )}
+          data-store-offer-price
+          data-store-offer-price-state={view.tone}
+        >
+          {view.label}
+        </span>
+        {preorderFacts && view.tone === 'ready' && view.preorder && (
+          <>
+            {released && <span className="store-item-card__release-status">Out now</span>}
+            <span className="preorder-badge">Pre-order</span>
+          </>
         )}
-        data-store-offer-price
-        data-store-offer-price-state={view.tone}
-      >
-        {view.label}
       </span>
       <span className="mt-2 block text-xs leading-5 text-muted-foreground">
         VAT included. Shipping calculated in your cart.{' '}
@@ -132,11 +142,11 @@ export default function StoreOfferPriceDisplay({
       {preorderFacts && view.tone === 'ready' && view.preorder && (
         <dl className="preorder-facts" style={{ marginTop: '1rem' }}>
           <div>
-            <dt>{released ? 'Release' : 'Release date'}</dt>
+            <dt>{released ? 'Album' : 'Release date'}</dt>
             <dd>{released ? `Out now, released ${releaseText}` : releaseText}</dd>
           </div>
           <div>
-            <dt>Expected to ship</dt>
+            <dt>{isVinyl ? 'Vinyl expected to ship' : 'Expected to ship'}</dt>
             <dd>{estimateText.charAt(0).toUpperCase() + estimateText.slice(1)}</dd>
           </div>
           <div>

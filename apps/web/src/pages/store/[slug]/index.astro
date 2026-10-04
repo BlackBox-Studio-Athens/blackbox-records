@@ -1,5 +1,5 @@
 ---
-import { tracklistGroups } from '@blackbox/content-model';
+import { tracklistFormat, tracklistGroups } from '@blackbox/content-model';
 import EditorialContent from '@/components/detail/EditorialContent.astro';
 import { formatDayMonthYear } from '@/utils/content';
 import Prose from '@/components/Prose.astro';
@@ -89,6 +89,9 @@ const trackGroups = tracklistGroups(
   sourceRelease?.data.tracklist ?? distroSource?.data.tracklist,
   primaryAvailability?.optionLabel || distroSource?.data.format || distroSource?.data.group,
 );
+const isVinyl =
+  tracklistFormat(primaryAvailability?.optionLabel || distroSource?.data.format || distroSource?.data.group) ===
+  'vinyl';
 const hasBody =
   sourceRelease &&
   (sourceRelease.data.editorial_body
@@ -161,6 +164,7 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
           client:load
           storeItemSlug={storeItem.slug}
           releaseDate={releaseDate}
+          isVinyl={isVinyl}
           preorderFacts
           suppressUnavailableHeadline
           className="block font-display text-3xl tracking-[0.08em] uppercase text-foreground"
@@ -169,6 +173,8 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
           client:load
           cartItem={cartItem}
           cartSeed={cartSeed}
+          releaseDate={releaseDate}
+          isVinyl={isVinyl}
           purchaseHint="Add it to the cart to review this item before checkout."
         />
         <PurchaseInformation />

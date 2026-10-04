@@ -13,6 +13,13 @@ Pre-order status rules SHALL be owned by `commerce-domain` and reach other backe
 - **AND** `operator-stock` declares its `commerce-domain` dependency for the staff pre-order projection
 - **AND** the pre-order estimate notice repository is a provided `commerce-persistence` entrypoint consumed by `orders`.
 
+#### Scenario: Checkout return and order emails share the canonical order reference
+
+- **WHEN** the paid checkout return, payment confirmation or estimate-change delivery needs an order reference
+- **THEN** the backend consumers import the existing pure formatter and reference type through the `commerce-domain` root entrypoint
+- **AND** `checkout-core` does not depend on `orders`, avoiding the reverse edge to the order module's checkout reconciliation dependency
+- **AND** the formatter retains its existing words, seed, date format and output; payment guards and delivery behavior remain unchanged.
+
 #### Scenario: Web modules word a pre-order
 
 - **WHEN** Store, cart, checkout, editorial or page code formats a Ship Estimate or badge

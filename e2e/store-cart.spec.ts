@@ -99,7 +99,7 @@ for (const viewport of [
     } finally {
       releaseQuote();
     }
-    await expect(summary).toContainText('Shipping');
+    await expect(summary).toContainText('BOX NOW locker delivery');
 
     const scroller = drawer.locator('[data-lenis-scroll-root]');
     await expect.poll(() => scroller.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
@@ -462,6 +462,162 @@ test('the open cart drawer holds the page behind it still', async ({ page, isMob
   await expect(page.getByRole('dialog')).toBeHidden();
   await expect(page.locator('body')).not.toHaveClass(/\bis-shell-scroll-locked\b/);
 });
+
+for (const width of [440, 390]) {
+  test(`mixed cart refinement preserves live quotes, state changes and checkout gates at ${width}px`, async ({
+    page,
+  }, testInfo) => {
+    await page.setViewportSize({ width, height: width === 440 ? 1040 : 844 });
+    const lines = [
+      {
+        availabilityLabel: 'Available',
+        image: null,
+        imageAlt: null,
+        optionLabel: 'Vinyl',
+        priceAmountMinor: 2500,
+        priceCurrencyCode: 'EUR',
+        priceDisplay: '€25.00',
+        priceKind: 'fixed',
+        storeItemSlug: 'caregivers-vinyl',
+        subtitle: 'Test artist',
+        title: 'Caregivers',
+        variantId: 'caregivers-vinyl_standard',
+        quantity: 1,
+        preorder: { shipEstimate: { kind: 'month', month: '2026-11', part: 'mid' } },
+      },
+      {
+        availabilityLabel: 'Available',
+        image: null,
+        imageAlt: null,
+        optionLabel: 'Vinyl',
+        priceAmountMinor: 2000,
+        priceCurrencyCode: 'EUR',
+        priceDisplay: '€20.00',
+        priceKind: 'fixed',
+        storeItemSlug: 'anarchotribal-vinyl',
+        subtitle: 'Ouranopithecus',
+        title: 'Anarchotribal',
+        variantId: 'anarchotribal-vinyl_standard',
+        quantity: 1,
+        preorder: null,
+      },
+    ];
+    await page.addInitScript((savedLines) => {
+      if (!localStorage.getItem('blackbox.storeCart.v2'))
+        localStorage.setItem('blackbox.storeCart.v2', JSON.stringify({ lines: savedLines }));
+    }, lines);
+    let inStock = true;
+    await page.route('**/api/store/capabilities', (route) =>
+      route.fulfill({
+        json: {
+          pricing: { vatDisclosure: 'VAT included', deliveryCharges: { small: 250, medium: 350 }, currencyCode: 'EUR' },
+          nativeCheckout: { enabled: true, unavailableReason: null },
+        },
+      }),
+    );
+    await page.route('**/api/store/items/*', (route) => {
+      const slug = new URL(route.request().url()).pathname.split('/').pop()!;
+      return route.fulfill({
+        json: {
+          storeItemSlug: slug,
+          variantId: `${slug}_standard`,
+          availability: inStock
+            ? { label: 'In stock', status: 'available' }
+            : { label: 'Sold Out', status: 'sold_out' },
+          canCheckout: inStock,
+          catalogStatus: 'ready',
+          price: {
+            kind: 'fixed',
+            amountMinor: slug === 'caregivers-vinyl' ? 2000 : 2800,
+            currencyCode: 'EUR',
+            display: slug === 'caregivers-vinyl' ? '€20.00' : '€28.00',
+          },
+          preorder: slug === 'caregivers-vinyl' ? lines[0]!.preorder : null,
+        },
+      });
+    });
+    await page.route('**/api/store/delivery-quote', (route) => {
+      const requested = route.request().postDataJSON().lines as { storeItemSlug: string; quantity: number }[];
+      const merchandiseGrossMinor = requested.reduce(
+        (total, line) => total + line.quantity * (line.storeItemSlug === 'caregivers-vinyl' ? 2000 : 2800),
+        0,
+      );
+      return route.fulfill({
+        json: {
+          quote: inStock
+            ? {
+                tier: 'small',
+                amountMinor: 250,
+                currencyCode: 'EUR',
+                merchandiseGrossMinor,
+                totalAmountMinor: merchandiseGrossMinor + 250,
+              }
+            : null,
+        },
+      });
+    });
+    await page.goto('store/');
+    await waitForShell(page);
+    const trigger = page.locator('[data-store-cart-trigger]').first();
+    await trigger.click();
+    const drawer = page.getByRole('dialog', { name: 'Cart' });
+    const notice = drawer.locator('.preorder-notice');
+    const summary = drawer.locator('[data-delivery-summary]');
+    await expect(notice.getByRole('heading', { name: 'Ships together' })).toBeVisible();
+    await expect(notice).toContainText('Around mid November 2026');
+    await expect(notice).toContainText('The in-stock item waits for CAREGIVERS and travels with it.');
+    await expect(summary).toContainText('€48.00');
+    await expect(summary).toContainText('€2.50');
+    await expectCartActionsVisible(drawer);
+    expect((await drawer.boundingBox())!.width).toBeCloseTo(width, 0);
+    expect(await drawer.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+
+    await drawer.getByRole('button', { name: 'Increase quantity for Caregivers', exact: true }).click();
+    await expect(summary).toContainText('€68.00');
+    await drawer.getByRole('button', { name: 'Decrease quantity for Caregivers', exact: true }).click();
+    await expect(summary).toContainText('€48.00');
+    await drawer
+      .locator('[data-store-cart-line-item]')
+      .last()
+      .getByRole('button', { name: 'Remove', exact: true })
+      .click();
+    await expect(notice).toContainText('Your order ships in one parcel when the pre-order arrives.');
+    await expect(notice).not.toContainText('in-stock');
+    await drawer.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expect(notice).toContainText('The in-stock item waits');
+    await drawer
+      .locator('[data-store-cart-line-item]')
+      .first()
+      .getByRole('button', { name: 'Remove', exact: true })
+      .click();
+    await expect(notice).toHaveCount(0);
+    await expect(drawer.locator('[data-store-cart-checkout]')).not.toHaveClass(/preorder-action/);
+    await drawer.getByRole('button', { name: 'Undo', exact: true }).click();
+    await expect(notice).toHaveCount(1);
+    await page.screenshot({
+      path: `.codex-artifacts/preorders/mixed-cart/behavior-${width}-${testInfo.project.name}.png`,
+    });
+
+    await page.reload();
+    await waitForShell(page);
+    await expect(trigger).toHaveAccessibleName('Cart, 2 items');
+    await trigger.click();
+    await expect(drawer.locator('[data-store-cart-line-item]')).toHaveCount(2);
+    await drawer.getByRole('link', { name: 'Checkout', exact: true }).click();
+    const pay = page.locator('[data-checkout-pay-state]');
+    await expect(pay).toHaveAttribute('data-checkout-pay-state', 'ready');
+    await expect(pay).toContainText('€50.50');
+    const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('blackbox.storeCart.v2')!));
+    // Browser snapshots remain a convenience draft; the Worker quote revalidates payment prices.
+    expect(saved.lines.map((line: { priceAmountMinor: number }) => line.priceAmountMinor)).toEqual([2500, 2000]);
+    inStock = false;
+    await page.reload();
+    await waitForShell(page);
+    await expect(page.locator('[data-delivery-summary]')).toContainText('Delivery is unavailable');
+    await expect(pay).toBeDisabled();
+    await expect(page.locator('[data-checkout-pay-state="ready"]')).toHaveCount(0);
+  });
+}
 
 test('paid pre-order return fixture keeps its rail and keyboard action usable at 390px', async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });

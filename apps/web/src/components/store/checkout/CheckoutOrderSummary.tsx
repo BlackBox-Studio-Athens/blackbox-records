@@ -56,9 +56,13 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
         }
       : null;
   const lines = cartLines.length > 0 ? cartLines : fallbackLine ? [fallbackLine] : [];
+  const hasPreorder = lines.some((line) => line.preorder);
 
   useEffect(() => {
-    setCartLines(readStoreCartState(window.localStorage).lines);
+    const syncCart = () => setCartLines(readStoreCartState(window.localStorage).lines);
+    syncCart();
+    window.addEventListener(CHECKOUT_CART_UPDATED_EVENT, syncCart);
+    return () => window.removeEventListener(CHECKOUT_CART_UPDATED_EVENT, syncCart);
   }, []);
 
   function updateCartLineQuantity(variantId: string, direction: 'decrement' | 'increment') {
@@ -79,32 +83,65 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
   }
 
   return (
-    <Card className="min-w-0 rounded-none border-border/70 bg-[#101010] shadow-none" data-checkout-order-summary>
-      <CardContent className="grid min-w-0 grid-cols-1 gap-5 p-4 sm:p-5">
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-4 sm:gap-4">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-            {CHECKOUT_ORDER_SUMMARY_COPY.title}
-          </p>
-          <Badge
-            variant="outline"
-            className={cn(
-              'rounded-none border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
-              props.canBuy
-                ? 'border-foreground/25 bg-background/70 text-foreground'
-                : 'border-border/70 bg-background/70 text-muted-foreground',
-            )}
-          >
-            {props.availabilityLabel}
-          </Badge>
+    <Card className="checkout-review__panel rounded-none shadow-none" data-checkout-order-summary>
+      <CardContent className="checkout-summary__content">
+        <div className="checkout-review__panel-heading">
+          <h2 className="checkout-summary__heading">{CHECKOUT_ORDER_SUMMARY_COPY.title}</h2>
+          <details className="checkout-summary__editor">
+            <summary
+              className={cn('checkout-review__badge', !props.canBuy && 'text-muted-foreground')}
+              aria-label="Edit cart quantities"
+            >
+              {props.availabilityLabel}
+            </summary>
+            <div className="checkout-summary__quantities">
+              {lines.length ? (
+                lines.map((line) => (
+                  <div key={line.variantId}>
+                    <p>{line.title}</p>
+                    <div className="inline-flex h-11 items-stretch border border-border/70">
+                      <button
+                        type="button"
+                        className="w-11 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        onClick={() => updateCartLineQuantity(line.variantId, 'decrement')}
+                        aria-label={`Decrease quantity for ${line.title}`}
+                      >
+                        -
+                      </button>
+                      <span className="inline-flex min-w-11 items-center justify-center border-x border-border/70 px-2 text-xs font-semibold tabular-nums">
+                        {line.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        className="w-11 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
+                        onClick={() => updateCartLineQuantity(line.variantId, 'increment')}
+                        aria-label={`Increase quantity for ${line.title}`}
+                        disabled={line.priceKind === 'pay_what_you_want'}
+                        aria-describedby={
+                          line.priceKind === 'pay_what_you_want'
+                            ? `checkout-price-guidance-${line.variantId}`
+                            : undefined
+                        }
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p>Your cart is empty. Continue shopping to add a record.</p>
+              )}
+            </div>
+          </details>
         </div>
 
-        <div className="space-y-4">
+        <div className="checkout-summary__items">
+          {!lines.length && (
+            <p className="checkout-review__note">Your cart is empty. Continue shopping to add a record.</p>
+          )}
           {lines.map((line) => (
-            <article
-              className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] gap-3 sm:grid-cols-[84px_minmax(0,1fr)] sm:gap-4"
-              key={line.variantId}
-            >
-              <div className="aspect-square overflow-hidden border border-border/70 bg-muted/20">
+            <article className="checkout-summary__item" key={line.variantId}>
+              <div className="checkout-summary__artwork">
                 {/* Runtime Image Snapshot: checkout summary renders the stored string URL only. */}
                 {line.image ? (
                   <img
@@ -116,56 +153,29 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
                     alt={line.imageAlt || line.title}
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center px-2 text-center text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                    No image
-                  </div>
+                  <div className="checkout-summary__fallback">Cover</div>
                 )}
               </div>
 
-              <div className="min-w-0 space-y-2">
-                <p className="brand-cart-line-title text-foreground">{line.title}</p>
-                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{line.subtitle}</p>
-                {line.optionLabel && (
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">{line.optionLabel}</p>
+              <div className="checkout-summary__identity">
+                <h3 className="brand-cart-line-title text-foreground">{line.title}</h3>
+                <p className="checkout-summary__metadata">
+                  {line.subtitle}
+                  {line.optionLabel && ` · ${line.optionLabel}`}
+                </p>
+                <p className="checkout-summary__price">{getCartLineTotalDisplay(line)}</p>
+                {line.quantity > 1 && (
+                  <p className="checkout-review__note">
+                    {line.quantity} × <span className="font-display">{line.priceDisplay}</span> each
+                  </p>
                 )}
-                {line.preorder && <p className="preorder-badge">{preorderChipText(line.preorder.shipEstimate)}</p>}
-                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="font-display text-2xl uppercase tracking-[0.08em] text-foreground">
-                      {getCartLineTotalDisplay(line)}
-                    </p>
-                    {line.quantity > 1 && (
-                      <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                        <span className="font-display">{line.priceDisplay}</span> each
-                      </p>
-                    )}
-                  </div>
-                  <div className="inline-flex h-11 items-stretch border border-border/70">
-                    <button
-                      type="button"
-                      className="w-11 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                      onClick={() => updateCartLineQuantity(line.variantId, 'decrement')}
-                      aria-label={`Decrease quantity for ${line.title}`}
-                    >
-                      -
-                    </button>
-                    <span className="inline-flex min-w-11 items-center justify-center border-x border-border/70 px-2 text-xs font-semibold tabular-nums">
-                      {line.quantity}
-                    </span>
-                    <button
-                      type="button"
-                      className="w-11 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
-                      onClick={() => updateCartLineQuantity(line.variantId, 'increment')}
-                      aria-label={`Increase quantity for ${line.title}`}
-                      disabled={line.priceKind === 'pay_what_you_want'}
-                      aria-describedby={
-                        line.priceKind === 'pay_what_you_want' ? `checkout-price-guidance-${line.variantId}` : undefined
-                      }
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
+                {line.preorder ? (
+                  <p className="preorder-badge">{preorderChipText(line.preorder.shipEstimate)}</p>
+                ) : (
+                  <Badge variant="outline" className="checkout-summary__availability rounded-none">
+                    {hasPreorder ? `${line.availabilityLabel} · sent with the pre-order` : line.availabilityLabel}
+                  </Badge>
+                )}
                 {line.priceKind === 'pay_what_you_want' && (
                   <p
                     id={`checkout-price-guidance-${line.variantId}`}

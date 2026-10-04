@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { PublicCheckoutApi, PublicStoreOffer } from '@/components/store/checkout/public-checkout-api';
 import { STORE_CART_ADD_ITEM_EVENT, type CartLineItemSnapshot } from '@/components/store/cart/store-cart';
@@ -74,6 +74,8 @@ const checkoutPausedOffer: PublicStoreOffer = {
 };
 
 describe('StoreItemPurchaseActions', () => {
+  afterEach(() => vi.useRealTimers());
+
   it('renders Add To Cart for eligible items without direct checkout copy', () => {
     const html = renderToStaticMarkup(<StoreItemPurchaseActions cartItem={cartItem} cartSeed={null} />);
 
@@ -114,6 +116,48 @@ describe('StoreItemPurchaseActions', () => {
     expect(html).toContain('aria-busy="true"');
     expect(html).not.toContain('preorder-action');
     expect(html).not.toContain(STORE_ITEM_PURCHASE_ACTION_COPY.preorderHint);
+  });
+
+  it.each([
+    ['2026-10-16', true, STORE_ITEM_PURCHASE_ACTION_COPY.preorderHint],
+    ['2026-06-09', true, STORE_ITEM_PURCHASE_ACTION_COPY.releasedVinylPreorderHint],
+    ['2026-10-03T23:30:00Z', true, STORE_ITEM_PURCHASE_ACTION_COPY.releasedVinylPreorderHint],
+    [null, true, STORE_ITEM_PURCHASE_ACTION_COPY.preorderHint],
+    ['2026-06-09', false, STORE_ITEM_PURCHASE_ACTION_COPY.releasedPreorderHint],
+  ] as const)('distinguishes released music from pending copies for %s, vinyl=%s', (releaseDate, isVinyl, hint) => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-03T00:15:00Z'));
+    const html = renderToStaticMarkup(
+      <StoreItemPurchaseActions
+        cartItem={{ ...cartItem, optionLabel: isVinyl ? 'Black Vinyl LP' : 'CD', preorder: { shipEstimate: null } }}
+        cartSeed={null}
+        releaseDate={releaseDate}
+        isVinyl={isVinyl}
+      />,
+    );
+
+    expect(html).toContain(hint);
+    expect(html).toContain('>Pre-order</button>');
+    if (!isVinyl) expect(html).not.toContain('vinyl');
+    if (hint === STORE_ITEM_PURCHASE_ACTION_COPY.preorderHint) expect(html).not.toContain('album is out');
+  });
+
+  it('does not keep release-aware pre-order hints after a fresh ordinary or unavailable offer', async () => {
+    const readStoreOffer = vi
+      .fn<PublicCheckoutApi['readStoreOffer']>()
+      .mockResolvedValueOnce(readyOffer)
+      .mockResolvedValueOnce(soldOutOffer);
+    const api = createApi({ readStoreOffer });
+    const staleSeed = { ...cartSeed, preorder: { shipEstimate: null } };
+
+    for (let index = 0; index < 2; index++) {
+      const state = await loadStoreItemPurchaseActionState(api, staleSeed);
+      const html = renderToStaticMarkup(
+        <StoreItemPurchaseActions cartItem={state.cartItem} cartSeed={null} releaseDate="2026-06-09" isVinyl />,
+      );
+      expect(html).not.toContain('preorder-action');
+      expect(html).not.toContain(STORE_ITEM_PURCHASE_ACTION_COPY.releasedVinylPreorderHint);
+    }
   });
 
   it('keeps an older cart snapshot disabled while a fresh Worker offer is pending', () => {

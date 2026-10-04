@@ -32,3 +32,5 @@ export {
   stockPreorderFromColumns,
 } from './preorder';
 export type { PreorderShipEstimate, ShopperPreorder, StockPreorder } from './preorder';
+export { createCheckoutOrderReferenceToken } from './order-reference-token';
+export type { CheckoutOrderReferenceToken } from './order-reference-token';

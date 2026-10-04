@@ -18,10 +18,37 @@ export function PrivacyLink({
 
 export default function PurchaseInformation({
   information = getPurchaseInformation(),
+  presentation,
 }: {
   information?: ApprovedPurchaseInformation | null;
+  presentation?: 'checkout';
 }) {
   const termsHref = `${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/terms/`;
+  if (presentation === 'checkout') {
+    const deliverySummary =
+      information?.terms.delivery.summary ??
+      'Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch. A street address collected at payment does not mean home delivery.';
+    return (
+      <div className="checkout-review__information" data-purchase-information>
+        {import.meta.env.DEV && information && isPurchaseInformationDraft && (
+          <p className="font-semibold">Draft purchase information. Details awaiting confirmation.</p>
+        )}
+        {typeof deliverySummary !== 'string' && <p>VAT is included, never added again.</p>}
+        <Prose
+          value={
+            typeof deliverySummary === 'string'
+              ? `VAT is included, never added again. ${deliverySummary}`
+              : deliverySummary
+          }
+        />
+        <div className="checkout-review__support">
+          <a href={`${termsHref}#delivery`}>Delivery information</a>
+          <a href={`${termsHref}#returns`}>Returns and refunds</a>
+          <a href={`${termsHref}#support`}>Purchase help</a>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="space-y-2 text-xs leading-6 text-muted-foreground" data-purchase-information>
       {import.meta.env.DEV && information && isPurchaseInformationDraft && (

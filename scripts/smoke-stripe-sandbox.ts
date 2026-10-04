@@ -14,7 +14,7 @@ import {
   type CartLineItemSnapshot,
   writeStoreCartState,
 } from '../apps/web/src/components/store/cart/store-cart';
-import { createCheckoutOrderReferenceToken } from '../apps/backend/src/application/commerce/orders';
+import { createCheckoutOrderReferenceToken } from '../apps/backend/src/domain/commerce';
 import {
   appendSmokeStepSummary,
   createRunId as createSmokeRunId,

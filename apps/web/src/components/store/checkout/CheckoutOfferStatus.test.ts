@@ -122,7 +122,7 @@ describe('CheckoutOfferStatus helpers', () => {
       badgeSrc: STRIPE_CHECKOUT_BADGE_SRC,
       label: STRIPE_CHECKOUT_CTA_COPY,
     });
-    expect(createStripeCheckoutCtaView(false).label).toBe('Continue to Stripe Checkout');
+    expect(createStripeCheckoutCtaView(false).label).toBe('Continue to Payment');
     expect(createStripeCheckoutCtaView(false).label).not.toBe('Pay Securely With Stripe');
     expect(createStripeCheckoutCtaView(true)).toEqual({
       badgeSrc: null,
@@ -490,7 +490,9 @@ describe('CheckoutOfferStatus helpers', () => {
       expect(markup).toContain(expected);
       expect(markup).toContain('One parcel to your BOX NOW locker');
       expect(markup).toContain(
-        'Your whole order, in-stock items included, ships in one parcel when the pre-order arrives. If the estimate changes we email you.',
+        lines.some((line) => !line.preorder)
+          ? 'Your whole order, in-stock items included, waits and travels with'
+          : 'Your order ships in one parcel when',
       );
       expect(markup.indexOf('class="preorder-notice"')).toBeLessThan(markup.indexOf('data-delivery-summary'));
       expect(markup).toContain('Calculating delivery and current prices');

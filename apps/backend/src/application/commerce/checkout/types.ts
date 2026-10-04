@@ -136,6 +136,16 @@ export type StripeCheckoutSessionState = {
 
 export type CheckoutState = {
   checkoutSessionId: CheckoutSessionId;
+  orderSnapshot?: {
+    reference: string;
+    lines: {
+      displayName: string;
+      optionLabel: string | null;
+      quantity: number;
+      storeItemSlug: string;
+      preorder: ShopperPreorder | null;
+    }[];
+  };
   orderStatus: OrderStatus | null;
   paymentStatus: StripeCheckoutPaymentStatus;
   preorder: ShopperPreorder | null;

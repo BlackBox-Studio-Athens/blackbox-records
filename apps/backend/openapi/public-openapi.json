@@ -814,6 +814,55 @@
           "checkoutSessionId": {
             "type": "string"
           },
+          "orderSnapshot": {
+            "type": "object",
+            "properties": {
+              "reference": {
+                "type": "string",
+                "minLength": 1
+              },
+              "lines": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "displayName": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "optionLabel": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "quantity": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    },
+                    "storeItemSlug": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "preorder": {
+                      "$ref": "#/components/schemas/PublicStorePreorder"
+                    }
+                  },
+                  "required": [
+                    "displayName",
+                    "optionLabel",
+                    "quantity",
+                    "storeItemSlug",
+                    "preorder"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "reference",
+              "lines"
+            ]
+          },
           "orderStatus": {
             "type": [
               "string",

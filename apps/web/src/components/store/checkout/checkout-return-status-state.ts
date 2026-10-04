@@ -17,6 +17,7 @@ export type CheckoutReturnStatusView = {
   kicker: string;
   nextStep: string;
   nextSteps: CheckoutReturnNextStepsView | null;
+  orderSnapshot?: CheckoutState['orderSnapshot'];
   shippingLocker: CheckoutReturnShippingLockerView;
   title: string;
   tone: 'loading' | 'success' | 'attention' | 'error';
@@ -138,6 +139,7 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
         : 'Payment is confirmed and your order is recorded.',
       isFinal: true,
       ...(preorder ? { isPreorder: true } : {}),
+      ...(checkoutState.orderSnapshot ? { orderSnapshot: checkoutState.orderSnapshot } : {}),
       kicker: 'Order Complete',
       nextStep: '',
       nextSteps: createCheckoutReturnNextStepsView(preorder),

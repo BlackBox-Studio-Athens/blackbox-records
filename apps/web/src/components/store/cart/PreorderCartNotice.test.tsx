@@ -54,6 +54,70 @@ const scenarios: { name: string; estimates: (ShipEstimate | null)[]; arrival: st
 ];
 
 describe('PreorderCartNotice', () => {
+  it('names the expected record in review and never claims ordinary stock in a pre-order-only order', () => {
+    const markup = renderToStaticMarkup(
+      <PreorderCartNotice
+        lines={[{ title: 'Lotus', preorder: { shipEstimate: { kind: 'month', month: '2026-11', part: null } } }]}
+      />,
+    );
+    expect(markup).toContain('LOTUS is expected to ship around November 2026.');
+    expect(markup).toContain('Your order ships in one parcel when the pre-order arrives.');
+    expect(markup).not.toContain('in-stock items included');
+    expect(markup).not.toContain('waits and travels');
+  });
+
+  it('names the pre-order holding a mixed drawer and offers a separate order for stock wanted sooner', () => {
+    const markup = renderToStaticMarkup(
+      <PreorderCartNotice
+        presentation="drawer"
+        lines={[
+          { title: 'Lotus', preorder: { shipEstimate: { kind: 'month', month: '2026-11', part: 'mid' } } },
+          { title: 'Against His-Story, Against Leviathan!', preorder: null },
+        ]}
+      />,
+    );
+    expect(markup).toContain('Ships together');
+    expect(markup).toContain('Around mid November 2026');
+    expect(markup).toContain('Charged in full');
+    expect(markup).toContain('One parcel to your locker');
+    expect(markup).toContain(
+      'The in-stock item waits for LOTUS and travels with it. Want it sooner? Check it out as a separate order.',
+    );
+  });
+
+  it('describes a pre-order-only drawer without inventing an in-stock line', () => {
+    const markup = renderToStaticMarkup(
+      <PreorderCartNotice
+        presentation="drawer"
+        lines={[
+          { title: 'First', preorder: { shipEstimate: { kind: 'date', date: '2026-11-20' } } },
+          { title: 'Second', preorder: { shipEstimate: { kind: 'month', month: '2026-12', part: null } } },
+        ]}
+      />,
+    );
+    expect(markup).toContain('Around December 2026');
+    expect(markup).toContain('when all pre-orders arrive');
+    expect(markup).not.toContain('in-stock');
+    expect(markup).not.toContain('separate order');
+  });
+
+  it('withholds the whole parcel date when one pending estimate is unknown', () => {
+    const markup = renderToStaticMarkup(
+      <PreorderCartNotice
+        presentation="drawer"
+        lines={[
+          { title: 'First', preorder: { shipEstimate: { kind: 'date', date: '2026-11-20' } } },
+          { title: 'Second', preorder: { shipEstimate: null } },
+          {},
+          {},
+        ]}
+      />,
+    );
+    expect(markup).toContain('When it arrives');
+    expect(markup).toContain('The in-stock items wait for FIRST, SECOND and travel with them.');
+    expect(markup).not.toContain('November');
+  });
+
   it.each(scenarios)('shows one notice using the $name', ({ estimates, arrival }) => {
     const lines: React.ComponentProps<typeof PreorderCartNotice>['lines'] = [
       {},
@@ -70,7 +134,7 @@ describe('PreorderCartNotice', () => {
     expect(markup).toContain(arrival);
     expect(markup).toContain('One parcel to your BOX NOW locker');
     expect(markup).toContain(
-      'Your whole order, in-stock items included, ships in one parcel when the pre-order arrives. If the estimate changes we email you.',
+      `Your whole order, in-stock items included, waits and travels with ${estimates.length === 1 ? 'it' : 'them'}. If the estimate changes we email you.`,
     );
     const headingId = /aria-labelledby="([^"]+)"/.exec(markup)?.[1];
     expect(headingId).toBeTruthy();

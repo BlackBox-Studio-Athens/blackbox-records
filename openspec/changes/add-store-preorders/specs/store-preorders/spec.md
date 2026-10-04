@@ -26,6 +26,12 @@ Protected stock operations SHALL let staff put one Store Item variant on pre-ord
 - **WHEN** staff press Copies arrived or switch Pre-order off
 - **THEN** the pre-order ends at once and the item reads as an ordinary Store Item.
 
+#### Scenario: Release stage and physical pre-order are independent
+
+- **WHEN** staff edit Release stage or the linked Store Item's Pre-order toggle
+- **THEN** each control explains that Release stage describes music and Pre-order describes pending physical copies
+- **AND** changing Release stage does not start or end the physical pre-order; Released music can still have an open pre-order.
+
 #### Scenario: Invalid or stale input
 
 - **WHEN** the month has already passed, the date is today or earlier, the value is malformed, or the submitted stock revision is stale
@@ -152,6 +158,24 @@ For a ready pre-order the Store Item page SHALL show the release date or Out now
 - **WHEN** the offer is a pre-order without an estimate
 - **THEN** the expected-to-ship fact reads To be confirmed.
 
+#### Scenario: Upcoming album and physical shipping are separate
+
+- **WHEN** the album release date is after the current UTC calendar day and its physical item is on pre-order
+- **THEN** the price has a Pre-order badge and the facts name the release date separately from the Ship Estimate
+- **AND** existing released singles, clips or listening sources do not mark the album Out now.
+
+#### Scenario: Released album with vinyl still on pre-order
+
+- **WHEN** the album release date is today or earlier in UTC and its vinyl offer is a ready pre-order
+- **THEN** Out now and Pre-order appear beside the price, the Album fact names its release date, and Vinyl expected to ship names the separate estimate
+- **AND** the purchase hint states that the album is out while the vinyl copies are pending, with the existing Listen action available when its embedded source exists.
+
+#### Scenario: Missing date or another physical format
+
+- **WHEN** a ready pre-order has no album release date, or its item is not vinyl
+- **THEN** a missing release date remains To be confirmed and never produces Out now or a released-album hint
+- **AND** non-vinyl items use generic copy and shipping wording rather than vinyl wording.
+
 #### Scenario: Offer is not a pre-order or not ready
 
 - **WHEN** the offer is ordinary, pending, failed or not buyable
@@ -171,6 +195,43 @@ When the cart holds a pre-order line, the cart and the checkout review SHALL mar
 
 - **WHEN** a previously stored cart without pre-order data is restored
 - **THEN** it loads unchanged with no pre-order marking.
+
+#### Scenario: Mixed-cart drawer follows the approved export
+
+- **WHEN** the drawer holds both pre-order and available lines
+- **THEN** its native 440px composition uses 24px gutters, 72px artwork, a 14px item grid gap, price/quantity followed by availability/Remove, a roomy list and a Ships together notice before delivery
+- **AND** the notice names the pending pre-orders and explains that available items wait and travel in the same parcel, with separate checkout offered in copy for items wanted sooner
+- **AND** Items and BOX NOW locker delivery use the current Worker quote, never the reference's placeholder date or delivery fee
+- **AND** Close, focus return, Undo and the canonical Checkout and Continue shopping actions remain usable, including at 390px and shorter heights.
+
+#### Scenario: Pre-order-only or unknown-estimate drawer
+
+- **WHEN** all drawer lines are pre-orders or any pending line has a withheld estimate
+- **THEN** the notice does not claim an available item is waiting
+- **AND** it states full payment today and one parcel when the copies arrive, without claiming a known shipping date when any estimate is withheld.
+
+#### Scenario: Available-only drawer
+
+- **WHEN** the drawer holds no pre-order line
+- **THEN** it shows no Ships together notice or pre-order accent on Checkout
+- **AND** its quote, quantity, removal, browser persistence and independently validated checkout continue to work.
+
+#### Scenario: Checkout review follows the approved export
+
+- **WHEN** the shopper opens cart checkout with a current quote and enabled checkout capabilities
+- **THEN** its 880px desktop composition has 3:2 bordered panels with a 16px gap, Review and Pay with Ready, and Order Summary with 64px artwork, Veneer titles, combined artist/format metadata, Bebas prices and per-line availability
+- **AND** a mixed pre-order notice names expected records, states full payment today and one parcel later, and explains that in-stock items wait and travel together
+- **AND** Items, BOX NOW locker delivery and Total, charged today come from the Worker quote; VAT/locker/address explanation and real support links precede Continue to Payment and the Stripe note
+- **AND** the desktop header aligns to the same 880px content bounds only on checkout, preserving shell/player behavior and other pages
+- **AND** Cart checkout exposes quantity editing and optional email consent remains opt-in through the Ready/status disclosure without changing checkout payload, idempotency or canonical Stripe handoff
+- **AND** at 390px the panels stack, actions remain reachable and the page has no horizontal overflow.
+
+#### Scenario: Checkout review has ordinary, unknown, empty or unavailable data
+
+- **WHEN** the review has ordinary lines, only pre-orders, a withheld estimate, no lines, a loading quote or an unavailable quote/capability
+- **THEN** ordinary-only orders have no pre-order notice or sent-with-pre-order copy; pre-order-only orders never claim an in-stock item waits; withheld estimates do not invent a date
+- **AND** empty carts cannot start payment, loading and failed quotes remain visibly unavailable, and current stock/price revalidation remains required before Stripe session creation
+- **AND** supplied screenshot identities, dates, fees and prices remain isolated fixtures and never become catalog, stock or payment authority.
 
 ### Requirement: Orders keep the pre-order estimate shown at checkout
 
@@ -233,7 +294,8 @@ The shopper confirmation SHALL state each pre-order line's Ship Estimate and tha
 #### Scenario: Order without a pre-order
 
 - **WHEN** an order has no pre-order line
-- **THEN** both emails are unchanged.
+- **THEN** the shopper confirmation uses the approved payment-confirmation hierarchy with ordinary stock and fulfillment copy, without a pre-order wait
+- **AND** the ops email retains its ordinary fulfillment actions.
 
 ### Requirement: An estimate change notifies awaiting orders once
 
@@ -307,3 +369,36 @@ Pre-order status SHALL use one Sea green accent as an outline or edge, never as 
 - **WHEN** a pre-order badge or action is shown on any surface
 - **THEN** the badge is an outline with text at 4.5:1 contrast or better, and the action is the primary control with a Sea green base line that fills on hover or keyboard focus
 - **AND** targets are at least 44px, text does not clip at 200% zoom or 390px width, and reduced-motion preferences are respected.
+
+### Requirement: Paid pre-order returns present immutable shopper facts
+
+The canonical return screen SHALL match the approved Return reference with Order Status/Paid, a centered bordered Sea Green-edged confirmation card, the shopper order reference, immutable record/format and pre-order shipping facts, BOX NOW single-parcel guidance, estimate-change email note, available published released-media links and outlined Continue Shopping. Paid confirmation SHALL require provider payment paid and the persisted order paid; URL parameters, reference fixtures and browser cart data SHALL NOT establish payment or fulfillment facts.
+
+#### Scenario: Mixed paid pre-order is confirmed
+
+- **WHEN** both payment and persisted order are paid and the immutable snapshot contains pre-order and ordinary lines
+- **THEN** the card pairs actual saved record/format labels with each pre-order's saved estimate and the ordinary item's In stock, sent with the pre-order state
+- **AND** it uses the existing shopper BBR reference and explains one BOX NOW parcel with locker arrangement before dispatch.
+
+#### Scenario: Pre-order-only or incomplete saved details
+
+- **WHEN** an order contains only pre-order lines or its saved estimate/details are unavailable
+- **THEN** no ordinary waiting item, date, record identity or reference is invented
+- **AND** truthful existing next steps remain available for historical responses without the new projection.
+
+#### Scenario: Published music is available while waiting
+
+- **WHEN** published released-media metadata provides usable links
+- **THEN** Out now, while you wait uses those actual titles and links
+- **AND** missing links are omitted without placeholder destinations or reference identities in product source.
+
+#### Scenario: Confirmation is unresolved or a later stock cycle starts
+
+- **WHEN** payment/order confirmation is pending, delayed, failed, cancelled, expired, unavailable or missing its session, or a later pre-order cycle exists
+- **THEN** the existing truthful status, polling, support/retry and paid-only cleanup behavior is preserved
+- **AND** unresolved payment never displays confirmed and a later cycle never changes the original order facts.
+
+#### Scenario: Return is viewed on desktop or mobile
+
+- **WHEN** the paid return is viewed at 1280px or 390px
+- **THEN** its reference layout, Inter body/metadata, Veneer heading and Bebas action render without overflow and preserve keyboard access, persistent shell/player and the checkout-scoped header.

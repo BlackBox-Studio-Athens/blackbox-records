@@ -61,7 +61,8 @@ export default function PreorderControl({
           <span className="grid gap-1">
             <span className="font-medium">Pre-order</span>
             <span id={id + '-description'} className="text-sm text-muted-foreground">
-              Take orders before the copies are on the shelf.
+              Take orders before the copies are on the shelf. This is separate from Release stage: released music can
+              still have physical copies on pre-order.
             </span>
           </span>
           <input

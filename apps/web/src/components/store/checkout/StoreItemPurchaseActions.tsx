@@ -15,6 +15,7 @@ import {
   STORE_CART_ITEM_ADDED_EVENT,
 } from '@/components/store/cart/store-cart-events';
 import { cn } from '@/components/ui/utils';
+import { preorderBadges } from '@/platform/lib/preorder-estimate';
 
 export type StoreItemCartSeed = Omit<
   CartLineItemSnapshot,
@@ -29,6 +30,8 @@ type StoreItemPurchaseActionsProps = {
   cartItem: CartLineItemSnapshot | null;
   cartSeed: StoreItemCartSeed | null;
   purchaseHint?: string;
+  releaseDate?: Date | string | null | undefined;
+  isVinyl?: boolean;
 };
 
 type StoreItemPurchaseActionState = {
@@ -48,6 +51,9 @@ export const STORE_ITEM_PURCHASE_ACTION_COPY = {
   addToCart: 'Add To Cart',
   preorder: 'Pre-order',
   preorderHint: 'We send it when the copies arrive. If the estimate changes we email you.',
+  releasedVinylPreorderHint:
+    'The album is out. We send the vinyl when the copies arrive. If the estimate changes we email you.',
+  releasedPreorderHint: 'The music is out. We send your copy when it arrives. If the estimate changes we email you.',
   checking: 'Checking availability',
   unavailable: 'Currently Unavailable',
 } as const;
@@ -138,6 +144,8 @@ export default function StoreItemPurchaseActions({
   cartItem,
   cartSeed,
   purchaseHint,
+  releaseDate,
+  isVinyl = false,
 }: StoreItemPurchaseActionsProps) {
   const [purchaseState, setPurchaseState] = React.useState<StoreItemPurchaseActionState>(() =>
     cartSeed
@@ -205,6 +213,12 @@ export default function StoreItemPurchaseActions({
   }, [api, cartItem, cartSeed]);
 
   const activeCartItem = purchaseState.cartItem;
+  const released = preorderBadges({ releaseDate, shipEstimate: null, today: new Date() }).includes('Out now');
+  const preorderHint = released
+    ? isVinyl
+      ? STORE_ITEM_PURCHASE_ACTION_COPY.releasedVinylPreorderHint
+      : STORE_ITEM_PURCHASE_ACTION_COPY.releasedPreorderHint
+    : STORE_ITEM_PURCHASE_ACTION_COPY.preorderHint;
 
   if (!activeCartItem && isChecking) {
     return (
@@ -286,7 +300,7 @@ export default function StoreItemPurchaseActions({
       </span>
       {(activeCartItem.preorder || purchaseHint) && (
         <p className="text-sm leading-relaxed text-muted-foreground">
-          {activeCartItem.preorder ? STORE_ITEM_PURCHASE_ACTION_COPY.preorderHint : purchaseHint}
+          {activeCartItem.preorder ? preorderHint : purchaseHint}
         </p>
       )}
     </>

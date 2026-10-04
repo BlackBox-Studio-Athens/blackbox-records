@@ -2302,6 +2302,90 @@ describe('checkout use cases', () => {
     expect(createPending).not.toHaveBeenCalled();
   });
 
+  it.each([
+    { name: 'paid immutable details', paymentStatus: 'paid', orderStatus: 'paid', complete: true, projected: true },
+    {
+      name: 'delayed persisted order',
+      paymentStatus: 'paid',
+      orderStatus: 'pending_payment',
+      complete: true,
+      projected: false,
+    },
+    { name: 'unpaid provider', paymentStatus: 'unpaid', orderStatus: 'paid', complete: true, projected: false },
+    { name: 'legacy missing identity', paymentStatus: 'paid', orderStatus: 'paid', complete: false, projected: false },
+  ] as const)(
+    'exposes only shopper-safe $name without writes',
+    async ({ paymentStatus, orderStatus, complete, projected }) => {
+      await startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://example.com/checkout',
+          successUrl: 'https://example.com/return',
+          storeItemSlug: storeItem.storeItemSlug,
+          variantId: storeItem.variantId,
+        },
+      );
+      const order = orders.records.get('cs_test_123')!;
+      order.status = orderStatus;
+      order.paidAt = new Date('2026-10-03T12:00:00.000Z');
+      const line = order.lines![0]!;
+      const savedEstimate = { kind: 'month', month: '2020-01', part: null } as const;
+      order.lines = [
+        {
+          ...line,
+          displayName: complete ? 'Saved record' : null,
+          optionLabel: 'Vinyl',
+          preorder: { startedAt: '2020-01-01T00:00:00.000Z', shipEstimate: savedEstimate },
+        },
+        { ...line, id: 'ordinary_line', displayName: 'Ordinary record', optionLabel: null, preorder: null },
+      ];
+      // Current stock's later cycle cannot alter an order's recorded estimate.
+      stock.records.get(storeItem.variantId)!.preorder = {
+        startedAt: '2026-10-03T10:00:00.000Z',
+        shipEstimate: { kind: 'month', month: '2027-03', part: null },
+      };
+      const session = await checkoutGateway.readCheckoutSession(checkoutSessionId('cs_test_123'));
+      vi.mocked(checkoutGateway.readCheckoutSession).mockResolvedValue({ ...session, paymentStatus });
+      const before = structuredClone(order);
+      const saveTransition = vi.spyOn(orders, 'saveTransition');
+      const createPending = vi.spyOn(orders, 'createPending');
+      const state = await readCheckoutState(checkoutGateway, orders, checkoutSessionId('cs_test_123'));
+      if (projected) {
+        expect(state.orderSnapshot?.reference).toMatch(/^BBR-2026-10-03-[A-Z]+-[A-Z]+-[A-Z]+$/);
+        expect(state.orderSnapshot?.lines).toEqual([
+          {
+            displayName: 'Saved record',
+            optionLabel: 'Vinyl',
+            quantity: line.quantity,
+            storeItemSlug: line.storeItemSlug,
+            preorder: { shipEstimate: savedEstimate },
+          },
+          {
+            displayName: 'Ordinary record',
+            optionLabel: null,
+            quantity: line.quantity,
+            storeItemSlug: line.storeItemSlug,
+            preorder: null,
+          },
+        ]);
+        expect(JSON.stringify(state.orderSnapshot)).not.toMatch(
+          /startedAt|stripePriceId|shopperEmail|variantId|ordinary_line|2027-03/,
+        );
+      } else {
+        expect(state).not.toHaveProperty('orderSnapshot');
+      }
+      expect(order).toEqual(before);
+      expect(saveTransition).not.toHaveBeenCalled();
+      expect(createPending).not.toHaveBeenCalled();
+    },
+  );
+
   it('surfaces manual BOX NOW return state without a persisted locker snapshot', async () => {
     await startCheckout(
       storeItems,

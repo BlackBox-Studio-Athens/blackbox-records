@@ -1,6 +1,6 @@
 import type { CheckoutReconciliation } from '../checkout';
 import type { CheckoutOrderLineRecord, CheckoutOrderRecord } from '../../../domain/commerce/repositories/spi';
-import { type CheckoutOrderReferenceToken, createCheckoutOrderReferenceToken } from './order-reference-token';
+import { type CheckoutOrderReferenceToken, createCheckoutOrderReferenceToken } from '../../../domain/commerce';
 
 export type CheckoutOrderPaidLineItem = {
   displayName: string | null;

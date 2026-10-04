@@ -19,7 +19,7 @@
       "namedInterfaces": {
         "checkout-spi": "./spi.ts"
       },
-      "dependsOn": ["catalog-sync", "commerce-domain", "orders", "stock", "backend-platform"],
+      "dependsOn": ["catalog-sync", "commerce-domain", "stock", "backend-platform"],
       "workspaceInterfaces": { "@blackbox/api-client": ["./public"] }
     }
   }

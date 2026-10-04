@@ -12,6 +12,7 @@ import {
 } from '@/components/store/cart/store-cart-events';
 import { cn } from '@/components/ui/utils';
 import { clearCheckoutAttempt } from './checkout-attempt';
+import { shipEstimateText } from '@/platform/lib/preorder-estimate';
 import {
   createCheckoutReturnStatusView,
   loadCheckoutReturnState,
@@ -24,6 +25,7 @@ type CheckoutReturnStatusProps = {
   checkoutPath: string;
   itemPath?: string | null | undefined;
   storePath: string;
+  releasedMediaByStoreItem?: Record<string, { title: string; url: string }[]>;
   api?: Pick<PublicCheckoutApi, 'readCheckoutState'>;
 };
 
@@ -48,7 +50,13 @@ export function clearStoreCartAfterPaidCheckout(
   return eventTarget.dispatchEvent(new CustomEvent(CHECKOUT_CART_UPDATED_EVENT, { detail: emptyCartState }));
 }
 
-export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, storePath }: CheckoutReturnStatusProps) {
+export default function CheckoutReturnStatus({
+  api,
+  checkoutPath,
+  itemPath,
+  storePath,
+  releasedMediaByStoreItem,
+}: CheckoutReturnStatusProps) {
   const [loadState, setLoadState] = useState<CheckoutReturnLoadState>({ kind: 'loading' });
   const clearedCheckoutSessionIds = useRef(new Set<string>());
   const refreshStatus = useRef<(() => void) | null>(null);
@@ -81,7 +89,9 @@ export default function CheckoutReturnStatus({ api, checkoutPath, itemPath, stor
   }
 
   if (view.isFinal) {
-    return <CheckoutSuccessScreen storePath={storePath} view={view} />;
+    return (
+      <CheckoutSuccessScreen storePath={storePath} view={view} releasedMediaByStoreItem={releasedMediaByStoreItem} />
+    );
   }
 
   return (
@@ -156,7 +166,91 @@ function CheckoutReturnPendingStatus() {
   );
 }
 
-export function CheckoutSuccessScreen({ storePath, view }: { storePath: string; view: CheckoutReturnStatusView }) {
+export function CheckoutSuccessScreen({
+  storePath,
+  view,
+  releasedMediaByStoreItem,
+}: {
+  storePath: string;
+  view: CheckoutReturnStatusView;
+  releasedMediaByStoreItem?: Record<string, { title: string; url: string }[]> | undefined;
+}) {
+  if (view.isPreorder && view.orderSnapshot) {
+    const { reference, lines } = view.orderSnapshot;
+    const estimateLabel = lines.every((line) => !line.preorder || line.preorder.shipEstimate?.kind === 'month')
+      ? 'ship month'
+      : 'ship estimate';
+    const releasedMedia = [
+      ...new Map(
+        lines
+          .filter((line) => line.preorder)
+          .flatMap((line) => releasedMediaByStoreItem?.[line.storeItemSlug] ?? [])
+          .filter((media) => media.title.trim() && media.url.startsWith('https://'))
+          .map((media) => [media.url, media]),
+      ).values(),
+    ];
+
+    return (
+      <section data-checkout-return-status data-checkout-success-screen data-checkout-preorder-confirmed>
+        <div className="checkout-return__status-row">
+          <p className="checkout-return__label">Order Status</p>
+          <span className="checkout-return__paid">Paid</span>
+        </div>
+        <div className="checkout-return__panel preorder-edge">
+          <h1 className="checkout-return__title">{view.title}</h1>
+          <p className="checkout-return__detail">
+            Payment received for order {reference}. A confirmation email is on its way.
+          </p>
+          <dl className="checkout-return__facts">
+            {lines.map((line, index) => (
+              <div key={`${line.storeItemSlug}-${index}`}>
+                <dt>
+                  {line.displayName}
+                  {line.optionLabel ? ` · ${line.optionLabel}` : ''}
+                  {line.quantity > 1 ? ` × ${line.quantity}` : ''}
+                </dt>
+                <dd>
+                  {line.preorder
+                    ? line.preorder.shipEstimate
+                      ? `Pre-order, expected to ship ${shipEstimateText(line.preorder.shipEstimate)}`
+                      : 'Pre-order, ship estimate to be announced'
+                    : 'In stock, sent with the pre-order'}
+                </dd>
+              </div>
+            ))}
+            <div>
+              <dt>Delivery</dt>
+              <dd>
+                {view.shippingLocker.kind === 'selected'
+                  ? `One BOX NOW locker parcel to ${view.shippingLocker.label}.`
+                  : 'One BOX NOW locker parcel. We contact you to arrange the locker before dispatch.'}
+              </dd>
+            </div>
+          </dl>
+          <p className="checkout-return__estimate-note">We email you if the {estimateLabel} changes.</p>
+          {releasedMedia.length > 0 && (
+            <div className="checkout-return__media">
+              <p className="checkout-return__label">Out now, while you wait</p>
+              <p className="checkout-return__media-links">
+                {releasedMedia.map((media, index) => (
+                  <React.Fragment key={media.url}>
+                    {index > 0 && ' · '}
+                    <a href={media.url} target="_blank" rel="noopener noreferrer">
+                      {media.title}
+                    </a>
+                  </React.Fragment>
+                ))}
+              </p>
+            </div>
+          )}
+          <Button asChild variant="outline" className="checkout-return__shopping">
+            <a href={storePath}>{CHECKOUT_RETURN_ACTION_COPY.continueShopping}</a>
+          </Button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="mx-auto max-w-5xl space-y-6" data-checkout-return-status data-checkout-success-screen>
       <div className="flex flex-wrap items-center justify-between gap-3">

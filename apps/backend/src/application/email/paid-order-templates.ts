@@ -42,7 +42,7 @@ const shopperPaymentThankYouCopy =
 const paymentDocumentCopy = 'This email confirms that payment was received. It is not a tax invoice or VAT receipt.';
 
 export function createPaidOrderShopperSubject(orderReference: string): string {
-  return `Payment received - ${orderReference}`;
+  return `Payment received · ${orderReference}`;
 }
 
 export function createPaidOrderOpsSubject(orderReference: string): string {
@@ -58,26 +58,25 @@ export function buildPaidOrderShopperEmail(input: {
   const subject = createPaidOrderShopperSubject(input.order.orderReference);
   const preheader = `Payment received for ${input.order.orderReference}. BlackBox Records will prepare fulfillment.`;
   const shopperLineItems = formatShopperLineItems(input.order);
-  const totalPaid = formatTotalPaid(input.order);
   const preorder = orderPreorder(input.order);
-  const thankYou = preorder
-    ? 'Thank you for your order. We have received your payment in full.'
-    : shopperPaymentThankYouCopy;
+  const preorderLines = input.order.lineItems.filter((line) => line.preorder);
+  const arrival = preorderLines.length === 1 ? `${preorderLines[0]!.displayName} arrives` : 'the pre-orders arrive';
   const preorderCopy = preorder
-    ? `Your order includes a pre-order. Everything is sent in one parcel when it arrives${preorder.shipEstimate ? `, expected ${shipEstimateText(preorder.shipEstimate)}` : ''}. We email you if that changes.`
+    ? `Your order includes a pre-order. Everything is sent in one parcel when ${arrival}${preorder.shipEstimate ? `, expected ${shipEstimateText(preorder.shipEstimate)}` : ''}. We email you if that changes.`
     : '';
+  const fulfillmentCopy = preorderCopy || shopperPaymentThankYouCopy;
+  const money = shopperMonetaryRows(input.order);
 
   return createBlackBoxEmailTemplate({
-    bodyHtml: renderEmailFrame({
+    brandFontStylesheetUrl: shopperBrandFontStylesheetUrl(input.brand),
+    bodyHtml: renderShopperEmailFrame({
       brand: input.brand,
       contentHtml: [
-        renderReferenceBlock('Order reference', input.order.orderReference),
-        renderLineItemSummary(input.order, { includeVariant: false }),
-        renderDetailTable([...monetaryRows(input.order), ['Total paid', totalPaid]]),
-        renderParagraph(thankYou),
-        preorderCopy ? renderParagraph(preorderCopy) : '',
-        renderSupportCta(input.replyToEmail),
-        renderPaymentDocumentNote(),
+        renderShopperFacts([['Order reference', input.order.orderReference]]),
+        renderShopperLineItems(input.order),
+        renderShopperFacts(money),
+        renderShopperParagraph(fulfillmentCopy),
+        renderShopperReply(input.replyToEmail),
       ].join(''),
       sectionLabel: 'Order confirmation',
       title: 'Payment received',
@@ -88,11 +87,10 @@ export function buildPaidOrderShopperEmail(input: {
       '',
       `Order reference: ${input.order.orderReference}`,
       `Item: ${shopperLineItems}`,
-      `Total paid: ${totalPaid}`,
-      ...monetaryRows(input.order).map(([label, amount]) => `${label}: ${amount}`),
+      ...money.map(([label, amount]) => `${label}: ${amount}`),
       '',
-      thankYou,
-      preorderCopy,
+      'Thank you for your order. We have received your payment in full.',
+      fulfillmentCopy,
       `Support: ${input.replyToEmail}`,
       '',
       paymentDocumentCopy,
@@ -214,17 +212,76 @@ function renderBrandLockup(brand: PaidOrderEmailBrand): string {
   ].join('');
 }
 
-function renderReferenceBlock(label: string, value: string): string {
+export function shopperBrandFontStylesheetUrl(brand: PaidOrderEmailBrand): string {
+  return new URL('../../fonts/brand/veneer.css', brand.logoUrl).href;
+}
+
+export function renderShopperEmailFrame(input: {
+  brand: PaidOrderEmailBrand;
+  contentHtml: string;
+  sectionLabel: string;
+  title: string;
+}): string {
   return [
-    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0 0 18px 0;border:1px solid ${emailDesignTokens.borderStrong};border-top:3px solid ${emailDesignTokens.accent};background:${emailDesignTokens.panelRaised};">`,
-    '<tr>',
-    `<td style="padding:14px 16px;color:${emailDesignTokens.metadata};font-size:11px;line-height:1.35;letter-spacing:0.14em;text-transform:uppercase;">${escapeHtml(label)}</td>`,
-    '</tr>',
-    '<tr>',
-    `<td style="padding:0 16px 16px 16px;color:${emailDesignTokens.text};font-size:22px;line-height:1.15;font-weight:800;word-break:break-word;">${escapeHtml(value)}</td>`,
-    '</tr>',
+    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;background:${emailDesignTokens.shell};"><tr><td align="center">`,
+    `<table class="shopper-panel" role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;max-width:476px;border:1px solid ${emailDesignTokens.borderStrong};border-top:2px solid #2d766a;border-collapse:collapse;background:${emailDesignTokens.panel};color:${emailDesignTokens.text};font-family:Inter,Helvetica Neue,Arial,sans-serif;"><tr><td style="padding:28px;">`,
+    `<a href="${escapeHtml(input.brand.homeUrl)}" style="display:block;margin:0 0 16px;text-decoration:none;"><img class="email-logo" src="${escapeHtml(input.brand.logoUrl)}" width="130" alt="BlackBox Records" style="display:block;width:130px;max-width:100%;height:auto;border:0;color:${emailDesignTokens.text};"></a>`,
+    `<p class="shopper-eyebrow" style="margin:0 0 16px;color:${emailDesignTokens.metadata};font-size:11.52px;line-height:1.3;font-weight:500;letter-spacing:0.22em;text-transform:uppercase;">${escapeHtml(input.sectionLabel)}</p>`,
+    `<h1 style="margin:0 0 16px;color:${emailDesignTokens.text};font-family:Veneer,Bebas Neue,Impact,sans-serif;font-size:25.6px;line-height:0.98;font-weight:900;letter-spacing:0.035em;text-transform:uppercase;">${escapeHtml(input.title)}</h1>`,
+    input.contentHtml,
+    '</td></tr></table></td></tr></table>',
+  ].join('');
+}
+
+export function renderShopperFacts(rows: Array<[string, string]>): string {
+  return [
+    `<table class="shopper-facts" width="100%" cellspacing="0" cellpadding="0" style="width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 16px;border:1px solid ${emailDesignTokens.borderStrong};background:${emailDesignTokens.panel};">`,
+    ...rows.map(([label, value], index) => {
+      const border = index ? `border-top:1px solid ${emailDesignTokens.borderStrong};` : '';
+      return `<tr><th scope="row" align="left" style="${border}box-sizing:border-box;width:194.4px;padding:11.2px 12px 11.2px 14.4px;vertical-align:baseline;color:${emailDesignTokens.metadata};font-size:10.88px;line-height:1.3;font-weight:500;letter-spacing:0.18em;text-transform:uppercase;">${escapeHtml(label)}</th><td style="${border}padding:11.2px 14.4px 11.2px 0;vertical-align:baseline;color:${emailDesignTokens.text};font-size:14px;line-height:1.45;overflow-wrap:anywhere;word-break:break-word;">${escapeHtml(value)}</td></tr>`;
+    }),
     '</table>',
   ].join('');
+}
+
+export function renderShopperParagraph(message: string): string {
+  return `<p class="shopper-copy" style="margin:0 0 16px;color:${emailDesignTokens.text};font-size:14px;line-height:1.6;overflow-wrap:anywhere;">${escapeHtml(message)}</p>`;
+}
+
+export function renderShopperReply(replyToEmail: string): string {
+  return `<a class="shopper-reply" href="mailto:${escapeHtml(replyToEmail)}" style="display:inline-block;box-sizing:border-box;max-width:100%;border:1px solid ${emailDesignTokens.border};padding:10px 24px;background:transparent;color:${emailDesignTokens.text};font-size:16px;line-height:22px;font-weight:500;text-decoration:none;text-align:center;">Reply to BlackBox Records</a>`;
+}
+
+function shopperLineStatus(line: PaidOrderEmailInput['lineItems'][number], hasPreorder: boolean): string {
+  return line.preorder ? preorderLineText(line) : hasPreorder ? 'In stock, sent with the pre-order' : 'In stock';
+}
+
+function shopperLineIdentity(line: PaidOrderEmailInput['lineItems'][number]): string {
+  return `${line.displayName}${line.optionLabel ? ` · ${line.optionLabel}` : ''} × ${line.quantity}`;
+}
+
+function renderShopperLineItems(order: PaidOrderEmailInput): string {
+  const hasPreorder = order.lineItems.some((line) => line.preorder);
+  return [
+    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="width:100%;border-collapse:collapse;margin:0 0 16px;">',
+    ...order.lineItems.map(
+      (line, index) =>
+        `<tr><td style="padding:${index ? '12px' : '0'} 0 0;overflow-wrap:anywhere;word-break:break-word;"><p class="shopper-item" style="margin:0;color:${emailDesignTokens.text};font-size:14px;line-height:normal;font-weight:600;">${escapeHtml(shopperLineIdentity(line))}</p><p style="margin:0;color:${line.preorder ? emailDesignTokens.text : emailDesignTokens.metadata};font-size:12px;line-height:1.7;">${escapeHtml(shopperLineStatus(line, hasPreorder))}</p></td></tr>`,
+    ),
+    '</table>',
+  ].join('');
+}
+
+function shopperMonetaryRows(order: PaidOrderEmailInput): Array<[string, string]> {
+  const amount = (minor: number | null | undefined) =>
+    typeof minor === 'number' && order.currencyCode
+      ? new Intl.NumberFormat('en-IE', { style: 'currency', currency: order.currencyCode }).format(minor / 100)
+      : 'Not recorded';
+  return [
+    ['Items', amount(order.merchandiseGrossMinor)],
+    ['Delivery', amount(order.deliveryGrossMinor)],
+    ['Total paid', formatTotalPaid(order)],
+  ];
 }
 
 export function renderDetailTable(rows: Array<[string, string]>): string {
@@ -353,30 +410,11 @@ function renderWarningList(warnings: string[]): string {
   ].join('');
 }
 
-export function renderParagraph(message: string): string {
-  return `<p style="margin:0 0 16px 0;color:${emailDesignTokens.text};font-size:14px;line-height:1.7;">${escapeHtml(message)}</p>`;
-}
-
-function renderPaymentDocumentNote(): string {
-  return [
-    `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin:0;border:1px solid ${emailDesignTokens.border};background:${emailDesignTokens.shell};">`,
-    `<tr><td style="padding:12px 14px;color:${emailDesignTokens.textSubtle};font-size:12px;line-height:1.6;">${escapeHtml(paymentDocumentCopy)}</td></tr>`,
-    '</table>',
-  ].join('');
-}
-
-export function renderSupportCta(replyToEmail: string): string {
-  const escapedEmail = escapeHtml(replyToEmail);
-  return `<p style="margin:0 0 16px 0;"><a href="mailto:${escapedEmail}" style="display:inline-block;border:1px solid ${emailDesignTokens.borderStrong};background:${emailDesignTokens.text};color:#090909;font-size:13px;line-height:1.2;font-weight:800;text-decoration:none;padding:11px 14px;">Reply to support</a><span style="display:block;margin-top:8px;color:${emailDesignTokens.metadata};font-size:12px;line-height:1.5;">${escapedEmail}</span></p>`;
-}
-
 function formatShopperLineItems(order: PaidOrderEmailInput): string {
+  const hasPreorder = order.lineItems.some((line) => line.preorder);
   return order.lineItems
-    .map(
-      (lineItem) =>
-        `${lineItem.quantity} x ${lineItem.displayName}${lineItem.preorder ? `\n${preorderLineText(lineItem)}` : ''}`,
-    )
-    .join('; ');
+    .map((line) => `${shopperLineIdentity(line)}\n${shopperLineStatus(line, hasPreorder)}`)
+    .join('\n');
 }
 
 function formatOpsLineItems(order: PaidOrderEmailInput): string {

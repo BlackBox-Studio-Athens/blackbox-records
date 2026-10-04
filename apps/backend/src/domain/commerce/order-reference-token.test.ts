@@ -10,7 +10,16 @@ describe('CheckoutOrderReferenceToken', () => {
       referenceDate: new Date('2026-04-25T11:00:00.000Z'),
     });
 
-    expect(reference).toMatch(/^BBR-2026-04-25-[A-Z]+-[A-Z]+-[A-Z]+$/);
+    expect(reference).toBe('BBR-2026-04-25-RAW-SHELF-CARRY');
+  });
+
+  it('preserves the same three-word label when the paid date is unavailable', () => {
+    const reference = createCheckoutOrderReferenceToken({
+      checkoutSessionId: 'cs_test_1234567890',
+      orderId: 'order_12345-abcde-67890',
+    });
+
+    expect(reference).toBe('BBR-RAW-SHELF-CARRY');
   });
 
   it('uses the same reference for the same order identity and date', () => {

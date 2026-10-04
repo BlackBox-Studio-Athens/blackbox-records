@@ -2,16 +2,29 @@
 import CheckoutReturnStatus from '@/components/store/checkout/CheckoutReturnStatus';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
+import { listReleaseCatalog, listStoreItems } from '@/lib/catalog-data';
 
 const checkoutPath = createProjectRelativeUrl('/store/checkout/');
 const storePath = createProjectRelativeUrl('/store/');
+const [releases, storeItems] = await Promise.all([listReleaseCatalog(), listStoreItems()]);
+const singlesByRelease = new Map(releases.map((release) => [release.id, release.data.singles ?? []]));
+const releasedMediaByStoreItem = Object.fromEntries(
+  storeItems
+    .filter((item) => item.sourceKind === 'release' && singlesByRelease.get(item.sourceId)?.length)
+    .map((item) => [item.slug, singlesByRelease.get(item.sourceId) ?? []]),
+);
 ---
 
 <SiteLayout
   pageTitle="Order Status | Store"
   pageDescription="Payment and order status for BlackBox Records cart checkout."
 >
-  <section class="layout-container pt-14 pb-8" data-tone="store">
-    <CheckoutReturnStatus client:load checkoutPath={checkoutPath} storePath={storePath} />
+  <section class="checkout-review checkout-return" data-tone="store">
+    <CheckoutReturnStatus
+      client:load
+      checkoutPath={checkoutPath}
+      storePath={storePath}
+      releasedMediaByStoreItem={releasedMediaByStoreItem}
+    />
   </section>
 </SiteLayout>

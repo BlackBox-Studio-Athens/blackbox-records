@@ -55,9 +55,9 @@ describe('StoreCartDrawer', () => {
     expect(markup).toContain('Pre-order · ships around early October 2026');
     expect(markup).toContain('Pre-order · ships 20 Nov 2026');
     expect(markup).toContain('>Available</p>');
-    expect(markup.match(/Pre-order in this order/g)).toHaveLength(1);
+    expect(markup.match(/Ships together/g)).toHaveLength(1);
     expect(markup).toContain('On 20 November 2026');
-    expect(markup.indexOf('Pre-order in this order')).toBeLessThan(markup.indexOf('Delivery summary fixture'));
+    expect(markup.indexOf('Ships together')).toBeLessThan(markup.indexOf('Delivery summary fixture'));
     expect(markup).toContain('href="/blackbox-records/store/checkout/"');
     expect(markup).toContain('Decrease quantity for Disintegration');
   });
@@ -201,7 +201,7 @@ describe('StoreCartDrawer', () => {
 
     expect(markup).toMatch(/<a[^>]*data-store-cart-checkout="true"[^>]*><span>Checkout<\/span>/);
     expect(markup).toContain(
-      '<span class="tabular-nums" aria-hidden="true" data-store-cart-checkout-amount="true">€24.50</span>',
+      '<span class="sr-only" aria-hidden="true" data-store-cart-checkout-amount="true">€24.50</span>',
     );
   });
 

@@ -625,7 +625,10 @@ export default function ContentFields({
             <option value="upcoming">Upcoming</option>
             <option value="released">Released</option>
           </NativeSelect>
-          <FieldDescription>Keep the same record and artwork when the release comes out.</FieldDescription>
+          <FieldDescription>
+            Release stage describes the music. Keep the same record and artwork when it comes out. Physical copies can
+            still be on pre-order after release; manage that separately in Selling.
+          </FieldDescription>
         </Field>
         {field('release_date', 'Release date', { type: 'date', required: data.release_stage !== 'upcoming' })}
         {image('cover_image', 'cover_image_alt', 'Cover image')}

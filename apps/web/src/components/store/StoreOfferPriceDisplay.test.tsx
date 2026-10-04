@@ -113,23 +113,25 @@ describe('StoreOfferPriceDisplay', () => {
 
   it.each([
     ['2026-10-16', 'Release date', '16 Oct 2026'],
-    ['2026-06-09', 'Release', 'Out now, released 9 Jun 2026'],
-    ['2026-10-02', 'Release', 'Out now, released 2 Oct 2026'],
+    ['2026-06-09', 'Album', 'Out now, released 9 Jun 2026'],
+    ['2026-10-02', 'Album', 'Out now, released 2 Oct 2026'],
   ])('renders release facts for %s', (releaseDate, label, value) => {
     const html = renderView(
       createStoreOfferPriceDisplayView({
         ...workerOffer,
         preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } },
       }),
-      { preorderFacts: true, releaseDate },
+      { preorderFacts: true, releaseDate, isVinyl: true },
     );
 
     expect(html).toContain('class="preorder-facts"');
     expect(html).toContain(`<dt>${label}</dt><dd>${value}</dd>`);
-    expect(html).toContain('<dt>Expected to ship</dt><dd>Around October 2026</dd>');
+    expect(html).toContain('<dt>Vinyl expected to ship</dt><dd>Around October 2026</dd>');
     expect(html).toContain('<dt>Payment</dt><dd>Charged in full today</dd>');
     expect(html.indexOf('€28.00')).toBeLessThan(html.indexOf('<dl'));
     expect(html).toMatch(/^<div>/);
+    expect(html).toContain('class="preorder-badge">Pre-order</span>');
+    expect(html.includes('class="store-item-card__release-status">Out now</span>')).toBe(label === 'Album');
   });
 
   it.each([
@@ -152,7 +154,8 @@ describe('StoreOfferPriceDisplay', () => {
       releaseDate: new Date('2026-10-02T23:30:00Z'),
     });
 
-    expect(html).toContain('<dt>Release</dt><dd>Out now, released 2 Oct 2026</dd>');
+    expect(html).toContain('<dt>Album</dt><dd>Out now, released 2 Oct 2026</dd>');
+    expect(html).toContain('class="store-item-card__release-status">Out now</span>');
   });
 
   it('does not invent a release date when none is available', () => {
@@ -161,6 +164,7 @@ describe('StoreOfferPriceDisplay', () => {
     });
 
     expect(html).toContain('<dt>Release date</dt><dd>To be confirmed</dd>');
+    expect(html).toContain('class="preorder-badge">Pre-order</span>');
     expect(html).not.toContain('Out now');
   });
 
@@ -176,10 +180,16 @@ describe('StoreOfferPriceDisplay', () => {
   });
 
   it('shows no facts for an ordinary ready offer', () => {
-    const html = renderView(createStoreOfferPriceDisplayView(workerOffer), { preorderFacts: true });
+    const html = renderView(createStoreOfferPriceDisplayView(workerOffer), {
+      preorderFacts: true,
+      releaseDate: '2026-06-09',
+      isVinyl: true,
+    });
 
     expect(html).toContain('€28.00');
     expect(html).not.toContain('preorder-facts');
+    expect(html).not.toContain('preorder-badge');
+    expect(html).not.toContain('Out now');
   });
 
   it.each(['sold_out', 'catalog_drift'] as const)('shows no facts for a %s offer', (catalogStatus) => {

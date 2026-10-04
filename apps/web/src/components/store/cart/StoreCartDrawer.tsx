@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Minus, Plus } from 'lucide-react';
+import { Minus, Plus, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -96,7 +96,7 @@ export default function StoreCartDrawer({
         ref={setModalRoot}
         side="right"
         data-tone="store"
-        className="top-[var(--header-height)] bottom-auto z-[1100] flex h-[calc(100dvh-var(--header-height))] min-h-0 w-[min(100vw,460px)] max-w-none flex-col overflow-hidden border-l border-border/80 bg-background/98 p-0 text-foreground sm:max-w-none"
+        className="store-cart-drawer top-[var(--header-height)] bottom-auto z-[1100] flex h-[calc(100dvh-var(--header-height))] min-h-0 w-[min(100vw,440px)] max-w-none flex-col overflow-hidden border-l border-border bg-card p-0 text-foreground sm:max-w-none"
       >
         <StoreCartDrawerPanel
           deliverySummary={deliverySummary}
@@ -192,22 +192,29 @@ export function StoreCartDrawerPanel({
   const undoIndex = removed ? Math.min(removed.index, visibleLines.length) : -1;
 
   return (
-    <div ref={panelRef} className="contents">
+    <div ref={panelRef} className="store-cart-drawer__panel">
       <p className="sr-only" aria-live="polite">
         {removed ? `${STORE_CART_DRAWER_COPY.removed} ${removed.line.title}` : ''}
       </p>
       {renderHeader && (
-        <SheetHeader className="shrink-0 border-b border-border/70 px-6 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <SheetTitle className="font-display text-3xl tracking-[0.12em] uppercase">Cart</SheetTitle>
-            <Button type="button" variant="outline" size="lg" aria-label="Close cart" onClick={onContinueShopping}>
-              Close
-            </Button>
-          </div>
-          <SheetDescription className="sr-only">Review your items before checkout.</SheetDescription>
+        <SheetHeader className="store-cart-drawer__header">
+          <SheetTitle className="store-cart-drawer__title">Cart</SheetTitle>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="store-cart-drawer__close"
+            aria-label="Close cart"
+            onClick={onContinueShopping}
+          >
+            <X aria-hidden="true" strokeWidth={1.5} />
+          </Button>
+          <SheetDescription className="store-cart-drawer__description">
+            Cart state stays browser-only. Checkout stays secure through Stripe.
+          </SheetDescription>
         </SheetHeader>
       )}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" data-lenis-scroll-root>
+      <div className="store-cart-drawer__scroll" data-lenis-scroll-root>
         {!hasLines ? (
           <div className="px-6 py-8">
             <div className="space-y-3">
@@ -217,14 +224,14 @@ export function StoreCartDrawerPanel({
             </div>
           </div>
         ) : (
-          <div>
-            <div className="px-6 py-6">
+          <>
+            <div className="store-cart-drawer__items">
               <div className="space-y-6">
                 {visibleLines.map((line, index) => (
                   <React.Fragment key={line.variantId}>
                     {index === undoIndex && undoLine}
-                    <article className="group grid grid-cols-[88px_1fr] gap-4" data-store-cart-line-item>
-                      <div className="aspect-square overflow-hidden border border-border/70 bg-muted/20">
+                    <article className="store-cart-drawer__item" data-store-cart-line-item>
+                      <div className="store-cart-drawer__art">
                         {/* Runtime Image Snapshot: cart state stores a browser-safe string URL here. */}
                         {line.image ? (
                           <img
@@ -236,53 +243,23 @@ export function StoreCartDrawerPanel({
                             alt={line.imageAlt || line.title}
                           />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center px-2 text-center text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-                            No image
-                          </div>
+                          <div className="store-cart-drawer__fallback">Cover</div>
                         )}
                       </div>
-                      <div className="min-w-0 space-y-3">
-                        <div className="space-y-1">
-                          <p className="brand-cart-line-title text-foreground">{line.title}</p>
-                          <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{line.subtitle}</p>
-                          {line.optionLabel && (
-                            <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                              {line.optionLabel}
-                            </p>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between gap-4">
-                          <div className="space-y-1 text-right">
-                            <p className="font-display text-2xl uppercase tracking-[0.08em]">
-                              {getCartLineTotalDisplay(line)}
-                            </p>
+                      <div className="store-cart-drawer__identity">
+                        <p className="brand-cart-line-title text-foreground">{line.title}</p>
+                        <p className="store-cart-drawer__metadata">{line.subtitle}</p>
+                        {line.optionLabel && <p className="store-cart-drawer__metadata">{line.optionLabel}</p>}
+                        <div className="store-cart-drawer__price-row">
+                          <div>
+                            <p className="store-cart-drawer__price">{getCartLineTotalDisplay(line)}</p>
                             {line.quantity > 1 && (
                               <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
                                 <span className="font-display">{line.priceDisplay}</span> each
                               </p>
                             )}
                           </div>
-                          <Button
-                            type="button"
-                            variant="link"
-                            className="[@media(hover:hover)]:text-control-muted-pressed group-focus-within:text-foreground group-hover:text-foreground"
-                            data-store-cart-remove={line.variantId}
-                            onClick={() => removeLine(line, index)}
-                          >
-                            {STORE_CART_DRAWER_COPY.remove}
-                          </Button>
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <p
-                            className={
-                              line.preorder
-                                ? 'preorder-badge'
-                                : 'inline-flex border border-border/70 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground'
-                            }
-                          >
-                            {line.preorder ? preorderChipText(line.preorder.shipEstimate) : line.availabilityLabel}
-                          </p>
-                          <div className="inline-flex items-center" aria-label={`Quantity for ${line.title}`}>
+                          <div className="store-cart-drawer__quantity" aria-label={`Quantity for ${line.title}`}>
                             <Button
                               type="button"
                               variant="outline"
@@ -294,9 +271,7 @@ export function StoreCartDrawerPanel({
                             >
                               <Minus aria-hidden="true" strokeWidth={1.75} />
                             </Button>
-                            <span className="inline-flex min-w-9 items-center justify-center px-1 pt-px font-display text-lg leading-none tabular-nums">
-                              {line.quantity}
-                            </span>
+                            <span className="store-cart-drawer__quantity-value">{line.quantity}</span>
                             <Button
                               type="button"
                               variant="outline"
@@ -314,6 +289,20 @@ export function StoreCartDrawerPanel({
                             </Button>
                           </div>
                         </div>
+                        <div className="store-cart-drawer__status-row">
+                          <p className={line.preorder ? 'preorder-badge' : 'store-cart-drawer__availability'}>
+                            {line.preorder ? preorderChipText(line.preorder.shipEstimate) : line.availabilityLabel}
+                          </p>
+                          <Button
+                            type="button"
+                            variant="link"
+                            className="store-cart-drawer__remove"
+                            data-store-cart-remove={line.variantId}
+                            onClick={() => removeLine(line, index)}
+                          >
+                            {STORE_CART_DRAWER_COPY.remove}
+                          </Button>
+                        </div>
                         {line.priceKind === 'pay_what_you_want' && (
                           <p
                             id={`cart-price-guidance-${line.variantId}`}
@@ -330,27 +319,37 @@ export function StoreCartDrawerPanel({
               </div>
             </div>
 
-            <div className="space-y-4 border-t border-border/70 px-6 py-6">
-              <PreorderCartNotice lines={visibleLines} />
+            <div className="store-cart-drawer__summary">
+              <PreorderCartNotice lines={visibleLines} presentation="drawer" />
               {deliverySummary}
             </div>
-          </div>
+          </>
         )}
       </div>
-      <div className="shrink-0 space-y-4 border-t border-border/70 px-6 py-6">
+      <div className="store-cart-drawer__actions">
         {hasLines && (
-          <Button asChild size="lg" className="w-full justify-between">
+          <Button
+            asChild
+            size="lg"
+            className={`store-cart-drawer__checkout${visibleLines.some((line) => line.preorder) ? ' preorder-action' : ''}`}
+          >
             <a href={view.checkoutHref || undefined} data-store-cart-checkout>
               <span>{STORE_CART_DRAWER_COPY.checkout}</span>
               {checkoutAmountDisplay && (
-                <span className="tabular-nums" aria-hidden="true" data-store-cart-checkout-amount>
+                <span className="sr-only" aria-hidden="true" data-store-cart-checkout-amount>
                   {checkoutAmountDisplay}
                 </span>
               )}
             </a>
           </Button>
         )}
-        <Button type="button" variant="outline" className="w-full" onClick={onContinueShopping}>
+        <Button
+          type="button"
+          variant="outline"
+          size="lg"
+          className="store-cart-drawer__continue"
+          onClick={onContinueShopping}
+        >
           {STORE_CART_DRAWER_COPY.continueShopping}
         </Button>
       </div>

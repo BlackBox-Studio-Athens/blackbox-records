@@ -250,6 +250,20 @@ const startCheckoutResponseSchema = z
 const checkoutStateSchema = z
   .object({
     checkoutSessionId: z.string(),
+    orderSnapshot: z
+      .object({
+        reference: z.string().trim().min(1),
+        lines: z.array(
+          z.object({
+            displayName: z.string().trim().min(1),
+            optionLabel: z.string().nullable(),
+            quantity: z.number().int().positive(),
+            storeItemSlug: z.string().trim().min(1),
+            preorder: publicStorePreorderSchema,
+          }),
+        ),
+      })
+      .optional(),
     orderStatus: z.enum(['pending_payment', 'paid', 'not_paid', 'needs_review']).nullable(),
     paymentStatus: z.enum(['paid', 'unpaid', 'no_payment_required']),
     preorder: publicStorePreorderSchema,

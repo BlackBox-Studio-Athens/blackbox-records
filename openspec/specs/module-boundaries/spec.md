@@ -27,6 +27,13 @@ The combined Worker SHALL retain closed module ownership and existing applicatio
 - **THEN** `commerce-domain` provides the runtime catalog contract through `repository-spi`, the pure request fingerprinting helper through `request-idempotency`, the request identity contract through `request-identity`, `commerce-persistence` implements it, and `catalog-sync` validates and reads it through its existing root entrypoint
 - **AND** CMS plugins cannot import commerce repositories and public web cannot import CMS server code.
 
+#### Scenario: Checkout and paid-order consumers share the order reference
+
+- **WHEN** checkout-state readers, paid-order events or delivery processors format an order reference
+- **THEN** they import the existing pure formatter and reference type through the `commerce-domain` root entrypoint
+- **AND** `checkout-core` does not depend on `orders`; `orders` retains its checkout reconciliation dependency
+- **AND** moving ownership preserves the canonical reference output and existing module-cycle enforcement.
+
 #### Scenario: Combined scheduled work runs
 
 - **WHEN** `cms-runtime` composes maintenance with the `backend-runtime` `commerce-worker` interface

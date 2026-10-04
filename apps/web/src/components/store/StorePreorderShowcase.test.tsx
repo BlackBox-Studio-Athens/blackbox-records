@@ -12,7 +12,7 @@ type ReadyListing = Extract<Listing, { presentationState: 'ready' }>;
 type Items = Awaited<ReturnType<typeof loadStorePreorderShowcase>>;
 const rendered = vi.hoisted(() => {
   const items: Items = [];
-  return { active: false, items, selected: 0, playing: false, cursor: 0 };
+  return { active: false, items, selected: 0, playing: false, selectedClip: 0, cursor: 0 };
 });
 
 vi.mock('react', async (importOriginal) => {
@@ -30,10 +30,17 @@ vi.mock('react', async (importOriginal) => {
             rendered.selected = value;
           },
         ];
+      if (cursor === 2)
+        return [
+          rendered.playing,
+          (value: boolean) => {
+            rendered.playing = value;
+          },
+        ];
       return [
-        rendered.playing,
-        (value: boolean) => {
-          rendered.playing = value;
+        rendered.selectedClip,
+        (value: number) => {
+          rendered.selectedClip = value;
         },
       ];
     },
@@ -52,6 +59,10 @@ const clip: StorePreorderShowcaseCandidate = {
   releaseDate: '2026-10-16',
   coverUrl: '/clip.webp',
   firstClipId: 'dQw4w9WgXcQ',
+  clips: [
+    { id: 'dQw4w9WgXcQ', title: 'First official video', posterUrl: '/video-poster.webp' },
+    { id: '01234567890', title: 'Second official video', posterUrl: null },
+  ],
   artistPhotoUrl: '/clip-band.webp',
 };
 const photo: StorePreorderShowcaseCandidate = {
@@ -60,6 +71,7 @@ const photo: StorePreorderShowcaseCandidate = {
   title: 'Photo album',
   storePath: '/blackbox-records/store/photo-vinyl/',
   firstClipId: null,
+  clips: [],
   artistPhotoUrl: '/photo-band.webp',
 };
 const cover: StorePreorderShowcaseCandidate = {
@@ -68,6 +80,7 @@ const cover: StorePreorderShowcaseCandidate = {
   title: 'Cover album',
   storePath: '/blackbox-records/store/cover-vinyl/',
   firstClipId: null,
+  clips: [],
   artistPhotoUrl: null,
 };
 const props = { candidatesUrl: '/blackbox-records/preorder-showcase.json', storeUrl: '/blackbox-records/store/' };
@@ -119,6 +132,7 @@ afterEach(() => {
   rendered.items = [];
   rendered.selected = 0;
   rendered.playing = false;
+  rendered.selectedClip = 0;
   rendered.cursor = 0;
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
@@ -212,6 +226,7 @@ describe('StorePreorderShowcase reads', () => {
     { ...clip, storePath: 'javascript:alert(1)' },
     { ...clip, coverUrl: '//external.example/cover.webp' },
     { ...clip, firstClipId: 'not-a-video-id' },
+    { ...clip, clips: [{ id: '01234567890', title: 'Video', posterUrl: '//external.example/poster.webp' }] },
   ])('rejects malformed candidate inputs', async (candidate) => {
     stubReads([ready(clip.slug)], [candidate]);
     expect(await loadStorePreorderShowcase(props.candidatesUrl)).toEqual([]);
@@ -237,14 +252,20 @@ describe('StorePreorderShowcase presentation', () => {
       const fetchRequest = stubReads([ready(candidate.slug)], [candidate]);
       rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
       const html = renderToStaticMarkup(render());
-      expect(html).toContain('home-preorders__poster-cover');
-      expect(html.includes('home-preorders__poster-photo')).toBe(Boolean(candidate.artistPhotoUrl));
+      expect(html.includes('home-preorders__poster-cover')).toBe(!candidate.firstClipId);
+      expect(html.includes('home-preorders__video-poster')).toBe(Boolean(candidate.firstClipId));
+      expect(html.includes('home-preorders__poster-photo')).toBe(
+        !candidate.firstClipId && Boolean(candidate.artistPhotoUrl),
+      );
       expect(html.includes('home-preorders__play')).toBe(Boolean(candidate.firstClipId));
       expect(html).not.toContain('<iframe');
       expect(html).not.toContain('youtube');
       expect(html).toContain('Pre-order · out 16 Oct 2026');
-      expect(html).toContain('Around October 2026');
-      expect(html).toContain('Charged today · ships around October 2026');
+      expect(html).toContain(
+        candidate.firstClipId
+          ? 'Ships around October 2026 · charged today'
+          : 'Charged today · ships around October 2026',
+      );
       expect(html).toContain('href="/blackbox-records/store/#preorders"');
       expect(html).toContain(`href="${candidate.storePath}"`);
       expect(html).toContain('€28.00');
@@ -261,11 +282,20 @@ describe('StorePreorderShowcase presentation', () => {
     play?.props.onClick?.();
     expect(renderToStaticMarkup(render())).toContain('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1');
     expect(renderToStaticMarkup(render())).toContain('title="Clip album video"');
+    const secondClip = buttons(render()).filter((button) => button.props.className === 'home-preorders__clip')[1];
+    secondClip?.props.onClick?.();
+    expect(rendered.selectedClip).toBe(1);
+    expect(renderToStaticMarkup(render())).not.toContain('<iframe');
+    buttons(render())
+      .find((button) => button.props.className === 'home-preorders__play')
+      ?.props.onClick?.();
+    expect(renderToStaticMarkup(render())).toContain('https://www.youtube-nocookie.com/embed/01234567890?autoplay=1');
     const photoButton = buttons(render()).filter((button) => button.props.className === 'home-preorders__item')[1];
     expect(photoButton).toBeDefined();
     photoButton?.props.onClick?.();
     const html = renderToStaticMarkup(render());
     expect(rendered.selected).toBe(1);
+    expect(rendered.selectedClip).toBe(0);
     expect(html).not.toContain('<iframe');
     expect(html).not.toContain('home-preorders__play');
     expect(html).toContain('src="/photo-band.webp"');
@@ -280,7 +310,35 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).toContain('Out now');
     expect(html).toContain('To be confirmed');
     expect(html).toContain('Charged today · ships when it arrives');
-    expect(html).toContain('9 Jun 2026');
+    expect(html).not.toContain('Release date');
+  });
+
+  it('presents the no-video release identity and delegates Listen to the shell', async () => {
+    stubReads(
+      [ready(photo.slug)],
+      [
+        {
+          ...photo,
+          summary: 'A six-track debut.',
+          trackCount: 6,
+          recording: 'BlackBox Studio',
+          listen: {
+            releaseId: 'release-a',
+            bandcampEmbedUrl: 'https://bandcamp.com/EmbeddedPlayer/album=1/',
+            tidalEmbedUrl: null,
+          },
+        },
+      ],
+    );
+    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
+    const html = renderToStaticMarkup(render());
+    expect(html).toContain('<h3>Photo album</h3>');
+    expect(html).toContain('Now showing');
+    expect(html).toContain('A six-track debut.');
+    expect(html).toContain('<dt>Tracks</dt><dd>Six</dd>');
+    expect(html).toContain('BlackBox Studio');
+    expect(html).toContain('data-music-streaming-service-embedded-player-release-id="release-a"');
+    expect(html).not.toContain('<iframe');
   });
 
   it('shows an exact ship date and no release date without inventing one', async () => {

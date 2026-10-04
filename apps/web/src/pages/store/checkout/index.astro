@@ -2,7 +2,6 @@
 import CheckoutOrderSummary from '@/components/store/checkout/CheckoutOrderSummary';
 import CheckoutOfferStatus from '@/components/store/checkout/CheckoutOfferStatus';
 import { STORE_OFFER_PRICE_DISPLAY_COPY } from '@/components/store/StoreOfferPriceDisplay';
-import { buttonVariants } from '@/components/ui/button';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 
@@ -29,27 +28,16 @@ const summaryItem = {
   pageTitle="Checkout | Store"
   pageDescription="Review your cart, confirm Greece-only shipping, then pay through Stripe."
 >
-  <section class="layout-container pt-8 pb-8" data-tone="store">
-    <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <h1 class="font-display text-4xl tracking-[0.08em] uppercase text-foreground">Checkout</h1>
-      <a href={createProjectRelativeUrl('/store/')} data-astro-prefetch class={buttonVariants({ variant: 'link' })}>
+  <section class="checkout-review" data-tone="store">
+    <div class="checkout-review__heading">
+      <h1 class="checkout-review__title">Checkout</h1>
+      <a href={createProjectRelativeUrl('/store/')} data-astro-prefetch class="checkout-review__continue">
         Continue Shopping
       </a>
     </div>
 
-    <div class="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_24rem] xl:grid-cols-[minmax(40rem,1fr)_27rem]">
-      <div class="min-w-0 lg:hidden">
-        <details class="group min-w-0 border border-border/70 bg-card/45" open>
-          <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-foreground marker:hidden sm:px-5">
-            <span class="min-w-0">Order Summary</span>
-          </summary>
-          <div class="min-w-0 border-t border-border/70 p-3 sm:p-4">
-            <CheckoutOrderSummary client:load {...summaryItem} />
-          </div>
-        </details>
-      </div>
-
-      <div class="min-w-0">
+    <div class="checkout-review__columns">
+      <div class="checkout-review__payment">
         <CheckoutOfferStatus
           client:load
           initialAvailability={initialCheckoutAvailability}
@@ -57,10 +45,8 @@ const summaryItem = {
         />
       </div>
 
-      <aside class="hidden lg:block">
-        <div class="sticky top-[calc(var(--header-height)+2rem)]">
-          <CheckoutOrderSummary client:load {...summaryItem} />
-        </div>
+      <aside class="checkout-review__summary" aria-label="Order summary">
+        <CheckoutOrderSummary client:load {...summaryItem} />
       </aside>
     </div>
   </section>

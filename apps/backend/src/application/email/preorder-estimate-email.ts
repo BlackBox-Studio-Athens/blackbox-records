@@ -1,8 +1,9 @@
 import {
-  renderDetailTable,
-  renderEmailFrame,
-  renderParagraph,
-  renderSupportCta,
+  renderShopperFacts,
+  renderShopperEmailFrame,
+  renderShopperParagraph,
+  renderShopperReply,
+  shopperBrandFontStylesheetUrl,
   type PaidOrderEmailBrand,
 } from './paid-order-templates';
 import { shipEstimateText } from './ship-estimate-format';
@@ -27,28 +28,36 @@ export function buildPreorderEstimateEmail(
   const subject = `New ship estimate for your pre-order · ${input.orderReference}`;
   const rows: Array<[string, string]> = [
     ['Order reference', input.orderReference],
-    ['Item', input.itemName],
-    ['When you ordered', shipEstimateText(input.whenOrdered)],
+    ['Was (at order)', shipEstimateText(input.whenOrdered)],
     ['Now expected', shipEstimateText(input.shipEstimate)],
   ];
-  const copy =
-    'Nothing else changes: everything is still sent in one parcel when the pre-order arrives. If you have a question, reply to this email.';
+  const copy = input.shipEstimate
+    ? `${input.itemName} is now expected to ship ${shipEstimateText(input.shipEstimate)}, with your whole order in one parcel.`
+    : `The ship estimate for ${input.itemName} is now to be confirmed. Your whole order still ships in one parcel when it arrives. We email you when there is a new estimate.`;
+  const nextSteps = 'There is nothing you need to do. If you have a question, reply to this email.';
   return createBlackBoxEmailTemplate({
+    brandFontStylesheetUrl: shopperBrandFontStylesheetUrl(input.brand),
     subject,
     preheader: `New ship estimate for ${input.orderReference}.`,
-    bodyHtml: renderEmailFrame({
+    bodyHtml: renderShopperEmailFrame({
       brand: input.brand,
       sectionLabel: 'Pre-order update',
-      title: 'Ship estimate changed',
-      contentHtml: [renderDetailTable(rows), renderParagraph(copy), renderSupportCta(input.replyToEmail)].join(''),
+      title: 'Ship date moved',
+      contentHtml: [
+        renderShopperFacts(rows),
+        renderShopperParagraph(copy),
+        renderShopperParagraph(nextSteps),
+        renderShopperReply(input.replyToEmail),
+      ].join(''),
     }),
     bodyText: [
       'BlackBox Records',
       subject,
       'Pre-order update',
-      'Ship estimate changed',
+      'Ship date moved',
       ...rows.map(([label, value]) => `${label}: ${value}`),
       copy,
+      nextSteps,
       `Support: ${input.replyToEmail}`,
     ].join('\n'),
   });

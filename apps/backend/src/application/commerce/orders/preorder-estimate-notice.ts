@@ -5,7 +5,7 @@ import {
   type PaidOrderDeliverySafeReason,
   type PreorderEstimateDeliveryRepository,
 } from '../../../domain/commerce/repositories/spi';
-import { createCheckoutOrderReferenceToken } from './order-reference-token';
+import { createCheckoutOrderReferenceToken } from '../../../domain/commerce';
 import {
   DELIVERY_RETRY_DELAY_MS,
   DELIVERY_WINDOW_MS,

@@ -3,6 +3,32 @@ import { describe, expect, it } from 'vitest';
 import { DeliverySummary } from './DeliverySummary';
 
 describe('delivery summary', () => {
+  it('uses authoritative amounts and locker copy in the drawer without a duplicate total', () => {
+    const html = renderToStaticMarkup(
+      <DeliverySummary
+        presentation="drawer"
+        loading={false}
+        quote={{
+          tier: 'medium',
+          amountMinor: 350,
+          totalAmountMinor: 4850,
+          merchandiseGrossMinor: 4500,
+          currencyCode: 'EUR',
+        }}
+      />,
+    );
+    expect(html).toContain('>Items</dt>');
+    expect(html).toContain('>BOX NOW locker delivery</dt>');
+    expect(html).toContain('€45.00');
+    expect(html).toContain('€3.50');
+    expect(html).toContain(
+      'VAT is included, never added again. Greece-only BOX NOW locker delivery. We arrange your locker with you before dispatch.',
+    );
+    expect(html).not.toContain('Total, VAT included');
+    expect(html).not.toContain('€48.50');
+    expect(html).not.toContain('[DELIVERY FEE]');
+  });
+
   it.each([
     ['small', 250, 2730],
     ['medium', 350, 2830],
@@ -16,7 +42,7 @@ describe('delivery summary', () => {
     expect(html).toContain('€24.80');
     expect(html).toContain(tier === 'small' ? '€2.50' : '€3.50');
     expect(html).toContain(tier === 'small' ? '€27.30' : '€28.30');
-    expect(html).toContain('Total, VAT included');
+    expect(html).toContain('Total, charged today');
     expect(html).toContain('/terms/');
   });
   it('never presents an unavailable or loading quote as free delivery', () => {

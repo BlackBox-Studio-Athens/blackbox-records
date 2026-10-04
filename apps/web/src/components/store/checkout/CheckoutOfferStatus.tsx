@@ -34,7 +34,7 @@ interface CheckoutOfferStatusProps {
   api?: PublicCheckoutApi;
 }
 
-export const STRIPE_CHECKOUT_CTA_COPY = 'Continue to Stripe Checkout';
+export const STRIPE_CHECKOUT_CTA_COPY = 'Continue to Payment';
 export const STRIPE_CHECKOUT_BADGE_SRC = `${(import.meta.env.BASE_URL || '/').replace(/\/$/, '')}/assets/vendor/stripe/powered-by-stripe.svg`;
 
 export function createStripeCheckoutCtaView(isStartingCheckout: boolean) {
@@ -109,6 +109,23 @@ export default function CheckoutOfferStatus({
     quoteLoading: delivery.loading,
     quoteTotalDisplay: delivery.totalDisplay,
   });
+  const canShowPayment = view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine;
+  const badgeLabel = !hasCheckoutLine
+    ? 'Cart is empty'
+    : view.canStartCheckout && (delivery.loading || !delivery.quote)
+      ? delivery.loading
+        ? 'Checking delivery'
+        : 'Delivery unavailable'
+      : view.canStartCheckout && shippingGateView.canContinueToPayment
+        ? 'Ready'
+        : view.badgeLabel;
+  const badgeClassName = cn(
+    'checkout-review__badge rounded-none',
+    view.tone === 'ready' && 'border-foreground/30 bg-background/70 text-foreground',
+    view.tone === 'unavailable' && 'border-border/70 bg-background/70 text-muted-foreground',
+    view.tone === 'error' && 'border-amber-300/45 bg-amber-300/10 text-amber-100',
+    view.tone === 'loading' && 'border-border/70 bg-background/50 text-muted-foreground',
+  );
 
   useEffect(() => {
     let isActive = true;
@@ -225,26 +242,36 @@ export default function CheckoutOfferStatus({
   }
 
   return (
-    <Card className="min-w-0 rounded-none border-border/70 bg-[#111111] shadow-none" data-checkout-offer-status>
-      <CardContent className="grid min-w-0 grid-cols-1 gap-4 p-5 sm:p-6">
-        <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-          <h2 className="font-display text-2xl uppercase tracking-[0.08em] text-foreground">Review and Pay</h2>
-          <Badge
-            variant="outline"
-            className={cn(
-              'rounded-none border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
-              view.tone === 'ready' && 'border-foreground/30 bg-background/70 text-foreground',
-              view.tone === 'unavailable' && 'border-border/70 bg-background/70 text-muted-foreground',
-              view.tone === 'error' && 'border-amber-300/45 bg-amber-300/10 text-amber-100',
-              view.tone === 'loading' && 'border-border/70 bg-background/50 text-muted-foreground',
-            )}
-          >
-            {view.canStartCheckout && (delivery.loading || !delivery.quote)
-              ? delivery.loading
-                ? 'Checking delivery'
-                : 'Delivery unavailable'
-              : view.badgeLabel}
-          </Badge>
+    <Card className="checkout-review__panel rounded-none shadow-none" data-checkout-offer-status>
+      <CardContent className="checkout-review__panel-content">
+        <div className="checkout-review__panel-heading">
+          <h2 className="checkout-review__panel-title">Review and Pay</h2>
+          {canShowPayment ? (
+            <details className="checkout-review__newsletter checkout-summary__editor">
+              <summary className={badgeClassName} aria-label={`${badgeLabel}. Email updates (optional)`}>
+                {badgeLabel}
+              </summary>
+              <div className="checkout-summary__quantities">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 size-4 shrink-0 accent-foreground"
+                    checked={isNewsletterOptedIn}
+                    disabled={isStartingCheckout}
+                    onChange={(event) => setIsNewsletterOptedIn(event.currentTarget.checked)}
+                  />
+                  <span>
+                    Email me BlackBox Records release, distro, and event updates. You can unsubscribe anytime.
+                  </span>
+                </label>
+                <PrivacyLink />
+              </div>
+            </details>
+          ) : (
+            <Badge variant="outline" className={badgeClassName}>
+              {badgeLabel}
+            </Badge>
+          )}
         </div>
 
         <PreorderCartNotice
@@ -252,8 +279,8 @@ export default function CheckoutOfferStatus({
         />
         <DeliverySummary {...delivery} />
 
-        <div className="grid gap-3 border-t border-border/60 pt-4">
-          <p className="text-sm leading-relaxed text-muted-foreground">{view.detail}</p>
+        <div className="checkout-review__actions">
+          {!view.canStartCheckout && <p className="checkout-review__note">{view.detail}</p>}
           {view.tone === 'loading' && (
             <LoadingInline
               className="text-xs uppercase tracking-[0.16em] text-muted-foreground"
@@ -261,28 +288,8 @@ export default function CheckoutOfferStatus({
             />
           )}
 
-          {view.canStartCheckout && shippingGateView.canContinueToPayment && hasCheckoutLine ? (
+          {canShowPayment ? (
             <>
-              <div className="flex flex-wrap items-center gap-x-4">
-                <label className="flex items-start gap-3 text-sm leading-relaxed text-muted-foreground">
-                  <input
-                    type="checkbox"
-                    className="mt-1 size-4 shrink-0 accent-foreground"
-                    checked={isNewsletterOptedIn}
-                    disabled={isStartingCheckout}
-                    onChange={(event) => {
-                      setIsNewsletterOptedIn(event.currentTarget.checked);
-                    }}
-                  />
-                  <span>
-                    Email me BlackBox Records release, distro, and event updates. You can unsubscribe anytime.
-                  </span>
-                </label>
-                <span className="text-xs text-muted-foreground">
-                  <PrivacyLink />
-                </span>
-              </div>
-
               {showReviewSiteMarker && (
                 <p className="text-xs font-semibold leading-relaxed text-foreground" data-review-site-checkout-warning>
                   Test checkout. No real payment will be taken.
@@ -294,7 +301,7 @@ export default function CheckoutOfferStatus({
                 size="lg"
                 variant={payView.variant}
                 className={cn(
-                  'w-full flex-wrap py-2 text-center whitespace-normal sm:flex-nowrap',
+                  'checkout-review__pay whitespace-normal',
                   payView.isWaitingForQuote && 'text-muted-foreground disabled:opacity-100',
                 )}
                 disabled={isStartingCheckout || delivery.loading || !delivery.quote}
@@ -310,18 +317,15 @@ export default function CheckoutOfferStatus({
                   <>
                     <span className="min-w-0 leading-tight">{payView.label}</span>
                     {payView.amountDisplay && (
-                      <span className="tabular-nums" aria-hidden="true" data-checkout-pay-amount>
+                      <span className="sr-only" aria-hidden="true" data-checkout-pay-amount>
                         {payView.amountDisplay}
                       </span>
-                    )}
-                    {payView.badgeSrc && (
-                      <img className="h-[18px] w-auto shrink-0" src={payView.badgeSrc} alt="" aria-hidden="true" />
                     )}
                   </>
                 )}
               </Button>
 
-              <p className="text-xs leading-relaxed text-muted-foreground">BlackBox never sees card details.</p>
+              <p className="checkout-review__note">Payment is taken on the Stripe page, the same as for any order.</p>
             </>
           ) : (
             <p className="text-xs leading-relaxed text-muted-foreground">

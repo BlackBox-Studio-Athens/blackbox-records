@@ -252,6 +252,16 @@ export type components = {
         };
         CheckoutState: {
             checkoutSessionId: string;
+            orderSnapshot?: {
+                lines: {
+                    displayName: string;
+                    optionLabel: string | null;
+                    preorder: components["schemas"]["PublicStorePreorder"];
+                    quantity: number;
+                    storeItemSlug: string;
+                }[];
+                reference: string;
+            };
             /** @enum {string|null} */
             orderStatus: "pending_payment" | "paid" | "not_paid" | "needs_review" | null;
             /** @enum {string} */

@@ -68,12 +68,91 @@ describe('CheckoutReturnStatus', () => {
           state: 'paid',
           paymentStatus: 'paid',
           orderStatus,
+          orderSnapshot: { reference: 'BBR-FIXTURE', lines: [] },
         },
       });
       expect(view.isFinal).toBe(false);
       expect(view.detail).not.toContain('order is recorded');
+      expect(view).not.toHaveProperty('orderSnapshot');
     },
   );
+  it.each([
+    { name: 'mixed', ordinary: true, shipEstimate: { kind: 'month', month: '2026-11', part: null } },
+    { name: 'pre-order only', ordinary: false, shipEstimate: { kind: 'date', date: '2026-11-20' } },
+    { name: 'unknown estimate', ordinary: false, shipEstimate: null },
+  ] satisfies {
+    name: string;
+    ordinary: boolean;
+    shipEstimate: NonNullable<CheckoutState['preorder']>['shipEstimate'];
+  }[])('renders immutable paid $name facts and safe published media', ({ ordinary, shipEstimate }) => {
+    const preorder = { shipEstimate };
+    const view = createCheckoutReturnStatusView({
+      kind: 'ready',
+      checkoutState: {
+        ...checkoutState,
+        orderStatus: 'paid',
+        paymentStatus: 'paid',
+        state: 'paid',
+        status: 'complete',
+        shippingLocker: null,
+        preorder,
+        orderSnapshot: {
+          reference: 'BBR-FIXTURE',
+          lines: [
+            {
+              displayName: 'Saved <Record>',
+              optionLabel: 'Vinyl',
+              quantity: 2,
+              storeItemSlug: 'saved-record',
+              preorder,
+            },
+            ...(ordinary
+              ? [
+                  {
+                    displayName: 'Ordinary record',
+                    optionLabel: null,
+                    quantity: 1,
+                    storeItemSlug: 'ordinary',
+                    preorder: null,
+                  },
+                ]
+              : []),
+          ],
+        },
+      },
+    });
+    const html = renderToStaticMarkup(
+      <CheckoutSuccessScreen
+        storePath="/blackbox-records/store/"
+        view={view}
+        releasedMediaByStoreItem={{
+          'saved-record': [
+            { title: 'Released <Single>', url: 'https://example.test/single' },
+            { title: 'Unsafe link', url: 'javascript:alert(1)' },
+          ],
+        }}
+      />,
+    );
+    expect(html).toContain('Payment received for order BBR-FIXTURE. A confirmation email is on its way.');
+    expect(html).toContain('Saved &lt;Record&gt;');
+    expect(html).toContain('Vinyl');
+    expect(html).toContain('× 2');
+    expect(html.includes('In stock, sent with the pre-order')).toBe(ordinary);
+    expect(html).toContain('One BOX NOW locker parcel. We contact you to arrange the locker before dispatch.');
+    expect(html).toContain('Released &lt;Single&gt;');
+    expect(html).toContain('href="https://example.test/single"');
+    expect(html).not.toContain('Unsafe link');
+    expect(html).not.toContain('javascript:');
+    if (!shipEstimate) {
+      expect(html).toContain('ship estimate to be announced');
+      expect(html).not.toContain('November');
+      expect(html).not.toContain('ship month');
+    }
+    expect(renderToStaticMarkup(<CheckoutSuccessScreen storePath="/store/" view={view} />)).not.toContain(
+      'Out now, while you wait',
+    );
+  });
+
   it('reads only session_id from the return query string', () => {
     expect(readCheckoutSessionIdFromSearch('?session_id=cs_test_123&redirect_status=succeeded')).toBe('cs_test_123');
     expect(readCheckoutSessionIdFromSearch('?redirect_status=succeeded')).toBeNull();

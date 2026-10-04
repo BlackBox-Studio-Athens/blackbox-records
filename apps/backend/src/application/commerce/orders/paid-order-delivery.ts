@@ -15,7 +15,7 @@ import type {
   PaidOrderDeliveryKind,
   PaidOrderDeliverySafeReason,
 } from '../../../domain/commerce/repositories/spi';
-import { createCheckoutOrderReferenceToken } from './order-reference-token';
+import { createCheckoutOrderReferenceToken } from '../../../domain/commerce';
 
 export type {
   ClaimedPaidOrderDelivery,

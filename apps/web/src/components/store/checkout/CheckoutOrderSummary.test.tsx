@@ -119,6 +119,7 @@ describe('CheckoutOrderSummary', () => {
       expect(markup).toContain(chip);
       expect(markup).toContain('Disintegration');
       expect(markup).toContain('Incoming record');
+      expect(markup).toContain('Available · sent with the pre-order');
       expect(markup).toContain('€56.00');
       expect(markup).toContain('Decrease quantity for Incoming record');
       expect(markup).toContain('Increase quantity for Incoming record');
