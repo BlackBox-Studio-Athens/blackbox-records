@@ -304,10 +304,16 @@
 - A read-only GET of `https://blackbox-records-web-uat.pages.dev/release.json` returned HTTP 200 with that exact source SHA and run ID. UAT CMS catalog field preparation also passed. Exact summaries, logs, source identities and hosted metadata are retained in `.codex-artifacts/preorders/release-uat/evidence.json` and the referenced artifacts.
 - This is UAT software-release evidence. Hosted browser/provider acceptance, real inbox rendering, PRD software promotion, new content publication and shopper launch are not established by this release.
 
-## User follow-up after UAT release
+## PRD software promotion, 4 October 2026
 
-- UAT `partner_links` schema preparation is complete. Run `pnpm --filter @blackbox/backend cms:catalog-schema` for PRD only through its normal environment selection and release gates when intended.
+- The user authorized PRD code promotion. Source `42f47fe8083661dbd2bb3096b748fb3bdafd2346` passed clean candidate validation and UAT release in run `37220123124`. [PRD promotion run 37220691378](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/37220691378) succeeded after identity, static, provider, Chromium/Firefox staff-preview and full browser acceptance. Browser results: 159 passed, 16 intentionally skipped, zero failed.
+- PRD compatible D1 migrations, CMS application/core migrations and catalog fields prepared successfully. The retained public renderer, combined CMS/commerce Worker and public Pages artifact deployed successfully. Production metadata independently returned the exact source SHA and candidate run `37220123124`; it retains PRD publication `37cd0985-1833-46ec-a1a1-dda42abb06ee` and snapshot `df649a20f9c3ed85c50acf01d3e8952ab0a206972078731f5ac041b31cad170f`. Metadata and run evidence are retained in `.codex-artifacts/preorders/release-prd/`.
+- This is software promotion to the disabled PRD readiness surface. No live catalog confirmation, new content publication, DNS/holding change or shopper-launch control was selected. Actual email inbox rendering and live shopper acceptance remain unverified.
+
+## User follow-up after software release
+
+- UAT and PRD `partner_links` schema preparation is complete through their release gates.
 - Archive completed changes in this order: `clarify-store-sold-out-presentation`, `show-low-stock-notice`, then `add-store-preorders`.
 - The main merge is complete and contains the low-stock migration dependency before this change's migrations 0027–0030.
 - Enter the pre-order content, ship estimate and expected copies for each intended Store Item variant; expected copies use the ordinary stock quantity, followed by a recount when copies arrive.
-- PRD software promotion, Content Publication and shopper launch retain their separate authorization and acceptance gates.
+- PRD software promotion is complete. Content Publication and shopper launch retain their separate authorization and acceptance gates.
