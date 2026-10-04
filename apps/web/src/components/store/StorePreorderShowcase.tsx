@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { z } from 'zod';
+import type { z as Zod } from 'zod';
 import type { PublicApiComponents } from '@blackbox/api-client/public';
 
 import { buttonVariants } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import MusicEqualizer from '@/components/music/MusicEqualizer';
 import { getPublicBackendBaseUrl } from '@/platform/lib/backend/public-backend-config';
 import { preorderBadges, shipEstimateText, type ShipEstimate } from '@/platform/lib/preorder-estimate';
 
-function createShowcaseSchemas(z: typeof import('zod').z) {
+function createShowcaseSchemas(z: typeof Zod) {
   const imageUrl = z.string().refine((value) => {
     if (value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\')) return true;
     return URL.canParse(value) && new URL(value).protocol === 'https:';
@@ -60,7 +60,7 @@ function createShowcaseSchemas(z: typeof import('zod').z) {
   return { candidateSchema, estimateSchema };
 }
 
-export type StorePreorderShowcaseCandidate = z.infer<ReturnType<typeof createShowcaseSchemas>['candidateSchema']>;
+export type StorePreorderShowcaseCandidate = Zod.infer<ReturnType<typeof createShowcaseSchemas>['candidateSchema']>;
 type ListingRecord = PublicApiComponents['schemas']['PublicStoreListingPrice'];
 type ShowcaseItem = StorePreorderShowcaseCandidate & { displayPrice: string; shipEstimate: ShipEstimate | null };
 
