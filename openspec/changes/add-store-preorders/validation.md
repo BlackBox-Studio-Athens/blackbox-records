@@ -310,6 +310,14 @@
 - PRD compatible D1 migrations, CMS application/core migrations and catalog fields prepared successfully. The retained public renderer, combined CMS/commerce Worker and public Pages artifact deployed successfully. Production metadata independently returned the exact source SHA and candidate run `37220123124`; it retains PRD publication `37cd0985-1833-46ec-a1a1-dda42abb06ee` and snapshot `df649a20f9c3ed85c50acf01d3e8952ab0a206972078731f5ac041b31cad170f`. Metadata and run evidence are retained in `.codex-artifacts/preorders/release-prd/`.
 - This is software promotion to the disabled PRD readiness surface. No live catalog confirmation, new content publication, DNS/holding change or shopper-launch control was selected. Actual email inbox rendering and live shopper acceptance remain unverified.
 
+## Published clip freshness repair, 5 October 2026
+
+- Read-only PRD responses reproduced the reported mismatch: `/releases/lotus/` embedded `MOA5YZDOR6A`, while `/preorder-showcase.json` returned `firstClipId: null` and `clips: []`, with an `Age` of 1418 seconds and no `Cache-Control`. One distinct query returned the published clip and its poster with `CF-Cache-Status: MISS`. The clip was published correctly; the homepage JSON had outlived the content publication.
+- The showcase endpoint now sends `Cache-Control: no-store`, preventing browsers and the edge from retaining its publication-dependent response. Static fixture builds still inherit their existing runtime mode. No CMS content, commerce state, video layout or image transformations were changed.
+- The endpoint regression invokes the real candidate builder before and after a release gains a clip. Before the fix it failed on the missing cache header; the repair requires both responses to prevent caching and the second response to contain the published video and poster.
+- The owning `web-pages` module passed all 58 tests. Normal Local validation passed 13 affected tasks (eight cached), including web lint/type checks and workspace formatting/architecture, with matching before/after fingerprint `084bddbe2f048ec11ef5ab3497b1ab331c2673cf8a76a7dafd1fc751c897de2d` at base SHA `14c4040a764e53cc2bef79dd17708e6c3efae3f1`. Summary: `.codex-artifacts/validation/2026-10-04T22-51-00-646Z-38148-233b22/summary.json`. Strict OpenSpec validation passed. The final notes-tree validation pointer is retained in ignored video-cache evidence.
+- Work is isolated in the explicitly requested `codex/preorder-video-cache` worktree, based on `14c4040a764e53cc2bef79dd17708e6c3efae3f1`. The other epic's primary-checkout edits were preserved. Native browser and DevTools tools were not exposed; hosted visual acceptance and deployment of this repair remain unverified. Local completion evidence is retained under `.codex-artifacts/preorders/video-cache/` in this worktree.
+
 ## User follow-up after software release
 
 - UAT and PRD `partner_links` schema preparation is complete through their release gates.
