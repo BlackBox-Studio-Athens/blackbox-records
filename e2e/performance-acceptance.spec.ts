@@ -233,9 +233,11 @@ test('empty Home defers the cart parser until its first cart event', async ({ pa
       .map((file) => ({ file, safeParse: readFileSync(`apps/web/dist/_astro/${file}`, 'utf8').includes('safeParse') })),
   });
   expect(loaded).toHaveLength(1);
-  expect(scriptBodies.find(({ url }) => parser(url))?.containsZod, 'demand-loaded parser contains bundled Zod').toBe(
-    true,
-  );
+  const validationBodies = scriptBodies.filter(({ containsZod }) => containsZod);
+  expect(validationBodies.length, 'cart demand-loading fetches Zod, including shared chunks').toBeGreaterThan(0);
+  for (const body of validationBodies) {
+    expect(scripts.find(({ url }) => url === body.url)?.start).toBeGreaterThanOrEqual(eventAt);
+  }
   expect(loaded[0].start).toBeGreaterThanOrEqual(eventAt);
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog', { name: 'Cart' })).toBeHidden();

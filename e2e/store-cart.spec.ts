@@ -270,6 +270,8 @@ test('Buy on a Store card reopens a three-item cart after every dismissal and pr
   await expect(drawer.locator('[data-store-cart-line-item]')).toHaveCount(2);
   await expectCartActionsVisible(drawer);
   await drawer.getByRole('button', { name: 'Continue Shopping' }).click();
+  await expect(drawer).toBeHidden();
+  await expect(secondBuy).toBeFocused();
   const thirdBuy = page.locator(`[data-store-card-buy][data-store-item-slug="${thirdSlug}"]`);
   await thirdBuy.click();
   await expect(drawer.locator('[data-store-cart-line-item]')).toHaveCount(3);
