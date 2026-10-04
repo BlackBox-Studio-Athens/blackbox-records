@@ -124,7 +124,12 @@ for (const width of [1440, 390]) {
         });
       }
       await preorder.click();
-      await expect(purchase.getByRole('button', { name: 'Added', exact: true })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: 'Cart', exact: true })).toBeVisible();
+      await expect(purchase.locator('[data-store-item-add-to-cart]')).toHaveText('Added');
+      await page
+        .getByRole('dialog', { name: 'Cart', exact: true })
+        .getByRole('button', { name: 'Continue Shopping', exact: true })
+        .click();
       await expect(page.locator('[data-store-cart-trigger]').first()).toHaveAccessibleName('Cart, 1 item');
     });
   }

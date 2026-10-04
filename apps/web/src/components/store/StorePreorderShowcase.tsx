@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { z } from 'zod';
+import type { z } from 'zod';
 import type { PublicApiComponents } from '@blackbox/api-client/public';
 
 import { buttonVariants } from '@/components/ui/button';
@@ -7,57 +7,60 @@ import MusicEqualizer from '@/components/music/MusicEqualizer';
 import { getPublicBackendBaseUrl } from '@/platform/lib/backend/public-backend-config';
 import { preorderBadges, shipEstimateText, type ShipEstimate } from '@/platform/lib/preorder-estimate';
 
-const imageUrl = z.string().refine((value) => {
-  if (value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\')) return true;
-  return URL.canParse(value) && new URL(value).protocol === 'https:';
-});
-const candidateSchema = z.object({
-  slug: z.string().min(1),
-  title: z.string().min(1),
-  artist: z.string().min(1),
-  option: z.string().min(1),
-  storePath: z
-    .string()
-    .startsWith('/')
-    .refine((value) => !value.startsWith('//') && !value.startsWith('/\\')),
-  releaseDate: z.iso.date().nullable(),
-  coverUrl: imageUrl,
-  firstClipId: z
-    .string()
-    .regex(/^[A-Za-z0-9_-]{11}$/)
-    .nullable(),
-  clips: z
-    .array(
-      z.object({
-        id: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
-        title: z.string().min(1),
-        posterUrl: imageUrl.nullable(),
-      }),
-    )
-    .optional(),
-  artistPhotoUrl: imageUrl.nullable(),
-  summary: z.string().nullable().optional(),
-  trackCount: z.number().int().positive().nullable().optional(),
-  recording: z.string().nullable().optional(),
-  listen: z
-    .object({
-      releaseId: z.string().min(1),
-      bandcampEmbedUrl: z.string().url().startsWith('https://bandcamp.com/EmbeddedPlayer/').nullable(),
-      tidalEmbedUrl: z.string().url().startsWith('https://embed.tidal.com/').nullable(),
-    })
-    .nullable()
-    .optional(),
-});
-const estimateSchema = z.union([
-  z.object({
-    kind: z.literal('month'),
-    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
-    part: z.enum(['early', 'mid', 'late']).nullable(),
-  }),
-  z.object({ kind: z.literal('date'), date: z.iso.date() }),
-]);
+function createShowcaseSchemas(z: typeof import('zod').z) {
+  const imageUrl = z.string().refine((value) => {
+    if (value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\')) return true;
+    return URL.canParse(value) && new URL(value).protocol === 'https:';
+  });
+  const candidateSchema = z.object({
+    slug: z.string().min(1),
+    title: z.string().min(1),
+    artist: z.string().min(1),
+    option: z.string().min(1),
+    storePath: z
+      .string()
+      .startsWith('/')
+      .refine((value) => !value.startsWith('//') && !value.startsWith('/\\')),
+    releaseDate: z.iso.date().nullable(),
+    coverUrl: imageUrl,
+    firstClipId: z
+      .string()
+      .regex(/^[A-Za-z0-9_-]{11}$/)
+      .nullable(),
+    clips: z
+      .array(
+        z.object({
+          id: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
+          title: z.string().min(1),
+          posterUrl: imageUrl.nullable(),
+        }),
+      )
+      .optional(),
+    artistPhotoUrl: imageUrl.nullable(),
+    summary: z.string().nullable().optional(),
+    trackCount: z.number().int().positive().nullable().optional(),
+    recording: z.string().nullable().optional(),
+    listen: z
+      .object({
+        releaseId: z.string().min(1),
+        bandcampEmbedUrl: z.string().url().startsWith('https://bandcamp.com/EmbeddedPlayer/').nullable(),
+        tidalEmbedUrl: z.string().url().startsWith('https://embed.tidal.com/').nullable(),
+      })
+      .nullable()
+      .optional(),
+  });
+  const estimateSchema = z.union([
+    z.object({
+      kind: z.literal('month'),
+      month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+      part: z.enum(['early', 'mid', 'late']).nullable(),
+    }),
+    z.object({ kind: z.literal('date'), date: z.iso.date() }),
+  ]);
+  return { candidateSchema, estimateSchema };
+}
 
-export type StorePreorderShowcaseCandidate = z.infer<typeof candidateSchema>;
+export type StorePreorderShowcaseCandidate = z.infer<ReturnType<typeof createShowcaseSchemas>['candidateSchema']>;
 type ListingRecord = PublicApiComponents['schemas']['PublicStoreListingPrice'];
 type ShowcaseItem = StorePreorderShowcaseCandidate & { displayPrice: string; shipEstimate: ShipEstimate | null };
 
@@ -75,6 +78,8 @@ export async function loadStorePreorderShowcase(candidatesUrl: string, signal?: 
     );
     if (stocked.length === 0 || signal?.aborted) return [];
 
+    const { z } = await import('zod');
+    const { candidateSchema, estimateSchema } = createShowcaseSchemas(z);
     const candidatesResponse = await fetch(candidatesUrl, {
       headers: { accept: 'application/json' },
       signal: signal ?? null,

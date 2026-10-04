@@ -1,5 +1,12 @@
 # Validation notes
 
+## PRD promotion acceptance repair, 4 October 2026
+
+- Promotion run `37217321953` selected candidate `51dae06d3f5dc641f6121f112f6616b8576d1cb5` from UAT run `37187852168`. Identity, static smoke and staff previews passed. Provider smoke stopped before payment because its newsletter disclosure and payment-button locators still assumed the previous checkout layout. Full browser acceptance reported 152 passed, 16 skipped and seven failed; PRD deployment did not start.
+- Provider smoke now opens the optional email-updates disclosure and uses Continue to Payment, preserving paid-order assertions. Store Item browser tests observe cart acknowledgement while the background is inert, then close the drawer before checking the header's accessible name. All seven named Store Item cases passed locally (`.codex-artifacts/preorders/release-uat/prd-item-cart-final.log`).
+- Home now imports Zod only after a nonempty authoritative pre-order listing, retaining candidate/estimate validation while keeping the empty Home path free of bundled Zod. Changed Store module tests passed. The normal Local validation attempt selected an existing web-pages test that rejects ignored trial fonts under `apps/web/public/local-fonts/type-studies`; those user files were preserved. Clean CI validation and compiled browser acceptance remain required for the replacement candidate.
+- No live catalog confirmation, publication, DNS change or shopper-launch authorization is part of this promotion.
+
 ## Planning evidence, 2 October 2026
 
 - Branch `claude/preorder-flow-design-65884f` now sits on `4a4595af`: `main` at `df2ceae0` plus the two commits of the low-stock branch (`show-low-stock-notice`). No implementation has started; this change holds planning artifacts only.
