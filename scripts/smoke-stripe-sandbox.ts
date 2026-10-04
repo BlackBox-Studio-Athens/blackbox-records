@@ -1291,16 +1291,17 @@ async function runScenarioWithBrowser(input: {
       await page.goto(input.checkoutPageUrl, { waitUntil: 'domcontentloaded' });
       const newsletterOptIn = page.getByLabel(/Email me BlackBox Records/i);
       const checkoutButton = page.getByRole('button', {
-        name: /(?:pay securely with|continue to) stripe(?: checkout)?/i,
+        name: /continue to payment/i,
       });
 
+      await page.getByLabel(/Email updates \(optional\)/i).click();
       await newsletterOptIn.waitFor({ state: 'visible', timeout: input.options.timeoutMs });
       await checkoutButton.waitFor({ state: 'visible', timeout: input.options.timeoutMs });
       await newsletterOptIn.check({ timeout: input.options.fieldActionTimeoutMs });
       await page.waitForFunction(
         () => {
           const button = [...document.querySelectorAll('button')].find((candidate) =>
-            /(?:pay securely with|continue to) stripe(?: checkout)?/i.test(candidate.textContent ?? ''),
+            /continue to payment/i.test(candidate.textContent ?? ''),
           );
           return Boolean(button && !button.disabled);
         },
