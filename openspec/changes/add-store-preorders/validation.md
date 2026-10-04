@@ -289,10 +289,17 @@
 - Conflict resolution preserves main's public image exports, uncached listing reads, server-rendered search/artist controls, memoized visibility calculation, lazy newsletter handling and cart warm-up/body-lock tests. Pre-order filtering and notes now enhance that server chrome; cached snapshots hide the notes until the fresh projection is applied. The shared formatter stays in commerce-domain, and checkout retains main's public API interface without restoring the orders dependency cycle. The older newsletter idle-directive commit was superseded by main's shell-owned lazy newsletter.
 - Named Store checks and normal affected validation cover the rebased tree. Exact commands, source identities, browser results and the eventual UAT run/hosted identity are retained in `.codex-artifacts/preorders/release-uat/`. Software release does not publish pre-order content or authorize production deployment or shopper launch.
 
-## User follow-up after implementation
+## UAT software release, 4 October 2026
 
-- Run `pnpm --filter @blackbox/backend cms:catalog-schema` for `partner_links` in each intended environment using its normal environment selection and release gates.
+- The rebased implementation and integration corrections were fast-forwarded into `main` and pushed as `51dae06d3f5dc641f6121f112f6616b8576d1cb5`. [Release run 37187852168](https://github.com/BlackBox-Studio-Athens/blackbox-records/actions/runs/37187852168) completed successfully, including repository checks, target preparation, UAT schema preparation, Worker deployment, Pages deployment and hosted release identity verification.
+- Rebased Local validation passed 63 tasks across 49 projects with matching before/after source fingerprint `bcd4e74b615b9a0eb953a9e6ecaf8c35de1bb6c8667555b4d2431e6a53b13b86`. Store unit checks passed 130 tests, and nine named browser cases covered pre-order filtering, refreshed membership, phone entry, cart warm-up, mixed-cart quote/payment gates at 440px and 390px, and paid return at 390px. Strict OpenSpec passed. The post-merge normal check on committed main passed with stable source identity; its narrower selection does not replace the rebased tree's full affected evidence or CI checks.
+- A read-only GET of `https://blackbox-records-web-uat.pages.dev/release.json` returned HTTP 200 with that exact source SHA and run ID. UAT CMS catalog field preparation also passed. Exact summaries, logs, source identities and hosted metadata are retained in `.codex-artifacts/preorders/release-uat/evidence.json` and the referenced artifacts.
+- This is UAT software-release evidence. Hosted browser/provider acceptance, real inbox rendering, PRD software promotion, new content publication and shopper launch are not established by this release.
+
+## User follow-up after UAT release
+
+- UAT `partner_links` schema preparation is complete. Run `pnpm --filter @blackbox/backend cms:catalog-schema` for PRD only through its normal environment selection and release gates when intended.
 - Archive completed changes in this order: `clarify-store-sold-out-presentation`, `show-low-stock-notice`, then `add-store-preorders`.
-- Merge the low-stock branch before this branch so migration `0026_stock_show_low_stock.sql` precedes this change's migrations 0027–0030.
+- The main merge is complete and contains the low-stock migration dependency before this change's migrations 0027–0030.
 - Enter the pre-order content, ship estimate and expected copies for each intended Store Item variant; expected copies use the ordinary stock quantity, followed by a recount when copies arrive.
-- A push, software release, Content Publication and shopper launch remain separate user operations. No push, deployment or workflow dispatch is part of this continuation.
+- PRD software promotion, Content Publication and shopper launch retain their separate authorization and acceptance gates.
