@@ -24,6 +24,9 @@ describe('server Store chrome', () => {
     expect(html).toContain('aria-controls="all-store-catalog"');
     expect(html).toMatch(/data-store-search-summary="[^"]*"><\/p>/);
     expect(html).toMatch(/<button[^>]*disabled[^>]*hidden[^>]*data-store-clear-search/);
+    expect(html).toMatch(/<button[^>]*aria-pressed="false"[^>]*disabled[^>]*hidden[^>]*data-store-preorder-filter/);
+    expect(html).toMatch(/data-store-preorder-count="[^"]*">0<\/span>/);
+    expect(html).toMatch(/data-store-preorder-notes="[^"]*" hidden/);
     expect(html).toMatch(/data-store-empty-results="[^"]*" hidden/);
   });
 

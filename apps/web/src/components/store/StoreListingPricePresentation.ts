@@ -64,6 +64,9 @@ export function sanitizeStoreSearchChrome(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-empty-results], [data-store-result-total]').forEach((element) => {
     element.hidden = true;
   });
+  root.querySelectorAll<HTMLElement>('[data-store-preorder-notes]').forEach((element) => {
+    element.hidden = true;
+  });
   root.querySelectorAll<HTMLElement>('[data-store-coverflow-controls]').forEach((controls) => {
     controls.hidden = false;
     controls.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {

@@ -75,7 +75,7 @@ for (const [date, badge, released] of [
 
     await toggle.press('Enter');
     await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-    await expect(notes).toHaveCount(0);
+    await expect(notes).toBeHidden();
     expect(await cards.locator('visible=true').count()).toBeGreaterThan(2);
   });
 }
@@ -130,7 +130,7 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
   await expect(toggle.locator('.store-preorder-filter__count')).toHaveText('2');
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
-  await expect(page.locator('.store-preorder-notes')).toHaveCount(0);
+  await expect(page.locator('.store-preorder-notes')).toBeHidden();
   await expect(search).toBeFocused();
   await expect(search).toHaveValue('');
   await expect(picker).toHaveValue('');
@@ -161,7 +161,7 @@ test('listing refresh changes membership at the same count and clears an active 
     document.dispatchEvent(new Event('blackbox:store-listing-applied'));
   });
   await expect(toggle).toHaveCount(0);
-  await expect(page.locator('.store-preorder-notes')).toHaveCount(0);
+  await expect(page.locator('.store-preorder-notes')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Clear filters', exact: true })).toHaveCount(0);
   expect(await cards.locator('visible=true').count()).toBeGreaterThan(2);
   expect(await sentinelIntact(page)).toBe(true);
@@ -177,7 +177,7 @@ test('Store has no pre-orders toggle or notes when the listing projection has no
     'loading',
   );
   await expect(page.getByRole('button', { name: /^Pre-orders/ })).toHaveCount(0);
-  await expect(page.locator('.store-preorder-notes')).toHaveCount(0);
+  await expect(page.locator('.store-preorder-notes')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Clear filters', exact: true })).toHaveCount(0);
   expect(await page.locator('[data-distro-search-item]:visible').count()).toBeGreaterThan(2);
 });

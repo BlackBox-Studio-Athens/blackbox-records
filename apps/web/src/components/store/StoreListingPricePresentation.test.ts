@@ -148,12 +148,14 @@ describe('Store listing-price presentation', () => {
       querySelectorAll: () => radios,
     };
     const total = { hidden: false };
+    const preorderNotes = { hidden: false };
     const view = { disabled: false };
     const controls = { hidden: true, querySelectorAll: () => [view] };
     const elements: Record<string, unknown[]> = {
       '[data-store-search-toolbar]': [toolbar],
       '[data-store-artists]': [artistHost],
       '[data-store-empty-results], [data-store-result-total]': [total],
+      '[data-store-preorder-notes]': [preorderNotes],
       '[data-store-coverflow-controls]': [controls],
     };
     const root = { querySelectorAll: (selector: string) => elements[selector] ?? [] } as unknown as ParentNode;
@@ -165,6 +167,7 @@ describe('Store listing-price presentation', () => {
     expect(fieldset.disabled).toBe(true);
     expect(radios.map(({ checked }) => checked)).toEqual([true, false]);
     expect(total.hidden).toBe(true);
+    expect(preorderNotes.hidden).toBe(true);
     expect(controls.hidden).toBe(false);
     expect(view.disabled).toBe(true);
   });
@@ -190,11 +193,13 @@ describe('Store listing-price presentation', () => {
 
     await expect(readPublicStoreListingPrices(abortController.signal, { scope: 'preorders' })).resolves.toEqual([]);
     expect(fetchRequest).toHaveBeenCalledWith('/api/store/listing-prices?scope=preorders', {
+      cache: 'no-store',
       headers: { accept: 'application/json' },
       signal: abortController.signal,
     });
     await readPublicStoreListingPrices();
     expect(fetchRequest).toHaveBeenLastCalledWith('/api/store/listing-prices', {
+      cache: 'no-store',
       headers: { accept: 'application/json' },
       signal: null,
     });

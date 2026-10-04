@@ -136,7 +136,12 @@ export function applyDistroSearch(
   matchedElements: ReadonlySet<HTMLElement> | null,
   preordersOnly = false,
 ) {
-  const visibleElements = getDistroSearchVisibleElements(dom, matchedElements, dom.root.dataset.distroSelectedFormat, preordersOnly);
+  const visibleElements = getDistroSearchVisibleElements(
+    dom,
+    matchedElements,
+    dom.root.dataset.distroSelectedFormat,
+    preordersOnly,
+  );
   applyDistroSearchVisibility(dom, visibleElements);
   return visibleElements.size;
 }
@@ -290,7 +295,10 @@ export function StoreSearchToolbar({ resultsId }: { resultsId: string }) {
           hidden
           data-store-preorder-filter
         >
-          Pre-orders <span className="store-preorder-filter__count" data-store-preorder-count>0</span>
+          Pre-orders{' '}
+          <span className="store-preorder-filter__count" data-store-preorder-count>
+            0
+          </span>
         </Button>
         <Button type="button" variant="ghost" disabled hidden data-store-clear-filters>
           Clear filters
@@ -350,7 +358,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     );
     // choices changes whenever the island reads a new catalog DOM; fuzzyRevision reruns the search
     // once the lazily loaded fuzzy matcher is available.
-  }, [ready, choices, query, artist, format, filtered, fuzzyRevision, preorders]);
+  }, [ready, choices, query, artist, format, filtered, fuzzyRevision, preorders, preordersOnly]);
   const count = visibleElements?.size ?? 0;
 
   useEffect(() => {
