@@ -16,11 +16,7 @@ const profiles = [
 const imageRoutes = [
   {
     route: 'releases/',
-    selectors: [
-      '[data-release-role="lead"] img',
-      '[data-release-role="supporting"] img',
-      '[data-release-role="catalog"] img',
-    ],
+    selectors: ['[data-release-role="lead"] img', '[data-release-role="catalog"] img'],
   },
   { route: localRepresentativePaths.release.slice(1), selectors: ['.release-detail-cover__image'] },
   { route: 'news/', selectors: ['.news-card__image'] },
