@@ -21,3 +21,8 @@ Read [design.md](design.md) and the PNGs and sources in [design/](design/) first
 - [x] 3.2 Browser pass on Local at desktop and 390px with the `sessionStorage` override from design.md: compare each placement with its PNG, keyboard focus on each link, 200% zoom, cart Checkout still reachable at 390px, player continuity across Store navigation, no console errors. Confirm nothing renders without the override.
 - [x] 3.3 Run `pnpm validate` and `pnpm openspec -- validate add-international-order-notice --type change --strict`. Record source-bound evidence in `validation.md` per `docs/agent-workflow.md`. Do not push; release is a separate step.
 - [ ] 3.4 After UAT deploy (separate release step): confirm `/cdn-cgi/trace` returns `loc` on the UAT host, the notice is hidden from a Greek connection and shown from a non-Greek one (VPN or remote browser), and the mail link opens addressed to `orders@`.
+
+## 4. Approved line accent follow-up
+
+- [x] 4.1 Apply the owner's Rule accent to the existing line truck and shipping rule with `--store-accent-active`. Keep the question muted, email foreground and all copy, whitespace, layout, typography, focus and behavior intact. Adapt the existing copy unit check and add desktop/390px color assertions to the item E2E.
+- [x] 4.2 Update only the Item and notice-variants reference sources and PNGs, verify normal-font desktop/390px color, focus, target size and overflow, then run scoped store-cart and item E2E checks, strict OpenSpec and `pnpm validate`. Record a new source-bound checkpoint; retain earlier neutral-line evidence as history and leave UAT task 3.4 pending.

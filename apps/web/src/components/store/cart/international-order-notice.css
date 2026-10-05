@@ -81,6 +81,11 @@
   column-gap: 0.375rem;
 }
 
+.international-order-notice--line > svg,
+.international-order-notice--line .international-order-notice__rule {
+  color: var(--store-accent-active);
+}
+
 .international-order-notice--line .international-order-notice__link {
   align-self: auto;
 }

@@ -4,6 +4,8 @@
 
 Canvas: https://claude.ai/artifact/MMtaHRBeRrdi5jHxZzfNBe (version 5, 2026-10-02). The exports below are tied to that version.
 
+The Item and notice-variants exports include the owner's approved Rule accent follow-up (2026-10-05).
+
 | File                                                       | Source                                                              | Shows                                             |
 | ---------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------- |
 | [design/notice-variants.png](design/notice-variants.png)   | [source/notice-variants.html](design/source/notice-variants.html)   | Strip, line and card variants with the email spec |
@@ -32,6 +34,8 @@ Design decisions:
 - **Stay quiet.** Not dismissible, no popup, no modal, no live region, no animation. Browsing and Greek checkout stay unchanged.
 - **Email, not a form.** A `mailto:` link needs no backend and keeps the closed country scope intact.
 - **One component.** `InternationalOrderNotice` with `variant: 'strip' | 'line' | 'card'` and an optional `itemTitles: string[]`. One copy object, one mailto builder, one country gate.
+
+Owner-approved follow-up, 2026-10-05: apply Rule accent to the line variant. The existing truck and `Ships within Greece only.` use `--store-accent-active` (`#cf6b80`); `Outside Greece?` stays muted and `Email us to order` stays foreground and underlined, without an arrow. Keep the exact combined copy, inline body, layout, fonts, weight, 44px link target and focus treatment. Do not add a box, border or padding. Strip and card styles retain their existing roles.
 
 ## Lifecycle and shipping expansion
 
@@ -96,12 +100,12 @@ Use this text exactly, kept in one copy object.
 
 ## Variants and tokens
 
-| Element        | Strip                                                                                                                   | Line                                      | Card                                                                                                                                                                                              |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Container      | `aside` with `aria-label="Shipping outside Greece"`, `--secondary` surface, 1px `--store-accent` border, square corners | Plain paragraph, no box                   | `aside` with `aria-label="Ordering from outside Greece"`, 1px border: `--store-accent` in the cart drawer, `--border` inside the checkout shipping step (that step already has the accent border) |
-| Label or title | `Shipping`, small uppercase tracked Inter, `--store-accent-active`                                                      | Truck icon, `aria-hidden`, `currentColor` | `Ordering from outside Greece?` in the display font (Bebas), `--store-accent-active`                                                                                                              |
-| Body           | First sentence `--foreground`, second `--muted-foreground`                                                              | `--muted-foreground`                      | `--muted-foreground`                                                                                                                                                                              |
-| Layout         | Desktop: one row, label, body, link. Below `md`: stacked                                                                | Wraps inline                              | Stacked                                                                                                                                                                                           |
+| Element        | Strip                                                                                                                   | Line                                                                     | Card                                                                                                                                                                                              |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Container      | `aside` with `aria-label="Shipping outside Greece"`, `--secondary` surface, 1px `--store-accent` border, square corners | Plain paragraph, no box                                                  | `aside` with `aria-label="Ordering from outside Greece"`, 1px border: `--store-accent` in the cart drawer, `--border` inside the checkout shipping step (that step already has the accent border) |
+| Label or title | `Shipping`, small uppercase tracked Inter, `--store-accent-active`                                                      | Existing truck, `aria-hidden`, `currentColor` in `--store-accent-active` | `Ordering from outside Greece?` in the display font (Bebas), `--store-accent-active`                                                                                                              |
+| Body           | First sentence `--foreground`, second `--muted-foreground`                                                              | Shipping rule `--store-accent-active`; question `--muted-foreground`     | `--muted-foreground`                                                                                                                                                                              |
+| Layout         | Desktop: one row, label, body, link. Below `md`: stacked                                                                | Wraps inline                                                             | Stacked                                                                                                                                                                                           |
 
 `--store-accent` is a border colour only; accent text uses `--store-accent-active` for contrast. No emoji, no rounded cards, no shadows.
 

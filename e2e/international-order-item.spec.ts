@@ -46,7 +46,16 @@ for (const width of [1440, 390]) {
     await waitForIsland(page, 'InternationalOrderNotice');
 
     await expect(email).toBeVisible();
-    await expect(email.locator('..')).toContainText('Ships within Greece only. Outside Greece?');
+    const notice = email.locator('..');
+    await expect(notice).toContainText('Ships within Greece only. Outside Greece?');
+    await expect(notice.locator(':scope > svg')).toHaveCSS('color', 'rgb(207, 107, 128)');
+    await expect(notice.getByText('Ships within Greece only.', { exact: true })).toHaveCSS(
+      'color',
+      'rgb(207, 107, 128)',
+    );
+    await expect(notice.locator(':scope > span')).toHaveCSS('color', 'rgb(179, 179, 179)');
+    await expect(email).toHaveCSS('color', 'rgb(245, 245, 245)');
+    await expect(email.locator('svg')).toHaveCount(0);
 
     const title = (await purchase.getByRole('heading', { level: 1 }).textContent())!.trim();
     const href = await email.getAttribute('href');

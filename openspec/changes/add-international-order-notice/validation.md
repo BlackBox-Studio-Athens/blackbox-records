@@ -4,7 +4,23 @@ Product Environment: Local. Work stays on the existing `main` checkout; no commi
 
 ## Source and completion record
 
-Base HEAD: `14c4040a764e53cc2bef79dd17708e6c3efae3f1`, plus the uncommitted implementation. The final run's before/after fingerprint, summary path, mode and status are recorded in `.codex-artifacts/international-order/final-evidence.json`. Completion requires a passed Local run with matching fingerprints. Per-board handoffs retain the covered file hashes and individual test summaries.
+The neutral-line implementation was committed at `ecbf6e9d79c872d5a4803a2e31d7ef97dd26a570`. Its original base was `14c4040a764e53cc2bef79dd17708e6c3efae3f1`; the matching final fingerprint, summary path, mode and status are recorded in `.codex-artifacts/international-order/final-evidence.json`. Per-board handoffs retain that checkpoint's file hashes and individual test summaries. Those neutral-line images do not establish acceptance of the later Rule accent.
+
+## Rule accent follow-up checkpoint
+
+Owner approval, 2026-10-05: the existing line truck and shipping rule take `--store-accent-active`; the question stays muted and the email action stays foreground. The shared copy remains centralized and preserves its combined wording and whitespace. Layout, truck paths, typography, target size, focus, other variants, country visibility and mailto encoding remain intact.
+
+New source-bound evidence is in `.codex-artifacts/international-order/rule-accent/`. `pnpm test store-cart` passed on the final markup. The final scoped browser run passed all seven cases: five item E2E cases plus reference rendering and normal-font captures. `final-browser-summary.json` records zero skipped, flaky or unexpected results; all 11 covered source hashes match before and after that run. UAT task 3.4 remains pending.
+
+The regenerated reference PNGs retain their board sizes (Item 1440 × 960; variants 1280 × 1040), assets and fonts. Each differs from the neutral reference at 1,255 pixels, with zero differences outside the line notice region. Exact production captures at 1440 × 960, 390 × 844 and the equivalent 200% reflow size of 720 × 480 confirm actual custom Inter glyphs, 14px/21px type at weight 400, truck/rule `rgb(207, 107, 128)`, muted question `rgb(179, 179, 179)` and foreground link `rgb(245, 245, 245)`. The email target is exactly 44px high, keyboard focus is 2px solid, and neither notice nor document overflows horizontally. `observations.json` and the PNGs record these checks. Country visibility, mail encoding, copies-left fusion and the complete pre-order presentation passed in the item E2E.
+
+The parent refreshed its own Local stack and verified the final compiled source. The capture's release header is `f170ef67be0f353eb89fc4cb817f5caec7a0fd0f`, a Local fingerprint derived from component/CSS hashes, not a Git commit. The capture also asserts the final single rule span and plain question text. Its saved spec is `rule-accent/capture.spec.ts`; replay through the same scoped `pnpm test:e2e` workflow after copying it into `e2e/`, then return it to the ignored artifact directory. The existing stack remains parent-owned.
+
+The minimal markup keeps the inter-sentence space inside the colored rule span and the question as plain text in the existing body span. Native measurements found identical body/email rectangles for this markup and the initial two-segment version. Compared with the original continuous text run, the body width and email position differ by about 0.013px from text shaping. No offsets or layout overrides were added. Reference raster checks require zero differences outside the line notice region; colors, copy and normal typography are checked separately. The first narrower comparison recorded 81 subpixel glyph differences within the question/email area, not a changed surrounding layout.
+
+Native Chrome bootstrapped and captured the initial accent checkpoint with visible keyboard focus and no horizontal overflow. Its requested 1440px viewport reported 1441px with fractional target/outline measurements; final scoped captures establish exact CSS viewport and target dimensions. The temporary native viewport was reset and the owned verification tab closed. No DevTools browser was opened for this follow-up.
+
+Local `pnpm validate` passed all 54 selected tasks, and strict OpenSpec validation passed. Graphify's single local AST refresh completed; its existing partial-extraction warning for `scripts/pages-workflow-contract.test.ts` is unrelated to the edited notice. The final-tree validation pointer, matching fingerprints, exact source hashes and browser release record are retained in `rule-accent/completion-evidence.json`. The capture spec is outside the permanent E2E suite. This work is prepared on `main` for review; UAT task 3.4 remains the only pending task.
 
 ## Acceptance scope
 

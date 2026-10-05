@@ -17,6 +17,8 @@ The public site SHALL show shoppers whose Cloudflare-reported country is not Gre
 - **WHEN** the Store Item purchase actions render
 - **THEN** a line after them states Greece-only shipping and offers the email link
 - **AND** the link's body template lists that item's title, then empty Country and City fields.
+- **AND** the existing truck and `Ships within Greece only.` use the Store active accent, while `Outside Greece?` remains muted and the underlined email link remains foreground, without a trailing arrow
+- **AND** the line preserves its inline wrapping, typography, 44px email target and visible keyboard focus without adding a box, border or padding.
 
 #### Scenario: Shopper abroad reviews the cart or checkout
 

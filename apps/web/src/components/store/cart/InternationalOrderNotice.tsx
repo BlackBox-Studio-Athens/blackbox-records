@@ -13,7 +13,10 @@ const copy = {
     body: 'We ship within Greece only, for now.',
     detail: "Ordering from abroad? Email us and we'll arrange it with you.",
   },
-  line: 'Ships within Greece only. Outside Greece?',
+  line: {
+    rule: 'Ships within Greece only.',
+    question: 'Outside Greece?',
+  },
   card: {
     title: 'Ordering from outside Greece?',
     landmark: 'Ordering from outside Greece',
@@ -89,7 +92,10 @@ export default function InternationalOrderNotice({
           <circle cx="4.5" cy="12" r="1.2" />
           <circle cx="12" cy="12" r="1.2" />
         </svg>
-        <span>{copy.line}</span>
+        <span>
+          <span className="international-order-notice__rule">{copy.line.rule} </span>
+          {copy.line.question}
+        </span>
         {link}
       </p>
     );

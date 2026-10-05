@@ -71,7 +71,7 @@ describe('InternationalOrderNotice', () => {
       );
     } else {
       expect(markup).toMatch(/^<p /);
-      expect(markup).toContain('Ships within Greece only. Outside Greece?');
+      expect(markup.replace(/<[^>]*>/g, '')).toContain('Ships within Greece only. Outside Greece?');
       expect(markup).not.toContain('<aside');
       expect(markup).not.toContain('M3 8h10M9 4l4 4-4 4');
     }
