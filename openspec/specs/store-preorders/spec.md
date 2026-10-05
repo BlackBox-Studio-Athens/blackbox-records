@@ -432,7 +432,7 @@ The public pre-order showcase JSON SHALL reuse bounded cached editorial data ass
 
 ### Requirement: Store cards match the approved pre-order lifecycle references
 
-Store listing cards SHALL match the supplied 5 October reference composition for the pre-order lifecycle: full square artwork, optional Listen, compact uppercase display title, plain artist/format metadata, left-aligned status badges and stable bottom price/action. Reference annotations SHALL NOT appear as shopper interface copy.
+Store listing cards SHALL retain the supplied 5 October pre-order lifecycle composition: full square artwork, optional Listen, source-cased Veneer title, quiet Inter “by ARTIST” credit and format metadata, left-aligned status badges and stable bottom price/action. Reference annotations SHALL NOT appear as shopper interface copy.
 
 #### Scenario: Lifecycle state changes
 

@@ -1,5 +1,15 @@
 # Validation
 
+## Local integration and archive — 5 October 2026
+
+The user explicitly requested a local commit, rebase onto latest main, merge to main, worktree removal and OpenSpec archive. Origin/main was fetched at `14c4040a764e53cc2bef79dd17708e6c3efae3f1`; local main `bec08e205c5f31a181fc39bdb50d4f05f86a5a28` contained it and was seven commits ahead. The implementation was rebased onto that local main as `1f7207a2`. Conflict resolution retained main's responsive Staff controls, disabled unavailable preorder controls and lifecycle card composition, combined with the requested icons, Veneer titles, Inter credits and ordinary Buy feedback.
+
+All five changes from this worktree were archived and their deltas merged into baseline specs, preserving unrelated requirements and scenarios. The newer Store preorder baseline was reconciled with the requested title/credit treatment. All six affected capabilities pass guarded strict spec validation. A whole-baseline strict run exposed 17 pre-existing placeholder Purposes; the affected Releases Purpose was completed, while the 16 unrelated placeholders remain outside this task.
+
+Post-rebase focused checks pass: web-store 132 tests, staff-stock 29 tests and web-layouts 21 tests. An initial multi-path test command forwarded incompatible filters and found no tests; the canonical module commands above replaced it. The full Local stack startup failed when stripe-mock did not become ready on its assigned port; the existing source-scoped Playwright harness passed all 11 selected Chromium cases for Releases, ordinary Buy feedback, Store typography and player continuity instead. Final source-bound repository and browser results, merge identities and retained evidence locations are recorded in `.codex-artifacts/validation/staff-release-updates-integration.json`. Previous phase evidence below retains its original source identity.
+
+The user authorized archive with Releases tasks 2.1 and 4.4 still incomplete. Neither live catalog adoption nor the known Store production bundle failure is marked complete, and this local integration does not publish content or authorize Software Release. Review artifacts are preserved under the primary checkout's `.codex-artifacts`; the stopped worktree's Local demo state is preserved separately under `.codex-artifacts/releases-strategy/archived-b553-local-state` without replacing the primary checkout's Local state.
+
 ## Scope and source
 
 - Phase: approved runtime implementation. The user requested the pre-order epic's visual direction only and explicit types that prevent contradictory state combinations.
