@@ -66,7 +66,7 @@
 
 - [x] 11.1 Commit the verified local repairs, rebase onto latest main and verify the resulting tree before merging.
 - [x] 11.2 Merge to main, release the exact candidate to UAT and verify hosted identity.
-- [ ] 11.3 Promote the accepted candidate through the existing browser/provider gates to PRD and monitor hosted identity/readiness, preserving catalog, stock and launch controls.
+- [x] 11.3 Promote the accepted candidate through the existing browser/provider gates to PRD and monitor hosted identity/readiness, preserving catalog, stock and launch controls except the explicitly approved one-copy UAT test adjustment.
 
 ## 12. Firefox full-video focus handoff
 
