@@ -1,13 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { z as Zod } from 'zod';
 import type { PublicApiComponents } from '@blackbox/api-client/public';
 
 import { buttonVariants } from '@/components/ui/button';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
 import { getPublicBackendBaseUrl } from '@/platform/lib/backend/public-backend-config';
+import { createProjectRelativeUrl } from '@/platform/config/site';
 import { preorderBadges, shipEstimateText, type ShipEstimate } from '@/platform/lib/preorder-estimate';
 
 function createShowcaseSchemas(z: typeof Zod) {
+  const localPath = z
+    .string()
+    .startsWith('/')
+    .refine((value) => !value.startsWith('//') && !value.startsWith('/\\'));
   const imageUrl = z.string().refine((value) => {
     if (value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\')) return true;
     return URL.canParse(value) && new URL(value).protocol === 'https:';
@@ -16,11 +21,9 @@ function createShowcaseSchemas(z: typeof Zod) {
     slug: z.string().min(1),
     title: z.string().min(1),
     artist: z.string().min(1),
+    artistPath: localPath.nullable().optional(),
     option: z.string().min(1),
-    storePath: z
-      .string()
-      .startsWith('/')
-      .refine((value) => !value.startsWith('//') && !value.startsWith('/\\')),
+    storePath: localPath,
     releaseDate: z.iso.date().nullable(),
     coverUrl: imageUrl,
     firstClipId: z
@@ -33,6 +36,7 @@ function createShowcaseSchemas(z: typeof Zod) {
           id: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
           title: z.string().min(1),
           posterUrl: imageUrl.nullable(),
+          backgroundVideoUrl: imageUrl.nullable().optional(),
         }),
       )
       .optional(),
@@ -113,192 +117,338 @@ export default function StorePreorderShowcase({
   storeUrl: string;
 }) {
   const [items, setItems] = useState<ShowcaseItem[]>([]);
-  const [selected, setSelected] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const [selectedClip, setSelectedClip] = useState(0);
+  const [activeScene, setActiveScene] = useState<string | null>(null);
+  const [watching, setWatching] = useState<string | null>(null);
+  const [playerSession, setPlayerSession] = useState(false);
+  const [automaticMotion, setAutomaticMotion] = useState(false);
+  const [documentVisible, setDocumentVisible] = useState(true);
+  const section = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
     setItems([]);
-    setSelected(0);
-    setPlaying(false);
-    setSelectedClip(0);
+    setWatching(null);
     void loadStorePreorderShowcase(candidatesUrl, controller.signal).then((next) => {
       if (!controller.signal.aborted) setItems(next);
     });
     return () => controller.abort();
   }, [candidatesUrl]);
 
-  const item = items[selected];
-  if (!item) return null;
-  const clip = item.clips?.[selectedClip];
-  const clipId = clip?.id ?? item.firstClipId;
-  const clips = item.clips?.length ? item.clips : clipId ? [{ id: clipId, title: item.title, posterUrl: null }] : [];
-  const estimate = item.shipEstimate ? shipEstimateText(item.shipEstimate) : null;
-  const badges = preorderBadges({ releaseDate: item.releaseDate, shipEstimate: item.shipEstimate, today: new Date() });
+  useEffect(() => {
+    const root = document.documentElement;
+    const syncSession = () => setPlayerSession(root.hasAttribute('data-music-player-session'));
+    const observer = new MutationObserver(syncSession);
+    syncSession();
+    observer.observe(root, { attributes: true, attributeFilter: ['data-music-player-session'] });
 
+    const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const connection = (navigator as Navigator & { connection?: EventTarget & { saveData?: boolean } }).connection;
+    const syncPreferences = () => setAutomaticMotion(!motion.matches && !connection?.saveData);
+    const syncVisibility = () => setDocumentVisible(!document.hidden);
+    syncPreferences();
+    syncVisibility();
+    motion.addEventListener('change', syncPreferences);
+    connection?.addEventListener('change', syncPreferences);
+    document.addEventListener('visibilitychange', syncVisibility);
+    return () => {
+      observer.disconnect();
+      motion.removeEventListener('change', syncPreferences);
+      connection?.removeEventListener('change', syncPreferences);
+      document.removeEventListener('visibilitychange', syncVisibility);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (playerSession) setWatching(null);
+  }, [playerSession]);
+
+  useEffect(() => {
+    if (!section.current || typeof IntersectionObserver === 'undefined') return;
+    const visible = new Map<string, number>();
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const slug = (entry.target as HTMLElement).dataset.preorderAmbient;
+          if (slug) visible.set(slug, entry.isIntersecting ? entry.intersectionRatio : 0);
+        }
+        const next = [...visible].filter(([, ratio]) => ratio >= 0.15).sort((a, b) => b[1] - a[1])[0];
+        setActiveScene(next?.[0] ?? null);
+      },
+      { threshold: [0, 0.15, 0.5, 0.75, 1] },
+    );
+    section.current.querySelectorAll('[data-preorder-ambient]').forEach((scene) => observer.observe(scene));
+    return () => observer.disconnect();
+  }, [items]);
+
+  if (items.length === 0) return null;
+  const firstHasVideo = Boolean(items[0]?.firstClipId || items[0]?.clips?.length);
   return (
     <section
+      ref={section}
       id="preorders"
-      className={`home-preorders layout-container mt-16${clipId ? ' home-preorders--video' : ''}`}
+      className={'home-preorders' + (firstHasVideo ? ' home-preorders--starts-video' : '')}
       aria-labelledby="home-preorders-title"
     >
-      <div className="home-section-header home-section-header--split">
-        <div className="home-section-header__lead">
-          <h2 id="home-preorders-title" className="home-section-header__title">
-            Pre-orders
-          </h2>
-          <span className="home-section-header__rule" aria-hidden="true" />
-        </div>
-        <a href={`${storeUrl.split('#')[0]}#preorders`} data-astro-prefetch className="home-preorders__all">
+      <div className="home-preorders__header">
+        <h2 id="home-preorders-title" className="home-section-header__title">
+          Pre-orders
+        </h2>
+        <a href={storeUrl.split('#')[0] + '#preorders'} data-astro-prefetch className="home-preorders__all">
           All pre-orders
         </a>
       </div>
-      <div className="home-preorders__panel">
-        <div className="home-preorders__sidebar">
-          <ul className="home-preorders__menu" aria-label="Choose a pre-order">
-            {items.map((candidate, index) => (
-              <li key={candidate.slug}>
+      {items.map((item, index) => (
+        <PreorderChapter
+          key={item.slug}
+          item={item}
+          next={items[index + 1]}
+          active={watching === null && activeScene === item.slug}
+          playing={watching === item.slug}
+          onWatch={setWatching}
+          automaticMotion={automaticMotion}
+          documentVisible={documentVisible}
+          playerSession={playerSession}
+        />
+      ))}
+    </section>
+  );
+}
+
+function PreorderChapter({
+  item,
+  next,
+  active,
+  playing,
+  onWatch,
+  automaticMotion,
+  documentVisible,
+  playerSession,
+}: {
+  item: ShowcaseItem;
+  next?: ShowcaseItem | undefined;
+  active: boolean;
+  playing: boolean;
+  onWatch: (slug: string | null) => void;
+  automaticMotion: boolean;
+  documentVisible: boolean;
+  playerSession: boolean;
+}) {
+  const [selectedClip, setSelectedClip] = useState(0);
+  const [manualPause, setManualPause] = useState(false);
+  const [motionIntent, setMotionIntent] = useState(false);
+  const [ambientPlaying, setAmbientPlaying] = useState(false);
+  const [failedClips, setFailedClips] = useState<string[]>([]);
+  const [autoplayBlocked, setAutoplayBlocked] = useState(false);
+  const video = useRef<HTMLVideoElement>(null);
+  const fullVideo = useRef<HTMLDivElement>(null);
+  const watchButton = useRef<HTMLButtonElement>(null);
+  const clips = item.clips?.length
+    ? item.clips
+    : item.firstClipId
+      ? [{ id: item.firstClipId, title: item.title, posterUrl: null, backgroundVideoUrl: null }]
+      : [];
+  const clip = clips[selectedClip] ?? clips[0];
+  const videoLabel = clips.length === 1 ? 'Official video' : 'Official videos';
+  const poster = clip?.posterUrl && clip.posterUrl !== item.coverUrl ? clip.posterUrl : item.artistPhotoUrl;
+  const failed = clip ? failedClips.includes(clip.id) : false;
+  const background = clip?.backgroundVideoUrl;
+  const shouldPlay = Boolean(
+    background &&
+    active &&
+    documentVisible &&
+    !playerSession &&
+    !playing &&
+    !manualPause &&
+    !failed &&
+    !autoplayBlocked &&
+    (automaticMotion || motionIntent),
+  );
+  const estimate = item.shipEstimate ? shipEstimateText(item.shipEstimate) : null;
+  const shipping = estimate ? estimate[0]?.toUpperCase() + estimate.slice(1) : 'To be confirmed';
+  const badges = preorderBadges({ releaseDate: item.releaseDate, shipEstimate: item.shipEstimate, today: new Date() });
+  const chapterId = 'preorder-' + item.slug;
+  const watchId = chapterId + '-video';
+  const sessionNoteId = chapterId + '-player-note';
+
+  useEffect(() => {
+    const media = video.current;
+    if (!media || !shouldPlay || !clip) {
+      media?.pause();
+      return;
+    }
+    let cancelled = false;
+    void media.play().catch(() => {
+      if (!cancelled) {
+        setAmbientPlaying(false);
+        setAutoplayBlocked(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+      media.pause();
+    };
+  }, [shouldPlay, clip?.id, background]);
+
+  useEffect(() => {
+    if (playing && !playerSession) {
+      fullVideo.current?.scrollIntoView({ block: 'center' });
+      fullVideo.current?.focus({ preventScroll: true });
+    }
+  }, [playing, playerSession]);
+
+  const cover = (
+    <img
+      src={item.coverUrl}
+      alt={item.title + ' cover'}
+      className="home-preorders__sleeve"
+      width={340}
+      height={340}
+      loading="lazy"
+      decoding="async"
+    />
+  );
+  const artist = (
+    <p className="home-preorders__artist">
+      {item.artistPath ? (
+        <a href={item.artistPath} data-astro-prefetch className="home-preorders__artist-link">
+          {item.artist}
+        </a>
+      ) : (
+        item.artist
+      )}
+    </p>
+  );
+  const badgeList = (
+    <div className="home-preorders__badges">
+      {badges.map((badge) => (
+        <span key={badge} className={badge === 'Out now' ? 'store-item-card__release-status' : 'preorder-badge'}>
+          {badge}
+        </span>
+      ))}
+    </div>
+  );
+  const listen = item.listen && (
+    <button
+      type="button"
+      className="music-listen-trigger release-card-listen-trigger music-listen-trigger--standalone music-listen-trigger--tone-neutral home-preorders__listen"
+      data-music-listen-trigger-variant="standalone"
+      data-music-listen-trigger-tone="neutral"
+      data-music-listen-source-id={item.listen.releaseId}
+      data-music-listen-default-label="Listen"
+      data-music-streaming-service-embedded-player-trigger=""
+      data-music-streaming-service-embedded-player-release-id={item.listen.releaseId}
+      data-music-streaming-service-embedded-player-title={item.title + ' — ' + item.artist}
+      data-music-streaming-service-embedded-player-bandcamp-embed-url={item.listen.bandcampEmbedUrl ?? undefined}
+      data-music-streaming-service-embedded-player-tidal-embed-url={item.listen.tidalEmbedUrl ?? undefined}
+    >
+      <MusicEqualizer />
+      <span data-music-listen-label>Listen</span>
+    </button>
+  );
+  const purchase = (
+    <div className="home-preorders__purchase">
+      <div className="home-preorders__price-block">
+        <span className="home-preorders__option">{item.option}</span>
+        <span className="home-preorders__price">{item.displayPrice}</span>
+      </div>
+      <a
+        href={item.storePath}
+        data-astro-prefetch
+        className={buttonVariants({ size: 'lg', className: 'preorder-action' })}
+      >
+        <span>Pre-order</span>
+      </a>
+      {clip && !badges.some((badge) => estimate && badge.includes(estimate)) && (
+        <p className="home-preorders__shipping">
+          {/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'} {estimate ?? 'at a date to be confirmed'}
+        </p>
+      )}
+      <a href={createProjectRelativeUrl('/terms/')} data-astro-prefetch className="home-preorders__terms">
+        Pre-order &amp; delivery information
+      </a>
+    </div>
+  );
+
+  return (
+    <article
+      id={chapterId}
+      className={'home-preorders__chapter' + (clip ? ' home-preorders__chapter--video' : '')}
+      aria-labelledby={chapterId + '-title'}
+    >
+      {clip ? (
+        <>
+          <div className="home-preorders__film-scene">
+            <div className="home-preorders__media" data-preorder-ambient={item.slug}>
+              {poster && poster !== item.coverUrl && (
+                <img src={poster} alt="" className="home-preorders__video-poster" loading="lazy" decoding="async" />
+              )}
+              {background && (
+                <video
+                  key={clip.id}
+                  ref={video}
+                  className="home-preorders__film"
+                  src={shouldPlay ? background : undefined}
+                  muted
+                  playsInline
+                  loop
+                  preload="none"
+                  aria-hidden="true"
+                  data-playing={ambientPlaying || undefined}
+                  onPlaying={() => setAmbientPlaying(true)}
+                  onPause={() => setAmbientPlaying(false)}
+                  onError={() => {
+                    setAmbientPlaying(false);
+                    setFailedClips((previous) => (previous.includes(clip.id) ? previous : [...previous, clip.id]));
+                  }}
+                />
+              )}
+            </div>
+            <div className="home-preorders__film-shade" aria-hidden="true" />
+            <div className="home-preorders__film-copy">
+              {artist}
+              <h3 id={chapterId + '-title'} className="home-preorders__film-title">
+                {item.title}
+              </h3>
+              {badgeList}
+              {purchase}
+              <div className="home-preorders__hero-sleeve">{cover}</div>
+            </div>
+            <div className="home-preorders__film-tools">
+              {listen}
+              {background && (
                 <button
                   type="button"
-                  className="home-preorders__item"
-                  aria-pressed={index === selected}
+                  className={buttonVariants({ variant: 'outline', size: 'lg' })}
+                  disabled={failed || playerSession || playing}
                   onClick={() => {
-                    setSelected(index);
-                    setPlaying(false);
-                    setSelectedClip(0);
+                    if (ambientPlaying) setManualPause(true);
+                    else {
+                      setManualPause(false);
+                      setMotionIntent(true);
+                      setAutoplayBlocked(false);
+                    }
                   }}
                 >
-                  <span className="home-preorders__number" aria-hidden="true">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <img
-                    src={candidate.coverUrl}
-                    alt=""
-                    width={64}
-                    height={64}
-                    loading="lazy"
-                    className="home-preorders__art"
-                  />
-                  <span className="home-preorders__item-body">
-                    <span className="home-preorders__item-title">{candidate.title}</span>
-                    <span className="home-preorders__meta">
-                      {candidate.artist} · {candidate.option} · {candidate.displayPrice}
-                    </span>
-                    <span className="home-preorders__badges">
-                      {preorderBadges({
-                        releaseDate: candidate.releaseDate,
-                        shipEstimate: candidate.shipEstimate,
-                        today: new Date(),
-                      }).map((badge) => (
-                        <span
-                          key={badge}
-                          className={badge === 'Out now' ? 'store-item-card__release-status' : 'preorder-badge'}
-                        >
-                          {badge}
-                        </span>
-                      ))}
-                    </span>
-                    {index === selected && <span className="home-preorders__now">Now showing</span>}
-                  </span>
+                  {failed ? 'Background unavailable' : ambientPlaying ? 'Pause background' : 'Play background'}
                 </button>
-              </li>
-            ))}
-          </ul>
-          <p className="home-preorders__terms">
-            Charged at order. Your whole order is sent in one parcel when the record arrives.{' '}
-            <a href={`${storeUrl.split('#')[0]}#preorders`} data-astro-prefetch>
-              How pre-orders work
-            </a>
-          </p>
-        </div>
-        <div className="home-preorders__stage">
-          <div className={`home-preorders__poster${clipId ? '' : ' home-preorders__poster--no-video'}`}>
-            {playing && clipId ? (
-              <iframe
-                key={`${item.slug}:${clipId}`}
-                className="home-preorders__frame"
-                src={`https://www.youtube-nocookie.com/embed/${clipId}?autoplay=1&playsinline=1&rel=0&color=white&controls=1&fs=1`}
-                title={`${item.title} video`}
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-              />
-            ) : clipId ? (
-              <>
-                <img
-                  src={clip?.posterUrl ?? item.coverUrl}
-                  alt={clip?.posterUrl ? `${clip.title} video poster` : `${item.title} cover`}
-                  className="home-preorders__video-poster"
-                  loading="lazy"
-                />
-                <button
-                  type="button"
-                  className="home-preorders__play"
-                  aria-label={`Play ${item.title}`}
-                  onClick={() => setPlaying(true)}
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </button>
-              </>
-            ) : (
-              <>
-                {item.artistPhotoUrl && (
-                  <img src={item.artistPhotoUrl} alt="" className="home-preorders__poster-photo" loading="lazy" />
-                )}
-                <span className="home-preorders__poster-shade" aria-hidden="true" />
-                <div className="home-preorders__poster-front">
-                  <img
-                    src={item.coverUrl}
-                    alt={`${item.title} cover`}
-                    className="home-preorders__poster-cover"
-                    loading="lazy"
-                  />
-                  <div className="home-preorders__identity">
-                    <span className="home-preorders__badges">
-                      {badges.map((badge) => (
-                        <span
-                          key={badge}
-                          className={badge === 'Out now' ? 'store-item-card__release-status' : 'preorder-badge'}
-                        >
-                          {badge}
-                        </span>
-                      ))}
-                    </span>
-                    <h3>{item.title}</h3>
-                    <p className="home-preorders__artist">{item.artist}</p>
-                    {item.listen && (
-                      <button
-                        key={item.slug}
-                        type="button"
-                        className="music-listen-trigger release-card-listen-trigger music-listen-trigger--standalone music-listen-trigger--tone-neutral home-preorders__listen"
-                        data-music-listen-trigger-variant="standalone"
-                        data-music-listen-trigger-tone="neutral"
-                        data-music-listen-source-id={item.listen.releaseId}
-                        data-music-listen-default-label="Listen"
-                        data-music-streaming-service-embedded-player-trigger=""
-                        data-music-streaming-service-embedded-player-release-id={item.listen.releaseId}
-                        data-music-streaming-service-embedded-player-title={`${item.title} — ${item.artist}`}
-                        data-music-streaming-service-embedded-player-bandcamp-embed-url={
-                          item.listen.bandcampEmbedUrl ?? undefined
-                        }
-                        data-music-streaming-service-embedded-player-tidal-embed-url={
-                          item.listen.tidalEmbedUrl ?? undefined
-                        }
-                      >
-                        <MusicEqualizer />
-                        <span data-music-listen-label>Listen</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
-          {clipId ? (
-            <div className="home-preorders__clips" role="group" aria-label="Official videos">
-              <span className="home-preorders__clips-label">Official videos</span>
+              )}
+              <button
+                ref={watchButton}
+                type="button"
+                disabled={playerSession}
+                className={buttonVariants({ variant: 'outline', size: 'lg' })}
+                aria-controls={watchId}
+                aria-expanded={playing}
+                aria-describedby={playerSession ? sessionNoteId : undefined}
+                onClick={() => {
+                  if (!document.documentElement.hasAttribute('data-music-player-session')) onWatch(item.slug);
+                }}
+              >
+                Watch full video
+              </button>
+            </div>
+            <div className="home-preorders__clips" role="group" aria-label={videoLabel}>
+              <span className="home-preorders__clips-label">{videoLabel}</span>
               {clips.map((choice, index) =>
                 index === selectedClip ? (
                   <span key={choice.id} className="home-preorders__clip" aria-current="true">
@@ -311,7 +461,9 @@ export default function StorePreorderShowcase({
                     className="home-preorders__clip"
                     onClick={() => {
                       setSelectedClip(index);
-                      setPlaying(false);
+                      onWatch(null);
+                      setAmbientPlaying(false);
+                      setAutoplayBlocked(false);
                     }}
                   >
                     {choice.title}
@@ -319,73 +471,104 @@ export default function StorePreorderShowcase({
                 ),
               )}
             </div>
-          ) : (
-            <dl className="home-preorders__facts">
-              <div>
-                <dt>Format</dt>
-                <dd>{item.option}</dd>
-              </div>
-              <>
-                <div>
-                  <dt>Tracks</dt>
-                  <dd>
-                    {item.trackCount
-                      ? (['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'][
-                          item.trackCount - 1
-                        ] ?? item.trackCount)
-                      : 'To be confirmed'}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Recorded and mixed</dt>
-                  <dd>{item.recording ?? 'To be confirmed'}</dd>
-                </div>
-              </>
-              <div>
-                <dt>{/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'}</dt>
-                <dd>{estimate ? estimate[0]?.toUpperCase() + estimate.slice(1) : 'To be confirmed'}</dd>
-              </div>
-            </dl>
-          )}
-          <div className={`home-preorders__buy${clipId ? ' home-preorders__buy--video' : ''}`}>
-            {clipId ? (
-              <div className="home-preorders__video-identity">
-                <span className="home-preorders__badges">
-                  {badges.map((badge) => (
-                    <span
-                      key={badge}
-                      className={badge === 'Out now' ? 'store-item-card__release-status' : 'preorder-badge'}
-                    >
-                      {badge}
-                    </span>
-                  ))}
-                </span>
-                <h3>{item.title}</h3>
-                <p className="home-preorders__artist">{item.artist}</p>
-                {item.summary && <p className="home-preorders__summary">{item.summary}</p>}
-              </div>
-            ) : item.summary ? (
-              <p className="home-preorders__summary">{item.summary}</p>
-            ) : null}
-            <div className="home-preorders__purchase">
-              <p className="home-preorders__option">{item.option}</p>
-              <p className="home-preorders__price">{item.displayPrice}</p>
-              <a
-                href={item.storePath}
-                data-astro-prefetch
-                className={buttonVariants({ size: 'lg', className: 'preorder-action' })}
-              >
-                Pre-order
-              </a>
-              <p className="home-preorders__charge">
-                {clipId
-                  ? `${estimate ? `Ships ${estimate}` : 'Ships when it arrives'} · charged today`
-                  : `Charged today · ${estimate ? `ships ${estimate}` : 'ships when it arrives'}`}
+            {playerSession && (
+              <p id={sessionNoteId} className="home-preorders__media-note" role="status">
+                Use Stop in the music player before watching this video.
               </p>
+            )}
+            {failed && (
+              <p className="home-preorders__media-note" role="status">
+                The background is unavailable. You can still watch the full video.
+              </p>
+            )}
+          </div>
+          {playing && !playerSession && (
+            <div id={watchId} ref={fullVideo} className="home-preorders__watch-area" tabIndex={-1}>
+              <button
+                type="button"
+                className={buttonVariants({ variant: 'outline', size: 'lg' })}
+                onClick={() => {
+                  onWatch(null);
+                  watchButton.current?.focus();
+                }}
+              >
+                Close video
+              </button>
+              <iframe
+                key={clip.id}
+                className="home-preorders__frame"
+                src={
+                  'https://www.youtube-nocookie.com/embed/' +
+                  clip.id +
+                  '?autoplay=1&playsinline=1&rel=0&color=white&controls=1&fs=1'
+                }
+                title={clip.title + ' video'}
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div
+            className={
+              'home-preorders__still-scene' + (!item.artistPhotoUrl ? ' home-preorders__still-scene--cover-only' : '')
+            }
+          >
+            {item.artistPhotoUrl && (
+              <img
+                src={item.artistPhotoUrl}
+                alt={item.artist}
+                className="home-preorders__band-photo"
+                loading="lazy"
+                decoding="async"
+              />
+            )}
+            <div className="home-preorders__still-shade" aria-hidden="true" />
+            <div className="home-preorders__still-grid">
+              <figure className="home-preorders__still-art">{cover}</figure>
+              <div className="home-preorders__identity">
+                {artist}
+                <h3 id={chapterId + '-title'}>{item.title}</h3>
+                {badgeList}
+                {listen}
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
+          <dl className="home-preorders__facts home-preorders__facts--still">
+            <div>
+              <dt>Format</dt>
+              <dd>{item.option}</dd>
+            </div>
+            <div>
+              <dt>Tracks</dt>
+              <dd>{item.trackCount ?? 'To be confirmed'}</dd>
+            </div>
+            <div>
+              <dt>Recorded and mixed</dt>
+              <dd>{item.recording ?? 'To be confirmed'}</dd>
+            </div>
+            <div>
+              <dt>{/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'}</dt>
+              <dd>{shipping}</dd>
+            </div>
+          </dl>
+          <div className="home-preorders__buy">
+            {item.summary && <p className="home-preorders__summary">{item.summary}</p>}
+            {purchase}
+          </div>
+        </>
+      )}
+      {next && (
+        <a
+          className="home-preorders__next"
+          href={'#preorder-' + next.slug}
+          aria-label={'Go to ' + next.title + ' by ' + next.artist}
+        >
+          <span aria-hidden="true">↓</span>
+        </a>
+      )}
+    </article>
   );
 }

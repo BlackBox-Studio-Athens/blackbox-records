@@ -12,40 +12,21 @@ type ReadyListing = Extract<Listing, { presentationState: 'ready' }>;
 type Items = Awaited<ReturnType<typeof loadStorePreorderShowcase>>;
 const rendered = vi.hoisted(() => {
   const items: Items = [];
-  return { active: false, items, selected: 0, playing: false, selectedClip: 0, cursor: 0 };
+  return { active: false, items };
 });
+
+vi.mock('astro:config/client', () => ({ base: '/blackbox-records/', site: undefined }));
 
 vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof React>();
   return {
     ...actual,
     useState: (initial: unknown) => {
-      if (!rendered.active) return actual.useState(initial);
-      const cursor = rendered.cursor++;
-      if (cursor === 0) return [rendered.items, vi.fn()];
-      if (cursor === 1)
-        return [
-          rendered.selected,
-          (value: number) => {
-            rendered.selected = value;
-          },
-        ];
-      if (cursor === 2)
-        return [
-          rendered.playing,
-          (value: boolean) => {
-            rendered.playing = value;
-          },
-        ];
-      return [
-        rendered.selectedClip,
-        (value: number) => {
-          rendered.selectedClip = value;
-        },
-      ];
-    },
-    useEffect: (effect: React.EffectCallback, dependencies?: React.DependencyList) => {
-      if (!rendered.active) actual.useEffect(effect, dependencies);
+      if (rendered.active && Array.isArray(initial)) {
+        rendered.active = false;
+        return actual.useState(rendered.items);
+      }
+      return actual.useState(initial);
     },
   };
 });
@@ -54,6 +35,7 @@ const clip: StorePreorderShowcaseCandidate = {
   slug: 'clip-vinyl',
   title: 'Clip album',
   artist: 'Clip band',
+  artistPath: '/blackbox-records/artists/clip-band/',
   option: 'Vinyl',
   storePath: '/blackbox-records/store/clip-vinyl/',
   releaseDate: '2026-10-16',
@@ -107,19 +89,7 @@ function stubReads(records: Listing[], candidates: StorePreorderShowcaseCandidat
 
 function render() {
   rendered.active = true;
-  rendered.cursor = 0;
-  return StorePreorderShowcase(props);
-}
-
-type ElementProps = { children?: React.ReactNode; className?: string; onClick?: () => void };
-function buttons(node: React.ReactNode): React.ReactElement<ElementProps>[] {
-  const found: React.ReactElement<ElementProps>[] = [];
-  React.Children.forEach(node, (child) => {
-    if (!React.isValidElement<ElementProps>(child)) return;
-    if (child.type === 'button') found.push(child);
-    found.push(...buttons(child.props.children));
-  });
-  return found;
+  return <StorePreorderShowcase {...props} />;
 }
 
 beforeEach(() => {
@@ -130,10 +100,6 @@ beforeEach(() => {
 afterEach(() => {
   rendered.active = false;
   rendered.items = [];
-  rendered.selected = 0;
-  rendered.playing = false;
-  rendered.selectedClip = 0;
-  rendered.cursor = 0;
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
   vi.useRealTimers();
@@ -224,9 +190,16 @@ describe('StorePreorderShowcase reads', () => {
 
   it.each([
     { ...clip, storePath: 'javascript:alert(1)' },
+    { ...clip, artistPath: 'javascript:alert(1)' },
+    { ...clip, artistPath: '//external.example/artist/' },
+    { ...clip, artistPath: '/\\external.example/artist/' },
     { ...clip, coverUrl: '//external.example/cover.webp' },
     { ...clip, firstClipId: 'not-a-video-id' },
     { ...clip, clips: [{ id: '01234567890', title: 'Video', posterUrl: '//external.example/poster.webp' }] },
+    {
+      ...clip,
+      clips: [{ id: 'MOA5YZDOR6A', title: 'Video', posterUrl: null, backgroundVideoUrl: 'javascript:alert(1)' }],
+    },
   ])('rejects malformed candidate inputs', async (candidate) => {
     stubReads([ready(clip.slug)], [candidate]);
     expect(await loadStorePreorderShowcase(props.candidatesUrl)).toEqual([]);
@@ -247,89 +220,121 @@ describe('StorePreorderShowcase presentation', () => {
   });
 
   it.each([clip, photo, cover])(
-    'renders the $slug stage from stubbed reads without contacting a video provider',
+    'renders the $slug chapter with truthful terms and a real Store Item link',
     async (candidate) => {
       const fetchRequest = stubReads([ready(candidate.slug)], [candidate]);
       rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
       const html = renderToStaticMarkup(render());
-      expect(html.includes('home-preorders__poster-cover')).toBe(!candidate.firstClipId);
       expect(html.includes('home-preorders__video-poster')).toBe(Boolean(candidate.firstClipId));
-      expect(html.includes('home-preorders__poster-photo')).toBe(
+      expect(html.includes('home-preorders__band-photo')).toBe(
         !candidate.firstClipId && Boolean(candidate.artistPhotoUrl),
       );
-      expect(html.includes('home-preorders__play')).toBe(Boolean(candidate.firstClipId));
+      expect(html.includes('Watch full video')).toBe(Boolean(candidate.firstClipId));
       expect(html).not.toContain('<iframe');
       expect(html).not.toContain('youtube');
+      expect(html).toContain(candidate.title);
+      expect(html).toContain(candidate.artist);
       expect(html).toContain('Pre-order · out 16 Oct 2026');
-      expect(html).toContain(
-        candidate.firstClipId
-          ? 'Ships around October 2026 · charged today'
-          : 'Charged today · ships around October 2026',
-      );
+      expect(html.toLowerCase()).toContain('around october 2026');
+      expect(html).toContain('Pre-order &amp; delivery information');
+      expect(html).not.toContain('Charged in full');
+      expect(html).not.toContain('<dt>Payment</dt>');
+      expect(html).toContain(`href="${candidate.artistPath}"`);
+      expect(html).not.toContain('target="_blank"');
+      expect(html).not.toContain('Open artwork');
+      expect(html).not.toContain('home-preorders__cover-link');
+      expect(html).not.toContain('Album details');
+      expect(html).not.toContain('home-preorders__watch-area');
+      expect(html.split(`src="${candidate.coverUrl}"`)).toHaveLength(2);
+      expect(html).not.toContain('The record');
       expect(html).toContain('href="/blackbox-records/store/#preorders"');
       expect(html).toContain(`href="${candidate.storePath}"`);
       expect(html).toContain('€28.00');
-      expect(html).toContain('aria-pressed="true"');
+      expect(html).not.toContain('Next pre-order:');
       expect(fetchRequest).toHaveBeenCalledTimes(2);
     },
   );
 
-  it('presents a single current video as text while keeping Play available', async () => {
+  it('presents a single current video as text while keeping explicit Watch available', async () => {
     stubReads([ready(clip.slug)], [{ ...clip, clips: clip.clips?.slice(0, 1) }]);
     rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const tree = render();
-    expect(renderToStaticMarkup(tree)).toContain(
-      '<span class="home-preorders__clip" aria-current="true">First official video</span>',
-    );
-    expect(buttons(tree).filter((button) => button.props.className === 'home-preorders__clip')).toHaveLength(0);
-    expect(buttons(tree).some((button) => button.props.className === 'home-preorders__play')).toBe(true);
+    const html = renderToStaticMarkup(render());
+    expect(html).toContain('<span class="home-preorders__clip" aria-current="true">First official video</span>');
+    expect(html).not.toMatch(/<button[^>]*home-preorders__clip/);
+    expect(html).toContain('Watch full video');
   });
 
-  it('creates the video only on Play, then tears it down when selection changes', async () => {
+  it('never repeats the sleeve as a missing or artwork-based video poster', async () => {
+    const candidate = {
+      ...clip,
+      artistPhotoUrl: null,
+      clips: [{ id: 'MOA5YZDOR6A', title: 'Video', posterUrl: clip.coverUrl }],
+    };
+    stubReads([ready(clip.slug, { preorder: { shipEstimate: null } })], [candidate]);
+    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
+    const html = renderToStaticMarkup(render());
+    expect(html.split(`src="${clip.coverUrl}"`)).toHaveLength(2);
+    expect(html).not.toContain('home-preorders__video-poster');
+    expect(html).toContain('Vinyl ships at a date to be confirmed');
+    expect(html).toContain('Watch full video');
+  });
+
+  it('shows a released album shipping estimate once rather than repeating its badge', async () => {
+    stubReads([ready(clip.slug)], [{ ...clip, releaseDate: '2020-01-01' }]);
+    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
+    const html = renderToStaticMarkup(render());
+    expect(html).toContain('Out now');
+    expect(html.match(/around October 2026/g)).toHaveLength(1);
+  });
+
+  it('leaves an artist without an accepted profile path as plain text', async () => {
+    stubReads([ready(photo.slug)], [{ ...photo, artistPath: null }]);
+    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
+    const html = renderToStaticMarkup(render());
+    expect(html).toContain('<p class="home-preorders__artist">Clip band</p>');
+    expect(html).not.toContain('home-preorders__artist-link');
+  });
+
+  it('renders successive chapters and next links instead of a release selector', async () => {
     const fetchRequest = stubReads([ready(clip.slug), ready(photo.slug), ready(cover.slug)], [clip, photo, cover]);
     rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
-    const play = buttons(render()).find((button) => button.props.className === 'home-preorders__play');
-    expect(play).toBeDefined();
-    expect(renderToStaticMarkup(render())).toContain('src="/video-poster.webp"');
-    play?.props.onClick?.();
-    const playingHtml = renderToStaticMarkup(render());
-    expect(playingHtml).toContain(
-      'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&amp;playsinline=1&amp;rel=0&amp;color=white&amp;controls=1&amp;fs=1',
-    );
-    expect(playingHtml).toContain('title="Clip album video"');
-    expect(playingHtml).toMatch(/allowfullscreen=""/i);
-    const secondClip = buttons(render()).find(
-      (button) =>
-        button.props.className === 'home-preorders__clip' && button.props.children === 'Second official video',
-    );
-    expect(secondClip).toBeDefined();
-    secondClip?.props.onClick?.();
-    expect(rendered.selectedClip).toBe(1);
-    expect(renderToStaticMarkup(render())).not.toContain('<iframe');
-    expect(renderToStaticMarkup(render())).toContain('src="/clip.webp"');
-    expect(renderToStaticMarkup(render())).toContain(
-      '<span class="home-preorders__clip" aria-current="true">Second official video</span>',
-    );
-    expect(buttons(render()).find((button) => button.props.className === 'home-preorders__clip')?.props.children).toBe(
-      'First official video',
-    );
-    buttons(render())
-      .find((button) => button.props.className === 'home-preorders__play')
-      ?.props.onClick?.();
-    expect(renderToStaticMarkup(render())).toContain(
-      'https://www.youtube-nocookie.com/embed/01234567890?autoplay=1&amp;playsinline=1&amp;rel=0&amp;color=white&amp;controls=1&amp;fs=1',
-    );
-    const photoButton = buttons(render()).filter((button) => button.props.className === 'home-preorders__item')[1];
-    expect(photoButton).toBeDefined();
-    photoButton?.props.onClick?.();
     const html = renderToStaticMarkup(render());
-    expect(rendered.selected).toBe(1);
-    expect(rendered.selectedClip).toBe(0);
+    expect(html.match(/<article /g)).toHaveLength(3);
+    expect(html.indexOf(clip.title)).toBeLessThan(html.indexOf(photo.title));
+    expect(html.indexOf(photo.title)).toBeLessThan(html.indexOf(cover.title));
+    expect(html).toContain(`href="#preorder-${photo.slug}"`);
+    expect(html).toContain(`href="#preorder-${cover.slug}"`);
+    expect(html.match(/class="home-preorders__next"/g)).toHaveLength(2);
+    expect(html).toContain(`aria-label="Go to ${photo.title} by ${photo.artist}"`);
+    expect(html).not.toContain('Next pre-order:');
+    expect(html).not.toContain('Choose a pre-order');
     expect(html).not.toContain('<iframe');
-    expect(html).not.toContain('home-preorders__play');
     expect(html).toContain('src="/photo-band.webp"');
     expect(html).toContain(`href="${photo.storePath}"`);
     expect(fetchRequest).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps prepared native footage muted and source-free before visibility', async () => {
+    const native = {
+      ...clip,
+      firstClipId: 'MOA5YZDOR6A',
+      clips: [
+        {
+          id: 'MOA5YZDOR6A',
+          title: 'Official video',
+          posterUrl: '/video-poster.webp',
+          backgroundVideoUrl: '/silent-loop.mp4',
+        },
+      ],
+    };
+    stubReads([ready(native.slug)], [native]);
+    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
+    const html = renderToStaticMarkup(render());
+    expect(html).toMatch(/<video[^>]*muted=""[^>]*playsInline=""[^>]*preload="none"/i);
+    expect(html).not.toContain('src="/silent-loop.mp4"');
+    expect(html).toContain('src="/video-poster.webp"');
+    expect(html).toContain('Play background');
+    expect(html).not.toContain('<iframe');
   });
 
   it('shows withheld terms and an Out now badge with a past release', async () => {
@@ -338,7 +343,7 @@ describe('StorePreorderShowcase presentation', () => {
     const html = renderToStaticMarkup(render());
     expect(html).toContain('Out now');
     expect(html).toContain('To be confirmed');
-    expect(html).toContain('Charged today · ships when it arrives');
+    expect(html).toContain('Pre-order &amp; delivery information');
     expect(html).not.toContain('Release date');
   });
 
@@ -361,10 +366,9 @@ describe('StorePreorderShowcase presentation', () => {
     );
     rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
     const html = renderToStaticMarkup(render());
-    expect(html).toContain('<h3>Photo album</h3>');
-    expect(html).toContain('Now showing');
+    expect(html).toMatch(/<h3[^>]*>Photo album<\/h3>/);
     expect(html).toContain('A six-track debut.');
-    expect(html).toContain('<dt>Tracks</dt><dd>Six</dd>');
+    expect(html).toContain('<dt>Tracks</dt><dd>6</dd>');
     expect(html).toContain('BlackBox Studio');
     expect(html).toContain('data-music-streaming-service-embedded-player-release-id="release-a"');
     expect(html).not.toContain('<iframe');
@@ -378,7 +382,7 @@ describe('StorePreorderShowcase presentation', () => {
     rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
     const html = renderToStaticMarkup(render());
     expect(html).toContain('On 20 October 2026');
-    expect(html).toContain('Charged today · ships on 20 October 2026');
+    expect(html).toContain('Pre-order &amp; delivery information');
     expect(html).toContain('To be confirmed');
     expect(html).not.toContain('Out now');
   });

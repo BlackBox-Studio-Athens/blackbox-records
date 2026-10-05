@@ -9,6 +9,7 @@ export function buildPreorderShowcaseCandidates(
     | 'slug'
     | 'title'
     | 'subtitle'
+    | 'artistPath'
     | 'storePath'
     | 'releaseDate'
     | 'metadata'
@@ -18,7 +19,12 @@ export function buildPreorderShowcaseCandidates(
   releases: readonly { id: string; data: Pick<ReleaseCatalogEntry['data'], 'clips' | 'tracklist' | 'credits'> }[],
   images: ReadonlyMap<
     string,
-    { coverUrl: string; artistPhotoUrl: string | null; clipPosterUrls?: ReadonlyMap<string, string> }
+    {
+      coverUrl: string;
+      artistPhotoUrl: string | null;
+      clipPosterUrls?: ReadonlyMap<string, string>;
+      clipBackgroundVideoUrls?: ReadonlyMap<string, string>;
+    }
   >,
 ) {
   const releasesById = new Map(releases.map((release) => [release.id, release]));
@@ -40,6 +46,7 @@ export function buildPreorderShowcaseCandidates(
         slug: item.slug,
         title: item.title,
         artist: item.subtitle,
+        artistPath: item.artistPath ?? null,
         option,
         storePath: item.storePath,
         releaseDate: item.releaseDate?.toISOString().slice(0, 10) ?? null,
@@ -49,6 +56,7 @@ export function buildPreorderShowcaseCandidates(
           id: clip.youtube_video_id,
           title: clip.title,
           posterUrl: media.clipPosterUrls?.get(clip.youtube_video_id) ?? null,
+          backgroundVideoUrl: media.clipBackgroundVideoUrls?.get(clip.youtube_video_id) ?? null,
         })),
         artistPhotoUrl: media.artistPhotoUrl,
         summary: item.summary?.split(/(?<=[.!?])\s/)[0] ?? null,

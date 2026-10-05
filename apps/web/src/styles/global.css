@@ -898,7 +898,6 @@ body {
   }
 
   .home-news-section::before,
-  .home-preorders::before,
   #newsletter-signup-area::before {
     position: absolute;
     inset-block: 0;
@@ -908,8 +907,7 @@ body {
     pointer-events: none;
   }
 
-  .home-news-section::before,
-  .home-preorders::before {
+  .home-news-section::before {
     background: rgb(13 13 13 / 76%);
   }
 
@@ -5516,362 +5514,339 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   }
 }
 
-/* The pre-order menu and stage share one frame, like the approved record poster. */
 .home-preorders {
+  --home-preorders-gutter: clamp(1.5rem, 6vw, 5.5rem);
   position: relative;
   z-index: 1;
-  max-width: 80rem;
   scroll-margin-top: calc(var(--header-height) + 2rem);
-}
-
-.home-preorders::before {
-  position: absolute;
-  inset-block: 0;
-  inset-inline: calc(50% - 50vw);
-  z-index: -1;
+  margin-top: 4rem;
   background: var(--background);
-  content: '';
-  pointer-events: none;
 }
 
-.home-preorders .home-section-header {
-  margin-bottom: 1.75rem;
+.home-preorders__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--control-edge);
+  padding: 1.75rem var(--home-preorders-gutter);
 }
 
-.home-preorders .home-section-header__rule {
-  background: linear-gradient(90deg, rgb(76 169 153 / 80%), rgb(76 169 153 / 12%));
+.home-preorders--starts-video > .home-preorders__header {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 2;
+  border-bottom: 0;
 }
 
-.home-preorders--video .home-section-header__rule {
-  visibility: hidden;
-}
-
-.home-preorders__all {
-  position: relative;
+.home-preorders__all,
+.home-preorders__next {
   display: inline-flex;
   align-items: center;
-  min-height: 2.5rem;
-  padding-inline: 1rem;
+  min-height: 2.75rem;
   color: var(--foreground);
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.8125rem;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
-.home-preorders__all::before {
-  position: absolute;
-  inset: -2px 0;
-  content: '';
-}
-
-.home-preorders__panel {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  border: 1px solid var(--control-edge);
-  border-top: 2px solid var(--preorder-accent);
+.home-preorders__chapter {
+  position: relative;
+  min-width: 0;
+  scroll-margin-top: 5rem;
+  border-top: 1px solid var(--control-edge);
   background: var(--secondary);
 }
 
-.home-preorders__sidebar {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.home-preorders__film-scene {
+  position: relative;
+  min-height: 57.5rem;
+  background: var(--background);
 }
 
-.home-preorders__menu {
-  display: grid;
-  min-width: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.home-preorders__item {
-  display: grid;
-  grid-template-columns: 1.75rem 4rem minmax(0, 1fr);
-  align-items: start;
-  gap: 0.875rem;
+.home-preorders__media,
+.home-preorders__video-poster,
+.home-preorders__film,
+.home-preorders__film-shade {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  min-height: 2.75rem;
-  border: 0;
-  border-bottom: 1px solid var(--control-edge);
-  background: transparent;
-  padding: 1.125rem 1.25rem;
+  height: 100%;
+}
+
+.home-preorders__video-poster,
+.home-preorders__film {
+  object-fit: cover;
+  object-position: center;
+}
+
+.home-preorders__film:not([data-playing]) {
+  visibility: hidden;
+}
+
+.home-preorders__film-shade {
+  pointer-events: none;
+  background: linear-gradient(
+    0deg,
+    rgb(13 13 13 / 88%),
+    rgb(13 13 13 / 36%) 38%,
+    rgb(13 13 13 / 60%) 76%,
+    rgb(13 13 13 / 72%)
+  );
+}
+
+.home-preorders__film-copy {
+  position: relative;
+  width: min(48.75rem, 88%);
+  margin: 0 auto;
+  padding: 8.125rem 0 6rem;
+  text-align: center;
+}
+
+.home-preorders__artist {
+  --home-preorders-artist-spacing: 0.3em;
+  margin: 0 0 1.25rem;
   color: var(--foreground);
-  text-align: left;
-  cursor: pointer;
-}
-
-.home-preorders__number {
-  color: var(--muted-foreground);
-  font: 400 1.1rem/1.2 var(--font-display-ui);
-  letter-spacing: 0.06em;
-}
-
-.home-preorders__art {
-  display: block;
-  width: 4rem;
-  height: 4rem;
-  border: 1px solid var(--control-edge);
-  object-fit: contain;
-}
-
-.home-preorders__item-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-  min-width: 0;
-}
-
-.home-preorders__item-title {
-  font: 900 1.3rem/1.04 var(--font-display-brand);
-  letter-spacing: 0.03em;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: var(--home-preorders-artist-spacing);
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
 
-.home-preorders__meta {
-  color: var(--muted-foreground);
-  font-size: 0.8125rem;
-  line-height: 1.4;
+.home-preorders__film-copy .home-preorders__artist {
+  --home-preorders-artist-spacing: 0.56em;
+}
+
+.home-preorders__film-title {
+  margin: 0 0 1.25rem;
+  font: 400 clamp(5.625rem, 11vw, 9rem) / 0.95 var(--font-display-brand);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
 }
 
 .home-preorders__badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.home-preorders__film-copy .home-preorders__badges {
+  justify-content: center;
 }
 
 .home-preorders :is(.preorder-badge, .store-item-card__release-status) {
   min-height: 0;
-  padding: 0.2rem 0.35rem;
+  background: rgb(13 13 13 / 90%);
+  padding: 0.25rem 0.45rem;
   color: var(--foreground);
-  font: 400 0.625rem/1.2 var(--font-sans);
+  font: 400 0.75rem/1.45 var(--font-sans);
   letter-spacing: 0;
   text-transform: none;
 }
 
 .home-preorders .store-item-card__release-status {
-  border-color: rgb(179 179 179 / 55%);
+  border-color: rgb(179 179 179 / 65%);
 }
 
-.home-preorders__now {
-  color: var(--preorder-accent-active);
-  font-size: 0.6rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
-  line-height: 1.3;
-  text-transform: uppercase;
+.home-preorders__purchase {
+  grid-column: -2 / -1;
+  min-width: 0;
 }
 
-.home-preorders__terms {
-  margin-top: auto;
-  border-top: 1px solid var(--control-edge);
-  padding: 1rem 1.25rem;
-  color: var(--muted-foreground);
-  font-size: 0.75rem;
-  line-height: 1.7;
+.home-preorders__price-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
-.home-preorders__terms a {
-  color: var(--foreground);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.home-preorders__option {
+  font-size: 0.8125rem;
+  line-height: 1.5;
 }
 
-.home-preorders__item:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: -2px;
+.home-preorders__price {
+  font: 400 2.375rem/1.2 var(--font-display-ui);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-.home-preorders__item:is([aria-current='true'], [aria-pressed='true'], [aria-selected='true']) {
-  background: var(--background);
+.home-preorders .preorder-action {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  min-height: 3.375rem;
+  background-color: var(--control-ink);
+  padding: 0.75rem;
+  font-size: 1.25rem;
+  outline-offset: 0;
 }
 
-.home-preorders__item[aria-pressed='true'] .home-preorders__number {
-  color: var(--preorder-accent-active);
+.home-preorders .preorder-action::before {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--preorder-accent);
+  content: '';
+  pointer-events: none;
+  transform: translateY(100%);
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-preorders .preorder-action > span {
+  position: relative;
+  z-index: 1;
+}
+
+.home-preorders .preorder-action:is(:focus-visible, :active) {
+  background-color: var(--control-ink);
+}
+
+.home-preorders .preorder-action:is(:focus-visible, :active)::before {
+  transform: translateY(0);
+}
+
+.home-preorders .preorder-action:active::before {
+  background: color-mix(in srgb, var(--preorder-accent) 80%, var(--background));
 }
 
 @media (hover: hover) {
-  .home-preorders__item:hover {
-    background: var(--accent);
-    color: var(--foreground);
+  .home-preorders .preorder-action:hover {
+    background-color: var(--control-ink);
+  }
+
+  .home-preorders .preorder-action:hover::before {
+    transform: translateY(0);
   }
 }
 
-.home-preorders__stage {
-  min-width: 0;
-  border-top: 1px solid var(--control-edge);
+.home-preorders__terms {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 2.75rem;
+  max-width: 100%;
+  margin-top: 1rem;
+  color: var(--muted-foreground);
+  font: 400 0.8125rem/1.5 var(--font-sans);
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
-.home-preorders__poster {
+.home-preorders__film-copy .home-preorders__price-block {
+  justify-content: center;
+  gap: 1.125rem;
+  margin-bottom: 0.875rem;
+}
+
+.home-preorders__film-copy .preorder-action {
+  width: 18.75rem;
+  max-width: 100%;
+}
+
+.home-preorders__film-copy .home-preorders__terms {
+  margin-inline: auto;
+}
+
+.home-preorders__shipping {
+  margin: 1rem 0 0;
+  color: var(--muted-foreground);
+  font: 400 0.8125rem/1.5 var(--font-sans);
+}
+
+.home-preorders__hero-sleeve {
+  width: 13.75rem;
+  margin: 1.375rem auto 0;
+}
+
+.home-preorders__artist-link {
   position: relative;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  background: var(--background);
-  border-bottom: 1px solid var(--control-edge);
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-inline-end: calc(-1 * var(--home-preorders-artist-spacing));
+  color: inherit;
+  text-decoration: none;
 }
 
-.home-preorders__video-poster {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.home-preorders__poster-photo {
+.home-preorders__artist-link::after {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: grayscale(1);
-  opacity: 0.55;
+  right: var(--home-preorders-artist-spacing);
+  bottom: calc((2.75rem - 1.5em) / 2);
+  left: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.32;
+  content: '';
+  pointer-events: none;
 }
 
-.home-preorders__poster--no-video .home-preorders__poster-photo {
-  filter: grayscale(1) brightness(0.85);
+.home-preorders__artist-link:is(:hover, :focus-visible)::after {
   opacity: 1;
 }
 
-.home-preorders__poster-shade {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to top,
-    rgb(13 13 13 / 94%) 0%,
-    rgb(13 13 13 / 78%) 38%,
-    rgb(13 13 13 / 20%) 78%,
-    rgb(13 13 13 / 5%) 100%
-  );
-}
-
-.home-preorders__poster-front {
-  position: absolute;
-  inset: auto 2rem 2rem;
-  display: grid;
-  grid-template-columns: 16.25rem minmax(0, 1fr);
-  align-items: end;
-  gap: 1.75rem;
-}
-
-.home-preorders__identity {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  min-width: 0;
-}
-
-.home-preorders__identity h3 {
-  margin: 0;
-  font: 900 3.6rem/0.98 var(--font-display-brand);
-  letter-spacing: 0.035em;
-  text-transform: uppercase;
-  overflow-wrap: anywhere;
-}
-
-.home-preorders__identity :is(.preorder-badge, .store-item-card__release-status) {
-  background: rgb(13 13 13 / 72%);
-  padding: 0.3rem 0.55rem;
-  font-size: 0.6875rem;
-  letter-spacing: 0.04em;
-}
-
-.home-preorders__artist {
-  margin: 0;
+.home-preorders__terms:is(:hover, :focus-visible) {
   color: var(--foreground);
-  font-size: 0.8rem;
-  font-weight: 500;
-  line-height: 1.3;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
 }
 
-.home-preorders__listen.music-listen-trigger--standalone {
-  align-self: start;
-  gap: 0.8rem;
-  margin-top: 0.25rem;
-  width: 9.5rem;
-  height: 3rem;
-  border: 1px solid var(--music-listen-border-color);
-  font: 600 0.76rem/1 var(--font-sans);
-  letter-spacing: 0.16em;
-}
-
-.home-preorders__listen [data-music-listen-label] {
-  margin-right: -0.16em;
-  padding-top: 0;
-}
-
-/* The complete record cover belongs to the no-video composition. */
-.home-preorders__poster-cover {
-  position: absolute;
-  top: 7%;
-  left: 50%;
-  z-index: 1;
-  width: auto;
-  height: 62%;
+.home-preorders__sleeve {
+  display: block;
+  width: 100%;
+  height: auto;
   aspect-ratio: 1;
-  translate: -50% 0;
   border: 1px solid var(--control-edge);
   background: var(--background);
   object-fit: contain;
 }
 
-.home-preorders__poster--no-video .home-preorders__poster-cover {
-  position: static;
-  width: 16.25rem;
-  height: 16.25rem;
-  translate: none;
-  border-color: rgb(245 245 245 / 22%);
-}
-
-.home-preorders__play {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  translate: -50% -50%;
-  width: 4.75rem;
-  height: 4.75rem;
-  border: 1px solid rgb(245 245 245 / 70%);
-  border-radius: 50%;
-  background: rgb(13 13 13 / 72%);
-  padding: 0;
-  color: var(--foreground);
-  cursor: pointer;
-  transition:
-    background-color 0.2s,
-    color 0.2s;
-}
-
-.home-preorders__play:focus-visible {
+.home-preorders__artist-link:focus-visible,
+.home-preorders__terms:focus-visible,
+.home-preorders__all:focus-visible,
+.home-preorders__next:focus-visible,
+.home-preorders__clip:focus-visible {
   outline: 2px solid var(--ring);
-  outline-offset: 2px;
+  outline-offset: 4px;
 }
 
-@media (hover: hover) {
-  .home-preorders__play:hover {
-    background: var(--foreground);
-    color: var(--primary-foreground);
-  }
-}
-
-.home-preorders__clips {
+.home-preorders__film-tools {
+  position: absolute;
+  right: var(--home-preorders-gutter);
+  bottom: 1.75rem;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 0 1.25rem;
-  border-bottom: 1px solid var(--control-edge);
-  padding-inline: 1.5rem;
+  gap: 0.5rem;
+}
+
+.home-preorders__film-tools .site-button {
+  background: rgb(13 13 13 / 93%);
+}
+
+.home-preorders__clips {
+  position: absolute;
+  bottom: 1.75rem;
+  left: var(--home-preorders-gutter);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+  max-width: 45%;
 }
 
 .home-preorders__clips-label {
+  margin: 0;
   color: var(--muted-foreground);
-  font: 500 0.72rem/1.3 var(--font-sans);
-  letter-spacing: 0.22em;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
@@ -5884,48 +5859,52 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   background: transparent;
   padding: 0;
   color: var(--muted-foreground);
-  font: 500 0.8125rem/1.4 var(--font-sans);
+  font: 500 0.8125rem/1.5 var(--font-sans);
   text-align: left;
   overflow-wrap: anywhere;
 }
 
 button.home-preorders__clip {
   cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 
 .home-preorders__clip[aria-current='true'] {
   color: var(--foreground);
 }
 
-.home-preorders__clip:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
+.home-preorders__media-note {
+  position: relative;
+  margin: 0;
+  padding: 0.75rem var(--home-preorders-gutter);
+  background: var(--background);
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  line-height: 1.6;
 }
 
-.home-preorders__frame {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: var(--background);
+.home-preorders__summary {
+  max-width: 65ch;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.7;
 }
 
 .home-preorders__facts {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin: 0;
-  border-bottom: 1px solid var(--control-edge);
-  color: var(--muted-foreground);
-  font-size: 0.875rem;
-  line-height: 1.3;
+  margin: 1.75rem 0;
+  border-block: 1px solid var(--control-edge);
 }
 
 .home-preorders__facts > div {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.875rem 1.25rem;
+  min-width: 0;
+  padding: 1.375rem 1.5rem;
+}
+
+.home-preorders__facts > div:first-child {
+  padding-left: 0;
 }
 
 .home-preorders__facts > div + div {
@@ -5933,212 +5912,339 @@ button.home-preorders__clip {
 }
 
 .home-preorders__facts dt {
-  font-size: 0.62rem;
-  font-weight: 500;
-  letter-spacing: 0.22em;
+  color: var(--muted-foreground);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
-.home-preorders__facts > div:last-child dt {
+.home-preorders__facts dd {
+  margin: 0.5rem 0 0;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.home-preorders__facts--still > div:last-child dt {
   color: var(--preorder-accent-active);
 }
 
-.home-preorders__facts dd {
-  margin: 0;
-  color: var(--foreground);
-  line-height: normal;
+.home-preorders__listen.music-listen-trigger--standalone {
+  align-self: start;
+  gap: 0.75rem;
+  width: 10.75rem;
+  height: 3.375rem;
+  font: 400 1.1875rem/1 var(--font-display-ui);
+  letter-spacing: 0.12em;
 }
 
-.home-preorders__buy {
+.home-preorders__listen [data-music-listen-label] {
+  margin-right: -0.12em;
+}
+
+.home-preorders__watch-area {
+  width: min(65rem, calc(100% - 2 * var(--home-preorders-gutter)));
+  margin: 0 auto;
+  border-top: 1px solid var(--control-edge);
+  padding: 1.5rem 0 2rem;
+  scroll-margin-block: 5rem;
+}
+
+.home-preorders__watch-area > button {
+  margin-bottom: 0.75rem;
+}
+
+.home-preorders__frame {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 12.5rem;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  background: var(--background);
+}
+
+.home-preorders__still-scene {
+  position: relative;
+}
+
+.home-preorders__band-photo {
+  position: absolute;
+  inset: 0 0 auto;
+  display: block;
+  width: 100%;
+  height: 32.5rem;
+  object-fit: cover;
+  object-position: 50% 35%;
+  filter: grayscale(1);
+}
+
+.home-preorders__still-shade {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 32.5rem;
+  pointer-events: none;
+  background: linear-gradient(
+    0deg,
+    var(--secondary),
+    rgb(20 20 20 / 96%) 10%,
+    rgb(20 20 20 / 30%) 38%,
+    rgb(20 20 20 / 6%) 70%
+  );
+}
+
+.home-preorders__still-grid {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 2rem;
-  padding: 1.375rem 1.5rem 1.5rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.home-preorders__summary {
-  max-width: 24rem;
-  margin: 0;
-  font-size: 0.875rem;
-  line-height: 1.6;
-}
-
-.home-preorders__buy--video {
+  grid-template-columns: 21.25rem minmax(0, 1fr);
   align-items: end;
+  gap: clamp(2.25rem, 5vw, 5rem);
+  max-width: 81.25rem;
+  margin-inline: auto;
+  padding: 16.875rem var(--home-preorders-gutter) 2.625rem;
 }
 
-.home-preorders__video-identity {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
+.home-preorders__still-art {
+  min-width: 0;
+  margin: 0;
+}
+
+.home-preorders__identity {
   min-width: 0;
 }
 
-.home-preorders__video-identity h3 {
-  margin: 0;
-  font: 900 3.4rem/0.98 var(--font-display-brand);
-  letter-spacing: 0.035em;
+.home-preorders__identity .home-preorders__artist {
+  margin-bottom: 0.75rem;
+}
+
+.home-preorders__identity h3 {
+  margin: 0 0 1.25rem;
+  font: 400 clamp(2.625rem, 5.3vw, 4.875rem) / 1.04 var(--font-display-brand);
   text-transform: uppercase;
   overflow-wrap: anywhere;
 }
 
-.home-preorders__video-identity :is(.preorder-badge, .store-item-card__release-status) {
-  padding: 0.3rem 0.55rem;
-  font-size: 0.6875rem;
-  letter-spacing: 0.04em;
+.home-preorders__facts--still {
+  margin: 0;
+  padding-inline: var(--home-preorders-gutter);
 }
 
-.home-preorders__video-identity .home-preorders__summary {
-  max-width: 26rem;
-  color: var(--muted-foreground);
+.home-preorders__buy {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 17.5rem;
+  align-items: center;
+  gap: 4rem;
+  max-width: 81.25rem;
+  margin-inline: auto;
+  padding: 2.25rem var(--home-preorders-gutter) 2.5rem;
 }
 
-.home-preorders__purchase {
+.home-preorders__buy .home-preorders__summary {
+  max-width: 54ch;
+}
+
+.home-preorders__still-scene--cover-only .home-preorders__still-grid {
+  padding-top: 3rem;
+}
+
+.home-preorders__still-scene--cover-only .home-preorders__still-shade {
+  display: none;
+}
+
+.home-preorders__next {
+  position: relative;
+  z-index: 1;
   display: flex;
-  grid-column: -2 / -1;
-  flex-direction: column;
-  align-items: end;
-  gap: 0.625rem;
+  justify-content: center;
+  width: 2.75rem;
+  margin: 0.75rem var(--home-preorders-gutter) 0.75rem auto;
+  border: 1px solid var(--control-edge);
+  background: transparent;
+  padding: 0;
+  text-decoration: none;
 }
 
-.home-preorders__price {
-  margin: 0;
-  font: 400 2.2rem/1.1 var(--font-display-ui);
-  letter-spacing: 0.05em;
-}
-
-.home-preorders__option,
-.home-preorders__charge {
-  margin: 0;
-  font-size: 0.75rem;
-  line-height: 1.7;
-}
-
-.home-preorders__charge {
-  color: var(--muted-foreground);
-}
-
-.home-preorders__purchase .preorder-action {
-  width: 13rem;
-  height: 3rem;
-  background: var(--foreground);
-}
-
-.home-preorders__purchase .preorder-action:is(:hover, :focus-visible) {
-  background: var(--preorder-accent);
-}
-
-@media (min-width: 64rem) {
-  .home-preorders {
-    padding-inline: 4rem;
-  }
-
-  .home-preorders__panel {
-    grid-template-columns: 24.5rem minmax(0, 1fr);
-  }
-
-  .home-preorders__sidebar {
-    border-right: 1px solid var(--control-edge);
-  }
-
-  .home-preorders__stage {
-    border-top: 0;
-  }
-}
-
-@media (width < 80rem) {
-  .home-preorders__poster-front {
-    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1fr);
-    inset: auto 1.5rem 1.5rem;
-    gap: 1.25rem;
-  }
-
-  .home-preorders__poster--no-video .home-preorders__poster-cover {
-    width: 100%;
-    height: auto;
-  }
-
-  .home-preorders__identity h3 {
-    font-size: clamp(1.8rem, 3.6vw, 3.6rem);
-  }
-}
-
-@media (width < 40rem) {
-  .home-preorders__item {
-    grid-template-columns: 1.25rem 3.5rem minmax(0, 1fr);
-    gap: 0.625rem;
-    padding: 1rem;
-  }
-
-  .home-preorders__art {
-    width: 3.5rem;
-    height: 3.5rem;
-  }
-
-  .home-preorders__poster--no-video {
-    aspect-ratio: auto;
-  }
-
-  .home-preorders__poster-front {
+@media (max-width: 70rem) {
+  .home-preorders__film-tools,
+  .home-preorders__clips {
     position: relative;
     inset: auto;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.25rem;
-    padding: 1.5rem;
+    max-width: none;
+    padding: 0 var(--home-preorders-gutter) 1rem;
+    background: var(--background);
   }
+}
 
-  .home-preorders__poster--no-video .home-preorders__poster-cover {
-    width: min(100%, 16.25rem);
-    justify-self: center;
+@media (min-width: 50.0625rem) and (max-width: 62.5rem) {
+  .home-preorders__still-grid {
+    grid-template-columns: 17.5rem minmax(0, 1fr);
+    gap: 2rem;
+    padding-top: 15rem;
   }
 
   .home-preorders__identity h3 {
-    font-size: 2.65rem;
+    font-size: 3rem;
   }
 
-  .home-preorders__facts {
+  .home-preorders__facts > div {
+    padding-inline: 0.875rem;
+  }
+
+  .home-preorders__buy {
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 50rem) {
+  .home-preorders {
+    --home-preorders-gutter: 1rem;
+  }
+
+  .home-preorders__header,
+  .home-preorders--starts-video > .home-preorders__header {
+    position: relative;
+    inset: auto;
+    border-bottom: 1px solid var(--control-edge);
+    padding-block: 1.375rem;
+  }
+
+  .home-preorders__header .home-section-header__title {
+    font-size: 1.6875rem;
+  }
+
+  .home-preorders__film-scene {
+    min-height: 0;
+  }
+
+  .home-preorders__media {
+    position: relative;
+    height: auto;
+    aspect-ratio: 2.388 / 1;
+  }
+
+  .home-preorders__film-shade {
+    display: none;
+  }
+
+  .home-preorders__film-copy {
+    width: auto;
+    margin: 0;
+    padding: 2rem 1rem 1.625rem;
+    background: var(--background);
+  }
+
+  .home-preorders__film-copy .home-preorders__artist {
+    font-size: 0.75rem;
+    --home-preorders-artist-spacing: 0.42em;
+  }
+
+  .home-preorders__film-title {
+    font-size: clamp(3rem, 19.5vw, 4.75rem);
+  }
+
+  .home-preorders__film-copy .home-preorders__price-block {
+    justify-content: space-between;
+  }
+
+  .home-preorders__film-copy .preorder-action {
+    width: 100%;
+  }
+
+  .home-preorders__hero-sleeve {
+    width: 9.375rem;
+    margin-top: 1.5rem;
+  }
+
+  .home-preorders__film-tools {
+    gap: 0.75rem;
+  }
+
+  .home-preorders__film-tools .site-button,
+  .home-preorders__film-tools .home-preorders__listen {
+    flex: 1;
+    min-width: 7.5rem;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .home-preorders__clips {
+    gap: 0 0.75rem;
+    padding: 0 1rem 1.5rem;
+  }
+
+  .home-preorders__band-photo {
+    position: relative;
+    height: auto;
+    aspect-ratio: 3 / 2;
+    object-fit: contain;
+  }
+
+  .home-preorders__still-shade {
+    display: none;
+  }
+
+  .home-preorders__still-grid,
+  .home-preorders__still-scene--cover-only .home-preorders__still-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.75rem;
+    padding: 0 1rem 2rem;
+  }
+
+  .home-preorders__still-art {
+    width: 13.75rem;
+    max-width: 75%;
+    margin: -2.625rem auto 0;
+  }
+
+  .home-preorders__still-scene--cover-only .home-preorders__still-art {
+    margin-top: 2rem;
+  }
+
+  .home-preorders__identity .home-preorders__artist {
+    font-size: 0.75rem;
+  }
+
+  .home-preorders__identity h3 {
+    font-size: clamp(2.125rem, 11.5vw, 3.5rem);
+  }
+
+  .home-preorders__facts--still {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .home-preorders__facts > div {
-    padding: 0.875rem 1rem;
+    padding: 1rem 0.75rem;
   }
 
-  .home-preorders__facts > div:nth-child(odd) {
+  .home-preorders__facts--still > div:nth-child(odd) {
     border-left: 0;
+    padding-left: 0;
   }
 
-  .home-preorders__facts > div:nth-child(n + 3) {
+  .home-preorders__facts--still > div:nth-child(n + 3) {
     border-top: 1px solid var(--control-edge);
   }
 
   .home-preorders__buy {
     grid-template-columns: minmax(0, 1fr);
-    gap: 1.25rem;
-    padding: 1.25rem;
+    gap: 1.75rem;
+    padding: 1.75rem 1rem 2rem;
   }
 
-  .home-preorders__clips {
-    padding-inline: 1.25rem;
-  }
-
-  .home-preorders__clips-label {
-    flex-basis: 100%;
-    padding-top: 0.75rem;
-  }
-
-  .home-preorders__video-identity h3 {
-    font-size: 2.65rem;
+  .home-preorders__summary {
+    font-size: 0.875rem;
   }
 
   .home-preorders__purchase {
-    align-items: stretch;
+    grid-column: auto;
   }
+}
 
-  .home-preorders__purchase .preorder-action {
-    width: 100%;
+@media (prefers-reduced-motion: reduce) {
+  .home-preorders .preorder-action::before {
+    transition: none;
   }
 }
 

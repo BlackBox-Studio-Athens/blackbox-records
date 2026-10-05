@@ -113,6 +113,7 @@ export function createShellPlayerSessionController({
 
   function updatePlayerUiFromSession(activeSession: ActivePlayerSession | null) {
     syncPlayerTriggers();
+    getTargetDocument().documentElement.toggleAttribute('data-music-player-session', Boolean(activeSession));
     if (!activeSession) {
       setPlayerProviders([]);
     }

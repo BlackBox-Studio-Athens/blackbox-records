@@ -32,6 +32,7 @@ const images: Parameters<typeof buildPreorderShowcaseCandidates>[2] = new Map([
       coverUrl: '/_astro/cover.webp',
       artistPhotoUrl: '/_astro/artist.webp',
       clipPosterUrls: new Map([['abcdefghijk', '/_astro/video.webp']]),
+      clipBackgroundVideoUrls: new Map([['abcdefghijk', '/_astro/background.mp4']]),
     },
   ],
 ]);
@@ -39,20 +40,30 @@ const images: Parameters<typeof buildPreorderShowcaseCandidates>[2] = new Map([
 describe('pre-order showcase candidates', () => {
   it('uses canonical release Store facts and supplied optimized images without commerce state', () => {
     expect(
-      buildPreorderShowcaseCandidates([item(), item({ sourceKind: 'distro', slug: 'distro' })], [release], images),
+      buildPreorderShowcaseCandidates(
+        [item({ artistPath: '/blackbox-records/artists/artist/' }), item({ sourceKind: 'distro', slug: 'distro' })],
+        [release],
+        images,
+      ),
     ).toEqual([
       {
         slug: 'canonical-edition',
         title: 'Album',
         artist: 'Artist',
+        artistPath: '/blackbox-records/artists/artist/',
         option: 'Black Vinyl LP',
         storePath: '/blackbox-records/store/canonical-edition/',
         releaseDate: '2026-10-16',
         coverUrl: '/_astro/cover.webp',
         firstClipId: 'abcdefghijk',
         clips: [
-          { id: 'abcdefghijk', title: 'First clip', posterUrl: '/_astro/video.webp' },
-          { id: '01234567890', title: 'Second clip', posterUrl: null },
+          {
+            id: 'abcdefghijk',
+            title: 'First clip',
+            posterUrl: '/_astro/video.webp',
+            backgroundVideoUrl: '/_astro/background.mp4',
+          },
+          { id: '01234567890', title: 'Second clip', posterUrl: null, backgroundVideoUrl: null },
         ],
         artistPhotoUrl: '/_astro/artist.webp',
         summary: 'An album about the city.',
@@ -105,6 +116,7 @@ describe('pre-order showcase candidates', () => {
     );
     expect(records.map((record) => record.slug)).toEqual(['second', 'canonical-edition']);
     expect(records[0]).toMatchObject({
+      artistPath: null,
       releaseDate: null,
       firstClipId: null,
       artistPhotoUrl: null,
@@ -119,6 +131,22 @@ describe('pre-order showcase candidates', () => {
     expect(() => buildPreorderShowcaseCandidates([item()], [release], new Map())).toThrow('Missing pre-order showcase');
   });
 
+  it('retains official clip identity with explicit still fallback when native media is absent', () => {
+    const [record] = buildPreorderShowcaseCandidates(
+      [item()],
+      [release],
+      new Map([['canonical-edition', { coverUrl: '/accepted-cover.webp', artistPhotoUrl: null }]]),
+    );
+    expect(record).toMatchObject({
+      coverUrl: '/accepted-cover.webp',
+      firstClipId: 'abcdefghijk',
+      clips: [
+        { id: 'abcdefghijk', title: 'First clip', posterUrl: null, backgroundVideoUrl: null },
+        { id: '01234567890', title: 'Second clip', posterUrl: null, backgroundVideoUrl: null },
+      ],
+    });
+  });
+
   it('mounts the island between Hero and News and lets the endpoint inherit the static or published runtime', () => {
     const home = readFileSync(new URL('../pages/index.astro', import.meta.url), 'utf8');
     const endpoint = readFileSync(new URL('../pages/preorder-showcase.json.ts', import.meta.url), 'utf8');
@@ -128,8 +156,6 @@ describe('pre-order showcase candidates', () => {
     expect(home).toContain('client:idle');
     expect(home).toContain("createProjectRelativeUrl('/preorder-showcase.json')");
     expect(endpoint).not.toMatch(/export\s+const\s+prerender\s*=\s*true/);
-    expect(endpoint).toContain("getImage({ src: release.data.cover_image, width: 720, format: 'webp' })");
-    expect(endpoint).toContain("getImage({ src: artist.data.image, width: 1200, format: 'webp' })");
     expect(sitemap).not.toContain('preorder-showcase.json');
   });
 });

@@ -27,7 +27,16 @@ function createFrameHost(iframeElement = createIframe()) {
 }
 
 function createTargetDocument() {
+  const rootAttributes = new Set<string>();
   return {
+    documentElement: {
+      hasAttribute: (name: string) => rootAttributes.has(name),
+      toggleAttribute(name: string, force: boolean) {
+        if (force) rootAttributes.add(name);
+        else rootAttributes.delete(name);
+        return force;
+      },
+    },
     querySelectorAll: vi.fn(() => []),
     createElement: vi.fn(() => ({}) as HTMLLinkElement),
     head: {
@@ -135,6 +144,21 @@ function createActiveSession(iframeElement = createIframe()): ActivePlayerSessio
 }
 
 describe('shell player session controller', () => {
+  it('keeps the ambient-media session signal through minimize and clears it on Stop', () => {
+    const targetDocument = createTargetDocument();
+    const { controller, options } = createController({ getTargetDocument: () => targetDocument });
+    controller.openPlayerModal(createTriggerElement(), createPlayerElement());
+    expect(targetDocument.documentElement.hasAttribute('data-music-player-session')).toBe(true);
+
+    controller.markActivePlayerSessionAsInteracted(bandcampEmbedUrl);
+    controller.closePlayerModal();
+    expect(options.activePlayerSessionRef.current?.status).toBe('minimized');
+    expect(targetDocument.documentElement.hasAttribute('data-music-player-session')).toBe(true);
+
+    controller.stopPlayerSession();
+    expect(targetDocument.documentElement.hasAttribute('data-music-player-session')).toBe(false);
+  });
+
   it('marks matching sources across surfaces and resets stale cached labels on sync and Stop', () => {
     const labels = [{ textContent: 'Listen' }, { textContent: 'Listen' }, { textContent: 'Listen' }];
     const triggers = ['disintegration', 'disintegration', 'distro:disintegration'].map((id, index) => ({
