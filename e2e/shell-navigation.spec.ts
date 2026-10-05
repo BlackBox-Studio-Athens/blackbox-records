@@ -47,7 +47,7 @@ test('detail link opens an overlay that closes back to the list; a direct load r
   await waitForShell(page);
   await plantSentinel(page);
 
-  await page.locator('a.prose-card-link[href*="/releases/"]').first().click();
+  await page.locator('a.release-card-title-link[href*="/releases/"]').first().click();
   const overlay = page.getByRole('dialog');
   await expect(overlay).toBeVisible();
   await expect(overlay.locator('[data-app-shell-overlay-kind="releases"]')).toBeVisible();
@@ -72,7 +72,7 @@ test('detail-link intent warms the overlay panel so the overlay opens in the cli
   const panelWarmed = watchSurfaceWarmup(page, 'ShellOverlayPanel');
   await page.goto('releases/');
   await waitForShell(page);
-  const trigger = 'a.prose-card-link[href*="/releases/"]';
+  const trigger = 'a.release-card-title-link[href*="/releases/"]';
   await page.locator(trigger).first().hover();
   await panelWarmed();
 

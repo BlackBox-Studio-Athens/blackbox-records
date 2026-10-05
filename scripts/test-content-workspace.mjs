@@ -2768,7 +2768,12 @@ else if (process.argv.includes('--editor-recovery')) {
       await page.setViewportSize({ width, height: 900 });
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
       assert.ok((await artistName.boundingBox()).width > 200);
-      if (width === 390) assert.ok((await artistName.boundingBox()).y <= 250, 'First field begins within 250px');
+      if (width === 390) {
+        const fieldTop = await artistName.evaluate(
+          (input) => input.closest('[data-slot="field"]').getBoundingClientRect().y,
+        );
+        assert.ok(fieldTop >= 0 && fieldTop <= 250, `First field begins within 250px (actual: ${fieldTop}px)`);
+      }
       await page.screenshot({ path: resolve(artifacts, `staff-editor-${width}.png`) });
     }
     const contrast = await page.evaluate(() => {

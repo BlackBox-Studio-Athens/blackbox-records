@@ -14,7 +14,14 @@ const profiles = [
   { width: 1440, height: 900, dpr: 1 },
 ];
 const imageRoutes = [
-  { route: 'releases/', selectors: ['.releases-latest-feature__artwork', '.release-card-artwork'] },
+  {
+    route: 'releases/',
+    selectors: [
+      '[data-release-role="lead"] img',
+      '[data-release-role="supporting"] img',
+      '[data-release-role="catalog"] img',
+    ],
+  },
   { route: localRepresentativePaths.release.slice(1), selectors: ['.release-detail-cover__image'] },
   { route: 'news/', selectors: ['.news-card__image'] },
   { route: localRepresentativePaths.news.slice(1), selectors: ['.news-detail-lead__image'] },
@@ -539,6 +546,18 @@ for (const profile of profiles)
         hasTouch: profile.width === 390,
       });
       await isolate(context, baseURL!);
+      if (route.route === 'releases/')
+        await context.route('**/api/store/listing-prices*', (request) =>
+          request.fulfill({
+            json: ['disintegration-black-vinyl-lp', 'caregivers-vinyl'].map((storeItemSlug) => ({
+              storeItemSlug,
+              presentationState: 'ready',
+              availabilityState: 'stocked',
+              displayPrice: '€28.00',
+              preorder: null,
+            })),
+          }),
+        );
       const page = await context.newPage();
       const bytes = new Map<string, { bytes: number; sha256: string; contentType: string }>();
       const pending: Promise<void>[] = [];

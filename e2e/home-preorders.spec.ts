@@ -567,7 +567,10 @@ for (const failure of ['autoplay rejection', 'asset failure'] as const) {
   });
 }
 
-test('A real minimized shell session pauses ambience and blocks competing full video until Stop', async ({ page }) => {
+test('A real minimized shell session pauses ambience and blocks competing full video until Stop', async ({
+  page,
+  browserName,
+}) => {
   const fixture = await stubShowcase(page, 'native');
   await page.route('https://bandcamp.com/EmbeddedPlayer/**', (route) =>
     route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
@@ -581,6 +584,11 @@ test('A real minimized shell session pauses ambience and blocks competing full v
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
   await iframe.contentFrame().getByRole('button', { name: 'Player fixture', exact: true }).click();
+  if (browserName === 'firefox') {
+    await expect.poll(() => iframe.evaluate((element) => document.activeElement === element)).toBe(true);
+    // The mocked provider's parent-window blur is not emitted by headless Firefox's frame click.
+    await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  }
   await page.getByRole('button', { name: 'Minimize player', exact: true }).click();
   const original = await iframe.elementHandle();
   await expect(page.locator('html')).toHaveAttribute('data-music-player-session', '');

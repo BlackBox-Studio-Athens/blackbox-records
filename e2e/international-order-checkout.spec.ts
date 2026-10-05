@@ -217,10 +217,11 @@ test('the checkout card and payment remain reachable with a 200 percent layout z
   await expect(email).toBeVisible();
   await email.scrollIntoViewIfNeeded();
   await expect(email).toBeInViewport({ ratio: 1 });
+  await expect(pay).toBeEnabled();
   await email.focus();
+  await expect(email).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(pay).toBeFocused();
-  await expect(pay).toBeEnabled();
   await pay.scrollIntoViewIfNeeded();
   await expect(pay).toBeInViewport({ ratio: 1 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

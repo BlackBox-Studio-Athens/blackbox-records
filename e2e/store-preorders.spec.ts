@@ -263,9 +263,11 @@ for (const state of [
     for (const width of [320, 390, 430, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await card.evaluate((element) => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
-      await expect(card.locator('h2')).toHaveCSS('font-family', /Bebas Neue/);
-      await expect(card.locator('h2')).toHaveCSS('text-transform', 'uppercase');
-      await expect(card.locator('.store-item-card__artist')).toHaveText('Afterwise');
+      await expect(card.locator('h2')).toHaveText('Disintegration');
+      await expect(card.locator('h2')).toHaveCSS('font-family', /^Veneer,/);
+      await expect(card.locator('h2')).toHaveCSS('text-transform', 'none');
+      await expect(card.locator('.store-item-card__artist')).toHaveText('by Afterwise');
+      await expect(card.locator('.store-item-card__artist')).toHaveCSS('font-family', /^Inter,/);
       await expect(card.locator('[data-store-listing-price]')).toHaveCSS('font-family', /Bebas Neue/);
       await expect(card.locator('.store-item-card__image')).toHaveCSS('object-fit', 'contain');
       const artwork = (await card.locator('.store-item-card__image-frame').boundingBox())!;
