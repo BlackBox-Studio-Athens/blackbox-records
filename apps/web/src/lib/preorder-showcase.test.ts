@@ -153,7 +153,7 @@ describe('pre-order showcase candidates', () => {
     const sitemap = readFileSync(new URL('../pages/sitemap.xml.ts', import.meta.url), 'utf8');
     expect(home.indexOf('<HomeHero')).toBeLessThan(home.indexOf('<StorePreorderShowcase'));
     expect(home.indexOf('<StorePreorderShowcase')).toBeLessThan(home.indexOf('id="news"'));
-    expect(home).toContain('client:idle');
+    expect(home).toContain('client:load');
     expect(home).toContain("createProjectRelativeUrl('/preorder-showcase.json')");
     expect(endpoint).not.toMatch(/export\s+const\s+prerender\s*=\s*true/);
     expect(sitemap).not.toContain('preorder-showcase.json');

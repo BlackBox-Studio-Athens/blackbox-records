@@ -7,6 +7,9 @@
       "inputs": [
         "webTests",
         "^default",
+        "{workspaceRoot}/apps/web/src/pages/index.astro",
+        "{workspaceRoot}/apps/web/src/pages/preorder-showcase.json.ts",
+        "{workspaceRoot}/apps/web/src/pages/sitemap.xml.ts",
         "{workspaceRoot}/apps/web/src/styles/**/*",
         "{workspaceRoot}/apps/web/public/**/*",
         "{workspaceRoot}/apps/web/content-snapshot/**/*"
