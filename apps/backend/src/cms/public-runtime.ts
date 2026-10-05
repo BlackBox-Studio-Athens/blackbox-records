@@ -77,8 +77,14 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
     return (this.pages ??= new PublicRenderCache(this.ctx.storage.sql));
   }
 
-  invalidatePublication(pointer: PublicationPointer) {
-    return this.selection.invalidate(publicationPointerSchema.parse(pointer));
+  async invalidatePublication(pointer: PublicationPointer) {
+    const accepted = publicationPointerSchema.parse(pointer);
+    await this.selection.invalidate(accepted);
+    try {
+      this.renderCache().retain(`${PUBLIC_RELEASE_IDENTITY.sha}/${accepted.snapshotSha256}/`);
+    } catch {
+      console.warn('Public render cache unavailable');
+    }
   }
 
   private async render(request: Request, snapshot: ContentSnapshot) {
@@ -234,7 +240,11 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
       const key = `${PUBLIC_RELEASE_IDENTITY.sha}/${pointer.snapshotSha256}/${url.origin}${url.pathname}`;
       let cached;
       try {
-        if (!url.search) cached = this.renderCache().get(key);
+        if (!url.search) {
+          const pages = this.renderCache();
+          pages.retain(`${PUBLIC_RELEASE_IDENTITY.sha}/${pointer.snapshotSha256}/`);
+          cached = pages.get(key);
+        }
       } catch {
         console.warn('Public render cache unavailable');
       }
@@ -248,13 +258,24 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
       // A refresh may have completed while reading the cache; render and identity must use the same snapshot.
       const renderKey = `${PUBLIC_RELEASE_IDENTITY.sha}/${selectedPointer.snapshotSha256}/${url.origin}${url.pathname}`;
       const response = await this.render(new Request(url, { method: 'GET' }), snapshot);
-      if (!response.headers.get('Content-Type')?.includes('text/html'))
+      const headers = new Headers(response.headers);
+      const contentType = headers.get('Content-Type')?.split(';')[0].trim().toLowerCase();
+      // Only this editorial JSON follows accepted content; prices and other JSON are never reusable here.
+      const publishedResponse =
+        contentType === 'text/html' || (path === '/preorder-showcase.json' && contentType === 'application/json');
+      if (!publishedResponse) {
+        if (contentType === 'application/json' || response.status !== 200 || url.search || headers.has('Set-Cookie'))
+          headers.set('Cache-Control', 'no-store');
         return new Response(request.method === 'HEAD' ? null : response.body, {
           status: response.status,
-          headers: response.headers,
+          headers,
         });
-      const headers = new Headers(response.headers);
-      const cacheable = response.status === 200 && !url.search && !headers.has('Set-Cookie');
+      }
+      let cacheable =
+        response.status === 200 &&
+        !url.search &&
+        !headers.has('Set-Cookie') &&
+        !/\b(?:private|no-store)\b/i.test(headers.get('Cache-Control') ?? '');
       // ponytail: 30 s fresh + 30 s stale-while-revalidate keeps edge staleness inside the 60 s publication target.
       headers.set(
         'Cache-Control',
@@ -270,7 +291,13 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
         );
       }
       const body = await readBoundedText(response.body, 4 * 1024 * 1024);
-      // ponytail: retain bounded buffering so render/read failures still return 503 before any HTML is sent.
+      // Activation can retire this render while its body is being read, after the edge purge.
+      if (cacheable && (await this.selection.selected()).pointer.snapshotSha256 !== selectedPointer.snapshotSha256) {
+        cacheable = false;
+        headers.set('Cache-Control', 'no-store');
+        for (const header of ['ETag', 'Last-Modified', 'Cache-Tag']) headers.delete(header);
+      }
+      // ponytail: retain bounded buffering so render/read failures still return 503 before any response is sent.
       try {
         if (cacheable) this.renderCache().put(renderKey, { body, status: response.status, headers: [...headers] });
       } catch {

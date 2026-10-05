@@ -120,7 +120,9 @@ test('Store categories retain current state, keyboard focus and shell navigation
   await expect(all).toHaveCSS('transition-duration', '0s');
 });
 
-test('Store listing cards use Band in Veneer with connected credits and unchanged sizes', async ({ page }) => {
+test('Store listing cards keep compact display titles and plain credits through responsive reflow', async ({
+  page,
+}) => {
   await page.goto('store/distro/');
   await waitForShell(page);
   await page.evaluate(() => document.fonts.ready);
@@ -132,7 +134,7 @@ test('Store listing cards use Band in Veneer with connected credits and unchange
   await expect(linked.locator('.store-item-card__artist-link')).toHaveText('Afterwise');
   await expect(linked.locator('.store-item-card__artist-link')).toHaveAttribute('href', /\/artists\/afterwise\/$/);
   await expect(unlinked.locator('.store-item-card__artist-link')).toHaveCount(0);
-  expect(await page.evaluate(() => document.fonts.check('900 14px Veneer'))).toBe(true);
+  expect(await page.evaluate(() => document.fonts.check('400 20px "Bebas Neue"'))).toBe(true);
   const longNames = await page.locator('.store-item-card--listing').evaluateAll((cards) => {
     const byLength = (selector: string) =>
       [...cards]
@@ -145,22 +147,22 @@ test('Store listing cards use Band in Veneer with connected credits and unchange
     return [...new Set([byLength('h2'), byLength('.store-item-card__artist-name')])];
   });
 
-  for (const width of [320, 390, 1440]) {
+  for (const width of [320, 390, 430, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     for (const card of [linked, unlinked]) {
       const title = card.locator('h2');
       const credit = card.locator('.store-item-card__artist');
       const name = card.locator('.store-item-card__artist-name');
       const artist = (await name.textContent())!.trim();
-      await expect(title).toHaveCSS('font-family', /Inter/);
-      await expect(title).toHaveCSS('font-weight', '600');
-      await expect(title).toHaveCSS('text-transform', 'none');
-      await expect(title).toHaveCSS('font-size', width === 1440 ? '24px' : '20px');
-      await expect(credit).toHaveText(`by ${artist}`);
+      await expect(title).toHaveCSS('font-family', /Bebas Neue/);
+      await expect(title).toHaveCSS('font-weight', '400');
+      await expect(title).toHaveCSS('text-transform', 'uppercase');
+      await expect(title).toHaveCSS('font-size', '20px');
+      await expect(credit).toHaveText(artist);
       await expect(credit).toHaveCSS('font-family', /Inter/);
       await expect(credit).toHaveCSS('font-weight', '400');
-      await expect(name).toHaveCSS('font-family', /Veneer/);
-      await expect(name).toHaveCSS('font-weight', '900');
+      await expect(name).toHaveCSS('font-family', /Inter/);
+      await expect(name).toHaveCSS('font-weight', '400');
       await expect(name).toHaveCSS('font-size', '14px');
       await expect(name).toHaveCSS('line-height', '19.6px');
       await expect(card).toHaveAttribute('data-store-artist', artist);

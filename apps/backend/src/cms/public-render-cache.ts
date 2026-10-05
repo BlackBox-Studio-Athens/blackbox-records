@@ -4,10 +4,11 @@ type Row = { body: string; headers: string; status: number };
 export const publicRenderCacheBytes = 8 * 1024 * 1024;
 export const publicRenderPageBytes = 2 * 1024 * 1024;
 
-/** Disposable HTML only; the R2 accepted pointer remains authoritative after a restart. */
+/** Disposable published responses; the R2 accepted pointer remains authoritative after a restart. */
 export class PublicRenderCache {
   private bytes: number;
   private sequence: number;
+  private prefix: string | undefined;
   constructor(
     private sql: SqlStorage,
     private maxBytes = publicRenderCacheBytes,
@@ -26,6 +27,19 @@ export class PublicRenderCache {
     this.sequence = totals.sequence;
   }
 
+  retain(prefix: string) {
+    if (this.prefix === prefix) return;
+    const retired = this.sql
+      .exec<{ bytes: number }>(
+        'DELETE FROM public_render_cache WHERE substr(key, 1, ?) <> ? RETURNING bytes',
+        prefix.length,
+        prefix,
+      )
+      .toArray();
+    this.bytes -= retired.reduce((bytes, row) => bytes + row.bytes, 0);
+    this.prefix = prefix;
+  }
+
   get(key: string): Page | undefined {
     const row = this.sql
       .exec<Row>('SELECT body, headers, status FROM public_render_cache WHERE key = ?', key)
@@ -36,6 +50,8 @@ export class PublicRenderCache {
   }
 
   put(key: string, page: Page) {
+    // An old render can finish after publication has retired its identity.
+    if (this.prefix !== undefined && !key.startsWith(this.prefix)) return;
     const headers = JSON.stringify(page.headers);
     const bytes = new TextEncoder().encode(key + page.body + headers).byteLength;
     if (bytes > Math.min(this.maxBytes, publicRenderPageBytes)) return;

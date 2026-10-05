@@ -50,7 +50,7 @@ it('never purges without an active pointer, and reports missing API and rejected
   expect((await selection.selected()).pointer).toEqual(pointer);
 });
 
-it('tags published HTML for publication-wide purge and release/snapshot identity', () => {
+it('tags published HTML and showcase JSON for the same publication-wide purge and release/snapshot identity', () => {
   expect(publicPublicationTags('b'.repeat(40), pointer.snapshotSha256)).toEqual([
     'blackbox-publication',
     `release-${'b'.repeat(40)}`,

@@ -14,7 +14,7 @@ interface PreorderControlProps {
 }
 
 const selectClass =
-  'min-h-11 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50';
+  'min-h-11 min-w-0 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50';
 
 export default function PreorderControl({
   preorder,
@@ -58,7 +58,7 @@ export default function PreorderControl({
       <fieldset disabled={disabled || busy} aria-busy={busy ? 'true' : undefined} className="grid min-w-0 gap-4">
         <legend className="sr-only">Pre-order settings</legend>
         <label className="flex min-h-11 cursor-pointer items-center justify-between gap-4">
-          <span className="grid gap-1">
+          <span className="grid min-w-0 gap-1">
             <span className="font-medium">Pre-order</span>
             <span id={id + '-description'} className="text-sm text-muted-foreground">
               Take orders before the copies are on the shelf. This is separate from Release stage: released music can
@@ -86,7 +86,7 @@ export default function PreorderControl({
             <p className="text-sm text-muted-foreground">
               Copies: enter the number you expect as the stock quantity. Count the stock again when they arrive.
             </p>
-            <label className="grid gap-2" htmlFor={id + '-kind'}>
+            <label className="grid min-w-0 gap-2" htmlFor={id + '-kind'}>
               <span>When it ships</span>
               <select
                 id={id + '-kind'}
@@ -100,7 +100,7 @@ export default function PreorderControl({
             </label>
             {kind === 'month' ? (
               <>
-                <label className="grid gap-2" htmlFor={id + '-month'}>
+                <label className="grid min-w-0 gap-2" htmlFor={id + '-month'}>
                   <span>Month</span>
                   <select
                     id={id + '-month'}
@@ -117,7 +117,7 @@ export default function PreorderControl({
                     ))}
                   </select>
                 </label>
-                <label className="grid gap-2" htmlFor={id + '-part'}>
+                <label className="grid min-w-0 gap-2" htmlFor={id + '-part'}>
                   <span>Part of the month</span>
                   <select
                     id={id + '-part'}
@@ -145,7 +145,7 @@ export default function PreorderControl({
               </>
             ) : (
               <>
-                <label className="grid gap-2" htmlFor={id + '-date'}>
+                <label className="grid min-w-0 gap-2" htmlFor={id + '-date'}>
                   <span>Exact ship date</span>
                   <Input
                     id={id + '-date'}
@@ -167,15 +167,15 @@ export default function PreorderControl({
                 </p>
               </>
             )}
-            <div className="flex flex-wrap gap-2">
-              <Button type="submit" className="min-h-11" disabled={monthPassed}>
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
+              <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={monthPassed}>
                 {busy ? 'Saving pre-order…' : 'Save pre-order'}
               </Button>
               {preorder?.open && (
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11"
+                  className="min-h-11 w-full sm:w-auto"
                   onClick={() => void onSave(null)}
                   aria-describedby={id + '-arrival'}
                 >
@@ -192,7 +192,7 @@ export default function PreorderControl({
           </>
         )}
       </fieldset>
-      <div className="mt-4 text-sm" aria-live="polite">
+      <div className="mt-4 min-w-0 break-words text-sm" aria-live="polite">
         <p className="font-medium">What shoppers see</p>
         <ul className="mt-1 list-inside list-disc text-muted-foreground">
           {rows.map((row) => (

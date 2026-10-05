@@ -402,3 +402,40 @@ The canonical return screen SHALL match the approved Return reference with Order
 
 - **WHEN** the paid return is viewed at 1280px or 390px
 - **THEN** its reference layout, Inter body/metadata, Veneer heading and Bebas action render without overflow and preserve keyboard access, persistent shell/player and the checkout-scoped header.
+
+### Requirement: Published showcase data follows accepted publication identity
+
+The public pre-order showcase JSON SHALL reuse bounded cached editorial data associated with the accepted publication snapshot and SHALL participate in the existing publication freshness and invalidation contract. It SHALL NOT infer stock, prices or buying eligibility from that cache, or expose private drafts.
+
+#### Scenario: The accepted release gains, changes or removes a clip
+
+- **WHEN** a publication containing a release clip change is accepted and confirmed
+- **THEN** the release page and showcase SHALL reflect the same accepted clip data within the existing publication freshness bound
+- **AND** repeated unchanged reads reuse the cached response while a previous snapshot's response cannot be treated as current indefinitely.
+
+#### Scenario: Publication invalidation is interrupted
+
+- **WHEN** the accepted pointer refresh or required hosted cache purge cannot be confirmed
+- **THEN** publication confirmation retains its existing recoverable pending/error behavior
+- **AND** private content, failed publication data and stale responses never establish a new confirmed publication.
+
+### Requirement: Store cards match the approved pre-order lifecycle references
+
+Store listing cards SHALL match the supplied 5 October reference composition for the pre-order lifecycle: full square artwork, optional Listen, compact uppercase display title, plain artist/format metadata, left-aligned status badges and stable bottom price/action. Reference annotations SHALL NOT appear as shopper interface copy.
+
+#### Scenario: Lifecycle state changes
+
+- **WHEN** music is unreleased, released with physical copies on pre-order, or its pre-order has ended
+- **THEN** the appropriate release/ship badges and Pre-order or ordinary Buy action follow authoritative lifecycle data without altering card geometry.
+
+#### Scenario: Active pre-order copies become unavailable
+
+- **WHEN** an active pre-order has no buyable copies
+- **THEN** its actual Sold Out or Out of Stock badge is visible beside a genuinely disabled gray Pre-order control as in the approved reference
+- **AND** ordering remains unavailable and ordinary unavailable cards keep their existing purchase-slot status treatment.
+
+#### Scenario: Card metadata is long or the viewport is narrow
+
+- **WHEN** cards display long identities or month/exact/unknown ship estimates at 320px, 390px, 430px or desktop widths
+- **THEN** artwork remains intact and titles, badges, prices and actions remain readable without document overflow
+- **AND** filters, navigation, cart operations and persistent listening retain their existing behavior.

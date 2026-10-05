@@ -32,19 +32,30 @@ vi.mock('@/lib/catalog-data', () => ({
 import { GET } from './preorder-showcase.json';
 
 describe('published pre-order showcase response', () => {
-  it('prevents stale edge or browser JSON from hiding a newly published clip', async () => {
+  it('leaves cache policy to the publication-aware renderer and reflects clip additions, replacements and removal', async () => {
     const before = await GET();
-    expect(before.headers.get('Cache-Control')).toBe('no-store');
+    expect(before.headers.get('Content-Type')).toBe('application/json');
+    expect(before.headers.get('Cache-Control')).toBeNull();
     expect(await before.json()).toEqual([expect.objectContaining({ firstClipId: null, clips: [] })]);
 
     catalog.clips = [{ title: 'Embrace The Void', youtube_video_id: 'MOA5YZDOR6A' }];
     const after = await GET();
-    expect(after.headers.get('Cache-Control')).toBe('no-store');
+    expect(after.headers.get('Cache-Control')).toBeNull();
     expect(await after.json()).toEqual([
       expect.objectContaining({
         firstClipId: 'MOA5YZDOR6A',
         clips: [{ id: 'MOA5YZDOR6A', title: 'Embrace The Void', posterUrl: '/_astro/image.webp' }],
       }),
     ]);
+
+    catalog.clips = [{ title: 'Replacement', youtube_video_id: 'abcdefghijk' }];
+    expect(await (await GET()).json()).toEqual([
+      expect.objectContaining({
+        firstClipId: 'abcdefghijk',
+        clips: [{ id: 'abcdefghijk', title: 'Replacement', posterUrl: null }],
+      }),
+    ]);
+    catalog.clips = [];
+    expect(await (await GET()).json()).toEqual([expect.objectContaining({ firstClipId: null, clips: [] })]);
   });
 });

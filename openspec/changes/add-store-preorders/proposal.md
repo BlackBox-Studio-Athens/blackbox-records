@@ -14,6 +14,7 @@ The label sells records before the copies arrive: Sidus "LOTUS" opens for pre-or
 - The home page gains a Pre-orders section above News while pre-orders exist: a menu and a stage that plays the release's YouTube clip, or shows the artist photo behind the cover when there is no clip.
 - Release pages and the Releases feature label a release whose Store Item is on pre-order. No new layout.
 - Releases gain an editorial list of partner store links, shown on the Store Item page for buyers outside Greece.
+- The 5 October follow-up makes the homepage's editorial pre-order data reuse the existing accepted-publication cache and invalidation mechanism, while prices, stock and buying eligibility retain their separate authority. It matches the supplied Store lifecycle card designs and adapts Staff Selling/pre-order controls and reproduced shared layout defects for mobile use.
 - Each order line keeps the pre-order estimate the shopper was shown. A paid order is awaiting stock while one of its lines belongs to a pre-order that is still open. Orders gain a read-only Awaiting stock filter.
 - The paid confirmation names the estimate, the fulfilment email flags the hold, and one new email tells every awaiting order when staff change the estimate.
 - The order pagination index migration, which is stored as a folder and therefore never applied by the migration runner or the tests, becomes an ordinary numbered migration before the pre-order migrations are added, with a check that keeps the migrations directory flat.
@@ -29,7 +30,7 @@ The label sells records before the copies arrive: Sidus "LOTUS" opens for pre-or
 - `store-listing-price-presentation`: The listing projection also reports whether an item is on pre-order and its ship estimate.
 - `paid-order-delivery`: The scheduled drain also sends pre-order estimate notices inside its existing per-run bound.
 - `staff-order-workspace`: Orders can be filtered to those awaiting stock, and list and detail state it.
-- `emdash-editorial-operations`: Releases carry an optional list of partner store links.
+- `emdash-editorial-operations`: Releases carry an optional list of partner store links; Staff pre-order editing remains usable at mobile widths.
 - `module-boundaries`: New provided entrypoints for pre-order wording, the home showcase and the release badge.
 - `project-language`: Pre-order, Ship Estimate and Awaiting Stock become canonical terms.
 - `tooling-validation`: Commerce migrations must be flat numbered files that the migration runner discovers.

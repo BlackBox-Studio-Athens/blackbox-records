@@ -80,6 +80,7 @@ function buyButton(storeItemSlug: string) {
       toggle: (name: string, enabled: boolean) => (enabled ? classes.add(name) : classes.delete(name)),
     },
     hidden: false,
+    disabled: false,
     textContent: STORE_LISTING_PRICE_COPY.buy as string,
     parentElement: { querySelector: () => status },
     closest: () => ({ querySelector: () => cardLink }),
@@ -288,7 +289,7 @@ describe('Store listing-price presentation', () => {
   );
 
   it.each(['sold_out', 'out_of_stock'] as const)(
-    'keeps the preorder badge and %s status without offering the button',
+    'shows the %s badge and a disabled preorder control without allowing an order',
     async (availabilityState) => {
       const availability = availabilityPlaceholder('item');
       const buy = buyButton('item');
@@ -305,13 +306,19 @@ describe('Store listing-price presentation', () => {
         root: listingRoot([], [availability], [buy]),
       });
 
-      await vi.waitFor(() => expect(availability.card.preorder.hidden).toBe(false));
-      expect(availability.card.preorder.textContent).toBe('Pre-order');
+      await vi.waitFor(() => expect(document.dispatchEvent).toHaveBeenCalledOnce());
+      expect(availability.card.preorder.hidden).toBe(true);
+      expect(availability.card.releaseStatus.hidden).toBe(true);
       expect(availability.card.dataset.storePreorder).toBe('');
       expect(availability.hidden).toBe(false);
       expect(availability.dataset.storeListingAvailabilityState).toBe(availabilityState);
       expect(availability.textContent).toBe(availabilityState === 'sold_out' ? 'Sold Out' : 'Out of Stock');
-      expect(buy.hidden).toBe(true);
+      expect(buy.hidden).toBe(false);
+      expect(buy.disabled).toBe(true);
+      expect(buy.textContent).toBe('Pre-order');
+      requestStoreCartAddFromSeed.mockClear();
+      buy.press();
+      expect(requestStoreCartAddFromSeed).not.toHaveBeenCalled();
     },
   );
 
@@ -326,6 +333,7 @@ describe('Store listing-price presentation', () => {
       buy.classList.add('preorder-action');
       buy.dataset.storeCardBuyLabel = 'Pre-order';
       buy.textContent = 'Pre-order';
+      buy.disabled = true;
       connectStoreListingPricePresentation({
         readListingPrices: async () => {
           if (state === 'failed') throw new Error('Worker unavailable');
@@ -351,6 +359,7 @@ describe('Store listing-price presentation', () => {
       expect(buy.textContent).toBe('Buy');
       expect(buy.dataset.storeCardBuyLabel).toBe('Buy');
       expect(buy.hidden).toBe(state === 'missing' || state === 'failed');
+      expect(buy.disabled).toBe(state === 'missing' || state === 'failed');
     },
   );
 
@@ -636,20 +645,33 @@ describe('Store listing-price presentation', () => {
     },
   );
 
-  it('shows the offer status instead of adding when the item stopped being buyable', async () => {
-    vi.stubGlobal('window', globalThis);
-    requestStoreCartAddFromSeed.mockResolvedValueOnce({ cartItem: null, label: 'Sold Out', statusTone: 'sold-out' });
-    const buy = buyButton('item');
-    connectStoreListingPricePresentation({
-      readListingPrices: async () => [],
-      root: listingRoot([placeholder('item')], [], [buy]),
-    });
+  it.each([false, true])(
+    'shows the authoritative depleted status after a purchase attempt (preorder: %s)',
+    async (preorder) => {
+      vi.stubGlobal('window', globalThis);
+      requestStoreCartAddFromSeed.mockResolvedValueOnce({ cartItem: null, label: 'Sold Out', statusTone: 'sold-out' });
+      const buy = buyButton('item');
+      connectStoreListingPricePresentation({
+        readListingPrices: async () => [
+          {
+            storeItemSlug: 'item',
+            presentationState: 'ready',
+            displayPrice: '€28.00',
+            availabilityState: 'stocked',
+            preorder: preorder ? { shipEstimate: null } : null,
+          },
+        ],
+        root: listingRoot([placeholder('item')], [], [buy]),
+      });
 
-    buy.press();
+      await vi.waitFor(() => expect(buy.disabled).toBe(false));
+      buy.press();
 
-    await vi.waitFor(() => expect(buy.status.textContent).toBe('Sold Out'));
-    expect(buy.status).toMatchObject({ hidden: false, dataset: { storeListingAvailabilityState: 'sold_out' } });
-    expect(buy.hidden).toBe(true);
-    expect(buy.cardLink.focus).toHaveBeenCalledOnce();
-  });
+      await vi.waitFor(() => expect(buy.status.textContent).toBe('Sold Out'));
+      expect(buy.status).toMatchObject({ hidden: false, dataset: { storeListingAvailabilityState: 'sold_out' } });
+      expect(buy.hidden).toBe(!preorder);
+      expect(buy.disabled).toBe(true);
+      expect(buy.cardLink.focus).toHaveBeenCalledOnce();
+    },
+  );
 });

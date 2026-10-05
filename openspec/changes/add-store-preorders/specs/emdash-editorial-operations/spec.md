@@ -26,3 +26,18 @@ A Release SHALL carry an optional ordered list of partner store links, each a la
 
 - **WHEN** existing Releases without the field are read, validated or published
 - **THEN** they remain valid and unchanged.
+
+### Requirement: Staff pre-order workflows remain usable on mobile
+
+Staff Selling and pre-order workflows SHALL adapt to 320px, 390px and 430px widths using the existing Staff visual and operational system. Layout repair SHALL preserve private autosave, explicit publication, immediate authorized stock updates and desktop behavior.
+
+#### Scenario: Member edits a pre-order on a phone
+
+- **WHEN** a member uses Pre-order, month/exact-date fields, shopper previews, Copies arrived, validation/recovery or publication actions on a narrow screen
+- **THEN** all required controls and explanatory text remain readable and reachable without document overflow, with usable touch targets and keyboard focus.
+
+#### Scenario: Shared Staff layout obstructs an operation
+
+- **WHEN** the mobile navigation, enclosing editor, Stock or Orders has reproduced clipping, overflow or inaccessible actions
+- **THEN** the existing component adapts without hiding core functionality or introducing a replacement workflow
+- **AND** the repaired surfaces and states receive rendered acceptance evidence.

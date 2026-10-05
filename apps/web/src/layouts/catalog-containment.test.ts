@@ -24,7 +24,7 @@ describe('catalog containment', () => {
       /prefers-reduced-motion:\s*no-preference[^]*?\[data-store-coverflow-stage\]\s*\{\s*display:\s*grid;\s*visibility:\s*hidden;/,
     );
     expect(css).toMatch(/\[data-store-coverflow-card\]\[data-store-coverflow-position\]\s*\{\s*visibility:\s*visible;/);
-    expect(css).toMatch(/\.store-item-card--listing \.brand-card-title\s*\{\s*font-family:\s*var\(--font-sans\)/);
+    expect(css).toMatch(/\.store-item-card--listing \.brand-card-title\s*\{\s*font-family:\s*var\(--font-display-ui\)/);
     expect(css).toMatch(/\.store-item-card--listing\s*\{\s*contain: layout inline-size;/);
     expect(source('./SiteLayout.astro')).not.toContain('display=swap');
   });
@@ -36,7 +36,9 @@ describe('catalog containment', () => {
 
     expect(css).toMatch(/\.store-item-card--listing\s*{[^}]*content-visibility:\s*auto;/s);
     expect(css).toMatch(/\.store-item-card--listing\s*{[^}]*contain-intrinsic-block-size:\s*auto 520px;/s);
-    expect(css).toMatch(/\.store-item-card--listing \.brand-card-title\s*{[^}]*font-family:\s*var\(--font-sans\)/s);
+    expect(css).toMatch(
+      /\.store-item-card--listing \.brand-card-title\s*{[^}]*font-family:\s*var\(--font-display-ui\)/s,
+    );
     expect(storePage).toContain('entries.map');
     expect(storeCard).toContain('data-store-listing-price');
     expect(storeCard).not.toMatch(/client:(?:visible|load|idle|only)/);

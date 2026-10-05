@@ -158,6 +158,9 @@ body[data-workspace='content'] {
   .staff-page {
     padding: 16px;
   }
+  .staff-shell .cms-workspace {
+    overflow: clip;
+  }
   .staff-shell .cms-editor-toolbar {
     position: static;
   }
@@ -229,14 +232,23 @@ body[data-workspace='content'] {
     gap: 4px;
   }
   .staff-shell .cms-editor-toolbar > .flex {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+  .staff-shell .cms-editor-toolbar > .flex > .flex {
+    flex-wrap: wrap;
+    min-width: 0;
+    max-width: 100%;
   }
   .staff-shell .cms-editor-toolbar p[role='status'] {
     flex: 1;
+    flex-basis: 100%;
     min-width: 0;
     font-size: 12px;
   }
   .staff-shell .cms-editor-toolbar h1 {
+    min-width: 0;
+    overflow-wrap: anywhere;
     font-size: 18px;
   }
 }
@@ -285,10 +297,13 @@ body[data-workspace='content'] {
   .staff-stock-controls {
     gap: 8px;
   }
+  .staff-stock-controls > [data-slot='button-group'] {
+    flex-wrap: wrap;
+  }
   .staff-stock-controls [data-slot='card-content'] {
     padding-inline: 12px;
   }
-  .staff-current-stock [data-slot='card-content'] > div {
+  .staff-current-stock [data-slot='card-content'] > div > div:first-child {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .staff-current-stock .staff-stock-metric:last-child {
@@ -359,6 +374,21 @@ body[data-workspace='content'] {
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
+  }
+}
+@media (max-width: 639px) {
+  .staff-brand img {
+    width: clamp(128px, 40vw, 176px);
+  }
+  .staff-header-context {
+    display: none;
+  }
+  .staff-shell-header > .staff-review-link {
+    width: 44px;
+    padding-inline: 0;
+  }
+  .staff-menu-trigger {
+    margin-left: auto;
   }
 }
 .staff-area-link {

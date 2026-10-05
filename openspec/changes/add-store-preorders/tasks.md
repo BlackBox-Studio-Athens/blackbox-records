@@ -278,3 +278,26 @@ Owns: paid-order-templates.ts, preorder-estimate-email.ts, existing mail frame/f
 - [x] 40.1 Match the approved payment confirmation and estimate-change HTML/text references in `D:/Downloads/Emails · confirmation and estimate changed-html` using the existing mail rendering owners. Preserve paid/cycle eligibility, immutable order money/lines, escaping and reply address. Was (at order) identifies the estimate recorded when ordered; exactly two update paragraphs retain the one-parcel promise without an unsupported cause or direction. Preview Subject remains outside the emitted body.
 - [x] 40.2 Run focused mail renderer checks for ordinary, mixed, pre-order-only and unknown estimates, immutable before/after estimates, escaping and text parity. Render and inspect both reference email previews without sending mail or changing catalog/stock/payment state. Inspect canonical normal fonts at native 476px and compact 390px; retain Subject captions outside the emitted documents and distinguish browser proof from unverified email-client support.
 - [x] 40.3 After both owned code batches freeze, complete shared spec/design/task/evidence notes, run one final local AST-only Graphify refresh, final normal `pnpm validate`, strict guarded OpenSpec and diff-check, and record stable combined source fingerprint, exact hashes, logs, previews and material limitations. Preserve all prior work; no archive, commit, push or deployment.
+
+## 41. Publication-aware showcase caching (approved 5 October)
+
+Owns: public renderer/cache/publication tests, showcase endpoint and its response test, public gateway tests if needed, and content-publication/Free-tier operational documentation. Implement in the shared `codex/preorder-video-cache` worktree; the orchestrator owns task state and combined verification.
+
+- [x] 41.1 Replace the endpoint-only no-store repair with reuse of the existing accepted-snapshot cache and publication invalidation for the showcase JSON. Preserve explicit no-store responses for content identity, errors, private previews and authoritative commerce. Keep storage bounded, preserve accepted-snapshot authority and reuse existing bindings without dependencies or paid infrastructure.
+- [x] 41.2 Prove repeated reads reuse the response and publication changes, removes and replaces clips consistently with the release page. Cover conditional reads, publication purge/refresh and invalidation failure without leaking drafts or retaining an old response as current.
+- [x] 41.3 Record focused source-bound checks and limitations, including the bounded operation cost and any unverified hosted cache propagation.
+
+## 42. Store pre-order card reference fidelity (approved 5 October)
+
+Owns: Store listing cards and their scoped styles, listing-price presentation where needed, focused card/browser checks and the corresponding Store design rules. The user-supplied 5 October screenshots supersede conflicting card typography rules for these pre-order lifecycle designs.
+
+- [x] 42.1 Match the supplied card references: full square artwork, optional Listen above the compact uppercase title, plain artist/format text, left-aligned lifecycle badges and aligned bottom price/action. Check unreleased pre-order, released music with physical copies on pre-order, ended pre-order and unavailable copies; preserve the existing Sold Out/Out of Stock semantics and Worker authority.
+- [x] 42.2 Verify month/exact-date and unknown estimate variants, long labels, ordinary cards, narrow screens and desktop with real fonts and canonical rendered captures. Preserve filters, card navigation, Buy/cart behavior and persistent listening.
+
+## 43. Staff mobile usability and combined acceptance (approved 5 October)
+
+Owns: Staff pre-order/Selling controls, their enclosing editor/shell and scoped Staff styles/tests. Fix additional Staff defects only when directly reproduced during the mobile check. The orchestrator owns shared OpenSpec notes, graph refresh and final validation.
+
+- [x] 43.1 Make the pre-order and Selling workflows usable at 320px, 390px and 430px: stacked readable fields, reachable actions, month/exact-date and shopper previews, keyboard focus, validation/recovery and no document overflow. Preserve private autosave, explicit publication, immediate stock updates and desktop functionality.
+- [x] 43.2 Inspect the shared Staff navigation, editor, stock and orders surfaces at mobile widths and correct reproduced clipping, overflow or inaccessible actions using existing components; preserve all core operations and record what was inspected.
+- [x] 43.3 Integrate the three owned batches, inspect the supplied designs and rendered evidence, refresh the local graph once, run final affected validation and strict OpenSpec, and record exact source identity, checked states and remaining limitations. Keep the unrelated main-checkout epic untouched; do not deploy or archive.

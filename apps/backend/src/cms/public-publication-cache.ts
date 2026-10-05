@@ -9,7 +9,7 @@ export const publicPublicationTags = (release: string, snapshot: string) => [
   `publication-${snapshot}`,
 ];
 
-/** Called only by the default service entrypoint, whose Workers Cache owns HTML. */
+/** Called only by the default service entrypoint, whose Workers Cache owns published HTML and showcase JSON. */
 export async function invalidatePublicPublication(
   request: Request,
   invalidate: (pointer: PublicationPointer) => Promise<void>,

@@ -96,6 +96,7 @@ export function sanitizeStoreListingPricePlaceholders(root: ParentNode): void {
   });
   root.querySelectorAll<HTMLButtonElement>(buySelector).forEach((button) => {
     button.hidden = true;
+    button.disabled = true;
     button.removeAttribute('aria-busy');
     button.classList.remove('preorder-action');
     button.dataset.storeCardBuyLabel = STORE_LISTING_PRICE_COPY.buy;
@@ -114,7 +115,7 @@ export function sanitizeStoreListingPricePlaceholders(root: ParentNode): void {
   });
 }
 
-// Status is information, not a control: the card says why it cannot be bought and focus stays in the card.
+// Ordinary unavailable cards show status only; an active pre-order retains its disabled control.
 function showStoreCardStatus(button: HTMLButtonElement, label: string, statusTone: 'neutral' | 'sold-out') {
   const status = button.parentElement?.querySelector<HTMLElement>(availabilitySelector);
   if (status) {
@@ -122,13 +123,14 @@ function showStoreCardStatus(button: HTMLButtonElement, label: string, statusTon
     status.dataset.storeListingAvailabilityState = statusTone === 'sold-out' ? 'sold_out' : 'unavailable';
     status.textContent = label;
   }
-  button.hidden = true;
+  button.disabled = true;
+  button.hidden = button.dataset.storeCardBuyLabel !== STORE_LISTING_PRICE_COPY.preorder;
   button.closest('.store-item-card--listing')?.querySelector<HTMLElement>('.prose-card-link')?.focus();
 }
 
 // Cards are not islands, so the purchase code loads on the first press; the Worker offer stays the authority.
 async function buyFromStoreCard(button: HTMLButtonElement, confirmationTimers: Map<HTMLButtonElement, number>) {
-  if (button.getAttribute('aria-busy') === 'true') return;
+  if (button.disabled || button.getAttribute('aria-busy') === 'true') return;
   window.clearTimeout(confirmationTimers.get(button));
   button.setAttribute('aria-busy', 'true');
   button.textContent = STORE_LISTING_PRICE_COPY.adding;
@@ -218,17 +220,19 @@ export function connectStoreListingPricePresentation({
           const preorderBadge = card.querySelector<HTMLElement>(preorderSelector);
           if (preorderBadge) {
             preorderBadge.textContent = badges[badges.length - 1] ?? '';
-            preorderBadge.hidden = false;
+            preorderBadge.hidden = recognizedState !== 'stocked';
           }
           const releaseStatus = card.querySelector<HTMLElement>(releaseStatusSelector);
-          if (releaseStatus) releaseStatus.hidden = badges.length < 2;
+          if (releaseStatus) releaseStatus.hidden = recognizedState !== 'stocked' || badges.length < 2;
         }
       });
 
       // The projection only decides whether Buy is offered; pressing it reads the authoritative offer.
       buyButtons.forEach((button) => {
         const record = recordsBySlug.get(button.dataset.storeItemSlug || '');
-        button.hidden = !(record?.presentationState === 'ready' && record.availabilityState === 'stocked');
+        const buyable = record?.presentationState === 'ready' && record.availabilityState === 'stocked';
+        button.hidden = !(buyable || record?.preorder);
+        button.disabled = !buyable;
         button.dataset.storeCardBuyLabel = record?.preorder
           ? STORE_LISTING_PRICE_COPY.preorder
           : STORE_LISTING_PRICE_COPY.buy;

@@ -51,6 +51,30 @@ it('evicts the least recently used entry by UTF-8 bytes, counts headers, and rep
   expect(cache.get('headers')).toBeUndefined();
 });
 
+it('retires older publication entries, retains the active HTML and JSON, and rejects late retired writes', () => {
+  const sql = storage();
+  const cache = new PublicRenderCache(sql, 140);
+  cache.put('release/old/home', page('old HTML'));
+  cache.put('release/old/showcase', page('old JSON'));
+  cache.put('old-release/current/home', page('old code'));
+  cache.put('release/current/home', page('HTML'));
+  cache.retain('release/current/');
+  expect(cache.get('release/old/home')).toBeUndefined();
+  expect(cache.get('release/old/showcase')).toBeUndefined();
+  expect(cache.get('old-release/current/home')).toBeUndefined();
+  expect(cache.get('release/current/home')?.body).toBe('HTML');
+  cache.put('release/current/showcase', page('JSON'));
+  cache.put('release/old/showcase', page('late render'));
+  cache.retain('release/current/');
+  expect(cache.get('release/old/showcase')).toBeUndefined();
+  expect(cache.get('release/current/showcase')?.body).toBe('JSON');
+  // Removal must also release its accounted bytes for subsequent inserts and restarts.
+  const restarted = new PublicRenderCache(sql, 140);
+  restarted.retain('release/next/');
+  restarted.put('release/next/showcase', page('x'.repeat(100)));
+  expect(restarted.get('release/next/showcase')?.body).toBe('x'.repeat(100));
+});
+
 it('produces stable weak validators bound to identity and matches strong/weak lists and wildcard', async () => {
   const etag = await publicPageEtag('release/snapshot/home');
   expect(etag).toMatch(/^W\/"[a-f0-9]{64}"$/);

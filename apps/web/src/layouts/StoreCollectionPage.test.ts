@@ -107,7 +107,7 @@ describe('Store collection category surfaces', () => {
       /<div class="store-item-card__image-frame">[\s\S]*?<\/div>\s*<a\s+class="prose-card-link"[\s\S]*?href=\{storeItem\.storePath\}/,
     );
     expect(storeItemCardSource).toMatch(
-      /<a\s+class="prose-card-link"[\s\S]*?<\/a>\s*<div class="store-item-card__listen">/,
+      /<a\s+class="prose-card-link"[\s\S]*?<\/a>\s*\{storeItem\.embeddedPlayerData && \(\s*<div class="store-item-card__listen">/,
     );
     expect(proseCssSource).toContain(
       '.store-item-card--listing .prose-card-link {\n  position: absolute;\n  inset: 0;',

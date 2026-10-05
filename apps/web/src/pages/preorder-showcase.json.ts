@@ -33,5 +33,5 @@ export async function GET() {
     ),
   );
   const candidates: StorePreorderShowcaseCandidate[] = buildPreorderShowcaseCandidates(items, releases, images);
-  return Response.json(candidates, { headers: { 'Cache-Control': 'no-store' } });
+  return Response.json(candidates);
 }

@@ -58,16 +58,23 @@ try {
     paths.push(`/${record.collection}/${record.slug}/`, `/app-shell-overlay/${record.collection}/${record.slug}/`);
   }
   for (const item of snapshot.storeItems ?? []) paths.push(`/store/${item.storeItemSlug}/`);
+  const releasePages = new Map();
   for (const path of paths) {
     const response = await fetch(root + path);
     const body = await response.text();
     assert.equal(response.status, 200, `${path}: ${body.slice(0, 300)}`);
-    assert.equal(response.headers.get('X-Content-SHA256'), input.sha256, path);
-    assert.equal(
-      response.headers.get('Cache-Control'),
-      'public, max-age=0, s-maxage=30, stale-while-revalidate=30',
-      path,
-    );
+    if (path === '/sitemap.xml') {
+      assert.match(response.headers.get('Content-Type') ?? '', /^application\/xml/);
+      assert.ok(body.includes('<urlset'), path);
+    } else {
+      assert.equal(response.headers.get('X-Content-SHA256'), input.sha256, path);
+      assert.equal(
+        response.headers.get('Cache-Control'),
+        'public, max-age=0, s-maxage=30, stale-while-revalidate=30',
+        path,
+      );
+    }
+    if (path.startsWith('/releases/')) releasePages.set(path, body);
     if (path === '/') {
       const images = [...body.matchAll(/<img[^>]*src="([^"]+)"/g)].map((match) => match[1].replaceAll('&amp;', '&'));
       for (const source of images) {
@@ -77,6 +84,41 @@ try {
         await image.body?.cancel();
       }
     }
+  }
+  const showcaseUrl = root + '/preorder-showcase.json';
+  const showcase = await fetch(showcaseUrl);
+  assert.equal(showcase.status, 200);
+  assert.match(showcase.headers.get('Content-Type') ?? '', /^application\/json/);
+  assert.equal(showcase.headers.get('X-Content-SHA256'), input.sha256);
+  assert.equal(showcase.headers.get('Cache-Control'), 'public, max-age=0, s-maxage=30, stale-while-revalidate=30');
+  const etag = showcase.headers.get('ETag');
+  assert.match(etag ?? '', /^W\/"[a-f0-9]{64}"$/);
+  assert.ok(showcase.headers.get('Cache-Tag')?.includes(`publication-${input.sha256}`));
+  const candidates = await showcase.json();
+  const releaseItems = (snapshot.storeItems ?? []).filter((item) => item.sourceKind === 'release');
+  assert.deepEqual(candidates.map((item) => item.slug).sort(), releaseItems.map((item) => item.storeItemSlug).sort());
+  for (const item of releaseItems) {
+    const record = snapshot.records.find((entry) => entry.collection === 'releases' && entry.slug === item.sourceId);
+    const candidate = candidates.find((entry) => entry.slug === item.storeItemSlug);
+    const clips = record.data.clips ?? [];
+    assert.equal(candidate.firstClipId, clips[0]?.youtube_video_id ?? null);
+    assert.deepEqual(
+      candidate.clips.map((clip) => clip.id),
+      clips.map((clip) => clip.youtube_video_id),
+    );
+    for (const clip of clips)
+      assert.ok(releasePages.get(`/releases/${record.slug}/`)?.includes(clip.youtube_video_id), record.slug);
+  }
+  const head = await fetch(showcaseUrl, { method: 'HEAD' });
+  assert.equal(head.status, 200);
+  assert.equal(head.headers.get('ETag'), etag);
+  assert.equal(await head.text(), '');
+  assert.deepEqual(await (await fetch(showcaseUrl)).json(), candidates);
+  for (const method of ['GET', 'HEAD']) {
+    const response = await fetch(showcaseUrl, { method, headers: { 'If-None-Match': etag } });
+    assert.equal(response.status, 304, method);
+    assert.equal(response.headers.get('ETag'), etag);
+    assert.equal(await response.text(), '', method);
   }
   for (const path of [
     '/_emdash/api/content/news',
@@ -91,7 +133,7 @@ try {
     await response.body?.cancel();
   }
   console.log(
-    `Public runtime smoke passed: ${paths.length} pages, homepage images, private routes and unaccepted media.`,
+    `Public runtime smoke passed: ${paths.length} pages, ${candidates.length} showcase candidates with GET/HEAD/304, homepage images, private routes and unaccepted media.`,
   );
 } finally {
   await worker.stop();

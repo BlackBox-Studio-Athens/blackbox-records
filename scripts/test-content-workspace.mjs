@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { proseText } from '../packages/content-model/src/prose.ts';
 import { resolveProse } from '../packages/content-model/src/prose-rendering.ts';
 import { createServer } from 'node:http';
-import { readFile, mkdir } from 'node:fs/promises';
+import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { chromium, firefox } from 'playwright';
 import { randomUUID } from 'node:crypto';
@@ -240,6 +240,7 @@ const state = {
 const publications = [];
 // EmDash blackbox-editorial plugin KV stand-in: price drafts with compare-and-set revisions.
 const priceDrafts = new Map();
+const preorders = new Map();
 let priceDraftRevision = 0;
 const previewDocuments = new Map();
 const previewBridge =
@@ -565,6 +566,22 @@ const server = createServer(async (req, res) => {
         pending: null,
       });
     }
+    if (/^\/api\/internal\/variants\/[^/]+\/stock\/preorder$/.test(url.pathname) && req.method === 'PATCH') {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      if (state.preorderFailure) {
+        const status = state.preorderFailure;
+        state.preorderFailure = 0;
+        if (status === 409) state.stockRevision++;
+        return fail(status);
+      }
+      if (body.expectedRevision !== state.stockRevision) return fail(409);
+      state.stockRevision++;
+      const preorder = body.shipEstimate
+        ? { startedAt: new Date().toISOString(), open: true, shipEstimate: body.shipEstimate }
+        : null;
+      preorders.set(url.pathname.split('/')[4], preorder);
+      return json({ stock: { revision: state.stockRevision, preorder } });
+    }
     if (/^\/api\/internal\/variants\/[^/]+\/stock(?:\/history)?$/.test(url.pathname)) {
       const variantId = url.pathname.split('/')[4];
       if (url.pathname.endsWith('/history')) {
@@ -582,6 +599,7 @@ const server = createServer(async (req, res) => {
           onlineQuantity: variantId === 'variant_retained' ? 1 : 5,
           revision: state.stockRevision,
           updatedAt: '2026-09-15T12:00:00Z',
+          preorder: preorders.get(variantId) ?? null,
         },
       });
     }
@@ -1050,6 +1068,252 @@ else if (process.argv.includes('--editor-recovery')) {
     );
   } catch (error) {
     await page.screenshot({ path: resolve(artifacts, 'artist-journey-failure.png') });
+    throw error;
+  } finally {
+    await browser.close();
+    await new Promise((resolve) => server.close(resolve));
+  }
+} else if (sellingJourney && process.argv.includes('--mobile-preorders')) {
+  const browser = await browserType.launch();
+  const page = await browser.newPage({ viewport: { width: 320, height: 900 } });
+  await mkdir(artifacts, { recursive: true });
+  async function fits(locator, name) {
+    const box = await locator.boundingBox();
+    const width = page.viewportSize().width;
+    assert.ok(box && box.x >= -0.5 && box.x + box.width <= width + 0.5, name + ' fits ' + width);
+    assert.ok(box.height >= 43.99, name + ' has a 44px touch target');
+    assert.ok(
+      await locator.evaluate((field) => {
+        if (field.tagName !== 'SELECT') return true;
+        const style = getComputedStyle(field);
+        const context = document.createElement('canvas').getContext('2d');
+        context.font = style.font;
+        const text = Math.max(...[...field.options].map((option) => context.measureText(option.text).width));
+        // ponytail: 24px native arrow allowance; screenshots catch platform-specific clipping.
+        return field.clientWidth >= text + parseFloat(style.paddingLeft) + parseFloat(style.paddingRight) + 24;
+      }),
+      name + ' values remain readable',
+    );
+    await locator.scrollIntoViewIfNeeded();
+    await locator.click({ trial: true });
+  }
+  async function capture(name, anchor) {
+    if (anchor) {
+      await anchor.evaluate((field) => {
+        const editor = field.closest('.cms-editor');
+        if (!editor) return field.scrollIntoView({ block: 'start' });
+        const main = editor.closest('#main');
+        if (main) main.scrollTop = 0;
+        const toolbar = editor.querySelector('.cms-editor-toolbar');
+        editor.scrollTop += field.getBoundingClientRect().top - toolbar.getBoundingClientRect().bottom - 16;
+      });
+    }
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
+    assert.ok(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      name + ' has no document overflow',
+    );
+    const layout = await page.evaluate(() => {
+      const form = [...document.querySelectorAll('form')].find(
+        (node) => node.querySelector('legend')?.textContent === 'Pre-order settings',
+      );
+      const ancestors = [];
+      for (let node = form; node && ancestors.length < 24; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        const box = node.getBoundingClientRect();
+        ancestors.push({
+          tag: node.tagName,
+          class: node.className,
+          rect: { x: box.x, y: box.y, width: box.width, height: box.height },
+          clientHeight: node.clientHeight,
+          scrollHeight: node.scrollHeight,
+          scrollTop: node.scrollTop,
+          overflow: style.overflow,
+          gridColumns: style.gridTemplateColumns,
+        });
+      }
+      return {
+        viewport: { width: innerWidth, height: innerHeight },
+        font: getComputedStyle(document.body).fontFamily,
+        fonts: [...document.fonts].filter((font) => font.family.includes('Inter')).map((font) => font.status),
+        ancestors,
+      };
+    });
+    await writeFile(resolve(artifacts, name + '.json'), JSON.stringify(layout, null, 2));
+    await page.screenshot({ path: resolve(artifacts, name + '.png') });
+    const workspace = layout.ancestors.find((node) => node.class.includes('cms-workspace'));
+    if (workspace && page.viewportSize().width < 768)
+      assert.equal(workspace.scrollTop, 0, name + ' keeps the phone editor in its frame');
+  }
+  try {
+    for (const width of [320, 390, 430]) {
+      await page.setViewportSize({ width, height: 900 });
+      preorders.delete('variant_retained');
+      await page.goto(origin + '/content/?collection=releases&id=releases-retained&tab=selling');
+      await page.getByRole('textbox', { name: 'Price (EUR)', exact: true }).waitFor();
+      await capture('staff-selling-' + width);
+      await fits(page.getByRole('button', { name: 'Menu', exact: true }), 'Menu');
+      await fits(page.getByRole('button', { name: /^Publish changes/ }), 'Publish changes');
+      await fits(page.getByRole('button', { name: 'Publishing options', exact: true }), 'Publishing options');
+      await fits(page.getByRole('button', { name: 'More draft actions', exact: true }), 'More draft actions');
+      await fits(page.getByRole('textbox', { name: 'Price (EUR)', exact: true }), 'Selling price');
+      const toggle = page.getByRole('switch', { name: /^Pre-order/ });
+      await fits(toggle.locator('..'), 'Pre-order switch');
+      await toggle.press('Space');
+      const kind = page.getByRole('combobox', { name: 'When it ships', exact: true });
+      const month = page.getByRole('combobox', { name: 'Month', exact: true });
+      const part = page.getByRole('combobox', { name: 'Part of the month', exact: true });
+      await part.selectOption('late');
+      for (const [control, name] of [
+        [kind, 'Ship estimate kind'],
+        [month, 'Month'],
+        [part, 'Month part'],
+      ])
+        await fits(control, name);
+      await page.getByText(/^Pre-order · ships around late/).waitFor();
+      await capture('staff-preorder-month-start-' + width, toggle.locator('..'));
+      await capture('staff-preorder-month-' + width, page.getByRole('button', { name: 'Save pre-order', exact: true }));
+      await page.getByRole('button', { name: 'Save pre-order', exact: true }).click();
+      await page.getByRole('status').filter({ hasText: 'Pre-order saved.' }).waitFor();
+      assert.equal(preorders.get('variant_retained').shipEstimate.part, 'late');
+      await fits(page.getByRole('button', { name: 'Copies arrived', exact: true }), 'Copies arrived');
+      await page.getByRole('button', { name: 'Save pre-order', exact: true }).press('Tab');
+      assert.equal(await page.locator(':focus').innerText(), 'Copies arrived', 'Keyboard reaches arrival action');
+      await capture(
+        'staff-preorder-month-saved-' + width,
+        page.getByRole('button', { name: 'Save pre-order', exact: true }),
+      );
+      await kind.selectOption('date');
+      const date = page.getByLabel('Exact ship date', { exact: true });
+      await fits(date, 'Exact ship date');
+      const writes = state.requests.filter((request) => request.method === 'PATCH').length;
+      await page.getByRole('button', { name: 'Save pre-order', exact: true }).click();
+      assert.equal(await date.evaluate((field) => field.validity.valueMissing), true);
+      assert.equal(
+        await date.evaluate((field) => field === document.activeElement),
+        true,
+        'Validation focuses the date',
+      );
+      assert.equal(state.requests.filter((request) => request.method === 'PATCH').length, writes);
+      const tomorrow = await date.getAttribute('min');
+      await date.fill(tomorrow);
+      await capture('staff-preorder-date-' + width, date.locator('..'));
+      if (width === 390) {
+        for (const status of [409, 503]) {
+          state.preorderFailure = status;
+          await page.getByRole('button', { name: 'Save pre-order', exact: true }).click();
+          await page
+            .getByRole('status')
+            .filter({
+              hasText: status === 409 ? 'Stock changed. Review the current item' : 'Pre-order was not confirmed.',
+            })
+            .waitFor();
+          await capture('staff-preorder-recovery-' + status);
+          await kind.selectOption('date');
+          await date.fill(tomorrow);
+          await fits(page.getByRole('button', { name: 'Save pre-order', exact: true }), 'Retry pre-order');
+        }
+      }
+      await page.getByRole('button', { name: 'Save pre-order', exact: true }).click();
+      await page.getByRole('button', { name: 'Saving pre-order…', exact: true }).waitFor();
+      assert.equal(await kind.isDisabled(), true, 'Stock controls disable during the immediate write');
+      await page.getByRole('status').filter({ hasText: 'Pre-order saved.' }).waitFor();
+      assert.deepEqual(preorders.get('variant_retained').shipEstimate, { kind: 'date', date: tomorrow });
+      await page.getByRole('button', { name: 'Copies arrived', exact: true }).click();
+      await page.getByRole('status').filter({ hasText: 'Pre-order ended.' }).waitFor();
+      assert.equal(await toggle.isChecked(), false);
+      assert.equal(preorders.get('variant_retained'), null);
+      await capture('staff-preorder-ended-' + width, toggle.locator('..'));
+      if (width === 390) {
+        preorders.set('variant_retained', {
+          startedAt: new Date().toISOString(),
+          open: true,
+          shipEstimate: { kind: 'month', month: '2000-01', part: null },
+        });
+        await page.reload();
+        await page.getByRole('alert').filter({ hasText: 'This month has passed.' }).waitFor();
+        assert.equal(await page.getByRole('button', { name: 'Save pre-order', exact: true }).isDisabled(), true);
+        await fits(page.getByRole('button', { name: 'Copies arrived', exact: true }), 'Arrival for a passed month');
+        await capture(
+          'staff-preorder-passed-month-390',
+          page.getByRole('alert').filter({ hasText: 'This month has passed.' }),
+        );
+        await page.getByRole('button', { name: 'Copies arrived', exact: true }).click();
+        await page.getByRole('status').filter({ hasText: 'Pre-order ended.' }).waitFor();
+      }
+      await page.getByRole('button', { name: 'Menu', exact: true }).click();
+      const menu = page.getByRole('dialog', { name: 'Staff workspace', exact: true });
+      await fits(menu.getByRole('button', { name: 'Close', exact: true }), 'Menu close');
+      await fits(menu.getByRole('link', { name: 'Stock', exact: true }), 'Stock navigation');
+      await capture('staff-menu-' + width);
+      await page.keyboard.press('Escape');
+      await menu.waitFor({ state: 'hidden' });
+      await page.waitForFunction(() => document.activeElement?.textContent.trim() === 'Menu');
+      assert.equal(await page.locator(':focus').innerText(), 'Menu');
+      await page.goto(origin + '/stock/');
+      await page.locator('.inventory-row').first().waitFor();
+      await capture('staff-stock-' + width);
+      await fits(page.getByRole('button', { name: 'Count stock', exact: true }), 'Count stock');
+      await page.locator('.inventory-row').first().click();
+      const stockMode = page.locator('.staff-stock-controls [data-slot="button-group"]');
+      await stockMode.waitFor();
+      await capture('staff-stock-task-' + width);
+      await fits(stockMode.getByRole('button', { name: 'Add or remove copies', exact: true }), 'Adjust stock mode');
+      await fits(stockMode.getByRole('button', { name: 'Count stock', exact: true }), 'Count stock mode');
+      await stockMode.getByRole('button', { name: 'Count stock', exact: true }).click();
+      await fits(page.getByLabel('Physical stock counted', { exact: true }), 'Physical stock count');
+      await fits(page.getByRole('button', { name: 'Save count', exact: true }), 'Record stock count');
+      await capture('staff-stock-count-' + width);
+      await page.goto(origin + '/orders/');
+      await page.locator('.order-row').first().waitFor();
+      await capture('staff-orders-' + width);
+      await fits(page.getByLabel('Search orders', { exact: true }), 'Order search');
+      await fits(
+        page.getByLabel('Awaiting stock', { exact: true }).locator('..').locator('..'),
+        'Awaiting stock filter',
+      );
+      await page.locator('.order-row').first().click();
+      await page.locator('.order-facts').waitFor();
+      await fits(page.locator('[data-staff-back]'), 'Back to Orders');
+      await fits(page.locator('.order-references summary'), 'Order references');
+      await capture('staff-order-detail-' + width);
+      await page.locator('[data-staff-back]').click();
+      await page.locator('.order-row').first().waitFor();
+      await page.getByLabel('Search orders', { exact: true }).fill('no matching fixture order');
+      await page.getByRole('heading', { name: 'No matching orders', exact: true }).waitFor();
+      await fits(page.getByRole('button', { name: 'Clear filters', exact: true }), 'Clear filters');
+      await capture('staff-orders-empty-' + width);
+    }
+    await page.setViewportSize({ width: 390, height: 900 });
+    await page.goto(origin + '/content/?collection=artists&id=artists-1');
+    const title = page.getByLabel('Artist name', { exact: true });
+    await title.waitFor();
+    state.failSave = true;
+    await title.fill('Private mobile recovery draft');
+    await page.getByRole('button', { name: 'Retry save', exact: true }).waitFor();
+    await fits(page.getByRole('button', { name: 'Retry save', exact: true }), 'Retry private autosave');
+    await fits(page.getByRole('button', { name: /^Publish changes/ }), 'Publication after failed autosave');
+    await capture('staff-editor-recovery-390');
+    assert.equal(await title.inputValue(), 'Private mobile recovery draft');
+    state.failSave = false;
+    await page.getByRole('button', { name: 'Retry save', exact: true }).click();
+    await page.getByRole('status').filter({ hasText: 'Changes saved' }).waitFor();
+    assert.equal(publications.length, 0, 'Mobile editing and stock writes never publish content');
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto(origin + '/content/?collection=releases&id=releases-retained&tab=selling');
+    await page.getByRole('textbox', { name: 'Price (EUR)', exact: true }).waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Menu', exact: true }).isVisible(), false);
+    await page.getByRole('switch', { name: /^Pre-order/ }).press('Space');
+    await fits(page.getByRole('combobox', { name: 'Month', exact: true }), 'Desktop month');
+    await fits(page.getByRole('button', { name: 'Save pre-order', exact: true }), 'Desktop save');
+    await capture('staff-preorder-desktop', page.getByRole('switch', { name: /^Pre-order/ }).locator('..'));
+    console.log(
+      'Staff mobile pre-orders passed: 320/390/430px, month/date, validation, revision recovery, arrival, keyboard, Menu, editor, Stock and Orders.',
+    );
+  } catch (error) {
+    await page.screenshot({ path: resolve(artifacts, 'staff-mobile-failure.png') });
     throw error;
   } finally {
     await browser.close();
