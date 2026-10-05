@@ -34,7 +34,7 @@ type ImageMarkupDiagnostic = {
 
 const distRoot = fileURLToPath(new URL('../dist', import.meta.url));
 
-const routeChecks: RouteCheck[] = [
+export const routeChecks: RouteCheck[] = [
   {
     route: 'index.html',
     maxHighPriorityImages: 1,
@@ -113,16 +113,10 @@ const routeChecks: RouteCheck[] = [
     maxHighPriorityImages: 1,
     images: [
       {
-        className: 'releases-latest-feature__artwork',
-        minCount: 1,
-        minSrcsetCandidates: 2,
-        requireDecoding: true,
-        requirePriority: true,
-        requireSrcset: true,
-      },
-      {
         className: 'release-card-artwork',
-        firstEagerCount: 3,
+        // Live offers select the feature after hydration; SSR starts with the neutral catalog.
+        firstPriorityCount: 1,
+        firstEagerCount: 1,
         minCount: 1,
         minSrcsetCandidates: 2,
         requireDecoding: true,
@@ -537,13 +531,9 @@ const byViewport = (phone: readonly [number, number], desktop: readonly [number,
 export const srcsetSlotChecks: SrcsetSlotCheck[] = [
   {
     route: 'releases/index.html',
-    className: 'releases-latest-feature__artwork',
-    // Includes the artwork's 1.026 resting scale; beside the upcoming release the feature spans 9 of 12 columns.
-    slot: (viewportWidth, { html }) =>
-      byViewport(
-        [330, 336],
-        html.includes('releases-page-layout--single-column') ? [617, 626] : [450, 458],
-      )(viewportWidth),
+    className: 'release-card-artwork',
+    // Neutral SSR grid: 87rem cap, gutters, section padding, gaps, 1px frame and 1.026 artwork scale.
+    slot: byViewport([330, 336], [420, 425]),
   },
   {
     route: 'releases/*/index.html',

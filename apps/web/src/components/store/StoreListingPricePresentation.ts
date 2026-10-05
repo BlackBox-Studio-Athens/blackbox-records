@@ -99,6 +99,7 @@ export function sanitizeStoreListingPricePlaceholders(root: ParentNode): void {
     button.disabled = true;
     button.removeAttribute('aria-busy');
     button.classList.remove('preorder-action');
+    button.classList.remove('purchase-action');
     button.dataset.storeCardBuyLabel = STORE_LISTING_PRICE_COPY.buy;
     button.textContent = STORE_LISTING_PRICE_COPY.buy;
   });
@@ -125,6 +126,7 @@ function showStoreCardStatus(button: HTMLButtonElement, label: string, statusTon
   }
   button.disabled = true;
   button.hidden = button.dataset.storeCardBuyLabel !== STORE_LISTING_PRICE_COPY.preorder;
+  button.classList.remove('purchase-action');
   button.closest('.store-item-card--listing')?.querySelector<HTMLElement>('.prose-card-link')?.focus();
 }
 
@@ -238,6 +240,7 @@ export function connectStoreListingPricePresentation({
           : STORE_LISTING_PRICE_COPY.buy;
         button.textContent = button.dataset.storeCardBuyLabel;
         button.classList.toggle('preorder-action', Boolean(record?.preorder));
+        button.classList.toggle('purchase-action', !button.hidden && !record?.preorder);
       });
       document.dispatchEvent(new Event('blackbox:store-listing-applied'));
     });

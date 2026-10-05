@@ -1,5 +1,121 @@
 import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
+test('regular Buy feedback is shared, stationary and independent of card hover', async ({ page }) => {
+  const storeItemSlug = 'disintegration-black-vinyl-lp';
+  await page.route('**/api/store/listing-prices*', (route) =>
+    route.fulfill({
+      json: [
+        {
+          storeItemSlug,
+          presentationState: 'ready',
+          availabilityState: 'stocked',
+          displayPrice: '€28.00',
+          preorder: null,
+        },
+      ],
+    }),
+  );
+  let offerReads = 0;
+  let releaseOffer: (() => Promise<void>) | undefined;
+  await page.route(`**/api/store/items/${storeItemSlug}`, (route) => {
+    offerReads += 1;
+    releaseOffer = () =>
+      route.fulfill({
+        json: {
+          storeItemSlug,
+          variantId: `${storeItemSlug}_standard`,
+          availability: { label: 'In stock', status: 'available' },
+          canCheckout: true,
+          catalogStatus: 'ready',
+          price: { kind: 'fixed', amountMinor: 2800, currencyCode: 'EUR', display: '€28.00' },
+        },
+      });
+  });
+  await page.goto('store/');
+  await waitForShell(page);
+  const card = page.getByRole('group', { name: 'Disintegration by Afterwise', exact: true }).first();
+  const buy = card.locator('[data-store-card-buy]');
+  const listen = card.getByRole('button', { name: 'Listen', exact: true });
+  await expect(buy).toHaveClass(/purchase-action/);
+  await expect(buy).toHaveAccessibleName('Buy');
+  await buy.scrollIntoViewIfNeeded();
+  await page.mouse.move(0, 0);
+  const appearance = (element: Element) => {
+    const style = getComputedStyle(element);
+    return {
+      face: style.backgroundColor,
+      edge: style.borderColor,
+      shadow: style.boxShadow,
+      transform: style.transform,
+    };
+  };
+  const cardAppearance = () =>
+    card.evaluate((element) => {
+      const surface = getComputedStyle(element.querySelector('.store-item-card__surface')!);
+      return {
+        face: surface.backgroundColor,
+        edge: surface.borderColor,
+        title: getComputedStyle(element.querySelector('h2')!).textDecorationColor,
+      };
+    });
+  const resting = await buy.evaluate(appearance);
+  const cardResting = await cardAppearance();
+  const footprint = await buy.boundingBox();
+  await buy.hover();
+  await buy.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
+  const hovering = await buy.evaluate(appearance);
+  expect(hovering).not.toEqual(resting);
+  expect(hovering.transform).toBe('none');
+  expect(hovering.shadow === 'none' || hovering.shadow.includes('inset')).toBe(true);
+  expect(await buy.boundingBox()).toEqual(footprint);
+  expect(await cardAppearance()).toEqual(cardResting);
+  await listen.hover();
+  expect(await cardAppearance()).toEqual(cardResting);
+  await buy.focus();
+  await expect(buy).toBeFocused();
+  await expect(buy).toHaveCSS('outline-width', '2px');
+  await expect(buy).toHaveCSS('outline-style', 'solid');
+  expect(await cardAppearance()).toEqual(cardResting);
+  await page.mouse.move(0, 0);
+  await buy.click();
+  await expect(buy).toHaveAttribute('aria-busy', 'true');
+  await expect(buy).toHaveText('Adding');
+  await expect.poll(() => buy.evaluate(appearance)).toEqual(resting);
+  await buy.click();
+  await expect.poll(() => offerReads).toBe(1);
+  await releaseOffer!();
+  const cart = page.getByRole('dialog', { name: 'Cart' });
+  await expect(cart).toBeVisible();
+  await expect(page).toHaveURL(/\/store\/$/);
+  await page.keyboard.press('Escape');
+  await expect(cart).toBeHidden();
+
+  // A native disabled visual fixture checks shared styling; Store Buy's real pending state above uses aria-busy.
+  await buy.evaluate((button: HTMLButtonElement) => {
+    button.disabled = true;
+  });
+  await expect(buy).toBeDisabled();
+  await expect(buy).toHaveCSS('pointer-events', 'none');
+  await expect(buy).toHaveCSS('opacity', '0.45');
+  await expect.poll(() => buy.evaluate(appearance)).toEqual(resting);
+  await buy.evaluate((button: HTMLButtonElement) => {
+    button.disabled = false;
+  });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(buy).toHaveCSS('transition-duration', '0s');
+  await expect(card.locator('.store-item-card__surface')).toHaveCSS('transition-duration', '0s');
+  await buy.hover();
+  expect(await buy.evaluate(appearance)).toEqual(hovering);
+
+  await page.goto('releases/');
+  await waitForShell(page);
+  const releaseBuy = page.locator('[data-release-role="lead"]').getByRole('link', { name: 'Buy vinyl', exact: true });
+  await expect(releaseBuy).toHaveClass(/purchase-action/);
+  await releaseBuy.hover();
+  expect(await releaseBuy.evaluate(appearance)).toEqual(hovering);
+  await expect(releaseBuy).toHaveCSS('transition-duration', '0s');
+});
+
 test('Store categories center and reflow with complete touch-sized labels', async ({ page }, testInfo) => {
   await page.goto('store/');
   await waitForShell(page);
@@ -120,9 +236,7 @@ test('Store categories retain current state, keyboard focus and shell navigation
   await expect(all).toHaveCSS('transition-duration', '0s');
 });
 
-test('Store listing cards keep compact display titles and plain credits through responsive reflow', async ({
-  page,
-}) => {
+test('Store listing cards use Veneer titles and quiet credits with unchanged sizes', async ({ page }) => {
   await page.goto('store/distro/');
   await waitForShell(page);
   await page.evaluate(() => document.fonts.ready);
@@ -134,7 +248,7 @@ test('Store listing cards keep compact display titles and plain credits through 
   await expect(linked.locator('.store-item-card__artist-link')).toHaveText('Afterwise');
   await expect(linked.locator('.store-item-card__artist-link')).toHaveAttribute('href', /\/artists\/afterwise\/$/);
   await expect(unlinked.locator('.store-item-card__artist-link')).toHaveCount(0);
-  expect(await page.evaluate(() => document.fonts.check('400 20px "Bebas Neue"'))).toBe(true);
+  expect(await page.evaluate(() => document.fonts.check('900 24px Veneer'))).toBe(true);
   const longNames = await page.locator('.store-item-card--listing').evaluateAll((cards) => {
     const byLength = (selector: string) =>
       [...cards]
@@ -154,11 +268,11 @@ test('Store listing cards keep compact display titles and plain credits through 
       const credit = card.locator('.store-item-card__artist');
       const name = card.locator('.store-item-card__artist-name');
       const artist = (await name.textContent())!.trim();
-      await expect(title).toHaveCSS('font-family', /Bebas Neue/);
-      await expect(title).toHaveCSS('font-weight', '400');
-      await expect(title).toHaveCSS('text-transform', 'uppercase');
-      await expect(title).toHaveCSS('font-size', '20px');
-      await expect(credit).toHaveText(artist);
+      await expect(title).toHaveCSS('font-family', /Veneer/);
+      await expect(title).toHaveCSS('font-weight', '900');
+      await expect(title).toHaveCSS('text-transform', 'none');
+      await expect(title).toHaveCSS('font-size', width === 1440 ? '24px' : '20px');
+      await expect(credit).toHaveText(`by ${artist}`);
       await expect(credit).toHaveCSS('font-family', /Inter/);
       await expect(credit).toHaveCSS('font-weight', '400');
       await expect(name).toHaveCSS('font-family', /Inter/);

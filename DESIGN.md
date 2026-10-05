@@ -166,7 +166,7 @@ The palette is near-black and off-white with two muted red families for section-
 
 **The Public Title Rule.** Veneer owns public content titles: artist names, release names, distro/store item names, cart and checkout line item names, service offering titles, group headings, route heroes, and major editorial feature titles. Bebas Neue remains the compact UI display face for navigation, buttons, prices, cart/checkout chrome, totals, controls, labels, stock operations, order-state surfaces, metadata-heavy panels, and any surface where texture would slow scanning.
 
-**The Store Listing Exception.** Store listing cards follow the approved 5 October lifecycle references: compact uppercase Bebas Neue titles at 20px, with plain Inter artist or label credits at 14px and 1.4 line height, without a “by” prefix. Existing artist links remain independent. This typography stays consistent after a pre-order ends and across All, BlackBox Releases, Distro and populated Merch; item pages, cart, checkout and order confirmation retain their existing typography.
+**The Store Listing Scale.** Store listing cards use Veneer weight 900 for source-cased item titles at the existing responsive 20–24px size. The entire credit underneath, “by” and the unchanged artist or label name, uses Inter weight 400 at the existing 14px size, 1.4 line height and muted color. Existing artist links remain independent. This applies across All, BlackBox Releases, Distro and populated Merch; item pages, cart, checkout and order confirmation retain their existing typography.
 
 **The Metadata Is Quiet Rule.** Labels may be uppercase and tracked, but they stay small. Do not let metadata compete with release, artist, or item names.
 
@@ -261,7 +261,7 @@ The embedded player is a shell-level continuity feature, not page-local decorati
 
 ### Signature Component: Catalog Tile
 
-Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, Veneer content titles (with the Store Listing Exception above), and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.
+Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, Veneer content titles (with the Store Listing Scale above), and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.
 
 ## Staff workspace
 
@@ -323,4 +323,4 @@ Store collections use a 90rem container with 32px desktop and 16px mobile gutter
 
 Distro uses one mixed-format catalog, including canonical BlackBox Store items. Released BlackBox titles from the last six calendar months lead newest-first; all remaining items follow band A–Z. The approved lifecycle card composition keeps artist and format together without an additional New release row; promotion ordering remains. Format chips filter individual cards and share the artist/text filters. Any active filter uses Grid; optional Coverflow browses the complete unfiltered list. Retained static builds refresh the date window at their next build. Pre-orders are marked on cards (Pre-order badge, Pre-order button) and collected under a Pre-orders filter; see Pre-order components.
 
-Use complete square artwork and the UI display face (Bebas Neue) for prices across cards, item pages, cart, and checkout. Store listing cards follow the Store Listing Exception: compact uppercase display titles above plain artist and format metadata, left-aligned lifecycle badges and a stable bottom price/action row. Item pages, cart and checkout retain Veneer item titles and Inter credits; formats and controls retain their existing fonts. Cards contain the purchase facts without repeated descriptions or category labels. On item pages, cap artwork at 26rem and place it beside purchase information on desktop; mobile reads identity, artwork, purchase information. Info and populated format-matching Tracklists share the next row. Preserve More views and existing listening actions.
+Use complete square artwork and the UI display face (Bebas Neue) for prices across cards, item pages, cart, and checkout. Store listing cards follow the Store Listing Scale: Veneer item titles above a quiet Inter “by” and artist or label name, left-aligned lifecycle badges and a stable bottom price/action row. Item pages, cart and checkout retain Veneer item titles and Inter credits; formats and controls retain their existing fonts. Cards contain the purchase facts without repeated descriptions or category labels. On item pages, cap artwork at 26rem and place it beside purchase information on desktop; mobile reads identity, artwork, purchase information. Info and populated format-matching Tracklists share the next row. Preserve More views and existing listening actions.

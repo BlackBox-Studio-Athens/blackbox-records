@@ -1,80 +1,13 @@
 ---
-import Prose from '@/components/Prose.astro';
-import { Image } from 'astro:assets';
-import ReleaseCard from '@/components/editorial/ReleaseCard.astro';
-import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
-import { buttonVariants } from '@/components/ui/button';
-import {
-  createArtistDetailPath,
-  createReleaseDetailPath,
-  listArtistProfiles,
-  listReleaseCatalog,
-  mapArtistProfilesById,
-  resolveReleaseArtistDisplayName,
-} from '@/lib/catalog-data';
+import ReleaseCard from '@/components/editorial/ReleaseCard.astro';
+import ReleaseCatalogPresentation from '@/components/editorial/ReleaseCatalogPresentation';
 import { getReleaseCommerceLink } from '@/components/editorial/release-commerce';
-import ReleaseStoreLink from '@/components/editorial/ReleaseStoreLink';
-import { isReleaseOutNow, selectReleasePageEntries } from '@/lib/release-feature';
-import { formatDayMonthYear, formatMonthYear } from '@/utils/content';
-import { buildEmbeddedPlayerData } from '@/components/music/music';
-import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
+import { listArtistProfiles, listReleaseCatalog, mapArtistProfilesById } from '@/lib/catalog-data';
 
-const artistProfiles = await listArtistProfiles();
-const releaseCatalogEntries = await listReleaseCatalog();
+const [artistProfiles, releaseCatalogEntries] = await Promise.all([listArtistProfiles(), listReleaseCatalog()]);
 const artistProfileById = mapArtistProfilesById(artistProfiles);
-const {
-  featuredReleaseEntry: latestReleaseEntry,
-  upcomingReleaseEntry,
-  remainingReleaseEntries,
-} = selectReleasePageEntries(releaseCatalogEntries);
-const latestReleaseArtist = latestReleaseEntry ? artistProfileById.get(latestReleaseEntry.data.artist.id) : undefined;
-const latestReleaseArtistName = latestReleaseEntry
-  ? resolveReleaseArtistDisplayName(latestReleaseEntry, latestReleaseArtist)
-  : '';
-const latestReleasePlayerData = latestReleaseEntry
-  ? buildEmbeddedPlayerData(
-      latestReleaseEntry.id,
-      latestReleaseEntry.data,
-      `${latestReleaseEntry.data.title} - ${latestReleaseArtistName}`,
-    )
-  : null;
-const latestReleaseCommerceLink = latestReleaseEntry ? await getReleaseCommerceLink(latestReleaseEntry) : null;
-const latestReleaseDetailPath = latestReleaseEntry ? createReleaseDetailPath(latestReleaseEntry) : '';
-const latestReleaseLabel =
-  latestReleaseEntry?.data.release_stage !== 'upcoming' &&
-  latestReleaseEntry?.data.release_date &&
-  isReleaseOutNow(latestReleaseEntry.data.release_date)
-    ? 'Latest out now'
-    : 'Next release';
-const latestReleaseDate = latestReleaseEntry ? formatMonthYear(latestReleaseEntry.data.release_date) : '';
-const latestReleaseDateMachineValue = latestReleaseEntry
-  ? latestReleaseEntry.data.release_date?.toISOString().slice(0, 10)
-  : '';
-const hasLatestReleaseActions = Boolean(latestReleasePlayerData || latestReleaseCommerceLink);
-const upcomingReleaseArtist = upcomingReleaseEntry
-  ? artistProfileById.get(upcomingReleaseEntry.data.artist.id)
-  : undefined;
-const upcomingReleaseArtistName = upcomingReleaseEntry
-  ? resolveReleaseArtistDisplayName(upcomingReleaseEntry, upcomingReleaseArtist)
-  : '';
-const upcomingReleaseDetailPath = upcomingReleaseEntry ? createReleaseDetailPath(upcomingReleaseEntry) : '';
-const upcomingReleaseDate = upcomingReleaseEntry ? formatDayMonthYear(upcomingReleaseEntry.data.release_date) : '';
-const upcomingReleaseDateMachineValue = upcomingReleaseEntry
-  ? upcomingReleaseEntry.data.release_date?.toISOString().slice(0, 10)
-  : '';
-
-// Rendered artwork width from global.css (.releases-page-showcase-container, .releases-latest-feature and its 12-column
-// grid), including the 1.026 resting scale. Beside the upcoming release the feature spans 9 of 12 columns from 64rem.
-const latestReleaseArtworkWidths = [720, 1080, 1440, 1800];
-const latestReleaseArtworkSizes = upcomingReleaseEntry
-  ? '(min-width: 87rem) 28.5rem, (min-width: 80rem) calc((100vw - 8rem) * 0.37), (min-width: 64rem) calc((100vw - 10rem) * 0.37), (min-width: 40rem) calc((100vw - 6rem) * 0.49), calc((100vw - 4.25rem) * 1.03)'
-  : '(min-width: 87rem) 39rem, (min-width: 80rem) calc((100vw - 9.5rem) * 0.5), (min-width: 64rem) calc((100vw - 8.5rem) * 0.49), (min-width: 40rem) calc((100vw - 6rem) * 0.49), calc((100vw - 4.25rem) * 1.03)';
-const upcomingReleaseArtworkWidths = [240, 360, 480, 640];
-
-function formatReleaseFormats(formats: string[] | undefined) {
-  return formats?.length ? formats.join(' / ') : 'Release';
-}
+const commerceLinks = await Promise.all(releaseCatalogEntries.map(getReleaseCommerceLink));
 ---
 
 <SiteLayout pageTitle="Releases" pageDescription="Releases and label catalog.">
@@ -82,193 +15,133 @@ function formatReleaseFormats(formats: string[] | undefined) {
     <p class="releases-page-intro__eyebrow">Catalog</p>
     <h1 class="releases-page-intro__title internal-page-hero__title">Releases</h1>
   </header>
-  {(latestReleaseEntry || upcomingReleaseEntry || remainingReleaseEntries.length > 0) && (
-    <div class="layout-container releases-page-showcase-container">
-      <div
-        class:list={[
-          'releases-page-layout',
-          (!latestReleaseEntry || !upcomingReleaseEntry) && 'releases-page-layout--single-column',
-        ]}
-      >
-        {latestReleaseEntry && (
-          <article class="releases-latest-feature">
-            <a class="releases-latest-feature__artwork-link" href={latestReleaseDetailPath} data-astro-prefetch>
-              <Image
-                src={latestReleaseEntry.data.cover_image}
-                alt={latestReleaseEntry.data.cover_image_alt || latestReleaseEntry.data.title}
-                class="releases-latest-feature__artwork"
-                priority
-                widths={latestReleaseArtworkWidths}
-                width={largestImageWidth(latestReleaseEntry.data.cover_image, latestReleaseArtworkWidths)}
-                sizes={latestReleaseArtworkSizes}
-                quality={editorialImageQuality}
+  {releaseCatalogEntries.length > 0 && (
+    <div id="releases-merchandising" class="layout-container releases-page-showcase-container">
+      <div class="releases-page-layout releases-page-layout--single-column" data-release-layout>
+        <section class="releases-catalog-section" aria-labelledby="releases-catalog-heading" data-release-catalog>
+          <h2 id="releases-catalog-heading" class="releases-catalog-section__heading">
+            Our Releases
+          </h2>
+          <div class="releases-catalog-grid grid gap-5 md:grid-cols-2 xl:grid-cols-3" data-release-grid>
+            {releaseCatalogEntries.map((releaseEntry, index) => (
+              <ReleaseCard
+                release={releaseEntry}
+                artist={artistProfileById.get(releaseEntry.data.artist.id)}
+                commerceLink={commerceLinks[index]}
+                imageLoading={index === 0 ? 'eager' : 'lazy'}
+                imagePriority={index === 0}
+                variant="releases"
               />
-            </a>
-            <div class="releases-latest-feature__copy">
-              <p class="releases-latest-feature__label">{latestReleaseLabel}</p>
-              <h2 class="releases-latest-feature__heading">
-                <a class="releases-latest-feature__title" href={latestReleaseDetailPath} data-astro-prefetch>
-                  {latestReleaseEntry.data.title}
-                </a>
-              </h2>
-              <p class="releases-latest-feature__meta">
-                {latestReleaseArtist ? (
-                  <a
-                    class="releases-artist-link"
-                    href={createArtistDetailPath(latestReleaseArtist)}
-                    data-astro-prefetch
-                  >
-                    {latestReleaseArtistName}
-                  </a>
-                ) : (
-                  latestReleaseArtistName
-                )}{' '}
-                /{' '}
-                {latestReleaseDateMachineValue ? (
-                  <time datetime={latestReleaseDateMachineValue}>{latestReleaseDate}</time>
-                ) : (
-                  <span>{latestReleaseDate}</span>
-                )}{' '}
-                / {formatReleaseFormats(latestReleaseEntry.data.formats)}
-              </p>
-              {latestReleaseEntry.data.summary && (
-                <Prose
-                  class="releases-latest-feature__summary"
-                  value={latestReleaseEntry.data.summary}
-                  rich={latestReleaseEntry.data.summary_rich}
-                />
-              )}
-              {hasLatestReleaseActions && (
-                <div class="releases-latest-feature__actions">
-                  {latestReleasePlayerData && (
-                    <MusicStreamingServiceListenTrigger
-                      embeddedPlayerData={latestReleasePlayerData}
-                      tone="accent"
-                      variant="standalone"
-                    />
-                  )}
-                  <a
-                    class={buttonVariants({ variant: 'outline', size: 'lg' })}
-                    href={latestReleaseDetailPath}
-                    data-astro-prefetch
-                  >
-                    View Release
-                  </a>
-                  {latestReleaseCommerceLink?.isNativeStoreLink ? (
-                    <ReleaseStoreLink
-                      client:idle
-                      href={latestReleaseCommerceLink.href}
-                      className={buttonVariants({ variant: 'outline', size: 'lg' })}
-                      releaseDate={latestReleaseDateMachineValue}
-                    />
-                  ) : (
-                    latestReleaseCommerceLink && (
-                      <a
-                        class={buttonVariants({
-                          variant: 'outline',
-                          size: 'lg',
-                          className: latestReleaseCommerceLink.target ? 'pr-6' : undefined,
-                        })}
-                        href={latestReleaseCommerceLink.href}
-                        rel={latestReleaseCommerceLink.rel}
-                        target={latestReleaseCommerceLink.target}
-                      >
-                        {latestReleaseCommerceLink.label}
-                        {latestReleaseCommerceLink.target && (
-                          <span class="site-button-external-mark" aria-hidden="true">
-                            ↗
-                          </span>
-                        )}
-                      </a>
-                    )
-                  )}
-                </div>
-              )}
-            </div>
-          </article>
-        )}
-        {upcomingReleaseEntry && (
-          <section class="releases-latest-feature__upcoming" aria-labelledby="releases-upcoming-heading">
-            <a
-              class="releases-latest-feature__upcoming-artwork-link"
-              href={upcomingReleaseDetailPath}
-              data-astro-prefetch
-            >
-              <Image
-                src={upcomingReleaseEntry.data.cover_image}
-                alt={upcomingReleaseEntry.data.cover_image_alt || upcomingReleaseEntry.data.title}
-                class="releases-latest-feature__upcoming-artwork"
-                loading="lazy"
-                widths={upcomingReleaseArtworkWidths}
-                width={largestImageWidth(upcomingReleaseEntry.data.cover_image, upcomingReleaseArtworkWidths)}
-                sizes="(min-width: 1024px) 22vw, (min-width: 640px) 10rem, 8.5rem"
-                quality={editorialImageQuality}
-              />
-            </a>
-            <div class="releases-latest-feature__upcoming-copy">
-              <h2 id="releases-upcoming-heading" class="releases-latest-feature__label">
-                Upcoming
-              </h2>
-              <h3 class="releases-latest-feature__upcoming-heading">
-                <a class="releases-latest-feature__upcoming-title" href={upcomingReleaseDetailPath} data-astro-prefetch>
-                  {upcomingReleaseEntry.data.title}
-                </a>
-              </h3>
-              <p class="releases-latest-feature__upcoming-meta">
-                {upcomingReleaseArtist ? (
-                  <a
-                    class="releases-artist-link"
-                    href={createArtistDetailPath(upcomingReleaseArtist)}
-                    data-astro-prefetch
-                  >
-                    {upcomingReleaseArtistName}
-                  </a>
-                ) : (
-                  upcomingReleaseArtistName
-                )}{' '}
-                /{' '}
-                {upcomingReleaseDateMachineValue ? (
-                  <time datetime={upcomingReleaseDateMachineValue}>{upcomingReleaseDate}</time>
-                ) : (
-                  <span>{upcomingReleaseDate}</span>
-                )}
-              </p>
-              {upcomingReleaseEntry.data.summary && (
-                <Prose
-                  class="releases-latest-feature__upcoming-summary"
-                  value={upcomingReleaseEntry.data.summary}
-                  rich={upcomingReleaseEntry.data.summary_rich}
-                />
-              )}
-              {upcomingReleaseEntry.data.formats?.length && (
-                <p class="releases-latest-feature__upcoming-formats">
-                  {formatReleaseFormats(upcomingReleaseEntry.data.formats)}
-                </p>
-              )}
-            </div>
-          </section>
-        )}
-        {remainingReleaseEntries.length > 0 && (
-          <section class="releases-catalog-section" aria-labelledby="releases-catalog-heading">
-            <h2 id="releases-catalog-heading" class="releases-catalog-section__heading">
-              Our Releases
-            </h2>
-            <div class="releases-catalog-grid grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-              {remainingReleaseEntries.map((releaseEntry, index) => {
-                const artistProfile = artistProfileById.get(releaseEntry.data.artist.id);
-                return (
-                  <ReleaseCard
-                    release={releaseEntry}
-                    artist={artistProfile}
-                    imageLoading={index < 3 ? 'eager' : 'lazy'}
-                    variant="framed-artwork"
-                  />
-                );
-              })}
-            </div>
-          </section>
-        )}
+            ))}
+          </div>
+        </section>
       </div>
+      <ReleaseCatalogPresentation rootId="releases-merchandising" client:load />
     </div>
   )}
 </SiteLayout>
+
+<style is:global>
+  #releases-merchandising [data-release-badges] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+  }
+  #releases-merchandising [data-release-badges]:empty {
+    display: none;
+  }
+  #releases-merchandising [data-release-badges] :is(.store-item-card__release-status, .preorder-badge) {
+    display: inline-block;
+    align-self: flex-start;
+    max-width: 100%;
+    border: 0;
+    padding: 0.35rem 0.5rem 0.3rem;
+    background-color: color-mix(in oklch, var(--foreground) 8%, transparent);
+    color: var(--foreground);
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    line-height: 1.4;
+    white-space: normal;
+    text-wrap: balance;
+    overflow-wrap: break-word;
+    text-transform: uppercase;
+  }
+  #releases-merchandising [data-release-badges] .preorder-badge {
+    background-color: var(--preorder-accent-surface);
+    color: var(--preorder-accent-active);
+  }
+  #releases-merchandising .release-card-artwork-link {
+    display: block;
+    color: inherit;
+  }
+  #releases-merchandising .release-card-artwork-link .release-card-artwork {
+    transform: scale(1.026);
+    transition: none;
+  }
+  #releases-merchandising .release-card-title-link {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in oklch, var(--foreground) 45%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.12em;
+  }
+  #releases-merchandising .release-card-title-link:focus-visible {
+    color: var(--foreground);
+    text-decoration-color: var(--foreground);
+    outline: 2px solid var(--foreground);
+    outline-offset: 4px;
+  }
+  #releases-merchandising .release-card-artwork-link:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: -2px;
+  }
+  @media (hover: hover) {
+    #releases-merchandising .release-card-artwork-link:hover:not(:focus-visible) {
+      outline: 1px solid var(--foreground);
+      outline-offset: -1px;
+    }
+    #releases-merchandising .release-card-title-link:hover {
+      color: var(--foreground);
+      text-decoration-color: var(--foreground);
+    }
+  }
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    #releases-merchandising .release-card-artwork-link .release-card-artwork {
+      transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    #releases-merchandising .release-card-artwork-link:is(:hover, :focus-visible) .release-card-artwork {
+      transform: scale(1.048);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #releases-merchandising .release-card-artwork-link .release-card-artwork {
+      transform: none;
+    }
+  }
+  #releases-merchandising .releases-latest-feature__copy {
+    container-type: inline-size;
+  }
+  #releases-merchandising .releases-latest-feature__title {
+    font-size: clamp(2.35rem, 16cqi, 4.85rem);
+  }
+  @media (width < 64rem) {
+    #releases-merchandising .releases-latest-feature__upcoming {
+      display: flex;
+      flex-wrap: wrap;
+    }
+    #releases-merchandising .releases-latest-feature__upcoming-artwork-link {
+      flex: 0 1 8.5rem;
+    }
+    #releases-merchandising .releases-latest-feature__upcoming-copy {
+      flex: 1 1 7rem;
+      container-type: inline-size;
+    }
+    #releases-merchandising .releases-latest-feature__upcoming-title {
+      font-size: min(17cqi, clamp(1.9rem, 8vw, 2.55rem));
+    }
+  }
+</style>

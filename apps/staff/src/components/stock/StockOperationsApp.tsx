@@ -1,4 +1,14 @@
-import { ArrowDownUp, ClipboardCheck, Disc3, ChevronLeft } from 'lucide-react';
+import {
+  ArrowDownUp,
+  ClipboardCheck,
+  Disc3,
+  ChevronLeft,
+  FileText,
+  Hash,
+  Package,
+  ShoppingBag,
+  Tag,
+} from 'lucide-react';
 import * as React from 'react';
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import StaffBack from '../../lib/StaffBack';
@@ -1137,7 +1147,10 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                         onSubmit={handleStockChange}
                         aria-busy={submittingIntent === 'stockChange' ? 'true' : undefined}
                       >
-                        <label htmlFor="stock-change-direction">What changed?</label>
+                        <label htmlFor="stock-change-direction" className="flex items-center gap-2">
+                          <ArrowDownUp className="size-4 text-muted-foreground" aria-hidden="true" />
+                          What changed?
+                        </label>
                         <select
                           id="stock-change-direction"
                           className="min-h-11 border border-border bg-background p-2"
@@ -1148,7 +1161,10 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           <option value="remove">Remove stock</option>
                           <option value="add">Add stock</option>
                         </select>
-                        <label htmlFor="stock-change-delta">How many?</label>
+                        <label htmlFor="stock-change-delta" className="flex items-center gap-2">
+                          <Hash className="size-4 text-muted-foreground" aria-hidden="true" />
+                          How many?
+                        </label>
                         <Input
                           className="border-input bg-background"
                           disabled={!selectedStockDetail || isSubmitting}
@@ -1162,7 +1178,10 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           type="number"
                           value={changeDelta}
                         />
-                        <label htmlFor="stock-change-reason">Reason</label>
+                        <label htmlFor="stock-change-reason" className="flex items-center gap-2">
+                          <Tag className="size-4 text-muted-foreground" aria-hidden="true" />
+                          Reason
+                        </label>
                         <select
                           className="min-h-11 border border-input bg-background p-2"
                           disabled={!selectedStockDetail || isSubmitting}
@@ -1178,7 +1197,10 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                             </option>
                           ))}
                         </select>
-                        <label htmlFor="stock-change-notes">Notes (optional)</label>
+                        <label htmlFor="stock-change-notes" className="flex items-center gap-2">
+                          <FileText className="size-4 text-muted-foreground" aria-hidden="true" />
+                          Notes (optional)
+                        </label>
                         <Textarea
                           className="border-input bg-background"
                           disabled={!selectedStockDetail || isSubmitting}
@@ -1249,7 +1271,10 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                         onSubmit={handleStockCount}
                         aria-busy={submittingIntent === 'stockCount' ? 'true' : undefined}
                       >
-                        <label htmlFor="stock-count-counted-quantity">Physical stock counted</label>
+                        <label htmlFor="stock-count-counted-quantity" className="flex items-center gap-2">
+                          <Package className="size-4 text-muted-foreground" aria-hidden="true" />
+                          Physical stock counted
+                        </label>
                         <Input
                           className="border-input bg-background"
                           disabled={!selectedStockDetail || isSubmitting}
@@ -1265,7 +1290,10 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           type="number"
                           value={countedQuantity}
                         />
-                        <label htmlFor="stock-count-online-quantity">Available to buy online</label>
+                        <label htmlFor="stock-count-online-quantity" className="flex items-center gap-2">
+                          <ShoppingBag className="size-4 text-muted-foreground" aria-hidden="true" />
+                          Available to buy online
+                        </label>
                         <Input
                           className="border-input bg-background"
                           disabled={!selectedStockDetail || isSubmitting}
@@ -1282,7 +1310,10 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           type="number"
                           value={onlineQuantity}
                         />
-                        <label htmlFor="stock-count-notes">Notes (optional)</label>
+                        <label htmlFor="stock-count-notes" className="flex items-center gap-2">
+                          <FileText className="size-4 text-muted-foreground" aria-hidden="true" />
+                          Notes (optional)
+                        </label>
                         <Textarea
                           className="border-input bg-background"
                           disabled={!selectedStockDetail || isSubmitting}

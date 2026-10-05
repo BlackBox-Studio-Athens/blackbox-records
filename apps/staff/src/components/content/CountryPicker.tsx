@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
 import { countryOptions, formatArtistCountries, parseArtistCountries } from '@blackbox/content-model';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, MapPin } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandInput, CommandList, CommandItem, CommandEmpty } from '../ui/command';
@@ -26,7 +26,7 @@ export default function CountryPicker({
   const unrecognized = selected === null || (single && selected.length > 1);
   return (
     <Field data-invalid={!!error || unrecognized}>
-      <FieldLabel htmlFor={id} required={single}>
+      <FieldLabel htmlFor={id} required={single} icon={MapPin}>
         {label}
       </FieldLabel>
       <Popover open={open} onOpenChange={setOpen}>

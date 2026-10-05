@@ -16,7 +16,6 @@ const releaseDetail = readFileSync(
   fileURLToPath(new URL('../components/editorial/ReleaseDetailContent.astro', import.meta.url)),
   'utf8',
 );
-const releasesPage = readFileSync(fileURLToPath(new URL('./releases/index.astro', import.meta.url)), 'utf8');
 const storeItemDetail = readFileSync(fileURLToPath(new URL('./store/[slug]/index.astro', import.meta.url)), 'utf8');
 
 function readClassRule(className: string) {
@@ -56,11 +55,8 @@ describe('Catalog description typography', () => {
     expect(distroCatalog).not.toContain('content.group_intros');
     expect(releaseCard).toContain('class="release-card-summary-text text-sm leading-relaxed text-muted-foreground"');
 
-    expect(releasesPage).toMatch(
-      /latestReleaseEntry\.data\.summary && \(\s*<Prose\s+class="releases-latest-feature__summary"/s,
-    );
-    expect(releasesPage).toMatch(
-      /upcomingReleaseEntry\.data\.summary && \(\s*<Prose\s+class="releases-latest-feature__upcoming-summary"/s,
+    expect(releaseCard).toMatch(
+      /release\.data\.summary && \(\s*<div data-release-summary hidden>\s*<Prose value=\{release\.data\.summary\} rich=\{release\.data\.summary_rich\}/s,
     );
 
     const releaseDetailSummaryClass = /release\.data\.summary && \(\s*<Prose\s+class="([^"]+)"/s.exec(

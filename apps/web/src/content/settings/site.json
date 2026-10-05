@@ -1,6 +1,7 @@
 {
   "$schema": "../../../.astro/collections/settings.schema.json",
   "label_name": "Blackbox Records",
+  "footer_text": "Helping artists release/share/tour their music. Dreaming about a planet full of art.",
   "established_year": 2026,
   "url": "https://blackbox-records-web-uat.pages.dev",
   "logo": "/assets/images/brand/logo.png",

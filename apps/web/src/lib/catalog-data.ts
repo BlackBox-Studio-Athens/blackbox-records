@@ -180,7 +180,7 @@ function normalizeStoreItemImageAlt(imageAlt: string | undefined, fallback: stri
   return imageAlt || fallback;
 }
 
-function getPrimaryReleaseStoreFormat(formats: readonly string[] | undefined): string | null {
+export function getPrimaryReleaseStoreFormat(formats: readonly string[] | undefined): string | null {
   return (
     formats?.find((format) => {
       const normalized = format.trim().toLowerCase();

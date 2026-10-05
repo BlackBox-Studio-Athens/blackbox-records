@@ -9,18 +9,17 @@ const proseCssPath = fileURLToPath(new URL('../styles/prose.css', import.meta.ur
 const releaseDetailPath = fileURLToPath(new URL('../components/editorial/ReleaseDetailContent.astro', import.meta.url));
 
 describe('Releases page layout', () => {
-  it('hydrates native Store links at idle while preserving external merch anchors', () => {
-    for (const path of [releasesPagePath, releaseDetailPath]) {
-      const page = readFileSync(path, 'utf8');
-      expect(page).toMatch(/\.isNativeStoreLink \? \(\s*<ReleaseStoreLink\s+client:idle/s);
-      expect(page).toMatch(/<ReleaseStoreLink[\s\S]*?href=\{(?:latestReleaseCommerceLink|commerceLink)\.href\}/);
-      expect(page).toMatch(
-        /<ReleaseStoreLink[\s\S]*?releaseDate=\{(?:latestReleaseDateMachineValue|releaseDateMachineValue)\}/,
-      );
-      expect(page).toMatch(/\) : \(\s*(?:latestReleaseCommerceLink|commerceLink) && \(/);
-      expect(page).toContain('site-button-external-mark');
-      expect(page).toMatch(/target=\{(?:latestReleaseCommerceLink|commerceLink)\.target\}/);
-      expect(page).toMatch(/rel=\{(?:latestReleaseCommerceLink|commerceLink)\.rel\}/);
+  it('loads Releases availability together while retaining idle detail links and external merch anchors', () => {
+    const page = readFileSync(releasesPagePath, 'utf8');
+    const detail = readFileSync(releaseDetailPath, 'utf8');
+    expect(page).toMatch(/<ReleaseCatalogPresentation[^>]*client:load/);
+    expect(detail).toMatch(/\.isNativeStoreLink \? \(\s*<ReleaseStoreLink\s+client:idle/s);
+    expect(detail).toMatch(/<ReleaseStoreLink[\s\S]*?href=\{commerceLink\.href\}/);
+    expect(detail).toMatch(/<ReleaseStoreLink[\s\S]*?releaseDate=\{releaseDateMachineValue\}/);
+    expect(detail).toContain('site-button-external-mark');
+    for (const markup of [readFileSync(releaseCardPath, 'utf8'), detail]) {
+      expect(markup).toContain('target={commerceLink.target}');
+      expect(markup).toContain('rel={commerceLink.rel}');
     }
   });
 
@@ -33,22 +32,38 @@ describe('Releases page layout', () => {
     expect(page).toMatch(/<h1 class="releases-page-intro__title internal-page-hero__title">\s*Releases\s*<\/h1>/s);
   });
 
-  it('keeps latest, Upcoming, and Our Releases in source order', () => {
+  it('renders the whole catalog once through shared cards with one availability connector', () => {
     const page = readFileSync(releasesPagePath, 'utf8');
-    const latestIndex = page.indexOf('<article class="releases-latest-feature">');
-    const upcomingIndex = page.indexOf('<section class="releases-latest-feature__upcoming"');
-    const catalogIndex = page.indexOf('<section class="releases-catalog-section"');
+    expect(page.match(/<ReleaseCard\b/g)).toHaveLength(1);
+    expect(page.match(/<ReleaseCatalogPresentation\b/g)).toHaveLength(1);
+    expect(page).toContain('variant="releases"');
+    expect(page).toContain('data-release-grid');
+    expect(page).toContain('Our Releases');
+    expect(page).not.toContain('Featured records');
+  });
 
-    expect(latestIndex).toBeGreaterThan(-1);
-    expect(upcomingIndex).toBeGreaterThan(latestIndex);
-    expect(catalogIndex).toBeGreaterThan(upcomingIndex);
+  it('uses native artwork and title links without stretching over metadata or repeating the detail action', () => {
+    const card = readFileSync(releaseCardPath, 'utf8');
+    expect(card).toContain(
+      "isReleaseShowcase ? 'block h-full' : 'release-card-link prose-link-card group block h-full'",
+    );
+    expect(card).toContain("const ArtworkTag = isReleaseShowcase ? 'a' : 'div'");
+    expect(card).toContain('tabindex={isReleaseShowcase ? -1 : undefined}');
+    expect(card).toMatch(
+      /<a class="release-card-title-link" href=\{detailPath\} data-release-detail data-astro-prefetch>/,
+    );
+    expect(card.match(/data-release-detail\b/g)).toHaveLength(1);
+    expect(card).toMatch(
+      /<\/ArtworkTag>\s*\{isReleaseShowcase && \(\s*<div class="release-card-meta-row pointer-events-none/s,
+    );
+    expect(card).toContain('class="pointer-events-auto"');
   });
 
   it('uses the twelve-track wide showcase and full-width catalog row', () => {
     const page = readFileSync(releasesPagePath, 'utf8');
     const css = readFileSync(globalCssPath, 'utf8');
 
-    expect(page).toContain('<div class="layout-container releases-page-showcase-container">');
+    expect(page).toContain('class="layout-container releases-page-showcase-container"');
     expect(css).toMatch(/\.releases-page-intro,\s*\.releases-page-showcase-container\s*{[^}]*max-width:\s*87rem/s);
     expect(css).toMatch(
       /@media \(min-width: 64rem\)[\s\S]*?\.releases-page-layout\s*{[^}]*grid-template-columns:\s*repeat\(12, minmax\(0, 1fr\)\)/,
@@ -63,8 +78,7 @@ describe('Releases page layout', () => {
     const card = readFileSync(releaseCardPath, 'utf8');
     const proseCss = readFileSync(proseCssPath, 'utf8');
 
-    expect(page).toContain('href={createArtistDetailPath(latestReleaseArtist)}');
-    expect(page).toContain('href={createArtistDetailPath(upcomingReleaseArtist)}');
+    expect(page).toContain('artist={artistProfileById.get(releaseEntry.data.artist.id)}');
     expect(card).toMatch(/class="release-card-artist-link" href=\{createArtistDetailPath\(artist\)\}/);
     // The card's stretched release link sits at z-index 2; the artist link must stay clickable above it.
     expect(proseCss).toMatch(/\.prose-link-card :is\([^)]*\.release-card-artist-link[^)]*\)\s*{[^}]*z-index:\s*3/);

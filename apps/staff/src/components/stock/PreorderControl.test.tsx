@@ -53,7 +53,7 @@ describe('PreorderControl', () => {
     expect(html.match(/value="20\d{2}-\d{2}"/g)).toHaveLength(19);
     expect(html).toContain('This month has passed. Shoppers see Pre-order without a date until you update it.');
     expect(html).toContain('<li>Pre-order</li>');
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Save pre-order/);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>[\s\S]*?Save pre-order<\/button>/);
     expect(html).toContain('Copies arrived');
   });
 

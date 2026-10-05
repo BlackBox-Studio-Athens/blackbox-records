@@ -5,6 +5,15 @@ import type { EmDashRuntime } from 'emdash/middleware';
 // Explicit setup operation, never run as a side effect of browsing.
 export async function prepareCatalogSchema(runtime: EmDashRuntime) {
   const registry = new SchemaRegistry(runtime.db);
+  const footerText = await registry.getField('settings', 'footer_text');
+  if (!footerText)
+    await registry.createField('settings', {
+      slug: 'footer_text',
+      label: 'Footer text',
+      type: 'string',
+      required: false,
+    });
+  else if (footerText.type !== 'string') throw new Error('Unexpected field type: settings.footer_text');
   const artistActivity = await registry.getField('artists', 'is_active');
   if (!artistActivity)
     await registry.createField('artists', {
@@ -34,6 +43,15 @@ export async function prepareCatalogSchema(runtime: EmDashRuntime) {
       required: false,
     });
   else if (releaseStage.type !== 'string') throw new Error('Unexpected field type: releases.release_stage');
+  const releasePriority = await registry.getField('releases', 'releases_priority');
+  if (!releasePriority)
+    await registry.createField('releases', {
+      slug: 'releases_priority',
+      label: 'Releases order',
+      type: 'number',
+      required: false,
+    });
+  else if (releasePriority.type !== 'number') throw new Error('Unexpected field type: releases.releases_priority');
   for (const [collection, fields] of Object.entries(scalarProseFields)) {
     for (const field of fields) {
       const slug = `${field}_rich`;

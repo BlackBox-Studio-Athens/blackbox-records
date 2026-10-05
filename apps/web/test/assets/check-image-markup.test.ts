@@ -13,6 +13,7 @@ import {
   getSrcsetCandidates,
   imageCandidateBytes,
   pickSrcsetCandidate,
+  routeChecks,
   srcsetSlotChecks,
 } from '../../scripts/check-image-markup';
 
@@ -87,6 +88,44 @@ describe('check-image-markup', () => {
       { route: 'news/lorem-ipsum/index.html', message: 'news-detail-lead__image #1 is not eager.' },
       { route: 'news/lorem-ipsum/index.html', message: 'news-detail-lead__image #1 lacks high fetch priority.' },
     ]);
+  });
+
+  it('validates neutral Releases artwork before live offers select a feature', () => {
+    const card = (attributes: string, sizes = '(min-width: 87rem) 26.375rem, 20.777rem') =>
+      `<img class="release-card-artwork" srcset="/r-320.webp 320w, /r-480.webp 480w, /r-720.webp 720w, /r-1080.webp 1080w" sizes="${sizes}" decoding="async" ${attributes}>`;
+    const checks = routeChecks.filter(({ route }) => route === 'releases/index.html');
+    const slots = srcsetSlotChecks.filter(({ route }) => route === 'releases/index.html');
+    const html = card('loading="eager" fetchpriority="high"') + card('loading="lazy" fetchpriority="auto"');
+    const pages = (markup: string) => new Map([['releases/index.html', markup]]);
+
+    expect(checkImageMarkup(pages(html), checks)).toEqual([]);
+    expect(checkSrcsetSelections(pages(html), slots)).toEqual([]);
+    expect(checkImageMarkup(pages(html.replace('loading="eager"', 'loading="lazy"')), checks)).toContainEqual({
+      route: 'releases/index.html',
+      message: 'release-card-artwork #1 should be eager.',
+    });
+    expect(
+      checkImageMarkup(pages(html.replace('fetchpriority="high"', 'fetchpriority="auto"')), checks),
+    ).toContainEqual({
+      route: 'releases/index.html',
+      message: 'release-card-artwork #1 should have high fetch priority.',
+    });
+    expect(checkImageMarkup(pages(html.replace('loading="lazy"', 'loading="eager"')), checks)).toContainEqual({
+      route: 'releases/index.html',
+      message: 'release-card-artwork #2 should stay lazy.',
+    });
+    expect(
+      checkImageMarkup(pages(html.replace('fetchpriority="auto"', 'fetchpriority="high"')), checks),
+    ).toContainEqual({
+      route: 'releases/index.html',
+      message: 'Expected at most 1 high-priority image(s), found 2.',
+    });
+    expect(checkImageMarkup(pages(html.replace(/srcset="[^"]*"/g, '')), checks)).toContainEqual({
+      route: 'releases/index.html',
+      message: 'release-card-artwork #1 lacks srcset/sizes.',
+    });
+    expect(checkSrcsetSelections(pages(card('loading="eager"', '100vw')), slots).length).toBeGreaterThan(0);
+    expect(checkSrcsetSelections(pages(card('loading="eager"', '10rem')), slots).length).toBeGreaterThan(0);
   });
 
   it('flags full-size-only srcsets on responsive card images', () => {
@@ -469,7 +508,7 @@ describe('check-image-markup', () => {
 
     it('requires a built page for every slot check', () => {
       expect(checkSrcsetSelections(new Map(), srcsetSlotChecks.slice(0, 1))).toEqual([
-        { route: 'releases/index.html', message: 'No built page renders releases-latest-feature__artwork.' },
+        { route: 'releases/index.html', message: 'No built page renders release-card-artwork.' },
       ]);
     });
   });

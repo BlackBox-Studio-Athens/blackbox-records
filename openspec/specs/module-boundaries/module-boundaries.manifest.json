@@ -10,7 +10,8 @@
   "ownershipGranularity": "native-nx-project-roots",
   "contractNotes": {
     "performance-resume": "Native project.json contracts provide lightweight checkout presentation, the lazy newsletter form and bundled public font assets, permit checkout-core to consume @blackbox/api-client/public delivery constants, and permit backend-runtime to create a commerce-persistence binding scope.",
-    "international-order-notice": "store-cart provides InternationalOrderNotice.tsx to Store pages, layouts and checkout through its native project.json contract. The browser country gate and email template remain presentation-only; store-cart acquires no checkout-client or payment dependency."
+    "international-order-notice": "store-cart provides InternationalOrderNotice.tsx to Store pages, layouts and checkout through its native project.json contract. The browser country gate and email template remain presentation-only; store-cart acquires no checkout-client or payment dependency.",
+    "releases-merchandising": "web-editorial exports ReleaseCatalogPresentation.tsx for web-pages and the shared pure release-presentation.ts sanitizer for app-shell. The shell acquires no live Releases connector or React island dependency. These entrypoints reuse the existing web-store listing projection, ui-foundation controls and web-platform preorder wording without adding checkout, cart or persistence authority."
   },
   "compatibilityFacades": "disallowed",
   "entrypointPolicy": {

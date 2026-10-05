@@ -21,9 +21,11 @@
         "./NewsCard.astro",
         "./NewsDetailContent.astro",
         "./ReleaseCard.astro",
+        "./ReleaseCatalogPresentation.tsx",
         "./ReleaseDetailContent.astro",
         "./ReleaseStoreLink.tsx",
-        "./release-commerce.ts"
+        "./release-commerce.ts",
+        "./release-presentation.ts"
       ],
       "namedInterfaces": {},
       "dependsOn": ["player", "storefront-catalog", "ui-foundation", "web-platform", "web-store"],

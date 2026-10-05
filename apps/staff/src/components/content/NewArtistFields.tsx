@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { genreSuggestions } from '@blackbox/content-model';
+import { FileText, Plus, RefreshCw, Save, Tag, Type, Users, X } from 'lucide-react';
+import { FieldLegend } from '../ui/field';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
@@ -70,6 +72,7 @@ export default function NewArtistFields({ base, onCreated }: { base: string; onC
     <div className="grid gap-4">
       {!open && (
         <Button type="button" variant="outline" onClick={() => setOpen(true)}>
+          <Plus className="size-4" aria-hidden="true" />
           Add a new artist
         </Button>
       )}
@@ -80,13 +83,21 @@ export default function NewArtistFields({ base, onCreated }: { base: string; onC
             disabled={busy || !!pending}
             className="grid min-w-0 gap-4 border-t border-border pt-4"
           >
-            <legend className="text-lg font-semibold">New artist</legend>
+            <FieldLegend className="text-lg font-semibold" icon={Users}>
+              New artist
+            </FieldLegend>
             <label className="grid gap-2">
-              Artist name
+              <span className="flex items-center gap-2">
+                <Users className="size-4 text-muted-foreground" aria-hidden="true" />
+                Artist name
+              </span>
               <Input required value={title} onChange={(event) => setTitle(event.target.value)} />
             </label>
             <label className="grid gap-2">
-              Genre
+              <span className="flex items-center gap-2">
+                <Tag className="size-4 text-muted-foreground" aria-hidden="true" />
+                Genre
+              </span>
               <Input
                 required
                 value={genre}
@@ -100,7 +111,10 @@ export default function NewArtistFields({ base, onCreated }: { base: string; onC
               </datalist>
             </label>
             <label className="grid gap-2">
-              Short biography
+              <span className="flex items-center gap-2">
+                <FileText className="size-4 text-muted-foreground" aria-hidden="true" />
+                Short biography
+              </span>
               <textarea
                 required
                 className="w-full border border-border bg-background p-2"
@@ -119,16 +133,25 @@ export default function NewArtistFields({ base, onCreated }: { base: string; onC
             <details>
               <summary>Image description for accessibility</summary>
               <label className="grid gap-2">
-                Image description
+                <span className="flex items-center gap-2">
+                  <Type className="size-4 text-muted-foreground" aria-hidden="true" />
+                  Image description
+                </span>
                 <Input value={alt} placeholder={title} onChange={(event) => setAlt(event.target.value)} />
               </label>
             </details>
           </fieldset>
           <Button type="button" disabled={busy} onClick={() => void save()}>
+            {pending ? (
+              <RefreshCw className="size-4" aria-hidden="true" />
+            ) : (
+              <Save className="size-4" aria-hidden="true" />
+            )}
             {busy ? 'Checking artist…' : pending ? 'Check artist' : 'Save artist'}
           </Button>
           {!pending && (
             <Button type="button" disabled={busy} onClick={() => setOpen(false)}>
+              <X className="size-4" aria-hidden="true" />
               Cancel new artist
             </Button>
           )}

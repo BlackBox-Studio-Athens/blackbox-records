@@ -67,6 +67,15 @@ function expectReleaseEntry(releaseEntry: ReleaseEntry | undefined): ReleaseEntr
 }
 
 describe('release commerce link resolution', () => {
+  it('classifies the canonical first physical edition rather than any vinyl format in the list', async () => {
+    const [release] = await listReleaseCatalog();
+    const entry = expectReleaseEntry(release);
+    const cd = { ...entry, data: { ...entry.data, formats: ['CD', 'Vinyl', 'Digital'] } };
+    await expect(getReleaseCommerceLink(cd)).resolves.toMatchObject({
+      physicalFormat: 'cd',
+      href: '/blackbox-records/store/disintegration-cd/',
+    });
+  });
   it('prefers the native store path for mapped releases', async () => {
     const [nativeRelease] = await listReleaseCatalog();
 
@@ -74,6 +83,7 @@ describe('release commerce link resolution', () => {
       href: '/blackbox-records/store/disintegration-black-vinyl-lp/',
       isNativeStoreLink: true,
       label: 'Shop release',
+      physicalFormat: 'vinyl',
     });
   });
 
@@ -84,6 +94,7 @@ describe('release commerce link resolution', () => {
       href: '/blackbox-records/store/caregivers-vinyl/',
       isNativeStoreLink: true,
       label: 'Shop release',
+      physicalFormat: 'vinyl',
     });
   });
 });

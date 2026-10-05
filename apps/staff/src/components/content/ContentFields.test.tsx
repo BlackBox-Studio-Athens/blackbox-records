@@ -103,7 +103,10 @@ test('partner rows add, edit, reorder and remove without replacing other release
     render();
   }
   const rows = data.partner_links as Array<{ label: string; url: string }>;
-  expect(controls.buttons.filter((button) => button.children === 'Move down').at(-1)?.disabled).toBe(true);
+  expect(
+    controls.buttons.filter((button) => Array.isArray(button.children) && button.children.includes('Move down')).at(-1)
+      ?.disabled,
+  ).toBe(true);
   click('Move up', 1);
   expect(data.partner_links).toEqual([rows[1], rows[0]]);
   render();
@@ -117,6 +120,40 @@ test('partner rows add, edit, reorder and remove without replacing other release
   expect(data.partner_links).toEqual([]);
   expect(data.title).toBe('Record');
   expect(data.singles).toEqual([]);
+});
+
+test('Releases order stays optional, validates positive whole numbers and edits only the draft field', () => {
+  let data: ComponentProps<typeof ContentFields>['data'] = { title: 'Record', release_stage: 'upcoming' };
+  const render = () => {
+    controls.inputs = [];
+    return renderToStaticMarkup(
+      <ContentFields
+        collection="releases"
+        data={data}
+        base=""
+        validation={getContentValidation('releases', data)}
+        validationAttempt={0}
+        onChange={(next) => {
+          data = next;
+        }}
+      />,
+    );
+  };
+  expect(render()).toContain('Releases order');
+  expect(data.releases_priority).toBeUndefined();
+  const field = () => controls.inputs.find((input) => input['data-content-path'] === 'releases_priority')!;
+  expect(field().required).toBe(false);
+  expect(field().min).toBe(1);
+  for (const value of ['2', '0', '-1', '1.5', '']) {
+    field().onChange!({ target: { value } } as Parameters<NonNullable<ComponentProps<'input'>['onChange']>>[0]);
+    render();
+    expect(getContentValidation('releases', data).issues.some((issue) => issue.path[0] === 'releases_priority')).toBe(
+      !['2', ''].includes(value),
+    );
+    expect(data.title).toBe('Record');
+    expect(data.release_stage).toBe('upcoming');
+  }
+  expect(data.releases_priority).toBeNull();
 });
 
 test.each(['http://example.com/record', '/record', 'javascript:alert(1)'])(

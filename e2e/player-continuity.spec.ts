@@ -57,6 +57,7 @@ test('player survives shell navigation, minimize/reopen and history; Stop destro
 test('Back closes the open player without moving the page beneath; its controls leave no extra entry', async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1280, height: 400 });
   await page.route(providerEmbeds, (route) =>
     route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
   );

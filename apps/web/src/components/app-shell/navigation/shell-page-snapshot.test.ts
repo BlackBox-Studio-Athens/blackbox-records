@@ -230,6 +230,97 @@ function createSnapshotDocument() {
 }
 
 describe('shell page snapshots', () => {
+  it.each(['Pre-order vinyl', 'Buy vinyl'])(
+    'neutralizes an enriched %s snapshot without changing the live cards or layout',
+    (actionName) => {
+      const makeCard = () => {
+        const purchase = {
+          textContent: actionName,
+          dataset: { releaseNeutralClass: 'site-button site-button--outline' },
+          className:
+            actionName === 'Pre-order vinyl' ? 'site-button preorder-action' : 'site-button site-button--primary',
+        };
+        const shipping = {
+          textContent: actionName === 'Pre-order vinyl' ? 'Expected to ship around November 2026' : '',
+          hidden: actionName !== 'Pre-order vinyl',
+        };
+        const badges = {
+          children: [
+            {
+              textContent: actionName === 'Pre-order vinyl' ? 'Pre-order' : 'Vinyl available',
+              className: actionName === 'Pre-order vinyl' ? 'preorder-badge' : 'store-item-card__release-status',
+            },
+          ],
+          replaceChildren(...children: Array<{ textContent: string; className: string }>) {
+            this.children = children;
+          },
+        };
+        const fields = {
+          '[data-release-purchase]': purchase,
+          '[data-release-shipping]': shipping,
+          '[data-release-badges]': badges,
+        };
+        const card = {
+          dataset: {
+            releaseId: 'release',
+            releaseRole: 'lead',
+            releaseDate: '2000-01-01',
+            releasePhysicalFormat: 'vinyl',
+            releaseStoreSlug: 'edition',
+            releaseSourceOrder: '0',
+          },
+          ownerDocument: { createElement: () => ({ textContent: '', className: '' }) },
+          querySelector: (selector: string) => fields[selector as keyof typeof fields] ?? null,
+        };
+        return { card, purchase, shipping, badges };
+      };
+      const live = makeCard();
+      const cloned = makeCard();
+      const makeMain = (model: ReturnType<typeof makeCard>) => ({
+        ownerDocument: fakeInertDocument,
+        getAttribute: () => 'releases-page-layout',
+        querySelectorAll: (selector: string) =>
+          selector === '[data-release-id][data-release-role]' ? [model.card] : [],
+        get childNodes() {
+          return [
+            {
+              html: JSON.stringify({
+                purchase: model.purchase,
+                shipping: model.shipping,
+                badges: model.badges.children,
+                role: model.card.dataset.releaseRole,
+              }),
+            },
+          ];
+        },
+      });
+      const main = makeMain(live);
+      const targetDocument = {
+        title: 'Releases',
+        querySelector: (selector: string) => (selector === 'main[data-app-shell-main]' ? main : null),
+        createElement: () => ({ content: { ownerDocument: { importNode: () => makeMain(cloned) } } }),
+      } as unknown as Document;
+      const snapshot = readDocumentShellPageSnapshot(
+        targetDocument,
+        'https://example.test/releases/',
+        'https://example.test/releases/',
+      );
+      expect(live.purchase.textContent).toBe(actionName);
+      expect(live.badges.children[0]?.textContent).toBe(
+        actionName === 'Pre-order vinyl' ? 'Pre-order' : 'Vinyl available',
+      );
+      expect(fragmentHtml(snapshot?.mainContent)).toContain('View vinyl details');
+      expect(fragmentHtml(snapshot?.mainContent)).toContain('Physical availability unconfirmed');
+      expect(fragmentHtml(snapshot?.mainContent)).not.toMatch(
+        /Pre-order vinyl|Buy vinyl|preorder-action|Expected to ship|Vinyl available/,
+      );
+      expect(cloned.shipping).toEqual({ textContent: '', hidden: true });
+      expect(cloned.purchase.className).toBe('site-button site-button--outline');
+      expect(cloned.card.dataset.releaseRole).toBe('lead');
+      expect(snapshot?.mainClassName).toBe('releases-page-layout');
+    },
+  );
+
   it('keeps the previous snapshot when a dialog temporarily hides page descendants', () => {
     const createElement = vi.fn();
     const cacheSnapshot = vi.fn();

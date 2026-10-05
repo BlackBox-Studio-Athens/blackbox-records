@@ -1,4 +1,5 @@
 import { TRACK_SIDE_LABELS, type Track, type Tracklist } from '@blackbox/content-model';
+import { ArrowDown, ArrowUp, Clock, Disc3, ListMusic, Plus, Tag, Trash2, Type } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { NativeSelect } from '../ui/native-select';
@@ -46,19 +47,22 @@ export default function TracklistFields({
       data-content-path="tracklist"
       data-invalid={errors.length > 0}
     >
-      <FieldLegend>Tracklist</FieldLegend>
+      <FieldLegend icon={ListMusic}>Tracklist</FieldLegend>
       <FieldDescription>
         Optional. Enter only tracks from this physical edition. Empty tracklists stay off the website.
       </FieldDescription>
       <FieldError>{errors.join(' ')}</FieldError>
       {!value ? (
         <Button type="button" variant="outline" onClick={() => changeFormat(formatHint || 'vinyl')}>
+          <Plus className="size-4" aria-hidden="true" />
           Add tracklist
         </Button>
       ) : (
         <>
           <Field>
-            <FieldLabel htmlFor="tracklist-format">Tracklist format</FieldLabel>
+            <FieldLabel htmlFor="tracklist-format" icon={Disc3}>
+              Tracklist format
+            </FieldLabel>
             <NativeSelect
               id="tracklist-format"
               value={value.format}
@@ -80,12 +84,14 @@ export default function TracklistFields({
           </Field>
           {groups.map((group, groupIndex) => (
             <FieldSet key={groupIndex} className="min-w-0 border-t border-border pt-4">
-              <FieldLegend>
+              <FieldLegend icon={Disc3}>
                 {value.format === 'cd' ? `Disc ${groupIndex + 1}` : `Side ${value.sides[groupIndex]!.label}`}
               </FieldLegend>
               {value.format !== 'cd' && (
                 <Field>
-                  <FieldLabel htmlFor={`tracklist-side-${groupIndex}`}>Side letter</FieldLabel>
+                  <FieldLabel htmlFor={`tracklist-side-${groupIndex}`} icon={Tag}>
+                    Side letter
+                  </FieldLabel>
                   <NativeSelect
                     id={`tracklist-side-${groupIndex}`}
                     value={value.sides[groupIndex]!.label}
@@ -112,7 +118,7 @@ export default function TracklistFields({
                   className="grid min-w-0 gap-3 border-t border-border py-3 sm:grid-cols-[minmax(0,1fr)_8rem]"
                 >
                   <Field>
-                    <FieldLabel htmlFor={`track-${groupIndex}-${trackIndex}`} required>
+                    <FieldLabel htmlFor={`track-${groupIndex}-${trackIndex}`} required icon={Type}>
                       Track {trackIndex + 1} title
                     </FieldLabel>
                     <Input
@@ -130,7 +136,9 @@ export default function TracklistFields({
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor={`duration-${groupIndex}-${trackIndex}`}>Duration</FieldLabel>
+                    <FieldLabel htmlFor={`duration-${groupIndex}-${trackIndex}`} icon={Clock}>
+                      Duration
+                    </FieldLabel>
                     <Input
                       id={`duration-${groupIndex}-${trackIndex}`}
                       value={track.duration || ''}
@@ -168,6 +176,11 @@ export default function TracklistFields({
                           })
                         }
                       >
+                        {delta < 0 ? (
+                          <ArrowUp className="size-4" aria-hidden="true" />
+                        ) : (
+                          <ArrowDown className="size-4" aria-hidden="true" />
+                        )}
                         {delta < 0 ? 'Move up' : 'Move down'}
                       </Button>
                     ))}
@@ -178,6 +191,7 @@ export default function TracklistFields({
                         changeTracks(groupIndex, (tracks) => tracks.filter((_, index) => index !== trackIndex))
                       }
                     >
+                      <Trash2 className="size-4" aria-hidden="true" />
                       Remove track {trackIndex + 1}
                     </Button>
                   </div>
@@ -190,6 +204,7 @@ export default function TracklistFields({
                   disabled={group.tracks.length >= 99}
                   onClick={() => changeTracks(groupIndex, (tracks) => [...tracks, { title: '' }])}
                 >
+                  <Plus className="size-4" aria-hidden="true" />
                   Add track
                 </Button>
                 {[-1, 1].map((delta) => (
@@ -200,6 +215,11 @@ export default function TracklistFields({
                     disabled={groupIndex + delta < 0 || groupIndex + delta >= groups.length}
                     onClick={() => moveGroup(groupIndex, delta)}
                   >
+                    {delta < 0 ? (
+                      <ArrowUp className="size-4" aria-hidden="true" />
+                    ) : (
+                      <ArrowDown className="size-4" aria-hidden="true" />
+                    )}
                     Move {value.format === 'cd' ? 'disc' : 'side'} {delta < 0 ? 'up' : 'down'}
                   </Button>
                 ))}
@@ -214,6 +234,7 @@ export default function TracklistFields({
                     )
                   }
                 >
+                  <Trash2 className="size-4" aria-hidden="true" />
                   Remove {value.format === 'cd' ? 'disc' : 'side'}
                 </Button>
               </div>
@@ -243,9 +264,11 @@ export default function TracklistFields({
                 )
               }
             >
+              <Plus className="size-4" aria-hidden="true" />
               Add {value.format === 'cd' ? 'disc' : 'side'}
             </Button>
             <Button type="button" variant="outline" onClick={() => onChange(null)}>
+              <Trash2 className="size-4" aria-hidden="true" />
               Remove tracklist
             </Button>
           </div>

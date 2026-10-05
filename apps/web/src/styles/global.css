@@ -4743,12 +4743,12 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 /* The title reads as the card's link (Buy and Listen are separate actions): faint underline at rest, full when the
    card link is hovered or focused. Hovering Buy or Listen leaves the card at rest. */
 .store-collection-page .store-item-card--listing .brand-card-title {
-  font-family: var(--font-display-ui);
-  font-weight: 400;
-  font-size: 1.25rem;
-  line-height: 1.1;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-family: var(--font-display-brand);
+  font-weight: 900;
+  font-size: clamp(1.25rem, 1.8vw, 1.5rem);
+  line-height: 1.12;
+  letter-spacing: 0.015em;
+  text-transform: none;
   text-decoration-line: underline;
   text-decoration-color: color-mix(in srgb, var(--foreground) 30%, transparent);
   text-decoration-thickness: 1px;
@@ -4934,6 +4934,40 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   display: inline-flex;
   align-items: center;
   font-size: 0.6875rem;
+}
+
+/* Ready ordinary Buy controls share restrained feedback across Releases and Store. */
+.purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action):focus-visible {
+  border-color: var(--foreground);
+  background-color: var(--foreground);
+  box-shadow: inset 0 -2px 0 color-mix(in oklch, var(--primary-foreground) 16%, transparent);
+}
+
+@media (hover: hover) {
+  .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action):hover {
+    border-color: var(--foreground);
+    background-color: var(--foreground);
+    box-shadow: inset 0 -2px 0 color-mix(in oklch, var(--primary-foreground) 16%, transparent);
+  }
+}
+
+.purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action):active {
+  border-color: var(--control-ink-pressed);
+  background-color: var(--control-ink-pressed);
+  box-shadow: inset 0 -2px 0 color-mix(in oklch, var(--primary-foreground) 22%, transparent);
+}
+
+.purchase-action:is(:disabled, [aria-disabled='true'], [aria-busy='true']) {
+  border-color: var(--control-ink);
+  background-color: var(--control-ink);
+  color: var(--primary-foreground);
+  box-shadow: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .purchase-action {
+    transition: none;
+  }
 }
 
 /* Primary button with a 3px Sea green base line. Hover and focus fill the face; the line then disappears into it.

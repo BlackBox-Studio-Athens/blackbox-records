@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useId, useState } from 'react';
+import { CalendarDays, Clock, PackageCheck, Save, Truck } from 'lucide-react';
 import type { InternalStockDetail } from '../../lib/backend/internal-stock-api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -87,7 +88,10 @@ export default function PreorderControl({
               Copies: enter the number you expect as the stock quantity. Count the stock again when they arrive.
             </p>
             <label className="grid min-w-0 gap-2" htmlFor={id + '-kind'}>
-              <span>When it ships</span>
+              <span className="flex items-center gap-2">
+                <Truck className="size-4 text-muted-foreground" aria-hidden="true" />
+                When it ships
+              </span>
               <select
                 id={id + '-kind'}
                 className={selectClass}
@@ -101,7 +105,10 @@ export default function PreorderControl({
             {kind === 'month' ? (
               <>
                 <label className="grid min-w-0 gap-2" htmlFor={id + '-month'}>
-                  <span>Month</span>
+                  <span className="flex items-center gap-2">
+                    <CalendarDays className="size-4 text-muted-foreground" aria-hidden="true" />
+                    Month
+                  </span>
                   <select
                     id={id + '-month'}
                     className={selectClass}
@@ -118,7 +125,10 @@ export default function PreorderControl({
                   </select>
                 </label>
                 <label className="grid min-w-0 gap-2" htmlFor={id + '-part'}>
-                  <span>Part of the month</span>
+                  <span className="flex items-center gap-2">
+                    <Clock className="size-4 text-muted-foreground" aria-hidden="true" />
+                    Part of the month
+                  </span>
                   <select
                     id={id + '-part'}
                     className={selectClass}
@@ -146,7 +156,10 @@ export default function PreorderControl({
             ) : (
               <>
                 <label className="grid min-w-0 gap-2" htmlFor={id + '-date'}>
-                  <span>Exact ship date</span>
+                  <span className="flex items-center gap-2">
+                    <CalendarDays className="size-4 text-muted-foreground" aria-hidden="true" />
+                    Exact ship date
+                  </span>
                   <Input
                     id={id + '-date'}
                     type="date"
@@ -169,6 +182,7 @@ export default function PreorderControl({
             )}
             <div className="grid gap-2 sm:flex sm:flex-wrap">
               <Button type="submit" className="min-h-11 w-full sm:w-auto" disabled={monthPassed}>
+                <Save className="size-4" aria-hidden="true" />
                 {busy ? 'Saving pre-order…' : 'Save pre-order'}
               </Button>
               {preorder?.open && (
@@ -179,6 +193,7 @@ export default function PreorderControl({
                   onClick={() => void onSave(null)}
                   aria-describedby={id + '-arrival'}
                 >
+                  <PackageCheck className="size-4" aria-hidden="true" />
                   Copies arrived
                 </Button>
               )}

@@ -11,7 +11,22 @@ import {
   type Prose,
   type RichText,
 } from '@blackbox/content-model';
-import { CheckCircle2, CircleAlert, ChevronLeft, ArrowRight, Save } from 'lucide-react';
+import {
+  CheckCircle2,
+  CircleAlert,
+  ChevronLeft,
+  ArrowRight,
+  Save,
+  CalendarDays,
+  Disc3,
+  Euro,
+  FileText,
+  Package,
+  RefreshCw,
+  Type,
+  Users,
+} from 'lucide-react';
+import { FieldLegend } from '../ui/field';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import EditorialPicker from './EditorialPicker';
@@ -528,12 +543,15 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
       </p>
       {autosave.error && (
         <Button variant="outline" onClick={() => void autosave.flush()}>
+          <RefreshCw className="size-4" aria-hidden="true" />
           Retry save
         </Button>
       )}
       <form onSubmit={submit} className="staff-form grid gap-8">
         <fieldset hidden={step !== 0} disabled={locked || step !== 0} className="staff-form-section grid min-w-0 gap-5">
-          <legend className="staff-section-title mb-4 text-xl font-semibold">Details</legend>
+          <FieldLegend className="staff-section-title mb-4 text-xl font-semibold" icon={FileText}>
+            Details
+          </FieldLegend>
           {mode === 'existing' ? (
             <EditorialPicker
               key={kind}
@@ -548,7 +566,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           ) : (
             <>
               <label className="grid gap-2">
-                Title
+                <span className="flex items-center gap-2">
+                  <Type className="size-4 text-muted-foreground" aria-hidden="true" />
+                  Title
+                </span>
                 <Input required maxLength={250} value={title} onChange={(event) => setTitle(event.target.value)} />
               </label>
               {kind === 'release' ? (
@@ -569,18 +590,27 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                     }}
                   />
                   <label className="grid gap-2">
-                    Release date
+                    <span className="flex items-center gap-2">
+                      <CalendarDays className="size-4 text-muted-foreground" aria-hidden="true" />
+                      Release date
+                    </span>
                     <Input required type="date" value={date} onChange={(event) => setDate(event.target.value)} />
                   </label>
                 </>
               ) : (
                 <label className="grid gap-2">
-                  Artist or label
+                  <span className="flex items-center gap-2">
+                    <Users className="size-4 text-muted-foreground" aria-hidden="true" />
+                    Artist or label
+                  </span>
                   <Input required value={artistOrLabel} onChange={(event) => setArtistOrLabel(event.target.value)} />
                 </label>
               )}
               <div className="grid gap-2">
-                <span id="item-summary-label">Short description</span>
+                <span id="item-summary-label" className="flex items-center gap-2">
+                  <FileText className="size-4 text-muted-foreground" aria-hidden="true" />
+                  Short description
+                </span>
                 <Suspense fallback={<p role="status">Loading text editor…</p>}>
                   <ContentBodyEditor
                     aria-labelledby="item-summary-label"
@@ -601,7 +631,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 }}
               />
               <label className="grid gap-2">
-                Describe the artwork
+                <span className="flex items-center gap-2">
+                  <Type className="size-4 text-muted-foreground" aria-hidden="true" />
+                  Describe the artwork
+                </span>
                 <Input required value={alt} onChange={(event) => setAlt(event.target.value)} />
                 <span className="text-sm text-muted-foreground">
                   Describe what is visible for people who cannot see the image.
@@ -611,7 +644,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           )}
           {!(mode === 'existing' && kind !== 'release') && (
             <label className="grid gap-2">
-              Format
+              <span className="flex items-center gap-2">
+                <Disc3 className="size-4 text-muted-foreground" aria-hidden="true" />
+                Format
+              </span>
               <select
                 className={inputClass}
                 value={format}
@@ -644,7 +680,9 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
             disabled={locked || step !== 1}
             className="staff-form-section grid min-w-0 gap-5"
           >
-            <legend className="staff-section-title mb-4 text-xl font-semibold">Price & starting stock</legend>
+            <FieldLegend className="staff-section-title mb-4 text-xl font-semibold" icon={Package}>
+              Price & starting stock
+            </FieldLegend>
             <label className="flex min-h-11 items-center gap-3">
               <input
                 type="checkbox"
@@ -658,7 +696,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
             </label>
             {custom && (
               <label className="grid gap-2">
-                Minimum price (EUR)
+                <span className="flex items-center gap-2">
+                  <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
+                  Minimum price (EUR)
+                </span>
                 <Input
                   required
                   inputMode="decimal"
@@ -672,7 +713,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
               </label>
             )}
             <label className="grid gap-2">
-              {custom ? 'Suggested price (EUR)' : 'Price (EUR)'}
+              <span className="flex items-center gap-2">
+                <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
+                {custom ? 'Suggested price (EUR)' : 'Price (EUR)'}
+              </span>
               <Input
                 required
                 inputMode="decimal"
@@ -687,7 +731,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
             </label>
             {custom && (
               <label className="grid gap-2">
-                Maximum price (EUR)
+                <span className="flex items-center gap-2">
+                  <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
+                  Maximum price (EUR)
+                </span>
                 <Input
                   required
                   inputMode="decimal"
@@ -701,7 +748,10 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
               </label>
             )}
             <label className="grid gap-2">
-              How many {kind === 'merch' ? 'units' : 'copies'} do you have?
+              <span className="flex items-center gap-2">
+                <Package className="size-4 text-muted-foreground" aria-hidden="true" />
+                How many {kind === 'merch' ? 'units' : 'copies'} do you have?
+              </span>
               <Input
                 required
                 type="number"
@@ -803,6 +853,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
             </Button>
             {step === 2 && !pending && !draftPending && (
               <Button type="submit" value="draft" variant="outline" disabled={!ready || busy || needsReview}>
+                <Save className="size-4" aria-hidden="true" />
                 Keep as draft
               </Button>
             )}

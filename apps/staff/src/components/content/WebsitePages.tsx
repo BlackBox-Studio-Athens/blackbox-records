@@ -8,6 +8,7 @@ const websitePages = [
   ['purchase_information', 'Buying & delivery', 'Purchase terms, delivery and privacy', FileText],
 ] as const;
 const footerPages = [
+  ['settings', 'Footer text', 'Description, label name and year at the bottom of every page', FileText],
   ['navigation', 'Navigation', 'Links at the top and bottom of the website', Menu],
   ['socials', 'Social links', 'Where listeners can follow the label', ArrowUpRight],
   ['newsletter', 'Newsletter', 'Signup heading, button and supporting text', Mail],

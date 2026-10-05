@@ -16,7 +16,25 @@ import {
   type Prose,
   type RichText,
 } from '@blackbox/content-model';
-import { ArrowUp, Plus, Trash2 } from 'lucide-react';
+import {
+  ArrowDown,
+  ArrowUp,
+  CalendarDays,
+  Disc3,
+  FileText,
+  Hash,
+  ImageIcon,
+  LayoutTemplate,
+  Link,
+  ListOrdered,
+  Mail,
+  Music2,
+  Plus,
+  Tag,
+  Trash2,
+  Type,
+  Users,
+} from 'lucide-react';
 import EditorialPicker from './EditorialPicker';
 import { Button } from '../ui/button';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '../ui/accordion';
@@ -89,10 +107,16 @@ export default function ContentFields({
   useEffect(() => {
     if (validationAttempt > 0) setOpenSections(['music', 'credits', 'text', 'presentation']);
   }, [validationAttempt]);
-  function section(id: string, label: string, children: React.ReactNode) {
+  function section(id: 'music' | 'credits' | 'text' | 'presentation', label: string, children: React.ReactNode) {
+    const Icon = { music: Music2, credits: Users, text: FileText, presentation: LayoutTemplate }[id];
     return (
       <AccordionItem value={id}>
-        <AccordionTrigger>{label}</AccordionTrigger>
+        <AccordionTrigger>
+          <span className="flex items-center gap-2">
+            {Icon && <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />}
+            {label}
+          </span>
+        </AccordionTrigger>
         <AccordionContent forceMount className="data-[state=closed]:hidden">
           <div className="grid min-w-0 gap-6 @2xl:grid-cols-2">{children}</div>
         </AccordionContent>
@@ -157,7 +181,7 @@ export default function ContentFields({
       const fieldErrors = errors(path);
       return (
         <Field className="col-span-full min-w-0" key={path} data-invalid={fieldErrors.length > 0}>
-          <FieldLabel id={`${id}-label`} required={required}>
+          <FieldLabel id={`${id}-label`} required={required} icon={FileText}>
             {label}
           </FieldLabel>
           <Suspense fallback={<p role="status">Loading text editor…</p>}>
@@ -214,7 +238,23 @@ export default function ContentFields({
         data-invalid={fieldErrors.length > 0}
         key={path}
       >
-        <FieldLabel htmlFor={props.id} required={required}>
+        <FieldLabel
+          htmlFor={props.id}
+          required={required}
+          icon={
+            options.multiline
+              ? FileText
+              : options.type === 'url'
+                ? Link
+                : options.type === 'email'
+                  ? Mail
+                  : options.type === 'date'
+                    ? CalendarDays
+                    : options.type === 'number'
+                      ? Hash
+                      : Type
+          }
+        >
           {label}
         </FieldLabel>
         {options.multiline ? (
@@ -260,7 +300,7 @@ export default function ContentFields({
     const errorId = `${id}-error`;
     return (
       <Field data-invalid={fieldErrors.length > 0} key={path}>
-        <FieldLabel htmlFor={id} required>
+        <FieldLabel htmlFor={id} required icon={Tag}>
           {label}
         </FieldLabel>
         <NativeSelect
@@ -298,7 +338,7 @@ export default function ContentFields({
         className="col-span-full min-w-0 gap-4 border-y border-border py-6"
         data-invalid={errors(path).length > 0}
       >
-        <FieldLegend variant="label" required>
+        <FieldLegend variant="label" required icon={ImageIcon}>
           {label}
         </FieldLegend>
         <FieldGroup className="gap-4">
@@ -338,7 +378,7 @@ export default function ContentFields({
     const fieldErrors = exactErrors(path);
     return (
       <FieldSet className="col-span-full grid min-w-0 gap-4" data-invalid={errors(path).length > 0}>
-        <FieldLegend>{label}</FieldLegend>
+        <FieldLegend icon={path === 'gallery' ? ImageIcon : ListOrdered}>{label}</FieldLegend>
         {path === 'gallery' && (
           <FieldDescription>
             The first extra photo different from the main image appears on hover or keyboard focus. All gallery photos
@@ -395,6 +435,7 @@ export default function ContentFields({
                     set(path, next);
                   }}
                 >
+                  <ArrowDown className="size-4" aria-hidden="true" />
                   Move down
                 </Button>
                 <Button
@@ -456,7 +497,9 @@ export default function ContentFields({
   );
   const body = (
     <FieldSet className="col-span-full grid min-w-0 gap-3" data-invalid={errors('body').length > 0}>
-      <FieldLegend id="content-body-label">Full text</FieldLegend>
+      <FieldLegend id="content-body-label" icon={FileText}>
+        Full text
+      </FieldLegend>
       <FieldGroup className="gap-3">
         <p id="content-body-help" className="text-sm text-muted-foreground">
           Add text, links and images. Tables, galleries and pasted HTML are not supported.
@@ -543,7 +586,7 @@ export default function ContentFields({
         {rows('profile_links', 'Artist links', { label: 'Bandcamp', url: '' }, (path) => (
           <>
             <Field>
-              <FieldLabel htmlFor={`content-${path}-service`} required>
+              <FieldLabel htmlFor={`content-${path}-service`} required icon={Link}>
                 Service
               </FieldLabel>
               <NativeSelect
@@ -575,7 +618,7 @@ export default function ContentFields({
           </>
         ))}
         <FieldSet className="col-span-full gap-3">
-          <FieldLegend>Releases</FieldLegend>
+          <FieldLegend icon={Disc3}>Releases</FieldLegend>
           <FieldDescription>
             Create an upcoming release with its own artwork. Keep the same release when it comes out.
           </FieldDescription>
@@ -615,7 +658,9 @@ export default function ContentFields({
           onSelect={(item) => set('artist', item.id)}
         />
         <Field>
-          <FieldLabel htmlFor="content-release_stage">Release stage</FieldLabel>
+          <FieldLabel htmlFor="content-release_stage" icon={CalendarDays}>
+            Release stage
+          </FieldLabel>
           <NativeSelect
             id="content-release_stage"
             data-content-path="release_stage"
@@ -631,6 +676,11 @@ export default function ContentFields({
           </FieldDescription>
         </Field>
         {field('release_date', 'Release date', { type: 'date', required: data.release_stage !== 'upcoming' })}
+        {field('releases_priority', 'Releases order', { type: 'number', required: false, min: 1, step: 1 })}
+        <FieldDescription className="col-span-full">
+          Optional. Lower numbers lead on Releases when the physical edition is available to buy. Leave empty for
+          automatic order. Publish changes to apply this choice; stock and pre-order remain in Selling.
+        </FieldDescription>
         {image('cover_image', 'cover_image_alt', 'Cover image')}
         {rows('gallery', 'Photos', { image: null, image_alt: '' }, (path) =>
           image(`${path}.image`, `${path}.image_alt`, 'Photo'),
@@ -790,11 +840,13 @@ export default function ContentFields({
             {field('quote.text', 'Quote', { multiline: true })}
             {field('quote.cite', 'Quote author')}
             <Button type="button" variant="outline" onClick={() => set('quote', null)}>
+              <Trash2 className="size-4" aria-hidden="true" />
               Remove quote
             </Button>
           </>
         ) : (
           <Button type="button" variant="outline" onClick={() => set('quote', { text: '', cite: '' })}>
+            <Plus className="size-4" aria-hidden="true" />
             Add quote
           </Button>
         )}
@@ -913,6 +965,10 @@ export default function ContentFields({
   if (collection === 'settings')
     return (
       <>
+        {field('footer_text', 'Footer text', { required: false })}
+        <FieldDescription className="col-span-full">
+          The description below the logo at the bottom of every page. Leave blank to use the default label description.
+        </FieldDescription>
         {field('label_name', 'Label name')}
         {field('established_year', 'Year established', { type: 'number', min: 1900, max: 2100, step: 1 })}
         <details className="col-span-full">
@@ -1014,7 +1070,7 @@ function ParsedField({
   const id = `content-${path}`;
   return (
     <Field data-invalid={invalid || !!errors.length}>
-      <FieldLabel htmlFor={id} required={required}>
+      <FieldLabel htmlFor={id} required={required} icon={Link}>
         {label}
       </FieldLabel>
       <Input

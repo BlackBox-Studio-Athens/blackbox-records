@@ -1,5 +1,6 @@
 import { normalizeAppPathname } from '@/components/app-shell/routing';
 import { sanitizeStoreListingPricePlaceholders } from '@/components/store/StoreListingPricePresentation';
+import { sanitizeReleaseCatalogPresentation } from '@/components/editorial/release-presentation';
 
 export type ShellPageSnapshot = {
   canonicalHref: string;
@@ -190,6 +191,7 @@ function sanitizeShellMainSnapshot(root: ParentNode) {
   });
   sanitizeStoreCoverflowSnapshot(root);
   sanitizeStoreListingPricePlaceholders(root);
+  sanitizeReleaseCatalogPresentation(root);
   root.querySelectorAll<HTMLElement>('[data-store-preview-ready]').forEach((image) => {
     image.removeAttribute('data-store-preview-ready');
   });

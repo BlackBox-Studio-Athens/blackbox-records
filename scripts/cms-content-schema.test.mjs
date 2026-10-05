@@ -171,6 +171,51 @@ test('upcoming releases may omit dates; released records must provide one', () =
   );
   assert.ok(validateCmsContent('releases', { ...release, release_stage: 'preorder' }).length);
 });
+
+test('Releases order accepts only positive whole numbers and reaches the public catalog through publication', () => {
+  const data = {
+    title: 'LOTUS',
+    artist: 'sidus',
+    cover_image: { id: 'image' },
+    cover_image_alt: 'Lotus',
+    release_stage: 'upcoming',
+  };
+  for (const releases_priority of [undefined, null, '', 1, 2]) {
+    assert.deepEqual(validateCmsDraft('releases', { ...data, releases_priority }), []);
+    assert.deepEqual(validateCmsContent('releases', { ...data, releases_priority }), []);
+  }
+  for (const releases_priority of [0, -1, 1.5, '2', true]) {
+    assert.ok(validateCmsDraft('releases', { ...data, releases_priority }).length);
+    assert.ok(validateCmsContent('releases', { ...data, releases_priority }).length);
+  }
+  const release = { collection: 'releases', id: 'lotus', slug: 'lotus', revisionId: 'accepted-release', data };
+  const media = [
+    { id: 'image', sha256: 'a'.repeat(64), filename: 'image.png', mimeType: 'image/png', size: 1, width: 1, height: 1 },
+  ];
+  const accepted = parseContentSnapshot(
+    JSON.stringify({
+      schemaVersion: 1,
+      environment: 'local',
+      media,
+      records: [
+        {
+          collection: 'artists',
+          id: 'sidus',
+          slug: 'sidus',
+          revisionId: 'accepted-artist',
+          data: { title: 'Sidus', genre: 'Rock', bio: 'Biography', image: { id: 'image' }, image_alt: 'Portrait' },
+        },
+        release,
+      ],
+    }),
+    'local',
+  );
+  const privateDraft = { ...release, revisionId: 'ranked-draft', data: { ...data, releases_priority: 1 } };
+  assert.equal(publishedCollection(accepted, 'releases', '/media')[0].data.releases_priority, undefined);
+  const published = replacePublishedRecord(accepted, privateDraft, media);
+  assert.equal(publishedCollection(published, 'releases', '/media')[0].data.releases_priority, 1);
+  assert.equal(publishedCollection(accepted, 'releases', '/media')[0].data.releases_priority, undefined);
+});
 import { formattedProse } from './fixtures/prose.ts';
 import {
   cmsLinkSchema,

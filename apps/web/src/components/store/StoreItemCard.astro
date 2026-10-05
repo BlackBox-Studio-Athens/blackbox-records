@@ -89,6 +89,7 @@ const widths = [240, 360, 480, 640, 720];
     <CardContent className="store-item-card__content">
       <h2 class="brand-card-title">{storeItem.title}</h2>
       <p class="store-item-card__artist">
+        by{' '}
         <span class="store-item-card__artist-name">
           {storeItem.artistPath ? (
             <a class="store-item-card__artist-link" href={storeItem.artistPath} data-astro-prefetch>

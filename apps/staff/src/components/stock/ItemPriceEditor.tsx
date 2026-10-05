@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Undo2 } from 'lucide-react';
+import { Disc3, Euro, RefreshCw, Undo2 } from 'lucide-react';
 import { DISTRO_GROUP_VALUES } from '@blackbox/content-model';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -282,7 +282,10 @@ export default function ItemPriceEditor({
           <legend className="sr-only">Selling price</legend>
           {initial && !initial.itemType && (
             <label className={fieldClass}>
-              Format
+              <span className="flex items-center gap-2">
+                <Disc3 className="size-4 text-muted-foreground" aria-hidden="true" />
+                Format
+              </span>
               <select
                 className="min-h-11 min-w-0 rounded border border-input bg-background px-3 focus-visible:ring-2"
                 required
@@ -301,7 +304,10 @@ export default function ItemPriceEditor({
           )}
           {kind === 'pay_what_you_want' && (
             <label className={fieldClass}>
-              Minimum (EUR)
+              <span className="flex items-center gap-2">
+                <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
+                Minimum (EUR)
+              </span>
               <Input
                 inputMode="decimal"
                 value={minimum}
@@ -311,7 +317,10 @@ export default function ItemPriceEditor({
             </label>
           )}
           <label className={fieldClass}>
-            {kind === 'pay_what_you_want' ? 'Suggested price (EUR)' : 'Price (EUR)'}
+            <span className="flex items-center gap-2">
+              <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
+              {kind === 'pay_what_you_want' ? 'Suggested price (EUR)' : 'Price (EUR)'}
+            </span>
             <Input
               inputMode="decimal"
               value={amount}
@@ -330,7 +339,10 @@ export default function ItemPriceEditor({
           </label>
           {kind === 'pay_what_you_want' && (
             <label className={fieldClass}>
-              Maximum (EUR)
+              <span className="flex items-center gap-2">
+                <Euro className="size-4 text-muted-foreground" aria-hidden="true" />
+                Maximum (EUR)
+              </span>
               <Input
                 inputMode="decimal"
                 value={maximum}
@@ -361,6 +373,7 @@ export default function ItemPriceEditor({
         )}
         {resume && (
           <Button type="button" disabled={busy} onClick={() => void resumeSetup()}>
+            <RefreshCw className="size-4" aria-hidden="true" />
             {busy ? 'Checking price…' : 'Resume'}
           </Button>
         )}

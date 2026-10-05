@@ -25,7 +25,8 @@
         "ui-foundation",
         "web-platform",
         "web-artists",
-        "web-store"
+        "web-store",
+        "web-editorial"
       ],
       "workspaceInterfaces": {
         "@blackbox/content-model": ["."]

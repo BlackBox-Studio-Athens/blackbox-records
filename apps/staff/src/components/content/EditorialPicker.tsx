@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
+import { Check, ChevronsUpDown, Disc3, RefreshCw, Users, X } from 'lucide-react';
 import { ContentImagePicker } from './MediaLibrary';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Command, CommandInput, CommandList, CommandItem, CommandEmpty } from '../ui/command';
@@ -118,7 +118,7 @@ function RecordPicker({
     items.find((item) => item.id === value);
   return (
     <Field data-invalid={!!fieldError || (requiredError && !value)}>
-      <FieldLabel htmlFor={id} required={required}>
+      <FieldLabel htmlFor={id} required={required} icon={collection === 'artists' ? Users : Disc3}>
         {label}
       </FieldLabel>
       <input
@@ -196,6 +196,7 @@ function RecordPicker({
                   onClick={() => void search()}
                   onKeyDown={(event) => event.stopPropagation()}
                 >
+                  <RefreshCw className="size-4" aria-hidden="true" />
                   Retry {label.toLowerCase()}
                 </Button>
               </div>
@@ -231,6 +232,7 @@ function RecordPicker({
       </Popover>
       {!required && value && onClear && (
         <Button type="button" variant="ghost" className="min-h-11 justify-self-start" onClick={onClear}>
+          <X className="size-4" aria-hidden="true" />
           Clear {label.toLowerCase()}
         </Button>
       )}

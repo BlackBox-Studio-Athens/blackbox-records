@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from './utils';
 
@@ -24,9 +25,10 @@ function FieldLegend({
   className,
   variant = 'legend',
   required = false,
+  icon: Icon,
   children,
   ...props
-}: React.ComponentProps<'legend'> & { variant?: 'legend' | 'label'; required?: boolean }) {
+}: React.ComponentProps<'legend'> & { variant?: 'legend' | 'label'; required?: boolean; icon?: LucideIcon }) {
   return (
     <legend
       data-slot="field-legend"
@@ -34,6 +36,7 @@ function FieldLegend({
       className={cn('mb-3 font-medium', 'data-[variant=legend]:text-base', 'data-[variant=label]:text-sm', className)}
       {...props}
     >
+      {Icon && <Icon aria-hidden="true" className="mr-2 inline-block size-4 align-middle text-muted-foreground" />}
       {children}
       {required && <span aria-hidden="true" className="ml-1 text-destructive after:content-['*']" />}
       {required && <span className="sr-only"> (required)</span>}
@@ -94,9 +97,10 @@ function Field({
 function FieldLabel({
   className,
   required = false,
+  icon: Icon,
   children,
   ...props
-}: React.ComponentProps<typeof Label> & { required?: boolean }) {
+}: React.ComponentProps<typeof Label> & { required?: boolean; icon?: LucideIcon }) {
   return (
     <Label
       data-slot="field-label"
@@ -108,6 +112,7 @@ function FieldLabel({
       )}
       {...props}
     >
+      {Icon && <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-muted-foreground" />}
       {children}
       {required && <span aria-hidden="true" className="text-destructive after:content-['*']" />}
     </Label>

@@ -281,6 +281,7 @@ describe('Store listing-price presentation', () => {
       expect(buy.textContent).toBe('Pre-order');
       expect(buy.dataset.storeCardBuyLabel).toBe('Pre-order');
       expect(buy.classList.contains('preorder-action')).toBe(true);
+      expect(buy.classList.contains('purchase-action')).toBe(false);
       expect(document.dispatchEvent).toHaveBeenCalledOnce();
       expect(document.dispatchEvent).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'blackbox:store-listing-applied' }),
@@ -375,6 +376,7 @@ describe('Store listing-price presentation', () => {
     Object.assign(availability.card.preorder, { hidden: false, textContent: 'Pre-order · ships around October 2026' });
     availability.card.releaseStatus.hidden = false;
     buy.classList.add('preorder-action');
+    buy.classList.add('purchase-action');
     buy.dataset.storeCardBuyLabel = 'Pre-order';
     buy.textContent = 'Added';
     buy.setAttribute('aria-busy', 'true');
@@ -395,6 +397,7 @@ describe('Store listing-price presentation', () => {
     expect(buy.hidden).toBe(true);
     expect(buy.getAttribute('aria-busy')).toBeNull();
     expect(buy.classList.contains('preorder-action')).toBe(false);
+    expect(buy.classList.contains('purchase-action')).toBe(false);
     expect(buy.dataset.storeCardBuyLabel).toBe('Buy');
     expect(buy.textContent).toBe('Buy');
     expect(document.dispatchEvent).not.toHaveBeenCalled();
@@ -600,6 +603,7 @@ describe('Store listing-price presentation', () => {
       root: listingRoot([placeholder('stocked')], [], buys),
     });
     expect(buys.every((buy) => buy.hidden)).toBe(true);
+    expect(buys.every((buy) => !buy.classList.contains('purchase-action'))).toBe(true);
 
     resolveRecords([
       { storeItemSlug: 'stocked', presentationState: 'ready', displayPrice: '€28.00', availabilityState: 'stocked' },
@@ -609,6 +613,8 @@ describe('Store listing-price presentation', () => {
 
     await vi.waitFor(() => expect(stocked?.hidden).toBe(false));
     expect([soldOut?.hidden, unpriced?.hidden, missing?.hidden]).toEqual([true, true, true]);
+    expect(stocked?.classList.contains('purchase-action')).toBe(true);
+    expect([soldOut, unpriced, missing].every((buy) => !buy?.classList.contains('purchase-action'))).toBe(true);
   });
 
   it.each([false, true])(
@@ -642,6 +648,7 @@ describe('Store listing-price presentation', () => {
       vi.advanceTimersByTime(4000);
       expect(buy.textContent).toBe(preorder ? 'Pre-order' : 'Buy');
       expect(buy.classList.contains('preorder-action')).toBe(preorder);
+      expect(buy.classList.contains('purchase-action')).toBe(!preorder);
     },
   );
 
@@ -671,6 +678,7 @@ describe('Store listing-price presentation', () => {
       expect(buy.status).toMatchObject({ hidden: false, dataset: { storeListingAvailabilityState: 'sold_out' } });
       expect(buy.hidden).toBe(!preorder);
       expect(buy.disabled).toBe(true);
+      expect(buy.classList.contains('purchase-action')).toBe(false);
       expect(buy.cardLink.focus).toHaveBeenCalledOnce();
     },
   );

@@ -104,7 +104,9 @@ export function ContentGalleryUploader({
   return (
     <div className="grid gap-3">
       <Field className="min-w-0 gap-2">
-        <FieldLabel htmlFor={`${id}-upload`}>Upload photos</FieldLabel>
+        <FieldLabel htmlFor={`${id}-upload`} icon={Upload}>
+          Upload photos
+        </FieldLabel>
         <Input
           id={`${id}-upload`}
           type="file"
@@ -159,6 +161,7 @@ export function ContentGalleryUploader({
                   )
                 }
               >
+                <RefreshCw className="size-4" aria-hidden="true" />
                 Retry failed images
               </Button>
             )}
@@ -201,7 +204,7 @@ function MediaImage({
     />
   ) : (
     <span className="flex h-full min-h-24 items-center justify-center gap-2 text-sm text-muted-foreground">
-      <ImageIcon className="size-5" />
+      <ImageIcon className="size-5" aria-hidden="true" />
       Preview unavailable
     </span>
   );
@@ -397,7 +400,9 @@ export default function MediaLibrary({
               className="overflow-hidden"
             >
               <Field className="rounded-lg border border-dashed border-border bg-muted/20 p-4">
-                <FieldLabel htmlFor={`${id}-upload`}>Choose an image</FieldLabel>
+                <FieldLabel htmlFor={`${id}-upload`} icon={Upload}>
+                  Choose an image
+                </FieldLabel>
                 <Input
                   id={`${id}-upload`}
                   type="file"
@@ -600,7 +605,11 @@ export function ContentImagePicker({
   const errorId = `${id}-error`;
   return (
     <Field data-invalid={!!fieldError}>
-      {!hideLabel && <FieldLabel htmlFor={id}>{label}</FieldLabel>}
+      {!hideLabel && (
+        <FieldLabel htmlFor={id} icon={ImageIcon}>
+          {label}
+        </FieldLabel>
+      )}
       <input
         id={`${id}-value`}
         className="sr-only"
@@ -649,7 +658,7 @@ export function ContentImagePicker({
                 aria-describedby={fieldError ? errorId : undefined}
                 onBlur={onBlur}
               >
-                <ImageIcon aria-hidden="true" />
+                <ImageIcon className="size-4" aria-hidden="true" />
                 {value ? 'Change' : 'Choose'} {label.toLowerCase()}
               </Button>
             </SheetTrigger>

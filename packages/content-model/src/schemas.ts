@@ -77,6 +77,10 @@ export function createReleasesContentSchema<TImage extends z.ZodType, TReference
     title: requiredText,
     artist: references.artist,
     release_stage: z.enum(['upcoming', 'released']).optional(),
+    releases_priority: z.preprocess(
+      (value) => (value === '' || value === null ? undefined : value),
+      z.number().int().positive('Use a whole number starting at 1.').optional(),
+    ),
     release_date: z.preprocess(
       (value) => (value === '' || value === null ? undefined : value),
       z.coerce.date().optional(),
@@ -162,6 +166,7 @@ export const socialsContentSchema = z.object({
 
 export const settingsContentSchema = z.object({
   label_name: requiredText,
+  footer_text: z.string().trim().optional(),
   established_year: z.number().int().min(1900).max(2100),
   url: httpsUrl,
   logo: z.string().refine(isPublicImagePath, { message: 'Use an image path below /assets/.' }),
