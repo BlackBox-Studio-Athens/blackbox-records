@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { createStoreCartDrawerView, STORE_CART_DRAWER_COPY, StoreCartDrawerPanel } from './StoreCartDrawer';
@@ -7,8 +7,20 @@ import {
   addStoreCartItem,
   createCartQuantity,
   createEmptyStoreCartState,
+  removeCartLineByVariant,
+  restoreCartLine,
   type CartLineItemSnapshot,
 } from './store-cart';
+
+const internationalOrderNotice = vi.hoisted(() => vi.fn());
+
+// The shared notice owns country gating and email copy; the drawer owns its position and current titles.
+vi.mock('./InternationalOrderNotice', () => ({
+  default: (props: { variant: string; itemTitles?: string[] }) => {
+    internationalOrderNotice(props);
+    return <aside data-international-order-notice />;
+  },
+}));
 
 const cartItem: CartLineItemSnapshot = {
   availabilityLabel: 'Available',
@@ -28,6 +40,68 @@ const cartItem: CartLineItemSnapshot = {
 const resolveHref = (path: string) => `/blackbox-records${path}`;
 
 describe('StoreCartDrawer', () => {
+  beforeEach(() => internationalOrderNotice.mockClear());
+
+  it('places the international card after delivery and before Checkout with current item titles', () => {
+    const markup = renderToStaticMarkup(
+      <StoreCartDrawerPanel
+        cartState={addStoreCartItem(
+          { ...cartItem, title: 'Barren Point', variantId: 'variant_barren' },
+          addStoreCartItem(cartItem),
+        )}
+        renderHeader={false}
+        deliverySummary={<p>Delivery summary fixture</p>}
+        onContinueShopping={() => undefined}
+        onDecrementItem={() => undefined}
+        onIncrementItem={() => undefined}
+        onRemoveItem={() => undefined}
+        resolveHref={resolveHref}
+      />,
+    );
+
+    expect(internationalOrderNotice).toHaveBeenLastCalledWith({
+      variant: 'card',
+      itemTitles: ['Disintegration', 'Barren Point'],
+    });
+    expect(markup.indexOf('Delivery summary fixture')).toBeLessThan(markup.indexOf('data-international-order-notice'));
+    expect(markup.indexOf('data-international-order-notice')).toBeLessThan(markup.indexOf('data-store-cart-checkout'));
+  });
+
+  it('updates the email titles after removal and restoration and omits the card in an empty cart', () => {
+    const initialCart = addStoreCartItem(
+      { ...cartItem, title: 'Barren Point', variantId: 'variant_barren' },
+      addStoreCartItem(cartItem),
+    );
+    const removedLine = initialCart.lines[0]!;
+    const reducedCart = removeCartLineByVariant(removedLine.variantId, initialCart);
+    const carts = [reducedCart, restoreCartLine(removedLine, 0, reducedCart), createEmptyStoreCartState()];
+
+    for (const cartState of carts) {
+      internationalOrderNotice.mockClear();
+      const markup = renderToStaticMarkup(
+        <StoreCartDrawerPanel
+          cartState={cartState}
+          renderHeader={false}
+          onContinueShopping={() => undefined}
+          onDecrementItem={() => undefined}
+          onIncrementItem={() => undefined}
+          onRemoveItem={() => undefined}
+          resolveHref={resolveHref}
+        />,
+      );
+
+      if (cartState.lines.length) {
+        expect(internationalOrderNotice).toHaveBeenLastCalledWith({
+          variant: 'card',
+          itemTitles: cartState.lines.map((line) => line.title),
+        });
+      } else {
+        expect(internationalOrderNotice).not.toHaveBeenCalled();
+        expect(markup).not.toContain('data-international-order-notice');
+      }
+    }
+  });
+
   it('marks only pre-order lines and places one latest-estimate notice before delivery', () => {
     const earlier: CartLineItemSnapshot = {
       ...cartItem,

@@ -134,6 +134,8 @@ export function scheduleIdleShellTask(task: () => void, scheduler: IdleTaskSched
 
 // Restores the server-rendered state of a snapshot's main element; `root` is a copy that no page listener touches.
 function sanitizeShellMainSnapshot(root: ParentNode) {
+  // This country-gated island has empty server markup, even if it resolved before the shell remembered it.
+  root.querySelectorAll('.international-order-notice').forEach((notice) => notice.remove());
   root.querySelectorAll<HTMLElement>('[data-newsletter-form]').forEach((placeholder) => {
     placeholder.replaceChildren();
   });

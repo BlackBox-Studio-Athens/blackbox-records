@@ -28,8 +28,8 @@ const devServerHotReloadSocket = "WebSocket connection to 'ws://";
 
 export const test = base.extend({
   page: async ({ page }, use) => {
-    // Keep runs off the external network: SiteLayout loads Google Fonts with display=optional, so an empty stylesheet
-    // only changes the typeface and prevents gstatic font requests entirely.
+    // Keep runs off the external network. The actual faces are self-hosted in fonts.css;
+    // an empty Google stylesheet prevents duplicate gstatic requests without replacing those faces.
     await page.route('https://fonts.googleapis.com/**', (route) =>
       route.fulfill({ contentType: 'text/css', body: '' }),
     );
@@ -37,6 +37,8 @@ export const test = base.extend({
     await page.route('https://www.glancelytics.com/**', (route) =>
       route.fulfill({ contentType: 'text/javascript', body: '' }),
     );
+    // Local has no Cloudflare country endpoint; country-specific tests override this default Greek response.
+    await page.route('**/cdn-cgi/trace', (route) => route.fulfill({ contentType: 'text/plain', body: 'loc=GR\n' }));
     // The harness runs without the Worker: stub the Store reads (listing prices, item offer, cart delivery quote)
     // so every serving mode behaves alike.
     await page.route(/\/api\/store\/listing-prices(?:\?.*)?$/, (route) => route.fulfill({ json: [] }));

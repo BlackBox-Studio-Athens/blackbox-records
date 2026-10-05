@@ -11,6 +11,7 @@ import { getEntry } from '@/lib/content-reader';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import StoreOfferPriceDisplay from '@/components/store/StoreOfferPriceDisplay';
 import StoreItemPurchaseActions from '@/components/store/checkout/StoreItemPurchaseActions';
+import InternationalOrderNotice from '@/components/store/cart/InternationalOrderNotice';
 import PurchaseInformation from '@/platform/components/PurchaseInformation';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { largestImageWidth } from '@/platform/lib/editorial-image';
@@ -177,6 +178,7 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
           isVinyl={isVinyl}
           purchaseHint="Add it to the cart to review this item before checkout."
         />
+        <InternationalOrderNotice client:load variant="line" itemTitles={[storeItem.title]} />
         <PurchaseInformation />
         {partnerLinks.length > 0 && (
           <p class="text-sm leading-relaxed text-muted-foreground" data-store-item-partner-links>

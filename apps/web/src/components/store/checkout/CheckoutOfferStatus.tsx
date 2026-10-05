@@ -8,6 +8,7 @@ import { createPublicCheckoutApi, type PublicCheckoutApi } from '@/components/st
 import { readStoreCartState, type CartLine, type CartLineItemSnapshot } from '@/components/store/cart/store-cart';
 import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/cart/store-cart-events';
 import { PreorderCartNotice } from '@/components/store/cart/PreorderCartNotice';
+import InternationalOrderNotice from '@/components/store/cart/InternationalOrderNotice';
 import { cn } from '@/components/ui/utils';
 import {
   createCartCheckoutOfferView,
@@ -278,6 +279,15 @@ export default function CheckoutOfferStatus({
           lines={cartLines.length ? cartLines : workerFallbackLineItem ? [workerFallbackLineItem] : []}
         />
         <DeliverySummary {...delivery} />
+        {hasCheckoutLine && (
+          <InternationalOrderNotice
+            variant="card"
+            borderTone="neutral"
+            itemTitles={(cartLines.length ? cartLines : workerFallbackLineItem ? [workerFallbackLineItem] : []).map(
+              (line) => line.title,
+            )}
+          />
+        )}
 
         <div className="checkout-review__actions">
           {!view.canStartCheckout && <p className="checkout-review__note">{view.detail}</p>}

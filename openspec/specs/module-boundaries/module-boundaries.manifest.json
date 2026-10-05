@@ -9,7 +9,8 @@
   },
   "ownershipGranularity": "native-nx-project-roots",
   "contractNotes": {
-    "performance-resume": "Native project.json contracts provide lightweight checkout presentation, the lazy newsletter form and bundled public font assets, permit checkout-core to consume @blackbox/api-client/public delivery constants, and permit backend-runtime to create a commerce-persistence binding scope."
+    "performance-resume": "Native project.json contracts provide lightweight checkout presentation, the lazy newsletter form and bundled public font assets, permit checkout-core to consume @blackbox/api-client/public delivery constants, and permit backend-runtime to create a commerce-persistence binding scope.",
+    "international-order-notice": "store-cart provides InternationalOrderNotice.tsx to Store pages, layouts and checkout through its native project.json contract. The browser country gate and email template remain presentation-only; store-cart acquires no checkout-client or payment dependency."
   },
   "compatibilityFacades": "disallowed",
   "entrypointPolicy": {

@@ -20,7 +20,8 @@
         "./store-cart-events.ts",
         "./StoreCartButton.tsx",
         "./StoreCartDrawer.tsx",
-        "./PreorderCartNotice.tsx"
+        "./PreorderCartNotice.tsx",
+        "./InternationalOrderNotice.tsx"
       ],
       "namedInterfaces": {},
       "dependsOn": ["ui-foundation", "web-platform"],

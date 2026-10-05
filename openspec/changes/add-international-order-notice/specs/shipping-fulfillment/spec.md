@@ -46,3 +46,28 @@ The public site SHALL show shoppers whose Cloudflare-reported country is not Gre
 - **THEN** it is static, not dismissible, not a modal or popup and not a live region
 - **AND** the country is looked up at most once per tab, kept only in the browser, and never sent to the Worker
 - **AND** checkout requests, country validation and Greek checkout behaviour are unchanged.
+
+### Requirement: Notice lifetime follows the shipping restriction
+
+The email ordering notice SHALL remain active while online checkout and fulfillment are Greece-only. It MUST NOT have an independent disable flag. An approved shipping expansion SHALL include removal or replacement of the Greece-specific notice in its acceptance and release scope; changing presentation MUST NOT broaden shipping authority.
+
+#### Scenario: Shipping expansion is not yet available
+
+- **GIVEN** online checkout and fulfillment remain Greece-only
+- **WHEN** expansion is planned, implemented or awaiting acceptance
+- **THEN** all four notice placements retain their country visibility and email ordering behavior.
+
+#### Scenario: Shipping expands to some additional countries
+
+- **GIVEN** expanded checkout and fulfillment are available and verified for some additional destinations
+- **WHEN** that expansion is released
+- **THEN** the notice no longer claims that online shipping is Greece-only
+- **AND** an accurate email ordering route remains for destinations checkout cannot serve
+- **AND** any destination eligibility used by the notice comes from the Worker's shipping policy, with shopper geolocation remaining advisory.
+
+#### Scenario: Checkout covers the full intended destination scope
+
+- **GIVEN** expanded checkout and fulfillment are available and verified for the full intended destination scope
+- **WHEN** that expansion is released
+- **THEN** the notice, its placements and its country lookup can be deleted together
+- **AND** the release verifies that stale Greece-only notice content is absent and normal purchase, cart and checkout behavior is preserved.

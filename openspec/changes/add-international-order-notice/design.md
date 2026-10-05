@@ -33,6 +33,29 @@ Design decisions:
 - **Email, not a form.** A `mailto:` link needs no backend and keeps the closed country scope intact.
 - **One component.** `InternationalOrderNotice` with `variant: 'strip' | 'line' | 'card'` and an optional `itemTitles: string[]`. One copy object, one mailto builder, one country gate.
 
+## Lifecycle and shipping expansion
+
+Owner clarification, 2026-10-05: this feature will never be retired before online shipping expands. Keep it active while checkout and fulfillment remain Greece-only. There is no independent feature flag: its lifetime follows the shipping restriction.
+
+Research found the current authority in the Worker: `StripeCheckoutGateway.createHostedCheckoutSession` sets `shipping_address_collection.allowed_countries` to `['GR']`, and paid-order shipping validation also rejects non-Greek destinations. `/api/store/capabilities` currently exposes checkout availability and pricing, not a destination policy. Shopper IP location is only a presentation hint; it never authorizes a shipping address.
+
+| Option                                                       | Decision                                                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Independent source or runtime flag                           | Skip. It permits the notice to disappear while the shipping restriction still exists, and requires a second release decision. The existing native-checkout flag controls checkout availability and cannot represent shipping coverage.                                                                                                              |
+| Isolated notice, removed or replaced with shipping expansion | Use now. The component owns its copy, mailto builder, country lookup and styles; four consumers supply only placement and item titles. No new runtime setting, request or backend dependency is needed.                                                                                                                                             |
+| Read destination coverage from Worker capabilities           | Add with partial shipping expansion if an unsupported-destination notice remains necessary. That change must expose the actual checkout/fulfillment policy through the existing public contract and use it for the notice. Adding an unused policy API now would add schema, generated-client, caching and failure behavior without a current need. |
+| Shared frontend/backend country list                         | Skip now. A browser constant would not by itself unify Stripe eligibility, paid-order validation, delivery quotes and fulfillment. Preserve Worker ownership until the expansion defines those rules.                                                                                                                                               |
+
+This choice follows the distinction between business eligibility and release controls. Feature toggles add configuration and validation complexity and should have a deliberate lifetime; see [Feature Toggles](https://martinfowler.com/articles/feature-toggles.html). Here the existing shipping rule supplies that lifetime.
+
+The shipping expansion change must include notice acceptance in the same release:
+
+- Before expanded checkout and fulfillment are available and verified, keep this feature and all four placements active. Do not remove it merely because expansion work has started or a configuration was edited.
+- For partial expansion, replace the Greece-only copy and country predicate together. Continue offering email ordering for destinations checkout cannot serve, deriving destination eligibility from the Worker's shipping policy rather than another frontend country list. Test `GR`, a newly supported country, an unsupported country and unknown country lookup. IP location remains advisory.
+- When checkout serves the full intended destination scope, remove the notice and country lookup. Expanded shipping acceptance must prove that no stale Greece-only notice remains and that the normal purchase/cart/checkout controls still work. Rollback must keep notice wording consistent with the effective shipping scope.
+
+Removal is ordinary deletion, not a disabled branch: remove the imports and placements in `StoreCollectionPage.astro`, `pages/store/[slug]/index.astro`, `StoreCartDrawer.tsx` and `CheckoutOfferStatus.tsx`; delete `InternationalOrderNotice.tsx`, `international-order-notice.css`, `shopper-country.ts` and their dedicated tests; remove the public entrypoint and notice-only boundary documentation, the snapshot sanitizer's `.international-order-notice` cleanup, the five `e2e/international-order-*.spec.ts` files and their dedicated assertions/default trace stub. Verify no notice import or trace lookup remains, then run affected validation and shipping acceptance. Existing shell, cart, checkout and pricing behavior remain independently owned.
+
 ## Country gate
 
 Cloudflare already geolocates every request. Its managed same-origin endpoint `/cdn-cgi/trace` returns plain `key=value` lines including `loc=<ISO 3166-1 alpha-2>`. It needs no Worker, Pages Function, binding or setting, and its requests do not count against Worker quotas. Verified 2026-10-02 on `blackbox-records-web.pages.dev` and `blackboxrecordsathens.com`; confirm on the UAT host during acceptance.
@@ -69,7 +92,7 @@ Use this text exactly, kept in one copy object.
 
 - Build it with `encodeURIComponent` in a pure helper, for example `buildInternationalOrderMailto(itemTitles: string[]): string`, with a unit test covering no items, several items, and titles containing `&`, `,`, `?` and non-ASCII characters.
 - Item titles: Store Item page passes the item title; cart drawer and checkout pass the current cart line titles. Store collection pages pass none.
-- The link is a normal `<a href="mailto:...">` with a minimum 44px target and the trailing arrow icon used in the mocks (`aria-hidden`). Link text alone names the action.
+- The link is a normal `<a href="mailto:...">` with a minimum 44px target. Strip and card variants have the trailing arrow icon used in the mocks (`aria-hidden`); the line has no trailing arrow. Link text alone names the action.
 
 ## Variants and tokens
 

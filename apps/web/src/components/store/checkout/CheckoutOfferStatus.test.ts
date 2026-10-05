@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createCartQuantity, type CartLine } from '@/components/store/cart/store-cart';
+import InternationalOrderNotice from '@/components/store/cart/InternationalOrderNotice';
 
 import {
   createCheckoutOfferView,
@@ -33,6 +34,9 @@ vi.mock('react', async (importOriginal) => {
       actual.useState<unknown>(Array.isArray(initialValue) ? cartState.lines : initialValue),
   };
 });
+vi.mock('@/components/store/cart/InternationalOrderNotice', () => ({
+  default: vi.fn(() => React.createElement('aside', { 'data-checkout-international-notice': true })),
+}));
 
 const ordinaryLine: CartLine = {
   availabilityLabel: 'Available',
@@ -116,6 +120,7 @@ function createUnavailableStoreOffer(overrides: Partial<SoldOutStoreOffer> = {})
 describe('CheckoutOfferStatus helpers', () => {
   beforeEach(() => {
     cartState.lines = [];
+    vi.mocked(InternationalOrderNotice).mockClear();
   });
   it('uses Stripe-aware CTA copy and the self-hosted official badge asset', () => {
     expect(createStripeCheckoutCtaView(false)).toEqual({
@@ -534,5 +539,44 @@ describe('CheckoutOfferStatus helpers', () => {
     expect(markup).not.toContain('preorder-notice');
     expect(markup).toContain('Add a priced item to the cart before checkout.');
     expect(markup).toContain('data-delivery-summary');
+  });
+
+  it('places the neutral international card after delivery and before payment, using current cart titles', () => {
+    cartState.lines = [ordinaryLine, { ...ordinaryLine, title: 'Barren Point', variantId: 'variant_barren' }];
+    const markup = renderToStaticMarkup(
+      React.createElement(CheckoutOfferStatus, {
+        initialAvailability,
+        fallbackLineItem: { ...ordinaryLine, title: 'Unused fallback' },
+      }),
+    );
+
+    expect(vi.mocked(InternationalOrderNotice).mock.calls.at(-1)?.[0]).toEqual({
+      variant: 'card',
+      borderTone: 'neutral',
+      itemTitles: ['Disintegration', 'Barren Point'],
+    });
+    const noticePosition = markup.indexOf('data-checkout-international-notice');
+    expect(noticePosition).toBeGreaterThan(markup.indexOf('data-delivery-summary'));
+    expect(noticePosition).toBeLessThan(markup.indexOf('class="checkout-review__actions"'));
+
+    cartState.lines = [{ ...ordinaryLine, title: 'Updated title' }];
+    renderToStaticMarkup(React.createElement(CheckoutOfferStatus, { initialAvailability }));
+    expect(vi.mocked(InternationalOrderNotice).mock.calls.at(-1)?.[0].itemTitles).toEqual(['Updated title']);
+  });
+
+  it('passes the checkout fallback title to the international card when the cart has no lines', () => {
+    renderToStaticMarkup(
+      React.createElement(CheckoutOfferStatus, { initialAvailability, fallbackLineItem: ordinaryLine }),
+    );
+    expect(vi.mocked(InternationalOrderNotice).mock.calls.at(-1)?.[0]).toEqual({
+      variant: 'card',
+      borderTone: 'neutral',
+      itemTitles: ['Disintegration'],
+    });
+  });
+
+  it('does not mount the international country gate for an empty checkout', () => {
+    renderToStaticMarkup(React.createElement(CheckoutOfferStatus, { initialAvailability }));
+    expect(InternationalOrderNotice).not.toHaveBeenCalled();
   });
 });

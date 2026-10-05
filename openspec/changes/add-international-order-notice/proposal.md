@@ -9,6 +9,7 @@ Online checkout ships within Greece only, and `shipping-fulfillment` keeps that 
 - Add one shopper notice in three variants: a strip on Store collection pages, a line beside the Store Item purchase action, and a card in the cart drawer and checkout shipping step.
 - The notice states that online checkout ships within Greece only, for now, and offers "Email us to order" as a `mailto:` link to `orders@` with a prefilled subject and order template. Where the items are known (Store Item, cart, checkout), the template lists them.
 - Show it only to shoppers outside Greece. The browser reads the visitor country from Cloudflare's same-origin `/cdn-cgi/trace`; Greece, unknown or failed lookups keep it hidden. No Worker, binding or setting is added.
+- Keep the notice active for the lifetime of Greece-only online shipping. Isolate it for removal or replacement as part of the shipping expansion release; do not add an independent enable/disable flag. Partial expansion must retain an accurate email route for destinations that checkout still cannot serve.
 - It stays quiet: no popup, dismissal or live region.
 
 ## Capabilities

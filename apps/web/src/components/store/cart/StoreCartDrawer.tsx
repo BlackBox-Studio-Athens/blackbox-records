@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { acquireLenisModalLock } from '@/platform/lib/lenis-scroll';
 import { preorderChipText } from '@/platform/lib/preorder-estimate';
+import InternationalOrderNotice from './InternationalOrderNotice';
 import { PreorderCartNotice } from './PreorderCartNotice';
 import {
   createCartCheckoutPath,
@@ -322,6 +323,7 @@ export function StoreCartDrawerPanel({
             <div className="store-cart-drawer__summary">
               <PreorderCartNotice lines={visibleLines} presentation="drawer" />
               {deliverySummary}
+              <InternationalOrderNotice variant="card" itemTitles={visibleLines.map((line) => line.title)} />
             </div>
           </>
         )}

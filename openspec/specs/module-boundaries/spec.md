@@ -183,6 +183,13 @@ Each application module MUST declare its source root, targets and task inputs in
 - **AND** application-owned `web-pages` owns the static `/terms/` and `/privacy/` routes; `checkout-web` retains runtime monetary presentation
 - **AND** shared editorial information does not import checkout clients or become price, tax or order authority.
 
+#### Scenario: International order notices cross public presentation boundaries
+
+- **WHEN** Store collections, Store Item, the cart drawer and checkout offer the same email ordering route
+- **THEN** `store-cart` owns and provides `InternationalOrderNotice.tsx` through its native `project.json` contract
+- **AND** its browser-only country gate and email template introduce no dependency on checkout clients, Worker state or payment authority
+- **AND** public pages, layouts and `checkout-web` consume the provided entrypoint without a reverse dependency on `web-store`.
+
 #### Scenario: Store category routes are added
 
 - **GIVEN** Store collection pages exist at `/store/`, `/store/blackbox-releases/`, `/store/distro/`, and `/store/merch/`

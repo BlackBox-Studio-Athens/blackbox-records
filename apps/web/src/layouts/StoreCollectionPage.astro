@@ -1,6 +1,7 @@
 ---
 import InternalPageHero from '@/components/InternalPageHero.astro';
 import StoreItemCard from '@/components/store/StoreItemCard.astro';
+import InternationalOrderNotice from '@/components/store/cart/InternationalOrderNotice';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import type { StoreCatalogCategory } from '@/lib/store-categories';
@@ -42,6 +43,9 @@ const catalogId = 'all-store-catalog';
       </a>
       .
     </p>
+    <div class="layout-container has-[aside]:mb-4 md:has-[aside]:mb-6">
+      <InternationalOrderNotice variant="strip" client:load />
+    </div>
     {category.id === 'distro' ? (
       <slot name="distro" />
     ) : (
