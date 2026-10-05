@@ -64,6 +64,11 @@
 
 ## 11. Authorized software release
 
-- [ ] 11.1 Commit the verified local repairs, rebase onto latest main and verify the resulting tree before merging.
-- [ ] 11.2 Merge to main, release the exact candidate to UAT and verify hosted identity.
+- [x] 11.1 Commit the verified local repairs, rebase onto latest main and verify the resulting tree before merging.
+- [x] 11.2 Merge to main, release the exact candidate to UAT and verify hosted identity.
 - [ ] 11.3 Promote the accepted candidate through the existing browser/provider gates to PRD and monitor hosted identity/readiness, preserving catalog, stock and launch controls.
+
+## 12. Firefox full-video focus handoff
+
+- [x] 12.1 Reproduce the remaining promotion failure without forced clicks and trace the page's smooth scrolling during the full-video focus handoff.
+- [x] 12.2 Make that handoff immediate, verify repeated unchanged Firefox/Chromium interaction checks and complete source-bound validation before a fresh release candidate.

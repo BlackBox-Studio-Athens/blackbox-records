@@ -307,7 +307,7 @@ function PreorderChapter({
 
   useEffect(() => {
     if (playing && !playerSession) {
-      fullVideo.current?.scrollIntoView({ block: 'center' });
+      fullVideo.current?.scrollIntoView({ behavior: 'instant', block: 'center' });
       fullVideo.current?.focus({ preventScroll: true });
     }
   }, [playing, playerSession]);
@@ -508,7 +508,8 @@ function PreorderChapter({
                 className={buttonVariants({ variant: 'outline', size: 'lg' })}
                 onClick={() => {
                   onWatch(null);
-                  watchButton.current?.focus();
+                  watchButton.current?.scrollIntoView({ behavior: 'instant', block: 'center' });
+                  watchButton.current?.focus({ preventScroll: true });
                 }}
               >
                 Close video
