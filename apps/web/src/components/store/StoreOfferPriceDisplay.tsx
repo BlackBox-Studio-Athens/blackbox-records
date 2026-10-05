@@ -1,13 +1,8 @@
 import * as React from 'react';
 
-import {
-  createPublicCheckoutApi,
-  type PublicCheckoutApi,
-  type PublicStoreOffer,
-} from '@/components/store/checkout/public-checkout-api';
+import type { PublicCheckoutApi, PublicStoreOffer } from '@/components/store/checkout/public-checkout-api';
 import { cn } from '@/components/ui/utils';
-import { isReleaseOutNow } from '@/lib/release-feature';
-import { shipEstimateText } from '@/platform/lib/preorder-estimate';
+import { preorderBadges, shipEstimateText } from '@/platform/lib/preorder-estimate';
 
 export const STORE_OFFER_PRICE_DISPLAY_COPY = {
   loading: 'Checking price',
@@ -85,7 +80,7 @@ export default function StoreOfferPriceDisplay({
   const hideUnavailableHeadline = suppressUnavailableHeadline && view.tone === 'unavailable';
   const Wrapper = preorderFacts ? 'div' : 'span';
   const release = releaseDate ? new Date(releaseDate) : undefined;
-  const released = isReleaseOutNow(release);
+  const released = preorderBadges({ releaseDate, shipEstimate: null, today: new Date() }).includes('Out now');
   const releaseText = release
     ? release.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
     : 'To be confirmed';
@@ -93,15 +88,18 @@ export default function StoreOfferPriceDisplay({
 
   React.useEffect(() => {
     let isActive = true;
-    const checkoutApi = api ?? createPublicCheckoutApi();
-
     setView(loadingView);
-
-    void loadStoreOfferPriceDisplayView(checkoutApi, storeItemSlug).then((nextView) => {
-      if (isActive) {
-        setView(nextView);
+    async function loadOffer() {
+      try {
+        const checkoutApi =
+          api ?? (await import('@/components/store/checkout/public-checkout-api')).createPublicCheckoutApi();
+        const nextView = await loadStoreOfferPriceDisplayView(checkoutApi, storeItemSlug);
+        if (isActive) setView(nextView);
+      } catch {
+        if (isActive) setView({ ...createStoreOfferPriceDisplayView(null), tone: 'error' });
       }
-    });
+    }
+    void loadOffer();
 
     return () => {
       isActive = false;

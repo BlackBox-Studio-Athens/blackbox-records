@@ -2,12 +2,8 @@ import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { LoadingButtonContent } from '@/components/ui/loading-feedback';
-import {
-  createPublicCheckoutApi,
-  formatStoreLowStockLabel,
-  type PublicCheckoutApi,
-  type PublicStoreOffer,
-} from '@/components/store/checkout/public-checkout-api';
+import type { PublicCheckoutApi, PublicStoreOffer } from '@/components/store/checkout/public-checkout-api';
+import { formatStoreLowStockLabel } from './public-checkout-presentation';
 import type { CartLineItemSnapshot } from '@/components/store/cart/store-cart';
 import {
   queuePendingStoreCartAddItem,
@@ -131,11 +127,9 @@ export async function loadStoreItemPurchaseActionState(
 }
 
 // Store cards are not islands: their Buy reads the authoritative Store Offer only when pressed.
-export async function requestStoreCartAddFromSeed(
-  cartSeed: StoreItemCartSeed,
-  api: PublicCheckoutApi = createPublicCheckoutApi(),
-) {
-  const state = await loadStoreItemPurchaseActionState(api, cartSeed);
+export async function requestStoreCartAddFromSeed(cartSeed: StoreItemCartSeed, api?: PublicCheckoutApi) {
+  const checkoutApi = api ?? (await import('./public-checkout-api')).createPublicCheckoutApi();
+  const state = await loadStoreItemPurchaseActionState(checkoutApi, cartSeed);
   return { ...state, isQueued: state.cartItem ? requestStoreCartAddItem(state.cartItem) : false };
 }
 
@@ -192,16 +186,24 @@ export default function StoreItemPurchaseActions({
 
     let isActive = true;
     const pricedCartSeed = cartSeed;
-    const checkoutApi = api ?? createPublicCheckoutApi();
     setPurchaseState({ cartItem: null, label: null, statusTone: 'neutral' });
     setIsChecking(true);
 
     async function loadWorkerOffer() {
-      const nextState = await loadStoreItemPurchaseActionState(checkoutApi, pricedCartSeed);
-
-      if (isActive) {
-        setPurchaseState(nextState);
-        setIsChecking(false);
+      try {
+        const checkoutApi = api ?? (await import('./public-checkout-api')).createPublicCheckoutApi();
+        const nextState = await loadStoreItemPurchaseActionState(checkoutApi, pricedCartSeed);
+        if (isActive) setPurchaseState(nextState);
+      } catch {
+        if (isActive) {
+          setPurchaseState({
+            cartItem: null,
+            label: STORE_ITEM_PURCHASE_ACTION_COPY.unavailable,
+            statusTone: 'neutral',
+          });
+        }
+      } finally {
+        if (isActive) setIsChecking(false);
       }
     }
 

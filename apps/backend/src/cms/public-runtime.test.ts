@@ -320,7 +320,7 @@ it('reuses the showcase endpoint through the public gateway and retires accepted
           builder.onResolve(
             {
               filter:
-                /^(astro\/fetch|@astrojs\/cloudflare\/fetch|astro:assets|@\/lib\/catalog-data|@\/lib\/preorder-showcase)$|\.jpg$/,
+                /^(astro\/fetch|@astrojs\/cloudflare\/fetch|astro:assets|@\/lib\/catalog-data|@\/lib\/preorder-showcase)$|\.jpg$|\.mp4\?url$/,
             },
             ({ path }) =>
               path === '@/lib/preorder-showcase'
