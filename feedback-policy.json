@@ -93,6 +93,7 @@
       "dev:stack:stripe-mock-api",
       "dev:stack:uat-connected",
       "checkout:preflight:stripe-test",
+      "checkout:expire:uat",
       "stripe:catalog:verify",
       "store:listing-readiness:verify",
       "catalog:readiness:generate",

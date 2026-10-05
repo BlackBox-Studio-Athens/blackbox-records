@@ -159,23 +159,63 @@ describe('StorePreorderShowcase reads', () => {
     );
   });
 
-  it.each(['listing-http', 'listing-network', 'listing-json', 'candidate-http', 'candidate-network', 'candidate-json'])(
-    'renders nothing after %s failure',
+  it.each(['listing-http', 'listing-network', 'candidate-http'])(
+    'recovers from a first %s failure with fresh availability',
     async (failure) => {
       const fetchRequest = vi.fn<typeof fetch>();
-      if (failure === 'listing-http') fetchRequest.mockResolvedValueOnce(new Response('', { status: 503 }));
-      else if (failure === 'listing-network') fetchRequest.mockRejectedValueOnce(new Error('offline'));
-      else if (failure === 'listing-json') fetchRequest.mockResolvedValueOnce(new Response('invalid json'));
-      else {
-        fetchRequest.mockResolvedValueOnce(Response.json([ready(clip.slug)]));
-        if (failure === 'candidate-http') fetchRequest.mockResolvedValueOnce(new Response('', { status: 503 }));
-        else if (failure === 'candidate-network') fetchRequest.mockRejectedValueOnce(new Error('offline'));
-        else fetchRequest.mockResolvedValueOnce(Response.json({ invalid: 'candidates' }));
-      }
+      if (failure === 'candidate-http') fetchRequest.mockResolvedValueOnce(Response.json([ready(clip.slug)]));
+      if (failure === 'listing-network') fetchRequest.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      else fetchRequest.mockResolvedValueOnce(new Response('', { status: 503 }));
+      fetchRequest
+        .mockResolvedValueOnce(Response.json([ready(clip.slug)]))
+        .mockResolvedValueOnce(Response.json([clip]));
+      vi.stubGlobal('fetch', fetchRequest);
+      expect((await loadStorePreorderShowcase(props.candidatesUrl)).map((item) => item.slug)).toEqual([clip.slug]);
+      expect(fetchRequest).toHaveBeenCalledTimes(failure === 'candidate-http' ? 4 : 3);
+    },
+  );
+
+  it('does not reuse an eligible price read after a candidate failure when copies become unavailable', async () => {
+    const fetchRequest = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json([ready(clip.slug)]))
+      .mockResolvedValueOnce(new Response('', { status: 503 }))
+      .mockResolvedValueOnce(Response.json([ready(clip.slug, { availabilityState: 'sold_out' })]));
+    vi.stubGlobal('fetch', fetchRequest);
+    expect(await loadStorePreorderShowcase(props.candidatesUrl)).toEqual([]);
+    expect(fetchRequest).toHaveBeenCalledTimes(3);
+  });
+
+  it('cancels retry backoff on unmount without another request', async () => {
+    vi.useFakeTimers({ toFake: ['Date', 'setTimeout', 'clearTimeout'] });
+    const controller = new AbortController();
+    const fetchRequest = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'));
+    vi.stubGlobal('fetch', fetchRequest);
+    const pending = loadStorePreorderShowcase(props.candidatesUrl, controller.signal);
+    await Promise.resolve();
+    expect(vi.getTimerCount()).toBe(1);
+    controller.abort();
+    expect(await pending).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
+    expect(fetchRequest).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['listing-http', 'listing-network', 'listing-json', 'candidate-http', 'candidate-network', 'candidate-json'])(
+    'renders nothing after bounded retries of a persistent %s failure',
+    async (failure) => {
+      const fetchRequest = vi.fn<typeof fetch>(async (url) => {
+        if (failure === 'listing-http') return new Response('', { status: 503 });
+        if (failure === 'listing-network') throw new TypeError('Failed to fetch');
+        if (failure === 'listing-json') return new Response('invalid json');
+        if (url !== props.candidatesUrl) return Response.json([ready(clip.slug)]);
+        if (failure === 'candidate-http') return new Response('', { status: 503 });
+        if (failure === 'candidate-network') throw new TypeError('Failed to fetch');
+        return Response.json({ invalid: 'candidates' });
+      });
       vi.stubGlobal('fetch', fetchRequest);
       rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
       expect(renderToStaticMarkup(render())).toBe('');
-      expect(fetchRequest).toHaveBeenCalledTimes(failure.startsWith('listing') ? 1 : 2);
+      expect(fetchRequest).toHaveBeenCalledTimes(failure.startsWith('listing') ? 2 : 4);
     },
   );
 
@@ -205,12 +245,12 @@ describe('StorePreorderShowcase reads', () => {
     expect(await loadStorePreorderShowcase(props.candidatesUrl)).toEqual([]);
   });
 
-  it('stops before candidates when cancelled after the listing read', async () => {
+  it('starts no reads when already cancelled', async () => {
     const controller = new AbortController();
     const fetchRequest = stubReads([ready(clip.slug)], [clip]);
     controller.abort();
     expect(await loadStorePreorderShowcase(props.candidatesUrl, controller.signal)).toEqual([]);
-    expect(fetchRequest).toHaveBeenCalledTimes(1);
+    expect(fetchRequest).not.toHaveBeenCalled();
   });
 });
 

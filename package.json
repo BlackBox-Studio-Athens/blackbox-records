@@ -28,6 +28,7 @@
     "dev:stack:stripe-mock-api": "node scripts/run-local-stack.mjs stripe-mock-api",
     "dev:stack:uat-connected": "node scripts/run-local-stack.mjs uat-connected",
     "checkout:preflight:stripe-test": "tsx scripts/check-stripe-test-checkout.ts",
+    "checkout:expire:uat": "tsx scripts/expire-uat-checkouts.ts",
     "stripe:catalog:verify": "tsx scripts/stripe-catalog-verify.ts",
     "store:listing-readiness:verify": "tsx scripts/verify-store-listing-readiness.ts",
     "catalog:readiness:generate": "tsx scripts/generate-catalog-readiness.ts --write",

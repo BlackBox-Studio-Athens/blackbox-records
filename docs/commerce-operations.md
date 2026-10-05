@@ -10,6 +10,16 @@ Current Stock separates Copies on hand, Allocated online, Available to buy onlin
 
 An overdue hold remains reserved until its payment state can be verified. A missing Stripe session is not proof of nonpayment; reconcile the reference with the correct provider account before repairing the order. Increasing the allocation to hide unresolved holds can oversell copies.
 
+### Resetting UAT test checkouts
+
+With the UAT Stripe test key in `STRIPE_SECRET_KEY`, run `pnpm checkout:expire:uat -- --variant-id <variant>` to inspect matching pending checkouts. Add `--apply` to close open unpaid test Sessions through Stripe, then release their holds. Already expired unpaid Sessions can release directly. A mixed cart closes as a whole. Paid, processing, mismatched or unverifiable Sessions remain untouched; concurrent payment/order changes prevent the local update.
+
+For obsolete UAT references that Stripe returns as missing, explicitly add `--retire-missing --apply`. Only overdue test references with no recorded payment are moved to the existing `needs_review` state, retaining history and payment correlation without assigning an invented review reason. This intentionally removes their test reservations without asserting they expired or were unpaid. Investigate any later payment as a review exception. This option is for disposable UAT tests only.
+
+The command defaults to dry-run, accepts no environment/database/provider override, and targets only `blackbox-records-commerce-uat`. It processes at most 25 checkouts for the named variant, prints redacted counts, changes neither stock quantities nor order lines, and adds no endpoint or deployment. To test Disintegration use `variant_disintegration-black-vinyl-lp_standard`; after clearing reservations, set one to five buyable copies and enable Show copies left in Staff UAT.
+
+The browser cart reserves nothing. Starting payment checkout creates a fixed 31-minute deadline: Stripe's native 30-minute minimum plus one minute for creation and transport. Retries preserve that deadline; the bound order retains Stripe's accepted expiry. Signed `checkout.session.expired` delivery releases unpaid holds without another shopper attempting checkout. A delayed or failed webhook can delay stock recovery; resend failed deliveries through the existing procedure below. Existing sessions retain their accepted expiry, and uncertain payment states remain reserved. A shorter 15-minute policy would require independent server-side expiration, not a browser timer.
+
 Change the estimate while the copies are delayed. A month estimate remains open until Copies arrived; once the month passes, shoppers see Pre-order without a date. An exact date ends the pre-order automatically on that Athens calendar date, whether or not the copies arrived. Use it only when sure, and update it before that date if the plant slips.
 
 When copies arrive, press Copies arrived (or switch Pre-order off), then count stock again to reconcile the physical copies and online quantity. Orders from that pre-order stop awaiting stock. A later pre-order starts a new cycle and does not hold earlier orders again.

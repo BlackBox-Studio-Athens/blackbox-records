@@ -10,6 +10,18 @@ The home page SHALL show a Pre-orders section after its existing introduction an
 - **THEN** the section presents current releases as successive chapters with badges and price, links to each Store Item page and to the Store with the Pre-orders filter on
 - **AND** the existing Home introduction remains unchanged, the feature precedes News, and a single release has no dead next-release link.
 
+#### Scenario: Initial Home data read fails temporarily
+
+- **WHEN** the first listing or published-candidate read fails while Home remains mounted
+- **THEN** the showcase starts with page loading and retries the complete read once after 250ms, beginning with fresh stock and price authority
+- **AND** eligible chapters render without requiring a document refresh, including return through the persistent shell
+- **AND** a valid empty/non-buyable response or a second failed read renders no shopping content and creates no recurring polling.
+
+#### Scenario: Shopper leaves during retry backoff
+
+- **WHEN** Home unmounts or its candidate URL changes before retry
+- **THEN** its existing abort signal clears the retry timer and prevents another request or late state update.
+
 #### Scenario: A release has prepared original-file footage
 
 - **WHEN** an accepted official clip has an available small native backdrop and its scene becomes meaningfully visible

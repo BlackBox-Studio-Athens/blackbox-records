@@ -12,6 +12,8 @@ Deliver the approved centered video scene and the completed Afterwise photo chap
 
 The subsequent UAT repair request also covers Releases navigation styling, canonical released-music wording, and stock/low-stock consistency. Preserve the current approved composition and every valid checkout reservation. Changes to stock must remain immediate and independent of editorial publication.
 
+The subsequent checkout-duration request permits a native 30-minute fallback when 15 minutes requires additional scheduling infrastructure. It extends checkout timing only; it does not authorize releasing the six unresolved legacy UAT holds.
+
 ## Decisions
 
 ### Approved visual contract
@@ -51,6 +53,14 @@ Full viewing retains the existing privacy-enhanced YouTube parameters, controls 
 
 Keep current buyable-pre-order filtering, accepted editorial caching, fresh prices and real Store Item links. A full album's release state is independent of a single/video being available. Unknown estimates and metadata stay truthful. No eligible pre-orders or a failed read removes the section; one release has no dead next-release link.
 
+### Reliable initial Home loading
+
+Hydrate the showcase on page load rather than browser idle. A failed listing or candidate read may retry the complete loader once after 250ms, starting again with uncached current listing authority. A successful empty/non-buyable response remains empty immediately and reads no candidates; retry never uses saved eligibility to display unavailable stock. A second failure remains safely empty without polling. The existing effect abort cancels requests and retry backoff on route change or unmount, and prevents late updates. Keep the approved markup, media lifecycle and publication cache unchanged.
+
+### Intermittent Firefox scrolling investigation
+
+Preserve native wheel scrolling and existing modal ownership. Repeated detail/player dismissal, including a stationary wheel pointer after detail removal, and all cart dismissal paths must restore document scrolling while preserving the player. An unobserved intermittent freeze remains unresolved; do not add a polling unlock, clear legitimate locks or replace scrolling without reproducing the cause.
+
 ### UAT lifecycle repair
 
 Releases' page-local CSS is absent when a fresh Home document enters Releases through the persistent shell. Put these existing scoped selectors in the shared stylesheet so direct and shell visits share badge typography, wrapping, quiet date spacing and artwork behavior. Keep the persistent player and route logic unchanged.
@@ -58,6 +68,18 @@ Releases' page-local CSS is absent when a fresh Home document enters Releases th
 One shared literal, Digital out now, represents released music. Type pre-order badge tuples and release-presentation badge unions so the obsolete Out now variant cannot be supplied. Public pages and Staff previews use the same label, without string translation at individual renderers. Digital availability remains independent of physical availability; date formatting retains each existing surface's calendar contract.
 
 Staff's current stock, its live selling summary and public stock/low-stock displays must agree on available-to-buy inventory, including valid checkout holds. A publication snapshot cannot establish current inventory or scarcity. Record the diagnosed stock cause and targeted repair evidence separately from the initial visual acceptance.
+
+### Shorter native Checkout expiry
+
+Use the existing persisted expiry and signed `checkout.session.expired` webhook. The cart reserves nothing until payment checkout starts. Request 31 minutes from pending-order creation: Stripe needs at least 30 minutes remaining on receipt, and one minute allows hold/lease writes and transport. This reduces the previous five-minute allowance to one; it is a 31-minute deadline, not an exact 30-minute guarantee. Preserve the deadline in every retry and retain the provider-accepted value when binding the session.
+
+A 15-minute deadline requires an independent expiration owner, provider-closure retries and additional payment-race handling. The CommerceRuntime has no existing checkout alarm; its cron serves paid-order deliveries. Do not add another timer, migration or service for this fallback. Existing signed expiry reconciliation releases stock without another shopper's checkout. Delayed or failed webhook delivery can delay stock recovery; paid/processing or unverified sessions must never be released by clock alone. Existing sessions retain their accepted deadlines.
+
+### UAT-only checkout test reset
+
+The follow-up user request explicitly authorizes a simple mechanism for invalidating item-specific UAT test carts. Use a dry-run-first CLI and native Stripe Session expiration, with a hardwired UAT database and real test-mode credential. Read at most 26 candidates and refuse more than 25; preserve paid/processing, live, mismatched and uncertain Sessions. Release a reachable Session's hold only after verifying unpaid expiry, using conditional order/session/status/payment guards. No endpoint, Staff screen, schedule, migration or dependency is needed.
+
+Missing historical Sessions remain protected by default. The separate `--retire-missing` opt-in may quarantine only overdue missing test references with no stored payment in the existing `needs_review` state. It retains all history and makes uncertainty explicit, without inventing a reason outside the database's closed reason set; it does not mark them unpaid or prove provider closure. This disposable-UAT exception does not change normal reconciliation or authorize PRD repair. Mixed carts close in full, and stock quantities remain unchanged.
 
 ## Risks / Trade-offs
 

@@ -70,44 +70,59 @@ type ListingRecord = PublicApiComponents['schemas']['PublicStoreListingPrice'];
 type ShowcaseItem = StorePreorderShowcaseCandidate & { displayPrice: string; shipEstimate: ShipEstimate | null };
 
 export async function loadStorePreorderShowcase(candidatesUrl: string, signal?: AbortSignal): Promise<ShowcaseItem[]> {
-  try {
-    const listingResponse = await fetch(`${getPublicBackendBaseUrl() ?? ''}/api/store/listing-prices?scope=preorders`, {
-      cache: 'no-store',
-      headers: { accept: 'application/json' },
-      signal: signal ?? null,
-    });
-    if (!listingResponse.ok) throw new Error('Could not read pre-orders.');
-    const records: ListingRecord[] = await listingResponse.json();
-    const stocked = records.filter(
-      (record) => record.presentationState === 'ready' && record.availabilityState === 'stocked' && record.preorder,
-    );
-    if (stocked.length === 0 || signal?.aborted) return [];
+  for (let attempt = 0; attempt < 2 && !signal?.aborted; attempt += 1) {
+    try {
+      const listingResponse = await fetch(
+        `${getPublicBackendBaseUrl() ?? ''}/api/store/listing-prices?scope=preorders`,
+        {
+          cache: 'no-store',
+          headers: { accept: 'application/json' },
+          signal: signal ?? null,
+        },
+      );
+      if (!listingResponse.ok) throw new Error('Could not read pre-orders.');
+      const records: ListingRecord[] = await listingResponse.json();
+      const stocked = records.filter(
+        (record) => record.presentationState === 'ready' && record.availabilityState === 'stocked' && record.preorder,
+      );
+      if (stocked.length === 0 || signal?.aborted) return [];
 
-    const { z } = await import('zod');
-    const { candidateSchema, estimateSchema } = createShowcaseSchemas(z);
-    const candidatesResponse = await fetch(candidatesUrl, {
-      headers: { accept: 'application/json' },
-      signal: signal ?? null,
-    });
-    if (!candidatesResponse.ok) throw new Error('Could not read pre-order candidates.');
-    const candidates = z.array(candidateSchema).parse(await candidatesResponse.json());
-    if (signal?.aborted) return [];
+      const { z } = await import('zod');
+      const { candidateSchema, estimateSchema } = createShowcaseSchemas(z);
+      const candidatesResponse = await fetch(candidatesUrl, {
+        headers: { accept: 'application/json' },
+        signal: signal ?? null,
+      });
+      if (!candidatesResponse.ok) throw new Error('Could not read pre-order candidates.');
+      const candidates = z.array(candidateSchema).parse(await candidatesResponse.json());
+      if (signal?.aborted) return [];
 
-    return candidates.flatMap((candidate) => {
-      const record = stocked.find((item) => item.storeItemSlug === candidate.slug);
-      return record?.presentationState === 'ready' && record.preorder
-        ? [
-            {
-              ...candidate,
-              displayPrice: z.string().min(1).parse(record.displayPrice),
-              shipEstimate: estimateSchema.nullable().parse(record.preorder.shipEstimate),
-            },
-          ]
-        : [];
-    });
-  } catch {
-    return [];
+      return candidates.flatMap((candidate) => {
+        const record = stocked.find((item) => item.storeItemSlug === candidate.slug);
+        return record?.presentationState === 'ready' && record.preorder
+          ? [
+              {
+                ...candidate,
+                displayPrice: z.string().min(1).parse(record.displayPrice),
+                shipEstimate: estimateSchema.nullable().parse(record.preorder.shipEstimate),
+              },
+            ]
+          : [];
+      });
+    } catch {
+      if (attempt === 1 || signal?.aborted) return [];
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(finish, 250);
+        function finish() {
+          clearTimeout(timer);
+          signal?.removeEventListener('abort', finish);
+          resolve();
+        }
+        signal?.addEventListener('abort', finish, { once: true });
+      });
+    }
   }
+  return [];
 }
 
 export default function StorePreorderShowcase({

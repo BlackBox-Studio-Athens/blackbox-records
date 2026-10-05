@@ -1289,7 +1289,7 @@ describe('checkout use cases', () => {
     );
   });
 
-  it('creates the provisional 35-minute hold before requesting provider authority', async () => {
+  it('reserves the native 30-minute minimum plus one minute for creation before requesting provider authority', async () => {
     checkoutGateway.createHostedCheckoutSession = vi.fn(async (request) => {
       const [sessionlessHold] = [...orders.records.values()];
 
@@ -1300,7 +1300,7 @@ describe('checkout use cases', () => {
       expect(sessionlessHold?.lines).toHaveLength(1);
       expect(request.orderId).toBe(sessionlessHold?.id);
       expect(request.checkoutExpiresAt).toEqual(sessionlessHold?.checkoutExpiresAt);
-      expect(request.checkoutExpiresAt.getTime() - sessionlessHold!.createdAt.getTime()).toBe(35 * 60 * 1000);
+      expect(request.checkoutExpiresAt.getTime() - sessionlessHold!.createdAt.getTime()).toBe(31 * 60 * 1000);
 
       return {
         checkoutExpiresAt: new Date('2026-09-09T10:35:02.000Z'),

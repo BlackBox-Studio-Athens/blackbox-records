@@ -198,13 +198,14 @@ describe('StripeCheckoutGateway', () => {
     });
   });
 
-  it('passes the persisted expiry after delayed hold work', async () => {
+  it('keeps the native minimum after hold work without extending the saved deadline', async () => {
     const createdAt = new Date('2026-09-09T10:00:00.900Z');
-    const providerNow = new Date(createdAt.getTime() + 2_000);
-    const checkoutExpiresAt = new Date(createdAt.getTime() + 35 * 60 * 1000);
+    const providerNow = new Date(createdAt.getTime() + 59_000);
+    const checkoutExpiresAt = new Date(createdAt.getTime() + 31 * 60 * 1000);
     const clock = vi.spyOn(Date, 'now').mockReturnValue(providerNow.getTime());
     const create = vi.fn(async (params: { expires_at?: number }) => {
       expect(params.expires_at).toBe(Math.floor(checkoutExpiresAt.getTime() / 1000));
+      expect(params.expires_at! - Math.floor(Date.now() / 1000)).toBeGreaterThanOrEqual(30 * 60);
       return {
         expires_at: params.expires_at,
         id: 'cs_test_delayed',

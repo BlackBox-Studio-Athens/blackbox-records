@@ -20,8 +20,9 @@ async function stubShowcase(page: Page, stage: 'clip' | 'native' | 'photo' | 'co
   const accepted: StorePreorderShowcaseCandidate[] = await response.json();
   const source = accepted.find((candidate) => candidate.slug === listing.storeItemSlug);
   if (!source) throw new Error('Expected the accepted Disintegration showcase candidate');
-  expect(source.coverUrl).toMatch(/\/_image\?|\/_astro\//);
-  expect(source.artistPhotoUrl).toMatch(/\/_image\?|\/_astro\//);
+  const acceptedImage = /\/_image\?|\/_astro\/|\/media\/content\/[a-f\d]{64}$/;
+  expect(source.coverUrl).toMatch(acceptedImage);
+  expect(source.artistPhotoUrl).toMatch(acceptedImage);
   expect(source.storePath).toMatch(/\/store\/disintegration-black-vinyl-lp\/$/);
   const hasClip = stage === 'clip' || stage === 'native';
   const candidate: StorePreorderShowcaseCandidate = {
@@ -89,6 +90,51 @@ async function expectPlaying(video: Locator, playing: boolean) {
   await expect.poll(() => video.evaluate((node) => !(node as HTMLVideoElement).paused)).toBe(playing);
 }
 
+for (const failedRead of ['listing', 'candidates'] as const) {
+  test(`Home recovers from a first ${failedRead} failure without refresh, including shell return`, async ({ page }) => {
+    await stubShowcase(page, 'photo');
+    let attempts = 0;
+    const pattern = failedRead === 'listing' ? '**/api/store/listing-prices*' : '**/preorder-showcase.json';
+    await page.route(pattern, (route) => {
+      if (failedRead === 'listing' && new URL(route.request().url()).searchParams.get('scope') !== 'preorders') {
+        return route.fallback();
+      }
+      attempts += 1;
+      // A truncated response exercises failed acquisition without expected Chromium HTTP console errors.
+      return attempts === 1 ? route.fulfill({ contentType: 'application/json', body: '{' }) : route.fallback();
+    });
+    let documents = 0;
+    page.on('request', (request) => {
+      if (request.isNavigationRequest() && request.frame() === page.mainFrame()) documents += 1;
+    });
+    await page.goto('./');
+    await waitForShell(page);
+    await expect(chapter(page).getByRole('heading', { name: 'Disintegration', exact: true })).toBeVisible({
+      timeout: 5000,
+    });
+    expect(attempts).toBe(2);
+    await expect(page.locator('astro-island[component-url*="StorePreorderShowcase"]')).toHaveAttribute(
+      'client',
+      'load',
+    );
+    expect(documents).toBe(1);
+    await plantSentinel(page);
+    await page
+      .getByRole('navigation', { name: 'Primary' })
+      .getByRole('link', { name: 'Services', exact: true })
+      .click();
+    await expect(page).toHaveURL(/\/services\/$/);
+    attempts = 0;
+    await page.getByRole('link', { name: 'BlackBox Records', exact: true }).click();
+    await expect(chapter(page).getByRole('heading', { name: 'Disintegration', exact: true })).toBeVisible({
+      timeout: 5000,
+    });
+    await expect.poll(() => attempts).toBe(2);
+    expect(documents).toBe(1);
+    expect(await sentinelIntact(page)).toBe(true);
+  });
+}
+
 test('Home photo chapter shows accepted identity and facts and delegates Listen to the shell', async ({ page }) => {
   const fixture = await stubShowcase(page, 'photo');
   await page.route('https://bandcamp.com/EmbeddedPlayer/**', (route) =>
@@ -116,6 +162,51 @@ test('Home photo chapter shows accepted identity and facts and delegates Listen 
   await expect(page.getByRole('dialog', { name: 'Music player' })).toBeVisible();
   await expect(page.getByRole('dialog').locator('iframe')).toHaveAttribute('src', /bandcamp\.com\/EmbeddedPlayer\//);
   await expect(page.locator('html')).toHaveAttribute('data-music-player-session', '');
+});
+
+test('Home wheel scrolling resumes after repeated detail and player dismissal without refresh', async ({
+  page,
+  browserName,
+}) => {
+  await stubShowcase(page, 'photo');
+  await page.route('https://bandcamp.com/EmbeddedPlayer/**', (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<button>Local player fixture</button>' }),
+  );
+  await page.goto('./');
+  await waitForShell(page);
+  await plantSentinel(page);
+  const release = chapter(page);
+  await expect(release).toBeVisible();
+
+  for (let cycle = 0; cycle < 3; cycle += 1) {
+    await release.getByRole('link', { name: 'Afterwise', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.mouse.move(700, 400);
+    await page.mouse.wheel(0, 300);
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await expect(page.locator('body')).not.toHaveClass(/\bis-shell-(?:modal-open|scroll-locked)\b/);
+    const detailScroll = await page.evaluate(() => window.scrollY);
+    // Keep the pointer still: a removed modal must not retain Firefox's wheel target.
+    await page.mouse.wheel(0, detailScroll > 0 ? -250 : 250);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).not.toBe(detailScroll);
+
+    if (cycle === 0) await release.getByRole('button', { name: 'Listen', exact: true }).click();
+    else await page.getByRole('button', { name: 'Open player', exact: true }).click();
+    const player = page.getByRole('dialog', { name: 'Music player' });
+    await expect(player).toBeVisible();
+    await player.locator('iframe').contentFrame().getByRole('button', { name: 'Local player fixture' }).click();
+    if (browserName === 'firefox') await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+    await page.getByRole('button', { name: 'Minimize player', exact: true }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await expect(page.locator('body')).not.toHaveClass(/\bis-shell-(?:modal-open|scroll-locked)\b/);
+    const playerScroll = await page.evaluate(() => window.scrollY);
+    await page.mouse.move(100, 300);
+    await page.mouse.wheel(0, playerScroll > 0 ? -250 : 250);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).not.toBe(playerScroll);
+    await expect(page.locator('[data-music-player-session]')).toHaveCount(1);
+  }
+  expect(await sentinelIntact(page)).toBe(true);
 });
 
 test('Home stays empty without buyable pre-orders and never reads static candidates or a video provider', async ({

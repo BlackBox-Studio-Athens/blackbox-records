@@ -38,3 +38,32 @@
 - [x] 6.4 Verify focused regressions, integrated validation and the unchanged release bundle budget; record source-bound evidence and hosted acceptance limits.
 - [ ] 6.5 Reconcile the six legacy UAT checkout references against the matching Stripe account or an explicitly reviewed order repair, then verify Disintegration's copies-left state in UAT.
 - [x] 6.6 Research a 10–15-minute checkout hold policy against Stripe's expiry rules and the existing checkout flow; record the recommendation and its implementation limits.
+
+## 7. Shorter native checkout reservations
+
+- [x] 7.1 Record the requested 15-minute assessment and native fallback, including the one-minute creation allowance and unchanged legacy-hold safety.
+- [x] 7.2 Shorten new checkout deadlines to 31 minutes (30-minute provider minimum plus one-minute creation allowance), retaining frozen retry parameters and provider-accepted expiry.
+- [x] 7.3 Verify creation latency, retry/nonpayment protection and signed expiry stock recovery in existing focused checks and the normal Local mock stack; complete source-bound validation.
+
+## 8. UAT checkout testing reset
+
+- [x] 8.1 Verify current Disintegration availability, pending holds and exact provider outcomes with bounded redacted reads.
+- [x] 8.2 Implement and verify a dry-run-first item-specific UAT CLI, native expire-before-release, explicit missing-reference quarantine and payment-race protection.
+- [x] 8.3 Rehearse the UAT reset, preserve existing stock, verify resulting authority and complete source-bound validation with hosted limits recorded.
+
+## 9. Initial Home loading recovery
+
+- [x] 9.1 Inspect bounded UAT reads and native Chrome hydration, reproduce initial read failure hiding Home pre-orders in Chromium and Firefox, and record the ranked diagnosis.
+- [x] 9.2 Start hydration on page load and add one abortable retry with fresh stock authority, preserving true empty states and approved presentation; verify focused regressions and shell return.
+- [x] 9.3 Complete source-bound validation and graph refresh, recording cold-load observation, browser results and remaining hosted-release limits.
+
+## 10. Intermittent Firefox wheel scrolling
+
+- [x] 10.1 Check repeated cart, detail and player dismissals in Firefox, preserving native scrolling and persistent-player continuity; record a bounded reproduction result.
+- [ ] 10.2 Repair a reproduced cause and verify the original sequence. If the reported intermittent freeze cannot be reproduced, retain it as unresolved rather than changing scroll ownership speculatively.
+
+## 11. Authorized software release
+
+- [ ] 11.1 Commit the verified local repairs, rebase onto latest main and verify the resulting tree before merging.
+- [ ] 11.2 Merge to main, release the exact candidate to UAT and verify hosted identity.
+- [ ] 11.3 Promote the accepted candidate through the existing browser/provider gates to PRD and monitor hosted identity/readiness, preserving catalog, stock and launch controls.

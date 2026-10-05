@@ -65,7 +65,8 @@ type StartCheckoutOptions = {
   productEnvironment?: string;
 };
 
-const CHECKOUT_HOLD_DURATION_MS = 35 * 60 * 1000;
+// Stripe requires 30 minutes remaining on receipt; allow one minute for hold creation and transport.
+const CHECKOUT_HOLD_DURATION_MS = 31 * 60 * 1000;
 const CHECKOUT_PROVIDER_LEASE_MS = 30 * 1000;
 
 const enabledFeatureFlags: FeatureFlagReader = {
