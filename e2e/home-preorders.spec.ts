@@ -173,13 +173,24 @@ test('Home clip stage uses Worker price and waits for Play, then survives shell 
   await expect(showcase.getByRole('heading', { name: 'Disintegration', exact: true })).toBeVisible();
   await expect(showcase.locator('dl')).toHaveCount(0);
   const videos = showcase.getByRole('group', { name: 'Official videos' });
+  const currentClip = videos.locator('[aria-current="true"]');
   const firstClip = videos.getByRole('button', { name: 'First official video', exact: true });
   const secondClip = videos.getByRole('button', { name: 'Second official video', exact: true });
-  await expect(firstClip).toHaveAttribute('aria-pressed', 'true');
-  await secondClip.click();
-  await expect(secondClip).toHaveAttribute('aria-pressed', 'true');
+  await expect(currentClip).toHaveText('First official video');
+  await expect(currentClip).toHaveJSProperty('tagName', 'SPAN');
+  await expect(currentClip).toHaveCSS('text-decoration-line', 'none');
+  await expect(currentClip).not.toHaveCSS('cursor', 'pointer');
+  await expect(firstClip).toHaveCount(0);
+  expect((await secondClip.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  await secondClip.focus();
+  await expect(secondClip).toBeFocused();
+  await secondClip.press('Enter');
+  await expect(currentClip).toHaveText('Second official video');
+  await expect(secondClip).toHaveCount(0);
   expect(fixture.providerRequests).toEqual([]);
-  await firstClip.click();
+  await firstClip.focus();
+  await firstClip.press('Space');
+  await expect(currentClip).toHaveText('First official video');
   await expect(showcase.getByRole('link', { name: 'Pre-order', exact: true })).toHaveAttribute(
     'href',
     fixture.candidate.storePath,
@@ -200,8 +211,9 @@ test('Home clip stage uses Worker price and waits for Play, then survives shell 
   await play.press('Space');
   await expect(showcase.getByTitle('Disintegration video')).toHaveAttribute(
     'src',
-    'https://www.youtube-nocookie.com/embed/abcdefghijk?autoplay=1',
+    'https://www.youtube-nocookie.com/embed/abcdefghijk?autoplay=1&playsinline=1&rel=0&color=white&controls=1&fs=1',
   );
+  await expect(showcase.getByTitle('Disintegration video')).toHaveAttribute('allowfullscreen', '');
   await expect.poll(() => fixture.providerRequests.length).toBe(1);
   await secondClip.click();
   await expect(showcase.locator('iframe')).toHaveCount(0);
@@ -209,17 +221,19 @@ test('Home clip stage uses Worker price and waits for Play, then survives shell 
   await play.click();
   await expect(showcase.getByTitle('Disintegration video')).toHaveAttribute(
     'src',
-    'https://www.youtube-nocookie.com/embed/01234567890?autoplay=1',
+    'https://www.youtube-nocookie.com/embed/01234567890?autoplay=1&playsinline=1&rel=0&color=white&controls=1&fs=1',
   );
   await expect.poll(() => fixture.providerRequests.length).toBe(2);
-  await secondClip.click();
+  await expect(currentClip).toHaveText('Second official video');
+  await expect(secondClip).toHaveCount(0);
   await expect(showcase.locator('iframe')).toHaveCount(1);
   await showcase.getByRole('button', { name: /No-video record Afterwise/ }).click();
   await expect(showcase.locator('iframe')).toHaveCount(0);
   await expect(videos).toHaveCount(0);
   await expect(showcase.locator('dl dt')).toHaveText(['Format', 'Tracks', 'Recorded and mixed', 'Vinyl ships']);
   await showcase.getByRole('button', { name: /Disintegration Afterwise/ }).click();
-  await expect(firstClip).toHaveAttribute('aria-pressed', 'true');
+  await expect(currentClip).toHaveText('First official video');
+  await expect(firstClip).toHaveCount(0);
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Services', exact: true }).click();
   await expect(page).toHaveURL(/\/services\/$/);
   await expect(page.locator('.home-preorders')).toHaveCount(0);
@@ -268,7 +282,6 @@ test('390px Home showcase keeps the stage, facts and purchase link usable', asyn
     firstClipId: 'abcdefghijk',
     clips: [
       { id: 'abcdefghijk', title: 'First official video with a long title', posterUrl: fixture.candidate.coverUrl },
-      { id: '01234567890', title: 'Second official video', posterUrl: null },
     ],
   };
   await page.route('**/preorder-showcase.json', (route) => route.fulfill({ json: [fixture.candidate, video] }));
@@ -292,9 +305,14 @@ test('390px Home showcase keeps the stage, facts and purchase link usable', asyn
   expect(fixture.providerRequests).toEqual([]);
   await showcase.getByRole('button', { name: /Mobile video record Afterwise/ }).click();
   await expect(showcase.getByRole('heading', { name: 'Mobile video record', exact: true })).toBeVisible();
-  for (const choice of await showcase.getByRole('group', { name: 'Official videos' }).getByRole('button').all()) {
-    expect((await choice.boundingBox())?.height).toBeGreaterThanOrEqual(44);
-  }
+  const videos = showcase.getByRole('group', { name: 'Official videos' });
+  await expect(videos.getByRole('button')).toHaveCount(0);
+  await expect(videos.getByRole('link')).toHaveCount(0);
+  const currentClip = videos.locator('span[aria-current="true"]');
+  await expect(currentClip).toHaveText('First official video with a long title');
+  await expect(currentClip).toHaveCSS('text-decoration-line', 'none');
+  await expect(currentClip).not.toHaveCSS('cursor', 'pointer');
+  await expect(showcase.getByRole('button', { name: 'Play Mobile video record', exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await showcase.screenshot({ path: '.codex-artifacts/preorders/home-video-mobile.png' });
   expect(fixture.providerRequests).toEqual([]);

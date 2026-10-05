@@ -5842,6 +5842,8 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 }
 
 .home-preorders__clip {
+  display: inline-flex;
+  align-items: center;
   min-width: 0;
   min-height: 2.75rem;
   border: 0;
@@ -5851,13 +5853,14 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   font: 500 0.8125rem/1.4 var(--font-sans);
   text-align: left;
   overflow-wrap: anywhere;
+}
+
+button.home-preorders__clip {
   cursor: pointer;
 }
 
-.home-preorders__clip[aria-pressed='true'] {
+.home-preorders__clip[aria-current='true'] {
   color: var(--foreground);
-  text-decoration: underline;
-  text-underline-offset: 6px;
 }
 
 .home-preorders__clip:focus-visible {

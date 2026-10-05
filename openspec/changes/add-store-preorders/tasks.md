@@ -301,3 +301,7 @@ Owns: Staff pre-order/Selling controls, their enclosing editor/shell and scoped 
 - [x] 43.1 Make the pre-order and Selling workflows usable at 320px, 390px and 430px: stacked readable fields, reachable actions, month/exact-date and shopper previews, keyboard focus, validation/recovery and no document overflow. Preserve private autosave, explicit publication, immediate stock updates and desktop functionality.
 - [x] 43.2 Inspect the shared Staff navigation, editor, stock and orders surfaces at mobile widths and correct reproduced clipping, overflow or inaccessible actions using existing components; preserve all core operations and record what was inspected.
 - [x] 43.3 Integrate the three owned batches, inspect the supplied designs and rendered evidence, refresh the local graph once, run final affected validation and strict OpenSpec, and record exact source identity, checked states and remaining limitations. Keep the unrelated main-checkout epic untouched; do not deploy or archive.
+
+## 44. Home official-video refinement (approved 5 October)
+
+- [x] 44.1 Add `playsinline=1`, `rel=0`, `color=white`, explicit `controls=1` and `fs=1` to the existing click-start YouTube embed. Present the current clip as noninteractive text and keep native buttons for alternatives, preserving poster, keyboard Play, fullscreen, layout and iframe teardown on switching. Extend and pass the existing unit and scoped Home video/browser checks; record source-bound Local evidence with physical iPhone and live YouTube rendering limitations.

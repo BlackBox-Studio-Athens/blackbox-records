@@ -218,7 +218,7 @@ export default function StorePreorderShowcase({
               <iframe
                 key={`${item.slug}:${clipId}`}
                 className="home-preorders__frame"
-                src={`https://www.youtube-nocookie.com/embed/${clipId}?autoplay=1`}
+                src={`https://www.youtube-nocookie.com/embed/${clipId}?autoplay=1&playsinline=1&rel=0&color=white&controls=1&fs=1`}
                 title={`${item.title} video`}
                 allow="autoplay; encrypted-media; picture-in-picture"
                 allowFullScreen
@@ -299,21 +299,25 @@ export default function StorePreorderShowcase({
           {clipId ? (
             <div className="home-preorders__clips" role="group" aria-label="Official videos">
               <span className="home-preorders__clips-label">Official videos</span>
-              {clips.map((choice, index) => (
-                <button
-                  key={choice.id}
-                  type="button"
-                  className="home-preorders__clip"
-                  aria-pressed={index === selectedClip}
-                  onClick={() => {
-                    if (index === selectedClip) return;
-                    setSelectedClip(index);
-                    setPlaying(false);
-                  }}
-                >
-                  {choice.title}
-                </button>
-              ))}
+              {clips.map((choice, index) =>
+                index === selectedClip ? (
+                  <span key={choice.id} className="home-preorders__clip" aria-current="true">
+                    {choice.title}
+                  </span>
+                ) : (
+                  <button
+                    key={choice.id}
+                    type="button"
+                    className="home-preorders__clip"
+                    onClick={() => {
+                      setSelectedClip(index);
+                      setPlaying(false);
+                    }}
+                  >
+                    {choice.title}
+                  </button>
+                ),
+              )}
             </div>
           ) : (
             <dl className="home-preorders__facts">

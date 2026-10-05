@@ -274,22 +274,51 @@ describe('StorePreorderShowcase presentation', () => {
     },
   );
 
+  it('presents a single current video as text while keeping Play available', async () => {
+    stubReads([ready(clip.slug)], [{ ...clip, clips: clip.clips?.slice(0, 1) }]);
+    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
+    const tree = render();
+    expect(renderToStaticMarkup(tree)).toContain(
+      '<span class="home-preorders__clip" aria-current="true">First official video</span>',
+    );
+    expect(buttons(tree).filter((button) => button.props.className === 'home-preorders__clip')).toHaveLength(0);
+    expect(buttons(tree).some((button) => button.props.className === 'home-preorders__play')).toBe(true);
+  });
+
   it('creates the video only on Play, then tears it down when selection changes', async () => {
     const fetchRequest = stubReads([ready(clip.slug), ready(photo.slug), ready(cover.slug)], [clip, photo, cover]);
     rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
     const play = buttons(render()).find((button) => button.props.className === 'home-preorders__play');
     expect(play).toBeDefined();
+    expect(renderToStaticMarkup(render())).toContain('src="/video-poster.webp"');
     play?.props.onClick?.();
-    expect(renderToStaticMarkup(render())).toContain('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1');
-    expect(renderToStaticMarkup(render())).toContain('title="Clip album video"');
-    const secondClip = buttons(render()).filter((button) => button.props.className === 'home-preorders__clip')[1];
+    const playingHtml = renderToStaticMarkup(render());
+    expect(playingHtml).toContain(
+      'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&amp;playsinline=1&amp;rel=0&amp;color=white&amp;controls=1&amp;fs=1',
+    );
+    expect(playingHtml).toContain('title="Clip album video"');
+    expect(playingHtml).toMatch(/allowfullscreen=""/i);
+    const secondClip = buttons(render()).find(
+      (button) =>
+        button.props.className === 'home-preorders__clip' && button.props.children === 'Second official video',
+    );
+    expect(secondClip).toBeDefined();
     secondClip?.props.onClick?.();
     expect(rendered.selectedClip).toBe(1);
     expect(renderToStaticMarkup(render())).not.toContain('<iframe');
+    expect(renderToStaticMarkup(render())).toContain('src="/clip.webp"');
+    expect(renderToStaticMarkup(render())).toContain(
+      '<span class="home-preorders__clip" aria-current="true">Second official video</span>',
+    );
+    expect(buttons(render()).find((button) => button.props.className === 'home-preorders__clip')?.props.children).toBe(
+      'First official video',
+    );
     buttons(render())
       .find((button) => button.props.className === 'home-preorders__play')
       ?.props.onClick?.();
-    expect(renderToStaticMarkup(render())).toContain('https://www.youtube-nocookie.com/embed/01234567890?autoplay=1');
+    expect(renderToStaticMarkup(render())).toContain(
+      'https://www.youtube-nocookie.com/embed/01234567890?autoplay=1&amp;playsinline=1&amp;rel=0&amp;color=white&amp;controls=1&amp;fs=1',
+    );
     const photoButton = buttons(render()).filter((button) => button.props.className === 'home-preorders__item')[1];
     expect(photoButton).toBeDefined();
     photoButton?.props.onClick?.();

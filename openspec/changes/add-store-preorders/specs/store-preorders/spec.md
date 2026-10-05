@@ -336,6 +336,17 @@ The home page SHALL show a Pre-orders section above News only while fresh listin
 - **WHEN** the selected item's release has a clip
 - **THEN** the stage offers Play over a still image and loads the video only after Play is pressed.
 
+#### Scenario: Shopper plays the selected official video
+
+- **WHEN** the shopper activates Play
+- **THEN** the existing privacy-enhanced YouTube embed requests `autoplay=1`, `playsinline=1`, `rel=0`, `color=white`, `controls=1` and `fs=1`, retaining native controls and fullscreen permission.
+
+#### Scenario: The current official-video title is shown
+
+- **WHEN** the Official videos row presents its selected clip
+- **THEN** that title is noninteractive current-video text without an underline or pointer affordance, including when only one clip exists
+- **AND** other clips remain keyboard-accessible buttons that select their poster and tear down any playing iframe until Play is activated again.
+
 #### Scenario: The selected release has no clip
 
 - **WHEN** it has none
