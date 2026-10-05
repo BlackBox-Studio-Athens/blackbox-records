@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import type { PublicCheckoutApi, PublicStoreOffer } from '@/components/store/checkout/public-checkout-api';
 import { cn } from '@/components/ui/utils';
@@ -80,7 +81,7 @@ export default function StoreOfferPriceDisplay({
   const hideUnavailableHeadline = suppressUnavailableHeadline && view.tone === 'unavailable';
   const Wrapper = preorderFacts ? 'div' : 'span';
   const release = releaseDate ? new Date(releaseDate) : undefined;
-  const released = preorderBadges({ releaseDate, shipEstimate: null, today: new Date() }).includes('Out now');
+  const released = preorderBadges({ releaseDate, shipEstimate: null, today: new Date() })[0] === DIGITAL_RELEASE_BADGE;
   const releaseText = release
     ? release.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
     : 'To be confirmed';
@@ -125,7 +126,7 @@ export default function StoreOfferPriceDisplay({
         </span>
         {preorderFacts && view.tone === 'ready' && view.preorder && (
           <>
-            {released && <span className="store-item-card__release-status">Out now</span>}
+            {released && <span className="store-item-card__release-status">{DIGITAL_RELEASE_BADGE}</span>}
             <span className="preorder-badge">Pre-order</span>
           </>
         )}
@@ -141,7 +142,7 @@ export default function StoreOfferPriceDisplay({
         <dl className="preorder-facts" style={{ marginTop: '1rem' }}>
           <div>
             <dt>{released ? 'Album' : 'Release date'}</dt>
-            <dd>{released ? `Out now, released ${releaseText}` : releaseText}</dd>
+            <dd>{released ? `${DIGITAL_RELEASE_BADGE}, released ${releaseText}` : releaseText}</dd>
           </div>
           <div>
             <dt>{isVinyl ? 'Vinyl expected to ship' : 'Expected to ship'}</dt>

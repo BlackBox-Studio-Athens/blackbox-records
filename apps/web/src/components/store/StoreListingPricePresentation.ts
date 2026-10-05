@@ -1,4 +1,5 @@
 import type { PublicStoreListingPrice } from '@/components/store/checkout/public-checkout-api';
+import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 import {
   formatStoreLowStockLabel,
   resolvePublicCheckoutApiBaseUrl,
@@ -17,7 +18,7 @@ export const STORE_LISTING_PRICE_COPY = {
   buy: 'Buy',
   adding: 'Adding',
   preorder: 'Pre-order',
-  outNow: 'Out now',
+  outNow: DIGITAL_RELEASE_BADGE,
 } as const;
 
 type ConnectStoreListingPricePresentationOptions = {

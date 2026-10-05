@@ -25,6 +25,7 @@ import type { RequestIdentity } from '../../domain/commerce/repositories/request
 
 type EffectiveAvailabilityRow = {
   effectiveQuantity: number;
+  heldQuantity: number;
 };
 
 type ExpiredSessionBoundCheckoutHoldRow = {
@@ -388,23 +389,34 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
   }
 
   public async findEffectiveAvailability(variantId: VariantId) {
+    return (await this.readAvailability(variantId))?.availableOnlineQuantity ?? null;
+  }
+
+  public async readAvailability(variantId: VariantId) {
     const row = await this.db
       .prepare(
         [
-          'SELECT MAX(0, MIN("Stock"."quantity", "Stock"."onlineQuantity") - COALESCE((',
-          '  SELECT SUM("CheckoutOrderLine"."quantity")',
+          'SELECT MAX(0, MIN("Stock"."quantity", "Stock"."onlineQuantity") - COALESCE(holds."quantity", 0)) AS "effectiveQuantity",',
+          '  COALESCE(holds."quantity", 0) AS "heldQuantity"',
+          'FROM "Stock"',
+          'LEFT JOIN (',
+          '  SELECT SUM("CheckoutOrderLine"."quantity") AS "quantity"',
           '  FROM "CheckoutOrderLine"',
           '  INNER JOIN "CheckoutOrder" ON "CheckoutOrder"."id" = "CheckoutOrderLine"."orderId"',
           '  WHERE "CheckoutOrderLine"."variantId" = ? AND "CheckoutOrder"."status" = ?',
-          '), 0)) AS "effectiveQuantity"',
-          'FROM "Stock"',
+          ') holds ON 1 = 1',
           'WHERE "Stock"."variantId" = ?',
         ].join('\n'),
       )
       .bind(variantId, 'pending_payment', variantId)
       .first<EffectiveAvailabilityRow>();
 
-    return row ? createStockQuantity(row.effectiveQuantity) : null;
+    return row
+      ? {
+          availableOnlineQuantity: createStockQuantity(row.effectiveQuantity),
+          heldQuantity: createStockQuantity(row.heldQuantity),
+        }
+      : null;
   }
 
   public async listOldestExpiredSessionBoundHolds(

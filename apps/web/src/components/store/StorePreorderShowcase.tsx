@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { z as Zod } from 'zod';
 import type { PublicApiComponents } from '@blackbox/api-client/public';
+import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import { buttonVariants } from '@/components/ui/button';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
@@ -321,7 +322,10 @@ function PreorderChapter({
   const badgeList = (
     <div className="home-preorders__badges">
       {badges.map((badge) => (
-        <span key={badge} className={badge === 'Out now' ? 'store-item-card__release-status' : 'preorder-badge'}>
+        <span
+          key={badge}
+          className={badge === DIGITAL_RELEASE_BADGE ? 'store-item-card__release-status' : 'preorder-badge'}
+        >
           {badge}
         </span>
       ))}

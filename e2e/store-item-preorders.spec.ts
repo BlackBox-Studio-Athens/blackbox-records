@@ -42,7 +42,7 @@ for (const width of [1440, 390]) {
         'Payment',
       ]);
       await expect(facts.locator('dd')).toHaveText([
-        released ? 'Out now, released 9 Jun 2026' : '9 Jun 2026',
+        released ? 'Digital out now, released 9 Jun 2026' : '9 Jun 2026',
         'Around October 2026',
         'Charged in full today',
       ]);

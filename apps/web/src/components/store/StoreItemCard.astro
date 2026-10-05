@@ -1,5 +1,6 @@
 ---
 import { Image } from 'astro:assets';
+import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
@@ -102,7 +103,7 @@ const widths = [240, 360, 480, 640, 720];
       </p>
       {option && <p class="store-item-card__option">{option}</p>}
       <span class="store-item-card__release-status" data-store-listing-release-status hidden>
-        Out now
+        {DIGITAL_RELEASE_BADGE}
       </span>
       <span class="store-item-card__preorder" data-store-listing-preorder hidden></span>
       <div class="store-item-card__price">

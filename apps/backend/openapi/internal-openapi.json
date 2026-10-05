@@ -899,6 +899,14 @@
           {
             "type": "object",
             "properties": {
+              "availableOnlineQuantity": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "heldQuantity": {
+                "type": "integer",
+                "minimum": 0
+              },
               "stock": {
                 "$ref": "#/components/schemas/InternalStockState"
               }

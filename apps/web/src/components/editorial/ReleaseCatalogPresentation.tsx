@@ -36,7 +36,7 @@ export function releasePresentation(
           releaseDate: entry.releaseDate,
           shipEstimate: record.preorder.shipEstimate,
           today,
-        }).map((badge) => (badge === 'Out now' ? 'Digital out now' : badge)),
+        }),
         action: `Pre-order ${formatLabel}`,
         shipping:
           record.preorder.shipEstimate &&
@@ -44,7 +44,7 @@ export function releasePresentation(
             ? `Expected to ship ${shipEstimateText(record.preorder.shipEstimate)}`
             : '',
       };
-    const medium = { vinyl: 'Vinyl', cd: 'CD', cassette: 'Cassette' }[entry.edition.format];
+    const medium = ({ vinyl: 'Vinyl', cd: 'CD', cassette: 'Cassette' } as const)[entry.edition.format];
     return {
       state: 'available',
       badges: [...digitalBadges, `${medium} available`],
@@ -54,7 +54,9 @@ export function releasePresentation(
   }
   const state = record.availabilityState;
   if (state !== 'sold_out' && state !== 'out_of_stock' && state !== 'unavailable') return neutral;
-  const status = { sold_out: 'Sold Out', out_of_stock: 'Out of Stock', unavailable: 'Currently Unavailable' }[state];
+  const status = (
+    { sold_out: 'Sold Out', out_of_stock: 'Out of Stock', unavailable: 'Currently Unavailable' } as const
+  )[state];
   return { ...neutral, state, badges: [...digitalBadges, status] };
 }
 

@@ -17,10 +17,10 @@ describe('staff pre-order wording', () => {
     [
       '2026-10-16',
       { kind: 'month', month: '2026-10', part: null },
-      ['Out now', 'Pre-order · ships around October 2026'],
+      ['Digital out now', 'Pre-order · ships around October 2026'],
     ],
-    ['2026-10-17', { kind: 'date', date: '2026-10-20' }, ['Out now', 'Pre-order · ships 20 Oct 2026']],
-    ['2026-10-17', null, ['Out now', 'Pre-order']],
+    ['2026-10-17', { kind: 'date', date: '2026-10-20' }, ['Digital out now', 'Pre-order · ships 20 Oct 2026']],
+    ['2026-10-17', null, ['Digital out now', 'Pre-order']],
   ] satisfies [string, ShipEstimate | null, string[]][])(
     'matches shopper badges on %s',
     (today, shipEstimate, rows) => {

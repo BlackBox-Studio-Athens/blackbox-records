@@ -65,6 +65,8 @@ describe('internal stock routes', () => {
     const body = { expectedRevision: 0, shipEstimate };
     const request = { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) };
     mockReadVariantStock.mockResolvedValueOnce({
+      availableOnlineQuantity: 0,
+      heldQuantity: 6,
       sourceId: 'test',
       sourceKind: 'release',
       storeItemSlug: 'test',
@@ -82,7 +84,14 @@ describe('internal stock routes', () => {
     const response = await app.request(url, request, LOCAL_ENV);
     expect(response.status).toBe(200);
     expectNoStoreCacheControl(response);
-    const result = (await response.json()) as { stock: unknown; actions: unknown[] };
+    const result = (await response.json()) as {
+      availableOnlineQuantity?: number;
+      heldQuantity?: number;
+      stock: unknown;
+      actions: unknown[];
+    };
+    expect(result.availableOnlineQuantity).toBe(0);
+    expect(result.heldQuantity).toBe(6);
     expect(result.stock).toMatchObject({ preorder: { shipEstimate, open: true } });
     expect(result.actions).toContainEqual(
       expect.objectContaining({

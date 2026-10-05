@@ -34,7 +34,7 @@ function availabilityPlaceholder(storeItemSlug: string, releaseDate?: string) {
   const textContent: string = STORE_LISTING_PRICE_COPY.soldOut;
   let hidden = false;
   const preorder = { hidden: true, textContent: '' };
-  const releaseStatus = { hidden: true, textContent: 'Out now' };
+  const releaseStatus = { hidden: true, textContent: 'Digital out now' };
   const card = {
     dataset: {} as Record<string, string>,
     preorder,
@@ -271,7 +271,7 @@ describe('Store listing-price presentation', () => {
       await vi.waitFor(() => expect(availability.card.preorder.hidden).toBe(false));
       expect(availability.card.preorder.textContent).toBe(badge);
       expect(availability.card.dataset.storePreorder).toBe('');
-      expect(availability.card.releaseStatus).toEqual({ hidden: !outNow, textContent: 'Out now' });
+      expect(availability.card.releaseStatus).toEqual({ hidden: !outNow, textContent: 'Digital out now' });
       expect(availability).toMatchObject({
         hidden: false,
         textContent: 'Only 3 left',
@@ -355,7 +355,7 @@ describe('Store listing-price presentation', () => {
       await vi.waitFor(() => expect(document.dispatchEvent).toHaveBeenCalledOnce());
       expect(availability.card.dataset).not.toHaveProperty('storePreorder');
       expect(availability.card.preorder).toEqual({ hidden: true, textContent: '' });
-      expect(availability.card.releaseStatus).toEqual({ hidden: true, textContent: 'Out now' });
+      expect(availability.card.releaseStatus).toEqual({ hidden: true, textContent: 'Digital out now' });
       expect(buy.classList.contains('preorder-action')).toBe(false);
       expect(buy.textContent).toBe('Buy');
       expect(buy.dataset.storeCardBuyLabel).toBe('Buy');
@@ -393,7 +393,7 @@ describe('Store listing-price presentation', () => {
     });
     expect(availability.card.dataset).not.toHaveProperty('storePreorder');
     expect(availability.card.preorder).toEqual({ hidden: true, textContent: '' });
-    expect(availability.card.releaseStatus).toEqual({ hidden: true, textContent: 'Out now' });
+    expect(availability.card.releaseStatus).toEqual({ hidden: true, textContent: 'Digital out now' });
     expect(buy.hidden).toBe(true);
     expect(buy.getAttribute('aria-busy')).toBeNull();
     expect(buy.classList.contains('preorder-action')).toBe(false);

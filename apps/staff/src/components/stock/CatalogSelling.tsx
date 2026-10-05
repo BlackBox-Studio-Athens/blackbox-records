@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { editorialRequest, type EditorialList, type EditorialRecord } from '../../lib/backend/editorial-api';
-import { createInternalStockApi, type CatalogSellingDetail } from '../../lib/backend/internal-stock-api';
+import {
+  createInternalStockApi,
+  type CatalogSellingDetail,
+  type InternalStockDetail,
+} from '../../lib/backend/internal-stock-api';
 import {
   describePrice,
   draftLookup,
@@ -49,6 +53,7 @@ export default function CatalogSelling({
   }, [onLeaveGuard]);
   const [selected, setSelected] = useState<EditorialRecord | null>(null);
   const [readiness, setReadiness] = useState<CatalogSellingDetail | null>(null);
+  const [stockDetail, setStockDetail] = useState<InternalStockDetail | null>(null);
   const [priceDraft, setPriceDraft] = useState<PriceDraft | null>(item.priceDraft ?? null);
   const [storedDraft, setStoredDraft] = useState<DraftLookup>({ status: 'unknown' });
   const [loadFailed, setLoadFailed] = useState(false);
@@ -165,10 +170,10 @@ export default function CatalogSelling({
           ) : (
             'No selling price yet'
           )}
-          {selling.onlineQuantity !== null && (
+          {stockDetail?.variantId === selling.variantId && stockDetail.availableOnlineQuantity !== undefined && (
             <>
               {' '}
-              · Available to buy online: <strong>{selling.onlineQuantity}</strong>
+              · Available to buy online: <strong>{stockDetail.availableOnlineQuantity}</strong>
             </>
           )}
         </p>
@@ -214,7 +219,7 @@ export default function CatalogSelling({
         <StockOperationsApp
           key={selling.variantId}
           backendBaseUrl={base}
-          embedded={{ variantId: selling.variantId, onLeaveGuard: registerStock }}
+          embedded={{ variantId: selling.variantId, onLeaveGuard: registerStock, onStockRead: setStockDetail }}
         />
       </div>
     </section>

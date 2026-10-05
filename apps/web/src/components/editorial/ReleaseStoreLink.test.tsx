@@ -99,11 +99,11 @@ describe('ReleaseStoreLink', () => {
     expect(read.mock.calls[0]?.[0]?.aborted).toBe(true);
   });
 
-  it('uses Out now and ship-estimate badges after the release date', async () => {
+  it('uses Digital out now and ship-estimate badges after the release date', async () => {
     vi.setSystemTime(new Date('2026-10-20T12:00:00Z'));
     read.mockResolvedValue([ready]);
     const result = await hydrate();
-    expect(result.rendered).toContain('class="store-item-card__release-status">Out now');
+    expect(result.rendered).toContain('class="store-item-card__release-status">Digital out now');
     expect(result.rendered).toContain('Pre-order · ships around early November 2026');
   });
 

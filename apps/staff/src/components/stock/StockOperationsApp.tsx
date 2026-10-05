@@ -71,6 +71,7 @@ interface StockOperationsAppProps {
   embedded?: {
     variantId: string;
     onLeaveGuard(guard: (() => boolean) | null): void;
+    onStockRead?(detail: InternalStockDetail | null): void;
   };
 }
 
@@ -225,6 +226,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
     setSelectedVariantId(variantId);
     if (intent === 'variant') setInventoryOpen(false);
     setHasFreshStock(false);
+    embedded?.onStockRead?.(null);
     setErrorMessage(null);
     setIsLoading(true);
     setLoadingIntent(intent);
@@ -262,6 +264,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
       if (countVariantRef.current === variantId && expectedRevision !== detail.stock.revision)
         setCountNeedsReassessment(true);
       setStockDetail(detail);
+      embedded?.onStockRead?.(detail);
       setVariants((rows) =>
         rows.map((row) =>
           row.variantId === detail.variantId
@@ -862,7 +865,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
             <div className="inventory-columns" aria-hidden="true">
               <span>Title / format</span>
               <span>On hand</span>
-              <span>Available to buy online</span>
+              <span>Allocated online</span>
             </div>
             {variants.map((variant) => (
               <button
@@ -906,7 +909,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                 </span>
                 <span className="inventory-quantity">
                   <strong>{variant.onlineQuantity ?? '-'}</strong>
-                  <small>available to buy online</small>
+                  <small>allocated online</small>
                 </span>
               </button>
             ))}
@@ -1059,9 +1062,17 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                         label={selectedStockDetail?.itemType === 'Clothes' ? 'Units on hand' : 'Copies on hand'}
                         value={selectedStockDetail?.stock.quantity}
                       />
-                      <StockMetric label="Available to buy online" value={selectedStockDetail?.stock.onlineQuantity} />
-                      <StockMetric label="Updated" value={formatDate(selectedStockDetail?.stock.updatedAt)} isText />
+                      <StockMetric label="Allocated online" value={selectedStockDetail?.stock.onlineQuantity} />
+                      <StockMetric
+                        label="Available to buy online"
+                        value={hasFreshStock ? selectedStockDetail?.availableOnlineQuantity : undefined}
+                      />
                     </div>
+                    <p className="text-sm text-muted-foreground">
+                      Held for checkouts:{' '}
+                      <strong>{hasFreshStock ? (selectedStockDetail?.heldQuantity ?? '-') : '-'}</strong>. Updated{' '}
+                      {formatDate(selectedStockDetail?.stock.updatedAt)}.
+                    </p>
                     <StockFlagSwitch
                       busy={submittingIntent === 'restockPlan'}
                       checked={selectedStockDetail?.stock.restockPlanned ?? false}
@@ -1222,7 +1233,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                               ? 'Cannot go below zero'
                               : adjustmentQuantity === null || !selectedStockDetail
                                 ? 'Enter a quantity'
-                                : `${adjustmentQuantity} on hand · ${Math.min(adjustmentQuantity, Math.max(0, selectedStockDetail.stock.onlineQuantity + Number(changeDelta) * (stockDirection === 'remove' ? -1 : 1)))} available to buy online`}
+                                : `${adjustmentQuantity} on hand · ${Math.min(adjustmentQuantity, Math.max(0, selectedStockDetail.stock.onlineQuantity + Number(changeDelta) * (stockDirection === 'remove' ? -1 : 1)))} allocated online`}
                           </strong>
                         </div>
                         {changeUnconfirmed && (
@@ -1261,8 +1272,8 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                     <CardHeader>
                       <CardTitle className="sr-only">Count stock</CardTitle>
                       <CardDescription>
-                        Enter how many you have counted. The online quantity is how many customers may buy through the
-                        website.
+                        Enter how many you have counted and how many to allocate online. Checkout holds reduce the
+                        copies currently available to buy.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -1292,7 +1303,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                         />
                         <label htmlFor="stock-count-online-quantity" className="flex items-center gap-2">
                           <ShoppingBag className="size-4 text-muted-foreground" aria-hidden="true" />
-                          Available to buy online
+                          Allocated online
                         </label>
                         <Input
                           className="border-input bg-background"
@@ -1354,7 +1365,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                           <span>Count to save</span>
                           <strong>
                             {countedQuantity && onlineQuantity
-                              ? `${countedQuantity} on hand · ${onlineQuantity} available to buy online · difference ${Number(countedQuantity) - (selectedStockDetail?.stock.quantity ?? 0)}`
+                              ? `${countedQuantity} on hand · ${onlineQuantity} allocated online · difference ${Number(countedQuantity) - (selectedStockDetail?.stock.quantity ?? 0)}`
                               : 'Enter both quantities'}
                           </strong>
                         </div>
@@ -1534,21 +1545,11 @@ function StockFlagSwitch({
   );
 }
 
-function StockMetric({
-  isText = false,
-  label,
-  value,
-}: {
-  isText?: boolean;
-  label: string;
-  value?: number | string | null | undefined;
-}) {
+function StockMetric({ label, value }: { label: string; value?: number | string | null | undefined }) {
   return (
     <div className="staff-stock-metric border border-border bg-background p-4">
       <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{label}</p>
-      <p className={cn('mt-3 font-mono font-semibold tabular-nums text-foreground', isText ? 'text-base' : 'text-3xl')}>
-        {value ?? '-'}
-      </p>
+      <p className="mt-3 font-mono text-3xl font-semibold tabular-nums text-foreground">{value ?? '-'}</p>
     </div>
   );
 }
@@ -1572,7 +1573,7 @@ function HistoryRow({ entry }: { entry: HistoryEntry }) {
         {entry.notes && <p className="text-sm text-muted-foreground">{entry.notes}</p>}
       </div>
       {'onlineQuantity' in entry && (
-        <p className="font-mono text-xs text-muted-foreground">Available to buy online: {entry.onlineQuantity}</p>
+        <p className="font-mono text-xs text-muted-foreground">Allocated online: {entry.onlineQuantity}</p>
       )}
     </article>
   );

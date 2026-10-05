@@ -6,6 +6,10 @@ This is the launch runbook for paid orders, review exceptions, delivery, and man
 
 Enter the number of expected copies as the ordinary stock quantity and set how many may be bought online. In Selling, switch Pre-order on and choose a ship month (optionally Early, Mid or Late) or an exact date, then Save pre-order. Saving checks the stock revision; refresh and retry a conflict. This changes neither quantities nor stock history.
 
+Current Stock separates Copies on hand, Allocated online, Available to buy online and Held for checkouts. Buyable stock is the smaller of on-hand and online allocation, minus pending checkout holds, clamped at zero. Count stock edits allocation; it does not clear checkout holds. Show copies left uses buyable stock and appears only when enabled and one to five copies are available. Stock reads and changes refresh the Selling summary immediately, without publishing content.
+
+An overdue hold remains reserved until its payment state can be verified. A missing Stripe session is not proof of nonpayment; reconcile the reference with the correct provider account before repairing the order. Increasing the allocation to hide unresolved holds can oversell copies.
+
 Change the estimate while the copies are delayed. A month estimate remains open until Copies arrived; once the month passes, shoppers see Pre-order without a date. An exact date ends the pre-order automatically on that Athens calendar date, whether or not the copies arrived. Use it only when sure, and update it before that date if the plant slips.
 
 When copies arrive, press Copies arrived (or switch Pre-order off), then count stock again to reconcile the physical copies and online quantity. Orders from that pre-order stop awaiting stock. A later pre-order starts a new cycle and does not hold earlier orders again.

@@ -648,6 +648,8 @@ export type components = {
             variantId: string;
         };
         InternalStockDetail: components["schemas"]["InternalVariantSummary"] & {
+            availableOnlineQuantity?: number;
+            heldQuantity?: number;
             stock: components["schemas"]["InternalStockState"];
         };
         InternalStockHistoryResponse: {

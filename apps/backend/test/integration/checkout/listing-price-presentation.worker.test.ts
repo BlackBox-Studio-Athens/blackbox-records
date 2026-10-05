@@ -109,6 +109,14 @@ describe('Prisma listing price presentation', () => {
       );
       expect(query).toHaveBeenCalledOnce();
       const holds = new D1CheckoutStockHoldRepository(env.COMMERCE_DB);
+      await expect(holds.readAvailability(variantId(ids[1]!))).resolves.toEqual({
+        availableOnlineQuantity: 0,
+        heldQuantity: 2,
+      });
+      await expect(holds.readAvailability(variantId(ids[0]!))).resolves.toEqual({
+        availableOnlineQuantity: 2,
+        heldQuantity: 0,
+      });
       for (const [index, slug] of slugs.entries()) {
         expect(snapshots.find((row) => row.storeItemSlug === slug)?.stock?.onlineQuantity ?? null).toBe(
           await holds.findEffectiveAvailability(variantId(ids[index]!)),

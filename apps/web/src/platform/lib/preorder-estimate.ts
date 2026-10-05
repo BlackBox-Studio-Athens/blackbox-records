@@ -1,5 +1,8 @@
-// Pre-order wording. Backend email and staff keep their own copies of this table
-// (design decision 10); each test asserts the same sample strings.
+import { DIGITAL_RELEASE_BADGE, type PreorderShippingBadge, type PreorderBadges } from '@blackbox/content-model';
+
+export { DIGITAL_RELEASE_BADGE };
+
+// Surfaces keep their calendar formatting; lifecycle labels share one typed contract.
 export type ShipEstimate =
   { kind: 'month'; month: string; part: 'early' | 'mid' | 'late' | null } | { kind: 'date'; date: string };
 
@@ -39,7 +42,7 @@ export function shipEstimateText(estimate: ShipEstimate) {
 }
 
 // Chip beside a cart line and the post-release badge share one wording.
-export function preorderChipText(shipEstimate: ShipEstimate | null) {
+export function preorderChipText(shipEstimate: ShipEstimate | null): PreorderShippingBadge {
   if (!shipEstimate) return 'Pre-order';
 
   return `Pre-order · ships ${shipEstimate.kind === 'date' ? shortDate(shipEstimate.date) : shipEstimateText(shipEstimate)}`;
@@ -54,14 +57,14 @@ export function preorderBadges({
   releaseDate?: string | Date | null | undefined;
   shipEstimate: ShipEstimate | null;
   today: Date;
-}) {
+}): PreorderBadges {
   if (!releaseDate) return [preorderChipText(shipEstimate)];
 
   const releaseDay = (typeof releaseDate === 'string' ? releaseDate : releaseDate.toISOString()).slice(0, 10);
 
   if (releaseDay > today.toISOString().slice(0, 10)) return [`Pre-order · out ${shortDate(releaseDay)}`];
 
-  return ['Out now', preorderChipText(shipEstimate)];
+  return [DIGITAL_RELEASE_BADGE, preorderChipText(shipEstimate)];
 }
 
 const PART_DAY = { early: 10, mid: 20, late: 31 } as const;

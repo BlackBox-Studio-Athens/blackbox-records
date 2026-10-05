@@ -38,9 +38,9 @@ describe('preorderBadges', () => {
     ]);
   });
 
-  it('switches to Out now on the UTC release day', () => {
+  it('switches to Digital out now on the UTC release day', () => {
     expect(preorderBadges({ releaseDate, shipEstimate: month('2026-10'), today: at('2026-10-16T00:00:00Z') })).toEqual([
-      'Out now',
+      'Digital out now',
       'Pre-order · ships around October 2026',
     ]);
   });
@@ -58,18 +58,18 @@ describe('preorderBadges', () => {
   it('words a month estimate after release', () => {
     expect(
       preorderBadges({ releaseDate, shipEstimate: month('2026-10', 'late'), today: at('2026-11-01T00:00:00Z') }),
-    ).toEqual(['Out now', 'Pre-order · ships around late October 2026']);
+    ).toEqual(['Digital out now', 'Pre-order · ships around late October 2026']);
   });
 
   it('words an exact date after release', () => {
     expect(
       preorderBadges({ releaseDate, shipEstimate: date('2026-10-20'), today: at('2026-10-17T00:00:00Z') }),
-    ).toEqual(['Out now', 'Pre-order · ships 20 Oct 2026']);
+    ).toEqual(['Digital out now', 'Pre-order · ships 20 Oct 2026']);
   });
 
   it('drops the estimate when withheld', () => {
     expect(preorderBadges({ releaseDate, shipEstimate: null, today: at('2026-10-17T00:00:00Z') })).toEqual([
-      'Out now',
+      'Digital out now',
       'Pre-order',
     ]);
   });

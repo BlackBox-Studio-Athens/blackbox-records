@@ -10,6 +10,8 @@ See proposal.md for motivation. The existing accepted showcase JSON supplies edi
 
 Deliver the approved centered video scene and the completed Afterwise photo chapter in the actual Home section, directly after its existing introduction and before News. Preserve genuine catalog content, shell listening and Store Item links. This change does not modify stock, checkout, publication authority, staff editing, hosting plans or deploy an environment.
 
+The subsequent UAT repair request also covers Releases navigation styling, canonical released-music wording, and stock/low-stock consistency. Preserve the current approved composition and every valid checkout reservation. Changes to stock must remain immediate and independent of editorial publication.
+
 ## Decisions
 
 ### Approved visual contract
@@ -48,6 +50,14 @@ Full viewing retains the existing privacy-enhanced YouTube parameters, controls 
 ### Existing commerce and publication rules
 
 Keep current buyable-pre-order filtering, accepted editorial caching, fresh prices and real Store Item links. A full album's release state is independent of a single/video being available. Unknown estimates and metadata stay truthful. No eligible pre-orders or a failed read removes the section; one release has no dead next-release link.
+
+### UAT lifecycle repair
+
+Releases' page-local CSS is absent when a fresh Home document enters Releases through the persistent shell. Put these existing scoped selectors in the shared stylesheet so direct and shell visits share badge typography, wrapping, quiet date spacing and artwork behavior. Keep the persistent player and route logic unchanged.
+
+One shared literal, Digital out now, represents released music. Type pre-order badge tuples and release-presentation badge unions so the obsolete Out now variant cannot be supplied. Public pages and Staff previews use the same label, without string translation at individual renderers. Digital availability remains independent of physical availability; date formatting retains each existing surface's calendar contract.
+
+Staff's current stock, its live selling summary and public stock/low-stock displays must agree on available-to-buy inventory, including valid checkout holds. A publication snapshot cannot establish current inventory or scarcity. Record the diagnosed stock cause and targeted repair evidence separately from the initial visual acceptance.
 
 ## Risks / Trade-offs
 

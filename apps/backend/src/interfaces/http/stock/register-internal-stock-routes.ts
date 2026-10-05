@@ -128,6 +128,8 @@ const stockStateSchema = z
 
 const stockDetailSchema = variantSummarySchema
   .extend({
+    availableOnlineQuantity: z.number().int().nonnegative().optional(),
+    heldQuantity: z.number().int().nonnegative().optional(),
     stock: stockStateSchema,
   })
   .openapi('InternalStockDetail');
@@ -1007,6 +1009,8 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
 }
 
 function toStockDetailResponse(detail: {
+  availableOnlineQuantity?: number;
+  heldQuantity?: number;
   displayName?: string;
   sourceId: string;
   sourceKind: 'release' | 'distro';
@@ -1023,6 +1027,10 @@ function toStockDetailResponse(detail: {
   variantId: string;
 }) {
   return {
+    ...(detail.availableOnlineQuantity === undefined
+      ? {}
+      : { availableOnlineQuantity: detail.availableOnlineQuantity }),
+    ...(detail.heldQuantity === undefined ? {} : { heldQuantity: detail.heldQuantity }),
     ...(detail.displayName ? { displayName: detail.displayName } : {}),
     sourceId: detail.sourceId,
     sourceKind: detail.sourceKind,

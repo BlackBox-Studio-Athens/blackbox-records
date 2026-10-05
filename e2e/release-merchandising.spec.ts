@@ -3,6 +3,33 @@ import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fix
 const stocked = { presentationState: 'ready', availabilityState: 'stocked', displayPrice: '€28.00', preorder: null };
 const preorder = { ...stocked, preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } } };
 
+for (const width of [390, 1280]) {
+  test(`Releases keeps badge typography and date spacing after entering from Home at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.clock.setFixedTime(new Date('2026-10-05T12:00:00Z'));
+    await page.route('**/api/store/listing-prices*', (route) =>
+      route.fulfill({ json: [{ ...preorder, storeItemSlug: 'disintegration-black-vinyl-lp' }] }),
+    );
+    await page.goto('');
+    await waitForShell(page);
+    await plantSentinel(page);
+    if (width < 640) await page.getByRole('banner').getByRole('button', { name: 'Menu', exact: true }).click();
+    await page.getByRole('link', { name: 'Releases', exact: true }).filter({ visible: true }).first().click();
+    const lead = page.locator('[data-release-role="lead"]');
+    await expect(lead).toHaveAttribute('data-release-id', 'disintegration');
+    const status = lead.locator('[data-release-badges] .store-item-card__release-status');
+    await expect(status).toHaveText('Digital out now');
+    await expect(status).toHaveCSS('font-family', /Geist Mono/);
+    await expect(status).toHaveCSS('text-transform', 'uppercase');
+    await expect(status).toHaveCSS('border-width', '0px');
+    const badges = await lead.locator('[data-release-badges]').boundingBox();
+    const date = await lead.locator('.release-card-year-text').boundingBox();
+    expect(date!.y - badges!.y - badges!.height).toBeGreaterThanOrEqual(4);
+    expect(await sentinelIntact(page)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
+
 for (const width of [320, 390, 1280]) {
   test(`Releases keeps the preorder visual family and current composition at ${width}px`, async ({
     page,

@@ -11,6 +11,7 @@ The Home pre-order selector gives the official video less prominence than the ap
 - Give no-video releases their own artist-photo/artwork composition, retaining Listen, metadata, purchase facts and monochrome treatment.
 - Preserve live commerce authority, accepted publication data, release/ship-date distinctions, shell navigation, explicit full-video intent and reduced-motion/low-data fallbacks.
 - Apply the approved Base sweep, subtle accepted artist links, noninteractive sleeves and arrow-only chapter navigation. Keep video shipping information beside its purchase action and the delivery-information link on its own line with clear space below the action.
+- Repair the UAT follow-up: keep Releases typography and date spacing through shell navigation, use a single typed Digital out now label across public and Staff presentation, and reconcile immediate stock and low-stock information with checkout reservations.
 
 ## Capabilities
 
@@ -24,4 +25,4 @@ None.
 
 ## Impact
 
-Public web Home showcase component, showcase JSON/candidate contract, scoped Home styles, small static media derivatives, relevant unit and browser tests, and design documentation. No checkout, stock, order, publication-authority or backend behavior change; no new runtime dependency. Local preview and source-bound validation are required. Hosted release is outside this request.
+Public Home and Releases presentation, shared lifecycle wording, Staff stock presentation and the relevant immediate stock/read model, small static media derivatives, focused checks and design documentation. The UAT follow-up extends the original presentation scope to stock consistency while preserving valid reservations and publication authority. No new runtime dependency. Local preview and source-bound validation are required; software release remains a separate operation.

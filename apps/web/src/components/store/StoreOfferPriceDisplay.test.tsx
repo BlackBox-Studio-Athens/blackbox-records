@@ -113,8 +113,8 @@ describe('StoreOfferPriceDisplay', () => {
 
   it.each([
     ['2026-10-16', 'Release date', '16 Oct 2026'],
-    ['2026-06-09', 'Album', 'Out now, released 9 Jun 2026'],
-    ['2026-10-02', 'Album', 'Out now, released 2 Oct 2026'],
+    ['2026-06-09', 'Album', 'Digital out now, released 9 Jun 2026'],
+    ['2026-10-02', 'Album', 'Digital out now, released 2 Oct 2026'],
   ])('renders release facts for %s', (releaseDate, label, value) => {
     const html = renderView(
       createStoreOfferPriceDisplayView({
@@ -131,7 +131,7 @@ describe('StoreOfferPriceDisplay', () => {
     expect(html.indexOf('€28.00')).toBeLessThan(html.indexOf('<dl'));
     expect(html).toMatch(/^<div>/);
     expect(html).toContain('class="preorder-badge">Pre-order</span>');
-    expect(html.includes('class="store-item-card__release-status">Out now</span>')).toBe(label === 'Album');
+    expect(html.includes('class="store-item-card__release-status">Digital out now</span>')).toBe(label === 'Album');
   });
 
   it.each([
@@ -154,8 +154,8 @@ describe('StoreOfferPriceDisplay', () => {
       releaseDate: new Date('2026-10-02T23:30:00Z'),
     });
 
-    expect(html).toContain('<dt>Album</dt><dd>Out now, released 2 Oct 2026</dd>');
-    expect(html).toContain('class="store-item-card__release-status">Out now</span>');
+    expect(html).toContain('<dt>Album</dt><dd>Digital out now, released 2 Oct 2026</dd>');
+    expect(html).toContain('class="store-item-card__release-status">Digital out now</span>');
   });
 
   it('does not invent a release date when none is available', () => {
@@ -165,7 +165,7 @@ describe('StoreOfferPriceDisplay', () => {
 
     expect(html).toContain('<dt>Release date</dt><dd>To be confirmed</dd>');
     expect(html).toContain('class="preorder-badge">Pre-order</span>');
-    expect(html).not.toContain('Out now');
+    expect(html).not.toContain('Digital out now');
   });
 
   it('leaves other uses unchanged without the facts opt-in', () => {
@@ -189,7 +189,7 @@ describe('StoreOfferPriceDisplay', () => {
     expect(html).toContain('€28.00');
     expect(html).not.toContain('preorder-facts');
     expect(html).not.toContain('preorder-badge');
-    expect(html).not.toContain('Out now');
+    expect(html).not.toContain('Digital out now');
   });
 
   it.each(['sold_out', 'catalog_drift'] as const)('shows no facts for a %s offer', (catalogStatus) => {

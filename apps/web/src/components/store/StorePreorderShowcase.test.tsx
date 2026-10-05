@@ -283,7 +283,7 @@ describe('StorePreorderShowcase presentation', () => {
     stubReads([ready(clip.slug)], [{ ...clip, releaseDate: '2020-01-01' }]);
     rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
     const html = renderToStaticMarkup(render());
-    expect(html).toContain('Out now');
+    expect(html).toContain('Digital out now');
     expect(html.match(/around October 2026/g)).toHaveLength(1);
   });
 
@@ -337,11 +337,11 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).not.toContain('<iframe');
   });
 
-  it('shows withheld terms and an Out now badge with a past release', async () => {
+  it('shows withheld terms and an Digital out now badge with a past release', async () => {
     stubReads([ready(cover.slug, { preorder: { shipEstimate: null } })], [{ ...cover, releaseDate: '2026-06-09' }]);
     rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
     const html = renderToStaticMarkup(render());
-    expect(html).toContain('Out now');
+    expect(html).toContain('Digital out now');
     expect(html).toContain('To be confirmed');
     expect(html).toContain('Pre-order &amp; delivery information');
     expect(html).not.toContain('Release date');
@@ -384,6 +384,6 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).toContain('On 20 October 2026');
     expect(html).toContain('Pre-order &amp; delivery information');
     expect(html).toContain('To be confirmed');
-    expect(html).not.toContain('Out now');
+    expect(html).not.toContain('Digital out now');
   });
 });

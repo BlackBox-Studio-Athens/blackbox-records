@@ -11,7 +11,7 @@ import {
   STORE_CART_ITEM_ADDED_EVENT,
 } from '@/components/store/cart/store-cart-events';
 import { cn } from '@/components/ui/utils';
-import { preorderBadges } from '@/platform/lib/preorder-estimate';
+import { DIGITAL_RELEASE_BADGE, preorderBadges } from '@/platform/lib/preorder-estimate';
 
 export type StoreItemCartSeed = Omit<
   CartLineItemSnapshot,
@@ -215,7 +215,7 @@ export default function StoreItemPurchaseActions({
   }, [api, cartItem, cartSeed]);
 
   const activeCartItem = purchaseState.cartItem;
-  const released = preorderBadges({ releaseDate, shipEstimate: null, today: new Date() }).includes('Out now');
+  const released = preorderBadges({ releaseDate, shipEstimate: null, today: new Date() })[0] === DIGITAL_RELEASE_BADGE;
   const preorderHint = released
     ? isVinyl
       ? STORE_ITEM_PURCHASE_ACTION_COPY.releasedVinylPreorderHint

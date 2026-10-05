@@ -82,7 +82,7 @@ describe('Store collection category surfaces', () => {
     expect(availabilityPlaceholder).toContain('Checking availability');
     expect(availabilityPlaceholder).not.toContain('data-store-listing-preorder');
     expect(storeItemCardSource).toMatch(
-      /<span\s+class="store-item-card__release-status"\s+data-store-listing-release-status\s+hidden\s*>\s*Out now\s*<\/span>/,
+      /<span\s+class="store-item-card__release-status"\s+data-store-listing-release-status\s+hidden\s*>\s*\{DIGITAL_RELEASE_BADGE\}\s*<\/span>/,
     );
     expect(storeItemCardSource).toMatch(
       /<span\s+class="store-item-card__preorder"\s+data-store-listing-preorder\s+hidden\s*>\s*<\/span>/,

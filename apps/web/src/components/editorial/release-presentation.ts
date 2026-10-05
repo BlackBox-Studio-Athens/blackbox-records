@@ -1,4 +1,4 @@
-import type { Tracklist } from '@blackbox/content-model';
+import { DIGITAL_RELEASE_BADGE, type ReleaseBadge, type Tracklist } from '@blackbox/content-model';
 import type { readPublicStoreListingPrices } from '@/components/store/StoreListingPricePresentation';
 import { isReleaseOutNow } from '@/lib/release-feature';
 
@@ -13,7 +13,7 @@ export type ReleasePresentationEntry = {
   releaseDate?: string | undefined;
   edition: ReleaseEdition;
 };
-export type ReleasePresentation = { badges: string[] } & (
+export type ReleasePresentation = { badges: ReleaseBadge[] } & (
   | { state: 'preorder'; action: `Pre-order ${string}`; shipping: string; preorder: NonNullable<Listing['preorder']> }
   | { state: 'available'; action: `Buy ${string}`; shipping: '' }
   | {
@@ -28,11 +28,11 @@ export function neutralReleasePresentation(
   today = new Date(),
 ): Exclude<ReleasePresentation, { state: 'preorder' | 'available' }> {
   const digitalOut = isReleaseOutNow(entry.releaseDate ? new Date(entry.releaseDate) : undefined, today);
-  const digitalBadge = digitalOut ? 'Digital out now' : entry.releaseDate ? 'Album upcoming' : null;
-  const digitalBadges = digitalBadge ? [digitalBadge] : [];
+  const digitalBadge = digitalOut ? DIGITAL_RELEASE_BADGE : entry.releaseDate ? 'Album upcoming' : null;
+  const digitalBadges: ReleaseBadge[] = digitalBadge ? [digitalBadge] : [];
   if (entry.edition.kind === 'none')
     return { state: 'editorial', badges: digitalBadges, action: 'View edition', shipping: '' };
-  const medium = { vinyl: 'Vinyl', cd: 'CD', cassette: 'Cassette' }[entry.edition.format];
+  const medium = ({ vinyl: 'Vinyl', cd: 'CD', cassette: 'Cassette' } as const)[entry.edition.format];
   const action = entry.edition.format === 'vinyl' ? 'View vinyl details' : 'View edition';
   if (entry.edition.kind === 'announced')
     return { state: 'announced', badges: [...digitalBadges, `${medium} coming later`], action, shipping: '' };

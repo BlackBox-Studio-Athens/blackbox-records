@@ -14,6 +14,7 @@ import {
 } from '../../../application/commerce/stock';
 import type { AppBindings } from '../../../platform/env';
 import type { InventoryQuery } from '../../../application/commerce/stock';
+import { D1CheckoutStockHoldRepository } from '../../../infrastructure/persistence/d1-checkout-stock-hold-repository';
 import {
   createPrismaClient,
   D1OperatorStockRepository,
@@ -27,6 +28,7 @@ export function createInternalStockServices(bindings: AppBindings) {
   const prisma = createPrismaClient(bindings);
   const storeItemOptions = new PrismaStoreItemOptionRepository(prisma);
   const stock = new PrismaStockRepository(prisma);
+  const checkoutHolds = new D1CheckoutStockHoldRepository(bindings.COMMERCE_DB);
   const operatorStock = new D1OperatorStockRepository(bindings.COMMERCE_DB);
   const stockChanges = new PrismaStockChangeRepository(prisma);
   const stockCounts = new PrismaStockCountRepository(prisma);
@@ -44,8 +46,11 @@ export function createInternalStockServices(bindings: AppBindings) {
       const { stock: state, ...item } = await readVariantStock(storeItemOptions, stock, variantId);
       const record = await storeItemOptions.findByStoreItem(item);
       const name = (record?.productProjection as { name?: unknown } | null)?.name;
+      const availability = await checkoutHolds.readAvailability(item.variantId);
       return {
         ...item,
+        availableOnlineQuantity: availability?.availableOnlineQuantity ?? 0,
+        heldQuantity: availability?.heldQuantity ?? 0,
         stock: state,
         itemType: record?.itemType ?? null,
         ...(typeof name === 'string' && name.trim() ? { displayName: name } : {}),

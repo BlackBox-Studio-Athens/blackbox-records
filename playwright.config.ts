@@ -45,7 +45,7 @@ export default defineConfig({
     {
       name: 'firefox-desktop',
       use: { browserName: 'firefox', viewport: { width: 1440, height: 900 } },
-      testMatch: /(store-cart|home-preorders)\.spec\.ts$/,
+      testMatch: /(store-cart|home-preorders|release-merchandising)\.spec\.ts$/,
     },
     {
       name: 'firefox-compact',

@@ -29,3 +29,12 @@
 - [x] 5.1 Record the approved mobile-first composition: one sleeve per release, shipping by the action, and a full player rendered only after Watch.
 - [x] 5.2 Remove repeated video artwork/details, retain shell Listen and native media behavior, implement the centered conditional player with accessible close/focus handling, and remove the visual gap in the Firefox purchase focus outline.
 - [x] 5.3 Verify mobile-first and desktop geometry, one-sleeve/fallback behavior and player continuity; refresh source-bound evidence and the preview against latest local main.
+
+## 6. UAT lifecycle and stock repairs
+
+- [x] 6.1 Preserve the approved Releases badge typography and date spacing when entering from Home through shell navigation, including Firefox and mobile.
+- [x] 6.2 Share a typed Digital out now label across public and Staff lifecycle presentations, remove local wording translations, and preserve independent physical availability and pre-order estimates.
+- [x] 6.3 Diagnose and repair the Disintegration stock/low-stock discrepancy and stale Staff summary while preserving valid checkout holds and immediate stock authority.
+- [x] 6.4 Verify focused regressions, integrated validation and the unchanged release bundle budget; record source-bound evidence and hosted acceptance limits.
+- [ ] 6.5 Reconcile the six legacy UAT checkout references against the matching Stripe account or an explicitly reviewed order repair, then verify Disintegration's copies-left state in UAT.
+- [x] 6.6 Research a 10–15-minute checkout hold policy against Stripe's expiry rules and the existing checkout flow; record the recommendation and its implementation limits.

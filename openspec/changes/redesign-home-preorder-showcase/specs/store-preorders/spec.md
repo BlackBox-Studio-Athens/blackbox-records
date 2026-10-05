@@ -100,3 +100,35 @@ Pre-order status SHALL use one Sea green accent as an outline or edge, never as 
 - **THEN** the existing Sea green baseline remains static at rest and fills upward over 240ms on hover or keyboard focus, without shifting the text or action
 - **AND** reduced motion uses an immediate state change and touch has press feedback
 - **AND** the Home section retains truthful shipping information and an existing terms link instead of repeated payment/whole-parcel copy; purchase and checkout disclosures remain unchanged.
+
+## ADDED Requirements
+
+### Requirement: Released music has one typed lifecycle label
+
+Public and Staff presentation SHALL use Digital out now as the single released-music badge. Their shared lifecycle label types SHALL exclude the obsolete Out now badge while retaining independent physical stock and shipping states.
+
+#### Scenario: Digital release precedes physical arrival
+
+- **WHEN** the album's release date has arrived and its physical edition is still on pre-order
+- **THEN** Home, Releases, Store and Staff previews use Digital out now alongside the truthful pre-order estimate without local wording translation
+- **AND** a missing or future album release date cannot produce a released-music badge.
+
+### Requirement: Releases styling survives shell entry
+
+Releases SHALL retain its approved typography, wrapping and date separation whether opened directly or reached from a fresh Home document through the persistent shell.
+
+#### Scenario: Shopper enters Releases from Home
+
+- **WHEN** a shopper follows the Releases navigation link from Home in Chromium or Firefox at mobile or desktop width
+- **THEN** badges use the same mono type, uppercase treatment and spacing as direct entry, without the old bordered chip treatment or a date touching the badge row
+- **AND** navigation preserves the persistent player.
+
+### Requirement: Current inventory determines stock and scarcity
+
+Public stock availability and opted-in copies-left notices SHALL derive from current buyable inventory including valid checkout holds. Staff's live summary and current stock view SHALL reflect the same authority after immediate stock changes.
+
+#### Scenario: Staff configures a low-stock notice
+
+- **WHEN** Staff enables Show copies left and the edition has between one and five copies available to buy online
+- **THEN** its Store surfaces show the actual Only N left notice with an enabled purchase action
+- **AND** zero buyable copies cannot produce a low-stock notice or an enabled purchase action, including while copies are held by valid checkouts.

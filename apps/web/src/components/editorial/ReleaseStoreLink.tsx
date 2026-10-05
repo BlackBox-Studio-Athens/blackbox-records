@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 import { readPublicStoreListingPrices } from '@/components/store/StoreListingPricePresentation';
 import { preorderBadges } from '@/platform/lib/preorder-estimate';
 
@@ -37,7 +38,10 @@ export default function ReleaseStoreLink({
       {preorder && (
         <span className="flex flex-wrap items-center gap-2">
           {preorderBadges({ releaseDate, shipEstimate: preorder.shipEstimate, today: new Date() }).map((badge) => (
-            <span key={badge} className={badge === 'Out now' ? 'store-item-card__release-status' : 'preorder-badge'}>
+            <span
+              key={badge}
+              className={badge === DIGITAL_RELEASE_BADGE ? 'store-item-card__release-status' : 'preorder-badge'}
+            >
               {badge}
             </span>
           ))}

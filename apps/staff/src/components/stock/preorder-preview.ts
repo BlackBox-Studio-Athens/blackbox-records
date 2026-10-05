@@ -1,3 +1,4 @@
+import { DIGITAL_RELEASE_BADGE, type PreorderShippingBadge, type PreorderBadges } from '@blackbox/content-model';
 import type { SetStockPreorderBody } from '../../lib/backend/internal-stock-api';
 
 export type ShipEstimate = NonNullable<SetStockPreorderBody['shipEstimate']>;
@@ -39,19 +40,23 @@ export function preorderBadges({
   releaseDate?: string | undefined;
   shipEstimate: ShipEstimate | null;
   today: string;
-}): string[] {
+}): PreorderBadges {
   if (releaseDate && releaseDate > today) {
     return [`Pre-order · out ${shortDateFormat.format(new Date(releaseDate + 'T00:00:00Z'))}`];
   }
-  const badge = !shipEstimate
+  const badge: PreorderShippingBadge = !shipEstimate
     ? 'Pre-order'
     : shipEstimate.kind === 'month'
       ? `Pre-order · ships ${shipEstimateText(shipEstimate)}`
       : `Pre-order · ships ${shortDateFormat.format(new Date(shipEstimate.date + 'T00:00:00Z'))}`;
-  return releaseDate ? ['Out now', badge] : [badge];
+  return releaseDate ? [DIGITAL_RELEASE_BADGE, badge] : [badge];
 }
 
-export function preorderPreview(estimate: ShipEstimate | null, today: string, releaseDate?: string): string[] {
+export function preorderPreview(
+  estimate: ShipEstimate | null,
+  today: string,
+  releaseDate?: string,
+): PreorderBadges | ['Not on pre-order'] {
   if (!estimate || (estimate.kind === 'date' && estimate.date <= today)) return ['Not on pre-order'];
   return preorderBadges({
     releaseDate,

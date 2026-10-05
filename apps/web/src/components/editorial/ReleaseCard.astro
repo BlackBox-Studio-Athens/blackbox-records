@@ -5,7 +5,7 @@ import type { CollectionEntry } from 'astro:content';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
-import { tracklistFormat } from '@blackbox/content-model';
+import { DIGITAL_RELEASE_BADGE, tracklistFormat } from '@blackbox/content-model';
 import type { ReleaseCommerceLink } from './release-commerce';
 import { createArtistDetailPath, createReleaseDetailPath, getPrimaryReleaseStoreFormat } from '@/lib/catalog-data';
 import { isReleaseOutNow } from '@/lib/release-feature';
@@ -166,7 +166,7 @@ const dataAttributes = embeddedPlayerData
       {isReleaseShowcase && (
         <div class="flex flex-wrap gap-2" data-release-badges>
           <span class="store-item-card__release-status">
-            {isReleaseOutNow(release.data.release_date) ? 'Digital out now' : 'Album upcoming'}
+            {isReleaseOutNow(release.data.release_date) ? DIGITAL_RELEASE_BADGE : 'Album upcoming'}
           </span>
         </div>
       )}
