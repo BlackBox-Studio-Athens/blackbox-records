@@ -218,58 +218,22 @@ UAT Static Smoke SHALL verify the Cloudflare public site's routes, public assets
 - **AND** it asserts HTTP status, Review Site Marker, console and page errors, secret exposure, media origin and UI copy rather than content titles
 - **AND** a section without a discoverable page fails with a message naming that section.
 
-### Requirement: Static deploy automation exposes measurable stages
-
-The system SHALL keep UAT and PRD static deploy automation split into measurable verification, build, and deploy stages while preserving the existing deployment targets.
-
-#### Scenario: UAT Pages workflow reports verification and deploy timing separately
-
-- **WHEN** the shared static deployment workflow runs the Cloudflare Pages UAT target
-- **THEN** unit tests, workspace checks, unused audit, UAT static build, artifact upload, and Cloudflare Pages deploy appear as separately timed workflow jobs or steps
-- **AND** the deployed target remains Cloudflare Pages UAT.
-
-#### Scenario: PRD Pages workflow reports verification and deploy timing separately
-
-- **WHEN** the shared static deployment workflow runs the Cloudflare Pages PRD target
-- **THEN** unit tests, workspace checks, unused audit, PRD static build, artifact handoff, and Cloudflare Pages deploy appear as separately timed workflow jobs or steps
-- **AND** the deployed target remains Cloudflare Pages PRD.
-
-### Requirement: Static deploy workflows preserve gate-before-deploy correctness
-
-The system MUST deploy UAT and PRD static artifacts only after the required repository gates and target-specific build artifact succeed for the same commit.
-
-#### Scenario: UAT static deployment waits for required work
-
-- **GIVEN** the shared static deployment workflow is triggered for a commit
-- **WHEN** deployment starts
-- **THEN** `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and the UAT `pnpm build:web` artifact build have succeeded for that commit
-- **AND** the deployed artifact was built with the UAT site/base/backend environment values.
-
-#### Scenario: PRD static deployment waits for required work
-
-- **GIVEN** the shared static deployment workflow is triggered for a commit
-- **WHEN** deployment starts
-- **THEN** `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and the PRD `pnpm build` artifact build have succeeded for that commit
-- **AND** the deployed artifact was built with the PRD site/base/backend environment values.
-
 ### Requirement: Static deploy workflows use explicit artifact handoff
 
-The system SHALL hand static build output from build jobs to deploy jobs through explicit GitHub Actions artifacts with bounded retention.
+The system SHALL hand build output from build jobs to deploy jobs through an explicit GitHub Actions artifact with the shortest practical retention, and SHALL NOT retain a release bundle beyond the run that uses it.
 
 #### Scenario: UAT build artifact is handed to deploy
 
-- **WHEN** the Cloudflare Pages UAT workflow builds the static frontend
-- **THEN** it uploads only the deployable static artifact needed by Cloudflare Pages
-- **AND** the deploy job consumes that artifact for the same commit
-- **AND** artifact retention is bounded to the shortest practical period for deployment diagnostics.
+- **WHEN** the push workflow builds the UAT CMS Worker and renderer
+- **THEN** its build job, which holds no Cloudflare or CMS credential, uploads only the deployable release directory
+- **AND** the single deploy job consumes that artifact within the same run for the same commit
+- **AND** artifact retention is three days, so a failed run can be rerun within that window.
 
 #### Scenario: PRD build artifact is handed to deploy
 
-- **WHEN** the Cloudflare Pages PRD workflow builds the static frontend
-- **THEN** it uploads only the deployable `apps/web/dist` artifact needed by the production `main` deploy job
-- **AND** the deploy job consumes that artifact for the same commit
-- **AND** artifact retention is bounded to the shortest practical period for deployment diagnostics
-- **AND** Cloudflare credentials are available only to deploy jobs.
+- **WHEN** PRD promotion runs
+- **THEN** it builds PRD from the proven source SHA in its own job, with no handoff artifact and no retained bundle
+- **AND** the PRD Cloudflare credential is available only to the steps that check Pages, migrate and deploy, never to install or build.
 
 #### Scenario: Holding build artifact is handed to deploy
 
@@ -424,28 +388,27 @@ The system SHALL include persistent Stripe endpoint configuration and delivery e
 
 ### Requirement: Static deployment triggers follow artifact relevance
 
-The system MUST omit the shared UAT/PRD static deployment workflow for a `main` push only when every changed path belongs to an explicit, audited set of repository-only documentation paths. Trigger decisions MUST use changed paths rather than commit-message semantics, and any unrecognized or deploy-relevant path MUST fail open by running the workflow.
+The system MUST omit the release workflow for a `main` push only when every changed path belongs to an explicit, audited set of repository-only documentation paths. Trigger decisions MUST use changed paths rather than commit-message semantics, and any unrecognized or deploy-relevant path MUST fail open by running the workflow.
 
 #### Scenario: Repository-only documentation is pushed
 
 - **GIVEN** every changed path in a `main` push matches the audited repository-only documentation set
-- **WHEN** GitHub evaluates the shared static deployment workflow trigger
-- **THEN** no shared UAT/PRD static deployment workflow run is created for that push
-- **AND** neither UAT nor PRD is redeployed
-- **AND** the downstream UAT provider smoke workflow does not start for that push.
+- **WHEN** GitHub evaluates the release workflow trigger
+- **THEN** no release run is created for that push
+- **AND** neither UAT nor PRD is redeployed.
 
 #### Scenario: Push contains a deploy-relevant or unknown path
 
 - **GIVEN** at least one changed path does not match the audited repository-only documentation set
 - **WHEN** the push reaches `main`
-- **THEN** the shared static deployment workflow runs with its existing verification, build, and deploy gates
+- **THEN** the release workflow runs with its existing verification, build and deploy gates
 - **AND** mixed documentation/code pushes are not skipped.
 
 #### Scenario: Deployable Markdown changes
 
 - **WHEN** Markdown under an Astro content collection or another build input changes
 - **THEN** the path does not match a broad Markdown exclusion
-- **AND** the shared static deployment workflow runs.
+- **AND** the release workflow runs.
 
 #### Scenario: Commit type disagrees with changed paths
 
@@ -455,19 +418,19 @@ The system MUST omit the shared UAT/PRD static deployment workflow for a `main` 
 
 #### Scenario: Operator forces a static deployment
 
-- **WHEN** an operator starts the shared workflow through `workflow_dispatch`
-- **THEN** the workflow runs independently of push path filters
-- **AND** the existing UAT and PRD verification, build, and deploy gates remain required.
+- **WHEN** an operator needs UAT redeployed
+- **THEN** they rerun the failed push run within three days, while its build artifact exists, or otherwise push a new commit
+- **AND** the release workflow has no manual dispatch or input path, and PRD changes only through the input-free promotion workflow.
 
 #### Scenario: Trigger policy validation runs
 
-- **WHEN** repository environment-model validation checks the shared static deployment workflow
-- **THEN** it requires the audited repository-only path exclusions and preserved manual dispatch
-- **AND** it rejects broad Markdown exclusion or commit-message coupling.
+- **WHEN** repository contract validation checks the release workflows
+- **THEN** it requires that only the promotion workflow binds the PRD environment, that no push-triggered workflow reads a PRD secret, and that every environment-bound job and release lock is non-cancelling
+- **AND** it requires the release workflow to trigger only on `main` pushes with the audited documentation path ignores, and to contain no commit-message coupling, manual dispatch or retired release input or string.
 
 ### Requirement: Catalog deployments use the gated source revision
 
-Software deployment SHALL use the reviewed code revision and explicit target content snapshot. Content Publication SHALL use the already-deployed approved code revision without deploying the backend or performing general provider synchronization.
+Software deployment SHALL use the reviewed code revision. Content Publication SHALL use the already-deployed approved code revision without deploying the backend or performing general provider synchronization, and no software build SHALL read or restore a content snapshot.
 
 #### Scenario: Source affects catalog or code
 
@@ -477,7 +440,7 @@ Software deployment SHALL use the reviewed code revision and explicit target con
 #### Scenario: Editorial content changes
 
 - **WHEN** content publication validates a complete target snapshot
-- **THEN** only the static public artifact is rebuilt and published
+- **THEN** the runtime activates it through the R2 pointer without rebuilding or redeploying any static artifact
 - **AND** its backend and Stripe catalog are not redeployed or synchronized as a prerequisite.
 
 #### Scenario: PRD launch is disabled
@@ -487,23 +450,22 @@ Software deployment SHALL use the reviewed code revision and explicit target con
 
 ### Requirement: Public frontend hosting uses separate Cloudflare Pages projects
 
-The system SHALL serve Astro frontend artifacts with separate Cloudflare Pages projects as the UAT and PRD static hosts.
+The system SHALL serve the renderer's client assets and public gateway with separate Cloudflare Pages projects as the UAT and PRD hosts.
 
 #### Scenario: Shared workflow deploys the UAT frontend to Cloudflare Pages
 
-- **GIVEN** the shared static frontend workflow runs the UAT target
-- **WHEN** CI builds the site
-- **THEN** it runs `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build:web`
-- **AND** it uploads only the prebuilt `apps/web/dist` artifact with browser-safe UAT build variables
-- **AND** the deployed static site calls the UAT Worker/API.
+- **GIVEN** a push whose checks, end-to-end suite and staff previews passed
+- **WHEN** the UAT deploy job runs
+- **THEN** the repository checks have already run `pnpm validate:checks` and the end-to-end build has run the bundle budgets
+- **AND** it uploads only the prebuilt renderer client directory with its gateway and browser-safe UAT build variables
+- **AND** the deployed site calls the UAT Worker/API.
 
 #### Scenario: Shared workflow deploys the PRD frontend to Cloudflare Pages
 
-- **GIVEN** an explicit Software Release promotion selects a verified PRD-targeted artifact
-- **WHEN** CI builds the site
-- **THEN** it runs `pnpm test:unit`, `pnpm check`, `pnpm audit:unused`, and `pnpm build`
-- **AND** it uploads only the full prebuilt `apps/web/dist` artifact with browser-safe PRD build variables for the Pages production `main` target
-- **AND** the static PRD storefront may deploy as a readiness surface
+- **GIVEN** an explicit Software Release promotion proved the source UAT serves
+- **WHEN** the promotion job builds PRD from that SHA
+- **THEN** it uploads only the prebuilt renderer client directory with its gateway and browser-safe PRD build variables for the Pages production `main` target
+- **AND** the PRD site may deploy as a readiness surface
 - **AND** PRD checkout and live provider mutation remain disabled until an explicit production-readiness gate opens them.
 
 #### Scenario: Manual workflow deploys the PRD Holding Page
@@ -511,17 +473,17 @@ The system SHALL serve Astro frontend artifacts with separate Cloudflare Pages p
 - **GIVEN** the separate holding workflow is started manually with its deploy input enabled
 - **WHEN** its repository gates and PRD-shaped static build succeed
 - **THEN** it derives and uploads only `apps/web/dist-holding` for the protected Pages `holding` branch deploy job
-- **AND** it does not invoke the shared UAT/PRD deploy workflow or mutate either existing deployment.
+- **AND** it does not invoke the release or promotion workflows or mutate either existing deployment.
 
 ### Requirement: UAT-only builds own Review Site Marker visibility
 
-The system MUST compile the Review Site Marker through an explicit UAT-only static build flag with absence as the safe default.
+The system MUST compile the Review Site Marker through an explicit UAT-only build flag with absence as the safe default.
 
 #### Scenario: Cloudflare Pages UAT artifact is built
 
-- **WHEN** the shared workflow runs the `Build UAT static frontend` step
-- **THEN** that step sets `SHOW_REVIEW_SITE_MARKER=true`
-- **AND** generated shopper-facing documents contain the exact header words `TEST SITE` and `Test payments only` plus the `[TEST] ` HTML-title prefix
+- **WHEN** the UAT public build runs
+- **THEN** it sets `SHOW_REVIEW_SITE_MARKER=true`
+- **AND** generated shopper-facing documents contain the exact header words `UAT · TESTING ONLY` plus the `[UAT] ` HTML-title prefix
 - **AND** generated checkout documents contain `Test checkout. No real payment will be taken.` beside the final payment action.
 
 #### Scenario: Local or PRD artifact is built
@@ -533,8 +495,8 @@ The system MUST compile the Review Site Marker through an explicit UAT-only stat
 #### Scenario: Build configuration drifts
 
 - **WHEN** repository environment-model verification runs
-- **THEN** it verifies that the flag and exact value are scoped to the UAT build step
-- **AND** it rejects a marker that is unconditional, public at runtime, hostname-derived, or enabled in a PRD build scope.
+- **THEN** it verifies the source-level marker contract: the flag and exact value are read only in the UAT-capable build and layouts, never unconditional, public at runtime or hostname-derived
+- **AND** release verification of the deployed home page requires the cues on UAT and rejects them on PRD, before and after PRD deployment.
 
 ### Requirement: Hosted cache policy is consistent across UAT and PRD
 
@@ -551,38 +513,32 @@ The system SHALL apply the same static cache policy on the separate Cloudflare P
 - **THEN** bounded PRD checks confirm actual target headers
 - **AND** UAT evidence does not imply that separately configured PRD settings were verified.
 
-### Requirement: UAT and PRD candidate artifacts are prepared independently
+### Requirement: Pages fails closed and ships no route HTML
 
-The Software Release workflow MUST prepare target artifacts independently from each Product Environment's own accepted
-publication. It MUST retain full source, workflow, run, configuration, and file identity in verified intermediates
-before combining the existing schema-2 promotion bundle.
+The hosted release SHALL upload to each Cloudflare Pages project only the renderer's client assets, the public gateway and a prerendered `robots.txt`. It SHALL NOT upload route HTML, so no static copy of a page can be served when the Pages Function is unavailable. Both Pages projects SHALL be configured to fail closed on Function quota exhaustion, set once in the Cloudflare dashboard, a UAT deploy or PRD promotion SHALL verify that mode on its project before it uploads, and a release builds with no CMS credential and restores no CMS content or media.
 
-#### Scenario: PRD preparation is slower than UAT
+#### Scenario: A release is uploaded to Pages
 
-- **WHEN** UAT preparation and verification pass while PRD preparation is still running
-- **THEN** UAT deployment may begin from its verified target artifact
-- **AND** the overall candidate remains unaccepted until PRD preparation, assembly, and full UAT acceptance pass.
+- **WHEN** the UAT or PRD public build is assembled
+- **THEN** the upload contains the renderer client assets, the gateway, its routes file and `robots.txt`
+- **AND** the renderer serves `/release.json` through the gateway, so the release identity is not an uploaded file
+- **AND** it contains no route HTML, no restored CMS snapshot or media and no `/assets/catalog/*` alias.
 
-#### Scenario: Checks run alongside target preparation
+#### Scenario: The Function allowance is exhausted
 
-- **WHEN** a candidate begins preparation
-- **THEN** checks and both target builds may run concurrently after each job verifies immutable main source
-- **AND** failed checks block UAT inspection, deployment, and final candidate assembly.
+- **WHEN** a Pages Function quota is exhausted and the project is set to fail closed
+- **THEN** document requests receive the platform's error until the allowance resets
+- **AND** no stale editorial HTML is served, because none exists on Pages
+- **AND** static assets such as `/_astro/*` and `robots.txt` remain available.
 
-#### Scenario: Target staff artifacts are built
+#### Scenario: Every deploy verifies fail-closed
 
-- **WHEN** either target's combined CMS artifact is built
-- **THEN** its staff assets are built once with that target's configuration and pass route isolation and bundle budgets
-- **AND** both target public builds may restore Astro image transforms without reusing compiled release artifacts or acceptance results.
-- **AND** UAT saves the transform cache only when its native file hash changes, it is nonempty, and its size is at most 600 MiB; PRD remains restore-only.
+- **WHEN** a UAT deploy or a PRD promotion reaches its Pages step
+- **THEN** it reads the production fail-closed setting of its Pages project (`blackbox-records-web-uat` or `blackbox-records-web`) and fails the run, before uploading anything, when it is not set
+- **AND** the failure names the Cloudflare dashboard setting (Settings > Runtime > Fail open/closed), because the Cloudflare API rejects `fail_open` in a project PATCH and the operator sets it once there.
 
-#### Scenario: Intermediate bundle identity differs
+#### Scenario: The renderer has a published pointer
 
-- **WHEN** assembly receives missing, altered, wrong-target, mixed-run, mixed-source, or migration-conflicting bundle
-  data
-- **THEN** assembly fails before producing a promotable candidate.
-
-#### Scenario: Candidate bundle is promoted
-
-- **WHEN** PRD promotion consumes the assembled release
-- **THEN** it retains schema-2 artifact compatibility and does not rebuild or restamp the selected bytes.
+- **WHEN** a content-free build is deployed to an environment
+- **THEN** the renderer serves the accepted snapshot named by that environment's R2 pointer
+- **AND** a missing pointer is an environment fault, not covered by a bundled bootstrap.

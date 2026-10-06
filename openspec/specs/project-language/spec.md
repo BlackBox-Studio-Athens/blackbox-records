@@ -223,8 +223,7 @@ The system SHALL use canonical smoke terms across scripts, workflows, specs, tes
 - **AND** it uses `Smoke Scenario` for one named check within a suite
 - **AND** it uses `Smoke Evidence` for the redacted per-scenario evidence and run summary
 - **AND** it uses `Static Smoke` for read-only UAT static or CMS/browser validation that does not create provider state
-- **AND** it uses `Provider Smoke` for Stripe- and D1-authoritative hosted-checkout and promotion evidence
-- **AND** it uses `Promotion Smoke` for environment-scoped catalog or checkout readiness evidence written by the promotion workflow.
+- **AND** it uses `Provider Smoke` for Stripe- and D1-authoritative hosted-checkout evidence.
 
 ### Requirement: Cache policy terms
 

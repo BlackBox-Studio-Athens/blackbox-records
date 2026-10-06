@@ -111,7 +111,7 @@ The system MUST keep caching implementation compatible with Cloudflare Free-tier
 
 ### Requirement: Hosted page views stay within a Worker-request budget
 
-The hosted public site SHALL keep Worker invocations per page view within a budget recorded in the Free-tier rule, so ordinary traffic cannot exhaust the account's shared daily Workers allowance.
+The hosted public site SHALL keep Worker invocations per page view within a budget recorded in the Free-tier rule, so ordinary traffic cannot exhaust the account's shared daily Workers allowance. When the allowance is nevertheless exhausted, the site SHALL fail closed: it returns the platform error and serves no stale HTML.
 
 #### Scenario: A visitor loads a hosted page for the first time
 
@@ -130,6 +130,19 @@ The hosted public site SHALL keep Worker invocations per page view within a budg
 - **WHEN** a release changes hosted delivery
 - **THEN** `docs/cloudflare-free-tier.md` records the Worker-requests-per-page-view budget for a cold first visit and a warm repeat view of representative routes
 - **AND** the bounded UAT pilot measures both against the budget before the release is accepted, without load testing or cache warming.
+
+#### Scenario: The Function allowance is exhausted
+
+- **WHEN** the daily Workers allowance is exhausted
+- **THEN** document requests receive the platform error until the allowance resets
+- **AND** no stale HTML is served, because the Pages projects fail closed and ship no route HTML
+- **AND** static assets such as `/_astro/*` and `robots.txt` remain available.
+
+#### Scenario: A release or promotion runs
+
+- **WHEN** a push or promotion builds and deploys a release
+- **THEN** it makes no per-release snapshot or media reads through the CMS Worker, because builds restore no content
+- **AND** the push's UAT static smoke is the only recurring release request cost, recorded in the Free-tier rule.
 
 ### Requirement: Published HTML is reused across renderer hibernation
 

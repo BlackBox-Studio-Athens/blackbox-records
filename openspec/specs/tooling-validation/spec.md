@@ -145,8 +145,8 @@ The system SHALL run targeted local checks after behavior-changing implementatio
 - **WHEN** `pnpm validate:checks` succeeds
 - **THEN** all current unit-test and workspace-check leaves have succeeded for its recorded source identity
 - **AND** its evidence is explicitly partial because target builds have not run
-- **AND** CI still requires both target builds, combined artifacts, previews, and hosted acceptance before promotion eligibility; the unused-code audit runs separately
-- **AND** checks and target builds may run concurrently, but failed checks prevent deployment and final candidate assembly.
+- **AND** CI still requires the content-free UAT build, the whole end-to-end suite and staff previews before UAT deployment; the unused-code audit runs separately
+- **AND** checks and the build may run concurrently, but failed checks prevent deployment.
 
 ### Requirement: Asset QA is read-only
 
@@ -249,48 +249,6 @@ The system SHALL keep smoke runners on the shared `.codex-artifacts/smoke/<envir
 - **THEN** the job summary shows the suite, overall status, each scenario's result and the evidence directory
 - **AND** the summary contains only redacted text already written to smoke evidence
 - **AND** outside GitHub Actions the runner writes no job summary.
-
-### Requirement: Post-merge UAT provider smoke workflow
-
-The system SHALL validate the deployed Cloudflare Pages UAT site with the canonical Stripe test-mode paid scenarios and newsletter Contact smoke inside the canonical release workflow before PRD promotion mutates PRD, without requiring operator presence or Resend receipt credentials. A push to `main` SHALL NOT run provider smoke.
-
-#### Scenario: Shared static deployment completes successfully
-
-- **GIVEN** an operator requests PRD code promotion of a candidate and UAT serves that candidate's source SHA
-- **WHEN** the canonical release workflow starts its promotion acceptance
-- **THEN** it runs `pnpm smoke:stripe-uat -- --scenario happy_path_paid,pay_what_you_want_paid --screenshots on-failure` against the deployed Cloudflare Pages UAT site
-- **AND** it runs `pnpm smoke:resend-uat` against the deployed UAT Worker
-- **AND** it uses the `catalog-promotion-uat` GitHub Actions environment for the same UAT Cloudflare and sandbox Stripe credentials already used by UAT promotion
-- **AND** resulting application email routes to the managed UAT sink
-- **AND** it uploads the standard smoke summary and evidence artifacts
-- **AND** one canonical invocation owns provider smoke for that promotion, with its result required before any PRD mutation.
-
-#### Scenario: Receipt mode is omitted from post-merge smoke
-
-- **WHEN** the canonical release workflow runs `pnpm smoke:stripe-uat`
-- **THEN** it does not enable receipt mode, require a local Resend profile, add a Resend GitHub secret, or wait for an operator
-- **AND** checkout, webhook, order, D1, screenshot, trace, and existing Smoke Evidence behavior remains unchanged
-- **AND** the result does not claim that inbox receipt was verified.
-
-#### Scenario: Stale smoke runs are cancelled
-
-- **GIVEN** a newer candidate was deployed to UAT after the candidate selected for promotion
-- **WHEN** promotion acceptance verifies the hosted UAT release identity
-- **THEN** it stops before any provider scenario or PRD mutation
-- **AND** an earlier candidate's smoke result cannot authorize the newer candidate; manual diagnostic smoke does not substitute for promotion acceptance.
-
-#### Scenario: A push deploys a UAT candidate
-
-- **WHEN** a push to `main` completes its UAT deployment
-- **THEN** that run verifies the hosted release identity and starts no browser or provider smoke
-- **AND** its success does not claim provider acceptance.
-
-#### Scenario: Deployment ownership is validated
-
-- **WHEN** environment-model and workflow contract validation run
-- **THEN** they reject Worker deployment or D1 migration commands in provider smoke
-- **AND** they reject a standalone UAT Worker deployment workflow
-- **AND** they require the canonical release workflow to retain the UAT Worker deployment step.
 
 ### Requirement: Knip audit is report-first
 
@@ -492,8 +450,9 @@ The system MUST require explicit environment and apply flags before mutating Str
 #### Scenario: UAT apply is requested
 
 - **GIVEN** an operator runs `pnpm stripe:catalog:verify --env uat --apply`
-- **WHEN** the dry-run plan has actionable Product projection or sandbox Price/D1 drift
-- **THEN** the command applies only sandbox-scoped changes
+- **WHEN** the dry-run plan has actionable Product projection drift
+- **THEN** the command re-syncs only sandbox Stripe Product name, description and images from the D1 runtime projection
+- **AND** it creates no Price and writes no D1 mapping or Store Offer snapshot, because checkout start repairs those
 - **AND** prints a redacted post-apply verification report.
 
 #### Scenario: Production apply is requested before go-live approval
@@ -752,37 +711,6 @@ The system SHALL run existing repository gates after image rendering implementat
 - **WHEN** implementation changes image behavior, generated markup, validation tooling, or source assets
 - **THEN** `pnpm test:unit`, `pnpm check`, and `pnpm build` pass on the final tree
 - **AND** any new asset QA or markup check has focused tests that fail when the optimized behavior regresses.
-
-### Requirement: CI performance measurement is repeatable
-
-The system SHALL provide a repeatable CI performance measurement path that uses GitHub Actions run, job, and step timing data.
-
-#### Scenario: Maintainer measures CI pipeline speed
-
-- **WHEN** the CI speed measurement command runs against GitHub Actions history
-- **THEN** it records workflow, job, and step durations for a declared bounded time window
-- **AND** it reports median, p75, p90, sample count, conclusion counts, and confidence labels
-- **AND** it separates UAT candidate releases, PRD promotions, catalog plans, and diagnostic workflows
-- **AND** it reports source/workflow revisions, execution duration, available queue timing, total job seconds, and available cache/artifact/content metadata without secrets
-- **AND** it stores raw data and a human-readable report under `.codex-artifacts/ci-speed-analysis/` or a documented equivalent artifact path.
-
-#### Scenario: Manual reruns are present
-
-- **WHEN** a workflow run contains multiple attempts or manual rerun gaps
-- **THEN** measurement uses attempt-specific job and step timing for execution duration
-- **AND** the selected attempt and prior conclusions are retained
-- **AND** raw run wall-clock gaps are not treated as CI execution or queue time
-- **AND** missing queue or cache metadata is reported as unavailable.
-
-#### Scenario: CI measurements are gathered without extra release campaigns
-
-- **WHEN** this optimization is investigated or accepted
-- **THEN** existing run/job/step history, retained logs and local prototypes are reused first
-- **AND** at most one optional 60-second shadow pack/restore/verify probe runs inside an already-authorized normal candidate job using its existing bundle
-- **AND** that probe performs no duplicate build, full artifact upload, deployment, payment or webhook replay
-- **AND** probe timeout or failure preserves the canonical original artifact and cannot establish optimization success
-- **AND** small timing summaries from subsequent ordinary releases supply the post-change cohort, including all instrumentation overhead
-- **AND** missing samples leave acceptance pending rather than triggering benchmark-only releases.
 
 ### Requirement: CI speed acceptance uses statistical thresholds
 
@@ -1147,7 +1075,7 @@ The validation workflow SHALL use Browser Use as the authority for rendered perf
 
 ### Requirement: Local end-to-end harness is deterministic and opt-in
 
-The repository SHALL provide `pnpm test:e2e`, which runs Playwright specs against this checkout's Local site URL and is the required check for shell navigation, overlay, player, mobile-navigation and cart continuity. It SHALL reuse a site already serving that URL or run the foreground static-site launcher for the run. It SHALL NOT start the Local stack, run inside `pnpm validate`, or depend on external network or Worker responses. A local run SHALL name a spec path or title filter; the whole suite runs at PRD promotion or under a maintainer grant.
+The repository SHALL provide `pnpm test:e2e`, which runs Playwright specs against this checkout's Local site URL and is the required check for shell navigation, overlay, player, mobile-navigation and cart continuity. It SHALL reuse a site already serving that URL or run the foreground static-site launcher for the run. It SHALL NOT start the Local stack, run inside `pnpm validate`, or depend on external network or Worker responses. A local run SHALL name a spec path or title filter; the whole suite runs in CI on every push before UAT deployment or locally under a maintainer grant.
 
 #### Scenario: A site already serves the canonical port
 
@@ -1326,7 +1254,7 @@ The system SHALL verify UAT behavior and record PRD closure without inventing li
 
 #### Scenario: UAT smoke runs
 
-- **WHEN** the same artifact commit is deployed
+- **WHEN** an operator dispatches the manual UAT smoke
 - **THEN** configured UAT checkout-surface and paid-path checks run
 - **AND** their evidence contains no provider secrets, full IDs, or payment/customer details.
 
@@ -1427,7 +1355,8 @@ Validation SHALL prove target isolation, matching Cloudflare hosting, immutable 
 #### Scenario: Hosted UAT is accepted
 
 - **WHEN** UAT's stable Cloudflare site serves the candidate
-- **THEN** static routes, Review Site Marker, cache headers, checkout return paths, and signed test-provider processing are verified for that SHA
+- **THEN** hosted release identity is verified for that SHA and the push run's read-only static smoke verifies static routes, Review Site Marker and cache headers
+- **AND** the manual UAT smoke verifies checkout return paths and signed test-provider processing
 - **AND** evidence identifies the new UAT origin rather than the retired GitHub Pages site.
 
 ### Requirement: Paid-order polling separates readiness from final acceptance
@@ -1588,14 +1517,19 @@ The runtime performance tooling SHALL provide repeatable idle, wheel, and touch 
 
 ### Requirement: Hosted public output passes the public performance gates
 
-The hosted release build SHALL run the same eager-JavaScript and image-markup checks as the static public build, against its own output.
+The eager-JavaScript budgets, route isolation and image-markup checks SHALL run on every push against the Local fixture build that the end-to-end suite uses, and the hosted release build SHALL NOT repeat them against its own output. The ceiling of this substitution (HOST-12) is chunk-split drift between the fixture build and the hosted renderer build, which no pre-deploy gate measures; the push's UAT static smoke detects it before PRD promotion.
 
 #### Scenario: The hosted public build completes
 
-- **WHEN** the hosted renderer's public build produces `dist-public`
-- **THEN** the bundle-graph check measures its client output against the public route budgets
-- **AND** the image-markup check runs against its rendered or prerendered pages where the output allows it
-- **AND** a failing check stops the hosted release before upload.
+- **WHEN** the end-to-end job builds the Local fixture with `pnpm build:web`
+- **THEN** route isolation and the bundle-graph budgets run against its output
+- **AND** a failing check stops the push before UAT deploys.
+
+#### Scenario: Hosted chunk output drifts from the fixture
+
+- **WHEN** the hosted renderer's client chunks diverge from the fixture build's
+- **THEN** no pre-deploy gate fails on that divergence
+- **AND** the UAT static smoke after deployment fails the run, so the release cannot be promoted.
 
 #### Scenario: Build options differ between server and client
 
@@ -1943,3 +1877,44 @@ The repository SHALL provide a read-only command that reports executed task time
 
 - **WHEN** the history log cannot be written
 - **THEN** the validation, denial or end-to-end run proceeds with its normal result.
+
+### Requirement: Manual UAT provider smoke
+
+The system SHALL validate the deployed Cloudflare Pages UAT site with the canonical Stripe test-mode paid scenarios and newsletter Contact smoke only when an operator dispatches the UAT smoke workflow, without requiring operator presence during the run or Resend receipt credentials. A push to `main` and PRD promotion SHALL NOT run provider smoke, and its result SHALL NOT gate any release.
+
+#### Scenario: An operator dispatches the UAT smoke
+
+- **GIVEN** UAT serves the candidate under test
+- **WHEN** the operator dispatches the UAT smoke workflow
+- **THEN** it runs `pnpm smoke:stripe-uat -- --scenario happy_path_paid,pay_what_you_want_paid --screenshots on-failure` against the deployed Cloudflare Pages UAT site
+- **AND** it runs `pnpm smoke:resend-uat` against the deployed UAT Worker
+- **AND** it uses the `catalog-promotion-uat` GitHub Actions environment for the same UAT Cloudflare and sandbox Stripe credentials already used by UAT promotion
+- **AND** its concurrency group differs from the release groups, so it cannot cancel a pending push deployment
+- **AND** resulting application email routes to the managed UAT sink
+- **AND** it uploads the standard smoke summary and evidence artifacts.
+
+#### Scenario: UAT has too little online stock
+
+- **WHEN** the selected UAT items lack the online stock the paid scenarios consume
+- **THEN** the run reports insufficient stock as a precondition, not as a product defect
+- **AND** it reports which item and quantity are missing.
+
+#### Scenario: Receipt mode is omitted from manual smoke
+
+- **WHEN** the manual workflow runs `pnpm smoke:stripe-uat`
+- **THEN** it does not enable receipt mode, require a local Resend profile, add a Resend GitHub secret, or wait for an operator
+- **AND** checkout, webhook, order, D1, screenshot, trace, and existing Smoke Evidence behavior remains unchanged
+- **AND** the result does not claim that inbox receipt was verified.
+
+#### Scenario: A push or promotion runs
+
+- **WHEN** a push to `main` completes its UAT deployment or PRD promotion runs
+- **THEN** no provider smoke runs
+- **AND** the run's success does not claim provider acceptance.
+
+#### Scenario: Deployment ownership is validated
+
+- **WHEN** environment-model and workflow contract validation run
+- **THEN** they reject Worker deployment or D1 migration commands in provider smoke
+- **AND** they reject a standalone UAT Worker deployment workflow
+- **AND** they require the canonical release workflow to retain the UAT Worker deployment step.

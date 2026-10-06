@@ -27,17 +27,20 @@ if (process.argv[3] === '--check') {
   console.log(`${target.toUpperCase()} Pages credential verified.`);
   process.exit(0);
 }
-const production = project.deployment_configs.production;
-const bindings = production.services ?? {};
+const bindings = project.deployment_configs.production.services ?? {};
 const service = `blackbox-records-public-${target}`;
-// HOST-11: fail closed, so an exhausted Functions allowance returns an error rather than bare static assets.
-if (bindings.PUBLIC_SITE?.service !== service || production.fail_open !== false)
+if (bindings.PUBLIC_SITE?.service !== service)
   await request('PATCH', {
     deployment_configs: {
-      production: { fail_open: false, services: { ...bindings, PUBLIC_SITE: { service, environment: 'production' } } },
+      production: { services: { ...bindings, PUBLIC_SITE: { service, environment: 'production' } } },
     },
   });
 const configured = (await request('GET')).deployment_configs.production;
 assert.equal(configured.services.PUBLIC_SITE.service, service);
-assert.equal(configured.fail_open, false, 'Pages must fail closed.');
+// HOST-11: the API rejects fail_open in a PATCH, so the project setting is kept in the dashboard and guarded here.
+assert.equal(
+  configured.fail_open,
+  false,
+  `Set ${name} Settings > Runtime > Fail open/closed to "Fail closed" in the Cloudflare dashboard.`,
+);
 console.log(`${target.toUpperCase()} Pages renderer binding and fail-closed mode verified.`);

@@ -25,7 +25,7 @@ The system SHALL derive provider presentation from the CMS-owned content snapsho
 #### Scenario: Member publishes changed item presentation
 
 - **WHEN** the guided item publication includes changed checkout title, description, or approved artwork
-- **THEN** the same operation applies only that item's Product Projection before requesting static publication
+- **THEN** the same operation applies only that item's Product Projection before requesting publication
 - **AND** existing Price Authority is unchanged and a failed projection is safely resumable without another setup or opening-stock entry.
 
 #### Scenario: Provider image is unsafe
@@ -193,8 +193,9 @@ The system MUST verify sandbox catalog alignment for every checkout-eligible Sto
 
 - **GIVEN** sandbox Stripe credentials and UAT D1 access are available
 - **WHEN** `pnpm stripe:catalog:verify --env uat --apply` runs after a clean dry-run plan is reviewed
-- **THEN** sandbox Stripe Products, sandbox Stripe Prices where permitted, D1 mappings, and Store Offer snapshots are aligned for checkout-eligible variants
-- **AND** the follow-up dry-run reports no blocking catalog drift.
+- **THEN** sandbox Stripe Product name, description and images are re-synced from the D1 runtime projection for checkout-eligible variants
+- **AND** no Price is created and no D1 mapping or Store Offer snapshot is written, because checkout start repairs those
+- **AND** the follow-up dry-run reports no Product projection drift.
 
 ### Requirement: Stripe native identity fields are owned by the application
 

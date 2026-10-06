@@ -23,19 +23,25 @@ Content Publication SHALL publish a consistent content revision using the target
 
 ### Requirement: Publication uses a complete immutable snapshot
 
-A public build SHALL consume one validated published-content snapshot and its referenced media. It SHALL NOT mix revisions, include drafts, or silently fall back to stale repository content when loading the snapshot fails.
+The public renderer SHALL serve one validated published-content snapshot and its referenced media, selected through the environment's accepted R2 pointer. It SHALL NOT mix revisions, include drafts, or silently fall back to stale repository content when loading the snapshot fails. No software build SHALL read, restore or bundle a snapshot, a media file or a content identity, and no build SHALL hold a CMS export credential.
 
 #### Scenario: Another editor saves during a build
 
-- **WHEN** a publication build is already using a captured revision
+- **WHEN** a publication or renderer refresh is already using a captured revision
 - **THEN** it finishes against that revision without including the later save
 - **AND** the later published revision can be processed separately.
 
 #### Scenario: Snapshot export or validation fails
 
 - **WHEN** content, references, or required media cannot be validated
-- **THEN** the new static artifact is not deployed
-- **AND** the previous public site remains available with a visible failure status for staff.
+- **THEN** the accepted pointer does not move
+- **AND** the previously accepted snapshot remains served with a visible failure status for staff.
+
+#### Scenario: A software release is built
+
+- **WHEN** a UAT or PRD release is built
+- **THEN** the build is content-free and the renderer reads its environment's accepted snapshot from R2 at runtime
+- **AND** the release neither changes nor depends on the live pointer's generation.
 
 #### Scenario: Published distro has no commerce setup yet
 
@@ -49,14 +55,14 @@ The workspace SHALL distinguish saved draft, publication pending, live, and fail
 
 #### Scenario: Dispatch fails or the browser closes
 
-- **WHEN** a valid publication request cannot reach deployment automation
+- **WHEN** a valid publication request cannot be processed by the runtime publication processor, or the browser closes after sending it
 - **THEN** its pending state remains visible and the same request can be retried
 - **AND** the UI does not claim that the page is live.
 
 #### Scenario: Deployment succeeds but acknowledgement is lost
 
 - **WHEN** the system retries or reconciles the publication
-- **THEN** it verifies the actual deployment and revision before marking it live
+- **THEN** it verifies the accepted snapshot pointer and the public origin's content identity before marking it live
 - **AND** duplicate notifications do not republish an older revision.
 
 #### Scenario: A newer request follows an older failure
@@ -85,19 +91,19 @@ The workspace SHALL distinguish saved draft, publication pending, live, and fail
 
 ### Requirement: Content and software deployments share target ordering
 
-Content Publication and Software Release promotion SHALL serialize target mutation and verify deployed code and content preconditions. Neither path SHALL overwrite a newer accepted publication with an older artifact.
+Content Publication and Software Release promotion SHALL NOT overwrite a newer accepted publication with an older one. Content Publication SHALL be a runtime operation of the target's CMS Worker that moves the accepted snapshot pointer; it SHALL NOT dispatch a GitHub workflow, build a static artifact or take the release lock.
 
 #### Scenario: Content changes after a code candidate was built
 
-- **WHEN** a PRD candidate artifact contains an older content revision
-- **THEN** promotion stops and refreshes the candidate's PRD-targeted artifact against current PRD content, retaining the same approved code SHA
-- **AND** the refreshed artifact passes content, build, compatibility, and target checks before explicit promotion.
+- **WHEN** content is published after a PRD code candidate was prepared
+- **THEN** promotion keeps the accepted snapshot pointer and does not reject or refresh the candidate for content freshness
+- **AND** no content is copied or rebuilt by the promotion.
 
 #### Scenario: Code is promoted while a publication waits
 
-- **WHEN** the publication reaches its deployment step
-- **THEN** it checks the target's deployed code revision again
-- **AND** it rebuilds with that approved revision or stops for a safe retry instead of downgrading code.
+- **WHEN** code is promoted while a publication request is pending
+- **THEN** promotion keeps the accepted snapshot pointer and rebuilds no content
+- **AND** the publication still activates against the promoted renderer, or stops for a safe retry, instead of downgrading content.
 
 ### Requirement: Environment publication never copies operational data
 
