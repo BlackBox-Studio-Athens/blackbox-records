@@ -245,6 +245,26 @@ test('a push without smoke-uat is a complete candidate once acceptance moved to 
   assert.deepEqual(historical.missingJobs, ['smoke-uat']);
 });
 
+test('matrix legs count as one job that ends with its last leg', () => {
+  const legs = (jobs, name, ...parts) =>
+    jobs.flatMap((job) => (job.name === name ? parts.map((part) => ({ ...job, ...part })) : [job]));
+  const push = legs(
+    promotionAcceptancePush(),
+    'check-candidate',
+    { name: 'check-candidate (lint)', completed_at: at(200) },
+    { name: 'check-candidate (tests)' },
+  );
+  assert.deepEqual(measureAttempt(pagesRun('push'), push).missingJobs, []);
+  const shards = legs(
+    promotionAcceptancePromotion(),
+    'accept-e2e',
+    { name: 'accept-e2e (1)', completed_at: at(250) },
+    { name: 'accept-e2e (2)' },
+  );
+  const promotion = measureAttempt(pagesRun('workflow_dispatch', prdDispatch), shards);
+  assert.equal(promotion.acceptanceMs, 296_000);
+});
+
 test('promotion reports acceptance separately from PRD deployment', () => {
   const current = measureAttempt(pagesRun('workflow_dispatch', prdDispatch), promotionAcceptancePromotion());
   assert.equal(current.classification, 'prd-promotion');

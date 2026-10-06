@@ -187,8 +187,9 @@ describe('Pages artifact promotion contract', () => {
     );
     expect(stepNamed(e2e, 'Run the whole end-to-end suite')).toMatchObject({
       env: { BLACKBOX_E2E_PREVIEW: '1' },
-      run: 'pnpm test:e2e',
+      run: 'pnpm test:e2e --shard=${{ matrix.shard }}/2',
     });
+    expect(e2e.strategy).toEqual({ 'fail-fast': false, matrix: { shard: [1, 2] } });
     expect(stepNamed(e2e, 'Upload end-to-end evidence')).toMatchObject({
       if: '${{ failure() }}',
       with: { path: '.codex-artifacts/e2e' },
@@ -336,13 +337,14 @@ describe('Pages artifact promotion contract', () => {
 
   it('prepares independent target bundles and assembles the retained final candidate', () => {
     expect(checks.env).toBeUndefined();
+    expect(checks.strategy).toEqual({ 'fail-fast': false, matrix: { part: ['lint', 'tests'] } });
     expect(checks.steps.find((step: { name: string }) => step.name === 'Run validation checks').run).toBe(
-      'pnpm validate:checks',
+      'pnpm validate:checks --part=${{ matrix.part }}',
     );
     // Build while validation runs, but do not assemble or deploy a failed candidate.
     expect(uatBuild.needs).toBeUndefined();
     expect(prdBuild.needs).toBeUndefined();
-    expect(workflow.jobs['inspect-uat-pages'].needs).toEqual(['check-candidate', 'prepare-uat']);
+    expect(workflow.jobs['inspect-uat-pages'].needs).toEqual(['prepare-uat']);
     for (const job of [checks, uatBuild]) {
       const diagnostics = job.steps.find((step: { name?: string }) => step.name === 'Upload validation diagnostics');
       expect(diagnostics.with.name).toContain('${{ github.job }}');
@@ -436,7 +438,7 @@ describe('Pages artifact promotion contract', () => {
       candidate.run.indexOf('elif [[ "$ASTRO_CACHE_FINGERPRINT_AFTER" == "$ASTRO_CACHE_FINGERPRINT_BEFORE" ]]'),
     );
     expect(candidate.run).toContain('bytes <= 629145600');
-    for (const stepName of ['Start Astro image cache save timer', 'Save Astro image cache']) {
+    for (const stepName of ['Save Astro image cache']) {
       expect(uatBuild.steps.find((step: { name?: string }) => step.name === stepName).if).toBe(
         "${{ steps.astro-cache-candidate.outputs.save == 'true' }}",
       );

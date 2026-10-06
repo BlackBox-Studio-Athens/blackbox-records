@@ -17,12 +17,14 @@ const scopes = ['web', 'staff', 'backend', 'api-client'];
 // Nx targetDefaults make workspace:architecture a prerequisite of these project targets.
 // --fast/--scope select affected projects; --checks selects all check targets; --resume keeps Nx cache defaults.
 // --lint-only selects every lint target, while --editor retains its existing acceptance commands.
+// --checks --part=lint|tests splits the check targets so CI can run them on two runners at once.
 export function validationPlan({
   fast = false,
   full = false,
   scope = 'all',
   editor = false,
   checks = false,
+  part,
   lintOnly = false,
   noCache = false,
   plan = false,
@@ -49,10 +51,17 @@ export function validationPlan({
     ];
   }
   if (lintOnly && scope !== 'all') throw new Error('Lint-only validation cannot be scoped.');
+  if (part !== undefined && (!checks || !['lint', 'tests'].includes(part)))
+    throw new Error('--part takes lint or tests and needs --checks.');
 
   const affected = !full && !checks && !lintOnly;
   if (since && !affected) throw new Error('--since is only valid for affected validation.');
-  const targets = lintOnly ? ['lint'] : ['test', 'lint', 'typecheck', ...(full ? ['build'] : [])];
+  const targets =
+    lintOnly || part === 'lint'
+      ? ['lint']
+      : part === 'tests'
+        ? ['test', 'typecheck']
+        : ['test', 'lint', 'typecheck', ...(full ? ['build'] : [])];
   const args = affected ? ['affected', '-t', ...targets] : ['run-many', '-t', ...targets, '--all'];
   // Nx bail kills tasks already running, which then report as failures; CI lets every task report its own result.
   if (bail) args.push('--nxBail');
@@ -459,6 +468,7 @@ export async function main(args = process.argv.slice(2), dependencies = {}) {
       editor: { type: 'boolean' },
       checks: { type: 'boolean' },
       'lint-only': { type: 'boolean' },
+      part: { type: 'string' },
       trace: { type: 'boolean' },
       resume: { type: 'boolean' },
       'no-cache': { type: 'boolean' },
@@ -473,6 +483,7 @@ export async function main(args = process.argv.slice(2), dependencies = {}) {
     editor: values.editor,
     checks: values.checks,
     lintOnly: values['lint-only'],
+    part: values.part,
     noCache: values['no-cache'],
     plan: values.plan,
     scope: values.scope,

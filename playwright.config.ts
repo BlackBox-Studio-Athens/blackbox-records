@@ -19,8 +19,12 @@ export default defineConfig({
   outputDir: `${artifacts}/test-results`,
   fullyParallel: true,
   // ponytail: astro dev compiles each route and lazy chunk on first request and re-renders the Store listing every
-  // time (about 7 s here, slower with more workers). Two workers and long waits keep it stable; a built site would not need them.
-  workers: 2,
+  // time (about 7 s here, slower with more workers). Two workers and long waits keep it stable; the built preview that
+  // PRD promotion serves does not need them, so it uses every core of the 4-vCPU runner.
+  workers: process.env.BLACKBOX_E2E_PREVIEW === '1' ? 4 : 2,
+  // A promotion runs 294 tests in two browsers; one retry keeps a network hiccup (a font download, a slow first paint)
+  // from failing the release, and the report still marks such a test flaky.
+  retries: process.env.CI ? 1 : 0,
   timeout: 90_000,
   expect: { timeout: 30_000 },
   reporter: [['list'], ['json', { outputFile: `${artifacts}/summary.json` }]],

@@ -31,8 +31,9 @@ const ACCEPTANCE_JOBS = [
   'accept-e2e',
 ];
 
-/** Reusable-workflow jobs are listed as `<caller> / <job>`. */
-const isJob = (name, required) => name === required || name.endsWith(` / ${required}`);
+/** Reusable-workflow jobs are listed as `<caller> / <job>` and matrix legs as `<job> (<leg>)`. */
+const isJob = (name, required) =>
+  name === required || name.endsWith(` / ${required}`) || name.startsWith(`${required} (`);
 
 /** The run lists every job, skipped ones included, so a push of the current workflow still names the acceptance jobs. */
 export function jobSetOf(jobs) {
@@ -115,7 +116,19 @@ export function measureAttempt(run, jobs) {
   const artifactTransfer = stepMeasure(
     /(?:artifact|bundle).*(?:upload|download)|(?:upload|download).*(?:artifact|bundle)/i,
   );
-  const timedJob = (required) => timed.find(({ name }) => isJob(name, required));
+  // A matrix job spans its legs: it starts with the first, ends with the last and succeeds only if every leg did.
+  const timedJob = (required) => {
+    const legs = timed.filter(({ name }) => isJob(name, required));
+    if (legs.length < 2) return legs[0];
+    const edge = (key, pick) =>
+      legs.map((leg) => leg[key]).reduce((a, b) => (pick(timestamp(a), timestamp(b)) ? a : b));
+    return {
+      ...legs[0],
+      started_at: edge('started_at', (a, b) => a <= b),
+      completed_at: edge('completed_at', (a, b) => a >= b),
+      conclusion: legs.every((leg) => leg.conclusion === 'success') ? 'success' : 'failure',
+    };
+  };
   const sinceCreated = (required) => {
     const job = timedJob(required);
     return job?.conclusion === 'success' ? duration(run.created_at, job.completed_at) : null;

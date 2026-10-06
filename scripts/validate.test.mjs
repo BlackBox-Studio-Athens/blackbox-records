@@ -72,6 +72,15 @@ test('Nx plans use affected targets by default and run-many for full validation'
     '--all',
     '--nxBail',
   ]);
+  assert.deepEqual(validationPlan({ checks: true, part: 'lint' })[0].args.slice(3, 6), ['-t', 'lint', '--all']);
+  assert.deepEqual(validationPlan({ checks: true, part: 'tests' })[0].args.slice(3, 7), [
+    '-t',
+    'test',
+    'typecheck',
+    '--all',
+  ]);
+  assert.throws(() => validationPlan({ part: 'lint' }), /needs --checks/);
+  assert.throws(() => validationPlan({ checks: true, part: 'build' }), /lint or tests/);
   assert.deepEqual(validationPlan({ scope: 'web' })[0].args, [
     'exec',
     'nx',

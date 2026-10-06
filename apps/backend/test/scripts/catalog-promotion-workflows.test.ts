@@ -113,7 +113,7 @@ describe('one gated release', () => {
       expect(release.jobs[role].concurrency.group).toContain('github.ref');
       expect(release.jobs[role].concurrency.group).toContain('github.run_id');
     }
-    expect(release.jobs['inspect-uat-pages'].needs).toEqual(['check-candidate', 'prepare-uat']);
+    expect(release.jobs['inspect-uat-pages'].needs).toEqual(['prepare-uat']);
     expect(release.jobs['uat-release'].needs).toEqual(['check-candidate', 'prepare-uat', 'inspect-uat-pages']);
     expect(uatSequence.jobs['deploy-uat-static'].environment).toBeUndefined();
     // Provider credentials serve the UAT deployment on push and provider smoke at promotion, never a PRD job.
