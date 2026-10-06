@@ -45,6 +45,19 @@ test('the motto opens on Records, scrubs through Art and Noise, and keeps cyclin
   expect(await sentinelIntact(page)).toBe(true);
 });
 
+test('a visitor who arrives elsewhere sees the motto cycle after shell navigation to Home', async ({ page }) => {
+  await serveHostedMotto(page);
+  await page.goto('./about/');
+  await waitForShell(page);
+  await plantSentinel(page);
+
+  await page.getByRole('banner').getByRole('link', { name: 'BlackBox Records' }).click();
+  await expect(page).toHaveURL(/\/blackbox-records\/$/);
+  await expect(page.locator('.motto-word-cycle__stage')).toHaveCount(1);
+  await expect.poll(() => shownWord(page), { timeout: 8_000 }).toEqual(['art.']);
+  expect(await sentinelIntact(page)).toBe(true);
+});
+
 test('reduced motion keeps the written word', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await serveHostedMotto(page);

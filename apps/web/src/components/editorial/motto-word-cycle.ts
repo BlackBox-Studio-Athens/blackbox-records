@@ -156,7 +156,7 @@ function loadMotion() {
     }));
 }
 
-/** Registers <motto-word-cycle> once; every page loads it because shell navigation never runs page scripts. */
+/** Registers <motto-word-cycle> once; Home's loader island calls it. */
 export function defineMottoWordCycle() {
   if (customElements.get('motto-word-cycle')) return;
   customElements.define('motto-word-cycle', MottoWordCycle);

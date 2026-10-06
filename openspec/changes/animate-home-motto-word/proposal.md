@@ -11,7 +11,7 @@ Staff changed the UAT and PRD home motto to "No borders. No genres. Just records
 - Scrub: a playhead travels from the start of the word to the end of the next word; behind it the next word, ahead of it the current one. The mockup's chaos rides on it: random bursts of word slices tearing sideways and torn fragments of a filled, mirrored session-clip waveform (drifting loudness, kick and snare transients, centre line, device-pixel canvas) flash during the first two thirds of each scrub, cut in and out without easing. The chaos is clipped to a span that grows or shrinks from the old word's length to the new word's length, so it never crosses "Just" and every word lands clean.
 - The playhead and word clips run on `motion/mini` (already a web dependency, lazily loaded as in the shell transition); the span and tears use native Web Animations with the same duration and ease, so they stay aligned.
 - The rest of the hero keeps its single fade-rise entrance; the owner chose not to animate the three motto lines on load. Screen readers read the written word only. Cycling pauses while the hero is off screen or the tab is hidden; reduced motion keeps the written word.
-- `SiteLayout` registers the element on every page because shell navigation inserts pages without running their scripts. `web-layouts` therefore depends on `web-editorial`, which exports `motto-word-cycle.ts`.
+- `HomeHero` registers the element through a null-rendering `client:load` island. Shell navigation inserts pages without running their scripts but hydrates their islands, so the element reaches Home on every visit, including one that starts on another page, while other pages' eager JavaScript stays unchanged.
 
 ## Capabilities
 
@@ -25,4 +25,4 @@ None.
 
 ## Impact
 
-Home hero, global styles, the layout script bundle (the element; Motion mini stays lazy) and module boundaries. No content, Worker or commerce change. Staff content stays authoritative: a motto that does not end in a listed word is not animated.
+Home hero, global styles and Home's eager bundle (the element, about 2.2 KB brotli, within Home's budget; Motion mini stays lazy). No content, Worker or commerce change. Staff content stays authoritative: a motto that does not end in a listed word is not animated.
