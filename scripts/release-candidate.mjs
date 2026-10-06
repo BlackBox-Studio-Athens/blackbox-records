@@ -120,13 +120,20 @@ export async function main(command, target, { fetch = globalThis.fetch, env = pr
   assert.equal(env[`${target.toUpperCase()}_PUBLIC_BACKEND_BASE_URL`], backends[target], 'Wrong backend URL.');
   const release = releaseIdentity(env);
   const site = sites[target];
-  const worker = await fetch(`${backends[target]}/api/store/capabilities`, { signal: AbortSignal.timeout(30_000) });
+  const capabilitiesUrl = `${backends[target]}/api/store/capabilities`;
+  // Read identity from the Worker entry's OPTIONS preflight: after a deploy the Durable Object behind GETs can lag for minutes.
+  const worker = await fetch(capabilitiesUrl, {
+    method: 'OPTIONS',
+    headers: { Origin: site, 'Access-Control-Request-Method': 'GET' },
+    signal: AbortSignal.timeout(30_000),
+  });
   assert.ok(worker.ok, 'Worker is unavailable.');
   if (command === 'verify') {
     if (target === 'prd') {
-      const capabilities = await worker.json();
+      const capabilities = await fetch(capabilitiesUrl, { signal: AbortSignal.timeout(30_000) });
+      assert.ok(capabilities.ok, 'Worker is unavailable.');
       assert.equal(
-        capabilities.nativeCheckout.enabled,
+        (await capabilities.json()).nativeCheckout.enabled,
         false,
         'This promotion path is for disabled PRD readiness only.',
       );

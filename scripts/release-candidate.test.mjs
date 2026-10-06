@@ -135,8 +135,11 @@ test('only UAT carries the Review Site Marker', () => {
 });
 
 // main() with canned HTTP: each entry is a fresh Response, so a route can be fetched more than once.
+// A route key is the URL for a GET, or `<METHOD> <url>` for any other method.
 const backend = 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev';
 const site = 'https://blackbox-records-web.pages.dev';
+const capabilitiesUrl = `${backend}/api/store/capabilities`;
+const preflightUrl = `OPTIONS ${capabilitiesUrl}`;
 const prdEnv = {
   PRD_PUBLIC_BACKEND_BASE_URL: backend,
   SOURCE_SHA: sha,
@@ -147,11 +150,20 @@ const reply =
   (body, { status = 200, ...headers } = {}) =>
   () =>
     new Response(typeof body === 'string' ? body : JSON.stringify(body), { status, headers });
-const canned = (routes) => async (url) => {
-  assert.ok(routes[url], `Unexpected request: ${url}`);
-  return routes[url]();
-};
+const canned =
+  (routes) =>
+  async (url, init = {}) => {
+    const key = init.method ? `${init.method} ${url}` : url;
+    assert.ok(routes[key], `Unexpected request: ${key}`);
+    return routes[key](init);
+  };
 const capabilities = (enabled, headers) => reply({ nativeCheckout: { enabled } }, headers);
+// The Worker entry's own answer to a CORS preflight: no body, release identity in the headers.
+const preflight = (headers) => (init) => {
+  assert.equal(init.headers.Origin, site);
+  assert.equal(init.headers['Access-Control-Request-Method'], 'GET');
+  return new Response(null, { status: 204, headers });
+};
 const released = reply({
   sha,
   runId: '123',
@@ -164,7 +176,8 @@ const home = (title) => reply(`<title>${title}</title>`, { 'X-Release-SHA': sha 
 test('PRD verify refuses a Worker with native checkout enabled, and a wrong backend URL', async (t) => {
   t.mock.method(console, 'log', () => {});
   const routes = (enabled) => ({
-    [`${backend}/api/store/capabilities`]: capabilities(enabled, { 'X-Release-Run-Number': '9' }),
+    [preflightUrl]: preflight({ 'X-Release-Run-Number': '9' }),
+    [capabilitiesUrl]: capabilities(enabled),
     [`${site}/release.json`]: reply('', { status: 404 }),
   });
   await main('verify', 'prd', { env: prdEnv, fetch: canned(routes(false)) });
@@ -183,7 +196,8 @@ test('PRD verify refuses a Worker with native checkout enabled, and a wrong back
 
 test('verify refuses a target whose Worker already serves a newer run', async () => {
   const fetch = canned({
-    [`${backend}/api/store/capabilities`]: capabilities(false, { 'X-Release-Run-Number': '11' }),
+    [preflightUrl]: preflight({ 'X-Release-Run-Number': '11' }),
+    [capabilitiesUrl]: capabilities(false),
     [`${site}/release.json`]: reply('', { status: 404 }),
   });
   await assert.rejects(main('verify', 'prd', { env: prdEnv, fetch }), /newer candidate already mutated/);
@@ -192,7 +206,7 @@ test('verify refuses a target whose Worker already serves a newer run', async ()
 test('verify-hosted prd refuses the UAT review marker', async (t) => {
   t.mock.method(console, 'log', () => {});
   const routes = (title) => ({
-    [`${backend}/api/store/capabilities`]: capabilities(false, { 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' }),
+    [preflightUrl]: preflight({ 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' }),
     [`${site}/release.json`]: released,
     [`${site}/`]: home(title),
   });
@@ -205,7 +219,16 @@ test('verify-hosted prd refuses the UAT review marker', async (t) => {
 
 test('verify-worker refuses a Worker from an older run', async () => {
   const fetch = canned({
-    [`${backend}/api/store/capabilities`]: capabilities(false, { 'X-Release-SHA': sha, 'X-Release-Run-Number': '9' }),
+    [preflightUrl]: preflight({ 'X-Release-SHA': sha, 'X-Release-Run-Number': '9' }),
   });
   await assert.rejects(main('verify-worker', 'prd', { env: prdEnv, fetch }), /another candidate run/);
+});
+
+test('verify-worker trusts the Worker entry preflight over a Durable Object still on the old code', async (t) => {
+  t.mock.method(console, 'log', () => {});
+  const fetch = canned({
+    [preflightUrl]: preflight({ 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' }),
+    [capabilitiesUrl]: capabilities(false, { 'X-Release-SHA': 'b'.repeat(40), 'X-Release-Run-Number': '9' }),
+  });
+  await main('verify-worker', 'prd', { env: prdEnv, fetch });
 });
