@@ -31,7 +31,9 @@ const routeDocuments = {
 };
 // React 19.3 plus Lenis/Motion lifecycle wiring; libraries and dormant surfaces remain lazy.
 // Measured migration output and prior budget: openspec/changes/adopt-lenis-motion-frontends/design.md.
-const eagerGraphBudgetBytes = 100 * 1024;
+// User-approved 2 KiB allowance (6 October 2026): Store Item pages sat 24 bytes under 100 KiB, so any shared byte
+// failed releases. Pages stay where they were; only the headroom grows.
+const eagerGraphBudgetBytes = 102 * 1024;
 // User-approved 3 KiB Home allowance for the current preorder and inquiry release.
 const homeEagerGraphBudgetBytes = 103 * 1024;
 const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton', 'StoreImageGallery'];
@@ -260,7 +262,7 @@ if (scope === 'staff') {
     diagnostics.push('Missing a built single-image Store Item page; item-route budget coverage is incomplete.');
   if (!galleryItem)
     diagnostics.push('Missing a built gallery Store Item page; gallery-route budget coverage is incomplete.');
-  // Both item classes use the unchanged public 100 KiB budget. A measured exception requires a recorded decision.
+  // Both item classes use the public 102 KiB budget. A measured exception requires a recorded decision.
   const documents = {
     ...routeDocuments,
     ...(args.has('documents')

@@ -64,12 +64,12 @@ function check(f: ReturnType<typeof fixture>, documents = f.documents) {
 }
 
 describe('hosted document bundle gate', { timeout: 60000 }, () => {
-  it('uses separate client assets and checks category, details and both item variants with unchanged budgets', () => {
+  it('uses separate client assets and checks category, details and both item variants with the public budgets', () => {
     const f = fixture();
     const result = check(f);
     expect(result.status, result.stderr).toBe(0);
     const report = JSON.parse(readFileSync(join(f.root, 'bundles.json'), 'utf8'));
-    expect(report.eagerGraphBudgetBytes).toBe(102400);
+    expect(report.eagerGraphBudgetBytes).toBe(104448);
     expect(report.documentsRoot).toBe(f.documents);
     expect(report.distRoot).toBe(f.assets);
     expect(Object.keys(report.routes)).toEqual(
@@ -110,7 +110,7 @@ describe('hosted document bundle gate', { timeout: 60000 }, () => {
     const result = check(f);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('storeGalleryItem eager graph');
-    expect(result.stderr).toContain('budget 102400');
+    expect(result.stderr).toContain('budget 104448');
   });
 });
 

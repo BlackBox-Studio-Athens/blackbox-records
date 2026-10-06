@@ -5,11 +5,11 @@ import type { animate as animateMotion } from 'motion/mini';
 // so a rewritten motto simply renders as written.
 
 /**
- * Records holds while the hero fades in (about 0.9 s) and the six-word motto is read once, then the first change
- * finishes by about 3.9 s: before the 4 to 9 s in which visitors typically start scrolling. Later words hold for one
- * glance, so a second change starts within the roughly 7 s a phone visitor spends on the first screen.
+ * Records holds through the hero's fade-in (about 0.9 s) and a brief look, then the first change finishes by about
+ * 2.9 s: well before the 4 to 9 s in which visitors typically start scrolling. Later words hold for one glance, so a
+ * second change starts within the roughly 7 s a phone visitor spends on the first screen.
  */
-export const MOTTO_FIRST_HOLD_MS = 2500;
+export const MOTTO_FIRST_HOLD_MS = 1500;
 export const MOTTO_HOLD_MS = 2800;
 export const MOTTO_SCRUB_MS = 1400;
 // Leaves fast and settles into the last letter, so the new word reads early and lands calmly.

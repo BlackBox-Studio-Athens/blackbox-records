@@ -14,7 +14,7 @@ Product Environments: PRD (`https://blackbox-records-web.pages.dev/`, one read-o
 
 - Hosted markup: the PRD motto renders as `<p>NO BORDERS.<br>NO GENRES.<br>JUST RECORDS.</p>`; the element detects the last text node's word.
 - `pnpm test:e2e e2e/home-motto.spec.ts` on this checkout's port 4361: chromium-desktop 3 passed on the rebased tree after the first check was made tolerant of a slow load reaching the first scrub. It covers Records first, arriving on Who we are and reaching Home through the shell, the scrub to Art, the written word for assistive technology, a shell round trip through Who we are without a full load, and reduced motion. An earlier firefox-desktop run of the same spec passed.
-- Playwright probes froze the scrub at seven times at 1280x800 and 390x844 (2x density): playhead, tears and shards stay inside the span between the old and new word lengths and never cross "Just"; no layout shift on the motto line. The owner approved recording `.codex-artifacts/motto/motto-scrub-v11.mp4` (2.5 s first hold, 2.8 s holds, 1.4 s scrub) and chose to keep the hero's existing fade-rise rather than animating the three lines on load.
+- Playwright probes froze the scrub at seven times at 1280x800 and 390x844 (2x density): playhead, tears and shards stay inside the span between the old and new word lengths and never cross "Just"; no layout shift on the motto line. The owner approved recording `.codex-artifacts/motto/motto-scrub-v11.mp4` (2.5 s first hold, 2.8 s holds, 1.4 s scrub), asked after the UAT release for a 1.5 s first hold, and chose to keep the hero's existing fade-rise rather than animating the three lines on load.
 
 ## Not verified
 

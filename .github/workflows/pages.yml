@@ -81,6 +81,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Run validation checks
+        # nx.json keeps 3 for laptops; public-repository runners have 4 vCPUs, and this uncached run is the release's
+        # critical path (Nx reported 64% of run 37475496472 as recoverable by parallelism).
+        env:
+          NX_PARALLEL: 4
         run: pnpm validate:checks
       - name: Upload validation diagnostics
         if: ${{ failure() }}

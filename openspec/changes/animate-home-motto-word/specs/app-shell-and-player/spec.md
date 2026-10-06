@@ -2,7 +2,7 @@
 
 ### Requirement: Homepage motto cycles its last word with a waveform scrub
 
-The homepage hero SHALL cycle the last word of the Staff motto through Records, Art and Noise when the motto ends with one of them, starting from the written word in its casing and punctuation. A playhead SHALL scrub between words with random glitch tears and torn track-waveform fragments, confined to a span that moves from the old word's length to the new word's length and ending before the scrub's last third. The written word SHALL hold 2.5 s on entry, every later word 2.8 s, and each scrub SHALL take 1.4 s. Assistive technology SHALL read the written motto.
+The homepage hero SHALL cycle the last word of the Staff motto through Records, Art and Noise when the motto ends with one of them, starting from the written word in its casing and punctuation. A playhead SHALL scrub between words with random glitch tears and torn track-waveform fragments, confined to a span that moves from the old word's length to the new word's length and ending before the scrub's last third. The written word SHALL hold 1.5 s on entry, every later word 2.8 s, and each scrub SHALL take 1.4 s. Assistive technology SHALL read the written motto.
 
 #### Scenario: Visitor opens Home
 
