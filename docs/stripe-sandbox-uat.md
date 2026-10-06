@@ -78,7 +78,7 @@ The Product's default Price selects the selling amount. Add an EUR Price with in
 
 Signed catalog webhooks refresh only the bound item. Detail and checkout reads retrieve current provider state and repair D1 snapshots. There is no runtime catalog cron and no normal reset flow. Repo presentation updates happen during the release; stock and pauses remain in D1.
 
-See [Catalog release](catalog-promotion.md) for the single workflow, credentials, targeted verification, migration, and retry commands. The manual provider smoke remains available after a deployment:
+See [Catalog release](catalog-promotion.md) for the single workflow, credentials, targeted verification, migration, and retry commands. The provider smoke is manual only: the **UAT provider smoke** workflow (`uat-smoke.yml`), or the commands below. It is never a release gate and does not run on a push or promotion. The paid scenarios need at least 2 online stock of the smoke item in UAT D1, and they spend that stock, so check it first:
 
 ```sh
 pnpm smoke:stripe-uat -- --scenario happy_path_paid,pay_what_you_want_paid --screenshots on-failure

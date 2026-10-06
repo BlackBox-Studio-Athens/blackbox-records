@@ -1,4 +1,4 @@
-# Browser and provider acceptance run at PRD promotion (pages.yml accept-* jobs), not on every push.
+# The browser suites gate this deploy and the UAT static smoke follows it (pages.yml e2e, staff-previews, uat-static-smoke); provider smoke is the manual uat-smoke.yml.
 name: Deploy UAT candidate
 on:
   workflow_call:

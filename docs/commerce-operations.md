@@ -48,7 +48,7 @@ The server supports a short compatibility bridge when COMMERCE_IDEMPOTENCY_KEYS_
 
 Open `/orders/` on the protected staff hostname, or choose Orders beside Stock. The workspace is read-only and uses the same Access identity as stock operations. The root landing page still opens Stock.
 
-Deploy the staff artifact through `.github/workflows/pages.yml` (`target=staff` for a staff-only release). The hosted staff build clears `PUBLIC_BACKEND_BASE_URL` so both workspaces call same-origin `/api/internal/*` through the existing Access session. The shared release also rebuilds staff after the public build to prevent the public Worker URL from leaking into the staff artifact.
+Deploy the staff artifact through `.github/workflows/pages.yml` (staff assets ship inside the combined CMS Worker of every release). The hosted staff build clears `PUBLIC_BACKEND_BASE_URL` so both workspaces call same-origin `/api/internal/*` through the existing Access session. The shared release also rebuilds staff after the public build to prevent the public Worker URL from leaking into the staff artifact.
 
 The list requests the latest 100 orders by creation time, across all payment statuses by default. Payment filters run on the protected API; notification filters cover only those returned orders. An empty subset is not a global all-clear, and older orders updated recently may be missing. Keep the daily provider and exception checks above.
 

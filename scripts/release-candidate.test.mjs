@@ -14,6 +14,7 @@ import {
   materializeBundle,
   observe,
   packBundle,
+  recheckUat,
   validateArtifacts,
   validateIdentity,
   validateOrder,
@@ -171,6 +172,37 @@ test('only a successful trusted main candidate with the selected SHA is accepted
     assert.throws(() => validateRun({ ...run, ...patch }, sha, repository));
   }
   assert.throws(() => validateRun(run, 'main', repository));
+});
+
+test('only the promotion verify command re-reads UAT; later PRD checks ignore a UAT that moved on', async () => {
+  const candidate = {
+    schema: 2,
+    sha,
+    workflowSha: sha,
+    runId: '123',
+    runNumber: 10,
+    configuration: { uatSite: 'https://uat.example.com', uatBackend: 'https://api.example.com' },
+  };
+  const calls = [];
+  const io = {
+    env: { GITHUB_REPOSITORY: repository },
+    api: (endpoint) => {
+      calls.push(endpoint);
+      if (endpoint.includes('/artifacts')) return { artifacts: [{ name: `release-${sha}`, expired: false }] };
+      return endpoint.includes('/compare/') ? { status: 'identical' } : { ...run, id: 123 };
+    },
+    json: async () => ({ sha, runId: '123', runNumber: 10, ...io.uat }),
+    request: async () =>
+      new Response('{}', { headers: { 'X-Release-SHA': sha, 'X-Release-Run-Number': String(io.uat.runNumber) } }),
+    uat: { runNumber: 10 },
+  };
+  await recheckUat('verify', candidate, io);
+  assert.equal(calls.length, 3);
+  io.uat = { runId: '124', runNumber: 11 };
+  await assert.rejects(recheckUat('verify', candidate, io), /superseded/);
+  calls.length = 0;
+  for (const command of ['verify-worker', 'verify-hosted']) await recheckUat(command, candidate, io);
+  assert.deepEqual(calls, []);
 });
 
 test('superseded UAT, mixed revisions and changed config cannot authorize promotion', () => {

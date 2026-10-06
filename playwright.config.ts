@@ -20,9 +20,9 @@ export default defineConfig({
   fullyParallel: true,
   // ponytail: astro dev compiles each route and lazy chunk on first request and re-renders the Store listing every
   // time (about 7 s here, slower with more workers). Two workers and long waits keep it stable; the built preview that
-  // PRD promotion serves does not need them, so it uses every core of the 4-vCPU runner.
+  // the push run serves does not need them, so it uses every core of the 4-vCPU runner.
   workers: process.env.BLACKBOX_E2E_PREVIEW === '1' ? 4 : 2,
-  // A promotion runs 294 tests in two browsers; one retry keeps a network hiccup (a font download, a slow first paint)
+  // A push runs 294 tests in two browsers; one retry keeps a network hiccup (a font download, a slow first paint)
   // from failing the release, and the report still marks such a test flaky.
   retries: process.env.CI ? 1 : 0,
   timeout: 90_000,

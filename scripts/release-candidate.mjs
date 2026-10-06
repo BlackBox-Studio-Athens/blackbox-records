@@ -586,6 +586,31 @@ function packTarget(target) {
   );
 }
 
+// Promotion's UAT re-check runs only in `verify`. verify-worker and verify-hosted compare PRD with the candidate, so a
+// push that moves UAT mid-promotion cannot fail them.
+export async function recheckUat(
+  command,
+  candidate,
+  { env = process.env, api = gh, json = publicJson, request = fetch } = {},
+) {
+  if (command !== 'verify') return;
+  const config = candidate.configuration;
+  const repository = env.GITHUB_REPOSITORY;
+  validateRun(api(`repos/${repository}/actions/runs/${candidate.runId}`), candidate.workflowSha, repository);
+  const sourceComparison = api(`repos/${repository}/compare/${candidate.sha}...${candidate.workflowSha}`);
+  assert.ok(['ahead', 'identical'].includes(sourceComparison.status), 'Source is outside trusted main history.');
+  const artifacts = api(`repos/${repository}/actions/runs/${candidate.runId}/artifacts?per_page=100`).artifacts;
+  validateArtifacts(artifacts, candidate.sha);
+  validateIdentity(candidate, await json(`${config.uatSite}/release.json`), config);
+  validateWorker(
+    candidate,
+    await request(`${config.uatBackend}/api/store/capabilities`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(30_000),
+    }),
+  );
+}
+
 async function main(command, target) {
   if (command === 'pack-target') return packTarget(target);
   if (command === 'assemble') {
@@ -717,27 +742,7 @@ async function main(command, target) {
     assert.equal(process.env.CONFIRM_CODE_PROMOTION, 'true', 'Code promotion requires confirmation.');
     assert.equal(candidate.sha, process.env.SOURCE_SHA);
     assert.equal(String(candidate.runId), process.env.CANDIDATE_RUN_ID);
-    validateRun(
-      gh(`repos/${process.env.GITHUB_REPOSITORY}/actions/runs/${candidate.runId}`),
-      candidate.workflowSha,
-      process.env.GITHUB_REPOSITORY,
-    );
-    const sourceComparison = gh(
-      `repos/${process.env.GITHUB_REPOSITORY}/compare/${candidate.sha}...${candidate.workflowSha}`,
-    );
-    assert.ok(['ahead', 'identical'].includes(sourceComparison.status), 'Source is outside trusted main history.');
-    const artifacts = gh(
-      `repos/${process.env.GITHUB_REPOSITORY}/actions/runs/${candidate.runId}/artifacts?per_page=100`,
-    ).artifacts;
-    validateArtifacts(artifacts, candidate.sha);
-    validateIdentity(candidate, await publicJson(`${config.uatSite}/release.json`), config);
-    validateWorker(
-      candidate,
-      await fetch(`${config.uatBackend}/api/store/capabilities`, {
-        cache: 'no-store',
-        signal: AbortSignal.timeout(30_000),
-      }),
-    );
+    await recheckUat(command, candidate);
     const capabilities = await publicJson(`${config.prdBackend}/api/store/capabilities`);
     assert.equal(capabilities.nativeCheckout.enabled, false, 'This promotion path is for disabled PRD readiness only.');
   } else {

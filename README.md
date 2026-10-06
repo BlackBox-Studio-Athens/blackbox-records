@@ -52,7 +52,7 @@ Local keeps the base-path defaults in `apps/web/astro.config.mjs`; hosted builds
 
 For label-member UAT, the Cloudflare Pages URL is intentionally wired to the UAT Worker on deploy-relevant `main` pushes. Repository-only documentation pushes are skipped by the shared static workflow, while `workflow_dispatch` remains available for a forced redeploy. Tester instructions live in [`docs/stripe-sandbox-uat.md`](docs/stripe-sandbox-uat.md). This is Stripe test mode only and is not PRD go-live approval.
 
-Commit → review UAT → explicitly promote this candidate. Main pushes deploy UAT only. In **Release BlackBox**, select `target=prd`, the reviewed full `artifact_commit_sha`, its successful `candidate_run_id`, and `confirm_code_promotion=true`. Promotion consumes the retained PRD public and combined CMS Worker artifacts (release contract v2) without rebuilding. UAT must still serve that candidate, configuration must match, and no newer release may have mutated PRD. Artifacts expire after seven days: dispatch `target=uat` with the same full SHA, wait for fresh acceptance, then use its new run ID. See [the release runbook](docs/catalog-promotion.md). Code confirmation does not authorize live catalog changes, apex activation, or shopper launch.
+Commit → review UAT → explicitly promote this candidate. Main pushes deploy UAT only, after the checks, the whole e2e suite and the staff previews pass, and then run the UAT static smoke. Promotion is deploy-only. In **Release BlackBox**, select `target=prd`, the reviewed full `artifact_commit_sha`, its successful `candidate_run_id`, and `confirm_code_promotion=true`. Promotion consumes the retained PRD public and combined CMS Worker artifacts (release contract v2) without rebuilding. UAT must still serve that candidate, configuration must match, and no newer release may have mutated PRD. Artifacts expire after seven days: dispatch `target=uat` with the same full SHA, wait for its green run, then use its new run ID. See [the release runbook](docs/catalog-promotion.md). Code confirmation does not authorize live catalog changes, apex activation, or shopper launch.
 
 The UAT build alone shows the layered Review Site Marker: a solid `TEST SITE` label with `Test payments only` beneath the header wordmark, a `[TEST]` browser-title prefix, and `Test checkout. No real payment will be taken.` beside the final checkout action. These presentational cues identify a review URL; they do not enable checkout or own payment authority, which remain controlled by the Worker and Stripe configuration. Local, full PRD, and PRD Holding Page builds leave all three cues unset.
 
@@ -181,7 +181,7 @@ pnpm site:dev:stop
 
 `pnpm site:dev` remains the foreground static-site launcher for WebStorm and local stack process supervision.
 
-Browser end-to-end checks are opt-in and not part of `pnpm validate`. `pnpm test:e2e e2e/<name>.spec.ts` (or `-g <text>`) runs the named Playwright specs against this checkout's Local URL, reusing a site already serving it or starting the static-site launcher for the run. Locally a run must name a spec or title filter; the whole suite runs at PRD promotion. The specs stub Worker reads and third-party requests, so they need neither the stack nor external network. Results, including a trace and `error-context.md` per failure, are in `.codex-artifacts/e2e/`. When the runner started Astro itself, the final `[WebServer] ... exit code 1` line only reports that server stopping.
+Browser end-to-end checks are opt-in and not part of `pnpm validate`. `pnpm test:e2e e2e/<name>.spec.ts` (or `-g <text>`) runs the named Playwright specs against this checkout's Local URL, reusing a site already serving it or starting the static-site launcher for the run. Locally a run must name a spec or title filter; the whole suite runs in CI on every push and blocks the UAT deploy. The specs stub Worker reads and third-party requests, so they need neither the stack nor external network. Results, including a trace and `error-context.md` per failure, are in `.codex-artifacts/e2e/`. When the runner started Astro itself, the final `[WebServer] ... exit code 1` line only reports that server stopping.
 
 Run the default full local commerce stack:
 
@@ -226,7 +226,7 @@ pnpm smoke:stripe-uat -- --scenario all
 
 The Stripe UAT smoke runner targets the deployed UAT Worker path, drives Stripe-hosted Checkout with Playwright, checks UAT D1 remotely through Wrangler, and writes ignored evidence to `.codex-artifacts/smoke/uat/stripe-sandbox/<run-id>/` with a `summary.json` at the run root and `evidence.json` per scenario.
 
-The runner defaults to the Cloudflare Pages UAT site and is also used by the same-release GitHub Actions `catalog-promotion-uat` environment after the UAT Pages deploy succeeds.
+The runner defaults to the Cloudflare Pages UAT site and is also used by the manual `uat-smoke.yml` workflow in the GitHub Actions `catalog-promotion-uat` environment. It is never a release gate and needs at least 2 online stock of the smoke item.
 
 Supported scenarios are `happy_path_paid`, `three_d_secure`, `card_declined`, `insufficient_funds`, `expired_card`, `incorrect_cvc`, `processing_error`, and `all`. The committed JetBrains run configuration `Stripe Sandbox Smoke` runs `--scenario all` through `pnpm smoke:stripe-uat`. Stripe’s current test card reference lives at <https://docs.stripe.com/testing#cards>. Paid deployed UAT smoke expects the persistent Stripe Dashboard/Workbench webhook endpoint to deliver to `https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev/api/stripe/webhooks`; `stripe listen` is local/temporary diagnostic tooling only and is not persistent readiness evidence.
 
@@ -262,7 +262,7 @@ Run the UAT static smoke when you need to verify deployed Cloudflare Pages stati
 pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all
 ```
 
-The release workflow runs it during PRD promotion, before any PRD mutation; the manual **UAT static smoke** workflow takes a site URL, scenario, and screenshot policy. It discovers one artist, release, and news page from the deployed sitemap and one Store Item from the Store listing, and checks code-owned headings and UI copy, so publishing content needs no smoke change. Evidence goes to ignored `.codex-artifacts/smoke/uat/uat-static/<run-id>/`. The supported scenarios are `public_assets`, `checkout_shell`, `public_routes`, and `all`. It never creates provider state.
+The release workflow runs it on every push after the UAT deploy; the manual **UAT static smoke** workflow takes a site URL, scenario, and screenshot policy. It discovers one artist, release, and news page from the deployed sitemap and one Store Item from the Store listing, and checks code-owned headings and UI copy, so publishing content needs no smoke change. Evidence goes to ignored `.codex-artifacts/smoke/uat/uat-static/<run-id>/`. The supported scenarios are `public_assets`, `checkout_shell`, `public_routes`, and `all`. It never creates provider state.
 
 The PRD no-payment promotion smoke runner writes ignored evidence to `.codex-artifacts/smoke/prd/stripe-promotion/<run-id>/`. The `not_configured` paid-policy status means live payment was not attempted, not that PRD commerce is open.
 
@@ -694,8 +694,8 @@ CI/deploy credentials and public build variables:
 
 - The static Astro site has one shared deployment workflow:
   - `.github/workflows/pages.yml` runs shared repository gates once, deploys the prebuilt UAT artifact to Cloudflare Pages; a separate confirmed promotion consumes the retained PRD artifacts.
-- `.github/workflows/pages.yml` owns repository gates, catalog preparation, UAT Worker deployment, static deployments, and UAT acceptance during PRD promotion.
-- `.github/workflows/uat-smoke.yml` remains available for manual diagnostics.
+- `.github/workflows/pages.yml` owns repository gates, the whole e2e suite and staff previews on every push, catalog preparation, UAT Worker deployment, static deployments, the UAT static smoke, and the deploy-only PRD promotion.
+- `.github/workflows/uat-smoke.yml` is the manual Stripe and Resend provider smoke. It never gates a release and needs at least 2 online stock of the smoke item.
 - Rerun the release at the same source SHA after correcting its readiness report. See the catalog release runbook for compatible application rollback; routine releases never reset operational data.
 - The UAT `workers.dev` backend is reachable for browser checks, Stripe return URLs, and webhook testing.
 - Cloudflare Access is not part of public UAT browsing at this stage.
@@ -712,7 +712,7 @@ CI/deploy credentials and public build variables:
 - Pushes go directly to `main` in this repo.
 - The unused-code report runs in its own weekly or manual workflow and does not gate a release.
 - UAT and PRD restore their own published snapshots and build in independent runners. UAT deployment can begin before PRD preparation finishes; the run is promotable after final bundle assembly and the hosted UAT release-identity check pass.
-- A failed build blocks UAT deployment. If deployment or acceptance fails, inspect the workflow summary and uploaded smoke evidence before retrying; immediate monotonic run-number checks reject late older candidates.
+- A failed build, e2e suite or staff preview blocks UAT deployment. If deployment or the static smoke fails, inspect the workflow summary and uploaded smoke evidence before retrying; immediate monotonic run-number checks reject late older candidates.
 - Cloudflare Pages is the UAT static host and must not be described as PRD rollback or legacy production hosting.
 
 ## Cloudflare Pages PRD Deployment
@@ -722,8 +722,8 @@ CI/deploy credentials and public build variables:
 - The staff artifact is built separately at `apps/staff/dist` and packaged into the combined Worker; no standalone staff Pages upload runs.
 - Cloudflare Pages Direct Upload acceptance is handled by `.github/workflows/pages.yml`, not by local manual `wrangler pages deploy`.
 - The candidate workflow runs `pnpm validate:checks` alongside independent UAT and PRD builds from their own published snapshots. Each target restores image transforms and builds its checked staff artifact once inside the CMS build. Passing checks gate UAT deployment and digest-verified assembly of the retained schema-2 `release-<sha>` artifact; PRD promotion consumes that artifact without rebuilding or restamping it.
-- The UAT Pages job deploys and verifies the hosted release identity; a push runs no browser or provider smoke. PRD promotion first checks that UAT serves the selected candidate, then runs UAT static smoke, Stripe and email provider smoke, staff previews in Chromium and Firefox and the whole e2e suite before any PRD mutation.
-- Automatic checks and target builds cancel older preparation for the same branch and role without waiting for an earlier deployment. The `uat-release` call holds the non-cancelling `blackbox-release` lock across the Worker and Pages deployments; its called workflow inherits repository secrets and binds the Worker job to `catalog-promotion-uat`. Promotion provider smoke binds `catalog-promotion-uat` too. PRD, confirmed catalog mutation, content publication, and the holding-page deploy share that lock. Manual preparation uses run-specific concurrency. The monotonic release-order guard rejects late older candidates.
+- The UAT Pages job deploys and verifies the hosted release identity, then the UAT static smoke runs. A push also runs the whole e2e suite and staff previews in Chromium and Firefox before UAT deploys; provider smoke is manual. PRD promotion only checks that UAT serves the selected candidate, then deploys.
+- Automatic checks and target builds cancel older preparation for the same branch and role without waiting for an earlier deployment. The `uat-release` call holds the non-cancelling `blackbox-release` lock across the Worker and Pages deployments; its called workflow inherits repository secrets and binds the Worker job to `catalog-promotion-uat`. PRD, confirmed catalog mutation, content publication, and the holding-page deploy share that lock. Manual preparation uses run-specific concurrency. The monotonic release-order guard rejects late older candidates.
 - The workflow sets Cloudflare-root static build values with `ASTRO_SITE_URL=https://blackbox-records-web.pages.dev` and `ASTRO_BASE_PATH=/`.
 - The workflow passes only browser-safe public Astro variables into the frontend runtime: `PUBLIC_BACKEND_BASE_URL` from `PRD_PUBLIC_BACKEND_BASE_URL`.
 - The Worker remains separate and owns `/api/*`, Stripe secrets, webhooks, D1, stock operations, order state, and future BOX NOW work.

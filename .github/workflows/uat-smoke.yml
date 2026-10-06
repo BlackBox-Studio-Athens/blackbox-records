@@ -9,7 +9,8 @@ on:
 permissions:
   contents: read
 concurrency:
-  group: blackbox-release
+  # Its own group: a queued manual smoke must not cancel a pending push deploy waiting in blackbox-release.
+  group: uat-provider-smoke
   cancel-in-progress: false
 jobs:
   smoke:

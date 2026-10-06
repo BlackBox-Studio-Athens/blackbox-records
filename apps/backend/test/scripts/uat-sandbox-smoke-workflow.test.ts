@@ -18,7 +18,9 @@ describe('UAT provider smoke workflow', () => {
     expect(workflow).toContain('permissions:');
     expect(workflow).toContain('contents: read');
     expect(workflow).toContain('concurrency:');
-    expect(workflow).toContain('group: blackbox-release');
+    // Its own group, so a queued manual smoke cannot cancel a pending push deploy waiting in blackbox-release.
+    expect(workflow).toContain('group: uat-provider-smoke');
+    expect(workflow).not.toContain('group: blackbox-release');
     expect(workflow).toContain('cancel-in-progress: false');
     expect(workflow).toContain('environment: catalog-promotion-uat');
     expect(workflow).toContain('ref: ${{ github.sha }}');

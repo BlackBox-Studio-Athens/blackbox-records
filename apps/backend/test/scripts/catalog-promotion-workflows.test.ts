@@ -108,29 +108,36 @@ describe('one gated release', () => {
     expect(release.jobs['uat-release'].secrets).toBe('inherit');
     for (const role of ['deploy-prd', 'deploy-prd-static', 'catalog-prd'])
       expect(release.jobs[role].concurrency).toBeUndefined();
-    for (const role of ['check-candidate', 'prepare-uat', 'prepare-prd', 'assemble-candidate']) {
+    for (const role of [
+      'check-candidate',
+      'prepare-uat',
+      'prepare-prd',
+      'assemble-candidate',
+      'e2e',
+      'staff-previews',
+    ]) {
       expect(release.jobs[role].concurrency['cancel-in-progress']).toBe(true);
       expect(release.jobs[role].concurrency.group).toContain('github.ref');
       expect(release.jobs[role].concurrency.group).toContain('github.run_id');
     }
     expect(release.jobs['inspect-uat-pages'].needs).toEqual(['prepare-uat']);
-    expect(release.jobs['uat-release'].needs).toEqual(['check-candidate', 'prepare-uat', 'inspect-uat-pages']);
-    expect(uatSequence.jobs['deploy-uat-static'].environment).toBeUndefined();
-    // Provider credentials serve the UAT deployment on push and provider smoke at promotion, never a PRD job.
-    for (const job of [uatSequence.jobs['deploy-uat'], release.jobs['accept-uat-providers']]) {
-      expect(job.environment).toBe('catalog-promotion-uat');
-      expect(job.concurrency).toBeUndefined();
-      expect(job.env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
-      expect(job.env.STRIPE_SECRET_KEY).toBe('${{ secrets.STRIPE_SECRET_KEY }}');
-    }
-    expect(Object.keys(uatSequence.jobs)).toEqual(['deploy-uat', 'deploy-uat-static']);
-    expect(release.jobs['deploy-prd'].needs).toEqual([
-      'accept-uat-identity',
-      'accept-uat-static',
-      'accept-uat-providers',
-      'accept-staff-previews',
-      'accept-e2e',
+    expect(release.jobs['uat-release'].needs).toEqual([
+      'check-candidate',
+      'prepare-uat',
+      'inspect-uat-pages',
+      'e2e',
+      'staff-previews',
     ]);
+    expect(release.jobs['uat-static-smoke'].needs).toBe('uat-release');
+    expect(uatSequence.jobs['deploy-uat-static'].environment).toBeUndefined();
+    // Provider credentials serve the UAT deployment on push, never a PRD job; provider smoke is the manual workflow.
+    const deployUat = uatSequence.jobs['deploy-uat'];
+    expect(deployUat.environment).toBe('catalog-promotion-uat');
+    expect(deployUat.concurrency).toBeUndefined();
+    expect(deployUat.env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
+    expect(deployUat.env.STRIPE_SECRET_KEY).toBe('${{ secrets.STRIPE_SECRET_KEY }}');
+    expect(Object.keys(uatSequence.jobs)).toEqual(['deploy-uat', 'deploy-uat-static']);
+    expect(release.jobs['deploy-prd'].needs).toBe('accept-uat-identity');
     expect(release.jobs['deploy-prd'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
     expect(uatSequence.jobs['deploy-uat-static'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
     expect(release.jobs['deploy-prd-static'].env.CLOUDFLARE_API_TOKEN).toBe('${{ secrets.CLOUDFLARE_API_TOKEN }}');
