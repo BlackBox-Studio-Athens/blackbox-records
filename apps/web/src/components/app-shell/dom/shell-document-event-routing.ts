@@ -190,11 +190,7 @@ export function connectShellDocumentEventRouting({
     }
 
     const anchorElement =
-      clickIntent.kind === 'anchor'
-        ? clickIntent.anchorElement
-        : clickIntent.kind === 'scroll-target'
-          ? clickIntent.anchorElement
-          : null;
+      clickIntent.kind === 'anchor' || clickIntent.kind === 'scroll-target' ? clickIntent.anchorElement : null;
 
     if (clickIntent.kind === 'scroll-target') {
       if (clickIntent.targetId === 'services-inquiry') {

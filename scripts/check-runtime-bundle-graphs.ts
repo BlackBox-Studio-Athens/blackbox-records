@@ -32,6 +32,8 @@ const routeDocuments = {
 // React 19.3 plus Lenis/Motion lifecycle wiring; libraries and dormant surfaces remain lazy.
 // Measured migration output and prior budget: openspec/changes/adopt-lenis-motion-frontends/design.md.
 const eagerGraphBudgetBytes = 100 * 1024;
+// User-approved 3 KiB Home allowance for the current preorder and inquiry release.
+const homeEagerGraphBudgetBytes = 103 * 1024;
 const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton', 'StoreImageGallery'];
 const staffRouteDocuments = {
   overview: { document: 'index.html', javascriptBudgetBytes: 122880 },
@@ -311,8 +313,9 @@ if (scope === 'staff') {
     if (result.graph.fileCount === 0) {
       diagnostics.push(`${route} has no discoverable eager JavaScript entries; route budget coverage is incomplete.`);
     }
-    if (result.graph.brotliBytes > eagerGraphBudgetBytes) {
-      diagnostics.push(`${route} eager graph is ${result.graph.brotliBytes} bytes (budget ${eagerGraphBudgetBytes}).`);
+    const budget = route === 'home' ? homeEagerGraphBudgetBytes : eagerGraphBudgetBytes;
+    if (result.graph.brotliBytes > budget) {
+      diagnostics.push(`${route} eager graph is ${result.graph.brotliBytes} bytes (budget ${budget}).`);
     }
     const dormantFiles = result.graph.files.filter((row) => dormantPortalNames.some((name) => row.file.includes(name)));
     if (dormantFiles.length > 0) {
@@ -327,7 +330,16 @@ if (scope === 'staff') {
         diagnostics.push(`Hosted client chunk ${file} contains an SSR execution-order wrapper.`);
     }
   }
-  const report = { distRoot, documentsRoot, eagerGraphBudgetBytes, routes, shell, storeCart, diagnostics };
+  const report = {
+    distRoot,
+    documentsRoot,
+    eagerGraphBudgetBytes,
+    homeEagerGraphBudgetBytes,
+    routes,
+    shell,
+    storeCart,
+    diagnostics,
+  };
   const json = `${JSON.stringify(report, null, 2)}\n`;
   if (output) {
     const outputPath = resolve(output);

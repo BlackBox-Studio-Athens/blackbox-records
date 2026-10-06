@@ -240,6 +240,11 @@ export default function ServicesInquiryForm({
   }, [state.status]);
 
   useEffect(() => {
+    function selectService(service: string) {
+      if (inquiryContainer) delete inquiryContainer.dataset.servicesInquiryTargetService;
+      dispatch({ service: isKnownService(service) ? service : 'General', type: 'select-service' });
+    }
+
     function handleDocumentClick(event: MouseEvent) {
       const eventTarget = event.target;
       if (!(eventTarget instanceof HTMLElement)) return;
@@ -247,24 +252,12 @@ export default function ServicesInquiryForm({
       const triggerElement = eventTarget.closest<HTMLElement>('[data-services-inquiry-target-service]');
       if (!triggerElement) return;
 
-      if (inquiryContainer) delete inquiryContainer.dataset.servicesInquiryTargetService;
-      const nextService = triggerElement.dataset.servicesInquiryTargetService || 'General';
-      if (isKnownService(nextService)) {
-        dispatch({ service: nextService, type: 'select-service' });
-      } else {
-        dispatch({ service: 'General', type: 'select-service' });
-      }
+      selectService(triggerElement.dataset.servicesInquiryTargetService || 'General');
     }
 
     document.addEventListener('click', handleDocumentClick);
     const pendingService = inquiryContainer?.dataset.servicesInquiryTargetService;
-    if (inquiryContainer && pendingService) {
-      delete inquiryContainer.dataset.servicesInquiryTargetService;
-      dispatch({
-        service: isKnownService(pendingService) ? pendingService : 'General',
-        type: 'select-service',
-      });
-    }
+    if (pendingService) selectService(pendingService);
     return () => document.removeEventListener('click', handleDocumentClick);
   }, [inquiryContainer]);
 

@@ -2,10 +2,12 @@
 
 Use these profiles for performance acceptance. Store raw output under `.codex-artifacts/runtime-performance/<commit-or-run>/`; commit only concise reports.
 
+The public eager JavaScript graph budget is 100 KiB Brotli. Home alone has a user-approved 103 KiB limit, adding 3 KiB (3%) for the current preorder and inquiry release. Shell, Store Item and other route limits remain 100 KiB; dormant surfaces must remain lazy. `scripts/check-runtime-bundle-graphs.ts` enforces and reports both limits.
+
 ## Product Environments
 
 - Local: `http://127.0.0.1:4321/blackbox-records/`
-- UAT: `https://blackbox-studio-athens.github.io/blackbox-records/`
+- UAT: `https://blackbox-records-web-uat.pages.dev/`
 - PRD: `https://blackbox-records-web.pages.dev/`
 
 Record commit, URL, Product Environment, production build command, browser/version, viewport, DPR, CPU/network throttle, cache state, run count, and method. Exclude browser startup, extensions, tooling, and unrelated network traffic explicitly.
