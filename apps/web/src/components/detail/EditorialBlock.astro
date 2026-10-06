@@ -2,6 +2,8 @@
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
+import { cmsLinkSchema } from '@blackbox/content-model';
+import EditorialVideo from './EditorialVideo.astro';
 interface Props {
   node: {
     _type: string;
@@ -10,22 +12,57 @@ interface Props {
     code?: string;
     language?: string;
     filename?: string;
+    caption?: string;
+    title?: string;
+    alignment?: string;
+    displayWidth?: number;
+    displayHeight?: number;
+    link?: string | { href: string; blank?: boolean };
+    src?: string;
   };
 }
 const { node } = Astro.props;
 const bodyImageWidths = [720, 1080, 1440];
 if (node._type === 'image' && !node.asset?.image) throw new Error('Missing snapshot body image.');
+const link = typeof node.link === 'string' ? { href: node.link } : node.link;
+const href = link ? cmsLinkSchema.parse(link.href) : undefined;
+const Wrapper = href ? 'a' : 'div';
+const alignment = node.alignment ?? 'center';
 ---
 
-{node._type === 'image' && node.asset?.image ? (
-  <Image
-    src={node.asset.image}
-    alt={node.alt!}
-    widths={bodyImageWidths}
-    width={largestImageWidth(node.asset.image, bodyImageWidths)}
-    sizes="(min-width: 1024px) 72rem, 100vw"
-    quality={editorialImageQuality}
-  />
+{node._type === 'iframe' && node.src ? (
+  <EditorialVideo src={node.src} title={node.title} />
+) : node._type === 'image' && node.asset?.image ? (
+  <figure
+    class={`editorial-image editorial-image-${alignment}`}
+    style={{
+      width: node.displayWidth ? `min(100%, ${node.displayWidth}px)` : undefined,
+      marginInline: alignment === 'left' ? '0 auto' : alignment === 'right' ? 'auto 0' : 'auto',
+    }}
+  >
+    <Wrapper
+      href={href}
+      target={link?.blank ? '_blank' : undefined}
+      rel={link?.blank ? 'noopener noreferrer' : undefined}
+    >
+      <Image
+        src={node.asset.image}
+        alt={node.alt!}
+        widths={bodyImageWidths}
+        width={largestImageWidth(node.asset.image, bodyImageWidths)}
+        sizes="(min-width: 1024px) 72rem, 100vw"
+        quality={editorialImageQuality}
+        title={node.title}
+        style={{
+          width: '100%',
+          height: node.displayHeight ? `${node.displayHeight}px` : 'auto',
+          objectFit: 'contain',
+          maxWidth: '100%',
+        }}
+      />
+    </Wrapper>
+    {node.caption && <figcaption>{node.caption}</figcaption>}
+  </figure>
 ) : (
   <div>
     {node.filename && <p>{node.filename}</p>}

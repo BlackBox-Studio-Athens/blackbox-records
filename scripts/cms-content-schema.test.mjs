@@ -7,7 +7,74 @@ import {
   publishedCollection,
   parseContentSnapshot,
   replacePublishedRecord,
+  normalizeEditorialBody,
+  normalizeVideoUrl,
+  proseSchema,
 } from '@blackbox/content-model';
+
+test('editorial images retain presentation without native delivery metadata and reject unsafe links', () => {
+  const image = {
+    _type: 'image',
+    _key: 'image',
+    asset: {
+      _type: 'reference',
+      _ref: 'media',
+      provider: 'local',
+      url: '/_emdash/private/image',
+      meta: { storageKey: 'image.png' },
+    },
+    alt: 'Artwork',
+    caption: 'Caption',
+    title: 'Image title',
+    displayWidth: 480,
+    displayHeight: 320,
+    alignment: 'right',
+    link: { href: '/releases/', blank: true },
+    blurhash: 'transient',
+  };
+  const body = normalizeEditorialBody([image]);
+  assert.deepEqual(body[0].asset, { _ref: 'media' });
+  assert.equal(body[0].blurhash, undefined);
+  assert.deepEqual(cmsBodySchema.parse(body), body);
+  assert.equal(body[0].caption, 'Caption');
+  assert.equal(image.asset.url, '/_emdash/private/image');
+  assert.equal(proseSchema.safeParse(body).success, false);
+  assert.equal(cmsBodySchema.safeParse([{ ...body[0], link: 'javascript:alert(1)' }]).success, false);
+  assert.equal(
+    cmsBodySchema.safeParse(normalizeEditorialBody([{ ...image, asset: { ...image.asset, provider: 'external' } }]))
+      .success,
+    false,
+  );
+});
+
+test('editorial videos normalize approved providers and discard autoplay', () => {
+  const youtube = 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ';
+  assert.equal(normalizeVideoUrl('https://youtu.be/dQw4w9WgXcQ?autoplay=1'), youtube);
+  assert.equal(normalizeVideoUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30'), youtube + '?start=30');
+  assert.equal(normalizeVideoUrl('https://vimeo.com/123456?autoplay=1'), 'https://player.vimeo.com/video/123456');
+  for (const url of [
+    'javascript:alert(1)',
+    'http://youtu.be/dQw4w9WgXcQ',
+    'https://youtube.com.evil.example/embed/dQw4w9WgXcQ',
+    'https://user@youtube.com/embed/dQw4w9WgXcQ',
+    'https://youtube.com:444/embed/dQw4w9WgXcQ',
+    'https://example.com/video',
+  ])
+    assert.equal(normalizeVideoUrl(url), null);
+  const body = normalizeEditorialBody([
+    {
+      _type: 'iframe',
+      _key: 'video',
+      src: 'https://youtu.be/dQw4w9WgXcQ?autoplay=1',
+      title: 'Video',
+      allow: 'autoplay',
+    },
+  ]);
+  assert.equal(body[0].src, youtube);
+  assert.deepEqual(cmsBodySchema.parse(body), body);
+  assert.equal(proseSchema.safeParse(body).success, false);
+  assert.equal(cmsBodySchema.safeParse([{ ...body[0], src: 'https://example.com/video' }]).success, false);
+});
 
 test('Artist activity retains legacy defaults and native false through draft and publication', () => {
   const data = { title: 'Artist', genre: 'Hardcore', bio: 'Biography', image: { id: 'image' }, image_alt: 'Portrait' };

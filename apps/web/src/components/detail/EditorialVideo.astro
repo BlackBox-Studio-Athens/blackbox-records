@@ -1,0 +1,31 @@
+---
+import { normalizeVideoUrl } from '@blackbox/content-model';
+interface Props {
+  src: string;
+  title?: string | undefined;
+}
+const { src, title = 'Video' } = Astro.props;
+const url = normalizeVideoUrl(src);
+const provider = url?.includes('player.vimeo.com') ? 'Vimeo' : 'YouTube';
+---
+
+{url && (
+  <div
+    data-editorial-video
+    class="editorial-video my-6 flex aspect-video w-full items-center justify-center border border-current/20"
+  >
+    <div class="grid justify-items-center gap-3 p-4 text-center">
+      <p>{title}</p>
+      <button
+        type="button"
+        data-editorial-video-load
+        data-src={url}
+        data-title={title}
+        class="min-h-11 border border-current px-5 py-2"
+      >
+        Load video
+      </button>
+      <small>Loads content from {provider}.</small>
+    </div>
+  </div>
+)}

@@ -52,7 +52,7 @@ describe('scroll root class changes stay cheap', () => {
       expect(classes.size).toBe(1);
       const rule = rules.find((candidate) => candidate.selectors.includes(`body.${lockClass}`));
       expect(rule?.selectors).toContain('body.is-shell-modal-open');
-      expect(rule?.declarations.get('overflow')).toBe('clip');
+      expect(rule?.declarations.get('overflow')).toBe('hidden');
       expect(rule?.declarations.get('overscroll-behavior')).toBe('contain');
       unlockFirst();
       expect(classes.has(lockClass)).toBe(true);

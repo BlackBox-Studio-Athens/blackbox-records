@@ -3,6 +3,30 @@ import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fix
 const stocked = { presentationState: 'ready', availabilityState: 'stocked', displayPrice: '€28.00', preorder: null };
 const preorder = { ...stocked, preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } } };
 
+test('release backdrop dismissal restores mouse-wheel scrolling', async ({ page }) => {
+  await page.goto('releases/');
+  await waitForShell(page);
+  await plantSentinel(page);
+  await page.mouse.move(1380, 750);
+  await page.mouse.wheel(0, 200);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  for (let round = 0; round < 2; round++) {
+    await page.locator('[data-release-id="anarchotribal"] .release-card-image-shell').click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page.locator('.app-shell-content-overlay__backdrop').click({ position: { x: 8, y: 450 } });
+    await expect(page.getByRole('dialog')).toBeHidden();
+    await expect(page).toHaveURL(/\/releases\/$/);
+    await expect(page.locator('.app-shell-content-overlay')).toHaveCount(0);
+    await expect(page.locator('body')).not.toHaveClass(/is-shell-(?:scroll-locked|modal-open)/);
+    const before = await page.evaluate(() => window.scrollY);
+    const maximum = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+    await page.mouse.move(1380, 750);
+    await page.mouse.wheel(0, before >= maximum - 100 ? -400 : 400);
+    await expect.poll(() => page.evaluate(() => window.scrollY)).not.toBe(before);
+    expect(await sentinelIntact(page)).toBe(true);
+  }
+});
+
 for (const [label, releaseDate, digitalStatus] of [
   ['released', '2026-06-06', 'Digital out now'],
   ['unreleased', '2099-11-06', 'Album upcoming'],

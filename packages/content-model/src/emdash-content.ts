@@ -15,13 +15,77 @@ import {
 } from './schemas';
 import { createDistroContentSchema } from './distro-content-schema';
 import { purchaseInformationSchema } from './purchase-information-schema';
-import { textBlockSchema, richTextSchema, proseSchema, requiredProseSchema, projectProseFields } from './prose';
+import {
+  textBlockSchema,
+  richTextSchema,
+  proseSchema,
+  requiredProseSchema,
+  projectProseFields,
+  cmsLinkSchema,
+} from './prose';
+
+/** Only supported video providers; discard autoplay and arbitrary embed parameters. */
+export function normalizeVideoUrl(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || url.username || url.password || url.port) return null;
+    const host = url.hostname.toLowerCase();
+    let id: string | undefined;
+    if (host === 'youtu.be') id = url.pathname.slice(1);
+    else if (['youtube.com', 'www.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com'].includes(host))
+      id =
+        url.pathname === '/watch'
+          ? (url.searchParams.get('v') ?? undefined)
+          : /^\/(?:embed|shorts)\/([^/]+)\/?$/.exec(url.pathname)?.[1];
+    if (id && /^[A-Za-z0-9_-]{11}$/.test(id)) {
+      const result = new URL(`https://www.youtube-nocookie.com/embed/${id}`);
+      const start = url.searchParams.get('start') ?? url.searchParams.get('t');
+      if (start && /^\d{1,5}$/.test(start)) result.searchParams.set('start', start);
+      return result.href;
+    }
+    if (['vimeo.com', 'www.vimeo.com', 'player.vimeo.com'].includes(host)) {
+      const video = /^\/(?:video\/)?(\d{1,12})\/?$/.exec(url.pathname)?.[1];
+      if (video) {
+        const result = new URL(`https://player.vimeo.com/video/${video}`);
+        const hash = url.searchParams.get('h');
+        if (hash && /^[a-zA-Z0-9]{1,128}$/.test(hash)) result.searchParams.set('h', hash);
+        return result.href;
+      }
+    }
+  } catch {
+    /* Invalid URL. */
+  }
+  return null;
+}
+
+/** Strip native delivery metadata, retaining editorial presentation and media identity. */
+export function normalizeEditorialBody(value: unknown): unknown {
+  if (!Array.isArray(value)) return value;
+  return value.map((block: unknown) => {
+    if (!block || typeof block !== 'object') return block;
+    const result = { ...block } as Record<string, unknown>;
+    if (result._type === 'image' && result.asset && typeof result.asset === 'object') {
+      const asset = { ...result.asset } as Record<string, unknown>;
+      if (asset.provider && asset.provider !== 'local') return block;
+      for (const name of ['_type', 'url', 'provider', 'meta']) delete asset[name];
+      result.asset = asset;
+      delete result.blurhash;
+      delete result.dominantColor;
+    }
+    if (result._type === 'iframe' && typeof result.src === 'string') {
+      result.src = normalizeVideoUrl(result.src) ?? result.src;
+      result.allow = 'fullscreen; picture-in-picture';
+      result.allowFullscreen = true;
+    }
+    return result;
+  });
+}
 
 const mediaId = z.string().min(1).max(128);
 const image = () => z.object({ id: mediaId }).strict();
 const key = z.string().min(1).max(128);
 const bodyError =
-  'Unsupported full-text formatting. Undo or remove the last block or formatting change. Use paragraphs, headings, lists, quotes, links, images with descriptions, or code; HTML, tables and galleries are not supported.';
+  'Unsupported full-text formatting. Undo or remove this block. Use paragraphs, headings, lists, quotes, safe links, images with descriptions, code, or YouTube/Vimeo videos. HTML, tables and galleries are not supported.';
 export const cmsBodySchema = z.array(
   z.union(
     [
@@ -32,6 +96,16 @@ export const cmsBodySchema = z.array(
           _key: key,
           asset: z.object({ _ref: mediaId }).strict(),
           alt: z.string().trim().min(1),
+          caption: z.string().max(10000).optional(),
+          title: z.string().max(1000).optional(),
+          width: z.number().int().positive().optional(),
+          height: z.number().int().positive().optional(),
+          displayWidth: z.number().int().positive().max(16384).optional(),
+          displayHeight: z.number().int().positive().max(16384).optional(),
+          alignment: z.enum(['left', 'center', 'right', 'wide', 'full']).optional(),
+          link: z
+            .union([cmsLinkSchema, z.object({ href: cmsLinkSchema, blank: z.boolean().optional() }).strict()])
+            .optional(),
         })
         .strict(),
       z
@@ -41,6 +115,18 @@ export const cmsBodySchema = z.array(
           code: z.string(),
           language: z.string().optional(),
           filename: z.string().optional(),
+        })
+        .strict(),
+      z
+        .object({
+          _type: z.literal('iframe'),
+          _key: key,
+          src: z.string().refine((src) => normalizeVideoUrl(src) !== null, 'Use a HTTPS YouTube or Vimeo video URL.'),
+          title: z.string().max(1000).optional(),
+          width: z.number().int().positive().max(16384).optional(),
+          height: z.number().int().positive().max(16384).optional(),
+          allow: z.literal('fullscreen; picture-in-picture').optional(),
+          allowFullscreen: z.literal(true).optional(),
         })
         .strict(),
     ],
@@ -249,5 +335,7 @@ export function validateCmsRevisionContent(collection: CmsCollection, data: Reco
     if (record.provider === 'local' && revisionImage.safeParse(record).success) return { id: record.id };
     return Object.fromEntries(Object.entries(record).map(([key, child]) => [key, editorialValue(child)]));
   }
-  return validateCmsContent(collection, editorialValue(data) as Record<string, unknown>);
+  const projected = editorialValue(data) as Record<string, unknown>;
+  if (Object.hasOwn(projected, 'body')) projected.body = normalizeEditorialBody(projected.body);
+  return validateCmsContent(collection, projected);
 }

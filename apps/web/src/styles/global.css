@@ -35,7 +35,8 @@
 
 body.is-shell-modal-open,
 body.is-shell-scroll-locked {
-  overflow: clip;
+  /* Firefox can keep wheel scrolling disabled after removing overflow: clip from the body. */
+  overflow: hidden;
   overscroll-behavior: contain;
 }
 

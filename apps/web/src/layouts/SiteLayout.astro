@@ -93,6 +93,23 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
       import { connectPublicImageFallback } from '@/platform/lib/public-image-fallback';
       connectPrivatePreview();
       connectPublicImageFallback();
+      // Delegation also handles videos inserted by shell navigation and release overlays.
+      // Private preview's capture handler keeps shared previews inert until the staff handshake.
+      document.addEventListener('click', (event) => {
+        if (!(event.target instanceof Element)) return;
+        const trigger = event.target.closest<HTMLButtonElement>('[data-editorial-video-load]');
+        const root = trigger?.closest('[data-editorial-video]');
+        if (!root || !trigger?.dataset.src) return;
+        const frame = document.createElement('iframe');
+        frame.src = trigger.dataset.src;
+        frame.title = trigger.dataset.title ?? 'Video';
+        frame.className = 'h-full w-full border-0';
+        frame.allow = 'fullscreen; picture-in-picture';
+        frame.allowFullscreen = true;
+        frame.referrerPolicy = 'no-referrer';
+        frame.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-presentation');
+        root.replaceChildren(frame);
+      });
     </script>
     <meta charset="utf-8" />
     {inlinesPurchaseInformation && (

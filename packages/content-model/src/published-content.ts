@@ -1,4 +1,4 @@
-import { contentMediaIds, sourceCollectionNames } from './emdash-content';
+import { contentMediaIds, normalizeEditorialBody, sourceCollectionNames } from './emdash-content';
 import { parseContentSnapshot, type ContentSnapshot } from './content-snapshot';
 import { projectProseFields } from './prose';
 
@@ -109,7 +109,7 @@ export function publishedCollection(
         else if (typeof data[key] === 'string') data[key] = new Date(data[key]);
       }
       if (['artists', 'releases', 'news'].includes(record.collection)) {
-        data.editorial_body = body ?? [];
+        data.editorial_body = normalizeEditorialBody(body ?? []);
         data.content_media = Object.fromEntries(contentMediaIds(body).map((id) => [id, image(id)]));
       }
       if (snapshot.storeItems && ['releases', 'distro'].includes(record.collection)) {
