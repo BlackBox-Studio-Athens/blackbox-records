@@ -111,6 +111,7 @@ test('Afterwise prepared film plays silently and opens its full official video o
   const accepted = candidates.find((candidate) => candidate.slug === 'disintegration-black-vinyl-lp');
   if (!accepted) throw new Error('Accepted Local Disintegration candidate is required');
   const filmUrl = '/blackbox-records/afterwise-film-fixture.mp4';
+  const desktopFilmUrl = '/blackbox-records/afterwise-film-desktop-fixture.mp4';
   const posterUrl = '/blackbox-records/afterwise-poster-fixture.jpg';
   await page.route('**/preorder-showcase.json', (route) =>
     route.fulfill({
@@ -123,6 +124,7 @@ test('Afterwise prepared film plays silently and opens its full official video o
               id: 'Cl7rWCTGEqY',
               title: 'Equilibrium · Live at Fuzz Club Athens',
               backgroundVideoUrl: filmUrl,
+              backgroundVideoDesktopUrl: desktopFilmUrl,
               posterUrl,
             },
           ],
@@ -144,13 +146,19 @@ test('Afterwise prepared film plays silently and opens its full official video o
     }),
   );
   const film = await readFile('apps/web/src/pages/_assets/video-posters/afterwise-equilibrium-loop.mp4');
+  const desktopFilm = await readFile('apps/web/src/pages/_assets/video-posters/afterwise-equilibrium-loop-desktop.mp4');
   const poster = await readFile('apps/web/src/pages/_assets/video-posters/afterwise-equilibrium.jpg');
   await page.route('**/afterwise-film-fixture.mp4', (route) => route.fulfill({ contentType: 'video/mp4', body: film }));
+  await page.route('**/afterwise-film-desktop-fixture.mp4', (route) =>
+    route.fulfill({ contentType: 'video/mp4', body: desktopFilm }),
+  );
+  let desktopRequests = 0;
   await page.route('**/afterwise-poster-fixture.jpg', (route) =>
     route.fulfill({ contentType: 'image/jpeg', body: poster }),
   );
   const providerRequests: string[] = [];
   page.on('request', (request) => {
+    if (new URL(request.url()).pathname === desktopFilmUrl) desktopRequests++;
     if (new URL(request.url()).hostname.includes('youtube')) providerRequests.push(request.url());
   });
   await page.route('https://www.youtube-nocookie.com/**', (route) =>
@@ -166,10 +174,24 @@ test('Afterwise prepared film plays silently and opens its full official video o
     .toBeGreaterThanOrEqual(2);
   await expect.poll(() => video.evaluate((element) => !(element as HTMLVideoElement).paused)).toBe(true);
   expect(await video.evaluate((element) => (element as HTMLVideoElement).muted)).toBe(true);
+  expect(await video.evaluate((element) => (element as HTMLVideoElement).videoWidth)).toBe(1280);
+  expect(desktopRequests).toBe(0);
   expect(providerRequests).toEqual([]);
   await chapter.screenshot({
     path: `.codex-artifacts/catalog-video-contact/afterwise-${testInfo.project.name}-390.png`,
   });
+  await page.setViewportSize({ width: 2560, height: 1440 });
+  await video.scrollIntoViewIfNeeded();
+  await expect.poll(() => video.evaluate((element) => (element as HTMLVideoElement).videoWidth)).toBe(1920);
+  await expect.poll(() => video.evaluate((element) => !(element as HTMLVideoElement).paused)).toBe(true);
+  expect(desktopRequests).toBeGreaterThan(0);
+  expect(await video.evaluate((element) => (element as HTMLVideoElement).muted)).toBe(true);
+  await chapter.screenshot({
+    path: `.codex-artifacts/catalog-video-contact/afterwise-${testInfo.project.name}-2560.png`,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await video.scrollIntoViewIfNeeded();
+  await expect.poll(() => video.evaluate((element) => (element as HTMLVideoElement).videoWidth)).toBe(1280);
   const watch = chapter.getByRole('button', { name: 'Watch full video', exact: true });
   await watch.click();
   const iframe = chapter.locator('iframe');

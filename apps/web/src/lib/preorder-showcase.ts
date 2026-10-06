@@ -24,6 +24,7 @@ export function buildPreorderShowcaseCandidates(
       artistPhotoUrl: string | null;
       clipPosterUrls?: ReadonlyMap<string, string>;
       clipBackgroundVideoUrls?: ReadonlyMap<string, string>;
+      clipBackgroundVideoDesktopUrls?: ReadonlyMap<string, string>;
     }
   >,
 ) {
@@ -57,6 +58,9 @@ export function buildPreorderShowcaseCandidates(
           title: clip.title,
           posterUrl: media.clipPosterUrls?.get(clip.youtube_video_id) ?? null,
           backgroundVideoUrl: media.clipBackgroundVideoUrls?.get(clip.youtube_video_id) ?? null,
+          ...(media.clipBackgroundVideoDesktopUrls?.has(clip.youtube_video_id)
+            ? { backgroundVideoDesktopUrl: media.clipBackgroundVideoDesktopUrls.get(clip.youtube_video_id)! }
+            : {}),
         })),
         artistPhotoUrl: media.artistPhotoUrl,
         summary: item.summary?.split(/(?<=[.!?])\s/)[0] ?? null,

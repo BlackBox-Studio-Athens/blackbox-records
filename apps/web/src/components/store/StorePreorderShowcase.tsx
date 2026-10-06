@@ -39,6 +39,7 @@ function createShowcaseSchemas(z: typeof Zod) {
           title: z.string().min(1),
           posterUrl: imageUrl.nullable(),
           backgroundVideoUrl: imageUrl.nullable().optional(),
+          backgroundVideoDesktopUrl: imageUrl.nullable().optional(),
         }),
       )
       .optional(),
@@ -138,6 +139,7 @@ export default function StorePreorderShowcase({
   const [watching, setWatching] = useState<string | null>(null);
   const [playerSession, setPlayerSession] = useState(false);
   const [automaticMotion, setAutomaticMotion] = useState(false);
+  const [desktopVideo, setDesktopVideo] = useState(false);
   const [documentVisible, setDocumentVisible] = useState(true);
   const section = useRef<HTMLElement>(null);
 
@@ -159,17 +161,23 @@ export default function StorePreorderShowcase({
     observer.observe(root, { attributes: true, attributeFilter: ['data-music-player-session'] });
 
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const desktop = window.matchMedia('(min-width: 1280px)');
     const connection = (navigator as Navigator & { connection?: EventTarget & { saveData?: boolean } }).connection;
-    const syncPreferences = () => setAutomaticMotion(!motion.matches && !connection?.saveData);
+    const syncPreferences = () => {
+      setAutomaticMotion(!motion.matches && !connection?.saveData);
+      setDesktopVideo(desktop.matches);
+    };
     const syncVisibility = () => setDocumentVisible(!document.hidden);
     syncPreferences();
     syncVisibility();
     motion.addEventListener('change', syncPreferences);
+    desktop.addEventListener('change', syncPreferences);
     connection?.addEventListener('change', syncPreferences);
     document.addEventListener('visibilitychange', syncVisibility);
     return () => {
       observer.disconnect();
       motion.removeEventListener('change', syncPreferences);
+      desktop.removeEventListener('change', syncPreferences);
       connection?.removeEventListener('change', syncPreferences);
       document.removeEventListener('visibilitychange', syncVisibility);
     };
@@ -223,6 +231,7 @@ export default function StorePreorderShowcase({
           playing={watching === item.slug}
           onWatch={setWatching}
           automaticMotion={automaticMotion}
+          desktopVideo={desktopVideo}
           documentVisible={documentVisible}
           playerSession={playerSession}
         />
@@ -238,6 +247,7 @@ function PreorderChapter({
   playing,
   onWatch,
   automaticMotion,
+  desktopVideo,
   documentVisible,
   playerSession,
 }: {
@@ -247,6 +257,7 @@ function PreorderChapter({
   playing: boolean;
   onWatch: (slug: string | null) => void;
   automaticMotion: boolean;
+  desktopVideo: boolean;
   documentVisible: boolean;
   playerSession: boolean;
 }) {
@@ -261,13 +272,21 @@ function PreorderChapter({
   const clips = item.clips?.length
     ? item.clips
     : item.firstClipId
-      ? [{ id: item.firstClipId, title: item.title, posterUrl: null, backgroundVideoUrl: null }]
+      ? [
+          {
+            id: item.firstClipId,
+            title: item.title,
+            posterUrl: null,
+            backgroundVideoUrl: null,
+            backgroundVideoDesktopUrl: null,
+          },
+        ]
       : [];
   const clip = clips[selectedClip] ?? clips[0];
   const videoLabel = clips.length === 1 ? 'Official video' : 'Official videos';
   const poster = clip?.posterUrl && clip.posterUrl !== item.coverUrl ? clip.posterUrl : item.artistPhotoUrl;
   const failed = clip ? failedClips.includes(clip.id) : false;
-  const background = clip?.backgroundVideoUrl;
+  const background = (desktopVideo && clip?.backgroundVideoDesktopUrl) || clip?.backgroundVideoUrl;
   const shouldPlay = Boolean(
     background &&
     active &&

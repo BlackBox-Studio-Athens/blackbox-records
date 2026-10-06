@@ -320,6 +320,10 @@ body[data-workspace='content'] {
   }
 }
 
+.cms-preview-closed .cms-editor-body {
+  max-width: none;
+}
+
 @media (min-width: 1280px) {
   .cms-editing.cms-preview-closed {
     grid-template-columns: minmax(0, 1fr);
@@ -327,7 +331,6 @@ body[data-workspace='content'] {
 
   .cms-preview-closed .cms-editor-toolbar > :not(.staff-gradient) {
     width: 100%;
-    max-width: 61.5rem;
     margin-inline: auto;
   }
 

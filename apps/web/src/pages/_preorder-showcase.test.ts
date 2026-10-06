@@ -2,7 +2,9 @@ import { getImage } from 'astro:assets';
 import { statSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import sidusBackgroundVideoUrl from './_assets/video-posters/sidus-embrace-the-void-loop.mp4?url';
+import sidusBackgroundVideoDesktopUrl from './_assets/video-posters/sidus-embrace-the-void-loop-desktop.mp4?url';
 import afterwiseBackgroundVideoUrl from './_assets/video-posters/afterwise-equilibrium-loop.mp4?url';
+import afterwiseBackgroundVideoDesktopUrl from './_assets/video-posters/afterwise-equilibrium-loop-desktop.mp4?url';
 
 const catalog = vi.hoisted(() => ({
   clips: [] as { title: string; youtube_video_id: string }[],
@@ -74,6 +76,7 @@ describe('published pre-order showcase response', () => {
             title: 'Embrace The Void',
             posterUrl: expect.any(String),
             backgroundVideoUrl: sidusBackgroundVideoUrl,
+            backgroundVideoDesktopUrl: sidusBackgroundVideoDesktopUrl,
           },
         ],
       }),
@@ -105,6 +108,7 @@ describe('published pre-order showcase response', () => {
             title: 'Revised official title',
             posterUrl: expect.any(String),
             backgroundVideoUrl: sidusBackgroundVideoUrl,
+            backgroundVideoDesktopUrl: sidusBackgroundVideoDesktopUrl,
           },
           { id: 'abcdefghijk', title: 'Embrace The Void', posterUrl: null, backgroundVideoUrl: null },
         ],
@@ -169,12 +173,14 @@ describe('published pre-order showcase response', () => {
             title: 'Revised performance title',
             posterUrl: expect.any(String),
             backgroundVideoUrl: afterwiseBackgroundVideoUrl,
+            backgroundVideoDesktopUrl: afterwiseBackgroundVideoDesktopUrl,
           },
           {
             id: 'MOA5YZDOR6A',
             title: 'Embrace The Void',
             posterUrl: expect.any(String),
             backgroundVideoUrl: sidusBackgroundVideoUrl,
+            backgroundVideoDesktopUrl: sidusBackgroundVideoDesktopUrl,
           },
           {
             id: 'abcdefghijk',
@@ -191,6 +197,13 @@ describe('published pre-order showcase response', () => {
     for (const filename of ['sidus-embrace-the-void-loop.mp4', 'afterwise-equilibrium-loop.mp4']) {
       const asset = new URL('./_assets/video-posters/' + filename, import.meta.url);
       expect(statSync(asset).size).toBeLessThan(900_000);
+    }
+  });
+  it('bounds the separately selected desktop backdrops to 4 MiB each', () => {
+    for (const filename of ['sidus-embrace-the-void-loop-desktop.mp4', 'afterwise-equilibrium-loop-desktop.mp4']) {
+      expect(statSync(new URL('./_assets/video-posters/' + filename, import.meta.url)).size).toBeLessThan(
+        4 * 1024 * 1024,
+      );
     }
   });
 });

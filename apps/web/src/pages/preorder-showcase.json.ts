@@ -5,13 +5,29 @@ import { largestImageWidth } from '@/platform/lib/editorial-image';
 import type { StorePreorderShowcaseCandidate } from '@/components/store/StorePreorderShowcase';
 import sidusVideoPoster from './_assets/video-posters/sidus-embrace-the-void.jpg';
 import sidusBackgroundVideoUrl from './_assets/video-posters/sidus-embrace-the-void-loop.mp4?url';
+import sidusBackgroundVideoDesktopUrl from './_assets/video-posters/sidus-embrace-the-void-loop-desktop.mp4?url';
 import afterwiseVideoPoster from './_assets/video-posters/afterwise-equilibrium.jpg';
 import afterwiseBackgroundVideoUrl from './_assets/video-posters/afterwise-equilibrium-loop.mp4?url';
+import afterwiseBackgroundVideoDesktopUrl from './_assets/video-posters/afterwise-equilibrium-loop-desktop.mp4?url';
 
 // ponytail: reviewed exact-ID backdrops; prepare a small loop and poster before adding another.
 const preparedClips = new Map([
-  ['MOA5YZDOR6A', { poster: sidusVideoPoster, backgroundVideoUrl: sidusBackgroundVideoUrl }],
-  ['Cl7rWCTGEqY', { poster: afterwiseVideoPoster, backgroundVideoUrl: afterwiseBackgroundVideoUrl }],
+  [
+    'MOA5YZDOR6A',
+    {
+      poster: sidusVideoPoster,
+      backgroundVideoUrl: sidusBackgroundVideoUrl,
+      backgroundVideoDesktopUrl: sidusBackgroundVideoDesktopUrl,
+    },
+  ],
+  [
+    'Cl7rWCTGEqY',
+    {
+      poster: afterwiseVideoPoster,
+      backgroundVideoUrl: afterwiseBackgroundVideoUrl,
+      backgroundVideoDesktopUrl: afterwiseBackgroundVideoDesktopUrl,
+    },
+  ],
 ]);
 
 export async function GET() {
@@ -44,15 +60,24 @@ export async function GET() {
                 .filter(([id]) => release.data.clips?.some((clip) => clip.youtube_video_id === id))
                 .map(async ([id, media]) => {
                   const poster = await getImage({ src: media.poster, width: 1200, format: 'webp' });
-                  return [id, poster.src, media.backgroundVideoUrl] as const;
+                  return [id, poster.src, media.backgroundVideoUrl, media.backgroundVideoDesktopUrl] as const;
                 }),
             ),
           ]);
           const clipPosterUrls = new Map(clipMedia.map(([id, posterUrl]) => [id, posterUrl] as const));
           const clipBackgroundVideoUrls = new Map(clipMedia.map(([id, , videoUrl]) => [id, videoUrl] as const));
+          const clipBackgroundVideoDesktopUrls = new Map(
+            clipMedia.map(([id, , , videoUrl]) => [id, videoUrl] as const),
+          );
           return [
             item.slug,
-            { coverUrl: cover.src, artistPhotoUrl: photo?.src ?? null, clipPosterUrls, clipBackgroundVideoUrls },
+            {
+              coverUrl: cover.src,
+              artistPhotoUrl: photo?.src ?? null,
+              clipPosterUrls,
+              clipBackgroundVideoUrls,
+              clipBackgroundVideoDesktopUrls,
+            },
           ] as const;
         }),
     ),

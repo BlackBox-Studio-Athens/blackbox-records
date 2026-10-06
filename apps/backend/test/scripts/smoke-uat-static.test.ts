@@ -44,6 +44,17 @@ describe('UAT static smoke', () => {
     const source = `https://images.blackboxrecordsathens.com/cdn-cgi/image/width=480,format=webp,quality=68/https://blackbox-records-web-uat.pages.dev/media/content/${media}`;
     const html = `<main><img src="${source}"></main>`;
     expect(findPublicMediaPath(html, 'https://blackbox-records-web-uat.pages.dev')).toBe(source);
+    expect(imageTransformProbePaths(html, 'https://blackbox-records-web-uat.pages.dev')).toEqual({
+      mediaPath: `/media/content/${media}`,
+      transformPath: `/_image?href=%2Fmedia%2Fcontent%2F${media}&w=480`,
+    });
+    expect(() => imageTransformProbePaths(html, 'https://blackbox-records-web.pages.dev')).toThrow();
+    expect(() =>
+      imageTransformProbePaths(
+        `<main><img src="https://foreign.test/media/content/${media}"></main>`,
+        'https://blackbox-records-web-uat.pages.dev',
+      ),
+    ).toThrow();
     expect(() => findPublicMediaPath(html, 'https://blackbox-records-web.pages.dev')).toThrow('site base');
     expect(() =>
       findPublicMediaPath(

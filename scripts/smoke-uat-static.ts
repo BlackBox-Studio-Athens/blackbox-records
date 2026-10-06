@@ -507,7 +507,13 @@ export function imageTransformProbePaths(html: string, siteUrl: string) {
   const main = /<main\b[^>]*>([\s\S]*?)<\/main>/i.exec(html)?.[1] ?? '';
   for (const [, , source] of main.matchAll(/<img\b[^>]*\ssrc=(["'])(.*?)\1/gi)) {
     const rendered = new URL(source!.replaceAll('&amp;', '&'), root);
-    const href = rendered.pathname.endsWith('/_image') ? rendered.searchParams.get('href') : rendered.pathname;
+    const directSource =
+      rendered.origin === 'https://images.blackboxrecordsathens.com'
+        ? /^\/cdn-cgi\/image\/[^/]+\/(https:\/\/.*)$/.exec(rendered.pathname)?.[1]
+        : null;
+    if (rendered.origin !== root.origin && !directSource) continue;
+    const href =
+      directSource ?? (rendered.pathname.endsWith('/_image') ? rendered.searchParams.get('href') : rendered.pathname);
     const media = href ? new URL(href, root) : null;
     if (
       media?.origin === root.origin &&

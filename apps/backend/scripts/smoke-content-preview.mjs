@@ -954,6 +954,7 @@ try {
       newsletterBefore.item.data.description,
       'Rich edits leave the legacy string unchanged',
     );
+    await page.setViewportSize({ width: 2134, height: 982 });
     await page.getByRole('button', { name: 'Close preview', exact: true }).first().click();
     assert.equal(await page.locator('.cms-preview-panel').isVisible(), false);
     assert.equal(await page.locator('.cms-resize-handle').isVisible(), false);
@@ -964,6 +965,17 @@ try {
           (panel) => panel.getBoundingClientRect().width / panel.parentElement.getBoundingClientRect().width > 0.95,
         ),
     );
+    assert.ok(
+      await page
+        .locator('.cms-editor-body')
+        .evaluate(
+          (body) =>
+            body.getBoundingClientRect().width / body.closest('.cms-edit-panel').getBoundingClientRect().width > 0.95,
+        ),
+      'Closing preview must remove the form width cap on wide desktops',
+    );
+    await mkdir(resolve('.codex-artifacts/staff-workspace'), { recursive: true });
+    await page.screenshot({ path: resolve('.codex-artifacts/staff-workspace', `${name}-closed-preview-desktop.png`) });
     let previewRequests = 0;
     const countPreview = (request) => {
       if (request.method() === 'POST' && new URL(request.url()).pathname === '/_emdash/preview') previewRequests++;
@@ -987,7 +999,6 @@ try {
     await page.getByRole('button', { name: 'Close preview', exact: true }).last().click();
     assert.equal(await description.isVisible(), true, 'Closing phone Preview returns to Edit');
     assert.equal(await description.textContent(), closedCopy);
-    await mkdir(resolve('.codex-artifacts/staff-workspace'), { recursive: true });
     await page.screenshot({ path: resolve('.codex-artifacts/staff-workspace', `${name}-closed-preview-phone.png`) });
     await checkCalendar(page, name);
     await checkStock(page, name);
