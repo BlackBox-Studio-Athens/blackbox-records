@@ -27,13 +27,17 @@ if (process.argv[3] === '--check') {
   console.log(`${target.toUpperCase()} Pages credential verified.`);
   process.exit(0);
 }
-const bindings = project.deployment_configs.production.services ?? {};
+const production = project.deployment_configs.production;
+const bindings = production.services ?? {};
 const service = `blackbox-records-public-${target}`;
-if (bindings.PUBLIC_SITE?.service !== service)
+// HOST-11: fail closed, so an exhausted Functions allowance returns an error rather than bare static assets.
+if (bindings.PUBLIC_SITE?.service !== service || production.fail_open !== false)
   await request('PATCH', {
     deployment_configs: {
-      production: { services: { ...bindings, PUBLIC_SITE: { service, environment: 'production' } } },
+      production: { fail_open: false, services: { ...bindings, PUBLIC_SITE: { service, environment: 'production' } } },
     },
   });
-assert.equal((await request('GET')).deployment_configs.production.services.PUBLIC_SITE.service, service);
-console.log(`${target.toUpperCase()} Pages public renderer binding verified.`);
+const configured = (await request('GET')).deployment_configs.production;
+assert.equal(configured.services.PUBLIC_SITE.service, service);
+assert.equal(configured.fail_open, false, 'Pages must fail closed.');
+console.log(`${target.toUpperCase()} Pages renderer binding and fail-closed mode verified.`);

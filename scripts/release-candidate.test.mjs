@@ -43,7 +43,7 @@ test('post-deployment propagation checks retry within a fixed attempt budget', a
     }, pause),
     /Still mismatched/,
   );
-  assert.equal(attempts, 36);
+  assert.equal(attempts, 120);
 });
 
 test('only a successful push run of this workflow on main with the selected SHA is accepted', () => {

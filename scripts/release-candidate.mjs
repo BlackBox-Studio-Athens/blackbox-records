@@ -16,12 +16,12 @@ const gh = (endpoint) => JSON.parse(execFileSync('gh', ['api', endpoint], { enco
 
 export async function waitForDeployment(verify, pause = () => setTimeout(5000)) {
   // ponytail: retry complete read-only checks; poll only identities if these reads become costly.
-  // 36 x 5 s (about 3 minutes): a CMS Worker version deployed at 100% can report the old SHA for over a minute.
-  for (let attempt = 0; attempt < 36; attempt += 1) {
+  // 120 x 5 s (about 10 minutes): a Worker deployed at 100% has reached the runner's edge only after 3-6 minutes.
+  for (let attempt = 0; attempt < 120; attempt += 1) {
     try {
       return await verify();
     } catch (error) {
-      if (attempt === 35) throw error;
+      if (attempt === 119) throw error;
       await pause();
     }
   }
