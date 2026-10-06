@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  verifyReviewSiteMarkerSources,
-  verifyStaticDeployTriggerSources,
-} from '../../../../scripts/verify-environment-model';
+import { verifyReviewSiteMarkerSources } from '../../../../scripts/verify-environment-model';
 
 const validSources = {
   checkoutRoutes: [
@@ -15,62 +12,23 @@ const validSources = {
   envDeclaration: "readonly SHOW_REVIEW_SITE_MARKER?: 'true';",
   header:
     "import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'; UAT · TESTING ONLY Data here is separate and does not transfer to or from the production site. https://blackbox-records-web.pages.dev/",
-  holdingWorkflow: 'run: pnpm build',
   siteLayout:
     "const showReviewSiteMarker = import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'; const htmlTitle = `[UAT] ${baseHtmlTitle}`;",
-  staticDeployWorkflow: [
-    '- name: Build hosted UAT static frontend',
-    '  env:',
-    "    SHOW_REVIEW_SITE_MARKER: 'true'",
-    '  run: pnpm build:web',
-  ].join('\n'),
 };
 
-const validStaticDeployTrigger = [
-  'on:',
-  '  push:',
-  "    branches: ['main']",
-  '    paths-ignore:',
-  "      - 'docs/**'",
-  "      - 'openspec/**'",
-  "      - '*.md'",
-  "      - 'LICENSE'",
-  '  workflow_dispatch:',
-].join('\n');
-
 describe('environment model verifier', () => {
-  it('accepts only the narrow static deployment trigger contract', () => {
-    expect(verifyStaticDeployTriggerSources(validStaticDeployTrigger)).toBe(true);
-    expect(verifyStaticDeployTriggerSources(validStaticDeployTrigger.replace("- '*.md'", "- '**/*.md'"))).toBe(false);
-    expect(
-      verifyStaticDeployTriggerSources(
-        validStaticDeployTrigger.replace("      - 'LICENSE'", "      - 'LICENSE'\n      - 'apps/**'"),
-      ),
-    ).toBe(false);
-    expect(verifyStaticDeployTriggerSources(validStaticDeployTrigger.replace('  push:\n', ''))).toBe(false);
-    expect(
-      verifyStaticDeployTriggerSources(validStaticDeployTrigger.replace("branches: ['main']", "branches: ['develop']")),
-    ).toBe(false);
-    expect(verifyStaticDeployTriggerSources(validStaticDeployTrigger.replace('  workflow_dispatch:', ''))).toBe(false);
-    expect(
-      verifyStaticDeployTriggerSources(
-        validStaticDeployTrigger + "\nif: ${{ contains(github.event.head_commit.message, 'docs') }}",
-      ),
-    ).toBe(false);
-  });
-
   it('accepts only the private exact UAT Review Site Marker contract', () => {
     expect(verifyReviewSiteMarkerSources(validSources)).toBe(true);
     expect(
       verifyReviewSiteMarkerSources({
         ...validSources,
-        staticDeployWorkflow: validSources.staticDeployWorkflow.replace("'true'", "'false'"),
+        header: validSources.header.replace('UAT · TESTING ONLY', 'TESTING'),
       }),
     ).toBe(false);
     expect(
       verifyReviewSiteMarkerSources({
         ...validSources,
-        holdingWorkflow: 'SHOW_REVIEW_SITE_MARKER: true',
+        siteLayout: validSources.siteLayout.replace('SHOW_REVIEW_SITE_MARKER', 'PUBLIC_SHOW_REVIEW_SITE_MARKER'),
       }),
     ).toBe(false);
   });

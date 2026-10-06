@@ -36,7 +36,7 @@ Withdrawal pauses new checkout before native unpublish, preserves private drafts
 
 The browser retains the request ID before sending it. Retrying an uncertain response returns the same request; conflicting reuse is rejected. The CMS arms its alarm before processing and resumes pending work after eviction. Retries back off from two seconds to a five-minute ceiling. Pre-activation failures retry up to six attempts and then preserve the previous public snapshot. Once activated, confirmation remains recoverable and cannot be reported as a preparation failure. Live requires the public origin's content identity to match. Investigate repeated service failures before manually retrying a failed request.
 
-R2 manifests, media and the accepted pointer are durable. Code promotion consumes the reviewed paired renderer/CMS/gateway artifacts and keeps that pointer. Initial cutover bootstraps from the previously accepted snapshot identity. An older static deployment is not a content rollback: its content may be stale. Use a reviewed compatible code candidate; content rollback requires a separately selected, verified accepted snapshot.
+R2 manifests, media and the accepted pointer are durable. A software release builds content-free from the reviewed source and keeps each environment's own pointer: no build restores snapshots or media, holds a CMS export credential, or bundles a content identity, and the renderer reads the accepted snapshot from R2 at runtime. Pages ships no route HTML, so no older deployment can serve stale editorial content. Code rollback is a reviewed revert; content rollback requires a separately selected, verified accepted snapshot.
 
 ## Local verification
 

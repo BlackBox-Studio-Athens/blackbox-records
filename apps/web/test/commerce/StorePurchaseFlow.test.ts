@@ -2,6 +2,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('astro:assets', () => ({ getImage: vi.fn(async () => ({ src: '/cart-176.webp' })) }));
 
+// Astro turns repo images into metadata; plain Vitest would return a bare path.
+vi.mock('@/content/releases/afterwise-album-cover-distro-mockup.webp', () => ({
+  default: { src: '/afterwise-mockup.webp', width: 3544, height: 3543, format: 'webp' },
+}));
+vi.mock('@/content/releases/chronoboros-album-cover-distro-mockup.webp', () => ({
+  default: { src: '/chronoboros-mockup.webp', width: 3544, height: 3543, format: 'webp' },
+}));
+
 vi.mock('astro:content', () => ({
   getCollection: vi.fn(async (collectionName: string) => {
     if (collectionName === 'releases') {

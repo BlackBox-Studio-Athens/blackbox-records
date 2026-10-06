@@ -69,6 +69,17 @@ vi.mock('astro:content', () => ({
   })),
 }));
 
+// Astro turns repo images into metadata; plain Vitest would return a bare path.
+vi.mock('@/content/releases/afterwise-album-cover-distro-mockup.webp', () => ({
+  default: { src: '/_astro/afterwise-mockup.webp', width: 3544, height: 3543, format: 'webp' },
+}));
+vi.mock('@/content/releases/chronoboros-album-cover-distro-mockup.webp', () => ({
+  default: { src: '/_astro/chronoboros-mockup.webp', width: 3544, height: 3543, format: 'webp' },
+}));
+vi.mock('@/content/releases/ouranopithecus-album-cover-distro-mockup.webp', () => ({
+  default: { src: '/_astro/ouranopithecus-mockup.webp', width: 3544, height: 3543, format: 'webp' },
+}));
+
 vi.mock('astro:config/client', () => ({
   base: '/blackbox-records/',
   site: 'https://blackbox-studio-athens.github.io',
@@ -350,7 +361,7 @@ describe('StoreItem projection contract', () => {
     );
 
     expect(storeItem?.image).toEqual({
-      src: '/blackbox-records/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp',
+      src: '/_astro/afterwise-mockup.webp',
       width: 3544,
       height: 3543,
       format: 'webp',
@@ -372,7 +383,7 @@ describe('StoreItem projection contract', () => {
     );
 
     expect(storeItem?.image).toEqual({
-      src: '/blackbox-records/assets/catalog/releases/ouranopithecus-album-cover-distro-mockup.webp',
+      src: '/_astro/ouranopithecus-mockup.webp',
       width: 3544,
       height: 3543,
       format: 'webp',
@@ -395,7 +406,7 @@ describe('StoreItem projection contract', () => {
 
     expect(storeItem).toMatchObject({
       image: {
-        src: '/blackbox-records/assets/catalog/releases/chronoboros-album-cover-distro-mockup.webp',
+        src: '/_astro/chronoboros-mockup.webp',
         width: 3544,
         height: 3543,
         format: 'webp',

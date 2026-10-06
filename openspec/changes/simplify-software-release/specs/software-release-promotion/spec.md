@@ -2,17 +2,17 @@
 
 ### Requirement: Main publishes a UAT candidate only
 
-A deploy-relevant push to main SHALL create a Release Candidate in UAT and SHALL NOT deploy PRD code or mutate live catalog state. The push run SHALL run the complete checks, both target builds, the whole end-to-end suite and the staff previews in Chromium and Firefox in parallel, and UAT deployment SHALL wait for the checks, the UAT build and both browser suites. After UAT deployment the push run SHALL verify the hosted release identity and run the read-only UAT static smoke. It SHALL NOT run provider smoke.
+A deploy-relevant push to main SHALL create a Release Candidate in UAT and SHALL NOT deploy PRD code or mutate live catalog state. The push run SHALL run the complete checks, the whole end-to-end suite and the staff previews in Chromium and Firefox in parallel with one content-free UAT build, and UAT deployment SHALL wait for the checks, the build and both browser suites. The UAT build SHALL hold no CMS credential and SHALL restore no CMS content or media. One deploy job SHALL check the Pages credential read-only before any migration, then migrate, deploy the Workers, deploy Pages and verify the hosted release identity, and SHALL then run the read-only UAT static smoke. It SHALL NOT run provider smoke.
 
 #### Scenario: A small UI change reaches main
 
-- **WHEN** its required checks, browser suites and target builds pass
+- **WHEN** its required checks, browser suites and UAT build pass
 - **THEN** the stable UAT URL serves that candidate with the Review Site Marker
 - **AND** PRD continues serving its previously deployed revision until explicit promotion.
 
 #### Scenario: A candidate fails its checks or deployment
 
-- **WHEN** required checks, a target build, artifact assembly, UAT deployment or hosted release identity verification fails
+- **WHEN** required checks, the UAT build, UAT deployment or hosted release identity verification fails
 - **THEN** the candidate is not promotable and the failing stage is reported.
 
 #### Scenario: A browser suite fails
@@ -20,6 +20,12 @@ A deploy-relevant push to main SHALL create a Release Candidate in UAT and SHALL
 - **WHEN** the whole end-to-end suite or a staff preview fails in the push run
 - **THEN** UAT is not deployed and the failing job is reported
 - **AND** the candidate is not promotable.
+
+#### Scenario: The Pages credential has no Pages access
+
+- **WHEN** the environment credential lacks access to the Pages project, which the first step reads
+- **THEN** the deploy job fails at its first step, before any migration or Worker deployment
+- **AND** that step proves read access only, so Pages write is an operator precondition of the push, and a read-only credential fails later at the Pages deploy.
 
 #### Scenario: A candidate fails UAT acceptance
 
@@ -29,56 +35,55 @@ A deploy-relevant push to main SHALL create a Release Candidate in UAT and SHALL
 
 ### Requirement: PRD promotion selects verified artifacts
 
-Software Release promotion SHALL require an explicit operator request identifying one successful UAT code revision and verified PRD-targeted artifacts. Deployment SHALL NOT silently substitute latest main, unavailable artifacts, or an unrelated successful run.
+Software Release promotion SHALL be an explicit operator dispatch without inputs. It SHALL resolve the source SHA and push run from the release UAT currently serves, and SHALL deploy only that release. Deployment SHALL NOT silently substitute latest main, an unrelated successful run or a run that is not in main history.
 
 #### Scenario: Reviewer accepts a candidate
 
-- **WHEN** the authorized operator promotes its exact code SHA and successful candidate evidence
-- **THEN** PRD receives the verified PRD-targeted artifact from that source SHA
-- **AND** evidence records operator, code revision, artifact digest, configuration identity, migration status, and deployment result.
+- **WHEN** the authorized operator dispatches promotion
+- **THEN** PRD is built from the source SHA UAT serves, after a push run of that SHA on main succeeded with its end-to-end shards, staff previews and UAT deploy
+- **AND** the run's evidence records the operator, source SHA, candidate run, migration status and deployment result.
 
 #### Scenario: Candidate evidence is stale or missing
 
-- **WHEN** artifacts are unavailable, code is superseded, configuration changed, or deployed UAT code no longer matches the review
-- **THEN** promotion stops before mutation and requires fresh candidate validation.
+- **WHEN** the served run is not a successful push run of the main workflow, its SHA is outside main history, it lacks a passed suite, or it does not match the served run number
+- **THEN** promotion stops before any candidate code is checked out and before mutation.
 
 #### Scenario: Target builds differ
 
-- **WHEN** UAT and PRD use different origins, status cues, or environment-owned configuration
-- **THEN** both builds use the same reviewed source code with explicit target configuration identities
+- **WHEN** UAT and PRD use different origins, status cues or environment-owned configuration
+- **THEN** both builds use the same reviewed source code with explicit target configuration
 - **AND** evidence does not claim byte-identical artifacts or promote UAT data into PRD.
 
 #### Scenario: PRD content advances after candidate preparation
 
-- **WHEN** PRD content is published after the candidate was prepared
-- **THEN** the artifact is not rejected for content freshness, because runtime publication, not the release, owns published content
+- **WHEN** PRD content is published after the candidate's push run
+- **THEN** promotion proceeds, because runtime publication, not the release, owns published content
 - **AND** promotion does not claim that its content was the content viewed in UAT.
 
 ### Requirement: Build acceleration preserves target artifacts and release gates
 
-Each release target SHALL still build from its selected source/content/configuration and pass existing artifact checks. Independent build and fixture-browser work SHALL overlap only with verified separate mutable state and complete prerequisite/failure handling. The staff previews and the whole end-to-end suite SHALL remain required before UAT deployment.
+Each release target SHALL still build from its selected source and configuration and pass existing build checks. Independent build and fixture-browser work SHALL overlap only with verified separate mutable state and complete prerequisite/failure handling. The staff previews and the whole end-to-end suite SHALL remain required before UAT deployment.
 
 #### Scenario: Independent preparation overlaps
 
-- **WHEN** web/staff builds or Chromium/Firefox fixture checks are scheduled concurrently
-- **THEN** all existing artifact checks remain required for packaging and all preview checks remain required for UAT deployment
+- **WHEN** the checks, the UAT build or Chromium/Firefox fixture checks are scheduled concurrently
+- **THEN** all preview checks remain required for UAT deployment
 - **AND** neither stage overwrites the other's output or evidence
 - **AND** each browser uses independent fixture state and an ephemeral server
-- **AND** packaging waits for the successful target builds, and UAT deployment waits for both browsers' successful results
-- **AND** failure or cancellation prevents acceptance and leaves no unjoined child
-- **AND** target builds sharing output paths remain sequential, while hosted jobs retain the existing dependency order and shared release lock.
+- **AND** UAT deployment waits for the checks, the build and both browsers' successful results
+- **AND** failure or cancellation prevents deployment and leaves no unjoined child.
 
 #### Scenario: Candidate preparation becomes faster
 
-- **WHEN** validation scheduling, media reads, or independent preparation changes
-- **THEN** unit/check coverage, target builds, artifact digests, source/configuration/content identity, and retention remain enforced for every candidate
+- **WHEN** validation scheduling or independent preparation changes
+- **THEN** unit/check coverage, build checks and source identity remain enforced for every candidate
 - **AND** previews and the whole end-to-end suite remain enforced before UAT deployment
-- **AND** mutation stages retain their ordering, credential contexts, and shared non-cancelling lock
-- **AND** PRD still requires explicit selection and promotion of the retained reviewed artifact without rebuilding or implying catalog/launch approval.
+- **AND** mutation stages retain their ordering, credential contexts and non-cancelling locks
+- **AND** PRD still requires an explicit promotion that rebuilds the proven source without implying catalog/launch approval.
 
 ### Requirement: Releases serialize changes and expose partial failure
 
-State-changing deployment stages for a target SHALL NOT overlap or be cancelled halfway through mutation. A failed partial release SHALL retain enough redacted evidence to retry or restore compatible application artifacts without rolling back orders or stock. Routine rollback SHALL be a revert committed and pushed forward through the normal release; an emergency rollback SHALL restore the renderer Worker version and the Pages deployment together, and SHALL NOT cross a migration.
+State-changing deployment stages for a target SHALL NOT overlap or be cancelled halfway through mutation. A failed partial release SHALL retain enough redacted evidence to retry or restore compatible application artifacts without rolling back orders or stock. Routine rollback SHALL be a revert committed and pushed forward through the normal release; an emergency rollback SHALL restore the renderer Worker version and the Pages deployment together, and SHALL NOT cross a migration. No retained release bundle or rebuild path SHALL exist: every release is built from its source SHA by the job that deploys it.
 
 #### Scenario: Another release starts during deployment
 
@@ -104,24 +109,31 @@ State-changing deployment stages for a target SHALL NOT overlap or be cancelled 
 - **AND** the CMS Worker is rolled back only when no migration ran between the two releases
 - **AND** no rollback crosses a migration: D1 and CMS migrations are forward-only, so an incident across a migration is repaired by a compatible fix pushed forward.
 
+#### Scenario: The seven-day rebuild path is gone
+
+- **WHEN** an older release must be restored after a seven-day window
+- **THEN** no retained bundle or `target=uat` rebuild dispatch exists to restore it
+- **AND** the operator reverts to that source on `main` and pushes it through the normal release.
+
 ### Requirement: Preparation cancellation does not interrupt hosted mutations
 
-Release preparation MAY cancel superseded work by branch and preparation role. Every hosted Worker, Pages and
-promotion mutation MUST remain serialized through its final identity checks.
+Release preparation MAY cancel superseded work by branch and role. Every hosted Worker, Pages and promotion mutation MUST remain serialized through its final identity checks.
 
 #### Scenario: New source supersedes preparation
 
-- **WHEN** a newer automatic run starts while older candidate preparation is active
-- **THEN** obsolete preparation for the same branch and role may be canceled
-- **AND** the active deployment/acceptance sequence is not canceled.
+- **WHEN** a newer automatic run starts while older checks or builds are active
+- **THEN** obsolete preparation for the same branch may be canceled
+- **AND** an active deployment sequence is not canceled.
 
 #### Scenario: Earlier deployment is still running
 
 - **WHEN** a newer UAT candidate starts
-- **THEN** its checks and target preparation start without waiting for the shared hosted mutation lock
-- **AND** the UAT reusable-workflow call acquires that lock across Worker deployment, Pages deployment, and final hosted identity verification
-- **AND** the called workflow inherits repository secrets, binds Worker/provider jobs to the UAT environment, and rejects missing required credentials before mutation
-- **AND** PRD promotion and holding-page deployment retain the same non-cancelling lock; content publication is a runtime operation and takes no release lock.
+- **THEN** its checks and build start without waiting for the hosted mutation lock
+- **AND** its deploy job waits in the non-cancelling UAT release lock, which spans the migrations, Worker deployment, Pages deployment and final hosted identity verification; a waiting run is replaced by a newer one but a deploying run is never cancelled
+- **AND** the deploy job binds the UAT environment and sets its Cloudflare credential only on the steps that need it
+- **AND** PRD promotion holds its own non-cancelling lock and binds the PRD environment, and only the promotion workflow binds it
+- **AND** the holding-page deployment keeps a separate lock, so it can never cancel a pending push deploy or promotion
+- **AND** content publication is a runtime operation and takes no release lock.
 
 #### Scenario: Older candidate reaches mutation late
 
@@ -134,7 +146,39 @@ promotion mutation MUST remain serialized through its final identity checks.
 - **THEN** the read-only UAT static smoke runs against that candidate
 - **AND** provider smoke is manual and never a release gate.
 
+### Requirement: Releases require combined CMS artifacts
+
+Software promotion SHALL build and deploy the combined CMS Worker from the selected source SHA, and SHALL exclude standalone staff Pages and commerce-only Worker fallback deployment.
+
+#### Scenario: Incompatible candidate is selected
+
+- **WHEN** the served release is not a provable push run of main, or its source cannot build the combined CMS Worker
+- **THEN** promotion stops before mutation and requires a fresh accepted push run.
+
+#### Scenario: Current candidate is selected
+
+- **WHEN** promotion passes the source, ordering and checkout-disabled checks
+- **THEN** it deploys the combined Worker built from that SHA without changing staff DNS or Access, and preserves the target content and checkout gates.
+
 ## REMOVED Requirements
+
+### Requirement: Published-content restore has bounded concurrency and unchanged authority
+
+**Reason**: Release builds are content-free: they restore no snapshot or media, so no restore, request budget or media cache remains.
+
+**Migration**: The renderer reads the environment's accepted snapshot from R2 at runtime; see static-site-and-deployment and content-publishing.
+
+### Requirement: Native image reuse preserves fresh target builds
+
+**Reason**: The Astro image cache and its Actions cache steps are removed with the per-target content builds; each job rebuilds from source.
+
+**Migration**: None.
+
+### Requirement: Compact artifact transfer preserves the complete reviewed bundle
+
+**Reason**: No release bundle is assembled, retained or transferred: UAT hands its build to its deploy job within one run, and PRD is rebuilt from the proven SHA.
+
+**Migration**: See "PRD promotion selects verified artifacts" and "PRD promotion is deploy-only".
 
 ### Requirement: PRD promotion runs hosted acceptance before mutation
 
@@ -146,28 +190,29 @@ promotion mutation MUST remain serialized through its final identity checks.
 
 ### Requirement: PRD promotion is deploy-only
 
-An explicit operator dispatch of PRD promotion SHALL verify that UAT serves the selected candidate's source SHA, then verify the order and checkout-disabled preconditions, migrate, deploy the Worker and then Pages, and verify the hosted PRD release. It SHALL run no static smoke, provider smoke, staff preview or end-to-end suite, and it SHALL check out the selected candidate's source SHA. The candidate's passed push run is the only acceptance evidence.
+An explicit operator dispatch of PRD promotion, which takes no inputs, SHALL run from main, resolve the release UAT serves and prove it from main-side tooling before any candidate code is checked out, then build PRD content-free from that source SHA, verify the order and checkout-disabled preconditions, migrate, deploy the Worker and then Pages, and verify the hosted PRD release. It SHALL run no static smoke, provider smoke, staff preview or end-to-end suite. The candidate's passed push run is the only acceptance evidence.
 
 #### Scenario: An operator promotes the deployed candidate
 
-- **GIVEN** UAT serves the selected candidate's source SHA and that candidate's push run succeeded
+- **GIVEN** UAT serves a release whose push run succeeded on main
 - **WHEN** the operator dispatches promotion
-- **THEN** main ancestry of the candidate is verified before any candidate code runs, then UAT identity is verified under the shared non-cancelling release lock
+- **THEN** the release's source SHA is verified to be in main history, and its end-to-end shards, staff previews and UAT deploy are verified to have passed, before any candidate code runs
+- **AND** PRD is built stamped with the candidate's run, so it reports the same release identity as UAT
 - **AND** PRD migrations and deployments run without a test suite in between.
 
-#### Scenario: UAT moved to a newer candidate
+#### Scenario: UAT serves a release that is not promotable
 
-- **WHEN** UAT serves a different source SHA than the candidate selected for promotion
-- **THEN** promotion stops before mutation
-- **AND** the operator promotes the candidate UAT currently serves or redeploys the selected one.
+- **WHEN** the served run failed, predates the current pipeline, or is outside main history
+- **THEN** promotion stops before candidate checkout and mutation
+- **AND** the operator pushes a fix and promotes what UAT then serves.
 
 #### Scenario: A push lands during promotion
 
 - **WHEN** a newer push starts while promotion is running
-- **THEN** promotion holds the shared release lock, so the push's UAT deploy waits until promotion ends
-- **AND** each `verify prd` before a PRD mutation re-checks UAT identity, while `verify-worker` and `verify-hosted` do not.
+- **THEN** promotion keeps the release it resolved at its start and is not failed by the push
+- **AND** the push's UAT deploy runs under its own lock and the monotonic order check keeps any older release from replacing a newer one.
 
 #### Scenario: A failed PRD step is retried
 
 - **WHEN** a PRD migration or deployment step failed
-- **THEN** rerunning only the failed jobs of that run reuses the same candidate.
+- **THEN** rerunning the failed run rebuilds and redeploys the same resolved release.

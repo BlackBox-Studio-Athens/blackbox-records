@@ -27,7 +27,7 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
         optionLabel: null,
         productImage: {
           altText: 'Disintegration Black Vinyl Lp With Extra Long Preview Title product image',
-          url: 'https://blackbox-records-web-uat.pages.dev/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp',
+          url: 'https://blackbox-records-web-uat.pages.dev/assets/images/brand/logo-240.webp',
         },
         quantity: 1,
         storeItemSlug: 'disintegration-black-vinyl-lp-with-extra-long-preview-title',

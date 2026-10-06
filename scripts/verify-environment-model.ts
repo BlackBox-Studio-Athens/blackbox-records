@@ -1,5 +1,4 @@
-import { parse } from 'yaml';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { pathToFileURL } from 'node:url';
@@ -14,16 +13,13 @@ type ReviewSiteMarkerSources = {
   checkoutStatus: string;
   envDeclaration: string;
   header: string;
-  holdingWorkflow: string;
   siteLayout: string;
-  staticDeployWorkflow: string;
 };
 
 const rootDir = process.cwd();
 const uatStaticHost = 'https://blackbox-records-web-uat.pages.dev';
 const prdStaticHost = 'https://blackbox-records-web.pages.dev';
 const prdPreviewHostFragment = '.blackbox-records-web.pages.dev';
-const retiredPrdControlName = ['PRD', 'OPEN', 'GATE'].join('_');
 const productPolicyFiles = [
   'apps/backend/src/application/email/config.ts',
   'apps/backend/src/application/email/routing.ts',
@@ -38,17 +34,9 @@ function read(relativePath: string): string {
   return readFileSync(path.join(rootDir, ...relativePath.split('/')), 'utf8');
 }
 
-function exists(relativePath: string): boolean {
-  return existsSync(path.join(rootDir, ...relativePath.split('/')));
-}
-
+// Source-level policy only. The release workflows are not pinned here: the renderer build sets the Review Site
+// Marker for UAT, and `release-candidate.mjs verify-hosted` asserts it on the deployed page.
 export function verifyEnvironmentModel(): CheckResult[] {
-  const staticDeployWorkflow = read('.github/workflows/pages.yml');
-  const releaseWorkflow = parse(staticDeployWorkflow);
-  const uatReleaseWorkflow = read('.github/workflows/uat-release-sequence.yml');
-  const uatSequence = parse(uatReleaseWorkflow);
-  const prdPromotionWorkflow = staticDeployWorkflow;
-  const holdingWorkflow = read('.github/workflows/prd-holding-page.yml');
   const envDeclaration = read('apps/web/src/env.d.ts');
   const header = read('apps/web/src/components/Header.astro');
   const siteLayout = read('apps/web/src/layouts/SiteLayout.astro');
@@ -57,83 +45,14 @@ export function verifyEnvironmentModel(): CheckResult[] {
     read('apps/web/src/pages/store/checkout/index.astro'),
     read('apps/web/src/pages/store/[slug]/checkout/index.astro'),
   ].join('\n');
-  const catalogPromotionWorkflow = staticDeployWorkflow;
-  const uatSandboxSmokeWorkflow = read('.github/workflows/uat-smoke.yml');
   const wranglerConfig = read('apps/backend/wrangler.jsonc');
 
   const catalogVerifyScript = read('scripts/stripe-catalog-verify.ts');
 
   return [
     {
-      detail: 'One release workflow handles content-only and mixed commits while preserving manual dispatch.',
-      ok: verifyStaticDeployTriggerSources(staticDeployWorkflow),
-    },
-    {
-      detail: 'Shared static deployment workflow deploys UAT to Cloudflare Pages with UAT_PUBLIC_BACKEND_BASE_URL.',
-      ok:
-        staticDeployWorkflow.includes('Release BlackBox') &&
-        uatReleaseWorkflow.includes('Deploy UAT to Cloudflare Pages') &&
-        staticDeployWorkflow.includes('UAT_PUBLIC_BACKEND_BASE_URL') &&
-        !staticDeployWorkflow.includes('PUBLIC_BACKEND_BASE_URL="${{ vars.PUBLIC_BACKEND_BASE_URL }}"'),
-    },
-    {
-      detail: 'Layered Review Site Marker cues are private, exact, and enabled only by the UAT static build step.',
-      ok: verifyReviewSiteMarkerSources({
-        checkoutRoutes,
-        checkoutStatus,
-        envDeclaration,
-        header,
-        holdingWorkflow,
-        siteLayout,
-        staticDeployWorkflow,
-      }),
-    },
-    {
-      detail:
-        'Shared static deployment workflow deploys PRD to Cloudflare Pages without branch or preview product deploys.',
-      ok:
-        prdPromotionWorkflow.includes('Deploy PRD static frontend to Cloudflare Pages') &&
-        staticDeployWorkflow.includes('PRD_PUBLIC_BACKEND_BASE_URL') &&
-        prdPromotionWorkflow.includes('--project-name=blackbox-records-web --branch=main') &&
-        !staticDeployWorkflow.includes('pages/**') &&
-        !staticDeployWorkflow.includes('--branch=${{ github.ref_name }}') &&
-        !exists('.github/workflows/cloudflare-pages.yml'),
-    },
-    {
-      detail:
-        'The release workflow promotes PRD code only: it carries no live catalog mutation and deploys no shopper runtime.',
-      ok:
-        catalogPromotionWorkflow.includes('options: [uat, prd]') &&
-        !catalogPromotionWorkflow.includes('- production') &&
-        catalogPromotionWorkflow.includes('catalog-promotion-prd') &&
-        catalogPromotionWorkflow.includes('default: false') &&
-        !catalogPromotionWorkflow.includes('confirm_live_catalog_changes') &&
-        !catalogPromotionWorkflow.includes('--confirm-live-catalog-changes') &&
-        !catalogPromotionWorkflow.includes(retiredPrdControlName) &&
-        !catalogPromotionWorkflow.includes('- name: Deploy PRD Worker') &&
-        !catalogPromotionWorkflow.includes('-f target=prd'),
-    },
-    {
-      detail: 'The release workflow owns UAT Worker deployment; provider smoke runs only in the manual workflow.',
-      ok:
-        uatReleaseWorkflow.includes('- name: Deploy UAT Worker') &&
-        !uatReleaseWorkflow.includes('smoke:') &&
-        uatSequence.jobs['deploy-uat'].environment === 'catalog-promotion-uat' &&
-        !/smoke:(stripe|resend)-uat/.test(staticDeployWorkflow) &&
-        releaseWorkflow.jobs['uat-release'].secrets === 'inherit' &&
-        releaseWorkflow.jobs['uat-release'].concurrency?.group === 'blackbox-release' &&
-        releaseWorkflow.jobs['uat-release'].concurrency?.['cancel-in-progress'] === false &&
-        !uatSandboxSmokeWorkflow.includes('pnpm deploy:backend:uat') &&
-        !uatSandboxSmokeWorkflow.includes('d1:migrations:apply:uat') &&
-        !exists('.github/workflows/cloudflare-uat.yml') &&
-        uatSandboxSmokeWorkflow.includes('pnpm smoke:stripe-uat -- \\') &&
-        uatSandboxSmokeWorkflow.includes('pnpm smoke:resend-uat -- \\') &&
-        uatSandboxSmokeWorkflow.includes('--site-url "${UAT_SITE_URL}"') &&
-        uatSandboxSmokeWorkflow.includes('--worker-url "${UAT_WORKER_URL}"') &&
-        uatSandboxSmokeWorkflow.includes('--scenario happy_path_paid') &&
-        uatSandboxSmokeWorkflow.includes('--screenshots on-failure') &&
-        uatSandboxSmokeWorkflow.includes('.codex-artifacts/smoke/uat/stripe-sandbox/**') &&
-        uatSandboxSmokeWorkflow.includes('.codex-artifacts/smoke/uat/resend-uat/**'),
+      detail: 'Layered Review Site Marker cues are private and exact.',
+      ok: verifyReviewSiteMarkerSources({ checkoutRoutes, checkoutStatus, envDeclaration, header, siteLayout }),
     },
     {
       detail: 'Local Worker checkout origins stay local-only.',
@@ -173,34 +92,7 @@ export function verifyEnvironmentModel(): CheckResult[] {
       detail: 'Raw platform/provider aliases stay out of product-policy modules outside approved boundaries.',
       ok: findRawPlatformAliasPolicyLeaks().length === 0,
     },
-    {
-      detail: 'Routine deployment does not seed or reconcile repository catalog state.',
-      ok: !uatSequence.jobs['deploy-uat'].steps.some((step: { run?: string }) =>
-        /d1:seed:.*catalog|stripe:catalog:verify/.test(step.run ?? ''),
-      ),
-    },
-    {
-      detail: 'UAT and PRD deploy to distinct Cloudflare Pages projects.',
-      ok:
-        uatReleaseWorkflow.includes('--project-name=blackbox-records-web-uat --branch=main') &&
-        prdPromotionWorkflow.includes('--project-name=blackbox-records-web --branch=main'),
-    },
   ];
-}
-
-export function verifyStaticDeployTriggerSources(staticDeployWorkflow: string): boolean {
-  try {
-    const workflow = parse(staticDeployWorkflow);
-    const push = workflow.on?.push;
-    return (
-      JSON.stringify(push?.branches) === JSON.stringify(['main']) &&
-      JSON.stringify(push?.['paths-ignore']) === JSON.stringify(['docs/**', 'openspec/**', '*.md', 'LICENSE']) &&
-      Object.hasOwn(workflow.on ?? {}, 'workflow_dispatch') &&
-      !/commit.?message|head_commit|github\.event\.commits/i.test(staticDeployWorkflow)
-    );
-  } catch {
-    return false;
-  }
 }
 
 export function verifyReviewSiteMarkerSources({
@@ -208,13 +100,8 @@ export function verifyReviewSiteMarkerSources({
   checkoutStatus,
   envDeclaration,
   header,
-  holdingWorkflow,
   siteLayout,
-  staticDeployWorkflow,
 }: ReviewSiteMarkerSources): boolean {
-  const uatBuildStep = /- name: Build hosted UAT static frontend[\s\S]*?run: pnpm build:web/.exec(
-    staticDeployWorkflow,
-  )?.[0];
   return (
     envDeclaration.includes("readonly SHOW_REVIEW_SITE_MARKER?: 'true';") &&
     header.includes("import.meta.env.SHOW_REVIEW_SITE_MARKER === 'true'") &&
@@ -234,10 +121,7 @@ export function verifyReviewSiteMarkerSources({
     !header.includes('PUBLIC_SHOW_REVIEW_SITE_MARKER') &&
     !siteLayout.includes('PUBLIC_SHOW_REVIEW_SITE_MARKER') &&
     !checkoutRoutes.includes('PUBLIC_SHOW_REVIEW_SITE_MARKER') &&
-    !header.includes('Astro.url.hostname') &&
-    uatBuildStep?.includes("SHOW_REVIEW_SITE_MARKER: 'true'") === true &&
-    (staticDeployWorkflow.match(/SHOW_REVIEW_SITE_MARKER/g) ?? []).length === 1 &&
-    !holdingWorkflow.includes('SHOW_REVIEW_SITE_MARKER')
+    !header.includes('Astro.url.hostname')
   );
 }
 

@@ -34,8 +34,8 @@ The system SHALL run targeted local checks after behavior-changing implementatio
 - **WHEN** `pnpm validate:checks` succeeds
 - **THEN** all current unit-test and workspace-check leaves have succeeded for its recorded source identity
 - **AND** its evidence is explicitly partial because target builds have not run
-- **AND** CI still requires both target builds, combined artifacts, the whole end-to-end suite and staff previews before UAT deployment; the unused-code audit runs separately
-- **AND** checks and target builds may run concurrently, but failed checks prevent deployment and final candidate assembly.
+- **AND** CI still requires the content-free UAT build, the whole end-to-end suite and staff previews before UAT deployment; the unused-code audit runs separately
+- **AND** checks and the build may run concurrently, but failed checks prevent deployment.
 
 ### Requirement: Local end-to-end harness is deterministic and opt-in
 
@@ -107,6 +107,28 @@ Validation SHALL prove target isolation, matching Cloudflare hosting, immutable 
 - **THEN** hosted release identity is verified for that SHA and the push run's read-only static smoke verifies static routes, Review Site Marker and cache headers
 - **AND** the manual UAT smoke verifies checkout return paths and signed test-provider processing
 - **AND** evidence identifies the new UAT origin rather than the retired GitHub Pages site.
+
+### Requirement: Hosted public output passes the public performance gates
+
+The eager-JavaScript budgets, route isolation and image-markup checks SHALL run on every push against the Local fixture build that the end-to-end suite uses, and the hosted release build SHALL NOT repeat them against its own output. The ceiling of this substitution (HOST-12) is chunk-split drift between the fixture build and the hosted renderer build, which no pre-deploy gate measures; the push's UAT static smoke detects it before PRD promotion.
+
+#### Scenario: The hosted public build completes
+
+- **WHEN** the end-to-end job builds the Local fixture with `pnpm build:web`
+- **THEN** route isolation and the bundle-graph budgets run against its output
+- **AND** a failing check stops the push before UAT deploys.
+
+#### Scenario: Hosted chunk output drifts from the fixture
+
+- **WHEN** the hosted renderer's client chunks diverge from the fixture build's
+- **THEN** no pre-deploy gate fails on that divergence
+- **AND** the UAT static smoke after deployment fails the run, so the release cannot be promoted.
+
+#### Scenario: Build options differ between server and client
+
+- **WHEN** an option is needed only for the hosted server bundle, such as strict module execution order
+- **THEN** it applies to the SSR build only
+- **AND** the hosted client bundles carry no wrappers from it.
 
 ## REMOVED Requirements
 

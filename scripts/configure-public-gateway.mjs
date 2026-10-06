@@ -22,6 +22,11 @@ async function request(method, body) {
 }
 const project = await request('GET');
 assert.equal(project.name, name);
+// Read-only credential check: a release fails here, before any migration, when the Pages token is unusable.
+if (process.argv[3] === '--check') {
+  console.log(`${target.toUpperCase()} Pages credential verified.`);
+  process.exit(0);
+}
 const bindings = project.deployment_configs.production.services ?? {};
 const service = `blackbox-records-public-${target}`;
 if (bindings.PUBLIC_SITE?.service !== service)

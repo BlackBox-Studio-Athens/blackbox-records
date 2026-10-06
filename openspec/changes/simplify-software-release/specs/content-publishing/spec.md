@@ -55,3 +55,31 @@ Content Publication and Software Release promotion SHALL NOT overwrite a newer a
 - **WHEN** code is promoted while a publication request is pending
 - **THEN** promotion keeps the accepted snapshot pointer and rebuilds no content
 - **AND** the publication still activates against the promoted renderer, or stops for a safe retry, instead of downgrading content.
+
+### Requirement: Publication uses a complete immutable snapshot
+
+The public renderer SHALL serve one validated published-content snapshot and its referenced media, selected through the environment's accepted R2 pointer. It SHALL NOT mix revisions, include drafts, or silently fall back to stale repository content when loading the snapshot fails. No software build SHALL read, restore or bundle a snapshot, a media file or a content identity, and no build SHALL hold a CMS export credential.
+
+#### Scenario: Another editor saves during a build
+
+- **WHEN** a publication or renderer refresh is already using a captured revision
+- **THEN** it finishes against that revision without including the later save
+- **AND** the later published revision can be processed separately.
+
+#### Scenario: Snapshot export or validation fails
+
+- **WHEN** content, references, or required media cannot be validated
+- **THEN** the accepted pointer does not move
+- **AND** the previously accepted snapshot remains served with a visible failure status for staff.
+
+#### Scenario: A software release is built
+
+- **WHEN** a UAT or PRD release is built
+- **THEN** the build is content-free and the renderer reads its environment's accepted snapshot from R2 at runtime
+- **AND** the release neither changes nor depends on the live pointer's generation.
+
+#### Scenario: Published distro has no commerce setup yet
+
+- **WHEN** a published Distro source is absent from the runtime catalog
+- **THEN** the snapshot retains its canonical source-slug display entry so existing storefront content stays browsable
+- **AND** an existing bound identity takes precedence; this display projection creates no D1 item, Product, Price, stock or checkout eligibility.

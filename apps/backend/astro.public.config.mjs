@@ -15,12 +15,8 @@ const { default: tailwindcss } = await import(
 const environment = process.env.BLACKBOX_BUILD_ENV || 'local';
 if (!['local', 'uat', 'prd'].includes(environment)) throw new Error('Select a public environment.');
 const resources = JSON.parse(readFileSync(local('cms-resources.json'), 'utf8'))[environment];
-const content = process.env.PUBLIC_CONTENT_IDENTITY
-  ? JSON.parse(readFileSync(process.env.PUBLIC_CONTENT_IDENTITY, 'utf8'))
-  : null;
-const bootstrap = content
-  ? { id: content.publicationId, snapshotSha256: content.snapshotSha256, ciRunId: content.ciRunId, generation: 0 }
-  : null;
+// Content-free builds: the renderer reads its published snapshot pointer from R2, never a bundled bootstrap.
+const bootstrap = null;
 const identity = {
   sha: process.env.SOURCE_SHA || '0'.repeat(40),
   runId: process.env.GITHUB_RUN_ID || 'local',
@@ -79,12 +75,6 @@ export default defineConfig({
     {
       name: 'published-runtime-routes',
       hooks: {
-        'astro:route:setup': ({ route }) => {
-          if (route.component.replaceAll('\\', '/').includes('/pages/assets/catalog/')) {
-            route.component = local('src/cms/public-asset.ts');
-            route.prerender = false;
-          }
-        },
         'astro:routes:resolved': ({ routes }) => {
           writeFileSync(local('.emdash/public-route-patterns.json'), JSON.stringify(publicRoutePatterns(routes)));
         },

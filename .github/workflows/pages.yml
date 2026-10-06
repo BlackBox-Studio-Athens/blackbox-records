@@ -3,73 +3,42 @@ on:
   push:
     branches: [main]
     paths-ignore: [docs/**, openspec/**, '*.md', LICENSE]
-  workflow_dispatch:
-    inputs:
-      artifact_commit_sha:
-        description: Full source SHA. Required for PRD promotion; UAT defaults to the triggering SHA.
-        type: string
-      candidate_run_id:
-        description: Successful UAT candidate run ID for PRD promotion.
-        type: string
-      target:
-        description: UAT candidate or PRD code promotion; PRD mutations require their separate confirmation input.
-        type: choice
-        default: uat
-        options: [uat, prd]
-      confirm_code_promotion:
-        description: Promote this reviewed candidate to disabled PRD; no catalog or launch authorization.
-        type: boolean
-        default: false
 permissions:
   contents: read
-concurrency:
-  # Preparation never waits for a hosted release. PRD retains the shared mutation lock.
-  group: ${{ inputs.target == 'prd' && 'blackbox-release' || format('blackbox-preparation-{0}', github.run_id) }}
-  cancel-in-progress: false
 env:
   CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
   UAT_PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
-  PRD_PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
-  SOURCE_SHA: ${{ inputs.artifact_commit_sha || github.sha }}
-  CANDIDATE_RUN_ID: ${{ inputs.target == 'prd' && inputs.candidate_run_id || '' }}
-  CONFIRM_CODE_PROMOTION: ${{ inputs.confirm_code_promotion }}
-  RELEASE_TOOLS_DIR: ${{ (inputs.artifact_commit_sha || github.sha) == github.sha && '.' || '.codex-artifacts/release-tools' }}
+  SOURCE_SHA: ${{ github.sha }}
 jobs:
-  # The release's critical path: lint and tests+typecheck run on two runners at once.
+  # Pushing to main deploys UAT only: the checks and both browser suites run in parallel and gate the deploy.
+  # PRD is a separate manual run of promote-prd.yml.
   check-candidate:
-    if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
     strategy:
       fail-fast: false
       matrix:
         part: [lint, tests]
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}-checks-{1}', github.run_id, matrix.part) || format('auto-checks-{0}', matrix.part) }}
+      group: ci-${{ github.ref }}-checks-${{ matrix.part }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - &immutable-main
-        name: Require immutable main source
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          [[ "$GITHUB_REF" == 'refs/heads/main' ]]
-          [[ "$SOURCE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          gh api "repos/$GITHUB_REPOSITORY/compare/$SOURCE_SHA...main" --jq '.status' | grep -Eq '^(ahead|identical)$'
-      - name: Checkout
+      - &checkout
+        name: Checkout
         uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-          ref: ${{ inputs.artifact_commit_sha || github.sha }}
-      - name: Setup pnpm
+      - &pnpm
+        name: Setup pnpm
         uses: pnpm/action-setup@v6.1.0
-      - name: Setup Node.js
+      - &node
+        name: Setup Node.js
         uses: actions/setup-node@v7.0.0
         with:
           node-version-file: .node-version
           cache: pnpm
-      - name: Install dependencies
+      - &install
+        name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Run validation checks
         # nx.json keeps 3 for laptops; public-repository runners have 4 vCPUs.
@@ -84,339 +53,15 @@ jobs:
           path: .codex-artifacts/validation
           if-no-files-found: ignore
           retention-days: 7
-  prepare-uat:
-    if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}-uat', github.run_id) || 'auto-uat' }}
-      cancel-in-progress: true
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - *immutable-main
-      - &checkout
-        name: Checkout
-        uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-          ref: ${{ inputs.artifact_commit_sha || github.sha }}
-      - &pnpm
-        name: Setup pnpm
-        uses: pnpm/action-setup@v6.1.0
-      - &node
-        name: Setup Node.js
-        uses: actions/setup-node@v7.0.0
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-      - &install
-        name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - &astro-cache-restore
-        name: Restore Astro image cache
-        id: astro-cache
-        uses: actions/cache/restore@v6.1.0
-        with:
-          path: apps/web/node_modules/.astro/assets
-          key: astro-assets-v1-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('pnpm-lock.yaml', 'package.json', 'apps/web/package.json', 'apps/web/astro.config.mjs') }}-${{ inputs.artifact_commit_sha || github.sha }}-${{ github.run_id }}
-          restore-keys: |
-            astro-assets-v1-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('pnpm-lock.yaml', 'package.json', 'apps/web/package.json', 'apps/web/astro.config.mjs') }}-
-      - &astro-cache-restore-report
-        name: Record Astro image cache restore
-        id: astro-cache-restore-report
-        if: ${{ always() }}
-        env:
-          ASTRO_CACHE_FINGERPRINT: ${{ hashFiles('apps/web/node_modules/.astro/assets/**') }}
-          ASTRO_CACHE_HIT: ${{ steps.astro-cache.outputs.cache-hit }}
-        run: |
-          set -euo pipefail
-          bytes=$(du -sb apps/web/node_modules/.astro/assets 2>/dev/null | cut -f1 || true)
-          echo "fingerprint=${ASTRO_CACHE_FINGERPRINT}" >> "$GITHUB_OUTPUT"
-          echo "Astro image cache restore: hit=${ASTRO_CACHE_HIT} bytes=${bytes:-0}" >> "$GITHUB_STEP_SUMMARY"
-      - &release-tools
-        name: Checkout trusted release tooling
-        if: ${{ inputs.artifact_commit_sha && inputs.artifact_commit_sha != github.sha }}
-        uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-          ref: ${{ github.sha }}
-          path: .codex-artifacts/release-tools
-          sparse-checkout: |
-            scripts/
-            apps/backend/cms-resources.json
-          sparse-checkout-cone-mode: false
-      # Restore uses a cached media file only when its sha256 equals the accepted snapshot's digest.
-      - &media-cache-restore
-        name: Restore publication media cache
-        id: media-cache
-        uses: actions/cache/restore@v6.1.0
-        with:
-          path: .codex-artifacts/publication-media
-          key: publication-media-v1-${{ github.job }}-${{ github.run_id }}
-          restore-keys: |
-            publication-media-v1-${{ github.job }}-
-      - &media-cache-restore-report
-        name: Record publication media cache restore
-        id: media-cache-restore-report
-        env:
-          MEDIA_CACHE_FINGERPRINT: ${{ hashFiles('.codex-artifacts/publication-media/**') }}
-          MEDIA_CACHE_MATCHED_KEY: ${{ steps.media-cache.outputs.cache-matched-key }}
-        run: |
-          set -euo pipefail
-          bytes=$(du -sb .codex-artifacts/publication-media 2>/dev/null | cut -f1 || true)
-          echo "fingerprint=${MEDIA_CACHE_FINGERPRINT}" >> "$GITHUB_OUTPUT"
-          echo "Publication media cache restore: key=${MEDIA_CACHE_MATCHED_KEY:-none} bytes=${bytes:-0}" >> "$GITHUB_STEP_SUMMARY"
-      - name: Restore current UAT publication
-        id: uat-content
-        env:
-          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets.UAT_CMS_PUBLICATION_EXPORT_TOKEN }}
-          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets.UAT_CMS_EXPORT_ACCESS_CLIENT_ID }}
-          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets.UAT_CMS_EXPORT_ACCESS_CLIENT_SECRET }}
-          CMS_PUBLICATION_MAX_REQUESTS: ${{ vars.UAT_CMS_PUBLICATION_MAX_REQUESTS }}
-          CMS_PUBLICATION_MEDIA_CACHE: .codex-artifacts/publication-media
-        run: |
-          tool=scripts/restore-published-content.mjs
-          if [[ -f .codex-artifacts/release-tools/scripts/restore-published-content.mjs ]]; then tool=.codex-artifacts/release-tools/scripts/restore-published-content.mjs; fi
-          node --import tsx "$tool" uat
-      - &media-cache-candidate
-        name: Measure publication media cache candidate
-        id: media-cache-candidate
-        env:
-          MEDIA_CACHE_FINGERPRINT_BEFORE: ${{ steps.media-cache-restore-report.outputs.fingerprint }}
-          MEDIA_CACHE_FINGERPRINT_AFTER: ${{ hashFiles('.codex-artifacts/publication-media/**') }}
-        run: |
-          set -euo pipefail
-          bytes=$(du -sb .codex-artifacts/publication-media 2>/dev/null | cut -f1 || true)
-          bytes=${bytes:-0}
-          echo "bytes=${bytes}" >> "$GITHUB_OUTPUT"
-          if [[ -z "$MEDIA_CACHE_FINGERPRINT_AFTER" ]]; then
-            echo "save=false" >> "$GITHUB_OUTPUT"
-            echo "Publication media cache candidate: bytes=${bytes}, save=false (empty)" >> "$GITHUB_STEP_SUMMARY"
-          elif [[ "$MEDIA_CACHE_FINGERPRINT_AFTER" == "$MEDIA_CACHE_FINGERPRINT_BEFORE" ]]; then
-            echo "save=false" >> "$GITHUB_OUTPUT"
-            echo "Publication media cache candidate: bytes=${bytes}, save=false (unchanged)" >> "$GITHUB_STEP_SUMMARY"
-          elif (( bytes <= 536870912 )); then
-            echo "save=true" >> "$GITHUB_OUTPUT"
-            echo "Publication media cache candidate: bytes=${bytes}, save=true" >> "$GITHUB_STEP_SUMMARY"
-          else
-            # Restore prunes media the current snapshot does not reference, so only an over-budget snapshot lands here.
-            echo "save=false" >> "$GITHUB_OUTPUT"
-            echo "Publication media cache candidate: bytes=${bytes}, save=false (over 512 MiB)" >> "$GITHUB_STEP_SUMMARY"
-          fi
-      - &media-cache-save
-        name: Save publication media cache
-        if: ${{ steps.media-cache-candidate.outputs.save == 'true' }}
-        continue-on-error: true
-        uses: actions/cache/save@v6.1.0
-        with:
-          path: .codex-artifacts/publication-media
-          key: ${{ steps.media-cache.outputs.cache-primary-key }}
-      - name: Build hosted UAT static frontend
-        env:
-          CMS_CONTENT_SOURCE: ${{ steps.uat-content.outputs.source }}
-          CMS_CONTENT_SNAPSHOT: ${{ github.workspace }}/.codex-artifacts/release-content/uat/snapshot.json
-          CMS_CONTENT_SHA256: ${{ steps.uat-content.outputs.sha256 }}
-          CMS_CONTENT_ENVIRONMENT: uat
-          ASTRO_SITE_URL: https://blackbox-records-web-uat.pages.dev
-          ASTRO_BASE_PATH: /
-          PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
-          SHOW_REVIEW_SITE_MARKER: 'true'
-        run: pnpm build:web
-      - name: Retain UAT artifact
-        run: |
-          mkdir -p .codex-artifacts/release/uat
-          cp -R apps/web/dist .codex-artifacts/release/uat/public
-      - name: Build UAT Worker and renderer
-        run: |
-          pnpm --filter @blackbox/backend build:cms --env uat
-          cp -R apps/backend/dist .codex-artifacts/release/uat/worker
-          cp apps/backend/.emdash/migrations.json .codex-artifacts/release/uat/worker/migrations.json
-          node scripts/build-public-release.mjs uat
-          tool=scripts/release-candidate.mjs
-          if [[ -f .codex-artifacts/release-tools/scripts/release-candidate.mjs ]]; then tool=.codex-artifacts/release-tools/scripts/release-candidate.mjs; fi
-          node "$tool" pack-target uat
-      - name: Measure Astro image cache candidate
-        id: astro-cache-candidate
-        if: ${{ success() }}
-        env:
-          ASTRO_CACHE_FINGERPRINT_BEFORE: ${{ steps.astro-cache-restore-report.outputs.fingerprint }}
-          ASTRO_CACHE_FINGERPRINT_AFTER: ${{ hashFiles('apps/web/node_modules/.astro/assets/**') }}
-        run: |
-          set -euo pipefail
-          bytes=$(du -sb apps/web/node_modules/.astro/assets 2>/dev/null | cut -f1 || true)
-          bytes=${bytes:-0}
-          echo "bytes=${bytes}" >> "$GITHUB_OUTPUT"
-          if [[ -z "$ASTRO_CACHE_FINGERPRINT_AFTER" ]]; then
-            echo "save=false" >> "$GITHUB_OUTPUT"
-            echo "Astro image cache candidate: bytes=${bytes}, save=false (empty)" >> "$GITHUB_STEP_SUMMARY"
-          elif [[ "$ASTRO_CACHE_FINGERPRINT_AFTER" == "$ASTRO_CACHE_FINGERPRINT_BEFORE" ]]; then
-            echo "save=false" >> "$GITHUB_OUTPUT"
-            echo "Astro image cache candidate: bytes=${bytes}, save=false (unchanged)" >> "$GITHUB_STEP_SUMMARY"
-          elif (( bytes <= 629145600 )); then
-            echo "save=true" >> "$GITHUB_OUTPUT"
-            echo "Astro image cache candidate: bytes=${bytes}, save=true" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "save=false" >> "$GITHUB_OUTPUT"
-            echo "Astro image cache candidate: bytes=${bytes}, save=false (over 600 MiB)" >> "$GITHUB_STEP_SUMMARY"
-          fi
-      - name: Save Astro image cache
-        if: ${{ steps.astro-cache-candidate.outputs.save == 'true' }}
-        continue-on-error: true
-        uses: actions/cache/save@v6.1.0
-        with:
-          path: apps/web/node_modules/.astro/assets
-          key: astro-assets-v1-${{ runner.os }}-${{ runner.arch }}-node24-${{ hashFiles('pnpm-lock.yaml', 'package.json', 'apps/web/package.json', 'apps/web/astro.config.mjs') }}-${{ inputs.artifact_commit_sha || github.sha }}-${{ github.run_id }}
-      - name: Upload verified UAT target bundle
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: release-uat-${{ inputs.artifact_commit_sha || github.sha }}
-          path: .codex-artifacts/release
-          include-hidden-files: true
-          if-no-files-found: error
-          compression-level: 1
-          retention-days: 7
-      - name: Upload validation diagnostics
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: validation-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
-          path: .codex-artifacts/validation
-          if-no-files-found: ignore
-          retention-days: 7
-  prepare-prd:
-    if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}-prd', github.run_id) || 'auto-prd' }}
-      cancel-in-progress: true
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - *immutable-main
-      - *checkout
-      - *pnpm
-      - *node
-      - *install
-      - *astro-cache-restore
-      - *astro-cache-restore-report
-      - *release-tools
-      - *media-cache-restore
-      - *media-cache-restore-report
-      - name: Restore current PRD publication
-        id: prd-content
-        env:
-          CMS_PUBLICATION_EXPORT_TOKEN: ${{ secrets.PRD_CMS_PUBLICATION_EXPORT_TOKEN }}
-          CMS_EXPORT_ACCESS_CLIENT_ID: ${{ secrets.PRD_CMS_EXPORT_ACCESS_CLIENT_ID }}
-          CMS_EXPORT_ACCESS_CLIENT_SECRET: ${{ secrets.PRD_CMS_EXPORT_ACCESS_CLIENT_SECRET }}
-          CMS_PUBLICATION_MAX_REQUESTS: ${{ vars.PRD_CMS_PUBLICATION_MAX_REQUESTS }}
-          CMS_PUBLICATION_MEDIA_CACHE: .codex-artifacts/publication-media
-        run: |
-          tool=scripts/restore-published-content.mjs
-          if [[ -f .codex-artifacts/release-tools/scripts/restore-published-content.mjs ]]; then tool=.codex-artifacts/release-tools/scripts/restore-published-content.mjs; fi
-          node --import tsx "$tool" prd
-      - *media-cache-candidate
-      - *media-cache-save
-      - name: Build hosted PRD static frontend
-        env:
-          CMS_CONTENT_SOURCE: ${{ steps.prd-content.outputs.source }}
-          CMS_CONTENT_SNAPSHOT: ${{ github.workspace }}/.codex-artifacts/release-content/prd/snapshot.json
-          CMS_CONTENT_SHA256: ${{ steps.prd-content.outputs.sha256 }}
-          CMS_CONTENT_ENVIRONMENT: prd
-          ASTRO_SITE_URL: https://blackbox-records-web.pages.dev
-          ASTRO_BASE_PATH: /
-          PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
-        run: pnpm build:web
-      - name: Build PRD Worker and renderer
-        run: |
-          mkdir -p .codex-artifacts/release/prd
-          cp -R apps/web/dist .codex-artifacts/release/prd/public
-          pnpm --filter @blackbox/backend build:cms --env prd --out-dir ../../.codex-artifacts/release/prd/cms
-          cp apps/backend/.emdash/migrations.json .codex-artifacts/release/prd/cms/migrations.json
-          node scripts/build-public-release.mjs prd
-          tool=scripts/release-candidate.mjs
-          if [[ -f .codex-artifacts/release-tools/scripts/release-candidate.mjs ]]; then tool=.codex-artifacts/release-tools/scripts/release-candidate.mjs; fi
-          node "$tool" pack-target prd
-      - name: Upload verified PRD target bundle
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: release-prd-${{ inputs.artifact_commit_sha || github.sha }}
-          path: .codex-artifacts/release
-          include-hidden-files: true
-          if-no-files-found: error
-          compression-level: 1
-          retention-days: 7
-  assemble-candidate:
-    if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
-    needs: [check-candidate, prepare-uat, prepare-prd]
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}-assembly', github.run_id) || 'auto-assembly' }}
-      cancel-in-progress: true
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - *checkout
-      - name: Setup Node.js for bundle assembly
-        uses: actions/setup-node@v7.0.0
-        with:
-          node-version-file: .node-version
-      - *release-tools
-      - name: Download verified UAT target bundle
-        uses: actions/download-artifact@v8.0.1
-        with:
-          name: release-uat-${{ inputs.artifact_commit_sha || github.sha }}
-          path: .codex-artifacts/release-targets/uat
-      - name: Download verified PRD target bundle
-        uses: actions/download-artifact@v8.0.1
-        with:
-          name: release-prd-${{ inputs.artifact_commit_sha || github.sha }}
-          path: .codex-artifacts/release-targets/prd
-      - name: Verify and assemble immutable release bundle
-        run: |
-          tool=scripts/release-candidate.mjs
-          if [[ -f .codex-artifacts/release-tools/scripts/release-candidate.mjs ]]; then tool=.codex-artifacts/release-tools/scripts/release-candidate.mjs; fi
-          node "$tool" assemble
-      - name: Upload verified release bundle
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: release-${{ inputs.artifact_commit_sha || github.sha }}
-          path: .codex-artifacts/release
-          include-hidden-files: true
-          if-no-files-found: error
-          compression-level: 1
-          retention-days: 7
-  # Read-only, so it runs beside the checks; uat-release still needs check-candidate before any mutation.
-  inspect-uat-pages:
-    needs: [prepare-uat]
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-    steps:
-      - *checkout
-      - name: Setup Node.js
-        uses: actions/setup-node@v7.0.0
-        with:
-          node-version-file: .node-version
-      - *release-tools
-      - name: Download verified UAT target bundle
-        uses: actions/download-artifact@v8.0.1
-        with:
-          name: release-uat-${{ inputs.artifact_commit_sha || github.sha }}
-          path: .codex-artifacts/release
-      - name: Verify Pages credential and UAT preconditions
-        run: |
-          tool=scripts/release-candidate.mjs
-          if [[ -f .codex-artifacts/release-tools/scripts/release-candidate.mjs ]]; then tool=.codex-artifacts/release-tools/scripts/release-candidate.mjs; fi
-          node "$tool" verify uat
   # The whole end-to-end suite runs on every push against a Local production fixture, in two balanced Playwright
   # shards beside the checks; a red shard stops the UAT deploy.
   e2e:
-    if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2]
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}-e2e-{1}', github.run_id, matrix.shard) || format('auto-e2e-{0}', matrix.shard) }}
+      group: ci-${{ github.ref }}-e2e-${{ matrix.shard }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -443,9 +88,8 @@ jobs:
           retention-days: 7
   # Builds the PRD staff app and checks the previews in Chromium and Firefox; offline, so it holds no credential.
   staff-previews:
-    if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}-staff-previews', github.run_id) || 'auto-staff-previews' }}
+      group: ci-${{ github.ref }}-staff-previews
       cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -469,44 +113,96 @@ jobs:
           path: .codex-artifacts/validation
           if-no-files-found: ignore
           retention-days: 7
-  uat-release:
-    if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
-    needs: [check-candidate, prepare-uat, inspect-uat-pages, e2e, staff-previews]
+  # Content-free: the renderer reads its accepted snapshot at runtime, so the build holds no CMS credential or content.
+  build-uat:
     concurrency:
-      group: blackbox-release
-      cancel-in-progress: false
-    permissions:
-      contents: read
-      actions: read
-    uses: ./.github/workflows/uat-release-sequence.yml
-    with:
-      artifact_commit_sha: ${{ inputs.artifact_commit_sha || github.sha }}
-    # Inherit repository secrets; the called Worker job also binds the UAT environment.
-    secrets: inherit
-  # Smokes the UAT this run just deployed. A red smoke fails the run, and PRD promotion refuses a failed candidate run.
-  uat-static-smoke:
-    if: ${{ github.event_name == 'push' || inputs.target == 'uat' }}
-    needs: uat-release
+      group: ci-${{ github.ref }}-build-uat
+      cancel-in-progress: true
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - *checkout
       - *pnpm
       - *node
       - *install
+      - name: Build UAT CMS Worker and renderer
+        run: |
+          pnpm --filter @blackbox/backend build:cms --env uat --out-dir ../../.codex-artifacts/release/uat/cms
+          cp apps/backend/.emdash/migrations.json .codex-artifacts/release/uat/cms/migrations.json
+          node scripts/build-public-release.mjs uat
+      # Only deploy-uat reads this, within the run. Three days let a failed run be rerun without rebuilding it.
+      - name: Upload UAT release
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: release-uat
+          path: .codex-artifacts/release/uat
+          include-hidden-files: true
+          if-no-files-found: error
+          compression-level: 1
+          retention-days: 3
+  # One serialized mutation per push: a newer push replaces a waiting run and never cancels one that is deploying.
+  deploy-uat:
+    needs: [check-candidate, e2e, staff-previews, build-uat]
+    concurrency:
+      group: release-uat
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-uat
+    timeout-minutes: 40
+    env:
+      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: ${{ vars.STRIPE_PAYMENT_METHOD_CONFIGURATION_ID }}
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - name: Download UAT release
+        uses: actions/download-artifact@v8.0.1
+        with:
+          name: release-uat
+          path: .codex-artifacts/release/uat
+      # Read-only, and first, so a token with no Pages access fails before any migration.
+      - name: Verify the Pages credential
+        env: &cloudflare
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/configure-public-gateway.mjs uat --check
+      - name: Verify UAT mutation preconditions
+        run: node scripts/release-candidate.mjs verify uat
+      - name: Verify UAT runtime and Stripe configuration
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          pnpm runtime:config:verify --env uat
+          pnpm stripe:webhooks:verify --env uat
+          pnpm stripe:payment-methods:verify
+      - name: Apply UAT migrations
+        env: *cloudflare
+        run: |
+          pnpm --filter @blackbox/backend d1:migrations:apply:uat
+          pnpm --filter @blackbox/backend cms:application-migrations --env uat --apply
+          node apps/backend/scripts/migrate-cms.mjs --env uat --wrangler-config ../../.codex-artifacts/release/uat/cms/server/wrangler.json --manifest ../../.codex-artifacts/release/uat/cms/migrations.json --apply
+          pnpm --filter @blackbox/backend cms:catalog-schema --env uat
+      - name: Deploy UAT Workers
+        env: *cloudflare
+        run: |
+          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/uat/renderer/server/wrangler.json
+          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/uat/cms/server/wrangler.json --keep-vars
+          node scripts/release-candidate.mjs verify-worker uat
+          pnpm store:listing-readiness:verify -- --env uat --url "$UAT_PUBLIC_BACKEND_BASE_URL/api/store/listing-prices"
+      - name: Deploy UAT to Cloudflare Pages
+        env: *cloudflare
+        run: |
+          node scripts/configure-public-gateway.mjs uat
+          pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/uat/public --project-name=blackbox-records-web-uat --branch=main --commit-hash="$SOURCE_SHA"
+          node scripts/release-candidate.mjs verify-hosted uat
+      # Smokes the UAT this run just deployed. A red smoke fails the run, and promotion refuses a failed run.
       - name: Install Chromium for the smoke
         run: pnpm exec playwright install --with-deps chromium
       - name: Run UAT static smoke
-        run: |
-          pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure
-      # Runs outside the release lock, so a later push can redeploy UAT mid-smoke; this run is then not promotable.
+        run: pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure
       - name: Require UAT to still serve this run
-        run: |
-          set -euo pipefail
-          curl -fsS https://blackbox-records-web-uat.pages.dev/release.json \
-            | jq -e --arg sha "$SOURCE_SHA" --arg run "$GITHUB_RUN_ID" '.sha == $sha and (.runId | tostring) == $run' > /dev/null \
-            || { echo "UAT was superseded during the smoke; this run cannot be promoted." >&2; exit 1; }
-          echo "UAT static smoke passed for $SOURCE_SHA" >> "$GITHUB_STEP_SUMMARY"
+        run: node scripts/release-candidate.mjs verify-hosted uat
       - name: Upload UAT static smoke evidence
         if: ${{ always() }}
         uses: actions/upload-artifact@v7.0.1
@@ -515,137 +211,3 @@ jobs:
           path: .codex-artifacts/smoke/uat/uat-static
           if-no-files-found: ignore
           retention-days: 7
-  # PRD promotion is deploy-only: UAT must still serve the selected candidate, then PRD is deployed. The browser
-  # suites and the UAT smoke already passed in the candidate's push run, which validateRun requires to have succeeded.
-  accept-uat-identity:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      actions: read
-    steps:
-      # Main ancestry is verified before the candidate checkout, so its code runs only if it is in main history.
-      - *immutable-main
-      # Runs from main's workflow, so a candidate run made before these suites existed cannot skip them.
-      - name: Require the candidate run's suites to have passed
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN_ID/jobs?per_page=100" --jq '[.jobs[] | select(.conclusion == "success") | select(.name | IN("e2e (1)", "e2e (2)", "staff-previews", "uat-static-smoke")) | .name] | unique | length')
-          [[ "$passed" == 4 ]] || { echo "Candidate run $CANDIDATE_RUN_ID lacks passed e2e (1), e2e (2), staff-previews and uat-static-smoke jobs." >&2; exit 1; }
-      - *checkout
-      - name: Setup Node.js
-        uses: actions/setup-node@v7.0.0
-        with:
-          node-version-file: .node-version
-      - &download-selected
-        name: Download selected candidate artifacts
-        uses: actions/download-artifact@v8.0.1
-        with:
-          name: release-${{ inputs.artifact_commit_sha }}
-          run-id: ${{ inputs.candidate_run_id }}
-          github-token: ${{ github.token }}
-          path: .codex-artifacts/release
-      - name: Verify UAT serves the selected candidate
-        run: node scripts/release-candidate.mjs verify-hosted uat
-  deploy-prd:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
-    needs: accept-uat-identity
-    runs-on: ubuntu-latest
-    environment: catalog-promotion-prd
-    timeout-minutes: 25
-    permissions:
-      contents: read
-      actions: read
-    env:
-      GH_TOKEN: ${{ github.token }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      RELEASE_TOOLS_DIR: .
-    steps:
-      # Main ancestry is verified before the candidate checkout, so its code runs only if it is in main history.
-      - *immutable-main
-      # The candidate source, not the dispatched main, so a later main commit cannot change the compared configuration.
-      - *checkout
-      - *pnpm
-      - *node
-      - *install
-      - *download-selected
-      - name: Verify PRD mutation preconditions
-        run: node scripts/release-candidate.mjs verify prd
-      - name: Apply compatible PRD migrations
-        run: |
-          node scripts/release-candidate.mjs verify prd
-          pnpm --filter @blackbox/backend d1:migrations:apply:prd
-      - name: Prepare PRD CMS application schema
-        run: |
-          node scripts/release-candidate.mjs verify prd
-          pnpm --filter @blackbox/backend cms:application-migrations --env prd --apply --confirm-live-cms-changes
-      - name: Apply reviewed PRD EmDash core migrations
-        run: |
-          node scripts/release-candidate.mjs verify prd
-          set -euo pipefail
-          config='../../.codex-artifacts/release/prd/cms/server/wrangler.json'
-          report="$RUNNER_TEMP/prd-cms-migrations.json"
-          set +e
-          node apps/backend/scripts/migrate-cms.mjs --env prd --wrangler-config "$config" --manifest "${config%/server/wrangler.json}/migrations.json" > "$report"
-          status=$?
-          set -e
-          if [[ "$status" -eq 0 ]]; then
-            cat "$report" >> "$GITHUB_STEP_SUMMARY"
-          elif [[ "$status" -eq 2 ]]; then
-            fingerprint=$(node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const r=JSON.parse(s);process.stdout.write(r.target.fingerprint)})' < "$report")
-            [[ "$fingerprint" =~ ^[a-f0-9]{64}$ ]]
-            cat "$report" >> "$GITHUB_STEP_SUMMARY"
-            node apps/backend/scripts/migrate-cms.mjs --env prd --wrangler-config "$config" --manifest "${config%/server/wrangler.json}/migrations.json" --apply --fingerprint "$fingerprint" --confirm-live-cms-changes
-          else
-            cat "$report"
-            exit "$status"
-          fi
-      - name: Prepare PRD CMS catalog fields
-        run: |
-          node scripts/release-candidate.mjs verify prd
-          pnpm --filter @blackbox/backend cms:catalog-schema --env prd --confirm-live-cms-changes
-      - name: Deploy candidate PRD public renderer
-        run: |
-          node scripts/release-candidate.mjs verify prd
-          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/prd/renderer/server/wrangler.json
-      - name: Deploy candidate combined PRD CMS Worker
-        run: |
-          node scripts/release-candidate.mjs verify prd
-          pnpm --filter @blackbox/backend exec wrangler versions upload --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
-          pnpm --filter @blackbox/backend exec wrangler versions deploy --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes
-          node scripts/release-candidate.mjs verify-worker prd
-      - name: Record actual deployed revisions
-        if: ${{ always() }}
-        run: node "$RELEASE_TOOLS_DIR/scripts/release-candidate.mjs" observe prd >> "$GITHUB_STEP_SUMMARY"
-  deploy-prd-static:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}
-    needs: deploy-prd
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read
-    timeout-minutes: 25
-    env:
-      GH_TOKEN: ${{ github.token }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-    steps:
-      # Main ancestry is verified before the candidate checkout, so its code runs only if it is in main history.
-      - *immutable-main
-      # The candidate source, not the dispatched main, so a later main commit cannot change the compared configuration.
-      - *checkout
-      - *pnpm
-      - *node
-      - *install
-      - *download-selected
-      - name: Deploy PRD static frontend to Cloudflare Pages
-        run: |
-          node scripts/release-candidate.mjs verify prd
-          node scripts/configure-public-gateway.mjs prd
-          pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/public --project-name=blackbox-records-web --branch=main --commit-hash="$SOURCE_SHA"
-          node scripts/release-candidate.mjs verify-hosted prd
-      - name: Record actual deployed revisions
-        if: ${{ always() }}
-        run: node scripts/release-candidate.mjs observe prd >> "$GITHUB_STEP_SUMMARY"

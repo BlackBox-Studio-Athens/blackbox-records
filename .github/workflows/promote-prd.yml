@@ -1,0 +1,79 @@
+# Promotes the release UAT serves to disabled PRD. Dispatching this workflow is the confirmation; it takes no inputs.
+# The browser suites and the UAT smoke already passed in the candidate's push run.
+name: Promote UAT to PRD
+on: workflow_dispatch
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: release-prd
+  cancel-in-progress: false
+env:
+  CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+  PRD_PUBLIC_BACKEND_BASE_URL: ${{ vars.PRD_PUBLIC_BACKEND_BASE_URL }}
+jobs:
+  deploy-prd:
+    runs-on: ubuntu-latest
+    environment: catalog-promotion-prd
+    timeout-minutes: 25
+    steps:
+      - name: Require the main branch
+        run: '[[ "$GITHUB_REF" == refs/heads/main ]]'
+      - name: Checkout trusted main
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      # Main-side tooling proves the candidate (a successful push run in main history, with its suites) before
+      # any of its code is checked out or installed; the result becomes SOURCE_SHA and CANDIDATE_RUN_*.
+      - name: Resolve the release UAT serves
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/release-candidate.mjs resolve >> "$GITHUB_ENV"
+      - name: Checkout candidate
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ env.SOURCE_SHA }}
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.1.0
+      - name: Setup Node.js
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      # Content-free, and stamped with the candidate's run so PRD reports the same release as UAT.
+      - name: Build PRD CMS Worker and renderer
+        run: |
+          export GITHUB_RUN_ID="$CANDIDATE_RUN_ID" GITHUB_RUN_NUMBER="$CANDIDATE_RUN_NUMBER"
+          pnpm --filter @blackbox/backend build:cms --env prd --out-dir ../../.codex-artifacts/release/prd/cms
+          cp apps/backend/.emdash/migrations.json .codex-artifacts/release/prd/cms/migrations.json
+          node scripts/build-public-release.mjs prd
+      # Read-only, and first, so an unusable Pages token fails before any migration.
+      - name: Verify the Pages credential
+        env: &cloudflare
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: node scripts/configure-public-gateway.mjs prd --check
+      - name: Verify PRD mutation preconditions
+        run: node scripts/release-candidate.mjs verify prd
+      - name: Apply PRD migrations
+        env: *cloudflare
+        run: |
+          pnpm --filter @blackbox/backend d1:migrations:apply:prd
+          pnpm --filter @blackbox/backend cms:application-migrations --env prd --apply --confirm-live-cms-changes
+          node apps/backend/scripts/migrate-cms.mjs --env prd --wrangler-config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --manifest ../../.codex-artifacts/release/prd/cms/migrations.json --apply --confirm-live-cms-changes
+          pnpm --filter @blackbox/backend cms:catalog-schema --env prd --confirm-live-cms-changes
+      - name: Deploy PRD Workers
+        env: *cloudflare
+        run: |
+          pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/prd/renderer/server/wrangler.json
+          pnpm --filter @blackbox/backend exec wrangler versions upload --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          pnpm --filter @blackbox/backend exec wrangler versions deploy --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes
+          node scripts/release-candidate.mjs verify-worker prd
+      - name: Deploy PRD to Cloudflare Pages
+        env: *cloudflare
+        run: |
+          node scripts/configure-public-gateway.mjs prd
+          pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/public --project-name=blackbox-records-web --branch=main --commit-hash="$SOURCE_SHA"
+          node scripts/release-candidate.mjs verify-hosted prd

@@ -89,7 +89,7 @@ Run the repository-required full/editor gates and relevant Local CMS checks. Exi
 ## Migration Plan
 
 1. **Local and UAT:** Complete Local checks, then perform one ordinary UAT stock-first smoke with a configured-item control through the existing release workflow. Keep failure/retry simulation local; record the candidate SHA/run ID and result.
-2. **PRD code:** Review the compatible migration with the candidate. The existing `deploy-prd` job applies it before the combined Worker deployment. Use the reviewed artifact SHA, successful candidate run and `confirm_code_promotion=true`; the release workflow carries no live catalog input. No separate catalog-seeding dispatch is needed.
+2. **PRD code:** Review the compatible migration with the candidate. Run `gh workflow run promote-prd.yml` (no inputs; it promotes the release UAT serves, after proving its push run); the promotion applies the migration before the combined Worker deployment. The release workflow carries no live catalog input. No separate catalog-seeding dispatch is needed.
 3. **PRD item:** With the item-scoped staff price authorization, verify the affected item's reviewed amount on its retained variant, unchanged inventory/history and unchanged launch controls. Ambiguous legacy bindings require a separate scoped repair; this plan does not authorize it.
 4. **Rollback:** Preserve provider objects and journal history. Use a compatible reviewed candidate or forward fix, never inventory reseeding or restoration of an old provider amount.
 

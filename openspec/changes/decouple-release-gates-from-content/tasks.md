@@ -14,4 +14,4 @@
 ## 3. Acceptance
 
 - [ ] 3.1 Run `pnpm validate` on the final tree and `pnpm openspec -- validate decouple-release-gates-from-content --type change --strict`; record evidence in `validation.md`.
-- [ ] 3.2 Confirm the next Release BlackBox push run passes validate, the image-markup check and the push-run UAT static smoke (`uat-static-smoke`, after `uat-release`).
+- [ ] 3.2 Confirm the next Release BlackBox push run passes validate, the image-markup check and the push-run UAT static smoke (the last steps of `deploy-uat`).

@@ -1,57 +1,43 @@
 import assert from 'node:assert/strict';
-import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import {
-  cpSync,
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  renameSync,
-  rmSync,
-  statSync,
-  writeFileSync,
-} from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout } from 'node:timers/promises';
 
-const bundle = '.codex-artifacts/release';
-const targetBundles = '.codex-artifacts/release-targets';
-const manifestPath = `${bundle}/manifest.json`;
-const transportPath = `${bundle}/transport.json`;
-const sha256 = (value) => createHash('sha256').update(value).digest('hex');
-const readJson = (file) => JSON.parse(readFileSync(file, 'utf8'));
+const sites = {
+  uat: 'https://blackbox-records-web-uat.pages.dev',
+  prd: 'https://blackbox-records-web.pages.dev',
+};
+const backends = {
+  uat: 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev',
+  prd: 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev',
+};
 const gh = (endpoint) => JSON.parse(execFileSync('gh', ['api', endpoint], { encoding: 'utf8' }));
 
-export function configuration(env = process.env) {
-  return {
-    cloudflareAccount: env.CLOUDFLARE_ACCOUNT_ID,
-    uatSite: 'https://blackbox-records-web-uat.pages.dev',
-    prdSite: 'https://blackbox-records-web.pages.dev',
-    uatBackend: env.UAT_PUBLIC_BACKEND_BASE_URL,
-    prdBackend: env.PRD_PUBLIC_BACKEND_BASE_URL,
-    worker: sha256(readFileSync('apps/backend/wrangler.jsonc')),
-    cmsResources: sha256(readFileSync('apps/backend/cms-resources.json')),
-    cmsBuild: sha256(readFileSync('apps/backend/astro.config.mjs')),
-    publicBuild: sha256(readFileSync('apps/backend/astro.public.config.mjs')),
-    lockfile: sha256(readFileSync('pnpm-lock.yaml')),
-    migrations: inventory('apps/backend/prisma/migrations'),
-    cmsMigrations: inventory('apps/backend/cms-migrations'),
-  };
-}
-
 export async function waitForDeployment(verify, pause = () => setTimeout(5000)) {
-  // ponytail: retry complete read-only checks; poll only identities if artifact reads become costly.
-  for (let attempt = 0; attempt < 12; attempt += 1) {
+  // ponytail: retry complete read-only checks; poll only identities if these reads become costly.
+  // 36 x 5 s (about 3 minutes): a CMS Worker version deployed at 100% can report the old SHA for over a minute.
+  for (let attempt = 0; attempt < 36; attempt += 1) {
     try {
       return await verify();
     } catch (error) {
-      if (attempt === 11) throw error;
+      if (attempt === 35) throw error;
       await pause();
     }
   }
+}
+
+// The release a job builds and deploys. A promotion deploys the candidate UAT serves, so CANDIDATE_* wins.
+export function releaseIdentity(env = process.env) {
+  const release = {
+    sha: env.SOURCE_SHA,
+    runId: String(env.CANDIDATE_RUN_ID ?? env.GITHUB_RUN_ID),
+    runNumber: Number(env.CANDIDATE_RUN_NUMBER ?? env.GITHUB_RUN_NUMBER),
+  };
+  assert.match(release.sha ?? '', /^[0-9a-f]{40}$/, 'Select a full source SHA.');
+  assert.match(release.runId, /^[1-9][0-9]*$/);
+  assert.ok(Number.isSafeInteger(release.runNumber) && release.runNumber > 0, 'Invalid candidate run number.');
+  return release;
 }
 
 export function validateRun(run, sha, repository) {
@@ -61,24 +47,16 @@ export function validateRun(run, sha, repository) {
   assert.equal(run.conclusion, 'success', 'Candidate acceptance failed.');
   assert.equal(run.path, '.github/workflows/pages.yml');
   assert.equal(run.head_branch, 'main');
-  assert.ok(['push', 'workflow_dispatch'].includes(run.event));
+  assert.equal(run.event, 'push');
   assert.equal(run.repository.full_name, repository);
   assert.equal(run.head_repository.full_name, repository);
 }
 
-export function validateArtifacts(artifacts, sha) {
-  assert.ok(
-    artifacts.some((artifact) => artifact.name === `release-${sha}` && !artifact.expired),
-    'Candidate artifact missing or expired.',
-  );
-}
-
-export function validateIdentity(candidate, current, config) {
-  assert.equal(candidate.schema, 2, 'Legacy candidate contract; build and accept a fresh candidate.');
-  assert.deepEqual(candidate.configuration, config, 'Target configuration changed; revalidate the candidate.');
-  assert.equal(current.sha, candidate.sha, 'UAT no longer serves the selected source.');
-  assert.equal(String(current.runId), String(candidate.runId), 'UAT candidate was superseded.');
-  assert.equal(current.runNumber, candidate.runNumber);
+// A candidate run made before a suite joined the push pipeline cannot skip it.
+export function validateSuites(jobs) {
+  const required = ['e2e (1)', 'e2e (2)', 'staff-previews', 'deploy-uat'];
+  const passed = new Set(jobs.filter((job) => job.conclusion === 'success').map((job) => job.name));
+  for (const name of required) assert.ok(passed.has(name), `Candidate run lacks a passed ${name} job.`);
 }
 
 export function validateOrder(candidate, current) {
@@ -86,18 +64,9 @@ export function validateOrder(candidate, current) {
   if (current) assert.ok(candidate.runNumber >= current.runNumber, 'A newer candidate already mutated this target.');
 }
 
-export function validatePublicationFreshness(candidate, current) {
-  if (candidate.publicationMode === 'runtime' && current?.publicationMode === 'runtime') return;
-  assert.deepEqual(
-    candidate.content ?? null,
-    current?.content ?? null,
-    'Target content changed; refresh the artifact at the reviewed code SHA before explicit promotion.',
-  );
-}
-
 export function validateWorker(candidate, response) {
   assert.ok(response.ok, 'Worker is unavailable.');
-  assert.equal(response.headers.get('X-Release-SHA'), candidate.sha, 'Worker source differs from selected artifact.');
+  assert.equal(response.headers.get('X-Release-SHA'), candidate.sha, 'Worker source differs from the candidate.');
   assert.equal(
     Number(response.headers.get('X-Release-Run-Number')),
     candidate.runNumber,
@@ -105,558 +74,86 @@ export function validateWorker(candidate, response) {
   );
 }
 
-export async function observe(candidate, target, request = fetch) {
-  const config = candidate.configuration;
-  const backend = target === 'uat' ? config.uatBackend : config.prdBackend;
-  const site = target === 'uat' ? config.uatSite : config.prdSite;
-  const read = async (url, worker) => {
-    try {
-      const response = await request(url, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
-      assert.ok(response.ok, `HTTP ${response.status}`);
-      return worker
-        ? { sha: response.headers.get('X-Release-SHA'), runNumber: response.headers.get('X-Release-Run-Number') }
-        : await response.json();
-    } catch (error) {
-      return { unavailable: error.message };
-    }
-  };
-  const [worker, frontend] = await Promise.all([
-    read(`${backend}/api/store/capabilities`, true),
-    read(`${site}/release.json`, false),
-  ]);
-  return { target, selected: identity(candidate), worker, frontend };
-}
-
-export function inventory(directory, prefix = '') {
-  return Object.fromEntries(
-    readdirSync(directory, { withFileTypes: true })
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .flatMap((entry) => {
-        assert.ok(!entry.isSymbolicLink(), 'Release artifacts cannot contain symlinks.');
-        const relative = `${prefix}${entry.name}`;
-        const file = path.join(directory, entry.name);
-        return entry.isDirectory()
-          ? Object.entries(inventory(file, `${relative}/`))
-          : [[relative, sha256(readFileSync(file))]];
-      }),
+export function validateReviewMarker(target, html) {
+  const title = /<title>([^<]*)<\/title>/.exec(html)?.[1] ?? '';
+  const marked = title.includes('[UAT] ') && html.includes('UAT · TESTING ONLY');
+  assert.ok(
+    target === 'uat' ? marked : !title.includes('[UAT] ') && !html.includes('UAT · TESTING ONLY'),
+    'Review Site Marker mismatch.',
   );
 }
 
-function safePath(root, target, relative = '') {
-  const targetPart = String(target).replaceAll('\\', '/');
-  const relativePart = String(relative).replaceAll('\\', '/');
-  assert(
-    targetPart &&
-      !path.posix.isAbsolute(targetPart) &&
-      !path.win32.isAbsolute(targetPart) &&
-      !targetPart.split('/').includes('..'),
-    'Invalid release path.',
-  );
-  assert(
-    relativePart &&
-      !path.posix.isAbsolute(relativePart) &&
-      !path.win32.isAbsolute(relativePart) &&
-      !relativePart.split('/').includes('..'),
-    'Invalid release path.',
-  );
-  const resolved = path.resolve(root, targetPart, relativePart);
-  assert(resolved.startsWith(path.resolve(root) + path.sep), 'Release path escapes its output root.');
-  return resolved;
-}
-
-function regularFile(filename) {
-  const stat = lstatSync(filename);
-  assert(stat.isFile() && !stat.isSymbolicLink(), `Release artifact is not a regular file: ${filename}`);
-  return stat;
-}
-
-function manifestEntries(candidate) {
-  assert.equal(candidate.schema, 2, 'Compact transport requires schema 2.');
-  assert(
-    candidate.files && typeof candidate.files === 'object' && !Array.isArray(candidate.files),
-    'Invalid manifest files.',
-  );
-  const destinations = new Set();
-  const entries = [];
-  for (const [target, files] of Object.entries(candidate.files)) {
-    assert(files && typeof files === 'object' && !Array.isArray(files), `Invalid manifest target: ${target}`);
-    for (const [relative, digest] of Object.entries(files)) {
-      const destination = safePath('.', target, relative);
-      const key = process.platform === 'win32' ? destination.toLowerCase() : destination;
-      assert(!destinations.has(key), `Duplicate release destination: ${target}/${relative}`);
-      destinations.add(key);
-      assert.match(digest, /^[a-f0-9]{64}$/, `Invalid manifest digest: ${target}/${relative}`);
-      entries.push({ target, relative, digest });
-    }
-  }
-  return entries;
-}
-
-function manifestObjects(candidate, directory) {
-  const objects = new Map();
-  for (const { target, relative, digest } of manifestEntries(candidate)) {
-    const source = safePath(directory, target, relative);
-    assertNoSymlinkParents(directory, source);
-    const stat = regularFile(source);
-    const bytes = readFileSync(source);
-    assert.equal(sha256(bytes), digest, `Manifest digest mismatch: ${target}/${relative}`);
-    objects.set(digest, { size: stat.size, source });
-  }
-  return objects;
-}
-
-function manifestDigests(candidate) {
-  return new Set(manifestEntries(candidate).map(({ digest }) => digest));
-}
-
-export function packBundle(directory = bundle) {
-  const manifest = readFileSync(path.join(directory, 'manifest.json'));
-  const candidate = JSON.parse(manifest.toString('utf8'));
-  const objects = manifestObjects(candidate, directory);
-  const logicalBytes = Object.values(candidate.files ?? {})
-    .flatMap((files) => Object.keys(files).map((relative) => files[relative]))
-    .reduce((total, digest) => total + objects.get(digest).size, 0);
-  const temporary = `${directory}.pack-${process.pid}`;
-  const previous = `${directory}.unpacked-${process.pid}`;
-  rmSync(temporary, { recursive: true, force: true });
-  mkdirSync(path.join(temporary, 'objects'), { recursive: true });
-  try {
-    writeFileSync(path.join(temporary, 'manifest.json'), manifest, { flag: 'wx' });
-    for (const [digest, object] of objects)
-      writeFileSync(path.join(temporary, 'objects', digest), readFileSync(object.source), { flag: 'wx' });
-    const marker = {
-      transportVersion: 1,
-      manifestSha256: sha256(manifest),
-      objects: Object.fromEntries([...objects].map(([digest, object]) => [digest, { size: object.size }])),
-    };
-    writeFileSync(path.join(temporary, path.basename(transportPath)), `${JSON.stringify(marker, null, 2)}\n`, {
-      flag: 'wx',
-    });
-    renameSync(directory, previous);
-    renameSync(temporary, directory);
-    rmSync(previous, { recursive: true, force: true });
-  } catch (error) {
-    rmSync(temporary, { recursive: true, force: true });
-    throw error;
-  }
-  return {
-    objectCount: objects.size,
-    logicalBytes,
-    storedBytes: [...objects.values()].reduce((total, object) => total + object.size, 0),
-  };
-}
-
-function assertNoSymlinkParents(root, filename) {
-  let current = path.dirname(filename);
-  const rootPath = path.resolve(root);
-  while (current.startsWith(rootPath + path.sep)) {
-    const stat = lstatSync(current, { throwIfNoEntry: false });
-    if (stat) assert(!stat.isSymbolicLink(), `Release materialization encountered a symlink: ${current}`);
-    current = path.dirname(current);
-  }
-}
-
-export function materializeBundle(directory = bundle) {
-  if (!existsSync(path.join(directory, 'transport.json'))) return { materialized: false };
-  const manifestBytes = readFileSync(path.join(directory, 'manifest.json'));
-  const marker = JSON.parse(readFileSync(path.join(directory, 'transport.json'), 'utf8'));
-  const candidate = JSON.parse(manifestBytes.toString('utf8'));
-  assert.equal(marker.transportVersion, 1, 'Unsupported release transport version.');
-  assert.equal(marker.manifestSha256, sha256(manifestBytes), 'Release transport manifest mismatch.');
-  const expectedNames = [...manifestDigests(candidate)].sort();
-  const declared = marker.objects;
-  assert(declared && typeof declared === 'object' && !Array.isArray(declared), 'Invalid release transport objects.');
-  assert.deepEqual(Object.keys(declared).sort(), expectedNames, 'Release transport objects differ from the manifest.');
-  const objectDirectory = path.join(directory, 'objects');
-  const objectDirectoryStat = lstatSync(objectDirectory);
-  assert(
-    objectDirectoryStat.isDirectory() && !objectDirectoryStat.isSymbolicLink(),
-    'Invalid release object directory.',
-  );
-  const actualNames = readdirSync(objectDirectory, { withFileTypes: true })
-    .map((entry) => {
-      assert(entry.isFile() && !entry.isSymbolicLink(), 'Release transport objects must be regular files.');
-      return entry.name;
-    })
-    .sort();
-  assert.deepEqual(actualNames, expectedNames, 'Release transport contains unexpected objects.');
-  for (const digest of expectedNames) {
-    assert.match(digest, /^[a-f0-9]{64}$/);
-    const filename = path.join(objectDirectory, digest);
-    const bytes = readFileSync(filename);
-    assert(
-      Number.isSafeInteger(declared[digest]?.size) && declared[digest].size >= 0,
-      `Invalid object size: ${digest}`,
-    );
-    assert.equal(bytes.byteLength, declared[digest]?.size, `Release transport object size mismatch: ${digest}`);
-    assert.equal(sha256(bytes), digest, `Release transport object digest mismatch: ${digest}`);
-  }
-
-  const temporary = `${directory}.materialized-${process.pid}`;
-  const previous = `${directory}.compact-${process.pid}`;
-  rmSync(temporary, { recursive: true, force: true });
-  mkdirSync(temporary, { recursive: true });
-  try {
-    writeFileSync(path.join(temporary, 'manifest.json'), manifestBytes, { flag: 'wx' });
-    for (const { target, relative, digest } of manifestEntries(candidate)) {
-      const destination = safePath(temporary, target, relative);
-      assertNoSymlinkParents(temporary, destination);
-      mkdirSync(path.dirname(destination), { recursive: true });
-      writeFileSync(destination, readFileSync(path.join(objectDirectory, digest)), { flag: 'wx' });
-    }
-    renameSync(directory, previous);
-    renameSync(temporary, directory);
-    rmSync(previous, { recursive: true, force: true });
-  } catch (error) {
-    rmSync(temporary, { recursive: true, force: true });
-    throw error;
-  }
-  return { materialized: true, objectCount: expectedNames.length };
-}
-
-async function publicJson(url, optional = false) {
-  const response = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
+async function publicJson(url, optional = false, request = fetch) {
+  const response = await request(url, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
   if (optional && response.status === 404) return null;
-  if (
-    optional &&
-    [522, 523].includes(response.status) &&
-    new URL(url).hostname === 'blackbox-records-web-uat.pages.dev'
-  ) {
-    const deployments = JSON.parse(
-      execFileSync(
-        process.execPath,
-        [
-          'apps/backend/node_modules/wrangler/bin/wrangler.js',
-          'pages',
-          'deployment',
-          'list',
-          '--project-name',
-          'blackbox-records-web-uat',
-          '--json',
-        ],
-        { encoding: 'utf8' },
-      ),
-    );
-    assert.equal(deployments.length, 0, 'An existing UAT deployment is unreachable.');
-    return null;
-  }
   assert.ok(response.ok, `Cannot verify ${url}: HTTP ${response.status}`);
   return response.json();
 }
 
-function identity(candidate) {
-  return { sha: candidate.sha, runId: candidate.runId, runNumber: candidate.runNumber };
-}
-
-export function refreshedReleaseIdentity(candidate, content) {
-  if (content === null) return identity(candidate);
-  return contentPublicationIdentity(candidate, content, candidate.sha);
-}
-
-export function contentPublicationIdentity(code, content, checkedOutSha) {
-  assert.match(code.sha ?? '', /^[a-f0-9]{40}$/);
-  assert.equal(code.sha, checkedOutSha, 'Publication must build the selected deployed code.');
-  assert.match(code.runId ?? '', /^[1-9][0-9]{0,19}$/);
-  validateOrder(code, null);
-  assert.match(
-    content.publicationId ?? '',
-    /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i,
-  );
-  assert.match(content.ciRunId ?? '', /^(?:[1-9][0-9]{0,19}|runtime)$/);
-  assert.match(content.snapshotSha256 ?? '', /^[a-f0-9]{64}$/);
-  return {
-    ...identity(code),
-    content: {
-      publicationId: content.publicationId,
-      ciRunId: content.ciRunId,
-      snapshotSha256: content.snapshotSha256,
-    },
-  };
-}
-
-export function verifyFiles(candidate, directory = bundle) {
-  materializeBundle(directory);
-  assert.equal(candidate.schema, 2, 'Legacy candidate contract; build and accept a fresh candidate.');
-  for (const target of ['uat/worker', 'prd/cms']) {
-    for (const file of [
-      'server/wrangler.json',
-      'server/entry.mjs',
-      'client/content/index.html',
-      'client/items/index.html',
-      'client/stock/index.html',
-    ])
-      assert.ok(existsSync(`${directory}/${target}/${file}`), `Missing combined CMS artifact: ${target}/${file}`);
-  }
-  for (const target of [
-    'uat/public',
-    'prd/public',
-    'uat/worker',
-    'prd/cms',
-    'migrations',
-    ...(candidate.publicationMode === 'runtime' ? ['uat/renderer', 'prd/renderer'] : []),
-  ]) {
-    assert.ok(existsSync(`${directory}/${target}`), `Missing artifact: ${target}`);
-    assert.deepEqual(
-      inventory(`${directory}/${target}`),
-      candidate.files[target],
-      `Artifact digest mismatch: ${target}`,
-    );
-  }
-}
-
-const targetDirectories = (target) =>
-  target === 'uat'
-    ? ['uat/public', 'uat/worker', 'uat/renderer', 'migrations']
-    : ['prd/public', 'prd/cms', 'prd/renderer', 'migrations'];
-
-export function verifyTargetFiles(candidate, target, directory) {
-  materializeBundle(directory);
-  assert.equal(candidate.schema, 2, 'Legacy candidate contract; build and accept a fresh candidate.');
-  assert.equal(candidate.target, target, `Expected ${target.toUpperCase()} target bundle.`);
-  assert.ok(['uat', 'prd'].includes(target), 'Invalid target bundle.');
-  assert.match(candidate.sha ?? '', /^[a-f0-9]{40}$/);
-  assert.match(candidate.workflowSha ?? '', /^[a-f0-9]{40}$/);
-  assert.match(String(candidate.runId ?? ''), /^[1-9][0-9]*$/);
-  assert.ok(Number.isSafeInteger(candidate.runNumber) && candidate.runNumber > 0);
-  assert.deepEqual(Object.keys(candidate.files ?? {}).sort(), targetDirectories(target).sort());
-  for (const targetPath of targetDirectories(target)) {
-    assert.ok(existsSync(`${directory}/${targetPath}`), `Missing artifact: ${targetPath}`);
-    assert.deepEqual(
-      inventory(`${directory}/${targetPath}`),
-      candidate.files[targetPath],
-      `Artifact digest mismatch: ${targetPath}`,
-    );
-  }
-  const workerPath = target === 'uat' ? 'uat/worker' : 'prd/cms';
-  for (const file of [
-    'server/wrangler.json',
-    'server/entry.mjs',
-    'client/content/index.html',
-    'client/items/index.html',
-    'client/stock/index.html',
-  ])
-    assert.ok(existsSync(`${directory}/${workerPath}/${file}`), `Missing combined CMS artifact: ${workerPath}/${file}`);
-  const worker = Object.keys(candidate.files[workerPath])
-    .filter((name) => /\.(?:js|mjs)$/.test(name))
-    .map((name) => readFileSync(`${directory}/${workerPath}/${name}`, 'utf8'))
-    .join('\n');
-  assert.ok(
-    worker.includes(candidate.sha) && worker.includes('X-Release-SHA'),
-    'Worker has no compiled release identity.',
-  );
-  const publicPath = `${target}/public`;
-  const current = readJson(`${directory}/${publicPath}/release.json`);
-  validateIdentity(candidate, current, candidate.configuration);
-  assert.equal(current.publicationMode, candidate.publicationMode);
-}
-
-export function assembleTargetBundles(uatDirectory, prdDirectory, outputDirectory) {
-  const uat = JSON.parse(readFileSync(`${uatDirectory}/manifest.json`, 'utf8'));
-  const prd = JSON.parse(readFileSync(`${prdDirectory}/manifest.json`, 'utf8'));
-  verifyTargetFiles(uat, 'uat', uatDirectory);
-  verifyTargetFiles(prd, 'prd', prdDirectory);
-  for (const key of ['schema', 'publicationMode', 'sha', 'workflowSha', 'runId', 'runNumber', 'configuration'])
-    assert.deepEqual(prd[key], uat[key], `Target bundles have different candidate ${key}.`);
-  assert.deepEqual(
-    uat.files.migrations,
-    prd.files.migrations,
-    'Target bundles have conflicting migration inventories.',
-  );
-  assert.deepEqual(
-    uat.configuration.migrations,
-    uat.files.migrations,
-    'Candidate migrations differ from its configuration.',
-  );
-  assert.ok(!existsSync(outputDirectory), 'Final release bundle output already exists.');
-
-  mkdirSync(outputDirectory, { recursive: true });
-  for (const [source, candidate] of [
-    [uatDirectory, uat],
-    [prdDirectory, prd],
-  ]) {
-    for (const targetPath of targetDirectories(candidate.target).filter((entry) => entry !== 'migrations')) {
-      cpSync(`${source}/${targetPath}`, `${outputDirectory}/${targetPath}`, { recursive: true });
-    }
-  }
-  cpSync(`${uatDirectory}/migrations`, `${outputDirectory}/migrations`, { recursive: true });
-
-  const candidate = {
-    schema: 2,
-    publicationMode: uat.publicationMode,
-    sha: uat.sha,
-    workflowSha: uat.workflowSha,
-    runId: uat.runId,
-    runNumber: uat.runNumber,
-    configuration: uat.configuration,
-    files: {},
-  };
-  for (const targetPath of [
-    'uat/public',
-    'prd/public',
-    'uat/worker',
-    'prd/cms',
-    'uat/renderer',
-    'prd/renderer',
-    'migrations',
-  ]) {
-    assert.ok(existsSync(`${outputDirectory}/${targetPath}`), `Missing assembled artifact: ${targetPath}`);
-    candidate.files[targetPath] = inventory(`${outputDirectory}/${targetPath}`);
-  }
-  verifyFiles(candidate, outputDirectory);
-  writeFileSync(`${outputDirectory}/manifest.json`, JSON.stringify(candidate, null, 2));
-  const transport = packBundle(outputDirectory);
-  return { candidate, transport };
-}
-
-function packTarget(target) {
-  assert.ok(['uat', 'prd'].includes(target), 'Select target uat or prd.');
-  const startedAt = performance.now();
-  const sha = process.env.SOURCE_SHA;
-  assert.match(sha ?? '', /^[0-9a-f]{40}$/);
-  assert.match(process.env.GITHUB_RUN_ID ?? '', /^[1-9][0-9]*$/);
-  assert.match(process.env.GITHUB_SHA ?? '', /^[0-9a-f]{40}$/);
-  const config = configuration();
-  assert.match(config.cloudflareAccount ?? '', /^[0-9a-f]{32}$/, 'Select an explicit Cloudflare account.');
-  assert.equal(config.uatBackend, 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev');
-  assert.equal(config.prdBackend, 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev');
-  cpSync('apps/backend/prisma/migrations', `${bundle}/migrations`, { recursive: true });
-  const candidate = {
-    schema: 2,
-    target,
-    publicationMode: 'runtime',
-    sha,
-    workflowSha: process.env.GITHUB_SHA,
-    runId: process.env.GITHUB_RUN_ID,
-    runNumber: Number(process.env.GITHUB_RUN_NUMBER),
-    configuration: config,
-    files: {},
-  };
-  validateOrder(candidate, null);
-  const workerPath = target === 'uat' ? 'uat/worker' : 'prd/cms';
-  const publicPath = `${target}/public`;
-  const worker = Object.keys(inventory(`${bundle}/${workerPath}`))
-    .filter((name) => /\.(?:js|mjs)$/.test(name))
-    .map((name) => readFileSync(`${bundle}/${workerPath}/${name}`, 'utf8'))
-    .join('\n');
-  assert.ok(worker.includes(sha) && worker.includes('X-Release-SHA'), 'Worker has no compiled release identity.');
-  const html = readFileSync(`${bundle}/${publicPath}/index.html`, 'utf8');
-  if (target === 'uat') assert.ok(html.includes('[UAT] ') && html.includes('UAT · TESTING ONLY'));
-  else assert.ok(!html.includes('[UAT] ') && !html.includes('UAT · TESTING ONLY'));
-  assert.ok(existsSync(`${bundle}/${publicPath}/_headers`));
-  const wrongBackend = target === 'uat' ? config.prdBackend : config.uatBackend;
-  for (const file of Object.keys(inventory(`${bundle}/${publicPath}`)).filter((name) => /\.(html|js)$/.test(name))) {
-    assert.ok(
-      !readFileSync(`${bundle}/${publicPath}/${file}`, 'utf8').includes(wrongBackend),
-      `Wrong target backend in ${publicPath}/${file}`,
-    );
-  }
-  const content = readJson(`.codex-artifacts/release-content/${target}/identity.json`);
-  writeFileSync(
-    `${bundle}/${publicPath}/release.json`,
-    JSON.stringify({ ...refreshedReleaseIdentity(candidate, content), publicationMode: 'runtime' }),
-  );
-  for (const targetPath of targetDirectories(target)) {
-    assert.ok(statSync(`${bundle}/${targetPath}`).isDirectory());
-    candidate.files[targetPath] = inventory(`${bundle}/${targetPath}`);
-  }
-  writeFileSync(`${bundle}/manifest.json`, JSON.stringify(candidate, null, 2));
-  verifyTargetFiles(candidate, target, bundle);
-  const transport = packBundle(bundle);
-  console.log(
-    `Packed ${target.toUpperCase()} target: ${transport.objectCount} objects, ${transport.storedBytes} bytes, ${Math.round(performance.now() - startedAt)}ms.`,
-  );
-}
-
-// Promotion's UAT re-check runs only in `verify`. verify-worker and verify-hosted compare PRD with the candidate, so a
-// push that moves UAT mid-promotion cannot fail them.
-export async function recheckUat(
-  command,
-  candidate,
-  { env = process.env, api = gh, json = publicJson, request = fetch } = {},
-) {
-  if (command !== 'verify') return;
-  const config = candidate.configuration;
+// Resolves what UAT serves and proves it from main-side tooling, before any candidate code is checked out.
+export async function resolveCandidate({ env = process.env, api = gh, json = publicJson } = {}) {
   const repository = env.GITHUB_REPOSITORY;
-  validateRun(api(`repos/${repository}/actions/runs/${candidate.runId}`), candidate.workflowSha, repository);
-  const sourceComparison = api(`repos/${repository}/compare/${candidate.sha}...${candidate.workflowSha}`);
-  assert.ok(['ahead', 'identical'].includes(sourceComparison.status), 'Source is outside trusted main history.');
-  const artifacts = api(`repos/${repository}/actions/runs/${candidate.runId}/artifacts?per_page=100`).artifacts;
-  validateArtifacts(artifacts, candidate.sha);
-  validateIdentity(candidate, await json(`${config.uatSite}/release.json`), config);
-  validateWorker(
-    candidate,
-    await request(`${config.uatBackend}/api/store/capabilities`, {
-      cache: 'no-store',
-      signal: AbortSignal.timeout(30_000),
-    }),
-  );
+  const served = await json(`${sites.uat}/release.json`);
+  const candidate = releaseIdentity({
+    SOURCE_SHA: served.sha,
+    CANDIDATE_RUN_ID: served.runId,
+    CANDIDATE_RUN_NUMBER: served.runNumber,
+  });
+  const run = api(`repos/${repository}/actions/runs/${candidate.runId}`);
+  validateRun(run, candidate.sha, repository);
+  assert.equal(run.run_number, candidate.runNumber, 'UAT release identity differs from its run.');
+  const comparison = api(`repos/${repository}/compare/${candidate.sha}...main`);
+  assert.ok(['ahead', 'identical'].includes(comparison.status), 'Source is outside trusted main history.');
+  validateSuites(api(`repos/${repository}/actions/runs/${candidate.runId}/jobs?per_page=100`).jobs);
+  return candidate;
 }
 
-async function main(command, target) {
-  if (command === 'pack-target') return packTarget(target);
-  if (command === 'assemble') {
-    const assembled = assembleTargetBundles(`${targetBundles}/uat`, `${targetBundles}/prd`, bundle);
-    console.log(`Assembled schema-2 release bundle: ${assembled.transport.objectCount} objects.`);
+export async function main(command, target, { fetch = globalThis.fetch, env = process.env } = {}) {
+  const json = (url, optional) => publicJson(url, optional, fetch);
+  if (command === 'resolve') {
+    const { sha, runId, runNumber } = await resolveCandidate({ env, json });
+    console.log(`SOURCE_SHA=${sha}\nCANDIDATE_RUN_ID=${runId}\nCANDIDATE_RUN_NUMBER=${runNumber}`);
     return;
   }
-  if (command === 'materialize') {
-    // Offline: lets promotion acceptance test the retained candidate bytes without hosted reads or credentials.
-    const candidate = readJson(manifestPath);
-    verifyFiles(candidate);
-    assert.equal(candidate.sha, process.env.SOURCE_SHA, 'Downloaded candidate differs from the selected source.');
-    assert.equal(String(candidate.runId), process.env.CANDIDATE_RUN_ID, 'Downloaded candidate differs from the run.');
-    console.log(`Materialized release bundle: ${candidate.sha} / run ${candidate.runId}`);
-    return;
-  }
-
-  assert.ok(['uat', 'prd'].includes(target));
-  const candidate = readJson(manifestPath);
-  const backend = target === 'uat' ? candidate.configuration.uatBackend : candidate.configuration.prdBackend;
-  if (command === 'observe') {
-    console.log(JSON.stringify(await observe(candidate, target)));
-    return;
-  }
-  const verificationStartedAt = performance.now();
-  if (candidate.target) verifyTargetFiles(candidate, target, bundle);
-  else verifyFiles(candidate);
-  console.log(`Verified release bundle in ${Math.round(performance.now() - verificationStartedAt)}ms.`);
-  assert.deepEqual(candidate.configuration, configuration(), 'Build/deploy configuration differs.');
-  const config = candidate.configuration;
-  if (target === 'prd') {
-    assert.equal(process.env.CONFIRM_CODE_PROMOTION, 'true', 'Code promotion requires confirmation.');
-    assert.equal(candidate.sha, process.env.SOURCE_SHA);
-    assert.equal(String(candidate.runId), process.env.CANDIDATE_RUN_ID);
-    await recheckUat(command, candidate);
-    const capabilities = await publicJson(`${config.prdBackend}/api/store/capabilities`);
-    assert.equal(capabilities.nativeCheckout.enabled, false, 'This promotion path is for disabled PRD readiness only.');
+  assert.ok(['uat', 'prd'].includes(target), 'Select target uat or prd.');
+  assert.ok(['verify', 'verify-worker', 'verify-hosted'].includes(command), 'Unknown command.');
+  assert.equal(env[`${target.toUpperCase()}_PUBLIC_BACKEND_BASE_URL`], backends[target], 'Wrong backend URL.');
+  const release = releaseIdentity(env);
+  const site = sites[target];
+  const worker = await fetch(`${backends[target]}/api/store/capabilities`, { signal: AbortSignal.timeout(30_000) });
+  assert.ok(worker.ok, 'Worker is unavailable.');
+  if (command === 'verify') {
+    if (target === 'prd') {
+      const capabilities = await worker.json();
+      assert.equal(
+        capabilities.nativeCheckout.enabled,
+        false,
+        'This promotion path is for disabled PRD readiness only.',
+      );
+    }
+    // A target never moves to an older candidate; an unreachable or empty target has nothing to order against.
+    validateOrder(release, await json(`${site}/release.json`, true));
+    const runNumber = worker.headers.get('X-Release-Run-Number');
+    if (runNumber !== null) validateOrder(release, { runNumber: Number(runNumber) });
   } else {
-    assert.equal(candidate.sha, process.env.SOURCE_SHA);
-    // Promotion acceptance checks that UAT still serves the selected candidate run; a candidate run checks itself.
-    assert.equal(String(candidate.runId), process.env.CANDIDATE_RUN_ID || process.env.GITHUB_RUN_ID);
+    validateWorker(release, worker);
   }
-  const site = target === 'uat' ? config.uatSite : config.prdSite;
-  // Pages access is verified by the preceding job using the separate Pages credential.
-  const current = await publicJson(`${site}/release.json`, true);
-  if (command === 'verify' || command === 'verify-backend')
-    validatePublicationFreshness(readJson(`${bundle}/${target}/public/release.json`), current);
-  validateOrder(candidate, current);
-  const workerResponse = await fetch(`${backend}/api/store/capabilities`, { signal: AbortSignal.timeout(30_000) });
-  assert.ok(workerResponse.ok);
-  const workerRunNumber = workerResponse.headers.get('X-Release-Run-Number');
-  if (workerRunNumber !== null) validateOrder(candidate, { runNumber: Number(workerRunNumber) });
   if (command === 'verify-hosted') {
-    assert.deepEqual(identity(current), identity(candidate), 'Deployed artifact identity mismatch.');
-    assert.equal(current.publicationMode, candidate.publicationMode);
+    const current = await json(`${site}/release.json`);
+    const { sha, runId, runNumber } = current;
+    assert.deepEqual(
+      { sha, runId: String(runId), runNumber: Number(runNumber) },
+      release,
+      'Deployed identity mismatch.',
+    );
+    assert.equal(current.publicationMode, 'runtime');
     assert.match(current.content?.snapshotSha256 ?? '', /^[a-f0-9]{64}$/);
     const page = await fetch(`${site}/`, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
     assert.ok(page.ok, 'Public renderer unavailable.');
-    assert.equal(page.headers.get('X-Release-SHA'), candidate.sha);
-    await page.body?.cancel();
+    assert.equal(page.headers.get('X-Release-SHA'), release.sha);
+    validateReviewMarker(target, await page.text());
   }
-  if (command === 'verify-hosted' || command === 'verify-worker') {
-    validateWorker(candidate, workerResponse);
-  } else assert.ok(['verify', 'verify-backend'].includes(command));
-  console.log(`${target.toUpperCase()} ${command}: ${candidate.sha} / run ${candidate.runId}`);
+  console.log(`${target.toUpperCase()} ${command}: ${release.sha} / run ${release.runId}`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -48,7 +48,7 @@ Read the relevant section. [AGENTS.md](../AGENTS.md) routes to current domain sp
 - The minimized player appears after iframe load and real embed interaction. Closing beforehand destroys the session; minimizing afterward retains it; Stop destroys it. The open modal owns one history entry at the page's own URL, so device and browser Back close it with these semantics without routing the page. Full reloads, new tabs and non-shell navigation cannot preserve third-party iframe playback.
 - News remains routable but hidden from primary navigation. Releases are editorial; Store owns commerce browsing. Follow the [shell/player spec](../openspec/specs/app-shell-and-player/spec.md) and current Store specs for categories and legacy redirects.
 - Store listings use the shell-mounted listing-price projection; item and checkout paths use authoritative offer reads. Keep prefetch changes deliberate.
-- Local base-path defaults and hosted `/` differ. [Environment model](environment-model.md) and [catalog promotion](catalog-promotion.md) own target configuration. Pages serves public assets and the read gateway, without business routes, persistence or provider secrets.
+- Local base-path defaults and hosted `/` differ. [Environment model](environment-model.md) and [catalog promotion](catalog-promotion.md) own target configuration. Pages serves the renderer's client assets and the read gateway (no route HTML, fail-closed), without business routes, persistence or provider secrets.
 
 ## Graphify context
 

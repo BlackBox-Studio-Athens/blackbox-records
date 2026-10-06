@@ -38,7 +38,6 @@
         "src/index.ts",
         "astro.public.config.mjs",
         "src/cms/public-runtime.ts",
-        "src/cms/public-asset.ts",
         "src/cms/published-reader.ts",
         "src/cms/published-purchase-information.ts",
         "wrangler.jsonc",

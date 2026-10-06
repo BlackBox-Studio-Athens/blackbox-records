@@ -28,10 +28,10 @@ Releasing is the slowest and most fragile part of the work. Measurements from al
   - UAT static smoke runs on push after UAT deploys.
   - **BREAKING:** provider smoke leaves the release. `uat-smoke.yml` stays as the manual entry in its own concurrency group.
   - **BREAKING:** PRD promotion becomes deploy-only: identity check, deploy, static deploy, no test suites.
-  - `release-candidate.mjs` re-checks UAT identity only in `verify prd`, before each PRD mutation; `verify-worker` and `verify-hosted` do not. Promotion holds the shared release lock, so a push's UAT deploy waits until promotion ends.
+  - Phase 1 (interim): `release-candidate.mjs` re-checked UAT identity only in `verify prd`, and promotion held the shared release lock, so a push's UAT deploy waited until promotion ended. Phase 3 replaced this: promotion resolves UAT's SHA once, and the locks are split (`release-uat`, `release-prd`).
   - The 592-line workflow contract test becomes about 20 lines of shape-free invariants.
 - **Phase 2:** delete dead machinery (publication workflow path, catalog and cutover jobs, duplicate smoke workflow and `pack`, measurement tooling) with no build-shape change. Its deltas are added with that phase, including the routine and emergency rollback rule.
-- **Phase 3:** HOST-11. Pages fails closed, builds become content-free, and promotion is a separate small workflow. The 7-day rebuild path is removed. Its deltas are added with that phase and state that the rebuild path is gone.
+- **Phase 3:** HOST-11. Pages fails closed and ships no route HTML. **BREAKING:** builds become content-free; one `deploy-uat` job replaces the reusable UAT sequence; `promote-prd.yml` (no inputs) replaces the `target=prd` dispatch and rebuilds PRD from the SHA UAT serves; the retained candidate bundle, compact transport and 7-day rebuild path are removed; the `/assets/catalog/*` alias is deleted.
 - **Phase 4:** hosted cleanup (secrets, caches, unused environment) and close-out, with each deletion needing the user's approval.
 
 ## Capabilities
@@ -42,14 +42,16 @@ None.
 
 ### Modified Capabilities
 
-- `software-release-promotion`: the push runs the browser suites before UAT deploys and static smoke after; PRD promotion is deploy-only; operator replaces reviewer; content-freshness wording leaves the promotion scenarios.
+- `software-release-promotion`: the push runs the browser suites before UAT deploys and static smoke after; PRD promotion is an input-free, deploy-only rebuild of the SHA UAT serves; operator replaces reviewer; content-freshness wording leaves the promotion scenarios; the retained bundle, content restore, image cache and compact transport requirements are removed.
 - `tooling-validation`: provider smoke becomes a manual workflow and never a gate; CI runs the whole e2e suite on every push; promotion evidence wording follows.
 - `commerce-checkout`, `project-language`: wording that referred to promotion smoke.
 
-Phases 2 and 3 add deltas for `static-site-and-deployment`, `content-publishing`, `catalog-promotion-automation` and `cloudflare-free-tier-cache-policy`.
+Phases 2 and 3 add deltas for `static-site-and-deployment` (fail-closed, no route HTML, artifact handoff, triggers, Review Site Marker), `content-publishing`, `catalog-promotion-automation` and `cloudflare-free-tier-cache-policy`; Phase 3 also modifies the hosted performance gate in `tooling-validation`.
 
 ## Impact
 
 Phase 1 touches `.github/workflows/pages.yml`, `uat-release-sequence.yml` (comment) and `uat-smoke.yml` (concurrency group), `scripts/release-candidate.mjs` and its test, `scripts/pages-workflow-contract.test.ts`, the workflow assertions in `apps/backend/test/scripts/` and `scripts/verify-environment-model.ts`, `feedback-policy.json`, `README.md` and the release docs (`agent-workflow`, `agent-reference`, `environment-model`, `catalog-promotion`, `validation-feedback`, `stripe-sandbox-uat`, `cloudflare-free-tier`). No runtime application code, dependency, secret or GitHub setting changes.
 
-Hosted steps needing the user, each asked first: a push to `main` (each phase; a push releases UAT), a `target=prd` dispatch to measure promotion, the Phase 0 variable change and backup dispatch, the Phase 3 Pages fail-closed toggle, Pages token scope and read-only hosted checks, and the Phase 4 secret, cache and environment deletions.
+Phase 3 touches `.github/workflows/pages.yml` and the new `promote-prd.yml`, `scripts/release-candidate.mjs`, `build-public-release.mjs`, `configure-public-gateway.mjs`, `apps/backend/scripts/migrate-cms.mjs`, the renderer config, the catalog mockup imports and the email preview, and deletes `uat-release-sequence.yml`, the restore and capture scripts and the `/assets/catalog` route. The environment `CLOUDFLARE_API_TOKEN`s need Pages write.
+
+Hosted steps needing the user, each asked first: a push to `main` (each phase; a push releases UAT), a `promote-prd.yml` dispatch to measure promotion, the Phase 0 variable change and backup dispatch, the Phase 3 Pages fail-closed toggle, Pages token scope and read-only hosted checks, and the Phase 4 secret, cache and environment deletions.

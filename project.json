@@ -91,7 +91,6 @@
       "{workspaceRoot}/scripts/runtime-performance-helpers.ts",
       "{workspaceRoot}/scripts/check-runtime-bundle-graphs.ts",
       "{workspaceRoot}/scripts/build-public-release.mjs",
-      "{workspaceRoot}/scripts/capture-public-documents.mjs",
       "{workspaceRoot}/apps/web/scripts/check-image-markup.ts",
       "{workspaceRoot}/.github/workflows/**/*",
       "{workspaceRoot}/apps/backend/scripts/build-cms.mjs",
@@ -138,7 +137,6 @@
     "contentTests": [
       "{workspaceRoot}/scripts/*cms*",
       "{workspaceRoot}/scripts/*-content-publication.mjs",
-      "{workspaceRoot}/scripts/restore-published-content.mjs",
       "{workspaceRoot}/scripts/release-candidate.mjs",
       "{workspaceRoot}/scripts/editorial-draft-creation.test.mjs",
       "{workspaceRoot}/scripts/local-publication-poll.test.mjs",

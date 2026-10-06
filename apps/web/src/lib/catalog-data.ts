@@ -10,6 +10,9 @@ import { sortDistroEntries } from './distro-data';
 import { createPhysicalEditionKey, createValidatedStoreItemProjection } from './store-item-ownership';
 import { reservedStoreRouteSegments } from './store-categories';
 import { formatMonthYear } from '@/utils/content';
+import afterwiseMockup from '@/content/releases/afterwise-album-cover-distro-mockup.webp';
+import chronoborosMockup from '@/content/releases/chronoboros-album-cover-distro-mockup.webp';
+import ouranopithecusMockup from '@/content/releases/ouranopithecus-album-cover-distro-mockup.webp';
 
 export { groupDistroEntries } from './distro-data';
 
@@ -38,12 +41,6 @@ export type StoreItem = {
   eyebrow: string | null;
   metadata: string[];
   storePath: string;
-};
-type StoreItemImageOverride = {
-  src: string;
-  width: number;
-  height: number;
-  format: 'webp';
 };
 export type ArtistRosterReleaseContext = {
   latestReleaseTitle: string | null;
@@ -151,25 +148,10 @@ function createStoreItemPath(slug: string) {
   return createProjectRelativeUrl(`/store/${slug}/`);
 }
 
-const RELEASE_STORE_ITEM_IMAGE_OVERRIDES: Record<string, StoreItemImageOverride> = {
-  anarchotribal: {
-    src: createProjectRelativeUrl('/assets/catalog/releases/ouranopithecus-album-cover-distro-mockup.webp'),
-    width: 3544,
-    height: 3543,
-    format: 'webp',
-  },
-  caregivers: {
-    src: createProjectRelativeUrl('/assets/catalog/releases/chronoboros-album-cover-distro-mockup.webp'),
-    width: 3544,
-    height: 3543,
-    format: 'webp',
-  },
-  disintegration: {
-    src: createProjectRelativeUrl('/assets/catalog/releases/afterwise-album-cover-distro-mockup.webp'),
-    width: 3544,
-    height: 3543,
-    format: 'webp',
-  },
+const RELEASE_STORE_ITEM_IMAGE_OVERRIDES: Record<string, ReleaseCatalogEntry['data']['cover_image']> = {
+  anarchotribal: ouranopithecusMockup,
+  caregivers: chronoborosMockup,
+  disintegration: afterwiseMockup,
 };
 
 function resolveStoreItemImageForRelease(releaseEntry: ReleaseCatalogEntry): StoreItem['image'] {

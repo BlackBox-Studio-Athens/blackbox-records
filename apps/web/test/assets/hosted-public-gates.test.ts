@@ -4,7 +4,6 @@ import { randomBytes } from 'node:crypto';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { captureRepresentativeDocuments } from '../../../../scripts/capture-public-documents.mjs';
 
 const workspaceRoot = fileURLToPath(new URL('../../../../', import.meta.url));
 const artifactRoot = resolve(workspaceRoot, '.codex-artifacts/performance-resume');
@@ -111,81 +110,5 @@ describe('hosted document bundle gate', { timeout: 60000 }, () => {
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('storeGalleryItem eager graph');
     expect(result.stderr).toContain('budget 104448');
-  });
-});
-
-describe('representative SSR document capture', () => {
-  const snapshot = {
-    records: [
-      { collection: 'artists', slug: 'band' },
-      { collection: 'releases', slug: 'album' },
-      { collection: 'news', slug: 'story' },
-    ],
-    storeItems: [{ storeItemSlug: 'single' }, { storeItemSlug: 'gallery' }],
-  };
-  const render = async (route: string) =>
-    new Response(
-      `<html><main class="store-item-page"${route.endsWith('/gallery/') ? ' data-store-image-gallery' : ''}></main></html>`,
-      { headers: { 'content-type': 'text/html' } },
-    );
-  it('captures rendered Home, section, category, detail and single/gallery documents', async () => {
-    const f = fixture();
-    const identity = { snapshotSha256: 'a'.repeat(64), releaseSha: 'b'.repeat(40) };
-    const captured = await captureRepresentativeDocuments(
-      snapshot,
-      async (route: string) => {
-        const response = await render(route);
-        response.headers.set('X-Content-SHA256', identity.snapshotSha256);
-        response.headers.set('X-Release-SHA', identity.releaseSha);
-        return response;
-      },
-      f.documents,
-      identity,
-    );
-    expect([...captured.keys()]).toEqual(
-      expect.arrayContaining([
-        'index.html',
-        'services/index.html',
-        'store/distro/index.html',
-        'artists/band/index.html',
-        'app-shell-overlay/artists/band/index.html',
-        'releases/album/index.html',
-        'app-shell-overlay/releases/album/index.html',
-        'news/story/index.html',
-        'app-shell-overlay/news/story/index.html',
-        'store/single/index.html',
-        'store/gallery/index.html',
-      ]),
-    );
-  });
-  it('rejects error responses, non-HTML output and an accepted snapshot without gallery coverage', async () => {
-    const f = fixture();
-    await expect(
-      captureRepresentativeDocuments(snapshot, async () => new Response('Unavailable', { status: 503 }), f.documents),
-    ).rejects.toThrow('Hosted capture failed');
-    await expect(
-      captureRepresentativeDocuments(
-        snapshot,
-        async () => new Response('{}', { headers: { 'content-type': 'application/json' } }),
-        f.documents,
-      ),
-    ).rejects.toThrow('Non-HTML response');
-    await expect(
-      captureRepresentativeDocuments({ ...snapshot, storeItems: snapshot.storeItems.slice(0, 1) }, render, f.documents),
-    ).rejects.toThrow('no rendered gallery');
-  });
-  it('rejects documents rendered from a different snapshot or SSR release', async () => {
-    const f = fixture();
-    const identity = { snapshotSha256: 'a'.repeat(64), releaseSha: 'b'.repeat(40) };
-    await expect(captureRepresentativeDocuments(snapshot, render, f.documents, identity)).rejects.toThrow(
-      'Wrong accepted snapshot',
-    );
-    const withSnapshot = async () =>
-      new Response('<html></html>', {
-        headers: { 'content-type': 'text/html', 'X-Content-SHA256': identity.snapshotSha256 },
-      });
-    await expect(captureRepresentativeDocuments(snapshot, withSnapshot, f.documents, identity)).rejects.toThrow(
-      'Wrong SSR release',
-    );
   });
 });

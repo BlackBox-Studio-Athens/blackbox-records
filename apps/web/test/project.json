@@ -10,7 +10,6 @@
         "{workspaceRoot}/apps/web/scripts/**/*",
         "{workspaceRoot}/scripts/check-runtime-bundle-graphs.ts",
         "{workspaceRoot}/scripts/runtime-performance-helpers.ts",
-        "{workspaceRoot}/scripts/capture-public-documents.mjs",
         "{workspaceRoot}/apps/web/public/**/*",
         "{workspaceRoot}/apps/web/vitest*.ts"
       ]

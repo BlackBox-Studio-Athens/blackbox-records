@@ -27,12 +27,12 @@ Defaults chosen unless the user says otherwise:
 
 ## Invariants kept
 
-- The Worker deploys before Pages, so renderer HTML never references chunks Pages lacks.
+- Workers deploy before Pages; a short window remains where new renderer HTML references `/_astro` chunks the previous Pages deployment lacks (unchanged from before).
 - D1 and EmDash migrations run before the deploy that needs them.
-- The shared non-cancelling release lock covers every hosted mutation. `uat-smoke.yml` moves to its own concurrency group so a manual dispatch cannot cancel a pending push deploy.
-- PRD credentials exist only in the promotion jobs (`catalog-promotion-prd`). `accept-uat-identity` stays in Phase 1 because it holds `immutable-main` before any candidate code runs with them.
+- Every hosted mutation holds a non-cancelling lock: `release-uat` for the UAT deploy, `release-prd` for promotion, and `blackbox-release` for the holding page alone, so none can cancel another's pending run. `uat-smoke.yml` keeps its own group.
+- PRD credentials exist only in the promotion workflow (`catalog-promotion-prd`), and only on the steps that use them. `release-candidate.mjs resolve` runs from trusted `main` and proves immutable-main ancestry, the push run and its suites before any candidate code is checked out or installed.
 - The holding page deployment is untouched.
-- The checkout-disabled assertion stays for every PRD command until launch, which belongs to `production-go-live-readiness`.
+- The checkout-disabled assertion stays in `verify prd`, which runs once before any PRD mutation, until launch, which belongs to `production-go-live-readiness`.
 - `validateRun` still requires the push run to have succeeded, so e2e, staff previews and static smoke on push gate promotion implicitly.
 
 ## Risks and ceilings
@@ -52,5 +52,15 @@ Estimates from job medians; each phase records the observed values with `gh run 
 | ---------------------------------- | -------------------------------------- | ------------------ |
 | Push, UAT live                     | about 8.6 m median                     | about 10 to 12 m   |
 | Push, green including static smoke | about 8.6 m                            | about 11.5 to 13 m |
-| Promotion (`target=prd`)           | 10 to 27 m, 2.6 dispatches per success | about 3.5 to 4.5 m |
+| Promotion (`promote-prd.yml`)      | 10 to 27 m, 2.6 dispatches per success | about 3.5 to 4.5 m |
 | Clean push through PRD             | median 22 m; failure loops 1 to 2 h    | about 15 to 17 m   |
+
+## Phase 3 decisions
+
+- **One deploy job per environment.** The environment `CLOUDFLARE_API_TOKEN` (D1 write, Workers Scripts write, and Pages write added by the operator) deploys Workers and then Pages in one job, so the reusable `uat-release-sequence.yml` and the repository Pages credential leave the release. The repository-level token remains only for `prd-holding-page.yml`. A read-only Pages check is the deploy job's first step, so a credential with no Pages access fails before any migration; it does not prove Pages write, which stays an operator precondition (task 3.6).
+- **Content-free builds, PRD rebuilt.** The renderer reads each environment's accepted snapshot from the R2 pointer at runtime (UAT generation 121 and PRD 216 exist), so no build restores CMS content, media or secrets and no bundle or content identity is retained. PRD is rebuilt from the SHA UAT serves, because the retained candidate never held tested bytes. The 7-day rebuild path, compact transport, `pack`/`assemble`/`materialize` and `release-tools` are deleted.
+- **Promotion proves, then builds.** `promote-prd.yml` takes no inputs. `resolve` reads `release.json` from UAT, requires a successful push run of `pages.yml` on `main` for that SHA with `e2e (1)`, `e2e (2)`, `staff-previews` and `deploy-uat` passed, and checks ancestry, before checkout. The build is stamped with the candidate's run id and number so PRD reports UAT's identity and the monotonic order checks keep working. UAT is read once, so a later UAT push cannot fail promotion mid-flight.
+- **Fail-closed without HTML.** The Pages upload is the renderer client assets, the gateway and a prerendered `robots.txt`; no route HTML ships. The operator sets Pages "Fail closed" on both projects as a platform setting.
+- **`/assets/catalog/*` is deleted, not served from R2.** D1 projections hold no such URLs on UAT or PRD, so serving them from R2 would have been dead code. The three mockup images are bundled `/_astro` assets and the email preview uses a static Pages asset. Stripe products created in the cutover era may still carry the old URL; their images were not read and no scheduled path was found that repairs them (task 3.8).
+- **Kept on purpose.** The Worker export routes and `CMS_PUBLICATION_EXPORT_TOKEN` (the GET catalog route and the manual export tool still have callers); `prd-holding-page.yml` and its `blackbox-release` lock; `release-uat` artifact retention of three days, so a failed push run can be rerun within that window.
+- **Dropped checks.** `verify-environment-model.ts` no longer checks workflow shape, and the push-trigger narrowness assertion is gone; the contract test keeps only shape-free invariants. A brand-new empty Pages project needs one manual first deploy, because the `522/523` bootstrap branch is removed.
