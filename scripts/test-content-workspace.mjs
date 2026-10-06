@@ -2136,7 +2136,8 @@ else if (process.argv.includes('--editor-recovery')) {
         records.distro[0].data.group = 'Tapes';
         state.previewSessionDenied = true;
         await probe.goto(`${origin}/content/?collection=distro&id=distro-1`);
-        const toggle = probe.getByRole('button', { name: 'Preview', exact: true });
+        // The desktop toggle reads Show or Close preview; the open panel has its own Close preview button.
+        const toggle = probe.locator('button[aria-expanded]').filter({ hasText: /^(Show|Close) preview$/ });
         await toggle.waitFor();
         if ((await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
         const signIn = probe.getByRole('link', { name: 'Sign in to preview (new tab)', exact: true });
@@ -2997,7 +2998,10 @@ else if (process.argv.includes('--editor-recovery')) {
       beforeExpiredSwitch + 1,
       'Returning after the server context lifetime creates one fresh preview',
     );
-    await page.getByRole('button', { name: 'Preview', exact: true }).click();
+    await page
+      .locator('button[aria-expanded="true"]')
+      .filter({ hasText: /^Close preview$/ })
+      .click();
     const previewReads = state.previewRequests.length;
     await artistName.fill('Hidden preview');
     await page.waitForTimeout(1800);
