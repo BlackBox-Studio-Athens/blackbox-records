@@ -65,4 +65,4 @@
 - [x] 9.1 Parent review of every package for errors and inconsistencies; fix findings.
 - [x] 9.2 Demonstrate: docs-only plan has no code task; two checkouts queue; guarded commands are denied and scoped ones run; a linked worktree uses its own port.
 - [x] 9.3 Run `pnpm agent:check`, strict OpenSpec validation and final `pnpm validate`; write `validation.md` with before and after measurements and unobserved hosted behavior.
-- [ ] 9.4 After `shorten-validation-release-feedback` is archived, add MODIFIED deltas for its two superseded requirements.
+- [x] 9.4 ~~After `shorten-validation-release-feedback` is archived, add MODIFIED deltas for its two superseded requirements.~~ Superseded by `simplify-software-release`, which removes the PRD-promotion acceptance requirement and modifies the provider smoke requirement.

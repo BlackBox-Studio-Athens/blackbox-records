@@ -116,4 +116,4 @@ Record the final summary and fingerprint in ignored `.codex-artifacts/feedback-s
 - [x] Run the validation wrapper with `NX_DAEMON=false` so a freshly started daemon cannot inherit piped stdio and hang; assert it in `scripts/validate.test.mjs`.
 - [x] Measure uncached full and affected runs at Nx parallelism 2, 3 and 4; set `parallel` to 3 and keep Vitest `maxWorkers: 1`.
 - [x] Record baseline, per-scenario timings and remaining bottlenecks in `module-review.md`.
-- [ ] Run final affected and full validation on the exact final tree and record the ignored evidence file `.codex-artifacts/perf/final-verification.json`.
+- [x] ~~Run final affected and full validation on the exact final tree and record the ignored evidence file `.codex-artifacts/perf/final-verification.json`.~~ Superseded by `simplify-software-release`, which replaces this change's release-gate shape; final evidence is recorded there.
