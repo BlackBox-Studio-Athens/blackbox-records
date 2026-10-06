@@ -585,7 +585,29 @@ body[data-workspace='content'] {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 12px 20px;
+}
+.inventory-heading-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 8px;
+}
+/* Phones keep both actions on the title row, so the first stock field stays in the first screen. */
+@media (max-width: 639px) {
+  .inventory-find {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+  .inventory-find-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }
 .inventory-heading h1 {
   font-size: 24px;

@@ -6,8 +6,10 @@ import {
   FileText,
   Hash,
   Package,
+  Search,
   ShoppingBag,
   Tag,
+  X,
 } from 'lucide-react';
 import * as React from 'react';
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -777,9 +779,10 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
             {selectedStockDetail?.displayName ?? selectedStockDetail?.storeItemSlug.replaceAll('-', ' ') ?? 'Stock'}
           </h1>
           {selectedVariantId && (
-            <div className="flex flex-wrap gap-2">
+            <div className="inventory-heading-actions">
               <Button
                 variant="outline"
+                className="inventory-find"
                 aria-expanded={inventoryOpen}
                 onClick={() => {
                   setInventoryOpen(!inventoryOpen);
@@ -789,7 +792,10 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                     );
                 }}
               >
-                {inventoryOpen ? 'Return to selected item' : 'Find another item'}
+                {inventoryOpen ? <X aria-hidden="true" /> : <Search aria-hidden="true" />}
+                <span className="inventory-find-label">
+                  {inventoryOpen ? 'Return to selected item' : 'Find another item'}
+                </span>
               </Button>
               <StaffBack />
             </div>
