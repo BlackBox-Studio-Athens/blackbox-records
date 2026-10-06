@@ -196,7 +196,12 @@ export async function backupCms({
   }
   for (const blob of await list(backups, `${prefix}blobs/`))
     if (!retained.has(blob.key)) await backups.delete(blob.key);
-  return { point, objects: media.size, bytes };
+  // Early warning (GitHub Actions annotation) before the byte cap starts failing daily runs.
+  if (bytes * 4 > maxBytes * 3)
+    console.log(
+      `::warning title=CMS backup nearing its byte ceiling::${environment} captured ${bytes} of ${maxBytes} bytes (${Math.round((bytes / maxBytes) * 100)}%). Review docs/cms-backup.md before it fails.`,
+    );
+  return { point, objects: media.size, bytes, maxBytes };
 }
 
 export async function restoreCms({ backups, destination, importSql, environment, point }) {

@@ -147,6 +147,30 @@ test('captures one D1 snapshot while CMS content and media change', async () => 
   );
 });
 
+test('warns above 75% of the byte ceiling and stays quiet below it', async (t) => {
+  const log = t.mock.method(console, 'log', () => {});
+  const run = async (maxBytes) => {
+    const source = bucket();
+    await source.put('existing.png', 'existing bytes'); // 14 bytes + 8 SQL bytes = 22
+    return backupCms({
+      source,
+      backups: bucket(),
+      exportSnapshot: async () => ({ sql: Buffer.from('snapshot'), mediaKeys: ['existing.png'] }),
+      environment: 'local',
+      maxBytes,
+      now: new Date('2026-09-12T00:00:00Z'),
+    });
+  };
+  const warnings = () => log.mock.calls.map((call) => call.arguments[0]).filter((line) => line.startsWith('::warning'));
+
+  assert.equal((await run(40)).maxBytes, 40);
+  assert.equal(warnings().length, 0, '22 of 40 bytes is 55%.');
+  await run(29);
+  assert.deepEqual(warnings(), [
+    '::warning title=CMS backup nearing its byte ceiling::local captured 22 of 29 bytes (76%). Review docs/cms-backup.md before it fails.',
+  ]);
+});
+
 test('does not publish a recovery point when snapshot media is missing', async () => {
   const source = bucket();
   const backups = bucket();

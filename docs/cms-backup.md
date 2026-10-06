@@ -19,16 +19,45 @@ Local commands use existing `apps/backend/.wrangler/state` persistence. They do 
 
 The committed `cms-backup.yml` workflow schedules daily capture at 02:30 UTC and supports manual pre-upgrade capture. Both repository variables `CMS_BACKUPS_ENABLED` and `CMS_BACKUP_BUDGET_REVIEWED` were enabled on September 15 after the user approved the dedicated credential. Manual daily capture `34935186823` passed for both environments through this workflow: UAT captured 386 objects and 423,157,810 database/media bytes; PRD captured zero objects and its 23-byte empty database. Both wrote recovery point `2026-09-15-daily`, retaining the existing pre-upgrade points. The credential has no expiration and is stored only as `CMS_BACKUP_API_TOKEN`; no credential was committed.
 
-The current account dashboard review recorded 995.38 MB R2 storage, 1.07k Class A and 5.28k Class B operations in the billing period, 120.92k D1 rows read and 15.17k written today, and 6,383/100,000 Worker requests today. The initial run budget is 10,000 D1 reads, no source D1 writes, 400 R2 Class A, 1,200 Class B and 1,500 Worker requests, using existing private buckets and a 512 MiB per-environment capture ceiling. The prior full capture/restore is the bounded pilot. On failure, disable `CMS_BACKUPS_ENABLED` before retrying. Evidence is `.codex-artifacts/emdash-m1/backup-schedule-budget.json`.
+The current hosted ceiling is 2 GiB (`CMS_BACKUP_MAX_BYTES` = `2147483648`) per environment capture, including SQL. The initial ceiling was 512 MiB (`536870912`). PRD media passed it on 2026-10-02, and every daily run from 2026-10-02 through 2026-10-06 failed with `Backup exceeds the byte budget`. The ceiling was raised on 2026-10-06. Dispatched run `37505027251` then passed for both environments: UAT point `2026-10-06-daily` captured 589 objects and 435,185,794 bytes; PRD captured 1,191 objects and 565,083,844 bytes. PRD's first attempt hit a transient R2 error and passed on one rerun. See [Free-tier storage budget](#free-tier-storage-budget) before raising the ceiling again.
+
+The account dashboard review at activation recorded 995.38 MB R2 storage, 1.07k Class A and 5.28k Class B operations in the billing period, 120.92k D1 rows read and 15.17k written today, and 6,383/100,000 Worker requests today. The initial run budget was 10,000 D1 reads, no source D1 writes, 400 R2 Class A, 1,200 Class B and 1,500 Worker requests, using existing private buckets and a 512 MiB per-environment capture ceiling. The prior full capture/restore was the bounded pilot; during the pilot, a failure meant disabling `CMS_BACKUPS_ENABLED` before retrying. Daily failures now follow the rerun rule below. Evidence is `.codex-artifacts/emdash-m1/backup-schedule-budget.json`.
 
 Before enabling it:
 
 1. Rehearse capture and isolated restore locally. Follow [the Free-tier operating rule](cloudflare-free-tier.md), measure current account usage and allow room for normal traffic.
-2. Provision separate private buckets named `blackbox-cms-backups-uat` and `blackbox-cms-backups-prd`. Set `UAT_CMS_BACKUP_BUCKET`, `PRD_CMS_BACKUP_BUCKET`, `CLOUDFLARE_ACCOUNT_ID`, and an explicitly budgeted `CMS_BACKUP_MAX_BYTES`.
+2. Provision separate private buckets named `blackbox-cms-backups-uat` and `blackbox-cms-backups-prd`. Set `UAT_CMS_BACKUP_BUCKET`, `PRD_CMS_BACKUP_BUCKET`, `CLOUDFLARE_ACCOUNT_ID`, and an explicitly budgeted `CMS_BACKUP_MAX_BYTES` (currently `2147483648`).
 3. Supply `CMS_BACKUP_API_TOKEN` through GitHub secrets with the permissions needed for CMS D1 export, source R2 reads and backup R2 writes. Do not give it commerce restore duties or expose it to browser builds.
 4. Run one bounded manual pilot, inspect actual D1/R2 usage and retained bytes, then enable the daily job. Stop scheduling if quota headroom is lost. A configured flag is not itself usage evidence.
 
-Each run captures schema, data, and media storage keys in one bounded D1 batch, lists source media twice around that snapshot, and reads each unchanged object once. It checks that every media key in the D1 snapshot has a verified backup blob before publishing the manifest. Retention also reads the kept manifests and deletes unreferenced backup objects. Budget those operations and failed attempts; there are no automatic inline retries. Seven points do not necessarily require seven full copies, but changed large media still needs measured storage headroom.
+Each run captures schema, data, and media storage keys in one bounded D1 batch, lists source media twice around that snapshot, and reads each unchanged object once. It checks that every media key in the D1 snapshot has a verified backup blob before publishing the manifest. Retention also reads the kept manifests and deletes unreferenced backup objects. Budget those operations and failed attempts; there are no automatic inline retries. A transient R2 5xx through the remote binding (for example `get: Unspecified error`) fails the run: rerun the failed job once, as on 2026-10-06, and investigate if it fails again. Seven points do not necessarily require seven full copies, but changed large media still needs measured storage headroom.
+
+### Free-tier storage budget
+
+`CMS_BACKUP_MAX_BYTES` is the deliberate Free-tier guard. It caps one environment's captured database plus media per run. Backups are checksum-deduplicated and retention deletes unreferenced blobs, so that environment's backup footprint is roughly the cap at most, plus media deleted within the seven-day retention window.
+
+Account storage is therefore about 2 × (UAT media + PRD media): each source bucket plus its backups. At the 2 GiB ceiling for both environments that is about 8.6 GB worst case, before other buckets, against the 10 GB R2 Free storage allowance. 2 GiB per environment is the highest ceiling that stays under it. Do not raise it further without first freeing storage. Overage is billed, and budget alerts do not stop usage ([Free-tier rule](cloudflare-free-tier.md)).
+
+Measured on 2026-10-06 with `wrangler r2 bucket info`, before that day's points:
+
+| Bucket                                 | Storage | Objects |
+| -------------------------------------- | ------- | ------- |
+| `blackbox-records-cms-prd` (PRD media) | 561 MB  | 1,189   |
+| `blackbox-emdash-m1-uat` (UAT media)   | 433 MB  | 589     |
+| `blackbox-cms-recovery-uat-20260915`   | 422 MB  | 386     |
+| `blackbox-cms-backups-prd`             | 270 MB  | 873     |
+| `blackbox-cms-backups-uat`             | 177 MB  | 359     |
+
+That is about 1.86 GB of the 10 GB allowance. PRD media grew from 404 MB (09-30) to 467 MB (10-01) to 561 MB (10-06), driven by preorder and video media. Operations are not the constraint: each run reads every media object once (about 1.8k Class B reads a day today) and writes only unseen blobs, against 1M Class A and 10M Class B per month.
+
+### When the warning appears
+
+A successful run prints the GitHub Actions warning `CMS backup nearing its byte ceiling` once a capture exceeds 75% of the ceiling (1.5 GiB at 2 GiB). The final JSON result line also reports `maxBytes`. Act before runs fail. Levers, cheapest first:
+
+1. The operator deletes the leftover rehearsal recovery bucket and D1 database `blackbox-cms-recovery-uat-20260915`. This frees about 422 MB and one of the ten D1 database slots; its evidence is recorded below. Permanent deletion is a user action.
+2. Stop backing up UAT (test data) or back it up weekly. This halves backup growth.
+3. Shrink media at upload. Video and large images drive the growth.
+4. Only then consider a paid plan. That is a user decision.
 
 ## Isolated recovery
 
@@ -40,7 +69,7 @@ The isolated restore target is `blackbox-cms-recovery-uat-20260915`, D1 ID `9157
 
 At 00:39 UTC, bounded inventories found 386 UAT objects totaling 421,623,017 bytes and an empty PRD media bucket. Account D1 usage showed 20.58k rows read, 2.5k written, 8.38 MB stored and seven of ten database slots used. R2 billing remained at 208 Class A and 768 Class B operations, with no billable usage; those delayed billing counters do not include every recent publication operation. The account has only the two CMS media buckets.
 
-The initial UAT capture ceiling is 512 MiB (`536870912` bytes), including SQL. Budget fewer than 400 Class A and 800 Class B operations for its first capture, two bounded database captures, and no commerce writes. Reserve 10,000 D1 reads for the exports and leave at least 90% of daily D1 allowances for ordinary activity. A small private-object pilot precedes full capture. Seven daily points plus one pre-upgrade point at this ceiling occupy at most 4 GiB per environment before deduplication; enable both schedules only after measuring actual retained bytes and preserving account-wide storage headroom. A backup bucket has no public route, domain, or Worker binding. Scheduling remains disabled until the pilot and credentials are ready.
+The initial UAT capture ceiling is 512 MiB (`536870912` bytes), including SQL. Budget fewer than 400 Class A and 800 Class B operations for its first capture, two bounded database captures, and no commerce writes. Reserve 10,000 D1 reads for the exports and leave at least 90% of daily D1 allowances for ordinary activity. A small private-object pilot precedes full capture. Seven daily points plus one pre-upgrade point at this ceiling occupy at most 4 GiB per environment before deduplication; enable both schedules only after measuring actual retained bytes and preserving account-wide storage headroom. A backup bucket has no public route, domain, or Worker binding. Scheduling remained disabled until the pilot and credentials were ready; the hosted ceiling is now 2 GiB (see [Hosted daily capture](#hosted-daily-capture)).
 
 Create an empty recovery database and bucket with names starting `blackbox-cms-recovery-`. Use their actual IDs; do not substitute a production ID under a different name. For example:
 
