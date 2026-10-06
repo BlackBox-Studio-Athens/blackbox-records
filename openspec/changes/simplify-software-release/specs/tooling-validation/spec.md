@@ -130,6 +130,25 @@ The eager-JavaScript budgets, route isolation and image-markup checks SHALL run 
 - **THEN** it applies to the SSR build only
 - **AND** the hosted client bundles carry no wrappers from it.
 
+### Requirement: Catalog apply is environment-scoped and UAT-first
+
+The system MUST require explicit environment and apply flags before mutating Stripe Products, Stripe Prices, D1 mappings, or Store Offer snapshots.
+
+#### Scenario: UAT apply is requested
+
+- **GIVEN** an operator runs `pnpm stripe:catalog:verify --env uat --apply`
+- **WHEN** the dry-run plan has actionable Product projection drift
+- **THEN** the command re-syncs only sandbox Stripe Product name, description and images from the D1 runtime projection
+- **AND** it creates no Price and writes no D1 mapping or Store Offer snapshot, because checkout start repairs those
+- **AND** prints a redacted post-apply verification report.
+
+#### Scenario: Production apply is requested before go-live approval
+
+- **GIVEN** an operator requests catalog apply for production
+- **WHEN** production catalog mutation has not been explicitly approved by the production go-live readiness workflow
+- **THEN** the command refuses to mutate provider or D1 state
+- **AND** reports the required approval gate.
+
 ## REMOVED Requirements
 
 ### Requirement: Post-merge UAT provider smoke workflow

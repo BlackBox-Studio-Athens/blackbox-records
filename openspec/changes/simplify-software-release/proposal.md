@@ -54,4 +54,4 @@ Phase 1 touches `.github/workflows/pages.yml`, `uat-release-sequence.yml` (comme
 
 Phase 3 touches `.github/workflows/pages.yml` and the new `promote-prd.yml`, `scripts/release-candidate.mjs`, `build-public-release.mjs`, `configure-public-gateway.mjs`, `apps/backend/scripts/migrate-cms.mjs`, the renderer config, the catalog mockup imports and the email preview, and deletes `uat-release-sequence.yml`, the restore and capture scripts and the `/assets/catalog` route. The environment `CLOUDFLARE_API_TOKEN`s need Pages write.
 
-Hosted steps needing the user, each asked first: a push to `main` (each phase; a push releases UAT), a `promote-prd.yml` dispatch to measure promotion, the Phase 0 variable change and backup dispatch, the Phase 3 Pages fail-closed toggle, Pages token scope and read-only hosted checks, and the Phase 4 secret, cache and environment deletions.
+Hosted steps needing the user, each asked first: a push to `main` (each phase; a push releases UAT), a `promote-prd.yml` dispatch to measure promotion, the Phase 0 variable change and backup dispatch, Pages token scope and read-only hosted checks, and the Phase 4 secret, cache and environment deletions.

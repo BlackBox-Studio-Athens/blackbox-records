@@ -2,7 +2,7 @@
 
 ### Requirement: Pages fails closed and ships no route HTML
 
-The hosted release SHALL upload to each Cloudflare Pages project only the renderer's client assets, the public gateway and a prerendered `robots.txt`. It SHALL NOT upload route HTML, so no static copy of a page can be served when the Pages Function is unavailable. Both Pages projects SHALL be configured to fail closed on Function quota exhaustion, and a release builds with no CMS credential and restores no CMS content or media.
+The hosted release SHALL upload to each Cloudflare Pages project only the renderer's client assets, the public gateway and a prerendered `robots.txt`. It SHALL NOT upload route HTML, so no static copy of a page can be served when the Pages Function is unavailable. Both Pages projects SHALL be configured to fail closed on Function quota exhaustion, a UAT deploy or PRD promotion SHALL set and verify that mode on its project before it uploads, and a release builds with no CMS credential and restores no CMS content or media.
 
 #### Scenario: A release is uploaded to Pages
 
@@ -18,11 +18,11 @@ The hosted release SHALL upload to each Cloudflare Pages project only the render
 - **AND** no stale editorial HTML is served, because none exists on Pages
 - **AND** static assets such as `/_astro/*` and `robots.txt` remain available.
 
-#### Scenario: The operator confirms the Pages setting
+#### Scenario: Every deploy enforces fail-closed
 
-- **WHEN** the operator sets Pages "Fail closed" on `blackbox-records-web-uat` and `blackbox-records-web`
-- **THEN** the setting is read back and recorded in the change's validation note
-- **AND** it needs no code change, because no HTML ships.
+- **WHEN** a UAT deploy or a PRD promotion reaches its Pages step
+- **THEN** it sets fail-closed on its Pages project (`blackbox-records-web-uat` or `blackbox-records-web`) and reads the setting back, failing the run when it is not set, before uploading anything
+- **AND** no operator toggle is needed, because the deploy script owns the setting.
 
 #### Scenario: The renderer has a published pointer
 
