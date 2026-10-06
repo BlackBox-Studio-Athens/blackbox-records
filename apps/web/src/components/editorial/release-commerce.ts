@@ -3,6 +3,7 @@ import { tracklistFormat, type Tracklist } from '@blackbox/content-model';
 
 import { resolveLinkAttributes } from '@/platform/config/site';
 import { getPrimaryReleaseStoreFormat, getStoreItemForRelease } from '@/lib/catalog-data';
+import type { ReleasePresentationEntry } from './release-presentation';
 
 export type ReleaseCommerceLink = {
   href: string;
@@ -12,6 +13,26 @@ export type ReleaseCommerceLink = {
   rel?: string;
   target?: '_blank';
 };
+
+export function getReleasePresentationEntry(
+  release: CollectionEntry<'releases'>,
+  commerceLink?: ReleaseCommerceLink | null,
+): ReleasePresentationEntry {
+  const format = commerceLink?.physicalFormat ?? tracklistFormat(getPrimaryReleaseStoreFormat(release.data.formats));
+  const storeSlug = commerceLink?.isNativeStoreLink ? commerceLink.href.split('/').filter(Boolean).at(-1) : undefined;
+  return {
+    id: release.id,
+    priority: release.data.releases_priority,
+    releaseDate: release.data.release_date?.toISOString().slice(0, 10),
+    releaseStage: release.data.release_stage,
+    edition:
+      format && (!commerceLink || commerceLink.isNativeStoreLink)
+        ? storeSlug
+          ? { kind: 'native', format, storeSlug }
+          : { kind: 'announced', format }
+        : { kind: 'none' },
+  };
+}
 
 export async function getReleaseCommerceLink(
   release: CollectionEntry<'releases'>,

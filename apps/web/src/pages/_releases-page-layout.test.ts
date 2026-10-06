@@ -34,7 +34,9 @@ describe('Releases page layout', () => {
 
   it('renders the whole catalog once through shared cards with one availability connector', () => {
     const page = readFileSync(releasesPagePath, 'utf8');
-    expect(page.match(/<ReleaseCard\b/g)).toHaveLength(1);
+    expect(page.match(/<ReleaseCard\b/g)).toHaveLength(2);
+    expect(page).toContain('selectReleaseMerchandisingEntries(');
+    expect(page).toContain("role={index === 0 ? 'lead' : 'supporting'}");
     expect(page.match(/<ReleaseCatalogPresentation\b/g)).toHaveLength(1);
     expect(page).toContain('variant="releases"');
     expect(page).toContain('data-release-grid');
@@ -44,8 +46,8 @@ describe('Releases page layout', () => {
 
   it('uses native artwork and title links without stretching over metadata or repeating the detail action', () => {
     const card = readFileSync(releaseCardPath, 'utf8');
-    expect(card).toContain(
-      "isReleaseShowcase ? 'block h-full' : 'release-card-link prose-link-card group block h-full'",
+    expect(card).toMatch(
+      /isReleaseShowcase\s*\?\s*'block h-full'\s*:\s*'release-card-link prose-link-card group block h-full'/,
     );
     expect(card).toContain("const ArtworkTag = isReleaseShowcase ? 'a' : 'div'");
     expect(card).toContain('tabindex={isReleaseShowcase ? -1 : undefined}');
@@ -54,7 +56,7 @@ describe('Releases page layout', () => {
     );
     expect(card.match(/data-release-detail\b/g)).toHaveLength(1);
     expect(card).toMatch(
-      /<\/ArtworkTag>\s*\{isReleaseShowcase && \(\s*<div class="release-card-meta-row pointer-events-none/s,
+      /<\/ArtworkTag>\s*\{isReleaseShowcase && !isPrincipal && \(\s*<div class="release-card-meta-row pointer-events-none/s,
     );
     expect(card).toContain('class="pointer-events-auto"');
   });
@@ -78,7 +80,7 @@ describe('Releases page layout', () => {
     const card = readFileSync(releaseCardPath, 'utf8');
     const proseCss = readFileSync(proseCssPath, 'utf8');
 
-    expect(page).toContain('artist={artistProfileById.get(releaseEntry.data.artist.id)}');
+    expect(page).toContain('artist={artistProfileById.get(release.data.artist.id)}');
     expect(card).toMatch(/class="release-card-artist-link" href=\{createArtistDetailPath\(artist\)\}/);
     // The card's stretched release link sits at z-index 2; the artist link must stay clickable above it.
     expect(proseCss).toMatch(/\.prose-link-card :is\([^)]*\.release-card-artist-link[^)]*\)\s*{[^}]*z-index:\s*3/);

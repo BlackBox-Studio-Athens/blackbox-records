@@ -27,6 +27,90 @@ test('release backdrop dismissal restores mouse-wheel scrolling', async ({ page 
   }
 });
 
+test('Releases keeps SSR roles and square artwork while offers resolve on direct and shell entry', async ({
+  page,
+}, testInfo) => {
+  let respond: (() => Promise<void>) | undefined;
+  await page.route('**/api/store/listing-prices*', (route) => {
+    if (new URL(route.request().url()).searchParams.get('scope') === 'preorders') return route.fulfill({ json: [] });
+    respond = () =>
+      route.fulfill({
+        json: [
+          { ...preorder, storeItemSlug: 'disintegration-black-vinyl-lp' },
+          { ...stocked, storeItemSlug: 'caregivers-vinyl' },
+        ],
+      });
+    return;
+  });
+  const html = await (await page.request.get('releases/')).text();
+  const serverRoles = [...html.matchAll(/data-release-id="([^"]+)"\s+data-release-role="([^"]+)"/g)].map((match) => [
+    match[1],
+    match[2],
+  ]);
+  expect(serverRoles).toEqual([
+    ['disintegration', 'lead'],
+    ['anarchotribal', 'supporting'],
+    ['caregivers', 'catalog'],
+  ]);
+  await page.goto('releases/');
+  await waitForShell(page);
+  const roles = () =>
+    page
+      .locator('[data-release-id]')
+      .evaluateAll((cards) =>
+        cards.map((card) => [card.getAttribute('data-release-id'), card.getAttribute('data-release-role')]),
+      );
+  await expect.poll(() => Boolean(respond)).toBe(true);
+  expect(await roles()).toEqual(serverRoles);
+  await expect(page.locator('.purchase-action, .preorder-action')).toHaveCount(0);
+  await respond!();
+  await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
+    'Pre-order vinyl',
+  );
+  expect(await roles()).toEqual(serverRoles);
+  for (const width of [2120, 1440, 1024, 320, 390, 430]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.evaluate(() => document.fonts.ready);
+    const artwork = await page.locator('[data-release-role]:not([data-release-role="catalog"])').evaluateAll((cards) =>
+      cards.map((card) => {
+        const frame = card.querySelector('.release-card-image-shell')!.getBoundingClientRect();
+        const image = card.querySelector('img')!;
+        return {
+          width: frame.width,
+          height: frame.height,
+          fit: getComputedStyle(image).objectFit,
+          transform: getComputedStyle(image).transform,
+        };
+      }),
+    );
+    for (const image of artwork) {
+      expect(Math.abs(image.height - image.width)).toBeLessThan(1);
+      expect(image.fit).toBe('contain');
+      expect(image.transform).toBe('none');
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    if (width === 2120 || width < 768)
+      await page
+        .locator('#releases-merchandising')
+        .screenshot({ path: `.codex-artifacts/catalog-repairs/releases-${testInfo.project.name}-${width}.png` });
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await plantSentinel(page);
+  await page.getByRole('link', { name: 'BlackBox Records', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'BlackBox Records', exact: true })).toBeVisible();
+  respond = undefined;
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Releases', exact: true }).click();
+  await expect.poll(() => Boolean(respond)).toBe(true);
+  expect(await roles()).toEqual(serverRoles);
+  await expect(page.locator('.purchase-action, .preorder-action')).toHaveCount(0);
+  await respond!();
+  await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
+    'Pre-order vinyl',
+  );
+  expect(await roles()).toEqual(serverRoles);
+  expect(await sentinelIntact(page)).toBe(true);
+});
+
 for (const [label, releaseDate, digitalStatus] of [
   ['released', '2026-06-06', 'Digital out now'],
   ['unreleased', '2099-11-06', 'Album upcoming'],
@@ -68,7 +152,7 @@ for (const [label, releaseDate, digitalStatus] of [
       'Pre-order vinyl',
     );
     const announced = page.locator('[data-release-id="anarchotribal"]');
-    await expect(announced).toHaveAttribute('data-release-role', 'catalog');
+    await expect(announced).toHaveAttribute('data-release-role', 'supporting');
     await expect(announced.locator('[data-release-badges]')).toHaveText(`${digitalStatus}Vinyl coming later`);
     await expect(announced.locator('[data-release-purchase]')).toHaveText('View vinyl details');
     await expect(page.locator('[data-release-id]')).toHaveCount(3);
@@ -183,6 +267,7 @@ for (const width of [390, 1280]) {
     await page.getByRole('link', { name: 'Releases', exact: true }).filter({ visible: true }).first().click();
     const lead = page.locator('[data-release-role="lead"]');
     await expect(lead).toHaveAttribute('data-release-id', 'disintegration');
+    await expect(lead.locator('[data-release-purchase]')).toHaveText('Pre-order vinyl');
     const status = lead.locator('[data-release-badges] .store-item-card__release-status');
     await expect(status).toHaveText('Digital out now');
     await expect(status).toHaveCSS('font-family', /Geist Mono/);
@@ -216,13 +301,13 @@ for (const width of [320, 390, 1280]) {
     await waitForShell(page);
     const lead = page.locator('[data-release-role="lead"]');
     await expect(lead).toHaveAttribute('data-release-id', 'disintegration');
-    await expect(page.locator('[data-release-role="supporting"]')).toHaveAttribute('data-release-id', 'caregivers');
+    await expect(page.locator('[data-release-role="supporting"]')).toHaveAttribute('data-release-id', 'anarchotribal');
     await expect(page.locator('[data-release-id]')).toHaveCount(3);
     expect(
       await page
         .locator('[data-release-id]')
         .evaluateAll((cards) => cards.map((card) => card.getAttribute('data-release-id'))),
-    ).toEqual(['disintegration', 'caregivers', 'anarchotribal']);
+    ).toEqual(['disintegration', 'anarchotribal', 'caregivers']);
     expect(offerReads).toBe(1);
     await expect(lead.getByRole('link', { name: 'Pre-order vinyl', exact: true })).toHaveClass(/preorder-action/);
     await expect(lead.locator('.preorder-badge')).toHaveText('Pre-order · ships around October 2026');
@@ -266,11 +351,13 @@ for (const width of [320, 390, 1280]) {
     });
     const button = lead.getByRole('link', { name: 'Pre-order vinyl', exact: true });
     expect((await button.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    await page.mouse.move(0, 0);
+    await button.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
     const visual = await button.evaluate((element) => ({
       shadow: getComputedStyle(element).boxShadow,
       accent: getComputedStyle(element).getPropertyValue('--preorder-accent').trim(),
     }));
-    expect(visual.shadow).toContain('3px');
+    expect(visual.shadow).toMatch(/-3(?:\.0+)?px/);
     expect(visual.accent).not.toBe('');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await button.focus();
@@ -305,7 +392,7 @@ for (const width of [320, 390, 1280]) {
   });
 }
 
-test('Releases automatically changes buying actions and placement on a fresh offer read', async ({ page }) => {
+test('Releases changes buying actions while retaining placement on a fresh offer read', async ({ page }) => {
   let current = preorder as typeof stocked | typeof preorder;
   let unknown = false;
   await page.route('**/api/store/listing-prices*', (route) =>
@@ -331,11 +418,11 @@ test('Releases automatically changes buying actions and placement on a fresh off
   await expect(page.locator('[data-release-id="disintegration"] .preorder-badge')).toHaveCount(0);
   current = { ...stocked, availabilityState: 'sold_out' };
   await page.reload();
-  await expect(page.locator('[data-release-role="lead"]')).toHaveAttribute('data-release-id', 'caregivers');
+  await expect(page.locator('[data-release-role="lead"]')).toHaveAttribute('data-release-id', 'disintegration');
   await expect(page.locator('[data-release-id="disintegration"] [data-release-badges]')).toContainText('Sold Out');
   unknown = true;
   await page.reload();
-  await expect(page.locator('[data-release-role="lead"]')).toHaveCount(0);
+  await expect(page.locator('[data-release-role="lead"]')).toHaveAttribute('data-release-id', 'disintegration');
   await expect(page.locator('[data-release-id]')).toHaveCount(3);
   await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
     'View vinyl details',
@@ -467,7 +554,7 @@ for (const result of ['unavailable', 'failed'] as const) {
       await page
         .locator('[data-release-id]')
         .evaluateAll((cards) => cards.map((card) => card.getAttribute('data-release-id'))),
-    ).toEqual(['disintegration', 'caregivers', 'anarchotribal']);
+    ).toEqual(['disintegration', 'anarchotribal', 'caregivers']);
     await plantSentinel(page);
     await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Artists', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1, name: /^Artists$/i })).toBeVisible();

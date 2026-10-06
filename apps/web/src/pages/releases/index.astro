@@ -1,13 +1,22 @@
 ---
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import ReleaseCard from '@/components/editorial/ReleaseCard.astro';
-import ReleaseCatalogPresentation from '@/components/editorial/ReleaseCatalogPresentation';
-import { getReleaseCommerceLink } from '@/components/editorial/release-commerce';
+import ReleaseCatalogPresentation, {
+  selectReleaseMerchandisingEntries,
+} from '@/components/editorial/ReleaseCatalogPresentation';
+import { getReleaseCommerceLink, getReleasePresentationEntry } from '@/components/editorial/release-commerce';
 import { listArtistProfiles, listReleaseCatalog, mapArtistProfilesById } from '@/lib/catalog-data';
 
 const [artistProfiles, releaseCatalogEntries] = await Promise.all([listArtistProfiles(), listReleaseCatalog()]);
 const artistProfileById = mapArtistProfilesById(artistProfiles);
 const commerceLinks = await Promise.all(releaseCatalogEntries.map(getReleaseCommerceLink));
+const { principal, remainder } = selectReleaseMerchandisingEntries(
+  releaseCatalogEntries.map((release, index) => ({
+    ...getReleasePresentationEntry(release, commerceLinks[index]),
+    release,
+    commerceLink: commerceLinks[index],
+  })),
+);
 ---
 
 <SiteLayout pageTitle="Releases" pageDescription="Releases and label catalog.">
@@ -17,19 +26,37 @@ const commerceLinks = await Promise.all(releaseCatalogEntries.map(getReleaseComm
   </header>
   {releaseCatalogEntries.length > 0 && (
     <div id="releases-merchandising" class="layout-container releases-page-showcase-container">
-      <div class="releases-page-layout releases-page-layout--single-column" data-release-layout>
-        <section class="releases-catalog-section" aria-labelledby="releases-catalog-heading" data-release-catalog>
+      <div
+        class:list={['releases-page-layout', { 'releases-page-layout--single-column': principal.length < 2 }]}
+        data-release-layout
+      >
+        {principal.map(({ release, commerceLink }, index) => (
+          <ReleaseCard
+            release={release}
+            artist={artistProfileById.get(release.data.artist.id)}
+            commerceLink={commerceLink}
+            imageLoading={index === 0 ? 'eager' : 'lazy'}
+            imagePriority={index === 0}
+            variant="releases"
+            role={index === 0 ? 'lead' : 'supporting'}
+            singleColumn={principal.length < 2}
+          />
+        ))}
+        <section
+          class="releases-catalog-section"
+          aria-labelledby="releases-catalog-heading"
+          data-release-catalog
+          hidden={remainder.length === 0}
+        >
           <h2 id="releases-catalog-heading" class="releases-catalog-section__heading">
             Our Releases
           </h2>
           <div class="releases-catalog-grid grid gap-5 md:grid-cols-2 xl:grid-cols-3" data-release-grid>
-            {releaseCatalogEntries.map((releaseEntry, index) => (
+            {remainder.map(({ release, commerceLink }) => (
               <ReleaseCard
-                release={releaseEntry}
-                artist={artistProfileById.get(releaseEntry.data.artist.id)}
-                commerceLink={commerceLinks[index]}
-                imageLoading={index === 0 ? 'eager' : 'lazy'}
-                imagePriority={index === 0}
+                release={release}
+                artist={artistProfileById.get(release.data.artist.id)}
+                commerceLink={commerceLink}
                 variant="releases"
               />
             ))}

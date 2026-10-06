@@ -38,6 +38,16 @@ const records = [
 ];
 
 describe('Releases physical merchandising', () => {
+  it('retains editorial roles and source order while offers load, fail or change availability', () => {
+    const expected = { principal: ['lotus', 'disintegration'], remainder: ['caregivers', 'anarchotribal'] };
+    for (const offers of [[], records, records.map((row) => ({ ...row, availabilityState: 'sold_out' as const }))]) {
+      const result = selectReleaseMerchandisingEntries(entries, offers);
+      expect({
+        principal: result.principal.map((entry) => entry.id),
+        remainder: result.remainder.map((entry) => entry.id),
+      }).toEqual(expected);
+    }
+  });
   it('keeps chosen preorders first and every record once, with older stock before announced vinyl', () => {
     const result = selectReleaseMerchandisingEntries(entries, records);
     expect(result.principal.map((entry) => entry.id)).toEqual(['lotus', 'disintegration']);
@@ -77,21 +87,21 @@ describe('Releases physical merchandising', () => {
     expect(releasePresentation(entries[0]!, records[0], today).shipping).toBe('Expected to ship around November 2026');
   });
   it.each(['sold_out', 'out_of_stock', 'unavailable'] as const)(
-    'replaces an unavailable lead automatically for %s',
+    'retains the lead geometry with truthful availability for %s',
     (availabilityState) => {
       const unavailable = records.map((row) =>
         row.storeItemSlug === 'lotus-vinyl' ? { ...row, availabilityState } : row,
       );
       const result = selectReleaseMerchandisingEntries(entries, unavailable);
-      expect(result.principal.map((entry) => entry.id)).toEqual(['disintegration', 'caregivers']);
+      expect(result.principal.map((entry) => entry.id)).toEqual(['lotus', 'disintegration']);
       expect(result.states.get('lotus')?.state).toBe(availabilityState);
       expect(selectReleaseMerchandisingEntries(entries, records).principal[0]?.id).toBe('lotus');
     },
   );
   it('unknown reads never assert stock, preorder or positive buying', () => {
     const result = selectReleaseMerchandisingEntries(entries, []);
-    expect(result.principal).toEqual([]);
-    expect(result.remainder).toHaveLength(4);
+    expect(result.principal.map((entry) => entry.id)).toEqual(['lotus', 'disintegration']);
+    expect(result.remainder).toHaveLength(2);
     expect(result.states.get('lotus')).toMatchObject({ state: 'unknown', action: 'View vinyl details', shipping: '' });
     expect(result.states.get('anarchotribal')?.badges).toEqual(['Digital out now', 'Vinyl coming later']);
   });
@@ -123,7 +133,7 @@ describe('Releases physical merchandising', () => {
       expect(releasePresentation(entry, record('lotus-vinyl'), today).state).toBe('available');
     },
   );
-  it('new offers reorder the remainder automatically, preserving chosen emphasis', () => {
+  it('new offers update status without reordering the remainder or chosen emphasis', () => {
     const opened: ReleasePresentationEntry[] = entries.map((entry) =>
       entry.id === 'anarchotribal'
         ? { ...entry, edition: { kind: 'native', format: 'vinyl', storeSlug: 'anarchotribal-vinyl' } }
@@ -134,12 +144,14 @@ describe('Releases physical merchandising', () => {
       record('anarchotribal-vinyl', { shipEstimate: null }),
     ]);
     expect(result.principal.map((entry) => entry.id)).toEqual(['lotus', 'disintegration']);
-    expect(result.remainder.map((entry) => entry.id)).toEqual(['anarchotribal', 'caregivers']);
+    expect(result.remainder.map((entry) => entry.id)).toEqual(['caregivers', 'anarchotribal']);
+    expect(result.states.get('anarchotribal')?.state).toBe('preorder');
   });
-  it('keeps several records per lifecycle together without duplicating any release', () => {
+  it('keeps several lifecycle states truthful without moving or duplicating releases', () => {
     const many: ReleasePresentationEntry[] = ['preorder', 'available', 'announced', 'sold_out'].flatMap((state) =>
       Array.from({ length: 3 }, (_, index): ReleasePresentationEntry => ({
         id: `${state}-${index}`,
+        priority: state === 'preorder' ? 3 - index : undefined,
         releaseStage: state === 'announced' ? 'upcoming' : 'released',
         releaseDate: index === 0 ? '2026-06-06' : '2099-11-06',
         edition: { kind: 'native', storeSlug: `${state}-${index}`, format: 'vinyl' },
@@ -152,16 +164,16 @@ describe('Releases physical merchandising', () => {
     const result = selectReleaseMerchandisingEntries(many.toReversed(), offers);
     expect(result.principal.map((entry) => entry.id)).toEqual(['preorder-2', 'preorder-1']);
     expect(result.remainder.map((entry) => entry.id)).toEqual([
-      'preorder-0',
-      'available-2',
-      'available-1',
-      'available-0',
-      'announced-2',
-      'announced-1',
-      'announced-0',
       'sold_out-2',
       'sold_out-1',
       'sold_out-0',
+      'announced-2',
+      'announced-1',
+      'announced-0',
+      'available-2',
+      'available-1',
+      'available-0',
+      'preorder-0',
     ]);
     expect(new Set([...result.principal, ...result.remainder].map((entry) => entry.id)).size).toBe(many.length);
   });

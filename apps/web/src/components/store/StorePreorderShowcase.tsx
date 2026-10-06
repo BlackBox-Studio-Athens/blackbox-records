@@ -258,6 +258,7 @@ function PreorderChapter({
   const video = useRef<HTMLVideoElement>(null);
   const fullVideo = useRef<HTMLDivElement>(null);
   const watchButton = useRef<HTMLButtonElement>(null);
+  const filmTitle = useRef<HTMLHeadingElement>(null);
   const clips = item.clips?.length
     ? item.clips
     : item.firstClipId
@@ -285,6 +286,28 @@ function PreorderChapter({
   const chapterId = 'preorder-' + item.slug;
   const watchId = chapterId + '-video';
   const sessionNoteId = chapterId + '-player-note';
+
+  useEffect(() => {
+    let cancelled = false;
+    void document.fonts.ready.then(() => {
+      const title = filmTitle.current;
+      const context = document.createElement('canvas').getContext('2d');
+      if (cancelled || !title || !context) return;
+      const style = getComputedStyle(title);
+      context.font = `${style.fontWeight} 100px ${style.fontFamily}`;
+      const spacing = parseFloat(style.letterSpacing) / parseFloat(style.fontSize) || 0;
+      const width = Math.max(
+        ...item.title
+          .toUpperCase()
+          .split(/\s+/)
+          .map((word) => context.measureText(word).width / 100 + spacing * word.length),
+      );
+      title.style.setProperty('--home-preorders-title-width', String(width + 0.05));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [item.title]);
 
   useEffect(() => {
     const media = video.current;
@@ -426,8 +449,13 @@ function PreorderChapter({
             <div className="home-preorders__film-shade" aria-hidden="true" />
             <div className="home-preorders__film-copy">
               {artist}
-              <h3 id={chapterId + '-title'} className="home-preorders__film-title">
-                {item.title}
+              <h3 ref={filmTitle} id={chapterId + '-title'} className="home-preorders__film-title">
+                {item.title.split(/\s+/).map((word, index) => (
+                  <span key={index}>
+                    {index > 0 ? ' ' : ''}
+                    <span>{word}</span>
+                  </span>
+                ))}
               </h3>
               {badgeList}
               {purchase}
