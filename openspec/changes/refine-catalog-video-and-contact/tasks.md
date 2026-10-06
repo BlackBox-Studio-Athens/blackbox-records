@@ -8,7 +8,7 @@
 - [x] 2.1 Encode the supplied performance into the existing small silent film/poster profile and map the exact YouTube ID, retaining Sidus and unknown-ID behavior.
 - [x] 2.2 Verify Local video/fallback/Watch behavior and record the separately observed user-published PRD clip plus code-release requirement.
 
-- [ ] 2.3 Prepare aligned high-quality desktop derivatives from both originals, retain small-screen delivery and verify quality, byte ceilings, preference/viewport selection and player continuity. Hold PRD for the user's additional commits.
+- [x] 2.3 Prepare aligned high-quality desktop derivatives from both originals, retain small-screen delivery and verify quality, byte ceilings, preference/viewport selection and player continuity. Consolidate into local main; UAT and PRD pushes are held at the user's request.
 
 ## 3. Footer and demo sharing
 

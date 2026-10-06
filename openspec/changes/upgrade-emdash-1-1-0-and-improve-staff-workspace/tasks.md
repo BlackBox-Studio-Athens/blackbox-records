@@ -16,5 +16,5 @@
 
 - [x] 9. Pass focused regression tests, frozen installation, builds, strict OpenSpec and final pnpm validate.
 - [x] 10. Complete disposable Local migration and desktop/phone browser acceptance; record source-bound evidence.
-- [ ] 11. Complete authorized UAT verification with backups and Free-tier allowance evidence. Candidate `02ec9984` passed; the final wide-editor follow-up awaits the combined candidate.
-- [ ] 12. Complete separately approved PRD promotion. Held at the user's request while additional commits are combined.
+- [ ] 11. Complete authorized UAT verification with backups and Free-tier allowance evidence. Candidate `02ec9984` passed; the consolidated follow-ups remain Local because the user explicitly prohibited a UAT push.
+- [ ] 12. Complete separately approved PRD promotion. Held at the user's request; hand over consolidated local main without pushing.
