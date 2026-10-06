@@ -454,9 +454,9 @@ The system SHALL serve the renderer's client assets and public gateway with sepa
 
 #### Scenario: Shared workflow deploys the UAT frontend to Cloudflare Pages
 
-- **GIVEN** a push whose checks, end-to-end suite and staff previews passed
+- **GIVEN** a push whose checks and UAT build passed
 - **WHEN** the UAT deploy job runs
-- **THEN** the repository checks have already run `pnpm validate:checks` and the end-to-end build has run the bundle budgets
+- **THEN** the repository checks have already run `pnpm validate:checks`, and the end-to-end build runs the bundle budgets in the same push run before the candidate can be promoted
 - **AND** it uploads only the prebuilt renderer client directory with its gateway and browser-safe UAT build variables
 - **AND** the deployed site calls the UAT Worker/API.
 

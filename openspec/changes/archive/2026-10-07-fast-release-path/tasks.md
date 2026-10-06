@@ -6,7 +6,7 @@
 - [x] 1.2 `scripts/release-candidate.mjs`: set the poll budget to 24 x 5 s, correct the identity comment, and read `/` with a cache-bypassing query in `verify-hosted`. Update `scripts/release-candidate.test.mjs`.
 - [x] 1.3 `pages.yml` and `promote-prd.yml`: deploy the Workers, then the gateway and Pages, then run `verify-worker`, listing readiness and `verify-hosted`.
 - [x] 1.4 Delete the `deploy:prd` script from `apps/backend/package.json` and the root `deploy:backend:prd` and `deploy:backend:production` scripts that call it.
-- [ ] 1.5 Push and promote once. Record the job timings and how long the entry and the commerce Durable Object take to serve the new SHA.
+- [x] 1.5 Push and promote once. Record the job timings and how long the entry and the commerce Durable Object take to serve the new SHA. Phases 1 and 2 shipped together in push run `37545331781` and promotion `37546197141`; the entry flipped within about 5 s, the Durable Object about 5 min later (see `validation.md`), so no bundle trim or Worker split is needed.
 
 ## 2. UAT waits for the checks and the build; promotion needs every suite
 
@@ -14,8 +14,8 @@
 - [x] 2.2 `pages.yml`: check parts `[lint, typecheck, tests]`, end-to-end shards 1-4, staff previews per browser, and `deploy-uat` needs only the checks and the build.
 - [x] 2.3 `scripts/release-candidate.mjs` `validateSuites` and its test: the new job names.
 - [x] 2.4 Docs and wording: `docs/validation-feedback.md`, `docs/catalog-promotion.md`, `docs/environment-model.md`, `README.md`, `docs/agent-workflow.md`, `feedback-policy.json`. Run `pnpm agent:check`.
-- [ ] 2.5 Push and promote once. Record push → UAT live, push → green and dispatch → PRD done against the targets (UAT at most 5 to 7 minutes, PRD at most 3 to 5 minutes).
+- [x] 2.5 Push and promote once. Record push → UAT live, push → green and dispatch → PRD done against the targets (UAT at most 5 to 7 minutes, PRD at most 3 to 5 minutes).
 
 ## 3. Close-out
 
-- [ ] 3.1 Write `validation.md`, validate strictly and archive the change.
+- [x] 3.1 Write `validation.md`, validate strictly and archive the change.
