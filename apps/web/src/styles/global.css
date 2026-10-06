@@ -5611,6 +5611,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 }
 
 .home-preorders__film-copy {
+  container-type: inline-size;
   position: relative;
   width: min(48.75rem, 88%);
   margin: 0 auto;
@@ -5635,11 +5636,21 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 }
 
 .home-preorders__film-title {
+  --home-preorders-title-size: clamp(5.625rem, 11vw, 9rem);
   margin: 0 0 1.25rem;
-  font: 400 clamp(5.625rem, 11vw, 9rem) / 0.95 var(--font-display-brand);
+  font: 400 clamp(2rem, calc(100cqi / var(--home-preorders-title-width, 1)), var(--home-preorders-title-size)) / 0.95
+    var(--font-display-brand);
   letter-spacing: 0.02em;
   text-transform: uppercase;
   overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
+.home-preorders__film-title > span > span {
+  display: inline-block;
+  max-width: 100%;
+  word-break: break-all;
+  text-wrap: balance;
 }
 
 .home-preorders__badges {
@@ -6160,7 +6171,7 @@ button.home-preorders__clip {
   }
 
   .home-preorders__film-title {
-    font-size: clamp(3rem, 19.5vw, 4.75rem);
+    --home-preorders-title-size: clamp(3rem, 19.5vw, 4.75rem);
   }
 
   .home-preorders__film-copy .home-preorders__price-block {
@@ -7334,6 +7345,20 @@ html[data-store-coverflow-capable]
   display: block;
   color: inherit;
 }
+#releases-merchandising :is(.releases-latest-feature__artwork-link, .releases-latest-feature__upcoming-artwork-link) {
+  align-self: start;
+  aspect-ratio: 1;
+}
+#releases-merchandising :is(.releases-latest-feature__artwork, .releases-latest-feature__upcoming-artwork) {
+  height: 100%;
+  object-fit: contain;
+}
+#releases-merchandising
+  [data-release-role]:not([data-release-role='catalog'])
+  .release-card-artwork-link
+  .release-card-artwork {
+  transform: none;
+}
 #releases-merchandising .release-card-artwork-link .release-card-artwork {
   transform: scale(1.026);
   transition: none;
@@ -7384,6 +7409,13 @@ html[data-store-coverflow-capable]
 #releases-merchandising .releases-latest-feature__title {
   font-size: clamp(2.35rem, 16cqi, 4.85rem);
 }
+#releases-merchandising .releases-latest-feature__upcoming-copy {
+  container-type: inline-size;
+}
+#releases-merchandising .releases-latest-feature__upcoming-title {
+  font-size: min(15cqi, clamp(1.9rem, 8vw, 2.55rem));
+  text-wrap: balance;
+}
 @media (width < 64rem) {
   .releases-page-intro,
   .releases-page-showcase-container {
@@ -7430,9 +7462,6 @@ html[data-store-coverflow-capable]
   }
   #releases-merchandising .releases-latest-feature__upcoming {
     grid-template-columns: minmax(0, 1fr);
-  }
-  #releases-merchandising .releases-latest-feature__upcoming-copy {
-    container-type: inline-size;
   }
   #releases-merchandising .releases-latest-feature__upcoming-title {
     font-size: min(17cqi, clamp(1.9rem, 8vw, 2.55rem));

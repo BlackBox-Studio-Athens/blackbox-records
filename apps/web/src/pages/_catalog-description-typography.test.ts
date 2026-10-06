@@ -56,7 +56,7 @@ describe('Catalog description typography', () => {
     expect(releaseCard).toContain('class="release-card-summary-text text-sm leading-relaxed text-muted-foreground"');
 
     expect(releaseCard).toMatch(
-      /release\.data\.summary && \(\s*<div data-release-summary hidden>\s*<Prose value=\{release\.data\.summary\} rich=\{release\.data\.summary_rich\}/s,
+      /release\.data\.summary && \(\s*<div\s+data-release-summary\s+hidden=\{!isPrincipal\}[^>]*>\s*<Prose value=\{release\.data\.summary\} rich=\{release\.data\.summary_rich\}/s,
     );
 
     const releaseDetailSummaryClass = /release\.data\.summary && \(\s*<Prose\s+class="([^"]+)"/s.exec(

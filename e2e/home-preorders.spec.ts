@@ -14,7 +14,7 @@ const listing: ListingPrice = {
 };
 const nativeVideoUrl = '/blackbox-records/home-scene-loop.mp4';
 
-async function stubShowcase(page: Page, stage: 'clip' | 'native' | 'photo' | 'cover') {
+async function stubShowcase(page: Page, stage: 'clip' | 'native' | 'afterwise' | 'photo' | 'cover') {
   const response = await page.request.get('preorder-showcase.json');
   expect(response.ok()).toBe(true);
   const accepted: StorePreorderShowcaseCandidate[] = await response.json();
@@ -24,17 +24,18 @@ async function stubShowcase(page: Page, stage: 'clip' | 'native' | 'photo' | 'co
   expect(source.coverUrl).toMatch(acceptedImage);
   expect(source.artistPhotoUrl).toMatch(acceptedImage);
   expect(source.storePath).toMatch(/\/store\/disintegration-black-vinyl-lp\/$/);
-  const hasClip = stage === 'clip' || stage === 'native';
+  const hasClip = stage === 'clip' || stage === 'native' || stage === 'afterwise';
+  const clipId = stage === 'afterwise' ? 'Cl7rWCTGEqY' : 'MOA5YZDOR6A';
   const candidate: StorePreorderShowcaseCandidate = {
     ...source,
-    firstClipId: hasClip ? 'MOA5YZDOR6A' : null,
+    firstClipId: hasClip ? clipId : null,
     clips: hasClip
       ? [
           {
-            id: 'MOA5YZDOR6A',
+            id: clipId,
             title: 'First official video',
             posterUrl: source.coverUrl,
-            ...(stage === 'native' ? { backgroundVideoUrl: nativeVideoUrl } : {}),
+            ...(['native', 'afterwise'].includes(stage) ? { backgroundVideoUrl: nativeVideoUrl } : {}),
           },
           { id: '01234567890', title: 'Second official video', posterUrl: source.coverUrl },
         ]
@@ -64,8 +65,10 @@ async function stubShowcase(page: Page, stage: 'clip' | 'native' | 'photo' | 'co
     candidateReads += 1;
     return route.fulfill({ json: candidates });
   });
-  if (stage === 'native') {
-    const body = await readFile('apps/web/src/pages/_assets/video-posters/sidus-embrace-the-void-loop.mp4');
+  if (stage === 'native' || stage === 'afterwise') {
+    const body = await readFile(
+      `apps/web/src/pages/_assets/video-posters/${stage === 'afterwise' ? 'afterwise-equilibrium' : 'sidus-embrace-the-void'}-loop.mp4`,
+    );
     await page.route('**/home-scene-loop.mp4', (route) => route.fulfill({ contentType: 'video/mp4', body }));
   }
   return {
@@ -77,6 +80,116 @@ async function stubShowcase(page: Page, stage: 'clip' | 'native' | 'photo' | 'co
     reads: () => ({ listingReads, candidateReads }),
   };
 }
+
+test('Film titles fit loaded Veneer without shrinking short names or orphaning long words', async ({
+  page,
+}, testInfo) => {
+  const fixture = await stubShowcase(page, 'clip');
+  fixture.candidates.push({ ...fixture.candidate, slug: 'short-title', title: 'LOTUS' });
+  fixture.listings.push({ ...listing, storeItemSlug: 'short-title' });
+  fixture.candidates.push({
+    ...fixture.candidate,
+    slug: 'long-title',
+    title: 'WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW',
+  });
+  fixture.listings.push({ ...listing, storeItemSlug: 'long-title' });
+  await page.goto('./');
+  await waitForShell(page);
+  for (const width of [2120, 1440, 1024, 320, 390, 430]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.evaluate(() => document.fonts.ready);
+    await expect
+      .poll(() =>
+        chapter(page)
+          .locator('.home-preorders__film-title')
+          .evaluate((title) => getComputedStyle(title).getPropertyValue('--home-preorders-title-width').trim()),
+      )
+      .not.toBe('');
+    const titles = await page.locator('.home-preorders__film-title').evaluateAll((elements) =>
+      elements.map((title) => {
+        const lines = new Map<number, string>();
+        const walker = document.createTreeWalker(title, NodeFilter.SHOW_TEXT);
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          for (let i = 0; i < node.textContent!.length; i++) {
+            const range = document.createRange();
+            range.setStart(node, i);
+            range.setEnd(node, i + 1);
+            const y = Math.round(range.getBoundingClientRect().y * 100) / 100;
+            lines.set(y, (lines.get(y) ?? '') + node.textContent![i]);
+          }
+        }
+        return {
+          lines: [...lines.values()],
+          fontSize: parseFloat(getComputedStyle(title).fontSize),
+          overflow: title.scrollWidth > title.clientWidth,
+        };
+      }),
+    );
+    expect(titles[0]!.lines, `${width}px Disintegration`).toEqual(['Disintegration']);
+    expect(titles[1]!.lines, `${width}px LOTUS`).toEqual(['LOTUS']);
+    expect(titles[1]!.fontSize).toBeCloseTo(
+      width < 768 ? Math.min(76, Math.max(48, width * 0.195)) : Math.min(144, Math.max(90, width * 0.11)),
+      1,
+    );
+    for (const title of titles) {
+      expect(title.overflow).toBe(false);
+      expect(title.fontSize).toBeGreaterThanOrEqual(32);
+      expect(title.lines.every((line) => line.length > 1)).toBe(true);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    if (width === 2120 || width < 768) {
+      await showScene(chapter(page));
+      await expect
+        .poll(() =>
+          chapter(page)
+            .locator('img')
+            .evaluateAll((images) => images.every((image) => image.complete && image.naturalWidth > 0)),
+        )
+        .toBe(true);
+      await chapter(page).screenshot({
+        path: `.codex-artifacts/catalog-repairs/home-title-${testInfo.project.name}-${width}.png`,
+      });
+    }
+  }
+});
+
+test('Prepared Afterwise ambience loops silently and keeps reduced-motion and full-video intent', async ({
+  page,
+}, testInfo) => {
+  const fixture = await stubShowcase(page, 'afterwise');
+  await page.goto('./');
+  await waitForShell(page);
+  const scene = chapter(page);
+  const video = scene.locator('video');
+  await showScene(scene);
+  await expectPlaying(video, true);
+  await expect(video).toHaveJSProperty('muted', true);
+  await expect(video).toHaveAttribute('playsinline', '');
+  await expect(video).toHaveJSProperty('loop', true);
+  await expect.poll(() => video.evaluate((media) => (media as HTMLVideoElement).readyState)).toBe(4);
+  await video.evaluate((media) => {
+    (media as HTMLVideoElement).currentTime = (media as HTMLVideoElement).duration - 0.25;
+  });
+  await expect.poll(() => video.evaluate((media) => (media as HTMLVideoElement).currentTime)).toBeLessThan(2);
+  await expectPlaying(video, true);
+  await expect
+    .poll(() =>
+      scene.locator('img').evaluateAll((images) => images.every((image) => image.complete && image.naturalWidth > 0)),
+    )
+    .toBe(true);
+  await scene.screenshot({ path: `.codex-artifacts/catalog-repairs/afterwise-playback-${testInfo.project.name}.png` });
+  await scene.getByRole('button', { name: 'Pause background motion', exact: true }).click();
+  await expectPlaying(video, false);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(video).not.toHaveAttribute('src', /.+/);
+  await expect(scene.getByRole('button', { name: /background motion/ })).toHaveCount(0);
+  await expect(scene.locator('.home-preorders__video-poster')).toBeVisible();
+  expect(fixture.providerRequests).toEqual([]);
+  await scene.getByRole('button', { name: 'Watch full video', exact: true }).click();
+  await expect(scene.locator('iframe')).toHaveAttribute('src', /\/Cl7rWCTGEqY\?/);
+  await scene.getByRole('button', { name: 'Close video', exact: true }).click();
+  await expect(scene.locator('iframe')).toHaveCount(0);
+});
 
 function chapter(page: Page, title = 'Disintegration') {
   return page.getByRole('article', { name: title, exact: true });
