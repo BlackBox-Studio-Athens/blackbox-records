@@ -29,7 +29,10 @@ describe('ServicesInquiryForm', () => {
       /<input(?=[^>]*name="email")(?=[^>]*maxLength="254")(?=[^>]*required="")(?=[^>]*type="email")[^>]*>/,
     );
     expect(html).toMatch(/<input(?=[^>]*name="band-or-project")(?=[^>]*maxLength="160")[^>]*>/);
-    expect(html).toMatch(/<select(?=[^>]*name="service")(?=[^>]*required="")[^>]*>/);
+    expect(html).toMatch(
+      /<select(?=[^>]*id="services-inquiry-service")(?=[^>]*name="service")(?=[^>]*required="")[^>]*>/,
+    );
+    expect(html).toMatch(/<label[^>]*for="services-inquiry-service"[^>]*>Service<\/label>/);
     const detailsControl = /<input(?=[^>]*name="serviceDetails")[^>]*>/.exec(html)?.[0];
     expect(detailsControl).toContain('id="services-inquiry-details"');
     expect(detailsControl).toContain('maxLength="300"');
@@ -38,6 +41,7 @@ describe('ServicesInquiryForm', () => {
     expect(html).toMatch(/<textarea(?=[^>]*name="message")(?=[^>]*maxLength="2000")(?=[^>]*required="")[^>]*>/);
     expect(html).toContain('Useful context');
     expect(html).toContain('Add any useful context.');
+    expect(html).toContain('<option value="Share your demo">Share your demo</option>');
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
     expect(html).not.toContain('role="alert"');
@@ -95,6 +99,10 @@ describe('ServicesInquiryForm', () => {
         hint: 'Add the format, quantity, and target date if known.',
         label: 'Format / Quantity / Target Date',
       },
+      'Share your demo': {
+        hint: 'Add a listening link. If it needs a listening password, include it in your message.',
+        label: 'Demo / Listening link',
+      },
     });
   });
 
@@ -140,6 +148,28 @@ describe('ServicesInquiryForm', () => {
       'provider-error',
     );
     expect(classifyServicesInquirySubmissionError(new Error('Network failed.'))).toBe('provider-error');
+  });
+
+  it('consumes the pending demo choice before reset and a cached-slot remount', () => {
+    const inquiryContainer = { dataset: { servicesInquiryTargetService: 'Share your demo' } };
+    vi.stubGlobal('document', { querySelector: () => inquiryContainer });
+
+    try {
+      const initialHtml = renderToStaticMarkup(<ServicesInquiryForm submitText="Send Inquiry" />);
+      expect(initialHtml).toContain('<option value="Share your demo" selected="">Share your demo</option>');
+      expect(inquiryContainer.dataset.servicesInquiryTargetService).toBeUndefined();
+
+      const resetState = reduceServicesInquiryFormState(
+        { ...createInitialServicesInquiryFormState('Share your demo'), status: 'submitted' },
+        { type: 'reset' },
+      );
+      expect(resetState.values.service).toBe('General');
+
+      const remountedHtml = renderToStaticMarkup(<ServicesInquiryForm submitText="Send Inquiry" />);
+      expect(remountedHtml).toContain('<option value="General" selected="">General</option>');
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it('submits once while pending with the entered public API fields', async () => {
@@ -208,6 +238,23 @@ describe('ServicesInquiryForm', () => {
       name: 'Alex',
       service: 'General',
     });
+  });
+
+  it('submits a demo link through the existing public inquiry fields', async () => {
+    const submitInquiry = vi.fn().mockResolvedValue({ status: 'submitted' });
+    const values: ServicesInquiryFormValues = {
+      bandOrProject: 'Night Shift',
+      email: 'visitor@example.com',
+      message: 'Here is our new recording.',
+      name: 'Visitor',
+      service: 'Share your demo',
+      serviceDetails: 'https://example.com/demo',
+    };
+
+    expect(
+      await submitServicesInquiryForm({ onStatusChange: vi.fn(), pending: { current: false }, submitInquiry, values }),
+    ).toBe(true);
+    expect(submitInquiry).toHaveBeenCalledWith(values);
   });
 
   it.each([

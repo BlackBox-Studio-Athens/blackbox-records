@@ -78,6 +78,16 @@ for (const width of [1440, 390]) {
     await page.keyboard.press('Tab');
     await expect(email).toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const correction = purchase.getByRole('button', { name: 'Deliver to Greece', exact: true });
+    expect((await correction.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await correction.click();
+    await expect(email).toHaveCount(0);
+    const change = purchase.getByRole('button', { name: 'Change delivery to outside Greece', exact: true });
+    await expect(change).toBeFocused();
+    await expect(purchase.locator('[data-store-item-add-to-cart]')).toBeEnabled();
+    await change.click();
+    await expect(email).toBeVisible();
+    await expect(correction).toBeFocused();
   });
 }
 
@@ -102,10 +112,12 @@ test('International item notice follows the complete pre-order presentation', as
 
 test('International item notice stays absent for Greece', async ({ page }) => {
   await page.route('**/cdn-cgi/trace', (route) => route.fulfill({ contentType: 'text/plain', body: 'loc=GR\n' }));
+  const trace = page.waitForResponse('**/cdn-cgi/trace');
   await page.goto(localRepresentativePaths.storeItem.replace(/^\//, ''));
+  await trace;
   await waitForShell(page);
   await waitForIsland(page, 'InternationalOrderNotice');
-  await expect.poll(() => page.evaluate(() => sessionStorage.getItem('blackbox:shopper-country'))).toBe('GR');
+  expect(await page.evaluate(() => sessionStorage.getItem('blackbox:shopper-country'))).toBeNull();
   await expect(page.getByRole('link', { name: 'Email us to order', exact: true })).toHaveCount(0);
   await expect(page.getByText('Ships within Greece only. Outside Greece?', { exact: true })).toHaveCount(0);
   await expect(page.locator('[data-store-item-add-to-cart]')).toBeEnabled();

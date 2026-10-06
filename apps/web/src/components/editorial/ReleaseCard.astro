@@ -5,10 +5,10 @@ import type { CollectionEntry } from 'astro:content';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
-import { DIGITAL_RELEASE_BADGE, tracklistFormat } from '@blackbox/content-model';
+import { tracklistFormat } from '@blackbox/content-model';
 import type { ReleaseCommerceLink } from './release-commerce';
+import { neutralReleasePresentation, type ReleasePresentationEntry } from './release-presentation';
 import { createArtistDetailPath, createReleaseDetailPath, getPrimaryReleaseStoreFormat } from '@/lib/catalog-data';
-import { isReleaseOutNow } from '@/lib/release-feature';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
 import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
@@ -46,16 +46,29 @@ const releaseCardImageWidths = isArtistDiscography
   : isReleaseShowcase
     ? [320, 480, 720, 1080, 1440, 1800]
     : [320, 480, 640, 800, 960];
-// The Releases catalog spans the 87rem showcase: outer gutters, clamped section padding, 1.25rem grid gaps,
-// and the framed artwork's 1px border and 1.026 resting scale all contribute to its painted slot.
+// Desktop catalog slots include showcase padding, grid gaps, frame borders and the resting scale.
+// Narrow Releases slots use one 16px gutter and complete, unscaled artwork.
 const releaseCardImageSizes = isFramedArtwork
-  ? '(min-width: 87rem) calc(((87rem - 9.5rem) / 3 - 2px) * 1.026), (min-width: 80rem) calc(((100vw - 9.5rem) / 3 - 2px) * 1.026), (min-width: 64rem) calc(((100vw - 8.25rem) / 2 - 2px) * 1.026), (min-width: 60rem) calc(((100vw - 7.25rem) / 2 - 2px) * 1.026), (min-width: 48rem) calc(((95vw - 4.25rem) / 2 - 2px) * 1.026), (min-width: 40rem) calc((95vw - 3rem - 2px) * 1.026), calc((100vw - 4rem - 2px) * 1.026)'
+  ? `(min-width: 87rem) calc(((87rem - 9.5rem) / 3 - 2px) * 1.026), (min-width: 80rem) calc(((100vw - 9.5rem) / 3 - 2px) * 1.026), (min-width: 64rem) calc(((100vw - 8.25rem) / 2 - 2px) * 1.026), ${isReleaseShowcase ? '(min-width: 48rem) calc((100vw - 3.25rem) / 2 - 2px), calc(100vw - 2rem - 2px)' : '(min-width: 60rem) calc(((100vw - 7.25rem) / 2 - 2px) * 1.026), (min-width: 48rem) calc(((95vw - 4.25rem) / 2 - 2px) * 1.026), (min-width: 40rem) calc((95vw - 3rem - 2px) * 1.026), calc((100vw - 4rem - 2px) * 1.026)'}`
   : '(min-width: 1280px) 260px, (min-width: 768px) 50vw, 100vw';
 const releaseDate = formatMonthYear(release.data.release_date);
 const releaseDateMachineValue = release.data.release_date?.toISOString().slice(0, 10);
 const physicalFormat =
   commerceLink?.physicalFormat ?? tracklistFormat(getPrimaryReleaseStoreFormat(release.data.formats));
 const detailPath = createReleaseDetailPath(release);
+const storeSlug = commerceLink?.isNativeStoreLink ? commerceLink.href.split('/').filter(Boolean).at(-1) : undefined;
+const presentationEntry: ReleasePresentationEntry = {
+  id: release.id,
+  releaseDate: releaseDateMachineValue,
+  releaseStage: release.data.release_stage,
+  edition:
+    physicalFormat && (!commerceLink || commerceLink.isNativeStoreLink)
+      ? storeSlug
+        ? { kind: 'native', format: physicalFormat, storeSlug }
+        : { kind: 'announced', format: physicalFormat }
+      : { kind: 'none' },
+};
+const neutralPresentation = neutralReleasePresentation(presentationEntry);
 
 const dataAttributes = embeddedPlayerData
   ? {
@@ -74,11 +87,8 @@ const dataAttributes = embeddedPlayerData
   data-release-role={isReleaseShowcase ? 'catalog' : undefined}
   data-release-priority={isReleaseShowcase ? release.data.releases_priority : undefined}
   data-release-date={isReleaseShowcase ? releaseDateMachineValue : undefined}
-  data-release-store-slug={
-    isReleaseShowcase && commerceLink?.isNativeStoreLink
-      ? commerceLink.href.split('/').filter(Boolean).at(-1)
-      : undefined
-  }
+  data-release-stage={isReleaseShowcase ? release.data.release_stage : undefined}
+  data-release-store-slug={isReleaseShowcase ? storeSlug : undefined}
   data-release-physical-format={
     isReleaseShowcase && (!commerceLink || commerceLink.isNativeStoreLink) ? physicalFormat : undefined
   }
@@ -165,9 +175,9 @@ const dataAttributes = embeddedPlayerData
     >
       {isReleaseShowcase && (
         <div class="flex flex-wrap gap-2" data-release-badges>
-          <span class="store-item-card__release-status">
-            {isReleaseOutNow(release.data.release_date) ? DIGITAL_RELEASE_BADGE : 'Album upcoming'}
-          </span>
+          {neutralPresentation.badges.map((badge) => (
+            <span class="store-item-card__release-status">{badge}</span>
+          ))}
         </div>
       )}
       <p class="release-card-year-text">

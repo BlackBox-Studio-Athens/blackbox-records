@@ -203,6 +203,8 @@ test('Store categories retain current state, keyboard focus and shell navigation
   const categories = page.getByRole('navigation', { name: 'Store categories' });
   const all = categories.getByRole('link', { name: 'All', exact: true });
   const releases = categories.getByRole('link', { name: 'BlackBox Releases', exact: true });
+  const releaseCard = page.getByRole('group', { name: 'Disintegration by Afterwise', exact: true });
+  await expect(releaseCard).toHaveCount(1);
   await expect(all).toHaveAttribute('aria-current', 'page');
   await all.focus();
   await page.keyboard.press('Tab');
@@ -225,6 +227,7 @@ test('Store categories retain current state, keyboard focus and shell navigation
     await expect(page).toHaveURL(new RegExp(`/store/${route}$`));
     await expect(categories.locator('[aria-current="page"]')).toHaveCount(1);
     await expect(categories.getByRole('link', { name: label, exact: true })).toHaveAttribute('aria-current', 'page');
+    await expect(releaseCard).toHaveCount(label === 'Distro' ? 0 : 1);
     expect(await sentinelIntact(page)).toBe(true);
   }
   await releases.focus();
@@ -237,7 +240,7 @@ test('Store categories retain current state, keyboard focus and shell navigation
 });
 
 test('Store listing cards use Veneer titles and quiet credits with unchanged sizes', async ({ page }) => {
-  await page.goto('store/distro/');
+  await page.goto('store/');
   await waitForShell(page);
   await page.evaluate(() => document.fonts.ready);
   const linked = page.getByRole('group', { name: 'Disintegration by Afterwise', exact: true }).first();
@@ -438,7 +441,7 @@ test('phone Store shows Distro formats without opening a disclosure and selects 
   await page.screenshot({ path: '.codex-artifacts/e2e/distro-layouts/mobile-cards.png' });
 });
 
-test('mixed catalog keeps its canonical order through format, search and Coverflow changes', async ({ page }) => {
+test('Distro catalog keeps its alphabetical order through format, search and Coverflow changes', async ({ page }) => {
   await page.goto('store/distro/#distro-group-cds');
   await waitForShell(page);
   const search = page.getByRole('searchbox', { name: 'Search Store' });
@@ -454,35 +457,33 @@ test('mixed catalog keeps its canonical order through format, search and Coverfl
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   const order = await cards.evaluateAll((nodes) =>
     nodes.map((node) => ({
-      promoted: node.hasAttribute('data-store-promotion'),
       artist: node.getAttribute('data-store-artist')!,
       title: node.querySelector('h2')!.textContent!,
       slug: node.querySelector('[data-store-listing-price]')!.getAttribute('data-store-item-slug')!,
     })),
   );
-  expect(order.some((item) => item.promoted)).toBe(true);
-  const firstOrdinary = order.findIndex((item) => !item.promoted);
-  expect(order.slice(firstOrdinary).every((item) => !item.promoted)).toBe(true);
+  expect(original).not.toContain('disintegration-black-vinyl-lp');
   const collator = new Intl.Collator('en', { sensitivity: 'base', numeric: true });
   const normal = (value: string) => value.normalize('NFC').trim().replace(/\s+/g, ' ');
-  const alphabetical = order.slice(firstOrdinary);
-  expect(alphabetical).toEqual(
-    [...alphabetical].sort(
+  expect(order).toEqual(
+    [...order].sort(
       (a, b) =>
         collator.compare(normal(a.artist), normal(b.artist)) ||
         collator.compare(a.title, b.title) ||
         a.slug.localeCompare(b.slug, 'en'),
     ),
   );
-  await expect(root.locator('.store-item-card__artist-link').first()).toBeVisible();
+  await expect(root.locator('.store-item-card__artist-link')).toHaveCount(0);
+  await expect(root.locator('.store-item-card__artist-name').first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: '.codex-artifacts/e2e/distro-layouts/desktop.png' });
-  const promoted = cards.locator('visible=true').first();
-  const formatKey = await promoted.getAttribute('data-distro-format-key');
-  const promotedTitle = await promoted.locator('h2').innerText();
+  const firstCard = cards.locator('visible=true').first();
+  const formatKey = await firstCard.getAttribute('data-distro-format-key');
+  const firstTitle = await firstCard.locator('h2').innerText();
   await page.locator(`[data-distro-format-link][data-distro-format-key="${formatKey}"]`).click();
-  await search.fill(promotedTitle);
-  await expect(root.locator('[data-store-promotion]:visible')).toHaveCount(1);
+  await search.fill(firstTitle);
+  await expect(firstCard).toBeVisible();
+  expect(await cards.locator('visible=true').count()).toBeGreaterThan(0);
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   const coverflow = page.getByRole('button', { name: 'Coverflow', exact: true });
   await coverflow.click();
@@ -527,10 +528,13 @@ test.describe('Native Store navigation', () => {
     await page.goto('store/distro/#distro-group-cds');
     const cards = page.locator('[data-distro-search-item]');
     expect(await cards.count()).toBeGreaterThan(6);
+    const releaseCard = page.getByRole('group', { name: 'Disintegration by Afterwise', exact: true });
+    await expect(releaseCard).toHaveCount(0);
     expect(await cards.locator('visible=true').count()).toBe(await cards.count());
     await expect(page.getByRole('button', { name: 'Coverflow', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Coverflow', exact: true })).toBeDisabled();
-    await expect(page.locator('.store-item-card__artist-link').first()).toBeVisible();
+    await expect(page.locator('.store-item-card__artist-link')).toHaveCount(0);
+    await expect(page.locator('.store-item-card__artist-name').first()).toBeVisible();
     await expect(page.locator('#distro-group-cds')).toHaveCount(1);
     // The legacy fragment starts below the category bar; return above the fixed header before choosing a shelf.
     await page.keyboard.press('Control+Home');
@@ -547,6 +551,7 @@ test.describe('Native Store navigation', () => {
       await link.press('Enter');
       await expect(page).toHaveURL(new RegExp(`/store/${route}$`));
       await expect(categories.getByRole('link', { name: label, exact: true })).toHaveAttribute('aria-current', 'page');
+      await expect(releaseCard).toHaveCount(label === 'Distro' ? 0 : 1);
     }
   });
 });

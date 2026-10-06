@@ -13,16 +13,8 @@ interface Props {
   imageLoadingMode?: StoreCardImageLoadingMode;
   searchable?: boolean;
   formatKey?: string;
-  promoted?: boolean;
 }
-const {
-  coverflowEnrolled = false,
-  entry,
-  imageLoadingMode = 'lazy',
-  searchable = false,
-  formatKey,
-  promoted = false,
-} = Astro.props;
+const { coverflowEnrolled = false, entry, imageLoadingMode = 'lazy', searchable = false, formatKey } = Astro.props;
 const { storeItem, primaryAvailability, previewImage } = entry;
 const priority = imageLoadingMode === 'priority';
 const option = primaryAvailability?.optionLabel || entry.distro?.format || entry.distro?.group;
@@ -39,7 +31,6 @@ const widths = [240, 360, 480, 640, 720];
   data-distro-search-item={searchable ? '' : undefined}
   data-store-artist={searchable ? storeItem.subtitle : undefined}
   data-distro-format-key={formatKey}
-  data-store-promotion={promoted ? 'recent' : undefined}
   data-distro-search-text={
     searchable
       ? [storeItem.title, storeItem.subtitle, ...storeItem.metadata, entry.distro?.group].filter(Boolean).join(' ')

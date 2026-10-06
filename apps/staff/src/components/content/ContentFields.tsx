@@ -671,11 +671,12 @@ export default function ContentFields({
             <option value="released">Released</option>
           </NativeSelect>
           <FieldDescription>
-            Release stage describes the music. Keep the same record and artwork when it comes out. Physical copies can
-            still be on pre-order after release; manage that separately in Selling.
+            Upcoming announces a release or physical edition, even if the music is already out digitally. Choose
+            Released when the release or edition is no longer forthcoming. Manage physical pre-orders and stock
+            separately in Selling.
           </FieldDescription>
         </Field>
-        {field('release_date', 'Release date', { type: 'date', required: data.release_stage !== 'upcoming' })}
+        {field('release_date', 'Digital release date', { type: 'date', required: data.release_stage !== 'upcoming' })}
         {field('releases_priority', 'Releases order', { type: 'number', required: false, min: 1, step: 1 })}
         <FieldDescription className="col-span-full">
           Optional. Lower numbers lead on Releases when the physical edition is available to buy. Leave empty for

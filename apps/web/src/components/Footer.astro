@@ -19,7 +19,7 @@ const establishedYear = Number(labelSettings.established_year) || currentYear;
 const copyrightYears =
   establishedYear > 0 && establishedYear < currentYear ? `${establishedYear}-${currentYear}` : `${currentYear}`;
 const showEstablishedYear = establishedYear > 0 && establishedYear <= currentYear;
-const footerDescriptionLines = (labelSettings.footer_text?.trim() || siteConfig.description).split(/(?<=\.)\s+/);
+const footerDescription = labelSettings.footer_text?.trim() || siteConfig.description;
 const footerLabel = labelSettings.label_name || siteConfig.title;
 const footerSocialItems = socialItems.filter((item) => item.url.trim() && item.url.trim() !== '#');
 ---
@@ -49,14 +49,7 @@ const footerSocialItems = socialItems.filter((item) => item.url.trim() && item.u
           })}
         </div>
       </div>
-      <p class="site-footer-description">
-        {footerDescriptionLines.map((line, index) => (
-          <>
-            {index > 0 && ' '}
-            <span>{line}</span>
-          </>
-        ))}
-      </p>
+      <p class="site-footer-description">{footerDescription}</p>
     </div>
 
     <div class="space-y-3">

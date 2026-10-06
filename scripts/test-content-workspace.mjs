@@ -1054,7 +1054,7 @@ else if (process.argv.includes('--editor-recovery')) {
     await page.locator('input[type=file]').setInputFiles({ name: 'cover.png', mimeType: 'image/png', buffer: pixels });
     await page.getByRole('dialog').waitFor({ state: 'hidden' });
     await page.getByLabel('Release stage', { exact: true }).selectOption('released');
-    await page.getByLabel('Release date', { exact: true }).fill('2026-09-27');
+    await page.getByLabel('Digital release date', { exact: true }).fill('2026-09-27');
     await page.getByRole('status').filter({ hasText: 'Changes saved' }).first().waitFor();
     await page.reload();
     await page.getByLabel('Release title', { exact: true }).waitFor();

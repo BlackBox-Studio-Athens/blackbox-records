@@ -1,64 +1,14 @@
 import { useEffect } from 'react';
 import { readPublicStoreListingPrices } from '@/components/store/StoreListingPricePresentation';
 import { buttonVariants } from '@/components/ui/button';
-import { isReleaseOutNow } from '@/lib/release-feature';
-import { preorderBadges, shipEstimateText } from '@/platform/lib/preorder-estimate';
 import {
-  neutralReleasePresentation,
+  releasePresentation,
   releaseCardSelector,
   readReleaseEntry,
   renderReleasePresentation,
   type Listing,
   type ReleasePresentationEntry,
-  type ReleasePresentation,
 } from './release-presentation';
-
-export function releasePresentation(
-  entry: ReleasePresentationEntry,
-  record?: Listing,
-  today = new Date(),
-): ReleasePresentation {
-  const neutral = neutralReleasePresentation(entry, today);
-  if (
-    entry.edition.kind !== 'native' ||
-    record?.storeItemSlug !== entry.edition.storeSlug ||
-    record.presentationState !== 'ready'
-  )
-    return neutral;
-  const digitalBadges = neutral.badges.slice(0, -1);
-  if (record.availabilityState === 'stocked') {
-    const formatLabel = entry.edition.format === 'cd' ? 'CD' : entry.edition.format;
-    if (record.preorder)
-      return {
-        state: 'preorder',
-        preorder: record.preorder,
-        badges: preorderBadges({
-          releaseDate: entry.releaseDate,
-          shipEstimate: record.preorder.shipEstimate,
-          today,
-        }),
-        action: `Pre-order ${formatLabel}`,
-        shipping:
-          record.preorder.shipEstimate &&
-          !isReleaseOutNow(entry.releaseDate ? new Date(entry.releaseDate) : undefined, today)
-            ? `Expected to ship ${shipEstimateText(record.preorder.shipEstimate)}`
-            : '',
-      };
-    const medium = ({ vinyl: 'Vinyl', cd: 'CD', cassette: 'Cassette' } as const)[entry.edition.format];
-    return {
-      state: 'available',
-      badges: [...digitalBadges, `${medium} available`],
-      action: `Buy ${formatLabel}`,
-      shipping: '',
-    };
-  }
-  const state = record.availabilityState;
-  if (state !== 'sold_out' && state !== 'out_of_stock' && state !== 'unavailable') return neutral;
-  const status = (
-    { sold_out: 'Sold Out', out_of_stock: 'Out of Stock', unavailable: 'Currently Unavailable' } as const
-  )[state];
-  return { ...neutral, state, badges: [...digitalBadges, status] };
-}
 
 export function selectReleaseMerchandisingEntries<T extends ReleasePresentationEntry>(
   entries: T[],
@@ -138,9 +88,9 @@ export function connectReleaseCatalogPresentation(root: HTMLElement, read = read
       : '((min(100vw, 87rem) - 4.125rem) * 0.75 - 1px)';
     image.sizes =
       role === 'lead'
-        ? `(min-width: 80rem) calc(((${leadRegion} - 3rem - clamp(1.5rem, 3vw, 2.5rem)) * 0.95 / 1.95 - 2px) * 1.026), (min-width: 64rem) calc(((${leadRegion} - 4.5rem) * 0.9 / 1.9 - 2px) * 1.026), (min-width: 40rem) calc(((100vw - 5.75rem - 2px) * 0.9 / 1.9 - 2px) * 1.026), calc((100vw - 2.25rem - clamp(1rem, 2.5vw, 1.5rem) * 2) * 1.026)`
+        ? `(min-width: 80rem) calc(((${leadRegion} - 3rem - clamp(1.5rem, 3vw, 2.5rem)) * 0.95 / 1.95 - 2px) * 1.026), (min-width: 64rem) calc(((${leadRegion} - 4.5rem) * 0.9 / 1.9 - 2px) * 1.026), (min-width: 40rem) calc((100vw - 3.5rem) * 0.9 / 1.9 - 2px), calc(100vw - 2rem - 2px)`
         : role === 'supporting'
-          ? '(min-width: 64rem) calc(((min(100vw, 87rem) - 4.125rem) / 4 - 3rem - 2px) * 1.026), calc((8.5rem - 2px) * 1.026)'
+          ? '(min-width: 64rem) calc(((min(100vw, 87rem) - 4.125rem) / 4 - 3rem - 2px) * 1.026), (min-width: 40rem) calc((100vw - 3.5rem) * 0.9 / 1.9 - 2px), calc(100vw - 2rem - 2px)'
           : image.dataset.releaseCatalogSizes;
     let heading = card.querySelector<HTMLElement>('[data-release-title]')!;
     const tag = primary ? 'H2' : 'H3';

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const cacheKey = 'blackbox:shopper-country';
+const deliveryKey = 'blackbox:delivery-destination';
 const trace = (country: string) => new Response(`fl=123\nip=192.0.2.1\nloc=${country}\ntls=TLSv1.3\n`);
 
 let values: Map<string, string>;
@@ -15,7 +16,13 @@ beforeEach(() => {
     setItem: vi.fn((key: string, value: string) => values.set(key, value)),
   };
   fetchMock = vi.fn().mockResolvedValue(trace('US'));
-  vi.stubGlobal('window', { sessionStorage: storage });
+  const events = new EventTarget();
+  vi.stubGlobal('window', {
+    sessionStorage: storage,
+    addEventListener: events.addEventListener.bind(events),
+    removeEventListener: events.removeEventListener.bind(events),
+    dispatchEvent: events.dispatchEvent.bind(events),
+  });
   vi.stubGlobal('fetch', fetchMock);
 });
 
@@ -63,16 +70,27 @@ describe('resolveShopperCountry', () => {
     finish(trace('US'));
     await expect(first).resolves.toBe('US');
     expect(resolveShopperCountry()).toBe(first);
-    expect(storage.setItem).toHaveBeenCalledExactlyOnceWith(cacheKey, 'US');
-    expect([...values]).toEqual([[cacheKey, 'US']]);
+    expect(storage.setItem).not.toHaveBeenCalled();
+    expect([...values]).toEqual([]);
   });
 
-  it.each(['US', 'GR'])('reads the %s session cache without a request', async (country) => {
+  it.each(['US', 'GR'])('ignores the old %s session hint and reads the current network', async (country) => {
     values.set(cacheKey, country);
+    fetchMock.mockResolvedValue(trace(country === 'US' ? 'GR' : 'US'));
     const { resolveShopperCountry } = await import('./shopper-country');
-    await expect(resolveShopperCountry()).resolves.toBe(country);
-    expect(fetchMock).not.toHaveBeenCalled();
+    await expect(resolveShopperCountry()).resolves.toBe(country === 'US' ? 'GR' : 'US');
+    expect(fetchMock).toHaveBeenCalledOnce();
     expect(storage.setItem).not.toHaveBeenCalled();
+  });
+
+  it('reads a Greek network on reload after previously seeing a foreign network', async () => {
+    const { resolveShopperCountry } = await import('./shopper-country');
+    await expect(resolveShopperCountry()).resolves.toBe('US');
+    fetchMock.mockResolvedValue(trace('GR'));
+    vi.resetModules();
+    const reloaded = await import('./shopper-country');
+    await expect(reloaded.resolveShopperCountry()).resolves.toBe('GR');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it.each(['XX', 'T1', 'us', 'malformed', ''])('ignores an invalid cache value %j', async (cached) => {
@@ -82,11 +100,13 @@ describe('resolveShopperCountry', () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
-  it('caches a successful Greek lookup too', async () => {
+  it('keeps a successful Greek lookup in memory without persisting the network hint', async () => {
     fetchMock.mockResolvedValue(trace('GR'));
     const { resolveShopperCountry } = await import('./shopper-country');
     await expect(resolveShopperCountry()).resolves.toBe('GR');
-    expect(values.get(cacheKey)).toBe('GR');
+    await expect(resolveShopperCountry()).resolves.toBe('GR');
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(storage.setItem).not.toHaveBeenCalled();
   });
 
   it.each(['XX', 'T1', 'us', 'invalid'])('keeps %j hidden without caching or retrying', async (country) => {
@@ -167,5 +187,84 @@ describe('resolveShopperCountry', () => {
     expect(fetchMock).not.toHaveBeenCalled();
     vi.stubGlobal('window', { sessionStorage: storage });
     await expect(resolveShopperCountry()).resolves.toBe('US');
+  });
+});
+
+describe('shopper delivery destination', () => {
+  it('corrects a foreign hint for all placements, retains it on reload and permits changing back', async () => {
+    values.set(cacheKey, 'US');
+    const { getDeliveryDestination, setDeliveryDestination, subscribeDeliveryDestination, resolveShopperCountry } =
+      await import('./shopper-country');
+    await expect(resolveShopperCountry()).resolves.toBe('US');
+    expect(getDeliveryDestination()).toBeNull();
+    const listener = vi.fn();
+    const unsubscribe = subscribeDeliveryDestination(listener);
+    setDeliveryDestination('GR');
+    expect(getDeliveryDestination()).toBe('GR');
+    expect(values.get(deliveryKey)).toBe('GR');
+    expect(values.get(cacheKey)).toBe('US');
+    expect(listener).toHaveBeenCalledOnce();
+    vi.resetModules();
+    const reloaded = await import('./shopper-country');
+    expect(reloaded.getDeliveryDestination()).toBe('GR');
+    reloaded.setDeliveryDestination('international');
+    expect(reloaded.getDeliveryDestination()).toBe('international');
+    expect(values.get(deliveryKey)).toBe('international');
+    expect(listener).toHaveBeenCalledTimes(2);
+    unsubscribe();
+    setDeliveryDestination('international');
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a Greek delivery choice when a late country lookup reports a foreign network', async () => {
+    let finish!: (response: Response) => void;
+    fetchMock.mockReturnValue(new Promise<Response>((resolve) => (finish = resolve)));
+    const { getDeliveryDestination, setDeliveryDestination, resolveShopperCountry } = await import('./shopper-country');
+    const pending = resolveShopperCountry();
+    setDeliveryDestination('GR');
+    finish(trace('US'));
+    await expect(pending).resolves.toBe('US');
+    expect(getDeliveryDestination()).toBe('GR');
+    expect(values.get(deliveryKey)).toBe('GR');
+  });
+
+  it('retains the choice in this document when browser storage is blocked', async () => {
+    const events = new EventTarget();
+    vi.stubGlobal('window', {
+      get sessionStorage() {
+        throw new Error('blocked');
+      },
+      addEventListener: events.addEventListener.bind(events),
+      removeEventListener: events.removeEventListener.bind(events),
+      dispatchEvent: events.dispatchEvent.bind(events),
+    });
+    const { getDeliveryDestination, setDeliveryDestination, subscribeDeliveryDestination } =
+      await import('./shopper-country');
+    const listener = vi.fn();
+    subscribeDeliveryDestination(listener);
+    setDeliveryDestination('GR');
+    expect(getDeliveryDestination()).toBe('GR');
+    setDeliveryDestination('international');
+    expect(getDeliveryDestination()).toBe('international');
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['US', 'XX', 'gr', 'malformed', ''])('ignores an invalid stored destination %j', async (value) => {
+    values.set(deliveryKey, value);
+    const { getDeliveryDestination } = await import('./shopper-country');
+    expect(getDeliveryDestination()).toBeNull();
+  });
+
+  it('starts without a choice in a fresh tab or during static rendering', async () => {
+    const { setDeliveryDestination } = await import('./shopper-country');
+    setDeliveryDestination('GR');
+    vi.resetModules();
+    values = new Map();
+    const { getDeliveryDestination } = await import('./shopper-country');
+    expect(getDeliveryDestination()).toBeNull();
+    values.set(deliveryKey, 'GR');
+    vi.stubGlobal('window', undefined);
+    expect(getDeliveryDestination()).toBeNull();
   });
 });

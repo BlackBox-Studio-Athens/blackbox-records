@@ -417,7 +417,7 @@ export type components = {
             message: string;
             name: string;
             /** @enum {string} */
-            service: "General" | "Tour Booking" | "Merch Printing" | "Vinyl Pressing";
+            service: "General" | "Tour Booking" | "Merch Printing" | "Vinyl Pressing" | "Share your demo";
             serviceDetails?: string;
         };
         ServicesInquiryResponse: {

@@ -169,11 +169,10 @@ describe('Distro format selection', () => {
     expect(dom.items).toEqual(original);
   });
 
-  it('filters interleaved formats and promoted cards with the same rules', () => {
+  it('filters interleaved formats without changing their order', () => {
     const { cards, dom, formatKeys } = createDom();
     dom.items[1]!.formatKey = formatKeys[1]!;
     dom.items[2]!.formatKey = formatKeys[0]!;
-    cards[1]!.setAttribute('data-store-promotion', 'recent');
     const original = [...dom.items];
     applyDistroFormatSelection(dom, formatKeys[0]!);
     expect(applyDistroSearch(dom, null)).toBe(2);

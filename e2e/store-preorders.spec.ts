@@ -112,9 +112,15 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
   const listingGate = new Promise<void>((resolve) => {
     releaseListing = resolve;
   });
+  const selectedSlug = 'adolf-plays-the-jazz-form-follows-function-cd';
   await page.route('**/api/store/listing-prices*', async (route) => {
     await listingGate;
-    await route.fulfill({ json: listingProjection });
+    await route.fulfill({
+      json: [
+        { ...listingProjection[0]!, storeItemSlug: selectedSlug },
+        { ...listingProjection[1]!, storeItemSlug: 'aflmsmp-i-went-to-the-mountain-vinyl' },
+      ],
+    });
   });
   await page.goto('store/distro/#preorders');
   await waitForShell(page);
@@ -130,7 +136,7 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: '.codex-artifacts/preorders/followup/store-cards/filter-390.png' });
 
-  const selected = cards.filter({ has: page.locator('[data-store-item-slug="disintegration-black-vinyl-lp"]') });
+  const selected = cards.filter({ has: page.locator(`[data-store-item-slug="${selectedSlug}"]`) });
   const format = await selected.getAttribute('data-distro-format-key');
   await page.locator(`[data-distro-format-link][data-distro-format-key="${format}"]`).click();
   const artist = await selected.getAttribute('data-store-artist');
@@ -144,7 +150,7 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
   expect(artistValue).toBeTruthy();
   if (!artistValue) throw new Error('Expected the pre-order artist option');
   await picker.selectOption(artistValue);
-  await search.fill('Disintegration');
+  await search.fill(await selected.locator('h2').innerText());
   await expect(cards.locator('visible=true')).toHaveCount(1);
   await expect(selected).toBeVisible();
   await search.fill('no-match-for-any-preorder');
@@ -238,7 +244,7 @@ for (const state of [
         ],
       }),
     );
-    await page.goto('store/distro/');
+    await page.goto('store/');
     await waitForShell(page);
     await page.evaluate(() => document.fonts.ready);
     const card = page.getByRole('group', { name: 'Disintegration by Afterwise', exact: true }).first();

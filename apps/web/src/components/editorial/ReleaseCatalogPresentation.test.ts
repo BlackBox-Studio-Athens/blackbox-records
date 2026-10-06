@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { selectReleaseMerchandisingEntries, releasePresentation } from './ReleaseCatalogPresentation';
-import { type ReleasePresentationEntry } from './release-presentation';
+import { selectReleaseMerchandisingEntries } from './ReleaseCatalogPresentation';
+import { releasePresentation, type ReleasePresentationEntry } from './release-presentation';
 type Listing = NonNullable<Parameters<typeof releasePresentation>[1]>;
 
 const today = new Date('2026-10-05T12:00:00Z');
@@ -68,7 +68,7 @@ describe('Releases physical merchandising', () => {
     expect(presentation.badges).toEqual(['Digital out now', 'Pre-order']);
   });
   it('a confirmed past digital date advances even when the accepted stage still says upcoming', () => {
-    const upcoming = { ...entries[0]!, releaseDate: '2026-10-05', releaseStage: 'upcoming' };
+    const upcoming: ReleasePresentationEntry = { ...entries[0]!, releaseDate: '2026-10-05', releaseStage: 'upcoming' };
     expect(releasePresentation(upcoming, records[0], today).badges).toEqual([
       'Digital out now',
       'Pre-order · ships around November 2026',
@@ -95,6 +95,34 @@ describe('Releases physical merchandising', () => {
     expect(result.states.get('lotus')).toMatchObject({ state: 'unknown', action: 'View vinyl details', shipping: '' });
     expect(result.states.get('anarchotribal')?.badges).toEqual(['Digital out now', 'Vinyl coming later']);
   });
+  it.each(['2026-06-06', '2026-11-06', undefined])(
+    'keeps an upcoming native edition announced before ordering opens with digital date %s',
+    (releaseDate) => {
+      const entry = { ...entries[0]!, releaseStage: 'upcoming' as const, releaseDate };
+      const digitalBadges = releaseDate ? [releaseDate === '2026-06-06' ? 'Digital out now' : 'Album upcoming'] : [];
+      const closed = ['sold_out', 'out_of_stock', 'unavailable'].map((availabilityState) => ({
+        ...record('lotus-vinyl'),
+        availabilityState: availabilityState as Listing['availabilityState'],
+      }));
+      for (const offer of [undefined, ...closed, { ...closed[0]!, presentationState: 'unavailable' as const }]) {
+        expect(releasePresentation(entry, offer, today)).toMatchObject({
+          state: 'announced',
+          badges: [...digitalBadges, 'Vinyl coming later'],
+          action: 'View vinyl details',
+          shipping: '',
+        });
+      }
+      expect(releasePresentation(entry, records[0], today).state).toBe('preorder');
+      if (!releaseDate) {
+        expect(releasePresentation(entry, records[0], today).badges).not.toContain('Album upcoming');
+        expect(releasePresentation(entry, records[0], today).badges).not.toContain('Digital out now');
+      }
+      expect(releasePresentation(entry, { ...records[0]!, availabilityState: 'sold_out' }, today).state).toBe(
+        'sold_out',
+      );
+      expect(releasePresentation(entry, record('lotus-vinyl'), today).state).toBe('available');
+    },
+  );
   it('new offers reorder the remainder automatically, preserving chosen emphasis', () => {
     const opened: ReleasePresentationEntry[] = entries.map((entry) =>
       entry.id === 'anarchotribal'
@@ -107,6 +135,35 @@ describe('Releases physical merchandising', () => {
     ]);
     expect(result.principal.map((entry) => entry.id)).toEqual(['lotus', 'disintegration']);
     expect(result.remainder.map((entry) => entry.id)).toEqual(['anarchotribal', 'caregivers']);
+  });
+  it('keeps several records per lifecycle together without duplicating any release', () => {
+    const many: ReleasePresentationEntry[] = ['preorder', 'available', 'announced', 'sold_out'].flatMap((state) =>
+      Array.from({ length: 3 }, (_, index): ReleasePresentationEntry => ({
+        id: `${state}-${index}`,
+        releaseStage: state === 'announced' ? 'upcoming' : 'released',
+        releaseDate: index === 0 ? '2026-06-06' : '2099-11-06',
+        edition: { kind: 'native', storeSlug: `${state}-${index}`, format: 'vinyl' },
+      })),
+    );
+    const offers = many.map((entry): Listing => ({
+      ...record(entry.id, entry.id.startsWith('preorder') ? { shipEstimate: null } : null),
+      availabilityState: entry.id.startsWith('announced') || entry.id.startsWith('sold_out') ? 'sold_out' : 'stocked',
+    }));
+    const result = selectReleaseMerchandisingEntries(many.toReversed(), offers);
+    expect(result.principal.map((entry) => entry.id)).toEqual(['preorder-2', 'preorder-1']);
+    expect(result.remainder.map((entry) => entry.id)).toEqual([
+      'preorder-0',
+      'available-2',
+      'available-1',
+      'available-0',
+      'announced-2',
+      'announced-1',
+      'announced-0',
+      'sold_out-2',
+      'sold_out-1',
+      'sold_out-0',
+    ]);
+    expect(new Set([...result.principal, ...result.remainder].map((entry) => entry.id)).size).toBe(many.length);
   });
   it('format identity controls wording and unranked ties retain catalog order', () => {
     expect(
@@ -127,7 +184,7 @@ describe('Releases physical merchandising', () => {
     expect(selectReleaseMerchandisingEntries([], []).remainder).toEqual([]);
   });
   it('keeps digital-out plus physical preorder valid, but never buys a sold-out or unconfirmed edition', () => {
-    const entry = { ...entries[1]!, releaseDate: '2026-06-09' };
+    const entry = { ...entries[1]!, releaseDate: '2026-06-09', releaseStage: 'released' as const };
     expect(releasePresentation(entry, records[1], today)).toMatchObject({
       state: 'preorder',
       badges: ['Digital out now', 'Pre-order'],
@@ -144,4 +201,28 @@ describe('Releases physical merchandising', () => {
       action: 'View vinyl details',
     });
   });
+  it.each([
+    ['vinyl', 'Vinyl', 'vinyl'],
+    ['cd', 'CD', 'CD'],
+    ['cassette', 'Cassette', 'cassette'],
+  ] as const)(
+    'keeps %s announcement, buying and unavailable wording in the same lifecycle',
+    (format, medium, action) => {
+      const upcoming: ReleasePresentationEntry = {
+        ...entries[0]!,
+        releaseStage: 'upcoming',
+        edition: { kind: 'native', storeSlug: 'lotus-vinyl', format },
+      };
+      expect(releasePresentation(upcoming, undefined, today).badges).toContain(`${medium} coming later`);
+      expect(releasePresentation(upcoming, record('lotus-vinyl'), today).action).toBe(`Buy ${action}`);
+      expect(releasePresentation(upcoming, records[0], today).action).toBe(`Pre-order ${action}`);
+      expect(
+        releasePresentation(
+          { ...upcoming, releaseStage: 'released' },
+          { ...record('lotus-vinyl'), availabilityState: 'sold_out' },
+          today,
+        ).badges,
+      ).toContain('Sold Out');
+    },
+  );
 });

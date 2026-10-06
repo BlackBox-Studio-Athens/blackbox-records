@@ -3,6 +3,148 @@ import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fix
 const stocked = { presentationState: 'ready', availabilityState: 'stocked', displayPrice: '€28.00', preorder: null };
 const preorder = { ...stocked, preorder: { shipEstimate: { kind: 'month', month: '2026-10', part: null } } };
 
+for (const [label, releaseDate, digitalStatus] of [
+  ['released', '2026-06-06', 'Digital out now'],
+  ['unreleased', '2099-11-06', 'Album upcoming'],
+  ['undated', undefined, ''],
+] as const) {
+  test(`Upcoming vinyl remains announced while the digital album is ${label}`, async ({ page }, testInfo) => {
+    await page.clock.setFixedTime(new Date('2026-10-05T12:00:00Z'));
+    await page.route('**/releases/', async (route) => {
+      const response = await route.fetch();
+      const html = await response.text();
+      const body = html.replace(/<div\b[^>]*\bdata-release-id="anarchotribal"[^>]*>/, (tag) =>
+        tag
+          .replace(/\sdata-release-stage="[^"]*"/, '')
+          .replace(/\sdata-release-date="[^"]*"/, '')
+          .replace(
+            '<div',
+            `<div data-release-stage="upcoming"${releaseDate ? ` data-release-date="${releaseDate}"` : ''}`,
+          ),
+      );
+      expect(body).not.toBe(html);
+      await route.fulfill({ response, body });
+    });
+    let current = { ...stocked, availabilityState: 'sold_out' } as typeof stocked | typeof preorder;
+    let failed = false;
+    await page.route('**/api/store/listing-prices*', (route) =>
+      failed
+        ? route.fulfill({ contentType: 'application/json', body: '{' })
+        : route.fulfill({
+            json: [
+              { ...preorder, storeItemSlug: 'disintegration-black-vinyl-lp' },
+              { ...stocked, storeItemSlug: 'caregivers-vinyl' },
+              { ...current, storeItemSlug: 'anarchotribal-vinyl' },
+            ],
+          }),
+    );
+    await page.goto('releases/');
+    await waitForShell(page);
+    await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
+      'Pre-order vinyl',
+    );
+    const announced = page.locator('[data-release-id="anarchotribal"]');
+    await expect(announced).toHaveAttribute('data-release-role', 'catalog');
+    await expect(announced.locator('[data-release-badges]')).toHaveText(`${digitalStatus}Vinyl coming later`);
+    await expect(announced.locator('[data-release-purchase]')).toHaveText('View vinyl details');
+    await expect(page.locator('[data-release-id]')).toHaveCount(3);
+    await expect(page.getByRole('heading', { name: 'Our Releases', exact: true })).toBeVisible();
+    await expect(announced.locator('.preorder-action, .purchase-action')).toHaveCount(0);
+
+    if (label === 'released') {
+      await page.setViewportSize({ width: 390, height: 900 });
+      await announced.scrollIntoViewIfNeeded();
+      await page.evaluate(() => document.fonts.ready);
+      await expect
+        .poll(() =>
+          announced
+            .locator('.release-card-image-shell img')
+            .evaluate((image) => (image as HTMLImageElement).naturalWidth),
+        )
+        .toBeGreaterThan(0);
+      await expect(announced.locator('[data-release-badges]')).toHaveText('Digital out nowVinyl coming later');
+      await announced.screenshot({
+        path: `.codex-artifacts/catalog-video-contact/anarchotribal-${testInfo.project.name}-390.png`,
+      });
+      await page.setViewportSize({ width: 1440, height: 900 });
+    }
+
+    await plantSentinel(page);
+    await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Artists', exact: true }).click();
+    await expect(page.getByRole('heading', { level: 1, name: /^Artists$/i })).toBeVisible();
+    failed = true;
+    const failedRead = page.waitForResponse(
+      (response) => response.url().includes('/api/store/listing-prices') && response.status() === 200,
+    );
+    await page.goBack();
+    await failedRead;
+    await expect(announced.locator('[data-release-badges]')).toHaveText(`${digitalStatus}Vinyl coming later`);
+    await expect(announced.locator('[data-release-purchase]')).toHaveText('View vinyl details');
+    expect(await sentinelIntact(page)).toBe(true);
+
+    failed = false;
+    current = preorder;
+    await page.reload();
+    await expect(announced.locator('[data-release-purchase]')).toHaveText('Pre-order vinyl');
+    current = stocked;
+    await page.reload();
+    await expect(announced.locator('[data-release-purchase]')).toHaveText('Buy vinyl');
+    await expect(announced.locator('[data-release-badges]')).toHaveText(`${digitalStatus}Vinyl available`);
+    await expect(page.locator('[data-release-id]')).toHaveCount(3);
+  });
+}
+
+for (const width of [320, 360, 390, 430, 768]) {
+  test(`Releases aligns complete artwork and touch actions within mobile gutters at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.route('**/api/store/listing-prices*', (route) =>
+      route.fulfill({
+        json: [
+          { ...preorder, storeItemSlug: 'disintegration-black-vinyl-lp' },
+          { ...stocked, storeItemSlug: 'caregivers-vinyl' },
+        ],
+      }),
+    );
+    await page.goto('releases/');
+    await waitForShell(page);
+    await expect(page.locator('[data-release-role="supporting"]')).toBeVisible();
+    await page.evaluate(() => document.fonts.ready);
+    const contentWidth = await page.evaluate(() => document.documentElement.getBoundingClientRect().width);
+    const measurements = await page.locator('[data-release-role]').evaluateAll((cards) =>
+      cards.map((card) => {
+        const artwork = card.querySelector('.release-card-image-shell')!.getBoundingClientRect();
+        const copy = card.querySelector('.release-card-copy')!.getBoundingClientRect();
+        const image = card.querySelector('img')!;
+        return {
+          artwork: { x: artwork.x, width: artwork.width, bottom: artwork.bottom },
+          copy: { x: copy.x, y: copy.y },
+          transform: getComputedStyle(image).transform,
+          actions: [...card.querySelectorAll('[data-release-actions] > *, .music-listen-trigger')].map((action) => {
+            const rect = action.getBoundingClientRect();
+            return { x: rect.x, right: rect.right, height: rect.height };
+          }),
+        };
+      }),
+    );
+    for (const card of measurements) {
+      expect(card.transform).toBe('none');
+      for (const action of card.actions) {
+        expect(action.x).toBeGreaterThanOrEqual(16);
+        // Firefox rounds separate DOMRects differently; allow less than a hundredth of a CSS pixel.
+        expect(action.right).toBeLessThanOrEqual(contentWidth - 16 + 0.01);
+        expect(action.height).toBeGreaterThanOrEqual(44);
+      }
+      if (width < 640) {
+        expect(card.artwork.x).toBe(16);
+        expect(card.artwork.width).toBe(contentWidth - 32);
+        expect(card.copy.x).toBe(16);
+        expect(card.copy.y).toBeGreaterThanOrEqual(card.artwork.bottom);
+      }
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
+
 for (const width of [390, 1280]) {
   test(`Releases keeps badge typography and date spacing after entering from Home at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
@@ -216,7 +358,7 @@ test('Releases keeps native destinations distinct from inert copy and status', a
         }
       }
     }
-    await lead.click({ position: { x: 2, y: 2 } });
+    await lead.locator('.release-card-copy').click({ position: { x: 2, y: 2 } });
     await expect(page).toHaveURL(/\/releases\/$/);
     await expect(page.getByRole('dialog')).toHaveCount(0);
   }

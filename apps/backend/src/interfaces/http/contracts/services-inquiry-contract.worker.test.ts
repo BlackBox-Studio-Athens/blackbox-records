@@ -12,6 +12,12 @@ const validInquiry = {
 };
 
 describe('Services inquiry public contract', () => {
+  it('accepts a demo and listening link through the existing inquiry contract', () => {
+    const inquiry = { ...validInquiry, service: 'Share your demo', serviceDetails: 'https://example.com/demo' };
+
+    expect(servicesInquiryBodySchema.parse(inquiry)).toEqual(inquiry);
+  });
+
   it('accepts exact field limits and rejects unknown fields', () => {
     expect(
       servicesInquiryBodySchema.parse({

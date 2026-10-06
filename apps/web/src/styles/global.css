@@ -972,6 +972,23 @@ body {
     gap: 0.1rem 0.85rem;
   }
 
+  @media (width < 48rem) {
+    .site-footer-nav-list {
+      display: block;
+      column-count: 2;
+      column-gap: 0.85rem;
+    }
+
+    .site-footer-nav-list > li {
+      break-inside: avoid;
+    }
+
+    .site-footer-nav-list .site-nav-link--footer {
+      width: 100%;
+      min-height: 2.75rem;
+    }
+  }
+
   .site-footer-content-shell,
   .site-footer-meta {
     padding-left: max(1.25rem, env(safe-area-inset-left));
@@ -3881,10 +3898,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     font-size: 0.82rem;
   }
 
-  .site-footer-description span {
-    display: block;
-  }
-
   .site-footer-nav-list {
     gap: 0.35rem 1rem;
   }
@@ -5658,6 +5671,11 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   min-width: 0;
 }
 
+.home-preorders__purchase > .international-order-notice,
+.home-preorders__purchase > .international-order-delivery {
+  margin-top: 1rem;
+}
+
 .home-preorders__price-block {
   display: flex;
   flex-wrap: wrap;
@@ -6161,7 +6179,7 @@ button.home-preorders__clip {
     gap: 0.75rem;
   }
 
-  .home-preorders__film-tools .site-button,
+  .home-preorders__film-tools .site-button:not(.site-button--icon),
   .home-preorders__film-tools .home-preorders__listen {
     flex: 1;
     min-width: 7.5rem;
@@ -7366,18 +7384,62 @@ html[data-store-coverflow-capable]
   font-size: clamp(2.35rem, 16cqi, 4.85rem);
 }
 @media (width < 64rem) {
-  #releases-merchandising .releases-latest-feature__upcoming {
-    display: flex;
-    flex-wrap: wrap;
+  .releases-page-intro,
+  .releases-page-showcase-container {
+    padding-inline: 1rem;
   }
-  #releases-merchandising .releases-latest-feature__upcoming-artwork-link {
-    flex: 0 1 8.5rem;
+  #releases-merchandising .releases-page-layout {
+    border: 0;
+  }
+  #releases-merchandising :is(.releases-latest-feature, .releases-latest-feature__upcoming, .releases-catalog-section) {
+    padding: 1.5rem 0;
+  }
+  #releases-merchandising .releases-page-layout > :first-child {
+    padding-top: 0;
+  }
+  #releases-merchandising .releases-catalog-grid {
+    row-gap: 2rem;
+  }
+  #releases-merchandising .release-card-artwork-link .release-card-artwork {
+    object-fit: contain;
+    transform: none;
+  }
+  #releases-merchandising .releases-latest-feature__artwork-link {
+    align-self: start;
+  }
+  #releases-merchandising :is(.release-card-title-link, .release-card-artist-link) {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    min-height: 2.75rem;
+    overflow-wrap: anywhere;
+  }
+  #releases-merchandising [data-release-actions] {
+    align-items: stretch;
+  }
+  #releases-merchandising [data-release-purchase] {
+    flex: 1 1 10rem;
+    min-width: 0;
+    min-height: 2.75rem;
+    white-space: normal;
+    text-align: center;
+  }
+  #releases-merchandising [data-release-actions] .music-listen-trigger {
+    flex: 0 0 auto;
+  }
+  #releases-merchandising .releases-latest-feature__upcoming {
+    grid-template-columns: minmax(0, 1fr);
   }
   #releases-merchandising .releases-latest-feature__upcoming-copy {
-    flex: 1 1 7rem;
     container-type: inline-size;
   }
   #releases-merchandising .releases-latest-feature__upcoming-title {
     font-size: min(17cqi, clamp(1.9rem, 8vw, 2.55rem));
+  }
+}
+@media (40rem <= width < 64rem) {
+  #releases-merchandising .releases-latest-feature__upcoming {
+    grid-template-columns: minmax(15rem, 0.9fr) minmax(0, 1fr);
+    gap: 1.5rem;
   }
 }

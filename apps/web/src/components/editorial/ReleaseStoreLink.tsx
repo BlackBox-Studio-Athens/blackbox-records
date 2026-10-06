@@ -1,51 +1,75 @@
 import * as React from 'react';
-import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
+import type { Tracklist } from '@blackbox/content-model';
 import { readPublicStoreListingPrices } from '@/components/store/StoreListingPricePresentation';
-import { preorderBadges } from '@/platform/lib/preorder-estimate';
-
-type Preorder = Awaited<ReturnType<typeof readPublicStoreListingPrices>>[number]['preorder'];
+import { buttonVariants } from '@/components/ui/button';
+import { releasePresentation, type Listing, type ReleasePresentationEntry } from './release-presentation';
 
 export default function ReleaseStoreLink({
   href,
   className,
   releaseDate,
+  releaseStage,
+  physicalFormat,
 }: {
   href: string;
   className: string;
   releaseDate?: string | undefined;
+  releaseStage?: 'upcoming' | 'released' | undefined;
+  physicalFormat?: Tracklist['format'] | null | undefined;
 }) {
-  const [preorder, setPreorder] = React.useState<Preorder>(null);
+  const slug = href.split('/').filter(Boolean).at(-1);
+  const [record, setRecord] = React.useState<Listing>();
   React.useEffect(() => {
     const controller = new AbortController();
-    const slug = href.split('/').filter(Boolean).at(-1);
-    void readPublicStoreListingPrices(controller.signal, { scope: 'preorders' })
+    void readPublicStoreListingPrices(controller.signal)
       .then((records) => {
         if (controller.signal.aborted) return;
-        const record = records.find((item) => item.storeItemSlug === slug);
-        setPreorder(
-          record?.presentationState === 'ready' && record.availabilityState === 'stocked' ? record.preorder : null,
-        );
+        setRecord(records.find((item) => item.storeItemSlug === slug));
       })
       .catch(() => {});
     return () => controller.abort();
-  }, [href]);
+  }, [slug]);
+
+  const entry: ReleasePresentationEntry = {
+    id: href,
+    releaseDate,
+    releaseStage,
+    edition: physicalFormat && slug ? { kind: 'native', format: physicalFormat, storeSlug: slug } : { kind: 'none' },
+  };
+  const presentation = releasePresentation(entry, record);
+  const buyable = presentation.state === 'preorder' || presentation.state === 'available';
+  const actionClassName = physicalFormat
+    ? buttonVariants({
+        variant: buyable ? 'default' : 'outline',
+        size: 'lg',
+        className:
+          presentation.state === 'preorder'
+            ? 'preorder-action'
+            : presentation.state === 'available'
+              ? 'purchase-action'
+              : undefined,
+      })
+    : className;
 
   return (
     <>
-      <a href={href} className={preorder ? `${className} preorder-action` : className}>
-        {preorder ? 'Pre-order' : 'Shop release'}
+      <a href={href} className={actionClassName}>
+        {physicalFormat ? presentation.action : 'Shop release'}
       </a>
-      {preorder && (
+      {physicalFormat && presentation.badges.length > 0 && (
         <span className="flex flex-wrap items-center gap-2">
-          {preorderBadges({ releaseDate, shipEstimate: preorder.shipEstimate, today: new Date() }).map((badge) => (
+          {presentation.badges.map((badge) => (
             <span
               key={badge}
-              className={badge === DIGITAL_RELEASE_BADGE ? 'store-item-card__release-status' : 'preorder-badge'}
+              className={badge.startsWith('Pre-order') ? 'preorder-badge' : 'store-item-card__release-status'}
             >
               {badge}
             </span>
           ))}
         </span>
+      )}
+      {physicalFormat && presentation.shipping && (
+        <span className="text-sm text-muted-foreground">{presentation.shipping}</span>
       )}
     </>
   );

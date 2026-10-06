@@ -34,6 +34,10 @@ export const SERVICES_INQUIRY_DETAIL_PROMPTS = {
     hint: 'Add the format, quantity, and target date if known.',
     label: 'Format / Quantity / Target Date',
   },
+  'Share your demo': {
+    hint: 'Add a listening link. If it needs a listening password, include it in your message.',
+    label: 'Demo / Listening link',
+  },
 } satisfies Record<ServicesInquiryService, { hint: string; label: string }>;
 
 export type ServicesInquiryAdaptiveDetailsState = {
@@ -74,7 +78,7 @@ type ServicesInquiryFormAction =
   | { status: ServicesInquirySubmissionStatus; type: 'status' }
   | { type: 'reset' };
 
-export function createInitialServicesInquiryFormState(): ServicesInquiryFormState {
+export function createInitialServicesInquiryFormState(service = 'General'): ServicesInquiryFormState {
   return {
     status: 'idle',
     values: {
@@ -82,7 +86,7 @@ export function createInitialServicesInquiryFormState(): ServicesInquiryFormStat
       email: '',
       message: '',
       name: '',
-      service: 'General',
+      service: isKnownService(service) ? service : 'General',
       serviceDetails: '',
     },
   };
@@ -215,11 +219,13 @@ export default function ServicesInquiryForm({
   submitInquiry = submitPublicServicesInquiry,
   submitText,
 }: ServicesInquiryFormProps) {
-  const [state, dispatch] = useReducer(
-    reduceServicesInquiryFormState,
-    undefined,
-    createInitialServicesInquiryFormState,
-  );
+  const inquiryContainer =
+    typeof document === 'undefined' ? null : document.querySelector<HTMLElement>('[data-services-inquiry-form]');
+  const requestedService = inquiryContainer?.dataset.servicesInquiryTargetService;
+  const [state, dispatch] = useReducer(reduceServicesInquiryFormState, undefined, () => {
+    if (inquiryContainer) delete inquiryContainer.dataset.servicesInquiryTargetService;
+    return createInitialServicesInquiryFormState(requestedService);
+  });
   const pendingSubmissionRef = useRef(false);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const successRef = useRef<HTMLElement>(null);
@@ -241,6 +247,7 @@ export default function ServicesInquiryForm({
       const triggerElement = eventTarget.closest<HTMLElement>('[data-services-inquiry-target-service]');
       if (!triggerElement) return;
 
+      if (inquiryContainer) delete inquiryContainer.dataset.servicesInquiryTargetService;
       const nextService = triggerElement.dataset.servicesInquiryTargetService || 'General';
       if (isKnownService(nextService)) {
         dispatch({ service: nextService, type: 'select-service' });
@@ -251,12 +258,13 @@ export default function ServicesInquiryForm({
 
     document.addEventListener('click', handleDocumentClick);
     return () => document.removeEventListener('click', handleDocumentClick);
-  }, []);
+  }, [inquiryContainer]);
 
   if (state.status === 'submitted') {
     return (
       <ServicesInquirySuccess
         onSendAnother={() => {
+          if (inquiryContainer) delete inquiryContainer.dataset.servicesInquiryTargetService;
           dispatch({ type: 'reset' });
           window.requestAnimationFrame(() => nameInputRef.current?.focus());
         }}
@@ -324,13 +332,16 @@ export default function ServicesInquiryForm({
             onChange={(event) => dispatch({ field: 'bandOrProject', type: 'change', value: event.target.value })}
           />
         </label>
-        <label className="services-inquiry-form__field">
-          <span className="services-inquiry-form__label">Service</span>
+        <div className="services-inquiry-form__field">
+          <label className="services-inquiry-form__label" htmlFor="services-inquiry-service">
+            Service
+          </label>
           <select
             aria-describedby={fieldErrorDescriptionId}
             aria-invalid={hasFieldError || undefined}
             className="services-inquiry-form__select h-11 w-full rounded-none border border-[#2b2b2b] bg-[#111111] px-3 text-[0.95rem] text-foreground outline-none"
             disabled={isSubmitting}
+            id="services-inquiry-service"
             name="service"
             required
             value={service}
@@ -348,7 +359,7 @@ export default function ServicesInquiryForm({
               </option>
             ))}
           </select>
-        </label>
+        </div>
       </div>
 
       <label className="services-inquiry-form__field" htmlFor="services-inquiry-details">

@@ -13,7 +13,10 @@ const serviceImageWidths = [720, 1200, 1600];
 const { services: servicesListSection, process: processSection, inquiry: inquirySection } = servicesContent;
 ---
 
-<SiteLayout pageTitle="Services" pageDescription="Tour booking, merch printing, and vinyl production support.">
+<SiteLayout
+  pageTitle="Services"
+  pageDescription="Share your demo, book tours, print merch, and press vinyl with BlackBox."
+>
   <div data-tone="services">
     <section class="layout-container services-page-intro">
       <div class="services-page-intro__surface">
@@ -22,14 +25,31 @@ const { services: servicesListSection, process: processSection, inquiry: inquiry
           <p class="services-page-intro__eyebrow">What We Do</p>
           <h1 class="services-page-intro__title internal-page-hero__title">{servicesContent.hero.title}</h1>
           <Prose class="services-page-intro__copy" value={servicesContent.hero.intro} data-content-path="hero.intro" />
-          <a
-            href="#services-inquiry"
-            data-services-inquiry-target-service="General"
-            data-scroll-to-target="services-inquiry"
-            class={buttonVariants({ variant: 'outline', className: 'justify-self-start' })}
-          >
-            {servicesContent.hero.cta_text}
-          </a>
+          <div class="flex flex-wrap gap-3">
+            <a
+              href="#services-inquiry"
+              data-services-inquiry-target-service="General"
+              data-scroll-to-target="services-inquiry"
+              class={buttonVariants({ variant: 'outline', size: 'lg' })}
+            >
+              {servicesContent.hero.cta_text}
+            </a>
+            {inquirySection && (
+              <a
+                href="#services-inquiry"
+                data-services-inquiry-target-service="Share your demo"
+                data-scroll-to-target="services-inquiry"
+                class={buttonVariants({ variant: 'outline', size: 'lg' })}
+              >
+                Share your demo
+              </a>
+            )}
+          </div>
+          {inquirySection && (
+            <p class="services-page-intro__copy">
+              For demos, send a listening link and a few words about your band or project.
+            </p>
+          )}
         </div>
       </div>
     </section>

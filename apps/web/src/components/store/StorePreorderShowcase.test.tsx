@@ -290,6 +290,8 @@ describe('StorePreorderShowcase presentation', () => {
       expect(html).toContain('href="/blackbox-records/store/#preorders"');
       expect(html).toContain(`href="${candidate.storePath}"`);
       expect(html).toContain('€28.00');
+      expect(html).not.toContain('mailto:orders@blackboxrecordsathens.com');
+      expect(html).not.toContain('Deliver to Greece');
       expect(html).not.toContain('Next pre-order:');
       expect(fetchRequest).toHaveBeenCalledTimes(2);
     },
@@ -373,7 +375,8 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).toMatch(/<video[^>]*muted=""[^>]*playsInline=""[^>]*preload="none"/i);
     expect(html).not.toContain('src="/silent-loop.mp4"');
     expect(html).toContain('src="/video-poster.webp"');
-    expect(html).toContain('Play background');
+    expect(html).not.toMatch(/(?:Play|Pause) background|Background unavailable/);
+    expect(html).not.toContain('site-button--icon');
     expect(html).not.toContain('<iframe');
   });
 

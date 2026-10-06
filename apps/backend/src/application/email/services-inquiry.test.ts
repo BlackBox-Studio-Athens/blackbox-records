@@ -48,6 +48,7 @@ describe('services inquiry email application input', () => {
       'Tour Booking': 'booking@blackboxrecordsathens.com',
       'Merch Printing': 'merch@blackboxrecordsathens.com',
       'Vinyl Pressing': 'vinyl@blackboxrecordsathens.com',
+      'Share your demo': 'info@blackboxrecordsathens.com',
     });
   });
 
@@ -115,6 +116,7 @@ describe('services inquiry email application input', () => {
     ['Tour Booking', 'tour-booking'],
     ['Merch Printing', 'merch-printing'],
     ['Vinyl Pressing', 'vinyl-pressing'],
+    ['Share your demo', 'demo'],
   ] as const)('provides safe purpose and tags for %s', (service, serviceTag) => {
     expect(SERVICES_INQUIRY_EMAIL_PURPOSE).toBe('services-inquiry');
     expect(createServicesInquiryEmailTags(service)).toEqual([
@@ -125,6 +127,21 @@ describe('services inquiry email application input', () => {
 });
 
 describe('services inquiry email template', () => {
+  it('includes the demo link in the existing inquiry email', () => {
+    const serviceDetails = 'https://example.com/demo';
+    const content = buildServicesInquiryEmail({
+      ...validInquiry,
+      bandOrProject: undefined,
+      service: 'Share your demo',
+      serviceDetails,
+    });
+
+    expect(content.subject).toBe('Services Inquiry — Share your demo — Visitor Name');
+    expect(content.html).toContain('>Demo / Listening link</th>');
+    expect(content.html).toContain(`>${serviceDetails}</td>`);
+    expect(content.text).toContain(`Demo / Listening link: ${serviceDetails}`);
+  });
+
   it('uses the approved subject and field order', () => {
     const content = buildServicesInquiryEmail({
       ...validInquiry,
@@ -220,6 +237,7 @@ describe('services inquiry send use case', () => {
     ['Tour Booking', 'booking@blackboxrecordsathens.com', 'tour-booking'],
     ['Merch Printing', 'merch@blackboxrecordsathens.com', 'merch-printing'],
     ['Vinyl Pressing', 'vinyl@blackboxrecordsathens.com', 'vinyl-pressing'],
+    ['Share your demo', 'info@blackboxrecordsathens.com', 'demo'],
   ] as const)('sends %s to its fixed PRD alias', async (service, recipient, serviceTag) => {
     mockRandomUuid('11111111-1111-4111-8111-111111111111');
     const { provider, sendEmail } = createProvider();

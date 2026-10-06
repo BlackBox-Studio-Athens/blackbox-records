@@ -38,7 +38,6 @@ const checkoutLines = [
 async function prepareCheckout(page: Page, lines = checkoutLines) {
   await page.addInitScript((savedLines) => {
     localStorage.setItem('blackbox.storeCart.v2', JSON.stringify({ lines: savedLines }));
-    sessionStorage.removeItem('blackbox:shopper-country');
   }, lines);
   await page.route('**/api/store/capabilities', (route) =>
     route.fulfill({
@@ -129,6 +128,10 @@ for (const width of [1280, 390]) {
     await email.focus();
     await expect(email).toBeFocused();
     await page.keyboard.press('Tab');
+    const correction = notice.getByRole('button', { name: 'Deliver to Greece', exact: true });
+    await expect(correction).toBeFocused();
+    expect((await correction.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await page.keyboard.press('Tab');
     await expect(pay).toBeFocused();
     expect(await review.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -145,6 +148,13 @@ for (const width of [1280, 390]) {
     expect(new URL((await email.getAttribute('href'))!).searchParams.get('body')).toBe(
       'Items: Barren & Point, έκδοση?\nCountry:\nCity:',
     );
+    await expect(pay).toBeEnabled();
+    expect(traceRequests).toBe(1);
+
+    await correction.click();
+    await expect(notice).toHaveCount(0);
+    const change = review.getByRole('button', { name: 'Change delivery to outside Greece', exact: true });
+    await expect(change).toBeFocused();
     await expect(pay).toBeEnabled();
     expect(traceRequests).toBe(1);
 
@@ -220,6 +230,8 @@ test('the checkout card and payment remain reachable with a 200 percent layout z
   await expect(pay).toBeEnabled();
   await email.focus();
   await expect(email).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(review.getByRole('button', { name: 'Deliver to Greece', exact: true })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(pay).toBeFocused();
   await pay.scrollIntoViewIfNeeded();

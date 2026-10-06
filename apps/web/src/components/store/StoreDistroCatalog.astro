@@ -6,7 +6,6 @@ import {
   createStoreDistroGroupHeadingId,
   getStoreDistroFormatGroup,
   groupStoreDistroCollectionEntries,
-  isRecentBlackboxRelease,
   sortStoreDistroCollectionEntries,
   type StoreCollectionEntry,
 } from '@/lib/store-collection';
@@ -17,8 +16,7 @@ interface Props {
   entries: StoreCollectionEntry[];
 }
 const { entries: sourceEntries } = Astro.props;
-const referenceDate = new Date();
-const entries = sortStoreDistroCollectionEntries(sourceEntries, referenceDate);
+const entries = sortStoreDistroCollectionEntries(sourceEntries);
 const content = await getDistroPageContent();
 const groups = groupStoreDistroCollectionEntries(entries);
 const enrolled = entries.length > 6;
@@ -84,7 +82,6 @@ const formats = [
                 entry={entry}
                 searchable
                 formatKey={createStoreDistroGroupHeadingId(getStoreDistroFormatGroup(entry))}
-                promoted={isRecentBlackboxRelease(entry.storeItem, referenceDate)}
                 coverflowEnrolled={enrolled}
                 imageLoadingMode={index === 0 ? 'priority' : index < 4 ? 'eager' : 'lazy'}
               />

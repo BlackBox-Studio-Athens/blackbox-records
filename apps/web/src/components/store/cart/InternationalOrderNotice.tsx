@@ -1,6 +1,12 @@
 import * as React from 'react';
 
-import { resolveShopperCountry } from './shopper-country';
+import {
+  getDeliveryDestination,
+  resolveShopperCountry,
+  setDeliveryDestination,
+  subscribeDeliveryDestination,
+  type DeliveryDestination,
+} from './shopper-country';
 import './international-order-notice.css';
 
 const copy = {
@@ -42,6 +48,13 @@ export default function InternationalOrderNotice({
   borderTone = 'accent',
 }: InternationalOrderNoticeProps) {
   const [country, setCountry] = React.useState<string | null>(null);
+  const destination = React.useSyncExternalStore(subscribeDeliveryDestination, getDeliveryDestination, () => null);
+  const destinationButton = React.useRef<HTMLButtonElement>(null);
+
+  function chooseDestination(next: DeliveryDestination) {
+    setDeliveryDestination(next);
+    requestAnimationFrame(() => destinationButton.current?.focus());
+  }
 
   React.useEffect(() => {
     let active = true;
@@ -53,7 +66,23 @@ export default function InternationalOrderNotice({
     };
   }, []);
 
-  if (!country || country === 'GR') return null;
+  if (destination === 'GR') {
+    return (
+      <p className="international-order-delivery">
+        Delivery: Greece
+        <button
+          className="international-order-notice__link international-order-notice__destination"
+          type="button"
+          aria-label="Change delivery to outside Greece"
+          ref={destinationButton}
+          onClick={() => chooseDestination('international')}
+        >
+          Change
+        </button>
+      </p>
+    );
+  }
+  if (destination !== 'international' && (!country || country === 'GR')) return null;
 
   const link = (
     <a className="international-order-notice__link" href={buildInternationalOrderMailto(itemTitles)}>
@@ -74,6 +103,16 @@ export default function InternationalOrderNotice({
     </a>
   );
   const className = `international-order-notice international-order-notice--${variant}`;
+  const correction = (
+    <button
+      className="international-order-notice__link international-order-notice__destination"
+      type="button"
+      ref={destinationButton}
+      onClick={() => chooseDestination('GR')}
+    >
+      Deliver to Greece
+    </button>
+  );
 
   if (variant === 'line') {
     return (
@@ -97,6 +136,7 @@ export default function InternationalOrderNotice({
           {copy.line.question}
         </span>
         {link}
+        {correction}
       </p>
     );
   }
@@ -117,6 +157,7 @@ export default function InternationalOrderNotice({
         </>
       )}
       {link}
+      {correction}
     </aside>
   );
 }

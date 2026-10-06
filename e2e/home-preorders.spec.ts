@@ -135,6 +135,71 @@ for (const failedRead of ['listing', 'candidates'] as const) {
   });
 }
 
+test('Home keeps active preorders abroad and preserves a Greece delivery correction on shell return', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const fixture = await stubShowcase(page, 'photo');
+  let traceRequests = 0;
+  await page.route('**/cdn-cgi/trace', (route) => {
+    traceRequests += 1;
+    return route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' });
+  });
+  await page.goto('./');
+  await waitForShell(page);
+  const release = chapter(page);
+  await expect(release.getByRole('heading', { name: 'Disintegration', exact: true })).toBeVisible();
+  await expect(release.getByText('€28.00', { exact: true })).toBeVisible();
+  await expect(release.getByRole('link', { name: 'Pre-order', exact: true })).toHaveAttribute(
+    'href',
+    fixture.candidate.storePath,
+  );
+  const email = release.getByRole('link', { name: 'Email us to order', exact: true });
+  await expect(email).toBeVisible();
+  const mailto = new URL((await email.getAttribute('href'))!);
+  expect(mailto.pathname).toBe('orders@blackboxrecordsathens.com');
+  expect(mailto.searchParams.get('subject')).toBe('Order from outside Greece');
+  expect(mailto.searchParams.get('body')).toBe('Items: Disintegration\nCountry:\nCity:');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(
+    true,
+  );
+
+  await release.getByRole('button', { name: 'Deliver to Greece', exact: true }).click();
+  await expect(email).toHaveCount(0);
+  await expect(release.locator('.international-order-delivery')).toContainText('Delivery: Greece');
+  await expect(release.getByRole('button', { name: 'Change delivery to outside Greece', exact: true })).toBeFocused();
+  await expect(release.getByRole('link', { name: 'Pre-order', exact: true })).toBeVisible();
+
+  await plantSentinel(page);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name: 'Services', exact: true }).click();
+  await expect(page).toHaveURL(/\/services\/$/);
+  await page.getByRole('link', { name: 'BlackBox Records', exact: true }).click();
+  await expect(release.getByRole('heading', { name: 'Disintegration', exact: true })).toBeVisible();
+  await expect(release.locator('.international-order-delivery')).toContainText('Delivery: Greece');
+  await expect(email).toHaveCount(0);
+  expect(traceRequests).toBe(1);
+  expect(await sentinelIntact(page)).toBe(true);
+});
+
+for (const country of ['GR', 'XX']) {
+  test(`Home keeps active preorders and a quiet shipping hint for ${country}`, async ({ page }) => {
+    await stubShowcase(page, 'photo');
+    await page.route('**/cdn-cgi/trace', (route) =>
+      route.fulfill({ contentType: 'text/plain', body: `loc=${country}\n` }),
+    );
+    const trace = page.waitForResponse('**/cdn-cgi/trace');
+    await page.goto('./');
+    await waitForShell(page);
+    await trace;
+    const release = chapter(page);
+    await expect(release.getByRole('heading', { name: 'Disintegration', exact: true })).toBeVisible();
+    await expect(release.getByRole('link', { name: 'Pre-order', exact: true })).toBeVisible();
+    await expect(release.getByRole('link', { name: 'Email us to order', exact: true })).toHaveCount(0);
+    await expect(release.getByRole('button', { name: 'Deliver to Greece', exact: true })).toHaveCount(0);
+  });
+}
+
 test('Home photo chapter shows accepted identity and facts and delegates Listen to the shell', async ({ page }) => {
   const fixture = await stubShowcase(page, 'photo');
   await page.route('https://bandcamp.com/EmbeddedPlayer/**', (route) =>
@@ -467,7 +532,9 @@ test('Native ambience plays one visible scene, preserves manual pause and stops 
   await expectPlaying(firstVideo, true);
   await expect(firstVideo).toHaveJSProperty('muted', true);
   await expect(firstVideo).toHaveAttribute('playsinline', '');
-  await first.getByRole('button', { name: 'Pause background', exact: true }).click();
+  const pause = first.getByRole('button', { name: 'Pause background motion', exact: true });
+  await expect(pause).toHaveText('');
+  await pause.click();
   await expectPlaying(firstVideo, false);
   await showScene(second);
   await expectPlaying(secondVideo, true);
@@ -480,8 +547,8 @@ test('Native ambience plays one visible scene, preserves manual pause and stops 
   await showScene(first);
   await expectPlaying(firstVideo, false);
   await expectPlaying(secondVideo, false);
-  await expect(first.getByRole('button', { name: 'Play background', exact: true })).toBeVisible();
-  await first.getByRole('button', { name: 'Play background', exact: true }).click();
+  await expect(first.getByRole('button', { name: 'Resume background motion', exact: true })).toBeVisible();
+  await first.getByRole('button', { name: 'Resume background motion', exact: true }).click();
   await expectPlaying(firstVideo, true);
   await page.evaluate(() => {
     Object.defineProperty(document, 'hidden', { configurable: true, value: true });
@@ -497,7 +564,7 @@ test('Native ambience plays one visible scene, preserves manual pause and stops 
 });
 
 for (const preference of ['reduced motion', 'data saving'] as const) {
-  test(`Native ambience keeps a poster for ${preference} until explicit intent`, async ({ page }) => {
+  test(`Native ambience keeps a poster for ${preference} without manual background playback`, async ({ page }) => {
     if (preference === 'reduced motion') await page.emulateMedia({ reducedMotion: 'reduce' });
     else
       await page.addInitScript(() =>
@@ -517,8 +584,10 @@ for (const preference of ['reduced motion', 'data saving'] as const) {
       'href',
       fixture.candidate.storePath,
     );
-    await release.getByRole('button', { name: 'Play background', exact: true }).click();
-    await expectPlaying(release.locator('video'), true);
+    await expect(release.getByRole('button', { name: /background/i })).toHaveCount(0);
+    await expectPlaying(release.locator('video'), false);
+    await expect(release.locator('.home-preorders__video-poster')).toBeVisible();
+    await expect(release.getByRole('button', { name: 'Watch full video', exact: true })).toBeEnabled();
     expect(fixture.providerRequests).toEqual([]);
   });
 }
@@ -544,12 +613,12 @@ for (const failure of ['autoplay rejection', 'asset failure'] as const) {
     const release = chapter(page);
     await showScene(release);
     if (failure === 'asset failure') {
-      await expect(release.getByRole('button', { name: 'Background unavailable', exact: true })).toBeDisabled();
+      await expect(release.getByRole('status')).toContainText('The background is unavailable.');
     } else {
       await expect.poll(() => page.evaluate(() => Reflect.get(window, '__homeScenePlayAttempts'))).toBe(1);
-      await expect(release.getByRole('button', { name: 'Play background', exact: true })).toBeEnabled();
     }
-    await expect(release.getByRole('button', { name: 'Pause background', exact: true })).toHaveCount(0);
+    await expect(release.getByRole('button', { name: /background/i })).toHaveCount(0);
+    await expect(release.locator('.home-preorders__video-poster')).toBeVisible();
     await expect(release.getByRole('button', { name: 'Watch full video', exact: true })).toBeEnabled();
     await expect(release.getByRole('link', { name: 'Pre-order', exact: true })).toHaveAttribute(
       'href',

@@ -143,6 +143,8 @@ const galleryImages =
               href={commerceLink.href}
               className={buttonVariants({ size: 'lg' })}
               releaseDate={releaseDateMachineValue}
+              releaseStage={release.data.release_stage}
+              physicalFormat={commerceLink.physicalFormat}
             />
           ) : (
             commerceLink && (

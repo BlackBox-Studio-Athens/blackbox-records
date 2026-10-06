@@ -2,6 +2,7 @@ import { getImage } from 'astro:assets';
 import { statSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import sidusBackgroundVideoUrl from './_assets/video-posters/sidus-embrace-the-void-loop.mp4?url';
+import afterwiseBackgroundVideoUrl from './_assets/video-posters/afterwise-equilibrium-loop.mp4?url';
 
 const catalog = vi.hoisted(() => ({
   clips: [] as { title: string; youtube_video_id: string }[],
@@ -152,8 +153,44 @@ describe('published pre-order showcase response', () => {
     ]);
   });
 
-  it('keeps the compiled native backdrop below the 900 kB delivery budget', () => {
-    const asset = new URL('./_assets/video-posters/sidus-embrace-the-void-loop.mp4', import.meta.url);
-    expect(statSync(asset).size).toBeLessThan(900_000);
+  it('projects both prepared performance backdrops in accepted clip order without matching titles', async () => {
+    catalog.artistSlug = 'renamed-artist';
+    catalog.clips = [
+      { title: 'Revised performance title', youtube_video_id: 'Cl7rWCTGEqY' },
+      { title: 'Embrace The Void', youtube_video_id: 'MOA5YZDOR6A' },
+      { title: 'Equilibrium - Live at Fuzz Club Athens', youtube_video_id: 'abcdefghijk' },
+    ];
+    expect(await (await GET()).json()).toEqual([
+      expect.objectContaining({
+        firstClipId: 'Cl7rWCTGEqY',
+        clips: [
+          {
+            id: 'Cl7rWCTGEqY',
+            title: 'Revised performance title',
+            posterUrl: expect.any(String),
+            backgroundVideoUrl: afterwiseBackgroundVideoUrl,
+          },
+          {
+            id: 'MOA5YZDOR6A',
+            title: 'Embrace The Void',
+            posterUrl: expect.any(String),
+            backgroundVideoUrl: sidusBackgroundVideoUrl,
+          },
+          {
+            id: 'abcdefghijk',
+            title: 'Equilibrium - Live at Fuzz Club Athens',
+            posterUrl: null,
+            backgroundVideoUrl: null,
+          },
+        ],
+      }),
+    ]);
+  });
+
+  it('keeps each compiled native backdrop below the 900 kB delivery budget', () => {
+    for (const filename of ['sidus-embrace-the-void-loop.mp4', 'afterwise-equilibrium-loop.mp4']) {
+      const asset = new URL('./_assets/video-posters/' + filename, import.meta.url);
+      expect(statSync(asset).size).toBeLessThan(900_000);
+    }
   });
 });

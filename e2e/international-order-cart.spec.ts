@@ -106,6 +106,10 @@ for (const viewport of [
     await expect(emailLink).toBeInViewport({ ratio: 1 });
     await expect(emailLink).toHaveCSS('outline-style', 'solid');
     await page.keyboard.press('Tab');
+    const correction = card.getByRole('button', { name: 'Deliver to Greece', exact: true });
+    await expect(correction).toBeFocused();
+    expect((await correction.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await page.keyboard.press('Tab');
     await expect(checkout).toBeFocused();
     expect(await page.evaluate(() => window.scrollY)).toBe(previousScroll);
 
@@ -124,6 +128,17 @@ for (const viewport of [
       emailLink,
       cartLines.map((line) => line.title),
     );
+
+    await correction.click();
+    await expect(card).toHaveCount(0);
+    await expect(page.locator('.international-order-notice--strip')).toHaveCount(0);
+    const change = drawer.getByRole('button', { name: 'Change delivery to outside Greece', exact: true });
+    await expect(change).toBeFocused();
+    await expect(checkout).toBeInViewport({ ratio: 1 });
+    await change.click();
+    await expect(card).toBeVisible();
+    await expect(page.locator('.international-order-notice--strip')).toHaveCount(1);
+    await expect(correction).toBeFocused();
 
     for (let remaining = cartLines.length - 1; remaining >= 0; remaining--) {
       await drawer
@@ -180,6 +195,8 @@ test('international cart card scrolls while Checkout stays reachable at 195x422 
   await expect.poll(() => scroller.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
   await emailLink.focus();
   await expect(emailLink).toBeInViewport({ ratio: 1 });
+  await page.keyboard.press('Tab');
+  await expect(drawer.getByRole('button', { name: 'Deliver to Greece', exact: true })).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(checkout).toBeFocused();
   await expect(checkout).toBeInViewport({ ratio: 1 });

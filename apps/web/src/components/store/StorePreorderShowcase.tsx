@@ -5,6 +5,7 @@ import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
 import { buttonVariants } from '@/components/ui/button';
 import MusicEqualizer from '@/components/music/MusicEqualizer';
+import InternationalOrderNotice from './cart/InternationalOrderNotice';
 import { getPublicBackendBaseUrl } from '@/platform/lib/backend/public-backend-config';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { preorderBadges, shipEstimateText, type ShipEstimate } from '@/platform/lib/preorder-estimate';
@@ -251,7 +252,6 @@ function PreorderChapter({
 }) {
   const [selectedClip, setSelectedClip] = useState(0);
   const [manualPause, setManualPause] = useState(false);
-  const [motionIntent, setMotionIntent] = useState(false);
   const [ambientPlaying, setAmbientPlaying] = useState(false);
   const [failedClips, setFailedClips] = useState<string[]>([]);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
@@ -277,7 +277,7 @@ function PreorderChapter({
     !manualPause &&
     !failed &&
     !autoplayBlocked &&
-    (automaticMotion || motionIntent),
+    automaticMotion,
   );
   const estimate = item.shipEstimate ? shipEstimateText(item.shipEstimate) : null;
   const shipping = estimate ? estimate[0]?.toUpperCase() + estimate.slice(1) : 'To be confirmed';
@@ -382,6 +382,7 @@ function PreorderChapter({
           {/vinyl|\blp\b/i.test(item.option) ? 'Vinyl ships' : 'Copies ship'} {estimate ?? 'at a date to be confirmed'}
         </p>
       )}
+      <InternationalOrderNotice variant="line" itemTitles={[item.title]} />
       <a href={createProjectRelativeUrl('/terms/')} data-astro-prefetch className="home-preorders__terms">
         Pre-order &amp; delivery information
       </a>
@@ -434,21 +435,17 @@ function PreorderChapter({
             </div>
             <div className="home-preorders__film-tools">
               {listen}
-              {background && (
+              {background && automaticMotion && !failed && !autoplayBlocked && (
                 <button
                   type="button"
-                  className={buttonVariants({ variant: 'outline', size: 'lg' })}
-                  disabled={failed || playerSession || playing}
-                  onClick={() => {
-                    if (ambientPlaying) setManualPause(true);
-                    else {
-                      setManualPause(false);
-                      setMotionIntent(true);
-                      setAutoplayBlocked(false);
-                    }
-                  }}
+                  className={buttonVariants({ variant: 'outline', size: 'icon-lg' })}
+                  disabled={!active || !documentVisible || playerSession || playing}
+                  aria-label={manualPause ? 'Resume background motion' : 'Pause background motion'}
+                  onClick={() => setManualPause((paused) => !paused)}
                 >
-                  {failed ? 'Background unavailable' : ambientPlaying ? 'Pause background' : 'Play background'}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d={manualPause ? 'm8 5 11 7-11 7Z' : 'M6 5h4v14H6zM14 5h4v14h-4z'} />
+                  </svg>
                 </button>
               )}
               <button

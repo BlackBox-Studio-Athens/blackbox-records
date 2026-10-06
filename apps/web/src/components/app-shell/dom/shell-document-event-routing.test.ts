@@ -1,4 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+
+import ServicesInquiryForm from '../../services/ServicesInquiryForm';
 
 vi.mock('astro:config/client', () => ({
   base: '/blackbox-records/',
@@ -97,6 +101,41 @@ function createOptions(overrides: Partial<ShellDocumentEventRoutingOptions> = {}
 }
 
 describe('shell document event routing', () => {
+  it.each(['General', 'Tour Booking', 'Merch Printing', 'Vinyl Pressing', 'Share your demo'] as const)(
+    'retains %s clicked before the lazy inquiry form mounts',
+    (service) => {
+      const inquiryContainer = { dataset: {} };
+      const documentRoot = { querySelector: vi.fn(() => inquiryContainer) };
+      const triggerElement = {
+        dataset: { servicesInquiryTargetService: service },
+        ownerDocument: documentRoot,
+      } as unknown as HTMLAnchorElement;
+      const options = createOptions({
+        dependencies: {
+          resolveShellDocumentClickIntent: vi.fn(() => ({
+            anchorElement: triggerElement,
+            kind: 'scroll-target' as const,
+            targetId: 'services-inquiry',
+            triggerElement,
+          })),
+        },
+        scrollToTargetId: vi.fn(() => true),
+      });
+      const disconnect = connectShellDocumentEventRouting(options);
+
+      try {
+        options.documentHandlers.click?.(createMouseEvent());
+        vi.stubGlobal('document', documentRoot);
+        const html = renderToStaticMarkup(createElement(ServicesInquiryForm, { submitText: 'Send Inquiry' }));
+
+        expect(html).toContain(`<option value="${service}" selected="">${service}</option>`);
+      } finally {
+        vi.unstubAllGlobals();
+        disconnect();
+      }
+    },
+  );
+
   it('toggles mobile navigation clicks', () => {
     const options = createOptions({
       dependencies: {

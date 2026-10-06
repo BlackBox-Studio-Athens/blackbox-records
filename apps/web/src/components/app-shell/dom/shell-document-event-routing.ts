@@ -197,6 +197,14 @@ export function connectShellDocumentEventRouting({
           : null;
 
     if (clickIntent.kind === 'scroll-target') {
+      if (clickIntent.targetId === 'services-inquiry') {
+        const inquiryContainer =
+          clickIntent.triggerElement.ownerDocument.querySelector<HTMLElement>('[data-services-inquiry-form]');
+        if (inquiryContainer) {
+          inquiryContainer.dataset.servicesInquiryTargetService =
+            clickIntent.triggerElement.dataset.servicesInquiryTargetService || 'General';
+        }
+      }
       if (scrollToTargetId(clickIntent.targetId, clickIntent.triggerElement)) {
         event.preventDefault();
         return clickIntent.kind;

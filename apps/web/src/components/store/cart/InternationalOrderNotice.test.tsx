@@ -4,9 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const hooks = vi.hoisted(() => ({
   country: null as string | null,
+  destination: null as 'GR' | 'international' | null,
   effects: [] as (() => () => void)[],
   setCountry: vi.fn(),
   resolveCountry: vi.fn<() => Promise<string | null>>(),
+  setDestination: vi.fn(),
 }));
 
 // Exercise the hydrated branches with the same server renderer used by the shopper tests.
@@ -14,18 +16,26 @@ const hooks = vi.hoisted(() => ({
 vi.mock('react', async (original) => ({
   ...(await original<typeof React>()),
   useState: () => [hooks.country, hooks.setCountry],
+  useSyncExternalStore: () => hooks.destination,
   useEffect: (effect: () => () => void) => {
     hooks.effects.push(effect);
   },
 }));
-vi.mock('./shopper-country', () => ({ resolveShopperCountry: hooks.resolveCountry }));
+vi.mock('./shopper-country', () => ({
+  resolveShopperCountry: hooks.resolveCountry,
+  getDeliveryDestination: () => hooks.destination,
+  setDeliveryDestination: hooks.setDestination,
+  subscribeDeliveryDestination: vi.fn(),
+}));
 
 import InternationalOrderNotice, { buildInternationalOrderMailto } from './InternationalOrderNotice';
 
 beforeEach(() => {
   hooks.country = null;
+  hooks.destination = null;
   hooks.effects = [];
   hooks.setCountry.mockClear();
+  hooks.setDestination.mockClear();
   hooks.resolveCountry.mockReset().mockResolvedValue('US');
 });
 
@@ -57,7 +67,9 @@ describe('InternationalOrderNotice', () => {
     expect(markup).toContain(buildInternationalOrderMailto(['A & B', 'Αθήνα']).replaceAll('&', '&amp;'));
     expect(markup).toContain('Email us to order');
     expect(markup).toContain('aria-hidden="true"');
-    expect(markup).not.toMatch(/aria-live|role="(?:alert|dialog|status)"|<button/);
+    expect(markup).not.toMatch(/aria-live|role="(?:alert|dialog|status)"/);
+    expect(markup).toContain('Deliver to Greece');
+    expect(markup).toContain('type="button"');
     if (variant === 'strip') {
       expect(markup).toContain('aria-label="Shipping outside Greece"');
       expect(markup).toContain('Shipping</span>');
@@ -83,6 +95,23 @@ describe('InternationalOrderNotice', () => {
       expect(renderToStaticMarkup(<InternationalOrderNotice variant={variant} />)).toBe('');
     }
     expect(hooks.resolveCountry).not.toHaveBeenCalled();
+  });
+
+  it.each(variants)('replaces the %s warning with the chosen Greek destination and a change action', (variant) => {
+    hooks.country = 'US';
+    hooks.destination = 'GR';
+    const markup = renderToStaticMarkup(<InternationalOrderNotice variant={variant} />);
+    expect(markup).toContain('Delivery: Greece');
+    expect(markup).toContain('Change');
+    expect(markup).not.toContain('Email us to order');
+    expect(markup).not.toContain('international-order-notice--');
+    expect(markup).not.toContain('<aside');
+  });
+
+  it.each(['GR', null])('shows the email route after choosing international delivery despite hint %j', (country) => {
+    hooks.country = country;
+    hooks.destination = 'international';
+    expect(renderToStaticMarkup(<InternationalOrderNotice variant="strip" />)).toContain('Email us to order');
   });
 
   it('has an empty item template on collections and updates titles when the cart changes', () => {
