@@ -3042,6 +3042,61 @@ body {
     text-shadow: 0 0 20px rgba(0, 0, 0, 0.38);
   }
 
+  motto-word-cycle {
+    display: contents;
+  }
+
+  /* Every word shares one grid cell, so the widest word fixes the line and nothing reflows. */
+  .motto-word-cycle__stage {
+    position: relative;
+    display: inline-grid;
+  }
+
+  .motto-word-cycle__word {
+    position: relative;
+    z-index: 1;
+    grid-area: 1 / 1;
+    justify-self: start;
+  }
+
+  .motto-word-cycle__word[data-hidden],
+  .motto-word-cycle__playhead[data-hidden] {
+    visibility: hidden;
+  }
+
+  .motto-word-cycle__playhead {
+    position: absolute;
+    z-index: 2;
+    top: 4%;
+    bottom: 4%;
+    left: 0;
+    width: 1px;
+    background: rgba(245, 245, 245, 0.6);
+    pointer-events: none;
+  }
+
+  /* Glitch tears stay right of the word's start, so they never reach the words before it. */
+  .motto-word-cycle__tears {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .motto-word-cycle__tear {
+    position: absolute;
+    top: 0;
+    left: 0;
+    white-space: nowrap;
+    opacity: 0;
+  }
+
+  .motto-word-cycle__shard {
+    position: absolute;
+    color: rgba(245, 245, 245, 0.85);
+    opacity: 0;
+  }
+
   .homepage-hero-section__scroll-indicator {
     position: absolute;
     z-index: 2;

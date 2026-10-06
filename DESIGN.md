@@ -261,6 +261,10 @@ Navigation is compact, uppercase, and shell-owned. One link model and one `.site
 
 The embedded player is a shell-level continuity feature, not page-local decoration. Its modal and mini-player states may use floating shadows because they sit above the document. The mini player appears only after real embed intent and must stay compact, legible, and keyboard reachable.
 
+### Home Motto Scrub
+
+Approved 6 October 2026. When the Staff motto ends in Records, Art or Noise, that word cycles in this order from the written word: 2.5 s first hold, 2.8 s holds, 1.4 s scrub that leaves fast and settles into the last letter. The first change therefore finishes by about 3.9 s, before most visitors scroll. A thin white playhead travels from the start of the word to the end of the next word, so each change spans the old word's length and ends at the new word's length; behind it the next word, ahead of it the current one. Chaos from the owner's mockup rides on it: in random bursts during the first two thirds of each scrub, horizontal slices of either word tear sideways and torn fragments of a filled, mirrored session-clip waveform flash between them, all clipped to the span so nothing touches the words before it. Each word then lands clean. Monochrome only. The rest of the hero keeps its single fade-rise entrance; the glitch is reserved for the cycling word. Reduced motion keeps the written word; the cycle pauses off screen and in hidden tabs. Rejected in the rendered study: Signal (word folds into a sine), Scan (sine-displaced bands) and a background waveform window behind the word.
+
 ### Signature Component: Catalog Tile
 
 Catalog tiles are hard-edged, image-led modules. They use square artwork frames, muted metadata rows, Veneer content titles (with the Store Listing Scale above), and subtle image scale on hover. Do not turn them into rounded ecommerce product cards.

@@ -31,7 +31,9 @@ const heroImageWidths = [900, 1400];
 
   <div class="homepage-hero-section__content-block page-content-width-constrained-container">
     <h1 class="sr-only">BlackBox Records</h1>
-    <Prose class="homepage-hero-section__tagline-text" value={tagline} data-content-path="hero.tagline" />
+    <motto-word-cycle data-words="records art noise">
+      <Prose class="homepage-hero-section__tagline-text" value={tagline} data-content-path="hero.tagline" />
+    </motto-word-cycle>
   </div>
 
   <div class="homepage-hero-section__scroll-indicator" aria-hidden="true">

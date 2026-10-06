@@ -18,6 +18,7 @@
       "status": "closed",
       "exports": [
         "./HomeHero.astro",
+        "./motto-word-cycle.ts",
         "./NewsCard.astro",
         "./NewsDetailContent.astro",
         "./ReleaseCard.astro",
