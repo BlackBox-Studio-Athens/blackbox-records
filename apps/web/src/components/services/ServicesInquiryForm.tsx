@@ -257,6 +257,14 @@ export default function ServicesInquiryForm({
     }
 
     document.addEventListener('click', handleDocumentClick);
+    const pendingService = inquiryContainer?.dataset.servicesInquiryTargetService;
+    if (inquiryContainer && pendingService) {
+      delete inquiryContainer.dataset.servicesInquiryTargetService;
+      dispatch({
+        service: isKnownService(pendingService) ? pendingService : 'General',
+        type: 'select-service',
+      });
+    }
     return () => document.removeEventListener('click', handleDocumentClick);
   }, [inquiryContainer]);
 

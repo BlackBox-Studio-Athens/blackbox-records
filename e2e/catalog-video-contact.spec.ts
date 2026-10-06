@@ -2,6 +2,20 @@ import { readFile } from 'node:fs/promises';
 import type { StorePreorderShowcaseCandidate } from '../apps/web/src/components/store/StorePreorderShowcase';
 import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
+test('a demo click during the inquiry form commit retains its selection', async ({ page }) => {
+  await page.addInitScript(() => {
+    const observer = new MutationObserver(() => {
+      if (!document.querySelector('.services-inquiry-form')) return;
+      observer.disconnect();
+      document.querySelector<HTMLAnchorElement>('[data-services-inquiry-target-service="Share your demo"]')?.click();
+    });
+    observer.observe(document, { childList: true, subtree: true });
+  });
+  await page.goto('./services/');
+  await waitForShell(page);
+  await expect(page.getByLabel('Service', { exact: true })).toHaveValue('Share your demo');
+});
+
 test('Share your demo selects the existing inquiry flow and submits without leaving the shell', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.route('**/api/services/inquiries', (route) => route.fulfill({ json: { status: 'submitted' } }));
