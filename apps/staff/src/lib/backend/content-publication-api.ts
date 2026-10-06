@@ -1,16 +1,23 @@
 import { EditorialApiError } from './editorial-api';
 import { extractSafeProblemDetail } from './problem-details';
-import type { PublicationRecord, PublicationReview, PublicationReviewInput } from '@blackbox/content-model';
+import type {
+  PublicationRecord,
+  PublicationReview,
+  PublicationReviewInput,
+  PublicationComparisonData,
+} from '@blackbox/content-model';
 
 export type ContentPublication = {
   id: string;
   status: 'pending' | 'live' | 'failed';
   requestedAt: number;
+  completedAt?: number;
+  action?: 'publish' | 'withdraw';
   failureReason?: string;
   stage?: string;
   actorEmail?: string;
   environment?: string;
-  entries?: { collection: string; recordId: string; title: string }[];
+  entries?: { collection: string; recordId: string; title: string; editorAvailable?: boolean }[];
 };
 
 export type SelectedPublicationRecord = PublicationRecord;
@@ -56,7 +63,7 @@ export async function readPublicationHistory(
   return response.json();
 }
 export function publicationStage(item: ContentPublication) {
-  if (item.status === 'live') return 'On the website';
+  if (item.status === 'live') return item.action === 'withdraw' ? 'Removed from the website' : 'On the website';
   if (item.status === 'failed') return 'Publication failed';
   return (
     {
@@ -67,6 +74,29 @@ export function publicationStage(item: ContentPublication) {
       retrying: 'Retrying publication',
     }[item.stage ?? ''] ?? 'Publishing'
   );
+}
+export type PublicationDetails = {
+  publication: ContentPublication;
+  comparison: PublicationComparisonData | null;
+  reason?: string;
+};
+export async function readPublicationDetails(
+  base: string,
+  id: string,
+  signal?: AbortSignal,
+): Promise<PublicationDetails> {
+  const response = await publicationRequest(base, `publications/${encodeURIComponent(id)}/details`, undefined, signal);
+  if (!response.ok) throw new Error('Publication details could not load. Retry.');
+  return response.json();
+}
+export async function readPublicationCalendar(
+  base: string,
+  params: URLSearchParams,
+  signal?: AbortSignal,
+): Promise<{ items: ContentPublication[]; nextCursor?: string }> {
+  const response = await publicationRequest(base, `publications/calendar?${params}`, undefined, signal);
+  if (!response.ok) throw new Error('Publication calendar could not load. Retry.');
+  return response.json();
 }
 export async function publishSavedContent(
   base: string,

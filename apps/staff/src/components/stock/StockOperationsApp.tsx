@@ -776,7 +776,24 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
           <h1>
             {selectedStockDetail?.displayName ?? selectedStockDetail?.storeItemSlug.replaceAll('-', ' ') ?? 'Stock'}
           </h1>
-          {selectedVariantId && <StaffBack />}
+          {selectedVariantId && (
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                aria-expanded={inventoryOpen}
+                onClick={() => {
+                  setInventoryOpen(!inventoryOpen);
+                  if (!inventoryOpen)
+                    requestAnimationFrame(() =>
+                      inventoryRef.current?.querySelector<HTMLInputElement>('input')?.focus(),
+                    );
+                }}
+              >
+                {inventoryOpen ? 'Return to selected item' : 'Find another item'}
+              </Button>
+              <StaffBack />
+            </div>
+          )}
         </header>
       )}
       <section
@@ -803,7 +820,7 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
               <Input
                 aria-label="Search items"
                 maxLength={200}
-                placeholder="Search titles-"
+                placeholder="Search titles…"
                 value={query}
                 disabled={!!stocktake || startingStocktake}
                 onChange={(event) => {

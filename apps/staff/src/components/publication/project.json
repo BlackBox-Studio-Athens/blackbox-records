@@ -17,6 +17,7 @@
       "status": "closed",
       "exports": [
         "./ContentPreview.tsx",
+        "./PublicationCalendar.tsx",
         "./PublicationHistory.tsx",
         "./PublicationReviewFlow.tsx",
         "./PublicationStatus.tsx",

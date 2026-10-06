@@ -39,6 +39,7 @@ export default function ContentPreview({
   publication,
   onReadiness,
   onShowValidation,
+  onClose,
 }: {
   collection: ContentSection;
   focusedPath?: string;
@@ -52,6 +53,7 @@ export default function ContentPreview({
   publication?: PublicationReviewInput;
   onReadiness?(state: 'loading' | 'ready' | 'failed'): void;
   onShowValidation?: (() => void) | undefined;
+  onClose?: (() => void) | undefined;
 }) {
   type Rendering = {
     generation: number;
@@ -492,18 +494,32 @@ export default function ContentPreview({
               </PopoverContent>
             </Popover>
           </div>
-          <Button
-            ref={expandButton}
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={expanded ? 'Close expanded preview' : 'Expand preview'}
-            title={expanded ? 'Close expanded preview' : 'Expand preview'}
-            aria-pressed={expanded}
-            onClick={() => setExpanded(!expanded)}
-          >
-            {expanded ? <Minimize className="size-4" /> : <Expand className="size-4" />}
-          </Button>
+          <div className="flex items-center gap-1">
+            {onClose && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setExpanded(false);
+                  onClose();
+                }}
+              >
+                Close preview
+              </Button>
+            )}
+            <Button
+              ref={expandButton}
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={expanded ? 'Close expanded preview' : 'Expand preview'}
+              title={expanded ? 'Close expanded preview' : 'Expand preview'}
+              aria-pressed={expanded}
+              onClick={() => setExpanded(!expanded)}
+            >
+              {expanded ? <Minimize className="size-4" /> : <Expand className="size-4" />}
+            </Button>
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex" role="group" aria-label="Preview width">

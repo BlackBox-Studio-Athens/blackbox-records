@@ -148,3 +148,32 @@ test('reopens a bounded, redacted publication history for the current environmen
     (await handlePublicationRequest(new Request(root), { ...ctx, identity: { ...ctx.identity, role: 10 } })).status,
   ).toBe(403);
 });
+
+test('details and calendar enforce private environment reads and omit editor links for removed entries', async () => {
+  const ctx = { ...context(), bucket: env.TEST_SNAPSHOTS };
+  const id = crypto.randomUUID();
+  await handlePublicationRequest(post({ id, requestedRevision: 'live-one' }), ctx);
+  await env.TEST_CMS_DB.prepare('UPDATE _blackbox_publications SET request_json = ? WHERE id = ?')
+    .bind(JSON.stringify({ records: [{ collection: 'news', recordId: 'news-one', title: 'News' }] }), id)
+    .run();
+  const details = new Request(`${root}/${id}/details`);
+  const calendar = new Request(`${root}/calendar?month=2026-10`);
+  for (const request of [details, calendar]) {
+    const response = await handlePublicationRequest(request, ctx);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+    expect((await handlePublicationRequest(request, { ...ctx, identity: { ...ctx.identity, role: 10 } })).status).toBe(
+      403,
+    );
+  }
+  expect(await (await handlePublicationRequest(details, ctx)).json()).toMatchObject({
+    publication: { entries: [{ recordId: 'news-one', editorAvailable: true }] },
+    comparison: null,
+  });
+  ctx.fetchCms.mockResolvedValue(Response.json({ data: { item: { id: 'news-one', deletedAt: '2026-10-06' } } }));
+  expect(await (await handlePublicationRequest(details, ctx)).json()).toMatchObject({
+    publication: { entries: [{ editorAvailable: false }] },
+  });
+  expect((await handlePublicationRequest(details, { ...ctx, environment: 'uat' })).status).toBe(404);
+  expect((await handlePublicationRequest(new Request(`${root}/calendar?month=2026-13`), ctx)).status).toBe(400);
+});

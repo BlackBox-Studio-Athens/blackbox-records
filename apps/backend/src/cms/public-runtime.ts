@@ -238,9 +238,11 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
           { headers: { 'Cache-Control': 'no-store', 'X-Content-SHA256': pointer.snapshotSha256 } },
         );
       const key = `${PUBLIC_RELEASE_IDENTITY.sha}/${pointer.snapshotSha256}/${url.origin}${url.pathname}`;
+      // Unversioned Local builds share the zero SHA; retained HTML would reference a previous build's assets.
+      const versioned = PUBLIC_RELEASE_IDENTITY.sha !== '0'.repeat(40);
       let cached;
       try {
-        if (!url.search) {
+        if (versioned && !url.search) {
           const pages = this.renderCache();
           pages.retain(`${PUBLIC_RELEASE_IDENTITY.sha}/${pointer.snapshotSha256}/`);
           cached = pages.get(key);
@@ -272,6 +274,7 @@ export class PublicSiteRuntime extends DurableObject<Bindings> {
         });
       }
       let cacheable =
+        versioned &&
         response.status === 200 &&
         !url.search &&
         !headers.has('Set-Cookie') &&

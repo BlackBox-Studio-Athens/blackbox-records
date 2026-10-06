@@ -1,8 +1,8 @@
-diff --git a/dist/api-BBZlif0y.mjs b/dist/api-BBZlif0y.mjs
-index 46689d8013572ada54c91dfa0ee14f34ee11d83d..1d19fad679b6700c487f92e0d24bfbcd90a073bc 100644
---- a/dist/api-BBZlif0y.mjs
-+++ b/dist/api-BBZlif0y.mjs
-@@ -1402,12 +1402,14 @@ async function handleContentDuplicate(db, collection, id, authorId) {
+diff --git a/dist/api-CltsXhiX.mjs b/dist/api-CltsXhiX.mjs
+index 698e0e8ebf864e0fbe84c8d41c2b63959f81d4c2..edf91efeab0921a6ad8b0efa565042554963154b 100644
+--- a/dist/api-CltsXhiX.mjs
++++ b/dist/api-CltsXhiX.mjs
+@@ -1406,12 +1406,14 @@ async function handleContentDuplicate(db, collection, id, authorId) {
  /**
  * Delete content item (soft delete - moves to trash)
  */
@@ -19,7 +19,7 @@ index 46689d8013572ada54c91dfa0ee14f34ee11d83d..1d19fad679b6700c487f92e0d24bfbcd
  			if (deleted) await new EntryLockRepository(trx).releaseEntry(collection, resolvedId);
  			return {
  				id: resolvedId,
-@@ -1417,8 +1419,8 @@ async function handleContentDelete(db, collection, id) {
+@@ -1421,8 +1423,8 @@ async function handleContentDelete(db, collection, id) {
  		if (!result.deleted) return {
  			success: false,
  			error: {
@@ -31,18 +31,18 @@ index 46689d8013572ada54c91dfa0ee14f34ee11d83d..1d19fad679b6700c487f92e0d24bfbcd
  		};
  		return {
 diff --git a/dist/astro/routes/api/content/_collection_/_id_.mjs b/dist/astro/routes/api/content/_collection_/_id_.mjs
-index 0731d7a752e9c6eb2e14855b2c671be45e00aff3..54a2ae950648b1e818e9bd442c5273c5f1474142 100644
+index 9bed243d00bcd0da35f598dd66839a0d646e4101..a624d948f5cfca15c69f52a9c6e796416a09be26 100644
 --- a/dist/astro/routes/api/content/_collection_/_id_.mjs
 +++ b/dist/astro/routes/api/content/_collection_/_id_.mjs
-@@ -9,7 +9,7 @@ import { n as mapErrorStatus } from "../../../../../errors-CNvATh_7.mjs";
- import "../../../../../settings-CwcrX-Ay.mjs";
- import "../../../../../site-settings-B7vGFRDT.mjs";
- import { a as unwrapResult, t as apiError } from "../../../../../error-DIYXAVk4.mjs";
--import { n as parseBody, t as isParseError } from "../../../../../parse-5Y0W39xR.mjs";
-+import { n as parseBody, r as parseOptionalBody, t as isParseError } from "../../../../../parse-5Y0W39xR.mjs";
- import "../../../../../redirects-1nhdEaTq.mjs";
- import { Kt as contentUpdateBody } from "../../../../../entry-lock-yIkBduqJ.mjs";
- import "../../../../../media-Bs6qmlVl.mjs";
+@@ -9,7 +9,7 @@ import { n as mapErrorStatus } from "../../../../../errors-DTE6C3K_.mjs";
+ import "../../../../../settings-WHr45II1.mjs";
+ import "../../../../../site-settings-KJOqJW6W.mjs";
+ import { a as unwrapResult, t as apiError } from "../../../../../error-B0rgPgsQ.mjs";
+-import { n as parseBody, t as isParseError } from "../../../../../parse-CmFDTGzp.mjs";
++import { n as parseBody, r as parseOptionalBody, t as isParseError } from "../../../../../parse-CmFDTGzp.mjs";
+ import "../../../../../redirects-D4EWeXAo.mjs";
+ import { qt as contentUpdateBody } from "../../../../../entry-lock-sxz2PGAT.mjs";
+ import "../../../../../media-aahnKHze.mjs";
 @@ -88,7 +88,9 @@ const PUT = async ({ params, request, locals, cache }) => {
  	if (cache?.enabled && result.liveContentChanged !== false) await cache.invalidate({ tags: [collection, resolvedId] });
  	return unwrapResult(result);
@@ -63,11 +63,11 @@ index 0731d7a752e9c6eb2e14855b2c671be45e00aff3..54a2ae950648b1e818e9bd442c5273c5
  	if (!result.success) return unwrapResult(result);
  	if (cache?.enabled) await cache.invalidate({ tags: [collection, resolvedId] });
  	return unwrapResult(result);
-diff --git a/dist/config-BCM5sQP7.d.mts b/dist/config-BCM5sQP7.d.mts
-index 2a9e9900b9e7cc8c2beff931dd8d6e7fe9b3c00f..ad23a0cc57bfa7122152cf9d3caf78806ae62e85 100644
---- a/dist/config-BCM5sQP7.d.mts
-+++ b/dist/config-BCM5sQP7.d.mts
-@@ -1013,7 +1013,7 @@ declare function handleContentDuplicate(db: Kysely<Database>, collection: string
+diff --git a/dist/config-B6BDSsz2.d.mts b/dist/config-B6BDSsz2.d.mts
+index b0e26a48908824c9534291c21512a60352bfc4f3..4877fab0b9ff5ce467b95494bc9b4eaec98925bc 100644
+--- a/dist/config-B6BDSsz2.d.mts
++++ b/dist/config-B6BDSsz2.d.mts
+@@ -1014,7 +1014,7 @@ declare function handleContentDuplicate(db: Kysely<Database>, collection: string
  /**
   * Delete content item (soft delete - moves to trash)
   */
@@ -76,7 +76,7 @@ index 2a9e9900b9e7cc8c2beff931dd8d6e7fe9b3c00f..ad23a0cc57bfa7122152cf9d3caf7880
    deleted: true;
    id: string;
  }>>;
-@@ -3327,7 +3327,7 @@ declare class EmDashRuntime {
+@@ -3328,7 +3328,7 @@ declare class EmDashRuntime {
      success: true;
      data: ContentResponse;
    }>;
@@ -85,11 +85,11 @@ index 2a9e9900b9e7cc8c2beff931dd8d6e7fe9b3c00f..ad23a0cc57bfa7122152cf9d3caf7880
      success: false;
      error: {
        code: string;
-diff --git a/dist/content-RzEXY3QX.mjs b/dist/content-RzEXY3QX.mjs
-index 395bd93899b3a63fa9a99698d746d93e4dc2af06..f365d48ce360a7e7b8607d7aa83c1bfefedeb825 100644
---- a/dist/content-RzEXY3QX.mjs
-+++ b/dist/content-RzEXY3QX.mjs
-@@ -1023,14 +1023,15 @@ var ContentRepository = class {
+diff --git a/dist/content-Dji9vEiW.mjs b/dist/content-Dji9vEiW.mjs
+index b91556c7510705fb8be248822bb76e7f5f3a8a9a..6be649ab99d360a4f305afaaf5bcd6708defd6c8 100644
+--- a/dist/content-Dji9vEiW.mjs
++++ b/dist/content-Dji9vEiW.mjs
+@@ -1064,14 +1064,15 @@ var ContentRepository = class {
  	/**
  	* Delete content (soft delete - moves to trash)
  	*/
@@ -107,11 +107,11 @@ index 395bd93899b3a63fa9a99698d746d93e4dc2af06..f365d48ce360a7e7b8607d7aa83c1bfe
  		`.execute(this.db)).numAffectedRows ?? 0n) > 0n;
  		if (changed) invalidateCollectionCache(type);
  		return changed;
-diff --git a/dist/emdash-runtime-BakQ6io7.mjs b/dist/emdash-runtime-BakQ6io7.mjs
-index 8beff2d2dd8c11ba739d5bdc076c0a8a418c73c7..3124a54aec14f5a625fc8bb45a0c5aa91199c824 100644
---- a/dist/emdash-runtime-BakQ6io7.mjs
-+++ b/dist/emdash-runtime-BakQ6io7.mjs
-@@ -2732,7 +2732,7 @@ var EmDashRuntime = class EmDashRuntime {
+diff --git a/dist/emdash-runtime-BlybX9Ui.mjs b/dist/emdash-runtime-BlybX9Ui.mjs
+index c99ccdf619142f15d46ae183be3adb9c76126225..f5fa4c3445799ce7743187b2f71fa7cb25825881 100644
+--- a/dist/emdash-runtime-BlybX9Ui.mjs
++++ b/dist/emdash-runtime-BlybX9Ui.mjs
+@@ -2739,7 +2739,7 @@ var EmDashRuntime = class EmDashRuntime {
  					}
  				}
  				const revisionRepo = new RevisionRepository(this.db);
@@ -120,7 +120,7 @@ index 8beff2d2dd8c11ba739d5bdc076c0a8a418c73c7..3124a54aec14f5a625fc8bb45a0c5aa9
  				for (let attempt = 0; existing && attempt < MAX_DRAFT_STAGE_ATTEMPTS; attempt++) {
  					let baseData;
  					if (existing.draftRevisionId) baseData = (await revisionRepo.findById(existing.draftRevisionId))?.data ?? existing.data;
-@@ -2846,7 +2846,7 @@ var EmDashRuntime = class EmDashRuntime {
+@@ -2856,7 +2856,7 @@ var EmDashRuntime = class EmDashRuntime {
  		};
  		return hydrated;
  	}
@@ -129,7 +129,7 @@ index 8beff2d2dd8c11ba739d5bdc076c0a8a418c73c7..3124a54aec14f5a625fc8bb45a0c5aa9
  		if (this.hooks.hasHooks("content:beforeDelete")) {
  			const { allowed } = await this.hooks.runContentBeforeDelete(id, collection);
  			if (!allowed) return {
-@@ -2858,7 +2858,7 @@ var EmDashRuntime = class EmDashRuntime {
+@@ -2868,7 +2868,7 @@ var EmDashRuntime = class EmDashRuntime {
  			};
  		}
  		const policyRejectionRevision = await this.getScheduledPolicyRejectionRevision(collection, id);
@@ -138,11 +138,11 @@ index 8beff2d2dd8c11ba739d5bdc076c0a8a418c73c7..3124a54aec14f5a625fc8bb45a0c5aa9
  		if (result.success) {
  			await this.clearScheduledPolicyRejection(collection, result.data.id, policyRejectionRevision);
  			await this.refreshContentUsageAfterSuccessfulWrite(collection, [result.data.id]);
-diff --git a/dist/storage-query-CdVF2bng.d.mts b/dist/storage-query-CdVF2bng.d.mts
-index 5134577069d2d2d09d4c66f772d3c1244e0826bf..997bc0484da37ecb805ab90e7dd8c3c847b8470c 100644
---- a/dist/storage-query-CdVF2bng.d.mts
-+++ b/dist/storage-query-CdVF2bng.d.mts
-@@ -195,7 +195,7 @@ declare class ContentRepository {
+diff --git a/dist/storage-query-C7iy6eUb.d.mts b/dist/storage-query-C7iy6eUb.d.mts
+index 8c3567601b719bcfa640e777c378e5e479cb9fd9..60fb7dd4e0122974dae1a8cf9cc4d5dd13de8c3b 100644
+--- a/dist/storage-query-C7iy6eUb.d.mts
++++ b/dist/storage-query-C7iy6eUb.d.mts
+@@ -196,7 +196,7 @@ declare class ContentRepository {
    /**
     * Delete content (soft delete - moves to trash)
     */
@@ -152,10 +152,10 @@ index 5134577069d2d2d09d4c66f772d3c1244e0826bf..997bc0484da37ecb805ab90e7dd8c3c8
     * Restore content from trash
     *
 diff --git a/src/api/handlers/content.ts b/src/api/handlers/content.ts
-index 1593ff09bee40971a67d9baf8716fd3b3005c3ef..e189c0509fa129adc0c6cde5e7bd69025893dc1c 100644
+index 34c2528c51a54119cd1730e876d699319c9f3702..9d9ef822c184942a480a63d14f9868653ec92fc5 100644
 --- a/src/api/handlers/content.ts
 +++ b/src/api/handlers/content.ts
-@@ -1832,12 +1832,15 @@ export async function handleContentDelete(
+@@ -1837,12 +1837,15 @@ export async function handleContentDelete(
  	db: Kysely<Database>,
  	collection: string,
  	id: string,
@@ -172,7 +172,7 @@ index 1593ff09bee40971a67d9baf8716fd3b3005c3ef..e189c0509fa129adc0c6cde5e7bd6902
  			if (deleted) {
  				await new EntryLockRepository(trx).releaseEntry(collection, resolvedId);
  			}
-@@ -1848,8 +1851,8 @@ export async function handleContentDelete(
+@@ -1853,8 +1856,8 @@ export async function handleContentDelete(
  			return {
  				success: false,
  				error: {
@@ -217,10 +217,10 @@ index 39cddb51f6bc6123573c0a159165940f4f587e83..d59b7458f96dce137e57f1087ec0947a
  	if (!result.success) return unwrapResult(result);
  
 diff --git a/src/database/repositories/content.ts b/src/database/repositories/content.ts
-index e1bb69c2287b1e496fbb557bbeb5eed0ca028509..fd7eb5174b9a6855f30a0698628b74385b9186e4 100644
+index 29dab9decf9af0d9fb21b464dc185ed48ab958ea..6b8fef602ac140f632b8e9b9b25b101c6210db41 100644
 --- a/src/database/repositories/content.ts
 +++ b/src/database/repositories/content.ts
-@@ -1548,15 +1548,16 @@ export class ContentRepository {
+@@ -1600,15 +1600,16 @@ export class ContentRepository {
  	/**
  	 * Delete content (soft delete - moves to trash)
  	 */
@@ -240,10 +240,10 @@ index e1bb69c2287b1e496fbb557bbeb5eed0ca028509..fd7eb5174b9a6855f30a0698628b7438
  
  		const changed = (result.numAffectedRows ?? 0n) > 0n;
 diff --git a/src/emdash-runtime.ts b/src/emdash-runtime.ts
-index d2694fb440cd9dfd82a0bbe4693c7ab31c916631..9b4ca6ea54e9007e3208dd2758b8debf1135001d 100644
+index 055ed1307ba4029e120cad989bc9b0e8c2d72afe..e3b8512eb9627e32a029258aae21965a86fe4b94 100644
 --- a/src/emdash-runtime.ts
 +++ b/src/emdash-runtime.ts
-@@ -3726,7 +3726,7 @@ export class EmDashRuntime {
+@@ -3735,7 +3735,7 @@ export class EmDashRuntime {
  				}
  
  				const revisionRepo = new RevisionRepository(this.db);
@@ -252,7 +252,7 @@ index d2694fb440cd9dfd82a0bbe4693c7ab31c916631..9b4ca6ea54e9007e3208dd2758b8debf
  
  				for (let attempt = 0; existing && attempt < MAX_DRAFT_STAGE_ATTEMPTS; attempt++) {
  					let baseData: Record<string, unknown>;
-@@ -3930,7 +3930,7 @@ export class EmDashRuntime {
+@@ -3947,7 +3947,7 @@ export class EmDashRuntime {
  		return hydrated;
  	}
  
@@ -261,7 +261,7 @@ index d2694fb440cd9dfd82a0bbe4693c7ab31c916631..9b4ca6ea54e9007e3208dd2758b8debf
  		// Run beforeDelete hooks (trusted plugins)
  		if (this.hooks.hasHooks("content:beforeDelete")) {
  			const { allowed } = await this.hooks.runContentBeforeDelete(id, collection);
-@@ -3948,7 +3948,7 @@ export class EmDashRuntime {
+@@ -3965,7 +3965,7 @@ export class EmDashRuntime {
  		const policyRejectionRevision = await this.getScheduledPolicyRejectionRevision(collection, id);
  
  		// Delete the content

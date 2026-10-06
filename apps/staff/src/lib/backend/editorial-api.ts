@@ -161,10 +161,12 @@ export async function editorialRequest<T>(
   path: string,
   body?: object | FormData,
   method = body === undefined ? 'GET' : 'POST',
+  signal?: AbortSignal,
 ): Promise<T> {
   const multipart = body instanceof FormData;
   const response = await fetch(`${base}/_emdash/api/${path}`, {
     method,
+    signal: signal ?? null,
     credentials: 'same-origin',
     cache: 'no-store',
     headers: {
@@ -223,7 +225,8 @@ export function editorialSlug(title: string, identity: string): string {
   return `${name || 'item'}-${identity}`;
 }
 
-export async function uploadArtwork(base: string, file: File): Promise<EditorialMedia> {
+export async function uploadArtwork(base: string, file: File, signal?: AbortSignal): Promise<EditorialMedia> {
+  signal?.throwIfAborted();
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type) || file.size > 20 * 1024 * 1024)
     throw new Error('Choose a JPG, PNG or WebP image smaller than 20 MB.');
   const bitmap = await createImageBitmap(file);
@@ -252,7 +255,8 @@ export async function uploadArtwork(base: string, file: File): Promise<Editorial
     const form = new FormData();
     form.set('file', file);
     form.set('thumbnail', thumbnail, 'thumbnail.png');
-    const result = await editorialRequest<{ item: EditorialMedia }>(base, 'media', form);
+    signal?.throwIfAborted();
+    const result = await editorialRequest<{ item: EditorialMedia }>(base, 'media', form, 'POST', signal);
     return result.item;
   } finally {
     bitmap.close();

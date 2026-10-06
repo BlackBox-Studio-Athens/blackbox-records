@@ -8,6 +8,7 @@ import {
   isCmsCollection,
   publicationReviewSchema,
   validateCmsDraft,
+  normalizeEditorialBody,
   validateCmsRevisionContent,
 } from '@blackbox/content-model';
 import { createBindingLogger } from './platform/observability';
@@ -743,7 +744,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             bucket: bindings.MEDIA,
             profile: productEnvironmentProfileFromBindings(bindings),
           })
-        : handlePublicationRequest(request, context);
+        : handlePublicationRequest(request, { ...context, bucket: bindings.MEDIA });
     }
     // Staff uses the supported REST contract; alternate writers and setup remain unavailable.
     if (!isSupportedCmsApiRequest(request)) {
@@ -820,7 +821,9 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
             Array.isArray(payload.data)
           )
             throw new Error('Invalid draft.');
-          const issues = validateCmsDraft(editorialWrite[1], payload.data as Record<string, unknown>);
+          const draftData = payload.data as Record<string, unknown>;
+          if (Object.hasOwn(draftData, 'body')) draftData.body = normalizeEditorialBody(draftData.body);
+          const issues = validateCmsDraft(editorialWrite[1], draftData);
           if (issues.length)
             return problemResponse(
               {
@@ -834,6 +837,9 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
               },
               { status: 422, headers: { 'Cache-Control': 'private, no-store' } },
             );
+          const writeHeaders = new Headers(request.headers);
+          writeHeaders.delete('Content-Length');
+          request = new Request(request, { headers: writeHeaders, body: JSON.stringify(payload) });
           if (request.method === 'POST' && !editorialWrite[2]) {
             payload = nativeDraftCreation(editorialWrite[1], payload);
             const headers = new Headers(request.headers);

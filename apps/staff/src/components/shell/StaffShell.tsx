@@ -231,7 +231,11 @@ export default function StaffShell({
         href={href}
         className="staff-area-link"
         data-area={color}
-        aria-current={!url.pathname.startsWith('/review/') && area.label === label ? 'page' : undefined}
+        aria-current={
+          !url.pathname.startsWith('/review/') && !url.pathname.startsWith('/calendar/') && area.label === label
+            ? 'page'
+            : undefined
+        }
       >
         <span className="staff-area-icon">
           <Icon aria-hidden="true" />
@@ -262,6 +266,13 @@ export default function StaffShell({
           <History aria-hidden="true" />
           Publication history
         </Button>
+        <a
+          className="staff-history-link rounded-md border border-input px-3 text-sm"
+          href="/calendar/"
+          aria-current={url.pathname === '/calendar/' ? 'page' : undefined}
+        >
+          Calendar
+        </a>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline">
@@ -308,7 +319,11 @@ export default function StaffShell({
         </nav>
         <div className="staff-header-context">
           <span className="staff-current-area">
-            {url.pathname.startsWith('/review/') ? 'Website changes' : area.label}
+            {url.pathname.startsWith('/review/')
+              ? 'Website changes'
+              : url.pathname.startsWith('/calendar/')
+                ? 'Publication calendar'
+                : area.label}
           </span>
         </div>
         <Suspense>

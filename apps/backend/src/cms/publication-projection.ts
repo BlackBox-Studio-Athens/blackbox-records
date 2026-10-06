@@ -1,13 +1,15 @@
 import { z } from 'zod';
 import { ContentRepository } from 'emdash';
 import type { EmDashRuntime } from 'emdash/middleware';
-import type { ContentSnapshot } from '@blackbox/content-model';
+import { normalizeEditorialBody, type ContentSnapshot } from '@blackbox/content-model';
 
 /** Resolve the selected revision's native relation snapshot, never a newer draft's selection. */
 export async function readRevisionContent(
   runtime: EmDashRuntime,
   revision: { collection: string; entryId: string; data: Record<string, unknown> },
 ) {
+  if (Object.hasOwn(revision.data, 'body'))
+    revision = { ...revision, data: { ...revision.data, body: normalizeEditorialBody(revision.data.body) } };
   if (!['releases', 'news'].includes(revision.collection) || !Object.hasOwn(revision.data, '_references'))
     return revision.data;
   const { _references, _referencesBaseline, ...data } = revision.data;

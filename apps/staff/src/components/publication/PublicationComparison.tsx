@@ -1,5 +1,9 @@
 import type { ReactNode } from 'react';
-import { changedPublicationFields, type PublicationReview } from '@blackbox/content-model';
+import {
+  changedPublicationFields,
+  type PublicationReview,
+  type PublicationComparisonData,
+} from '@blackbox/content-model';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '../ui/accordion';
 import { contentSections, type ContentSection } from '../../lib/content-sections';
 
@@ -59,7 +63,23 @@ function Value({
     return (
       <figure>
         <Value value={{ id: object.asset._ref }} media={media} references={references} />
-        <figcaption>Image description: {String(object.alt ?? 'Not set')}</figcaption>
+        <figcaption>
+          Image description: {String(object.alt ?? 'Not set')}
+          {object.caption ? <p>Caption: {String(object.caption)}</p> : null}
+          {object.title ? <p>Title: {String(object.title)}</p> : null}
+          {object.alignment ? <p>Alignment: {String(object.alignment)}</p> : null}
+          {object.displayWidth || object.displayHeight ? (
+            <p>
+              Display size: {String(object.displayWidth ?? 'Auto')} × {String(object.displayHeight ?? 'Auto')}
+            </p>
+          ) : null}
+          {object.link ? (
+            <p>
+              Link:{' '}
+              {String(typeof object.link === 'string' ? object.link : ((object.link as { href?: string }).href ?? ''))}
+            </p>
+          ) : null}
+        </figcaption>
       </figure>
     );
   if (typeof object.id === 'string' && (Object.keys(object).length === 1 || object.provider === 'local')) {
@@ -131,8 +151,10 @@ export default function PublicationComparison({
   review,
   activeEntry,
   onActiveEntryChange,
+  historical = false,
 }: {
-  review: PublicationReview;
+  review: PublicationComparisonData;
+  historical?: boolean;
   activeEntry?: string;
   onActiveEntryChange?(value: string): void;
 }) {
@@ -158,7 +180,11 @@ export default function PublicationComparison({
                 <strong className="block text-base">{entry.title}</strong>
                 <span className="text-sm font-normal text-muted-foreground">
                   {contentSections[entry.collection as ContentSection]} ·{' '}
-                  {entry.before ? `${fields.length} ${fields.length === 1 ? 'field' : 'fields'} changed` : 'New entry'}
+                  {entry.action === 'withdraw'
+                    ? 'Removed from the website'
+                    : entry.before
+                      ? `${fields.length} ${fields.length === 1 ? 'field' : 'fields'} changed`
+                      : 'New entry'}
                 </span>
               </span>
             </AccordionTrigger>
@@ -184,13 +210,19 @@ export default function PublicationComparison({
                     {(['before', 'after'] as const).map((side) => (
                       <div key={side}>
                         <p className="publication-value-label">
-                          {side === 'before' ? 'On the website' : 'After publishing'}
+                          {historical
+                            ? side === 'before'
+                              ? 'Before this update'
+                              : 'After this update'
+                            : side === 'before'
+                              ? 'On the website'
+                              : 'After publishing'}
                         </p>
                         {entry[side] ? (
                           <Value
                             value={entry[side][`${field}_rich`] ?? entry[side][field]}
                             field={field}
-                            media={review.media}
+                            media={side === 'before' ? (review.baselineMedia ?? review.media) : review.media}
                             references={side === 'before' ? review.baselineReferenceTitles : review.referenceTitles}
                           />
                         ) : (

@@ -30,11 +30,19 @@ Release editors and imports keep the scalar `data.artist` contract. When EmDash 
 
 Creation remains private until a final publish action. Leaving midway retains the autosaved draft; reopening never publishes or enables buying. For a sale item, **Create and publish** follows confirmed price and starting stock, completes setup, then uses shop publication to publish its content and enable buying. **Keep as draft** is the alternative. A website-only release uses **Publish release** without commerce setup.
 
-At widths of at least 1280 px, editors initially show a resizable public appearance preview; visibility is remembered. Smaller screens use Edit/Preview tabs. Hidden previews do no background work. Images remains one flat library; uploading alone does not publish anything. Alt text belongs to its editorial placement.
+At widths of at least 1280 px, editors initially show a resizable public appearance preview; visibility is remembered. **Close preview** removes the pane and divider, gives the fields the available width and stops preview requests. **Show preview** restores the latest draft. Smaller screens use Edit/Preview tabs; closing Preview returns to Edit. Images remains one flat library; uploading alone does not publish anything. Alt text belongs to its editorial placement.
+
+Stock starts with the finder. Selecting an item closes search and gives stock facts, adjustments and counts the available width. **Find another item** restores the same search, filters, page and selection; returning to the selected item preserves unfinished input. Stock history stays secondary. The embedded Price & stock workflow uses the same protected operations.
+
+Images and image pickers accept one or several JPG, PNG or WebP files within the existing 20 MB limit. Each file reports progress or failure; retry repeats only failed files. A cover still selects one image. Full text uses EmDash's image toolbar and inline settings for descriptions, captions, titles, alignment, display size and safe links. Uploads use the existing thumbnail-producing path. Short descriptions remain text-only.
+
+Full text also supports YouTube and Vimeo videos. Approved HTTPS provider URLs are normalized before saving and publishing; autoplay is disabled. The native editor, activated staff previews and public pages require **Load video**. Shared private previews remain inert. Accepted snapshots own public image delivery; native private media URLs are never stored as public delivery authority.
 
 The [backoffice design reference](backoffice-design.md) and [staff glossary](../UBIQUITOUS_LANGUAGE.md) own the shared vocabulary and update policy. Implementation acceptance is tracked in [the redesign checklist](../openspec/changes/redesign-staff-workspace/tasks.md).
 
 ## Staff startup assets
+
+Calendar is also covered by the staff route, HTML and JavaScript checks. Its JavaScript limit is 172 KiB. Calendar navigation and focused stock controls use at most 2 KiB more than the earlier staff limits: Overview is 121 KiB, Stock 152 KiB and Orders 126 KiB. Website remains 172 KiB. Expanded comparison and native-editor code stay lazy.
 
 `pnpm build:staff` runs the route-isolation check and `pnpm performance:bundles --scope=staff`. The performance check bounds eager JavaScript and compressed HTML for Overview, Website, Stock and Orders, and rejects initial project stylesheet requests. Initial project CSS is included in authenticated HTML, which remains private and `no-store`; full document navigations therefore retransmit the extra 12–13 KiB of compressed HTML. With warmed assets, private asset responses near 100 ms and throughput of at least 10 Mbps, the conditional estimate is 50–200 ms faster primary content on routine visits. Hosted results can differ, and this estimate does not cover slow first HTML or API responses.
 
@@ -42,7 +50,7 @@ Release and Distro editors have **Details & photos** and **Price & stock** tabs 
 
 In **Photos**, select multiple JPG, PNG or WebP files (up to 20 MB each). Successful files append in order, without replacing the cover or other edits. Failed filenames remain available for retry; successful uploads are not repeated. Use Move up/Move down for gallery ordering. Save and preview privately, then review and publish; uploading never publishes. Existing CMS instances need the additive `releases.gallery` setup in the CMS application migration command before release gallery editing; it preserves stored content and pending drafts.
 
-The catalogue header trials a monochrome WebGL gradient. It is decorative, pauses when hidden or offscreen and falls back to a static CSS gradient for reduced motion or unavailable WebGL. Inputs retain solid backgrounds. The shared stock controls measured 153,047 compressed JavaScript bytes; their route budget is now 150 KiB (1,008 bytes above the previous budget).
+The catalogue header trials a monochrome WebGL gradient. It is decorative, pauses when hidden or offscreen and falls back to a static CSS gradient for reduced motion or unavailable WebGL. Inputs retain solid backgrounds. The earlier shared stock controls measured 153,047 compressed JavaScript bytes under a 150 KiB limit. The current focused Stock workspace uses the 152 KiB limit recorded above.
 
 ## Editorial text formatting
 

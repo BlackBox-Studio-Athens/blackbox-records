@@ -431,9 +431,9 @@ export async function processRuntimePublication(deps: Dependencies) {
       codeSha = proof.sha;
       await deps.db
         .prepare(
-          "UPDATE _blackbox_publications SET snapshot_sha256 = ?, code_sha = ? WHERE id = ? AND environment = ? AND status = 'pending'",
+          "UPDATE _blackbox_publications SET snapshot_sha256 = ?, code_sha = ?, before_snapshot_sha256 = ? WHERE id = ? AND environment = ? AND status = 'pending'",
         )
-        .bind(sha256, codeSha, job.id, deps.environment)
+        .bind(sha256, codeSha, current.pointer.snapshotSha256, job.id, deps.environment)
         .run();
       // Keep media from already-open pages available after the first runtime cutover.
       await deps.bucket.put(
@@ -507,7 +507,7 @@ export async function processRuntimePublication(deps: Dependencies) {
       throw new InvalidPublication('A newer publication is already active.');
     await deps.db
       .prepare(
-        `UPDATE _blackbox_publications SET status = 'live', stage = 'live', completed_at = ?, snapshot_sha256 = ?, code_sha = ?, ci_run_id = 'runtime', deployment_id = ?, failure_code = NULL WHERE id = ? AND environment = ? AND status = 'pending'`,
+        `UPDATE _blackbox_publications SET status = 'live', stage = 'live', completed_at = COALESCE(completed_at, ?), snapshot_sha256 = ?, code_sha = ?, ci_run_id = 'runtime', deployment_id = ?, failure_code = NULL WHERE id = ? AND environment = ? AND status = 'pending'`,
       )
       .bind(Date.now(), pointer.snapshotSha256, codeSha ?? live.sha, job.id, job.id, deps.environment)
       .run();

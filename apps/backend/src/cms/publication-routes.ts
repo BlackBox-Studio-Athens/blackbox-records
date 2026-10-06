@@ -18,6 +18,7 @@ import {
   requestPublication,
 } from './publication-journal';
 import { cmsStringProblemResponse } from '../platform/interfaces/http/responses';
+import { publicationCalendarQuery, readPublicationCalendar, readPublicationDetails } from './publication-history';
 
 const revisionId = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/);
 const bodySchema = z.object({ id: z.uuid(), requestedRevision: revisionId }).strict();
@@ -321,6 +322,7 @@ export async function handlePublicationRequest(
     db: D1Database;
     environment: 'local' | 'uat' | 'prd';
     identity: { email: string; role: number };
+    bucket?: R2Bucket;
     fetchCms: (path: string) => Promise<Response>;
     onAccepted?: () => void;
   },
@@ -335,8 +337,34 @@ export async function handlePublicationRequest(
   };
   const summary = publicationSummary;
   if (context.identity.role < 30) return reply(403, { error: 'FORBIDDEN' });
-  if (url.search && path !== root + '/history') return reply(400, { error: 'INVALID_REQUEST' });
+  if (url.search && ![root + '/history', root + '/calendar'].includes(path))
+    return reply(400, { error: 'INVALID_REQUEST' });
   try {
+    if (request.method === 'GET' && path === root + '/calendar') {
+      const query = publicationCalendarQuery.safeParse(Object.fromEntries(url.searchParams));
+      if (!query.success) return reply(400, { error: 'INVALID_REQUEST' });
+      return reply(200, await readPublicationCalendar(context.db, context.environment, query.data));
+    }
+    const details = /^\/_emdash\/api\/blackbox\/publications\/([^/]+)\/details$/.exec(path);
+    if (request.method === 'GET' && details) {
+      const id = z.uuid().safeParse(details[1]);
+      if (!id.success) return reply(404, { error: 'NOT_FOUND' });
+      if (!context.bucket) return reply(503, { error: 'PUBLICATION_UNAVAILABLE' });
+      const result = await readPublicationDetails(context.db, context.bucket, context.environment, id.data);
+      if (!result) return reply(404, { error: 'NOT_FOUND' });
+      const entries = await Promise.all(
+        result.publication.entries.map(async (entry) => {
+          const response = await context.fetchCms(
+            `/_emdash/api/content/${encodeURIComponent(entry.collection)}/${encodeURIComponent(entry.recordId)}`,
+          );
+          const content = response.ok
+            ? ((await response.json()) as { data?: { item?: { deletedAt?: string | null } } })
+            : null;
+          return { ...entry, editorAvailable: !!content?.data?.item && !content.data.item.deletedAt };
+        }),
+      );
+      return reply(200, { ...result, publication: { ...result.publication, entries } });
+    }
     if (request.method === 'GET' && path === root + '/history') {
       const query = publicationHistoryQuery.safeParse(Object.fromEntries(url.searchParams));
       if (!query.success) return reply(400, { error: 'INVALID_REQUEST' });

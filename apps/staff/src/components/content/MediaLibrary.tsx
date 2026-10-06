@@ -33,7 +33,7 @@ export function ContentGalleryUploader({
 }: {
   base: string;
   editorIdentity: string;
-  onUpload(images: EditorialMedia[]): void;
+  onUpload(images: EditorialMedia[], selectedFilesCount?: number): void;
   onUploadPendingChange?(pending: boolean): void;
   disabled?: boolean;
 }) {
@@ -81,7 +81,7 @@ export function ContentGalleryUploader({
       setFailed(remaining);
       const attached = result.uploaded.length > 0 && context.current.editorIdentity === identity;
       if (attached) {
-        context.current.onUpload(result.uploaded);
+        context.current.onUpload(result.uploaded, files.length);
         setUploaded(result.uploaded.map(({ filename }) => filename));
       }
       setMessage(
@@ -217,7 +217,11 @@ export default function MediaLibrary({
   disabled = false,
   remembered,
   cropRatio,
+  editorIdentity = 'images-library',
+  onUploadPendingChange,
 }: {
+  editorIdentity?: string | undefined;
+  onUploadPendingChange?: ((pending: boolean) => void) | undefined;
   cropRatio?: number | undefined;
   remembered?: React.RefObject<{ query: string; view: 'grid' | 'list' }>;
   base: string;
@@ -286,23 +290,6 @@ export default function MediaLibrary({
     };
   }, [base, query]);
   useStaffRead(['images', base, query], () => search(), { enabled: !uploading && !disabled });
-
-  async function upload(file: File) {
-    setUploading(true);
-    setMessage('');
-    setError(false);
-    try {
-      const item = await uploadArtwork(base, file);
-      setItems((previous) => [item, ...previous.filter((row) => row.id !== item.id)]);
-      setMessage(`${item.filename} uploaded.`);
-      onSelect?.(item);
-    } catch (error) {
-      setError(true);
-      setMessage(error instanceof Error ? error.message : 'The image could not be uploaded. Try again.');
-    } finally {
-      setUploading(false);
-    }
-  }
 
   return (
     <div className="cms-media grid min-w-0 gap-6">
@@ -399,27 +386,29 @@ export default function MediaLibrary({
               }}
               className="overflow-hidden"
             >
-              <Field className="rounded-lg border border-dashed border-border bg-muted/20 p-4">
-                <FieldLabel htmlFor={`${id}-upload`} icon={Upload}>
-                  Choose an image
-                </FieldLabel>
-                <Input
-                  id={`${id}-upload`}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  disabled={busy}
-                  aria-label="Upload an image"
-                  aria-describedby={`${id}-upload-help`}
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    event.target.value = '';
-                    if (file) void upload(file);
+              <div className="rounded-lg border border-dashed border-border bg-muted/20 p-4">
+                <ContentGalleryUploader
+                  base={base}
+                  editorIdentity={editorIdentity}
+                  disabled={loading || disabled}
+                  onUploadPendingChange={(pending) => {
+                    setUploading(pending);
+                    onUploadPendingChange?.(pending);
+                  }}
+                  onUpload={(images, selectedFilesCount) => {
+                    setItems((previous) => [
+                      ...images,
+                      ...previous.filter((row) => !images.some((image) => image.id === row.id)),
+                    ]);
+                    if (selectedFilesCount === 1 && images.length === 1) onSelect?.(images[0]!);
                   }}
                 />
-                <FieldDescription id={`${id}-upload-help`}>
-                  JPG, PNG or WebP, up to 20 MB. Uploading does not publish the image.
-                </FieldDescription>
-              </Field>
+                {onSelect && (
+                  <p className="mt-3 text-sm text-muted-foreground">
+                    After uploading several images, choose one for this field.
+                  </p>
+                )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -559,7 +548,11 @@ export function ContentImagePicker({
   path,
   hideLabel,
   cropRatio,
+  editorIdentity,
+  onUploadPendingChange,
 }: {
+  editorIdentity?: string | undefined;
+  onUploadPendingChange?: ((pending: boolean) => void) | undefined;
   cropRatio?: number | undefined;
   base: string;
   value: string;
@@ -689,6 +682,8 @@ export function ContentImagePicker({
                   </p>
                 )}
                 <MediaLibrary
+                  editorIdentity={editorIdentity}
+                  onUploadPendingChange={onUploadPendingChange}
                   cropRatio={cropRatio}
                   base={base}
                   remembered={remembered}

@@ -161,10 +161,12 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
     commerceGuard.current = guard;
   }, []);
   const uploadPending = useRef(false);
+  const uploadGroups = useRef(0);
   const publicationRequest = useRef(false);
   const [preparingPublication, setPreparingPublication] = useState<'review' | 'publish' | null>(null);
   const registerUploadPending = useCallback((pending: boolean) => {
-    uploadPending.current = pending;
+    uploadGroups.current = Math.max(0, uploadGroups.current + (pending ? 1 : -1));
+    uploadPending.current = uploadGroups.current > 0;
   }, []);
   useEffect(() => {
     const warn = (event: BeforeUnloadEvent) => {
@@ -1543,7 +1545,8 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                             )}
                             {wide && (
                               <Button variant="outline" aria-expanded={desktopPreview} onClick={togglePreview}>
-                                {desktopPreview ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}Preview
+                                {desktopPreview ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
+                                {desktopPreview ? 'Close preview' : 'Show preview'}
                               </Button>
                             )}
                             {
@@ -1777,6 +1780,11 @@ export default function ContentApp({ backendBaseUrl: base }: { backendBaseUrl: s
                       base={base}
                       dirty={dirty}
                       valid={validation.valid}
+                      onClose={() => {
+                        if (wide && desktopPreview) togglePreview();
+                        setPreview(false);
+                        requestAnimationFrame(() => editorHeading.current?.focus());
+                      }}
                       onShowValidation={() => {
                         setPreview(false);
                         requireValidContent();

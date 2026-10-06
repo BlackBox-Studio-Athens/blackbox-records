@@ -15,6 +15,7 @@ import { completeSnapshot, storeSnapshotMedia } from './snapshot-storage';
 import { createPrismaClient } from '../infrastructure/persistence/prisma';
 import { readPublication } from './publication-journal';
 import { readPublicationHistory } from './publication-journal';
+import { readPublicationDetails } from './publication-history';
 import { reviewPublication } from './publication-review';
 import { publishedCollection, parseContentSnapshot, publicationReviewSchema } from '@blackbox/content-model';
 import { selectPreviewContent, previewDestination } from './preview-selection';
@@ -570,6 +571,10 @@ test('durably deduplicates selected revisions before native mutation and preserv
   expect(runtime.handleMediaGet).not.toHaveBeenCalled();
   expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
   expect(await deps.bucket.head(`snapshots/local/accepted/${originalPointer.snapshotSha256}`)).not.toBeNull();
+  const details = await readPublicationDetails(deps.db, deps.bucket, 'local', input.id);
+  expect(details?.publication.completedAt).toEqual(expect.any(Number));
+  expect(details?.comparison?.entries[0]).toMatchObject({ recordId: 'news', after: { title: 'Selected title' } });
+  expect(await readPublicationDetails(deps.db, deps.bucket, 'uat', input.id)).toBeNull();
   expect(await processRuntimePublication(deps)).toBe(false);
   expect((await acceptSelectedPublication(input, 'editor@example.com', deps)).status).toBe('live');
 });
@@ -590,8 +595,20 @@ test('recovers a lost post-activation response without republishing and never re
   await processRuntimePublication(deps);
   expect((await readPublicationPointer(deps.bucket, 'local'))!.pointer.id).toBe(input.id);
   expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('pending');
+  const beforeHash = async () =>
+    (
+      await deps.db
+        .prepare('SELECT before_snapshot_sha256 AS hash FROM _blackbox_publications WHERE id = ?')
+        .bind(input.id)
+        .first<{ hash: string }>()
+    )?.hash;
+  expect(await beforeHash()).toBe(pointer.snapshotSha256);
   await processRuntimePublication(deps);
   expect((await readPublication(deps.db, 'local', input.id))?.status).toBe('live');
+  expect(await beforeHash()).toBe(pointer.snapshotSha256);
+  const completedAt = (await readPublication(deps.db, 'local', input.id))?.completedAt;
+  expect(await processRuntimePublication(deps)).toBe(false);
+  expect((await readPublication(deps.db, 'local', input.id))?.completedAt).toBe(completedAt);
   expect(runtime.handleContentPublish).toHaveBeenCalledTimes(1);
   expect(await activatePublication(deps.bucket, 'local', pointer, 'stale-etag')).toBeNull();
 });

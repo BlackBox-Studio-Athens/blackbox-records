@@ -19,6 +19,7 @@ const publicationSchema = requestSchema.extend({
   stage: z.string().nullable().optional(),
   failureReason: z.string().nullable().optional(),
   requestedAt: z.number().int().nonnegative(),
+  completedAt: z.number().int().nonnegative().nullable().optional(),
   status: z.enum(['pending', 'live', 'failed']),
   snapshotSha256: z
     .string()
@@ -38,7 +39,7 @@ export async function readPublication(db: D1Database, environment: 'local' | 'ua
   const row = await db
     .prepare(
       `SELECT id, environment, actor_email AS actorEmail,
-    requested_revision AS requestedRevision, requested_at AS requestedAt, status, stage, failure_code AS failureReason,
+    requested_revision AS requestedRevision, requested_at AS requestedAt, completed_at AS completedAt, status, stage, failure_code AS failureReason,
     snapshot_sha256 AS snapshotSha256, code_sha AS codeSha, ci_run_id AS ciRunId, deployment_id AS deploymentId
     FROM _blackbox_publications WHERE id = ? AND environment = ?`,
     )
@@ -51,12 +52,12 @@ export async function readRecentPublications(db: D1Database, environment: 'local
   environmentSchema.parse(environment);
   const { results } = await db
     .prepare(
-      'SELECT id, status, requested_at AS requestedAt, stage, failure_code AS failureReason FROM _blackbox_publications WHERE environment = ? ORDER BY rowid DESC LIMIT 10',
+      'SELECT id, status, requested_at AS requestedAt, completed_at AS completedAt, stage, failure_code AS failureReason FROM _blackbox_publications WHERE environment = ? ORDER BY rowid DESC LIMIT 10',
     )
     .bind(environment)
     .all();
   const summary = publicationSchema
-    .pick({ id: true, status: true, requestedAt: true })
+    .pick({ id: true, status: true, requestedAt: true, completedAt: true })
     .extend({ stage: z.string().nullable(), failureReason: z.string().nullable() });
   return results.map((item) => publicationSummary(summary.parse(item)));
 }
@@ -84,7 +85,7 @@ export async function readPublicationHistory(
   const { results } = await db
     .prepare(
       `SELECT rowid AS cursor, id, actor_email AS actorEmail,
-    requested_at AS requestedAt, status, stage, failure_code AS failureReason, request_json AS requestJson
+    requested_at AS requestedAt, completed_at AS completedAt, status, stage, failure_code AS failureReason, request_json AS requestJson
     FROM _blackbox_publications WHERE environment = ? AND (? IS NULL OR rowid < ?)
     AND (? IS NULL OR EXISTS (SELECT 1 FROM json_each(CASE WHEN json_type(request_json, '$.records') = 'array'
       THEN json_extract(request_json, '$.records') ELSE json_array(json(request_json)) END)
@@ -104,6 +105,7 @@ export async function readPublicationHistory(
       id: string;
       actorEmail: string;
       requestedAt: number;
+      completedAt: number | null;
       status: 'pending' | 'live' | 'failed';
       stage: string | null;
       failureReason: string | null;
@@ -118,7 +120,13 @@ export async function readPublicationHistory(
           title: entry.title ?? 'Title unavailable for this earlier update',
         }))
       : [];
-    return { ...publicationSummary(row), actorEmail: row.actorEmail, environment, entries };
+    return {
+      ...publicationSummary(row),
+      actorEmail: row.actorEmail,
+      environment,
+      entries,
+      action: intent?.action === 'withdraw' ? ('withdraw' as const) : ('publish' as const),
+    };
   });
   return { items, ...(results.length > 20 ? { nextCursor: String(results[19].cursor) } : {}) };
 }
@@ -127,6 +135,7 @@ export function publicationSummary(item: {
   id: string;
   status: 'pending' | 'live' | 'failed';
   requestedAt: number;
+  completedAt?: number | null;
   stage?: string | null;
   failureReason?: string | null;
 }) {
@@ -134,6 +143,7 @@ export function publicationSummary(item: {
     id: item.id,
     status: item.status,
     requestedAt: item.requestedAt,
+    ...(typeof item.completedAt === 'number' ? { completedAt: item.completedAt } : {}),
     ...(item.stage ? { stage: item.stage } : {}),
     ...(item.status === 'failed'
       ? {
@@ -165,12 +175,12 @@ export async function acknowledgeLocalPublication(db: D1Database, id: string, sn
     await db.batch([
       db
         .prepare(
-          `UPDATE _blackbox_publications SET status = 'live', snapshot_sha256 = ?
+          `UPDATE _blackbox_publications SET status = 'live', completed_at = COALESCE(completed_at, ?), snapshot_sha256 = ?
         WHERE id = ? AND environment = 'local' AND status = 'pending'
         AND NOT EXISTS (SELECT 1 FROM _blackbox_publications newer WHERE newer.environment = 'local'
           AND newer.status = 'live' AND newer.rowid > (SELECT rowid FROM _blackbox_publications WHERE id = ?))`,
         )
-        .bind(snapshotSha256, id, id),
+        .bind(Date.now(), snapshotSha256, id, id),
       db
         .prepare(
           `UPDATE _blackbox_publications SET status = 'failed'
@@ -415,7 +425,7 @@ export async function completePublication(
   const revisions = z.array(z.string().min(1).max(128)).max(1000).parse(coveredRevisions);
   const selected = db
     .prepare(
-      `UPDATE _blackbox_publications SET status = 'live', deployment_id = ?
+      `UPDATE _blackbox_publications SET status = 'live', completed_at = COALESCE(completed_at, ?), deployment_id = ?
     WHERE id = ? AND environment = ? AND status = 'pending'
     AND ci_run_id = ? AND code_sha = ? AND snapshot_sha256 = ?
     AND NOT EXISTS (SELECT 1 FROM _blackbox_publications AS newer
@@ -423,6 +433,7 @@ export async function completePublication(
       AND newer.rowid > _blackbox_publications.rowid)`,
     )
     .bind(
+      Date.now(),
       value.deploymentId,
       value.id,
       value.environment,
@@ -434,7 +445,7 @@ export async function completePublication(
   const covered = db
     .prepare(
       `UPDATE _blackbox_publications
-    SET status = 'live', deployment_id = ?, ci_run_id = ?, code_sha = ?, snapshot_sha256 = ?
+    SET status = 'live', completed_at = COALESCE(completed_at, ?), deployment_id = ?, ci_run_id = ?, code_sha = ?, snapshot_sha256 = ?
     WHERE environment = ? AND status IN ('pending', 'failed') AND (ci_run_id IS NULL OR status = 'failed')
     AND requested_revision IN (SELECT value FROM json_each(?))
     AND rowid < (SELECT rowid FROM _blackbox_publications AS selected WHERE id = ? AND environment = ?
@@ -443,6 +454,7 @@ export async function completePublication(
         WHERE newer.environment = selected.environment AND newer.status = 'live' AND newer.rowid > selected.rowid))`,
     )
     .bind(
+      Date.now(),
       value.deploymentId,
       value.ciRunId,
       value.codeSha,

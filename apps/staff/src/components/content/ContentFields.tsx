@@ -343,6 +343,8 @@ export default function ContentFields({
         </FieldLegend>
         <FieldGroup className="gap-4">
           <ContentImagePicker
+            editorIdentity={editorIdentity}
+            onUploadPendingChange={onUploadPendingChange}
             cropRatio={collection === 'artists' ? 0.75 : ['releases', 'distro'].includes(collection) ? 1 : undefined}
             base={base}
             label={label}
@@ -502,11 +504,16 @@ export default function ContentFields({
       </FieldLegend>
       <FieldGroup className="gap-3">
         <p id="content-body-help" className="text-sm text-muted-foreground">
-          Add text, links and images. Tables, galleries and pasted HTML are not supported.
+          Add text, links, images with captions, and YouTube or Vimeo videos. Tables, galleries and pasted HTML are not
+          supported.
         </p>
         <Suspense fallback={<p>Loading text editor…</p>}>
           <ContentBodyEditor
             aria-labelledby="content-body-label"
+            key={editorIdentity}
+            base={base}
+            fullText
+            onUploadPendingChange={onUploadPendingChange}
             aria-describedby={errors('body').length ? 'content-body-help content-body-error' : 'content-body-help'}
             aria-invalid={errors('body').length > 0}
             data-content-path="body"

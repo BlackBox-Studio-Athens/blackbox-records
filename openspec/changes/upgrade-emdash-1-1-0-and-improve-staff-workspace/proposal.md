@@ -9,6 +9,7 @@ EmDash 1.1.0 supplies image editing, upload and content fixes. BlackBox's custom
 - Support batch image uploads, richer Full text images and restricted YouTube/Vimeo embeds.
 - Add readable publication comparisons and a read-only Athens publication calendar based on accepted BlackBox snapshots.
 - Restore Firefox mouse-wheel scrolling after dismissing a release detail by clicking its backdrop.
+- Retain original-image fallback on Images Free quota exhaustion and extend it to social-image crawlers without a paid image service.
 
 ## Capabilities
 
@@ -21,4 +22,3 @@ EmDash 1.1.0 supplies image editing, upload and content fixes. BlackBox's custom
 ## Impact
 
 Staff frontend, CMS publication journal/routes, content-model, public editorial rendering, dependency patches and migration smoke. No new infrastructure or dependencies. Local acceptance precedes UAT; PRD remains separately approved.
-- Retain original-image fallback on Images Free quota exhaustion and extend it to social-image crawlers without a paid image service.

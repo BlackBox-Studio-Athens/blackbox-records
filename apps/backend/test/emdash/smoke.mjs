@@ -85,7 +85,7 @@ try {
   assert.ok(contract.paths['/_emdash/api/content/{collection}/{id}'].put);
   const created = await request('/content/socials', 'POST', {
     slug: `revision-check-${Date.now()}`,
-    data: { title: 'Initial', url: 'https://example.com', order: 1 },
+    data: { title: 'Instagram', url: 'https://example.com', order: 1 },
   });
   assert.equal(created.status, 201, JSON.stringify(created));
   const path = '/content/socials/' + created.data.item.id;
@@ -96,13 +96,13 @@ try {
   const current = await request(path);
   assert.equal((await request(path, 'DELETE', { _rev: 'malformed' })).status, 409);
   assert.equal((await request(path)).data._rev, current.data._rev, 'Malformed delete revisions cannot mutate content');
-  const first = await request(path, 'PUT', { _rev: current.data._rev, data: { title: 'First' } });
+  const first = await request(path, 'PUT', { _rev: current.data._rev, data: { title: 'Facebook' } });
   assert.equal(first.status, 200);
-  assert.equal((await request(path, 'PUT', { _rev: current.data._rev, data: { title: 'Stale' } })).status, 409);
+  assert.equal((await request(path, 'PUT', { _rev: current.data._rev, data: { title: 'Bandcamp' } })).status, 409);
   assert.equal((await request(path + '/revisions')).status, 200);
-  assert.equal((await request(path, 'PUT', { data: { title: 'No revision' } })).status, 400);
+  assert.equal((await request(path, 'PUT', { data: { title: 'Tidal' } })).status, 400);
   assert.equal(
-    (await request(path, 'PUT', { _rev: first.data._rev, data: { title: 'Partial' }, status: 'published' })).status,
+    (await request(path, 'PUT', { _rev: first.data._rev, data: { title: 'Tidal' }, status: 'published' })).status,
     400,
   );
   assert.equal((await request(path)).data._rev, first.data._rev, 'Rejected shapes must not partially save');
@@ -119,18 +119,18 @@ try {
 
   const publishedRevision = await request(path, 'PUT', {
     _rev: first.data._rev,
-    data: { title: 'Live title' },
+    data: { title: 'Bandcamp' },
   });
   assert.equal((await request(path + '/publish', 'POST', { _rev: publishedRevision.data._rev })).status, 200);
   const liveBeforeDraft = await request(path);
   const savedDraft = await request(path, 'PUT', {
     _rev: liveBeforeDraft.data._rev,
-    data: { title: 'Saved draft title' },
+    data: { title: 'Tidal' },
   });
   assert.equal((await request(path + '/discard-draft', 'POST', { _rev: liveBeforeDraft.data._rev })).status, 409);
   assert.equal((await request(path + '/discard-draft', 'POST', { _rev: savedDraft.data._rev })).status, 200);
   const restored = await request(path);
-  assert.equal(restored.data.item.data.title, 'Live title', 'Discarding a draft restores live content');
+  assert.equal(restored.data.item.data.title, 'Bandcamp', 'Discarding a draft restores live content');
 
   // Exercise both a never-published draft and a previously published entry.
   for (const published of [false, true]) {
@@ -140,16 +140,16 @@ try {
     }
     const before = await request(path);
     entered = false;
-    const delayed = request(path, 'PUT', { _rev: before.data._rev, data: { title: 'delayed-save' } });
+    const delayed = request(path, 'PUT', { _rev: before.data._rev, data: { title: 'Linktree' } });
     for (let attempt = 0; attempt < 100; attempt++) {
       if (entered) break;
       await setTimeout(10);
     }
     assert.ok(entered, 'Delayed save must enter its hook before the competing save');
-    assert.equal((await request(path, 'PUT', { _rev: before.data._rev, data: { title: 'Winner' } })).status, 200);
+    assert.equal((await request(path, 'PUT', { _rev: before.data._rev, data: { title: 'Facebook' } })).status, 200);
     assert.equal((await delayed).status, 409, 'Concurrent stale save must lose');
     const after = await request(path);
-    assert.equal(after.data.item.data.title, 'Winner');
+    assert.equal(after.data.item.data.title, 'Facebook');
     assert.equal((await request(path + '/publish', 'POST', { _rev: before.data._rev })).status, 409);
     assert.equal((await request(path + '/publish', 'POST', { _rev: after.data._rev })).status, 200);
     const live = await request(path);
@@ -171,15 +171,15 @@ try {
     assert.ok(entered, 'Delete must enter its hook before the competing save');
     const winner = await request(path, 'PUT', {
       _rev: before.data._rev,
-      data: { title: `Preserved edit ${published}` },
+      data: { title: published ? 'Bandcamp' : 'Tidal' },
     });
     assert.equal(winner.status, 200);
     assert.equal((await deleting).status, 409, 'A stale delete must not remove the winning save');
-    assert.equal((await request(path)).data.item.data.title, `Preserved edit ${published}`);
+    assert.equal((await request(path)).data.item.data.title, published ? 'Bandcamp' : 'Tidal');
   }
   const beforeDelete = await request(path);
   entered = false;
-  const losingSave = request(path, 'PUT', { _rev: beforeDelete.data._rev, data: { title: 'delayed-save' } });
+  const losingSave = request(path, 'PUT', { _rev: beforeDelete.data._rev, data: { title: 'Linktree' } });
   for (let attempt = 0; attempt < 100; attempt++) {
     if (entered) break;
     await setTimeout(10);
@@ -188,7 +188,7 @@ try {
   assert.equal((await request(path, 'DELETE', { _rev: beforeDelete.data._rev })).status, 200);
   assert.equal((await losingSave).status, 409, 'A delayed save must not resurrect deleted content');
   assert.equal(
-    (await request(path, 'PUT', { _rev: beforeDelete.data._rev, data: { title: 'Stale restore' } })).status,
+    (await request(path, 'PUT', { _rev: beforeDelete.data._rev, data: { title: 'Instagram' } })).status,
     404,
   );
   const capabilities = await fetch(base + '/api/store/capabilities');

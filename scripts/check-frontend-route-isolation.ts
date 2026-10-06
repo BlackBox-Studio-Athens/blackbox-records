@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 export type FrontendRouteIsolationMode = 'web' | 'staff';
 
 const staffFiles = new Set([
+  'calendar/index.html',
   'content/index.html',
   'review/index.html',
   '_headers',
@@ -25,7 +26,9 @@ export function assertFrontendRouteIsolation(mode: FrontendRouteIsolationMode, d
 
   if (mode === 'web') {
     const stockFiles = files.filter((file) =>
-      ['stock', 'orders', 'items', 'content', 'review'].some((route) => file === route || file.startsWith(`${route}/`)),
+      ['stock', 'orders', 'items', 'content', 'review', 'calendar'].some(
+        (route) => file === route || file.startsWith(`${route}/`),
+      ),
     );
     if (stockFiles.length > 0) {
       throw new Error(`Public web artifact contains staff files: ${stockFiles.join(', ')}`);

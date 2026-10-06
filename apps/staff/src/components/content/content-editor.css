@@ -1,2 +1,8 @@
 /* Keep EmDash's bundled utilities below the staff app's responsive utilities. */
 @import '@emdash-cms/admin/styles.css' layer(emdash);
+
+/* Native editor dialogs and menus must clear the staff and text-editor sticky toolbars. */
+body.staff-body > [data-base-ui-portal] {
+  position: relative;
+  z-index: 60;
+}

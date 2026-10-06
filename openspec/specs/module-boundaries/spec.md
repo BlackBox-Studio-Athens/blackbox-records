@@ -21,6 +21,11 @@ The combined Worker SHALL retain closed module ownership and existing applicatio
 - **AND** CMS dependencies remain limited to the manifest's declared interfaces, including `backend-platform`, commerce persistence for publication coordination, and the pure content-model workspace export
 - **AND** `staff-frontend` owns its source and consumes the internal API client; its built assets are packaged without cross-app source imports.
 
+#### Scenario: Staff calendar respects publication ownership
+
+- **WHEN** the read-only staff calendar page renders
+- **THEN** it consumes the declared `staff-publication` entrypoint `PublicationCalendar.tsx`; history details and comparison internals remain private to that module.
+
 #### Scenario: Runtime catalog data is read
 
 - **WHEN** catalog projections are loaded from D1

@@ -36,11 +36,12 @@ const eagerGraphBudgetBytes = 100 * 1024;
 const homeEagerGraphBudgetBytes = 103 * 1024;
 const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton', 'StoreImageGallery'];
 const staffRouteDocuments = {
-  overview: { document: 'index.html', javascriptBudgetBytes: 122880 },
+  overview: { document: 'index.html', javascriptBudgetBytes: 121 * 1024 },
   website: { document: 'content/index.html', javascriptBudgetBytes: 176128 },
-  // Shared catalogue stock controls add identity-bound recovery and navigation protection (153,047 bytes measured).
-  stock: { document: 'stock/index.html', javascriptBudgetBytes: 150 * 1024 },
-  orders: { document: 'orders/index.html', javascriptBudgetBytes: 128000 },
+  // Calendar navigation and focused stock controls add at most 2 KiB to the existing staff budgets.
+  stock: { document: 'stock/index.html', javascriptBudgetBytes: 152 * 1024 },
+  orders: { document: 'orders/index.html', javascriptBudgetBytes: 126 * 1024 },
+  calendar: { document: 'calendar/index.html', javascriptBudgetBytes: 176128 },
 };
 const staffHtmlBudgetBytes = 24576;
 

@@ -7,7 +7,13 @@ import { parseArgs } from 'node:util';
 import { getPlatformProxy, unstable_dev } from 'wrangler';
 
 const backend = fileURLToPath(new URL('../../', import.meta.url));
-const { values } = parseArgs({ options: { 'source-state': { type: 'string' } } });
+const { values } = parseArgs({
+  options: { 'source-state': { type: 'string' }, 'source-history': { type: 'string', default: 'auto' } },
+});
+assert.ok(
+  ['auto', 'current', 'legacy'].includes(values['source-history']),
+  'Select auto, current or legacy source history',
+);
 // Copy only a stopped Local store. The supplied source is never opened by Wrangler or modified.
 const source = resolve(values['source-state'] ?? join(backend, '.wrangler/state'));
 const state = await mkdtemp(join(backend, '.emdash/upgrade-'));
@@ -92,11 +98,29 @@ async function createPendingReleaseDraft() {
   });
   try {
     const db = proxy.env.CMS_DB;
+    const legacy = !(await db
+      .prepare("SELECT name FROM _emdash_migrations WHERE name = '088_cron_oneshot_utc'")
+      .first());
     assert.equal(
-      await db.prepare("SELECT name FROM _emdash_migrations WHERE name = '088_cron_oneshot_utc'").first(),
+      await db
+        .prepare(
+          "SELECT name FROM _emdash_migrations WHERE name IN ('090_redirect_enable_loop_guard', '091_redirect_artifacts') LIMIT 1",
+        )
+        .first(),
       null,
-      'Requires a stopped pre-0.42 store or backup to exercise the actual upgrade',
+      'Requires a stopped store from before EmDash 1.1.0',
     );
+    if (values['source-history'] !== 'auto')
+      assert.equal(
+        legacy,
+        values['source-history'] === 'legacy',
+        'Supplied store must match the selected source history',
+      );
+    if (!legacy)
+      assert.ok(
+        await db.prepare("SELECT name FROM _emdash_migrations WHERE name = '089_auto_seed_completion'").first(),
+        'Current history requires EmDash 1.0.1 migrations',
+      );
     for (const fixture of cronCases)
       await db
         .prepare(
@@ -104,11 +128,19 @@ async function createPendingReleaseDraft() {
           (id, plugin_id, task_name, schedule, is_oneshot, next_run_at, enabled)
           VALUES (?, 'blackbox-upgrade-test', ?, ?, ?, ?, 0)`,
         )
-        .bind(fixture.id, fixture.id, fixture.oneshot ? fixture.value : '0 0 * * *', fixture.oneshot, fixture.value)
+        .bind(
+          fixture.id,
+          fixture.id,
+          fixture.oneshot ? fixture.value : '0 0 * * *',
+          fixture.oneshot,
+          legacy ? fixture.value : fixture.expected,
+        )
         .run();
     // Simulate a configured pre-089 site with a removed seed collection, only in the disposable copy.
-    await db.prepare("DELETE FROM options WHERE name = 'emdash:seed_complete'").run();
-    await db.prepare("UPDATE _emdash_collections SET slug = 'upgrade_socials' WHERE slug = 'socials'").run();
+    if (legacy) {
+      await db.prepare("DELETE FROM options WHERE name = 'emdash:seed_complete'").run();
+      await db.prepare("UPDATE _emdash_collections SET slug = 'upgrade_socials' WHERE slug = 'socials'").run();
+    }
     const release = await db
       .prepare('SELECT id, live_revision_id FROM ec_releases WHERE live_revision_id IS NOT NULL ORDER BY id LIMIT 1')
       .first();
@@ -209,6 +241,8 @@ try {
     assert.ok(after.migrations.includes('087_reference_field_relations'));
     assert.ok(after.migrations.includes('088_cron_oneshot_utc'));
     assert.ok(after.migrations.includes('089_auto_seed_completion'));
+    assert.ok(after.migrations.includes('090_redirect_enable_loop_guard'));
+    assert.ok(after.migrations.includes('091_redirect_artifacts'));
     assert.deepEqual(after.seedComplete, { value: 'true' });
     assert.deepEqual(after.collections, before.collections, 'Restart must not recreate a removed seed collection');
     assert.deepEqual(after.media, before.media, 'Native media identities and metadata survive upgrade');
@@ -241,7 +275,7 @@ try {
     assert.equal(after.fields.length, 0, 'Editorial dates no longer use datetime storage');
   }
   console.log(
-    'EmDash Local upgrade to 1.0.1 and restart passed: migrations 088/089, seed completion, media, pending draft, dates, revisions, stock and accepted publication preserved.',
+    'EmDash Local upgrade to 1.1.0 and restart passed: migrations through 091, seed completion, media, pending draft, dates, revisions, stock and accepted publication preserved.',
   );
 } finally {
   await worker?.stop();

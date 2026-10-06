@@ -51,5 +51,9 @@ export type PublicationReview = {
   referenceTitles: Record<string, string>;
   baselineReferenceTitles: Record<string, string>;
 };
+export type PublicationComparisonData = Pick<
+  PublicationReview,
+  'entries' | 'media' | 'referenceTitles' | 'baselineReferenceTitles'
+> & { baselineMedia?: PublicationReview['media'] };
 
 export { publicationValueKey, changedPublicationFields } from './publication-values';

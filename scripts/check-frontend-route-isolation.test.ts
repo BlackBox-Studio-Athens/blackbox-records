@@ -16,6 +16,7 @@ afterEach(() => {
 
 describe('frontend route isolation', () => {
   it.each([
+    'calendar/index.html',
     'stock/index.html',
     'orders/index.html',
     'items/index.html',
@@ -39,6 +40,7 @@ describe('frontend route isolation', () => {
 
 function createStaffDist(violation?: string): string {
   return createDist([
+    'calendar/index.html',
     'content/index.html',
     'review/index.html',
     '_headers',

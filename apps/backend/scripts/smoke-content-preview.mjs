@@ -6,9 +6,17 @@ import { editorialWriteData } from '../../staff/src/lib/backend/editorial-api.ts
 import { formattedProse } from '../../../scripts/fixtures/prose.ts';
 import { proseText, sourceCollectionNames } from '@blackbox/content-model';
 
+const leasedPreviews = new Set();
 const fetch = async (input, init = {}) => {
   try {
-    return await globalThis.fetch(input, { ...init, signal: AbortSignal.timeout(30000) });
+    const response = await globalThis.fetch(input, { ...init, signal: AbortSignal.timeout(30000) });
+    if (init.method === 'POST' && new URL(input).pathname === '/_emdash/preview' && response.ok) {
+      leasedPreviews.add((await response.clone().json()).context);
+    }
+    if (init.method === 'POST' && new URL(input).pathname === '/_emdash/preview-release' && response.ok) {
+      leasedPreviews.delete(JSON.parse(init.body).context);
+    }
+    return response;
   } catch (error) {
     throw new Error(`${init.method ?? 'GET'} ${new URL(input).pathname} failed`, { cause: error });
   }
@@ -30,6 +38,17 @@ function clean(value) {
   return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, clean(item)]));
 }
 const headers = { Origin: base, 'X-EmDash-Request': '1', 'Content-Type': 'application/json' };
+async function releaseLeasedPreviews() {
+  for (const context of leasedPreviews) {
+    const released = await fetch(`${base}/_emdash/preview-release`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ context }),
+    });
+    await released.body?.cancel();
+    leasedPreviews.delete(context);
+  }
+}
 const history = await get('blackbox/publications');
 for (let attempt = 0; attempt < 2; attempt++) {
   const response = await fetch(`${base}/_emdash/api/blackbox/catalog-schema`, { method: 'POST', headers });
@@ -126,16 +145,19 @@ async function comparePublicPreviews() {
               const selector = `a[href*="/releases/${item.slug}/"]`;
               await frame.locator(selector).first().click();
               await publicPage.locator(selector).first().click();
-              await frame.getByRole('dialog').waitFor();
-              await publicPage.getByRole('dialog').waitFor();
-              await frame.getByRole('dialog').locator('h1').waitFor();
-              await publicPage.getByRole('dialog').locator('h1').waitFor();
+              await frame.locator('.app-shell-content-overlay__panel h1').waitFor();
+              await publicPage.locator('.app-shell-content-overlay__panel h1').waitFor();
             }
             if (label === 'store-listing') {
               for (const target of [frame, publicPage]) {
+                // Compare complete catalog geometry rather than remembered offscreen size estimates.
+                await target.addStyleTag({
+                  content: '.store-item-card--listing{content-visibility:visible;contain-intrinsic-block-size:none}',
+                });
                 await target.locator('[data-distro-search]').scrollIntoViewIfNeeded();
                 await target.getByRole('searchbox', { name: 'Search Store', exact: true }).waitFor();
-                await target.evaluate(() => scrollTo(0, 0));
+                await target.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+                await target.waitForFunction(() => scrollY === 0);
               }
             }
             for (const target of [frame, publicPage]) {
@@ -157,12 +179,46 @@ async function comparePublicPreviews() {
                 );
               });
             }
-            const scope = overlay ? '[role="dialog"]' : 'main';
-            assert.equal(
-              await frame.locator(scope).innerText(),
-              await publicPage.locator(scope).innerText(),
-              `${name}/${label}/${width} content`,
-            );
+            const scope = overlay ? '.app-shell-content-overlay__panel' : 'main';
+            if (label === 'home') {
+              for (const target of [frame, publicPage]) {
+                await target.locator('#newsletter-signup-area').scrollIntoViewIfNeeded();
+                await target.getByRole('textbox', { name: 'Email address', exact: true }).waitFor();
+                await target.evaluate(() => scrollTo({ top: 0, behavior: 'instant' }));
+                await target.waitForFunction(() => scrollY === 0);
+              }
+            }
+            // content-visibility:auto can omit different offscreen card text from innerText.
+            const property = label === 'store-listing' ? 'textContent' : 'innerText';
+            const readText = (target) =>
+              target.locator(scope).evaluate((element, property) => element[property], property);
+            const text = await readText(publicPage);
+            try {
+              await frame.waitForFunction(
+                ({ scope, text, property }) => document.querySelector(scope)?.[property] === text,
+                { scope, text, property },
+                { timeout: 30000 },
+              );
+            } catch (error) {
+              await writeFile(
+                resolve(artifacts, 'content-failure.json'),
+                JSON.stringify(
+                  {
+                    name,
+                    label,
+                    width,
+                    public: await readText(publicPage),
+                    preview: await readText(frame),
+                    previewCards: await frame.locator('[data-distro-search-item]').count(),
+                    publicCards: await publicPage.locator('[data-distro-search-item]').count(),
+                  },
+                  null,
+                  2,
+                ),
+              );
+              throw error;
+            }
+            assert.equal(await readText(frame), await readText(publicPage), `${name}/${label}/${width} content`);
             const headings = `${scope} h1, ${scope} h2`;
             assert.deepEqual(
               await frame.locator(headings).allTextContents(),
@@ -176,8 +232,8 @@ async function comparePublicPreviews() {
                 footerHeight: Math.round(document.querySelector('footer').getBoundingClientRect().height),
                 images: [...root.querySelectorAll('img')].map((image) => ({
                   alt: image.alt,
-                  width: Math.round(image.getBoundingClientRect().width),
-                  height: Math.round(image.getBoundingClientRect().height),
+                  width: image.offsetWidth,
+                  height: image.offsetHeight,
                   fit: getComputedStyle(image).objectFit,
                 })),
               }));
@@ -223,9 +279,11 @@ async function comparePublicPreviews() {
               if (Math.max(Math.abs(a[i] - b[i]), Math.abs(a[i + 1] - b[i + 1]), Math.abs(a[i + 2] - b[i + 2])) > 20)
                 different++;
             pairs.push({ name, label, width, differentPixelRatio: different / (a.length / 3) });
+            // Firefox can rasterize the iframe's dialog a pixel higher; exact content and geometry are checked above.
+            assert.ok(different / (a.length / 3) < 0.06, `${name}/${label}/${width} visual parity`);
             if (!overlay) {
               for (const target of [frame, publicPage])
-                await target.evaluate(() => scrollTo(0, document.body.scrollHeight));
+                await target.evaluate(() => scrollTo({ top: document.body.scrollHeight, behavior: 'instant' }));
               await publicPage.screenshot({
                 path: resolve(artifacts, `${filename}-public-footer.png`),
                 animations: 'disabled',
@@ -261,7 +319,22 @@ async function checkInteractions(page, name) {
   const response = await fetch(`${base}/_emdash/preview?view=listing`, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ collection: 'releases', id: item.id, slug: item.slug, data: editorialWriteData(item.data) }),
+    body: JSON.stringify({
+      collection: 'releases',
+      id: item.id,
+      slug: item.slug,
+      data: {
+        ...editorialWriteData(item.data),
+        body: [
+          {
+            _type: 'iframe',
+            _key: 'video-fixture',
+            src: 'https://youtu.be/dQw4w9WgXcQ?autoplay=1',
+            title: 'Editorial video fixture',
+          },
+        ],
+      },
+    }),
   });
   assert.equal(response.status, 200, await response.clone().text());
   const document = await response.json();
@@ -271,7 +344,27 @@ async function checkInteractions(page, name) {
     providerRequests.push(route.request());
     await route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' });
   });
+  const videoPattern = 'https://www.youtube-nocookie.com/embed/**';
+  const videoRequests = [];
+  await page.route(videoPattern, async (route) => {
+    videoRequests.push(route.request().url());
+    await route.fulfill({ contentType: 'text/html', body: '<p>Video fixture</p>' });
+  });
   try {
+    const shared = await page.context().newPage();
+    try {
+      const detailUrl = new URL(document.url);
+      detailUrl.pathname = `/blackbox-records/releases/${item.slug}/`;
+      await shared.goto(detailUrl.href);
+      await shared.getByRole('button', { name: 'Load video', exact: true }).click();
+      assert.equal(
+        await shared.locator('[data-editorial-video] iframe').count(),
+        0,
+        'Shared private preview remains inert',
+      );
+    } finally {
+      await shared.close();
+    }
     await showPreview(page, document.url);
     await page.waitForFunction(() => window.document.querySelector('iframe').dataset.loaded === 'true');
     const frame = await (await page.$('iframe')).contentFrame();
@@ -285,6 +378,17 @@ async function checkInteractions(page, name) {
     await player.contentFrame().getByRole('button', { name: 'Player fixture' }).click();
     await frame.getByRole('button', { name: /Minimize/ }).click();
     const originalPlayer = await player.elementHandle();
+    await frame.locator(`[data-release-id="${item.slug}"] .release-card-image-shell`).click();
+    await frame.getByRole('button', { name: 'Load video', exact: true }).waitFor();
+    assert.equal(videoRequests.length, 0, 'Videos stay unloaded until explicit activation');
+    await frame.getByRole('button', { name: 'Load video', exact: true }).click();
+    await frame.locator('[data-editorial-video] iframe').waitFor();
+    assert.equal(await originalPlayer.evaluate((element) => element.isConnected), true);
+    assert.equal(
+      await frame.locator('[data-editorial-video] iframe').getAttribute('src'),
+      'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+    );
+    await frame.getByRole('button', { name: 'Close detail view', exact: true }).click();
     await frame.locator('header').getByRole('link', { name: 'Store', exact: true }).first().click();
     await frame.getByRole('searchbox', { name: 'Search Store', exact: true }).waitFor();
     assert.equal(await originalPlayer.evaluate((element) => element.isConnected), true);
@@ -331,6 +435,7 @@ async function checkInteractions(page, name) {
     );
   } finally {
     await page.unroute(providerPattern);
+    await page.unroute(videoPattern);
     await (await (await page.$('iframe')).contentFrame()).goto('about:blank');
     await fetch(`${base}/_emdash/preview-release`, {
       method: 'POST',
@@ -340,6 +445,195 @@ async function checkInteractions(page, name) {
   }
 }
 let restoreNewsletter;
+async function checkStock(page, name) {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${base}/stock/?q=Disintegration&area=all`);
+  await page.getByRole('button', { name: /Disintegration.*copies on hand/ }).click();
+  const quantity = page.getByRole('spinbutton', { name: 'How many?', exact: true });
+  const notes = page.getByRole('textbox', { name: 'Notes (optional)', exact: true });
+  await quantity.fill('2');
+  await notes.fill('Unfinished phone acceptance work');
+  await page.getByRole('button', { name: 'Find another item', exact: true }).click();
+  assert.equal(await page.getByRole('textbox', { name: 'Search items', exact: true }).inputValue(), 'Disintegration');
+  const returnToItem = page.getByRole('button', { name: 'Return to selected item', exact: true });
+  await returnToItem.focus();
+  await returnToItem.press('Enter');
+  assert.equal(await quantity.inputValue(), '2');
+  assert.equal(await notes.inputValue(), 'Unfinished phone acceptance work');
+  assert.match(page.url(), /q=Disintegration/);
+  assert.equal(await page.getByRole('textbox', { name: 'Search items', exact: true }).isVisible(), false);
+  assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
+  await page.screenshot({ path: resolve('.codex-artifacts/staff-workspace', `${name}-stock-phone.png`) });
+  await quantity.fill('');
+  await notes.fill('');
+  console.error(`Passed ${name} 390px Stock workbench, retained finder/work and keyboard return`);
+}
+async function checkStaffUploads(page, name) {
+  const release = await publishedItem('releases');
+  const other = (await get('content/releases?limit=25')).items.find((item) => item.id !== release.id);
+  assert.ok(other, 'Entry-switch acceptance requires two Local releases');
+  const documents = new Map(
+    await Promise.all([release, other].map(async (item) => [item.id, await get(`content/releases/${item.id}`)])),
+  );
+  const media = (await get('media?limit=3')).items;
+  assert.equal(media.length, 3);
+  const buffer = await sharp({ create: { width: 20, height: 20, channels: 3, background: '#222' } })
+    .png()
+    .toBuffer();
+  const file = (name) => ({ name, mimeType: 'image/png', buffer });
+  const attempts = [];
+  const saves = [];
+  let failed = false;
+  let releaseUpload;
+  const mediaPattern = '**/_emdash/api/media';
+  const contentPattern = '**/_emdash/api/content/releases/*';
+  await page.route(contentPattern, async (route) => {
+    if (route.request().method() !== 'PUT') return route.continue();
+    const id = new URL(route.request().url()).pathname.split('/').at(-1);
+    const document = documents.get(id);
+    assert.ok(document, 'Only acceptance entries can be edited');
+    const data = route.request().postDataJSON().data;
+    saves.push({ id, data });
+    await route.fulfill({ json: { success: true, data: { ...document, item: { ...document.item, data } } } });
+  });
+  await page.route(mediaPattern, async (route) => {
+    if (route.request().method() !== 'POST') return route.continue();
+    const body = route.request().postDataBuffer().toString('latin1');
+    const filename = body.match(/name="file"; filename="([^"]+)"/)?.[1];
+    assert.ok(filename);
+    assert.match(body, /name="thumbnail"; filename="thumbnail.png"/, 'Every editor upload uses the thumbnail uploader');
+    attempts.push(filename);
+    if (filename === 'failed.png' && !failed) {
+      failed = true;
+      return route.fulfill({ status: 503, json: { success: false } });
+    }
+    if (filename === 'late.png')
+      await new Promise((resolve) => {
+        releaseUpload = resolve;
+      });
+    const index = filename === 'failed.png' ? 1 : filename === 'last.png' || filename === 'cover-two.png' ? 2 : 0;
+    await route.fulfill({ json: { success: true, data: { item: { ...media[index], filename } } } }).catch(() => {});
+  });
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`${base}/content/?collection=releases&id=${release.id}`);
+    await page.getByRole('heading', { name: release.data.title, exact: true }).waitFor();
+    const closePreview = page.getByRole('button', { name: 'Close preview', exact: true }).first();
+    if (await closePreview.isVisible()) await closePreview.click();
+    const gallery = page.getByLabel('Upload photos', { exact: true });
+    const initial = editorialWriteData(release.data).gallery ?? [];
+    const firstSave = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        response.request().postDataJSON()?.data?.gallery?.length === initial.length + 2,
+    );
+    await gallery.setInputFiles([file('first.png'), file('failed.png'), file('last.png')]);
+    await page.getByRole('button', { name: 'Retry failed images', exact: true }).waitFor();
+    await firstSave;
+    assert.deepEqual(
+      saves
+        .at(-1)
+        .data.gallery.slice(initial.length)
+        .map((row) => row.image.id),
+      [media[0].id, media[2].id],
+    );
+    const retrySave = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        response.request().postDataJSON()?.data?.gallery?.length === initial.length + 3,
+    );
+    await page.getByRole('button', { name: 'Retry failed images', exact: true }).click();
+    await retrySave;
+    assert.deepEqual(attempts, ['first.png', 'failed.png', 'last.png', 'failed.png']);
+    assert.equal(saves.at(-1).data.gallery.at(-1).image.id, media[1].id);
+    await page.getByRole('button', { name: 'Change cover image', exact: true }).click();
+    const cover = page.getByRole('dialog', { name: 'Choose cover image', exact: true });
+    await cover.getByRole('button', { name: 'Upload', exact: true }).click();
+    await cover.locator('input[type=file]:not(:disabled)').waitFor();
+    await cover
+      .getByLabel('Upload photos', { exact: true })
+      .setInputFiles([file('cover-one.png'), file('cover-two.png')]);
+    await cover.getByText('2 photos added in order.', { exact: true }).waitFor();
+    assert.equal(await cover.isVisible(), true, 'A batch never selects several images for a cover');
+    await cover.getByRole('button', { name: 'cover-one.png', exact: true }).click();
+    await cover.waitFor({ state: 'hidden' });
+    await page.getByRole('button', { name: 'Full text', exact: true }).click();
+    const fullText = page.getByRole('region', { name: 'Full text', exact: true });
+    await fullText.getByRole('button', { name: 'Insert Image', exact: true }).click();
+    const picker = page.getByRole('dialog', { name: 'Select image', exact: true });
+    assert.ok(
+      await picker.evaluate((dialog) => {
+        const box = dialog.getBoundingClientRect();
+        return dialog.contains(document.elementFromPoint(box.x + box.width / 2, box.y + 30));
+      }),
+      'Native image dialog must appear above sticky toolbars',
+    );
+    await picker.getByLabel('Choose files to upload', { exact: true }).setInputFiles(file('native.png'));
+    await picker.getByRole('button', { name: 'Insert image', exact: true }).click();
+    await picker.waitFor({ state: 'hidden' });
+    await fullText.locator('[contenteditable] img').first().waitFor();
+    assert.equal(attempts.filter((filename) => filename === 'native.png').length, 1);
+    const saveCount = saves.length;
+    await gallery.setInputFiles(file('late.png'));
+    await page.getByRole('status').filter({ hasText: 'late.png' }).waitFor();
+    await page.goto(`${base}/content/?collection=releases&id=${other.id}`);
+    releaseUpload();
+    await page.getByRole('textbox', { name: 'Release title', exact: true }).waitFor();
+    assert.equal(
+      await page.getByRole('textbox', { name: 'Release title', exact: true }).inputValue(),
+      other.data.title,
+    );
+    assert.ok(!saves.slice(saveCount).some((save) => save.id === other.id), 'Late results cannot edit another entry');
+    console.error(
+      `Passed ${name} batch order, partial failure/retry, singular cover, native uploader and entry switching`,
+    );
+  } finally {
+    releaseUpload?.();
+    await page.unroute(mediaPattern);
+    await page.unroute(contentPattern);
+  }
+}
+async function checkCalendar(page, name) {
+  const items = Array.from({ length: 101 }, (_, index) => ({
+    id: crypto.randomUUID(),
+    status: 'live',
+    requestedAt: Date.parse('2026-10-25T01:30:00Z'),
+    entries: [{ collection: 'news', recordId: `fixture-${index}`, title: `Repeated update ${index}` }],
+  }));
+  const pattern = '**/_emdash/api/blackbox/publications/calendar?*';
+  let failNextPage = true;
+  await page.route(pattern, async (route) => {
+    const cursor = new URL(route.request().url()).searchParams.get('cursor');
+    if (!cursor) return route.fulfill({ json: { items: items.slice(0, 100), nextCursor: 'next-page' } });
+    if (failNextPage) {
+      failNextPage = false;
+      return route.fulfill({ status: 503, json: { error: 'Temporarily unavailable' } });
+    }
+    return route.fulfill({ json: { items: items.slice(100) } });
+  });
+  try {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`${base}/calendar/?month=2026-10`);
+    await page.getByRole('alert').filter({ hasText: 'incomplete' }).waitFor();
+    assert.equal(await page.locator('.publication-calendar-event').count(), 100);
+    assert.equal(await page.getByRole('combobox', { name: 'View', exact: true }).inputValue(), 'agenda');
+    await page.getByRole('button', { name: 'Retry calendar', exact: true }).click();
+    await page.waitForFunction(() => document.querySelectorAll('.publication-calendar-event').length === 101);
+    assert.equal(await page.getByRole('alert').count(), 0);
+    assert.match(page.url(), /month=2026-10/);
+    assert.match(page.url(), /view=agenda/);
+    await page.getByRole('combobox', { name: 'Collection', exact: true }).selectOption('releases');
+    await page.waitForURL(/collection=releases/);
+    await page.screenshot({ path: resolve('.codex-artifacts/staff-workspace', `${name}-calendar-phone.png`) });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole('combobox', { name: 'View', exact: true }).selectOption('month');
+    await page.waitForURL(/view=month/);
+    assert.equal(await page.locator('.publication-calendar-grid').isVisible(), true);
+    console.error(`Passed ${name} calendar pagination, partial failure/retry, phone agenda and URL state`);
+  } finally {
+    await page.unroute(pattern);
+  }
+}
 if (process.argv.includes('--browsers')) {
   const { chromium, firefox } = await import('playwright');
   for (const type of [chromium, firefox]) {
@@ -366,6 +660,16 @@ if (process.argv.includes('--browsers')) {
       await route.fulfill(cached);
     });
     const page = await context.newPage();
+    page.on('response', async (response) => {
+      if (response.request().method() !== 'POST') return;
+      const path = new URL(response.url()).pathname;
+      if (path === '/_emdash/preview' && response.ok()) {
+        const document = await response.json().catch(() => null);
+        if (document?.context) leasedPreviews.add(document.context);
+      } else if (path === '/_emdash/preview-release' && response.ok()) {
+        leasedPreviews.delete(response.request().postDataJSON()?.context);
+      }
+    });
     await page.setViewportSize({ width: 1280, height: 900 });
     page.on('pageerror', (error) => console.error(type.name(), error.message));
     page.on('requestfailed', (request) => {
@@ -408,9 +712,30 @@ try {
     const before = await get(`content/${collection}/${items[0].id}`);
     const item = before.item;
     const data = editorialWriteData(item.data);
-    if (typeof data.title === 'string') data.title += ' — unsaved preview smoke';
+    if (typeof data.title === 'string' && collection !== 'socials') data.title += ' — unsaved preview smoke';
     if (collection === 'artists') data.bio_rich = formattedProse;
     if (collection === 'releases' || collection === 'distro') data.summary_rich = formattedProse;
+    if (collection === 'releases')
+      data.body = [
+        {
+          _type: 'image',
+          _key: 'image-fixture',
+          asset: { _ref: data.cover_image.id },
+          alt: 'Editorial image fixture',
+          caption: 'Editorial caption fixture',
+          title: 'Editorial image title',
+          alignment: 'right',
+          displayWidth: 320,
+          displayHeight: 320,
+          link: { href: '/releases/', blank: true },
+        },
+        {
+          _type: 'iframe',
+          _key: 'video-fixture',
+          src: 'https://vimeo.com/123456?autoplay=1',
+          title: 'Editorial video fixture',
+        },
+      ];
     if (collection === 'about') data.lead.text = formattedProse;
     if (collection === 'purchase_information') {
       // Preview-only fixture: exercise the approved public document without saving approval or wording.
@@ -436,6 +761,12 @@ try {
       const rendered = await fetch(document.url);
       const html = await rendered.text();
       assert.equal(rendered.status, 200, collection + '/' + view + ': ' + html.slice(0, 500));
+      if (collection === 'releases' && view === 'detail') {
+        assert.match(html, /Editorial caption fixture/);
+        assert.match(html, /Editorial image title/);
+        assert.match(html, /Load video/);
+        assert.ok(!/<iframe[^>]+src="https:\/\/(?:player\.vimeo\.com|www\.youtube-nocookie\.com)/.test(html));
+      }
       assert.match(rendered.headers.get('Content-Security-Policy'), /script-src 'self'/);
       assert.match(html, /<!DOCTYPE html>/i);
       if (collection === 'distro' && view === 'listing') {
@@ -569,6 +900,13 @@ try {
     await page.getByRole('status').filter({ hasText: 'Preview up to date' }).waitFor();
     await page.getByRole('button', { name: 'Mobile', exact: true }).click();
     const description = page.getByRole('textbox', { name: 'Description', exact: true });
+    for (const command of ['Insert Image', 'Insert HTML', 'Insert Table', 'Code Block']) {
+      assert.equal(
+        await page.getByRole('button', { name: command, exact: true }).count(),
+        0,
+        `Short descriptions cannot insert ${command}`,
+      );
+    }
     const preview = page.frameLocator('iframe[title="Private site appearance preview"]');
     await description.press('ControlOrMeta+a');
     await description.press('Backspace');
@@ -616,6 +954,45 @@ try {
       newsletterBefore.item.data.description,
       'Rich edits leave the legacy string unchanged',
     );
+    await page.getByRole('button', { name: 'Close preview', exact: true }).first().click();
+    assert.equal(await page.locator('.cms-preview-panel').isVisible(), false);
+    assert.equal(await page.locator('.cms-resize-handle').isVisible(), false);
+    assert.ok(
+      await page
+        .locator('.cms-edit-panel')
+        .evaluate(
+          (panel) => panel.getBoundingClientRect().width / panel.parentElement.getBoundingClientRect().width > 0.95,
+        ),
+    );
+    let previewRequests = 0;
+    const countPreview = (request) => {
+      if (request.method() === 'POST' && new URL(request.url()).pathname === '/_emdash/preview') previewRequests++;
+    };
+    page.on('request', countPreview);
+    const closedCopy = `${name} edits while preview is closed`;
+    const closedSave = page.waitForResponse(
+      (response) =>
+        response.request().method() === 'PUT' &&
+        proseText(response.request().postDataJSON()?.data?.description_rich) === closedCopy,
+    );
+    await description.press('ControlOrMeta+a');
+    await description.pressSequentially(closedCopy);
+    assert.equal((await closedSave).status(), 200);
+    assert.equal(previewRequests, 0, 'Closed preview must stop preview requests while editing');
+    page.off('request', countPreview);
+    await page.getByRole('button', { name: 'Show preview', exact: true }).click();
+    await preview.getByText(closedCopy, { exact: true }).waitFor();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.getByRole('tab', { name: 'Preview', exact: true }).click();
+    await page.getByRole('button', { name: 'Close preview', exact: true }).last().click();
+    assert.equal(await description.isVisible(), true, 'Closing phone Preview returns to Edit');
+    assert.equal(await description.textContent(), closedCopy);
+    await mkdir(resolve('.codex-artifacts/staff-workspace'), { recursive: true });
+    await page.screenshot({ path: resolve('.codex-artifacts/staff-workspace', `${name}-closed-preview-phone.png`) });
+    await checkCalendar(page, name);
+    await checkStock(page, name);
+    await checkStaffUploads(page, name);
+    await releaseLeasedPreviews();
     console.error(`Passed ${name} real newsletter edits and formatting-only autosave`);
   }
   // Editor typing autosaves privately; preview POSTs above never save or publish.
@@ -631,6 +1008,7 @@ try {
       await browser.close();
     }),
   );
+  await releaseLeasedPreviews();
   if (restoreNewsletter) {
     const path = `content/newsletter/${restoreNewsletter.id}`;
     const current = await get(path);

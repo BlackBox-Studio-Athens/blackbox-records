@@ -9,7 +9,7 @@ import {
   publicationStage,
   type ContentPublication,
 } from '../../lib/backend/content-publication-api';
-import { contentSections, type ContentSection } from '../../lib/content-sections';
+import { PublicationDisclosure, publicationTime } from './PublicationDetails';
 
 export { publicationHistoryEvent, requestPublicationHistory } from '../../lib/publication-history-events';
 export type { PublicationHistoryFilter } from '../../lib/publication-history-events';
@@ -22,7 +22,11 @@ export function publicationHistoryTitle(item: ContentPublication) {
 
 function status(item: ContentPublication) {
   if (item.status === 'live')
-    return { label: 'On the website', icon: CheckCircle2, className: 'publication-history-status-live' };
+    return {
+      label: item.action === 'withdraw' ? 'Removed from the website' : 'Published',
+      icon: CheckCircle2,
+      className: 'publication-history-status-live',
+    };
   if (item.status === 'failed')
     return { label: 'Failed', icon: XCircle, className: 'publication-history-status-failed' };
   return { label: publicationStage(item), icon: Clock3, className: 'publication-history-status-pending' };
@@ -103,8 +107,8 @@ export default function PublicationHistory({
             Publication history
           </SheetTitle>
           <SheetDescription>
-            {recordId ? 'Updates containing this entry.' : 'Recent website publication requests.'} Requested times are
-            shown in Athens time.
+            {recordId ? 'Updates containing this entry.' : 'Recent website publication requests.'} Times are shown in
+            Athens time.
           </SheetDescription>
         </SheetHeader>
         <div className="publication-history-content">
@@ -132,42 +136,11 @@ export default function PublicationHistory({
                         {current.label}
                       </Badge>
                     </div>
-                    <time dateTime={new Date(item.requestedAt).toISOString()}>
-                      Requested{' '}
-                      {new Intl.DateTimeFormat('en-GB', {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                        timeZone: 'Europe/Athens',
-                      }).format(item.requestedAt)}
+                    <time dateTime={new Date(item.completedAt ?? item.requestedAt).toISOString()}>
+                      {item.completedAt !== undefined ? 'Completed' : 'Requested'}{' '}
+                      {publicationTime(item.completedAt ?? item.requestedAt)}
                     </time>
-                    <details className="publication-history-details">
-                      <summary>Details</summary>
-                      <dl>
-                        <div>
-                          <dt>Publisher</dt>
-                          <dd>{item.actorEmail ?? 'Unavailable for this update'}</dd>
-                        </div>
-                        <div>
-                          <dt>Destination</dt>
-                          <dd>{item.environment?.toUpperCase() ?? 'Unavailable for this update'}</dd>
-                        </div>
-                      </dl>
-                      {item.entries?.length ? (
-                        <ul>
-                          {item.entries.map((entry, index) => (
-                            <li key={`${entry.collection}/${entry.recordId}/${index}`}>
-                              {entry.title}{' '}
-                              <span className="text-muted-foreground">
-                                · {contentSections[entry.collection as ContentSection] ?? 'Content'}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>Entry details unavailable for this earlier update.</p>
-                      )}
-                      {item.failureReason && <p className="cms-state-error">{item.failureReason}</p>}
-                    </details>
+                    <PublicationDisclosure base={base} item={item} />
                   </div>
                 </li>
               );

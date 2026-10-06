@@ -27,13 +27,14 @@ export function staffTarget(value: string, origin: string): string | null {
       '/stock/': ['variantId', 'q', 'area', 'format', 'cursor'],
       '/orders/': ['checkoutSessionId', 'status', 'q', 'notification', 'cursor', 'awaitingStock'],
       '/review/': ['q', 'scope', 'cursor'],
+      '/calendar/': ['month', 'collection', 'view'],
     };
     const allowed = keys[url.pathname];
     if (!allowed) return null;
     url.searchParams.delete('returnTo');
     const enums: Record<string, readonly string[]> = {
       collection: Object.keys(contentSections),
-      view: ['media', 'footer'],
+      view: url.pathname === '/calendar/' ? ['month', 'agenda'] : ['media', 'footer'],
       area: url.pathname === '/stock/' ? ['all', 'release', 'distro', 'merch'] : ['all', 'distro', 'merch'],
       format: DISTRO_GROUP_VALUES,
       sort: ['title', 'updated'],
@@ -48,6 +49,7 @@ export function staffTarget(value: string, origin: string): string | null {
     for (const [key, entry] of url.searchParams) {
       if (!allowed.includes(key) || url.searchParams.getAll(key).length !== 1) return null;
       if (key === 'awaitingStock' && entry !== 'true') return null;
+      if (key === 'month' && !/^\d{4}-(?:0[1-9]|1[0-2])$/.test(entry)) return null;
       if (entry.length > (key === 'cursor' ? 2048 : key === 'q' ? 200 : 128)) return null;
       if (enums[key] && entry && !enums[key].includes(entry)) return null;
       if (['id', 'variantId', 'checkoutSessionId'].includes(key) && !/^[\w-]{1,128}$/.test(entry)) return null;
@@ -96,6 +98,7 @@ export function staffLabel(path: string): string {
       {
         '/': 'Overview',
         '/review/': 'Review changes',
+        '/calendar/': 'Publication calendar',
         '/stock/': 'Inventory',
         '/orders/': 'Orders',
         '/items/new/': 'Item setup',

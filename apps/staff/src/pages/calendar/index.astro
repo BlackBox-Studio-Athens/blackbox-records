@@ -1,0 +1,12 @@
+---
+import StockOpsLayout from '../../layouts/StockOpsLayout.astro';
+import PublicationCalendar from '../../components/publication/PublicationCalendar';
+import { getInternalStockApiBaseUrl } from '../../lib/backend/internal-stock-api';
+---
+
+<StockOpsLayout
+  pageTitle="Publication calendar"
+  pageDescription="Read-only history of accepted BlackBox website updates."
+>
+  <PublicationCalendar base={getInternalStockApiBaseUrl()} client:load />
+</StockOpsLayout>
