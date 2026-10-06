@@ -73,14 +73,14 @@ test('Nx plans use affected targets by default and run-many for full validation'
     '--nxBail',
   ]);
   assert.deepEqual(validationPlan({ checks: true, part: 'lint' })[0].args.slice(3, 6), ['-t', 'lint', '--all']);
-  assert.deepEqual(validationPlan({ checks: true, part: 'tests' })[0].args.slice(3, 7), [
+  assert.deepEqual(validationPlan({ checks: true, part: 'tests' })[0].args.slice(3, 6), ['-t', 'test', '--all']);
+  assert.deepEqual(validationPlan({ checks: true, part: 'typecheck' })[0].args.slice(3, 6), [
     '-t',
-    'test',
     'typecheck',
     '--all',
   ]);
   assert.throws(() => validationPlan({ part: 'lint' }), /needs --checks/);
-  assert.throws(() => validationPlan({ checks: true, part: 'build' }), /lint or tests/);
+  assert.throws(() => validationPlan({ checks: true, part: 'build' }), /lint, typecheck or tests/);
   assert.deepEqual(validationPlan({ scope: 'web' })[0].args, [
     'exec',
     'nx',
@@ -133,6 +133,11 @@ test('Nx plans use affected targets by default and run-many for full validation'
       ['editor-firefox', releaseTierEnv],
     ],
   );
+  const editorSteps = (browser) => validationPlan({ editor: true, browser }).map(({ name }) => name);
+  assert.deepEqual(editorSteps('chromium'), ['build:staff', 'preview-policy', 'editor-chromium']);
+  assert.deepEqual(editorSteps('firefox'), ['build:staff', 'editor-firefox']);
+  assert.throws(() => validationPlan({ editor: true, browser: 'webkit' }), /chromium or firefox/);
+  assert.throws(() => validationPlan({ checks: true, browser: 'firefox' }), /needs --editor/);
   assert.deepEqual(nxWatchArguments('stock'), ['exec', 'nx', 'run', 'stock:test-watch']);
   assert.deepEqual(nxWatchArguments('backend', { changed: true, since: 'origin/main' }), [
     'exec',

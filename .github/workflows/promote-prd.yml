@@ -70,10 +70,13 @@ jobs:
           pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/prd/renderer/server/wrangler.json
           pnpm --filter @blackbox/backend exec wrangler versions upload --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --keep-vars --tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           pnpm --filter @blackbox/backend exec wrangler versions deploy --config ../../.codex-artifacts/release/prd/cms/server/wrangler.json --version-tag "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT@100%" --yes
-          node scripts/release-candidate.mjs verify-worker prd
       - name: Deploy PRD to Cloudflare Pages
         env: *cloudflare
         run: |
           node scripts/configure-public-gateway.mjs prd
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/prd/public --project-name=blackbox-records-web --branch=main --commit-hash="$SOURCE_SHA"
+      # Public reads only, so no token.
+      - name: Verify the deployed PRD release
+        run: |
+          node scripts/release-candidate.mjs verify-worker prd
           node scripts/release-candidate.mjs verify-hosted prd

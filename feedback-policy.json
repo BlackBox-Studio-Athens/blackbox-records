@@ -110,8 +110,6 @@
       "openspec:readonly",
       "deploy:backend:sandbox",
       "deploy:backend:uat",
-      "deploy:backend:prd",
-      "deploy:backend:production",
       "worker:dev",
       "worker:dev:uat",
       "worker:dev:sandbox",
@@ -142,7 +140,7 @@
   "filteredOnly": {
     "commands": ["test:e2e"],
     "filter": "\\w\\.spec\\.ts\\b|(^|\\s)(-g|--grep)(\\s+|=)\\S*\\w|(^|\\s)--list\\b",
-    "instead": "Name a spec or title filter, for example `pnpm test:e2e e2e/store-cart.spec.ts`. CI runs the whole suite on every push, before the UAT deploy."
+    "instead": "Name a spec or title filter, for example `pnpm test:e2e e2e/store-cart.spec.ts`. CI runs the whole suite on every push beside the UAT deploy; it must pass before PRD promotion."
   },
   "packageSuites": {
     "nxTaskEnv": "NX_TASK_HASH",
@@ -206,7 +204,7 @@
       "id": "playwright-whole-suite",
       "pattern": "^playwright\\s+test\\b",
       "unless": "\\w\\.spec\\.ts\\b|(^|\\s)(-g|--grep)(\\s+|=)\\S*\\w|(^|\\s)--list\\b",
-      "instead": "Run one spec: `pnpm test:e2e e2e/<name>.spec.ts`. CI runs the whole suite on every push, before the UAT deploy."
+      "instead": "Run one spec: `pnpm test:e2e e2e/<name>.spec.ts`. CI runs the whole suite on every push beside the UAT deploy; it must pass before PRD promotion."
     },
     {
       "id": "vitest-package-wide",

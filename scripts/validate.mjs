@@ -13,11 +13,16 @@ import { runFiniteCommand } from './local-process.ts';
 import { acquireSlots, createExclusive, liveHolder } from './machine-slots.mjs';
 
 const scopes = ['web', 'staff', 'backend', 'api-client'];
+// Each CI leg installs both browsers, so the preview policy check rides with Chromium.
+const browserSteps = {
+  chromium: ['build:staff', 'preview-policy', 'editor-chromium'],
+  firefox: ['build:staff', 'editor-firefox'],
+};
 
 // Nx targetDefaults make workspace:architecture a prerequisite of these project targets.
 // --fast/--scope select affected projects; --checks selects all check targets; --resume keeps Nx cache defaults.
 // --lint-only selects every lint target, while --editor retains its existing acceptance commands.
-// --checks --part=lint|tests splits the check targets so CI can run them on two runners at once.
+// --checks --part=lint|typecheck|tests and --editor --browser=chromium|firefox split CI across parallel runners.
 export function validationPlan({
   fast = false,
   full = false,
@@ -25,6 +30,7 @@ export function validationPlan({
   editor = false,
   checks = false,
   part,
+  browser,
   lintOnly = false,
   noCache = false,
   plan = false,
@@ -34,6 +40,8 @@ export function validationPlan({
   if ([fast, full, editor, checks, lintOnly].filter(Boolean).length > 1) throw new Error('Choose one validation mode.');
   if ((full || checks) && scope !== 'all') throw new Error('Complete validation cannot be scoped.');
   if (scope !== 'all' && !scopes.includes(scope)) throw new Error(`Unknown scope: ${scope}`);
+  if (browser !== undefined && (!editor || !['chromium', 'firefox'].includes(browser)))
+    throw new Error('--browser takes chromium or firefox and needs --editor.');
   if (editor) {
     if (plan || since || scope !== 'all')
       throw new Error('Editor acceptance cannot be combined with --plan, --since, or scoped validation.');
@@ -48,11 +56,11 @@ export function validationPlan({
         args: ['scripts/test-content-workspace.mjs', '--firefox'],
         env,
       },
-    ];
+    ].filter(({ name }) => !browser || browserSteps[browser].includes(name));
   }
   if (lintOnly && scope !== 'all') throw new Error('Lint-only validation cannot be scoped.');
-  if (part !== undefined && (!checks || !['lint', 'tests'].includes(part)))
-    throw new Error('--part takes lint or tests and needs --checks.');
+  if (part !== undefined && (!checks || !['lint', 'typecheck', 'tests'].includes(part)))
+    throw new Error('--part takes lint, typecheck or tests and needs --checks.');
 
   const affected = !full && !checks && !lintOnly;
   if (since && !affected) throw new Error('--since is only valid for affected validation.');
@@ -60,8 +68,10 @@ export function validationPlan({
     lintOnly || part === 'lint'
       ? ['lint']
       : part === 'tests'
-        ? ['test', 'typecheck']
-        : ['test', 'lint', 'typecheck', ...(full ? ['build'] : [])];
+        ? ['test']
+        : part === 'typecheck'
+          ? ['typecheck']
+          : ['test', 'lint', 'typecheck', ...(full ? ['build'] : [])];
   const args = affected ? ['affected', '-t', ...targets] : ['run-many', '-t', ...targets, '--all'];
   // Nx bail kills tasks already running, which then report as failures; CI lets every task report its own result.
   if (bail) args.push('--nxBail');
@@ -469,6 +479,7 @@ export async function main(args = process.argv.slice(2), dependencies = {}) {
       checks: { type: 'boolean' },
       'lint-only': { type: 'boolean' },
       part: { type: 'string' },
+      browser: { type: 'string' },
       trace: { type: 'boolean' },
       resume: { type: 'boolean' },
       'no-cache': { type: 'boolean' },
@@ -484,6 +495,7 @@ export async function main(args = process.argv.slice(2), dependencies = {}) {
     checks: values.checks,
     lintOnly: values['lint-only'],
     part: values.part,
+    browser: values.browser,
     noCache: values['no-cache'],
     plan: values.plan,
     scope: values.scope,

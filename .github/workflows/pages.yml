@@ -10,13 +10,13 @@ env:
   UAT_PUBLIC_BACKEND_BASE_URL: ${{ vars.UAT_PUBLIC_BACKEND_BASE_URL }}
   SOURCE_SHA: ${{ github.sha }}
 jobs:
-  # Pushing to main deploys UAT only: the checks and both browser suites run in parallel and gate the deploy.
-  # PRD is a separate manual run of promote-prd.yml.
+  # Pushing to main deploys UAT only: the build and the static checks gate the deploy. Both browser suites run beside
+  # it on every push and gate PRD promotion, a separate manual run of promote-prd.yml.
   check-candidate:
     strategy:
       fail-fast: false
       matrix:
-        part: [lint, tests]
+        part: [lint, typecheck, tests]
     concurrency:
       group: ci-${{ github.ref }}-checks-${{ matrix.part }}
       cancel-in-progress: true
@@ -53,13 +53,13 @@ jobs:
           path: .codex-artifacts/validation
           if-no-files-found: ignore
           retention-days: 7
-  # The whole end-to-end suite runs on every push against a Local production fixture, in two balanced Playwright
-  # shards beside the checks; a red shard stops the UAT deploy.
+  # The whole end-to-end suite runs on every push against a Local production fixture, in four balanced Playwright
+  # shards beside the deploy; a red shard fails the run, and promotion refuses a failed run.
   e2e:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3, 4]
     concurrency:
       group: ci-${{ github.ref }}-e2e-${{ matrix.shard }}
       cancel-in-progress: true
@@ -77,7 +77,7 @@ jobs:
       - name: Run the whole end-to-end suite
         env:
           BLACKBOX_E2E_PREVIEW: '1'
-        run: pnpm test:e2e --shard=${{ matrix.shard }}/2
+        run: pnpm test:e2e --shard=${{ matrix.shard }}/4
       - name: Upload end-to-end evidence
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7.0.1
@@ -86,10 +86,15 @@ jobs:
           path: .codex-artifacts/e2e
           if-no-files-found: ignore
           retention-days: 7
-  # Builds the PRD staff app and checks the previews in Chromium and Firefox; offline, so it holds no credential.
+  # Builds the PRD staff app and checks the previews, one browser per leg, beside the deploy; offline, so it holds no
+  # credential. Both legs install both browsers: the chromium leg's preview policy checks both engines.
   staff-previews:
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, firefox]
     concurrency:
-      group: ci-${{ github.ref }}-staff-previews
+      group: ci-${{ github.ref }}-staff-previews-${{ matrix.browser }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -100,16 +105,16 @@ jobs:
       - *install
       - name: Install preview test browsers
         run: pnpm exec playwright install --with-deps chromium firefox
-      - name: Verify staff previews in Chromium and Firefox
+      - name: Verify staff previews in ${{ matrix.browser }}
         env:
           PUBLIC_STAFF_ENVIRONMENT: prd
           STAFF_PREVIEW_ENVIRONMENT: prd
-        run: pnpm validate:editor
+        run: pnpm validate:editor --browser=${{ matrix.browser }}
       - name: Upload staff preview evidence
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: staff-previews-${{ github.run_id }}-${{ github.run_attempt }}
+          name: staff-previews-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.browser }}
           path: .codex-artifacts/validation
           if-no-files-found: ignore
           retention-days: 7
@@ -142,7 +147,7 @@ jobs:
           retention-days: 3
   # One serialized mutation per push: a newer push replaces a waiting run and never cancels one that is deploying.
   deploy-uat:
-    needs: [check-candidate, e2e, staff-previews, build-uat]
+    needs: [check-candidate, build-uat]
     concurrency:
       group: release-uat
       cancel-in-progress: false
@@ -188,13 +193,17 @@ jobs:
         run: |
           pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/uat/renderer/server/wrangler.json
           pnpm --filter @blackbox/backend exec wrangler deploy --config ../../.codex-artifacts/release/uat/cms/server/wrangler.json --keep-vars
-          node scripts/release-candidate.mjs verify-worker uat
-          pnpm store:listing-readiness:verify -- --env uat --url "$UAT_PUBLIC_BACKEND_BASE_URL/api/store/listing-prices"
       - name: Deploy UAT to Cloudflare Pages
         env: *cloudflare
         run: |
           node scripts/configure-public-gateway.mjs uat
           pnpm --filter @blackbox/backend exec wrangler pages deploy ../../.codex-artifacts/release/uat/public --project-name=blackbox-records-web-uat --branch=main --commit-hash="$SOURCE_SHA"
+      # The identity checks are public reads; the token only lets the listing check read D1's published Store Items.
+      - name: Verify the deployed UAT release
+        env: *cloudflare
+        run: |
+          node scripts/release-candidate.mjs verify-worker uat
+          pnpm store:listing-readiness:verify -- --env uat --url "$UAT_PUBLIC_BACKEND_BASE_URL/api/store/listing-prices"
           node scripts/release-candidate.mjs verify-hosted uat
       # Smokes the UAT this run just deployed. A red smoke fails the run, and promotion refuses a failed run.
       - name: Install Chromium for the smoke

@@ -11,8 +11,6 @@
     "dev:sandbox": "pnpm dev:uat",
     "deploy:uat": "pnpm build:cms --env uat && wrangler deploy --config dist/server/wrangler.json",
     "deploy:sandbox": "pnpm deploy:uat",
-    "deploy:prd": "wrangler deploy --env prd",
-    "deploy:production": "pnpm deploy:prd",
     "d1:smoke:local": "wrangler d1 execute COMMERCE_DB --local --command \"SELECT 1 AS ok\" --json",
     "d1:seed:local": "wrangler d1 execute COMMERCE_DB --local --file ./prisma/seeds/local-commerce-state.sql --json",
     "d1:seed:uat": "wrangler d1 execute COMMERCE_DB --env uat --remote --file ./prisma/seeds/local-commerce-state.sql --json",

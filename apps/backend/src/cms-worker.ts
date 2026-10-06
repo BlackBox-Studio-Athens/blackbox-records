@@ -14,6 +14,7 @@ import {
 import { createBindingLogger } from './platform/observability';
 import { DurableObject } from 'cloudflare:workers';
 import { CommerceRuntime } from './index';
+import { createHttpApp } from './interfaces/http/app';
 import {
   isSupportedCmsApiRequest,
   isCmsTokenExportRead,
@@ -82,6 +83,7 @@ import type { ValidatedUploadThumbnail } from './cms/media-upload';
 
 declare const RELEASE_SOURCE_SHA: string;
 const releaseSourceSha = typeof RELEASE_SOURCE_SHA === 'undefined' ? undefined : RELEASE_SOURCE_SHA;
+const preflightApp = createHttpApp({ preflightOnly: true });
 
 export { CommerceRuntime };
 
@@ -112,7 +114,7 @@ export default {
         'Scheduled work failed',
       );
   },
-  async fetch(request: Request, bindings: CmsBindings, _context: ExecutionContext) {
+  async fetch(request: Request, bindings: CmsBindings, context: ExecutionContext) {
     const url = new URL(request.url);
     if (isPreviewHost(request, bindings)) return bindings.CMS_RUNTIME.getByName('editorial').fetch(request);
     if (url.pathname.startsWith(publishedMediaPath))
@@ -120,6 +122,9 @@ export default {
     if (request.headers.get('Authorization')?.startsWith('Bearer ec_pat_') && !isCmsTokenExportRead(request))
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
     if (url.pathname.startsWith('/api/') && !url.pathname.startsWith('/api/internal/')) {
+      // The entry answers preflights, so their release headers name the deployed Worker,
+      // not the Durable Object's possibly older code.
+      if (request.method === 'OPTIONS') return preflightApp.fetch(request, bindings, context);
       return bindings.COMMERCE_RUNTIME.getByName('store').fetch(request);
     }
     if (url.pathname.startsWith(staffThumbnailRoutePrefix)) {

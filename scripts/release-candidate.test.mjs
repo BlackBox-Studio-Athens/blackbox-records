@@ -26,7 +26,15 @@ const run = {
   repository: { full_name: repository },
   head_repository: { full_name: repository },
 };
-const jobs = ['e2e (1)', 'e2e (2)', 'staff-previews', 'deploy-uat'].map((name) => ({ name, conclusion: 'success' }));
+const jobs = [
+  'e2e (1)',
+  'e2e (2)',
+  'e2e (3)',
+  'e2e (4)',
+  'staff-previews (chromium)',
+  'staff-previews (firefox)',
+  'deploy-uat',
+].map((name) => ({ name, conclusion: 'success' }));
 
 test('post-deployment propagation checks retry within a fixed attempt budget', async () => {
   let attempts = 0;
@@ -43,7 +51,7 @@ test('post-deployment propagation checks retry within a fixed attempt budget', a
     }, pause),
     /Still mismatched/,
   );
-  assert.equal(attempts, 120);
+  assert.equal(attempts, 24);
 });
 
 test('only a successful push run of this workflow on main with the selected SHA is accepted', () => {
@@ -66,7 +74,7 @@ test('only a successful push run of this workflow on main with the selected SHA 
 
 test('a candidate run must have passed the browser suites and the UAT deploy', () => {
   validateSuites(jobs);
-  for (const name of ['e2e (2)', 'staff-previews', 'deploy-uat']) {
+  for (const name of ['e2e (4)', 'staff-previews (chromium)', 'staff-previews (firefox)', 'deploy-uat']) {
     assert.throws(
       () => validateSuites(jobs.filter((job) => job.name !== name)),
       new RegExp(name.replace(/[()]/g, '\\$&')),
@@ -208,7 +216,7 @@ test('verify-hosted prd refuses the UAT review marker', async (t) => {
   const routes = (title) => ({
     [preflightUrl]: preflight({ 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' }),
     [`${site}/release.json`]: released,
-    [`${site}/`]: home(title),
+    [`${site}/?release=${sha}`]: home(title),
   });
   await main('verify-hosted', 'prd', { env: prdEnv, fetch: canned(routes('Home')) });
   await assert.rejects(
@@ -224,7 +232,7 @@ test('verify-worker refuses a Worker from an older run', async () => {
   await assert.rejects(main('verify-worker', 'prd', { env: prdEnv, fetch }), /another candidate run/);
 });
 
-test('verify-worker trusts the Worker entry preflight over a Durable Object still on the old code', async (t) => {
+test('verify-worker reads identity from the entry preflight, not the Durable Object behind GETs', async (t) => {
   t.mock.method(console, 'log', () => {});
   const fetch = canned({
     [preflightUrl]: preflight({ 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' }),

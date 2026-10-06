@@ -16,12 +16,13 @@ const gh = (endpoint) => JSON.parse(execFileSync('gh', ['api', endpoint], { enco
 
 export async function waitForDeployment(verify, pause = () => setTimeout(5000)) {
   // ponytail: retry complete read-only checks; poll only identities if these reads become costly.
-  // 120 x 5 s (about 10 minutes): a Worker deployed at 100% has reached the runner's edge only after 3-6 minutes.
-  for (let attempt = 0; attempt < 120; attempt += 1) {
+  // 24 x 5 s (about 2 minutes): the Worker entry answers the identity preflight itself, so only the
+  // Worker version's propagation to the runner's edge is awaited, not the Durable Object's code update.
+  for (let attempt = 0; attempt < 24; attempt += 1) {
     try {
       return await verify();
     } catch (error) {
-      if (attempt === 119) throw error;
+      if (attempt === 23) throw error;
       await pause();
     }
   }
@@ -54,7 +55,15 @@ export function validateRun(run, sha, repository) {
 
 // A candidate run made before a suite joined the push pipeline cannot skip it.
 export function validateSuites(jobs) {
-  const required = ['e2e (1)', 'e2e (2)', 'staff-previews', 'deploy-uat'];
+  const required = [
+    'e2e (1)',
+    'e2e (2)',
+    'e2e (3)',
+    'e2e (4)',
+    'staff-previews (chromium)',
+    'staff-previews (firefox)',
+    'deploy-uat',
+  ];
   const passed = new Set(jobs.filter((job) => job.conclusion === 'success').map((job) => job.name));
   for (const name of required) assert.ok(passed.has(name), `Candidate run lacks a passed ${name} job.`);
 }
@@ -121,7 +130,8 @@ export async function main(command, target, { fetch = globalThis.fetch, env = pr
   const release = releaseIdentity(env);
   const site = sites[target];
   const capabilitiesUrl = `${backends[target]}/api/store/capabilities`;
-  // Read identity from the Worker entry's OPTIONS preflight: after a deploy the Durable Object behind GETs can lag for minutes.
+  // Read identity from the OPTIONS preflight, which the Worker entry answers without the Durable Object:
+  // after a deploy the Durable Object behind GETs can run older code for minutes.
   const worker = await fetch(capabilitiesUrl, {
     method: 'OPTIONS',
     headers: { Origin: site, 'Access-Control-Request-Method': 'GET' },
@@ -155,7 +165,11 @@ export async function main(command, target, { fetch = globalThis.fetch, env = pr
     );
     assert.equal(current.publicationMode, 'runtime');
     assert.match(current.content?.snapshotSha256 ?? '', /^[a-f0-9]{64}$/);
-    const page = await fetch(`${site}/`, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
+    // A unique query bypasses the renderer's s-maxage edge copy, which can still name the previous SHA.
+    const page = await fetch(`${site}/?release=${release.sha}`, {
+      cache: 'no-store',
+      signal: AbortSignal.timeout(30_000),
+    });
     assert.ok(page.ok, 'Public renderer unavailable.');
     assert.equal(page.headers.get('X-Release-SHA'), release.sha);
     validateReviewMarker(target, await page.text());

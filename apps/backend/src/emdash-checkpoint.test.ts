@@ -358,6 +358,23 @@ describe('EmDash checkpoint composition', () => {
     expect(assets).not.toHaveBeenCalled();
   });
 
+  it('answers public API preflights at the entry without the commerce Durable Object', async () => {
+    vi.mocked(authenticate).mockResolvedValue({ email: 'member@example.com', name: 'Member', role: 30 });
+    const commerce = vi.fn().mockResolvedValue(new Response('commerce'));
+    const bindings = {
+      PRODUCT_ENVIRONMENT: 'LOCAL',
+      COMMERCE_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetch: commerce }) },
+    } as unknown as Parameters<typeof worker.fetch>[1];
+    const send = (path: string, method: string) =>
+      worker.fetch(new Request(`http://127.0.0.1${path}`, { method }), bindings, {} as ExecutionContext);
+
+    expect((await send('/api/store/capabilities', 'OPTIONS')).status).toBe(204);
+    expect(commerce).not.toHaveBeenCalled();
+    await send('/api/store/capabilities', 'GET');
+    await send('/api/internal/variants', 'OPTIONS');
+    expect(commerce).toHaveBeenCalledTimes(2);
+  });
+
   it('routes checkout to commerce without invoking the CMS or consuming its CPU allowance', async () => {
     const request = new Request('https://shop.example/api/checkout/sessions', { method: 'POST', body: '{}' });
     const fetch = vi.fn().mockResolvedValue(new Response('checkout', { status: 200 }));

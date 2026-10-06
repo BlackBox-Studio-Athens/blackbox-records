@@ -47,8 +47,6 @@
     "openspec:readonly": "pnpm openspec",
     "deploy:backend:sandbox": "pnpm deploy:backend:uat",
     "deploy:backend:uat": "pnpm --filter @blackbox/backend deploy:uat",
-    "deploy:backend:prd": "pnpm --filter @blackbox/backend deploy:prd",
-    "deploy:backend:production": "pnpm deploy:backend:prd",
     "worker:dev": "pnpm dev:backend",
     "worker:dev:uat": "pnpm dev:backend:uat",
     "worker:dev:sandbox": "pnpm worker:dev:uat",
