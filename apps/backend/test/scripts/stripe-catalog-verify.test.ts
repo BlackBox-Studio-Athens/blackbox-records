@@ -116,6 +116,99 @@ describe('stripe catalog verify script helpers', () => {
     expect(spawnSyncMock).not.toHaveBeenCalled();
   });
 
+  it('re-syncs UAT Stripe Products from the D1 runtime projection without D1 writes', async () => {
+    const lookupKey = createStripeCatalogLookupKey('uat', storeItem);
+    const metadata = createStripeCatalogMetadata('uat', storeItem);
+    const projection = {
+      name: 'Current title',
+      description: 'Current copy',
+      imageUrls: ['https://uat.example.test/media/published/current.jpg'],
+      metadata: {},
+      taxCode: 'txcd_99999999',
+    };
+    const stalePrice: StripeCatalogPrice = {
+      taxBehavior: 'inclusive',
+      active: true,
+      amountMinor: 3700,
+      currencyCode: 'EUR',
+      customUnitAmount: null,
+      lookupKey,
+      metadata,
+      priceKind: 'fixed',
+      priceId: stripePriceId('price_runtimeapply1234'),
+      productActive: true,
+      productDescription: null,
+      productId: 'prod_runtimeapply1234',
+      productImages: ['https://retired.example.test/assets/catalog/old.jpg'],
+      productMetadata: metadata,
+      productName: 'Old title',
+      productTaxCode: 'txcd_99999999',
+    };
+    const syncedPrice = {
+      ...stalePrice,
+      productDescription: projection.description,
+      productImages: projection.imageUrls,
+      productName: projection.name,
+    };
+    const updateProductProjection = vi.fn().mockResolvedValue({
+      active: true,
+      metadata,
+      name: projection.name,
+      productId: 'prod_runtimeapply1234',
+    });
+    createStripeCatalogGatewayMock.mockReturnValue({
+      retrieveDefaultPrice: vi.fn().mockResolvedValueOnce(stalePrice).mockResolvedValueOnce(syncedPrice),
+      updateProductProjection,
+    } as unknown as ReturnType<typeof createStripeCatalogGateway>);
+    spawnSyncMock.mockReturnValue({
+      status: 0,
+      stderr: '',
+      stdout: JSON.stringify([
+        {
+          success: true,
+          results: [
+            {
+              mappingStripePriceId: stalePrice.priceId,
+              mappingStripeProductId: stalePrice.productId,
+              sourceId: storeItem.sourceId,
+              sourceKind: storeItem.sourceKind,
+              storeItemSlug: storeItem.storeItemSlug,
+              variantId: storeItem.variantId,
+              cmsSourceId: 'native-release',
+              itemType: 'vinyl',
+              priceKind: 'fixed',
+              catalogAvailability: 'published',
+              catalogRevision: 1,
+              productProjection: JSON.stringify(projection),
+            },
+          ],
+        },
+      ]),
+    } as ReturnType<typeof spawnSync>);
+    vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_runtime_apply');
+
+    try {
+      const result = await verifyStripeCatalog({ apply: true, environment: 'uat' });
+
+      expect(updateProductProjection).toHaveBeenCalledTimes(1);
+      expect(updateProductProjection).toHaveBeenCalledWith(
+        'prod_runtimeapply1234',
+        { projection, stripeMetadata: metadata },
+        expect.anything(),
+      );
+      expect(JSON.stringify(updateProductProjection.mock.calls)).not.toContain('/assets/catalog/');
+      expect(result).toMatchObject({ dryRun: false, issues: [] });
+      expect(result.appliedActions?.flatMap((item) => item.actions.map((action) => action.kind))).toEqual([
+        'update_product_projection',
+      ]);
+      expect(JSON.stringify(spawnSyncMock.mock.calls)).not.toMatch(/INSERT|UPDATE|DELETE/);
+    } finally {
+      createStripeCatalogGatewayMock.mockReset();
+      spawnSyncMock.mockReset();
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('accepts current Stripe Price Authority during day-to-day dry-run verification', async () => {
     const previousStripeSecretKey = process.env.STRIPE_SECRET_KEY;
     const lookupKey = createStripeCatalogLookupKey('uat', storeItem);

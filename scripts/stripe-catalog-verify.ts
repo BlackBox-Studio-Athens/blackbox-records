@@ -119,7 +119,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--help' || arg === '-h') {
       console.log(
-        'Usage: pnpm stripe:catalog:verify --env local|uat|prd [--store-item <storeItemSlug>] [--apply|--plan-apply] (legacy platform aliases accepted: sandbox, production)',
+        'Usage: pnpm stripe:catalog:verify --env local|uat|prd [--store-item <storeItemSlug>] [--apply|--plan-apply] (--apply re-syncs Stripe Product name, description and images from the D1 runtime projection, never PRD; --plan-apply is a repository-migration dry run; legacy platform aliases accepted: sandbox, production)',
       );
       process.exit(0);
     }
@@ -137,11 +137,14 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 }
 
 export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promise<CatalogSyncRunResult> {
-  if (!options.apply && !options.planApply)
-    return verifyRuntimeCatalogItem(options.environment, options.storeItemSlug ?? undefined);
-  if (options.apply) assertNoPrdCatalogApply(options.environment);
+  const slug = options.storeItemSlug ?? undefined;
+  if (options.apply) {
+    assertNoPrdCatalogApply(options.environment);
+    return applyRuntimeCatalogProjections(options.environment, slug);
+  }
+  if (!options.planApply) return verifyRuntimeCatalogItem(options.environment, slug);
 
-  // Explicit repository migration diagnostics; routine release does not call this path.
+  // --plan-apply only: dry-run repository migration diagnostics; routine release and --apply do not use this path.
   const allContracts = await loadStripeCatalogStoreItemContracts({
     productEnvironment: options.environment === 'prd' ? 'PRD' : 'UAT',
   });
@@ -151,8 +154,7 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
   if (!stripeSecretKey) {
     throw new Error('Missing STRIPE_SECRET_KEY for Stripe catalog verification.');
   }
-  const desiredPrices = createExpectedPriceMap(contracts, options.environment);
-  const expectedPrices = options.apply || options.planApply ? desiredPrices : undefined;
+  const expectedPrices = createExpectedPriceMap(contracts, options.environment);
   const expectedProductProjections = createExpectedProductProjectionMap(contracts, options.environment);
   const stripeCatalog = createStripeCatalogGateway({
     STRIPE_API_BASE_URL: process.env.STRIPE_API_BASE_URL,
@@ -173,47 +175,40 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
       variantStripeMappings: repositories.variantStripeMappings,
     });
   };
-  const reconciler = createReconciler();
-
-  const result = await reconciler.verifyBuyableCatalog({
-    apply: options.apply,
+  return createReconciler().verifyBuyableCatalog({
+    apply: false,
     expectedPrices,
     expectedProductProjections,
   });
-  const appliedActions =
-    options.apply && !result.dryRun
-      ? result.results.flatMap((resultItem) =>
-          resultItem.actions.length
-            ? [
-                {
-                  actions: resultItem.actions,
-                  lookupKey: resultItem.lookupKey,
-                  storeItemSlug: resultItem.storeItem.storeItemSlug,
-                  variantId: resultItem.storeItem.variantId,
-                },
-              ]
-            : [],
-        )
-      : [];
-
-  if (options.apply && appliedActions.length > 0) {
-    const postApplyResult = await createReconciler().verifyBuyableCatalog({
-      apply: false,
-      expectedPrices: desiredPrices,
-      expectedProductProjections,
-    });
-
-    return {
-      ...postApplyResult,
-      appliedActions,
-      dryRun: false,
-    };
-  }
-
-  return result;
 }
 
-async function verifyRuntimeCatalogItem(environment: StripeCatalogEnvironment, slug: StoreItemSlug | undefined) {
+// --apply re-syncs Stripe Product name, description and images from the D1 runtime projection, then re-verifies.
+async function applyRuntimeCatalogProjections(environment: StripeCatalogEnvironment, slug: StoreItemSlug | undefined) {
+  const result = await verifyRuntimeCatalogItem(environment, slug, { apply: true });
+  const appliedActions = result.results.flatMap((item) => {
+    const actions = item.actions.filter((action) => action.kind === 'update_product_projection');
+    return actions.length
+      ? [
+          {
+            actions,
+            lookupKey: item.lookupKey,
+            storeItemSlug: item.storeItem.storeItemSlug,
+            variantId: item.storeItem.variantId,
+          },
+        ]
+      : [];
+  });
+
+  return appliedActions.length
+    ? { ...(await verifyRuntimeCatalogItem(environment, slug)), appliedActions, dryRun: false }
+    : result;
+}
+
+async function verifyRuntimeCatalogItem(
+  environment: StripeCatalogEnvironment,
+  slug: StoreItemSlug | undefined,
+  { apply = false }: { apply?: boolean } = {},
+) {
   const records = parseD1Rows<Record<string, unknown>>(
     runD1ReadSql(
       environment,
@@ -248,14 +243,17 @@ async function verifyRuntimeCatalogItem(environment: StripeCatalogEnvironment, s
   if (!secret) throw new Error('Missing STRIPE_SECRET_KEY for Stripe catalog verification.');
   const reconciler = new CatalogReconciler({
     environment,
-    ...repositories,
+    storeItems: repositories.storeItems,
+    // Apply updates Stripe Products only; checkout start repairs D1 mappings and snapshots, so these writes are dropped.
+    storeOfferSnapshots: { ...repositories.storeOfferSnapshots, save: async (snapshot) => snapshot },
+    variantStripeMappings: { ...repositories.variantStripeMappings, save: async (mapping) => mapping },
     stripeCatalog: createStripeCatalogGateway({
       STRIPE_SECRET_KEY: secret,
       STRIPE_API_BASE_URL: process.env.STRIPE_API_BASE_URL,
     }),
   });
   return reconciler.verifyBuyableCatalog({
-    apply: false,
+    apply,
     expectedProductProjections: projections,
   });
 }
