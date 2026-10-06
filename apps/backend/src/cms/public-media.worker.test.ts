@@ -86,6 +86,40 @@ function countingBucket() {
 
 const get = (path: string, host = 'https://blackbox-records-web.pages.dev') => new Request(`${host}${path}`);
 
+it('social JPEGs fall back on quota failure and retry the same transformation after recovery', async () => {
+  const cover = await storeMedia('social');
+  const live = await storeSnapshot([cover]);
+  const calls: URL[] = [];
+  let exhausted = true;
+  const media = new PublicMedia(bucket, environment, config, async (url) => {
+    calls.push(url);
+    return exhausted
+      ? new Response('quota', { status: 403, headers: { 'Cf-Resized': 'err=9422' } })
+      : new Response('JPEG', { headers: { 'Content-Type': 'image/jpeg' } });
+  });
+  const source = new URL(`/media/content/${cover.sha256}`, config.sourceOrigin);
+  const read = (query: string) => media.transformed(get(`/_image?${query}`), source, async () => live);
+  const query = `href=${encodeURIComponent(source.pathname)}&w=1200&f=jpeg`;
+  const fallback = await read(query);
+  expect(await bodyText(fallback)).toBe('image bytes social');
+  expect(fallback.headers.get('X-Blackbox-Image')).toBe('original-fallback');
+  expect(fallback.headers.get('Cache-Control')).toBe('public, max-age=300');
+  exhausted = false;
+  const recovered = await read(query);
+  expect(await bodyText(recovered)).toBe('JPEG');
+  expect(recovered.headers.get('Content-Type')).toBe('image/jpeg');
+  expect(calls.map((url) => url.href)).toEqual([
+    `${config.transformationOrigin}/cdn-cgi/image/width=1200,format=jpeg/${source.href}`,
+    `${config.transformationOrigin}/cdn-cgi/image/width=1200,format=jpeg/${source.href}`,
+  ]);
+  for (const invalid of ['w=480&f=jpeg', 'w=1200&f=avif']) {
+    const rejected = await read(invalid);
+    expect(rejected.status).toBe(404);
+    await rejected.body?.cancel();
+  }
+  expect(calls).toHaveLength(2);
+});
+
 it('addresses media by media SHA, so a text-only publication keeps every image URL', async () => {
   const cover = await storeMedia('cover');
   const before = await storeSnapshot([cover], 'Before');

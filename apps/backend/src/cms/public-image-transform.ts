@@ -98,6 +98,7 @@ export async function deliverPublicCmsImage(
         headers: { Accept: imageRequest.headers.get('Accept') ?? '*/*' },
       }),
     ),
+  profile: PublicImageProfile = 'auto',
 ): Promise<Response> {
   // A failed transform can be transient (e.g. the monthly Images quota), so the original is never cached immutably here.
   const fallbackOriginal = async () => {
@@ -108,7 +109,7 @@ export async function deliverPublicCmsImage(
     return new Response(original.body, { status: original.status, headers });
   };
   if (width === null || !config.transformationOrigin) return fetchOriginal();
-  const transformedUrl = publicImageTransformUrl(mediaSha256, config, width);
+  const transformedUrl = publicImageTransformUrl(mediaSha256, config, width, profile);
   if (!transformedUrl) return fallbackOriginal();
 
   try {

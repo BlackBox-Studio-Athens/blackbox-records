@@ -36,6 +36,15 @@ The system SHALL show publisher, destination, action, times, affected entries an
 - **WHEN** activation succeeds and confirmation is retried
 - **THEN** history retains the actual previous snapshot and records successful completion once
 
+### Requirement: Recover images within the Free plan
+
+The system SHALL keep Cloudflare Images on Free and automatically serve verified originals when transformations fail. Social-image URLs SHALL use the server fallback so crawlers do not require JavaScript. Successful transformations SHALL retain existing canonical source identities, and temporary fallbacks SHALL permit recovery after the allowance resets.
+
+#### Scenario: Social-image transformation quota is exhausted
+
+- **WHEN** Cloudflare returns quota error 9422 for a social image
+- **THEN** the server serves the accepted original with a short cache and retries the same approved transformation after recovery, without enabling a paid Images plan
+
 ### Requirement: Provide a read-only publication calendar
 
 The staff calendar SHALL show every successful publication including repeated updates and removals, use Europe/Athens, expose requested-time fallback labels, and support responsive month/agenda views and collection filtering without silent pagination truncation.

@@ -102,7 +102,7 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
         if (!root || !trigger?.dataset.src) return;
         const frame = document.createElement('iframe');
         frame.src = trigger.dataset.src;
-        frame.title = trigger.dataset.title ?? 'Video';
+        frame.title = trigger.dataset.title!;
         frame.className = 'size-full border-0';
         frame.allow = 'fullscreen; picture-in-picture';
         frame.allowFullscreen = true;

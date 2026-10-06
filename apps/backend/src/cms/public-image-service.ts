@@ -36,6 +36,9 @@ const service: ExternalImageService<PublicImageConfig> = {
     const transformed = publicImageTransformUrl(parsed.mediaSha256, config.service.config, width, profile);
     if (!transformed && config.service.config.transformationOrigin)
       throw new Error('Invalid hosted image configuration.');
+    // Crawlers cannot run the browser's original fallback; keep JPEG unfurls behind the server fallback.
+    if (transformed && profile === 'metadata')
+      return `${config.endpoint.route}?href=${encodeURIComponent(source)}&w=1200&f=jpeg`;
     return transformed?.href ?? source;
   },
 };

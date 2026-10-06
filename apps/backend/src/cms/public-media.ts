@@ -67,6 +67,8 @@ export class PublicMedia {
     const parsed = parsePublicMediaPath(source.pathname.replace(/^\/blackbox-records(?=\/)/, ''));
     if (!parsed || source.origin !== url.origin || source.search || source.hash) return notFound();
     const width = url.searchParams.get('w');
+    const format = url.searchParams.get('f');
+    if (format !== null && (format !== 'jpeg' || width !== '1200')) return notFound();
     const item = await this.resolve(await live(), parsed);
     if (!item || (width !== null && !isPublicImageRequestWidth(width, item.width))) return notFound();
     return deliverPublicCmsImage(
@@ -76,6 +78,7 @@ export class PublicMedia {
       this.image,
       () => this.original(request.method, item),
       this.fetchTransformed,
+      format === 'jpeg' ? 'metadata' : 'auto',
     );
   }
 

@@ -21,3 +21,4 @@ EmDash 1.1.0 supplies image editing, upload and content fixes. BlackBox's custom
 ## Impact
 
 Staff frontend, CMS publication journal/routes, content-model, public editorial rendering, dependency patches and migration smoke. No new infrastructure or dependencies. Local acceptance precedes UAT; PRD remains separately approved.
+- Retain original-image fallback on Images Free quota exhaustion and extend it to social-image crawlers without a paid image service.

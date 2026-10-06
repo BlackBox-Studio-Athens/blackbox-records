@@ -57,10 +57,10 @@ it('every CMS srcset candidate uses direct Images delivery; ESM assets stay plai
   );
 });
 
-it('keeps metadata JPEG at one 1200px ceiling even for smaller originals', async () => {
+it('keeps metadata JPEG at one 1200px ceiling behind the server original fallback', async () => {
   const options = await service.validateOptions!({ src: source, width: 1200, format: 'jpg' }, config, logger);
   const url = await service.getURL(options, config, logger);
-  expect(url).toContain('/width=1200,format=jpeg/');
+  expect(url).toBe(`/_image?href=${encodeURIComponent(source.src)}&w=1200&f=jpeg`);
   expect(await service.getURL({ src: { ...source, width: 1000 }, width: 1000, format: 'jpg' }, config, logger)).toBe(
     url,
   );
