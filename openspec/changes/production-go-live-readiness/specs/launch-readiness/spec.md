@@ -6,7 +6,7 @@ Define the fail-closed evidence, data, provider, approval, cutover, and rollback
 
 ### Requirement: Production launch gates
 
-The system MUST block PRD native-commerce launch until required prerequisite acceptance is complete and live payment, domain, webhook, Worker, D1, emergency-disable, rollback and sole-approver evidence identifies the accepted launch code and content. The separately authorized bounded live smoke precedes public cutover; archive paperwork alone is not an additional runtime gate.
+The system MUST block unrestricted PRD native-commerce launch until required prerequisite acceptance is complete and live payment, domain, webhook, Worker, D1, emergency-disable, rollback and sole-approver evidence identifies the accepted launch code and content. Restricted paid beta MUST follow its separate requirement below. The separately authorized bounded live smoke precedes public cutover; archive paperwork alone is not an additional runtime gate.
 
 #### Scenario: Launch is requested
 
@@ -32,6 +32,31 @@ The system MUST block PRD native-commerce launch until required prerequisite acc
 - **AND** non-Greece delivery is rejected before payment or normal fulfillment
 - **AND** no non-Greece provider, quote, or fallback path is configured.
 
+### Requirement: Restricted paid beta has explicit scope and receipts
+
+The system MUST restrict the paid beta to the approved cohort and finite order limit, retain an immediate checkout stop, and enable ordinary Stripe payment and refund receipts. The owner-accepted deferral of fiscal-provider/myDATA/credit and filing automation MUST remain unresolved evidence for full public launch; it MUST NOT be represented as a legal exemption or successful fiscal acceptance.
+
+#### Scenario: A beta customer pays
+
+- **GIVEN** the user approved the beta's seller/account, named cohort, order limit, review/end date and technical acceptance
+- **WHEN** an eligible customer completes a real payment
+- **THEN** normal payment, tax, shipping, stock, order and delivery checks apply, and the configured Stripe payment receipt uses accurate seller/contact and transaction details
+- **AND** the authorized smoke proves payment and refund receipt delivery to an approved recipient; sandbox manual receipts alone do not prove live automatic delivery
+- **AND** paid invoice creation and fiscal connectors are not prerequisites for ordinary payment receipts.
+
+#### Scenario: Beta access is outside its approved scope
+
+- **WHEN** an excluded customer requests checkout directly, or the beta reaches its limit or end condition
+- **THEN** new checkout is rejected while existing paid orders and refunds remain recoverable
+- **AND** the public apex remains on Holding Page until separately approved full public launch.
+
+#### Scenario: Beta ends with an account switch
+
+- **WHEN** future sales move to the owner's official account
+- **THEN** the switch uses refreshed inventory, source-session drain and verified target configuration
+- **AND** earlier orders retain their original account, seller and monetary history, with access and funding for old-account refunds/disputes
+- **AND** beta success alone does not authorize full public launch or mark fiscal work complete.
+
 ### Requirement: Exact launch tree
 
 The system MUST associate launch code artifacts, configuration, validation, approval and cutover with one exact accepted commit SHA and MUST separately identify the accepted PRD content snapshot and runtime catalog evidence.
@@ -50,9 +75,9 @@ The system MUST associate launch code artifacts, configuration, validation, appr
 - **THEN** launch evidence records the new accepted PRD snapshot identity and rechecks affected public surfaces
 - **AND** code SHA alone is not proof of approved content, and UAT content is not substituted for PRD content.
 
-### Requirement: Stripe-last provider sequence
+### Requirement: Destination Stripe provider sequence
 
-The system MUST close new-account Stripe test-mode behavior before live-mode preparation and MUST keep shopper checkout closed throughout live preparation.
+The system MUST accept the migration's designated-sandbox UAT behavior before live-mode preparation and MUST keep shopper checkout closed throughout live preparation. Independent account/tooling and Store performance work MAY proceed in parallel; each retains its required launch acceptance.
 
 #### Scenario: New Stripe account test mode is prepared
 
@@ -99,7 +124,7 @@ The system MUST close new-account Stripe test-mode behavior before live-mode pre
 
 ### Requirement: Manual selling operations are accepted before launch
 
-The system MUST keep launch blocked until an owner-approved manual fulfillment/refund procedure, shipping-charge model, and tax/receipt/invoice workflow have been configured and verified against the actual checkout experience.
+The system MUST keep full public launch blocked until an owner-approved manual fulfillment/refund procedure, shipping-charge model, and tax/receipt/invoice workflow have been configured and verified against the actual checkout experience. Restricted beta retains fulfillment, shipping, tax and ordinary receipt checks under its declared fiscal-automation deferral.
 
 #### Scenario: Manual handoff is rehearsed
 
@@ -188,7 +213,7 @@ The system MUST treat the user's explicit approval as the only final go/no-go au
 
 #### Scenario: User approves launch
 
-- **WHEN** all pre-activation evidence passes and the user explicitly approves the bounded live smoke and conditional public cutover
+- **WHEN** all full public-launch pre-activation evidence passes and the user explicitly approves the bounded live smoke and conditional public cutover
 - **THEN** `PRD_LAUNCH_APPROVED=true` may be deployed for the accepted Worker configuration
 - **AND** one bounded live checkout smoke runs before apex cutover.
 
@@ -212,7 +237,7 @@ The system SHALL record PRD evidence without committing secrets, full Stripe IDs
 
 ### Requirement: Post-commerce performance readiness
 
-The system MUST remeasure Store behavior against one production build and exact commit before Stripe work begins.
+The system MUST remeasure Store behavior against one production build and exact commit before launch acceptance. Independent Stripe preparation MAY proceed in parallel.
 
 #### Scenario: Current Store gates pass
 
@@ -222,5 +247,5 @@ The system MUST remeasure Store behavior against one production build and exact 
 #### Scenario: Reproducible application failure remains
 
 - **WHEN** a Store failure is attributable to current application behavior
-- **THEN** one bounded performance child addresses only the measured cause and is archived before Stripe work
+- **THEN** one bounded performance child addresses only the measured cause and supplies accepted evidence before launch; archival alone is not a runtime gate
 - **AND** pagination, virtualization, batching, static prices, or new frontend dependencies require a separate explicit design decision.

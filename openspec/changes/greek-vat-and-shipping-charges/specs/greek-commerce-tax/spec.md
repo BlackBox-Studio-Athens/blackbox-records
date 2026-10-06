@@ -6,7 +6,7 @@ Define the approved VAT treatment, monetary evidence and fiscal-document handoff
 
 ### Requirement: Stripe account facts support the selected taxable checkout
 
-The system MUST use the owner's current Stripe account as the seller/business source of truth and implement the selected ordinary taxable, VAT-inclusive treatment for the accepted physical audio catalog. Existing advertised amounts MUST remain consumer gross prices. Actual registration/configuration and fiscal-provider evidence MUST be verified before hosted acceptance and launch; unavailable account access MUST NOT be represented as successful inspection or prevent local implementation with synthetic fixtures.
+The system MUST use the phase's actual seller/account accepted by the migration and implement the selected ordinary taxable, VAT-inclusive treatment for the accepted physical audio catalog. Existing advertised amounts MUST remain consumer gross prices. Actual tax registration/configuration MUST be verified before live beta acceptance; fiscal-provider evidence MUST be verified before full public launch. Unavailable access MUST NOT be represented as successful inspection or prevent local implementation with synthetic fixtures.
 
 #### Scenario: Seller details already exist in Stripe
 
@@ -18,7 +18,7 @@ The system MUST use the owner's current Stripe account as the seller/business so
 #### Scenario: Account configuration is incomplete
 
 - **WHEN** required tax registration, origin, product classification or fiscal setup is absent or contradictory
-- **THEN** affected hosted acceptance remains incomplete until corrected
+- **THEN** affected tax or fiscal acceptance remains incomplete until corrected; the declared beta fiscal-automation deferral does not waive tax-calculation checks
 - **AND** unknown treatment cannot become a zero-tax/default-rate sale or a claim that tax collection or remittance is configured.
 
 #### Scenario: Existing advertised prices are retained
@@ -92,7 +92,15 @@ The system MUST verify and retain an Order Monetary Snapshot containing merchand
 
 ### Requirement: Stripe-connected fiscal services provide traceable documents
 
-The selling workflow MUST delegate routine fiscal issuance/transmission to a verified Stripe-connected service, with an accepted Greek issuer, timing, retention, delivery and credit process. Each applicable Fiscal Document and transmission/reconciliation result MUST be traceable to its order independently of payment receipts. Provider marketing, a generic PDF and ordinary Stripe account verification MUST NOT alone satisfy fiscal acceptance.
+For full public launch, the selling workflow MUST delegate routine fiscal issuance/transmission to a verified Stripe-connected service, with an accepted Greek issuer, timing, retention, delivery and credit process. Each applicable Fiscal Document and transmission/reconciliation result MUST be traceable to its order independently of payment receipts. Provider marketing, a generic PDF and ordinary Stripe account verification MUST NOT alone satisfy fiscal acceptance.
+
+#### Scenario: Fiscal automation is deferred during restricted beta
+
+- **GIVEN** the owner accepted the restricted-beta deferral recorded by launch readiness
+- **WHEN** an actual beta payment or refund is recorded
+- **THEN** ordinary Stripe receipt delivery and immutable seller/account/monetary facts remain required
+- **AND** fiscal automation stays open for the later phase with an owner for unresolved beta-period obligations
+- **AND** the deferral establishes neither a legal exemption nor completed issuance, myDATA transmission or filing.
 
 #### Scenario: A paid sale requires a document
 
@@ -117,7 +125,7 @@ The selling workflow MUST delegate routine fiscal issuance/transmission to a ver
 
 ### Requirement: VAT filing and remittance remain explicit
 
-The selling workflow MUST identify and verify the Stripe-connected service responsible for Greek VAT filing, its required inputs and the party funding/remitting the liability. Tax calculation, payment receipts and myDATA transmission MUST NOT be treated as proof that a return was filed or VAT paid to AADE.
+Before full public launch, the selling workflow MUST identify and verify the Stripe-connected service responsible for Greek VAT filing, its required inputs and the party funding/remitting the liability. During beta its automation remains deferred with a named responsible owner. Tax calculation, payment receipts and myDATA transmission MUST NOT be treated as proof that a return was filed or VAT paid to AADE.
 
 #### Scenario: Periodic VAT obligations are prepared
 

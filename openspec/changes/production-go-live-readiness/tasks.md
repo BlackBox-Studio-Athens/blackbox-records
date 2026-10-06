@@ -18,12 +18,14 @@
 - [x] 2.5 Record a no-action result when gates pass, or plan, fix, validate, and archive one bounded performance child for a reproducible application-attributable failure.
 - [x] 2.6 Reconcile implemented correction evidence: checkout creation and atomic stock are archived under `2026-09-09-*`; paid reconciliation records completed local correction/regression tasks. Preserve their actual validation limits and source references. Current account/provider checks remain section 3; protected PRD stock/order checks remain 4.9.
 - [ ] 2.7 Accept approved selling/privacy content and its authorized publication through [complete-shopper-purchase-information](../complete-shopper-purchase-information/tasks.md) ([coverage and local verification](../complete-shopper-purchase-information/evidence.md)), the single implementation owner for seller/support, shipping timing, returns/refunds, privacy and Store/checkout/footer placement. Reuse its coverage and Browser Use proof instead of implementing these surfaces again. Rates and monetary acceptance remain with the VAT child: [shared evidence](../greek-vat-and-shipping-charges/evidence.md). Do not invent business or legal terms; external acceptance remains open.
-- [ ] 2.8 Complete `greek-vat-and-shipping-charges` using the 2026-09-11 decisions: current Stripe account seller/business authority, existing prices inclusive of VAT, Stripe Tax, verified Stripe-connected fiscal/filing services and manual Greek BOX NOW at €2.50 Small / €3.50 Medium gross selected by measured cart packing. Local work may use synthetic fixtures; actual account configuration, packing and fiscal/myDATA/filing coverage must be evidenced before acceptance. Reuse the child's proof for 2.7, 2.9 and 3.8; verify advertised receipts and fiscal delivery rather than assuming Dashboard defaults.
+- [ ] 2.8 Complete `greek-vat-and-shipping-charges` for full public launch with the phase's accepted seller/account, inclusive gross prices, Stripe Tax, verified fiscal/filing services and measured Greek BOX NOW at €2.50 Small / €3.50 Medium. For beta, accept the monetary/packing proof and ordinary receipts while fiscal automation remains explicitly deferred and this task stays open. Reuse shared evidence for 2.7, 2.9 and 3.8.
 - [ ] 2.9 Review the existing `docs/commerce-operations.md`, assign missing owners and rehearse paid/review/failed-delivery checks through Orders, manual BOX NOW handoff, duplicate-safe private dispatch recording, Dashboard refunds and returned-stock reconciliation through Stock. Do not create another runbook or imply Orders tracks dispatch. External operational/fiscal acceptance remains open.
 
-## 3. New Stripe Account Test-Mode Closure
+## 3. Destination Stripe UAT Acceptance
 
-- [ ] 3.1 Obtain new-account test access, approved secret-store credentials, and approved UAT email recipients before any paid test can trigger delivery; keep secrets, private recipients, and full Stripe IDs out of Git.
+The migration's [UAT tasks](../migrate-stripe-to-blackboxrecords/tasks.md) execute account setup and cutover. Accept the same evidence below; do not repeat migration steps or purchases for separate checklists.
+
+- [ ] 3.1 Verify designated-sandbox access, the migration's durable secret-store credentials and approved UAT email recipients before any paid test can trigger delivery; keep secrets, private recipients and full Stripe IDs out of Git.
 - [ ] 3.2 Reuse archived `2026-09-10-stabilize-store-listing-prices` evidence and prove only missing/affected designated-account default-Price replacement and listing refresh behavior. Do not reopen or rearchive the completed change.
 - [ ] 3.3 On one corrected UAT commit, prove provider-valid expiry, accepted/rejected custom-Price carts, and reservation settlement/expiry/replay; include paid-reconciliation corrections and link shared evidence once. Reference the atomic-stock local D1 operator/checkout race proof; protected staff flows are PRD-only and belong to 4.9.
 - [ ] 3.4 Prove differing billing/shipping, delayed confirmation, failed webhook resend, and durable shortage review on that tree; exercise immediate delivery and controlled scheduled recovery only with approved recipients.
@@ -34,9 +36,11 @@
 
 ## 4. Live Stripe and PRD Preparation While Checkout Is Closed
 
+Consume the migration's closed-PRD handoff for account/catalog/configuration work below. This parent retains release, runtime and launch acceptance.
+
 - [ ] 4.1 Prepare the PRD configuration and final-origin artifact settings while checkout and apex cutover remain closed; freeze the launch commit only after source/configuration/generation changes finish in 4.6.
 - [ ] 4.2 Keep `PRD_LAUNCH_APPROVED` absent and `native_checkout_enabled=false`; verify capabilities report disabled and checkout creation rejects before provider work.
-- [ ] 4.3 Inventory existing live Product/default-Price bindings and secrets first; create or correct only missing approved resources through current Items/provider commands. Verify Payment Method Configuration, webhook and the application's pinned API version against the accepted candidate. Preserve live amounts and identities; store secrets only in approved stores.
+- [ ] 4.3 Accept the migration's live Product/default-Price bindings and configuration proof. Verify Payment Method Configuration, webhook and the application's pinned API version against the accepted candidate; route gaps through the migration's manifest procedure. Preserve approved live amounts and target identities; store secrets only in approved stores.
 - [ ] 4.4 Verify PRD runtime catalog, retained stock and migration inventory; apply only missing compatible migrations through the current release path. No routine readiness seed or repository-catalog overwrite: exceptional recovery requires its own reviewed plan and one-run confirmation. Never copy UAT runtime/provider state.
 - [ ] 4.5 Verify existing PRD `*/5 * * * *` and UAT `*/15 * * * *` schedules, CommerceRuntime forwarding, Resend, Access trust, CMS/public renderer service bindings, checkout origins and Greece-only delivery. Preserve Free-tier/no-KV guards; add no scheduler or paid dependency.
 - [ ] 4.6 Finish approved source/configuration changes and select reviewed PRD content revisions through Content/Items. Record code SHA, candidate run, accepted PRD snapshot identity/digest and runtime catalog readiness. Verify technical-origin media/image reachability without retired generated-catalog overrides. Any live catalog mutation retains separate one-run confirmation.
@@ -55,10 +59,13 @@
 
 ## 6. Final Activation and Stability
 
+The restricted beta uses the scope recorded in the migration design; full public launch requires the remaining fiscal acceptance and later official-account migration. Neither is authorized by this planning edit.
+
+- [ ] 6.0 Record the private beta cohort, finite order limit, review/end date, operating owner and fiscal/IRIS deferrals. Implement and verify enforced cohort access and the stop condition, including direct checkout requests by excluded users. Reuse existing controls; keep the apex on Holding Page and verify an immediate checkout shutdown.
 - [ ] 6.1 Set `native_checkout_enabled=true` while launch approval remains absent and verify checkout stays closed.
-- [ ] 6.2 Record completed pre-activation evidence, the prepared final-origin artifacts, and remaining live-smoke/public-routing checks; request the user's sole go/no-go decision.
-- [ ] 6.3 After explicit approval, set `PRD_LAUNCH_APPROVED=true` for the accepted Worker code, record that configuration/deployment change, and run one bounded live checkout smoke through the technical return origin; verify actual payment, stock/order settlement, collected Greek shipping, and delivery state.
+- [ ] 6.2 Record accepted code/configuration/content, the requested phase (restricted beta or full public launch), ordinary receipt settings, deferred work and remaining live proof. Obtain the user's phase-specific go/no-go; for full public launch also verify the official-account switch and fiscal acceptance. Record accepted risk without a compliance claim.
+- [ ] 6.3 After explicit phase approval, set `PRD_LAUNCH_APPROVED=true` for the accepted Worker code and record the deployment. Run the approved live purchase/refund with an approved recipient; verify money, stock/order/outbox, Greek shipping and actual Stripe payment/refund receipt emails, amounts and links. Beta then admits only its approved cohort until its stop condition, with the apex unchanged.
 - [ ] 6.4 On smoke failure, set `native_checkout_enabled=false`, remove launch approval if needed, and leave the apex on the Holding Page.
-- [ ] 6.5 On smoke success, repoint the apex from `holding` to the already-verified production artifact without code or generated-asset changes; verify public canonical URLs, checkout return routing, HTTPS, and `www` redirects.
+- [ ] 6.5 Only after full public-launch acceptance, its explicit approval and successful smoke on the final account, repoint the apex from `holding` to the already-verified production artifact; verify public canonical URLs, checkout returns, HTTPS and `www` redirects. Beta success does not authorize this step.
 - [ ] 6.6 Keep the Holding Page available as immediate rollback for at least 24 hours and record stability evidence.
 - [ ] 6.7 After accepted stability, retire holding-only workflow/source/artifact/branch dependencies, remove holding `noindex` remnants, sync final specs, and archive this change.

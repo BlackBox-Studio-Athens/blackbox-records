@@ -8,7 +8,7 @@ The public apex must not imply readiness before those gates close. UAT data and 
 
 **Goals:**
 
-- Preserve one auditable Stripe-last launch sequence.
+- Preserve one auditable account-migration and launch sequence.
 - Make one exact commit SHA own all launch artifacts and evidence.
 - Keep catalog preparation, launch approval, and runtime checkout independently controllable.
 - Keep the Holding Page available as immediate rollback through a minimum 24-hour stability window.
@@ -27,6 +27,12 @@ The public apex must not imply readiness before those gates close. UAT data and 
 
 `https://blackboxrecordsathens.com/` continues serving the verified Holding Page until every exact-tree gate passes and the user gives the sole final go/no-go approval. The holding branch remains the immediate rollback target through the stability window.
 
+### Restricted paid beta precedes public launch
+
+The owner's 2026-10-06 decision makes the [migration's restricted-beta scope](../migrate-stripe-to-blackboxrecords/design.md#5-separate-paid-beta-from-public-launch-and-the-next-account-switch) the immediate target. Record a named cohort, finite order limit, review/end date and operator before activation; implement and verify access restrictions at the checkout authority using existing access controls where suitable. Hidden URLs and frontend-only restrictions are insufficient. The user separately authorizes the bounded live payment/refund smoke and cohort access; keep the apex on Holding Page.
+
+Ordinary Stripe payment/refund receipts, truthful seller/support details, actual tax calculations, measured packing, stock/order/webhook integrity and operational recovery remain beta requirements. Fiscal-provider/myDATA/credit and filing automation stay open under the owner's accepted risk and are required for full public launch; the deferral establishes no legal exemption. Keep IRIS deferred. Reuse the existing two checkout controls, close checkout at the beta limit/end or on failure, and preserve beta account/seller provenance. Plan the later official-account switch from fresh evidence before full public launch; retain access to BlackBoxRecords for old refunds/disputes.
+
 ### One exact commit owns launch
 
 Freeze source/configuration changes, including final-origin settings, before selecting the accepted launch commit and building its artifacts. Record environment values and deployment identifiers alongside that SHA. Final launch checks target those artifacts; historical prerequisite evidence retains its original source SHA. Rerun affected checks after source, generated artifact, or configuration changes; evidence notes and OpenSpec archival alone do not invalidate unchanged runtime proof.
@@ -41,9 +47,9 @@ PRD editorial content comes from its own accepted immutable CMS snapshot; runtim
 
 Prepare final `ASTRO_SITE_URL`, renderer/CMS public-origin configuration, shopper email links, sitemap/metadata and assertions before approval. Keep accepted media and catalog/email image URLs reachable through the PRD technical origin while the apex serves Holding Page; inspect current snapshot/provider URLs rather than restoring retired catalog-generation overrides. Verify the paired release and accepted PRD snapshot through technical Pages and explicitly allowlist technical/apex checkout returns. After successful smoke, switch the apex to that verified gateway/runtime without changing code or content. The existing production Worker URL remains the browser API target.
 
-### Stripe work is last
+### Destination Stripe acceptance precedes live preparation
 
-After the new Stripe account exists, test mode closes in this order: listing-price stabilization, checkout stock reservations, then paid-order delivery outbox. Live Products/Prices, Payment Method Configuration, webhook, secrets, D1 preparation, and deployment follow while shopper checkout remains closed.
+[migrate-stripe-to-blackboxrecords](../migrate-stripe-to-blackboxrecords/design.md) owns the existing destination account map, seller resolution, account setup and catalog/configuration cutover. Consume its shared destination UAT proof for listing prices, checkout/reservations and paid-order delivery, then its closed-PRD handoff. The checklists here are launch acceptance views of that work, not a second migration. Seller-neutral tooling and provisional UAT preparation can run alongside physical/fiscal/content work.
 
 All three corrections are implemented. Listing-price stabilization, checkout creation, reservations, outbox and atomic-stock corrections are already archived; preserve their dated evidence and its account limitations. Use one current UAT candidate and approved recipients for only missing or affected account/provider checks: listing prices, reservation/checkout, then paid reconciliation and delivery recovery. Do not reopen archives or repeat purchases for bookkeeping. Paid-reconciliation remains open for its declared account acceptance and closure.
 
@@ -73,7 +79,7 @@ Use an owner-approved manual runbook covering paid/review/failed-delivery checks
 
 Record the selected separately charged delivery policy, who owns tax/receipt/invoice handling, and the exact checkout total expected. Configure and verify the approved model before launch; finish the bounded monetary implementation below before accepting this gate. Do not infer tax treatment, invent policy terms, or assume Stripe sends the receipt promised by the return page. Inventory existing public information, then publish the approved missing shipping timing/rates, return/refund process, contact, and privacy content in accessible storefront links. Verify against Stripe's [website checklist](https://docs.stripe.com/get-started/checklist/website); this is operational readiness, not a legal determination.
 
-The bounded child [greek-vat-and-shipping-charges](../greek-vat-and-shipping-charges/proposal.md) owns the VAT/delivery monetary contract and fiscal handoff. On 2026-09-11 the owner selected the current Stripe account as seller/business authority, taxable VAT-inclusive existing prices, Stripe Tax and Stripe-connected fiscal/filing services. Greece-only manual BOX NOW remains €2.50 Small / €3.50 Medium gross once per order, using the child's protected flat-stack algorithm and measured item/package dimensions and weights; later changes preserve accepted amounts. This supersedes the earlier undecided seller/exemption and manual fiscal re-entry alternatives. Local monetary/packing work can proceed with synthetic fixtures while account verification, physical measurements and provider capability evidence remain acceptance gates. Reuse the child's UI/provider/order/fiscal evidence for tasks 2.7–2.9 and 3.8; a Stripe payment receipt alone is not fiscal/myDATA/remittance proof. There is no separate launch approval or planning authorization to configure live providers.
+The bounded child [greek-vat-and-shipping-charges](../greek-vat-and-shipping-charges/proposal.md) owns the VAT/delivery monetary contract and fiscal handoff. Its 2026-09-11 taxable VAT-inclusive prices, Stripe Tax and Stripe-connected fiscal/filing choices remain selected; destination seller identity now comes from the migration. Greece-only manual BOX NOW remains €2.50 Small / €3.50 Medium gross once per order, using protected measured packing. Reuse the child's UI/provider/order/fiscal evidence for tasks 2.7–2.9 and 3.8. Synthetic UAT fixtures remain provisional; fiscal automation follows the restricted-beta deferral above, and ordinary payment receipts do not establish fiscal/myDATA/remittance acceptance. This parent retains beta and public-launch approval.
 
 The bounded child [complete-shopper-purchase-information](../complete-shopper-purchase-information/proposal.md) owns the remaining public content and its placement. Task 2.7 accepts its publication evidence; VAT task 4.4 supplies policy inputs and checks consistency against the same evidence. Neither child must wait for the other's archival to exchange evidence, and the parent retains final launch acceptance.
 
@@ -112,11 +118,11 @@ No other reviewer or automated result can create launch approval. After all prep
 1. Record completed prerequisite archives and accepted evidence.
 2. Remeasure Store performance on one exact production build; record no action or close one bounded child.
 3. Reuse implemented correction/archive evidence and fix only concrete regressions found on the launch candidate; account access is not a prerequisite for local corrections.
-4. Obtain the new Stripe account, approved secret-store credentials, and approved UAT recipients; close shared provider evidence in the declared order.
+4. Accept the migration's designated-account setup and shared UAT evidence with approved recipients; close only missing or affected provider checks.
 5. Prepare live Stripe, PRD D1, Worker bindings, Access, Cron, email, catalog, approved shopper policies, and the manual operating handoff while checkout remains closed.
 6. Run deterministic Prisma/API generation where applicable, `pnpm validate`, `pnpm validate:editor`, relevant Local publication checks, strict OpenSpec validation and Browser Use against the exact code and accepted content snapshot. No routine compiled catalog generation or stock seeding.
 7. Set the runtime feature flag true while launch approval remains absent and prove checkout stays closed.
-8. After explicit user approval, set `PRD_LAUNCH_APPROVED=true`, run one bounded live checkout smoke, and cut over the public apex only on success.
+8. After explicit user approval for the named phase, set `PRD_LAUNCH_APPROVED=true` and run the bounded live payment/refund/receipt smoke. For beta, retain restricted cohort access and Holding Page. Cut over the public apex only after full public-launch acceptance and its separate approval.
 9. Keep the Holding Page rollback target for at least 24 hours, then retire holding-only dependencies and archive this change after accepted stability.
 
 ## Open Questions
