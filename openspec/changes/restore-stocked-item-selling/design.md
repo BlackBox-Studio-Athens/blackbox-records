@@ -89,8 +89,8 @@ Run the repository-required full/editor gates and relevant Local CMS checks. Exi
 ## Migration Plan
 
 1. **Local and UAT:** Complete Local checks, then perform one ordinary UAT stock-first smoke with a configured-item control through the existing release workflow. Keep failure/retry simulation local; record the candidate SHA/run ID and result.
-2. **PRD code:** Review the compatible migration with the candidate. The existing `deploy-prd` job applies it before the combined Worker deployment. Use the reviewed artifact SHA, successful candidate run and `confirm_code_promotion=true`; keep `confirm_live_catalog_changes=false`. No separate catalog-seeding dispatch is needed.
-3. **PRD item:** With the existing per-item live authorization, verify the affected item's reviewed amount on its retained variant, unchanged inventory/history and unchanged launch controls. Ambiguous legacy bindings require a separate scoped repair; this plan does not authorize it.
+2. **PRD code:** Review the compatible migration with the candidate. The existing `deploy-prd` job applies it before the combined Worker deployment. Use the reviewed artifact SHA, successful candidate run and `confirm_code_promotion=true`; the release workflow carries no live catalog input. No separate catalog-seeding dispatch is needed.
+3. **PRD item:** With the item-scoped staff price authorization, verify the affected item's reviewed amount on its retained variant, unchanged inventory/history and unchanged launch controls. Ambiguous legacy bindings require a separate scoped repair; this plan does not authorize it.
 4. **Rollback:** Preserve provider objects and journal history. Use a compatible reviewed candidate or forward fix, never inventory reseeding or restoration of an old provider amount.
 
 Follow `docs/cloudflare-free-tier.md`. This change adds no bindings/jobs; a single ordinary smoke does not require a new capacity study or budget-approval gate. Its usage preflight still applies if work expands into repeated probes, hosted recovery rehearsals or bulk changes. Planning grants no deployment or live mutation approval.

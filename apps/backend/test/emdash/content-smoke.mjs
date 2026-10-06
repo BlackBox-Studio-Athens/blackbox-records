@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { getPlatformProxy, unstable_dev } from 'wrangler';
 import sharp from 'sharp';
@@ -11,15 +11,12 @@ import { markdownTreeToPortableText } from '../../../../scripts/cms-markdown.mjs
 import { DISTRO_GROUP_VALUES, sourceCollectionNames } from '@blackbox/content-model';
 import { createCmsSnapshotReaders } from '../../../../scripts/cms-snapshot-readers.mjs';
 import { captureCmsSnapshot } from '../../../../scripts/capture-cms-snapshot.mjs';
-import { stageCmsSnapshot } from '../../../../scripts/stage-cms-snapshot.mjs';
 import { writeCmsSnapshot } from '../../../../scripts/export-cms-snapshot.mjs';
 import { readContentSnapshot } from '../../../web/src/lib/content-files/content-snapshot.ts';
-import { claimPublicationDispatch } from '../../src/cms/publication-journal.ts';
 
 const root = new URL('../../', import.meta.url);
 const stateRoot = realpathSync(fileURLToPath(new URL('.emdash/', root)));
 const localState = mkdtempSync(join(stateRoot, 'publication-smoke-'));
-const workflowToken = 'a'.repeat(64);
 let worker;
 try {
   const commerceMigration = spawnSync(
@@ -47,7 +44,6 @@ try {
     persist: true,
     persistTo: localState,
     envFiles: [],
-    vars: { CMS_PUBLICATION_EXPORT_TOKEN: workflowToken, CONTENT_PUBLICATION_MODE: 'workflow' },
     logLevel: 'error',
     experimental: { disableExperimentalWarning: true },
   });
@@ -429,86 +425,27 @@ try {
   assert.deepEqual(summary(overview), summary(legacyOverview));
   assert.ok(overview.body.data.items.length <= 20);
 
-  const publicationInput = { id: crypto.randomUUID(), requestedRevision: snapshot.snapshot.records[0].revisionId };
-  const sendPublication = () =>
-    fetch('http://127.0.0.1:8799/_emdash/api/blackbox/publications', {
-      method: 'POST',
-      headers: { Origin: 'http://127.0.0.1:8799', 'X-EmDash-Request': '1', 'Content-Type': 'application/json' },
-      body: JSON.stringify(publicationInput),
-    });
-  const accepted = await sendPublication();
-  assert.equal(accepted.status, 202, await accepted.clone().text());
-  const publication = await accepted.json();
-  assert.equal(publication.status, 'pending');
-  assert.deepEqual(JSON.parse(migrate('--apply')).pending, []);
-  assert.deepEqual(await (await sendPublication()).json(), publication);
-  const statusResponse = await fetch('http://127.0.0.1:8799/_emdash/api/blackbox/publications/' + publication.id);
-  assert.equal(statusResponse.status, 200);
-  assert.deepEqual(await statusResponse.json(), publication);
-  const journal = await getPlatformProxy({
-    configPath: fileURLToPath(new URL('.emdash/wrangler.application-local.json', root)),
+  // Stage private snapshot objects directly: the generic media route must never expose reserved storage.
+  const mediaConfig = join(localState, 'wrangler.media.json');
+  writeFileSync(
+    mediaConfig,
+    JSON.stringify({
+      name: 'blackbox-cms-smoke-media',
+      compatibility_date: '2026-08-31',
+      r2_buckets: [{ binding: 'MEDIA', bucket_name: 'blackbox-records-cms-local' }],
+    }),
+  );
+  const staged = await getPlatformProxy({
+    configPath: mediaConfig,
     persist: { path: join(localState, 'v3') },
     remoteBindings: false,
     envFiles: [],
   });
-  let dispatch;
   try {
-    dispatch = await claimPublicationDispatch(journal.env.CMS_DB, 'local');
+    await staged.env.MEDIA.put(`snapshots/local/manifest/${snapshot.sha256}`, snapshot.json);
+    await staged.env.MEDIA.put(`snapshots/local/media/${snapshot.snapshot.media[0].sha256}`, pixels);
   } finally {
-    await journal.dispose();
-  }
-  assert.equal(dispatch.id, publication.id);
-  const bindRun = (token, ciRunId = '12345') =>
-    fetch('http://127.0.0.1:8799/_emdash/api/blackbox/publications/run', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        id: publication.id,
-        dispatchToken: dispatch.dispatchToken,
-        ciRunId,
-        codeSha: 'c'.repeat(40),
-      }),
-    });
-  const deniedRun = await bindRun('b'.repeat(64));
-  assert.equal(deniedRun.status, 403);
-  await deniedRun.body?.cancel();
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const bound = await bindRun(workflowToken);
-    assert.equal(bound.status, 200, await bound.clone().text());
-    assert.deepEqual(await bound.json(), { id: publication.id, status: 'pending' });
-  }
-  const conflictingRun = await bindRun(workflowToken, '54321');
-  assert.equal(conflictingRun.status, 409);
-  await conflictingRun.body?.cancel();
-  const uploadSnapshot = (kind, body) =>
-    fetch(`http://127.0.0.1:8799/_emdash/api/blackbox/publications/${kind}`, {
-      method: 'PUT',
-      body,
-      headers: {
-        Authorization: `Bearer ${workflowToken}`,
-        'X-Publication-ID': publication.id,
-        'X-CI-Run-ID': '12345',
-        'Content-Type': kind === 'media' ? 'application/octet-stream' : 'application/json',
-      },
-    });
-  const incomplete = await uploadSnapshot('snapshot', snapshot.json);
-  assert.equal(incomplete.status, 503, 'A snapshot with missing media cannot complete');
-  await incomplete.body?.cancel();
-  assert.deepEqual(
-    await stageCmsSnapshot({
-      environment: 'local',
-      target: 'http://127.0.0.1:8799/',
-      publicationId: publication.id,
-      ciRunId: '12345',
-      token: workflowToken,
-      capture: snapshot,
-    }),
-    { id: publication.id, snapshotSha256: snapshot.sha256 },
-  );
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const completed = await uploadSnapshot('snapshot', snapshot.json);
-    assert.equal(completed.status, 200, await completed.clone().text());
-    assert.deepEqual(await completed.json(), { id: publication.id, snapshotSha256: snapshot.sha256 });
+    await staged.dispose();
   }
   const revisionPath = '/revisions/' + snapshot.snapshot.records[0].revisionId;
   assert.equal((await request(revisionPath)).status, 200);

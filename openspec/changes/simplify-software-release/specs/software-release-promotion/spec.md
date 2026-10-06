@@ -76,9 +76,37 @@ Each release target SHALL still build from its selected source/content/configura
 - **AND** mutation stages retain their ordering, credential contexts, and shared non-cancelling lock
 - **AND** PRD still requires explicit selection and promotion of the retained reviewed artifact without rebuilding or implying catalog/launch approval.
 
+### Requirement: Releases serialize changes and expose partial failure
+
+State-changing deployment stages for a target SHALL NOT overlap or be cancelled halfway through mutation. A failed partial release SHALL retain enough redacted evidence to retry or restore compatible application artifacts without rolling back orders or stock. Routine rollback SHALL be a revert committed and pushed forward through the normal release; an emergency rollback SHALL restore the renderer Worker version and the Pages deployment together, and SHALL NOT cross a migration.
+
+#### Scenario: Another release starts during deployment
+
+- **WHEN** a target is already being mutated
+- **THEN** the new run waits and revalidates its source and target preconditions before acting.
+
+#### Scenario: Worker deploy succeeds but public deploy fails
+
+- **WHEN** a release stops after only the backend changed
+- **THEN** evidence names the deployed backend and unchanged frontend
+- **AND** recovery uses a compatible retry or code rollback without database reset or implied cross-provider transaction.
+
+#### Scenario: Routine rollback
+
+- **WHEN** a released change must be undone and no incident requires immediate action
+- **THEN** the operator reverts the change on `main` and pushes forward
+- **AND** the revert passes the same push-run gates, deploys to UAT and is promoted like any other candidate.
+
+#### Scenario: Emergency rollback
+
+- **WHEN** an incident requires restoring the previous PRD code before a revert can be released
+- **THEN** the operator rolls back the renderer Worker version and the Pages deployment from the same release run together, because rolling back only one leaves the renderer HTML and its `/_astro/*` chunks mismatched
+- **AND** the CMS Worker is rolled back only when no migration ran between the two releases
+- **AND** no rollback crosses a migration: D1 and CMS migrations are forward-only, so an incident across a migration is repaired by a compatible fix pushed forward.
+
 ### Requirement: Preparation cancellation does not interrupt hosted mutations
 
-Release preparation MAY cancel superseded work by branch and preparation role. Every hosted Worker, Pages, catalog, and
+Release preparation MAY cancel superseded work by branch and preparation role. Every hosted Worker, Pages and
 promotion mutation MUST remain serialized through its final identity checks.
 
 #### Scenario: New source supersedes preparation
@@ -93,7 +121,7 @@ promotion mutation MUST remain serialized through its final identity checks.
 - **THEN** its checks and target preparation start without waiting for the shared hosted mutation lock
 - **AND** the UAT reusable-workflow call acquires that lock across Worker deployment, Pages deployment, and final hosted identity verification
 - **AND** the called workflow inherits repository secrets, binds Worker/provider jobs to the UAT environment, and rejects missing required credentials before mutation
-- **AND** PRD promotion, catalog mutation, content publication and holding-page deployment retain the same non-cancelling lock.
+- **AND** PRD promotion and holding-page deployment retain the same non-cancelling lock; content publication is a runtime operation and takes no release lock.
 
 #### Scenario: Older candidate reaches mutation late
 

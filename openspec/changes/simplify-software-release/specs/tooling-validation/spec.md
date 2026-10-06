@@ -116,6 +116,12 @@ Validation SHALL prove target isolation, matching Cloudflare hosting, immutable 
 
 **Migration**: See the requirement "Manual UAT provider smoke".
 
+### Requirement: CI performance measurement is repeatable
+
+**Reason**: `pnpm ci:speed` and `scripts/ci-speed-measurement.mjs` are removed. Timing comes from the GitHub Actions API, so no repository tool or artifact path is required.
+
+**Migration**: Record timings with `gh run view --json jobs`; see `docs/validation-feedback.md`.
+
 ## ADDED Requirements
 
 ### Requirement: Manual UAT provider smoke

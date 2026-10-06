@@ -2,9 +2,9 @@
 
 ## 0. Restore PRD CMS backups (no code)
 
-- [ ] 0.1 With the user's approval, read the PRD R2 backup usage and confirm headroom under the 10 GB Free tier.
-- [ ] 0.2 Set the repository variable `CMS_BACKUP_MAX_BYTES` to `1073741824` and dispatch `cms-backup.yml` with `kind=daily`; confirm both environments are green.
-- [ ] 0.3 Update `docs/cms-backup.md` (capture ceiling, 1 GiB and its review date).
+- [x] 0.1 With the user's approval, read the PRD R2 backup usage and confirm headroom under the 10 GB Free tier. Measured 2026-10-06: about 1.86 GB of 10 GB (`docs/cms-backup.md`, Free-tier storage budget).
+- [x] 0.2 Set the repository variable `CMS_BACKUP_MAX_BYTES` to `2147483648` (2 GiB, the user's choice over 1 GiB) and dispatch `cms-backup.yml` with `kind=daily`; confirm both environments are green. Set on 2026-10-06; run `37505027251` succeeded (UAT 589 objects / 435,185,794 bytes; PRD 1,191 objects / 565,083,844 bytes after one rerun of a transient R2 500).
+- [x] 0.3 Update `docs/cms-backup.md` (capture ceiling, 2 GiB and its review date). Done in `50278f16`, which also adds a warning at 75% of the ceiling.
 
 ## 1. Suites to push, deploy-only promotion
 
@@ -19,11 +19,11 @@
 
 ## 2. Delete dead machinery (no build-shape change)
 
-- [ ] 2.1 Content publication path: `content-publication.yml`, prepare/acknowledge/report/build-snapshot/stage scripts, `publication-dispatch.ts`, journal workflow functions, write branches of `publication-routes.ts`, `CONTENT_PUBLICATION_MODE` guards; keep GET routes and `processRuntimePublication`.
-- [ ] 2.2 Catalog and cutover: `catalog-prd-plan` and `catalog-prd` jobs, cutover inputs and their scripts and test; keep `backfill-runtime-catalog.ts`; record the live-confirmation requirement in `migrate-stripe-to-blackboxrecords` tasks 4.2 and 4.3.
-- [ ] 2.3 Smoke and duplicates: `uat-static-smoke.yml`, `smoke-stripe-promotion.ts` and its test, the `smoke:stripe-sandbox` alias, `release-candidate.mjs pack` and its helpers.
-- [ ] 2.4 Measurement tooling: `ci-speed-measurement.mjs`, `benchmark-validation.mjs`, their scripts and docs; retarget the guard test fixtures.
-- [ ] 2.5 Add spec deltas (static-site-and-deployment timed jobs and `audit:unused` gate, content-publishing, catalog-promotion-automation) and strictly validate.
+- [x] 2.1 Content publication path: `content-publication.yml`, prepare/acknowledge/report/build-snapshot/stage scripts, `publication-dispatch.ts`, journal workflow functions, write branches of `publication-routes.ts`, `CONTENT_PUBLICATION_MODE` guards; keep GET routes and `processRuntimePublication`.
+- [x] 2.2 Catalog and cutover: `catalog-prd-plan` and `catalog-prd` jobs, cutover inputs and their scripts and test; keep `backfill-runtime-catalog.ts`; record the live-confirmation requirement in `migrate-stripe-to-blackboxrecords` tasks 4.2 and 4.3. Kept on purpose: `CatalogReconcilerDependencies.creationMutationScope` (`apps/backend/src/application/commerce/catalog-sync/catalog-reconciler.ts`) stays for the `migrate-stripe-to-blackboxrecords` apply workflow, and the PRD seed in `scripts/generate-catalog-readiness.ts` stays as the documented recovery input (`docs/catalog-promotion.md`).
+- [x] 2.3 Smoke and duplicates: `uat-static-smoke.yml`, `smoke-stripe-promotion.ts` and its test, the `smoke:stripe-sandbox` alias, `release-candidate.mjs pack` and its helpers.
+- [x] 2.4 Measurement tooling: `ci-speed-measurement.mjs`, `benchmark-validation.mjs`, their scripts and docs; retarget the guard test fixtures.
+- [x] 2.5 Add spec deltas (static-site-and-deployment timed jobs and `audit:unused` gate, content-publishing, catalog-promotion-automation) and strictly validate.
 
 ## 3. HOST-11: fail-closed, content-free builds, simple promotion
 
@@ -31,7 +31,7 @@
 - [ ] 3.2 Product prerequisites: prerender `robots.txt`, import the 3 mockup images, fix the email preview URL, serve `/assets/catalog/*` from R2 through the gateway.
 - [ ] 3.3 One content-free `build-uat` job; delete `prepare-prd`, `assemble-candidate`, `inspect-uat-pages`, content restore, media and Astro caches, the 6 CMS secrets, 7-day retention, `release-tools` and the `target=uat` path; add the read-only Pages credential check and `migrate-cms.mjs --apply`.
 - [ ] 3.4 New `promote-prd.yml` (no inputs, `main` guard, UAT identity, PRD build, checks, deploy, `verify-hosted prd`); shrink `release-candidate.mjs` to about 150 lines; delete restore and capture scripts and export routes.
-- [ ] 3.5 Add spec deltas (software-release-promotion bundle and rollback scenario, static-site-and-deployment fail-closed, content-publishing, cloudflare-free-tier-cache-policy, tooling-validation fixture snapshot) and update `docs/environment-model.md`.
+- [ ] 3.5 Add spec deltas (software-release-promotion bundle scenario; the rollback scenario landed in Phase 2 and Phase 3 adds that the rebuild path is gone; static-site-and-deployment fail-closed, content-publishing, cloudflare-free-tier-cache-policy, tooling-validation fixture snapshot) and update `docs/environment-model.md`.
 - [ ] 3.6 Operator step: set Pages "Fail closed" on both projects and read it back; verify the push run, asset URLs and a `promote-prd.yml` run of about 4 minutes.
 - [ ] 3.7 Re-check UAT only in the first PRD `verify` once locks split, so a UAT push cannot fail promotion between the Worker deploy and the Pages deploy.
 

@@ -52,7 +52,7 @@ it('checks persisted published items without loading repository contracts or imp
   const verify = vi
     .spyOn(CatalogReconciler.prototype, 'verifyBuyableCatalog')
     .mockResolvedValue({ dryRun: true, environment: 'uat', issues: [], results: [] });
-  await verifyStripeCatalog({ apply: false, environment: 'uat', promotionContext: null });
+  await verifyStripeCatalog({ apply: false, environment: 'uat' });
   expect(verify).toHaveBeenCalledWith({
     apply: false,
     expectedProductProjections: new Map([[record.variantId, JSON.parse(record.productProjection)]]),
@@ -64,7 +64,7 @@ it('checks persisted published items without loading repository contracts or imp
 
 it('fails closed on incomplete runtime setup before provider inspection', async () => {
   vi.mocked(spawnSync).mockReturnValueOnce(d1([{ ...record, cmsSourceId: null }]));
-  await expect(verifyStripeCatalog({ apply: false, environment: 'uat', promotionContext: null })).rejects.toThrow(
+  await expect(verifyStripeCatalog({ apply: false, environment: 'uat' })).rejects.toThrow(
     'Runtime catalog setup is incomplete',
   );
 });
@@ -73,7 +73,7 @@ it('fails closed when a runtime identity disappears during verification', async 
   vi.mocked(spawnSync)
     .mockReturnValueOnce(d1([record]))
     .mockReturnValueOnce(d1([]));
-  await expect(verifyStripeCatalog({ apply: false, environment: 'uat', promotionContext: null })).rejects.toThrow(
+  await expect(verifyStripeCatalog({ apply: false, environment: 'uat' })).rejects.toThrow(
     'Runtime catalog identities changed',
   );
 });

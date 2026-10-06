@@ -59,7 +59,7 @@ Each staff route additionally must:
 
 These ceilings allow modest build variation above the successful native experiment; baseline Overview and Orders fail their new JS budgets, and all four baseline documents fail the stylesheet rule. Verify that distinction against before/after artifacts instead of asserting configuration text alone. Do not raise budgets to make a regression pass. Existing `assertClosedOptionalFeatures` in `scripts/test-content-workspace.mjs` already checks initial scripts, stylesheet/HTML bodies, `.tiptap`, and `.cms-media-grid`; reuse it instead of adding a second browser suite.
 
-Append `pnpm performance:bundles --scope=staff` to the existing root `build:staff` command after route isolation. Append the default `pnpm performance:bundles` check to root `build:web` after its Astro build and route-isolation check. `run-release-preparation.mjs` already invokes these root build commands, so full validation and release builds inherit both checks. Keep the existing checker and budgets; do not add a second budget system.
+Append `pnpm performance:bundles --scope=staff` to the existing root `build:staff` command after route isolation. Append the default `pnpm performance:bundles` check to root `build:web` after its Astro build and route-isolation check. `scripts/validate.mjs --editor` (`pnpm validate:editor`) and the push `e2e` build (`pnpm build:web`) already invoke these root build commands, so full validation and release builds inherit both checks. Keep the existing checker and budgets; do not add a second budget system.
 
 ### 4. Separate local correctness from hosted outcome
 

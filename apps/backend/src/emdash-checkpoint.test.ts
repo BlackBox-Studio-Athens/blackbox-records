@@ -44,6 +44,8 @@ describe('EmDash checkpoint composition', () => {
       {} as DurableObjectState,
       {
         PRODUCT_ENVIRONMENT: 'LOCAL',
+        // No pending publication covers the record, so staff writes pass the in-progress guard.
+        CMS_DB: { prepare: () => ({ bind: () => ({ first: async () => null }) }) },
       } as unknown as ConstructorParameters<typeof CmsRuntime>[1],
     );
     const data = { title: 'About', url: '/about/', order: 5, show_in_header: true, show_in_footer: false };
@@ -330,7 +332,7 @@ describe('EmDash checkpoint composition', () => {
     expect(
       (
         await worker.fetch(
-          new Request('http://127.0.0.1/_emdash/api/blackbox/publications/run', { method: 'POST' }),
+          new Request('http://127.0.0.1/_emdash/api/blackbox/publications/snapshot'),
           bindings,
           {} as ExecutionContext,
         )
@@ -413,23 +415,16 @@ describe('EmDash checkpoint composition', () => {
     expect(response.status).toBe(403);
   });
 
-  it.each(['orders', 'cms', 'publication'] as const)(
-    'isolates scheduled %s failure from the other work',
-    async (failed) => {
-      const publication = vi.fn().mockResolvedValue({ status: 'idle' });
-      orders.mockReset().mockResolvedValue(undefined);
-      cms.mockReset().mockResolvedValue(undefined);
-      const failure = new Error('Scheduled operation unavailable');
-      ({ orders, cms, publication })[failed].mockRejectedValueOnce(failure);
-      const bindings = {
-        CMS_PUBLICATION_GITHUB_TOKEN: 'fake-github-test-token',
-        CMS_PUBLICATION_EXPORT_TOKEN: 'a'.repeat(64),
-        CMS_RUNTIME: { getByName: () => ({ runMaintenance: cms, dispatchPublication: publication }) },
-      } as unknown as Parameters<typeof worker.scheduled>[1];
-      await expect(worker.scheduled({} as ScheduledController, bindings)).rejects.toMatchObject({ errors: [failure] });
-      expect(orders).toHaveBeenCalledTimes(1);
-      expect(cms).toHaveBeenCalledTimes(1);
-      expect(publication).toHaveBeenCalledTimes(1);
-    },
-  );
+  it.each(['orders', 'cms'] as const)('isolates scheduled %s failure from the other work', async (failed) => {
+    orders.mockReset().mockResolvedValue(undefined);
+    cms.mockReset().mockResolvedValue(undefined);
+    const failure = new Error('Scheduled operation unavailable');
+    ({ orders, cms })[failed].mockRejectedValueOnce(failure);
+    const bindings = {
+      CMS_RUNTIME: { getByName: () => ({ runMaintenance: cms }) },
+    } as unknown as Parameters<typeof worker.scheduled>[1];
+    await expect(worker.scheduled({} as ScheduledController, bindings)).rejects.toMatchObject({ errors: [failure] });
+    expect(orders).toHaveBeenCalledTimes(1);
+    expect(cms).toHaveBeenCalledTimes(1);
+  });
 });

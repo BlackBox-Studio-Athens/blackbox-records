@@ -45,8 +45,7 @@ describe('Release workflow invariants', () => {
         (step) =>
           step.uses?.startsWith('actions/checkout@') && String(step.with?.ref).includes('inputs.artifact_commit_sha'),
       );
-      // Catalog jobs (`!inputs.confirm_code_promotion`) predate this rule and are removed with the catalog workflow.
-      if (promotionOnly(job) && /(?<!!)inputs\.confirm_code_promotion/.test(job.if ?? '') && checksOutCandidate)
+      if (promotionOnly(job) && checksOutCandidate)
         expect(job.steps?.[0]?.name, id).toBe('Require immutable main source');
     }
   });

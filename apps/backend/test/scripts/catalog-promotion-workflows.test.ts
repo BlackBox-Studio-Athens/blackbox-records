@@ -78,15 +78,13 @@ describe('one gated release', () => {
     }
   });
 
-  it('limits main pushes to UAT and keeps code, catalog, and launch authorization independent', () => {
+  it('limits main pushes to UAT and keeps PRD code promotion separate from catalog and launch authorization', () => {
     expect(release.on.workflow_dispatch.inputs.target.default).toBe('uat');
     expect(release.on.workflow_dispatch.inputs.confirm_code_promotion.default).toBe(false);
-    expect(release.on.workflow_dispatch.inputs.confirm_live_catalog_changes.default).toBe(false);
+    expect(release.on.workflow_dispatch.inputs.confirm_live_catalog_changes).toBeUndefined();
+    expect(release.jobs['catalog-prd']).toBeUndefined();
     expect(release.jobs['deploy-prd'].if).toBe(
       "${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_code_promotion }}",
-    );
-    expect(release.jobs['catalog-prd'].if).toBe(
-      "${{ github.event_name == 'workflow_dispatch' && inputs.target == 'prd' && inputs.confirm_live_catalog_changes && !inputs.confirm_code_promotion }}",
     );
     const promotion = [prdSequence.jobs['deploy-prd'], prdSequence.jobs['deploy-prd-static']];
     expect(JSON.stringify(promotion)).not.toMatch(/stripe:catalog:verify|d1:seed:prd|confirm-live-catalog-changes/);
@@ -106,8 +104,7 @@ describe('one gated release', () => {
     expect(release.concurrency['cancel-in-progress']).toBe(false);
     expect(release.jobs['uat-release'].concurrency).toEqual(lock);
     expect(release.jobs['uat-release'].secrets).toBe('inherit');
-    for (const role of ['deploy-prd', 'deploy-prd-static', 'catalog-prd'])
-      expect(release.jobs[role].concurrency).toBeUndefined();
+    for (const role of ['deploy-prd', 'deploy-prd-static']) expect(release.jobs[role].concurrency).toBeUndefined();
     for (const role of [
       'check-candidate',
       'prepare-uat',

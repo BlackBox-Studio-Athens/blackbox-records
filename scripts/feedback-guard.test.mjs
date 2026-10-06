@@ -115,12 +115,11 @@ test('a guarded leaf script runs only in CI, under the override, under a grant o
   const cwd = repository(t);
   const refusal = (file, args, env = {}) => scriptRefusal(file, { args, env, cwd, now });
   assert.match(refusal('scripts/test-content-workspace.mjs', ['--firefox']), /belong to `pnpm validate:editor`/);
-  assert.match(refusal('scripts/benchmark-validation.mjs', []), /`pnpm benchmark:validation`, which is release-tier/);
   assert.match(refusal('scripts/not-listed.mjs', []), /not listed in feedback-policy\.json/);
   assert.equal(refusal('scripts/test-content-workspace.mjs', ['--serve']), undefined);
-  assert.equal(refusal('scripts/run-release-preparation.mjs', ['browsers'], { GITHUB_ACTIONS: 'true' }), undefined);
+  assert.equal(refusal('scripts/test-content-workspace.mjs', ['--firefox'], { GITHUB_ACTIONS: 'true' }), undefined);
   assert.equal(
-    refusal('scripts/run-release-preparation.mjs', ['builds'], { [policy.releaseTier.overrideEnv]: '1' }),
+    refusal('scripts/test-content-workspace.mjs', ['--firefox'], { [policy.releaseTier.overrideEnv]: '1' }),
     undefined,
   );
   writeFileSync(grantPath(cwd, policy), JSON.stringify({ expiresAt: '2026-10-01T12:30:00Z' }));

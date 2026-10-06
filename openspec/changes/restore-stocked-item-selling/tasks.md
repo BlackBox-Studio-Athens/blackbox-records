@@ -25,5 +25,5 @@
 ## 5. Accept the release
 
 - [ ] 5.1 After release authorization, perform one UAT stock-first smoke and configured-item control. Record the candidate SHA/run ID and unchanged inventory result. Keep failure simulation local; apply the Free-tier usage preflight if hosted work expands into repeated probes, recovery rehearsals or bulk operations.
-- [ ] 5.2 Promote the reviewed compatible migration/code through the existing job with `confirm_live_catalog_changes=false`. Verify the served Worker identity and preserved journal history; use a compatible candidate or forward fix for rollback.
-- [ ] 5.3 With the existing one-run live authorization, verify the actual PRD item's reviewed initial price, unchanged inventory/history and unchanged launch controls. Leave this task open without authorization or an observed result; route any legacy binding repair to a separate scoped operation.
+- [ ] 5.2 Promote the reviewed compatible migration/code through the existing deploy-only promotion job. Verify the served Worker identity and preserved journal history; use a compatible candidate or forward fix for rollback.
+- [ ] 5.3 With the item-scoped staff price authorization, verify the actual PRD item's reviewed initial price, unchanged inventory/history and unchanged launch controls. Leave this task open without authorization or an observed result; route any legacy binding repair to a separate scoped operation.

@@ -23,7 +23,6 @@ export {
   publicationWorkflowPaths,
   publicationCatalogPath,
 } from './publication-routes';
-export { dispatchPendingPublication, reconcilePendingPublication } from './publication-dispatch';
 export {
   acceptSelectedPublication,
   InvalidPublication,

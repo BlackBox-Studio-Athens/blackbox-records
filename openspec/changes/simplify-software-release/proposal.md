@@ -22,7 +22,7 @@ Releasing is the slowest and most fragile part of the work. Measurements from al
 
 ## What Changes
 
-- **Phase 0:** restore PRD CMS backups by raising `CMS_BACKUP_MAX_BYTES` to 1 GiB, dispatching one daily backup and updating `docs/cms-backup.md`. No code.
+- **Phase 0:** restore PRD CMS backups by raising `CMS_BACKUP_MAX_BYTES` to 2 GiB (`2147483648`), dispatching one daily backup and updating `docs/cms-backup.md`. No code.
 - **Phase 1 (this change's first deltas):**
   - **BREAKING:** the whole e2e suite and the staff previews move from the PRD dispatch to every push and the legacy `target=uat` dispatch. They run in parallel with checks and builds and block the UAT deploy.
   - UAT static smoke runs on push after UAT deploys.
@@ -30,8 +30,8 @@ Releasing is the slowest and most fragile part of the work. Measurements from al
   - **BREAKING:** PRD promotion becomes deploy-only: identity check, deploy, static deploy, no test suites.
   - `release-candidate.mjs` re-checks UAT identity only in `verify prd`, before each PRD mutation; `verify-worker` and `verify-hosted` do not. Promotion holds the shared release lock, so a push's UAT deploy waits until promotion ends.
   - The 592-line workflow contract test becomes about 20 lines of shape-free invariants.
-- **Phase 2:** delete dead machinery (publication workflow path, catalog and cutover jobs, duplicate smoke workflow and `pack`, measurement tooling) with no build-shape change. Its deltas are added with that phase.
-- **Phase 3:** HOST-11. Pages fails closed, builds become content-free, and promotion is a separate small workflow. The 7-day rebuild path is removed. Its deltas are added with that phase.
+- **Phase 2:** delete dead machinery (publication workflow path, catalog and cutover jobs, duplicate smoke workflow and `pack`, measurement tooling) with no build-shape change. Its deltas are added with that phase, including the routine and emergency rollback rule.
+- **Phase 3:** HOST-11. Pages fails closed, builds become content-free, and promotion is a separate small workflow. The 7-day rebuild path is removed. Its deltas are added with that phase and state that the rebuild path is gone.
 - **Phase 4:** hosted cleanup (secrets, caches, unused environment) and close-out, with each deletion needing the user's approval.
 
 ## Capabilities

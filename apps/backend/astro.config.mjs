@@ -54,7 +54,6 @@ const runtime = {
   assets: { binding: 'ASSETS', run_worker_first: true, html_handling: 'auto-trailing-slash' },
   vars: {
     ...selected.vars,
-    CONTENT_PUBLICATION_MODE: 'runtime',
     ...(selected.vars.PRODUCT_ENVIRONMENT === 'LOCAL'
       ? { EMDASH_MIGRATIONS_MODE: 'auto' }
       : {

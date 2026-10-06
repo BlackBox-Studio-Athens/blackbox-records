@@ -45,7 +45,6 @@ export async function importCmsContent({
   apply = false,
   verifyOnly = false,
   prepareUat,
-  preparePrd,
   prepareLocal,
 } = {}) {
   const target = new URL(base);
@@ -94,19 +93,13 @@ export async function importCmsContent({
     assert.equal(metadata.width, media.width, media.path);
     assert.equal(metadata.height, media.height, media.path);
   }
-  if ((prepareUat || preparePrd || prepareLocal) && apply)
-    throw new Error('Prepare and apply are separate operations.');
-  if ([prepareUat, preparePrd, prepareLocal].filter(Boolean).length > 1)
-    throw new Error('Prepare one CMS environment at a time.');
+  if ((prepareUat || prepareLocal) && apply) throw new Error('Prepare and apply are separate operations.');
+  if ([prepareUat, prepareLocal].filter(Boolean).length > 1) throw new Error('Prepare one CMS environment at a time.');
   for (const media of manifest.media) mediaIds.set(media.path, 'urn:blackbox:media:' + media.path);
   for (const record of manifest.records)
     recordIds.set(`${record.collection}/${record.id}`, `urn:blackbox:record:${record.collection}/${record.id}`);
   const plan = {
-    target: preparePrd
-      ? 'https://staff.blackboxrecordsathens.com'
-      : prepareUat
-        ? 'https://staff-uat.blackboxrecordsathens.com'
-        : target.origin,
+    target: prepareUat ? 'https://staff-uat.blackboxrecordsathens.com' : target.origin,
     retainedAssets: retainedAssets.map((media) => media.path),
     media: importMedia,
     records: [...manifest.records]
@@ -128,7 +121,7 @@ export async function importCmsContent({
       }),
     };
   }
-  const prepareDirectory = prepareUat || preparePrd || prepareLocal;
+  const prepareDirectory = prepareUat || prepareLocal;
   if (prepareDirectory) {
     for (const media of plan.media) {
       const { thumbnail } = await readMedia(media);
@@ -158,7 +151,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
       apply: { type: 'boolean', default: false },
       verifyOnly: { type: 'boolean', default: false },
       prepareUat: { type: 'string' },
-      preparePrd: { type: 'string' },
       prepareLocal: { type: 'string' },
     },
   });

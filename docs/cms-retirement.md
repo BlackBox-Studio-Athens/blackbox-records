@@ -1,6 +1,6 @@
 # Legacy cleanup acceptance and retirement
 
-Implementation follows EmDash cutover `7134654b113b4eefdec286483ce839b359ace853`, including the published-distro correction in `123b905a`. Historical evidence remains in [the cutover worksheet](cms-cutover.md). The follow-up is `retire-legacy-cms-catalog-paths`.
+Implementation follows EmDash cutover `7134654b113b4eefdec286483ce839b359ace853`, including the published-distro correction in `123b905a`. Historical evidence remains in [the cutover record](cms-cutover.md). The follow-up is `retire-legacy-cms-catalog-paths`.
 
 ## Repository contract
 

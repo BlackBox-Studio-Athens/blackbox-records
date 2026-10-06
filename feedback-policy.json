@@ -54,7 +54,6 @@
       "validate:full",
       "validate:checks",
       "validate:editor",
-      "benchmark:validation",
       "build",
       "test:unit",
       "test:web",
@@ -97,17 +96,13 @@
       "stripe:catalog:verify",
       "store:listing-readiness:verify",
       "catalog:readiness:generate",
-      "prd:catalog-readiness:check",
-      "production:catalog-readiness:check",
       "catalog:checkout:pause",
       "runtime:config:verify",
       "email:previews",
       "stripe:payment-methods:verify",
       "stripe:webhooks:verify",
       "smoke:stripe-uat",
-      "smoke:stripe-sandbox",
       "smoke:resend-uat",
-      "smoke:stripe-promotion",
       "smoke:uat-static",
       "stripe:webhook:simulate:local",
       "openspec:guard",
@@ -120,9 +115,7 @@
       "worker:dev",
       "worker:dev:uat",
       "worker:dev:sandbox",
-      "ci:speed",
       "build:web",
-      "build:content-snapshot",
       "cms:snapshot:export",
       "build:staff",
       "cache:policy:check",
@@ -166,9 +159,7 @@
     "scripts/test-content-workspace.mjs": {
       "command": "validate:editor",
       "unless": "(^|\\s)--(serve|selling|artist-journey|editor-recovery)(\\s|$)"
-    },
-    "scripts/run-release-preparation.mjs": { "command": "validate:editor" },
-    "scripts/benchmark-validation.mjs": { "command": "benchmark:validation" }
+    }
   },
   "deny": [
     {

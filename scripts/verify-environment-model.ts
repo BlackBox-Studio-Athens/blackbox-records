@@ -101,15 +101,14 @@ export function verifyEnvironmentModel(): CheckResult[] {
     },
     {
       detail:
-        'Catalog promotion uses one-run confirmation for PRD catalog/D1 changes without deploying shopper runtime.',
+        'The release workflow promotes PRD code only: it carries no live catalog mutation and deploys no shopper runtime.',
       ok:
         catalogPromotionWorkflow.includes('options: [uat, prd]') &&
         !catalogPromotionWorkflow.includes('- production') &&
         catalogPromotionWorkflow.includes('catalog-promotion-prd') &&
-        catalogPromotionWorkflow.includes('confirm_live_catalog_changes:') &&
         catalogPromotionWorkflow.includes('default: false') &&
-        catalogPromotionWorkflow.includes('--confirm-live-catalog-changes') &&
-        catalogPromotionWorkflow.includes('!inputs.confirm_code_promotion') &&
+        !catalogPromotionWorkflow.includes('confirm_live_catalog_changes') &&
+        !catalogPromotionWorkflow.includes('--confirm-live-catalog-changes') &&
         !catalogPromotionWorkflow.includes(retiredPrdControlName) &&
         !catalogPromotionWorkflow.includes('- name: Deploy PRD Worker') &&
         !catalogPromotionWorkflow.includes('-f target=prd'),

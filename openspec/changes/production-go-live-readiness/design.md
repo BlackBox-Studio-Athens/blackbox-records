@@ -85,7 +85,7 @@ The bounded child [complete-shopper-purchase-information](../complete-shopper-pu
 
 ### Production controls remain independent
 
-Live catalog mutation requires the one-run `confirm_live_catalog_changes` workflow input or direct CLI `--confirm-live-catalog-changes`. Shopper launch requires `PRD_LAUNCH_APPROVED=true`. Runtime checkout also requires `native_checkout_enabled=true`. Catalog preparation cannot set either checkout control.
+Live catalog mutation requires a one-run, false-by-default confirmation carried by a dedicated reviewed workflow or CLI command (the `migrate-stripe-to-blackboxrecords` apply); the release workflow's former `confirm_live_catalog_changes` input is removed. Shopper launch requires `PRD_LAUNCH_APPROVED=true`. Runtime checkout also requires `native_checkout_enabled=true`. Catalog preparation cannot set either checkout control.
 
 ### Delivery remains Greece-only
 

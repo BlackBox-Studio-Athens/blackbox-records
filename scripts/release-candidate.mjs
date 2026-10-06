@@ -374,25 +374,6 @@ export function contentPublicationIdentity(code, content, checkedOutSha) {
   };
 }
 
-export function publicationCodeIdentity(project, current, run, target, repository) {
-  assert.ok(['uat', 'prd'].includes(target));
-  const name = target === 'uat' ? 'blackbox-records-web-uat' : 'blackbox-records-web';
-  assert.equal(project.name, name, 'Wrong publication project.');
-  const deployment = project.canonical_deployment;
-  assert.equal(deployment?.environment, 'production', 'Publication requires the canonical production deployment.');
-  assert.equal(deployment.latest_stage?.name, 'deploy');
-  assert.equal(deployment.latest_stage?.status, 'success', 'Canonical deployment did not succeed.');
-  assert.match(current.sha ?? '', /^[a-f0-9]{40}$/);
-  assert.match(String(current.runId ?? ''), /^[1-9][0-9]{0,19}$/);
-  assert.equal(deployment.deployment_trigger?.metadata?.commit_hash, current.sha, 'Public code differs from Pages.');
-  assert.equal(deployment.deployment_trigger.metadata.branch, 'main');
-  validateRun(run, run.head_sha, repository);
-  assert.equal(String(run.id), String(current.runId), 'Public release run mismatch.');
-  assert.equal(run.run_number, current.runNumber, 'Public release sequence mismatch.');
-  validateOrder(current, null);
-  return identity({ ...current, runId: String(current.runId) });
-}
-
 export function verifyFiles(candidate, directory = bundle) {
   materializeBundle(directory);
   assert.equal(candidate.schema, 2, 'Legacy candidate contract; build and accept a fresh candidate.');
@@ -618,103 +599,6 @@ async function main(command, target) {
     console.log(`Assembled schema-2 release bundle: ${assembled.transport.objectCount} objects.`);
     return;
   }
-  if (command === 'resolve-publication-code') {
-    assert.ok(['uat', 'prd'].includes(target));
-    const account = process.env.CLOUDFLARE_ACCOUNT_ID;
-    assert.match(account ?? '', /^[a-f0-9]{32}$/);
-    assert.ok(process.env.CLOUDFLARE_API_TOKEN, 'Pages read credential required.');
-    const name = target === 'uat' ? 'blackbox-records-web-uat' : 'blackbox-records-web';
-    const response = await fetch(`https://api.cloudflare.com/client/v4/accounts/${account}/pages/projects/${name}`, {
-      headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}` },
-      redirect: 'error',
-      signal: AbortSignal.timeout(30_000),
-    });
-    assert.ok(response.ok, `Pages deployment lookup failed (${response.status}).`);
-    const project = await response.json();
-    assert.equal(project.success, true, 'Pages deployment lookup failed.');
-    const current = await publicJson(`https://${name}.pages.dev/release.json`);
-    assert.match(String(current.runId ?? ''), /^[1-9][0-9]{0,19}$/);
-    const repository = process.env.GITHUB_REPOSITORY;
-    assert.equal(repository, 'BlackBox-Studio-Athens/blackbox-records');
-    const run = gh(`repos/${repository}/actions/runs/${current.runId}`);
-    const selected = publicationCodeIdentity(project.result, current, run, target, repository);
-    const comparison = gh(`repos/${repository}/compare/${selected.sha}...${run.head_sha}`);
-    assert.ok(['ahead', 'identical'].includes(comparison.status), 'Published source is outside release main history.');
-    console.log(JSON.stringify(selected));
-    return;
-  }
-  if (command === 'pack') {
-    const startedAt = performance.now();
-    const sha = process.env.SOURCE_SHA;
-    assert.match(sha ?? '', /^[0-9a-f]{40}$/);
-    assert.match(process.env.GITHUB_RUN_ID ?? '', /^[1-9][0-9]*$/);
-    assert.match(process.env.GITHUB_SHA ?? '', /^[0-9a-f]{40}$/);
-    const config = configuration();
-    assert.match(config.cloudflareAccount ?? '', /^[0-9a-f]{32}$/, 'Select an explicit Cloudflare account.');
-    assert.equal(config.uatBackend, 'https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev');
-    assert.equal(config.prdBackend, 'https://blackbox-records-backend-prd.blackboxrecordsathens.workers.dev');
-    cpSync('apps/backend/prisma/migrations', `${bundle}/migrations`, { recursive: true });
-    const candidate = {
-      schema: 2,
-      publicationMode: 'runtime',
-      sha,
-      workflowSha: process.env.GITHUB_SHA,
-      runId: process.env.GITHUB_RUN_ID,
-      runNumber: Number(process.env.GITHUB_RUN_NUMBER),
-      configuration: config,
-      files: {},
-    };
-    validateOrder(candidate, null);
-    for (const target of ['uat', 'prd']) {
-      const directory = `${bundle}/${target === 'uat' ? 'uat/worker' : 'prd/cms'}`;
-      const worker = Object.keys(inventory(directory))
-        .filter((name) => /\.(?:js|mjs)$/.test(name))
-        .map((name) => readFileSync(`${directory}/${name}`, 'utf8'))
-        .join('\n');
-      assert.ok(worker.includes(sha) && worker.includes('X-Release-SHA'), 'Worker has no compiled release identity.');
-    }
-    for (const surface of ['uat/public', 'prd/public']) {
-      const html = readFileSync(`${bundle}/${surface}/index.html`, 'utf8');
-      if (surface === 'uat/public') assert.ok(html.includes('[UAT] ') && html.includes('UAT · TESTING ONLY'));
-      else assert.ok(!html.includes('[UAT] ') && !html.includes('UAT · TESTING ONLY'));
-      if (surface.endsWith('public')) {
-        assert.ok(existsSync(`${bundle}/${surface}/_headers`));
-        const wrongBackend = surface.startsWith('uat') ? config.prdBackend : config.uatBackend;
-        for (const file of Object.keys(inventory(`${bundle}/${surface}`)).filter((name) => /\.(html|js)$/.test(name))) {
-          assert.ok(
-            !readFileSync(`${bundle}/${surface}/${file}`, 'utf8').includes(wrongBackend),
-            `Wrong target backend in ${surface}/${file}`,
-          );
-        }
-      }
-      const content = surface.endsWith('public')
-        ? readJson(`.codex-artifacts/release-content/${surface.split('/')[0]}/identity.json`)
-        : null;
-      writeFileSync(
-        `${bundle}/${surface}/release.json`,
-        JSON.stringify({ ...refreshedReleaseIdentity(candidate, content), publicationMode: 'runtime' }),
-      );
-    }
-    for (const directory of [
-      'uat/public',
-      'prd/public',
-      'uat/worker',
-      'prd/cms',
-      'uat/renderer',
-      'prd/renderer',
-      'migrations',
-    ]) {
-      assert.ok(statSync(`${bundle}/${directory}`).isDirectory());
-      candidate.files[directory] = inventory(`${bundle}/${directory}`);
-    }
-    writeFileSync(manifestPath, JSON.stringify(candidate, null, 2));
-    const transport = packBundle(bundle);
-    console.log(
-      `Packed ${transport.objectCount} unique release objects: logical=${transport.logicalBytes} bytes, stored=${transport.storedBytes} bytes, elapsed=${Math.round(performance.now() - startedAt)}ms.`,
-    );
-    return;
-  }
-
   if (command === 'materialize') {
     // Offline: lets promotion acceptance test the retained candidate bytes without hosted reads or credentials.
     const candidate = readJson(manifestPath);

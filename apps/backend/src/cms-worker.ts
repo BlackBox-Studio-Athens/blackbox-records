@@ -30,7 +30,6 @@ import {
   acceptSelectedPublication,
   authenticatePreview,
   createStaffThumbnailCandidate,
-  dispatchPendingPublication,
   guardItemLifecycle,
   handleItemArtwork,
   handleLocalPublicationRequest,
@@ -64,7 +63,6 @@ import {
   readPriceDrafts,
   readStaffWorkspace,
   reconcileItemPublications,
-  reconcilePendingPublication,
   releasePreviewContext,
   renderPreviewPage,
   reportPreviewFailure,
@@ -97,8 +95,6 @@ type CmsBindings = Omit<AppBindings, 'CMS_RUNTIME'> & {
   CMS_PREVIEW_HOSTNAME?: string;
   CMS_PREVIEW_POLICY_AUD?: string;
   CMS_PUBLICATION_EXPORT_TOKEN?: string;
-  CMS_PUBLICATION_GITHUB_TOKEN?: string;
-  CONTENT_PUBLICATION_MODE?: string;
   PUBLIC_SITE?: Fetcher;
   LOCAL_PUBLIC_ORIGIN?: string;
 };
@@ -108,13 +104,6 @@ export default {
     const results = await Promise.allSettled([
       import('./index').then(({ default: commerce }) => commerce.scheduled(controller, bindings)),
       Promise.resolve().then(() => bindings.CMS_RUNTIME.getByName('editorial').runMaintenance()),
-      ...(bindings.CMS_PUBLICATION_GITHUB_TOKEN && bindings.CMS_PUBLICATION_EXPORT_TOKEN
-        ? [
-            Promise.resolve().then(async () => {
-              await bindings.CMS_RUNTIME.getByName('editorial').dispatchPublication();
-            }),
-          ]
-        : []),
     ]);
     const failures = results.filter((result) => result.status === 'rejected');
     if (failures.length)
@@ -182,7 +171,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
   }
 
   private async processPublications() {
-    if (this.env.CONTENT_PUBLICATION_MODE !== 'runtime' || !this.env.PUBLIC_SITE) return;
+    if (!this.env.PUBLIC_SITE) return;
     if (this.publicationTask) return this.publicationTask;
     this.publicationTask = (async () => {
       // Arm before processing: eviction or a lost response cannot discard pending work.
@@ -453,33 +442,12 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     }
   }
 
-  async dispatchPublication() {
-    if (this.env.CONTENT_PUBLICATION_MODE === 'runtime') {
-      await this.processPublications();
-      return { status: 'runtime' as const };
-    }
-    if (!/^[a-f0-9]{64}$/.test(this.env.CMS_PUBLICATION_EXPORT_TOKEN ?? '')) return { status: 'disabled' as const };
-    await reconcilePendingPublication({
-      db: this.env.CMS_DB,
-      bucket: this.env.MEDIA,
-      environment: this.env.PRODUCT_ENVIRONMENT?.toLowerCase(),
-      hostname: this.env.CMS_HOSTNAME,
-      token: this.env.CMS_PUBLICATION_EXPORT_TOKEN,
-      githubToken: this.env.CMS_PUBLICATION_GITHUB_TOKEN,
-    });
-    return dispatchPendingPublication(
-      this.env.CMS_DB,
-      this.env.PRODUCT_ENVIRONMENT?.toLowerCase(),
-      this.env.CMS_PUBLICATION_GITHUB_TOKEN,
-    );
-  }
-
   async runMaintenance() {
     if (!(await this.isInitialized())) throw new Error('CMS requires explicit initialization');
     pruneStoredPreviewContexts(this.ctx.storage.kv);
     const { runScheduledTasks } = await import('emdash/middleware');
     await runScheduledTasks();
-    if (this.env.CONTENT_PUBLICATION_MODE === 'runtime') await this.processPublications();
+    await this.processPublications();
     await reconcileItemPublications(
       this.env.COMMERCE_DB,
       this.env.CMS_DB,
@@ -629,8 +597,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         request.headers.get('X-EmDash-Request') !== '1'
       )
         return new Response('Forbidden', { status: 403 });
-      if (bindings.CONTENT_PUBLICATION_MODE !== 'runtime' || !bindings.PUBLIC_SITE)
-        return cmsStringProblemResponse(503, 'PUBLICATION_UNAVAILABLE');
+      if (!bindings.PUBLIC_SITE) return cmsStringProblemResponse(503, 'PUBLICATION_UNAVAILABLE');
       try {
         const input = selectedPublicationSchema.parse(JSON.parse(await readBoundedText(request.body, 16384)));
         // This path publishes editorial revisions only. Commerce availability and its
@@ -656,7 +623,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       }
     }
     const mutation = /^\/_emdash\/api\/content\/([a-z_]+)\/([A-Za-z0-9_-]+)(?:\/|$)/.exec(url.pathname);
-    if (bindings.CONTENT_PUBLICATION_MODE === 'runtime' && mutation && !['GET', 'HEAD'].includes(request.method)) {
+    if (mutation && !['GET', 'HEAD'].includes(request.method)) {
       let pending;
       try {
         pending = await bindings.CMS_DB.prepare(
@@ -714,20 +681,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         environment,
         identity,
         onAccepted: () => {
-          if (bindings.CONTENT_PUBLICATION_MODE === 'runtime') {
-            this.ctx.waitUntil(this.processPublications().finally(() => this.ctx.storage.setAlarm(Date.now() + 1000)));
-            return;
-          }
-          if (environment === 'local' || !bindings.CMS_PUBLICATION_EXPORT_TOKEN) return;
-          this.ctx.waitUntil(
-            dispatchPendingPublication(bindings.CMS_DB, environment, bindings.CMS_PUBLICATION_GITHUB_TOKEN)
-              .then((result) => {
-                createBindingLogger(bindings).info({ event: 'publication_dispatch', ...result });
-              })
-              .catch(() => {
-                createBindingLogger(bindings).warn({ event: 'publication_dispatch_failed' });
-              }),
-          );
+          this.ctx.waitUntil(this.processPublications().finally(() => this.ctx.storage.setAlarm(Date.now() + 1000)));
         },
         fetchCms: (path: string): Promise<Response> => {
           const headers = new Headers(request.headers);
@@ -736,8 +690,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
           return this.fetch(new Request(new URL(path, url), { headers }));
         },
       };
-      if (bindings.CONTENT_PUBLICATION_MODE === 'runtime' && request.method === 'POST')
-        await this.ctx.storage.setAlarm(Date.now() + 1000);
+      if (request.method === 'POST') await this.ctx.storage.setAlarm(Date.now() + 1000);
       return url.pathname === itemArtworkPath
         ? handleItemArtwork(request, {
             ...context,

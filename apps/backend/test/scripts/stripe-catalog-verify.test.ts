@@ -38,13 +38,11 @@ const storeItem = {
 };
 
 describe('stripe catalog verify script helpers', () => {
-  it('parses UAT dry-run and apply flags while requiring promotion context for PRD apply', () => {
+  it('parses UAT dry-run and apply flags and refuses PRD apply outright', () => {
     expect(parseStripeCatalogVerifyArgs(['--env', 'uat'])).toEqual({
       apply: false,
-      confirmLiveCatalogChanges: false,
       environment: 'uat',
       planApply: false,
-      promotionContext: null,
       storeItemSlug: null,
     });
     expect(parseStripeCatalogVerifyArgs(['--env', 'sandbox'])).toMatchObject({
@@ -52,52 +50,19 @@ describe('stripe catalog verify script helpers', () => {
     });
     expect(parseStripeCatalogVerifyArgs(['--env=uat', '--apply'])).toEqual({
       apply: true,
-      confirmLiveCatalogChanges: false,
       environment: 'uat',
       planApply: false,
-      promotionContext: null,
-      storeItemSlug: null,
-    });
-    expect(parseStripeCatalogVerifyArgs(['--env', 'uat', '--promotion-run-id', 'run-123'])).toEqual({
-      apply: false,
-      confirmLiveCatalogChanges: false,
-      environment: 'uat',
-      planApply: false,
-      promotionContext: {
-        artifactCommitSha: '',
-        ci: false,
-        runId: 'run-123',
-      },
       storeItemSlug: null,
     });
     expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply'])).toThrow(
-      'PRD Stripe catalog apply requires --confirm-live-catalog-changes.',
+      'PRD Stripe catalog apply has no supported path.',
     );
-    expect(() => parseStripeCatalogVerifyArgs(['--env', 'prd', '--apply', '--confirm-live-catalog-changes'])).toThrow(
-      'PRD Stripe catalog apply requires promotion context.',
+    expect(() => parseStripeCatalogVerifyArgs(['--env=prd', '--apply', '--confirm-live-catalog-changes'])).toThrow(
+      'Unknown argument: --confirm-live-catalog-changes',
     );
-    expect(
-      parseStripeCatalogVerifyArgs([
-        '--env=prd',
-        '--apply',
-        '--confirm-live-catalog-changes',
-        '--artifact-commit-sha',
-        'abc123',
-        '--promotion-run-id=run-456',
-        '--ci-promotion',
-      ]),
-    ).toEqual({
-      apply: true,
-      confirmLiveCatalogChanges: true,
-      environment: 'prd',
-      planApply: false,
-      promotionContext: {
-        artifactCommitSha: 'abc123',
-        ci: true,
-        runId: 'run-456',
-      },
-      storeItemSlug: null,
-    });
+    expect(() => parseStripeCatalogVerifyArgs(['--env', 'uat', '--ci-promotion'])).toThrow(
+      'Unknown argument: --ci-promotion',
+    );
     expect(parseStripeCatalogVerifyArgs(['--env', 'uat', '--plan-apply'])).toMatchObject({
       apply: false,
       planApply: true,
@@ -107,33 +72,13 @@ describe('stripe catalog verify script helpers', () => {
     );
   });
 
-  it('allows PRD dry-run without promotion context', () => {
+  it('allows PRD dry-run', () => {
     expect(parseStripeCatalogVerifyArgs(['--env', 'prd'])).toEqual({
       apply: false,
-      confirmLiveCatalogChanges: false,
       environment: 'prd',
       planApply: false,
-      promotionContext: null,
       storeItemSlug: null,
     });
-    expect(parseStripeCatalogVerifyArgs(['--env', 'prd'])).toEqual({
-      apply: false,
-      confirmLiveCatalogChanges: false,
-      environment: 'prd',
-      planApply: false,
-      promotionContext: null,
-      storeItemSlug: null,
-    });
-    expect(() =>
-      parseStripeCatalogVerifyArgs([
-        '--env',
-        'prd',
-        '--apply',
-        '--confirm-live-catalog-changes',
-        '--artifact-commit-sha',
-        'abc123',
-      ]),
-    ).toThrow('Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.');
   });
 
   it('parses one Store Item selector and rejects malformed or unknown slugs before provider access', async () => {
@@ -157,7 +102,7 @@ describe('stripe catalog verify script helpers', () => {
     expect(spawnSyncMock).toHaveBeenCalledTimes(1);
   });
 
-  it('blocks unconfirmed PRD apply before provider access', async () => {
+  it('blocks PRD apply before provider access', async () => {
     createStripeCatalogGatewayMock.mockClear();
     spawnSyncMock.mockClear();
 
@@ -165,13 +110,8 @@ describe('stripe catalog verify script helpers', () => {
       verifyStripeCatalog({
         apply: true,
         environment: 'prd',
-        promotionContext: {
-          artifactCommitSha: 'abc123',
-          ci: true,
-          runId: 'run-456',
-        },
       }),
-    ).rejects.toThrow('PRD Stripe catalog apply requires --confirm-live-catalog-changes.');
+    ).rejects.toThrow('PRD Stripe catalog apply has no supported path.');
     expect(createStripeCatalogGatewayMock).not.toHaveBeenCalled();
     expect(spawnSyncMock).not.toHaveBeenCalled();
   });
@@ -266,7 +206,6 @@ describe('stripe catalog verify script helpers', () => {
       const result = await verifyStripeCatalog({
         apply: false,
         environment: 'uat',
-        promotionContext: null,
         storeItemSlug: storeItem.storeItemSlug,
       });
 
@@ -289,7 +228,6 @@ describe('stripe catalog verify script helpers', () => {
         apply: false,
         environment: 'uat',
         planApply: true,
-        promotionContext: null,
         storeItemSlug: storeItem.storeItemSlug,
       });
 

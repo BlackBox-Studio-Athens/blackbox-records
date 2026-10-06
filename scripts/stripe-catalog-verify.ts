@@ -43,17 +43,9 @@ import { loadStripeCatalogStoreItemContracts, type StripeCatalogStoreItemContrac
 
 type CatalogVerifyOptions = {
   apply: boolean;
-  confirmLiveCatalogChanges?: boolean;
   environment: StripeCatalogEnvironment;
   planApply?: boolean;
-  promotionContext: CatalogPromotionContext | null;
   storeItemSlug?: StoreItemSlug | null;
-};
-
-type CatalogPromotionContext = {
-  artifactCommitSha: string;
-  ci: boolean;
-  runId: string;
 };
 
 export type D1CatalogRow = {
@@ -78,10 +70,8 @@ const backendDir = path.join(process.cwd(), 'apps', 'backend');
 export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptions {
   const options: CatalogVerifyOptions = {
     apply: false,
-    confirmLiveCatalogChanges: false,
     environment: 'uat',
     planApply: false,
-    promotionContext: null,
     storeItemSlug: null,
   };
 
@@ -94,11 +84,6 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--apply') {
       options.apply = true;
-      continue;
-    }
-
-    if (arg === '--confirm-live-catalog-changes') {
-      options.confirmLiveCatalogChanges = true;
       continue;
     }
 
@@ -120,53 +105,6 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
       continue;
     }
 
-    if (arg === '--artifact-commit-sha') {
-      const value = args[index + 1];
-      index += 1;
-      options.promotionContext = {
-        ...(options.promotionContext ?? { artifactCommitSha: '', ci: false, runId: '' }),
-        artifactCommitSha: parseRequiredOptionValue('--artifact-commit-sha', value),
-      };
-      continue;
-    }
-
-    if (arg?.startsWith('--artifact-commit-sha=')) {
-      options.promotionContext = {
-        ...(options.promotionContext ?? { artifactCommitSha: '', ci: false, runId: '' }),
-        artifactCommitSha: parseRequiredOptionValue(
-          '--artifact-commit-sha',
-          arg.slice('--artifact-commit-sha='.length),
-        ),
-      };
-      continue;
-    }
-
-    if (arg === '--promotion-run-id') {
-      const value = args[index + 1];
-      index += 1;
-      options.promotionContext = {
-        ...(options.promotionContext ?? { artifactCommitSha: '', ci: false, runId: '' }),
-        runId: parseRequiredOptionValue('--promotion-run-id', value),
-      };
-      continue;
-    }
-
-    if (arg?.startsWith('--promotion-run-id=')) {
-      options.promotionContext = {
-        ...(options.promotionContext ?? { artifactCommitSha: '', ci: false, runId: '' }),
-        runId: parseRequiredOptionValue('--promotion-run-id', arg.slice('--promotion-run-id='.length)),
-      };
-      continue;
-    }
-
-    if (arg === '--ci-promotion') {
-      options.promotionContext = {
-        ...(options.promotionContext ?? { artifactCommitSha: '', ci: false, runId: '' }),
-        ci: true,
-      };
-      continue;
-    }
-
     if (arg === '--env') {
       const value = args[index + 1];
       index += 1;
@@ -181,7 +119,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 
     if (arg === '--help' || arg === '-h') {
       console.log(
-        'Usage: pnpm stripe:catalog:verify --env local|uat|prd [--store-item <storeItemSlug>] [--apply|--plan-apply] [--confirm-live-catalog-changes] [--artifact-commit-sha <sha> --promotion-run-id <id> --ci-promotion] (legacy platform aliases accepted: sandbox, production)',
+        'Usage: pnpm stripe:catalog:verify --env local|uat|prd [--store-item <storeItemSlug>] [--apply|--plan-apply] (legacy platform aliases accepted: sandbox, production)',
       );
       process.exit(0);
     }
@@ -193,13 +131,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
     throw new Error('--apply and --plan-apply cannot be combined.');
   }
 
-  if (
-    options.apply &&
-    productEnvironmentProfileFromWorkerRuntimeTarget(options.environment).productEnvironment === 'PRD'
-  ) {
-    assertPrdCatalogApplyConfirmed(options.confirmLiveCatalogChanges);
-    assertPrdApplyPromotionContext(options.promotionContext);
-  }
+  if (options.apply) assertNoPrdCatalogApply(options.environment);
 
   return options;
 }
@@ -207,10 +139,7 @@ export function parseStripeCatalogVerifyArgs(args: string[]): CatalogVerifyOptio
 export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promise<CatalogSyncRunResult> {
   if (!options.apply && !options.planApply)
     return verifyRuntimeCatalogItem(options.environment, options.storeItemSlug ?? undefined);
-  const productEnvironmentProfile = productEnvironmentProfileFromWorkerRuntimeTarget(options.environment);
-  if (options.apply && productEnvironmentProfile.productEnvironment === 'PRD') {
-    assertPrdCatalogApplyConfirmed(options.confirmLiveCatalogChanges);
-  }
+  if (options.apply) assertNoPrdCatalogApply(options.environment);
 
   // Explicit repository migration diagnostics; routine release does not call this path.
   const allContracts = await loadStripeCatalogStoreItemContracts({
@@ -237,7 +166,6 @@ export async function verifyStripeCatalog(options: CatalogVerifyOptions): Promis
     const repositories = createD1CatalogRepositories(options.environment, rows);
 
     return new CatalogReconciler({
-      creationMutationScope: options.promotionContext?.runId,
       environment: options.environment,
       storeItems: repositories.storeItems,
       storeOfferSnapshots: repositories.storeOfferSnapshots,
@@ -349,22 +277,12 @@ export function selectStripeCatalogContracts(
   return selected;
 }
 
-function assertPrdCatalogApplyConfirmed(confirmed: boolean | undefined): void {
-  if (confirmed !== true) {
-    throw new Error('PRD Stripe catalog apply requires --confirm-live-catalog-changes.');
-  }
-}
-
-function assertPrdApplyPromotionContext(context: CatalogPromotionContext | null): void {
-  if (!context?.ci || !context.artifactCommitSha || !context.runId) {
+// The one-time PRD cutover workflow is gone; a live PRD apply needs a newly reviewed one-run workflow.
+function assertNoPrdCatalogApply(environment: StripeCatalogEnvironment): void {
+  if (productEnvironmentProfileFromWorkerRuntimeTarget(environment).productEnvironment === 'PRD')
     throw new Error(
-      [
-        'PRD Stripe catalog apply requires promotion context.',
-        'Run from CI with --ci-promotion, --artifact-commit-sha <sha>, and --promotion-run-id <id>.',
-        'Use --env prd without --apply for a local dry run.',
-      ].join(' '),
+      'PRD Stripe catalog apply has no supported path. Use --env prd without --apply for a dry run; live changes need a separately reviewed one-run workflow.',
     );
-  }
 }
 
 function parseRequiredOptionValue(name: string, value: string | undefined): string {

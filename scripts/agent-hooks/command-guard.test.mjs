@@ -115,8 +115,6 @@ const denied = [
   ['node C:\\repo\\scripts\\test-content-workspace.mjs', 'release-tier:validate:editor'],
   ['node --import tsx scripts/validate.mjs --full', 'release-tier:validate --full'],
   ['node --import=tsx ./scripts/validate-local.mjs --editor', 'release-tier:validate --editor'],
-  ['tsx scripts/benchmark-validation.mjs --mode commands', 'release-tier:benchmark:validation'],
-  ['node --import tsx scripts/run-release-preparation.mjs browsers', 'release-tier:validate:editor'],
   ['pnpm exec eslint apps/web/src', 'eslint-whole-package'],
   ['pnpm exec eslint --max-warnings=0 apps/web/src apps/staff/src packages/api-client/src', 'eslint-whole-package'],
   ['pnpm exec eslint apps/*/src packages/*/src', 'eslint-whole-package'],
