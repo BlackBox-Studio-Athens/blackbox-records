@@ -24,10 +24,19 @@ runs:
         key: ${{ steps.playwright.outputs.cache-key }}
     # No --with-deps or install-deps: apt can wait without bound while the runner's own package manager holds the
     # lock at boot. This assumes ubuntu-latest, whose image ships Chrome and Firefox and so already has the system
-    # libraries Playwright's Chromium and Firefox builds need.
+    # libraries Playwright's Chromium and Firefox builds need, except Firefox's H.264 decoder (next step).
     - name: Download Playwright browsers
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       env:
         BROWSERS: ${{ inputs.browsers }}
       run: pnpm exec playwright install $BROWSERS
+    # Firefox decodes H.264 through the system libavcodec, which the runner image lacks (Playwright's ubuntu24.04
+    # Firefox dependency table lists libavcodec60). DPkg::Lock::Timeout bounds the apt lock wait; the caller's
+    # 5-minute timeout bounds the step.
+    - name: Install Firefox's H.264 decoder
+      if: contains(inputs.browsers, 'firefox')
+      shell: bash
+      run: |
+        sudo apt-get -o DPkg::Lock::Timeout=60 -o Acquire::Retries=3 update -qq
+        sudo apt-get -o DPkg::Lock::Timeout=60 -o Acquire::Retries=3 install -y --no-install-recommends libavcodec60
