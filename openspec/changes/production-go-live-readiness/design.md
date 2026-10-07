@@ -39,13 +39,15 @@ Freeze source/configuration changes, including final-origin settings, before sel
 
 ### UAT and PRD data stay isolated
 
-The implemented `align-cloudflare-uat-and-release-promotion`, `replace-sveltia-with-emdash-operations` and `reliable-content-publication` changes supply the release/publication paths. Follow `docs/catalog-promotion.md`: run `gh workflow run promote-prd.yml` (no inputs), which promotes the release UAT serves after proving its push run passed, rebuilding PRD content-free from that SHA. To promote different code, push it first. Main pushes authorize no PRD promotion. Existing evidence retains its original host/revision; changed code, content or configuration requires affected checks.
+Follow the current [release runbook](../../../docs/catalog-promotion.md), including archived `simplify-software-release`: `gh workflow run promote-prd.yml` takes no inputs, verifies the successful push run UAT serves and rebuilds PRD content-free from that SHA. To promote different code, push it first. Main pushes authorize no PRD promotion. Provider smoke runs separately through `uat-smoke.yml` or the existing commands; promotion neither runs it nor installs Stripe credentials. Existing evidence retains its original host/revision; changed code, content or configuration requires affected checks.
 
 PRD editorial content comes from its own accepted immutable CMS snapshot; runtime catalog/stock/order data remains in PRD D1 with bound live provider identities. Items owns explicit catalog setup/publication and price commands. Normal releases neither generate compiled catalogs nor seed inventory. Repository recovery inputs are exceptional, reviewed migration tools. Never copy UAT drafts, snapshots, D1 rows, test Products/Prices, synthetic stock or acceptance status into PRD.
 
 ### Canonical origin changes atomically
 
-Prepare final `ASTRO_SITE_URL`, renderer/CMS public-origin configuration, shopper email links, sitemap/metadata and assertions before approval. Keep accepted media and catalog/email image URLs reachable through the PRD technical origin while the apex serves Holding Page; inspect current snapshot/provider URLs rather than restoring retired catalog-generation overrides. Verify the paired release and accepted PRD snapshot through technical Pages and explicitly allowlist technical/apex checkout returns. After successful smoke, switch the apex to that verified gateway/runtime without changing code or content. The existing production Worker URL remains the browser API target.
+During beta, purchase/return, policy and customer-email links must reach the restricted PRD site through its technical origin while the apex serves Holding Page. Verify these links in the beta smoke. Defer the final apex-origin change until full public launch preparation.
+
+For full public launch, prepare final `ASTRO_SITE_URL`, renderer/CMS public-origin configuration, shopper email links, sitemap/metadata and assertions before approval. Keep accepted media and catalog/email image URLs reachable through the PRD technical origin; inspect current snapshot/provider URLs rather than restoring retired catalog-generation overrides. Verify the paired release and accepted PRD snapshot through technical Pages and explicitly allowlist technical/apex checkout returns. After successful smoke, switch the apex to that verified gateway/runtime without changing code or content. The existing production Worker URL remains the browser API target.
 
 ### Destination Stripe acceptance precedes live preparation
 
@@ -85,7 +87,9 @@ The bounded child [complete-shopper-purchase-information](../complete-shopper-pu
 
 ### Production controls remain independent
 
-Live catalog mutation requires a one-run, false-by-default confirmation carried by a dedicated reviewed workflow or CLI command (the `migrate-stripe-to-blackboxrecords` apply); the release workflow's former `confirm_live_catalog_changes` input is removed. Shopper launch requires `PRD_LAUNCH_APPROVED=true`. Runtime checkout also requires `native_checkout_enabled=true`. Catalog preparation cannot set either checkout control.
+Live catalog mutation requires the migration operator command's one-run, false-by-default confirmation; the release workflow's former `confirm_live_catalog_changes` input is removed. Shopper launch requires `PRD_LAUNCH_APPROVED=true`. Runtime checkout also requires `native_checkout_enabled=true`. Catalog preparation cannot set either checkout control.
+
+Before accepting the beta candidate, remove the temporary checkout-disabled promotion assertion in `scripts/release-candidate.mjs` and update its test. Preserve candidate provenance, monotonic release order and the two independent checkout controls. Verify code can still be promoted after beta activation without a release enabling or disabling checkout. The preparation checks here continue to require closed checkout until the phase-specific approval.
 
 ### Delivery remains Greece-only
 
@@ -93,7 +97,7 @@ Live catalog mutation requires a one-run, false-by-default confirmation carried 
 
 ### Code and content acceptance are recorded separately
 
-Record the exact application commit/candidate run and PRD accepted snapshot identity/digest together. Publishing content does not rebuild code; source SHA alone cannot prove approved wording or artwork. Recheck affected surfaces after either identity changes. Reuse completed EmDash/runtime-publication evidence from `docs/cms-cutover.md` and `docs/content-publication.md`; close actual outstanding editor-safety/publication-status acceptance before launch. Code rollback promotes a compatible candidate preserving the content pointer; content rollback selects a verified accepted snapshot. An old static artifact is not a content rollback.
+Record the exact application commit/candidate run and PRD accepted snapshot identity/digest together. Publishing content does not rebuild code; source SHA alone cannot prove approved wording or artwork. Recheck affected surfaces after either identity changes. Reuse completed EmDash/runtime-publication evidence from `docs/cms-cutover.md` and `docs/content-publication.md`; close actual outstanding editor-safety/publication-status acceptance before launch. Routine code rollback uses revert, push and promotion. Emergency rollback pairs the renderer and Pages deployments from the same run; roll back the CMS Worker only when no migration intervened. Preserve the content pointer and commerce history; content rollback separately selects a verified accepted snapshot.
 
 Orders and Store search are complete. Remaining paid-account/VAT/purchase-wording acceptance can proceed in parallel with listening and unresolved Distro photography; shared template changes integrate with the implemented purchase hierarchy. Listening and comprehensive photo enrichment are not newly invented payment-launch gates. New request-idempotency work remains in its own ticket; assess its findings for launch relevance without duplicating implementation here.
 
@@ -120,7 +124,7 @@ No other reviewer or automated result can create launch approval. After all prep
 3. Reuse implemented correction/archive evidence and fix only concrete regressions found on the launch candidate; account access is not a prerequisite for local corrections.
 4. Accept the migration's designated-account setup and shared UAT evidence with approved recipients; close only missing or affected provider checks.
 5. Prepare live Stripe, PRD D1, Worker bindings, Access, Cron, email, catalog, approved shopper policies, and the manual operating handoff while checkout remains closed.
-6. Run deterministic Prisma/API generation where applicable, `pnpm validate`, `pnpm validate:editor`, relevant Local publication checks, strict OpenSpec validation and Browser Use against the exact code and accepted content snapshot. No routine compiled catalog generation or stock seeding.
+6. Run `pnpm validate`, affected generation/publication checks, strict OpenSpec validation and browser acceptance against the selected code and PRD snapshot. Reuse that candidate's passing CI end-to-end and Chromium/Firefox staff-preview suites; local whole-project suites require a maintainer grant. No routine compiled catalog generation or stock seeding.
 7. Set the runtime feature flag true while launch approval remains absent and prove checkout stays closed.
 8. After explicit user approval for the named phase, set `PRD_LAUNCH_APPROVED=true` and run the bounded live payment/refund/receipt smoke. For beta, retain restricted cohort access and Holding Page. Cut over the public apex only after full public-launch acceptance and its separate approval.
 9. Keep the Holding Page rollback target for at least 24 hours, then retire holding-only dependencies and archive this change after accepted stability.

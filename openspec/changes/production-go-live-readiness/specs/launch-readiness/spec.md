@@ -42,7 +42,8 @@ The system MUST restrict the paid beta to the approved cohort and finite order l
 - **WHEN** an eligible customer completes a real payment
 - **THEN** normal payment, tax, shipping, stock, order and delivery checks apply, and the configured Stripe payment receipt uses accurate seller/contact and transaction details
 - **AND** the authorized smoke proves payment and refund receipt delivery to an approved recipient; sandbox manual receipts alone do not prove live automatic delivery
-- **AND** paid invoice creation and fiscal connectors are not prerequisites for ordinary payment receipts.
+- **AND** paid invoice creation and fiscal connectors are not prerequisites for ordinary payment receipts
+- **AND** purchase returns, policies and customer-email links reach the restricted PRD site while the apex remains on Holding Page.
 
 #### Scenario: Beta access is outside its approved scope
 
@@ -68,6 +69,13 @@ The system MUST associate launch code artifacts, configuration, validation, appr
 - **AND** historical prerequisite results retain their original source references
 - **AND** technical PRD code deployment follows explicit Software Release promotion of the accepted UAT candidate SHA/run and its verified PRD-targeted artifacts, independently of live-catalog and shopper-launch authorization
 - **AND** a later source, generated-artifact, or configuration change reruns affected checks; evidence notes or archival alone do not invalidate unchanged runtime proof.
+
+#### Scenario: Code is promoted during an approved beta
+
+- **GIVEN** beta checkout has been separately approved and enabled
+- **WHEN** an accepted software release is promoted
+- **THEN** candidate provenance and release-order checks still apply without requiring checkout to be disabled
+- **AND** code promotion preserves the independent checkout controls and does not authorize catalog mutation or new customers.
 
 #### Scenario: Content changes independently of code
 
@@ -160,7 +168,7 @@ The system MUST use PRD's own accepted immutable CMS snapshot and runtime D1 cat
 - **GIVEN** colleagues have reviewed editorial content and code in UAT
 - **WHEN** the corresponding PRD launch is prepared
 - **THEN** PRD's reviewed revisions are published through its own Content/Items workflow and its accepted snapshot is verified independently of the UAT snapshot
-- **AND** code promotion consumes the reviewed candidate's retained renderer/CMS/Pages artifacts while preserving the PRD content pointer
+- **AND** code promotion rebuilds PRD renderer/CMS/Pages artifacts from the SHA of UAT's successful push run while preserving the PRD content pointer
 - **AND** approved launch Store Items have explicit PRD target policy, live price authority, first-publication stock readiness, PRD D1 readiness rows, and live provider ownership evidence
 - **AND** UAT D1 rows, Stripe test-mode Products/Prices, synthetic stock quantities, and UAT smoke evidence are not copied or treated as PRD launch data
 - **AND** PRD catalog assets use PRD asset URLs instead of UAT asset URLs.
@@ -189,7 +197,8 @@ The system MUST prepare and verify every final public-origin dependency in the a
 #### Scenario: Code or content rollback is prepared
 
 - **WHEN** a launch rollback procedure is reviewed
-- **THEN** code rollback uses a compatible accepted candidate preserving the content pointer and commerce history
+- **THEN** routine code rollback uses a revert, push and promotion, preserving the content pointer and commerce history
+- **AND** emergency rollback pairs renderer and Pages deployments from the same run and rolls back the CMS Worker only when no migration intervened
 - **AND** content rollback separately selects a verified accepted snapshot
 - **AND** an old static artifact is not treated as restoration of prior published content.
 

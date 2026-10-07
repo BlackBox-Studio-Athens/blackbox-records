@@ -12,7 +12,7 @@ Core production foundations are implemented, but final launch still needs one co
 - Close the verified checkout-creation, paid-reconciliation, and operator-stock correction changes before commerce sign-off, with local regressions and separate new-account acceptance.
 - Verify the committed and deployed PRD delivery schedule, rehearse manual fulfillment/refund operations, and publish approved shipping/returns/privacy information with explicit charge and receipt/invoice decisions.
 - Keep live catalog preparation separate from shopper launch approval and runtime checkout enablement.
-- Prepare final-origin artifacts before approval, then expose the verified full site at `https://blackboxrecordsathens.com/` during approved cutover; the Pages origin remains technical.
+- Keep beta purchase/policy/email links on the working PRD technical origin. Prepare final-origin artifacts for full public launch before approval, then expose the verified full site at `https://blackboxrecordsathens.com/` during approved cutover.
 - Make the user the sole final go/no-go approver and keep the Holding Page as the immediate rollback target for at least 24 hours after launch.
 
 ## Capabilities
