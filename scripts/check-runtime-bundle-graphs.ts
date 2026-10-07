@@ -41,8 +41,9 @@ const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'Stor
 const staffRouteDocuments = {
   overview: { document: 'index.html', javascriptBudgetBytes: 121 * 1024 },
   website: { document: 'content/index.html', javascriptBudgetBytes: 176128 },
-  // Calendar navigation and focused stock controls add at most 2 KiB to the existing staff budgets.
-  stock: { document: 'stock/index.html', javascriptBudgetBytes: 152 * 1024 },
+  // Calendar navigation and focused stock controls add at most 2 KiB to the existing staff budgets. Raised 1 KiB on
+  // 7 October 2026 for the zero-stock state control (593 Brotli bytes over; openspec/changes/add-coming-soon-availability).
+  stock: { document: 'stock/index.html', javascriptBudgetBytes: 153 * 1024 },
   orders: { document: 'orders/index.html', javascriptBudgetBytes: 126 * 1024 },
   calendar: { document: 'calendar/index.html', javascriptBudgetBytes: 176128 },
 };
