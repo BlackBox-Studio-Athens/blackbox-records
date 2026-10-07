@@ -2241,7 +2241,18 @@ else if (process.argv.includes('--editor-recovery')) {
       const heading = page.locator('.cms-records h1');
       const arrival = await heading.boundingBox();
       check(arrival.y >= 0 && arrival.y < 400, 'Next must bring the results heading into view');
-      check(await heading.evaluate((node) => node === document.activeElement), 'Next must focus the results heading');
+      // Paging focuses the heading in the frame after the rows render, so wait for it instead of reading once.
+      check(
+        await page
+          .waitForFunction(() => document.activeElement === document.querySelector('.cms-records h1'), null, {
+            timeout: 2000,
+          })
+          .then(
+            () => true,
+            () => false,
+          ),
+        'Next must focus the results heading',
+      );
       await page.getByRole('button', { name: /Browse 050/ }).click();
       await page.locator('#content-title').waitFor();
       await page.goBack();
