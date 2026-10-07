@@ -3,7 +3,7 @@ title: Ouranopithecus
 slug: ouranopithecus
 genre: Experimental Weird Rock
 country: Greece
-image: ./Ouranopithecus-band-photo.jpg
+image: ./Ouranopithecus-band-photo-bw-square.jpg
 image_alt: Three members of Ouranopithecus standing among trees
 bio: >
   Ouranopithecus channels a raw, heavy sound that blends stark tension with
