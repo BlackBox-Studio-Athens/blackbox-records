@@ -37,6 +37,8 @@ const eagerGraphBudgetBytes = 102 * 1024;
 // User-approved 3 KiB Home allowance for the current preorder and inquiry release, plus 1 KiB approved on
 // 7 October 2026 for the swipe-row dots island (795 Brotli bytes; openspec/changes/add-home-swipe-rows).
 const homeEagerGraphBudgetBytes = 104 * 1024;
+// Store item pages only; the recorded decision sits where the item routes are chosen below.
+const storeItemEagerGraphBudgetBytes = 104 * 1024;
 const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton', 'StoreImageGallery'];
 const staffRouteDocuments = {
   overview: { document: 'index.html', javascriptBudgetBytes: 121 * 1024 },
@@ -264,7 +266,10 @@ if (scope === 'staff') {
     diagnostics.push('Missing a built single-image Store Item page; item-route budget coverage is incomplete.');
   if (!galleryItem)
     diagnostics.push('Missing a built gallery Store Item page; gallery-route budget coverage is incomplete.');
-  // Both item classes use the public 102 KiB budget. A measured exception requires a recorded decision.
+  // Both item classes use the 104 KiB Store item budget, a maintainer-approved exception (8 October 2026): the item
+  // page carries the purchase status with Coming Soon, Repressing and Notify me, measured at 105,966 bytes eager before
+  // that UI moved on demand and 103,004 after. The zero-stock UI loads on demand, so the common stocked path stays
+  // small. Decision: openspec/changes/add-coming-soon-availability/design.md.
   const documents = {
     ...routeDocuments,
     ...(args.has('documents')
@@ -314,11 +319,16 @@ if (scope === 'staff') {
       `Shell eager graph is ${shell?.brotliBytes ?? 'missing'} bytes (budget ${eagerGraphBudgetBytes}).`,
     );
   }
+  const routeEagerGraphBudgetBytes: Record<string, number> = {
+    home: homeEagerGraphBudgetBytes,
+    storeItem: storeItemEagerGraphBudgetBytes,
+    storeGalleryItem: storeItemEagerGraphBudgetBytes,
+  };
   for (const [route, result] of Object.entries(routes)) {
     if (result.graph.fileCount === 0) {
       diagnostics.push(`${route} has no discoverable eager JavaScript entries; route budget coverage is incomplete.`);
     }
-    const budget = route === 'home' ? homeEagerGraphBudgetBytes : eagerGraphBudgetBytes;
+    const budget = routeEagerGraphBudgetBytes[route] ?? eagerGraphBudgetBytes;
     if (result.graph.brotliBytes > budget) {
       diagnostics.push(`${route} eager graph is ${result.graph.brotliBytes} bytes (budget ${budget}).`);
     }
@@ -340,6 +350,7 @@ if (scope === 'staff') {
     documentsRoot,
     eagerGraphBudgetBytes,
     homeEagerGraphBudgetBytes,
+    storeItemEagerGraphBudgetBytes,
     routes,
     shell,
     storeCart,

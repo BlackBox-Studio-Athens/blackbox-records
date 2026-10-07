@@ -69,6 +69,7 @@ describe('hosted document bundle gate', { timeout: 60000 }, () => {
     expect(result.status, result.stderr).toBe(0);
     const report = JSON.parse(readFileSync(join(f.root, 'bundles.json'), 'utf8'));
     expect(report.eagerGraphBudgetBytes).toBe(104448);
+    expect(report.storeItemEagerGraphBudgetBytes).toBe(106496);
     expect(report.documentsRoot).toBe(f.documents);
     expect(report.distRoot).toBe(f.assets);
     expect(Object.keys(report.routes)).toEqual(
@@ -98,7 +99,7 @@ describe('hosted document bundle gate', { timeout: 60000 }, () => {
     f.write('client/_astro/dormant-island.js', 'var __esm = (fn) => fn;');
     expect(check(f).stderr).toContain('SSR execution-order wrapper');
   });
-  it('rejects item eager bytes above the public budget', () => {
+  it('rejects item eager bytes above the Store item budget', () => {
     const f = fixture();
     f.write('client/_astro/item.js', `export const data="${randomBytes(180000).toString('base64')}";`);
     f.write(
@@ -109,6 +110,6 @@ describe('hosted document bundle gate', { timeout: 60000 }, () => {
     const result = check(f);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain('storeGalleryItem eager graph');
-    expect(result.stderr).toContain('budget 104448');
+    expect(result.stderr).toContain('budget 106496');
   });
 });

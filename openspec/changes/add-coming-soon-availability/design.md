@@ -158,6 +158,7 @@ Approved styles (owner review, 7 October 2026, `/demo/coming-soon-styles`): stat
   - a submit button.
 - Validation, error association and the inline status pattern are copied from the newsletter form.
 - Visual direction goes through the Impeccable shape and approval gates during apply. It follows the monochrome hard-edged language and adds no icons or urgency.
+- Bundle budget (maintainer-approved, 8 October 2026): Store item routes get a 104 KiB eager budget (`storeItemEagerGraphBudgetBytes`; every other route keeps 102 KiB). The status and Notify me measured 105,966 bytes eager before they moved to the on-demand `StoreItemPurchaseStatus` module and 103,004 after, so the common stocked path stays small.
 
 ## Risks / Trade-offs
 
