@@ -72,3 +72,7 @@
 
 - [x] 12.1 Reproduce the remaining promotion failure without forced clicks and trace the page's smooth scrolling during the full-video focus handoff.
 - [x] 12.2 Make that handoff immediate, verify repeated unchanged Firefox/Chromium interaction checks and complete source-bound validation before a fresh release candidate.
+
+## 13. Sidus loading poster
+
+- [x] 13.1 Replace Sidus's YouTube title-card poster with a still from its prepared native footage, following Afterwise; verify the loading/reduced-motion fallback on mobile and desktop.
