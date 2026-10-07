@@ -328,7 +328,10 @@ export async function runValidation({
       if (identify === sourceIdentity) stopMonitoring = await monitorSourceChanges(cwd);
       summary.sourceBefore = await identify(cwd);
       for (const [index, command] of commands.entries()) {
-        const logPath = path.join(evidenceDir, `${index}-${command.name}${summary.passes > 1 ? '-rerun' : ''}.log`);
+        const logPath = path.join(
+          evidenceDir,
+          `${index}-${command.name.replaceAll(':', '-')}${summary.passes > 1 ? '-rerun' : ''}.log`,
+        );
         await writeFile(logPath, '');
         const phaseStart = performance.now();
         const entry = {
