@@ -191,12 +191,12 @@ The system is flat by default. Depth comes from tonal separation, borders, image
 
 ### Buttons
 
-Buttons are hard, typographic controls with direct action language: one family (`apps/web/src/components/ui/button.tsx`), three sizes, one focus ring. They sit behind the artwork; nothing glows except Listen.
+Buttons are hard, typographic controls with direct action language: one family (`apps/web/src/components/ui/button.tsx`), three sizes, one focus ring. They sit behind the artwork; nothing glows except Listen and the Store card Buy that borrows its chrome.
 
 - **Shape:** Square (`0`) everywhere, including shared primitives. No pills.
 - **Type:** Bebas Neue caps, 0.06em tracking, nudged 1px down to centre the caps. Text actions (Remove, Back to Store, Refresh status) stay Inter 13/500 with an underline.
 - **Sizes:** 32px for chips, sort and view toggles; 36px for every action and icon control; 44px for commerce decisions and anything sharing a row with a 44px input or Listen. On coarse pointers an invisible halo makes every control 44px tappable; the drawn size never changes.
-- **Primary:** Control Ink (#e8e8e8) face with Primary Inverse text, lifting to Ink Foreground on hover. One filled primary per view, except Store cards, where each buyable card carries its own Buy.
+- **Primary:** Control Ink (#e8e8e8) face with Primary Inverse text, lifting to Ink Foreground on hover. One filled primary per view. Store cards' Buy now takes the Listen chrome (dark face, hairline edge, Store Blood hover edge) with a record mark, while their Pre-order keeps the filled primary face.
 - **Outline:** Charcoal Surface face with a Deep Border edge; hover lifts face and edge. Inside store or services surfaces (`data-tone`) the edge takes Store Blood or Services Rose automatically, never per button. Icon controls keep a quieter neutral edge.
 - **Quiet:** Soft Muted text with a hairline underline that grows from the centre on hover.
 - **Chips:** Charcoal face and quiet edge; selected chips gain an ink border and a check mark, and may show their result count.
@@ -307,7 +307,7 @@ Editors autosave private drafts and publish explicitly. Catalog items show one P
 
 For reference research, start with the personal [Design Library](C:/Users/SVall/.codex/design-library/README.md), which maps shared sources, inventories and reusable pattern evidence. [BlackBox design references and decisions](docs/design-inspiration.md) retains project studies and selections. The [pattern application guide](docs/ui-design-patterns-guide.md) explains the local application table and stable pattern IDs.
 
-Listen refinement selected September 24, 2026: **Fluid five with animation**. Preserve the familiar dark face, square edges and compact label; replace the circular indicator with five amber (`#e3b56c`) bars. Use the same mark in the modal heading and minimized player. Hover/focus and modal entry run two brief cycles, then settle; reduced motion disables the animation. The mark identifies listening and never claims verified playback. Retain `Player Ready` and the existing shell-owned lifecycle. Future button studies should extend this restrained family. Cosmos Public Work remains an aesthetic reference for quiet hierarchy and image-first restraint; amber is a music accent, not a replacement global action color.
+Listen refinement selected September 24, 2026: **Fluid five with animation**. Preserve the familiar dark face, square edges and compact label; replace the circular indicator with five amber (`#e3b56c`) bars. Use the same mark in the modal heading and minimized player. Hover/focus and modal entry run two brief cycles, then settle; reduced motion disables the animation. The mark identifies listening and never claims verified playback. Retain `Player Ready` and the existing shell-owned lifecycle. Future button studies should extend this restrained family. Cosmos Public Work remains an aesthetic reference for quiet hierarchy and image-first restraint; amber is a music accent, not a replacement global action color. Store Buy refinement selected 7 October 2026: Buy on Store cards takes the Listen chrome and a neutral Rim add record mark (`apps/web/src/components/store/StoreBuyIcon.tsx`), static, 18px; Pre-order keeps the filled primary face and its Sea green line.
 
 For Content, Images, Items, Stock and Orders, use the living [backoffice design reference](docs/backoffice-design.md). It records shared staff patterns, research, proposal status and validation separately from the public site's visual direction.
 

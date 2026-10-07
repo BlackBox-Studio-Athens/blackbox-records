@@ -2,15 +2,22 @@
 
 ### Requirement: Store cards offer Buy for stocked items
 
-A Store collection card whose Store Item has a sellable variant SHALL offer a 44px Buy action in the filled primary face beside its listing price when the activation's listing projection reports a ready price and stocked availability. In every other state, and in Coverflow narrower than 40rem, the card SHALL show its price and status text without a Buy action. Buy SHALL be a sibling of the card's single Store Item link and SHALL NOT navigate, and the card title SHALL read as that link. Pressing Buy SHALL read the Worker Store Offer before adding one unit to StoreCart; the listing projection SHALL NOT be cart, checkout, stock or payment authority.
+A Store collection card whose Store Item has a sellable variant SHALL offer a 44px Buy action in the Listen chrome with a leading record mark beside its listing price when the activation's listing projection reports a ready price and stocked availability. In every other state, and in Coverflow narrower than 40rem, the card SHALL show its price and status text without a Buy action. Buy SHALL be a sibling of the card's single Store Item link and SHALL NOT navigate, and the card title SHALL read as that link. Pressing Buy SHALL read the Worker Store Offer before adding one unit to StoreCart; the listing projection SHALL NOT be cart, checkout, stock or payment authority.
 
 #### Scenario: Stocked card shows Buy
 
 - **GIVEN** the listing projection reports a ready price and stocked availability for a card's Store Item
 - **WHEN** the card's price row is presented
-- **THEN** Buy appears beside the price in the filled primary face, unlike the outlined status text
+- **THEN** Buy appears beside the price in the Listen chrome (dark face, hairline edge, Store Blood hover edge) with a leading record mark, unlike the outlined status text
 - **AND** the card keeps its height, because the price row reserves Buy's height
 - **AND** the active Coverflow card shows Buy in its visible purchase row at 40rem and wider.
+
+#### Scenario: Pre-order card keeps its action
+
+- **GIVEN** the listing projection reports a ready, stocked pre-order for a card's Store Item
+- **WHEN** the card's price row is presented
+- **THEN** its Pre-order action keeps the filled primary face and Sea green base line
+- **AND** it shows no record mark.
 
 #### Scenario: Phone Coverflow keeps its compact card
 
@@ -39,6 +46,7 @@ A Store collection card whose Store Item has a sellable variant SHALL offer a 44
 - **THEN** Buy reads Adding, keeps its width and is marked busy while the Worker Store Offer is read
 - **AND** a buyable offer adds one unit to StoreCart and opens the cart drawer
 - **AND** Buy reads Added for the confirmation period, then Buy
+- **AND** Adding and Added keep the record mark and the Listen chrome
 - **AND** closing the drawer returns focus to Buy.
 
 #### Scenario: Item stopped being buyable

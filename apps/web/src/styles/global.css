@@ -5248,6 +5248,65 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   }
 }
 
+/* Store card Buy borrows the Listen chrome with a Store Blood hover edge (openspec/changes/add-store-card-buy).
+   Busy and disabled read as rest. Pre-order keeps the filled primary face and shows no record mark. */
+.store-item-card--listing [data-store-card-buy].purchase-action {
+  color: rgba(245, 245, 245, 0.9);
+  border-color: rgba(245, 245, 245, 0.48);
+  background: linear-gradient(180deg, rgba(245, 245, 245, 0.035), rgba(245, 245, 245, 0.005)), rgba(9, 9, 9, 0.94);
+  box-shadow: inset 0 -0.5rem 0.9rem rgba(0, 0, 0, 0.18);
+}
+
+.store-item-card--listing
+  [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):focus-visible {
+  color: rgb(245, 245, 245);
+  border-color: var(--store-accent-hover);
+  background:
+    radial-gradient(
+      circle at 18% 50%,
+      rgba(245, 245, 245, 0.16),
+      rgba(245, 245, 245, 0.07) 46%,
+      rgba(245, 245, 245, 0) 100%
+    ),
+    rgba(245, 245, 245, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(245, 245, 245, 0.12),
+    0 0 1.05rem rgba(245, 245, 245, 0.12),
+    inset 0 0 0 1px rgba(245, 245, 245, 0.05);
+  transform: none;
+}
+
+@media (hover: hover) {
+  .store-item-card--listing
+    [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):hover {
+    color: rgb(245, 245, 245);
+    border-color: var(--store-accent-hover);
+    background:
+      radial-gradient(
+        circle at 18% 50%,
+        rgba(245, 245, 245, 0.16),
+        rgba(245, 245, 245, 0.07) 46%,
+        rgba(245, 245, 245, 0) 100%
+      ),
+      rgba(245, 245, 245, 0.12);
+    box-shadow:
+      0 0 0 1px rgba(245, 245, 245, 0.12),
+      0 0 1.05rem rgba(245, 245, 245, 0.12),
+      inset 0 0 0 1px rgba(245, 245, 245, 0.05);
+    transform: none;
+  }
+}
+
+.store-item-card--listing
+  [data-store-card-buy].purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true']):active {
+  border-color: var(--store-accent-active);
+  color: rgba(245, 245, 245, 0.9);
+}
+
+[data-store-card-buy].preorder-action .store-buy-icon {
+  display: none;
+}
+
 /* Primary button with a 3px Sea green base line. Hover and focus fill the face; the line then disappears into it.
    Size and footprint stay the button's own. */
 .preorder-action {

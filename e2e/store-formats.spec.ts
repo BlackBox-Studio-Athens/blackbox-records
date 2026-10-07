@@ -1,6 +1,8 @@
 import { expect, plantSentinel, sentinelIntact, test, waitForShell } from './fixtures';
 
-test('regular Buy feedback is shared, stationary and independent of card hover', async ({ page }) => {
+test('Store card Buy takes the Listen chrome and Releases Buy vinyl keeps restrained feedback, both stationary', async ({
+  page,
+}) => {
   const storeItemSlug = 'disintegration-black-vinyl-lp';
   await page.route('**/api/store/listing-prices*', (route) =>
     route.fulfill({
@@ -64,6 +66,8 @@ test('regular Buy feedback is shared, stationary and independent of card hover',
   await buy.hover();
   await buy.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
   const hovering = await buy.evaluate(appearance);
+  expect(resting.edge).toBe('rgba(245, 245, 245, 0.48)');
+  expect(hovering.edge).toBe('rgb(180, 70, 90)');
   expect(hovering).not.toEqual(resting);
   expect(hovering.transform).toBe('none');
   expect(hovering.shadow === 'none' || hovering.shadow.includes('inset')).toBe(true);
@@ -111,8 +115,14 @@ test('regular Buy feedback is shared, stationary and independent of card hover',
   await waitForShell(page);
   const releaseBuy = page.locator('[data-release-role="lead"]').getByRole('link', { name: 'Buy vinyl', exact: true });
   await expect(releaseBuy).toHaveClass(/purchase-action/);
+  await releaseBuy.scrollIntoViewIfNeeded();
+  await page.mouse.move(0, 0);
+  const releaseResting = await releaseBuy.evaluate(appearance);
   await releaseBuy.hover();
-  expect(await releaseBuy.evaluate(appearance)).toEqual(hovering);
+  const releaseHovering = await releaseBuy.evaluate(appearance);
+  expect(releaseHovering).not.toEqual(releaseResting);
+  expect(releaseHovering.transform).toBe('none');
+  expect(releaseHovering.shadow === 'none' || releaseHovering.shadow.includes('inset')).toBe(true);
   await expect(releaseBuy).toHaveCSS('transition-duration', '0s');
 });
 

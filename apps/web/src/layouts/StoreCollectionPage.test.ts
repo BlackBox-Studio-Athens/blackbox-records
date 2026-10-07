@@ -14,6 +14,7 @@ const releasesRouteSource = source('../pages/store/blackbox-releases/index.astro
 const distroRouteSource = source('../pages/store/distro/index.astro');
 const merchRouteSource = source('../pages/store/merch/index.astro');
 const storeItemCardSource = source('../components/store/StoreItemCard.astro');
+const storeBuyIconSource = source('../components/store/StoreBuyIcon.tsx');
 const proseCssSource = source('../styles/prose.css');
 
 describe('Store collection category surfaces', () => {
@@ -89,7 +90,10 @@ describe('Store collection category surfaces', () => {
     );
     const buyButton = /<button\b[^>]*\sdata-store-card-buy=[^>]*>[\s\S]*?<\/button>/.exec(storeItemCardSource)?.[0];
     expect(buyButton).toContain('data-store-card-buy-label="Buy"');
-    expect(buyButton).toMatch(/\shidden\s*>\s*Buy\s*<\/button>/);
+    expect(buyButton).toMatch(
+      /\shidden\s*>\s*<StoreBuyIcon\s*\/>\s*<span data-store-card-buy-label>Buy<\/span>\s*<\/button>/,
+    );
+    expect(storeBuyIconSource).toMatch(/<svg className="store-buy-icon"[^>]*aria-hidden="true"/);
   });
 
   it('links a Release item artist above the card link', () => {

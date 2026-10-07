@@ -29,6 +29,11 @@ const buySelector = '[data-store-card-buy]';
 const preorderSelector = '[data-store-listing-preorder]';
 const releaseStatusSelector = '[data-store-listing-release-status]';
 
+// The label lives in its own span so label writes keep the leading record mark.
+function setStoreCardBuyLabel(button: HTMLButtonElement, label: string) {
+  (button.querySelector?.<HTMLElement>('[data-store-card-buy-label]') ?? button).textContent = label;
+}
+
 /** Snapshots keep the server chrome and reset its state before the next enhancement. */
 export function sanitizeStoreSearchChrome(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-search-toolbar]').forEach((toolbar) => {
@@ -92,7 +97,7 @@ export function sanitizeStoreListingPricePlaceholders(root: ParentNode): void {
     button.classList.remove('preorder-action');
     button.classList.remove('purchase-action');
     button.dataset.storeCardBuyLabel = STORE_LISTING_PRICE_COPY.buy;
-    button.textContent = STORE_LISTING_PRICE_COPY.buy;
+    setStoreCardBuyLabel(button, STORE_LISTING_PRICE_COPY.buy);
   });
   root.querySelectorAll<HTMLElement>('[data-store-preorder]').forEach((card) => {
     delete card.dataset.storePreorder;
@@ -126,7 +131,7 @@ async function buyFromStoreCard(button: HTMLButtonElement, confirmationTimers: M
   if (button.disabled || button.getAttribute('aria-busy') === 'true') return;
   window.clearTimeout(confirmationTimers.get(button));
   button.setAttribute('aria-busy', 'true');
-  button.textContent = STORE_LISTING_PRICE_COPY.adding;
+  setStoreCardBuyLabel(button, STORE_LISTING_PRICE_COPY.adding);
 
   let label: string = button.dataset.storeCardBuyLabel ?? STORE_LISTING_PRICE_COPY.buy;
   try {
@@ -139,7 +144,7 @@ async function buyFromStoreCard(button: HTMLButtonElement, confirmationTimers: M
     } else if (!result.isQueued) {
       label = purchase.STORE_ITEM_PURCHASE_ACTION_COPY.added;
       const resetLabel = () => {
-        button.textContent = button.dataset.storeCardBuyLabel ?? STORE_LISTING_PRICE_COPY.buy;
+        setStoreCardBuyLabel(button, button.dataset.storeCardBuyLabel ?? STORE_LISTING_PRICE_COPY.buy);
       };
       confirmationTimers.set(button, window.setTimeout(resetLabel, purchase.STORE_ITEM_ADDED_CONFIRMATION_MS));
     }
@@ -147,7 +152,7 @@ async function buyFromStoreCard(button: HTMLButtonElement, confirmationTimers: M
     // The purchase code could not load: Buy stays available for another press.
   }
   button.removeAttribute('aria-busy');
-  button.textContent = label;
+  setStoreCardBuyLabel(button, label);
 }
 
 export function connectStoreListingPricePresentation({
@@ -224,8 +229,9 @@ export function connectStoreListingPricePresentation({
         const preorder = buyable && Boolean(record.preorder);
         button.hidden = !buyable;
         button.disabled = !buyable;
-        button.dataset.storeCardBuyLabel = preorder ? STORE_LISTING_PRICE_COPY.preorder : STORE_LISTING_PRICE_COPY.buy;
-        button.textContent = button.dataset.storeCardBuyLabel;
+        const label = preorder ? STORE_LISTING_PRICE_COPY.preorder : STORE_LISTING_PRICE_COPY.buy;
+        button.dataset.storeCardBuyLabel = label;
+        setStoreCardBuyLabel(button, label);
         button.classList.toggle('preorder-action', preorder);
         button.classList.toggle('purchase-action', buyable && !preorder);
       });

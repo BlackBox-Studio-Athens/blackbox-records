@@ -40,3 +40,17 @@ Built-in browser pane with viewport emulation. In Claude in Chrome the tab group
 - Focus returning to Buy when the cart closes is proven by Playwright. The pane never has window focus, so there focus fell to the document body.
 - Sold Out, Out of Stock and unavailable cards without Buy are covered by unit tests; the Local seed had no such item.
 - Hosted UAT and PRD were not exercised and nothing was released.
+
+## Buy in the Listen chrome, 7 October 2026
+
+Product Environment: Local, branch `claude/listen-button-design-parity-b06415` (worktree `restore-artist-photos-aeca04`), base `a20debe3`. Acceptance rows: Shell/player/routing (Store card markup, presenter labels and Playwright specs) and Boundaries/tooling/instructions (strict OpenSpec validation). Commerce authority, Worker, cart storage and checkout are unchanged; staff, CMS and release rows do not apply.
+
+- Vitest (`vitest run --config vitest.config.ts` from `apps/web`): `StoreCollectionPage.test.ts`, `StoreListingPricePresentation.test.ts`, `button.test.tsx` and `catalog-containment.test.ts`, 4 files and 50 tests passed. The presenter's test fakes have no `querySelector`, so the label helper's fallback to the button kept them passing unchanged.
+- `pnpm test:e2e e2e/store-formats.spec.ts`: 11 passed, including the renamed Store card Buy and Releases Buy vinyl test (resting edge `rgba(245, 245, 245, 0.48)`, hovering edge `rgb(180, 70, 90)`, stationary footprint, busy and disabled equal rest, reduced motion).
+- `pnpm test:e2e e2e/store-preorders.spec.ts`: 12 passed.
+- `pnpm test:e2e e2e/store-cart.spec.ts`: 48 passed, 7 skipped and 1 failed. The failure, Firefox compact "the header cart control appears only with items or in the store", was a React portal error-boundary console error on a fresh dev server; that test alone then passed in all four projects. An earlier run reused a background Astro started without `BLACKBOX_E2E=1`, whose development toolbar intercepted clicks; it was discarded.
+- `pnpm openspec -- validate add-store-card-buy --type change --strict --allow-worktree`: valid.
+- `pnpm validate`: passed, `mode: local`, source `a20debe3` with matching before/after fingerprint `3ee4dd7b…`, summary `.codex-artifacts/validation/2026-10-07T20-01-13-475Z-51360-772dea/summary.json`.
+- Browser (`playwright-cli`, Chromium 1440 × 1000, this checkout's Astro on 4361, listing projection stubbed): Buy measured 72px wide with the record mark, a `rgba(245, 245, 245, 0.48)` edge and `rgba(9, 9, 9, 0.94)` face; hovered, the edge read `rgb(180, 70, 90)` with the Listen highlight. With a pre-order record the same card's Pre-order kept `rgb(232, 232, 232)` and its `rgb(45, 118, 106)` 3px inset line, and the mark was `display: none`. Screenshots: `.codex-artifacts/design/buy-icon/implemented-card.png`, `implemented-card-hover.png` and `implemented-card-preorder.png`.
+
+Not verified here: phone widths and Coverflow in a browser (unchanged layout; the 72px footprint matches the earlier measurement), Safari, and hosted UAT or PRD. Nothing was released.
