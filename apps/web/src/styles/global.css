@@ -3580,6 +3580,76 @@ body.is-app-shell-overlay-open {
   }
 }
 
+/* Home News and Artists on phones: one native scroll-snap row each. The row bleeds to the screen edges; its padding
+   keeps the first card on the page gutter, and the next card stays partly visible as the swipe cue. Artists cards are
+   narrower because their 3:4 photos make them tall. */
+@media (width < 40rem) {
+  .home-swipe-row {
+    --home-swipe-row-gutter-left: max(var(--page-gutter), env(safe-area-inset-left));
+    --home-swipe-row-gutter-right: max(var(--page-gutter), env(safe-area-inset-right));
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 82%;
+    gap: 0.875rem;
+    align-items: start;
+    margin-right: calc(var(--home-swipe-row-gutter-right) * -1);
+    margin-left: calc(var(--home-swipe-row-gutter-left) * -1);
+    padding-right: var(--home-swipe-row-gutter-right);
+    padding-left: var(--home-swipe-row-gutter-left);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-padding-right: var(--home-swipe-row-gutter-right);
+    scroll-padding-left: var(--home-swipe-row-gutter-left);
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .home-swipe-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-featured-roster-grid.home-swipe-row {
+    grid-auto-columns: 74%;
+  }
+
+  .home-swipe-row > * {
+    min-width: 0;
+    scroll-snap-align: start;
+  }
+}
+
+/* Cards beside the current one fade with their distance from the gutter, on the compositor. Longhands only: the build
+   minifier drops animation-timeline next to an animation shorthand. Without scroll timelines a fill-both animation
+   would hold its last keyframe and dim every card, so browsers without them keep full opacity. */
+@supports (animation-timeline: view()) {
+  @media (width < 40rem) and (prefers-reduced-motion: no-preference) {
+    .home-swipe-row > * {
+      animation-name: home-swipe-row-fade;
+      animation-duration: auto;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view(inline);
+    }
+  }
+}
+
+@keyframes home-swipe-row-fade {
+  0%,
+  20% {
+    opacity: 0.45;
+  }
+
+  50%,
+  65% {
+    opacity: 1;
+  }
+
+  85%,
+  100% {
+    opacity: 0.45;
+  }
+}
+
 .store-category-signal {
   border-block: 1px solid var(--border);
 }

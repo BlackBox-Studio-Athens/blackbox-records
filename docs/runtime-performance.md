@@ -2,7 +2,7 @@
 
 Use these profiles for performance acceptance. Store raw output under `.codex-artifacts/runtime-performance/<commit-or-run>/`; commit only concise reports.
 
-The public eager JavaScript graph budget is 102 KiB Brotli; the user approved raising it from 100 KiB on 6 October 2026 because Store Item pages sat 24 bytes under the old limit and any shared byte failed a release. Home alone has a user-approved 103 KiB limit for the preorder and inquiry release. Shell, Store Item and other routes use 102 KiB; dormant surfaces must remain lazy. Page-specific code belongs in that page's island, not the layout or shell. `scripts/check-runtime-bundle-graphs.ts` enforces and reports both limits.
+The public eager JavaScript graph budget is 102 KiB Brotli; the user approved raising it from 100 KiB on 6 October 2026 because Store Item pages sat 24 bytes under the old limit and any shared byte failed a release. Home alone has a user-approved 104 KiB limit: 103 KiB for the preorder and inquiry release, raised on 7 October 2026 for the swipe-row dots island, which must load with `client:load` because the shell runs no page scripts. Shell, Store Item and other routes use 102 KiB; dormant surfaces must remain lazy. Page-specific code belongs in that page's island, not the layout or shell. `scripts/check-runtime-bundle-graphs.ts` enforces and reports both limits.
 
 ## Product Environments
 

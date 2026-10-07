@@ -34,8 +34,9 @@ const routeDocuments = {
 // User-approved 2 KiB allowance (6 October 2026): Store Item pages sat 24 bytes under 100 KiB, so any shared byte
 // failed releases. Pages stay where they were; only the headroom grows.
 const eagerGraphBudgetBytes = 102 * 1024;
-// User-approved 3 KiB Home allowance for the current preorder and inquiry release.
-const homeEagerGraphBudgetBytes = 103 * 1024;
+// User-approved 3 KiB Home allowance for the current preorder and inquiry release, plus 1 KiB approved on
+// 7 October 2026 for the swipe-row dots island (795 Brotli bytes; openspec/changes/add-home-swipe-rows).
+const homeEagerGraphBudgetBytes = 104 * 1024;
 const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton', 'StoreImageGallery'];
 const staffRouteDocuments = {
   overview: { document: 'index.html', javascriptBudgetBytes: 121 * 1024 },

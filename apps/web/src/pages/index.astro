@@ -6,6 +6,7 @@ import StorePreorderShowcase from '@/components/store/StorePreorderShowcase';
 import NewsletterSignup from '@/components/NewsletterSignup.astro';
 import SiteLayout from '@/layouts/SiteLayout.astro';
 import { buttonVariants } from '@/components/ui/button';
+import { SwipeRowDots } from '@/components/ui/swipe-row-dots';
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { listArtistRosterProfiles, listNewsArticles } from '@/lib/catalog-data';
 import { getHomeContent } from '@/lib/site-data';
@@ -48,27 +49,41 @@ const homeArtists = homeContent.artists;
           {homeNews.link_text}
         </a>
       </div>
-      <div class="home-news-grid">
+      <div class="home-news-grid home-swipe-row" id="home-news-row">
         {latestNewsArticles.map((newsArticle) => (
           <NewsCard item={newsArticle} grid="home" />
         ))}
       </div>
+      <SwipeRowDots
+        client:load
+        rowId="home-news-row"
+        count={latestNewsArticles.length}
+        label="News position"
+        className="mt-3 sm:hidden"
+      />
     </section>
   )}
 
   {homeArtists && (
-    <section class="artists-surface-section mt-20 border-t border-border py-20 sm:py-24" id="artists">
+    <section class="artists-surface-section mt-12 border-t border-border py-14 sm:mt-20 sm:py-24" id="artists">
       <div class="layout-container">
         <div class="home-section-header home-section-header--centered mb-6 sm:mb-8">
           <span class="home-section-header__rule" aria-hidden="true" />
           <h2 class="home-section-header__title">{homeArtists.title}</h2>
           <span class="home-section-header__rule" aria-hidden="true" />
         </div>
-        <div class="home-featured-roster-grid">
+        <div class="home-featured-roster-grid home-swipe-row" id="home-artists-row">
           {featuredArtistProfiles.map((artistProfile) => (
             <ArtistCard artist={artistProfile} variant="featured-roster" />
           ))}
         </div>
+        <SwipeRowDots
+          client:load
+          rowId="home-artists-row"
+          count={featuredArtistProfiles.length}
+          label="Artists position"
+          className="mt-3 sm:hidden"
+        />
         <div class="mt-8 text-center">
           <a
             href={createProjectRelativeUrl(homeArtists.button_link)}
