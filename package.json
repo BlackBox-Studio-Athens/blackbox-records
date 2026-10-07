@@ -41,6 +41,7 @@
     "smoke:stripe-uat": "tsx scripts/smoke-stripe-sandbox.ts",
     "smoke:resend-uat": "tsx scripts/smoke-resend-uat.ts",
     "smoke:uat-static": "tsx scripts/smoke-uat-static.ts",
+    "release:watch": "node scripts/watch-release.mjs",
     "stripe:webhook:simulate:local": "pnpm --filter @blackbox/backend webhook:simulate:local",
     "openspec:guard": "tsx scripts/assert-openspec-worktree.ts",
     "openspec": "tsx scripts/run-openspec.ts",
