@@ -3500,10 +3500,23 @@ body.is-app-shell-overlay-open {
     letter-spacing: 0.03em;
   }
 
+  /* The motto block sits centred in the viewport; its lines stay left-aligned because the word cycle reserves
+     the widest word's width, which would leave a gap in centred lines. */
+  .homepage-hero-section__content-block {
+    justify-content: center;
+    align-items: center;
+    padding-top: var(--header-height);
+    padding-bottom: 3rem;
+  }
+
   .homepage-hero-section__tagline-text {
-    max-width: min(18rem, 82vw);
-    font-size: clamp(1.55rem, 9vw, 2.2rem);
+    max-width: min(21rem, 90vw);
+    font-size: clamp(2.1rem, 11.5vw, 2.75rem);
     line-height: 1;
+  }
+
+  .homepage-hero-section__scroll-indicator > span {
+    display: none;
   }
 
   .homepage-hero-section__scroll-indicator {
