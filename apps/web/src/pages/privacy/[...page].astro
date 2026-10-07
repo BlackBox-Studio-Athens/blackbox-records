@@ -18,7 +18,7 @@ if (!information || Astro.params.page) return new Response('Not found', { status
   pageDescription="How BlackBox Records uses personal information and how to contact us about privacy."
 >
   <InternalPageHero sectionLabel="BlackBox Records" title="Privacy information" />
-  <section class="page-content-width-constrained-container py-10">
+  <section class="layout-container py-10">
     <PurchaseDocument kind="privacy" information={information} />
   </section>
 </SiteLayout>

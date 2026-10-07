@@ -16,10 +16,7 @@ const { class: className, hasBanner = false } = Astro.props;
 >
   <slot name="banner" />
   <div
-    class:list={[
-      'mx-auto flex w-full max-w-[1240px] items-center justify-between gap-4 px-[var(--header-padding-x-mobile)] md:gap-6 md:px-[var(--header-padding-x-desktop)]',
-      hasBanner ? 'h-20' : 'h-full',
-    ]}
+    class:list={['layout-container flex items-center justify-between gap-4 md:gap-6', hasBanner ? 'h-20' : 'h-full']}
   >
     <slot />
   </div>

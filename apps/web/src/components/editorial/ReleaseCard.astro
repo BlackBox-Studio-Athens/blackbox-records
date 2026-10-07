@@ -10,7 +10,12 @@ import { neutralReleasePresentation } from './release-presentation';
 import { createArtistDetailPath, createReleaseDetailPath } from '@/lib/catalog-data';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
-import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
+import {
+  createImageSizes,
+  editorialImageQuality,
+  largestImageWidth,
+  PAGE_MAX_WIDTH,
+} from '@/platform/lib/editorial-image';
 
 interface Props {
   release: CollectionEntry<'releases'>;
@@ -53,17 +58,48 @@ const releaseCardImageWidths = isArtistDiscography
   : isReleaseShowcase
     ? [320, 480, 720, 1080, 1440, 1800]
     : [320, 480, 640, 800, 960];
-// Desktop catalog slots include showcase padding, grid gaps, frame borders and the resting scale.
-// Narrow Releases slots use one 16px gutter and complete, unscaled artwork.
-const leadRegion = singleColumn ? '(100vw - 4.125rem)' : '((100vw - 4.125rem) * 0.75 - 1px)';
-const cappedLeadRegion = leadRegion.replace('100vw', '87rem');
+// Releases slots follow global.css: the page frame (PAGE_MAX_WIDTH less 2rem gutters from 64rem, 1.5rem from 40rem,
+// 1rem below), a 12-track 2rem-gap grid sharing the lead (8 tracks) and supporting (4 tracks) row, 1px artwork frames,
+// and the 1.026 resting scale on desktop catalog artwork.
+const frameWidth = `(${PAGE_MAX_WIDTH} - 4rem)`;
+const fluidFrameWidth = '(100vw - 4rem)';
+const leadWidth = (frame: string) => (singleColumn ? frame : `((${frame} - 22rem) * 2 / 3 + 14rem)`);
+// Cover track share of the lead's two columns: 1.15fr / 1fr beside a supporting release, else 0.95fr (0.9fr below 80rem).
+const leadCoverShare = singleColumn
+  ? { wide: '0.95 / 1.95', narrow: '0.9 / 1.9' }
+  : { wide: '1.15 / 2.15', narrow: '1.15 / 2.15' };
 const releaseCardImageSizes = isPrincipal
   ? role === 'lead'
-    ? `(min-width: 87rem) calc((${cappedLeadRegion} - 5.5rem) * 0.95 / 1.95 - 2px), (min-width: 83.333333rem) calc((${leadRegion} - 5.5rem) * 0.95 / 1.95 - 2px), (min-width: 80rem) calc((${leadRegion} - 3rem - 3vw) * 0.95 / 1.95 - 2px), (min-width: 64rem) calc((${leadRegion} - 4.5rem) * 0.9 / 1.9 - 2px), (min-width: 40rem) calc((100vw - 3.5rem) * 0.9 / 1.9 - 2px), calc(100vw - 2rem - 2px)`
-    : '(min-width: 87rem) calc((87rem - 4.125rem) / 4 - 3rem - 2px), (min-width: 64rem) calc((100vw - 4.125rem) / 4 - 3rem - 2px), (min-width: 40rem) calc((100vw - 3.5rem) * 0.9 / 1.9 - 2px), calc(100vw - 2rem - 2px)'
-  : isFramedArtwork
-    ? `(min-width: 87rem) calc(((87rem - 9.5rem) / 3 - 2px) * 1.026), (min-width: 80rem) calc(((100vw - 9.5rem) / 3 - 2px) * 1.026), (min-width: 64rem) calc(((100vw - 8.25rem) / 2 - 2px) * 1.026), ${isReleaseShowcase ? '(min-width: 48rem) calc((100vw - 3.25rem) / 2 - 2px), calc(100vw - 2rem - 2px)' : '(min-width: 60rem) calc(((100vw - 7.25rem) / 2 - 2px) * 1.026), (min-width: 48rem) calc(((95vw - 4.25rem) / 2 - 2px) * 1.026), (min-width: 40rem) calc((95vw - 3rem - 2px) * 1.026), calc((100vw - 4rem - 2px) * 1.026)'}`
-    : '(min-width: 1280px) 260px, (min-width: 768px) 50vw, 100vw';
+    ? createImageSizes(release.data.cover_image, [
+        { media: '(min-width: 80rem)', width: `(${leadWidth(frameWidth)} - 2.5rem) * ${leadCoverShare.wide} - 2px` },
+        {
+          media: `(min-width: ${PAGE_MAX_WIDTH})`,
+          width: `(${leadWidth(frameWidth)} - 1.5rem) * ${leadCoverShare.narrow} - 2px`,
+        },
+        {
+          media: '(min-width: 64rem)',
+          width: `(${leadWidth(fluidFrameWidth)} - 1.5rem) * ${leadCoverShare.narrow} - 2px`,
+        },
+        { media: '(min-width: 40rem)', width: '(100vw - 4.5rem) * 0.9 / 1.9 - 2px' },
+        { width: '100vw - 2rem - 2px' },
+      ])
+    : createImageSizes(release.data.cover_image, [
+        { media: '(min-width: 64rem)', width: '15rem - 2px' },
+        { media: '(min-width: 40rem)', width: '14rem - 2px' },
+        { width: '6.5rem - 2px' },
+      ])
+  : isReleaseShowcase
+    ? createImageSizes(release.data.cover_image, [
+        { media: '(min-width: 80rem)', width: `((${frameWidth} - 2.5rem) / 3 - 2px) * 1.026` },
+        { media: `(min-width: ${PAGE_MAX_WIDTH})`, width: `((${frameWidth} - 1.25rem) / 2 - 2px) * 1.026` },
+        { media: '(min-width: 64rem)', width: `((${fluidFrameWidth} - 1.25rem) / 2 - 2px) * 1.026` },
+        { media: '(min-width: 48rem)', width: '(100vw - 4.25rem) / 2 - 2px' },
+        { media: '(min-width: 40rem)', width: '100vw - 3rem - 2px' },
+        { width: '100vw - 2rem - 2px' },
+      ])
+    : isFramedArtwork
+      ? '(min-width: 87rem) calc(((87rem - 9.5rem) / 3 - 2px) * 1.026), (min-width: 80rem) calc(((100vw - 9.5rem) / 3 - 2px) * 1.026), (min-width: 64rem) calc(((100vw - 8.25rem) / 2 - 2px) * 1.026), (min-width: 60rem) calc(((100vw - 7.25rem) / 2 - 2px) * 1.026), (min-width: 48rem) calc(((95vw - 4.25rem) / 2 - 2px) * 1.026), (min-width: 40rem) calc((95vw - 3rem - 2px) * 1.026), calc((100vw - 4rem - 2px) * 1.026)'
+      : '(min-width: 1280px) 260px, (min-width: 768px) 50vw, 100vw';
 const releaseDate = formatMonthYear(release.data.release_date);
 const releaseDateMachineValue = release.data.release_date?.toISOString().slice(0, 10);
 const detailPath = createReleaseDetailPath(release);
@@ -185,7 +221,7 @@ const dataAttributes = embeddedPlayerData
     <CardContent
       className={
         isPrincipal
-          ? `release-card-copy ${featurePartPrefix}copy`
+          ? `release-card-copy p-0 ${featurePartPrefix}copy`
           : usesFramedArtworkLayout
             ? `release-card-copy space-y-2.5 p-0 pt-4 ${isArtistDiscography ? 'release-card-copy--artist-discography' : 'release-card-copy--framed'}`
             : 'release-card-copy space-y-2 p-5'

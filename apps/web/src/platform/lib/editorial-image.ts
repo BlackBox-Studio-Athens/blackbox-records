@@ -5,6 +5,9 @@
  */
 export const editorialImageQuality = 68;
 
+/** The page frame's maximum width, mirroring `--page-max-width` in global.css (a contract test keeps them equal). */
+export const PAGE_MAX_WIDTH = '72rem';
+
 type ImageSource = string | { width?: number; height?: number };
 
 /**

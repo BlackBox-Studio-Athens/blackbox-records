@@ -17,7 +17,7 @@ const information = Astro.props.information === undefined ? getPurchaseInformati
   pageDescription="Delivery, returns and purchase help for BlackBox Records orders."
 >
   <InternalPageHero sectionLabel="Store" title="Purchase and delivery information" />
-  <section class="page-content-width-constrained-container space-y-6 py-10" aria-label="Delivery information">
+  <section class="layout-container space-y-6 py-10" aria-label="Delivery information">
     <div class="max-w-2xl space-y-5 text-sm leading-7">
       <DeliveryRates />
       {information ? (

@@ -224,7 +224,8 @@ for (const width of [320, 360, 390, 430, 768]) {
         const copy = card.querySelector('.release-card-copy')!.getBoundingClientRect();
         const image = card.querySelector('img')!;
         return {
-          artwork: { x: artwork.x, width: artwork.width, bottom: artwork.bottom },
+          role: card.getAttribute('data-release-role'),
+          artwork: { x: artwork.x, y: artwork.y, width: artwork.width, right: artwork.right, bottom: artwork.bottom },
           copy: { x: copy.x, y: copy.y },
           transform: getComputedStyle(image).transform,
           actions: [...card.querySelectorAll('[data-release-actions] > *, .music-listen-trigger')].map((action) => {
@@ -244,12 +245,41 @@ for (const width of [320, 360, 390, 430, 768]) {
       }
       if (width < 640) {
         expect(card.artwork.x).toBe(16);
-        expect(card.artwork.width).toBe(contentWidth - 32);
-        expect(card.copy.x).toBe(16);
-        expect(card.copy.y).toBeGreaterThanOrEqual(card.artwork.bottom);
+        if (card.role === 'supporting') {
+          // Phones read the supporting release as a list row: a 6.5rem cover beside its identity and actions.
+          expect(card.artwork.width).toBe(104);
+          expect(card.copy.x).toBe(card.artwork.right + 16);
+          expect(card.copy.y).toBe(card.artwork.y);
+        } else {
+          expect(card.artwork.width).toBe(contentWidth - 32);
+          expect(card.copy.x).toBe(16);
+          expect(card.copy.y).toBeGreaterThanOrEqual(card.artwork.bottom);
+        }
       }
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
+
+for (const width of [1024, 1440]) {
+  test(`Releases top-aligns the lead and supporting release in one row at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('releases/');
+    await waitForShell(page);
+    await page.evaluate(() => document.fonts.ready);
+    const [lead, supporting] = await page
+      .locator('[data-release-role="lead"], [data-release-role="supporting"]')
+      .evaluateAll((cards) =>
+        cards.map((card) => ({
+          artwork: card.querySelector('.release-card-image-shell')!.getBoundingClientRect().toJSON(),
+          copy: card.querySelector('.release-card-copy')!.getBoundingClientRect().toJSON(),
+        })),
+      );
+    // Copy starts at the cover's top edge instead of centring in a row stretched by its neighbour.
+    expect(Math.abs(lead!.copy.top - lead!.artwork.top)).toBeLessThan(1);
+    expect(Math.abs(supporting!.artwork.top - lead!.artwork.top)).toBeLessThan(1);
+    expect(supporting!.artwork.left).toBeGreaterThan(lead!.copy.right);
+    expect(supporting!.artwork.width).toBeLessThan(lead!.artwork.width);
   });
 }
 
@@ -350,7 +380,8 @@ for (const width of [320, 390, 1280]) {
       ),
     });
     const button = lead.getByRole('link', { name: 'Pre-order vinyl', exact: true });
-    expect((await button.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+    // Firefox snaps fractional grid tracks; allow less than a hundredth of a CSS pixel.
+    expect((await button.boundingBox())?.height).toBeGreaterThanOrEqual(44 - 0.01);
     await page.mouse.move(0, 0);
     await button.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
     const visual = await button.evaluate((element) => ({

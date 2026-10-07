@@ -94,8 +94,10 @@ body.is-shell-scroll-locked {
   --font-display-ui: 'Bebas Neue', 'Impact', sans-serif;
   --font-display-brand: 'Veneer', 'Bebas Neue', 'Impact', sans-serif;
   --header-height: 80px;
-  --header-padding-x-mobile: 18px;
-  --header-padding-x-desktop: 32px;
+  /* The one page frame: header, editorial routes and footer share it through .layout-container.
+     PAGE_MAX_WIDTH in platform/lib/editorial-image.ts mirrors the width for image sizes. */
+  --page-max-width: 72rem;
+  --page-gutter: 1rem;
   --header-brand-logo-aspect-ratio: 256 / 63;
   --header-brand-logo-inline-size: clamp(9rem, 42vw, 9.6rem);
   /* Leaves room for the cart and the labelled Menu button down to 280px phones. */
@@ -293,6 +295,18 @@ body {
 @keyframes ui-sheet-slide-out {
   to {
     transform: translate3d(var(--ui-sheet-offset-x, 0), var(--ui-sheet-offset-y, 0), 0);
+  }
+}
+
+@media (min-width: 40rem) {
+  :root {
+    --page-gutter: 1.5rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --page-gutter: 2rem;
   }
 }
 
@@ -506,7 +520,11 @@ body {
   }
 
   .layout-container {
-    @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+    width: 100%;
+    max-width: var(--page-max-width);
+    margin-inline: auto;
+    padding-left: max(var(--page-gutter), env(safe-area-inset-left));
+    padding-right: max(var(--page-gutter), env(safe-area-inset-right));
   }
 
   .brand-display-title {
@@ -988,12 +1006,6 @@ body {
       width: 100%;
       min-height: 2.75rem;
     }
-  }
-
-  .site-footer-content-shell,
-  .site-footer-meta {
-    padding-left: max(1.25rem, env(safe-area-inset-left));
-    padding-right: max(1.25rem, env(safe-area-inset-right));
   }
 
   .site-footer-meta {
@@ -1985,11 +1997,6 @@ body {
     gap: 1.25rem;
   }
 
-  .releases-page-intro,
-  .releases-page-showcase-container {
-    max-width: 87rem;
-  }
-
   .releases-page-intro {
     padding-top: clamp(2.25rem, 5vw, 4.5rem);
     padding-bottom: clamp(1.25rem, 3vw, 2rem);
@@ -2026,7 +2033,6 @@ body {
     grid-template-columns: minmax(0, 1fr);
     gap: 0;
     margin-bottom: clamp(2.5rem, 5vw, 4rem);
-    border: 1px solid #2b2b2b;
   }
 
   .releases-page-layout > * {
@@ -2041,8 +2047,8 @@ body {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
-    align-items: stretch;
-    padding: clamp(1rem, 2.5vw, 1.5rem);
+    align-items: start;
+    padding-block: clamp(1.5rem, 3vw, 2rem);
   }
 
   .releases-latest-feature__artwork-link {
@@ -2070,8 +2076,6 @@ body {
     display: flex;
     min-width: 0;
     flex-direction: column;
-    justify-content: center;
-    padding-block: 0.5rem;
   }
 
   .releases-latest-feature__label {
@@ -2148,11 +2152,11 @@ body {
 
   .releases-latest-feature__upcoming {
     display: grid;
-    grid-template-columns: minmax(6.5rem, 8.5rem) minmax(0, 1fr);
+    grid-template-columns: 6.5rem minmax(0, 1fr);
     gap: 1rem;
     align-items: start;
     border-top: 1px solid #2b2b2b;
-    padding: clamp(1rem, 2.5vw, 1.5rem);
+    padding-block: clamp(1.5rem, 3vw, 2rem);
   }
 
   .releases-latest-feature__upcoming-artwork-link {
@@ -2219,7 +2223,7 @@ body {
   .releases-catalog-section {
     min-width: 0;
     border-top: 1px solid #2b2b2b;
-    padding: clamp(1rem, 2.5vw, 1.5rem);
+    padding-block: clamp(1.5rem, 3vw, 2rem) 0;
   }
 
   .releases-catalog-grid > * {
@@ -3907,19 +3911,12 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 @media (min-width: 48rem) {
   :root {
     --header-height: 80px;
-    --header-padding-x-desktop: 32px;
     --header-brand-logo-inline-size: clamp(9rem, 18vw, 9.6rem);
     --header-brand-logo-max-inline-size: 9.6rem;
     --header-nav-font-size: 12px;
     --header-nav-letter-spacing: 2.4px;
     --header-nav-gap: 2.5rem;
     --header-nav-link-padding-bottom: 6.4px;
-  }
-
-  .site-footer-content-shell,
-  .site-footer-meta {
-    padding-left: var(--header-padding-x-desktop);
-    padding-right: var(--header-padding-x-desktop);
   }
 
   .site-nav-link--footer {
@@ -4363,7 +4360,8 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   }
 
   .releases-latest-feature__upcoming {
-    grid-template-columns: minmax(7.5rem, 10rem) minmax(0, 1fr);
+    grid-template-columns: minmax(9rem, 14rem) minmax(0, 1fr);
+    gap: 1.5rem;
   }
 
   .music-streaming-service-embedded-player-mini-player {
@@ -4399,22 +4397,32 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 }
 
 @media (min-width: 64rem) {
+  /* Lead and supporting share the first row; each top-aligns, so neither stretches the other's copy. */
   .releases-page-layout {
     grid-template-columns: repeat(12, minmax(0, 1fr));
-    align-items: stretch;
+    column-gap: 2rem;
   }
 
   .releases-latest-feature {
-    grid-column: 1 / span 9;
+    grid-column: 1 / span 8;
     grid-row: 1;
-    border-right: 1px solid #2b2b2b;
+  }
+
+  /* The lead cover stays the largest artwork on the page. */
+  .releases-page-layout:not(.releases-page-layout--single-column) .releases-latest-feature {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
   }
 
   .releases-latest-feature__upcoming {
-    grid-column: 10 / span 3;
+    grid-column: 9 / span 4;
     grid-row: 1;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 15rem);
     border-top: 0;
+    padding-top: 0;
+  }
+
+  .releases-latest-feature__upcoming-summary {
+    display: none;
   }
 
   .releases-catalog-section {
@@ -4422,23 +4430,9 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     grid-row: 2;
   }
 
-  .releases-page-layout--single-column {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .releases-page-layout--single-column .releases-latest-feature,
-  .releases-page-layout--single-column .releases-latest-feature__upcoming,
-  .releases-page-layout--single-column .releases-catalog-section {
-    grid-column: 1;
+  .releases-page-layout--single-column > * {
+    grid-column: 1 / -1;
     grid-row: auto;
-  }
-
-  .releases-page-layout--single-column .releases-latest-feature {
-    border-right: 0;
-  }
-
-  .releases-page-layout--single-column .releases-latest-feature__upcoming:not(:first-child) {
-    border-top: 1px solid #2b2b2b;
   }
 
   .services-service-section {
@@ -4569,13 +4563,9 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   }
 }
 
-/* Store collections keep catalogue density independent of editorial routes. */
-.store-collection-page .layout-container,
-.store-collection-page #store-page-top > section {
-  width: 100%;
-  max-width: 90rem;
-  margin-inline: auto;
-  padding-inline: 1rem;
+/* Store collections keep catalogue density independent of editorial routes: wider frame, same gutters. */
+.store-collection-page {
+  --page-max-width: 90rem;
 }
 
 .store-collection-page #store-page-top > section {
@@ -6436,19 +6426,9 @@ html[data-store-coverflow-capable]
   .store-collection-page :is(.store-catalog-chunks, .distro-group-grid) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-
-  .store-collection-page .layout-container,
-  .store-collection-page #store-page-top > section {
-    padding-inline: 1.5rem;
-  }
 }
 
 @media (min-width: 64rem) {
-  .store-collection-page .layout-container,
-  .store-collection-page #store-page-top > section {
-    padding-inline: 2rem;
-  }
-
   .store-browse-layout {
     grid-template-columns: 13rem minmax(0, 1fr);
     gap: 1.5rem;
@@ -7471,29 +7451,33 @@ html[data-store-coverflow-capable]
   font-size: min(15cqi, clamp(1.9rem, 8vw, 2.55rem));
   text-wrap: balance;
 }
+#releases-merchandising .releases-page-layout > :first-child {
+  padding-top: 0;
+}
+@media (width < 40rem) {
+  /* Phones read the supporting release as a list row: thumb, identity, action. The summary waits for the detail page.
+     The row wraps the copy below the thumb when enlarged text leaves it less than 10rem. */
+  #releases-merchandising .releases-latest-feature__upcoming {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  #releases-merchandising .releases-latest-feature__upcoming-artwork-link {
+    flex: 0 0 6.5rem;
+  }
+  #releases-merchandising .releases-latest-feature__upcoming-copy {
+    flex: 1 1 10rem;
+  }
+  #releases-merchandising .releases-latest-feature__upcoming-summary {
+    display: none;
+  }
+}
 @media (width < 64rem) {
-  .releases-page-intro,
-  .releases-page-showcase-container {
-    padding-inline: 1rem;
-  }
-  #releases-merchandising .releases-page-layout {
-    border: 0;
-  }
-  #releases-merchandising :is(.releases-latest-feature, .releases-latest-feature__upcoming, .releases-catalog-section) {
-    padding: 1.5rem 0;
-  }
-  #releases-merchandising .releases-page-layout > :first-child {
-    padding-top: 0;
-  }
   #releases-merchandising .releases-catalog-grid {
     row-gap: 2rem;
   }
   #releases-merchandising .release-card-artwork-link .release-card-artwork {
     object-fit: contain;
     transform: none;
-  }
-  #releases-merchandising .releases-latest-feature__artwork-link {
-    align-self: start;
   }
   #releases-merchandising :is(.release-card-title-link, .release-card-artist-link) {
     display: inline-flex;
@@ -7515,16 +7499,7 @@ html[data-store-coverflow-capable]
   #releases-merchandising [data-release-actions] .music-listen-trigger {
     flex: 0 0 auto;
   }
-  #releases-merchandising .releases-latest-feature__upcoming {
-    grid-template-columns: minmax(0, 1fr);
-  }
   #releases-merchandising .releases-latest-feature__upcoming-title {
     font-size: min(17cqi, clamp(1.9rem, 8vw, 2.55rem));
-  }
-}
-@media (40rem <= width < 64rem) {
-  #releases-merchandising .releases-latest-feature__upcoming {
-    grid-template-columns: minmax(15rem, 0.9fr) minmax(0, 1fr);
-    gap: 1.5rem;
   }
 }
