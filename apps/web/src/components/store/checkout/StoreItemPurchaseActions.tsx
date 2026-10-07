@@ -1,10 +1,9 @@
 import * as React from 'react';
-import { Disc3, RotateCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { LoadingButtonContent } from '@/components/ui/loading-feedback';
 import type { PublicCheckoutApi, PublicStoreOffer } from '@/components/store/checkout/public-checkout-api';
-import { formatStoreLowStockLabel } from './public-checkout-presentation';
+import { formatStoreLowStockLabel, purchaseActionLayoutClasses } from './public-checkout-presentation';
 import type { CartLineItemSnapshot } from '@/components/store/cart/store-cart';
 import {
   queuePendingStoreCartAddItem,
@@ -13,14 +12,10 @@ import {
 } from '@/components/store/cart/store-cart-events';
 import { cn } from '@/components/ui/utils';
 import { DIGITAL_RELEASE_BADGE, preorderBadges } from '@/platform/lib/preorder-estimate';
-import {
-  availabilityLabel,
-  availabilityNote,
-  availabilityTone,
-  expectedMonthText,
-  isNotifiable,
-} from '@/platform/lib/availability-copy';
-import AvailabilityAlertForm from './AvailabilityAlertForm';
+import { availabilityLabel, availabilityTone, isNotifiable } from '@/platform/lib/availability-copy';
+
+// Most shoppers see a buyable item, so the zero-stock status, its icons and Notify me load only when one renders.
+const StoreItemPurchaseStatus = React.lazy(() => import('./StoreItemPurchaseStatus'));
 
 export type StoreItemCartSeed = Omit<
   CartLineItemSnapshot,
@@ -50,8 +45,6 @@ type StoreItemPurchaseActionState = {
 };
 
 type StoreItemPurchaseStatusTone = 'neutral' | 'sold-out' | 'incoming';
-
-const purchaseActionLayoutClasses = 'w-full sm:w-56 whitespace-normal';
 
 export const STORE_ITEM_PURCHASE_ACTION_COPY = {
   added: 'Added',
@@ -143,52 +136,6 @@ export async function requestStoreCartAddFromSeed(cartSeed: StoreItemCartSeed, a
   const checkoutApi = api ?? (await import('./public-checkout-api')).createPublicCheckoutApi();
   const state = await loadStoreItemPurchaseActionState(checkoutApi, cartSeed);
   return { ...state, isQueued: state.cartItem ? requestStoreCartAddItem(state.cartItem) : false };
-}
-
-// Not buyable is information, not a control: a status in the purchase slot, never a disabled button. Coming Soon and
-// Repressing add their explanatory line and Notify me; an unlabelled state renders nothing.
-export function StoreItemPurchaseStatus({
-  api,
-  state,
-  storeItemSlug,
-}: {
-  api?: PublicCheckoutApi | undefined;
-  state: Pick<StoreItemPurchaseActionState, 'label' | 'statusTone' | 'availabilityState' | 'expectedMonth'>;
-  storeItemSlug: string | null;
-}) {
-  if (!state.label) return null;
-  const { availabilityState, expectedMonth } = state;
-  const status = (
-    <p
-      role="status"
-      aria-atomic="true"
-      data-store-item-purchase-status
-      data-store-item-purchase-tone={state.statusTone}
-      className={cn(
-        purchaseActionLayoutClasses,
-        'inline-flex min-h-11 items-center justify-center gap-2 border px-4 pt-px text-center font-display text-base leading-none tracking-[0.06em] text-foreground uppercase',
-        state.statusTone === 'sold-out' && 'border-[var(--store-accent)]',
-        state.statusTone === 'incoming' && 'border-dashed border-[#8c8c8c]',
-        state.statusTone === 'neutral' && 'border-[#767676]',
-      )}
-    >
-      {availabilityState === 'coming_soon' && <Disc3 aria-hidden="true" size={14} strokeWidth={1.75} />}
-      {availabilityState === 'repressing' && <RotateCw aria-hidden="true" size={14} strokeWidth={1.75} />}
-      {state.label}
-    </p>
-  );
-  if (!isNotifiable(availabilityState)) return status;
-  const month = expectedMonthText(expectedMonth);
-  return (
-    <div className="store-availability-status" data-store-item-availability={availabilityState}>
-      {status}
-      <p className="store-availability-note" data-store-item-availability-note>
-        {availabilityNote(availabilityState)}
-        {month && ` · ${month}`}
-      </p>
-      {storeItemSlug && <AvailabilityAlertForm api={api} storeItemSlug={storeItemSlug} />}
-    </div>
-  );
 }
 
 export default function StoreItemPurchaseActions({
@@ -296,7 +243,12 @@ export default function StoreItemPurchaseActions({
   }
 
   if (!activeCartItem) {
-    return <StoreItemPurchaseStatus api={api} state={purchaseState} storeItemSlug={cartSeed?.storeItemSlug ?? null} />;
+    if (!purchaseState.label) return null;
+    return (
+      <React.Suspense fallback={<div aria-hidden="true" className={cn(purchaseActionLayoutClasses, 'min-h-11')} />}>
+        <StoreItemPurchaseStatus api={api} state={purchaseState} storeItemSlug={cartSeed?.storeItemSlug ?? null} />
+      </React.Suspense>
+    );
   }
 
   const addToCartButton = (
