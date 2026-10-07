@@ -104,6 +104,7 @@
       "smoke:stripe-uat",
       "smoke:resend-uat",
       "smoke:uat-static",
+      "release:watch",
       "stripe:webhook:simulate:local",
       "openspec:guard",
       "openspec",
