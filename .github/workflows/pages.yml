@@ -71,7 +71,10 @@ jobs:
       - *node
       - *install
       - name: Install public end-to-end browsers
-        run: pnpm exec playwright install --with-deps chromium firefox
+        uses: ./.github/actions/playwright-browsers
+        timeout-minutes: 5
+        with:
+          browsers: chromium firefox
       - name: Build Local production fixture for end-to-end tests
         run: pnpm build:web
       - name: Run the whole end-to-end suite
@@ -104,7 +107,10 @@ jobs:
       - *node
       - *install
       - name: Install preview test browsers
-        run: pnpm exec playwright install --with-deps chromium firefox
+        uses: ./.github/actions/playwright-browsers
+        timeout-minutes: 5
+        with:
+          browsers: chromium firefox
       - name: Verify staff previews in ${{ matrix.browser }}
         env:
           PUBLIC_STAFF_ENVIRONMENT: prd
@@ -207,7 +213,10 @@ jobs:
           node scripts/release-candidate.mjs verify-hosted uat
       # Smokes the UAT this run just deployed. A red smoke fails the run, and promotion refuses a failed run.
       - name: Install Chromium for the smoke
-        run: pnpm exec playwright install --with-deps chromium
+        uses: ./.github/actions/playwright-browsers
+        timeout-minutes: 5
+        with:
+          browsers: chromium
       - name: Run UAT static smoke
         run: pnpm smoke:uat-static -- --site-url https://blackbox-records-web-uat.pages.dev --scenario all --screenshots on-failure
       - name: Require UAT to still serve this run

@@ -1,0 +1,33 @@
+name: Playwright browsers
+description: Restores Playwright's browser builds from the cache and downloads them only on a miss, without apt.
+inputs:
+  browsers:
+    description: Space-separated Playwright browsers, such as `chromium` or `chromium firefox`.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Read the Playwright version
+      id: playwright
+      shell: bash
+      env:
+        BROWSERS: ${{ inputs.browsers }}
+      run: |
+        version="$(pnpm exec playwright --version | awk '{print $2}')"
+        echo "version=$version" >> "$GITHUB_OUTPUT"
+        echo "cache-key=playwright-$RUNNER_OS-$version-${BROWSERS// /-}" >> "$GITHUB_OUTPUT"
+    - name: Restore Playwright browsers
+      id: cache
+      uses: actions/cache@v6.1.0
+      with:
+        path: ~/.cache/ms-playwright
+        key: ${{ steps.playwright.outputs.cache-key }}
+    # No --with-deps or install-deps: apt can wait without bound while the runner's own package manager holds the
+    # lock at boot. This assumes ubuntu-latest, whose image ships Chrome and Firefox and so already has the system
+    # libraries Playwright's Chromium and Firefox builds need.
+    - name: Download Playwright browsers
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        BROWSERS: ${{ inputs.browsers }}
+      run: pnpm exec playwright install $BROWSERS

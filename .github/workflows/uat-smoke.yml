@@ -40,7 +40,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium
+        uses: ./.github/actions/playwright-browsers
+        timeout-minutes: 5
+        with:
+          browsers: chromium
       - name: Verify UAT webhook and payment configuration
         run: |
           pnpm stripe:webhooks:verify --env uat
