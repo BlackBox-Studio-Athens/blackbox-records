@@ -547,7 +547,8 @@ export const srcsetSlotChecks: SrcsetSlotCheck[] = [
     slot: byViewport([298, 302], [1012, 1016]),
   },
   { route: 'news/index.html', className: 'news-card__image', slot: byViewport([356, 360], [347, 352]) },
-  { route: 'index.html', className: 'news-card__image', slot: byViewport([356, 360], [345, 350]) },
+  // Home phones show News in a swipe row whose cards are 82% of the container.
+  { route: 'index.html', className: 'news-card__image', slot: byViewport([291, 295], [345, 350]) },
   {
     route: 'artists/*/index.html',
     className: 'artist-detail-hero__image',

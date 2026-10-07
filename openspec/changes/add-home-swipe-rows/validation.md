@@ -12,6 +12,7 @@ Product Environment: Local. Source: `981c610d` plus this change's working tree.
 
 - `npx astro build --root .` in `apps/web`, then `npx tsx scripts/check-runtime-bundle-graphs.ts`: Home eager graph 105,931 Brotli bytes. It failed the 105,472-byte budget by 459 bytes; the island chunk `swipe-row-dots.*.js` is 1,729 bytes, 795 Brotli. The owner approved a 104 KiB Home budget (106,496 bytes); the check then passed. Other routes are unchanged.
 - Built CSS keeps `animation-timeline: view(inline)` inside `@supports (animation-timeline:view())` with the reduced-motion media query.
+- Follow-up: push run 37687568781 failed `pnpm build:web` because the image-markup slot table still held the pre-row Home News width (356 px at 390). Chromium on the built fixture paints the swipe-row card image at 291.55 px at 390 (344.66 at 1440; News index 356 and 347.33), matching the card `sizes` (291.56 px), so the Home phone slot is now [291, 295]. `pnpm --filter @blackbox/web build` reproduced the failure; `tsx scripts/check-image-markup.ts` then passed.
 
 ## Acceptance rows
 
