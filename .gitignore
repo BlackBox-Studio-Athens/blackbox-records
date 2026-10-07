@@ -28,6 +28,7 @@ files/
 node_modules/.astro/
 node_modules/.vite/
 .codex-artifacts/
+.playwright-cli/
 .nx/
 /graphify-out/
 .codex/skills/graphify/

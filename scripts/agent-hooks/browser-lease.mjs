@@ -42,7 +42,7 @@ export async function decideChromeLease(event, { policy = loadPolicy(), now = Da
     const left = Math.ceil((idleMs - idle) / 1000);
     return {
       allowed: false,
-      message: `Chrome is leased to another agent session in ${lease.checkout} (last used ${ago} s ago; free in at most ${left} s). Instead run a named spec with \`pnpm test:e2e e2e/<spec>.spec.ts\`, or use the built-in browser pane on ${await ownSiteUrl(event.cwd, policy)}.`,
+      message: `Chrome is leased to another agent session in ${lease.checkout} (last used ${ago} s ago; free in at most ${left} s). Instead run a named spec with \`pnpm test:e2e e2e/<spec>.spec.ts\`, or use \`playwright-cli open ${await ownSiteUrl(event.cwd, policy)}\`.`,
     };
   }
   // ponytail: two sessions taking a free lease at the same instant both pass once; the next call denies the loser.
