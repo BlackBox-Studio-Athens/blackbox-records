@@ -215,6 +215,7 @@ test('verify-hosted prd refuses the UAT review marker', async (t) => {
   t.mock.method(console, 'log', () => {});
   const routes = (title) => ({
     [preflightUrl]: preflight({ 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' }),
+    [capabilitiesUrl]: capabilities(false, { 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' }),
     [`${site}/release.json`]: released,
     [`${site}/?release=${sha}`]: home(title),
   });
@@ -232,11 +233,22 @@ test('verify-worker refuses a Worker from an older run', async () => {
   await assert.rejects(main('verify-worker', 'prd', { env: prdEnv, fetch }), /another candidate run/);
 });
 
-test('verify-worker reads identity from the entry preflight, not the Durable Object behind GETs', async (t) => {
+test('verify-worker requires the Worker entry and the store Durable Object to serve the candidate', async (t) => {
   t.mock.method(console, 'log', () => {});
-  const fetch = canned({
-    [preflightUrl]: preflight({ 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' }),
-    [capabilitiesUrl]: capabilities(false, { 'X-Release-SHA': 'b'.repeat(40), 'X-Release-Run-Number': '9' }),
+  const fetch = (store) =>
+    canned({
+      [preflightUrl]: preflight({ 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' }),
+      [capabilitiesUrl]: capabilities(false, store),
+    });
+  await main('verify-worker', 'prd', {
+    env: prdEnv,
+    fetch: fetch({ 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' }),
   });
-  await main('verify-worker', 'prd', { env: prdEnv, fetch });
+  await assert.rejects(
+    main('verify-worker', 'prd', {
+      env: prdEnv,
+      fetch: fetch({ 'X-Release-SHA': 'b'.repeat(40), 'X-Release-Run-Number': '9' }),
+    }),
+    /Store Durable Object source differs/,
+  );
 });

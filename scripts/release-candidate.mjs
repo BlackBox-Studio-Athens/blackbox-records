@@ -16,8 +16,8 @@ const gh = (endpoint) => JSON.parse(execFileSync('gh', ['api', endpoint], { enco
 
 export async function waitForDeployment(verify, pause = () => setTimeout(5000)) {
   // ponytail: retry complete read-only checks; poll only identities if these reads become costly.
-  // 24 x 5 s (about 2 minutes): the Worker entry answers the identity preflight itself, so only the
-  // Worker version's propagation to the runner's edge is awaited, not the Durable Object's code update.
+  // 24 x 5 s (about 2 minutes): deploys restart Durable Objects onto the new code at once (code_update_strategy
+  // immediate), so the Worker entry and the store object both report a new release within seconds.
   for (let attempt = 0; attempt < 24; attempt += 1) {
     try {
       return await verify();
@@ -73,13 +73,13 @@ export function validateOrder(candidate, current) {
   if (current) assert.ok(candidate.runNumber >= current.runNumber, 'A newer candidate already mutated this target.');
 }
 
-export function validateWorker(candidate, response) {
-  assert.ok(response.ok, 'Worker is unavailable.');
-  assert.equal(response.headers.get('X-Release-SHA'), candidate.sha, 'Worker source differs from the candidate.');
+export function validateWorker(candidate, response, source = 'Worker') {
+  assert.ok(response.ok, `${source} is unavailable.`);
+  assert.equal(response.headers.get('X-Release-SHA'), candidate.sha, `${source} source differs from the candidate.`);
   assert.equal(
     Number(response.headers.get('X-Release-Run-Number')),
     candidate.runNumber,
-    'Worker belongs to another candidate run.',
+    `${source} belongs to another candidate run.`,
   );
 }
 
@@ -130,8 +130,7 @@ export async function main(command, target, { fetch = globalThis.fetch, env = pr
   const release = releaseIdentity(env);
   const site = sites[target];
   const capabilitiesUrl = `${backends[target]}/api/store/capabilities`;
-  // Read identity from the OPTIONS preflight, which the Worker entry answers without the Durable Object:
-  // after a deploy the Durable Object behind GETs can run older code for minutes.
+  // The Worker entry answers the OPTIONS preflight itself; GETs run in the store Durable Object.
   const worker = await fetch(capabilitiesUrl, {
     method: 'OPTIONS',
     headers: { Origin: site, 'Access-Control-Request-Method': 'GET' },
@@ -154,6 +153,8 @@ export async function main(command, target, { fetch = globalThis.fetch, env = pr
     if (runNumber !== null) validateOrder(release, { runNumber: Number(runNumber) });
   } else {
     validateWorker(release, worker);
+    const store = await fetch(capabilitiesUrl, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
+    validateWorker(release, store, 'Store Durable Object');
   }
   if (command === 'verify-hosted') {
     const current = await json(`${site}/release.json`);

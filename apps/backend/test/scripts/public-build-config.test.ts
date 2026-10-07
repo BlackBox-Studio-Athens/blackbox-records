@@ -79,3 +79,12 @@ describe('hosted public build module overrides', () => {
     expect(() => publicRoutePatterns([{ type: 'page', pattern: '/' }])).toThrow('Public route regex required');
   });
 });
+
+describe('hosted Durable Object code updates', () => {
+  it('restarts running objects onto a deploy at once instead of waiting up to 5 minutes for hibernation', () => {
+    for (const file of ['astro.config.mjs', 'astro.public.config.mjs'])
+      expect(readFileSync(backend(file), 'utf8'), file).toMatch(
+        /code_update_strategy:\s*\{\s*mode:\s*'immediate'\s*\}/,
+      );
+  });
+});

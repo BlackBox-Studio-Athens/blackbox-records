@@ -40,7 +40,12 @@ const config = {
     PUBLIC_IMAGE_TRANSFORM_ORIGIN: environment === 'local' ? '' : 'https://images.blackboxrecordsathens.com',
   },
   r2_buckets: [{ binding: 'MEDIA', bucket_name: resources.bucket_name }],
-  durable_objects: { bindings: [{ name: 'PUBLIC_SITE_RUNTIME', class_name: 'PublicSiteRuntime' }] },
+  // Restart the renderer object onto a new deploy at once, so its HTML never names the previous release's
+  // /_astro chunks after Pages replaced them. Wrangler's default waits for hibernation, up to 5 minutes.
+  durable_objects: {
+    bindings: [{ name: 'PUBLIC_SITE_RUNTIME', class_name: 'PublicSiteRuntime' }],
+    code_update_strategy: { mode: 'immediate' },
+  },
   cache: { enabled: false },
   exports: {
     default: { type: 'worker', cache: { enabled: true } },

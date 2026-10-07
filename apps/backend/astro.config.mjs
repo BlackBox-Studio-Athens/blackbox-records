@@ -74,6 +74,9 @@ const runtime = {
   services: [{ binding: 'PUBLIC_SITE', service: publicWorkerName(selected.vars.PRODUCT_ENVIRONMENT.toLowerCase()) }],
   durable_objects: {
     bindings: [...selected.durable_objects.bindings, { name: 'CMS_RUNTIME', class_name: 'CmsRuntime' }],
+    // Restart running objects onto a new deploy at once. Wrangler's default waits for an object to hibernate, up to
+    // 5 minutes, so a busy store object kept answering with the previous release's code.
+    code_update_strategy: { mode: 'immediate' },
   },
   migrations: [...base.migrations, { tag: 'cms-runtime-v1', new_sqlite_classes: ['CmsRuntime'] }],
 };
