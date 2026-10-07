@@ -7,10 +7,15 @@ import {
   getStoreListingPricesRoute,
   getStoreItemRoute,
   getStoreItemVariantsRoute,
+  postAvailabilityAlertRoute,
   postCheckoutSessionRoute,
   postDeliveryQuoteRoute,
 } from '../contracts/public-contracts';
-import { createStartCheckoutLineCommand } from '../../../application/commerce/checkout';
+import {
+  acceptsAvailabilityAlerts,
+  createStartCheckoutLineCommand,
+  type StoreOffer,
+} from '../../../application/commerce/checkout';
 import {
   requestLogger,
   safeCheckoutSessionId,
@@ -149,6 +154,44 @@ export function registerPublicCommerceRoutes(app: AppOpenApi, getPublicOpenApiDo
         }),
         apiLink({ href: '/api/store/openapi.json', rel: 'service-desc' }),
       ]);
+    } finally {
+      await services.disconnect();
+    }
+  });
+
+  app.openapi(postAvailabilityAlertRoute, async (context) => {
+    const logger = requestLogger(context);
+    const services = createPublicCommerceServices(context.env, logger);
+    const { storeItemSlug } = context.req.valid('param');
+    const outcome = (result: string, status: 'info' | 'warn' = 'info') =>
+      logger[status]({ event: 'availability_alert_request_outcome', outcome: result, storeItemSlug });
+
+    try {
+      await services.requestAvailabilityAlert(storeItemSlug, context.req.valid('json').email);
+      outcome('requested');
+      return jsonNoStore(context.json({ status: 'requested' as const }, 200));
+    } catch (error) {
+      if (error instanceof services.errors.StoreItemNotFoundError) {
+        outcome('not_found');
+        return jsonError(context, { code: 'not_found', message: 'Store item not found.', status: 404 });
+      }
+      if (error instanceof services.errors.AvailabilityAlertIneligibleError) {
+        outcome('ineligible');
+        return jsonError(context, {
+          code: 'availability_alert_unavailable',
+          message: 'This item cannot take availability alerts.',
+          status: 400,
+        });
+      }
+      if (error instanceof services.errors.AvailabilityAlertCapReachedError) {
+        outcome('cap_reached', 'warn');
+        return jsonError(context, {
+          code: 'availability_alert_busy',
+          message: 'Alerts for this item are temporarily unavailable. Try again later.',
+          status: 503,
+        });
+      }
+      throw error;
     } finally {
       await services.disconnect();
     }
@@ -374,14 +417,7 @@ export function registerPublicCommerceRoutes(app: AppOpenApi, getPublicOpenApiDo
   });
 }
 
-function toStoreOfferResponse<
-  TOffer extends {
-    canCheckout: boolean;
-    catalogStatus: string;
-    storeItemSlug: string;
-    variantId: string;
-  },
->(offer: TOffer, checkoutEnabled: boolean) {
+function toStoreOfferResponse<TOffer extends StoreOffer>(offer: TOffer, checkoutEnabled: boolean) {
   const actions =
     offer.canCheckout && offer.catalogStatus === 'ready' && checkoutEnabled
       ? [
@@ -411,6 +447,14 @@ function toStoreOfferResponse<
         href: apiPath('api', 'store', 'items', offer.storeItemSlug, 'variants'),
         rel: 'variants',
       }),
+      ...(acceptsAvailabilityAlerts(offer)
+        ? [
+            apiLink({
+              href: apiPath('api', 'store', 'items', offer.storeItemSlug, 'availability-alerts'),
+              rel: 'availability-alert',
+            }),
+          ]
+        : []),
     ],
     actions,
   );

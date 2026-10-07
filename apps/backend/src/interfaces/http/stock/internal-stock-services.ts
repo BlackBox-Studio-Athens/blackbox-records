@@ -7,13 +7,14 @@ import {
   recordStockChange,
   recordStockCount,
   searchVariants,
-  setRestockPlanned,
+  setZeroStockState,
   setShowLowStock,
   setStockPreorder,
   VariantNotFoundError,
 } from '../../../application/commerce/stock';
 import type { AppBindings } from '../../../platform/env';
 import type { InventoryQuery } from '../../../application/commerce/stock';
+import { D1AvailabilityAlertRepository } from '../../../infrastructure/persistence/d1-availability-alert-repository';
 import { D1CheckoutStockHoldRepository } from '../../../infrastructure/persistence/d1-checkout-stock-hold-repository';
 import {
   createPrismaClient,
@@ -32,6 +33,7 @@ export function createInternalStockServices(bindings: AppBindings) {
   const operatorStock = new D1OperatorStockRepository(bindings.COMMERCE_DB);
   const stockChanges = new PrismaStockChangeRepository(prisma);
   const stockCounts = new PrismaStockCountRepository(prisma);
+  const alerts = new D1AvailabilityAlertRepository(bindings.COMMERCE_DB);
 
   return {
     readInventory: (query: InventoryQuery) => storeItemOptions.readInventory(query),
@@ -43,12 +45,17 @@ export function createInternalStockServices(bindings: AppBindings) {
       VariantNotFoundError,
     },
     readVariantStock: async (variantId: string) => {
-      const { stock: state, ...item } = await readVariantStock(storeItemOptions, stock, variantId);
+      const {
+        stock: state,
+        availabilityAlertCount,
+        ...item
+      } = await readVariantStock(storeItemOptions, stock, alerts, variantId);
       const record = await storeItemOptions.findByStoreItem(item);
       const name = (record?.productProjection as { name?: unknown } | null)?.name;
       const availability = await checkoutHolds.readAvailability(item.variantId);
       return {
         ...item,
+        availabilityAlertCount,
         availableOnlineQuantity: availability?.availableOnlineQuantity ?? 0,
         heldQuantity: availability?.heldQuantity ?? 0,
         stock: state,
@@ -77,8 +84,12 @@ export function createInternalStockServices(bindings: AppBindings) {
       idempotencyKey?: string;
       productEnvironment: string;
     }) => recordStockCount(storeItemOptions, operatorStock, command),
-    setRestockPlanned: async (command: { expectedRevision: unknown; restockPlanned: unknown; variantId: unknown }) =>
-      setRestockPlanned(storeItemOptions, operatorStock, command),
+    setZeroStockState: async (command: {
+      expectedRevision: unknown;
+      zeroStockState: unknown;
+      expectedMonth: unknown;
+      variantId: unknown;
+    }) => setZeroStockState(storeItemOptions, operatorStock, command),
     setShowLowStock: async (command: { expectedRevision: unknown; showLowStock: unknown; variantId: unknown }) =>
       setShowLowStock(storeItemOptions, operatorStock, command),
     setStockPreorder: async (command: { expectedRevision: unknown; shipEstimate: unknown; variantId: unknown }) =>

@@ -4,6 +4,7 @@ import { buttonVariants } from '@/components/ui/button';
 import {
   releasePresentation,
   releaseCardSelector,
+  RELEASE_DETAIL_LINK_CLASS,
   readReleaseEntry,
   renderReleasePresentation,
   type Listing,
@@ -50,16 +51,12 @@ export function connectReleaseCatalogPresentation(root: HTMLElement, read = read
         card,
         entry,
         presentation,
-        buttonVariants({
-          variant: presentation.state === 'preorder' || presentation.state === 'available' ? 'default' : 'outline',
-          size: 'lg',
-          className:
-            presentation.state === 'preorder'
-              ? 'preorder-action'
-              : presentation.state === 'available'
-                ? 'purchase-action'
-                : undefined,
-        }),
+        presentation.state === 'preorder' || presentation.state === 'available'
+          ? buttonVariants({
+              size: 'lg',
+              className: presentation.state === 'preorder' ? 'preorder-action' : 'purchase-action',
+            })
+          : RELEASE_DETAIL_LINK_CLASS,
       );
     }
   }

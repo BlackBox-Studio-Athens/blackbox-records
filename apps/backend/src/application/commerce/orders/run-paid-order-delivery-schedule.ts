@@ -1,11 +1,14 @@
 import {
+  drainDueAvailabilityAlerts,
   drainDuePaidOrderDeliveries,
   drainDuePreorderEstimateNotices,
   SCHEDULED_DELIVERY_LIMIT,
   type ProcessPaidOrderDeliveryResult,
+  type StoreItemNameReader,
 } from './';
 import type { AppBindings } from '../../../platform/env';
 import { createBindingLogger, normalizeUnknownError } from '../../../platform/observability';
+import { D1AvailabilityAlertRepository } from '../../../infrastructure/persistence/d1-availability-alert-repository';
 import { D1PaidOrderDeliveryRepository } from '../../../infrastructure/persistence/d1-paid-order-delivery-repository';
 import { D1PreorderEstimateDeliveryRepository } from '../../../infrastructure/persistence/d1-preorder-estimate-delivery-repository';
 import { createPrismaClient, PrismaOrderStateRepository } from '../../../infrastructure/persistence/prisma';
@@ -14,6 +17,7 @@ import { createEmailRuntimeServices } from '../../../infrastructure/resend';
 export async function runPaidOrderDeliverySchedule(
   bindings: AppBindings,
   scheduledAt: Date,
+  options: { itemNames?: StoreItemNameReader } = {},
 ): Promise<ProcessPaidOrderDeliveryResult[]> {
   const logger = createBindingLogger(bindings);
   const prisma = createPrismaClient(bindings);
@@ -59,6 +63,19 @@ export async function runPaidOrderDeliverySchedule(
       rescheduledCount: countResults(notices, 'rescheduled'),
       status: 'completed',
     });
+
+    // Alerts run last and only in the rows order email left, so they never delay it.
+    event = 'availability_alert_schedule_outcome';
+    const alerts = await drainDueAvailabilityAlerts({
+      attemptedAt: scheduledAt,
+      config: emailRuntime.config,
+      ...(options.itemNames ? { itemNames: options.itemNames } : {}),
+      limit: SCHEDULED_DELIVERY_LIMIT - results.length - notices.length,
+      logger,
+      provider: emailRuntime.provider,
+      repository: new D1AvailabilityAlertRepository(bindings.COMMERCE_DB),
+    });
+    logger.info({ ...alerts, event, status: 'completed' });
 
     return results;
   } catch (error) {

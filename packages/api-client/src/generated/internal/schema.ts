@@ -300,7 +300,7 @@ export type paths = {
         patch: operations["setStockPreorder"];
         trace?: never;
     };
-    "/api/internal/variants/{variantId}/stock/restock-plan": {
+    "/api/internal/variants/{variantId}/stock/zero-stock-state": {
         parameters: {
             query?: never;
             header?: never;
@@ -313,7 +313,7 @@ export type paths = {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["setRestockPlanned"];
+        patch: operations["setZeroStockState"];
         trace?: never;
     };
 };
@@ -648,6 +648,8 @@ export type components = {
             variantId: string;
         };
         InternalStockDetail: components["schemas"]["InternalVariantSummary"] & {
+            /** @description Shoppers waiting for an availability alert; a count only. */
+            availabilityAlertCount: number;
             availableOnlineQuantity?: number;
             heldQuantity?: number;
             stock: components["schemas"]["InternalStockState"];
@@ -659,6 +661,8 @@ export type components = {
             variantId: string;
         };
         InternalStockState: {
+            /** @description Expected `YYYY-MM` month shown with Coming Soon or Repressing. */
+            expectedMonth: string | null;
             onlineQuantity: number;
             preorder: {
                 open: boolean;
@@ -677,11 +681,15 @@ export type components = {
                 startedAt: string;
             } | null;
             quantity: number;
-            restockPlanned: boolean;
             revision: number | null;
             showLowStock: boolean;
             /** Format: date-time */
             updatedAt: string | null;
+            /**
+             * @description What shoppers see once online stock runs out.
+             * @enum {string}
+             */
+            zeroStockState: "coming_soon" | "repressing" | "sold_out";
         };
         InternalVariantSummary: {
             actions?: components["schemas"]["ApiAction"][];
@@ -727,10 +735,6 @@ export type components = {
             stock: components["schemas"]["InternalStockState"];
             variantId: string;
         };
-        SetRestockPlannedBody: {
-            expectedRevision: number | null;
-            restockPlanned: boolean;
-        };
         SetShowLowStockBody: {
             expectedRevision: number | null;
             showLowStock: boolean;
@@ -748,6 +752,13 @@ export type components = {
                 /** @enum {string} */
                 kind: "date";
             } | null;
+        };
+        SetZeroStockStateBody: {
+            /** @description A `YYYY-MM` month that has not passed, or null. Sold Out always clears it. */
+            expectedMonth: string | null;
+            expectedRevision: number | null;
+            /** @enum {string} */
+            zeroStockState: "coming_soon" | "repressing" | "sold_out";
         };
     };
     responses: never;
@@ -856,6 +867,8 @@ export interface operations {
                 "application/json": {
                     /** @default false */
                     confirmLiveSetup?: boolean;
+                    /** @default null */
+                    expectedMonth?: string | null;
                     /** @enum {string} */
                     itemType: "Vinyl 12-inch" | "Vinyl 10-inch" | "Vinyl 7-inch" | "CDs" | "Clothes" | "Tapes" | "Other";
                     /** @default 0 */
@@ -876,8 +889,6 @@ export interface operations {
                         minimumAmountMinor: number;
                         presetAmountMinor: number;
                     };
-                    /** @default false */
-                    restockPlanned?: boolean;
                     source: {
                         id: string;
                         /** @enum {string} */
@@ -895,6 +906,11 @@ export interface operations {
                         sourceKind: "release" | "distro";
                     };
                     storeItemSlug: string;
+                    /**
+                     * @default sold_out
+                     * @enum {string}
+                     */
+                    zeroStockState?: "coming_soon" | "repressing" | "sold_out";
                 };
             };
         };
@@ -2056,7 +2072,7 @@ export interface operations {
             };
         };
     };
-    setRestockPlanned: {
+    setZeroStockState: {
         parameters: {
             query?: never;
             header?: never;
@@ -2067,11 +2083,11 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["SetRestockPlannedBody"];
+                "application/json": components["schemas"]["SetZeroStockStateBody"];
             };
         };
         responses: {
-            /** @description Updated the item restock plan. */
+            /** @description Updated what shoppers see once the item sells out online. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -2080,7 +2096,7 @@ export interface operations {
                     "application/json": components["schemas"]["InternalStockDetail"];
                 };
             };
-            /** @description Invalid restock plan. */
+            /** @description Invalid zero-stock state or expected month. */
             400: {
                 headers: {
                     [name: string]: unknown;

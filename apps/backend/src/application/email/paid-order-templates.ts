@@ -249,7 +249,12 @@ export function renderShopperParagraph(message: string): string {
 }
 
 export function renderShopperReply(replyToEmail: string): string {
-  return `<a class="shopper-reply" href="mailto:${escapeHtml(replyToEmail)}" style="display:inline-block;box-sizing:border-box;max-width:100%;border:1px solid ${emailDesignTokens.border};padding:10px 24px;background:transparent;color:${emailDesignTokens.text};font-size:16px;line-height:22px;font-weight:500;text-decoration:none;text-align:center;">Reply to BlackBox Records</a>`;
+  return renderShopperButtonLink(`mailto:${replyToEmail}`, 'Reply to BlackBox Records');
+}
+
+/** The outlined shopper email button, for a link to the site or a reply. */
+export function renderShopperButtonLink(href: string, label: string): string {
+  return `<a class="shopper-reply" href="${escapeHtml(href)}" style="display:inline-block;box-sizing:border-box;max-width:100%;border:1px solid ${emailDesignTokens.border};padding:10px 24px;background:transparent;color:${emailDesignTokens.text};font-size:16px;line-height:22px;font-weight:500;text-decoration:none;text-align:center;">${escapeHtml(label)}</a>`;
 }
 
 function shopperLineStatus(line: PaidOrderEmailInput['lineItems'][number], hasPreorder: boolean): string {

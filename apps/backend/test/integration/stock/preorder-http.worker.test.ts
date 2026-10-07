@@ -42,10 +42,13 @@ it('runs the protected pre-order lifecycle through HTTP and D1 with no quantity 
     expect(response.headers.get('Cache-Control')).toBe('no-store');
     const start = (await response.json()) as { stock: { revision: number; preorder: { startedAt: string } } };
     expect(start).toMatchObject({
+      availabilityAlertCount: 0,
       stock: {
         revision: 0,
         quantity: 0,
         onlineQuantity: 0,
+        zeroStockState: 'sold_out',
+        expectedMonth: null,
         preorder: { shipEstimate: month, startedAt: '2026-10-02T10:00:00.000Z', open: true },
       },
     });

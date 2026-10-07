@@ -9,6 +9,7 @@ import {
   recordStockCount,
   searchVariants,
   setStockPreorder,
+  setZeroStockState,
   StockConflictError,
   VariantNotFoundError,
 } from './';
@@ -86,7 +87,8 @@ class InMemoryStockRepository implements StockRepository {
       createdAt: existing?.createdAt ?? new Date('2026-04-24T10:00:00.000Z'),
       onlineQuantity: stockQuantity(state.onlineQuantity),
       quantity: stockQuantity(state.quantity),
-      restockPlanned: existing?.restockPlanned ?? false,
+      zeroStockState: existing?.zeroStockState ?? 'sold_out',
+      expectedMonth: existing?.expectedMonth ?? null,
       showLowStock: existing?.showLowStock ?? false,
       preorder: existing?.preorder ?? null,
       updatedAt: new Date('2026-04-24T11:00:00.000Z'),
@@ -147,6 +149,8 @@ class InMemoryStockCountRepository implements StockCountRepository {
   }
 }
 
+const noAlerts = { countWaiting: async () => 0 };
+
 describe('commerce stock use cases', () => {
   const storeItem = {
     sourceId: 'disintegration',
@@ -198,17 +202,105 @@ describe('commerce stock use cases', () => {
   });
 
   it('returns zero stock when the variant exists but has no stock row yet', async () => {
-    await expect(readVariantStock(storeItems, stock, storeItem.variantId)).resolves.toEqual({
+    await expect(
+      readVariantStock(storeItems, stock, { countWaiting: async () => 3 }, storeItem.variantId),
+    ).resolves.toEqual({
       ...storeItem,
+      availabilityAlertCount: 3,
       stock: {
         revision: null,
         onlineQuantity: 0,
         quantity: 0,
-        restockPlanned: false,
+        zeroStockState: 'sold_out',
+        expectedMonth: null,
         showLowStock: false,
         preorder: null,
         updatedAt: null,
       },
+    });
+  });
+
+  describe('zero-stock state', () => {
+    const now = new Date('2026-10-31T22:30:00Z'); // Already 1 November in Europe/Athens.
+    const write = () =>
+      vi.fn(async (input: Parameters<OperatorStockRepository['setZeroStockState']>[0]) => {
+        const old = await stock.findByVariantId(input.variantId);
+        if ((old?.revision ?? null) !== input.expectedRevision) return null;
+        const record = await stock.save(input.variantId, {
+          quantity: old?.quantity ?? 0,
+          onlineQuantity: old?.onlineQuantity ?? 0,
+        });
+        Object.assign(record, { zeroStockState: input.zeroStockState, expectedMonth: input.expectedMonth });
+        return record;
+      });
+    const command = { variantId: storeItem.variantId, expectedRevision: null };
+
+    it('saves a choice with a month on a zero-quantity record without changing quantities', async () => {
+      const setZeroStock = write();
+      const saved = await setZeroStockState(
+        storeItems,
+        { setZeroStockState: setZeroStock },
+        { ...command, zeroStockState: 'coming_soon', expectedMonth: '2026-11' },
+        now,
+      );
+      expect(saved).toMatchObject({
+        quantity: 0,
+        onlineQuantity: 0,
+        revision: 0,
+        zeroStockState: 'coming_soon',
+        expectedMonth: '2026-11',
+      });
+      expect(setZeroStock).toHaveBeenCalledWith({
+        expectedRevision: null,
+        variantId: storeItem.variantId,
+        zeroStockState: 'coming_soon',
+        expectedMonth: '2026-11',
+      });
+    });
+
+    it('clears the month when staff choose Sold Out', async () => {
+      const setZeroStock = write();
+      await expect(
+        setZeroStockState(
+          storeItems,
+          { setZeroStockState: setZeroStock },
+          { ...command, zeroStockState: 'sold_out', expectedMonth: '2026-12' },
+          now,
+        ),
+      ).resolves.toMatchObject({ zeroStockState: 'sold_out', expectedMonth: null });
+    });
+
+    it.each([
+      ['a month passed in Athens', 'repressing', '2026-10'],
+      ['a malformed month', 'coming_soon', '2026-13'],
+      ['a non-month value', 'coming_soon', 202611],
+      ['an unknown state', 'out_of_stock', null],
+    ])('rejects %s without writing', async (_case, zeroStockState, expectedMonth) => {
+      const setZeroStock = write();
+      await expect(
+        setZeroStockState(
+          storeItems,
+          { setZeroStockState: setZeroStock },
+          { ...command, zeroStockState, expectedMonth },
+          now,
+        ),
+      ).rejects.toBeInstanceOf(InvalidStockOperationError);
+      expect(setZeroStock).not.toHaveBeenCalled();
+    });
+
+    it('rejects a stale revision and keeps the saved choice', async () => {
+      const setZeroStock = write();
+      const input = { ...command, zeroStockState: 'repressing', expectedMonth: null };
+      await setZeroStockState(storeItems, { setZeroStockState: setZeroStock }, input, now);
+      await expect(
+        setZeroStockState(
+          storeItems,
+          { setZeroStockState: setZeroStock },
+          { ...input, zeroStockState: 'sold_out' },
+          now,
+        ),
+      ).rejects.toBeInstanceOf(StockConflictError);
+      await expect(stock.findByVariantId(storeItem.variantId)).resolves.toMatchObject({ zeroStockState: 'repressing' });
     });
   });
 
@@ -468,7 +560,7 @@ describe('commerce stock use cases', () => {
     expect(result.stock.onlineQuantity).toBe(3);
     expect(result.entry.actorEmail).toBe('operator@blackboxrecords.example');
 
-    await expect(readVariantStock(storeItems, stock, storeItem.variantId)).resolves.toMatchObject({
+    await expect(readVariantStock(storeItems, stock, noAlerts, storeItem.variantId)).resolves.toMatchObject({
       stock: {
         onlineQuantity: 3,
         quantity: 3,
@@ -489,7 +581,7 @@ describe('commerce stock use cases', () => {
     await recordStockChange(storeItems, operatorStock, command);
 
     expect(stockChanges.records).toHaveLength(2);
-    expect((await readVariantStock(storeItems, stock, storeItem.variantId)).stock.quantity).toBe(2);
+    expect((await readVariantStock(storeItems, stock, noAlerts, storeItem.variantId)).stock.quantity).toBe(2);
   });
 
   it('rejects stock changes that would drive stock below zero', async () => {
@@ -561,7 +653,7 @@ describe('commerce stock use cases', () => {
   });
 
   it('throws a variant-not-found error for unknown variants', async () => {
-    await expect(readVariantStock(storeItems, stock, toVariantId('variant_missing'))).rejects.toBeInstanceOf(
+    await expect(readVariantStock(storeItems, stock, noAlerts, toVariantId('variant_missing'))).rejects.toBeInstanceOf(
       VariantNotFoundError,
     );
   });

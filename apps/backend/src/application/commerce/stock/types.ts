@@ -8,11 +8,14 @@ import type {
 export type VariantSummary = StoreItemOptionRecord;
 
 export type VariantStockDetail = VariantSummary & {
+  /** Shoppers waiting for an availability alert; a count only, never addresses. */
+  availabilityAlertCount: number;
   stock: {
     revision: number | null;
     quantity: number;
     onlineQuantity: number;
-    restockPlanned: boolean;
+    zeroStockState: StockRecord['zeroStockState'];
+    expectedMonth: string | null;
     showLowStock: boolean;
     preorder: StockRecord['preorder'];
     updatedAt: Date | null;

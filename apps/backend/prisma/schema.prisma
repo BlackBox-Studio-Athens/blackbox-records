@@ -134,7 +134,8 @@ model Stock {
   variantId         String   @unique
   quantity          Int
   onlineQuantity    Int
-  restockPlanned    Boolean  @default(false)
+  zeroStockState    String   @default("sold_out")
+  expectedMonth     String?
   showLowStock      Boolean  @default(false)
   preorderStartedAt String?
   preorderShipMonth String?
@@ -301,4 +302,26 @@ model PreorderEstimateDelivery {
 
   @@unique([orderId, variantId])
   @@index([status, nextAttemptAt, createdAt])
+}
+
+model AvailabilityAlert {
+  id                 String   @id @default(cuid())
+  variantId          String
+  email              String
+  consentCopyVersion String
+  consentedAt        DateTime
+  status             String   @default("pending")
+  attemptCount       Int      @default(0)
+  nextAttemptAt      DateTime
+  leaseUntil         DateTime?
+  createdAt          DateTime
+  updatedAt          DateTime
+
+  @@unique([variantId, email])
+  @@index([status, nextAttemptAt, createdAt])
+}
+
+model AvailabilityAlertSendDay {
+  day       String @id
+  sentCount Int    @default(0)
 }

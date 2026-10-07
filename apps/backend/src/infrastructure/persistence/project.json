@@ -16,6 +16,7 @@
     "boundaries": {
       "status": "closed",
       "exports": [
+        "./d1-availability-alert-repository.ts",
         "./d1-checkout-stock-hold-repository.ts",
         "./d1-paid-order-delivery-repository.ts",
         "./d1-preorder-estimate-delivery-repository.ts",

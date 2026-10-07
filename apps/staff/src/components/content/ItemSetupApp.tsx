@@ -34,6 +34,7 @@ import NewArtistFields from './NewArtistFields';
 import { euroMinor, isEuroDraft } from '../../lib/item-commerce';
 import { createInternalStockApi, type CatalogSetupCommand } from '../../lib/backend/internal-stock-api';
 import ItemPublication from '../stock/ItemPublication';
+import ZeroStockStateControl, { isZeroStockState, type ZeroStockState } from '../stock/ZeroStockStateControl';
 import PublicationReviewFlow from '../publication/PublicationReviewFlow';
 import {
   createEditorialDraft,
@@ -88,7 +89,8 @@ export function setupCommand(input: {
   maximum: string;
   custom: boolean;
   quantity: string;
-  restockPlanned?: boolean;
+  zeroStockState?: ZeroStockState;
+  expectedMonth?: string;
 }): CatalogSetupCommand {
   const openingQuantity = Number(input.quantity);
   if (!/^\d+$/.test(input.quantity) || !Number.isSafeInteger(openingQuantity) || openingQuantity > maxOpeningStock)
@@ -145,7 +147,8 @@ export function setupCommand(input: {
     itemType,
     price,
     openingQuantity,
-    restockPlanned: input.restockPlanned ?? false,
+    zeroStockState: input.zeroStockState ?? 'sold_out',
+    expectedMonth: input.zeroStockState && input.zeroStockState !== 'sold_out' ? input.expectedMonth || null : null,
     confirmLiveSetup: true,
   };
 }
@@ -174,7 +177,8 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
   const [maximum, setMaximum] = useState('');
   const [custom, setCustom] = useState(false);
   const [quantity, setQuantity] = useState('0');
-  const [restockPlanned, setRestockPlanned] = useState(false);
+  const [zeroStockState, setZeroStockState] = useState<ZeroStockState>('sold_out');
+  const [expectedMonth, setExpectedMonth] = useState('');
   const [pending, setPending] = useState<CatalogSetupCommand | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -240,7 +244,7 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
         JSON.stringify({
           collection,
           slug: draftSlug.current,
-          setup: { amount, minimum, maximum, custom, quantity, restockPlanned, sellRelease },
+          setup: { amount, minimum, maximum, custom, quantity, zeroStockState, expectedMonth, sellRelease },
         }),
       );
       const current = draftDocument.current;
@@ -359,7 +363,8 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
               if (typeof saved.setup.maximum === 'string') setMaximum(saved.setup.maximum);
               if (typeof saved.setup.custom === 'boolean') setCustom(saved.setup.custom);
               if (typeof saved.setup.quantity === 'string') setQuantity(saved.setup.quantity);
-              if (typeof saved.setup.restockPlanned === 'boolean') setRestockPlanned(saved.setup.restockPlanned);
+              if (isZeroStockState(saved.setup.zeroStockState)) setZeroStockState(saved.setup.zeroStockState);
+              if (typeof saved.setup.expectedMonth === 'string') setExpectedMonth(saved.setup.expectedMonth);
               if (typeof saved.setup.sellRelease === 'boolean') setSellRelease(saved.setup.sellRelease);
             }
             draftSlug.current = saved.slug;
@@ -481,7 +486,8 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
           maximum,
           custom,
           quantity,
-          restockPlanned,
+          zeroStockState,
+          expectedMonth,
         });
       if (mode === 'existing' && !existing && !pending) throw new Error('Choose an existing title.');
       sessionStorage.setItem(storageKey, JSON.stringify(command));
@@ -769,29 +775,19 @@ export default function ItemSetupApp({ backendBaseUrl }: { backendBaseUrl: strin
                 published.
               </span>
             </label>
-            <label className="flex min-h-11 items-center justify-between gap-4 border-t border-border pt-4">
-              <span className="grid gap-1">
-                <span className="font-medium">Restock planned</span>
-                <span id="setup-restock-planned-description" className="text-sm text-muted-foreground">
-                  At zero online stock, shoppers see {restockPlanned ? 'Out of Stock.' : 'Sold Out.'}
-                </span>
-              </span>
-              <input
-                checked={restockPlanned}
-                className="peer sr-only"
-                onChange={(event) => {
-                  setRestockPlanned(event.currentTarget.checked);
-                  retainSetup({ restockPlanned: event.currentTarget.checked });
-                }}
-                role="switch"
-                aria-describedby="setup-restock-planned-description"
-                type="checkbox"
-              />
-              <span
-                aria-hidden="true"
-                className="relative inline-flex h-6 w-11 shrink-0 rounded-full border border-border bg-muted transition-colors after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-background after:content-[''] after:transition-transform peer-checked:border-primary peer-checked:bg-primary peer-checked:after:translate-x-5 peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background"
-              />
-            </label>
+            <ZeroStockStateControl
+              idPrefix="setup"
+              value={zeroStockState}
+              month={expectedMonth}
+              onValueChange={(value) => {
+                setZeroStockState(value);
+                retainSetup({ zeroStockState: value });
+              }}
+              onMonthChange={(month) => {
+                setExpectedMonth(month);
+                retainSetup({ expectedMonth: month });
+              }}
+            />
           </fieldset>
         )}
         {step === 2 && (

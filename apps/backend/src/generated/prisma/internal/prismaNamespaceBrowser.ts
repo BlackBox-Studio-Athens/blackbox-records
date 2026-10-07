@@ -63,7 +63,9 @@ export const ModelName = {
   CheckoutOrder: 'CheckoutOrder',
   CheckoutOrderLine: 'CheckoutOrderLine',
   PaidOrderDelivery: 'PaidOrderDelivery',
-  PreorderEstimateDelivery: 'PreorderEstimateDelivery'
+  PreorderEstimateDelivery: 'PreorderEstimateDelivery',
+  AvailabilityAlert: 'AvailabilityAlert',
+  AvailabilityAlertSendDay: 'AvailabilityAlertSendDay'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -182,7 +184,8 @@ export const StockScalarFieldEnum = {
   variantId: 'variantId',
   quantity: 'quantity',
   onlineQuantity: 'onlineQuantity',
-  restockPlanned: 'restockPlanned',
+  zeroStockState: 'zeroStockState',
+  expectedMonth: 'expectedMonth',
   showLowStock: 'showLowStock',
   preorderStartedAt: 'preorderStartedAt',
   preorderShipMonth: 'preorderShipMonth',
@@ -342,6 +345,31 @@ export const PreorderEstimateDeliveryScalarFieldEnum = {
 } as const
 
 export type PreorderEstimateDeliveryScalarFieldEnum = (typeof PreorderEstimateDeliveryScalarFieldEnum)[keyof typeof PreorderEstimateDeliveryScalarFieldEnum]
+
+
+export const AvailabilityAlertScalarFieldEnum = {
+  id: 'id',
+  variantId: 'variantId',
+  email: 'email',
+  consentCopyVersion: 'consentCopyVersion',
+  consentedAt: 'consentedAt',
+  status: 'status',
+  attemptCount: 'attemptCount',
+  nextAttemptAt: 'nextAttemptAt',
+  leaseUntil: 'leaseUntil',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AvailabilityAlertScalarFieldEnum = (typeof AvailabilityAlertScalarFieldEnum)[keyof typeof AvailabilityAlertScalarFieldEnum]
+
+
+export const AvailabilityAlertSendDayScalarFieldEnum = {
+  day: 'day',
+  sentCount: 'sentCount'
+} as const
+
+export type AvailabilityAlertSendDayScalarFieldEnum = (typeof AvailabilityAlertSendDayScalarFieldEnum)[keyof typeof AvailabilityAlertSendDayScalarFieldEnum]
 
 
 export const SortOrder = {

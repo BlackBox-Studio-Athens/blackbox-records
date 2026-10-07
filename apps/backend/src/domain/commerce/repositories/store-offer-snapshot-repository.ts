@@ -22,7 +22,7 @@ export type StoreOfferListingPriceSnapshotRecord = Pick<
   'amountMinor' | 'currencyCode' | 'freshUntil' | 'priceActive' | 'productActive' | 'storeItemSlug'
 > & {
   availability: Pick<ItemAvailabilityRecord, 'status' | 'canBuy'> | null;
-  stock: Pick<StockRecord, 'onlineQuantity' | 'restockPlanned' | 'showLowStock' | 'preorder'> | null;
+  stock: Pick<StockRecord, 'onlineQuantity' | 'zeroStockState' | 'expectedMonth' | 'showLowStock' | 'preorder'> | null;
 };
 
 export interface StoreOfferListingPriceSnapshotRepository {

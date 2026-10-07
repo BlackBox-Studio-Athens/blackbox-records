@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  AvailabilityAlertCapReachedError,
+  AvailabilityAlertIneligibleError,
+  requestAvailabilityAlert,
   CheckoutConfigurationError,
   CheckoutAttemptTerminalError,
   CheckoutUnavailableError,
@@ -25,12 +28,15 @@ const mockQuoteDelivery = vi.fn();
 const mockReadCheckoutState = vi.fn();
 const mockRegisterNewsletterSignup = vi.fn();
 const mockSubmitServicesInquiry = vi.fn();
+const mockRequestAvailabilityAlert = vi.fn();
 
 vi.mock('./public-commerce-services', () => ({
   readPublicStoreCapabilities: (...args: unknown[]) => mockReadStoreCapabilities(...args),
   createPublicCommerceServices: vi.fn(() => ({
     disconnect: mockDisconnect,
     errors: {
+      AvailabilityAlertCapReachedError,
+      AvailabilityAlertIneligibleError,
       CatalogDriftError,
       CheckoutAttemptTerminalError,
       CheckoutConfigurationError,
@@ -45,6 +51,7 @@ vi.mock('./public-commerce-services', () => ({
     readCheckoutState: mockReadCheckoutState,
     readStoreListingPrices: mockReadStoreListingPrices,
     readStoreOffer: mockReadStoreOffer,
+    requestAvailabilityAlert: mockRequestAvailabilityAlert,
     startCheckout: mockStartCheckout,
     quoteDelivery: mockQuoteDelivery,
   })),
@@ -259,13 +266,156 @@ describe('public commerce routes', () => {
     for (const catalogStatus of ['sold_out', 'catalog_drift'] as const) {
       const unavailable = {
         ...offer,
-        availability: { label: 'Unavailable', status: catalogStatus === 'sold_out' ? 'sold_out' : 'unavailable' },
+        availability:
+          catalogStatus === 'sold_out'
+            ? { label: 'Unavailable', state: 'unavailable', status: 'sold_out' }
+            : { label: 'Checkout Paused', status: 'unavailable' },
         canCheckout: false,
         catalogStatus,
         price: null,
         preorder: undefined,
       };
       expect(schema.parse(unavailable)).not.toHaveProperty('preorder');
+    }
+    const comingSoon = {
+      ...offer,
+      availability: { label: 'Coming Soon', state: 'coming_soon', status: 'sold_out' },
+      canCheckout: false,
+      catalogStatus: 'sold_out',
+      expectedMonth: '2026-11',
+      price: null,
+    };
+    expect(schema.parse(comingSoon)).toMatchObject({
+      availability: { state: 'coming_soon' },
+      expectedMonth: '2026-11',
+    });
+    for (const state of [undefined, 'out_of_stock', 'stocked'])
+      expect(schema.safeParse({ ...comingSoon, availability: { ...comingSoon.availability, state } }).success).toBe(
+        false,
+      );
+  });
+
+  it('records Notify me only for Coming Soon or Repressing items, with one answer for repeats', async () => {
+    const identity = { storeItemSlug: 'anarchotribal-vinyl', variantId: 'variant_anarchotribal' };
+    const waiting = (state: 'coming_soon' | 'repressing' | 'sold_out' | 'unavailable') => ({
+      ...identity,
+      availability: { label: state, state, status: 'sold_out' },
+      canCheckout: false,
+      catalogStatus: 'sold_out',
+      price: null,
+    });
+    const offers: Record<string, unknown> = {
+      'coming-soon': waiting('coming_soon'),
+      repressing: waiting('repressing'),
+      'sold-out': waiting('sold_out'),
+      unavailable: waiting('unavailable'),
+      drift: {
+        ...identity,
+        availability: { label: 'Checkout Paused', status: 'unavailable' },
+        canCheckout: false,
+        catalogStatus: 'catalog_drift',
+        price: null,
+      },
+    };
+    const stored = new Set<string>();
+    let full = false;
+    const alerts = {
+      request: vi.fn(async (input: { variantId: string; email: string }) => {
+        const key = `${input.variantId}:${input.email}`;
+        if (stored.has(key)) return 'accepted' as const;
+        if (full) return 'cap_reached' as const;
+        stored.add(key);
+        return 'accepted' as const;
+      }),
+    };
+    mockRequestAvailabilityAlert.mockImplementation(async (storeItemSlug: string, email: string) =>
+      requestAvailabilityAlert((offers[storeItemSlug] ?? null) as never, alerts, {
+        storeItemSlug,
+        email,
+        consentedAt: new Date(),
+      }),
+    );
+    const logs = [vi.spyOn(console, 'info'), vi.spyOn(console, 'warn'), vi.spyOn(console, 'error')].map((spy) =>
+      spy.mockImplementation(() => {}),
+    );
+    const app = createHttpApp();
+    const post = (slug: string, body: unknown) =>
+      app.request(
+        `http://backend.test/api/store/items/${slug}/availability-alerts`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+        testBindings,
+      );
+    try {
+      const body = { email: '  Shopper@Example.com ', consent: true };
+      const first = await post('coming-soon', body);
+      expect(first.status).toBe(200);
+      expectNoStoreCacheControl(first);
+      const firstBody = await first.json();
+      expect(firstBody).toEqual({ status: 'requested' });
+      const repeat = await post('coming-soon', { ...body, email: 'shopper@example.com' });
+      expect(repeat.status).toBe(200);
+      expect(await repeat.json()).toEqual(firstBody);
+      expect([...stored]).toEqual(['variant_anarchotribal:shopper@example.com']);
+      expect((await post('repressing', { email: 'second@example.com', consent: true })).status).toBe(200);
+
+      for (const slug of ['sold-out', 'unavailable', 'drift']) {
+        const refused = await post(slug, { email: 'third@example.com', consent: true });
+        expect(refused.status).toBe(400);
+        expectNoStoreCacheControl(refused);
+        expect(await refused.json()).toMatchObject({ code: 'availability_alert_unavailable' });
+      }
+      expect((await post('missing', body)).status).toBe(404);
+      for (const invalid of [
+        { email: 'not-an-email', consent: true },
+        { email: 'shopper@example.com', consent: false },
+        { email: 'shopper@example.com' },
+        { ...body, newsletterOptIn: true },
+      ]) {
+        expect((await post('coming-soon', invalid)).status).toBe(400);
+      }
+
+      full = true;
+      const busy = await post('coming-soon', { email: 'late@example.com', consent: true });
+      expect(busy.status).toBe(503);
+      expect(await busy.json()).toMatchObject({ code: 'availability_alert_busy' });
+      expect((await post('coming-soon', body)).status).toBe(200);
+      expect(stored.size).toBe(2);
+
+      const logged = JSON.stringify(logs.flatMap((spy) => spy.mock.calls));
+      expect(logged).toContain('availability_alert_request_outcome');
+      expect(logged).not.toMatch(/example\.com|@/i);
+    } finally {
+      logs.forEach((spy) => spy.mockRestore());
+    }
+  });
+
+  it('advertises the availability-alert link only on an eligible non-ready offer', async () => {
+    const app = createHttpApp();
+    const identity = { storeItemSlug: 'anarchotribal-vinyl', variantId: 'variant_anarchotribal' };
+    for (const [state, linked] of [
+      ['coming_soon', true],
+      ['repressing', true],
+      ['sold_out', false],
+      ['unavailable', false],
+    ] as const) {
+      mockReadStoreOffer.mockResolvedValueOnce({
+        ...identity,
+        availability: { label: state, state, status: 'sold_out' },
+        canCheckout: false,
+        catalogStatus: 'sold_out',
+        price: null,
+      });
+      const response = await app.request('http://backend.test/api/store/items/anarchotribal-vinyl', {}, testBindings);
+      const links = ((await response.json()) as { links: { rel: string; href: string }[] }).links;
+      expect(links.find((link) => link.rel === 'availability-alert')).toEqual(
+        linked
+          ? {
+              href: '/api/store/items/anarchotribal-vinyl/availability-alerts',
+              rel: 'availability-alert',
+              type: 'application/json',
+            }
+          : undefined,
+      );
     }
   });
 
@@ -283,6 +433,14 @@ describe('public commerce routes', () => {
         presentationState: 'unavailable',
         preorder: null,
         storeItemSlug: 'afterglow-tape',
+      },
+      {
+        availabilityState: 'coming_soon',
+        displayPrice: '€30.00',
+        expectedMonth: '2026-11',
+        preorder: null,
+        presentationState: 'ready',
+        storeItemSlug: 'anarchotribal-vinyl',
       },
     ]);
 
@@ -310,9 +468,17 @@ describe('public commerce routes', () => {
         preorder: null,
         storeItemSlug: 'afterglow-tape',
       },
+      {
+        availabilityState: 'coming_soon',
+        displayPrice: '€30.00',
+        expectedMonth: '2026-11',
+        preorder: null,
+        presentationState: 'ready',
+        storeItemSlug: 'anarchotribal-vinyl',
+      },
     ]);
     expect(JSON.stringify(body)).not.toMatch(
-      /variantId|canCheckout|stripe|onlineQuantity|restockPlanned|amountMinor|currencyCode|preorderStartedAt|startedAt|"quantity"/,
+      /variantId|canCheckout|stripe|onlineQuantity|zeroStockState|availabilityAlert|amountMinor|currencyCode|preorderStartedAt|startedAt|"quantity"/,
     );
   });
 

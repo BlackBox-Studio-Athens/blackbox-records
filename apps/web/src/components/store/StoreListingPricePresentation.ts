@@ -6,15 +6,12 @@ import {
 } from '@/components/store/checkout/public-checkout-presentation';
 import type { StoreItemCartSeed } from '@/components/store/checkout/StoreItemPurchaseActions';
 import { preorderBadges } from '@/platform/lib/preorder-estimate';
+import { availabilityChipText } from '@/platform/lib/availability-copy';
 
 export const STORE_LISTING_PRICE_COPY = {
   loading: 'Checking price',
   unavailable: 'Price unavailable',
   availabilityLoading: 'Checking availability',
-  availabilityUnknown: 'Availability unknown',
-  soldOut: 'Sold Out',
-  outOfStock: 'Out of Stock',
-  currentlyUnavailable: 'Currently Unavailable',
   buy: 'Buy',
   adding: 'Adding',
   preorder: 'Pre-order',
@@ -76,13 +73,6 @@ export function sanitizeStoreSearchChrome(root: ParentNode) {
   });
 }
 
-const availabilityCopy: Record<PublicStoreListingPrice['availabilityState'], string> = {
-  stocked: '',
-  sold_out: STORE_LISTING_PRICE_COPY.soldOut,
-  out_of_stock: STORE_LISTING_PRICE_COPY.outOfStock,
-  unavailable: STORE_LISTING_PRICE_COPY.currentlyUnavailable,
-};
-
 export function sanitizeStoreListingPricePlaceholders(root: ParentNode): void {
   root.querySelectorAll<HTMLElement>(placeholderSelector).forEach((placeholder) => {
     placeholder.dataset.storeListingPriceState = 'loading';
@@ -117,17 +107,17 @@ export function sanitizeStoreListingPricePlaceholders(root: ParentNode): void {
   });
 }
 
-// Ordinary unavailable cards show status only; an active pre-order retains its disabled control.
-function showStoreCardStatus(button: HTMLButtonElement, label: string, statusTone: 'neutral' | 'sold-out') {
+// A card whose offer stopped being buyable shows its status (or none) beside the price and drops Buy.
+function showStoreCardStatus(button: HTMLButtonElement, label: string | null, availabilityState: string | undefined) {
   const status = button.parentElement?.querySelector<HTMLElement>(availabilitySelector);
   if (status) {
-    status.hidden = false;
-    status.dataset.storeListingAvailabilityState = statusTone === 'sold-out' ? 'sold_out' : 'unavailable';
-    status.textContent = label;
+    status.hidden = !label;
+    status.dataset.storeListingAvailabilityState = availabilityState ?? 'unavailable';
+    status.textContent = label ?? '';
   }
   button.disabled = true;
-  button.hidden = button.dataset.storeCardBuyLabel !== STORE_LISTING_PRICE_COPY.preorder;
-  button.classList.remove('purchase-action');
+  button.hidden = true;
+  button.classList.remove('purchase-action', 'preorder-action');
   button.closest('.store-item-card--listing')?.querySelector<HTMLElement>('.prose-card-link')?.focus();
 }
 
@@ -145,7 +135,7 @@ async function buyFromStoreCard(button: HTMLButtonElement, confirmationTimers: M
       JSON.parse(button.dataset.storeCardBuy ?? '') as StoreItemCartSeed,
     );
     if (!result.cartItem) {
-      showStoreCardStatus(button, result.label ?? STORE_LISTING_PRICE_COPY.currentlyUnavailable, result.statusTone);
+      showStoreCardStatus(button, result.label, result.availabilityState);
     } else if (!result.isQueued) {
       label = purchase.STORE_ITEM_PURCHASE_ACTION_COPY.added;
       const resetLabel = () => {
@@ -192,28 +182,25 @@ export function connectStoreListingPricePresentation({
 
       availabilityPlaceholders.forEach((placeholder) => {
         const record = recordsBySlug.get(placeholder.dataset.storeItemSlug || '');
-        const availabilityState = record && 'availabilityState' in record ? record.availabilityState : undefined;
-        const recognizedState =
-          typeof availabilityState === 'string' && Object.hasOwn(availabilityCopy, availabilityState)
-            ? (availabilityState as PublicStoreListingPrice['availabilityState'])
-            : undefined;
-
+        const availabilityState: unknown = record?.availabilityState;
+        const stocked = availabilityState === 'stocked';
         const lowStockLabel =
-          recognizedState === 'stocked' && record?.presentationState === 'ready'
-            ? formatStoreLowStockLabel(record.lowStockQuantity)
-            : null;
+          stocked && record?.presentationState === 'ready' ? formatStoreLowStockLabel(record.lowStockQuantity) : null;
+        // Unavailable, unknown or missing records show the price only: no chip and no Buy.
+        const chipText = lowStockLabel ?? availabilityChipText(availabilityState, record?.expectedMonth);
 
         placeholder.removeAttribute('aria-busy');
         placeholder.dataset.storeListingAvailabilityState = lowStockLabel
           ? 'low_stock'
-          : (recognizedState ?? 'unknown');
-        placeholder.hidden = recognizedState === 'stocked' && !lowStockLabel;
-        placeholder.textContent =
-          lowStockLabel ??
-          (recognizedState ? availabilityCopy[recognizedState] : STORE_LISTING_PRICE_COPY.availabilityUnknown);
+          : typeof availabilityState === 'string'
+            ? availabilityState
+            : 'unknown';
+        placeholder.hidden = !chipText;
+        placeholder.textContent = chipText;
 
+        // A pre-order whose copies ran out reads like any zero-stock card.
         const card = placeholder.closest<HTMLElement>('.store-item-card--listing');
-        if (card && record?.preorder) {
+        if (card && stocked && record?.preorder) {
           const badges = preorderBadges({
             releaseDate: placeholder.dataset.storeReleaseDate,
             shipEstimate: record.preorder.shipEstimate,
@@ -223,10 +210,10 @@ export function connectStoreListingPricePresentation({
           const preorderBadge = card.querySelector<HTMLElement>(preorderSelector);
           if (preorderBadge) {
             preorderBadge.textContent = badges[badges.length - 1] ?? '';
-            preorderBadge.hidden = recognizedState !== 'stocked';
+            preorderBadge.hidden = false;
           }
           const releaseStatus = card.querySelector<HTMLElement>(releaseStatusSelector);
-          if (releaseStatus) releaseStatus.hidden = recognizedState !== 'stocked' || badges.length < 2;
+          if (releaseStatus) releaseStatus.hidden = badges.length < 2;
         }
       });
 
@@ -234,14 +221,13 @@ export function connectStoreListingPricePresentation({
       buyButtons.forEach((button) => {
         const record = recordsBySlug.get(button.dataset.storeItemSlug || '');
         const buyable = record?.presentationState === 'ready' && record.availabilityState === 'stocked';
-        button.hidden = !(buyable || record?.preorder);
+        const preorder = buyable && Boolean(record.preorder);
+        button.hidden = !buyable;
         button.disabled = !buyable;
-        button.dataset.storeCardBuyLabel = record?.preorder
-          ? STORE_LISTING_PRICE_COPY.preorder
-          : STORE_LISTING_PRICE_COPY.buy;
+        button.dataset.storeCardBuyLabel = preorder ? STORE_LISTING_PRICE_COPY.preorder : STORE_LISTING_PRICE_COPY.buy;
         button.textContent = button.dataset.storeCardBuyLabel;
-        button.classList.toggle('preorder-action', Boolean(record?.preorder));
-        button.classList.toggle('purchase-action', !button.hidden && !record?.preorder);
+        button.classList.toggle('preorder-action', preorder);
+        button.classList.toggle('purchase-action', buyable && !preorder);
       });
       document.dispatchEvent(new Event('blackbox:store-listing-applied'));
     });

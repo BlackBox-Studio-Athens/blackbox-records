@@ -111,4 +111,70 @@ describe('paid order delivery schedule', () => {
       }
     },
   );
+
+  it('sends a due availability alert only after order email and in the rows order email left', async () => {
+    const id = crypto.randomUUID().slice(0, 8);
+    const variantId = `variant_schedule_alert_${id}`;
+    const timestamp = '2026-09-01T09:00:00.000Z';
+    const bindings = { ...env, PRODUCT_ENVIRONMENT: 'LOCAL' as const, RESEND_API_KEY: 're_mock_blackbox_local' };
+    await env.COMMERCE_DB.batch([
+      env.COMMERCE_DB.prepare(
+        `INSERT INTO "StoreItemOption" ("id", "storeItemSlug", "sourceKind", "sourceId", "variantId", "productProjection",
+           "catalogAvailability", "createdAt", "updatedAt") VALUES (?, ?, 'release', ?, ?, ?, 'published', ?, ?)`,
+      ).bind(
+        variantId,
+        `schedule-alert-${id}`,
+        variantId,
+        variantId,
+        '{"name":"Schedule Alert LP"}',
+        timestamp,
+        timestamp,
+      ),
+      env.COMMERCE_DB.prepare(
+        `INSERT INTO "ItemAvailability" ("id", "variantId", "status", "canBuy", "updatedAt") VALUES (?, ?, 'available', 1, ?)`,
+      ).bind(variantId, variantId, timestamp),
+      env.COMMERCE_DB.prepare(
+        `INSERT INTO "Stock" ("id", "variantId", "quantity", "onlineQuantity", "revision", "createdAt", "updatedAt")
+         VALUES (?, ?, 2, 2, 0, ?, ?)`,
+      ).bind(variantId, variantId, timestamp, timestamp),
+      env.COMMERCE_DB.prepare(
+        `INSERT INTO "AvailabilityAlert" ("id", "variantId", "email", "consentCopyVersion", "consentedAt", "nextAttemptAt",
+           "createdAt", "updatedAt") VALUES (?, ?, 'waiting@example.com', 'v1', ?, ?, ?, ?)`,
+      ).bind(variantId, variantId, timestamp, timestamp, timestamp, timestamp),
+    ]);
+    // Park alerts other tests left so this run can only claim the one seeded here.
+    await env.COMMERCE_DB.prepare(
+      `UPDATE "AvailabilityAlert" SET "nextAttemptAt" = '9999-01-01T00:00:00.000Z' WHERE "id" <> ?`,
+    )
+      .bind(variantId)
+      .run();
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      await runPaidOrderDeliverySchedule(bindings, new Date('2026-09-01T10:30:00.000Z'), {
+        itemNames: async (slug) =>
+          slug === `schedule-alert-${id}` ? { title: 'Schedule Alert', artist: 'Tester' } : null,
+      });
+      const events = info.mock.calls.map(([record]) => record.event);
+      expect(events.indexOf('availability_alert_schedule_outcome')).toBeGreaterThan(
+        events.indexOf('preorder_estimate_notice_schedule_outcome'),
+      );
+      const outcome = info.mock.calls.find(([record]) => record.event === 'availability_alert_schedule_outcome')![0];
+      expect(outcome).toMatchObject({ status: 'completed' });
+      expect(JSON.stringify(info.mock.calls)).not.toContain('waiting@example.com');
+      const remaining = await env.COMMERCE_DB.prepare(
+        'SELECT COUNT(*) AS "count" FROM "AvailabilityAlert" WHERE "id" = ?',
+      )
+        .bind(variantId)
+        .first<{ count: number }>('count');
+      expect(outcome).toMatchObject({ deliveredCount: 1, budgetExhausted: false });
+      expect(remaining).toBe(0);
+    } finally {
+      info.mockRestore();
+      await env.COMMERCE_DB.batch(
+        ['AvailabilityAlert', 'Stock', 'ItemAvailability', 'StoreItemOption'].map((table) =>
+          env.COMMERCE_DB.prepare(`DELETE FROM "${table}" WHERE "id" = ?`).bind(variantId),
+        ),
+      );
+    }
+  });
 });

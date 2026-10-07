@@ -141,7 +141,7 @@ describe('StorePreorderShowcase reads', () => {
     { name: 'empty', records: [] },
     { name: 'ordinary', records: [ready(clip.slug, { preorder: null })] },
     { name: 'sold out', records: [ready(clip.slug, { availabilityState: 'sold_out' })] },
-    { name: 'out of stock', records: [ready(clip.slug, { availabilityState: 'out_of_stock' })] },
+    { name: 'coming soon', records: [ready(clip.slug, { availabilityState: 'coming_soon' })] },
     { name: 'unavailable', records: [ready(clip.slug, { availabilityState: 'unavailable' })] },
   ])('does not read candidates without a buyable preorder ($name)', async ({ records }) => {
     const fetchRequest = stubReads(records, [clip]);

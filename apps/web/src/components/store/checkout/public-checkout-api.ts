@@ -17,6 +17,8 @@ export type StartCheckoutBody = PublicApiComponents['schemas']['StartCheckoutBod
 export type StartCheckoutResponse = PublicApiComponents['schemas']['StartCheckoutResponse'];
 export type BackendErrorResponse = PublicApiComponents['schemas']['BackendErrorResponse'];
 export type DeliveryQuoteResponse = PublicApiComponents['schemas']['DeliveryQuoteResponse'];
+export type AvailabilityAlertRequestBody = PublicApiComponents['schemas']['AvailabilityAlertRequestBody'];
+export type AvailabilityAlertRequestResponse = PublicApiComponents['schemas']['AvailabilityAlertRequestResponse'];
 
 export async function readDeliveryQuote(
   lines: NonNullable<StartCheckoutBody['lines']>,
@@ -42,6 +44,10 @@ export interface PublicCheckoutApi {
   startCheckout(body: StartCheckoutBody, idempotencyKey?: string): Promise<StartCheckoutResponse>;
   readCheckoutState(checkoutSessionId: string): Promise<CheckoutState>;
   registerNewsletterSignup(body: NewsletterRegistrationBody): Promise<NewsletterRegistrationResponse>;
+  requestAvailabilityAlert(
+    storeItemSlug: string,
+    body: AvailabilityAlertRequestBody,
+  ): Promise<AvailabilityAlertRequestResponse>;
 }
 
 export class PublicCheckoutApiError extends Error {
@@ -76,6 +82,10 @@ export function createPublicCheckoutApi(
     .method('get')
     .create();
   const registerNewsletterSignupRequest = fetcher.path('/api/newsletter/registrations').method('post').create();
+  const requestAvailabilityAlertRequest = fetcher
+    .path('/api/store/items/{storeItemSlug}/availability-alerts')
+    .method('post')
+    .create();
 
   return {
     async readStoreCapabilities() {
@@ -118,6 +128,12 @@ export function createPublicCheckoutApi(
       return readPublicCheckoutResponse(
         () => registerNewsletterSignupRequest(body),
         'Newsletter signup is temporarily unavailable.',
+      );
+    },
+    async requestAvailabilityAlert(storeItemSlug: string, body: AvailabilityAlertRequestBody) {
+      return readPublicCheckoutResponse(
+        () => requestAvailabilityAlertRequest({ storeItemSlug, ...body }),
+        "Couldn't save that. Try again.",
       );
     },
   };

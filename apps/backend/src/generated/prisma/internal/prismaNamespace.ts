@@ -409,7 +409,9 @@ export const ModelName = {
   CheckoutOrder: 'CheckoutOrder',
   CheckoutOrderLine: 'CheckoutOrderLine',
   PaidOrderDelivery: 'PaidOrderDelivery',
-  PreorderEstimateDelivery: 'PreorderEstimateDelivery'
+  PreorderEstimateDelivery: 'PreorderEstimateDelivery',
+  AvailabilityAlert: 'AvailabilityAlert',
+  AvailabilityAlertSendDay: 'AvailabilityAlertSendDay'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -425,7 +427,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "storeItemOption" | "catalogOperation" | "variantStripeMapping" | "storeOfferSnapshot" | "stripeCatalogWebhookEvent" | "itemAvailability" | "stock" | "stockChange" | "stockCount" | "checkoutOrder" | "checkoutOrderLine" | "paidOrderDelivery" | "preorderEstimateDelivery"
+    modelProps: "storeItemOption" | "catalogOperation" | "variantStripeMapping" | "storeOfferSnapshot" | "stripeCatalogWebhookEvent" | "itemAvailability" | "stock" | "stockChange" | "stockCount" | "checkoutOrder" | "checkoutOrderLine" | "paidOrderDelivery" | "preorderEstimateDelivery" | "availabilityAlert" | "availabilityAlertSendDay"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1391,6 +1393,154 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    AvailabilityAlert: {
+      payload: Prisma.$AvailabilityAlertPayload<ExtArgs>
+      fields: Prisma.AvailabilityAlertFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AvailabilityAlertFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AvailabilityAlertFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertPayload>
+        }
+        findFirst: {
+          args: Prisma.AvailabilityAlertFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AvailabilityAlertFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertPayload>
+        }
+        findMany: {
+          args: Prisma.AvailabilityAlertFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertPayload>[]
+        }
+        create: {
+          args: Prisma.AvailabilityAlertCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertPayload>
+        }
+        createMany: {
+          args: Prisma.AvailabilityAlertCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AvailabilityAlertCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertPayload>[]
+        }
+        delete: {
+          args: Prisma.AvailabilityAlertDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertPayload>
+        }
+        update: {
+          args: Prisma.AvailabilityAlertUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertPayload>
+        }
+        deleteMany: {
+          args: Prisma.AvailabilityAlertDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AvailabilityAlertUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AvailabilityAlertUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertPayload>[]
+        }
+        upsert: {
+          args: Prisma.AvailabilityAlertUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertPayload>
+        }
+        aggregate: {
+          args: Prisma.AvailabilityAlertAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAvailabilityAlert>
+        }
+        groupBy: {
+          args: Prisma.AvailabilityAlertGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AvailabilityAlertGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AvailabilityAlertCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AvailabilityAlertCountAggregateOutputType> | number
+        }
+      }
+    }
+    AvailabilityAlertSendDay: {
+      payload: Prisma.$AvailabilityAlertSendDayPayload<ExtArgs>
+      fields: Prisma.AvailabilityAlertSendDayFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.AvailabilityAlertSendDayFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertSendDayPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.AvailabilityAlertSendDayFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertSendDayPayload>
+        }
+        findFirst: {
+          args: Prisma.AvailabilityAlertSendDayFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertSendDayPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.AvailabilityAlertSendDayFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertSendDayPayload>
+        }
+        findMany: {
+          args: Prisma.AvailabilityAlertSendDayFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertSendDayPayload>[]
+        }
+        create: {
+          args: Prisma.AvailabilityAlertSendDayCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertSendDayPayload>
+        }
+        createMany: {
+          args: Prisma.AvailabilityAlertSendDayCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.AvailabilityAlertSendDayCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertSendDayPayload>[]
+        }
+        delete: {
+          args: Prisma.AvailabilityAlertSendDayDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertSendDayPayload>
+        }
+        update: {
+          args: Prisma.AvailabilityAlertSendDayUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertSendDayPayload>
+        }
+        deleteMany: {
+          args: Prisma.AvailabilityAlertSendDayDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.AvailabilityAlertSendDayUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.AvailabilityAlertSendDayUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertSendDayPayload>[]
+        }
+        upsert: {
+          args: Prisma.AvailabilityAlertSendDayUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$AvailabilityAlertSendDayPayload>
+        }
+        aggregate: {
+          args: Prisma.AvailabilityAlertSendDayAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateAvailabilityAlertSendDay>
+        }
+        groupBy: {
+          args: Prisma.AvailabilityAlertSendDayGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AvailabilityAlertSendDayGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.AvailabilityAlertSendDayCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AvailabilityAlertSendDayCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1530,7 +1680,8 @@ export const StockScalarFieldEnum = {
   variantId: 'variantId',
   quantity: 'quantity',
   onlineQuantity: 'onlineQuantity',
-  restockPlanned: 'restockPlanned',
+  zeroStockState: 'zeroStockState',
+  expectedMonth: 'expectedMonth',
   showLowStock: 'showLowStock',
   preorderStartedAt: 'preorderStartedAt',
   preorderShipMonth: 'preorderShipMonth',
@@ -1690,6 +1841,31 @@ export const PreorderEstimateDeliveryScalarFieldEnum = {
 } as const
 
 export type PreorderEstimateDeliveryScalarFieldEnum = (typeof PreorderEstimateDeliveryScalarFieldEnum)[keyof typeof PreorderEstimateDeliveryScalarFieldEnum]
+
+
+export const AvailabilityAlertScalarFieldEnum = {
+  id: 'id',
+  variantId: 'variantId',
+  email: 'email',
+  consentCopyVersion: 'consentCopyVersion',
+  consentedAt: 'consentedAt',
+  status: 'status',
+  attemptCount: 'attemptCount',
+  nextAttemptAt: 'nextAttemptAt',
+  leaseUntil: 'leaseUntil',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AvailabilityAlertScalarFieldEnum = (typeof AvailabilityAlertScalarFieldEnum)[keyof typeof AvailabilityAlertScalarFieldEnum]
+
+
+export const AvailabilityAlertSendDayScalarFieldEnum = {
+  day: 'day',
+  sentCount: 'sentCount'
+} as const
+
+export type AvailabilityAlertSendDayScalarFieldEnum = (typeof AvailabilityAlertSendDayScalarFieldEnum)[keyof typeof AvailabilityAlertSendDayScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1993,6 +2169,8 @@ export type GlobalOmitConfig = {
   checkoutOrderLine?: Prisma.CheckoutOrderLineOmit
   paidOrderDelivery?: Prisma.PaidOrderDeliveryOmit
   preorderEstimateDelivery?: Prisma.PreorderEstimateDeliveryOmit
+  availabilityAlert?: Prisma.AvailabilityAlertOmit
+  availabilityAlertSendDay?: Prisma.AvailabilityAlertSendDayOmit
 }
 
 /* Types for Logging */

@@ -68,6 +68,12 @@ export type {
   ClaimDuePreorderEstimateDeliveryResult,
   PreorderEstimateDeliveryRepository,
 } from './preorder-estimate-delivery-repository';
+export type {
+  AvailabilityAlertDelivery,
+  AvailabilityAlertRepository,
+  AvailabilityAlertRequest,
+  ClaimedAvailabilityAlert,
+} from './availability-alert-repository';
 export type { OperatorStockRepository } from './operator-stock-repository';
 export type { RecordStockChangeInput, StockChangeRecord, StockChangeRepository } from './stock-change-repository';
 export type { RecordStockCountInput, StockCountRecord, StockCountRepository } from './stock-count-repository';

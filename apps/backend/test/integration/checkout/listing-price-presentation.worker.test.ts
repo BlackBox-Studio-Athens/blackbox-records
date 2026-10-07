@@ -13,7 +13,7 @@ describe('Prisma listing price presentation', () => {
     const names = [
       'stocked',
       'held',
-      'restock',
+      'coming-soon',
       'missing-stock',
       'missing-availability',
       'physical-cap',
@@ -57,9 +57,12 @@ describe('Prisma listing price presentation', () => {
                 {
                   variantId: ids[index]!,
                   quantity: name === 'physical-cap' ? 0 : 2,
-                  onlineQuantity: name === 'restock' || name === 'paused' || name === 'physical-cap' ? 0 : 2,
-                  restockPlanned: name === 'restock',
-                  showLowStock: name === 'scarce' || name === 'stocked' || name === 'restock',
+                  onlineQuantity: name === 'coming-soon' || name === 'paused' || name === 'physical-cap' ? 0 : 2,
+                  zeroStockState:
+                    name === 'coming-soon' ? 'coming_soon' : name === 'physical-cap' ? 'repressing' : 'sold_out',
+                  // Repressing with a month already passed in Athens shows no month.
+                  expectedMonth: name === 'coming-soon' ? '2026-11' : name === 'physical-cap' ? '2026-09' : null,
+                  showLowStock: name === 'scarce' || name === 'stocked' || name === 'coming-soon',
                   preorderStartedAt: ['held', 'scarce', 'withheld', 'reached', 'unpriced'].includes(name)
                     ? '2026-09-01T10:00:00.000Z'
                     : null,
@@ -131,10 +134,11 @@ describe('Prisma listing price presentation', () => {
       expect(slugs.map((slug) => records.find((record) => record.storeItemSlug === slug)?.availabilityState)).toEqual([
         'stocked',
         'sold_out',
-        'out_of_stock',
-        'unavailable',
-        'unavailable',
+        'coming_soon',
+        // A missing stock record reads as zero stock with the Sold Out default.
         'sold_out',
+        'unavailable',
+        'repressing',
         'unavailable',
         'stocked',
         'stocked',
@@ -159,12 +163,26 @@ describe('Prisma listing price presentation', () => {
         undefined,
         undefined,
       ]);
+      expect(slugs.map((slug) => records.find((record) => record.storeItemSlug === slug)?.expectedMonth)).toEqual([
+        undefined,
+        undefined,
+        '2026-11',
+        ...Array(8).fill(undefined),
+      ]);
+      expect(Object.keys(records.find((record) => record.storeItemSlug === slugs[2])!).sort()).toEqual([
+        'availabilityState',
+        'displayPrice',
+        'expectedMonth',
+        'preorder',
+        'presentationState',
+        'storeItemSlug',
+      ]);
       expect(
         records
           .filter((record) => record.storeItemSlug !== slugs[10])
           .every((record) => record.presentationState === 'ready' && record.displayPrice === '€28.00'),
       ).toBe(true);
-      expect(Object.keys(records[0]!).sort()).toEqual([
+      expect(Object.keys(records.find((record) => record.storeItemSlug === slugs[1])!).sort()).toEqual([
         'availabilityState',
         'displayPrice',
         'preorder',
@@ -173,7 +191,8 @@ describe('Prisma listing price presentation', () => {
       ]);
       expect(slugs.map((slug) => records.find((record) => record.storeItemSlug === slug)?.preorder)).toEqual([
         null,
-        { shipEstimate: { kind: 'date', date: '2026-10-04' } },
+        // Held copies leave no buyable stock, so the open pre-order is closed for shoppers.
+        null,
         null,
         null,
         null,
@@ -204,6 +223,7 @@ describe('Prisma listing price presentation', () => {
         const allowed = [
           'availabilityState',
           'displayPrice',
+          'expectedMonth',
           'lowStockQuantity',
           'preorder',
           'presentationState',
@@ -211,7 +231,9 @@ describe('Prisma listing price presentation', () => {
         ];
         expect(Object.keys(record).every((key) => allowed.includes(key))).toBe(true);
       }
-      expect(JSON.stringify(records)).not.toMatch(/preorderStartedAt|startedAt|onlineQuantity|"quantity"/);
+      expect(JSON.stringify(records)).not.toMatch(
+        /preorderStartedAt|startedAt|onlineQuantity|"quantity"|zeroStockState|availabilityAlert/,
+      );
     } finally {
       await prisma.$disconnect();
     }

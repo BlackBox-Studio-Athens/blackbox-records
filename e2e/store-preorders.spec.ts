@@ -57,7 +57,8 @@ for (const [date, badge, released] of [
     await stubListing(page);
     await page.goto('store/');
     await waitForShell(page);
-    const toggle = page.getByRole('button', { name: 'Pre-orders 2', exact: true });
+    // Caregivers is on pre-order but its copies ran out, so it reads like any zero-stock card and is not counted.
+    const toggle = page.getByRole('button', { name: 'Pre-orders 1', exact: true });
     await expect(toggle).toBeVisible();
     await expect(toggle).toHaveAttribute('aria-pressed', 'false');
     const cards = page.locator('[data-store-search-root] [data-distro-search-item]');
@@ -71,13 +72,17 @@ for (const [date, badge, released] of [
     else await expect(releaseStatus).toBeHidden();
     await expect(disintegration.getByText('Only 3 left', { exact: true })).toBeVisible();
     await expect(disintegration.getByRole('button', { name: 'Pre-order', exact: true })).toBeVisible();
+    const soldOut = cards.filter({ has: page.locator('[data-store-item-slug="caregivers-vinyl"]') });
+    await expect(soldOut.locator('[data-store-listing-availability]')).toHaveText('Sold Out');
+    await expect(soldOut.locator('[data-store-listing-preorder]')).toBeHidden();
+    await expect(soldOut.locator('[data-store-card-buy]')).toBeHidden();
 
     await toggle.focus();
     await toggle.press('Space');
     await expect(toggle).toBeFocused();
     await expect(toggle).toHaveAttribute('aria-pressed', 'true');
-    await expect(cards.locator('visible=true')).toHaveCount(2);
-    await expect(page.getByRole('status').filter({ hasText: /^2 items$/ })).toBeVisible();
+    await expect(cards.locator('visible=true')).toHaveCount(1);
+    await expect(page.getByRole('status').filter({ hasText: /^1 item$/ })).toBeVisible();
     const notes = page.locator('.store-preorder-notes');
     await expect(notes.locator('dt')).toHaveText(['You pay today', 'We wait for the copies', 'One parcel']);
     await expect(notes.locator('dd')).toHaveText([
@@ -85,10 +90,7 @@ for (const [date, badge, released] of [
       'Every item states when we expect to ship. If that changes, we email you.',
       'Your whole order is sent together by BOX NOW when the pre-order arrives.',
     ]);
-    const soldOut = cards.filter({ has: page.locator('[data-store-item-slug="caregivers-vinyl"]') });
-    await expect(soldOut.getByText('Sold Out', { exact: true })).toBeVisible();
-    await expect(soldOut.locator('[data-store-listing-preorder]')).toBeHidden();
-    await expect(soldOut.getByRole('button', { name: 'Pre-order', exact: true })).toBeDisabled();
+    await expect(soldOut).toBeHidden();
     expect((await toggle.boundingBox())?.height).toBeGreaterThanOrEqual(44);
     await disintegration.evaluate((element) => element.scrollIntoView({ block: 'center', behavior: 'instant' }));
     await disintegration.screenshot({
@@ -118,7 +120,11 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
     await route.fulfill({
       json: [
         { ...listingProjection[0]!, storeItemSlug: selectedSlug },
-        { ...listingProjection[1]!, storeItemSlug: 'aflmsmp-i-went-to-the-mountain-vinyl' },
+        {
+          ...listingProjection[1]!,
+          availabilityState: 'stocked',
+          storeItemSlug: 'aflmsmp-i-went-to-the-mountain-vinyl',
+        },
       ],
     });
   });
@@ -172,7 +178,7 @@ test('listing refresh changes membership at the same count and clears an active 
   await page.goto('store/#preorders');
   await waitForShell(page);
   await plantSentinel(page);
-  const toggle = page.getByRole('button', { name: 'Pre-orders 2', exact: true });
+  const toggle = page.getByRole('button', { name: 'Pre-orders 1', exact: true });
   await expect(toggle).toHaveAttribute('aria-pressed', 'true');
   const cards = page.locator('[data-store-search-root] [data-distro-search-item]');
   await page.evaluate(() => {
@@ -183,7 +189,7 @@ test('listing refresh changes membership at the same count and clears an active 
     replacement.setAttribute('data-store-preorder', '');
     document.dispatchEvent(new Event('blackbox:store-listing-applied'));
   });
-  await expect(page.locator('[data-distro-search-item][data-store-preorder]:visible')).toHaveCount(2);
+  await expect(page.locator('[data-distro-search-item][data-store-preorder]:visible')).toHaveCount(1);
   await expect(page.locator('[data-distro-search-item]:not([data-store-preorder]):visible')).toHaveCount(0);
   await page.evaluate(() => {
     document.querySelectorAll('[data-store-preorder]').forEach((item) => item.removeAttribute('data-store-preorder'));
@@ -226,8 +232,16 @@ for (const state of [
   },
   { name: 'unknown', availabilityState: 'stocked', preorder: { shipEstimate: null }, badge: 'Pre-order' },
   { name: 'ended', availabilityState: 'stocked', preorder: null, badge: null },
-  { name: 'sold-out', availabilityState: 'sold_out', preorder: { shipEstimate: null }, badge: null },
-  { name: 'out-of-stock', availabilityState: 'out_of_stock', preorder: { shipEstimate: null }, badge: null },
+  { name: 'sold-out', availabilityState: 'sold_out', preorder: { shipEstimate: null }, badge: null, chip: 'Sold Out' },
+  {
+    name: 'coming-soon',
+    availabilityState: 'coming_soon',
+    expectedMonth: '2026-11',
+    preorder: null,
+    badge: null,
+    chip: 'Coming Soon · Nov 2026',
+  },
+  { name: 'repressing', availabilityState: 'repressing', preorder: null, badge: null, chip: 'Repressing' },
 ] as const) {
   test(`Store lifecycle card reference ${state.name}`, async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-10-03T12:00:00Z'));
@@ -239,6 +253,7 @@ for (const state of [
             presentationState: 'ready',
             displayPrice: '€28.00',
             availabilityState: state.availabilityState,
+            ...('expectedMonth' in state ? { expectedMonth: state.expectedMonth } : {}),
             preorder: state.preorder,
           } satisfies ListingPrice,
         ],
@@ -250,9 +265,11 @@ for (const state of [
     const card = page.getByRole('group', { name: 'Disintegration by Afterwise', exact: true }).first();
     await expect(card.getByText('New release', { exact: true })).toHaveCount(0);
     const action = card.locator('[data-store-card-buy]');
-    await expect(action).toHaveText(state.preorder ? 'Pre-order' : 'Buy');
-    if (state.availabilityState === 'stocked') await expect(action).toBeEnabled();
-    else await expect(action).toBeDisabled();
+    const stocked = state.availabilityState === 'stocked';
+    if (stocked) {
+      await expect(action).toHaveText(state.preorder ? 'Pre-order' : 'Buy');
+      await expect(action).toBeEnabled();
+    } else await expect(action).toBeHidden();
     if (state.badge) {
       await expect(card.locator('[data-store-listing-preorder]')).toHaveText(state.badge);
       await expect(card.locator('[data-store-listing-release-status]')).toBeVisible();
@@ -260,10 +277,10 @@ for (const state of [
       await expect(card.locator('[data-store-listing-preorder]')).toBeHidden();
       await expect(card.locator('[data-store-listing-release-status]')).toBeHidden();
     }
-    if (state.availabilityState !== 'stocked') {
-      await expect(card.locator('[data-store-listing-availability]')).toHaveText(
-        state.availabilityState === 'sold_out' ? 'Sold Out' : 'Out of Stock',
-      );
+    if ('chip' in state) {
+      const chip = card.locator('[data-store-listing-availability]');
+      await expect(chip).toHaveText(state.chip);
+      await expect(chip).toHaveCSS('border-top-style', state.availabilityState === 'sold_out' ? 'solid' : 'dashed');
     }
 
     for (const width of [320, 390, 430, 1440]) {
@@ -280,18 +297,20 @@ for (const state of [
       expect(Math.abs(artwork.width - artwork.height)).toBeLessThan(1);
       const content = (await card.locator('.store-item-card__content').boundingBox())!;
       const price = (await card.locator('[data-store-listing-price]').boundingBox())!;
-      const button = (await action.boundingBox())!;
-      expect(button.height).toBeGreaterThanOrEqual(44);
-      expect(Math.abs(price.y + price.height / 2 - button.y - button.height / 2)).toBeLessThan(1);
-      const status = state.badge
-        ? card.locator('[data-store-listing-preorder]')
-        : state.availabilityState !== 'stocked'
-          ? card.locator('[data-store-listing-availability]')
-          : null;
-      if (status) {
-        const badge = (await status.boundingBox())!;
-        expect(Math.abs(badge.x - content.x - 12)).toBeLessThan(1);
-        expect(badge.y).toBeLessThan(button.y);
+      if (stocked) {
+        const button = (await action.boundingBox())!;
+        expect(button.height).toBeGreaterThanOrEqual(44);
+        expect(Math.abs(price.y + price.height / 2 - button.y - button.height / 2)).toBeLessThan(1);
+        if (state.badge) {
+          const badge = (await card.locator('[data-store-listing-preorder]').boundingBox())!;
+          expect(Math.abs(badge.x - content.x - 12)).toBeLessThan(1);
+          expect(badge.y).toBeLessThan(button.y);
+        }
+      } else {
+        // A zero-stock chip sits beside the retained price, inside the card.
+        const chip = (await card.locator('[data-store-listing-availability]').boundingBox())!;
+        expect(chip.x + chip.width).toBeLessThanOrEqual(content.x + content.width + 1);
+        expect(chip.y + chip.height).toBeGreaterThan(price.y - 1);
       }
       expect(await card.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

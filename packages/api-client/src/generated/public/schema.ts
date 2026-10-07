@@ -170,6 +170,22 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/store/items/{storeItemSlug}/availability-alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["requestAvailabilityAlert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/store/items/{storeItemSlug}/variants": {
         parameters: {
             query?: never;
@@ -246,6 +262,20 @@ export type components = {
             href: string;
             rel: string;
             type?: string;
+        };
+        AvailabilityAlertRequestBody: {
+            /**
+             * @description The shopper ticked: "Email me once when this can be bought or pre-ordered."
+             * @enum {boolean}
+             */
+            consent: true;
+            /** Format: email */
+            email: string;
+        };
+        /** @description The same response for a new request and for an address already waiting. */
+        AvailabilityAlertRequestResponse: {
+            /** @enum {string} */
+            status: "requested";
         };
         BackendErrorResponse: components["schemas"]["ProblemDetails"] & {
             error: string;
@@ -327,8 +357,10 @@ export type components = {
         } | null;
         PublicStoreListingPrice: {
             /** @enum {string} */
-            availabilityState: "stocked" | "sold_out" | "out_of_stock" | "unavailable";
+            availabilityState: "stocked" | "coming_soon" | "repressing" | "sold_out" | "unavailable";
             displayPrice: string;
+            /** @description `YYYY-MM` month, present only for Coming Soon or Repressing until that month has passed in Europe/Athens. */
+            expectedMonth?: string;
             /** @description Copies left, present only when staff enabled the notice and few copies remain. */
             lowStockQuantity?: number;
             preorder: components["schemas"]["PublicStorePreorder"];
@@ -337,7 +369,9 @@ export type components = {
             storeItemSlug: string;
         } | {
             /** @enum {string} */
-            availabilityState: "stocked" | "sold_out" | "out_of_stock" | "unavailable";
+            availabilityState: "stocked" | "coming_soon" | "repressing" | "sold_out" | "unavailable";
+            /** @description `YYYY-MM` month, present only for Coming Soon or Repressing until that month has passed in Europe/Athens. */
+            expectedMonth?: string;
             preorder: components["schemas"]["PublicStorePreorder"];
             /** @enum {string} */
             presentationState: "unavailable";
@@ -366,12 +400,16 @@ export type components = {
             availability: {
                 label: string;
                 /** @enum {string} */
+                state: "coming_soon" | "repressing" | "sold_out" | "unavailable";
+                /** @enum {string} */
                 status: "sold_out";
             };
             /** @enum {boolean} */
             canCheckout: false;
             /** @enum {string} */
             catalogStatus: "sold_out";
+            /** @description `YYYY-MM` month, present only for Coming Soon or Repressing until that month has passed in Europe/Athens. */
+            expectedMonth?: string;
             links?: components["schemas"]["ApiLink"][];
             price: null;
             storeItemSlug: string;
@@ -702,6 +740,59 @@ export interface operations {
             };
             /** @description Store item not found. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+        };
+    };
+    requestAvailabilityAlert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                storeItemSlug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AvailabilityAlertRequestBody"];
+            };
+        };
+        responses: {
+            /** @description One email will be sent when the item can be bought or pre-ordered. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AvailabilityAlertRequestResponse"];
+                };
+            };
+            /** @description Invalid email or consent, or the item is not Coming Soon or Repressing. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Store item not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["BackendErrorResponse"];
+                };
+            };
+            /** @description Alerts for this item are temporarily unavailable. Retry later. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

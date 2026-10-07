@@ -11,6 +11,7 @@ import {
   parseStripePriceId,
   parseVariantId,
   stockPreorderFromColumns,
+  type ZeroStockState,
 } from '../../../domain/commerce';
 import { Prisma, type PrismaClient } from '../../../generated/prisma/client';
 
@@ -73,7 +74,8 @@ export class PrismaStoreOfferSnapshotRepository
         availabilityStatus: 'available' | 'sold_out' | null;
         canBuy: number | null;
         effectiveQuantity: number | null;
-        restockPlanned: number | null;
+        zeroStockState: ZeroStockState | null;
+        expectedMonth: string | null;
         showLowStock: number | null;
         preorderStartedAt: string | Date | null;
         preorderShipMonth: string | null;
@@ -86,7 +88,7 @@ export class PrismaStoreOfferSnapshotRepository
         availability."status" AS "availabilityStatus", availability."canBuy",
         CASE WHEN stock."variantId" IS NULL THEN NULL
           ELSE MAX(0, MIN(stock."quantity", stock."onlineQuantity") - COALESCE(holds."quantity", 0))
-        END AS "effectiveQuantity", stock."restockPlanned", stock."showLowStock",
+        END AS "effectiveQuantity", stock."zeroStockState", stock."expectedMonth", stock."showLowStock",
         stock."preorderStartedAt", stock."preorderShipMonth", stock."preorderShipPart", stock."preorderShipDate"
       FROM "StoreOfferSnapshot" snapshot
       INNER JOIN "StoreItemOption" item ON item."storeItemSlug" = snapshot."storeItemSlug"
@@ -123,7 +125,8 @@ export class PrismaStoreOfferSnapshotRepository
           ? null
           : {
               onlineQuantity: createStockQuantity(Number(record.effectiveQuantity)),
-              restockPlanned: Boolean(record.restockPlanned),
+              zeroStockState: record.zeroStockState ?? 'sold_out',
+              expectedMonth: record.expectedMonth,
               showLowStock: Boolean(record.showLowStock),
               preorder: stockPreorderFromColumns({
                 ...record,

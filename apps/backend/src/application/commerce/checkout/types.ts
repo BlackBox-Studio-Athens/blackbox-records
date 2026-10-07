@@ -5,6 +5,7 @@ import type {
   PaymentIntentId,
   ShopperPreorder,
   StoreItemSlug,
+  StoreStockAvailability,
   StripePriceId,
   VariantId,
 } from '../../../domain/commerce';
@@ -32,9 +33,10 @@ export type StoreOffer = StoreOfferIdentity &
         price: StoreOfferPrice;
       }
     | {
-        availability: { label: string; status: 'sold_out' };
+        availability: { label: string; state: Exclude<StoreStockAvailability, 'stocked'>; status: 'sold_out' };
         canCheckout: false;
         catalogStatus: 'sold_out';
+        expectedMonth?: string;
         price: null;
       }
     | {

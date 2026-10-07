@@ -8,9 +8,11 @@ import {
   classifyStoreStockAvailability,
   deriveShopperPreorder,
   parseStoreItemSlug,
+  readExpectedMonth,
   readLowStockQuantity,
   storeStockAvailabilityLabels,
   type StoreItemSlug,
+  type StoreStockAvailability,
   type VariantId,
 } from '../../../domain/commerce';
 import {
@@ -24,17 +26,20 @@ import type { StoreOffer } from './types';
 function soldOutOffer(
   storeItemSlug: StoreItemSlug,
   variantId: VariantId,
-  label: string,
+  state: Exclude<StoreStockAvailability, 'stocked'>,
+  expectedMonth: string | undefined,
 ): Extract<StoreOffer, { catalogStatus: 'sold_out' }> {
   return {
     storeItemSlug,
     variantId,
     availability: {
       status: 'sold_out',
-      label,
+      state,
+      label: storeStockAvailabilityLabels[state],
     },
     canCheckout: false,
     catalogStatus: 'sold_out',
+    ...(expectedMonth === undefined ? {} : { expectedMonth }),
     price: null,
   };
 }
@@ -101,8 +106,14 @@ export async function readStoreOffer(
       ? await stock.findByVariantId(storeItem.variantId)
       : null;
   const stockAvailability = classifyStoreStockAvailability(availability, currentStock);
+  const today = athensToday(now);
   if (stockAvailability !== 'stocked') {
-    return soldOutOffer(storeItem.storeItemSlug, storeItem.variantId, storeStockAvailabilityLabels[stockAvailability]);
+    return soldOutOffer(
+      storeItem.storeItemSlug,
+      storeItem.variantId,
+      stockAvailability,
+      readExpectedMonth(stockAvailability, currentStock, today),
+    );
   }
 
   const productProjection = await productProjections.findByStoreItem(storeItem);
@@ -128,7 +139,7 @@ export async function readStoreOffer(
     storeItem.variantId,
     price,
     readLowStockQuantity(stockAvailability, currentStock),
-    deriveShopperPreorder(currentStock?.preorder ?? null, athensToday(now)),
+    deriveShopperPreorder(currentStock?.preorder ?? null, today),
   );
 }
 

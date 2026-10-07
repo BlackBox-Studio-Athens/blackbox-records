@@ -19,6 +19,7 @@ import { EMPTY_PAID_CHECKOUT_ORDER_FIELDS } from '../../../domain/commerce/repos
 import { isAwaitingStock } from './read-checkout-order';
 import { currentPaidCheckoutOrder } from '../../../../test/fixtures/current-paid-checkout-order';
 import { createStockQuantity } from '../../../domain/commerce';
+import { readStoreListingPrices } from '../checkout/readers';
 import {
   checkoutSessionId,
   paymentIntentId,
@@ -104,7 +105,8 @@ describe('order lifecycle use cases', () => {
       variantId: order.lines[0]!.variantId,
       quantity: createStockQuantity(0),
       onlineQuantity: createStockQuantity(0),
-      restockPlanned: false,
+      zeroStockState: 'sold_out' as const,
+      expectedMonth: null,
       showLowStock: false,
       preorder: { startedAt: cycle, shipEstimate: { kind: 'month' as const, month: '2000-01', part: null } },
       createdAt: order.createdAt,
@@ -116,6 +118,45 @@ describe('order lifecycle use cases', () => {
     expect(isAwaitingStock(order, [{ ...stock, variantId: variantId('variant_other') }])).toBe(false);
     expect(isAwaitingStock({ ...order, status: 'pending_payment' }, [stock])).toBe(false);
     expect(isAwaitingStock({ ...order, lines: [] }, [stock])).toBe(false);
+  });
+
+  it('closes a depleted open pre-order for shoppers while its paid order still awaits stock', async () => {
+    const order = currentPaidCheckoutOrder();
+    const cycle = '2026-09-01T00:00:00.000Z';
+    const shipEstimate = { kind: 'month' as const, month: '2026-11', part: null };
+    order.lines[0]!.preorder = { startedAt: cycle, shipEstimate };
+    const stock = {
+      revision: 0,
+      variantId: order.lines[0]!.variantId,
+      quantity: createStockQuantity(0),
+      onlineQuantity: createStockQuantity(0),
+      zeroStockState: 'coming_soon' as const,
+      expectedMonth: null,
+      showLowStock: false,
+      preorder: { startedAt: cycle, shipEstimate },
+      createdAt: order.createdAt,
+      updatedAt: order.createdAt,
+    };
+    const snapshots = {
+      listForListingPricePresentation: async () => [
+        {
+          amountMinor: 2800,
+          currencyCode: 'EUR',
+          freshUntil: new Date('2026-10-01T00:00:00.000Z'),
+          priceActive: true,
+          productActive: true,
+          storeItemSlug: storeItemSlug('anarchotribal-vinyl'),
+          availability: { status: 'available' as const, canBuy: true },
+          stock,
+        },
+      ],
+    };
+    const now = new Date('2026-10-07T10:00:00.000Z');
+
+    const [record] = await readStoreListingPrices(snapshots, undefined, now);
+    expect(record).toMatchObject({ availabilityState: 'coming_soon', preorder: null });
+    await expect(readStoreListingPrices(snapshots, 'preorders', now)).resolves.toEqual([]);
+    expect(isAwaitingStock(order, [stock])).toBe(true);
   });
 
   it('passes the awaiting filter and combined search options to persistence', async () => {

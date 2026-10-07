@@ -52,7 +52,7 @@ The system SHALL describe digital availability independently from physical offer
 
 ### Requirement: Release badges reuse the Store availability vocabulary
 
-Release cards and detail pages SHALL show one digital badge and at most one physical badge per edition. The digital badge SHALL be Digital out now once the digital date has passed, Out followed by the date when it is in the future, and absent without a date. The physical badge SHALL be the format name followed by the Store label for the offer's state: available, Coming Soon, Repressing, Sold Out or Unavailable. Pre-order SHALL keep its pre-order badges.
+Release cards and detail pages SHALL show one digital badge and at most one physical badge per edition. The digital badge SHALL be Digital out now once the digital date has passed, Out followed by the date when it is in the future, and absent without a date. The physical badge SHALL be the format name followed by the Store label for the offer's state: available, Coming Soon, Repressing or Sold Out. An unavailable offer SHALL show no physical badge. Pre-order SHALL keep its pre-order badges.
 
 #### Scenario: Future digital date
 
@@ -64,7 +64,13 @@ Release cards and detail pages SHALL show one digital badge and at most one phys
 
 - **WHEN** a release's native vinyl offer reads Repressing with expected month 2027-01
 - **THEN** the physical badge reads Vinyl Repressing followed by Expected January 2027
-- **AND** the strings Out of Stock, Currently Unavailable, coming later and Physical availability unconfirmed never appear.
+- **AND** the strings Out of Stock, Currently Unavailable, Unavailable, coming later and Physical availability unconfirmed never appear.
+
+#### Scenario: Edition details are not buyable
+
+- **WHEN** a release's physical edition reads Coming Soon, Repressing or Sold Out
+- **THEN** its edition action is an underlined text link "View vinyl details" (or "View edition") with a trailing arrow, not an outlined box
+- **AND** Buy vinyl and Pre-order vinyl keep their button treatment.
 
 #### Scenario: Offer has not been read yet
 

@@ -61,7 +61,7 @@ Alternative considered: keep `restockPlanned` and only change the label. Rejecte
 - The Store Offer's `catalogStatus: 'sold_out'` branch keeps its discriminator for compatibility. Its `availability` gains a `state` field (`coming_soon | repressing | sold_out | unavailable`) beside `label`. Web tone and the Notify me eligibility read `state`.
 - `expectedMonth` is suppressed once the Europe/Athens month has passed. This reuses the pre-order "month estimate has passed" helper in `domain/commerce/preorder.ts`.
 - The only consumer is our own web build, regenerated from the same OpenAPI document.
-- Deployment order is Worker, then Pages (the `deploy-uat` job). For minutes in between, an old web build sees an unknown state; `availabilityCopy[state]` is undefined, so it shows an empty status. The new web build maps unknown states to Unavailable (spec) so future additions degrade cleanly.
+- Deployment order is Worker, then Pages (the `deploy-uat` job). For minutes in between, an old web build sees an unknown state; `availabilityCopy[state]` is undefined, so it shows an empty status. The new web build treats unknown states like `unavailable`: price only, no status and no Buy (spec), so future additions degrade cleanly.
 
 Alternative considered: keep `out_of_stock` as an alias of `coming_soon`. Rejected because no external consumer exists and an alias keeps the retired term alive.
 
@@ -71,9 +71,10 @@ Alternative considered: keep `out_of_stock` as an alias of `coming_soon`. Reject
 - The card presenter, item purchase actions, price display, cart chip, checkout status and `release-presentation.ts` import it instead of keeping their own strings.
 - `ReleaseBadge` in content-model changes to:
   - the digital badges: `Digital out now`, `Out ${string}`, plus the existing pre-order badges;
-  - `${Format} ${'available' | 'Coming Soon' | 'Repressing' | 'Sold Out' | 'Unavailable'}`.
+  - `${Format} ${'available' | 'Coming Soon' | 'Repressing' | 'Sold Out'}`. An unavailable offer has no physical badge.
 
   `Album upcoming`, `coming later` and `Physical availability unconfirmed` are deleted.
+
 - Releases physical derivation:
   - An announced edition (format, no Store Item) reads `{Format} Coming Soon` statically, since no offer exists to read.
   - A native edition reads its offer state.
@@ -90,19 +91,20 @@ Alternative considered: keep `out_of_stock` as an alias of `coming_soon`. Reject
 
 **Table.** A new D1 table `AvailabilityAlert`:
 
-| Column | Notes |
-|---|---|
-| `id` | |
-| `variantId` | |
-| `email` | |
-| `consentCopyVersion` | |
-| `consentedAt` | |
-| `status` | `pending` or `sending` |
-| `attemptCount` | at most 5 |
-| `nextAttemptAt`, `leaseUntil` | |
-| `createdAt`, `updatedAt` | |
+| Column                        | Notes                  |
+| ----------------------------- | ---------------------- |
+| `id`                          |                        |
+| `variantId`                   |                        |
+| `email`                       |                        |
+| `consentCopyVersion`          |                        |
+| `consentedAt`                 |                        |
+| `status`                      | `pending` or `sending` |
+| `attemptCount`                | at most 5              |
+| `nextAttemptAt`, `leaseUntil` |                        |
+| `createdAt`, `updatedAt`      |                        |
 
 Indexes:
+
 - Unique `(variantId, email)` with a lower-cased, trimmed email, so a repeat request is idempotent.
 - `(status, nextAttemptAt, createdAt)`.
 
@@ -119,6 +121,7 @@ No `delivered` state: a delivered row is deleted, which keeps address retention 
 The response is `no-store`. Hypermedia: the non-ready Store Offer advertises an `availability-alert` link only when eligible, following existing `apiLink` usage.
 
 **Drain.**
+
 - `drainDueAvailabilityAlerts` runs inside `runPaidOrderDeliverySchedule`, after the paid-order and Ship Estimate drains. It is orchestrated in `orders`, which already has every needed dependency, so no new module or boundary edge is needed.
 - Domain rules live in `commerce-domain` (`availability-alerts.ts`):
   - due when the variant classifies `stocked`;
@@ -132,6 +135,7 @@ The response is `no-store`. Hypermedia: the non-ready Store Offer advertises an 
 **Why 40 a day.** Ordinary paid-order traffic is far below 60 emails a day on the shared team, so 40 leaves headroom. A release with 120 waiting shoppers is notified within 3 days, oldest first. Alternative considered: Resend Broadcast to a per-item Segment, which uses marketing quota instead of transactional. Rejected for now: it creates Resend Contacts (the spec forbids that, keeping addresses out of the newsletter system) and needs Segment lifecycle management.
 
 **Email.** Content goes in `application/email/availability-alert-email.ts`, following `preorder-estimate-email.ts`:
+
 - Subject: `{Title} is available` or `{Title} is on pre-order`.
 - Body: one line, the item link and the Ship Estimate if shown. No price or count.
 - Footer: a sentence saying this was a one-off alert and the address has been deleted.
@@ -146,9 +150,11 @@ The internal PATCH `/api/internal/variants/{variantId}/stock/restock-plan` is re
 
 ### 7. Notify me UI
 
+Approved styles (owner review, 7 October 2026, `/demo/coming-soon-styles`): statuses A4 with smaller icons (dashed neutral edge, 14px lucide `Disc3` / `RotateCw`, explanatory line), Notify me B4 (ghost text action "Email me when it lands" with a `Mail` icon), Releases detail action C2 (underlined text link with `ArrowRight`). Sold Out keeps the solid Store Blood edge on every surface; cards and Releases badges use dashed chips for Coming Soon and Repressing without icons.
+
 - Notify me lives in the Store item page's purchase island (`StoreItemPurchaseActions.tsx`) under the disabled status control, so it reads the same offer without a second request. A plain `<form>` holds:
   - an email input;
-  - an unticked consent checkbox ("Email me once when this can be bought or pre-ordered. Not added to the newsletter.");
+  - an unticked consent checkbox ("Email me once when this can be bought or pre-ordered.");
   - a submit button.
 - Validation, error association and the inline status pattern are copied from the newsletter form.
 - Visual direction goes through the Impeccable shape and approval gates during apply. It follows the monochrome hard-edged language and adds no icons or urgency.
@@ -156,7 +162,7 @@ The internal PATCH `/api/internal/variants/{variantId}/stock/restock-plan` is re
 ## Risks / Trade-offs
 
 - [Unarchived prerequisite] This change's commerce-checkout and staff-workspace deltas MODIFY requirements that `clarify-store-sold-out-presentation` adds. → Archive that change, syncing its specs, before this change's specs are synced. Task 0.1.
-- [Public contract break during deploy] An old Pages build briefly meets new states. → Worker-first deploy; an empty status for minutes is acceptable. The new web build degrades unknown states to Unavailable.
+- [Public contract break during deploy] An old Pages build briefly meets new states. → Worker-first deploy; an empty status for minutes is acceptable. The new web build shows unknown states as price only.
 - [Shared email quota] A popular release could exhaust Resend Free alongside order email. → Fixed daily budget, order email drains first, and the remainder waits. Logs record `availability_alert_budget_exhausted`.
 - [Abuse] There is no Turnstile, like the newsletter form, so someone could enqueue many addresses for one variant. → Unique per variant and email, a 2,000 per-variant cap, and the daily send budget, so the worst case is delayed alerts, not quota exhaustion.
 - [Personal data] Addresses sit in D1 until delivery or 12 months. → They never leave the alert table or appear in logs, and rows are deleted on delivery, on final failure or at expiry. `docs/commerce-operations.md` documents this.

@@ -8,7 +8,7 @@ export { readVariantStock } from './read-variant-stock';
 export { readVariantStockHistory } from './read-variant-stock-history';
 export { recordStockChange } from './record-stock-change';
 export { recordStockCount } from './record-stock-count';
-export { setRestockPlanned } from './set-restock-planned';
+export { parseZeroStockChoice, setZeroStockState } from './set-zero-stock-state';
 export { setShowLowStock } from './set-show-low-stock';
 export { setStockPreorder } from './set-stock-preorder';
 export { searchVariants } from './search-variants';

@@ -191,10 +191,12 @@ describe('paid-order email notifications', () => {
       'shopper-preorder',
       'ops-preorder',
       'preorder-estimate-changed',
+      'availability-alert-available',
+      'availability-alert-preorder',
     ]);
 
     for (const preview of previews) {
-      expect(preview.message.subject).toContain(preview.order.orderReference);
+      if (preview.order) expect(preview.message.subject).toContain(preview.order.orderReference);
       expect(preview.message.preheader).toBeTruthy();
       expect(preview.message.html).toContain('class="email-logo"');
       expect(preview.message.html).toContain('alt="BlackBox Records"');
@@ -209,7 +211,7 @@ describe('paid-order email notifications', () => {
       expect(preview.message.html).toContain('color-scheme');
       expect(preview.message.html).toContain('@media (max-width: 600px)');
       expect(preview.message.html).toContain('email-stack');
-      expect(preview.message.text).toContain(preview.order.orderReference);
+      if (preview.order) expect(preview.message.text).toContain(preview.order.orderReference);
     }
 
     const shopperPreview = previews.find((preview) => preview.name === 'shopper-long-content');
@@ -279,8 +281,8 @@ describe('paid-order email notifications', () => {
     expect(withheldOps.text).toContain('Ship nothing until the pre-order copies arrive.');
     expect(withheldOps.text).not.toContain('(expected');
     const withoutPreorder = {
-      ...preview.order,
-      lineItems: preview.order.lineItems.map((line) => ({ ...line, preorder: null })),
+      ...preview.order!,
+      lineItems: preview.order!.lineItems.map((line) => ({ ...line, preorder: null })),
     };
     expect(
       buildPaidOrderShopperEmail({

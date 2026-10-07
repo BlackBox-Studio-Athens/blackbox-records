@@ -45,6 +45,8 @@ export default defineConfig({
         d1Databases: {
           COMMERCE_DB: 'blackbox-records-workers-pool-test',
           TEST_CMS_DB: 'blackbox-records-cms-workers-pool-test',
+          // A scratch commerce database for replaying migrations over rows written by an earlier schema.
+          TEST_MIGRATION_DB: 'blackbox-records-migration-workers-pool-test',
         },
         r2Buckets: ['TEST_SNAPSHOTS'],
       },

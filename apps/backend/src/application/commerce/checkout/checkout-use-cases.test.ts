@@ -128,7 +128,8 @@ class InMemoryStockRepository implements StockRepository {
       createdAt: new Date('2026-04-24T10:00:00.000Z'),
       onlineQuantity: stockQuantity(state.onlineQuantity),
       quantity: stockQuantity(state.quantity),
-      restockPlanned: current?.restockPlanned ?? false,
+      zeroStockState: current?.zeroStockState ?? 'sold_out',
+      expectedMonth: current?.expectedMonth ?? null,
       showLowStock: current?.showLowStock ?? false,
       preorder: current?.preorder ?? null,
       updatedAt: new Date('2026-04-24T10:00:00.000Z'),
@@ -694,11 +695,15 @@ describe('checkout use cases', () => {
     },
   );
 
-  it.each([false, true])('keeps a depleted pre-order non-ready (restock planned %s)', async (restockPlanned) => {
+  it.each([
+    ['sold_out', 'Sold Out'],
+    ['coming_soon', 'Coming Soon'],
+    ['repressing', 'Repressing'],
+  ] as const)('keeps a depleted pre-order non-ready (%s)', async (zeroStockState, label) => {
     const saved = await stock.save(storeItem.variantId, { onlineQuantity: 0, quantity: 0 });
     stock.records.set(storeItem.variantId, {
       ...saved,
-      restockPlanned,
+      zeroStockState,
       preorder: { startedAt: '2026-09-01T10:00:00.000Z', shipEstimate: currentMonthEstimate },
     });
     const offer = await readStoreOffer(
@@ -714,7 +719,7 @@ describe('checkout use cases', () => {
       catalogStatus: 'sold_out',
       canCheckout: false,
       price: null,
-      availability: { label: restockPlanned ? 'Out of Stock' : 'Sold Out' },
+      availability: { label, state: zeroStockState },
     });
     expect(offer).not.toHaveProperty('preorder');
   });
@@ -1037,35 +1042,40 @@ describe('checkout use cases', () => {
       name: 'availability is missing',
       availability: null,
       onlineQuantity: 2,
-      expectedLabel: 'Currently Unavailable',
+      expectedLabel: 'Unavailable',
+      expectedState: 'unavailable',
       stockReads: 0,
     },
     {
       name: 'stock is missing',
       availability: { canBuy: true, status: 'available' as const },
       onlineQuantity: null,
-      expectedLabel: 'Currently Unavailable',
+      expectedLabel: 'Sold Out',
+      expectedState: 'sold_out',
       stockReads: 1,
     },
     {
       name: 'selling is paused at zero stock',
       availability: { canBuy: false, status: 'available' as const },
       onlineQuantity: 0,
-      expectedLabel: 'Currently Unavailable',
+      expectedLabel: 'Unavailable',
+      expectedState: 'unavailable',
       stockReads: 0,
     },
     {
       name: 'selling is paused at positive stock',
       availability: { canBuy: false, status: 'available' as const },
       onlineQuantity: 2,
-      expectedLabel: 'Currently Unavailable',
+      expectedLabel: 'Unavailable',
+      expectedState: 'unavailable',
       stockReads: 0,
     },
     {
       name: 'a non-buyable status has positive stock',
       availability: { canBuy: false, status: 'sold_out' as const },
       onlineQuantity: 2,
-      expectedLabel: 'Currently Unavailable',
+      expectedLabel: 'Unavailable',
+      expectedState: 'unavailable',
       stockReads: 1,
     },
     {
@@ -1073,6 +1083,7 @@ describe('checkout use cases', () => {
       availability: { canBuy: false, status: 'sold_out' as const },
       onlineQuantity: 0,
       expectedLabel: 'Sold Out',
+      expectedState: 'sold_out',
       stockReads: 1,
     },
     {
@@ -1080,19 +1091,39 @@ describe('checkout use cases', () => {
       availability: { canBuy: true, status: 'available' as const },
       onlineQuantity: 0,
       expectedLabel: 'Sold Out',
+      expectedState: 'sold_out',
       stockReads: 1,
     },
     {
-      name: 'effective stock is depleted with a planned restock',
+      name: 'effective stock is depleted with Coming Soon chosen',
       availability: { canBuy: false, status: 'sold_out' as const },
       onlineQuantity: 0,
-      restockPlanned: true,
-      expectedLabel: 'Out of Stock',
+      zeroStockState: 'coming_soon' as const,
+      expectedLabel: 'Coming Soon',
+      expectedState: 'coming_soon',
       stockReads: 1,
+    },
+    {
+      name: 'effective stock is depleted with Repressing chosen',
+      availability: { canBuy: true, status: 'available' as const },
+      onlineQuantity: 0,
+      zeroStockState: 'repressing' as const,
+      expectedLabel: 'Repressing',
+      expectedState: 'repressing',
+      stockReads: 1,
+    },
+    {
+      name: 'availability is missing whatever zero-stock state is chosen',
+      availability: null,
+      onlineQuantity: 0,
+      zeroStockState: 'coming_soon' as const,
+      expectedLabel: 'Unavailable',
+      expectedState: 'unavailable',
+      stockReads: 0,
     },
   ])(
     'returns the correct Store Offer label when $name',
-    async ({ availability, onlineQuantity, restockPlanned, expectedLabel, stockReads }) => {
+    async ({ availability, onlineQuantity, zeroStockState, expectedLabel, expectedState, stockReads }) => {
       if (availability) {
         itemAvailability.records.set(storeItem.variantId, {
           ...availability,
@@ -1107,9 +1138,9 @@ describe('checkout use cases', () => {
         stock.records.delete(storeItem.variantId);
       } else {
         await stock.save(storeItem.variantId, { onlineQuantity, quantity: 3 });
-        if (restockPlanned) {
+        if (zeroStockState) {
           const saved = stock.records.get(storeItem.variantId);
-          if (saved) stock.records.set(storeItem.variantId, { ...saved, restockPlanned: true });
+          if (saved) stock.records.set(storeItem.variantId, { ...saved, zeroStockState });
         }
       }
 
@@ -1124,18 +1155,43 @@ describe('checkout use cases', () => {
       );
 
       expect(offer).toMatchObject({
-        availability: { label: expectedLabel, status: 'sold_out' },
+        availability: { label: expectedLabel, state: expectedState, status: 'sold_out' },
         canCheckout: false,
         catalogStatus: 'sold_out',
         price: null,
       });
+      expect(offer).not.toHaveProperty('expectedMonth');
       expect(findStock).toHaveBeenCalledTimes(stockReads);
     },
   );
 
-  it('keeps positive-stock availability when a restock plan is set', async () => {
+  it.each([
+    // 22:30 UTC on 31 October is already 1 November in Europe/Athens.
+    ['coming_soon', '2026-11', '2026-11'],
+    ['repressing', '2026-12', '2026-12'],
+    ['repressing', '2026-10', undefined],
+    ['sold_out', '2026-11', undefined],
+  ] as const)('reports a %s expected month %s only while it has not passed', async (zeroStockState, month, shown) => {
+    const saved = await stock.save(storeItem.variantId, { onlineQuantity: 0, quantity: 0 });
+    stock.records.set(storeItem.variantId, { ...saved, zeroStockState, expectedMonth: month });
+
+    const offer = await readStoreOffer(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      storeItem.storeItemSlug,
+      new Date('2026-10-31T22:30:00Z'),
+    );
+
+    expect(offer).toMatchObject({ catalogStatus: 'sold_out', availability: { state: zeroStockState } });
+    expect(offer && 'expectedMonth' in offer ? offer.expectedMonth : undefined).toBe(shown);
+  });
+
+  it('keeps positive-stock availability whatever zero-stock state is chosen', async () => {
     const saved = await stock.save(storeItem.variantId, { onlineQuantity: 2, quantity: 3 });
-    stock.records.set(storeItem.variantId, { ...saved, restockPlanned: true });
+    stock.records.set(storeItem.variantId, { ...saved, zeroStockState: 'coming_soon', expectedMonth: '2099-01' });
 
     const offer = await readStoreOffer(
       storeItems,
@@ -1151,6 +1207,7 @@ describe('checkout use cases', () => {
       canCheckout: true,
       catalogStatus: 'ready',
     });
+    expect(offer).not.toHaveProperty('expectedMonth');
     expect(offer?.price).not.toBeNull();
   });
 

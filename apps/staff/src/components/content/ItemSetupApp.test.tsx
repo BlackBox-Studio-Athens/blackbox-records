@@ -25,7 +25,8 @@ it('creates one release or distro source with an explicit EUR price and opening 
     const result = setupCommand({ ...input, kind });
     expect(result).toMatchObject({
       openingQuantity: 10,
-      restockPlanned: false,
+      zeroStockState: 'sold_out',
+      expectedMonth: null,
       itemType: 'Vinyl 12-inch',
       price: { kind: 'fixed', currencyCode: 'EUR', amountMinor: 2705 },
       confirmLiveSetup: true,
@@ -34,7 +35,19 @@ it('creates one release or distro source with an explicit EUR price and opening 
     expect(result.storeItemSlug).toMatch(/^new-record-vinyl-12-inch-/);
     expect(result).toEqual(setupCommand({ ...input, kind }));
   }
-  expect(setupCommand({ ...input, restockPlanned: true })).toMatchObject({ restockPlanned: true });
+  expect(setupCommand({ ...input, zeroStockState: 'coming_soon', expectedMonth: '2026-11' })).toMatchObject({
+    zeroStockState: 'coming_soon',
+    expectedMonth: '2026-11',
+  });
+  // Sold Out never carries a month, and an empty month is sent as null.
+  expect(setupCommand({ ...input, zeroStockState: 'sold_out', expectedMonth: '2026-11' })).toMatchObject({
+    zeroStockState: 'sold_out',
+    expectedMonth: null,
+  });
+  expect(setupCommand({ ...input, zeroStockState: 'repressing', expectedMonth: '' })).toMatchObject({
+    zeroStockState: 'repressing',
+    expectedMonth: null,
+  });
   const merch = setupCommand({ ...input, kind: 'merch', format: 'Clothes', quantity: '0' });
   expect(merch).toMatchObject({ openingQuantity: 0, source: { sourceKind: 'distro', data: { group: 'Clothes' } } });
   expect(JSON.stringify(merch)).not.toContain('category');

@@ -139,7 +139,12 @@ test('Releases order stays optional, validates positive whole numbers and edits 
       />,
     );
   };
-  expect(render()).toContain('Releases order');
+  const html = render();
+  expect(html).toContain('Releases order');
+  // Release stage describes the music only; physical copies belong to Selling.
+  expect(html).toContain(
+    'Upcoming means the music is not out yet. Physical copies are managed in Selling: pre-order, stock and the zero-stock state.',
+  );
   expect(data.releases_priority).toBeUndefined();
   const field = () => controls.inputs.find((input) => input['data-content-path'] === 'releases_priority')!;
   expect(field().required).toBe(false);

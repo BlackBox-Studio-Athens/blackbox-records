@@ -102,6 +102,7 @@ function createUnavailableStoreOffer(overrides: Partial<SoldOutStoreOffer> = {})
   const offer: SoldOutStoreOffer = {
     availability: {
       label: 'Sold Out',
+      state: 'sold_out',
       status: 'sold_out',
     },
     canCheckout: false,
@@ -184,6 +185,7 @@ describe('CheckoutOfferStatus helpers', () => {
       readStoreOffer: vi.fn(async () => createReadyStoreOffer()),
       readStoreOfferVariants: vi.fn(async () => [createReadyStoreOffer()]),
       registerNewsletterSignup: vi.fn(),
+      requestAvailabilityAlert: vi.fn(),
       startCheckout: vi.fn(),
     };
 
@@ -245,19 +247,24 @@ describe('CheckoutOfferStatus helpers', () => {
     });
   });
 
-  it('renders unavailable Worker state without a payment action', () => {
+  it.each([
+    ['sold_out', 'Sold Out', 'Sold Out'],
+    ['coming_soon', 'Coming Soon', 'Coming Soon'],
+    ['repressing', 'Repressing', 'Repressing'],
+    ['unavailable', '', 'Not available'],
+  ] as const)('renders %s Worker state from its typed state without a payment action', (state, statusLabel, badge) => {
     expect(
       createCheckoutOfferView({
         kind: 'ready',
         capabilities: enabledStoreCapabilities,
-        offer: createUnavailableStoreOffer(),
+        offer: createUnavailableStoreOffer({ availability: { label: 'Sold Out', state, status: 'sold_out' } }),
         variants: [],
       }),
     ).toMatchObject({
-      badgeLabel: 'Not available',
+      badgeLabel: badge,
       canStartCheckout: false,
       isReady: false,
-      statusLabel: 'Sold Out',
+      statusLabel,
       tone: 'unavailable',
       variantId: 'variant_afterglow-tape_standard',
     });
@@ -272,6 +279,7 @@ describe('CheckoutOfferStatus helpers', () => {
       }),
       readStoreOfferVariants: vi.fn(),
       registerNewsletterSignup: vi.fn(),
+      requestAvailabilityAlert: vi.fn(),
       startCheckout: vi.fn(),
     };
 
@@ -309,6 +317,7 @@ describe('CheckoutOfferStatus helpers', () => {
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
       registerNewsletterSignup: vi.fn(),
+      requestAvailabilityAlert: vi.fn(),
       startCheckout,
     };
 
@@ -338,6 +347,7 @@ describe('CheckoutOfferStatus helpers', () => {
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
       registerNewsletterSignup: vi.fn(),
+      requestAvailabilityAlert: vi.fn(),
       startCheckout,
     };
 
@@ -395,6 +405,7 @@ describe('CheckoutOfferStatus helpers', () => {
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
       registerNewsletterSignup: vi.fn(),
+      requestAvailabilityAlert: vi.fn(),
       startCheckout: vi.fn(async () => ({
         checkoutUrl: '',
       })),
@@ -419,6 +430,7 @@ describe('CheckoutOfferStatus helpers', () => {
       readStoreOffer: vi.fn(),
       readStoreOfferVariants: vi.fn(),
       registerNewsletterSignup: vi.fn(),
+      requestAvailabilityAlert: vi.fn(),
       startCheckout: vi.fn(async () => {
         throw new PublicCheckoutApiError(409, 'Checkout is not available.');
       }),

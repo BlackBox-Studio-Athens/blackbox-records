@@ -907,11 +907,17 @@
                 "type": "integer",
                 "minimum": 0
               },
+              "availabilityAlertCount": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Shoppers waiting for an availability alert; a count only."
+              },
               "stock": {
                 "$ref": "#/components/schemas/InternalStockState"
               }
             },
             "required": [
+              "availabilityAlertCount",
               "stock"
             ]
           }
@@ -935,8 +941,21 @@
             "type": "integer",
             "minimum": 0
           },
-          "restockPlanned": {
-            "type": "boolean"
+          "zeroStockState": {
+            "type": "string",
+            "enum": [
+              "coming_soon",
+              "repressing",
+              "sold_out"
+            ],
+            "description": "What shoppers see once online stock runs out."
+          },
+          "expectedMonth": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Expected `YYYY-MM` month shown with Coming Soon or Repressing."
           },
           "showLowStock": {
             "type": "boolean"
@@ -1028,13 +1047,14 @@
           "revision",
           "onlineQuantity",
           "quantity",
-          "restockPlanned",
+          "zeroStockState",
+          "expectedMonth",
           "showLowStock",
           "preorder",
           "updatedAt"
         ]
       },
-      "SetRestockPlannedBody": {
+      "SetZeroStockStateBody": {
         "type": "object",
         "properties": {
           "expectedRevision": {
@@ -1044,13 +1064,27 @@
             ],
             "minimum": 0
           },
-          "restockPlanned": {
-            "type": "boolean"
+          "zeroStockState": {
+            "type": "string",
+            "enum": [
+              "coming_soon",
+              "repressing",
+              "sold_out"
+            ]
+          },
+          "expectedMonth": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "description": "A `YYYY-MM` month that has not passed, or null. Sold Out always clears it."
           }
         },
         "required": [
           "expectedRevision",
-          "restockPlanned"
+          "zeroStockState",
+          "expectedMonth"
         ]
       },
       "SetShowLowStockBody": {
@@ -2624,9 +2658,9 @@
         }
       }
     },
-    "/api/internal/variants/{variantId}/stock/restock-plan": {
+    "/api/internal/variants/{variantId}/stock/zero-stock-state": {
       "patch": {
-        "operationId": "setRestockPlanned",
+        "operationId": "setZeroStockState",
         "tags": [
           "Internal Stock"
         ],
@@ -2645,14 +2679,14 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SetRestockPlannedBody"
+                "$ref": "#/components/schemas/SetZeroStockStateBody"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Updated the item restock plan.",
+            "description": "Updated what shoppers see once the item sells out online.",
             "content": {
               "application/json": {
                 "schema": {
@@ -2662,7 +2696,7 @@
             }
           },
           "400": {
-            "description": "Invalid restock plan.",
+            "description": "Invalid zero-stock state or expected month.",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -3945,9 +3979,21 @@
                     "maximum": 2147483647,
                     "default": 0
                   },
-                  "restockPlanned": {
-                    "type": "boolean",
-                    "default": false
+                  "zeroStockState": {
+                    "type": "string",
+                    "enum": [
+                      "coming_soon",
+                      "repressing",
+                      "sold_out"
+                    ],
+                    "default": "sold_out"
+                  },
+                  "expectedMonth": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "default": null
                   },
                   "confirmLiveSetup": {
                     "type": "boolean",

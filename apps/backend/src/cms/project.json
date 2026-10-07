@@ -15,10 +15,11 @@
   "metadata": {
     "boundaries": {
       "status": "closed",
-      "exports": ["./index.ts", "./auth.ts", "./media-upload.ts"],
+      "exports": ["./index.ts", "./auth.ts", "./media-upload.ts", "./published-store-item-names.ts"],
       "namedInterfaces": {
         "access-auth-provider": "./auth.ts",
-        "lazy-media-upload": "./media-upload.ts"
+        "lazy-media-upload": "./media-upload.ts",
+        "published-store-item-names": "./published-store-item-names.ts"
       },
       "dependsOn": ["operator-auth", "backend-platform", "commerce-persistence"],
       "workspaceInterfaces": {

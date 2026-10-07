@@ -47,11 +47,20 @@ describe('free-tier commerce execution', () => {
     expect(scopedBindings).not.toBe(env);
     expect(handleRequest).toHaveBeenCalledExactlyOnceWith(request, scopedBindings, ctx);
     await worker.scheduled({ scheduledTime: 1234 } as ScheduledController, bindings);
-    expect(deliver).toHaveBeenCalledExactlyOnceWith(scopedBindings, new Date(1234));
+    expect(deliver).toHaveBeenCalledExactlyOnceWith(scopedBindings, new Date(1234), {});
     deliver.mockRejectedValueOnce(new Error('Retry later'));
     await expect(worker.scheduled({ scheduledTime: 5678 } as ScheduledController, bindings)).rejects.toThrow(
       'Retry later',
     );
+  });
+
+  it('names alert items from published content when the combined Worker binds it', async () => {
+    const env = { PRODUCT_ENVIRONMENT: 'UAT', MEDIA: { get: vi.fn() } } as unknown as AppBindings;
+    deliver.mockClear();
+    await new CommerceRuntime({} as DurableObjectState, env).runPaidOrderDelivery(1234);
+    expect(deliver).toHaveBeenCalledExactlyOnceWith(expect.any(Object), new Date(1234), {
+      itemNames: expect.any(Function),
+    });
   });
 
   it('answers API preflights without resolving the Durable Object', async () => {

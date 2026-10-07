@@ -1,6 +1,12 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { inventoryQuerySchema } from '../../../application/commerce/stock';
-import { athensToday, isPreorderOpen, type StockPreorder } from '../../../domain/commerce';
+import {
+  athensToday,
+  isPreorderOpen,
+  ZERO_STOCK_STATES,
+  type StockPreorder,
+  type ZeroStockState,
+} from '../../../domain/commerce';
 
 import { areCommerceIdempotencyKeysRequired, type AppBindings, type AppOpenApi } from '../../../platform/env';
 import type { AppLogger } from '../../../platform/observability';
@@ -31,7 +37,8 @@ function logStockOutcome(
   logger: Pick<AppLogger, 'error' | 'info' | 'warn'>,
   severity: 'error' | 'info' | 'warn',
   record: {
-    operation: 'count' | 'history' | 'read' | 'search' | 'change' | 'restock_plan' | 'low_stock_notice' | 'preorder';
+    operation:
+      'count' | 'history' | 'read' | 'search' | 'change' | 'zero_stock_state' | 'low_stock_notice' | 'preorder';
     outcome: string;
     safeReason?: string;
     variantId?: string;
@@ -117,7 +124,8 @@ const stockStateSchema = z
     revision: z.number().int().min(0).nullable(),
     onlineQuantity: z.number().int().min(0),
     quantity: z.number().int().min(0),
-    restockPlanned: z.boolean(),
+    zeroStockState: z.enum(ZERO_STOCK_STATES).describe('What shoppers see once online stock runs out.'),
+    expectedMonth: z.string().nullable().describe('Expected `YYYY-MM` month shown with Coming Soon or Repressing.'),
     showLowStock: z.boolean(),
     preorder: z
       .object({ shipEstimate: shipEstimateSchema, startedAt: z.string().datetime(), open: z.boolean() })
@@ -130,6 +138,11 @@ const stockDetailSchema = variantSummarySchema
   .extend({
     availableOnlineQuantity: z.number().int().nonnegative().optional(),
     heldQuantity: z.number().int().nonnegative().optional(),
+    availabilityAlertCount: z
+      .number()
+      .int()
+      .nonnegative()
+      .describe('Shoppers waiting for an availability alert; a count only.'),
     stock: stockStateSchema,
   })
   .openapi('InternalStockDetail');
@@ -191,12 +204,17 @@ const stockCountBodySchema = z
   })
   .openapi('InternalStockCountBody');
 
-const setRestockPlannedBodySchema = z
+const setZeroStockStateBodySchema = z
   .object({
     expectedRevision: z.number().int().min(0).nullable(),
-    restockPlanned: z.boolean(),
+    zeroStockState: z.enum(ZERO_STOCK_STATES),
+    expectedMonth: z
+      .string()
+      .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+      .nullable()
+      .describe('A `YYYY-MM` month that has not passed, or null. Sold Out always clears it.'),
   })
-  .openapi('SetRestockPlannedBody');
+  .openapi('SetZeroStockStateBody');
 
 const setShowLowStockBodySchema = z
   .object({
@@ -419,15 +437,15 @@ const postStockCountRoute = createRoute({
   tags: ['Internal Stock'],
 });
 
-const patchRestockPlannedRoute = createRoute({
+const patchZeroStockStateRoute = createRoute({
   method: 'patch',
-  path: '/api/internal/variants/{variantId}/stock/restock-plan',
-  operationId: 'setRestockPlanned',
+  path: '/api/internal/variants/{variantId}/stock/zero-stock-state',
+  operationId: 'setZeroStockState',
   request: {
     body: {
       content: {
         'application/json': {
-          schema: setRestockPlannedBodySchema,
+          schema: setZeroStockStateBodySchema,
         },
       },
     },
@@ -440,11 +458,11 @@ const patchRestockPlannedRoute = createRoute({
           schema: stockDetailSchema,
         },
       },
-      description: 'Updated the item restock plan.',
+      description: 'Updated what shoppers see once the item sells out online.',
     },
     400: {
       content: problemContent,
-      description: 'Invalid restock plan.',
+      description: 'Invalid zero-stock state or expected month.',
     },
     404: {
       content: problemContent,
@@ -596,7 +614,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
     });
   });
 
-  app.openapi(patchRestockPlannedRoute, async (context) => {
+  app.openapi(patchZeroStockStateRoute, async (context) => {
     const logger = requestLogger(context);
 
     return withInternalStockServices(context.env, async (services) => {
@@ -607,14 +625,14 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
           traceContextFromHono(context),
           'stock.mutate',
           {
-            operation: 'stock_restock_plan',
+            operation: 'stock_zero_stock_state',
             productEnvironment: context.env.PRODUCT_ENVIRONMENT,
             variantId,
           },
-          () => services.setRestockPlanned({ ...body, variantId }),
+          () => services.setZeroStockState({ ...body, variantId }),
         );
         const detail = await services.readVariantStock(variantId);
-        logStockOutcome(logger, 'info', { operation: 'restock_plan', outcome: 'ok', variantId });
+        logStockOutcome(logger, 'info', { operation: 'zero_stock_state', outcome: 'ok', variantId });
         return jsonNoStore(
           context.json(
             addHypermedia(
@@ -628,7 +646,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
       } catch (error) {
         if (error instanceof services.errors.StockConflictError) {
           logStockOutcome(logger, 'warn', {
-            operation: 'restock_plan',
+            operation: 'zero_stock_state',
             outcome: 'conflict',
             safeReason: 'stock_changed',
             variantId,
@@ -637,11 +655,11 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
         }
         const routeError = toInternalStockRouteError(services, error, {
           includeInvalidStockOperation: true,
-          invalidRequestMessage: 'Invalid restock plan request.',
+          invalidRequestMessage: 'Invalid zero-stock state request.',
         });
         if (routeError) {
           logStockOutcome(logger, 'warn', {
-            operation: 'restock_plan',
+            operation: 'zero_stock_state',
             outcome: 'failed',
             safeReason: routeError.status === 404 ? 'variant_not_found' : 'invalid_request',
             variantId,
@@ -1011,6 +1029,7 @@ export function registerInternalStockRoutes(app: AppOpenApi): void {
 function toStockDetailResponse(detail: {
   availableOnlineQuantity?: number;
   heldQuantity?: number;
+  availabilityAlertCount: number;
   displayName?: string;
   sourceId: string;
   sourceKind: 'release' | 'distro';
@@ -1018,7 +1037,8 @@ function toStockDetailResponse(detail: {
     revision: number | null;
     onlineQuantity: number;
     quantity: number;
-    restockPlanned: boolean;
+    zeroStockState: ZeroStockState;
+    expectedMonth: string | null;
     showLowStock: boolean;
     preorder: StockPreorder | null;
     updatedAt: Date | null;
@@ -1031,6 +1051,7 @@ function toStockDetailResponse(detail: {
       ? {}
       : { availableOnlineQuantity: detail.availableOnlineQuantity }),
     ...(detail.heldQuantity === undefined ? {} : { heldQuantity: detail.heldQuantity }),
+    availabilityAlertCount: detail.availabilityAlertCount,
     ...(detail.displayName ? { displayName: detail.displayName } : {}),
     sourceId: detail.sourceId,
     sourceKind: detail.sourceKind,
@@ -1090,11 +1111,11 @@ function variantActions(variantId: string, revision: number | null) {
       rel: 'record-stock-count',
     }),
     apiAction({
-      href: apiPath('api', 'internal', 'variants', variantId, 'stock', 'restock-plan'),
+      href: apiPath('api', 'internal', 'variants', variantId, 'stock', 'zero-stock-state'),
       method: 'PATCH',
-      operationRef: 'setRestockPlanned',
+      operationRef: 'setZeroStockState',
       parameters: { body: { expectedRevision: revision }, path: { variantId } },
-      rel: 'set-restock-planned',
+      rel: 'set-zero-stock-state',
     }),
     apiAction({
       href: apiPath('api', 'internal', 'variants', variantId, 'stock', 'low-stock-notice'),
@@ -1117,7 +1138,8 @@ function toStockStateResponse(stock: {
   revision: number | null;
   onlineQuantity: number;
   quantity: number;
-  restockPlanned: boolean;
+  zeroStockState: ZeroStockState;
+  expectedMonth: string | null;
   showLowStock: boolean;
   preorder: StockPreorder | null;
   updatedAt: Date | null;
@@ -1126,7 +1148,8 @@ function toStockStateResponse(stock: {
     revision: stock.revision,
     onlineQuantity: stock.onlineQuantity,
     quantity: stock.quantity,
-    restockPlanned: stock.restockPlanned,
+    zeroStockState: stock.zeroStockState,
+    expectedMonth: stock.expectedMonth,
     showLowStock: stock.showLowStock,
     preorder: stock.preorder ? { ...stock.preorder, open: isPreorderOpen(stock.preorder, athensToday()) } : null,
     updatedAt: stock.updatedAt?.toISOString() ?? null,

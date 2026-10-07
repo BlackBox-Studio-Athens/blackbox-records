@@ -4,15 +4,23 @@ import {
   type ShopperNotificationStatus,
 } from './paid-order-templates';
 import type { EmailMessageContent, PaidOrderEmailInput } from './types';
+import { buildAvailabilityAlertEmail } from './availability-alert-email';
 import { buildPreorderEstimateEmail } from './preorder-estimate-email';
 
 export type PaidOrderEmailPreviewName =
-  'ops-ready' | 'shopper-long-content' | 'shopper-preorder' | 'ops-preorder' | 'preorder-estimate-changed';
+  | 'ops-ready'
+  | 'shopper-long-content'
+  | 'shopper-preorder'
+  | 'ops-preorder'
+  | 'preorder-estimate-changed'
+  | 'availability-alert-available'
+  | 'availability-alert-preorder';
 
 export type PaidOrderEmailPreview = {
   message: EmailMessageContent;
   name: PaidOrderEmailPreviewName;
-  order: PaidOrderEmailInput;
+  /** The order the email is about; availability alerts belong to no order. */
+  order?: PaidOrderEmailInput;
 };
 
 export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
@@ -123,5 +131,17 @@ export function buildPaidOrderEmailPreviews(): PaidOrderEmailPreview[] {
       name: 'preorder-estimate-changed',
       order: preorderOrder,
     },
+    ...(['available', 'preorder'] as const).map((kind) => ({
+      message: buildAvailabilityAlertEmail({
+        brand: previewBrand,
+        title: 'Anarchotribal',
+        artist: 'Ouranopithecus',
+        format: 'Vinyl',
+        storeItemSlug: 'anarchotribal-vinyl',
+        preorder: kind === 'preorder' ? { shipEstimate: { kind: 'month', month: '2026-11', part: null } } : null,
+        replyToEmail: 'support@blackboxrecordsathens.com',
+      }),
+      name: `availability-alert-${kind}` as const,
+    })),
   ];
 }

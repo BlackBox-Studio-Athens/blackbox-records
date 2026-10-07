@@ -18,13 +18,30 @@ export type { AcceptedMonetaryPolicy, OrderMonetarySnapshot, OrderMonetaryFields
 export {
   classifyStoreStockAvailability,
   LOW_STOCK_THRESHOLD,
+  readExpectedMonth,
   readLowStockQuantity,
   storeStockAvailabilityLabels,
+  ZERO_STOCK_STATES,
 } from './stock-availability';
-export type { StoreStockAvailability } from './stock-availability';
+export type { StoreStockAvailability, ZeroStockState } from './stock-availability';
+export {
+  AVAILABILITY_ALERT_CONSENT_COPY,
+  AVAILABILITY_ALERT_CONSENT_COPY_VERSION,
+  AVAILABILITY_ALERT_DAILY_BUDGET,
+  AVAILABILITY_ALERT_LEASE_MS,
+  AVAILABILITY_ALERT_MAX_ATTEMPTS,
+  AVAILABILITY_ALERT_PENDING_CAP,
+  availabilityAlertExpiryCutoff,
+  availabilityAlertRetryAt,
+  isAvailabilityAlertDue,
+  isAvailabilityAlertEligible,
+  normalizeAvailabilityAlertEmail,
+} from './availability-alerts';
 export {
   athensToday,
   deriveShopperPreorder,
+  isCalendarMonth,
+  isMonthPassed,
   isPreorderOpen,
   latestShipEstimate,
   parsePreorderShipEstimate,

@@ -6,7 +6,7 @@ import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamin
 import { Card, CardContent } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
 import { getReleasePresentationEntry, type ReleaseCommerceLink } from './release-commerce';
-import { neutralReleasePresentation } from './release-presentation';
+import { neutralReleasePresentation, physicalBadgeState, RELEASE_DETAIL_LINK_CLASS } from './release-presentation';
 import { createArtistDetailPath, createReleaseDetailPath } from '@/lib/catalog-data';
 import { formatMonthYear } from '@/utils/content';
 import { buildEmbeddedPlayerData } from '@/components/music/music';
@@ -107,6 +107,7 @@ const presentationEntry = getReleasePresentationEntry(release, commerceLink);
 const physicalFormat = presentationEntry.edition.kind !== 'none' ? presentationEntry.edition.format : undefined;
 const storeSlug = presentationEntry.edition.kind === 'native' ? presentationEntry.edition.storeSlug : undefined;
 const neutralPresentation = neutralReleasePresentation(presentationEntry);
+const neutralPhysicalState = physicalBadgeState(neutralPresentation);
 
 const dataAttributes = embeddedPlayerData
   ? {
@@ -131,7 +132,6 @@ const dataAttributes = embeddedPlayerData
   data-release-role={isReleaseShowcase ? role : undefined}
   data-release-priority={isReleaseShowcase ? release.data.releases_priority : undefined}
   data-release-date={isReleaseShowcase ? releaseDateMachineValue : undefined}
-  data-release-stage={isReleaseShowcase ? release.data.release_stage : undefined}
   data-release-store-slug={isReleaseShowcase ? storeSlug : undefined}
   data-release-physical-format={
     isReleaseShowcase && (!commerceLink || commerceLink.isNativeStoreLink) ? physicalFormat : undefined
@@ -229,8 +229,17 @@ const dataAttributes = embeddedPlayerData
     >
       {isReleaseShowcase && (
         <div class="flex flex-wrap gap-2" data-release-badges>
-          {neutralPresentation.badges.map((badge) => (
-            <span class="store-item-card__release-status">{badge}</span>
+          {neutralPresentation.badges.map((badge, index) => (
+            <span
+              class="store-item-card__release-status"
+              data-availability-state={
+                neutralPhysicalState && index === neutralPresentation.badges.length - 1
+                  ? neutralPhysicalState
+                  : undefined
+              }
+            >
+              {badge}
+            </span>
           ))}
         </div>
       )}
@@ -291,13 +300,16 @@ const dataAttributes = embeddedPlayerData
           <div class="releases-latest-feature__actions" data-release-actions>
             {commerceLink && (
               <a
-                class={buttonVariants({ variant: 'outline', size: 'lg' })}
+                class={
+                  commerceLink.isNativeStoreLink
+                    ? RELEASE_DETAIL_LINK_CLASS
+                    : buttonVariants({ variant: 'outline', size: 'lg' })
+                }
                 href={commerceLink.href}
                 rel={commerceLink.rel}
                 target={commerceLink.target}
                 data-astro-prefetch={commerceLink.isNativeStoreLink}
                 data-release-purchase
-                data-release-neutral-class={buttonVariants({ variant: 'outline', size: 'lg' })}
               >
                 {commerceLink.isNativeStoreLink
                   ? physicalFormat === 'vinyl'

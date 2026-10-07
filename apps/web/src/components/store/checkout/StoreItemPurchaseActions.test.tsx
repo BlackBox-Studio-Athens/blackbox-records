@@ -6,13 +6,19 @@ import type { PublicCheckoutApi, PublicStoreOffer } from '@/components/store/che
 import { STORE_CART_ADD_ITEM_EVENT, type CartLineItemSnapshot } from '@/components/store/cart/store-cart';
 import StoreItemPurchaseActions, {
   createCartLineItemSnapshotFromWorkerOffer,
-  getStoreItemPurchaseStatusTone,
   loadStoreItemPurchaseActionState,
+  readStoreItemPurchaseStatus,
+  StoreItemPurchaseStatus,
   requestStoreCartAddItem,
   STORE_ITEM_PURCHASE_ACTION_COPY,
   type StoreItemCartSeed,
 } from './StoreItemPurchaseActions';
 import { takePendingStoreCartAddItems } from '@/components/store/cart/store-cart-events';
+import AvailabilityAlertForm, {
+  AVAILABILITY_ALERT_COPY,
+  availabilityAlertErrors,
+  sendAvailabilityAlert,
+} from './AvailabilityAlertForm';
 
 const cartItem: CartLineItemSnapshot = {
   availabilityLabel: 'Available',
@@ -51,7 +57,7 @@ const readyOffer: PublicStoreOffer = {
 };
 
 const soldOutOffer: PublicStoreOffer = {
-  availability: { label: 'Sold Out', status: 'sold_out' },
+  availability: { label: 'Sold Out', state: 'sold_out', status: 'sold_out' },
   canCheckout: false,
   catalogStatus: 'sold_out',
   price: null,
@@ -59,9 +65,21 @@ const soldOutOffer: PublicStoreOffer = {
   variantId: 'variant_disintegration-black-vinyl-lp_standard',
 };
 
-const outOfStockOffer: PublicStoreOffer = {
+const comingSoonOffer: PublicStoreOffer = {
   ...soldOutOffer,
-  availability: { label: 'Out of Stock', status: 'sold_out' },
+  availability: { label: 'Coming Soon', state: 'coming_soon', status: 'sold_out' },
+  expectedMonth: '2026-11',
+  links: [{ rel: 'availability-alert', href: '/api/store/items/disintegration-black-vinyl-lp/availability-alerts' }],
+};
+
+const repressingOffer: PublicStoreOffer = {
+  ...comingSoonOffer,
+  availability: { label: 'Repressing', state: 'repressing', status: 'sold_out' },
+};
+
+const pausedOffer: PublicStoreOffer = {
+  ...soldOutOffer,
+  availability: { label: 'Unavailable', state: 'unavailable', status: 'sold_out' },
 };
 
 const checkoutPausedOffer: PublicStoreOffer = {
@@ -180,20 +198,61 @@ describe('StoreItemPurchaseActions', () => {
     expect(html).not.toContain('data-store-item-add-to-cart');
   });
 
-  it('renders unavailable items as a status, not a disabled button', () => {
-    const html = renderToStaticMarkup(<StoreItemPurchaseActions cartItem={null} cartSeed={null} />);
+  it('renders nothing in the purchase slot when no offer can be shown', () => {
+    expect(renderToStaticMarkup(<StoreItemPurchaseActions cartItem={null} cartSeed={null} />)).toBe('');
+  });
 
-    expect(html).toContain(STORE_ITEM_PURCHASE_ACTION_COPY.unavailable);
+  it('renders Sold Out as a solid Store Blood status, not a disabled button, with no line or Notify me', () => {
+    const html = renderToStaticMarkup(
+      <StoreItemPurchaseStatus state={readStoreItemPurchaseStatus(soldOutOffer)} storeItemSlug="item" />,
+    );
     expect(html).toMatch(/^<p role="status"/);
-    expect(html).not.toContain('<button');
-    expect(html).not.toContain('disabled=""');
-    expect(html).toContain('border-[#767676]');
+    expect(html).toContain('>Sold Out</p>');
+    expect(html).toContain('border-[var(--store-accent)]');
+    expect(html).toContain('data-store-item-purchase-tone="sold-out"');
     expect(html).toContain('min-h-11');
     expect(html).toContain('sm:w-56');
-    expect(html).toContain('data-store-item-purchase-tone="neutral"');
-    expect(html).not.toContain('aria-busy="true"');
-    expect(html).not.toContain('animate-spin');
-    expect(html).not.toContain('data-store-item-add-to-cart');
+    expect(html).not.toContain('<button');
+    expect(html).not.toContain('<svg');
+    expect(html).not.toContain('data-store-item-availability-note');
+    expect(html).not.toContain(AVAILABILITY_ALERT_COPY.open);
+  });
+
+  it.each([
+    [comingSoonOffer, 'Coming Soon', 'lucide-disc-3', 'First pressing on its way · Expected November 2026'],
+    [repressingOffer, 'Repressing', 'lucide-rotate-cw', 'More copies being pressed · Expected November 2026'],
+    [{ ...repressingOffer, expectedMonth: undefined }, 'Repressing', 'lucide-rotate-cw', 'More copies being pressed'],
+  ] as [PublicStoreOffer, string, string, string][])(
+    'renders %#: a dashed status with a small icon, its line and the quiet Notify me action',
+    (offer, label, icon, line) => {
+      const html = renderToStaticMarkup(
+        <StoreItemPurchaseStatus state={readStoreItemPurchaseStatus(offer)} storeItemSlug="item" />,
+      );
+      expect(html).toContain('data-store-item-purchase-tone="incoming"');
+      expect(html).toContain('border-dashed');
+      expect(html).not.toContain('border-[var(--store-accent)]');
+      expect(html).toContain(icon);
+      expect(html).toMatch(/<svg[^>]*width="14"/);
+      expect(html).toContain(`${label}</p>`);
+      expect(html).toContain(`data-store-item-availability-note="true">${line}</p>`);
+      expect(html).toContain('site-button--ghost');
+      expect(html).toContain('lucide-mail');
+      expect(html).toContain(AVAILABILITY_ALERT_COPY.open);
+      expect(html).not.toMatch(/Out of Stock|Currently Unavailable|Unavailable/);
+    },
+  );
+
+  it('shows no status, line or Notify me for a paused or unrecognised state', () => {
+    const unknownOffer = {
+      ...pausedOffer,
+      availability: { ...pausedOffer.availability, state: 'out_of_stock' },
+    } as unknown as PublicStoreOffer;
+    for (const offer of [pausedOffer, unknownOffer])
+      expect(
+        renderToStaticMarkup(
+          <StoreItemPurchaseStatus state={readStoreItemPurchaseStatus(offer)} storeItemSlug="item" />,
+        ),
+      ).toBe('');
   });
 
   it('dispatches the browser-safe cart item through the existing cart event', () => {
@@ -286,6 +345,7 @@ describe('StoreItemPurchaseActions', () => {
       createCartLineItemSnapshotFromWorkerOffer(cartSeed, {
         availability: {
           label: 'Sold Out',
+          state: 'sold_out',
           status: 'sold_out',
         },
         canCheckout: false,
@@ -308,6 +368,7 @@ describe('StoreItemPurchaseActions', () => {
       cartItem: null,
       label: 'Sold Out',
       statusTone: 'sold-out',
+      availabilityState: 'sold_out',
     });
     await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toMatchObject({
       cartItem: { priceDisplay: '€28.00', variantId: readyOffer.variantId },
@@ -355,34 +416,48 @@ describe('StoreItemPurchaseActions', () => {
       cartItem: null,
       label: 'Sold Out',
       statusTone: 'sold-out',
+      availabilityState: 'sold_out',
     });
   });
 
-  it('uses neutral tone for planned restock and checkout pauses', async () => {
+  it('takes label, tone and month from the typed state, never from the label text', async () => {
     const readStoreOffer = vi
       .fn<PublicCheckoutApi['readStoreOffer']>()
-      .mockResolvedValueOnce(outOfStockOffer)
-      .mockResolvedValueOnce(checkoutPausedOffer);
+      .mockResolvedValueOnce(comingSoonOffer)
+      .mockResolvedValueOnce(checkoutPausedOffer)
+      .mockResolvedValueOnce(pausedOffer)
+      .mockResolvedValueOnce({ ...soldOutOffer, availability: { ...soldOutOffer.availability, label: 'Coming Soon' } });
     const api = createApi({ readStoreOffer });
 
-    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toMatchObject({
-      label: 'Out of Stock',
-      statusTone: 'neutral',
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toEqual({
+      cartItem: null,
+      label: 'Coming Soon',
+      statusTone: 'incoming',
+      availabilityState: 'coming_soon',
+      expectedMonth: '2026-11',
     });
-    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toMatchObject({
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toEqual({
+      cartItem: null,
       label: 'Checkout Paused',
       statusTone: 'neutral',
     });
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toMatchObject({
+      label: null,
+      availabilityState: 'unavailable',
+    });
+    await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toMatchObject({
+      label: 'Sold Out',
+      statusTone: 'sold-out',
+    });
   });
 
-  it('maps only Sold Out copy to the brand red status tone', () => {
-    expect(getStoreItemPurchaseStatusTone('Sold Out')).toBe('sold-out');
-    expect(getStoreItemPurchaseStatusTone('Out of Stock')).toBe('neutral');
-    expect(getStoreItemPurchaseStatusTone('Checkout Paused')).toBe('neutral');
-    expect(getStoreItemPurchaseStatusTone(STORE_ITEM_PURCHASE_ACTION_COPY.unavailable)).toBe('neutral');
+  it('drops a month that came with a Sold Out offer', () => {
+    expect(readStoreItemPurchaseStatus({ ...soldOutOffer, expectedMonth: '2026-11' })).not.toHaveProperty(
+      'expectedMonth',
+    );
   });
 
-  it('uses neutral unavailable copy after a failed Worker read', async () => {
+  it('shows no status after a failed Worker read', async () => {
     const api = createApi({
       readStoreOffer: vi.fn(async () => {
         throw new Error('Worker unavailable');
@@ -391,7 +466,7 @@ describe('StoreItemPurchaseActions', () => {
 
     await expect(loadStoreItemPurchaseActionState(api, cartSeed)).resolves.toEqual({
       cartItem: null,
-      label: STORE_ITEM_PURCHASE_ACTION_COPY.unavailable,
+      label: null,
       statusTone: 'neutral',
     });
   });
@@ -419,6 +494,87 @@ describe('StoreItemPurchaseActions', () => {
   });
 });
 
+describe('Notify me', () => {
+  it('opens to an email field and an unticked one-off consent with Send and Cancel', () => {
+    const html = renderToStaticMarkup(<AvailabilityAlertForm initial={{ step: 'open' }} storeItemSlug="item" />);
+    expect(html).toContain('>Email</label>');
+    expect(html).toMatch(/<input[^>]*type="email"[^>]*autoComplete="email"/);
+    expect(html).toContain(AVAILABILITY_ALERT_COPY.consent);
+    expect(html).toMatch(/<input type="checkbox" name="consent"(?![^>]*checked)[^>]*>/);
+    expect(html).toContain('>Send</button>');
+    expect(html).toContain('site-button--link');
+    expect(html).toContain('>Cancel</button>');
+    expect(html).not.toContain('aria-invalid');
+  });
+
+  it('validates the email and consent in the browser before any request', () => {
+    expect(availabilityAlertErrors('', false)).toEqual({
+      email: AVAILABILITY_ALERT_COPY.invalidEmail,
+      consent: AVAILABILITY_ALERT_COPY.missingConsent,
+    });
+    expect(availabilityAlertErrors('listener@example', true)).toEqual({ email: 'Enter a valid email.' });
+    expect(availabilityAlertErrors(' listener@example.com ', false)).toEqual({
+      consent: 'Tick the box so we can email you.',
+    });
+    expect(availabilityAlertErrors('listener@example.com', true)).toEqual({});
+  });
+
+  it('links each error to its control', () => {
+    const html = renderToStaticMarkup(
+      <AvailabilityAlertForm
+        initial={{ step: 'open', email: 'nope', errors: availabilityAlertErrors('nope', false) }}
+        storeItemSlug="item"
+      />,
+    );
+    const emailError = /<input[^>]*type="email"[^>]*aria-describedby="([^"]+)"/.exec(html)?.[1];
+    const consentError = /<input type="checkbox"[^>]*aria-describedby="([^"]+)"/.exec(html)?.[1];
+    expect(html.match(/aria-invalid="true"/g)).toHaveLength(2);
+    expect(html).toContain(`id="${emailError}" class="availability-alert__error">Enter a valid email.</p>`);
+    expect(html).toContain(
+      `id="${consentError}" class="availability-alert__error">Tick the box so we can email you.</p>`,
+    );
+  });
+
+  it('keeps the Send width while sending and confirms in a status region', () => {
+    const sending = renderToStaticMarkup(
+      <AvailabilityAlertForm initial={{ step: 'sending', email: 'a@b.co', consent: true }} storeItemSlug="item" />,
+    );
+    expect(sending).toMatch(/<button[^>]*availability-alert__send[^>]*aria-busy="true"[^>]*>Sending<\/button>/);
+    const done = renderToStaticMarkup(<AvailabilityAlertForm initial={{ step: 'done' }} storeItemSlug="item" />);
+    expect(done).toContain('role="status"');
+    expect(done).toContain('tabindex="-1"');
+    expect(done).toContain('We&#x27;ll email you once when it can be ordered.');
+    expect(done).not.toContain('<form');
+  });
+
+  it('sends only the email, consent and Store Item, and reads any failure as retryable', async () => {
+    const requestAvailabilityAlert = vi
+      .fn<PublicCheckoutApi['requestAvailabilityAlert']>()
+      .mockResolvedValueOnce({ status: 'requested' })
+      .mockRejectedValueOnce(new Error('availability_alert_busy'));
+    const api = createApi({ requestAvailabilityAlert });
+    await expect(sendAvailabilityAlert(api, 'item', ' listener@example.com ')).resolves.toBe('done');
+    expect(requestAvailabilityAlert).toHaveBeenCalledWith('item', { email: 'listener@example.com', consent: true });
+    await expect(sendAvailabilityAlert(api, 'item', 'listener@example.com')).resolves.toEqual({
+      form: AVAILABILITY_ALERT_COPY.failed,
+    });
+    const retry = renderToStaticMarkup(
+      <AvailabilityAlertForm
+        initial={{
+          step: 'open',
+          email: 'listener@example.com',
+          consent: true,
+          errors: { form: AVAILABILITY_ALERT_COPY.failed },
+        }}
+        storeItemSlug="item"
+      />,
+    );
+    expect(retry).toContain('value="listener@example.com"');
+    expect(retry).toMatch(/<input type="checkbox" name="consent" checked=""/);
+    expect(retry).toContain('role="alert">Couldn&#x27;t save that. Try again.</p>');
+  });
+});
+
 function createApi(overrides: Partial<PublicCheckoutApi>): PublicCheckoutApi {
   return {
     readCheckoutState: vi.fn(),
@@ -426,6 +582,7 @@ function createApi(overrides: Partial<PublicCheckoutApi>): PublicCheckoutApi {
     readStoreOffer: vi.fn(),
     readStoreOfferVariants: vi.fn(),
     registerNewsletterSignup: vi.fn(),
+    requestAvailabilityAlert: vi.fn(),
     startCheckout: vi.fn(),
     ...overrides,
   };

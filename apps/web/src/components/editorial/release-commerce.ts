@@ -24,7 +24,6 @@ export function getReleasePresentationEntry(
     id: release.id,
     priority: release.data.releases_priority,
     releaseDate: release.data.release_date?.toISOString().slice(0, 10),
-    releaseStage: release.data.release_stage,
     edition:
       format && (!commerceLink || commerceLink.isNativeStoreLink)
         ? storeSlug

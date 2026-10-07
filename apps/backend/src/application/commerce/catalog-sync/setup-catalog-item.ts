@@ -1,6 +1,15 @@
 import { z } from 'zod';
 import { DISTRO_GROUP_VALUES, projectProseFields, richTextSchema } from '@blackbox/content-model';
-import { createStockQuantity, parseStoreItemSlug, parseStripePriceId, parseVariantId } from '../../../domain/commerce';
+import {
+  athensToday,
+  createStockQuantity,
+  isCalendarMonth,
+  isMonthPassed,
+  parseStoreItemSlug,
+  parseStripePriceId,
+  parseVariantId,
+  ZERO_STOCK_STATES,
+} from '../../../domain/commerce';
 import {
   CatalogOperationConflictError,
   type CatalogOperation,
@@ -47,10 +56,15 @@ export const catalogItemSetupSchema = z
     itemType: z.enum(DISTRO_GROUP_VALUES),
     price: catalogPriceChangeSchema.shape.price,
     openingQuantity: z.number().int().nonnegative().max(2_147_483_647).default(0),
-    restockPlanned: z.boolean().default(false),
+    zeroStockState: z.enum(ZERO_STOCK_STATES).default('sold_out'),
+    expectedMonth: z.string().refine(isCalendarMonth, 'Use a YYYY-MM month.').nullable().default(null),
     confirmLiveSetup: z.boolean().default(false),
   })
   .strict()
+  .refine((command) => command.expectedMonth === null || !isMonthPassed(command.expectedMonth, athensToday()), {
+    path: ['expectedMonth'],
+    message: 'Choose an expected month that has not passed.',
+  })
   .refine(
     (command) =>
       command.source.mode !== 'create' ||
@@ -106,7 +120,9 @@ export async function setupCatalogItem(deps: Dependencies, actorEmail: string, i
   const variantId = parseVariantId(
     `variant_${createStripeCatalogRequestShapeFingerprint(command.operationId).slice(6)}`,
   );
-  const { restockPlanned, ...requestShape } = command;
+  const { zeroStockState, expectedMonth, ...requestShape } = command;
+  // Sold Out never keeps a month; the default choice stays out of the fingerprint so earlier requests replay.
+  const zeroStock = { zeroStockState, expectedMonth: zeroStockState === 'sold_out' ? null : expectedMonth };
   const context = createStripeCatalogMutationContext({
     action: 'create_catalog_price',
     environment: deps.environment,
@@ -114,7 +130,7 @@ export async function setupCatalogItem(deps: Dependencies, actorEmail: string, i
     identity: command.operationId,
     requestShape: {
       ...requestShape,
-      ...(restockPlanned ? { restockPlanned: true } : {}),
+      ...(zeroStockState === 'sold_out' ? {} : zeroStock),
       environment: deps.environment,
     },
   });
@@ -221,7 +237,7 @@ export async function setupCatalogItem(deps: Dependencies, actorEmail: string, i
         !(await deps.stock.initializeOpeningStock(
           operation,
           createStockQuantity(command.openingQuantity),
-          command.restockPlanned,
+          zeroStock,
           now(),
         ))
       ) {

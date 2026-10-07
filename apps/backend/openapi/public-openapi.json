@@ -261,10 +261,15 @@
                 "type": "string",
                 "enum": [
                   "stocked",
+                  "coming_soon",
+                  "repressing",
                   "sold_out",
-                  "out_of_stock",
                   "unavailable"
                 ]
+              },
+              "expectedMonth": {
+                "type": "string",
+                "description": "`YYYY-MM` month, present only for Coming Soon or Repressing until that month has passed in Europe/Athens."
               },
               "lowStockQuantity": {
                 "type": "integer",
@@ -310,10 +315,15 @@
                 "type": "string",
                 "enum": [
                   "stocked",
+                  "coming_soon",
+                  "repressing",
                   "sold_out",
-                  "out_of_stock",
                   "unavailable"
                 ]
+              },
+              "expectedMonth": {
+                "type": "string",
+                "description": "`YYYY-MM` month, present only for Coming Soon or Repressing until that month has passed in Europe/Athens."
               },
               "storeItemSlug": {
                 "type": "string",
@@ -492,6 +502,15 @@
                   "label": {
                     "type": "string"
                   },
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "coming_soon",
+                      "repressing",
+                      "sold_out",
+                      "unavailable"
+                    ]
+                  },
                   "status": {
                     "type": "string",
                     "enum": [
@@ -501,6 +520,7 @@
                 },
                 "required": [
                   "label",
+                  "state",
                   "status"
                 ]
               },
@@ -515,6 +535,10 @@
                 "enum": [
                   "sold_out"
                 ]
+              },
+              "expectedMonth": {
+                "type": "string",
+                "description": "`YYYY-MM` month, present only for Coming Soon or Repressing until that month has passed in Europe/Athens."
               },
               "price": {
                 "type": "null"
@@ -770,6 +794,43 @@
             }
           }
         },
+        "additionalProperties": false
+      },
+      "AvailabilityAlertRequestResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "requested"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "description": "The same response for a new request and for an address already waiting."
+      },
+      "AvailabilityAlertRequestBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email"
+          },
+          "consent": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "The shopper ticked: \"Email me once when this can be bought or pre-ordered.\""
+          }
+        },
+        "required": [
+          "email",
+          "consent"
+        ],
         "additionalProperties": false
       },
       "StartCheckoutResponse": {
@@ -1300,6 +1361,77 @@
           },
           "404": {
             "description": "Store item not found.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/store/items/{storeItemSlug}/availability-alerts": {
+      "post": {
+        "operationId": "requestAvailabilityAlert",
+        "tags": [
+          "Store"
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required": true,
+            "name": "storeItemSlug",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AvailabilityAlertRequestBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One email will be sent when the item can be bought or pre-ordered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailabilityAlertRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email or consent, or the item is not Coming Soon or Repressing.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Store item not found.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackendErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Alerts for this item are temporarily unavailable. Retry later.",
             "content": {
               "application/problem+json": {
                 "schema": {

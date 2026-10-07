@@ -678,9 +678,8 @@ export default function ContentFields({
             <option value="released">Released</option>
           </NativeSelect>
           <FieldDescription>
-            Upcoming announces a release or physical edition, even if the music is already out digitally. Choose
-            Released when the release or edition is no longer forthcoming. Manage physical pre-orders and stock
-            separately in Selling.
+            Upcoming means the music is not out yet. Physical copies are managed in Selling: pre-order, stock and the
+            zero-stock state.
           </FieldDescription>
         </Field>
         {field('release_date', 'Digital release date', { type: 'date', required: data.release_stage !== 'upcoming' })}

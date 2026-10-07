@@ -94,22 +94,37 @@ describe('createInternalStockApi', () => {
     );
   });
 
-  it('updates the per-item restock plan with the revision from stock detail', async () => {
+  it('saves the zero-stock state and expected month with the revision from stock detail', async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify({ ...variant, stock: {} }), { status: 200 }));
     const api = createInternalStockApi({ fetcher });
+    const body = { expectedRevision: null, zeroStockState: 'coming_soon', expectedMonth: '2026-11' } as const;
 
-    await api.setRestockPlanned(variant.variantId, { expectedRevision: null, restockPlanned: true });
+    await api.setZeroStockState(variant.variantId, body);
 
     expect(fetcher).toHaveBeenCalledWith(
-      '/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/restock-plan',
+      '/api/internal/variants/variant_disintegration-black-vinyl-lp_standard/stock/zero-stock-state',
       {
-        body: JSON.stringify({ expectedRevision: null, restockPlanned: true }),
+        body: JSON.stringify(body),
         cache: 'no-store',
         credentials: 'same-origin',
         headers: { 'content-type': 'application/json' },
         method: 'PATCH',
       },
     );
+  });
+
+  it('reports a stale zero-stock revision as a conflict', async () => {
+    const api = createInternalStockApi({
+      fetcher: async () => new Response(JSON.stringify({ error: 'Stock changed.' }), { status: 409 }),
+    });
+
+    await expect(
+      api.setZeroStockState(variant.variantId, {
+        expectedRevision: 1,
+        zeroStockState: 'sold_out',
+        expectedMonth: null,
+      }),
+    ).rejects.toMatchObject({ status: 409 });
   });
 
   it('surfaces JSON and status-based API errors', async () => {

@@ -28,6 +28,7 @@ Current runtime `console.*` inventory:
 - Migrated: paid-order email and checkout newsletter outcome logs.
 - Migrated: Stripe webhook service warnings.
 - Migrated: scheduled catalog verification warning string.
+- Availability alerts log counts and safe reasons only, never an address or alert identifier: `availability_alert_request_outcome` (`outcome` requested, not_found, ineligible or cap_reached, with `storeItemSlug`); `availability_alert_schedule_outcome` (delivered, rescheduled, dropped, expired, unnamed and lease-lost counts, `budgetExhausted`); `availability_alert_budget_exhausted` (Athens `day`, `budget`); `availability_alert_delivery_failed` (`attemptCount`, `outcome` rescheduled or deleted, `safeReason`); `availability_alert_item_unnamed` (`storeItemSlug`; the accepted publication does not name the item yet, so the alert waits).
 - New: request completion, checkout capability/start, Stripe webhook receipt/reconciliation, internal stock, feature-gate failure, scheduled catalog start/success/failure events.
 - Script-only logs under `apps/backend/scripts/**` remain outside Worker runtime logging.
 

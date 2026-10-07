@@ -1,6 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 
-import { LOW_STOCK_THRESHOLD } from '../../../domain/commerce';
+import { AVAILABILITY_ALERT_CONSENT_COPY, LOW_STOCK_THRESHOLD } from '../../../domain/commerce';
 import { SERVICES_INQUIRY_FIELD_LIMITS, SERVICES_INQUIRY_SERVICES } from '../../../application/email';
 import {
   hypermediaLinkSchema,
@@ -81,6 +81,14 @@ const lowStockQuantitySchema = z
   .max(LOW_STOCK_THRESHOLD)
   .describe('Copies left, present only when staff enabled the notice and few copies remain.');
 
+const availabilityStateSchema = z.enum(['stocked', 'coming_soon', 'repressing', 'sold_out', 'unavailable']);
+
+const expectedMonthSchema = z
+  .string()
+  .describe(
+    '`YYYY-MM` month, present only for Coming Soon or Repressing until that month has passed in Europe/Athens.',
+  );
+
 const storeOfferIdentitySchema = z.object({
   storeItemSlug: z.string(),
   variantId: z.string(),
@@ -114,9 +122,14 @@ const storeOfferSchema = z
       ...hypermediaMetadataShape,
     }),
     storeOfferIdentitySchema.extend({
-      availability: z.object({ label: z.string(), status: z.literal('sold_out') }),
+      availability: z.object({
+        label: z.string(),
+        state: z.enum(['coming_soon', 'repressing', 'sold_out', 'unavailable']),
+        status: z.literal('sold_out'),
+      }),
       canCheckout: z.literal(false),
       catalogStatus: z.literal('sold_out'),
+      expectedMonth: expectedMonthSchema.optional(),
       price: z.null(),
       ...hypermediaMetadataShape,
     }),
@@ -150,7 +163,8 @@ const storeListingPriceSchema = z
   .discriminatedUnion('presentationState', [
     z.object({
       displayPrice: z.string().trim().min(1),
-      availabilityState: z.enum(['stocked', 'sold_out', 'out_of_stock', 'unavailable']),
+      availabilityState: availabilityStateSchema,
+      expectedMonth: expectedMonthSchema.optional(),
       lowStockQuantity: lowStockQuantitySchema.optional(),
       preorder: publicStorePreorderSchema,
       presentationState: z.literal('ready'),
@@ -159,7 +173,8 @@ const storeListingPriceSchema = z
     z.object({
       presentationState: z.literal('unavailable'),
       preorder: publicStorePreorderSchema,
-      availabilityState: z.enum(['stocked', 'sold_out', 'out_of_stock', 'unavailable']),
+      availabilityState: availabilityStateSchema,
+      expectedMonth: expectedMonthSchema.optional(),
       storeItemSlug: z.string().trim().min(1),
     }),
   ])
@@ -328,6 +343,48 @@ export const getStoreItemRoute = createRoute({
     404: {
       content: problemContent,
       description: 'Store item not found.',
+    },
+  },
+  tags: ['Store'],
+});
+
+const availabilityAlertBodySchema = z
+  .object({
+    email: z.string().trim().max(320).email(),
+    consent: z.literal(true).describe(`The shopper ticked: "${AVAILABILITY_ALERT_CONSENT_COPY}"`),
+  })
+  .strict()
+  .openapi('AvailabilityAlertRequestBody');
+
+const availabilityAlertResponseSchema = z
+  .object({ status: z.literal('requested') })
+  .describe('The same response for a new request and for an address already waiting.')
+  .openapi('AvailabilityAlertRequestResponse');
+
+export const postAvailabilityAlertRoute = createRoute({
+  method: 'post',
+  path: '/api/store/items/{storeItemSlug}/availability-alerts',
+  operationId: 'requestAvailabilityAlert',
+  request: {
+    params: storeItemParamsSchema,
+    body: { required: true, content: { 'application/json': { schema: availabilityAlertBodySchema } } },
+  },
+  responses: {
+    200: {
+      content: { 'application/json': { schema: availabilityAlertResponseSchema } },
+      description: 'One email will be sent when the item can be bought or pre-ordered.',
+    },
+    400: {
+      content: problemContent,
+      description: 'Invalid email or consent, or the item is not Coming Soon or Repressing.',
+    },
+    404: {
+      content: problemContent,
+      description: 'Store item not found.',
+    },
+    503: {
+      content: problemContent,
+      description: 'Alerts for this item are temporarily unavailable. Retry later.',
     },
   },
   tags: ['Store'],
@@ -541,6 +598,7 @@ const publicContractModules = [
   getStoreListingPricesRoute,
   getStoreItemRoute,
   getStoreItemVariantsRoute,
+  postAvailabilityAlertRoute,
   postCheckoutSessionRoute,
   getCheckoutStateRoute,
   postNewsletterRegistrationRoute,

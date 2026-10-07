@@ -24,6 +24,7 @@ const mockReadVariantStockHistory = vi.fn();
 const mockRecordStockChange = vi.fn();
 const mockRecordStockCount = vi.fn();
 const mockSetStockPreorder = vi.fn();
+const mockSetZeroStockState = vi.fn();
 const VariantNotFoundError = class VariantNotFoundError extends Error {};
 const InvalidStockOperationError = class InvalidStockOperationError extends Error {};
 const StockConflictError = class StockConflictError extends Error {};
@@ -51,6 +52,7 @@ vi.mock('./stock/internal-stock-services', () => ({
       recordStockChange: mockRecordStockChange,
       recordStockCount: mockRecordStockCount,
       setStockPreorder: mockSetStockPreorder,
+      setZeroStockState: mockSetZeroStockState,
       searchVariants: mockSearchVariants,
       readInventory: mockReadInventory,
     };
@@ -75,7 +77,8 @@ describe('internal stock routes', () => {
         revision: 1,
         quantity: 3,
         onlineQuantity: 3,
-        restockPlanned: false,
+        zeroStockState: 'sold_out',
+        expectedMonth: null,
         showLowStock: false,
         preorder: { shipEstimate, startedAt: '2026-10-02T10:00:00.000Z' },
         updatedAt: new Date('2026-10-02T10:00:00Z'),
@@ -116,6 +119,76 @@ describe('internal stock routes', () => {
       (await app.request(url.replace('http://127.0.0.1', 'https://ops.example'), request, HOSTED_ENV)).status,
     ).toBe(401);
   });
+  it('saves the zero-stock state, returns it with the waiting count and rejects invalid or stale writes', async () => {
+    const app = createHttpApp();
+    const url = 'http://127.0.0.1/api/internal/variants/variant_test/stock/zero-stock-state';
+    const body = { expectedRevision: 1, zeroStockState: 'coming_soon', expectedMonth: '2099-11' };
+    const request = (payload: unknown) => ({
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    mockReadVariantStock.mockResolvedValueOnce({
+      availabilityAlertCount: 3,
+      sourceId: 'test',
+      sourceKind: 'release',
+      storeItemSlug: 'test',
+      variantId: 'variant_test',
+      stock: {
+        revision: 2,
+        quantity: 0,
+        onlineQuantity: 0,
+        zeroStockState: 'coming_soon',
+        expectedMonth: '2099-11',
+        showLowStock: false,
+        preorder: null,
+        updatedAt: new Date('2026-10-02T10:00:00Z'),
+      },
+    });
+
+    const response = await app.request(url, request(body), LOCAL_ENV);
+
+    expect(response.status).toBe(200);
+    expectNoStoreCacheControl(response);
+    expect(mockSetZeroStockState).toHaveBeenCalledWith({ ...body, variantId: 'variant_test' });
+    const result = (await response.json()) as { availabilityAlertCount: number; stock: unknown; actions: unknown[] };
+    expect(result.availabilityAlertCount).toBe(3);
+    expect(result.stock).toMatchObject({ zeroStockState: 'coming_soon', expectedMonth: '2099-11' });
+    expect(result.actions).toContainEqual(
+      expect.objectContaining({
+        rel: 'set-zero-stock-state',
+        operationRef: 'setZeroStockState',
+        method: 'PATCH',
+        href: '/api/internal/variants/variant_test/stock/zero-stock-state',
+        parameters: { path: { variantId: 'variant_test' }, body: { expectedRevision: 2 } },
+      }),
+    );
+    expect(JSON.stringify(result)).not.toMatch(/restock/i);
+
+    mockSetZeroStockState.mockRejectedValueOnce(new StockConflictError('Stock changed.'));
+    expect((await app.request(url, request(body), LOCAL_ENV)).status).toBe(409);
+    mockSetZeroStockState.mockRejectedValueOnce(new InvalidStockOperationError('Month has passed.'));
+    expect((await app.request(url, request(body), LOCAL_ENV)).status).toBe(400);
+    mockSetZeroStockState.mockRejectedValueOnce(new VariantNotFoundError());
+    expect((await app.request(url, request(body), LOCAL_ENV)).status).toBe(404);
+    mockSetZeroStockState.mockClear();
+    for (const invalid of [
+      { ...body, expectedMonth: '2099-13' },
+      { ...body, zeroStockState: 'out_of_stock' },
+      { expectedRevision: 1, zeroStockState: 'sold_out' },
+      { expectedRevision: 1, restockPlanned: true },
+    ]) {
+      expect((await app.request(url, request(invalid), LOCAL_ENV)).status).toBe(400);
+    }
+    expect(mockSetZeroStockState).not.toHaveBeenCalled();
+    expect(
+      (await app.request(url.replace('stock/zero-stock-state', 'stock/restock-plan'), request(body), LOCAL_ENV)).status,
+    ).toBe(404);
+    expect(
+      (await app.request(url.replace('http://127.0.0.1', 'https://ops.example'), request(body), HOSTED_ENV)).status,
+    ).toBe(401);
+  });
+
   it('derives the open flag from the Athens day on every stock read', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-10-31T22:30:00Z'));
@@ -130,7 +203,8 @@ describe('internal stock routes', () => {
           revision: 1,
           quantity: 3,
           onlineQuantity: 3,
-          restockPlanned: false,
+          zeroStockState: 'sold_out',
+          expectedMonth: null,
           showLowStock: false,
           updatedAt: new Date(),
         },

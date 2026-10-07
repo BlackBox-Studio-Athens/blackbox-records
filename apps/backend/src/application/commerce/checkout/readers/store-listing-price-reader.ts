@@ -3,6 +3,7 @@ import {
   classifyStoreStockAvailability,
   athensToday,
   deriveShopperPreorder,
+  readExpectedMonth,
   readLowStockQuantity,
   type ShopperPreorder,
   type StoreItemSlug,
@@ -14,6 +15,7 @@ export type StoreListingPricePresentation =
   | {
       displayPrice: string;
       availabilityState: StoreStockAvailability;
+      expectedMonth?: string;
       lowStockQuantity?: number;
       preorder: ShopperPreorder | null;
       presentationState: 'ready';
@@ -23,6 +25,7 @@ export type StoreListingPricePresentation =
       presentationState: 'unavailable';
       preorder: ShopperPreorder | null;
       availabilityState: StoreStockAvailability;
+      expectedMonth?: string;
       storeItemSlug: StoreItemSlug;
     };
 
@@ -34,7 +37,11 @@ export async function readStoreListingPrices(
   const today = athensToday(now);
   const records = (await snapshots.listForListingPricePresentation(scope)).map((snapshot) => {
     const availabilityState = classifyStoreStockAvailability(snapshot.availability, snapshot.stock);
-    const preorder = deriveShopperPreorder(snapshot.stock?.preorder ?? null, today);
+    // A pre-order whose copies ran out closes for shoppers; staff keep it open for paid orders.
+    const preorder =
+      availabilityState === 'stocked' ? deriveShopperPreorder(snapshot.stock?.preorder ?? null, today) : null;
+    const expectedMonth = readExpectedMonth(availabilityState, snapshot.stock, today);
+    const month = expectedMonth === undefined ? {} : { expectedMonth };
     if (
       snapshot.currencyCode.trim().length !== 3 ||
       !snapshot.priceActive ||
@@ -43,6 +50,7 @@ export async function readStoreListingPrices(
     ) {
       return {
         availabilityState,
+        ...month,
         preorder,
         presentationState: 'unavailable' as const,
         storeItemSlug: snapshot.storeItemSlug,
@@ -52,6 +60,7 @@ export async function readStoreListingPrices(
     const lowStockQuantity = readLowStockQuantity(availabilityState, snapshot.stock);
     return {
       availabilityState,
+      ...month,
       preorder,
       ...(lowStockQuantity === undefined ? {} : { lowStockQuantity }),
       displayPrice:

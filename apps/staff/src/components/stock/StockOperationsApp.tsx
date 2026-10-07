@@ -38,6 +38,7 @@ import {
   type InternalStockHistoryResponse,
   type InternalVariantSummary,
   type SetStockPreorderBody,
+  type SetZeroStockStateBody,
 } from '../../lib/backend/internal-stock-api';
 import { readStaffQuery, useStaffRead } from '../../lib/staff-query';
 import { cn } from '../ui/utils';
@@ -66,6 +67,8 @@ import {
   AlertDialogAction,
 } from '../ui/alert-dialog';
 
+import ZeroStockStateControl, { type ZeroStockState } from './ZeroStockStateControl';
+
 const PreorderControl = lazy(() => import('./PreorderControl'));
 
 interface StockOperationsAppProps {
@@ -81,7 +84,7 @@ type HistoryEntry = InternalStockHistoryResponse['entries'][number];
 export type StockLoadingIntent = 'refresh' | 'search' | 'variant' | 'workspace' | null;
 const LOW_STOCK_NOTICE_THRESHOLD = 5;
 
-type StockSubmittingIntent = 'stockChange' | 'stockCount' | 'restockPlan' | 'lowStockNotice' | 'preorder' | null;
+type StockSubmittingIntent = 'stockChange' | 'stockCount' | 'zeroStockState' | 'lowStockNotice' | 'preorder' | null;
 
 export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOperationsAppProps) {
   const [otherPending, setOtherPending] = useState(false);
@@ -138,6 +141,9 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
   const api = createInternalStockApi({ backendBaseUrl });
   const selectedStockDetail = canSubmitStockMutation(selectedVariantId, stockDetail) ? stockDetail : null;
   const canMutateSelectedStock = !!selectedStockDetail && hasFreshStock && !isLoading && !otherPending;
+  const savedExpectedMonth = selectedStockDetail?.stock.expectedMonth ?? '';
+  const [expectedMonthDraft, setExpectedMonthDraft] = useState(savedExpectedMonth);
+  useEffect(() => setExpectedMonthDraft(savedExpectedMonth), [selectedVariantId, savedExpectedMonth]);
   const adjustmentQuantity =
     selectedStockDetail && /^\d+$/.test(changeDelta)
       ? selectedStockDetail.stock.quantity + Number(changeDelta) * (stockDirection === 'remove' ? -1 : 1)
@@ -666,29 +672,23 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
     }
   }
 
-  async function handleRestockPlannedChange(restockPlanned: boolean) {
+  async function handleZeroStockStateChange(zeroStockState: ZeroStockState, expectedMonth: string) {
     const detail = selectedStockDetail;
     if (!detail || !canMutateSelectedStock || isSubmitting) return;
 
     const variantId = selectedVariantId;
-    setSubmittingIntent('restockPlan');
+    setSubmittingIntent('zeroStockState');
     setErrorMessage(null);
-    setStatusMessage('Saving restock plan.');
+    setStatusMessage('Saving what shoppers see when sold out.');
     try {
-      await api.setRestockPlanned(variantId, {
-        expectedRevision: detail.stock.revision,
-        restockPlanned,
-      });
-      await loadVariant(variantId, false, 'refresh');
-      setStatusMessage('Restock plan saved.');
-    } catch (error) {
-      await loadVariant(variantId, false, 'refresh');
-      setStatusMessage(
-        error instanceof InternalStockApiError && error.status === 409
-          ? 'Stock changed. Review the current item before retrying the restock plan.'
-          : 'Restock plan was not confirmed. Refresh the item before trying again.',
+      const result = await saveZeroStockState(
+        api,
+        variantId,
+        { expectedRevision: detail.stock.revision, zeroStockState, expectedMonth: expectedMonth || null },
+        () => loadVariant(variantId, false, 'refresh'),
       );
-      setErrorMessage(readErrorMessage(error));
+      setStatusMessage(result.statusMessage);
+      if (result.errorMessage) setErrorMessage(result.errorMessage);
     } finally {
       setSubmittingIntent(null);
     }
@@ -1096,19 +1096,31 @@ export default function StockOperationsApp({ backendBaseUrl, embedded }: StockOp
                       <strong>{hasFreshStock ? (selectedStockDetail?.heldQuantity ?? '-') : '-'}</strong>. Updated{' '}
                       {formatDate(selectedStockDetail?.stock.updatedAt)}.
                     </p>
-                    <StockFlagSwitch
-                      busy={submittingIntent === 'restockPlan'}
-                      checked={selectedStockDetail?.stock.restockPlanned ?? false}
-                      description={
-                        <>
-                          At zero online stock, shoppers see{' '}
-                          {selectedStockDetail?.stock.restockPlanned ? 'Out of Stock.' : 'Sold Out.'}
-                        </>
-                      }
-                      descriptionId="restock-planned-description"
+                    <ZeroStockStateControl
+                      idPrefix="stock"
+                      busy={submittingIntent === 'zeroStockState'}
                       disabled={!canMutateSelectedStock || isSubmitting}
-                      label="Restock planned"
-                      onChange={(checked) => void handleRestockPlannedChange(checked)}
+                      value={selectedStockDetail?.stock.zeroStockState ?? 'sold_out'}
+                      month={expectedMonthDraft}
+                      waitingCount={selectedStockDetail?.availabilityAlertCount}
+                      onValueChange={(value) => void handleZeroStockStateChange(value, expectedMonthDraft)}
+                      onMonthChange={setExpectedMonthDraft}
+                      monthAction={
+                        expectedMonthDraft !== savedExpectedMonth && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              void handleZeroStockStateChange(
+                                selectedStockDetail?.stock.zeroStockState ?? 'sold_out',
+                                expectedMonthDraft,
+                              )
+                            }
+                          >
+                            Save month
+                          </Button>
+                        )
+                      }
                     />
                     <StockFlagSwitch
                       busy={submittingIntent === 'lowStockNotice'}
@@ -1515,6 +1527,34 @@ export async function saveStockPreorder(
         error instanceof InternalStockApiError && error.status === 409
           ? 'Stock changed. Review the current item before retrying the pre-order.'
           : 'Pre-order was not confirmed. Review the refreshed item before trying again.',
+      errorMessage: readErrorMessage(error),
+    };
+  }
+}
+
+// Sold Out never carries an expected month, so choosing it clears any saved month.
+export async function saveZeroStockState(
+  api: Pick<ReturnType<typeof createInternalStockApi>, 'setZeroStockState'>,
+  variantId: string,
+  body: SetZeroStockStateBody,
+  refresh: () => Promise<void>,
+): Promise<{ statusMessage: string; errorMessage: string | null }> {
+  try {
+    await api.setZeroStockState(variantId, {
+      ...body,
+      expectedMonth: body.zeroStockState === 'sold_out' ? null : body.expectedMonth,
+    });
+    await refresh();
+    return { statusMessage: 'Saved what shoppers see when sold out.', errorMessage: null };
+  } catch (error) {
+    await refresh();
+    return {
+      statusMessage:
+        error instanceof InternalStockApiError && error.status === 409
+          ? 'Stock changed. Review the current item before choosing again.'
+          : error instanceof InternalStockApiError && error.status === 400
+            ? 'Choose a month that has not passed, or leave it empty.'
+            : 'The sold-out choice was not confirmed. Refresh the item before trying again.',
       errorMessage: readErrorMessage(error),
     };
   }

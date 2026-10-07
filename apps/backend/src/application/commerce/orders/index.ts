@@ -33,6 +33,8 @@ export type {
 } from './paid-order-delivery';
 export { attemptPaidOrderDelivery, createPaidOrderDeliveryId } from './paid-order-delivery';
 export { drainDuePreorderEstimateNotices } from './preorder-estimate-notice';
+export { drainDueAvailabilityAlerts } from './availability-alert-delivery';
+export type { AvailabilityAlertDrainSummary, StoreItemNameReader } from './availability-alert-delivery';
 export {
   drainDuePaidOrderDeliveries,
   processPaidOrderDeliveriesForOrder,

@@ -5,6 +5,7 @@ import {
   type StoreCapabilities,
 } from './public-checkout-api';
 import type { CartLine } from '../cart/store-cart';
+import { availabilityLabel } from '@/platform/lib/availability-copy';
 
 export type CheckoutOfferInitialAvailability = {
   label: string;
@@ -114,12 +115,17 @@ export function createCheckoutOfferView(loadState: CheckoutOfferLoadState): Chec
   }
 
   if (loadState.offer.catalogStatus !== 'ready') {
+    // Zero-stock lines reuse the item page's state label; a technical pause has none.
+    const statusLabel =
+      loadState.offer.catalogStatus === 'sold_out'
+        ? (availabilityLabel(loadState.offer.availability.state) ?? '')
+        : loadState.offer.availability.label;
     return {
-      badgeLabel: 'Not available',
+      badgeLabel: statusLabel || 'Not available',
       canStartCheckout: false,
       detail: 'This item is not eligible for checkout right now.',
       isReady: false,
-      statusLabel: loadState.offer.availability.label,
+      statusLabel,
       tone: 'unavailable',
       variantId: loadState.offer.variantId,
     };

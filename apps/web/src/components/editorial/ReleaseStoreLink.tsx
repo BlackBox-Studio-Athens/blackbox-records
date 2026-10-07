@@ -2,19 +2,23 @@ import * as React from 'react';
 import type { Tracklist } from '@blackbox/content-model';
 import { readPublicStoreListingPrices } from '@/components/store/StoreListingPricePresentation';
 import { buttonVariants } from '@/components/ui/button';
-import { releasePresentation, type Listing, type ReleasePresentationEntry } from './release-presentation';
+import {
+  physicalBadgeState,
+  releasePresentation,
+  RELEASE_DETAIL_LINK_CLASS,
+  type Listing,
+  type ReleasePresentationEntry,
+} from './release-presentation';
 
 export default function ReleaseStoreLink({
   href,
   className,
   releaseDate,
-  releaseStage,
   physicalFormat,
 }: {
   href: string;
   className: string;
   releaseDate?: string | undefined;
-  releaseStage?: 'upcoming' | 'released' | undefined;
   physicalFormat?: Tracklist['format'] | null | undefined;
 }) {
   const slug = href.split('/').filter(Boolean).at(-1);
@@ -33,23 +37,19 @@ export default function ReleaseStoreLink({
   const entry: ReleasePresentationEntry = {
     id: href,
     releaseDate,
-    releaseStage,
     edition: physicalFormat && slug ? { kind: 'native', format: physicalFormat, storeSlug: slug } : { kind: 'none' },
   };
   const presentation = releasePresentation(entry, record);
   const buyable = presentation.state === 'preorder' || presentation.state === 'available';
-  const actionClassName = physicalFormat
-    ? buttonVariants({
-        variant: buyable ? 'default' : 'outline',
-        size: 'lg',
-        className:
-          presentation.state === 'preorder'
-            ? 'preorder-action'
-            : presentation.state === 'available'
-              ? 'purchase-action'
-              : undefined,
-      })
-    : className;
+  const physicalState = physicalBadgeState(presentation);
+  const actionClassName = !physicalFormat
+    ? className
+    : buyable
+      ? buttonVariants({
+          size: 'lg',
+          className: presentation.state === 'preorder' ? 'preorder-action' : 'purchase-action',
+        })
+      : RELEASE_DETAIL_LINK_CLASS;
 
   return (
     <>
@@ -58,10 +58,13 @@ export default function ReleaseStoreLink({
       </a>
       {physicalFormat && presentation.badges.length > 0 && (
         <span className="flex flex-wrap items-center gap-2">
-          {presentation.badges.map((badge) => (
+          {presentation.badges.map((badge, index) => (
             <span
               key={badge}
               className={badge.startsWith('Pre-order') ? 'preorder-badge' : 'store-item-card__release-status'}
+              data-availability-state={
+                physicalState && index === presentation.badges.length - 1 ? physicalState : undefined
+              }
             >
               {badge}
             </span>

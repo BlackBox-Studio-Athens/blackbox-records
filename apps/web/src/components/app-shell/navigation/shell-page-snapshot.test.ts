@@ -236,7 +236,6 @@ describe('shell page snapshots', () => {
       const makeCard = () => {
         const purchase = {
           textContent: actionName,
-          dataset: { releaseNeutralClass: 'site-button site-button--outline' },
           className:
             actionName === 'Pre-order vinyl' ? 'site-button preorder-action' : 'site-button site-button--primary',
         };
@@ -310,12 +309,13 @@ describe('shell page snapshots', () => {
         actionName === 'Pre-order vinyl' ? 'Pre-order' : 'Vinyl available',
       );
       expect(fragmentHtml(snapshot?.mainContent)).toContain('View vinyl details');
-      expect(fragmentHtml(snapshot?.mainContent)).toContain('Physical availability unconfirmed');
+      // Before the offer is read again the card carries only its digital badge.
+      expect(fragmentHtml(snapshot?.mainContent)).toContain('Digital out now');
       expect(fragmentHtml(snapshot?.mainContent)).not.toMatch(
-        /Pre-order vinyl|Buy vinyl|preorder-action|Expected to ship|Vinyl available/,
+        /Pre-order vinyl|Buy vinyl|preorder-action|Expected to ship|Vinyl available|unconfirmed/,
       );
       expect(cloned.shipping).toEqual({ textContent: '', hidden: true });
-      expect(cloned.purchase.className).toBe('site-button site-button--outline');
+      expect(cloned.purchase.className).toBe('release-detail-link');
       expect(cloned.card.dataset.releaseRole).toBe('lead');
       expect(snapshot?.mainClassName).toBe('releases-page-layout');
     },

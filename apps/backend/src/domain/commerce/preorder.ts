@@ -10,10 +10,19 @@ const isRealDate = (value: string) => {
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(value);
 };
 
+const calendarMonth = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+/** A `YYYY-MM` calendar month. */
+export const isCalendarMonth = (value: unknown): value is string =>
+  typeof value === 'string' && calendarMonth.test(value);
+
+/** A `YYYY-MM` month has passed once Europe/Athens `today` (`YYYY-MM-DD`) is in a later month. */
+export const isMonthPassed = (month: string, today: string): boolean => month < today.slice(0, 7);
+
 const shipEstimateSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('month'),
-    month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+    month: z.string().regex(calendarMonth),
     part: z.enum(['early', 'mid', 'late']).nullable(),
   }),
   z.object({
@@ -68,7 +77,7 @@ export function isPreorderOpen(preorder: StockPreorder, today: string): boolean 
 export function deriveShopperPreorder(preorder: StockPreorder | null, today: string): ShopperPreorder | null {
   if (!preorder || !isPreorderOpen(preorder, today)) return null;
   const { shipEstimate } = preorder;
-  const passed = shipEstimate.kind === 'month' && shipEstimate.month < today.slice(0, 7);
+  const passed = shipEstimate.kind === 'month' && isMonthPassed(shipEstimate.month, today);
   return { shipEstimate: passed ? null : shipEstimate };
 }
 

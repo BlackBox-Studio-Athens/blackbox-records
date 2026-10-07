@@ -31,7 +31,7 @@ function placeholder(storeItemSlug: string) {
 
 function availabilityPlaceholder(storeItemSlug: string, releaseDate?: string) {
   const attributes = new Map<string, string>();
-  const textContent: string = STORE_LISTING_PRICE_COPY.soldOut;
+  const textContent = 'Sold Out';
   let hidden = false;
   const preorder = { hidden: true, textContent: '' };
   const releaseStatus = { hidden: true, textContent: 'Digital out now' };
@@ -76,7 +76,7 @@ function buyButton(storeItemSlug: string) {
     classList: {
       contains: (name: string) => classes.has(name),
       add: (name: string) => classes.add(name),
-      remove: (name: string) => classes.delete(name),
+      remove: (...names: string[]) => names.forEach((name) => classes.delete(name)),
       toggle: (name: string, enabled: boolean) => (enabled ? classes.add(name) : classes.delete(name)),
     },
     hidden: false,
@@ -289,8 +289,8 @@ describe('Store listing-price presentation', () => {
     },
   );
 
-  it.each(['sold_out', 'out_of_stock'] as const)(
-    'shows the %s badge and a disabled preorder control without allowing an order',
+  it.each(['coming_soon', 'repressing', 'sold_out'] as const)(
+    'reads a %s pre-order whose copies ran out like any zero-stock card, with no pre-order badge or control',
     async (availabilityState) => {
       const availability = availabilityPlaceholder('item');
       const buy = buyButton('item');
@@ -310,13 +310,15 @@ describe('Store listing-price presentation', () => {
       await vi.waitFor(() => expect(document.dispatchEvent).toHaveBeenCalledOnce());
       expect(availability.card.preorder.hidden).toBe(true);
       expect(availability.card.releaseStatus.hidden).toBe(true);
-      expect(availability.card.dataset.storePreorder).toBe('');
+      expect(availability.card.dataset).not.toHaveProperty('storePreorder');
       expect(availability.hidden).toBe(false);
       expect(availability.dataset.storeListingAvailabilityState).toBe(availabilityState);
-      expect(availability.textContent).toBe(availabilityState === 'sold_out' ? 'Sold Out' : 'Out of Stock');
-      expect(buy.hidden).toBe(false);
+      expect(availability.textContent).toBe(
+        { coming_soon: 'Coming Soon', repressing: 'Repressing', sold_out: 'Sold Out' }[availabilityState],
+      );
+      expect(buy.hidden).toBe(true);
       expect(buy.disabled).toBe(true);
-      expect(buy.textContent).toBe('Pre-order');
+      expect(buy.classList.contains('preorder-action')).toBe(false);
       requestStoreCartAddFromSeed.mockClear();
       buy.press();
       expect(requestStoreCartAddFromSeed).not.toHaveBeenCalled();
@@ -473,38 +475,73 @@ describe('Store listing-price presentation', () => {
     expect(ready.getAttribute('aria-busy')).toBeNull();
   });
 
-  it('shows explicit availability and treats older or missing records as unknown', async () => {
+  it('shows the shared vocabulary with the expected month in the chip and nothing for paused or unknown states', async () => {
     const stocked = availabilityPlaceholder('stocked');
+    const comingSoon = availabilityPlaceholder('coming-soon');
+    const repressing = availabilityPlaceholder('repressing');
     const soldOut = availabilityPlaceholder('sold-out');
-    const outOfStock = availabilityPlaceholder('out-of-stock');
     const unavailable = availabilityPlaceholder('unavailable');
+    const retired = availabilityPlaceholder('retired');
     const older = availabilityPlaceholder('older');
     const missing = availabilityPlaceholder('missing');
+    const buys = ['coming-soon', 'unavailable', 'retired'].map(buyButton);
     const records = [
       { storeItemSlug: 'stocked', presentationState: 'ready', displayPrice: '€28.00', availabilityState: 'stocked' },
-      { storeItemSlug: 'sold-out', presentationState: 'ready', displayPrice: '€28.00', availabilityState: 'sold_out' },
       {
-        storeItemSlug: 'out-of-stock',
+        storeItemSlug: 'coming-soon',
+        presentationState: 'ready',
+        displayPrice: '€28.00',
+        availabilityState: 'coming_soon',
+        expectedMonth: '2026-11',
+        preorder: null,
+      },
+      {
+        storeItemSlug: 'repressing',
+        presentationState: 'ready',
+        displayPrice: '€28.00',
+        availabilityState: 'repressing',
+      },
+      {
+        storeItemSlug: 'sold-out',
+        presentationState: 'ready',
+        displayPrice: '€28.00',
+        availabilityState: 'sold_out',
+        expectedMonth: '2026-11',
+      },
+      {
+        storeItemSlug: 'unavailable',
+        presentationState: 'ready',
+        displayPrice: '€28.00',
+        availabilityState: 'unavailable',
+      },
+      {
+        storeItemSlug: 'retired',
         presentationState: 'ready',
         displayPrice: '€28.00',
         availabilityState: 'out_of_stock',
       },
-      { storeItemSlug: 'unavailable', presentationState: 'unavailable', availabilityState: 'unavailable' },
       { storeItemSlug: 'older', presentationState: 'ready', displayPrice: '€28.00' },
     ];
 
     connectStoreListingPricePresentation({
       readListingPrices: async () => records as never,
-      root: listingRoot([], [stocked, soldOut, outOfStock, unavailable, older, missing]),
+      root: listingRoot([], [stocked, comingSoon, repressing, soldOut, unavailable, retired, older, missing], buys),
     });
 
-    await vi.waitFor(() => expect(soldOut.textContent).toBe(STORE_LISTING_PRICE_COPY.soldOut));
+    await vi.waitFor(() => expect(comingSoon.textContent).toBe('Coming Soon · Nov 2026'));
+    expect(comingSoon.dataset.storeListingAvailabilityState).toBe('coming_soon');
+    expect(repressing.textContent).toBe('Repressing');
+    expect(soldOut.textContent).toBe('Sold Out');
+    expect(soldOut.dataset.storeListingAvailabilityState).toBe('sold_out');
     expect(stocked.hidden).toBe(true);
-    expect(outOfStock.textContent).toBe(STORE_LISTING_PRICE_COPY.outOfStock);
-    expect(unavailable.textContent).toBe(STORE_LISTING_PRICE_COPY.currentlyUnavailable);
-    expect(older.textContent).toBe(STORE_LISTING_PRICE_COPY.availabilityUnknown);
-    expect(missing.textContent).toBe(STORE_LISTING_PRICE_COPY.availabilityUnknown);
+    for (const priceOnly of [unavailable, retired, older, missing]) {
+      expect(priceOnly.hidden).toBe(true);
+      expect(priceOnly.textContent).toBe('');
+    }
     expect(older.dataset.storeListingAvailabilityState).toBe('unknown');
+    expect(buys.every((buy) => buy.hidden && buy.disabled)).toBe(true);
+    const shown = [comingSoon, repressing, soldOut].map((chip) => chip.textContent).join(' ');
+    expect(shown).not.toMatch(/Out of Stock|Currently Unavailable|Unavailable/);
   });
 
   it('shows copies left on stocked cards while keeping Buy available', async () => {
@@ -587,7 +624,8 @@ describe('Store listing-price presentation', () => {
 
     await vi.waitFor(() => expect(item.textContent).toBe(STORE_LISTING_PRICE_COPY.unavailable));
     expect(item.dataset.storeListingPriceState).toBe('unavailable');
-    expect(availability.textContent).toBe(STORE_LISTING_PRICE_COPY.availabilityUnknown);
+    expect(availability.hidden).toBe(true);
+    expect(availability.textContent).toBe('');
     expect(availability.dataset.storeListingAvailabilityState).toBe('unknown');
   });
 
@@ -652,11 +690,15 @@ describe('Store listing-price presentation', () => {
     },
   );
 
-  it.each([false, true])(
-    'shows the authoritative depleted status after a purchase attempt (preorder: %s)',
-    async (preorder) => {
+  it.each([
+    [false, 'Sold Out', 'sold_out'],
+    [true, 'Coming Soon', 'coming_soon'],
+    [false, null, 'unavailable'],
+  ] as const)(
+    'shows the authoritative depleted status after a purchase attempt (preorder: %s, %s)',
+    async (preorder, label, availabilityState) => {
       vi.stubGlobal('window', globalThis);
-      requestStoreCartAddFromSeed.mockResolvedValueOnce({ cartItem: null, label: 'Sold Out', statusTone: 'sold-out' });
+      requestStoreCartAddFromSeed.mockResolvedValueOnce({ cartItem: null, label, availabilityState });
       const buy = buyButton('item');
       connectStoreListingPricePresentation({
         readListingPrices: async () => [
@@ -674,11 +716,15 @@ describe('Store listing-price presentation', () => {
       await vi.waitFor(() => expect(buy.disabled).toBe(false));
       buy.press();
 
-      await vi.waitFor(() => expect(buy.status.textContent).toBe('Sold Out'));
-      expect(buy.status).toMatchObject({ hidden: false, dataset: { storeListingAvailabilityState: 'sold_out' } });
-      expect(buy.hidden).toBe(!preorder);
-      expect(buy.disabled).toBe(true);
+      await vi.waitFor(() => expect(buy.disabled).toBe(true));
+      expect(buy.status).toMatchObject({
+        hidden: !label,
+        textContent: label ?? '',
+        dataset: { storeListingAvailabilityState: availabilityState },
+      });
+      expect(buy.hidden).toBe(true);
       expect(buy.classList.contains('purchase-action')).toBe(false);
+      expect(buy.classList.contains('preorder-action')).toBe(false);
       expect(buy.cardLink.focus).toHaveBeenCalledOnce();
     },
   );

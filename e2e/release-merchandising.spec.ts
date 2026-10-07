@@ -113,27 +113,24 @@ test('Releases keeps SSR roles and square artwork while offers resolve on direct
 
 for (const [label, releaseDate, digitalStatus] of [
   ['released', '2026-06-06', 'Digital out now'],
-  ['unreleased', '2099-11-06', 'Album upcoming'],
+  ['unreleased', '2099-11-06', 'Out 6 November 2099'],
   ['undated', undefined, ''],
 ] as const) {
-  test(`Upcoming vinyl remains announced while the digital album is ${label}`, async ({ page }, testInfo) => {
+  test(`Vinyl reads Coming Soon from its offer while the digital album is ${label}`, async ({ page }, testInfo) => {
     await page.clock.setFixedTime(new Date('2026-10-05T12:00:00Z'));
     await page.route('**/releases/', async (route) => {
       const response = await route.fetch();
       const html = await response.text();
       const body = html.replace(/<div\b[^>]*\bdata-release-id="anarchotribal"[^>]*>/, (tag) =>
         tag
-          .replace(/\sdata-release-stage="[^"]*"/, '')
           .replace(/\sdata-release-date="[^"]*"/, '')
-          .replace(
-            '<div',
-            `<div data-release-stage="upcoming"${releaseDate ? ` data-release-date="${releaseDate}"` : ''}`,
-          ),
+          .replace('<div', `<div${releaseDate ? ` data-release-date="${releaseDate}"` : ''}`),
       );
       expect(body).not.toBe(html);
       await route.fulfill({ response, body });
     });
-    let current = { ...stocked, availabilityState: 'sold_out' } as typeof stocked | typeof preorder;
+    let current = { ...stocked, availabilityState: 'coming_soon', expectedMonth: '2026-11' } as
+      typeof stocked | typeof preorder;
     let failed = false;
     await page.route('**/api/store/listing-prices*', (route) =>
       failed
@@ -153,8 +150,15 @@ for (const [label, releaseDate, digitalStatus] of [
     );
     const announced = page.locator('[data-release-id="anarchotribal"]');
     await expect(announced).toHaveAttribute('data-release-role', 'supporting');
-    await expect(announced.locator('[data-release-badges]')).toHaveText(`${digitalStatus}Vinyl coming later`);
-    await expect(announced.locator('[data-release-purchase]')).toHaveText('View vinyl details');
+    await expect(announced.locator('[data-release-badges]')).toHaveText(`${digitalStatus}Vinyl Coming Soon`);
+    const physical = announced.locator('[data-release-badges] [data-availability-state="coming_soon"]');
+    await expect(physical).toHaveText('Vinyl Coming Soon');
+    await expect(physical).toHaveCSS('border-top-style', 'dashed');
+    await expect(announced.locator('[data-release-shipping]')).toHaveText('Expected November 2026');
+    const details = announced.locator('[data-release-purchase]');
+    await expect(details).toHaveText('View vinyl details');
+    await expect(details).toHaveClass('release-detail-link');
+    await expect(details).toHaveCSS('text-decoration-line', 'underline');
     await expect(page.locator('[data-release-id]')).toHaveCount(3);
     await expect(page.getByRole('heading', { name: 'Our Releases', exact: true })).toBeVisible();
     await expect(announced.locator('.preorder-action, .purchase-action')).toHaveCount(0);
@@ -170,7 +174,7 @@ for (const [label, releaseDate, digitalStatus] of [
             .evaluate((image) => (image as HTMLImageElement).naturalWidth),
         )
         .toBeGreaterThan(0);
-      await expect(announced.locator('[data-release-badges]')).toHaveText('Digital out nowVinyl coming later');
+      await expect(announced.locator('[data-release-badges]')).toHaveText('Digital out nowVinyl Coming Soon');
       await announced.screenshot({
         path: `.codex-artifacts/catalog-video-contact/anarchotribal-${testInfo.project.name}-390.png`,
       });
@@ -186,7 +190,8 @@ for (const [label, releaseDate, digitalStatus] of [
     );
     await page.goBack();
     await failedRead;
-    await expect(announced.locator('[data-release-badges]')).toHaveText(`${digitalStatus}Vinyl coming later`);
+    // Without an offer there is no physical badge; the digital badge stays.
+    await expect(announced.locator('[data-release-badges]')).toHaveText(digitalStatus);
     await expect(announced.locator('[data-release-purchase]')).toHaveText('View vinyl details');
     expect(await sentinelIntact(page)).toBe(true);
 
@@ -623,9 +628,9 @@ for (const result of ['unavailable', 'failed'] as const) {
     expect(inserted).toBeDefined();
     expect(inserted?.some((action) => /^(Buy|Pre-order) /.test(action))).toBe(false);
     await respond!();
-    await expect(page.locator('[data-release-id="disintegration"] [data-release-badges]')).toContainText(
-      result === 'failed' ? 'Physical availability unconfirmed' : 'Sold Out',
-    );
+    const badges = page.locator('[data-release-id="disintegration"] [data-release-badges]');
+    if (result === 'failed') await expect(badges).not.toContainText('Vinyl');
+    else await expect(badges.locator('[data-availability-state="sold_out"]')).toHaveText('Vinyl Sold Out');
     await expect(page.locator('.purchase-action, .preorder-action, .preorder-badge')).toHaveCount(0);
     expect(await sentinelIntact(page)).toBe(true);
   });

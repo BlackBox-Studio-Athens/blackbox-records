@@ -25,7 +25,7 @@ const entry = Astro.props.entry ?? (await getStorePageEntryBySlug(Astro.params.s
 if (!entry) return new Response('Not found', { status: 404 });
 const { storeItem, primaryAvailability } = entry;
 const priceLabel = STORE_OFFER_PRICE_DISPLAY_COPY.loading;
-const availabilityLabel = primaryAvailability?.availability.label || 'Unavailable';
+const availabilityLabel = primaryAvailability?.availability.label ?? '';
 const canBuy = primaryAvailability?.canBuy ?? false;
 const fallbackCartSeed = await createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const initialCheckoutAvailability = {

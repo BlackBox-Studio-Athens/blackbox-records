@@ -20,7 +20,8 @@
         "./FormatFilter.tsx",
         "./ItemPriceEditor.tsx",
         "./ItemPublication.tsx",
-        "./StockOperationsApp.tsx"
+        "./StockOperationsApp.tsx",
+        "./ZeroStockStateControl.tsx"
       ],
       "namedInterfaces": {},
       "dependsOn": ["staff-ui", "staff-platform", "staff-publication"],

@@ -9,6 +9,9 @@ import {
   readCheckoutState,
   readStoreCapabilities,
   readStoreOffer,
+  requestAvailabilityAlert,
+  AvailabilityAlertCapReachedError,
+  AvailabilityAlertIneligibleError,
   startCheckout,
   StoreItemNotFoundError,
   VariantMismatchError,
@@ -39,6 +42,7 @@ import {
 import type { AppLogger } from '../../../platform/observability';
 import { readStoreListingPrices } from '../../../application/commerce/checkout/readers';
 import type { VariantId } from '../../../domain/commerce';
+import { D1AvailabilityAlertRepository } from '../../../infrastructure/persistence/d1-availability-alert-repository';
 import { D1CheckoutStockHoldRepository } from '../../../infrastructure/persistence/d1-checkout-stock-hold-repository';
 
 export async function readPublicStoreCapabilities(bindings: AppBindings, logger?: Pick<AppLogger, 'warn'>) {
@@ -85,6 +89,8 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
   return {
     disconnect: async () => prisma.$disconnect(),
     errors: {
+      AvailabilityAlertCapReachedError,
+      AvailabilityAlertIneligibleError,
       CatalogDriftError,
       CheckoutConfigurationError,
       CheckoutIdempotencyConflictError,
@@ -146,6 +152,19 @@ export function createPublicCommerceServices(bindings: AppBindings, logger?: Pic
       if (totalAmountMinor !== null && !Number.isSafeInteger(totalAmountMinor)) return null;
       return { ...quote, merchandiseGrossMinor, totalAmountMinor };
     },
+    requestAvailabilityAlert: async (storeItemSlug: string, email: string) =>
+      requestAvailabilityAlert(
+        await readStoreOffer(
+          storeItems,
+          itemAvailability,
+          effectiveStock,
+          createCatalogReconciler(true),
+          productProjections,
+          storeItemSlug,
+        ),
+        new D1AvailabilityAlertRepository(bindings.COMMERCE_DB),
+        { storeItemSlug, email, consentedAt: new Date() },
+      ),
     readStoreListingPrices: async (scope?: 'preorders') => readStoreListingPrices(storeOfferSnapshots, scope),
     readStoreOffer: async (storeItemSlug: string) =>
       readStoreOffer(

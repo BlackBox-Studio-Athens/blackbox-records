@@ -4956,38 +4956,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   font-variant-numeric: tabular-nums;
 }
 
-/* An exhausted active pre-order keeps its status with the identity and its disabled action at the bottom. */
-.store-collection-page .store-item-card__price:has(.preorder-action:disabled) {
-  display: grid;
-  flex: 1;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto 1fr auto;
-  margin-top: 0;
-  padding-top: 0;
-}
-
-.store-collection-page .store-item-card__price:has(.preorder-action:disabled) > [data-store-listing-price] {
-  grid-column: 1;
-  grid-row: 3;
-}
-
-.store-collection-page .store-item-card__price:has(.preorder-action:disabled) > .store-item-card__availability {
-  grid-column: 1 / -1;
-  grid-row: 1;
-  justify-self: start;
-}
-
-.store-collection-page .store-item-card__price:has(.preorder-action:disabled) > [data-store-card-buy] {
-  grid-column: 2;
-  grid-row: 3;
-}
-
-.store-collection-page
-  .store-item-card--listing:has(.preorder-action:disabled)
-  :is(.store-item-card__preorder, .store-item-card__release-status) {
-  display: none;
-}
-
 .store-collection-page .store-item-card__availability {
   align-self: center;
   border: 1px solid color-mix(in srgb, var(--muted-foreground) 55%, transparent);
@@ -4998,8 +4966,144 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   white-space: nowrap;
 }
 
-.store-collection-page .store-item-card__availability[data-store-listing-availability-state='sold_out'] {
+/* One tone per zero-stock state on every surface: Sold Out alone carries the Store Blood edge; Coming Soon and
+   Repressing take a dashed neutral edge, the convention for "not here yet". */
+.store-collection-page .store-item-card__availability[data-store-listing-availability-state='sold_out'],
+.store-item-card__release-status[data-availability-state='sold_out'] {
   border-color: var(--store-accent);
+}
+
+.store-collection-page
+  .store-item-card__availability:is(
+    [data-store-listing-availability-state='coming_soon'],
+    [data-store-listing-availability-state='repressing']
+  ),
+.store-item-card__release-status:is([data-availability-state='coming_soon'], [data-availability-state='repressing']) {
+  border-style: dashed;
+  border-color: #8c8c8c;
+}
+
+/* Item page: a Coming Soon or Repressing status, its explanatory line and Notify me read as one unit. */
+.store-availability-status {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+}
+
+.store-availability-note {
+  margin: 0;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+/* Notify me is a quiet text action, never an outlined or red control. */
+.site-button.availability-alert__open {
+  padding-inline: 0;
+}
+
+.availability-alert {
+  display: grid;
+  gap: 0.6rem;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .availability-alert,
+  .availability-alert__done {
+    animation-name: availability-alert-in;
+    animation-duration: 150ms;
+    animation-timing-function: ease-out;
+  }
+}
+
+@keyframes availability-alert-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 40rem) {
+  .availability-alert {
+    width: 14rem;
+  }
+}
+
+.availability-alert__label {
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.availability-alert__input {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+}
+
+.availability-alert__input:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 2px;
+}
+
+.availability-alert__input[aria-invalid='true'] {
+  border-color: var(--store-accent-active);
+}
+
+.availability-alert__consent {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 0.6rem;
+  color: var(--muted-foreground);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.availability-alert__consent input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.1rem;
+  accent-color: var(--foreground);
+}
+
+.availability-alert__consent input[aria-invalid='true'] {
+  outline: 1px solid var(--store-accent-active);
+  outline-offset: 2px;
+}
+
+.availability-alert__error {
+  margin: 0;
+  color: var(--store-accent-active);
+  font-size: 0.8125rem;
+}
+
+.availability-alert__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.site-button.availability-alert__send {
+  min-width: 7rem;
+}
+
+.availability-alert__done {
+  margin: 0;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  outline: none;
 }
 
 /* Copies left is a status, never a control, and never animated urgency. On cards it keeps the status chip's exact box
@@ -5038,8 +5142,8 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
    badges and a quiet edge on panels, never a fill on a resting control. Text on dark uses --preorder-accent-active
    (6.5:1 on Charcoal Surface); the only fill is the button on hover and focus, with Ink Foreground text (4.9:1). */
 
-/* Card status chips share the availability chip's box. The pre-order badge has its own element, so a pre-order that is
-   sold out or scarce keeps the Sold Out, Out of Stock or Only N left chip beside it. */
+/* Card status chips share the availability chip's box. The pre-order badge has its own element, so a stocked pre-order
+   that is scarce keeps its Only N left chip beside it; a pre-order whose copies ran out reads like any zero-stock card. */
 .store-item-card__preorder,
 .store-item-card__release-status,
 .preorder-badge {
@@ -5074,6 +5178,40 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   display: inline-flex;
   align-items: center;
   font-size: 0.6875rem;
+}
+
+/* A non-buyable edition's details action is navigation, not a box: underlined text with a trailing arrow. */
+.release-detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration-line: underline;
+  text-decoration-color: color-mix(in srgb, var(--foreground) 40%, transparent);
+  text-underline-offset: 4px;
+}
+
+.release-detail-link::after {
+  content: '';
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m12 5 7 7-7 7'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m12 5 7 7-7 7'/%3E%3C/svg%3E");
+}
+
+.release-detail-link:hover {
+  text-decoration-color: var(--foreground);
+}
+
+.release-detail-link:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 2px;
 }
 
 /* Ready ordinary Buy controls share restrained feedback across Releases and Store. */
@@ -7454,6 +7592,14 @@ html[data-store-coverflow-capable]
   text-wrap: balance;
   overflow-wrap: break-word;
   text-transform: uppercase;
+}
+#releases-merchandising [data-release-badges] .store-item-card__release-status[data-availability-state] {
+  border: 1px dashed #8c8c8c;
+  padding: calc(0.35rem - 1px) calc(0.5rem - 1px) calc(0.3rem - 1px);
+}
+#releases-merchandising [data-release-badges] .store-item-card__release-status[data-availability-state='sold_out'] {
+  border-style: solid;
+  border-color: var(--store-accent);
 }
 #releases-merchandising [data-release-badges] .preorder-badge {
   background-color: var(--preorder-accent-surface);

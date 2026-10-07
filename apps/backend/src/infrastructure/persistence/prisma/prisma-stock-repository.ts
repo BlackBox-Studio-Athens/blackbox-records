@@ -1,4 +1,5 @@
 import type { StockRecord, StockRepository, StockState } from '../../../domain/commerce/repositories/spi';
+import type { ZeroStockState } from '../../../domain/commerce';
 import {
   athensToday,
   createStockQuantity,
@@ -15,7 +16,8 @@ function mapStock(record: {
   createdAt: Date;
   onlineQuantity: number;
   quantity: number;
-  restockPlanned: boolean;
+  zeroStockState: string;
+  expectedMonth: string | null;
   showLowStock: boolean;
   preorderStartedAt: string | null;
   preorderShipMonth: string | null;
@@ -29,7 +31,8 @@ function mapStock(record: {
     createdAt: record.createdAt,
     onlineQuantity: createStockQuantity(record.onlineQuantity),
     quantity: createStockQuantity(record.quantity),
-    restockPlanned: record.restockPlanned,
+    zeroStockState: record.zeroStockState as ZeroStockState,
+    expectedMonth: record.expectedMonth,
     showLowStock: record.showLowStock,
     preorder: stockPreorderFromColumns(record),
     updatedAt: record.updatedAt,

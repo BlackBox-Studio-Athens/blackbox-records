@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { Disc3, RotateCw } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { LoadingButtonContent } from '@/components/ui/loading-feedback';
@@ -12,6 +13,14 @@ import {
 } from '@/components/store/cart/store-cart-events';
 import { cn } from '@/components/ui/utils';
 import { DIGITAL_RELEASE_BADGE, preorderBadges } from '@/platform/lib/preorder-estimate';
+import {
+  availabilityLabel,
+  availabilityNote,
+  availabilityTone,
+  expectedMonthText,
+  isNotifiable,
+} from '@/platform/lib/availability-copy';
+import AvailabilityAlertForm from './AvailabilityAlertForm';
 
 export type StoreItemCartSeed = Omit<
   CartLineItemSnapshot,
@@ -32,12 +41,15 @@ type StoreItemPurchaseActionsProps = {
 
 type StoreItemPurchaseActionState = {
   cartItem: CartLineItemSnapshot | null;
+  /** null renders no status: an unavailable, unknown or unreadable offer shows the price only. */
   label: string | null;
   lowStockLabel?: string;
   statusTone: StoreItemPurchaseStatusTone;
+  availabilityState?: string;
+  expectedMonth?: string;
 };
 
-type StoreItemPurchaseStatusTone = 'neutral' | 'sold-out';
+type StoreItemPurchaseStatusTone = 'neutral' | 'sold-out' | 'incoming';
 
 const purchaseActionLayoutClasses = 'w-full sm:w-56 whitespace-normal';
 
@@ -51,14 +63,24 @@ export const STORE_ITEM_PURCHASE_ACTION_COPY = {
     'The album is out. We send the vinyl when the copies arrive. If the estimate changes we email you.',
   releasedPreorderHint: 'The music is out. We send your copy when it arrives. If the estimate changes we email you.',
   checking: 'Checking availability',
-  unavailable: 'Currently Unavailable',
 } as const;
 
 // The purchase control confirms in place: it reads Added for this long after a successful add.
 export const STORE_ITEM_ADDED_CONFIRMATION_MS = 4000;
 
-export function getStoreItemPurchaseStatusTone(label: string | null): StoreItemPurchaseStatusTone {
-  return label === 'Sold Out' ? 'sold-out' : 'neutral';
+// Label and tone follow the offer's typed state, never its label text.
+export function readStoreItemPurchaseStatus(
+  offer: PublicStoreOffer,
+): Pick<StoreItemPurchaseActionState, 'label' | 'statusTone' | 'availabilityState' | 'expectedMonth'> {
+  if (offer.catalogStatus === 'ready') return { label: null, statusTone: 'neutral' };
+  if (offer.catalogStatus !== 'sold_out') return { label: offer.availability.label || null, statusTone: 'neutral' };
+  const state = offer.availability.state;
+  return {
+    label: availabilityLabel(state),
+    statusTone: availabilityTone(state) ?? 'neutral',
+    availabilityState: state,
+    ...(isNotifiable(state) && offer.expectedMonth ? { expectedMonth: offer.expectedMonth } : {}),
+  };
 }
 
 // Returns true while no cart bridge acknowledged the add; the request then waits until the bridge connects.
@@ -105,24 +127,14 @@ export async function loadStoreItemPurchaseActionState(
     const resolvedCartItem = createCartLineItemSnapshotFromWorkerOffer(cartSeed, offer);
     const lowStockLabel =
       resolvedCartItem && offer.catalogStatus === 'ready' ? formatStoreLowStockLabel(offer.lowStockQuantity) : null;
-    const label = resolvedCartItem
-      ? null
-      : offer.catalogStatus === 'ready'
-        ? STORE_ITEM_PURCHASE_ACTION_COPY.unavailable
-        : offer.availability.label;
 
     return {
       cartItem: resolvedCartItem,
-      label,
+      ...(resolvedCartItem ? { label: null, statusTone: 'neutral' as const } : readStoreItemPurchaseStatus(offer)),
       ...(lowStockLabel ? { lowStockLabel } : {}),
-      statusTone: getStoreItemPurchaseStatusTone(label),
     };
   } catch {
-    return {
-      cartItem: null,
-      label: STORE_ITEM_PURCHASE_ACTION_COPY.unavailable,
-      statusTone: 'neutral',
-    };
+    return { cartItem: null, label: null, statusTone: 'neutral' };
   }
 }
 
@@ -131,6 +143,52 @@ export async function requestStoreCartAddFromSeed(cartSeed: StoreItemCartSeed, a
   const checkoutApi = api ?? (await import('./public-checkout-api')).createPublicCheckoutApi();
   const state = await loadStoreItemPurchaseActionState(checkoutApi, cartSeed);
   return { ...state, isQueued: state.cartItem ? requestStoreCartAddItem(state.cartItem) : false };
+}
+
+// Not buyable is information, not a control: a status in the purchase slot, never a disabled button. Coming Soon and
+// Repressing add their explanatory line and Notify me; an unlabelled state renders nothing.
+export function StoreItemPurchaseStatus({
+  api,
+  state,
+  storeItemSlug,
+}: {
+  api?: PublicCheckoutApi | undefined;
+  state: Pick<StoreItemPurchaseActionState, 'label' | 'statusTone' | 'availabilityState' | 'expectedMonth'>;
+  storeItemSlug: string | null;
+}) {
+  if (!state.label) return null;
+  const { availabilityState, expectedMonth } = state;
+  const status = (
+    <p
+      role="status"
+      aria-atomic="true"
+      data-store-item-purchase-status
+      data-store-item-purchase-tone={state.statusTone}
+      className={cn(
+        purchaseActionLayoutClasses,
+        'inline-flex min-h-11 items-center justify-center gap-2 border px-4 pt-px text-center font-display text-base leading-none tracking-[0.06em] text-foreground uppercase',
+        state.statusTone === 'sold-out' && 'border-[var(--store-accent)]',
+        state.statusTone === 'incoming' && 'border-dashed border-[#8c8c8c]',
+        state.statusTone === 'neutral' && 'border-[#767676]',
+      )}
+    >
+      {availabilityState === 'coming_soon' && <Disc3 aria-hidden="true" size={14} strokeWidth={1.75} />}
+      {availabilityState === 'repressing' && <RotateCw aria-hidden="true" size={14} strokeWidth={1.75} />}
+      {state.label}
+    </p>
+  );
+  if (!isNotifiable(availabilityState)) return status;
+  const month = expectedMonthText(expectedMonth);
+  return (
+    <div className="store-availability-status" data-store-item-availability={availabilityState}>
+      {status}
+      <p className="store-availability-note" data-store-item-availability-note>
+        {availabilityNote(availabilityState)}
+        {month && ` · ${month}`}
+      </p>
+      {storeItemSlug && <AvailabilityAlertForm api={api} storeItemSlug={storeItemSlug} />}
+    </div>
+  );
 }
 
 export default function StoreItemPurchaseActions({
@@ -146,7 +204,7 @@ export default function StoreItemPurchaseActions({
       ? { cartItem: null, label: null, statusTone: 'neutral' }
       : {
           cartItem,
-          label: cartItem ? null : STORE_ITEM_PURCHASE_ACTION_COPY.unavailable,
+          label: null,
           statusTone: 'neutral',
         },
   );
@@ -177,7 +235,7 @@ export default function StoreItemPurchaseActions({
     if (!cartSeed) {
       setPurchaseState({
         cartItem,
-        label: cartItem ? null : STORE_ITEM_PURCHASE_ACTION_COPY.unavailable,
+        label: null,
         statusTone: 'neutral',
       });
       setIsChecking(false);
@@ -196,11 +254,7 @@ export default function StoreItemPurchaseActions({
         if (isActive) setPurchaseState(nextState);
       } catch {
         if (isActive) {
-          setPurchaseState({
-            cartItem: null,
-            label: STORE_ITEM_PURCHASE_ACTION_COPY.unavailable,
-            statusTone: 'neutral',
-          });
+          setPurchaseState({ cartItem: null, label: null, statusTone: 'neutral' });
         }
       } finally {
         if (isActive) setIsChecking(false);
@@ -242,22 +296,7 @@ export default function StoreItemPurchaseActions({
   }
 
   if (!activeCartItem) {
-    // Not buyable is information, not a control: a status in the purchase slot, never a disabled button.
-    return (
-      <p
-        role="status"
-        aria-atomic="true"
-        data-store-item-purchase-status
-        data-store-item-purchase-tone={purchaseState.statusTone}
-        className={cn(
-          purchaseActionLayoutClasses,
-          'inline-flex min-h-11 items-center justify-center border px-4 pt-px text-center font-display text-base leading-none tracking-[0.06em] text-foreground uppercase',
-          purchaseState.statusTone === 'sold-out' ? 'border-[var(--store-accent)]' : 'border-[#767676]',
-        )}
-      >
-        {purchaseState.label ?? STORE_ITEM_PURCHASE_ACTION_COPY.unavailable}
-      </p>
-    );
+    return <StoreItemPurchaseStatus api={api} state={purchaseState} storeItemSlug={cartSeed?.storeItemSlug ?? null} />;
   }
 
   const addToCartButton = (

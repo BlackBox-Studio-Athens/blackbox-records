@@ -8,7 +8,13 @@ import { storeItemSlug } from '../../../../../test/support/commerce-value-object
 function snapshot(overrides: Partial<StoreOfferListingPriceSnapshotRecord> = {}): StoreOfferListingPriceSnapshotRecord {
   return {
     availability: { status: 'available', canBuy: true },
-    stock: { onlineQuantity: createStockQuantity(3), restockPlanned: false, showLowStock: false, preorder: null },
+    stock: {
+      onlineQuantity: createStockQuantity(3),
+      zeroStockState: 'sold_out',
+      expectedMonth: null,
+      showLowStock: false,
+      preorder: null,
+    },
     amountMinor: 2800,
     currencyCode: 'EUR',
     freshUntil: new Date('2026-07-16T13:00:00.000Z'),
@@ -76,18 +82,19 @@ describe('Store listing-price reader', () => {
   });
 
   it.each([
-    ['stocked', 'available', true, 2, false, 'stocked'],
-    ['depleted', 'available', true, 0, false, 'sold_out'],
-    ['restocking', 'sold_out', false, 0, true, 'out_of_stock'],
-    ['restock with stock', 'available', true, 2, true, 'stocked'],
-    ['paused and depleted', 'available', false, 0, false, 'unavailable'],
-    ['paused with stock', 'available', false, 2, true, 'unavailable'],
-    ['non-buyable with stock', 'sold_out', false, 2, false, 'unavailable'],
-    ['missing availability', null, false, 0, false, 'unavailable'],
-    ['missing stock', 'available', true, null, false, 'unavailable'],
+    ['stocked', 'available', true, 2, 'sold_out', 'stocked'],
+    ['depleted', 'available', true, 0, 'sold_out', 'sold_out'],
+    ['first pressing on the way', 'sold_out', false, 0, 'coming_soon', 'coming_soon'],
+    ['repress on the way', 'available', true, 0, 'repressing', 'repressing'],
+    ['Coming Soon with stock', 'available', true, 2, 'coming_soon', 'stocked'],
+    ['paused and depleted', 'available', false, 0, 'coming_soon', 'unavailable'],
+    ['paused with stock', 'available', false, 2, 'repressing', 'unavailable'],
+    ['non-buyable with stock', 'sold_out', false, 2, 'sold_out', 'unavailable'],
+    ['missing availability', null, false, 0, 'coming_soon', 'unavailable'],
+    ['missing stock as zero stock', 'available', true, null, 'sold_out', 'sold_out'],
   ] as const)(
     'classifies %s without discarding a valid price',
-    async (_case, status, canBuy, quantity, restockPlanned, expected) => {
+    async (_case, status, canBuy, quantity, zeroStockState, expected) => {
       const [record] = await readStoreListingPrices({
         listForListingPricePresentation: async () => [
           snapshot({
@@ -97,7 +104,8 @@ describe('Store listing-price reader', () => {
                 ? null
                 : {
                     onlineQuantity: createStockQuantity(quantity),
-                    restockPlanned,
+                    zeroStockState,
+                    expectedMonth: '2099-01',
                     showLowStock: false,
                     preorder: null,
                   },
@@ -106,6 +114,7 @@ describe('Store listing-price reader', () => {
       });
       expect(record).toEqual({
         availabilityState: expected,
+        ...(expected === 'coming_soon' || expected === 'repressing' ? { expectedMonth: '2099-01' } : {}),
         preorder: null,
         displayPrice: '€28.00',
         presentationState: 'ready',
@@ -125,7 +134,13 @@ describe('Store listing-price reader', () => {
     const [record] = await readStoreListingPrices({
       listForListingPricePresentation: async () => [
         snapshot({
-          stock: { onlineQuantity: createStockQuantity(quantity), restockPlanned: false, showLowStock, preorder: null },
+          stock: {
+            onlineQuantity: createStockQuantity(quantity),
+            zeroStockState: 'sold_out',
+            expectedMonth: null,
+            showLowStock,
+            preorder: null,
+          },
         }),
       ],
     });
@@ -145,7 +160,13 @@ describe('Store listing-price reader', () => {
       listForListingPricePresentation: async () => [
         snapshot({
           priceActive: false,
-          stock: { onlineQuantity: createStockQuantity(2), restockPlanned: false, showLowStock: true, preorder: null },
+          stock: {
+            onlineQuantity: createStockQuantity(2),
+            zeroStockState: 'sold_out',
+            expectedMonth: null,
+            showLowStock: true,
+            preorder: null,
+          },
         }),
       ],
     });
@@ -168,11 +189,11 @@ describe('Store listing-price reader', () => {
       expected: { shipEstimate: { kind: 'month', month: '2026-10', part: 'late' } },
     },
     {
-      name: 'sold out',
+      name: 'depleted, so closed for shoppers',
       estimate: { kind: 'date', date: '2026-10-04' },
       quantity: 0,
       priceActive: true,
-      expected: { shipEstimate: { kind: 'date', date: '2026-10-04' } },
+      expected: null,
     },
     {
       name: 'withheld and unpriced',
@@ -204,7 +225,8 @@ describe('Store listing-price reader', () => {
             priceActive,
             stock: {
               onlineQuantity: createStockQuantity(quantity),
-              restockPlanned: false,
+              zeroStockState: 'sold_out',
+              expectedMonth: null,
               showLowStock: true,
               preorder: { startedAt: '2026-09-01T10:00:00.000Z', shipEstimate: estimate },
             },
@@ -221,12 +243,52 @@ describe('Store listing-price reader', () => {
         ...(priceActive ? { displayPrice: '€28.00', ...(quantity ? { lowStockQuantity: quantity } : {}) } : {}),
         preorder: expected,
       });
-      expect(JSON.stringify(records)).not.toMatch(/startedAt|onlineQuantity|restockPlanned/);
+      expect(JSON.stringify(records)).not.toMatch(/startedAt|onlineQuantity|zeroStockState/);
       snapshots.listForListingPricePresentation.mockClear();
       expect(await readStoreListingPrices(snapshots, 'preorders', now)).toEqual(expected ? records : []);
       expect(snapshots.listForListingPricePresentation).toHaveBeenCalledExactlyOnceWith('preorders');
     },
   );
+
+  it.each([
+    ['an unpriced Coming Soon record', false, 'coming_soon', '2026-11', '2026-11'],
+    ['a ready Repressing record', true, 'repressing', '2026-11', '2026-11'],
+    ['a month passed in Athens', true, 'coming_soon', '2026-10', undefined],
+    ['a Sold Out record', true, 'sold_out', '2026-11', undefined],
+  ] as const)('carries the expected month for %s', async (_case, priceActive, zeroStockState, month, expected) => {
+    const [record] = await readStoreListingPrices(
+      {
+        listForListingPricePresentation: async () => [
+          snapshot({
+            priceActive,
+            stock: {
+              onlineQuantity: createStockQuantity(0),
+              zeroStockState,
+              expectedMonth: month,
+              showLowStock: true,
+              preorder: null,
+            },
+          }),
+        ],
+      },
+      undefined,
+      new Date('2026-10-31T22:30:00Z'),
+    );
+
+    expect(record?.availabilityState).toBe(zeroStockState);
+    expect(record?.expectedMonth).toBe(expected);
+    // Only the reported state and month leave the Worker: never the choice key, quantities or alert counts.
+    expect(Object.keys(record ?? {}).sort()).toEqual(
+      [
+        'availabilityState',
+        'preorder',
+        'presentationState',
+        'storeItemSlug',
+        ...(priceActive ? ['displayPrice'] : []),
+        ...(expected ? ['expectedMonth'] : []),
+      ].sort(),
+    );
+  });
 
   it('excludes ordinary stock and missing stock from the narrowed read', async () => {
     const snapshots = { listForListingPricePresentation: vi.fn(async () => [snapshot(), snapshot({ stock: null })]) };

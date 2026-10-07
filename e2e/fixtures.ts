@@ -24,7 +24,9 @@ function readyOffer(storeItemSlug: string) {
 }
 
 // The site opens no WebSockets; only Vite's hot-reload client does under astro dev, and its failures are not site errors.
-const devServerHotReloadSocket = "WebSocket connection to 'ws://";
+// Chromium reports the socket itself; Vite's client then logs its own connect and error-relay failures.
+const devServerHotReloadSocket =
+  /^(WebSocket connection to 'ws:\/\/|\[vite\] failed to connect to websocket|Failed to send error to Vite server)/;
 // Firefox logs a font download that a resize or navigation cancelled (NS_BINDING_ABORTED, 0x804B0002) as an error;
 // a missing or broken font reports another status and still fails.
 const firefoxCancelledFont = /downloadable font: download failed .*status=2152398850 /;
@@ -55,7 +57,7 @@ export const test = base.extend({
     diagnostics.dispose();
     expect(diagnostics.pageErrors, 'page errors').toEqual([]);
     const consoleErrors = diagnostics.consoleErrors.filter(
-      (message) => !message.startsWith(devServerHotReloadSocket) && !firefoxCancelledFont.test(message),
+      (message) => !devServerHotReloadSocket.test(message) && !firefoxCancelledFont.test(message),
     );
     expect(consoleErrors, 'console errors').toEqual([]);
   },

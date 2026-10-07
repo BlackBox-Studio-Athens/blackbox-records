@@ -85,11 +85,11 @@ describe('createHttpApp', () => {
     expect(response.headers.get('access-control-allow-origin')).toBe('http://127.0.0.1:4321');
   });
 
-  it('allows browser preflight for the protected stock restock-plan update', async () => {
+  it('allows browser preflight for the protected zero-stock state update', async () => {
     const app = createHttpApp();
 
     const response = await app.request(
-      'http://backend.test/api/internal/variants/variant-1/stock/restock-plan',
+      'http://backend.test/api/internal/variants/variant-1/stock/zero-stock-state',
       {
         method: 'OPTIONS',
         headers: {

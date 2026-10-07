@@ -1,4 +1,8 @@
-import type { StockRepository, StoreItemOptionRepository } from '../../../domain/commerce/repositories/spi';
+import type {
+  AvailabilityAlertRepository,
+  StockRepository,
+  StoreItemOptionRepository,
+} from '../../../domain/commerce/repositories/spi';
 import { parseVariantId } from '../../../domain/commerce';
 import { VariantNotFoundError } from './errors';
 import type { VariantStockDetail } from './types';
@@ -6,6 +10,7 @@ import type { VariantStockDetail } from './types';
 export async function readVariantStock(
   storeItemOptions: StoreItemOptionRepository,
   stock: StockRepository,
+  alerts: Pick<AvailabilityAlertRepository, 'countWaiting'>,
   variantId: unknown,
 ): Promise<VariantStockDetail> {
   const parsedVariantId = parseVariantId(variantId);
@@ -19,11 +24,13 @@ export async function readVariantStock(
 
   return {
     ...storeItem,
+    availabilityAlertCount: await alerts.countWaiting(parsedVariantId),
     stock: {
       revision: currentStock?.revision ?? null,
       quantity: currentStock?.quantity ?? 0,
       onlineQuantity: currentStock?.onlineQuantity ?? 0,
-      restockPlanned: currentStock?.restockPlanned ?? false,
+      zeroStockState: currentStock?.zeroStockState ?? 'sold_out',
+      expectedMonth: currentStock?.expectedMonth ?? null,
       showLowStock: currentStock?.showLowStock ?? false,
       preorder: currentStock?.preorder ?? null,
       updatedAt: currentStock?.updatedAt ?? null,

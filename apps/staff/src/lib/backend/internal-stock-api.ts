@@ -6,8 +6,8 @@ export type InternalStockDetail = InternalApiComponents['schemas']['InternalStoc
 export type InternalStockHistoryResponse = InternalApiComponents['schemas']['InternalStockHistoryResponse'];
 export type InternalStockChangeBody = InternalApiComponents['schemas']['InternalStockChangeBody'];
 export type InternalStockCountBody = InternalApiComponents['schemas']['InternalStockCountBody'];
-export type SetRestockPlannedBody = NonNullable<
-  InternalApiOperations['setRestockPlanned']['requestBody']
+export type SetZeroStockStateBody = NonNullable<
+  InternalApiOperations['setZeroStockState']['requestBody']
 >['content']['application/json'];
 export type SetShowLowStockBody = NonNullable<
   InternalApiOperations['setShowLowStock']['requestBody']
@@ -150,9 +150,9 @@ export function createInternalStockApi({ backendBaseUrl = '', fetcher = fetch }:
     readStock(variantId: string) {
       return fetchJson<InternalStockDetail>(`/api/internal/variants/${encodeURIComponent(variantId)}/stock`);
     },
-    setRestockPlanned(variantId: string, body: SetRestockPlannedBody) {
+    setZeroStockState(variantId: string, body: SetZeroStockStateBody) {
       return fetchJson<InternalStockDetail>(
-        `/api/internal/variants/${encodeURIComponent(variantId)}/stock/restock-plan`,
+        `/api/internal/variants/${encodeURIComponent(variantId)}/stock/zero-stock-state`,
         { method: 'PATCH', body: JSON.stringify(body) },
       );
     },

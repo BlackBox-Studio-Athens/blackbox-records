@@ -51,7 +51,9 @@ Expected copies SHALL be recorded as the ordinary stock quantity. A pre-order SH
 #### Scenario: Copies run out
 
 - **WHEN** effective online stock of a pre-order item reaches zero
-- **THEN** it reads its zero-stock state, Coming Soon, Repressing or Sold Out, and cannot be bought.
+- **THEN** the pre-order closes for shoppers: it reads its zero-stock state, Coming Soon, Repressing or Sold Out, with no pre-order badge or Pre-order control, and leaves the Pre-orders filter and the home page
+- **AND** the pre-order stays open for staff, so its paid orders remain Awaiting Stock until staff press Copies arrived or switch Pre-order off
+- **AND** if copies are added while it is still open, it sells as a pre-order again with its Ship Estimate.
 
 #### Scenario: Shopper reads pre-order copy
 
@@ -71,8 +73,8 @@ Store listing cards SHALL retain the supplied 5 October pre-order lifecycle comp
 #### Scenario: Active pre-order copies become unavailable
 
 - **WHEN** an active pre-order has no buyable copies
-- **THEN** its actual zero-stock badge, Coming Soon, Repressing or Sold Out, is visible beside a genuinely disabled gray Pre-order control as in the approved reference
-- **AND** ordering remains unavailable and ordinary unavailable cards keep their existing purchase-slot status treatment.
+- **THEN** the card reads like any zero-stock card: its Coming Soon, Repressing or Sold Out chip beside the price, with no pre-order badge and no Pre-order control
+- **AND** this replaces the earlier approved reference with a disabled gray Pre-order control.
 
 #### Scenario: Card metadata is long or the viewport is narrow
 

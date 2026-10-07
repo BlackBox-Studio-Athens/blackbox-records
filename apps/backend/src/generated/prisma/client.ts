@@ -103,3 +103,13 @@ export type PaidOrderDelivery = Prisma.PaidOrderDeliveryModel
  *
  */
 export type PreorderEstimateDelivery = Prisma.PreorderEstimateDeliveryModel
+/**
+ * Model AvailabilityAlert
+ *
+ */
+export type AvailabilityAlert = Prisma.AvailabilityAlertModel
+/**
+ * Model AvailabilityAlertSendDay
+ *
+ */
+export type AvailabilityAlertSendDay = Prisma.AvailabilityAlertSendDayModel

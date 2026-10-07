@@ -8,12 +8,13 @@ export interface OperatorStockRepository {
   initializeOpeningStock(
     operation: CatalogOperation,
     quantity: StockQuantity,
-    restockPlanned?: boolean,
+    zeroStock?: Pick<StockRecord, 'zeroStockState' | 'expectedMonth'>,
     now?: Date,
   ): Promise<boolean>;
-  setRestockPlanned(input: {
+  setZeroStockState(input: {
     expectedRevision: number | null;
-    restockPlanned: boolean;
+    zeroStockState: StockRecord['zeroStockState'];
+    expectedMonth: string | null;
     variantId: StockRecord['variantId'];
   }): Promise<StockRecord | null>;
   setShowLowStock(input: {

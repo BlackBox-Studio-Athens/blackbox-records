@@ -247,6 +247,7 @@ function createApi(overrides: Partial<PublicCheckoutApi>): PublicCheckoutApi {
     readStoreOffer: vi.fn(),
     readStoreOfferVariants: vi.fn(),
     registerNewsletterSignup: vi.fn(),
+    requestAvailabilityAlert: vi.fn(),
     startCheckout: vi.fn(),
     ...overrides,
   };

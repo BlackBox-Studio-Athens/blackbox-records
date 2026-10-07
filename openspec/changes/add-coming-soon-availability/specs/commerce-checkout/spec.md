@@ -4,7 +4,7 @@
 
 ### Requirement: Sold Out copy reflects confirmed online depletion
 
-When effective OnlineStock is exhausted without an independent selling pause, the Store Offer SHALL report the variant's staff-chosen zero-stock state: Coming Soon, Repressing or Sold Out, defaulting to Sold Out. Coming Soon and Repressing MAY carry an unexpired expected month. Other non-buyable conditions SHALL report Unavailable. The non-buyable offer SHALL carry the state as a typed field beside its label. The rule SHALL apply equally to BlackBox Releases and Distro items.
+When effective OnlineStock is exhausted without an independent selling pause, the Store Offer SHALL report the variant's staff-chosen zero-stock state: Coming Soon, Repressing or Sold Out, defaulting to Sold Out. Coming Soon and Repressing MAY carry an unexpired expected month. A missing stock record SHALL count as zero stock with the default. A missing availability record or an independent selling pause SHALL report the technical state unavailable, which shoppers never see as a label. The non-buyable offer SHALL carry the state as a typed field beside its label. The rule SHALL apply equally to BlackBox Releases and Distro items.
 
 #### Scenario: Depletion is confirmed
 
@@ -28,8 +28,9 @@ When effective OnlineStock is exhausted without an independent selling pause, th
 
 #### Scenario: Depletion is not established
 
-- **WHEN** availability or stock is missing, selling is independently paused, or non-buyable availability has positive effective stock
-- **THEN** the offer state is unavailable with label Unavailable
+- **WHEN** the availability record is missing, selling is independently paused, or non-buyable availability has positive effective stock
+- **THEN** the offer state is unavailable and the storefront shows no status label and no purchase action for it
+- **AND** a missing stock record instead reads as depleted stock with the zero-stock default, Sold Out
 - **AND** catalog-drift and checkout-capability messages retain their existing meanings.
 
 ### Requirement: Purchase status is clear without duplicate messaging
@@ -59,30 +60,31 @@ The storefront SHALL display the resolved non-buyable label in the approved comp
 
 - **WHEN** status renders on a narrow screen or with increased text size
 - **THEN** its text has at least 4.5:1 contrast, the control has a minimum 44px height, and there is no clipping or horizontal overflow
-- **AND** the status button is at most 14rem wide and approximately 54px high, with a subtle outline and transparent near-black face
+- **AND** the status is at most 14rem wide and approximately 54px high, with a transparent near-black face
 - **AND** pending busy feedback clears and the resolved purchase label is announced politely.
 
 #### Scenario: Purchase states share geometry
 
-- **WHEN** the action changes between Checking availability, Add To Cart, Coming Soon, Repressing, Sold Out, Checkout Paused, or Unavailable
+- **WHEN** the action changes between Checking availability, Add To Cart, Coming Soon, Repressing, Sold Out or Checkout Paused
 - **THEN** the control remains 224px wide and 54px high on desktop and fills the available action width on mobile
 - **AND** the enabled Add To Cart state retains its primary filled treatment while disabled states remain outlined.
 
 #### Scenario: Inventory states have a subtle visual distinction
 
 - **WHEN** effective online stock is exhausted
-- **THEN** Sold Out uses the subtle Store Blood outline, and Coming Soon and Repressing use the neutral gray outline
-- **AND** Checkout Paused and Unavailable use the neutral gray outline
+- **THEN** Sold Out uses a solid subtle Store Blood outline
+- **AND** Coming Soon and Repressing use a dashed neutral outline, the convention for "not here yet", with a small leading icon (a disc for Coming Soon, a circular arrow for Repressing) and a short line below: "First pressing on its way" or "More copies being pressed", followed by any shown expected month
+- **AND** Checkout Paused uses the neutral gray outline, and an unavailable offer renders no status control
 - **AND** styling does not determine purchase eligibility.
 
 ## ADDED Requirements
 
 ### Requirement: Cart and checkout reuse the availability vocabulary
 
-Cart lines and checkout review SHALL name a line that is no longer buyable with the same state label the item page would show: Coming Soon, Repressing, Sold Out or Unavailable. Catalog drift SHALL keep its Checkout Paused meaning.
+Cart lines and checkout review SHALL name a line that is no longer buyable with the same state label the item page would show: Coming Soon, Repressing or Sold Out. An unavailable line SHALL show no state label and SHALL still be blocked from checkout. Catalog drift SHALL keep its Checkout Paused meaning.
 
 #### Scenario: A cart line's item stops being buyable
 
 - **WHEN** a stored cart line's fresh offer reads Coming Soon
 - **THEN** the cart chip reads Coming Soon and the line cannot proceed to checkout
-- **AND** Out of Stock and Currently Unavailable are never shown.
+- **AND** Out of Stock, Currently Unavailable and Unavailable are never shown.

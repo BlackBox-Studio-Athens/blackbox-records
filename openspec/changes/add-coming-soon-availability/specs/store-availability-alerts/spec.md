@@ -8,7 +8,7 @@ Lets a shopper ask, with an email address and explicit one-off consent, to be to
 
 ### Requirement: Shoppers request a one-off availability alert
 
-The Store Item page SHALL offer Notify me only while the variant's Store Offer reads Coming Soon or Repressing. The form SHALL ask for an email address and an unticked one-off consent, with no account, and SHALL submit only the email, consent state and Store Item identity to the Worker. Consent copy SHALL state that one email is sent when the item can be bought or pre-ordered and that the address is not added to the newsletter.
+The Store Item page SHALL offer Notify me only while the variant's Store Offer reads Coming Soon or Repressing, as a quiet text action "Email me when it lands" with a small mail icon that opens the form in place. The form SHALL ask for an email address and an unticked one-off consent, with no account, and SHALL submit only the email, consent state and Store Item identity to the Worker. Consent copy SHALL read "Email me once when this can be bought or pre-ordered." The address SHALL NOT be added to the newsletter.
 
 #### Scenario: Shopper asks to be notified
 
@@ -19,7 +19,7 @@ The Store Item page SHALL offer Notify me only while the variant's Store Offer r
 
 #### Scenario: Offer is not eligible
 
-- **WHEN** the offer reads Buy, Pre-order, Sold Out or Unavailable, or cannot be read
+- **WHEN** the offer reads Buy, Pre-order or Sold Out, is unavailable, or cannot be read
 - **THEN** no Notify me form is shown
 - **AND** the Worker rejects an alert request for that variant with a provider-safe error and stores nothing.
 
@@ -74,7 +74,7 @@ The scheduled Worker job SHALL send each pending alert once when its variant cla
 
 #### Scenario: Variant is still not orderable
 
-- **WHEN** a scheduled run finds the variant Coming Soon, Repressing, Sold Out or Unavailable
+- **WHEN** a scheduled run finds the variant Coming Soon, Repressing, Sold Out or unavailable
 - **THEN** no email is sent and the alert stays pending until it becomes orderable or expires.
 
 #### Scenario: Provider fails

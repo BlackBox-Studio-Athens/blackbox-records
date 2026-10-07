@@ -16,6 +16,7 @@ import type {
   StockCountRecord,
   StockRecord,
 } from '../../../domain/commerce/repositories/spi';
+import type { ZeroStockState } from '../../../domain/commerce';
 import {
   RequestIdentityConflictError,
   type RequestIdentity,
@@ -25,7 +26,8 @@ type StockRow = {
   variantId: string;
   quantity: number;
   onlineQuantity: number;
-  restockPlanned: number;
+  zeroStockState: ZeroStockState;
+  expectedMonth: string | null;
   showLowStock: number;
   preorderStartedAt: string | null;
   preorderShipMonth: string | null;
@@ -61,12 +63,13 @@ type StockCountRow = {
 export class D1OperatorStockRepository implements OperatorStockRepository {
   public constructor(private readonly db: D1Database) {}
 
-  public async setRestockPlanned(input: {
+  public async setZeroStockState(input: {
     expectedRevision: number | null;
-    restockPlanned: boolean;
+    zeroStockState: ZeroStockState;
+    expectedMonth: string | null;
     variantId: StockRecord['variantId'];
   }): Promise<StockRecord | null> {
-    return this.setStockFlag('restockPlanned', input.restockPlanned, input);
+    return this.setStockColumns({ zeroStockState: input.zeroStockState, expectedMonth: input.expectedMonth }, input);
   }
 
   public async setShowLowStock(input: {
@@ -74,28 +77,29 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
     showLowStock: boolean;
     variantId: StockRecord['variantId'];
   }): Promise<StockRecord | null> {
-    return this.setStockFlag('showLowStock', input.showLowStock, input);
+    return this.setStockColumns({ showLowStock: input.showLowStock ? 1 : 0 }, input);
   }
 
-  private async setStockFlag(
-    column: 'restockPlanned' | 'showLowStock',
-    value: boolean,
+  /** Revision-checked write of setting columns; creates a zero-quantity row when the variant has no stock yet. */
+  private async setStockColumns(
+    values: { showLowStock: number } | { zeroStockState: ZeroStockState; expectedMonth: string | null },
     input: { expectedRevision: number | null; variantId: StockRecord['variantId'] },
   ): Promise<StockRecord | null> {
     const timestamp = new Date().toISOString();
+    const columns = Object.keys(values).map((column) => `"${column}"`);
     const row = await this.db
       .prepare(
         [
-          `INSERT INTO "Stock" ("id", "variantId", "quantity", "onlineQuantity", "${column}", "revision", "createdAt", "updatedAt")`,
-          `SELECT ?, ?, 0, 0, ?, 0, ?, ? WHERE ? IS NULL OR EXISTS (SELECT 1 FROM "Stock" WHERE "variantId" = ?)`,
-          `ON CONFLICT ("variantId") DO UPDATE SET "${column}" = excluded."${column}", "revision" = "Stock"."revision" + 1, "updatedAt" = excluded."updatedAt"`,
+          `INSERT INTO "Stock" ("id", "variantId", "quantity", "onlineQuantity", ${columns.join(', ')}, "revision", "createdAt", "updatedAt")`,
+          `SELECT ?, ?, 0, 0, ${columns.map(() => '?').join(', ')}, 0, ?, ? WHERE ? IS NULL OR EXISTS (SELECT 1 FROM "Stock" WHERE "variantId" = ?)`,
+          `ON CONFLICT ("variantId") DO UPDATE SET ${columns.map((column) => `${column} = excluded.${column}`).join(', ')}, "revision" = "Stock"."revision" + 1, "updatedAt" = excluded."updatedAt"`,
           `WHERE "Stock"."revision" = ? RETURNING *`,
         ].join('\n'),
       )
       .bind(
         crypto.randomUUID(),
         input.variantId,
-        value ? 1 : 0,
+        ...Object.values(values),
         timestamp,
         timestamp,
         input.expectedRevision,
@@ -201,7 +205,10 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
   public async initializeOpeningStock(
     operation: CatalogOperation,
     quantity: ReturnType<typeof createStockQuantity>,
-    restockPlanned = false,
+    zeroStock: Pick<StockRecord, 'zeroStockState' | 'expectedMonth'> = {
+      zeroStockState: 'sold_out',
+      expectedMonth: null,
+    },
     now = new Date(),
   ): Promise<boolean> {
     const opening = createStockQuantity(quantity);
@@ -238,10 +245,19 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
         ),
       this.db
         .prepare(
-          `INSERT INTO "Stock" (id, variantId, quantity, onlineQuantity, restockPlanned, revision, createdAt, updatedAt)
-           SELECT ?, ?, ?, ?, ?, 0, ?, ? WHERE changes() = 1`,
+          `INSERT INTO "Stock" (id, variantId, quantity, onlineQuantity, zeroStockState, expectedMonth, revision, createdAt, updatedAt)
+           SELECT ?, ?, ?, ?, ?, ?, 0, ?, ? WHERE changes() = 1`,
         )
-        .bind(crypto.randomUUID(), operation.variantId, opening, opening, restockPlanned ? 1 : 0, timestamp, timestamp),
+        .bind(
+          crypto.randomUUID(),
+          operation.variantId,
+          opening,
+          opening,
+          zeroStock.zeroStockState,
+          zeroStock.expectedMonth,
+          timestamp,
+          timestamp,
+        ),
       this.db
         .prepare(
           `INSERT INTO "StockChange" (id, variantId, quantityDelta, reason, notes, actorEmail, recordedAt)
@@ -502,7 +518,7 @@ export class D1OperatorStockRepository implements OperatorStockRepository {
   private async readStock(variantId: string): Promise<StockRecord | null> {
     const row = await this.db
       .prepare(
-        `SELECT "variantId", "quantity", "onlineQuantity", "restockPlanned", "showLowStock",
+        `SELECT "variantId", "quantity", "onlineQuantity", "zeroStockState", "expectedMonth", "showLowStock",
                 "preorderStartedAt", "preorderShipMonth", "preorderShipPart", "preorderShipDate",
                 "revision", "createdAt", "updatedAt"
          FROM "Stock"
@@ -567,7 +583,8 @@ function mapStock(row: StockRow): StockRecord {
     variantId: parseVariantId(row.variantId),
     quantity: createStockQuantity(row.quantity),
     onlineQuantity: createStockQuantity(row.onlineQuantity),
-    restockPlanned: row.restockPlanned === 1,
+    zeroStockState: row.zeroStockState,
+    expectedMonth: row.expectedMonth,
     showLowStock: row.showLowStock === 1,
     preorder: stockPreorderFromColumns(row),
     revision: row.revision,

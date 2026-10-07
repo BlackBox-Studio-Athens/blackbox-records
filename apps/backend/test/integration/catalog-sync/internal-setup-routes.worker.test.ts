@@ -25,7 +25,8 @@ it('protects setup and completes one draft through the bound CMS service', async
     },
     itemType: 'Vinyl 12-inch',
     openingQuantity: 10,
-    restockPlanned: true,
+    zeroStockState: 'coming_soon',
+    expectedMonth: '2099-11',
     price: { kind: 'fixed', currencyCode: 'EUR', amountMinor: 2200 },
   };
   let source: unknown = null;
@@ -49,6 +50,10 @@ it('protects setup and completes one draft through the bound CMS service', async
       [command, { 'content-type': 'application/json' }, 403],
       [{ ...command, actorEmail: 'forged@example.com' }, headers, 400],
       [{ ...command, stripeProductId: 'prod_injected' }, headers, 400],
+      [{ ...command, restockPlanned: true }, headers, 400],
+      [{ ...command, zeroStockState: 'out_of_stock' }, headers, 400],
+      [{ ...command, expectedMonth: '2020-01' }, headers, 400],
+      [{ ...command, expectedMonth: '2099-13' }, headers, 400],
     ] as const) {
       expect(
         (
@@ -91,7 +96,8 @@ it('protects setup and completes one draft through the bound CMS service', async
     expect(await db.stock.findUnique({ where: { variantId: result.variantId } })).toMatchObject({
       quantity: 10,
       onlineQuantity: 10,
-      restockPlanned: true,
+      zeroStockState: 'coming_soon',
+      expectedMonth: '2099-11',
     });
     expect(await db.storeItemOption.findUnique({ where: { variantId: result.variantId } })).toMatchObject({
       catalogAvailability: 'withheld',

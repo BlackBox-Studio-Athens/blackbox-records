@@ -4,13 +4,13 @@
 
 ### Requirement: Availability terms are canonical
 
-The system SHALL name physical availability with one vocabulary: Buy for orderable stock, Pre-order for orderable copies not yet here, Coming Soon for copies on the way that cannot be ordered yet, Repressing for a sold-out edition being pressed again, Sold Out for an edition with no more copies planned, and Unavailable for any other non-orderable state. Shopper copy SHALL write them in Title Case. Identifiers SHALL use stocked, coming_soon, repressing, sold_out and unavailable.
+The system SHALL name physical availability with one vocabulary: Buy for orderable stock, Pre-order for orderable copies not yet here, Coming Soon for copies on the way that cannot be ordered yet, Repressing for a sold-out edition being pressed again, and Sold Out for an edition with no more copies planned. Shopper copy SHALL write them in Title Case. Identifiers SHALL use stocked, coming_soon, repressing and sold_out; `unavailable` names only a technical selling pause and has no shopper label.
 
 #### Scenario: Zero stock is described
 
 - **WHEN** specs, code, tests, docs or UI copy describe an edition with no copies available online
 - **THEN** they use Coming Soon, Repressing or Sold Out according to the staff choice
-- **AND** they do not use Out of Stock, Currently Unavailable, Back soon, Awaiting stock or coming later.
+- **AND** they do not use Out of Stock, Currently Unavailable, Unavailable, Back soon, Awaiting stock or coming later.
 
 #### Scenario: Coming Soon and Pre-order differ
 

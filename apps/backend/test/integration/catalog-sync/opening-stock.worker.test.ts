@@ -48,7 +48,7 @@ it.each([0, 10])('initializes %i opening units once and preserves later movement
       await stock.initializeOpeningStock(
         operation,
         createStockQuantity(quantity),
-        false,
+        undefined,
         new Date(Date.now() + 120_000),
       ),
     ).toBe(false);
@@ -81,7 +81,8 @@ it.each([0, 10])('initializes %i opening units once and preserves later movement
     expect(await db.stock.findUnique({ where: { variantId } })).toMatchObject({
       quantity,
       onlineQuantity: quantity,
-      restockPlanned: false,
+      zeroStockState: 'sold_out',
+      expectedMonth: null,
       revision: 0,
     });
     const history = await db.stockChange.findMany({ where: { variantId } });
