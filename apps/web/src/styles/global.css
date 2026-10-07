@@ -5799,7 +5799,6 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   position: relative;
   z-index: 1;
   scroll-margin-top: calc(var(--header-height) + 2rem);
-  margin-top: 4rem;
   background: var(--background);
 }
 

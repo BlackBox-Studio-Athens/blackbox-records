@@ -72,6 +72,8 @@ describe('Homepage hero CSS', () => {
     const homeSurfacesRule = readCssBlock('.home-news-section,\n  .home-preorders,\n  .artists-surface-section,');
     expect(homeSurfacesRule).toMatch(/position:\s*relative/i);
     expect(homeSurfacesRule).toMatch(/z-index:\s*1/i);
+    // A transparent gap under the hero would show the fixed photo unshaded before the pre-orders.
+    expect(readCssBlock('\n.home-preorders {')).not.toMatch(/(^|\s)margin(-top)?:/i);
     expect(artistsSurfaceRule).toMatch(/background-color:\s*rgb\(20 20 20 \/ 78%\)/i);
     expect(newsletterVeilRule).toMatch(/background:\s*rgb\(13 13 13 \/ 74%\)/i);
     expect(cardRule).toMatch(/background-color:\s*#141414/i);

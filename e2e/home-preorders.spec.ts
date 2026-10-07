@@ -588,6 +588,13 @@ test('Home video and photo chapters keep controls reachable without overflow fro
         .poll(async () => (await chapter(page).locator('[data-preorder-ambient]').boundingBox())?.width)
         .toBeCloseTo(availableWidth, 0);
     }
+    // A gap under the hero would expose the fixed hero photo unshaded.
+    const heroGap = await page.evaluate(
+      () =>
+        document.querySelector('#preorders')!.getBoundingClientRect().top -
+        document.querySelector('#homepage-hero-section')!.getBoundingClientRect().bottom,
+    );
+    expect(heroGap, `${width}px gap under the hero`).toBeCloseTo(0, 0);
     for (const purchase of await showcase.getByRole('link', { name: 'Pre-order', exact: true }).all()) {
       await purchase.scrollIntoViewIfNeeded();
       expect(Math.round((await purchase.boundingBox())!.height), `${width}px purchase target`).toBeGreaterThanOrEqual(
