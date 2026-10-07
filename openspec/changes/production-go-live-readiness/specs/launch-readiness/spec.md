@@ -34,7 +34,7 @@ The system MUST block unrestricted PRD native-commerce launch until required pre
 
 ### Requirement: Restricted paid beta has explicit scope and receipts
 
-The system MUST restrict the paid beta to the approved cohort and finite order limit, retain an immediate checkout stop, and enable ordinary Stripe payment and refund receipts. The owner-accepted deferral of fiscal-provider/myDATA/credit and filing automation MUST remain unresolved evidence for full public launch; it MUST NOT be represented as a legal exemption or successful fiscal acceptance.
+The system MUST restrict the paid beta to the approved cohort and finite order limit, retain an immediate checkout stop, and enable ordinary Stripe payment and refund receipts. Availability-alert sends MUST stay suppressed while PRD checkout is closed or restricted to beta. The owner-accepted deferral of fiscal-provider/myDATA/credit and filing automation MUST remain unresolved evidence for full public launch; it MUST NOT be represented as a legal exemption or successful fiscal acceptance.
 
 #### Scenario: A beta customer pays
 
@@ -57,6 +57,14 @@ The system MUST restrict the paid beta to the approved cohort and finite order l
 - **THEN** the switch uses refreshed inventory, source-session drain and verified target configuration
 - **AND** earlier orders retain their original account, seller and monetary history, with access and funding for old-account refunds/disputes
 - **AND** beta success alone does not authorize full public launch or mark fiscal work complete.
+
+#### Scenario: Availability alerts are due before public selling
+
+- **GIVEN** PRD checkout is closed or restricted to beta
+- **WHEN** scheduled delivery runs with due availability alerts
+- **THEN** availability-alert sending is suppressed and pending requests retain their existing retention policy
+- **AND** paid-order delivery and estimate notices continue normally
+- **AND** availability alerts resume only for approved public selling.
 
 ### Requirement: Exact launch tree
 
