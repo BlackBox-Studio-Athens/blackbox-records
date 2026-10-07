@@ -6659,6 +6659,9 @@ html[data-store-coverflow-capable]
     position: sticky;
     top: calc(var(--header-height) + 1rem);
     align-self: start;
+    /* A pane taller than the viewport keeps its end reachable without scrolling the results to their end. */
+    max-height: calc(100dvh - var(--header-height) - 2rem);
+    overflow-y: auto;
   }
 
   .store-artists-picker {
