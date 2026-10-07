@@ -10,6 +10,94 @@ import {
 
 const main = 'main[data-app-shell-main]';
 
+test('News is the final section and preserves the player through navigation and article overlays', async ({
+  page,
+  isMobile,
+}) => {
+  await page.route(/^https:\/\/(bandcamp\.com|embed\.tidal\.com)\//, (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
+  );
+  await page.goto('releases/');
+  await waitForShell(page);
+  await plantSentinel(page);
+
+  await page.locator('[data-music-streaming-service-embedded-player-trigger]').first().click();
+  const player = page.getByRole('dialog', { name: 'Music player' });
+  const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
+  await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
+  await iframe.contentFrame().getByRole('button', { name: 'Player fixture' }).click();
+  await page.getByRole('button', { name: 'Minimize player' }).click();
+  await expect(player).toBeHidden();
+  const originalIframe = await iframe.elementHandle();
+
+  const menu = page.locator('[data-app-shell-mobile-navigation-trigger]');
+  if (isMobile) await menu.click();
+  const navigation = page.getByRole('navigation', { name: isMobile ? 'Mobile' : 'Primary' });
+  const news = navigation.getByRole('link', { name: 'News', exact: true });
+  await expect(navigation.getByRole('link').last()).toHaveText('News');
+  await news.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/blackbox-records\/news\/$/);
+  await expect(page.locator(main).getByRole('heading', { level: 1, name: 'News' })).toBeVisible();
+  await expect(page.locator(main)).toBeFocused();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+  await expect(page.locator('header [data-nav-link="/news/"]')).toHaveAttribute('aria-current', 'page');
+  if (isMobile) {
+    await expect(navigation).toBeHidden();
+    await expect(menu).toHaveAttribute('aria-expanded', 'false');
+  }
+  await expect(page.locator('footer').getByRole('link', { name: 'News', exact: true })).toHaveCount(0);
+
+  await page.locator(`${main} a.prose-card-link[href*="/news/"]`).first().click();
+  const article = page.getByRole('dialog');
+  await expect(article.locator('[data-app-shell-overlay-kind="news"]')).toBeVisible();
+  await page.getByRole('button', { name: 'Close detail view' }).click();
+  await expect(article).toBeHidden();
+  await expect(page).toHaveURL(/\/blackbox-records\/news\/$/);
+  await expect(page.locator('header [data-nav-link="/news/"]')).toHaveAttribute('aria-current', 'page');
+  expect(await sentinelIntact(page)).toBe(true);
+  expect(await originalIframe!.evaluate((element) => element.isConnected)).toBe(true);
+
+  await page.getByRole('button', { name: 'Open player' }).click();
+  await expect(player).toBeVisible();
+  expect(await originalIframe!.evaluate((element) => element.isConnected)).toBe(true);
+});
+
+test('News remains last and the main navigation fits phone and desktop widths', async ({ page }) => {
+  for (const width of [320, 390, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto('news/');
+    await waitForShell(page);
+    if (width < 1024) await page.locator('[data-app-shell-mobile-navigation-trigger]').click();
+    const navigation = page.getByRole('navigation', { name: width < 1024 ? 'Mobile' : 'Primary' });
+    const links = navigation.getByRole('link');
+    await expect(links).toHaveText([
+      ...(width < 1024 ? ['Home'] : []),
+      'Artists',
+      'Releases',
+      'Store',
+      'Services',
+      'Who we are',
+      'News',
+    ]);
+    await expect(links.last()).toHaveAttribute('aria-current', 'page');
+    await expect
+      .poll(async () => {
+        const box = await navigation.boundingBox();
+        return box ? box.x + box.width : Infinity;
+      })
+      .toBeLessThanOrEqual(width);
+    for (const link of await links.all()) {
+      const box = await link.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+      if (width < 1024) expect(box!.height).toBeGreaterThanOrEqual(44);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  }
+});
+
 test('header section link swaps main in place and shows the delayed Store status', async ({ page, isMobile }) => {
   test.skip(isMobile, 'The primary header navigation is desktop only.');
   await page.goto('./');
