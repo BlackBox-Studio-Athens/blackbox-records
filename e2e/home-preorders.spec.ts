@@ -397,10 +397,69 @@ test('Home stays empty without buyable pre-orders and never reads static candida
   await waitForIsland(page, 'StorePreorderShowcase');
   await expect.poll(fixture.reads).toEqual({ listingReads: 1, candidateReads: 0 });
   await expect(page.getByRole('region', { name: 'Pre-orders', exact: true })).toHaveCount(0);
+  // The hero still offers the Store, but never a pre-orders link without a showcase to reach.
+  const hero = page.locator('#homepage-hero-section');
+  await expect(hero.getByRole('link', { name: 'Browse the Store' })).toBeVisible();
+  await expect(hero.locator('.homepage-hero-section__preorders-link')).toBeHidden();
   expect(fixture.providerRequests).toEqual([]);
   const sitemap = await page.request.get('sitemap.xml');
   expect(sitemap.ok()).toBe(true);
   expect(await sitemap.text()).not.toContain('preorder-showcase.json');
+});
+
+test('Home hero links to the Store and to open pre-orders, on one line at phone widths and without a Scroll label', async ({
+  page,
+}) => {
+  await stubShowcase(page, 'photo');
+  await page.goto('./');
+  await waitForShell(page);
+  await expect(page.getByRole('region', { name: 'Pre-orders', exact: true })).toBeVisible();
+
+  const hero = page.locator('#homepage-hero-section');
+  await expect(hero.getByText('Records from our artists and the distro.')).toBeVisible();
+  await expect(hero.getByRole('link', { name: 'Browse the Store' })).toHaveAttribute('href', /\/store\/$/);
+  await expect(hero).not.toContainText(/scroll/i);
+
+  for (const width of [390, 320, 280]) {
+    await page.setViewportSize({ width, height: 844 });
+    await page.evaluate(() => document.fonts.ready);
+    const layout = await page.evaluate(() => {
+      const box = (selector: string) => document.querySelector(selector)!.getBoundingClientRect();
+      const line = box('.homepage-hero-section__store-line');
+      return {
+        logoLeft: box('header img').left,
+        mottoLeft: box('.homepage-hero-section__tagline-text').left,
+        lineLeft: line.left,
+        lineRight: line.right,
+        lineHeight: line.height,
+        lineLeading: parseFloat(
+          getComputedStyle(document.querySelector('.homepage-hero-section__store-line')!).lineHeight,
+        ),
+        links: [...document.querySelectorAll('.homepage-hero-section__actions a')].map((link) => {
+          const rect = link.getBoundingClientRect();
+          return { left: rect.left, right: rect.right, height: rect.height };
+        }),
+      };
+    });
+    expect(layout.mottoLeft, `${width}px motto`).toBeCloseTo(layout.logoLeft, 0);
+    expect(layout.lineLeft, `${width}px store line`).toBeCloseTo(layout.logoLeft, 0);
+    expect(layout.lineRight, `${width}px store line`).toBeLessThanOrEqual(width - layout.logoLeft + 0.5);
+    expect(layout.lineHeight, `${width}px store line`).toBeLessThan(layout.lineLeading * 1.5);
+    expect(layout.links).toHaveLength(2);
+    for (const link of layout.links) {
+      expect(link.height, `${width}px link`).toBeGreaterThanOrEqual(44);
+      expect(link.left, `${width}px link`).toBeGreaterThanOrEqual(layout.logoLeft - 0.5);
+      expect(link.right, `${width}px link`).toBeLessThanOrEqual(width - layout.logoLeft + 0.5);
+    }
+  }
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await hero.getByRole('link', { name: 'See pre-orders' }).click();
+  await expect(page).toHaveURL(/\/#preorders$/);
+  // The section lands at its scroll margin, clear of the fixed site header.
+  await expect
+    .poll(() => page.locator('#preorders').evaluate((section) => Math.round(section.getBoundingClientRect().top)))
+    .toBe(112);
 });
 
 test('Home chapters use fresh prices and explicit Watch, close and clip switching before shell navigation', async ({

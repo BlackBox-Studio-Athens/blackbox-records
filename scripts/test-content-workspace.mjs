@@ -117,7 +117,6 @@ const data = {
       tagline: 'Music made together',
       image: { id: media[0].id },
       image_alt: 'Band portrait',
-      scroll_indicator_text: 'Explore',
     },
     news: { title: 'News', link_text: 'Read more', link_url: '/news/' },
     artists: { title: 'Artists', button_text: 'Meet the roster', button_link: '/artists/' },

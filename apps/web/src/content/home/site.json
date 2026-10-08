@@ -3,8 +3,7 @@
   "hero": {
     "tagline": "No borders.\nNo genres.\nJust records.",
     "image": "./hero-live-band.jpg",
-    "image_alt": "Black and white live band performing on stage",
-    "scroll_indicator_text": "Scroll"
+    "image_alt": "Black and white live band performing on stage"
   },
   "news": {
     "title": "News",

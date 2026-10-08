@@ -195,7 +195,8 @@ export function createHomeContentSchema<TImage extends z.ZodType>(image: () => T
       tagline: requiredProseSchema,
       image: image(),
       image_alt: requiredAltText,
-      scroll_indicator_text: requiredText,
+      // Retired: stored Home records still carry it, so it stays accepted; nothing renders or edits it.
+      scroll_indicator_text: z.string().optional(),
     }),
     news: z.object({
       title: requiredText,

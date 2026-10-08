@@ -816,7 +816,6 @@ export default function ContentFields({
         <h2 className="col-span-full text-lg font-semibold">Opening content</h2>
         {field('hero.tagline', 'Opening text', { multiline: true })}
         {image('hero.image', 'hero.image_alt', 'Home image')}
-        {field('hero.scroll_indicator_text', 'Scroll hint')}
         <details className="col-span-full">
           <summary className="min-h-11 cursor-pointer">News — currently hidden on the website</summary>
           <div className="grid gap-6">

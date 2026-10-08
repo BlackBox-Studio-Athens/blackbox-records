@@ -3,15 +3,16 @@ import Prose from '@/components/Prose.astro';
 import MottoWordCycleLoader from './MottoWordCycleLoader';
 import type { ImageMetadata } from 'astro';
 import { Image } from 'astro:assets';
+import { buttonVariants } from '@/components/ui/button';
+import { createProjectRelativeUrl } from '@/platform/config/site';
 import { editorialImageQuality, largestImageWidth } from '@/platform/lib/editorial-image';
 interface Props {
   tagline: import('@blackbox/content-model').Prose;
   image: ImageMetadata;
   imageAlt: string;
-  scrollIndicatorText?: string;
 }
 
-const { tagline, image, imageAlt, scrollIndicatorText = 'Scroll' } = Astro.props;
+const { tagline, image, imageAlt } = Astro.props;
 const heroImageWidths = [900, 1400];
 ---
 
@@ -36,10 +37,22 @@ const heroImageWidths = [900, 1400];
       <Prose class="homepage-hero-section__tagline-text" value={tagline} data-content-path="hero.tagline" />
     </motto-word-cycle>
     <MottoWordCycleLoader client:load />
+    <p class="homepage-hero-section__store-line">Records from our artists and the distro.</p>
+    <div class="homepage-hero-section__actions">
+      <a href={createProjectRelativeUrl('/store/')} data-astro-prefetch class={buttonVariants({ size: 'lg' })}>
+        Browse the Store
+      </a>
+      <!-- Shown only while the pre-orders showcase is on the page; see .homepage-hero-section__preorders-link. -->
+      <a
+        href="#preorders"
+        class={buttonVariants({ variant: 'outline', size: 'lg', className: 'homepage-hero-section__preorders-link' })}
+      >
+        See pre-orders
+      </a>
+    </div>
   </div>
 
   <div class="homepage-hero-section__scroll-indicator" aria-hidden="true">
-    <span>{scrollIndicatorText}</span>
     <div class="homepage-hero-section__scroll-indicator-line">
       <span></span>
     </div>

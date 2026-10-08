@@ -3065,6 +3065,22 @@ body {
     text-shadow: 0 0 20px rgba(0, 0, 0, 0.38);
   }
 
+  .homepage-hero-section__store-line {
+    margin: 1.5rem 0 0;
+    color: #d0d0d0;
+    font-size: 1rem;
+    line-height: 1.55;
+    white-space: nowrap;
+    text-shadow: 0 0 20px rgba(0, 0, 0, 0.38);
+  }
+
+  .homepage-hero-section__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
   motto-word-cycle {
     display: contents;
   }
@@ -3129,11 +3145,6 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.42rem;
-    color: var(--muted-foreground);
-    font-size: 0.65rem;
-    letter-spacing: 0.26em;
-    text-transform: uppercase;
     opacity: 1;
   }
 
@@ -3519,11 +3530,11 @@ body.is-app-shell-overlay-open {
     letter-spacing: 0.03em;
   }
 
-  /* The motto block sits centred in the viewport; its lines stay left-aligned because the word cycle reserves
-     the widest word's width, which would leave a gap in centred lines. */
+  /* The hero block sits centred vertically and spans the gutter, so the motto, store line and buttons share the
+     logo's left edge. */
   .homepage-hero-section__content-block {
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
     padding-top: var(--header-height);
     padding-bottom: 3rem;
   }
@@ -3534,15 +3545,18 @@ body.is-app-shell-overlay-open {
     line-height: 1;
   }
 
-  .homepage-hero-section__scroll-indicator > span {
-    display: none;
+  /* Scales down with the viewport so the line never wraps, down to 280px phones. */
+  .homepage-hero-section__store-line {
+    font-size: min(0.9375rem, 4.4vw);
+  }
+
+  /* The buttons share one row and wrap to full-width rows when they cannot fit. */
+  .homepage-hero-section__actions > a {
+    flex: 1 1 auto;
   }
 
   .homepage-hero-section__scroll-indicator {
     bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
-    gap: 0.34rem;
-    font-size: 0.58rem;
-    letter-spacing: 0.2em;
   }
 
   .homepage-hero-section__scroll-indicator-line {
@@ -6114,6 +6128,17 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   z-index: 1;
   scroll-margin-top: calc(var(--header-height) + 2rem);
   background: var(--background);
+}
+
+/* The hero's See pre-orders link exists only while the showcase renders, which the Worker decides at runtime.
+   Unlayered so these rules outrank the button's inline-flex utility. */
+.homepage-hero-section__preorders-link {
+  display: none;
+  border-bottom: 2px solid var(--preorder-accent);
+}
+
+#main:has(#preorders) .homepage-hero-section__preorders-link {
+  display: inline-flex;
 }
 
 .home-preorders__header {
