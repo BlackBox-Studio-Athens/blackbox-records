@@ -74,6 +74,10 @@ describe('Homepage hero CSS', () => {
     expect(homeSurfacesRule).toMatch(/z-index:\s*1/i);
     // A transparent gap under the hero would show the fixed photo unshaded before the pre-orders.
     expect(readCssBlock('\n.home-preorders {')).not.toMatch(/(^|\s)margin(-top)?:/i);
+    // So would a border on the section itself: the fixed photo paints over its parent's border, outside the shade.
+    expect(shadeRule).toMatch(/border-bottom:\s*1px solid/i);
+    const heroMarkup = readFileSync(new URL('../components/editorial/HomeHero.astro', import.meta.url), 'utf8');
+    expect(heroMarkup).toMatch(/<section class="homepage-hero-section" id="homepage-hero-section">/);
     expect(artistsSurfaceRule).toMatch(/background-color:\s*rgb\(20 20 20 \/ 78%\)/i);
     expect(newsletterVeilRule).toMatch(/background:\s*rgb\(13 13 13 \/ 74%\)/i);
     expect(cardRule).toMatch(/background-color:\s*#141414/i);

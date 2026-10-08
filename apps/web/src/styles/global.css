@@ -3010,10 +3010,13 @@ body {
     animation-delay: 0.08s;
   }
 
+  /* The hero's bottom rule belongs here, not on the section: the fixed photo paints over its parent's border, so a
+     section border would show a strip of the unshaded photo that changes as the page scrolls. */
   .homepage-hero-section__shade-layer {
     position: absolute;
     inset: 0;
     z-index: 1;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 70%, #050505);
     background:
       linear-gradient(
         180deg,
