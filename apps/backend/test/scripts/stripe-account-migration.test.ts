@@ -368,7 +368,7 @@ function fixture(environment: 'uat' | 'prd' = 'uat') {
     db
       .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
       .all()
-      .map((row) => ({ name: row.name, rows: db.prepare(`SELECT * FROM "${row.name}"`).all() }));
+      .map((row) => ({ name: row.name, rows: db.prepare(`SELECT * FROM "${String(row.name)}"`).all() }));
   return {
     db,
     cmsDb,
