@@ -1,0 +1,7 @@
+<!-- rotate-origin: 5 8 -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="currentColor">
+<g id="bbx-cassette-spin-left-rotor">
+<path d="M5.5 8.46L5.8 8.98L5.45 9.18L5.15 8.66ZM4.85 8.66L4.55 9.18L4.2 8.98L4.5 8.46ZM4.35 8.2L3.75 8.2L3.75 7.8L4.35 7.8ZM4.5 7.54L4.2 7.02L4.55 6.82L4.85 7.34ZM5.15 7.34L5.45 6.82L5.8 7.02L5.5 7.54Z" fill="#a5a5a5"/>
+<path d="M5.65 7.75L6.25 7.75L6.25 8.25L5.65 8.25Z" fill="#f5f5f5"/>
+</g>
+</svg>

@@ -10,6 +10,7 @@
 - [x] Update DESIGN.md and add the store-listing-price-presentation delta; strict OpenSpec validation passes.
 - [x] Browser pass on the Local stack, run `pnpm validate` and record evidence.
 - [x] Give Store card Buy the Listen chrome and the Rim add record mark (`StoreBuyIcon.tsx`); keep the label in its own span so Adding and Added keep the mark.
+- [x] Replace the mark with layered vinyl, CD and cassette icons chosen by format, with one flick on press, mouse entry or keyboard focus and none under reduced motion.
 - [x] Keep Pre-order's filled primary face and hide the mark there.
 - [x] Update the source, unit and Playwright assertions; split the Releases Buy vinyl checks from the Store card Buy.
 - [x] Update DESIGN.md, the proposal, design and store-listing-price-presentation delta, and add the release-catalog-presentation delta; strict OpenSpec validation passes.

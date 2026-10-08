@@ -6,7 +6,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import MusicStreamingServiceListenTrigger from '@/components/music/MusicStreamingServiceListenTrigger.astro';
 import StoreBuyIcon from '@/components/store/StoreBuyIcon';
 import { createPricedCartSeedForStorePage } from '@/components/store/store-page-data';
-import type { StoreCardImageLoadingMode, StoreCollectionEntry } from '@/lib/store-collection';
+import {
+  getStoreDistroFormatGroup,
+  type StoreCardImageLoadingMode,
+  type StoreCollectionEntry,
+} from '@/lib/store-collection';
 import { largestImageWidth } from '@/platform/lib/editorial-image';
 interface Props {
   coverflowEnrolled?: boolean;
@@ -127,7 +131,7 @@ const widths = [240, 360, 480, 640, 720];
             data-store-item-slug={storeItem.slug}
             hidden
           >
-            <StoreBuyIcon />
+            <StoreBuyIcon formatGroup={getStoreDistroFormatGroup(entry)} />
             <span data-store-card-buy-label>Buy</span>
           </button>
         )}

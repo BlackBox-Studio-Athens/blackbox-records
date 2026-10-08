@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="currentColor">
+  <defs>
+    <linearGradient id="bbx-cd-base-silver" gradientUnits="userSpaceOnUse" x1="1" y1="1" x2="14" y2="14">
+      <stop offset="0" stop-color="#f3f5f3"/>
+      <stop offset="0.2" stop-color="#9fa9b0"/>
+      <stop offset="0.43" stop-color="#eef1ee"/>
+      <stop offset="0.62" stop-color="#bdc5c6"/>
+      <stop offset="0.8" stop-color="#e5e8e5"/>
+      <stop offset="1" stop-color="#69747d"/>
+    </linearGradient>
+    <linearGradient id="bbx-cd-base-rim" gradientUnits="userSpaceOnUse" x1="2.5" y1="1" x2="12.5" y2="14">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.35" stop-color="#c3ccd1"/>
+      <stop offset="0.65" stop-color="#f2f4ee"/>
+      <stop offset="1" stop-color="#505d68"/>
+    </linearGradient>
+    <linearGradient id="bbx-cd-base-rainbow-ne" gradientUnits="userSpaceOnUse" x1="8" y1="0" x2="15" y2="7">
+      <stop offset="0" stop-color="#a394d7" stop-opacity="0"/>
+      <stop offset="0.17" stop-color="#9a81d5" stop-opacity="0.62"/>
+      <stop offset="0.33" stop-color="#66addb" stop-opacity="0.66"/>
+      <stop offset="0.46" stop-color="#64d3cd" stop-opacity="0.58"/>
+      <stop offset="0.6" stop-color="#d1df8c" stop-opacity="0.58"/>
+      <stop offset="0.73" stop-color="#eed09b" stop-opacity="0.63"/>
+      <stop offset="0.86" stop-color="#d792ac" stop-opacity="0.6"/>
+      <stop offset="1" stop-color="#d792ac" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="bbx-cd-base-rainbow-sw" gradientUnits="userSpaceOnUse" x1="0" y1="8" x2="7" y2="15">
+      <stop offset="0" stop-color="#d99db9" stop-opacity="0"/>
+      <stop offset="0.16" stop-color="#d493b0" stop-opacity="0.56"/>
+      <stop offset="0.3" stop-color="#edd79c" stop-opacity="0.55"/>
+      <stop offset="0.45" stop-color="#bcde99" stop-opacity="0.48"/>
+      <stop offset="0.59" stop-color="#62ccc5" stop-opacity="0.63"/>
+      <stop offset="0.73" stop-color="#6da6d7" stop-opacity="0.67"/>
+      <stop offset="0.86" stop-color="#a895d6" stop-opacity="0.57"/>
+      <stop offset="1" stop-color="#a895d6" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="bbx-cd-base-reflection" gradientUnits="userSpaceOnUse" x1="1" y1="13.5" x2="14" y2="1.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.3" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.43" stop-color="#ffffff" stop-opacity="0.19"/>
+      <stop offset="0.51" stop-color="#ffffff" stop-opacity="0.86"/>
+      <stop offset="0.57" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="0.72" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="bbx-cd-base-hub" gradientUnits="userSpaceOnUse" cx="7.5" cy="7.5" r="2">
+      <stop offset="0" stop-color="#e9f0f1" stop-opacity="0.17"/>
+      <stop offset="0.5" stop-color="#e9f0f1" stop-opacity="0.17"/>
+      <stop offset="0.62" stop-color="#e2e9e8" stop-opacity="0.27"/>
+      <stop offset="0.8" stop-color="#84929c" stop-opacity="0.11"/>
+      <stop offset="0.93" stop-color="#dce4e8" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#ecf0ee" stop-opacity="0.86"/>
+    </radialGradient>
+    <clipPath id="bbx-cd-base-data-clip">
+      <path d="M14.5 7.5A7 7 0 1 0 0.5 7.5A7 7 0 1 0 14.5 7.5ZM9.5 7.5A2 2 0 1 0 5.5 7.5A2 2 0 1 0 9.5 7.5Z" fill-rule="evenodd" clip-rule="evenodd"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#bbx-cd-base-data-clip)">
+    <path d="M14.5 7.5A7 7 0 1 0 0.5 7.5A7 7 0 1 0 14.5 7.5ZM9.5 7.5A2 2 0 1 0 5.5 7.5A2 2 0 1 0 9.5 7.5Z" fill="url(#bbx-cd-base-silver)" fill-rule="evenodd"/>
+    <path d="M14 7.5A6.5 6.5 0 1 0 1 7.5A6.5 6.5 0 1 0 14 7.5ZM10 7.5A2.5 2.5 0 1 0 5 7.5A2.5 2.5 0 1 0 10 7.5Z" fill="#7c8791" fill-opacity="0.1" fill-rule="evenodd"/>
+    <path d="M7.5 7.5L8.5 0H15V7Z" fill="url(#bbx-cd-base-rainbow-ne)"/>
+    <path d="M7.5 7.5L6.5 15H0V8Z" fill="url(#bbx-cd-base-rainbow-sw)"/>
+    <path d="M14.5 7.5A7 7 0 1 0 0.5 7.5A7 7 0 1 0 14.5 7.5ZM9.5 7.5A2 2 0 1 0 5.5 7.5A2 2 0 1 0 9.5 7.5Z" fill="url(#bbx-cd-base-reflection)" fill-rule="evenodd"/>
+    <path d="M14 7.5A6.5 6.5 0 1 0 1 7.5A6.5 6.5 0 1 0 14 7.5ZM13.75 7.5A6.25 6.25 0 1 0 1.25 7.5A6.25 6.25 0 1 0 13.75 7.5Z" fill="#f3f6f0" fill-opacity="0.24" fill-rule="evenodd"/>
+    <path d="M10.25 7.5A2.75 2.75 0 1 0 4.75 7.5A2.75 2.75 0 1 0 10.25 7.5ZM10 7.5A2.5 2.5 0 1 0 5 7.5A2.5 2.5 0 1 0 10 7.5Z" fill="#66737d" fill-opacity="0.33" fill-rule="evenodd"/>
+    <path d="M10 7.5A2.5 2.5 0 1 0 5 7.5A2.5 2.5 0 1 0 10 7.5ZM9.75 7.5A2.25 2.25 0 1 0 5.25 7.5A2.25 2.25 0 1 0 9.75 7.5Z" fill="#f6f8f4" fill-opacity="0.48" fill-rule="evenodd"/>
+  </g>
+  <path d="M14.5 7.5A7 7 0 1 0 0.5 7.5A7 7 0 1 0 14.5 7.5ZM14.25 7.5A6.75 6.75 0 1 0 0.75 7.5A6.75 6.75 0 1 0 14.25 7.5Z" fill="url(#bbx-cd-base-rim)" fill-rule="evenodd"/>
+  <path d="M9.75 7.5A2.25 2.25 0 1 0 5.25 7.5A2.25 2.25 0 1 0 9.75 7.5ZM9.5 7.5A2 2 0 1 0 5.5 7.5A2 2 0 1 0 9.5 7.5Z" fill="#55616a" fill-opacity="0.68" fill-rule="evenodd"/>
+  <path d="M9.5 7.5A2 2 0 1 0 5.5 7.5A2 2 0 1 0 9.5 7.5ZM8.5 7.5A1 1 0 1 0 6.5 7.5A1 1 0 1 0 8.5 7.5Z" fill="url(#bbx-cd-base-hub)" fill-rule="evenodd"/>
+  <path d="M8.75 7.5A1.25 1.25 0 1 0 6.25 7.5A1.25 1.25 0 1 0 8.75 7.5ZM8.5 7.5A1 1 0 1 0 6.5 7.5A1 1 0 1 0 8.5 7.5Z" fill="#d0dade" fill-opacity="0.52" fill-rule="evenodd"/>
+</svg>

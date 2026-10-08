@@ -87,11 +87,11 @@ function buyButton(storeItemSlug: string) {
     getAttribute: (name: string) => attributes.get(name) ?? null,
     removeAttribute: (name: string) => attributes.delete(name),
     setAttribute: (name: string, value: string) => attributes.set(name, value),
-    addEventListener: (_type: string, listener: (event: Event) => void) => {
-      pressListener = listener;
+    addEventListener: (type: string, listener: (event: Event) => void) => {
+      if (type === 'click') pressListener = listener;
     },
-    removeEventListener: () => {
-      pressListener = undefined;
+    removeEventListener: (type: string) => {
+      if (type === 'click') pressListener = undefined;
     },
     press: () => pressListener?.({ currentTarget: button } as unknown as Event),
     cardLink,

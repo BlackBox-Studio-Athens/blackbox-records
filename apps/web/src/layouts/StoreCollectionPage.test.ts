@@ -91,9 +91,9 @@ describe('Store collection category surfaces', () => {
     const buyButton = /<button\b[^>]*\sdata-store-card-buy=[^>]*>[\s\S]*?<\/button>/.exec(storeItemCardSource)?.[0];
     expect(buyButton).toContain('data-store-card-buy-label="Buy"');
     expect(buyButton).toMatch(
-      /\shidden\s*>\s*<StoreBuyIcon\s*\/>\s*<span data-store-card-buy-label>Buy<\/span>\s*<\/button>/,
+      /\shidden\s*>\s*<StoreBuyIcon formatGroup=\{getStoreDistroFormatGroup\(entry\)\} \/>\s*<span data-store-card-buy-label>Buy<\/span>\s*<\/button>/,
     );
-    expect(storeBuyIconSource).toMatch(/<svg className="store-buy-icon"[^>]*aria-hidden="true"/);
+    expect(storeBuyIconSource).toMatch(/<span className="store-buy-icon" aria-hidden="true">/);
   });
 
   it('links a Release item artist above the card link', () => {

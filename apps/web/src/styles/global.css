@@ -5310,6 +5310,42 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   display: none;
 }
 
+/* Stacked full-canvas layers; each spin layer turns about the origin StoreBuyIcon sets from its file.
+   StoreListingPricePresentation marks the button for one flick on press, mouse entry or keyboard focus. */
+.store-buy-icon {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.store-buy-icon img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes store-buy-icon-flick {
+  from {
+    rotate: 0turn;
+  }
+
+  to {
+    rotate: 1turn;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-store-card-buy-flick] .store-buy-icon__spin {
+    animation-name: store-buy-icon-flick;
+    animation-duration: 1s;
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.35, 1);
+  }
+}
+
 /* Primary button with a 3px Sea green base line. Hover and focus fill the face; the line then disappears into it.
    Size and footprint stay the button's own. */
 .preorder-action {
