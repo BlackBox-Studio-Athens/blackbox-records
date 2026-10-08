@@ -1164,6 +1164,7 @@ body {
   /* Grid and Coverflow read as one switch; the pressed side takes the ink face. */
   .store-coverflow-view-switch {
     display: inline-flex;
+    flex-wrap: wrap;
     flex: 1 1 100%;
     gap: 0.25rem;
     border: 1px solid #333333;

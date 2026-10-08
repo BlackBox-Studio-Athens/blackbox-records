@@ -212,7 +212,7 @@ test('international cart notice preserves the player across cart actions and Sto
   );
   const drawer = await openCart(page);
   await drawer.getByRole('button', { name: 'Continue Shopping', exact: true }).click();
-  await page.locator('[data-music-streaming-service-embedded-player-trigger]').first().click();
+  await page.locator('[data-music-streaming-service-embedded-player-trigger]:visible').first().click();
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
   await iframe.contentFrame().getByRole('button', { name: 'Player fixture', exact: true }).click();

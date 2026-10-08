@@ -155,6 +155,13 @@ export async function main(command, target, { fetch = globalThis.fetch, env = pr
     validateWorker(release, worker);
     const store = await fetch(capabilitiesUrl, { cache: 'no-store', signal: AbortSignal.timeout(30_000) });
     validateWorker(release, store, 'Store Durable Object');
+    if (target === 'uat') {
+      assert.equal(
+        (await store.json()).nativeCheckout.enabled,
+        false,
+        'UAT checkout must be closed during a software release.',
+      );
+    }
   }
   if (command === 'verify-hosted') {
     const current = await json(`${site}/release.json`);

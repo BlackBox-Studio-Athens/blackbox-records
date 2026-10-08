@@ -88,3 +88,11 @@ describe('hosted Durable Object code updates', () => {
       );
   });
 });
+
+describe('UAT deployment checkout gate', () => {
+  it('leaves the checkout override to the operator instead of reopening it on deployment', () => {
+    const uat = readFileSync(backend('wrangler.jsonc'), 'utf8').split('"uat":')[1]?.split('"prd":')[0];
+    expect(uat).toBeDefined();
+    expect(uat).not.toContain('"NATIVE_CHECKOUT_ENABLED"');
+  });
+});

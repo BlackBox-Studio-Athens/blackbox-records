@@ -226,6 +226,24 @@ test('verify-hosted prd refuses the UAT review marker', async (t) => {
   );
 });
 
+test('UAT post-deployment checks accept a closed gate and refuse a reopened gate', async (t) => {
+  t.mock.method(console, 'log', () => {});
+  const uatBackend = backend.replace('-prd.', '-uat.');
+  const uatSite = 'https://blackbox-records-web-uat.pages.dev';
+  const headers = { 'X-Release-SHA': sha, 'X-Release-Run-Number': '10' };
+  const env = { ...prdEnv, UAT_PUBLIC_BACKEND_BASE_URL: uatBackend };
+  const routes = (enabled) => ({
+    [`OPTIONS ${uatBackend}/api/store/capabilities`]: () => new Response(null, { status: 204, headers }),
+    [`${uatBackend}/api/store/capabilities`]: capabilities(enabled, headers),
+    [`${uatSite}/release.json`]: released,
+    [`${uatSite}/?release=${sha}`]: reply('<title>[UAT] Home</title>UAT · TESTING ONLY', headers),
+  });
+  for (const command of ['verify-worker', 'verify-hosted']) {
+    await main(command, 'uat', { env, fetch: canned(routes(false)) });
+    await assert.rejects(main(command, 'uat', { env, fetch: canned(routes(true)) }), /UAT checkout must be closed/);
+  }
+});
+
 test('verify-worker refuses a Worker from an older run', async () => {
   const fetch = canned({
     [preflightUrl]: preflight({ 'X-Release-SHA': sha, 'X-Release-Run-Number': '9' }),
