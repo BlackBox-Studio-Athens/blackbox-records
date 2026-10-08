@@ -1,5 +1,8 @@
 import { normalizeAppPathname } from '@/components/app-shell/routing';
-import { sanitizeStoreListingPricePlaceholders } from '@/components/store/StoreListingPricePresentation';
+import {
+  sanitizeStoreArtistChrome,
+  sanitizeStoreListingPricePlaceholders,
+} from '@/components/store/StoreListingPricePresentation';
 import { sanitizeReleaseCatalogPresentation } from '@/components/editorial/release-presentation';
 
 export type ShellPageSnapshot = {
@@ -160,7 +163,7 @@ function sanitizeShellMainSnapshot(root: ParentNode) {
     }
     const summary = toolbar.querySelector<HTMLElement>('[data-store-search-summary]');
     if (summary) summary.textContent = '';
-    toolbar.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+    toolbar.querySelectorAll<HTMLButtonElement>('button:not([data-store-artists-trigger])').forEach((button) => {
       button.disabled = true;
       button.hidden = true;
     });
@@ -168,19 +171,7 @@ function sanitizeShellMainSnapshot(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-search-active]').forEach((element) => {
     element.removeAttribute('data-store-search-active');
   });
-  root.querySelectorAll<HTMLElement>('[data-store-artists]').forEach((element) => {
-    const select = element.querySelector<HTMLSelectElement>('select');
-    if (select) {
-      select.disabled = true;
-      select.value = '';
-    }
-    const fieldset = element.querySelector<HTMLFieldSetElement>('fieldset');
-    if (fieldset) fieldset.disabled = true;
-    element.querySelectorAll<HTMLInputElement>('input[name="store-artist"]').forEach((radio) => {
-      radio.checked = radio.value === '';
-      radio.toggleAttribute('checked', radio.value === '');
-    });
-  });
+  sanitizeStoreArtistChrome(root);
   root.querySelectorAll<HTMLElement>('[data-store-empty-results], [data-store-result-total]').forEach((element) => {
     element.hidden = true;
   });

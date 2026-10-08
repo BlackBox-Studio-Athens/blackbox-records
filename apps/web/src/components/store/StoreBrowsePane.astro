@@ -7,10 +7,8 @@ interface Props {
   resultsId: string;
 }
 const { entries, resultsId } = Astro.props;
-const choices = [
-  { key: '', label: 'All artists', count: entries.length },
-  ...getStoreArtistChoices(entries.map(({ storeItem }) => ({ artist: storeItem.subtitle }))),
-];
+// No ticked artist means all artists, so there is no All artists choice.
+const choices = getStoreArtistChoices(entries.map(({ storeItem }) => ({ artist: storeItem.subtitle })));
 ---
 
 <aside class="store-browse-pane">

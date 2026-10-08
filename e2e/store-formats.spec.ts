@@ -433,14 +433,24 @@ test('phone Store shows Distro formats without opening a disclosure and selects 
   expect(await cards.count()).toBe(Number(await cds.locator('span').last().innerText()));
   for (const card of await cards.all()) await expect(card).toHaveAttribute('data-distro-format-key', key);
   const artist = await cards.first().getAttribute('data-store-artist');
-  const picker = page.getByRole('combobox', { name: 'Artist', exact: true });
-  const artistOption = await picker
-    .locator('option')
-    .evaluateAll(
-      (options, name) => options.find((option) => option.textContent?.startsWith(`${name} (`))!.getAttribute('value')!,
-      artist,
-    );
-  await picker.selectOption(artistOption);
+  const artistsChip = page.getByRole('button', { name: /^Artists/ });
+  await artistsChip.click();
+  const sheet = page.getByRole('dialog', { name: 'Artists' });
+  await sheet
+    .locator('[data-store-artist-option]')
+    .filter({ hasText: `${artist} (` })
+    .first()
+    .getByRole('checkbox')
+    .check();
+  await expect(sheet.locator('[data-store-artist-selected-label]')).toHaveText('Selected · 1');
+  await sheet.getByRole('button', { name: /^Show \d+ items?$/ }).click();
+  await expect(sheet).toBeHidden();
+  await expect(artistsChip).toBeFocused();
+  await expect(artistsChip).toHaveText('Artists · 1');
+  const filterRow = await page
+    .locator('[data-store-artists-trigger], [data-store-clear-filters]')
+    .evaluateAll((nodes) => nodes.map((node) => Math.round(node.getBoundingClientRect().top)));
+  expect(new Set(filterRow).size).toBe(1);
   await page.getByRole('searchbox', { name: 'Search Store' }).fill(await cards.first().locator('h2').innerText());
   await expect(cards.first()).toHaveAttribute('data-store-artist', artist!);
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
@@ -449,6 +459,63 @@ test('phone Store shows Distro formats without opening a disclosure and selects 
   await page.screenshot({ path: '.codex-artifacts/e2e/distro-layouts/mobile.png' });
   await cards.first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: '.codex-artifacts/e2e/distro-layouts/mobile-cards.png' });
+});
+
+test('desktop Store artist filter combines several ticked artists with find and clearing', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('store/distro/');
+  await waitForShell(page);
+  const pane = page.getByRole('group', { name: 'Artists' });
+  await expect(pane.getByRole('checkbox').first()).toBeEnabled();
+  await expect(pane.getByText('All artists')).toHaveCount(0);
+  await expect(page.locator('[data-store-artists-trigger]')).toBeHidden();
+  const options = pane.locator('[data-store-artist-options] input');
+  const [first, second] = await options.evaluateAll((nodes) =>
+    nodes.slice(2, 4).map((node) => node.getAttribute('value')!),
+  );
+  await pane.locator(`input[value="${first}"]`).check();
+  const secondBox = pane.locator(`input[value="${second}"]`);
+  await secondBox.focus();
+  await page.keyboard.press('Space');
+  await expect(secondBox).toBeFocused();
+  await expect(pane.locator('[data-store-artist-selected-label]')).toHaveText('Selected · 2');
+  await expect(pane.locator('[data-store-artist-selected-list] input')).toHaveCount(2);
+  const cards = page.locator('[data-distro-search-item]:visible');
+  expect(await cards.count()).toBeGreaterThan(0);
+  const shown = await cards.evaluateAll((nodes) =>
+    nodes.map((node) =>
+      node.getAttribute('data-store-artist')!.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase(),
+    ),
+  );
+  expect(new Set(shown)).toEqual(new Set([first, second]));
+  await expect(page.locator('[data-store-search-summary]')).toHaveText(
+    `${shown.length} ${shown.length === 1 ? 'item' : 'items'}`,
+  );
+
+  const find = pane.getByRole('searchbox', { name: 'Find an artist' });
+  await find.fill('no-artist-has-this-name');
+  await expect(pane.getByText('No artist matches.', { exact: true })).toBeVisible();
+  await expect(pane.locator('[data-store-artist-selected-list] input')).toHaveCount(2);
+  await find.fill('');
+  await expect(cards).toHaveCount(shown.length);
+
+  const clearFilters = page.getByRole('button', { name: 'Clear filters', exact: true });
+  await expect(clearFilters).toHaveCSS('font-weight', '700');
+  await expect(clearFilters).toHaveCSS('font-size', '16px');
+  await pane.getByRole('button', { name: 'Clear', exact: true }).click();
+  await expect(pane.locator('input:checked')).toHaveCount(0);
+  await expect(pane.locator('[data-store-artist-selected]')).toBeHidden();
+  await expect(clearFilters).toBeHidden();
+  expect(await options.evaluateAll((nodes) => nodes.slice(2, 4).map((node) => node.getAttribute('value')))).toEqual([
+    first,
+    second,
+  ]);
+
+  await pane.locator(`input[value="${first}"]`).check();
+  await clearFilters.click();
+  await expect(pane.locator('input:checked')).toHaveCount(0);
+  await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
 test('Distro catalog keeps its alphabetical order through format, search and Coverflow changes', async ({ page }) => {

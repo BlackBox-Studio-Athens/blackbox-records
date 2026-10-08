@@ -8,6 +8,8 @@ import type { StoreItemCartSeed } from '@/components/store/checkout/StoreItemPur
 import { preorderBadges } from '@/platform/lib/preorder-estimate';
 import { availabilityChipText } from '@/platform/lib/availability-copy';
 
+import { resetStoreArtistControls, resetStoreArtistsTrigger } from './store-artist-options';
+
 export const STORE_LISTING_PRICE_COPY = {
   loading: 'Checking price',
   unavailable: 'Price unavailable',
@@ -34,6 +36,12 @@ function setStoreCardBuyLabel(button: HTMLButtonElement, label: string) {
   (button.querySelector?.<HTMLElement>('[data-store-card-buy-label]') ?? button).textContent = label;
 }
 
+/** Resets the Artists checklist, its phone sheet and the toolbar Artists chip to their disabled server state. */
+export function sanitizeStoreArtistChrome(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>('[data-store-artists]').forEach(resetStoreArtistControls);
+  root.querySelectorAll<HTMLButtonElement>('[data-store-artists-trigger]').forEach(resetStoreArtistsTrigger);
+}
+
 /** Snapshots keep the server chrome and reset its state before the next enhancement. */
 export function sanitizeStoreSearchChrome(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-search-toolbar]').forEach((toolbar) => {
@@ -46,24 +54,12 @@ export function sanitizeStoreSearchChrome(root: ParentNode) {
     }
     const summary = toolbar.querySelector<HTMLElement>('[data-store-search-summary]');
     if (summary) summary.textContent = '';
-    toolbar.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+    toolbar.querySelectorAll<HTMLButtonElement>('button:not([data-store-artists-trigger])').forEach((button) => {
       button.disabled = true;
       button.hidden = true;
     });
   });
-  root.querySelectorAll<HTMLElement>('[data-store-artists]').forEach((host) => {
-    const select = host.querySelector<HTMLSelectElement>('select');
-    if (select) {
-      select.disabled = true;
-      select.value = '';
-    }
-    const fieldset = host.querySelector<HTMLFieldSetElement>('fieldset');
-    if (fieldset) fieldset.disabled = true;
-    host.querySelectorAll<HTMLInputElement>('input[name="store-artist"]').forEach((radio) => {
-      radio.checked = radio.value === '';
-      radio.toggleAttribute('checked', radio.value === '');
-    });
-  });
+  sanitizeStoreArtistChrome(root);
   root.querySelectorAll<HTMLElement>('[data-store-empty-results], [data-store-result-total]').forEach((element) => {
     element.hidden = true;
   });

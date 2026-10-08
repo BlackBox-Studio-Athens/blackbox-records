@@ -1,10 +1,19 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { Search } from 'lucide-react';
+import { memo, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { ChevronDown, Search, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createExactFirstSearcher } from '@/lib/exact-first-search';
-import { scrollElementWithLenis } from '@/platform/lib/lenis-scroll';
+import { acquireLenisModalLock, scrollElementWithLenis } from '@/platform/lib/lenis-scroll';
+
+import {
+  filterStoreArtistOptions,
+  normalizeStoreArtist,
+  placeStoreArtistOptions,
+  resetStoreArtistControls,
+  resetStoreArtistsTrigger,
+  setStoreArtistsTrigger,
+} from './store-artist-options';
 
 import {
   createStoreCoverflowController,
@@ -153,9 +162,7 @@ export function getDistroSearchResultState(visibleCount: number) {
   };
 }
 
-export function normalizeStoreArtist(artist: string) {
-  return artist.normalize('NFC').trim().replace(/\s+/gu, ' ').toLowerCase();
-}
+export { normalizeStoreArtist };
 
 export function getStoreArtistChoices(items: readonly Pick<DistroSearchItem, 'artist'>[]) {
   const choices = new Map<string, { key: string; label: string; count: number }>();
@@ -179,28 +186,40 @@ type StoreArtistControlsProps = {
 export function StoreArtistControls({ choices, resultsId }: StoreArtistControlsProps) {
   return (
     <>
-      {/* Phones get the native picker; the desktop pane keeps the radio list. CSS shows one. */}
-      <label className="store-artists-picker">
-        <span>Artist</span>
-        <select defaultValue="" disabled aria-controls={resultsId} data-store-artist-select>
-          {choices.map((choice) => (
-            <option key={choice.key} value={choice.key}>
-              {choice.label} ({choice.count})
-            </option>
-          ))}
-        </select>
-      </label>
-      <fieldset className="store-artists" disabled>
+      {/* The desktop pane shows this list; on phones the island moves it into the sheet below while it is open. */}
+      <fieldset className="store-artists" disabled data-store-artist-fieldset>
         <legend>Artists</legend>
-        <p id="store-artists-help">Artist or label credits from this catalogue.</p>
-        <div className="store-artists-list" data-lenis-scroll-root>
-          {choices.map((choice) => (
-            <label key={choice.key}>
+        <p id="store-artists-help">Tick one or more.</p>
+        <input
+          type="search"
+          className="store-artists-find"
+          placeholder="Find an artist"
+          aria-label="Find an artist"
+          aria-controls="store-artists-options"
+          data-store-artist-find
+        />
+        <div className="store-artists-selected" hidden data-store-artist-selected>
+          <div className="store-artists-selected__head">
+            <span data-store-artist-selected-label>Selected · 0</span>
+            <button type="button" className="store-artists-clear" data-store-artist-clear>
+              Clear
+            </button>
+          </div>
+          <div className="store-artists-selected__list" data-store-artist-selected-list />
+        </div>
+        <div id="store-artists-options" className="store-artists-list" data-lenis-scroll-root data-store-artist-options>
+          {choices.map((choice, index) => (
+            <label
+              key={choice.key}
+              data-store-artist-option
+              data-store-artist-index={index}
+              data-store-artist-name={choice.key}
+            >
               <input
-                type="radio"
+                type="checkbox"
                 name="store-artist"
                 value={choice.key}
-                defaultChecked={choice.key === ''}
+                aria-controls={resultsId}
                 aria-describedby="store-artists-help"
               />
               <span>
@@ -209,49 +228,133 @@ export function StoreArtistControls({ choices, resultsId }: StoreArtistControlsP
             </label>
           ))}
         </div>
+        <p className="store-artists-no-match" hidden data-store-artist-no-match>
+          No artist matches.
+        </p>
       </fieldset>
+      <dialog
+        id="store-artists-sheet"
+        className="store-artists-sheet"
+        aria-labelledby="store-artists-sheet-title"
+        data-store-artists-sheet
+      >
+        <div className="store-artists-sheet__head">
+          <h2 id="store-artists-sheet-title" tabIndex={-1}>
+            Artists
+          </h2>
+          <Button type="button" variant="outline" size="icon-lg" aria-label="Close" data-store-artists-sheet-close>
+            <X aria-hidden="true" />
+          </Button>
+        </div>
+        <div className="store-artists-sheet__body" data-lenis-scroll-root data-store-artists-sheet-body />
+        <div className="store-artists-sheet__foot">
+          <Button type="button" size="lg" className="store-artists-sheet__show" data-store-artists-sheet-done>
+            Show items
+          </Button>
+        </div>
+      </dialog>
     </>
   );
 }
 
+type StoreArtistSelection = ReadonlySet<string>;
+
 // Enhance the server controls without replacing them. Query changes never touch this list.
 const StoreArtistPicker = memo(function StoreArtistPicker({
-  artist,
+  artists,
   host,
-  onArtistChange,
+  onArtistsChange,
+  visibleLabel,
 }: {
-  artist: string;
+  artists: StoreArtistSelection;
   host: HTMLElement;
-  onArtistChange: (artist: string) => void;
+  onArtistsChange: Dispatch<SetStateAction<StoreArtistSelection>>;
+  visibleLabel: string;
 }) {
   useEffect(() => {
-    const select = host.querySelector<HTMLSelectElement>('[data-store-artist-select]');
-    const fieldset = host.querySelector<HTMLFieldSetElement>('fieldset');
+    const fieldset = host.querySelector<HTMLFieldSetElement>('[data-store-artist-fieldset]');
+    if (!fieldset) return;
+    const sheet = host.querySelector<HTMLDialogElement>('[data-store-artists-sheet]');
+    const sheetBody = sheet?.querySelector<HTMLElement>('[data-store-artists-sheet-body]');
+    const find = host.querySelector<HTMLInputElement>('[data-store-artist-find]');
+    const trigger = document.querySelector<HTMLButtonElement>(
+      '[data-store-search-toolbar] [data-store-artists-trigger]',
+    );
+    const desktop = window.matchMedia('(min-width: 64rem)');
+    let releaseScroll: (() => void) | null = null;
     const onChange = (event: Event) => {
       const target = event.target;
-      if (
-        target instanceof HTMLSelectElement ||
-        (target instanceof HTMLInputElement && target.name === 'store-artist')
-      ) {
-        onArtistChange(target.value);
-      }
+      if (!(target instanceof HTMLInputElement) || target.name !== 'store-artist') return;
+      const { checked, value } = target;
+      onArtistsChange((current) => {
+        const next = new Set(current);
+        if (checked) next.add(value);
+        else next.delete(value);
+        return next;
+      });
     };
-    if (select) select.disabled = false;
-    if (fieldset) fieldset.disabled = false;
+    const onClick = (event: Event) => {
+      const button = event.target instanceof Element ? event.target.closest('button') : null;
+      if (sheet && event.target === sheet) sheet.close();
+      else if (button?.hasAttribute('data-store-artist-clear')) onArtistsChange(new Set());
+      else if (button?.matches('[data-store-artists-sheet-close], [data-store-artists-sheet-done]')) sheet?.close();
+    };
+    const onFind = () => filterStoreArtistOptions(fieldset, find?.value ?? '');
+    const openSheet = () => {
+      if (!sheet || !sheetBody || sheet.open) return;
+      sheetBody.append(fieldset);
+      sheet.showModal();
+      releaseScroll = acquireLenisModalLock(sheet);
+      sheet.querySelector<HTMLElement>('#store-artists-sheet-title')?.focus();
+    };
+    const returnList = () => {
+      sheet?.before(fieldset);
+      releaseScroll?.();
+      releaseScroll = null;
+    };
+    const onClose = () => {
+      returnList();
+      trigger?.focus();
+    };
+    const onViewport = (event: MediaQueryListEvent) => {
+      if (event.matches) sheet?.close();
+    };
     host.addEventListener('change', onChange);
+    host.addEventListener('click', onClick);
+    find?.addEventListener('input', onFind);
+    trigger?.addEventListener('click', openSheet);
+    sheet?.addEventListener('close', onClose);
+    desktop.addEventListener('change', onViewport);
+    fieldset.disabled = false;
+    if (trigger) trigger.disabled = false;
     return () => {
       host.removeEventListener('change', onChange);
-      if (select) select.disabled = true;
-      if (fieldset) fieldset.disabled = true;
+      host.removeEventListener('click', onClick);
+      find?.removeEventListener('input', onFind);
+      trigger?.removeEventListener('click', openSheet);
+      sheet?.removeEventListener('close', onClose);
+      desktop.removeEventListener('change', onViewport);
+      if (sheet?.open) sheet.close();
+      returnList();
+      resetStoreArtistControls(host);
+      if (trigger) resetStoreArtistsTrigger(trigger);
     };
-  }, [host, onArtistChange]);
+  }, [host, onArtistsChange]);
   useEffect(() => {
-    const select = host.querySelector<HTMLSelectElement>('[data-store-artist-select]');
-    if (select) select.value = artist;
-    host.querySelectorAll<HTMLInputElement>('input[name="store-artist"]').forEach((radio) => {
-      radio.checked = radio.value === artist;
+    const fieldset = host.querySelector<HTMLFieldSetElement>('[data-store-artist-fieldset]');
+    if (!fieldset) return;
+    host.querySelectorAll<HTMLInputElement>('input[name="store-artist"]').forEach((checkbox) => {
+      checkbox.checked = artists.has(checkbox.value);
     });
-  }, [artist, host]);
+    const count = placeStoreArtistOptions(fieldset);
+    filterStoreArtistOptions(fieldset, host.querySelector<HTMLInputElement>('[data-store-artist-find]')?.value ?? '');
+    const trigger = document.querySelector<HTMLElement>('[data-store-search-toolbar] [data-store-artists-trigger]');
+    if (trigger) setStoreArtistsTrigger(trigger, count);
+  }, [artists, host]);
+  useEffect(() => {
+    const done = host.querySelector<HTMLElement>('[data-store-artists-sheet-done]');
+    if (done) done.textContent = `Show ${visibleLabel}`;
+  }, [host, visibleLabel]);
   return null;
 });
 
@@ -284,6 +387,20 @@ export function StoreSearchToolbar({ resultsId }: { resultsId: string }) {
         <Button type="button" variant="ghost" disabled hidden data-store-clear-search>
           Clear search
         </Button>
+        {/* Phones only (CSS); the island opens the Artists sheet from it. */}
+        <Button
+          type="button"
+          variant="chip"
+          size="lg"
+          className="store-artists-trigger"
+          aria-haspopup="dialog"
+          aria-controls="store-artists-sheet"
+          disabled
+          data-store-artists-trigger
+        >
+          <span data-store-artists-trigger-label>Artists</span>
+          <ChevronDown aria-hidden="true" />
+        </Button>
         <Button
           type="button"
           variant="chip"
@@ -300,9 +417,10 @@ export function StoreSearchToolbar({ resultsId }: { resultsId: string }) {
             0
           </span>
         </Button>
-        <Button type="button" variant="ghost" disabled hidden data-store-clear-filters>
+        <button type="button" className="store-clear-filters" disabled hidden data-store-clear-filters>
+          <X aria-hidden="true" />
           Clear filters
-        </Button>
+        </button>
       </div>
       <dl className="store-preorder-notes" aria-label="About pre-orders" data-store-preorder-notes hidden>
         <div>
@@ -334,21 +452,21 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
   const pendingFocus = useRef(false);
   const [ready, setReady] = useState(false);
   const [query, setQuery] = useState('');
-  const [artist, setArtist] = useState('');
+  const [artists, setArtists] = useState<StoreArtistSelection>(() => new Set());
   const [format, setFormat] = useState('all');
   const [fuzzyRevision, setFuzzyRevision] = useState(0);
   const [preorders, setPreorders] = useState({ count: 0, active: false });
   const [artistHost, setArtistHost] = useState<HTMLElement | null>(null);
   const [choices, setChoices] = useState<StoreArtistChoice[]>([]);
   const preordersOnly = preorders.active && preorders.count > 0;
-  const filtered = Boolean(query.trim() || artist || preordersOnly);
+  const filtered = Boolean(query.trim() || artists.size > 0 || preordersOnly);
   const hasFilters = filtered || format !== 'all';
   // Derive the visible set while rendering so each keystroke commits once, count included.
   const visibleElements = useMemo(() => {
     const dom = domRef.current;
     if (!ready || !dom) return null;
     const matches = query.trim() ? searcherRef.current?.search(query) || [] : dom.items;
-    const selected = matches.filter((item) => !artist || normalizeStoreArtist(item.artist) === artist);
+    const selected = matches.filter((item) => artists.size === 0 || artists.has(normalizeStoreArtist(item.artist)));
     const formatKey = resolveDistroFormatKey(dom, format);
     return getDistroSearchVisibleElements(
       dom,
@@ -358,7 +476,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     );
     // choices changes whenever the island reads a new catalog DOM; fuzzyRevision reruns the search
     // once the lazily loaded fuzzy matcher is available.
-  }, [ready, choices, query, artist, format, filtered, fuzzyRevision, preorders, preordersOnly]);
+  }, [ready, choices, query, artists, format, filtered, fuzzyRevision, preorders, preordersOnly]);
   const count = visibleElements?.size ?? 0;
 
   useEffect(() => {
@@ -421,7 +539,7 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
     };
     const onClearAll = () => {
       setQuery('');
-      setArtist('');
+      setArtists(new Set());
       setFormat('all');
       setPreorders((current) => ({ ...current, active: false }));
       input?.focus();
@@ -507,7 +625,14 @@ function StoreDistroSearch({ pageKey, scope = 'distro' }: StoreDistroSearchProps
   }, [ready, query, count, hasFilters, preorders, preordersOnly]);
 
   if (!ready) return null;
-  return artistHost ? <StoreArtistPicker artist={artist} host={artistHost} onArtistChange={setArtist} /> : null;
+  return artistHost ? (
+    <StoreArtistPicker
+      artists={artists}
+      host={artistHost}
+      onArtistsChange={setArtists}
+      visibleLabel={getDistroSearchResultState(count).visibleLabel}
+    />
+  ) : null;
 }
 
 export default StoreDistroSearch;

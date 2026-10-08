@@ -31,9 +31,10 @@ describe('Distro format navigation', () => {
     expect(browse).not.toContain('<details');
     expect(browse.indexOf('data-store-artists')).toBeLessThan(browse.indexOf('href="#store-page-top"'));
   });
-  it('keeps the desktop pane sticky with radios and gives phones the Artist select', () => {
+  it('keeps the desktop pane sticky with checkboxes and gives phones the Artists chip', () => {
     expect(cssSource).toMatch(/@media \(min-width: 64rem\)[\s\S]*?\.store-browse-pane\s*\{\s*position: sticky/);
-    expect(cssSource).toMatch(/@media \(min-width: 64rem\)[\s\S]*?\.store-artists-picker\s*\{\s*display: none/);
+    expect(cssSource).toMatch(/@media \(min-width: 64rem\)[\s\S]*?\.store-artists-trigger\s*\{\s*display: none/);
+    expect(cssSource).toMatch(/\.store-artists-sheet \.store-artists\s*\{\s*display: block/);
     expect(cssSource).toMatch(
       /@media \(max-width: 63\.99rem\)\s*\{\s*\.store-artists\s*\{\s*display: none;\s*\}\s*\.store-format-links\s*\{\s*display: flex;\s*flex-wrap: wrap;/,
     );

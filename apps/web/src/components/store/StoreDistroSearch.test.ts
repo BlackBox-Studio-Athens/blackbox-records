@@ -30,21 +30,39 @@ describe('server Store chrome', () => {
     expect(html).toMatch(/data-store-empty-results="[^"]*" hidden/);
   });
 
-  it('renders complete native artist choices before enhancement', () => {
+  it('renders a disabled artist checklist and a closed phone sheet before enhancement', () => {
     const html = renderToStaticMarkup(
       createElement(StoreArtistControls, {
         resultsId: 'distro-search-results',
         choices: [
-          { key: '', label: 'All artists', count: 2 },
           { key: 'band', label: 'Band', count: 2 },
+          { key: 'other band', label: 'Other Band', count: 1 },
         ],
       }),
     );
-    expect(html).toMatch(/<select[^>]*disabled/);
-    expect(html).toContain('All artists (2)');
-    expect(html).toContain('Band (2)');
     expect(html).toContain('<fieldset class="store-artists" disabled');
-    expect(html).toMatch(/<input[^>]*type="radio"[^>]*checked=""[^>]*value=""/);
+    expect(html).not.toContain('<select');
+    expect(html).not.toContain('All artists');
+    expect(html).toMatch(
+      /<input type="checkbox" aria-controls="distro-search-results"[^>]*name="store-artist" value="band"/,
+    );
+    expect(html).not.toMatch(/type="checkbox"[^>]*checked/);
+    expect(html).toContain('data-store-artist-index="1" data-store-artist-name="other band"');
+    expect(html).toMatch(/<input type="search"[^>]*aria-label="Find an artist"/);
+    expect(html).toMatch(/data-store-artist-selected="[^"]*" hidden|hidden="" data-store-artist-selected/);
+    expect(html).toMatch(/<dialog id="store-artists-sheet"[^>]*aria-labelledby="store-artists-sheet-title"/);
+    expect(html).not.toMatch(/<dialog[^>]*\bopen\b/);
+  });
+
+  it('renders the phone Artists chip and Clear filters text action in the toolbar', () => {
+    const html = renderToStaticMarkup(createElement(StoreSearchToolbar, { resultsId: 'all-store-catalog' }));
+    expect(html).toMatch(/<button[^>]*aria-haspopup="dialog"[^>]*aria-controls="store-artists-sheet"[^>]*disabled/);
+    expect(html).not.toMatch(/<button[^>]*hidden[^>]*data-store-artists-trigger/);
+    expect(html).toMatch(
+      /<button type="button" class="store-clear-filters" disabled="" hidden="" data-store-clear-filters/,
+    );
+    expect(html.indexOf('data-store-artists-trigger')).toBeLessThan(html.indexOf('data-store-preorder-filter'));
+    expect(html.indexOf('data-store-preorder-filter')).toBeLessThan(html.indexOf('data-store-clear-filters'));
   });
 });
 

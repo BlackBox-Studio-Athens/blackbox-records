@@ -4750,35 +4750,76 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   font-weight: 600;
 }
 
-.store-artists-picker {
-  display: grid;
-  gap: 0.5rem;
+.store-artists p {
+  margin-block: 0.5rem;
+  color: var(--muted-foreground);
+  font-size: 0.8125rem;
 }
 
-.store-artists-picker select {
+.store-artists-find {
   width: 100%;
   min-height: 2.75rem;
   border: 1px solid var(--control-edge-quiet);
   border-radius: 0;
   background: var(--secondary);
-  padding-inline: 0.875rem;
+  padding-inline: 0.75rem;
   color: var(--foreground);
   font-size: 0.875rem;
 }
 
-.store-artists-picker select:hover {
+.store-artists-find::placeholder {
+  color: var(--muted-foreground);
+}
+
+.store-artists-find:hover {
   border-color: var(--control-edge-hover);
 }
 
-.store-artists-picker select:focus-visible {
+/* Inset, because the scrolling pane clips an outside ring. */
+.store-artists-find:focus-visible {
   outline: 2px solid var(--ring);
-  outline-offset: 1px;
+  outline-offset: -2px;
 }
 
-.store-artists p {
-  margin-block: 0.5rem;
+/* Ticked artists are pinned above the scrolling list, in server order. */
+.store-artists-selected {
+  margin-top: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  padding: 0 0.25rem 0.25rem;
+}
+
+.store-artists-selected__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
   color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.store-artists-clear {
+  min-height: 2.75rem;
+  padding-inline: 0.25rem;
+  color: var(--foreground);
   font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.store-artists-clear:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.store-artists-selected__list label {
+  font-weight: 600;
 }
 
 .store-artists-list {
@@ -4798,14 +4839,148 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   cursor: pointer;
 }
 
-.store-artists input {
+.store-artists label[hidden] {
+  display: none;
+}
+
+.store-artists label input {
   flex: none;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin: 0;
   accent-color: var(--store-accent-active);
 }
 
 .store-artists label:focus-within {
   outline: 2px solid var(--ring);
   outline-offset: 1px;
+}
+
+/* Approved 9 October 2026: Clear filters is a bold text action, larger than the 13px text-action default. */
+.store-clear-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.75rem;
+  padding-inline: 0.375rem;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+  cursor: pointer;
+}
+
+.store-clear-filters[hidden] {
+  display: none;
+}
+
+.store-clear-filters svg {
+  flex: none;
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2.5;
+}
+
+.store-clear-filters:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.store-artists-trigger[data-store-artists-active] {
+  border-color: var(--foreground);
+  background: var(--control-face-selected);
+  color: var(--foreground);
+}
+
+/* Phones: the Artists chip opens this modal bottom sheet, which borrows the pane's checklist while open. */
+.store-artists-sheet {
+  inset: auto 0 0;
+  width: 100%;
+  max-width: none;
+  max-height: min(85dvh, 44rem);
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: var(--card);
+  padding: 0;
+  color: var(--foreground);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.56);
+}
+
+.store-artists-sheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.store-artists-sheet::backdrop {
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.store-artists-sheet__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.5rem 0.25rem var(--page-gutter);
+}
+
+.store-artists-sheet__head h2 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.store-artists-sheet__head h2:focus {
+  outline: none;
+}
+
+.store-artists-sheet__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-inline: var(--page-gutter);
+}
+
+.store-artists-sheet .store-artists {
+  display: block;
+}
+
+.store-artists-sheet legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.store-artists-sheet .store-artists > p:first-of-type {
+  margin-top: 0;
+}
+
+.store-artists-sheet .store-artists-list {
+  max-height: none;
+  overflow: visible;
+  padding-inline: 0;
+}
+
+.store-artists-sheet .store-artists label {
+  min-height: 3rem;
+  border-bottom: 1px solid var(--control-edge-quiet);
+  font-size: 0.9375rem;
+}
+
+.store-artists-sheet__foot {
+  border-top: 1px solid var(--border);
+  padding: 0.75rem var(--page-gutter) max(1.25rem, env(safe-area-inset-bottom));
+}
+
+.store-artists-sheet__show {
+  width: 100%;
 }
 
 .store-format-links a {
@@ -4832,6 +5007,45 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 
 .store-search-toolbar > div {
   flex: 1 1 16rem;
+}
+
+/* Phones: search on its own row, then Artists, Pre-orders and Clear filters on one row from 375px, then the count. */
+@media (max-width: 63.99rem) {
+  .store-search-toolbar {
+    column-gap: 0.375rem;
+  }
+
+  .store-search-toolbar > div {
+    flex-basis: 100%;
+  }
+
+  .store-search-toolbar p.store-result-count {
+    order: 1;
+    width: auto;
+    flex: 1 0 100%;
+  }
+
+  .store-search-toolbar .store-artists-trigger,
+  .store-search-toolbar .store-preorder-filter {
+    gap: 0.375rem;
+    padding-inline: 0.625rem;
+  }
+
+  .store-search-toolbar .store-artists-trigger svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .store-search-toolbar .store-clear-filters {
+    gap: 0.25rem;
+    padding-inline: 0.25rem;
+    font-size: 0.9375rem;
+  }
+
+  .store-search-toolbar .store-clear-filters svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
 }
 
 .store-result-count {
@@ -7003,7 +7217,7 @@ html[data-store-coverflow-capable]
     overflow-y: auto;
   }
 
-  .store-artists-picker {
+  .store-artists-trigger {
     display: none;
   }
 
@@ -7194,8 +7408,7 @@ html[data-store-coverflow-capable]
     border-top: 0;
   }
 
-  .store-format-links h2,
-  .store-artists-picker span {
+  .store-format-links h2 {
     flex-basis: 100%;
     padding-block: 0;
     color: var(--muted-foreground);

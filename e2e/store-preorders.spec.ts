@@ -146,16 +146,16 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
   const format = await selected.getAttribute('data-distro-format-key');
   await page.locator(`[data-distro-format-link][data-distro-format-key="${format}"]`).click();
   const artist = await selected.getAttribute('data-store-artist');
-  const picker = page.getByRole('combobox', { name: 'Artist', exact: true });
-  const artistValue = await picker
-    .locator('option')
-    .evaluateAll(
-      (options, name) => options.find((option) => option.textContent?.startsWith(`${name} (`))?.getAttribute('value'),
-      artist,
-    );
-  expect(artistValue).toBeTruthy();
-  if (!artistValue) throw new Error('Expected the pre-order artist option');
-  await picker.selectOption(artistValue);
+  await page.getByRole('button', { name: /^Artists/ }).click();
+  const sheet = page.getByRole('dialog', { name: 'Artists' });
+  await sheet
+    .locator('[data-store-artist-option]')
+    .filter({ hasText: `${artist} (` })
+    .first()
+    .getByRole('checkbox')
+    .check();
+  await sheet.getByRole('button', { name: /^Show \d+ items?$/ }).click();
+  await expect(sheet).toBeHidden();
   await search.fill(await selected.locator('h2').innerText());
   await expect(cards.locator('visible=true')).toHaveCount(1);
   await expect(selected).toBeVisible();
@@ -168,7 +168,8 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
   await expect(page.locator('.store-preorder-notes')).toBeHidden();
   await expect(search).toBeFocused();
   await expect(search).toHaveValue('');
-  await expect(picker).toHaveValue('');
+  await expect(page.getByRole('button', { name: /^Artists/ })).toHaveText('Artists');
+  await expect(page.locator('input[name="store-artist"]:checked')).toHaveCount(0);
   await expect(page.getByRole('link', { name: /^All formats/ })).toHaveAttribute('aria-current', 'true');
   expect(await cards.locator('visible=true').count()).toBeGreaterThan(2);
 });

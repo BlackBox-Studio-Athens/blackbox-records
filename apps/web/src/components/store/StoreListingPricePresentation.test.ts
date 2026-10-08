@@ -138,16 +138,24 @@ describe('Store listing-price presentation', () => {
       querySelector: (selector: string) => (selector === 'input[type="search"]' ? input : summary),
       querySelectorAll: () => [clear],
     };
-    const select = { disabled: false, value: 'band' };
-    const fieldset = { disabled: false };
-    const radios = [
-      { value: '', checked: false, toggleAttribute: vi.fn() },
-      { value: 'band', checked: true, toggleAttribute: vi.fn() },
+    const fieldset = { disabled: false, querySelector: () => null };
+    const find = { value: 'ban', removeAttribute: vi.fn() };
+    const sheet = { removeAttribute: vi.fn(), contains: () => true, before: vi.fn() };
+    const checkboxes = [
+      { value: 'band', checked: true, removeAttribute: vi.fn() },
+      { value: 'other', checked: false, removeAttribute: vi.fn() },
     ];
-    const artistHost = {
-      querySelector: (selector: string) => (selector === 'select' ? select : fieldset),
-      querySelectorAll: () => radios,
+    const artistParts: Record<string, unknown> = {
+      '[data-store-artist-fieldset]': fieldset,
+      '[data-store-artists-sheet]': sheet,
+      '[data-store-artist-find]': find,
     };
+    const artistHost = {
+      querySelector: (selector: string) => artistParts[selector] ?? null,
+      querySelectorAll: () => checkboxes,
+    };
+    const triggerLabel = { textContent: 'Artists · 1' };
+    const trigger = { disabled: false, hidden: true, querySelector: () => triggerLabel, toggleAttribute: vi.fn() };
     const total = { hidden: false };
     const preorderNotes = { hidden: false };
     const view = { disabled: false };
@@ -155,6 +163,7 @@ describe('Store listing-price presentation', () => {
     const elements: Record<string, unknown[]> = {
       '[data-store-search-toolbar]': [toolbar],
       '[data-store-artists]': [artistHost],
+      '[data-store-artists-trigger]': [trigger],
       '[data-store-empty-results], [data-store-result-total]': [total],
       '[data-store-preorder-notes]': [preorderNotes],
       '[data-store-coverflow-controls]': [controls],
@@ -164,9 +173,14 @@ describe('Store listing-price presentation', () => {
     expect(input).toMatchObject({ disabled: true, value: '' });
     expect(summary.textContent).toBe('');
     expect(clear).toEqual({ disabled: true, hidden: true });
-    expect(select).toEqual({ disabled: true, value: '' });
+    expect(sheet.removeAttribute).toHaveBeenCalledWith('open');
+    expect(sheet.before).toHaveBeenCalledWith(fieldset);
     expect(fieldset.disabled).toBe(true);
-    expect(radios.map(({ checked }) => checked)).toEqual([true, false]);
+    expect(checkboxes.map(({ checked }) => checked)).toEqual([false, false]);
+    expect(find.value).toBe('');
+    expect(trigger).toMatchObject({ disabled: true, hidden: false });
+    expect(triggerLabel.textContent).toBe('Artists');
+    expect(trigger.toggleAttribute).toHaveBeenCalledWith('data-store-artists-active', false);
     expect(total.hidden).toBe(true);
     expect(preorderNotes.hidden).toBe(true);
     expect(controls.hidden).toBe(false);
