@@ -6,7 +6,7 @@ Define the fail-closed evidence, data, provider, approval, cutover, and rollback
 
 ### Requirement: Production launch gates
 
-The system MUST block unrestricted PRD native-commerce launch until required prerequisite acceptance is complete and live payment, domain, webhook, Worker, D1, emergency-disable, rollback and sole-approver evidence identifies the accepted launch code and content. Restricted paid beta MUST follow its separate requirement below. The separately authorized bounded live smoke precedes public cutover; archive paperwork alone is not an additional runtime gate.
+The system MUST block PRD native-commerce activation until required technical prerequisite acceptance is complete and live payment, domain, webhook, Worker, D1, emergency-disable, rollback and sole-approver evidence identifies the accepted launch code and content. The 2026-10-08 requested scope is unrestricted selling with no participant/order cap or end date. Declared Tax/fiscal deferrals and assumed packing MUST remain honest unresolved evidence, not successful compliance or measurement. The authorized bounded live smoke precedes public cutover; archive paperwork alone is not an additional runtime gate.
 
 #### Scenario: Launch is requested
 
@@ -23,7 +23,7 @@ The system MUST block unrestricted PRD native-commerce launch until required pre
 - **AND** evidence includes Access allow/deny proof, one-unit checkout concurrency and replay safety, immediate and scheduled delivery recovery, and the verified Holding Page rollback target
 - **AND** checkout creation and paid-order reconciliation/return corrections have local regression and new-account acceptance evidence
 - **AND** atomic operator-stock correction has local D1/browser evidence and protected PRD acceptance after migration and matching Worker/staff deployment with checkout closed
-- **AND** no required launch acceptance remains unresolved; unrelated optional features and completed-but-unarchived paperwork do not create additional launch gates.
+- **AND** no required technical launch acceptance remains unresolved; explicitly deferred Tax/fiscal evidence stays open, while unrelated optional features and completed-but-unarchived paperwork do not create additional launch gates.
 
 #### Scenario: Shipping scope is reviewed
 
@@ -32,35 +32,35 @@ The system MUST block unrestricted PRD native-commerce launch until required pre
 - **AND** non-Greece delivery is rejected before payment or normal fulfillment
 - **AND** no non-Greece provider, quote, or fallback path is configured.
 
-### Requirement: Restricted paid beta has explicit scope and receipts
+### Requirement: Requested selling scope preserves controls and receipts
 
-The system MUST restrict the paid beta to the approved cohort and finite order limit, retain an immediate checkout stop, and enable ordinary Stripe payment and refund receipts. Availability-alert sends MUST stay suppressed while PRD checkout is closed or restricted to beta. The owner-accepted deferral of fiscal-provider/myDATA/credit and filing automation MUST remain unresolved evidence for full public launch; it MUST NOT be represented as a legal exemption or successful fiscal acceptance.
+The system MUST follow the owner's 2026-10-08 unrestricted selling scope after technical readiness without adding cohort, order-limit or end-date restrictions. It MUST retain the independent launch/runtime controls, immediate checkout stop and ordinary Stripe payment/refund receipts. Availability-alert sends MUST stay suppressed while PRD checkout is closed. The owner-accepted Tax evidence and fiscal-provider/myDATA/credit/filing deferrals apply to this uncapped scope and MUST remain unresolved evidence, without a legal exemption or successful fiscal-acceptance claim.
 
-#### Scenario: A beta customer pays
+#### Scenario: A customer pays in the approved scope
 
-- **GIVEN** the user approved the beta's seller/account, named cohort, order limit, review/end date and technical acceptance
+- **GIVEN** the supplied seller/account inputs, technical acceptance and final user activation decision are recorded
 - **WHEN** an eligible customer completes a real payment
-- **THEN** normal payment, tax, shipping, stock, order and delivery checks apply, and the configured Stripe payment receipt uses accurate seller/contact and transaction details
+- **THEN** normal provider calculation, authorized assumed-profile shipping, stock, order and delivery checks apply, and the configured Stripe payment receipt uses accurate seller/contact and transaction details
 - **AND** the authorized smoke proves payment and refund receipt delivery to an approved recipient; sandbox manual receipts alone do not prove live automatic delivery
 - **AND** paid invoice creation and fiscal connectors are not prerequisites for ordinary payment receipts
-- **AND** purchase returns, policies and customer-email links reach the restricted PRD site while the apex remains on Holding Page.
+- **AND** purchase returns, policies and customer-email links reach the accepted PRD site, with the apex held until approved cutover.
 
-#### Scenario: Beta access is outside its approved scope
+#### Scenario: Checkout is stopped during preparation or an incident
 
-- **WHEN** an excluded customer requests checkout directly, or the beta reaches its limit or end condition
+- **WHEN** preparation or incident handling closes an existing checkout control
 - **THEN** new checkout is rejected while existing paid orders and refunds remain recoverable
-- **AND** the public apex remains on Holding Page until separately approved full public launch.
+- **AND** the public apex remains on or returns to Holding Page when routing rollback is required.
 
-#### Scenario: Beta ends with an account switch
+#### Scenario: Future sales move to the later official account
 
 - **WHEN** future sales move to the owner's official account
 - **THEN** the switch uses refreshed inventory, source-session drain and verified target configuration
 - **AND** earlier orders retain their original account, seller and monetary history, with access and funding for old-account refunds/disputes
-- **AND** beta success alone does not authorize full public launch or mark fiscal work complete.
+- **AND** the later switch is follow-up work, and payment success alone does not mark fiscal work complete.
 
 #### Scenario: Availability alerts are due before public selling
 
-- **GIVEN** PRD checkout is closed or restricted to beta
+- **GIVEN** PRD checkout is closed
 - **WHEN** scheduled delivery runs with due availability alerts
 - **THEN** availability-alert sending is suppressed and pending requests retain their existing retention policy
 - **AND** paid-order delivery and estimate notices continue normally
@@ -78,12 +78,12 @@ The system MUST associate launch code artifacts, configuration, validation, appr
 - **AND** technical PRD code deployment follows explicit Software Release promotion of the accepted UAT candidate SHA/run and its verified PRD-targeted artifacts, independently of live-catalog and shopper-launch authorization
 - **AND** a later source, generated-artifact, or configuration change reruns affected checks; evidence notes or archival alone do not invalidate unchanged runtime proof.
 
-#### Scenario: Code is promoted during an approved beta
+#### Scenario: Code is promoted during approved selling
 
-- **GIVEN** beta checkout has been separately approved and enabled
+- **GIVEN** shopper checkout has been approved and enabled
 - **WHEN** an accepted software release is promoted
 - **THEN** candidate provenance and release-order checks still apply without requiring checkout to be disabled
-- **AND** code promotion preserves the independent checkout controls and does not authorize catalog mutation or new customers.
+- **AND** code promotion preserves the independent checkout controls and does not authorize catalog mutation or activation.
 
 #### Scenario: Content changes independently of code
 
@@ -108,7 +108,7 @@ The system MUST accept the migration's designated-sandbox UAT behavior before li
 - **WHEN** reservation and paid-order provider evidence is collected
 - **THEN** all three correction changes are implemented on that tree
 - **AND** existing checkout-creation, atomic-stock, reservation and outbox archives retain their recorded evidence and limitations
-- **AND** paid-reconciliation closure follows its remaining shared designated-account acceptance
+- **AND** the archived paid-reconciliation correction retains its unresolved designated-account limits, with remaining proof accepted through the shared migration/launch checks rather than a second archive cycle
 - **AND** overlapping tasks reference the same accepted evidence without requiring duplicate purchases or unchanged test reruns
 - **AND** a local mock or failure-reproduction probe never substitutes for new-account provider proof.
 
@@ -140,7 +140,7 @@ The system MUST accept the migration's designated-sandbox UAT behavior before li
 
 ### Requirement: Manual selling operations are accepted before launch
 
-The system MUST keep full public launch blocked until an owner-approved manual fulfillment/refund procedure, shipping-charge model, and tax/receipt/invoice workflow have been configured and verified against the actual checkout experience. Restricted beta retains fulfillment, shipping, tax and ordinary receipt checks under its declared fiscal-automation deferral.
+The system MUST verify the owner-approved manual fulfillment/refund procedure, shipping-charge model, supported assumed-profile cart behavior, provider calculations and ordinary receipts against the actual checkout experience before activation. The necessary operating owner is supplied by private attestation. Actual Tax evidence and fiscal automation remain explicitly deferred for the requested uncapped scope, without claiming completed fiscal issuance or filing.
 
 #### Scenario: Manual handoff is rehearsed
 
@@ -152,7 +152,7 @@ The system MUST keep full public launch blocked until an owner-approved manual f
 #### Scenario: Checkout charges and receipts are reviewed
 
 - **WHEN** the owner selects included delivery or a separate shipping charge and the intended tax/receipt/invoice workflow
-- **THEN** the configured checkout total and shopper-visible claims match that approved model
+- **THEN** the configured checkout total and shopper-visible claims match that approved model and identify deferred fiscal issuance honestly
 - **AND** required monetary implementation and acceptance finish before launch
 - **AND** absent provider options or Dashboard defaults are not treated as proof of the advertised behavior.
 
@@ -230,7 +230,7 @@ The system MUST treat the user's explicit approval as the only final go/no-go au
 
 #### Scenario: User approves launch
 
-- **WHEN** all full public-launch pre-activation evidence passes and the user explicitly approves the bounded live smoke and conditional public cutover
+- **WHEN** required technical pre-activation evidence passes, the current assumptions/deferrals are recorded and the user explicitly approves the bounded live smoke and conditional public cutover
 - **THEN** `PRD_LAUNCH_APPROVED=true` may be deployed for the accepted Worker configuration
 - **AND** one bounded live checkout smoke runs before apex cutover.
 

@@ -62,7 +62,7 @@ export type {
   StripeCatalogProductProjectionUpdateInput,
 } from './types';
 
-export { CatalogPriceConflictError } from './types';
+export { CatalogPriceConflictError, STORE_OFFER_FRESHNESS_MS } from './types';
 export { changeCatalogPrice, readCatalogPrice, catalogPriceChangeSchema } from './change-catalog-price';
 export {
   initializeCatalogPrice,

@@ -30,6 +30,7 @@
     "checkout:preflight:stripe-test": "tsx scripts/check-stripe-test-checkout.ts",
     "checkout:expire:uat": "tsx scripts/expire-uat-checkouts.ts",
     "stripe:catalog:verify": "tsx scripts/stripe-catalog-verify.ts",
+    "stripe:catalog:migrate": "pnpm --filter @blackbox/backend exec tsx scripts/migrate-stripe-account.ts",
     "store:listing-readiness:verify": "tsx scripts/verify-store-listing-readiness.ts",
     "catalog:readiness:generate": "tsx scripts/generate-catalog-readiness.ts --write",
     "catalog:checkout:pause": "tsx scripts/pause-catalog-checkout.ts",

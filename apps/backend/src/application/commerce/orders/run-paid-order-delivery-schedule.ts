@@ -6,6 +6,7 @@ import {
   type ProcessPaidOrderDeliveryResult,
   type StoreItemNameReader,
 } from './';
+import { createFeatureFlagReader, parseBooleanOverride } from '../checkout/feature-flags';
 import type { AppBindings } from '../../../platform/env';
 import { createBindingLogger, normalizeUnknownError } from '../../../platform/observability';
 import { D1AvailabilityAlertRepository } from '../../../infrastructure/persistence/d1-availability-alert-repository';
@@ -66,11 +67,16 @@ export async function runPaidOrderDeliverySchedule(
 
     // Alerts run last and only in the rows order email left, so they never delay it.
     event = 'availability_alert_schedule_outcome';
+    const availabilityAlertsEnabled =
+      emailRuntime.config.productEnvironmentProfile.productEnvironment !== 'PRD' ||
+      (parseBooleanOverride(bindings.PRD_AVAILABILITY_ALERTS_APPROVED) === true &&
+        (await createFeatureFlagReader(bindings, logger).isNativeCheckoutEnabled()));
     const alerts = await drainDueAvailabilityAlerts({
       attemptedAt: scheduledAt,
       config: emailRuntime.config,
       ...(options.itemNames ? { itemNames: options.itemNames } : {}),
-      limit: SCHEDULED_DELIVERY_LIMIT - results.length - notices.length,
+      // A zero limit still expires old requests without claiming alerts or consuming send budget.
+      limit: availabilityAlertsEnabled ? SCHEDULED_DELIVERY_LIMIT - results.length - notices.length : 0,
       logger,
       provider: emailRuntime.provider,
       repository: new D1AvailabilityAlertRepository(bindings.COMMERCE_DB),

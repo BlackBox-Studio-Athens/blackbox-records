@@ -13,6 +13,8 @@ import {
   readStoreOffer,
   startCheckout as startCheckoutWithPolicy,
   createPackingPolicy,
+  hostedMonetaryPolicyReference,
+  quoteDelivery,
   StoreItemNotFoundError,
   VariantMismatchError,
 } from './';
@@ -615,6 +617,77 @@ describe('checkout use cases', () => {
     });
     catalogReconciler.prices.set(storeItem.variantId, createCatalogPrice({ storeItem }));
   });
+
+  it.each([
+    [8, 'small', 250],
+    [9, 'medium', 350],
+  ] as const)('retains the assumed PRD quote and policy for %i LPs', async (quantity, tier, amountMinor) => {
+    await stock.save(storeItem.variantId, { onlineQuantity: quantity, quantity });
+    const packingPolicy = createPackingPolicy('prd');
+    const lines = [
+      { storeItemSlug: storeItem.storeItemSlug, variantId: storeItem.variantId, quantity: cartQuantity(quantity) },
+    ];
+    expect(quoteDelivery(lines, packingPolicy)).toEqual({ tier, amountMinor, currencyCode: 'EUR' });
+    expect(hostedMonetaryPolicyReference).toMatch(/^owner-assumed-vinyl-packing-inclusive-tariff-prd-/);
+
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      {
+        cancelUrl: 'https://blackbox-records-web.pages.dev/store/checkout/',
+        successUrl: 'https://blackbox-records-web.pages.dev/store/checkout/return/',
+        lines,
+      },
+      undefined,
+      { packingPolicy, monetaryPolicyReference: hostedMonetaryPolicyReference, productEnvironment: 'PRD' },
+    );
+
+    const monetaryPolicy = {
+      acceptedDeliveryAmountMinor: amountMinor,
+      acceptedParcelTier: tier,
+      monetaryPolicyReference: hostedMonetaryPolicyReference,
+    };
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({ monetaryPolicy }),
+    );
+    expect(await orders.findByCheckoutSessionId('cs_test_123')).toMatchObject(monetaryPolicy);
+  });
+
+  it.each([
+    ['unassigned packing', { ...createPackingPolicy('prd'), items: new Map() }, hostedMonetaryPolicyReference],
+    ['missing reference', createPackingPolicy('prd'), null],
+    ['blank reference', createPackingPolicy('prd'), ' '],
+  ] as const)(
+    'rejects %s before creating a hold or provider Session',
+    async (_reason, packingPolicy, monetaryPolicyReference) => {
+      await expect(
+        startCheckout(
+          storeItems,
+          itemAvailability,
+          stock,
+          catalogReconciler,
+          productProjections,
+          checkoutGateway,
+          orders,
+          {
+            cancelUrl: 'https://blackbox-records-web.pages.dev/store/checkout/',
+            successUrl: 'https://blackbox-records-web.pages.dev/store/checkout/return/',
+            storeItemSlug: storeItem.storeItemSlug,
+            variantId: storeItem.variantId,
+          },
+          undefined,
+          { packingPolicy, monetaryPolicyReference, productEnvironment: 'PRD' },
+        ),
+      ).rejects.toThrow(CheckoutUnavailableError);
+      expect(orders.createPendingHoldCalls).toBe(0);
+      expect(checkoutGateway.createHostedCheckoutSession).not.toHaveBeenCalled();
+    },
+  );
 
   it('reads backend-known checkout eligibility for one store item', async () => {
     await expect(

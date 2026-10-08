@@ -37,17 +37,21 @@ export function getStoreCartBrowserStorage(): StoreCartBrowserStorage {
   }
 }
 export async function applyStoreCartStateAndPersist({
+  eventTarget,
   readStorage,
   setStoreCartState,
   state,
 }: {
+  eventTarget: Window;
   readStorage: () => StoreCartBrowserStorage;
   setStoreCartState: (state: StoreCartState) => void;
   state: StoreCartState;
 }) {
   const cart = await warmStoreCartParser();
-  cart.writeStoreCartState(readStorage(), state);
+  const storage = readStorage();
+  cart.writeStoreCartState(storage, state);
   setStoreCartState(state);
+  if (storage) eventTarget.dispatchEvent(new CustomEvent(CHECKOUT_CART_UPDATED_EVENT, { detail: state }));
 }
 export function connectStoreCartBridge({
   eventTarget,

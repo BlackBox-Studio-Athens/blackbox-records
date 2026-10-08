@@ -2,7 +2,7 @@
 
 ### Requirement: Delivery Charge is explicit and applied once
 
-The system MUST initially charge **€2.50 gross for Small (250 EUR cents) or €3.50 gross for Medium (350 EUR cents)**, including VAT, once per eligible Greek BOX NOW order according to its verified packed size. The shopper amount MUST be disclosed before payment, use the selected taxable VAT Treatment, and remain distinct from the carrier's invoice cost and merchandise stock. The initial policy has no free-shipping threshold, per-item fee or island surcharge; BlackBox absorbs carrier and packaging cost differences for accepted orders.
+The system MUST initially charge **€2.50 gross for Small (250 EUR cents) or €3.50 gross for Medium (350 EUR cents)**, including VAT, once per eligible Greek BOX NOW order according to its supported configured packing profile. The shopper amount MUST be disclosed before payment, use the selected taxable VAT Treatment, and remain distinct from the carrier's invoice cost and merchandise stock. The initial policy has no free-shipping threshold, per-item fee or island surcharge; BlackBox absorbs carrier and packaging cost differences for accepted orders. Owner-authorized assumed dimensions MUST remain labelled assumed until measured evidence exists.
 
 #### Scenario: Separate delivery is charged
 
@@ -21,15 +21,24 @@ The system MUST initially charge **€2.50 gross for Small (250 EUR cents) or �
 
 ### Requirement: Packing eligibility accounts for the complete protected cart
 
-The system MUST select the smallest supported package whose measured usable dimensions and gross-weight limit accommodate every cart unit under the supported flat-stack method. It MUST account for quantities, item protection and outer packaging, validate sealed fit against the carrier's tier limits, and keep measurement authority outside the browser. Synthetic measurements MUST NOT qualify production stock for shipping.
+The system MUST select the smallest supported package whose configured usable dimensions and gross-weight limit accommodate every cart unit under the supported flat-stack method. It MUST account for quantities, item protection and outer packaging, validate sealed outer geometry against the carrier's tier limits, and keep profile authority outside the browser. Under the 2026-10-08 owner instruction, expressly assumed profiles MAY support explicitly assigned eligible PRD variants with a dated assumption-labelled policy reference. Actual measurements MUST remain Unknown until observed; a Local/UAT catch-all MUST NOT silently qualify all PRD products.
 
 #### Scenario: Provisional UAT packing
 
 - **GIVEN** owner-authorized UAT testing with a Stripe test key
 - **WHEN** measured profiles are not yet available
 - **THEN** the Worker may use the explicit synthetic profiles and a synthetic accepted-policy reference
-- **AND** PRD and UAT without a test key remain ineligible under these profiles
+- **AND** this UAT test authorization alone enables neither PRD nor UAT without a test key; the explicitly authorized PRD assumed-profile scenario below has its own supported assignments/reference
 - **AND** successful provider tests do not establish measured packing or fiscal acceptance.
+
+#### Scenario: The owner authorizes an assumed vinyl parcel for PRD
+
+- **GIVEN** the owner authorized the existing provisional vinyl parcel for the requested uncapped scope
+- **WHEN** an explicitly assigned eligible PRD variant enters checkout
+- **THEN** the Worker may use the assumed profile with a nonempty assumption-labelled monetary-policy reference
+- **AND** full-cart positive/safe quantities, footprint, outer geometry, height, weight, stock and amount checks still apply
+- **AND** unassigned, unsupported, oversized, overweight and split-parcel carts remain unavailable
+- **AND** technical packing/cart constraints are not participant, order or time limits, and assumed values are never recorded as measured evidence.
 
 #### Scenario: Quantity or mixed contents exceed Small capacity
 
@@ -46,7 +55,7 @@ The system MUST select the smallest supported package whose measured usable dime
 
 #### Scenario: Physical inputs are missing or neither package fits
 
-- **WHEN** an assigned profile is missing, invalid or unmeasured for production, or neither supported package fits
+- **WHEN** an assigned profile is missing, invalid or outside the explicitly authorized assumed/measured scope, or neither supported package fits
 - **THEN** shipping is unavailable and no payable Session is created for that cart
 - **AND** the system does not guess from format labels, compress records, invent a larger tariff or request a later customer top-up.
 

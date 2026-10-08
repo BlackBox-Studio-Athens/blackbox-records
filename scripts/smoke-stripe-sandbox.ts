@@ -37,8 +37,10 @@ import {
 import {
   createCheckoutOrderBySessionSql,
   createRemoteD1ReadinessSql,
+  createSmokeRuntimeCatalogSql,
   parseD1CheckoutOrderRows,
   parseRemoteD1ReadinessSummary,
+  parseSmokeRuntimeProductProjections,
 } from './stripe-sandbox-smoke/d1-sql';
 import {
   createStripeCheckoutSessionProjectionObservation,
@@ -822,7 +824,10 @@ async function main() {
   const scenarios = replaceFixedCheckoutAmountExpectation(
     resolveSelectedStripeSandboxScenarios(
       options.scenarioSelection,
-      createStripeSandboxSmokeScenarios(await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' })),
+      createStripeSandboxSmokeScenarios(
+        await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' }),
+        parseSmokeRuntimeProductProjections(runRemoteD1Sql(createSmokeRuntimeCatalogSql())),
+      ),
     ),
     options.expectedCheckoutAmountMinor,
   );

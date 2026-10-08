@@ -6,13 +6,13 @@ Core production foundations are implemented, but final launch still needs one co
 
 - Record completed performance, environment, EmDash, accepted-snapshot publication, staff/search, holding-page and commerce prerequisites by their actual evidence; retain Decap/Sveltia only as migration history.
 - Keep the public apex on the verified Holding Page while non-Stripe planning and post-commerce performance checks finish.
-- Add a separately approved, restricted paid beta on temporary BlackBoxRecords with ordinary payment/refund receipts. Record the owner's fiscal-automation/IRIS deferrals, participant limits and later official-account migration; full public launch retains its remaining fiscal acceptance.
+- Follow the owner's 2026-10-08 unrestricted selling scope on temporary BlackBoxRecords after technical readiness, with ordinary payment/refund receipts and no participant/order limit or end date. Record the current Tax/fiscal/IRIS deferrals and assumed parcel without claiming compliance or measurement; the later official-account migration remains follow-up work.
 - Pin the exact code candidate and its paired renderer/CMS/Pages artifacts alongside the independently accepted PRD content snapshot and runtime catalog evidence for launch approval and cutover.
 - Accept the BlackBoxRecords migration's dedicated-sandbox UAT proof before live-mode preparation. Independent account/tooling and Store performance work may overlap; never promote UAT D1 rows, test objects, synthetic stock, or UAT evidence into PRD.
 - Close the verified checkout-creation, paid-reconciliation, and operator-stock correction changes before commerce sign-off, with local regressions and separate new-account acceptance.
 - Verify the committed and deployed PRD delivery schedule, rehearse manual fulfillment/refund operations, and publish approved shipping/returns/privacy information with explicit charge and receipt/invoice decisions.
 - Keep live catalog preparation separate from shopper launch approval and runtime checkout enablement.
-- Keep beta purchase/policy/email links on the working PRD technical origin. Prepare final-origin artifacts for full public launch before approval, then expose the verified full site at `https://blackboxrecordsathens.com/` during approved cutover.
+- Verify purchase/policy/email links on the PRD technical origin during closed preparation. Prepare final-origin artifacts before final approval, then expose the verified full site at `https://blackboxrecordsathens.com/` during approved cutover after live smoke.
 - Make the user the sole final go/no-go approver and keep the Holding Page as the immediate rollback target for at least 24 hours after launch.
 
 ## Capabilities

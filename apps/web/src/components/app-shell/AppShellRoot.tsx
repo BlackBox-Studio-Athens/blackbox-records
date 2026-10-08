@@ -266,6 +266,7 @@ export default function AppShellRoot({
     const { applyStoreCartStateAndPersist, getStoreCartBrowserStorage } =
       await import('@/components/app-shell/store-cart/store-cart-bridge');
     await applyStoreCartStateAndPersist({
+      eventTarget: window,
       readStorage: getStoreCartBrowserStorage,
       setStoreCartState,
       state: nextState,

@@ -1,4 +1,5 @@
 import type { StripeCatalogStoreItemContract } from '../stripe-catalog-contract';
+import type { StripeCatalogProductProjection } from '../../apps/backend/src/application/commerce/catalog-sync';
 import {
   createMoney,
   formatMoney,
@@ -35,6 +36,7 @@ export const allScenarioNames: readonly StripeSandboxSmokeScenarioName[] = [
 
 export function createStripeSandboxSmokeScenarios(
   currentCatalogProductProjectionEntries: StripeCatalogStoreItemContract[],
+  runtimeProductProjections: ReadonlyMap<string, StripeCatalogProductProjection>,
 ) {
   const smokeCatalogProjectionEntry = currentCatalogProductProjectionEntries.find(
     (entry) => entry.storeItemSlug === smokeStoreItemSlug && entry.variantId === smokeVariantId,
@@ -50,12 +52,13 @@ export function createStripeSandboxSmokeScenarios(
     variantId: string,
   ) {
     const expectedSandboxPrice = entry?.expectedSandboxPrice;
+    const productProjection = runtimeProductProjections.get(variantId);
 
-    if (!entry || !expectedSandboxPrice) {
+    if (!entry || !expectedSandboxPrice || !productProjection) {
       throw new Error(`Missing checkout-eligible Product Projection for ${storeItemSlug} / ${variantId}.`);
     }
 
-    return { ...entry, expectedSandboxPrice };
+    return { ...entry, expectedSandboxPrice, productProjection };
   }
 
   function requireSmokeCatalogProjectionEntry() {

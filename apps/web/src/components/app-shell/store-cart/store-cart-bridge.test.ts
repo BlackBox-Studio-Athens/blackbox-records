@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   addStoreCartItem,
+  createCartQuantity,
   createEmptyStoreCartState,
   readStoreCartState,
   type CartLineItemSnapshot,
@@ -60,11 +61,18 @@ const cartItem: CartLineItemSnapshot = {
 
 describe('store cart bridge', async () => {
   it('applies StoreCart state and persists it through the configured storage', async () => {
+    const eventTarget = new EventTarget() as Window;
     const storage = createMemoryStorage();
-    const nextState = addStoreCartItem(cartItem, addStoreCartItem(cartItem));
+    const nextState = addStoreCartItem(cartItem);
+    nextState.lines[0]!.quantity = createCartQuantity(9);
     const seenStates: StoreCartState[] = [];
+    const notifiedQuantities: number[] = [];
+    eventTarget.addEventListener(CHECKOUT_CART_UPDATED_EVENT, () => {
+      notifiedQuantities.push(readStoreCartState(storage).lines[0]!.quantity);
+    });
 
     await applyStoreCartStateAndPersist({
+      eventTarget,
       readStorage: () => storage,
       setStoreCartState: (state) => {
         seenStates.push(state);
@@ -73,7 +81,8 @@ describe('store cart bridge', async () => {
     });
 
     expect(seenStates).toEqual([nextState]);
-    expect(readStoreCartState(storage).lines).toMatchObject([{ variantId: cartItem.variantId, quantity: 2 }]);
+    expect(readStoreCartState(storage).lines).toMatchObject([{ variantId: cartItem.variantId, quantity: 9 }]);
+    expect(notifiedQuantities).toEqual([9]);
   });
 
   it('still applies StoreCart state when browser storage is unavailable', async () => {
@@ -81,6 +90,7 @@ describe('store cart bridge', async () => {
     const seenStates: StoreCartState[] = [];
 
     await applyStoreCartStateAndPersist({
+      eventTarget: new EventTarget() as Window,
       readStorage: () => undefined,
       setStoreCartState: (state) => {
         seenStates.push(state);
@@ -89,6 +99,36 @@ describe('store cart bridge', async () => {
     });
 
     expect(seenStates).toEqual([nextState]);
+  });
+
+  it('preserves in-memory drawer changes when the connected bridge has no storage', async () => {
+    const eventTarget = new EventTarget() as Window;
+    const nextState = addStoreCartItem(cartItem);
+    const seenStates: StoreCartState[] = [];
+    const disconnect = connectStoreCartBridge({
+      eventTarget,
+      queryHeaderRoot: () => null,
+      readStorage: () => undefined,
+      setStoreCartDrawerOpen: () => {},
+      setStoreCartHeaderContainer: () => {},
+      setStoreCartState: (state) => {
+        seenStates.push(state);
+      },
+    });
+    try {
+      await applyStoreCartStateAndPersist({
+        eventTarget,
+        readStorage: () => undefined,
+        state: nextState,
+        setStoreCartState: (state) => {
+          seenStates.push(state);
+        },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      expect(seenStates).toEqual([nextState]);
+    } finally {
+      disconnect();
+    }
   });
 
   it('persists add-item events and opens the cart drawer', async () => {

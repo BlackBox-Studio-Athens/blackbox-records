@@ -1,10 +1,49 @@
 import type { LocalCheckoutOrderRow, RemoteD1ReadinessSummary } from '../smoke-stripe-sandbox';
-import { smokeVariantId } from './constants';
+import { readRuntimeCatalogPresentation } from '../../apps/backend/src/application/commerce/catalog-sync';
+import { parseD1Rows } from '../stripe-catalog-verify';
+import {
+  payWhatYouWantSmokeStoreItemSlug,
+  payWhatYouWantSmokeVariantId,
+  smokeStoreItemSlug,
+  smokeVariantId,
+} from './constants';
 
 type D1JsonResult = Array<{
   results?: unknown;
   success?: boolean;
 }>;
+
+export function createSmokeRuntimeCatalogSql(): string {
+  return `SELECT * FROM "StoreItemOption" WHERE "variantId" IN ('${smokeVariantId}', '${payWhatYouWantSmokeVariantId}') LIMIT 3;`;
+}
+
+export function parseSmokeRuntimeProductProjections(jsonText: string) {
+  const rows = parseD1Rows<Record<string, unknown>>(jsonText);
+  return new Map(
+    (
+      [
+        [smokeVariantId, smokeStoreItemSlug],
+        [payWhatYouWantSmokeVariantId, payWhatYouWantSmokeStoreItemSlug],
+      ] as const
+    ).map(([variantId, slug]) => {
+      const matches = rows.filter((row) => row.variantId === variantId && row.storeItemSlug === slug);
+      const row = matches[0];
+      if (matches.length !== 1 || row?.catalogAvailability !== 'published') {
+        throw new Error(`Missing unique published UAT runtime catalog fixture: ${slug} / ${variantId}.`);
+      }
+      const projection = readRuntimeCatalogPresentation(
+        {
+          ...row,
+          productProjection:
+            typeof row.productProjection === 'string' ? JSON.parse(row.productProjection) : row.productProjection,
+        },
+        'uat',
+      );
+      if (!projection) throw new Error(`Runtime catalog setup is incomplete for ${slug}.`);
+      return [variantId, projection] as const;
+    }),
+  );
+}
 
 export function createRemoteD1ReadinessSql(): string {
   return [

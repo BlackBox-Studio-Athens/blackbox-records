@@ -26,6 +26,8 @@ vi.mock('./cms/auth', () => ({ authenticate: vi.fn().mockRejectedValue(new Error
 
 import worker, { CmsRuntime } from './cms-worker';
 import { authenticate } from './cms/auth';
+import { commerceRuntimeConfigFromBindings } from './platform/env';
+import { retainPreviewContext } from './cms';
 
 const thumbnailBytes = Uint8Array.from(
   Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64'),
@@ -36,6 +38,62 @@ describe('EmDash checkpoint composition', () => {
     vi.mocked(authenticate).mockReset().mockRejectedValue(new Error('Unauthorized'));
     cmsAsset.mockReset();
     nativeRuntime.handleContentGet.mockReset();
+  });
+
+  it('carries current commerce configuration through a retained CMS preview object', async () => {
+    const values = new Map<string, unknown>();
+    const kv = {
+      get: (key: string) => values.get(key),
+      put: (key: string, value: unknown) => {
+        values.set(key, value);
+      },
+      delete: (key: string) => values.delete(key),
+      list: ({ prefix }: { prefix: string }) => [...values.entries()].filter(([key]) => key.startsWith(prefix)),
+    };
+    const id = retainPreviewContext(
+      new Map(),
+      {
+        owner: 'operator@example.com',
+        parentOrigin: 'http://127.0.0.1:8787',
+        generation: 1,
+        selection: {
+          content: { records: [], media: [] },
+          input: { collection: 'news', slug: 'draft', data: {} },
+          media: {},
+        },
+      },
+      Date.now(),
+      kv,
+    );
+    const commerce = vi.fn().mockImplementation(async () => Response.json({ nativeCheckout: { enabled: false } }));
+    const env = {
+      PRODUCT_ENVIRONMENT: 'LOCAL',
+      LOCAL_OPERATOR_EMAIL: 'operator@example.com',
+      STRIPE_SECRET_KEY: 'sk_test_old',
+      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_old',
+      STRIPE_WEBHOOK_SECRET: 'whsec_old',
+      PUBLIC_SITE: {},
+      COMMERCE_RUNTIME: { getByName: () => ({ fetchWithBindings: commerce }) },
+    } as unknown as ConstructorParameters<typeof CmsRuntime>[1];
+    const runtime = new CmsRuntime({ storage: { kv } } as unknown as DurableObjectState, env);
+    const bindings = {
+      ...env,
+      STRIPE_SECRET_KEY: 'sk_test_new',
+      STRIPE_PAYMENT_METHOD_CONFIGURATION_ID: 'pmc_new',
+      STRIPE_WEBHOOK_SECRET: undefined,
+      NATIVE_CHECKOUT_ENABLED: 'false',
+      CMS_RUNTIME: { getByName: () => runtime },
+    } as unknown as Parameters<typeof worker.fetch>[1];
+    const response = await worker.fetch(
+      new Request(`http://localhost:8787/_preview/api/${id}/api/store/capabilities`),
+      bindings,
+      {} as ExecutionContext,
+    );
+    expect(response.status).toBe(200);
+    expect(commerce).toHaveBeenCalledOnce();
+    expect(commerce.mock.calls[0][1]).toEqual(commerceRuntimeConfigFromBindings(bindings));
+    expect(commerce.mock.calls[0][1].STRIPE_WEBHOOK_SECRET).toBeUndefined();
+    expect(env.STRIPE_SECRET_KEY).toBe('sk_test_old');
   });
 
   it('validates native navigation booleans before publishing newly imported records', async () => {
@@ -143,7 +201,7 @@ describe('EmDash checkpoint composition', () => {
       PRODUCT_ENVIRONMENT: 'LOCAL',
       ASSETS: { fetch: assets },
       CMS_DB: { prepare: vi.fn() },
-      CMS_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetch: cms }) },
+      CMS_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetchWithBindings: cms }) },
     } as unknown as Parameters<typeof worker.fetch>[1];
 
     for (const method of ['GET', 'HEAD']) {
@@ -317,8 +375,8 @@ describe('EmDash checkpoint composition', () => {
     const bindings = {
       PRODUCT_ENVIRONMENT: 'LOCAL',
       ASSETS: { fetch: assets },
-      COMMERCE_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetch: commerce }) },
-      CMS_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetch: cms }) },
+      COMMERCE_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetchWithBindings: commerce }) },
+      CMS_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetchWithBindings: cms }) },
     } as unknown as Parameters<typeof worker.fetch>[1];
 
     expect(
@@ -355,6 +413,11 @@ describe('EmDash checkpoint composition', () => {
     ).toBe(200);
     expect(commerce).toHaveBeenCalledTimes(2);
     expect(cms).toHaveBeenCalledTimes(3);
+    for (const call of [...commerce.mock.calls, ...cms.mock.calls]) {
+      expect(call[1]).toEqual(commerceRuntimeConfigFromBindings(bindings));
+      expect(call[1]).not.toHaveProperty('COMMERCE_RUNTIME');
+      expect(call[1]).not.toHaveProperty('CMS_RUNTIME');
+    }
     expect(assets).not.toHaveBeenCalled();
   });
 
@@ -363,7 +426,7 @@ describe('EmDash checkpoint composition', () => {
     const commerce = vi.fn().mockResolvedValue(new Response('commerce'));
     const bindings = {
       PRODUCT_ENVIRONMENT: 'LOCAL',
-      COMMERCE_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetch: commerce }) },
+      COMMERCE_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetchWithBindings: commerce }) },
     } as unknown as Parameters<typeof worker.fetch>[1];
     const send = (path: string, method: string) =>
       worker.fetch(new Request(`http://127.0.0.1${path}`, { method }), bindings, {} as ExecutionContext);
@@ -379,7 +442,7 @@ describe('EmDash checkpoint composition', () => {
     const request = new Request('https://shop.example/api/checkout/sessions', { method: 'POST', body: '{}' });
     const fetch = vi.fn().mockResolvedValue(new Response('checkout', { status: 200 }));
     const bindings = {
-      COMMERCE_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetch }) },
+      COMMERCE_RUNTIME: { getByName: vi.fn().mockReturnValue({ fetchWithBindings: fetch }) },
       CMS_RUNTIME: { getByName: vi.fn() },
     };
     const response = await worker.fetch(
@@ -388,7 +451,10 @@ describe('EmDash checkpoint composition', () => {
       {} as ExecutionContext,
     );
     expect(await response.text()).toBe('checkout');
-    expect(fetch).toHaveBeenCalledExactlyOnceWith(request);
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(
+      request,
+      commerceRuntimeConfigFromBindings(bindings as unknown as Parameters<typeof worker.fetch>[1]),
+    );
     expect(bindings.CMS_RUNTIME.getByName).not.toHaveBeenCalled();
   });
 

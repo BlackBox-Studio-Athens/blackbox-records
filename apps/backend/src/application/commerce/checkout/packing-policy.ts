@@ -3,22 +3,20 @@ import { deliveryCharges } from '@blackbox/api-client/public';
 
 export { deliveryCharges, vatDisclosure } from '@blackbox/api-client/public';
 
-// Replace with measured, explicitly assigned profiles before production acceptance.
-const measuredItems = new Map<string, ItemPackingProfile>();
-const measuredPackages: PackagePackingProfile[] = [];
-export const hostedMonetaryPolicyReference: string | null = null;
+export const hostedMonetaryPolicyReference = 'owner-assumed-vinyl-packing-inclusive-tariff-prd-2026-10-08-v1';
 
-const syntheticReference = { measurementReference: 'synthetic-test-2026-09-11', synthetic: true };
-const syntheticItemProfile: ItemPackingProfile = {
-  ...syntheticReference,
+// Owner-authorized assumptions for the explicitly assigned LP editions; real measurements remain unknown.
+const assumedReference = { measurementReference: 'owner-assumed-vinyl-parcel-2026-10-08' };
+const assumedItemProfile: ItemPackingProfile = {
+  ...assumedReference,
   lengthMm: 315,
   widthMm: 315,
   thicknessMm: 8,
   weightGrams: 220,
 };
-const syntheticPackages: PackagePackingProfile[] = [
+const assumedPackages: PackagePackingProfile[] = [
   {
-    ...syntheticReference,
+    ...assumedReference,
     tier: 'small',
     innerLengthMm: 330,
     innerWidthMm: 330,
@@ -30,7 +28,7 @@ const syntheticPackages: PackagePackingProfile[] = [
     maxGrossWeightGrams: 2000,
   },
   {
-    ...syntheticReference,
+    ...assumedReference,
     tier: 'medium',
     innerLengthMm: 330,
     innerWidthMm: 330,
@@ -42,13 +40,24 @@ const syntheticPackages: PackagePackingProfile[] = [
     maxGrossWeightGrams: 5000,
   },
 ];
+const assumedItems = new Map<string, ItemPackingProfile>([
+  ['variant_disintegration-black-vinyl-lp_standard', assumedItemProfile],
+  ['variant_barren-point_standard', assumedItemProfile],
+]);
+const syntheticReference = { measurementReference: 'synthetic-test-2026-09-11', synthetic: true };
+const syntheticItemProfile = { ...assumedItemProfile, ...syntheticReference };
+const syntheticPackages = assumedPackages.map((pack) => ({ ...pack, ...syntheticReference }));
 
 export function createPackingPolicy(target: 'local' | 'uat' | 'prd' = 'prd', stripeTestMode = false): PackingPolicy {
   const allowSynthetic = target === 'local' || (target === 'uat' && stripeTestMode);
   return {
     allowSynthetic,
     charges: deliveryCharges,
-    items: allowSynthetic ? { get: () => syntheticItemProfile } : measuredItems,
-    packages: allowSynthetic ? syntheticPackages : measuredPackages,
+    items: allowSynthetic
+      ? { get: () => syntheticItemProfile }
+      : target === 'prd'
+        ? assumedItems
+        : new Map<string, ItemPackingProfile>(),
+    packages: allowSynthetic ? syntheticPackages : target === 'prd' ? assumedPackages : [],
   };
 }

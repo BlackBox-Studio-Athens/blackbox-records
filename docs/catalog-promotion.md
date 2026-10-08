@@ -46,7 +46,7 @@ For repository migration/recovery only, `pnpm catalog:readiness:generate` create
 
 ## Credentials and PRD
 
-The one-time PRD catalog and CMS cutover (initial Price, CMS linkage backfill, Stripe key installation) finished on 2026-09-15; see [the completion record](cms-cutover.md). The release workflow no longer has a catalog job or confirmation input, and `stripe:catalog:verify` refuses PRD `--apply`. Do not repeat the cutover. A future live PRD catalog change needs its own reviewed one-run workflow with a false-by-default confirmation; that confirmation never enables checkout, and `PRD_LAUNCH_APPROVED=true` and `native_checkout_enabled` remain separate launch controls. Such a workflow also owns persisting `STRIPE_SECRET_KEY` into the PRD Worker, which the retired job did with `wrangler secret put`.
+The one-time PRD catalog and CMS cutover (initial Price, CMS linkage backfill, Stripe key installation) finished on 2026-09-15; see [the completion record](cms-cutover.md). The release workflow no longer has a catalog job or confirmation input, and `stripe:catalog:verify` refuses PRD `--apply`. Do not repeat that backfill. The separately reviewed account migration below has a one-run live confirmation; it never enables checkout. `PRD_LAUNCH_APPROVED=true` and `native_checkout_enabled` remain separate launch controls. Install matching Worker credentials explicitly during the frozen configuration switch; software promotion does not install them.
 
 Keep the GitHub environments `catalog-promotion-uat` and `catalog-promotion-prd`. Each environment's `CLOUDFLARE_API_TOKEN` covers D1, Workers Scripts and Cloudflare Pages write, so one deploy job per environment deploys the Workers and then Pages; there is no separate Pages credential or job. The token is set only on the steps that use it, never on install, build or the static smoke. The manual provider smoke (`uat-smoke.yml`) uses the UAT credential. Only `promote-prd.yml` binds `catalog-promotion-prd`, and no push-triggered workflow reads a `PRD_*` secret. The repository-level `CLOUDFLARE_API_TOKEN` remains only for `prd-holding-page.yml`. Existing staff routes remain provisioned separately; routine releases do not require zone-route mutation permission. `STRIPE_SECRET_KEY` and `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID` are required only for UAT provider verification and operations; disabled PRD promotion does not need Stripe credentials. `CLOUDFLARE_ACCOUNT_ID` is non-secret. Worker runtime secrets remain separate.
 
@@ -54,9 +54,66 @@ Release candidates and code promotion never change the live PRD catalog; the dis
 
 ## Migration and retry
 
+### Stripe account migration
+
+`pnpm stripe:catalog:migrate` is the plan/apply/restore operator for [migrate-stripe-to-blackboxrecords](../openspec/changes/migrate-stripe-to-blackboxrecords/design.md). It defaults to a read-only plan. Use the primary `main` checkout; this is separate from Software Release and needs no new Actions workflow.
+
+Provide `SOURCE_STRIPE_SECRET_KEY`, `TARGET_STRIPE_SECRET_KEY`, `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` privately. The source key needs account/balance/Product/Price reads; the destination also needs Product/Price writes. D1 reads cover configured `COMMERCE_DB` and the separate `CMS_DB`; writes target current commerce mappings/offers only. Every run asserts exact full accounts and test/live mode and pins both database identities. Use the change's account map; keep full IDs out of Git.
+
+Check account-wide [Free-tier headroom](cloudflare-free-tier.md) and record the expected request/row budget before hosted commands. Plans and boundary verification paginate D1 tables in 1,000-row pages, with the unchanged 100,000-row per-table ceiling. Budget one full commerce/CMS state read for a plan, two for prepare-only and three for each full apply or restore, including an idempotent invocation. Stripe recovery exhausts Product inventory and Product/lookup-scoped Price pagination, including archived Prices. Each distinct runtime media URL is fetched once per invocation; its body is canceled after image headers are checked. Reserve ordinary-service headroom and stop/reduce the run if measured use exceeds the budget.
+
+Create and review a private dry run (PowerShell):
+
+```powershell
+pnpm stripe:catalog:migrate --env uat --source-account $env:SOURCE_STRIPE_ACCOUNT_ID --target-account $env:TARGET_STRIPE_ACCOUNT_ID --manifest .codex-artifacts/catalog-migration/uat-reviewed.json
+$reviewedHash = (Get-Content .codex-artifacts/catalog-migration/uat-reviewed.json -Raw | ConvertFrom-Json).hash
+```
+
+Read the manifest before authorizing that hash. It contains every `StoreItemOption`, its revision and original mapping/offer, source Product/default-Price facts, target Product identity and runtime presentation. CMS-created, withheld, paused, sold-out and uninitialized rows are included. The compact `cmsSources` inventory records native source IDs/slugs, versions, live/draft revision pointers and content fingerprints, including sources with no catalog identity. These sources gain no Store Item, variant or Price. Product-only unfinished setup remains in its original `CatalogOperation`, without an invented mapping. Missing/conflicting source identities stop the plan. Fixed/custom amounts, nullable bounds, active flags and inclusive EUR tax come from that environment's source authority.
+
+Zero-revision drafts keep any partial source mapping/offer unchanged and gain no destination objects. Retain a source-account handling path for their unfinished setup through the drain/disposition journal; this command does not complete setup or rewrite its receipt.
+
+Protected fingerprints cover all other commerce and CMS tables/schema: stock, `zeroStockState`, `expectedMonth`, preorder fields, pauses, content/publication data, pending AvailabilityAlert consent/retry fields, send-day counters, orders, monetary facts and retained events/operations. Plan files refuse overwrite. Journals/provider IDs stay under `.codex-artifacts/catalog-migration/`; keep an approved private copy with usable source rollback credentials.
+
+Version 2 records raw CMS bookkeeping separately in the private manifest and at each journal verification boundary. Its protected fingerprints normalize only `value` and `revision` on the `options` row named `system:scheduler:last_completed_at`, and `next_eligible_at`, `last_started_at`, `last_completed_at`, `last_duration_ms` and `updated_at` on `_emdash_media_usage_cleanup` task `projection_gc`. Row presence, identities, counts, schema and every other field remain protected, including other options, cleanup leases/cursors, failures and deletion counters. Apply and restore reject version 1 manifests/journals; retain those artifacts and create a fresh version 2 plan in new files for review.
+
+Stage destination objects before changing current links:
+
+```powershell
+pnpm stripe:catalog:migrate --env uat --source-account $env:SOURCE_STRIPE_ACCOUNT_ID --target-account $env:TARGET_STRIPE_ACCOUNT_ID --manifest .codex-artifacts/catalog-migration/uat-reviewed.json --mode apply --prepare-only --reviewed-hash $reviewedHash
+```
+
+Deterministic Product IDs, migration metadata, exhaustive Price recovery and the journal prevent duplicates after lost responses or expired idempotency. Ambiguous identities, conflicting defaults or source drift stop the run. Inactive objects stay inactive; uninitialized items gain no prices. Published artwork `/media/published/<sha>` uses the Product Environment profile's backend Worker origin: `blackbox-records-backend-uat.blackboxrecordsathens.workers.dev` for UAT and `blackbox-records-backend-prd.blackboxrecordsathens.workers.dev` for PRD. Public content `/media/content/<sha>` uses its Pages origin: `blackbox-records-web-uat.pages.dev` for UAT and `blackbox-records-web.pages.dev` for PRD. The command derives these origins from the existing profile, checks HTTPS image reachability without redirects and preserves each stored URL. Inspect actual live Product images during PRD acceptance.
+
+Freeze every independent writer. Coordinate `release-uat`/`release-prd`, the separate `uat-provider-smoke` group, Content/Items edits/publication and scheduled activity. Close checkout, drain source Sessions/holds/pending payments, CatalogOperation leases and payable retries, and assign retained review/history cases. For PRD, deploy and verify the launch change's availability-alert suppression before rebinding; checkout closure alone does not stop alerts. Keep safe unrelated delivery recovery running under its owner. Record legitimate drain/delivery, retention cleanup or later probe events separately. If these change the protected baseline, review a fresh manifest/journal in new files; matching staged objects resume without duplication.
+
+Stage the target webhook by creating it, privately capturing its secret, updating `disabled=true` and verifying disabled status. Disable an existing source endpoint only after drain. Stop target payment/catalog activity during staging. Switch the Worker key/PMC/signing secret and matching GitHub key/PMC coherently, then apply the final reviewed manifest:
+
+```powershell
+pnpm stripe:catalog:migrate --env uat --source-account $env:SOURCE_STRIPE_ACCOUNT_ID --target-account $env:TARGET_STRIPE_ACCOUNT_ID --manifest .codex-artifacts/catalog-migration/uat-reviewed.json --mode apply --reviewed-hash $reviewedHash
+```
+
+Each mapping/offer pair changes in one [D1 transaction batch](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch) with exact item/revision, mapping, offer, stock and pause preconditions. A failed precondition aborts the batch. The command verifies every manifest row and CMS source plus protected table fingerprints before/after apply; the published-only normal verifier is an additional check. Interrupted/repeated apply resumes from actual links and retained target IDs. On error, keep checkout closed and inspect the safe reason/private journal. Do not edit an old reviewed manifest to make it pass.
+
+The current inverse rehearsal is **pre-event**, before signed probes advance protected webhook history or any destination payment. Hold the freeze, disable the destination endpoint and restore coherent source Worker/GitHub configuration. Restore only inverse current catalog fields:
+
+```powershell
+pnpm stripe:catalog:migrate --env uat --source-account $env:SOURCE_STRIPE_ACCOUNT_ID --target-account $env:TARGET_STRIPE_ACCOUNT_ID --manifest .codex-artifacts/catalog-migration/uat-reviewed.json --mode restore --reviewed-hash $reviewedHash
+```
+
+Restore preserves provider objects/history and removes only a current offer created here when its original was absent. Repeated/interrupted restore is safe. Restore the former source endpoint and verify identity/data, then reapply the same journal in UAT and check for duplicates. A private journal lock prevents concurrent operators; dead same-host locks recover automatically, while live/other-host ownership must be resolved by the operator.
+
+For PRD, use `--env prd`, its own accounts/manifest/hash and add `--confirm-live-catalog-changes` to **every** prepare/apply/restore invocation. The normal verifier's PRD apply refusal stays unchanged. Once protected webhook history advances, the old manifest refuses restore. Ordinary planning while mappings point at target cannot construct an inverse successor; no successor-baseline recovery is implemented. Keep checkout closed and repair forward thereafter, including after a destination payment, preserving both histories. A source configuration restore alone with target D1 mappings is not recovery. Bound or resolve this limit for exact PRD readiness; representative UAT needs no historical audit. See the [prepared procedure and limits](../.codex-artifacts/stripe-migration-delegation/uat-configuration-next-mutation-20261008.md).
+
+Enable the target endpoint only after configuration and links agree. Prove a signed reversible catalog event and replay, then restore probe metadata. Run runtime, PMC, webhook and normal catalog checks against the recorded deployed SHA. Provider purchase/receipt/refund smoke is explicit through `uat-smoke.yml` or `pnpm smoke:stripe-uat` after stock/recipient checks; release/static smoke does not establish destination-account acceptance. PRD remains closed pending technical acceptance, live smoke and final activation for the [current requested scope](../openspec/changes/migrate-stripe-to-blackboxrecords/evidence.md#owner-decisions--2026-10-08).
+
+### Retained same-account binding backfill
+
 The additive D1 migration retains existing Price mappings and adds a unique nullable Product binding. Run `pnpm catalog:bindings:migrate --env uat` for a dry run; add `--apply` after reviewing it. PRD apply also requires `--confirm-live-catalog-changes`.
 
 Migration exports affected D1 tables and validates all selected bindings before provider writes. A trusted Price mapping supplies the Product and preserves the current amount. Missing or conflicting mappings/defaults stop the migration. Backups and provider IDs stay in ignored `.codex-artifacts/catalog-migration/` files.
+
+This completed repository-contract backfill is not account-rebinding authority. Do not use it, `backfill-runtime-catalog.ts`, or `stripe:catalog:verify --plan-apply` for the command above: the repository loader still emits retired `/assets/catalog/` URLs. Repair that path only for an identified recovery using actual CMS media identities.
 
 Reset recovery is an exceptional operator repair from reviewed backups and provider history. It is deliberately absent from the release workflow; ordinary retries never reactivate archived objects or infer identities from Product names.
 

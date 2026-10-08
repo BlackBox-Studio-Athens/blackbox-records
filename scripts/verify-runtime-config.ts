@@ -16,6 +16,7 @@ import { UAT_RESEND_RECEIVING_SINK_EMAIL } from '../apps/backend/src/application
 
 export type RuntimeConfigEnvironment = ProductEnvironment;
 export type RuntimeConfigStatus = 'missing' | 'not_applicable' | 'present' | 'unverified';
+type CmsAccessConfig = { access_team_domain?: string | null; access_policy_aud?: string | null };
 
 export type RuntimeConfigCategory = {
   detail?: string;
@@ -113,6 +114,7 @@ export function parseRuntimeConfigVerifyArgs(args: string[]): {
 }
 
 export function verifyRuntimeConfig(input: {
+  cmsResources?: Partial<Record<WorkerRuntimeTarget, CmsAccessConfig>>;
   environment: RuntimeConfigEnvironment;
   requireLiveSecrets?: boolean;
   secretNames: readonly string[] | null;
@@ -127,7 +129,12 @@ export function verifyRuntimeConfig(input: {
     productEnvironmentProfile.requiresDeployedSecretsByDefault || input.requireLiveSecrets === true;
   const categories: RuntimeConfigCategory[] = [
     classifyProductEnvironmentMapping(productEnvironmentProfile),
-    ...classifyOperatorAccessTrust(productEnvironmentProfile, environmentBlock, input.secretNames),
+    ...classifyOperatorAccessTrust(
+      productEnvironmentProfile,
+      environmentBlock,
+      input.secretNames,
+      input.cmsResources?.[productEnvironmentProfile.workerDeploymentTarget],
+    ),
     ...(!requireDeployedSecrets
       ? []
       : [
@@ -163,6 +170,7 @@ function classifyOperatorAccessTrust(
   productEnvironmentProfile: ProductEnvironmentProfile,
   environmentBlock: string,
   secretNames: readonly string[] | null,
+  cmsAccess?: CmsAccessConfig,
 ): RuntimeConfigCategory[] {
   if (productEnvironmentProfile.productEnvironment === 'LOCAL') {
     return [
@@ -201,8 +209,8 @@ function classifyOperatorAccessTrust(
   }
 
   return [
-    classifyWorkerConfigPresence('CF_ACCESS_TEAM_DOMAIN', environmentBlock, secretNames),
-    classifyWorkerConfigPresence('CF_ACCESS_POLICY_AUD', environmentBlock, secretNames),
+    classifyWorkerConfigPresence('CF_ACCESS_TEAM_DOMAIN', environmentBlock, secretNames, cmsAccess?.access_team_domain),
+    classifyWorkerConfigPresence('CF_ACCESS_POLICY_AUD', environmentBlock, secretNames, cmsAccess?.access_policy_aud),
     {
       detail: 'Hosted Product Environments cannot use the Local operator identity bypass.',
       name: 'LOCAL_OPERATOR_EMAIL',
@@ -249,7 +257,13 @@ function classifyWorkerConfigPresence(
   name: RuntimeConfigCategory['name'],
   environmentBlock: string,
   secretNames: readonly string[] | null,
+  configuredValue?: string | null,
 ): RuntimeConfigCategory {
+  // The canonical CMS build's resource value takes precedence over Wrangler vars and secrets.
+  if (configuredValue !== undefined && configuredValue !== null) {
+    return { name, status: configuredValue.trim() ? 'present' : 'missing' };
+  }
+
   if (classifyWranglerTextPresence(name, environmentBlock).status === 'present') {
     return {
       name,
@@ -612,6 +626,7 @@ async function main(): Promise<void> {
   const options = parseRuntimeConfigVerifyArgs(process.argv.slice(2));
   const workerDeploymentTarget = getProductEnvironmentProfile(options.environment).workerDeploymentTarget;
   const result = verifyRuntimeConfig({
+    cmsResources: JSON.parse(readFileSync(path.join(backendDir, 'cms-resources.json'), 'utf8')),
     environment: options.environment,
     requireLiveSecrets: options.requireLiveSecrets,
     secretNames: readWorkerSecretNames(workerDeploymentTarget),

@@ -243,7 +243,7 @@ test('Buy on a Store card reopens a three-item cart after every dismissal and pr
   await expect(buy).toBeVisible();
   await expect(page.locator('[data-store-card-buy]:visible')).toHaveCount(3);
 
-  await page.locator('[data-music-streaming-service-embedded-player-trigger]').first().click();
+  await page.locator('[data-music-streaming-service-embedded-player-trigger]:visible').first().click();
   const iframe = page.locator('[data-music-streaming-service-embedded-player-iframe]');
   await expect(iframe).toHaveAttribute('data-music-streaming-service-embedded-player-load-state', 'loaded');
   await iframe.contentFrame().getByRole('button', { name: 'Player fixture' }).click();
@@ -415,6 +415,98 @@ test('the checkout pay control fills in place when the shipping quote arrives', 
   await expect(pay).toContainText('€32.50');
   // Webfonts are stubbed here, so this guards the layout around the control, not Bebas metrics.
   expect((await pay.boundingBox())?.y).toBeCloseTo(waitingBox?.y ?? Number.NaN, 0);
+});
+
+test('mounted checkout follows drawer quantity changes before payment', async ({ page }) => {
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('blackbox.storeCart.v2'))
+      localStorage.setItem(
+        'blackbox.storeCart.v2',
+        JSON.stringify({
+          lines: [
+            {
+              availabilityLabel: 'In stock',
+              image: null,
+              imageAlt: null,
+              optionLabel: 'Black Vinyl LP',
+              priceAmountMinor: 2800,
+              priceCurrencyCode: 'EUR',
+              priceDisplay: '€28.00',
+              priceKind: 'fixed',
+              storeItemSlug: 'disintegration-black-vinyl-lp',
+              subtitle: 'Black Vinyl LP',
+              title: 'Disintegration',
+              variantId: 'variant_disintegration-black-vinyl-lp_standard',
+              quantity: 1,
+            },
+          ],
+        }),
+      );
+  });
+  await page.route('**/api/store/capabilities', (route) =>
+    route.fulfill({
+      json: {
+        pricing: { vatDisclosure: 'VAT included', deliveryCharges: { small: 250, medium: 350 }, currencyCode: 'EUR' },
+        nativeCheckout: { enabled: true, unavailableReason: null },
+      },
+    }),
+  );
+  let releaseQuotes!: () => void;
+  const changedQuotes = new Promise<void>((resolve) => {
+    releaseQuotes = resolve;
+  });
+  await page.route('**/api/store/delivery-quote', async (route) => {
+    const quantity = route.request().postDataJSON().lines[0].quantity;
+    if (quantity > 1) await changedQuotes;
+    const amountMinor = quantity > 1 ? 350 : 250;
+    await route.fulfill({
+      json: {
+        quote: {
+          tier: quantity > 1 ? 'medium' : 'small',
+          amountMinor,
+          currencyCode: 'EUR',
+          merchandiseGrossMinor: quantity * 2800,
+          totalAmountMinor: quantity * 2800 + amountMinor,
+        },
+      },
+    });
+  });
+  await page.route('**/api/checkout/sessions', (route) => route.fulfill({ json: { checkoutUrl: '' } }));
+  await page.goto('store/checkout/');
+  await waitForShell(page);
+  const pay = page.locator('[data-checkout-pay-state]');
+  await expect(pay).toHaveAttribute('data-checkout-pay-state', 'ready');
+  await expect(pay).toContainText('€30.50');
+  await page.locator('[data-store-cart-trigger]').first().click();
+  const drawer = page.getByRole('dialog', { name: 'Cart' });
+  try {
+    for (let quantity = 2; quantity <= 9; quantity++) {
+      await drawer.getByRole('button', { name: 'Increase quantity for Disintegration' }).click();
+      await expect
+        .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('blackbox.storeCart.v2')!).lines[0].quantity))
+        .toBe(quantity);
+    }
+    await expect(page.locator('[data-checkout-order-summary]')).toContainText('€252.00');
+    await expect(pay).toHaveAttribute('data-checkout-pay-state', 'waiting');
+    await expect(pay).toBeDisabled();
+  } finally {
+    releaseQuotes();
+  }
+  await drawer.getByRole('button', { name: 'Close cart', exact: true }).click();
+  await expect(pay).toHaveAttribute('data-checkout-pay-state', 'ready');
+  await expect(pay).toContainText('€255.50');
+  await expect(page.locator('[data-delivery-summary]').first()).toContainText('€3.50');
+  const submitted = page.waitForRequest(
+    (request) => request.url().endsWith('/api/checkout/sessions') && request.method() === 'POST',
+  );
+  await pay.click();
+  expect((await submitted).postDataJSON().lines).toEqual([
+    {
+      storeItemSlug: 'disintegration-black-vinyl-lp',
+      variantId: 'variant_disintegration-black-vinyl-lp_standard',
+      quantity: 9,
+    },
+  ]);
 });
 
 test('the header cart control appears only with items or in the store', async ({ page }) => {

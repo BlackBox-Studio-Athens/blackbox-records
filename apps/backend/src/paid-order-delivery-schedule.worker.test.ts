@@ -3,6 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import worker from './index';
 import { runPaidOrderDeliverySchedule } from './application/commerce/orders/run-paid-order-delivery-schedule';
+import { productEnvironmentProfiles, type AppBindings } from './platform/env';
+
+const getBooleanValue: NonNullable<AppBindings['FLAGS']>['getBooleanValue'] = () => {
+  throw new Error('Flagship unavailable');
+};
+const unavailableFlags = { getBooleanValue } as NonNullable<AppBindings['FLAGS']>;
 
 describe('paid order delivery schedule', () => {
   it('exports one scheduled handler and treats an empty delivery queue as a no-op', async () => {
@@ -11,9 +17,17 @@ describe('paid order delivery schedule', () => {
     await expect(runPaidOrderDeliverySchedule(env, new Date('2026-09-01T10:30:00.000Z'))).resolves.toEqual([]);
   });
 
-  it.each([0, 3, 6])(
-    'shares five rows with %i paid deliveries first and preserves the paid results',
-    async (paidCount) => {
+  it.each([
+    [0, 'LOCAL', false],
+    [3, 'LOCAL', false],
+    [6, 'LOCAL', false],
+    [0, 'PRD', false],
+    [3, 'PRD', false],
+    [6, 'PRD', false],
+    [3, 'PRD', true],
+  ] as const)(
+    'shares five rows with %i paid deliveries first in %s (flag failure: %s)',
+    async (paidCount, productEnvironment, flagFailure) => {
       const timestamp = '2026-09-01T10:00:00.000Z';
       const statements: D1PreparedStatement[] = [];
       const prefix = crypto.randomUUID();
@@ -54,13 +68,25 @@ describe('paid order delivery schedule', () => {
       }
       await env.COMMERCE_DB.batch(statements);
       const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+      const emailRequest = vi
+        .spyOn(globalThis, 'fetch')
+        .mockImplementation(async () => Response.json({ id: 'schedule' }));
       try {
         const paidProcessed = Math.min(5, paidCount);
         const results = await runPaidOrderDeliverySchedule(
           {
             ...env,
-            PRODUCT_ENVIRONMENT: 'LOCAL',
+            PRODUCT_ENVIRONMENT: productEnvironment,
+            EMAIL_BRAND_HOME_URL: productEnvironmentProfiles[productEnvironment].emailBrand.homeUrl,
+            EMAIL_BRAND_LOGO_URL: productEnvironmentProfiles[productEnvironment].emailBrand.logoUrl,
             RESEND_API_KEY: 're_mock_blackbox_local',
+            ...(flagFailure
+              ? {
+                  PRD_LAUNCH_APPROVED: 'true',
+                  PRD_AVAILABILITY_ALERTS_APPROVED: 'true',
+                  FLAGS: unavailableFlags,
+                }
+              : { NATIVE_CHECKOUT_ENABLED: 'false' }),
           },
           new Date('2026-09-01T10:30:00.000Z'),
         );
@@ -82,6 +108,7 @@ describe('paid order delivery schedule', () => {
           deliveredCount: 5 - paidProcessed,
           status: 'completed',
         });
+        expect(emailRequest).toHaveBeenCalledTimes(productEnvironment === 'LOCAL' ? 0 : 5);
         expect(info.mock.calls.indexOf(info.mock.calls.find(([record]) => record === paidLog)!)).toBeLessThan(
           info.mock.calls.indexOf(info.mock.calls.find(([record]) => record === noticeLog)!),
         );
@@ -103,6 +130,7 @@ describe('paid order delivery schedule', () => {
         }
       } finally {
         info.mockRestore();
+        emailRequest.mockRestore();
         await env.COMMERCE_DB.batch(
           ['PaidOrderDelivery', 'PreorderEstimateDelivery', 'CheckoutOrderLine', 'CheckoutOrder'].map((table) =>
             env.COMMERCE_DB.prepare(`DELETE FROM "${table}" WHERE "id" LIKE ?`).bind(`${prefix}%`),
@@ -112,11 +140,80 @@ describe('paid order delivery schedule', () => {
     },
   );
 
-  it('sends a due availability alert only after order email and in the rows order email left', async () => {
+  it.each<[string, Partial<AppBindings>, number]>([
+    ['Local with checkout closed', { PRODUCT_ENVIRONMENT: 'LOCAL', NATIVE_CHECKOUT_ENABLED: 'false' }, 1],
+    [
+      'UAT with checkout closed',
+      {
+        PRODUCT_ENVIRONMENT: 'UAT',
+        NATIVE_CHECKOUT_ENABLED: 'false',
+        RESEND_UAT_RECIPIENT_OVERRIDE_EMAIL: 'uat-sink@ambkime.resend.app',
+      },
+      1,
+    ],
+    [
+      'PRD without launch approval',
+      { PRODUCT_ENVIRONMENT: 'PRD', PRD_AVAILABILITY_ALERTS_APPROVED: 'true', NATIVE_CHECKOUT_ENABLED: 'true' },
+      0,
+    ],
+    [
+      'PRD with checkout disabled',
+      {
+        PRODUCT_ENVIRONMENT: 'PRD',
+        PRD_LAUNCH_APPROVED: 'true',
+        PRD_AVAILABILITY_ALERTS_APPROVED: 'true',
+        NATIVE_CHECKOUT_ENABLED: 'false',
+      },
+      0,
+    ],
+    [
+      'PRD with the checkout default',
+      { PRODUCT_ENVIRONMENT: 'PRD', PRD_LAUNCH_APPROVED: 'true', PRD_AVAILABILITY_ALERTS_APPROVED: 'true' },
+      0,
+    ],
+    ...[undefined, 'false', 'invalid'].map((approval): [string, Partial<AppBindings>, number] => [
+      `PRD beta with public-alert approval ${approval ?? 'absent'}`,
+      {
+        PRODUCT_ENVIRONMENT: 'PRD',
+        PRD_LAUNCH_APPROVED: 'true',
+        NATIVE_CHECKOUT_ENABLED: 'true',
+        ...(approval === undefined ? {} : { PRD_AVAILABILITY_ALERTS_APPROVED: approval }),
+      },
+      0,
+    ]),
+    [
+      'PRD approved public selling',
+      {
+        PRODUCT_ENVIRONMENT: 'PRD',
+        PRD_LAUNCH_APPROVED: 'true',
+        PRD_AVAILABILITY_ALERTS_APPROVED: 'true',
+        NATIVE_CHECKOUT_ENABLED: 'true',
+      },
+      1,
+    ],
+    [
+      'PRD with failed checkout flag evaluation',
+      {
+        PRODUCT_ENVIRONMENT: 'PRD',
+        PRD_LAUNCH_APPROVED: 'true',
+        PRD_AVAILABILITY_ALERTS_APPROVED: 'true',
+        FLAGS: unavailableFlags,
+      },
+      0,
+    ],
+  ])('checks %s before claiming a due alert and preserves retention', async (_scenario, overrides, deliveredCount) => {
     const id = crypto.randomUUID().slice(0, 8);
     const variantId = `variant_schedule_alert_${id}`;
     const timestamp = '2026-09-01T09:00:00.000Z';
-    const bindings = { ...env, PRODUCT_ENVIRONMENT: 'LOCAL' as const, RESEND_API_KEY: 're_mock_blackbox_local' };
+    const expiredId = `${variantId}-expired`;
+    const profile = productEnvironmentProfiles[overrides.PRODUCT_ENVIRONMENT ?? 'LOCAL'];
+    const bindings = {
+      ...env,
+      ...overrides,
+      RESEND_API_KEY: 're_mock_blackbox_local',
+      EMAIL_BRAND_HOME_URL: profile.emailBrand.homeUrl,
+      EMAIL_BRAND_LOGO_URL: profile.emailBrand.logoUrl,
+    };
     await env.COMMERCE_DB.batch([
       env.COMMERCE_DB.prepare(
         `INSERT INTO "StoreItemOption" ("id", "storeItemSlug", "sourceKind", "sourceId", "variantId", "productProjection",
@@ -139,8 +236,10 @@ describe('paid order delivery schedule', () => {
       ).bind(variantId, variantId, timestamp, timestamp),
       env.COMMERCE_DB.prepare(
         `INSERT INTO "AvailabilityAlert" ("id", "variantId", "email", "consentCopyVersion", "consentedAt", "nextAttemptAt",
-           "createdAt", "updatedAt") VALUES (?, ?, 'waiting@example.com', 'v1', ?, ?, ?, ?)`,
-      ).bind(variantId, variantId, timestamp, timestamp, timestamp, timestamp),
+           "createdAt", "updatedAt") VALUES (?, ?, 'waiting@example.com', 'v1', ?, ?, ?, ?),
+           (?, ?, 'expired@example.com', 'v1', '2025-01-01T00:00:00.000Z', '2025-01-01T00:00:00.000Z',
+            '2025-01-01T00:00:00.000Z', '2025-01-01T00:00:00.000Z')`,
+      ).bind(variantId, variantId, timestamp, timestamp, timestamp, timestamp, expiredId, variantId),
     ]);
     // Park alerts other tests left so this run can only claim the one seeded here.
     await env.COMMERCE_DB.prepare(
@@ -149,11 +248,20 @@ describe('paid order delivery schedule', () => {
       .bind(variantId)
       .run();
     const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const emailRequest = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async () => Response.json({ id: 'schedule' }));
+    const itemNames = vi.fn(async (slug: string) =>
+      slug === `schedule-alert-${id}` ? { title: 'Schedule Alert', artist: 'Tester' } : null,
+    );
     try {
-      await runPaidOrderDeliverySchedule(bindings, new Date('2026-09-01T10:30:00.000Z'), {
-        itemNames: async (slug) =>
-          slug === `schedule-alert-${id}` ? { title: 'Schedule Alert', artist: 'Tester' } : null,
-      });
+      const pendingBefore = await env.COMMERCE_DB.prepare('SELECT * FROM "AvailabilityAlert" WHERE "id" = ?')
+        .bind(variantId)
+        .first();
+      const budgetBefore = await env.COMMERCE_DB.prepare('SELECT * FROM "AvailabilityAlertSendDay" WHERE "day" = ?')
+        .bind('2026-09-01')
+        .first();
+      await runPaidOrderDeliverySchedule(bindings, new Date('2026-09-01T10:30:00.000Z'), { itemNames });
       const events = info.mock.calls.map(([record]) => record.event);
       expect(events.indexOf('availability_alert_schedule_outcome')).toBeGreaterThan(
         events.indexOf('preorder_estimate_notice_schedule_outcome'),
@@ -161,18 +269,35 @@ describe('paid order delivery schedule', () => {
       const outcome = info.mock.calls.find(([record]) => record.event === 'availability_alert_schedule_outcome')![0];
       expect(outcome).toMatchObject({ status: 'completed' });
       expect(JSON.stringify(info.mock.calls)).not.toContain('waiting@example.com');
-      const remaining = await env.COMMERCE_DB.prepare(
-        'SELECT COUNT(*) AS "count" FROM "AvailabilityAlert" WHERE "id" = ?',
-      )
+      const remaining = await env.COMMERCE_DB.prepare('SELECT * FROM "AvailabilityAlert" WHERE "id" = ?')
         .bind(variantId)
-        .first<{ count: number }>('count');
-      expect(outcome).toMatchObject({ deliveredCount: 1, budgetExhausted: false });
-      expect(remaining).toBe(0);
+        .first();
+      expect(outcome).toMatchObject({ deliveredCount, budgetExhausted: false });
+      expect(remaining).toEqual(deliveredCount ? null : pendingBefore);
+      expect(itemNames).toHaveBeenCalledTimes(deliveredCount);
+      expect(emailRequest).toHaveBeenCalledTimes(bindings.PRODUCT_ENVIRONMENT === 'LOCAL' ? 0 : deliveredCount);
+      if (deliveredCount && bindings.PRODUCT_ENVIRONMENT !== 'LOCAL') {
+        const message = JSON.parse(String(emailRequest.mock.calls[0]![1]?.body));
+        expect(message.to).toBe(
+          bindings.PRODUCT_ENVIRONMENT === 'UAT' ? 'uat-sink@ambkime.resend.app' : 'waiting@example.com',
+        );
+      }
+      if (!deliveredCount) {
+        expect(
+          await env.COMMERCE_DB.prepare('SELECT * FROM "AvailabilityAlertSendDay" WHERE "day" = ?')
+            .bind('2026-09-01')
+            .first(),
+        ).toEqual(budgetBefore);
+      }
+      expect(
+        await env.COMMERCE_DB.prepare('SELECT * FROM "AvailabilityAlert" WHERE "id" = ?').bind(expiredId).first(),
+      ).toBeNull();
     } finally {
       info.mockRestore();
+      emailRequest.mockRestore();
       await env.COMMERCE_DB.batch(
         ['AvailabilityAlert', 'Stock', 'ItemAvailability', 'StoreItemOption'].map((table) =>
-          env.COMMERCE_DB.prepare(`DELETE FROM "${table}" WHERE "id" = ?`).bind(variantId),
+          env.COMMERCE_DB.prepare(`DELETE FROM "${table}" WHERE "id" IN (?, ?)`).bind(variantId, expiredId),
         ),
       );
     }

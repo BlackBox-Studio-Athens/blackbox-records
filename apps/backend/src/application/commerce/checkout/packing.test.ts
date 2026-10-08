@@ -42,16 +42,50 @@ const policy: PackingPolicy = {
 const records = (quantity: number) => [{ variantId: 'record', quantity }];
 
 describe('protected flat-stack Delivery Charge', () => {
-  it('allows provisional packing only locally or in UAT with a test-mode provider', () => {
+  it('keeps catch-all synthetic packing limited to Local and test-mode UAT', () => {
     for (const target of ['local', 'uat', 'prd'] as const) {
       for (const testMode of [false, true]) {
         const configured = createPackingPolicy(target, testMode);
+        expect(configured.allowSynthetic).toBe(target === 'local' || (target === 'uat' && testMode));
         const variantId = 'variant_new_runtime_item';
         const quote = quoteDelivery([{ variantId, quantity: 1 }], configured);
         expect(quote?.amountMinor ?? null).toBe(target === 'local' || (target === 'uat' && testMode) ? 250 : null);
       }
     }
   });
+  it('uses explicitly assumed PRD LP profiles at the Small and Medium boundary', () => {
+    const configured = createPackingPolicy('prd');
+    const disintegration = { variantId: 'variant_disintegration-black-vinyl-lp_standard', quantity: 7 };
+    const barrenPoint = { variantId: 'variant_barren-point_standard', quantity: 1 };
+    expect(quoteDelivery([disintegration, barrenPoint], configured)).toEqual({
+      tier: 'small',
+      amountMinor: 250,
+      currencyCode: 'EUR',
+    });
+    expect(quoteDelivery([{ ...disintegration, quantity: 8 }, barrenPoint], configured)).toEqual({
+      tier: 'medium',
+      amountMinor: 350,
+      currencyCode: 'EUR',
+    });
+    expect(configured.items.get(disintegration.variantId)?.measurementReference).toBe(
+      'owner-assumed-vinyl-parcel-2026-10-08',
+    );
+    expect(
+      configured.packages.every((pack) => pack.measurementReference === 'owner-assumed-vinyl-parcel-2026-10-08'),
+    ).toBe(true);
+    expect(quoteDelivery([disintegration, barrenPoint], createPackingPolicy('uat', false))).toBeNull();
+  });
+
+  it('rejects an unassigned PRD variant alone or mixed with an assigned LP', () => {
+    const configured = createPackingPolicy('prd');
+    const disintegration = { variantId: 'variant_disintegration-black-vinyl-lp_standard', quantity: 1 };
+    for (const variantId of ['variant_new_runtime_item', 'variant_atopia-atopia-cd_standard']) {
+      const unassigned = { variantId, quantity: 1 };
+      expect(quoteDelivery([unassigned], configured)).toBeNull();
+      expect(quoteDelivery([disintegration, unassigned], configured)).toBeNull();
+    }
+  });
+
   it.each([
     [8, 'small', 250],
     [9, 'medium', 350],

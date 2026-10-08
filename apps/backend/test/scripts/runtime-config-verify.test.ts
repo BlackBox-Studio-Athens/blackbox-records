@@ -225,4 +225,50 @@ describe('runtime config verification', () => {
       ]),
     );
   });
+
+  it('uses the PRD CMS Access inputs that the canonical build adds without masking missing Stripe config', () => {
+    const result = verifyRuntimeConfig({
+      cmsResources: {
+        prd: { access_team_domain: 'https://prd.cloudflareaccess.com', access_policy_aud: 'prd-audience' },
+        uat: { access_team_domain: 'https://uat.cloudflareaccess.com', access_policy_aud: 'uat-audience' },
+      },
+      environment: 'PRD',
+      requireLiveSecrets: true,
+      secretNames: ['STRIPE_SECRET_KEY', ...requiredResendSecrets],
+      wranglerConfigText: wranglerConfigText.replace(/\s*"CF_ACCESS_[^"]+": "[^"]+",/g, ''),
+    });
+
+    expect(result.issues).toEqual([
+      'STRIPE_PAYMENT_METHOD_CONFIGURATION_ID is missing.',
+      'STRIPE_WEBHOOK_SECRET is missing.',
+    ]);
+    const report = formatRuntimeConfigVerificationReport(result);
+    expect(report).not.toContain('prd.cloudflareaccess.com');
+    expect(report).not.toContain('prd-audience');
+    expect(report).not.toContain('uat-audience');
+  });
+
+  it('does not borrow UAT CMS Access inputs for PRD', () => {
+    const result = verifyRuntimeConfig({
+      cmsResources: {
+        uat: { access_team_domain: 'https://uat.cloudflareaccess.com', access_policy_aud: 'uat-audience' },
+      },
+      environment: 'PRD',
+      secretNames: requiredResendSecrets,
+      wranglerConfigText: wranglerConfigText.replace(/\s*"CF_ACCESS_[^"]+": "[^"]+",/g, ''),
+    });
+
+    expect(result.issues).toEqual(['CF_ACCESS_TEAM_DOMAIN is missing.', 'CF_ACCESS_POLICY_AUD is missing.']);
+  });
+
+  it('rejects blank CMS Access overrides even when Wrangler vars and secrets contain the names', () => {
+    const result = verifyRuntimeConfig({
+      cmsResources: { prd: { access_team_domain: ' ', access_policy_aud: '' } },
+      environment: 'PRD',
+      secretNames: ['CF_ACCESS_TEAM_DOMAIN', 'CF_ACCESS_POLICY_AUD', ...requiredResendSecrets],
+      wranglerConfigText,
+    });
+
+    expect(result.issues).toEqual(['CF_ACCESS_TEAM_DOMAIN is missing.', 'CF_ACCESS_POLICY_AUD is missing.']);
+  });
 });

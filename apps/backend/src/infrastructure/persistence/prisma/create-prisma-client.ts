@@ -6,9 +6,9 @@ import { PrismaClient } from '../../../generated/prisma/client';
 // Only bindings explicitly scoped to a Durable Object retain their client.
 const objectClients = new WeakMap<Pick<AppBindings, 'COMMERCE_DB'>, { client?: PrismaClient }>();
 
-export function createPrismaClientScope(bindings: AppBindings): AppBindings {
+export function createPrismaClientScope(bindings: AppBindings, parentScope?: AppBindings): AppBindings {
   const scopedBindings = { ...bindings };
-  objectClients.set(scopedBindings, {});
+  objectClients.set(scopedBindings, (parentScope && objectClients.get(parentScope)) ?? {});
   return scopedBindings;
 }
 

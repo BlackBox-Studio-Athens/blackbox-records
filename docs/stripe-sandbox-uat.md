@@ -24,19 +24,25 @@ https://blackbox-records-backend-uat.blackboxrecordsathens.workers.dev
 
 Treat a Stripe account switch as one account-scoped cutover. Changing only `STRIPE_SECRET_KEY` leaves invalid Payment Method Configuration, webhook, Product, Price, D1 mapping, and acceptance-evidence state.
 
-Complete repo work first. Then perform this manual/provider sequence from the exact pushed commit that passed all required gates:
+Use the reviewed `migrate-stripe-to-blackboxrecords` change and the [manifest command and recovery procedure](catalog-promotion.md#stripe-account-migration). Its pinned UAT destination is the dedicated BlackBoxRecords sandbox. Complete repository checks first; provider acceptance names the deployed SHA separately.
 
-1. Preserve the old account and historical D1 order/event rows. Do not rewrite stored Checkout Session, Payment Intent, Price, Product, or event identities; they remain historical references to the account that created them.
-2. In the new Stripe test account, create/select the UAT Payment Method Configuration, persistent webhook endpoint, Products, and Prices. Reuse repo-owned lookup keys and metadata identities, not old account object IDs.
-3. Rotate all account-scoped UAT configuration together:
+1. Export source obligations, commerce/CMS baseline and rollback credential references privately. Preserve old account resources and historical order/event identities. Check current Free-tier headroom before hosted reads, media checks or writes.
+2. Run the default manifest plan, review all catalog rows and explicit CMS source inventory, then stage/resume destination Products/default Prices using `--mode apply --prepare-only` and the reviewed hash. Runtime D1 presentation supplies `/media/` URLs; source defaults supply amounts and bounds. Withheld, paused, sold-out and CMS-created items remain covered. Uninitialized items and CMS sources without catalog identities gain no invented prices or publication.
+3. Coordinate a freeze with `release-uat`, the separate `uat-provider-smoke` group, Content/Items writers and scheduled activity. Close checkout; drain source Sessions, holds, pending payments, CatalogOperation leases and payable retries. Record legitimate drain/delivery or retention changes separately; refresh and review a final manifest in a new file if its baseline changed. Matching staged objects are recovered by permanent identities after idempotency expiry.
+4. Configure the dedicated UAT PMC and stage the target webhook: create, capture its signing secret, update `disabled=true`, and verify disabled status. Disable an existing source endpoint only after drain. Keep target payment/catalog activity stopped during staging.
+5. Rotate all account-scoped UAT configuration together:
    - UAT Worker secrets: `STRIPE_SECRET_KEY`, `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`, `STRIPE_WEBHOOK_SECRET`
-   - GitHub environment `catalog-promotion-uat`: `STRIPE_SECRET_KEY` and `STRIPE_PAYMENT_METHOD_CONFIGURATION_ID`
-   - ignored local `apps/backend/.dev.vars` and `apps/backend/prisma/seeds/local-stripe-test-state.sql` when local real-test checkout is required
-4. Reset/reseed/reconcile the UAT catalog so every current variant receives a new-account Price mapping and Store Offer snapshot. Never carry old account `price_...` IDs into the new account.
-5. Run `pnpm runtime:config:verify --env uat`, `pnpm stripe:payment-methods:verify`, `pnpm stripe:webhooks:verify --env uat`, catalog verification/apply, Worker deploy, and fresh paid UAT smoke. Existing evidence is historical and cannot prove the new account.
-6. Keep PRD closed. Repeat the equivalent live-account setup and evidence only through `production-go-live-readiness`; do not copy UAT test IDs or treat UAT proof as PRD approval.
+   - GitHub environment `catalog-promotion-uat`: key secret and PMC variable
+6. Apply the final reviewed manifest. Each mapping/offer pair switches atomically with source preconditions; every manifest row and protected commerce/CMS field is checked. Do not reset or reseed D1. Keep the freeze and checkout closed on any failure.
+7. Before the first destination payment, rehearse inverse restore and reapply with the same private journal. Restore matching Worker/GitHub configuration separately. Enable the target endpoint after configuration and bindings agree, then prove a signed catalog event and replay without duplicate effects.
+8. Run `pnpm runtime:config:verify --env uat`, `pnpm stripe:payment-methods:verify`, `pnpm stripe:webhooks:verify --env uat`, `pnpm stripe:catalog:verify --env uat`, and the separately authorized manual provider smoke below. Check current test stock and approved recipients first. Prior evidence is historical after an account/configuration/code change.
+9. Keep PRD closed. Its equivalent live writes require its own reviewed hash and `--confirm-live-catalog-changes` on every command; provider and launch acceptance remain with their existing owners.
+
+Custom-price Store Offer snapshots keep `amountMinor=null`; the preset belongs to the provider Price policy. A target state written by the former migration conversion with the preset in that snapshot fails the corrected command's exact current-row guards for both apply and restore. Keep checkout closed and review an explicit guarded repair of the affected rows before using the corrected command; do not weaken the manifest guards or rerun the former conversion.
 
 The committed mock Stripe configuration, Prisma migration history, generated UAT/PRD seed inputs, and static frontend configuration do not change solely because the Stripe account changes.
+
+Local mock stays independent. `pnpm dev:stack:uat-connected` follows the deployed UAT Worker without copying hosted credentials. Advanced Local real-test checkout remains a separate setup; do not rotate normal mock `.dev.vars` or reseed Local for this migration. Keep `backfill-runtime-catalog.ts`, `catalog:bindings:migrate` and `stripe:catalog:verify --plan-apply` out of account rebinding: their repository recovery inputs include retired `/assets/catalog/` URLs.
 
 ## Operator Webhook Readiness
 
@@ -76,13 +82,15 @@ Do not paste the signing secret into docs, chat, screenshots, evidence files, As
 
 The Product's default Price selects the selling amount. Add an EUR Price with inclusive VAT under the existing Product and choose **Set as default price**. Older active Prices are harmless; do not move lookup keys or edit identity metadata.
 
-Signed catalog webhooks refresh only the bound item. Detail and checkout reads retrieve current provider state and repair D1 snapshots. There is no runtime catalog cron and no normal reset flow. Repo presentation updates happen during the release; stock and pauses remain in D1.
+Signed catalog webhooks refresh only the bound item. Detail and checkout reads retrieve current provider state and repair D1 snapshots. The presentation verifier reads current D1 projections; stock and pauses remain in D1. Software release moves code without applying a repository catalog. There is no normal catalog reset flow.
 
 See [Catalog release](catalog-promotion.md) for the single workflow, credentials, targeted verification, migration, and retry commands. The provider smoke is manual only: the **UAT provider smoke** workflow (`uat-smoke.yml`), or the commands below. It is never a release gate and does not run on a push or promotion. The paid scenarios need at least 2 online stock of the smoke item in UAT D1, and they spend that stock, so check it first:
 
 ```sh
 pnpm smoke:stripe-uat -- --scenario happy_path_paid,pay_what_you_want_paid --screenshots on-failure
 ```
+
+The runner reads the published UAT D1 Product Projections for the canonical Disintegration and Atopia fixtures before creating Checkout expectations. Repository fixture contracts still supply the independent expected prices; repository names/images and observed Stripe Products do not supply expected presentation. Missing, duplicate, unpublished or incomplete runtime fixture rows stop the run. Also check Atopia has at least one buyable copy: the paid pair consumes one copy of each fixture.
 
 For a changed fixed price, use the no-payment proof:
 
@@ -98,9 +106,9 @@ Start from the store, open an item, add it to the cart, and continue to checkout
 
 Use any realistic Greek shipping address and phone number in Stripe Checkout. The address is only sandbox test data.
 
-Expected UAT checkout items: every current visible Astro Store Item should reach hosted Stripe Checkout after the full catalog reset/seed/apply sequence.
+Expected UAT checkout items: published, configured and unpaused items with available online stock should reach hosted Stripe Checkout after the reviewed manifest switch and readiness checks. Withheld, paused, sold-out and uninitialized rows keep their existing eligibility.
 
-Sample across formats before acceptance: one vinyl item, `afterglow-tape` for low-stock behavior, `rehearsal-room-tee` for the T-shirt price, and one release item. Sandbox UAT stock starts high for every item except `afterglow-tape`, so multiple testers can complete checkouts. Successful sandbox payments still decrement sandbox stock, just like the production flow will.
+Sample across formats before acceptance: one vinyl item, `afterglow-tape` for low-stock behavior, `rehearsal-room-tee` for the T-shirt price, and one release item. Inspect current UAT stock rather than assuming seeded quantities. Successful sandbox payments decrement that stock, just like the production flow will.
 
 ### Successful Payment
 

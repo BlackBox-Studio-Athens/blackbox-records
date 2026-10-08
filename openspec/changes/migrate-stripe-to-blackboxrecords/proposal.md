@@ -2,15 +2,15 @@
 
 ## Why
 
-Move the existing store's UAT and PRD checkout to BlackBoxRecords for an extremely limited paid beta. Complete its technical setup while preserving the current catalog, stock and commerce history. A later migration will move future sales to the owner's intended official account.
+Move the existing store's UAT and PRD checkout to BlackBoxRecords for the owner's requested unrestricted selling scope after technical readiness. The 2026-10-08 decision supersedes the earlier restricted beta, with no participant/order limit or end date. Preserve the current catalog, stock and commerce history. A later migration will move future sales to the owner's intended official account.
 
 ## What Changes
 
 - Use the existing **BlackBoxRecords sandbox** for UAT and **BlackBoxRecords live** for PRD, with explicit account/mode checks.
-- Confirm the actual beta seller and configure Tax, payment methods, public details, durable credentials, webhooks and payout operations. Explicitly enable ordinary Stripe receipts for successful payments and refunds before beta sales.
+- Use the supplied seller, stock, bank and necessary operating-owner attestations; configure payment methods, public details, durable credentials, webhooks and payout operations. Reuse approved UAT Tax fixtures while actual live Tax facts remain unknown/deferred; never invent registration or accepted rates. Explicitly enable ordinary Stripe receipts for successful payments and refunds before sales.
 - Reuse each environment's D1 runtime presentation and source Product/default-Price facts, including working media URLs, and rebind its catalog links through one reviewed, resumable operator command.
 - Follow one maintenance procedure for both environments; rehearse recovery and prove the destination purchase flow in UAT before preparing PRD with checkout closed.
-- Complete measured BOX NOW and truthful public-content acceptance through their existing owners. Hand evidence to `production-go-live-readiness` for restricted-beta activation; fiscal-provider/myDATA and filing automation remain open for the later public-launch phase under the owner's accepted risk.
+- Use the owner-authorized provisional vinyl parcel through the VAT/delivery owner with explicit assignments and capacity safeguards; actual measurements remain unknown. Hand truthful public-content and technical evidence to `production-go-live-readiness` for the requested scope. Fiscal-provider/myDATA and filing automation remain deferred open work for that scope, without a compliance claim.
 - Retain each account's sales history and refund/dispute access through the later switch. IRIS remains deferred under the owner's 2026-10-05 risk acceptance.
 
 ## Capabilities
@@ -21,7 +21,7 @@ None.
 
 ### Modified Capabilities
 
-None in this migration. It applies the existing checkout, catalog, environment and historical-preservation contracts through account configuration and migration tooling. `skip_specs: true` is retained; the linked launch-readiness delta owns restricted-beta access and activation requirements.
+None in this migration. It applies the existing checkout, catalog, environment and historical-preservation contracts through account configuration and migration tooling. `skip_specs: true` is retained; the linked launch-readiness delta owns the current selling scope and activation requirements.
 
 ## Impact
 

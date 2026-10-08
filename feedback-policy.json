@@ -94,6 +94,7 @@
       "checkout:preflight:stripe-test",
       "checkout:expire:uat",
       "stripe:catalog:verify",
+      "stripe:catalog:migrate",
       "store:listing-readiness:verify",
       "catalog:readiness:generate",
       "catalog:checkout:pause",

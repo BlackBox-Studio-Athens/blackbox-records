@@ -24,6 +24,13 @@ describe('createPrismaClient', () => {
     expect(createPrismaClient(firstObject)).toBe(first);
     expect(createPrismaClient(secondObject)).not.toBe(first);
     expect(createPrismaClient(bindings)).not.toBe(first);
+    const requestA = createPrismaClientScope({ ...firstObject, STRIPE_SECRET_KEY: 'sk_test_A' }, firstObject);
+    const requestB = createPrismaClientScope({ ...firstObject, STRIPE_SECRET_KEY: 'sk_test_B' }, firstObject);
+    expect(requestA).not.toBe(requestB);
+    expect(createPrismaClient(requestA)).toBe(first);
+    expect(createPrismaClient(requestB)).toBe(first);
+    await createPrismaClient(requestA).$disconnect();
+    expect(createPrismaClient(requestB)).toBe(first);
     // Cleanup did not close the retained D1 client.
     await expect(first.$queryRaw`SELECT 1`).resolves.toEqual([{ '1': 1 }]);
   });

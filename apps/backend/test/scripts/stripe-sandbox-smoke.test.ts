@@ -1,5 +1,6 @@
 import { loadStripeCatalogStoreItemContracts } from '../../../../scripts/stripe-catalog-contract';
 import { describe, expect, it, vi } from 'vitest';
+import { parseSmokeRuntimeProductProjections } from '../../../../scripts/stripe-sandbox-smoke/d1-sql';
 
 import {
   buildStripeSandboxSmokeEvidence,
@@ -95,11 +96,81 @@ const passingSessionProjection = createStripeCheckoutSessionProjectionObservatio
   sessionProjectionExpectation,
 );
 
+const smokePriceContracts = await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' });
 const STRIPE_SANDBOX_SMOKE_SCENARIOS = createStripeSandboxSmokeScenarios(
-  await loadStripeCatalogStoreItemContracts({ productEnvironment: 'UAT' }),
+  smokePriceContracts,
+  new Map(smokePriceContracts.map((entry) => [entry.variantId, entry.productProjection])),
 );
 
 describe('Stripe sandbox Playwright smoke runner', () => {
+  it('expects published D1 names and images independently of repository and observed Stripe Products', () => {
+    const fixtures = smokePriceContracts.filter((entry) =>
+      ['disintegration-black-vinyl-lp', 'atopia-atopia-cd'].includes(entry.storeItemSlug),
+    );
+    const rows = fixtures.map((entry, index) => ({
+      ...entry,
+      cmsSourceId: entry.sourceId,
+      itemType: 'physical',
+      priceKind: entry.expectedSandboxPrice!.kind,
+      catalogAvailability: 'published',
+      catalogRevision: 1,
+      productProjection: JSON.stringify({
+        ...entry.productProjection,
+        name: `Published runtime ${entry.storeItemSlug}`,
+        imageUrls: [`https://worker.example.test/media/published/${String(index).repeat(64)}`],
+      }),
+    }));
+    const encodeRows = (results: unknown[], success = true) => JSON.stringify([{ success, results }]);
+    const scenarios = createStripeSandboxSmokeScenarios(
+      smokePriceContracts,
+      parseSmokeRuntimeProductProjections(encodeRows(rows)),
+    );
+    for (const name of ['happy_path_paid', 'pay_what_you_want_paid'] as const) {
+      const scenario = scenarios[name];
+      const expected = scenario.checkoutSurfaceExpectation!.expectedSessionProjection;
+      const row = rows.find((item) => item.variantId === scenario.lineItemSnapshot!.variantId)!;
+      const projection = JSON.parse(row.productProjection);
+      const entry = fixtures.find((item) => item.variantId === row.variantId)!;
+      expect(expected).toEqual({
+        expectedAmountMinor: name === 'happy_path_paid' ? 2800 : 500,
+        expectedCurrencyCode: 'EUR',
+        expectedProductImageUrl: projection.imageUrls[0],
+        expectedProductName: projection.name,
+      });
+      const observed = {
+        amountMinor: expected.expectedAmountMinor,
+        currencyCode: 'eur',
+        productImageUrls: projection.imageUrls,
+        productName: projection.name,
+      };
+      expect(createStripeCheckoutSessionProjectionObservation(observed, expected).issues).toEqual([]);
+      expect(
+        createStripeCheckoutSessionProjectionObservation(
+          {
+            ...observed,
+            productName: entry.productProjection.name,
+            productImageUrls: entry.productProjection.imageUrls,
+          },
+          expected,
+        ),
+      ).toMatchObject({ amountMatches: true, productNameMatches: false, productImageMatches: false });
+      expect(
+        createStripeCheckoutSessionProjectionObservation({ ...observed, amountMinor: 1 }, expected).amountMatches,
+      ).toBe(false);
+    }
+    expect(() => parseSmokeRuntimeProductProjections(encodeRows(rows.slice(1)))).toThrow('Missing unique published');
+    expect(() => parseSmokeRuntimeProductProjections(encodeRows([...rows, rows[0]]))).toThrow(
+      'Missing unique published',
+    );
+    expect(() =>
+      parseSmokeRuntimeProductProjections(encodeRows([{ ...rows[0], catalogAvailability: 'withheld' }, rows[1]])),
+    ).toThrow('Missing unique published');
+    expect(() =>
+      parseSmokeRuntimeProductProjections(encodeRows([{ ...rows[0], productProjection: '{}' }, rows[1]])),
+    ).toThrow('Runtime catalog setup is incomplete');
+    expect(() => parseSmokeRuntimeProductProjections(encodeRows(rows, false))).toThrow('successful D1');
+  });
+
   it('defaults to sandbox-only all-scenario automation', () => {
     expect(parseStripeSandboxSmokeArgs([])).toEqual({
       debug: false,

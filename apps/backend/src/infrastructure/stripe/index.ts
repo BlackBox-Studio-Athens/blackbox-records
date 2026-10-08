@@ -1,5 +1,10 @@
 export { createStripeCheckoutGateway } from './stripe-checkout-gateway';
-export { createStripeCatalogGateway } from './stripe-catalog-gateway';
+export {
+  createStripeCatalogGateway,
+  createStripeAccountCatalogGateway,
+  StripeCatalogGatewayClient,
+} from './stripe-catalog-gateway';
+export type { StripeAccountCatalogInput } from './stripe-catalog-gateway';
 export { toStripeCheckoutSessionState } from './stripe-checkout-session-state';
 export {
   STRIPE_CATALOG_WEBHOOK_EVENT_TYPES,

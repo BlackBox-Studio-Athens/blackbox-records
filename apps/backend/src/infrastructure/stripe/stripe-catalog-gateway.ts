@@ -12,6 +12,7 @@ import type {
   StripeCatalogPriceChangeGateway,
   StripeCatalogPriceCreateInput,
   StripeCatalogProduct,
+  StripeCatalogProductProjection,
   StripeCatalogProductProjectionUpdateInput,
 } from '../../application/commerce/catalog-sync';
 import {
@@ -26,6 +27,16 @@ type StripePriceWithExpandedProduct = Stripe.Price & {
   product: string | Stripe.Product | Stripe.DeletedProduct;
 };
 
+export type StripeAccountCatalogInput = {
+  productId: string;
+  operationId: string;
+  lookupKey: string;
+  metadata: StripeCatalogPriceCreateInput['metadata'];
+  projection: StripeCatalogProductProjection;
+  sourcePrice: StripeCatalogPrice;
+  confirmLiveChanges: boolean;
+};
+
 export class StripeCatalogGatewayClient
   implements StripeCatalogGateway, StripeCatalogPriceChangeGateway, StripeCatalogSetupGateway
 {
@@ -33,6 +44,161 @@ export class StripeCatalogGatewayClient
     private readonly stripe: Stripe,
     private readonly providerLiveMode?: boolean,
   ) {}
+
+  public async assertAccount(accountId: string, environment: 'uat' | 'prd'): Promise<void> {
+    const [account, balance] = await Promise.all([
+      this.stripe.accounts.retrieveCurrent(),
+      this.stripe.balance.retrieve(),
+    ]);
+    const live = environment === 'prd';
+    if (account.id !== accountId || balance.livemode !== live || this.providerLiveMode !== live)
+      throw new CatalogPriceConflictError('Stripe account or mode does not match the reviewed migration.');
+  }
+
+  // Account migration preserves inactive objects and nullable custom bounds, unlike normal new-item setup.
+  public async ensureAccountCatalog(input: StripeAccountCatalogInput): Promise<StripeCatalogPrice> {
+    const live = input.metadata.appEnv === 'prd';
+    const source = input.sourcePrice;
+    const amounts = source.priceKind === 'fixed' ? [source.amountMinor] : Object.values(source.customUnitAmount ?? {});
+    if (
+      !['uat', 'prd'].includes(input.metadata.appEnv) ||
+      this.providerLiveMode !== live ||
+      (live && !input.confirmLiveChanges) ||
+      !/^prod_blackbox_[A-Za-z0-9_-]+$/.test(input.productId) ||
+      !/^[a-f0-9]{64}$/.test(input.operationId) ||
+      source.currencyCode !== 'EUR' ||
+      source.taxBehavior !== 'inclusive' ||
+      source.productTaxCode !== 'txcd_99999999' ||
+      input.projection.taxCode !== source.productTaxCode ||
+      !input.lookupKey ||
+      input.lookupKey.length > 200 ||
+      !/^variant_[A-Za-z0-9_-]{1,120}$/.test(input.metadata.variantId) ||
+      !input.projection.name.trim() ||
+      input.projection.imageUrls.length > 8 ||
+      input.projection.imageUrls.some((value) => {
+        try {
+          return new URL(value).protocol !== 'https:';
+        } catch {
+          return true;
+        }
+      }) ||
+      (source.priceKind === 'fixed' && (source.amountMinor === null || source.customUnitAmount !== null)) ||
+      (source.priceKind === 'pay_what_you_want' && (!source.customUnitAmount || source.amountMinor !== null)) ||
+      amounts.some((amount) => amount !== null && (!Number.isSafeInteger(amount) || amount < 0 || amount > 99_999_999))
+    )
+      throw new CatalogPriceConflictError('Invalid or unconfirmed account catalog migration.');
+    const metadata = { ...input.metadata, catalogMigrationId: input.operationId };
+    const products = await this.catalogProducts();
+    if (
+      products.some(
+        (product) =>
+          product.id !== input.productId &&
+          product.metadata.appEnv === input.metadata.appEnv &&
+          product.metadata.variantId === input.metadata.variantId,
+      )
+    )
+      throw new CatalogPriceConflictError('Destination Product identity is ambiguous.');
+    let product: Stripe.Product | Stripe.DeletedProduct;
+    try {
+      product = await this.stripe.products.retrieve(input.productId);
+    } catch (error) {
+      if (!isStripeNotFoundError(error)) throw error;
+      product = await this.stripe.products.create(
+        {
+          id: input.productId,
+          active: source.productActive,
+          name: input.projection.name,
+          description: input.projection.description,
+          images: input.projection.imageUrls,
+          tax_code: input.projection.taxCode,
+          metadata: { ...input.projection.metadata, ...metadata },
+        },
+        { idempotencyKey: `blackbox:migration:${input.operationId}:product` },
+      );
+    }
+    if (
+      'deleted' in product ||
+      product.id !== input.productId ||
+      product.livemode !== live ||
+      product.active !== source.productActive ||
+      product.name !== input.projection.name ||
+      (product.description ?? '') !== input.projection.description ||
+      JSON.stringify(product.images) !== JSON.stringify(input.projection.imageUrls) ||
+      normalizeProductTaxCode(product.tax_code) !== input.projection.taxCode ||
+      !hasMetadata(product.metadata, { ...input.projection.metadata, ...metadata })
+    )
+      throw new CatalogPriceConflictError('Destination Product conflicts with the reviewed migration.');
+    const candidates: Stripe.Price[] = [];
+    for (const active of [true, false]) {
+      for await (const price of this.stripe.prices.list({ product: product.id, active, limit: 100 })) {
+        if (!hasMetadata(price.metadata, metadata))
+          throw new CatalogPriceConflictError('Destination Product has an unrecognized Price.');
+        candidates.push(price);
+      }
+      for await (const price of this.stripe.prices.list({ lookup_keys: [input.lookupKey], active, limit: 100 })) {
+        if ((typeof price.product === 'string' ? price.product : price.product.id) !== product.id)
+          throw new CatalogPriceConflictError('Destination lookup key belongs to another Product.');
+      }
+    }
+    if (candidates.length > 1) throw new CatalogPriceConflictError('Destination Price identity is ambiguous.');
+    let price = candidates[0];
+    if (!price) {
+      if (defaultPriceId(product)) throw new CatalogPriceConflictError('Destination default Price changed.');
+      const custom = source.customUnitAmount;
+      price = await this.stripe.prices.create(
+        {
+          product: product.id,
+          currency: 'eur',
+          tax_behavior: 'inclusive',
+          lookup_key: input.lookupKey,
+          metadata,
+          active: true,
+          ...(source.priceKind === 'fixed'
+            ? { unit_amount: source.amountMinor! }
+            : {
+                custom_unit_amount: {
+                  enabled: true,
+                  minimum: custom?.minimumAmountMinor ?? undefined,
+                  maximum: custom?.maximumAmountMinor ?? undefined,
+                  preset: custom?.presetAmountMinor ?? undefined,
+                },
+              }),
+        },
+        { idempotencyKey: `blackbox:migration:${input.operationId}:price` },
+      );
+    }
+    const mapped = toCatalogPrice({ ...price, product });
+    if (
+      price.type !== 'one_time' ||
+      price.livemode !== live ||
+      (typeof price.product === 'string' ? price.product : price.product.id) !== product.id ||
+      !hasMetadata(price.metadata, metadata) ||
+      mapped.lookupKey !== input.lookupKey ||
+      mapped.currencyCode !== source.currencyCode ||
+      mapped.taxBehavior !== source.taxBehavior ||
+      mapped.priceKind !== source.priceKind ||
+      mapped.amountMinor !== source.amountMinor ||
+      JSON.stringify(mapped.customUnitAmount) !== JSON.stringify(source.customUnitAmount) ||
+      (defaultPriceId(product) !== null && defaultPriceId(product) !== price.id)
+    )
+      throw new CatalogPriceConflictError('Destination Price conflicts with the reviewed migration.');
+    if (defaultPriceId(product) !== price.id)
+      await this.stripe.products.update(
+        product.id,
+        { default_price: price.id },
+        { idempotencyKey: `blackbox:migration:${input.operationId}:default` },
+      );
+    if (price.active !== source.active)
+      await this.stripe.prices.update(
+        price.id,
+        { active: source.active },
+        { idempotencyKey: `blackbox:migration:${input.operationId}:active` },
+      );
+    const result = await this.retrieveDefaultPrice(product.id);
+    if (!result || result.priceId !== price.id || result.active !== source.active)
+      throw new CatalogPriceConflictError('Destination default Price changed during migration.');
+    return result;
+  }
 
   public async inspectSetupProduct(productId: string, environment: StripeCatalogEnvironment) {
     if (this.providerLiveMode !== (environment === 'prd'))
@@ -379,6 +545,13 @@ export function createStripeCatalogGateway(
   bindings: Pick<AppBindings, 'STRIPE_API_BASE_URL' | 'STRIPE_SECRET_KEY'>,
   options: Pick<NonNullable<ConstructorParameters<typeof Stripe>[1]>, 'timeout' | 'maxNetworkRetries'> = {},
 ): StripeCatalogGateway & StripeCatalogPriceChangeGateway & StripeCatalogSetupGateway {
+  return createStripeAccountCatalogGateway(bindings, options);
+}
+
+export function createStripeAccountCatalogGateway(
+  bindings: Pick<AppBindings, 'STRIPE_API_BASE_URL' | 'STRIPE_SECRET_KEY'>,
+  options: Pick<NonNullable<ConstructorParameters<typeof Stripe>[1]>, 'timeout' | 'maxNetworkRetries'> = {},
+): StripeCatalogGatewayClient {
   if (!bindings.STRIPE_SECRET_KEY) {
     throw new CheckoutConfigurationError('Stripe secret key is not configured.');
   }

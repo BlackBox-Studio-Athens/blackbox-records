@@ -1,7 +1,12 @@
 import { astro, FetchState } from 'astro/fetch';
 import { cf, finalize } from '@astrojs/cloudflare/fetch';
 import { SchemaRegistry } from 'emdash';
-import { productEnvironmentProfileFromBindings, type AppBindings } from './platform/env';
+import {
+  commerceRuntimeConfigFromBindings,
+  productEnvironmentProfileFromBindings,
+  type AppBindings,
+  type CommerceRuntimeConfig,
+} from './platform/env';
 import { authenticate } from './cms/auth';
 import {
   contentMediaIds,
@@ -116,7 +121,11 @@ export default {
   },
   async fetch(request: Request, bindings: CmsBindings, context: ExecutionContext) {
     const url = new URL(request.url);
-    if (isPreviewHost(request, bindings)) return bindings.CMS_RUNTIME.getByName('editorial').fetch(request);
+    if (isPreviewHost(request, bindings))
+      return bindings.CMS_RUNTIME.getByName('editorial').fetchWithBindings(
+        request,
+        commerceRuntimeConfigFromBindings(bindings),
+      );
     if (url.pathname.startsWith(publishedMediaPath))
       return servePublishedMedia(request, bindings.MEDIA, productEnvironmentProfileFromBindings(bindings));
     if (request.headers.get('Authorization')?.startsWith('Bearer ec_pat_') && !isCmsTokenExportRead(request))
@@ -125,7 +134,10 @@ export default {
       // The entry answers preflights, so their release headers name the deployed Worker,
       // not the Durable Object's possibly older code.
       if (request.method === 'OPTIONS') return preflightApp.fetch(request, bindings, context);
-      return bindings.COMMERCE_RUNTIME.getByName('store').fetch(request);
+      return bindings.COMMERCE_RUNTIME.getByName('store').fetchWithBindings(
+        request,
+        commerceRuntimeConfigFromBindings(bindings),
+      );
     }
     if (url.pathname.startsWith(staffThumbnailRoutePrefix)) {
       try {
@@ -160,9 +172,15 @@ export default {
       return new Response('Forbidden', { status: 403, headers: { 'Cache-Control': 'private, no-store' } });
     }
     if (url.pathname.startsWith('/api/internal/')) {
-      return bindings.COMMERCE_RUNTIME.getByName('store').fetch(request);
+      return bindings.COMMERCE_RUNTIME.getByName('store').fetchWithBindings(
+        request,
+        commerceRuntimeConfigFromBindings(bindings),
+      );
     }
-    return bindings.CMS_RUNTIME.getByName('editorial').fetch(request);
+    return bindings.CMS_RUNTIME.getByName('editorial').fetchWithBindings(
+      request,
+      commerceRuntimeConfigFromBindings(bindings),
+    );
   },
 } satisfies ExportedHandler<CmsBindings>;
 
@@ -289,7 +307,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
     }
   }
 
-  private async previewRead(request: Request): Promise<Response> {
+  private async previewRead(request: Request, bindings: CmsBindings): Promise<Response> {
     const url = new URL(request.url);
     const started = performance.now();
     let requestId: string | undefined;
@@ -300,10 +318,10 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       url.searchParams.get('__preview');
     if (directContext && /^[a-f0-9-]{36}$/.test(directContext)) requestId = directContext;
     try {
-      if (url.pathname === '/_preview/session') return await previewSessionResponse(request, this.env);
-      const identity = await authenticatePreview(request, this.env);
+      if (url.pathname === '/_preview/session') return await previewSessionResponse(request, bindings);
+      const identity = await authenticatePreview(request, bindings);
       failurePhase = 'routing';
-      if (!['GET', 'HEAD'].includes(request.method) || !this.env.PUBLIC_SITE) {
+      if (!['GET', 'HEAD'].includes(request.method) || !bindings.PUBLIC_SITE) {
         if (request.body) await readBoundedText(request.body, 256 * 1024).catch(() => {});
         return new Response('Forbidden', { status: 403, headers: privatePreviewHeaders });
       }
@@ -336,11 +354,11 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       ) {
         resourceType = 'static_asset';
         failurePhase = 'static_asset';
-        const asset = await this.env.PUBLIC_SITE.fetch(
+        const asset = await bindings.PUBLIC_SITE.fetch(
           new Request(
             new URL(
               resourcePath,
-              publicationPublicUrl(productEnvironmentProfileFromBindings(this.env).workerDeploymentTarget),
+              publicationPublicUrl(productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget),
             ),
             { method: request.method },
           ),
@@ -372,7 +390,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         failurePhase = 'media';
         const item = context.selection.media[media?.[2] ?? aliasId ?? ''];
         if (!item) throw new Error('Selected image is unavailable.');
-        const object = await this.env.MEDIA.get(item.key);
+        const object = await bindings.MEDIA.get(item.key);
         if (!object || object.size !== item.size || (item.sha256 && object.checksums.toJSON().sha256 !== item.sha256)) {
           await object?.body.cancel();
           throw new Error('Selected image is unavailable.');
@@ -385,14 +403,15 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       if (api) {
         resourceType = 'store_api';
         failurePhase = 'store_api';
-        const response = await this.env.COMMERCE_RUNTIME.getByName('store').fetch(
+        const response = await bindings.COMMERCE_RUNTIME.getByName('store').fetchWithBindings(
           new Request(
             new URL(
               api[2],
-              publicationPublicUrl(productEnvironmentProfileFromBindings(this.env).workerDeploymentTarget),
+              publicationPublicUrl(productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget),
             ),
             { method: 'GET', headers: { accept: 'application/json' } },
           ),
+          commerceRuntimeConfigFromBindings(bindings),
         );
         if (request.method === 'HEAD') await response.body?.cancel();
         return new Response(request.method === 'HEAD' ? null : response.body, {
@@ -410,10 +429,10 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
         request,
         id,
         context,
-        this.env.PUBLIC_SITE,
-        productEnvironmentProfileFromBindings(this.env).workerDeploymentTarget,
+        bindings.PUBLIC_SITE,
+        productEnvironmentProfileFromBindings(bindings).workerDeploymentTarget,
       );
-      const logger = createBindingLogger(this.env);
+      const logger = createBindingLogger(bindings);
       const renderLog = {
         event: 'preview_render',
         requestId,
@@ -431,7 +450,7 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
       }
       return response;
     } catch {
-      createBindingLogger(this.env).warn({
+      createBindingLogger(bindings).warn({
         event: 'preview_render',
         requestId,
         status: 410,
@@ -461,9 +480,13 @@ export class CmsRuntime extends DurableObject<CmsBindings> {
   }
 
   async fetch(request: Request): Promise<Response> {
-    const bindings = this.env;
+    return this.fetchWithBindings(request, commerceRuntimeConfigFromBindings(this.env));
+  }
+
+  async fetchWithBindings(request: Request, config: CommerceRuntimeConfig): Promise<Response> {
+    const bindings = { ...this.env, ...commerceRuntimeConfigFromBindings(config) };
     const url = new URL(request.url);
-    if (isPreviewHost(request, bindings)) return this.previewRead(request);
+    if (isPreviewHost(request, bindings)) return this.previewRead(request, bindings);
     if (
       publicationWorkflowPaths.has(url.pathname) &&
       !(url.pathname === publicationCatalogPath && bindings.PRODUCT_ENVIRONMENT === 'LOCAL')
