@@ -268,7 +268,7 @@ export const routeChecks: RouteCheck[] = [
     maxHighPriorityImages: 1,
     images: [
       {
-        className: 'services-service-section__image',
+        className: 'services-tile__image',
         firstEagerCount: 1,
         minCount: 3,
         requireDecoding: true,
