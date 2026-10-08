@@ -616,8 +616,7 @@ test('Coverflow steps settle on CSS positions and a first typo query waits for t
   await expect(group).toHaveAttribute('data-store-coverflow-mode', 'preview');
   await group.locator('[data-store-coverflow-next]').click();
   await expect(cards.nth(1)).toHaveAttribute('data-store-coverflow-position', 'active');
-  // Native position animations run without fill, so settled cards carry no inline styles and only the rail
-  // fill holds the position ratio.
+  // Native position animations run without fill, so settled cards carry no inline styles and no position ratio.
   await expect
     .poll(() =>
       group.evaluate((element) => ({
@@ -630,12 +629,23 @@ test('Coverflow steps settle on CSS positions and a first typo query waits for t
           (card) => card.style.transform || card.style.opacity,
         ).length,
         groupRatio: element.style.getPropertyValue('--store-coverflow-position-ratio'),
-        railRatio: element
-          .querySelector<HTMLElement>('[data-store-coverflow-disclosure-rail]')!
-          .style.getPropertyValue('--store-coverflow-position-ratio'),
       })),
     )
-    .toEqual({ animatedCards: 0, inlineCards: 0, groupRatio: '', railRatio: String(2 / total) });
+    .toEqual({ animatedCards: 0, inlineCards: 0, groupRatio: '' });
+  expect(total).toBeGreaterThan(6);
+  // The plaque's Listen end plays the front cover; the card's own Listen steps aside.
+  const plaqueListen = group.locator('[data-store-coverflow-listen]');
+  const cardListen = cards.nth(1).locator('[data-music-listen-source-id]');
+  if (await cardListen.count()) {
+    await expect(plaqueListen).toBeVisible();
+    await expect(plaqueListen).toHaveAttribute(
+      'data-music-listen-source-id',
+      (await cardListen.getAttribute('data-music-listen-source-id'))!,
+    );
+    await expect(cardListen).toBeHidden();
+  } else {
+    await expect(plaqueListen).toBeHidden();
+  }
   await expect(cards.nth(1).locator('.store-item-card__price')).toBeVisible();
   await expect(cards.nth(1).locator('.brand-card-title')).toBeHidden();
   await page.getByRole('button', { name: 'Grid', exact: true }).click();

@@ -52,9 +52,9 @@ type StoreCoverflowGroup = {
   cards: HTMLElement[];
   controls: HTMLElement;
   currentValue: HTMLElement | null;
-  disclosureRail: HTMLElement;
   element: HTMLElement;
   lastActiveIndex: number;
+  listen: HTMLButtonElement | null;
   nextButton: HTMLButtonElement;
   positionedCards: Set<HTMLElement>;
   previousButton: HTMLButtonElement;
@@ -171,7 +171,7 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
       const nextButton = element.querySelector<HTMLButtonElement>('[data-store-coverflow-next]');
       const toggleButton = element.querySelector<HTMLButtonElement>('[data-store-coverflow-toggle]');
       const previewButton = element.querySelector<HTMLButtonElement>('[data-store-coverflow-preview]');
-      const disclosureRail = element.querySelector<HTMLElement>('[data-store-coverflow-disclosure-rail]');
+      const listen = element.querySelector<HTMLButtonElement>('[data-store-coverflow-listen]');
       const remainingValue = element.querySelector<HTMLElement>('[data-store-coverflow-remaining-value]');
       const status = element.querySelector<HTMLElement>('[data-store-coverflow-status]');
       const summary = element.querySelector<HTMLElement>('[data-store-coverflow-summary]');
@@ -185,7 +185,6 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
         !nextButton ||
         !toggleButton ||
         !previewButton ||
-        !disclosureRail ||
         !status ||
         !summary ||
         !reveal ||
@@ -201,9 +200,9 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
         cards,
         controls,
         currentValue,
-        disclosureRail,
         element,
         lastActiveIndex: 0,
+        listen,
         nextButton,
         positionedCards: new Set(cards.filter((card) => card.hasAttribute('data-store-coverflow-position'))),
         previousButton,
@@ -225,6 +224,27 @@ export function readStoreCoverflowDom(root: ParentNode | null): StoreCoverflowDo
 
 function setAriaDisabled(element: HTMLElement, isDisabled: boolean) {
   element.setAttribute('aria-disabled', String(isDisabled));
+}
+
+const PLAYER_TRIGGER_ATTRIBUTE = 'data-music-streaming-service-embedded-player-trigger';
+
+/**
+ * The plaque's Listen end becomes a copy of the front cover's own trigger: its player data and the session state the
+ * shell last wrote. The shell then keeps it in step through the shared source id, and focus returns to it on close.
+ */
+export function syncStoreCoverflowListen(listen: HTMLButtonElement, source: HTMLElement | null) {
+  for (const { name } of [...listen.attributes]) {
+    if (name.startsWith('data-music-') && name !== PLAYER_TRIGGER_ATTRIBUTE) listen.removeAttribute(name);
+  }
+  listen.hidden = !source;
+  listen.disabled = source?.hasAttribute('disabled') ?? false;
+  if (!source) return;
+  for (const { name, value } of [...source.attributes]) {
+    if (name.startsWith('data-music-')) listen.setAttribute(name, value);
+  }
+  const label = listen.querySelector<HTMLElement>('[data-music-listen-label]');
+  const sourceLabel = source.querySelector<HTMLElement>('[data-music-listen-label]');
+  if (label && sourceLabel) label.textContent = sourceLabel.textContent;
 }
 
 export function createStoreCoverflowController(
@@ -297,18 +317,18 @@ export function createStoreCoverflowController(
       if (group.currentValue) group.currentValue.textContent = String(currentPosition);
       if (group.remainingValue) group.remainingValue.textContent = String(group.cards.length - currentPosition);
       group.summary.textContent = `You're viewing ${currentPosition} of ${group.cards.length}.`;
-      // Only the rail fill reads the ratio; setting it on the group would restyle every card below it.
-      group.disclosureRail.style.setProperty(
-        '--store-coverflow-position-ratio',
-        String(currentPosition / group.cards.length),
-      );
-      group.status.textContent = group.cards[group.state.activeIndex]!.getAttribute('aria-label') || '';
+      const activeCard = group.cards[group.state.activeIndex]!;
+      group.status.textContent = activeCard.getAttribute('aria-label') || '';
+      if (group.listen) {
+        syncStoreCoverflowListen(group.listen, activeCard.querySelector<HTMLElement>(`[${PLAYER_TRIGGER_ATTRIBUTE}]`));
+      }
       return;
     }
 
     group.status.textContent = '';
     group.summary.textContent = `${group.cards.length} items`;
     group.status.hidden = true;
+    if (group.listen) syncStoreCoverflowListen(group.listen, null);
     group.previousButton.removeAttribute('aria-disabled');
     group.nextButton.removeAttribute('aria-disabled');
     group.controls.hidden = false;

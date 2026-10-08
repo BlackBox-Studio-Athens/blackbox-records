@@ -1150,31 +1150,6 @@ body {
     line-height: 0.95;
   }
 
-  .store-coverflow-rail {
-    position: relative;
-    height: 0.25rem;
-    overflow: hidden;
-  }
-
-  .store-coverflow-rail__track,
-  .store-coverflow-rail__fill {
-    position: absolute;
-    inset: 0;
-  }
-
-  .store-coverflow-rail__track {
-    top: 50%;
-    bottom: auto;
-    border-top: 2px dashed color-mix(in srgb, var(--store-accent) 78%, transparent);
-  }
-
-  .store-coverflow-rail__fill {
-    background: var(--store-accent-active);
-    transform: scaleX(var(--store-coverflow-position-ratio));
-    transform-origin: left center;
-    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
   .store-coverflow-summary {
     color: var(--foreground);
   }
@@ -1182,7 +1157,79 @@ body {
   .store-coverflow-actions {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: 0.5rem;
+  }
+
+  /* Grid and Coverflow read as one switch; the pressed side takes the ink face. */
+  .store-coverflow-view-switch {
+    display: inline-flex;
+    flex: 1 1 100%;
+    gap: 0.25rem;
+    border: 1px solid #333333;
+    padding: 3px;
+    background: var(--secondary);
+  }
+
+  .store-coverflow-view {
+    display: inline-flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    gap: 0.625rem;
+    min-height: 2.375rem;
+    border: 0;
+    padding: 1px 0.875rem 0;
+    color: var(--muted-foreground);
+    background: transparent;
+    font-family: var(--font-display-ui);
+    font-size: 1.0625rem;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition:
+      background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .store-coverflow-view[aria-pressed='true'] {
+    color: var(--background);
+    background: var(--foreground);
+  }
+
+  .store-coverflow-view:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .store-coverflow-view[aria-disabled='true'] {
+    pointer-events: none;
+  }
+
+  .store-coverflow-view:focus-visible {
+    outline: 2px solid var(--foreground);
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) {
+    .store-coverflow-view[aria-pressed='false']:hover {
+      color: var(--foreground);
+      background: var(--control-face-selected);
+    }
+  }
+
+  /* Phones give the switch its own row and split the next one between Previous and Next. */
+  .store-coverflow-actions > :is([data-store-coverflow-previous], [data-store-coverflow-next]) {
+    flex: 1;
+  }
+
+  @media (min-width: 40rem) {
+    .store-coverflow-view-switch,
+    .store-coverflow-view,
+    .store-coverflow-actions > :is([data-store-coverflow-previous], [data-store-coverflow-next]) {
+      flex: none;
+    }
   }
 
   .store-item-card--listing {
@@ -3713,7 +3760,7 @@ body.is-app-shell-overlay-open {
   }
 }
 
-.store-coverflow-status {
+.store-coverflow-plaque {
   display: none;
 }
 
@@ -3735,14 +3782,37 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-
   touch-action: pan-y pinch-zoom;
 }
 
-html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-coverflow-status:not([hidden]) {
-  display: block;
-  width: min(calc(100% - 2rem), 32rem);
+html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-coverflow-plaque {
+  display: flex;
+  align-items: stretch;
+  width: min(calc(100% - 2rem), 36rem);
   margin: 1rem auto 0;
   border: 1px solid #3a3a3a;
+  background: #0d0d0d;
+}
+
+/* The Listen end shares the plaque's frame, so only its divider is drawn. */
+html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-coverflow-listen {
+  flex: none;
+  min-width: 0;
+  border-style: solid;
+  border-width: 0 1px 0 0;
+  border-right-color: #3a3a3a;
+  font-size: 1.0625rem;
+  cursor: pointer;
+}
+
+html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-coverflow-listen[hidden] {
+  display: none;
+}
+
+html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-coverflow-status:not([hidden]) {
+  display: block;
+  flex: 1;
+  align-self: center;
+  margin: 0;
   padding: 0.65rem 1rem 0.6rem;
   color: var(--foreground);
-  background: #0d0d0d;
   font-family: var(--font-display-ui);
   font-size: clamp(1rem, 3.8vw, 1.2rem);
   letter-spacing: 0.075em;
@@ -3936,7 +4006,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-reveal='catalog'] .stor
 }
 
 html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] .store-coverflow-depth,
-html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] .store-coverflow-status,
+html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] .store-coverflow-plaque,
 html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-store-coverflow-previous],
 html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-store-coverflow-next] {
   display: none;
@@ -4024,13 +4094,11 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   }
 
   .store-category-signal__link,
-  html[data-store-coverflow-capable] [data-store-coverflow-group] .store-coverflow-rail__fill,
   html[data-store-coverflow-capable] [data-store-coverflow-group] [data-store-coverflow-remaining] {
     animation: none;
   }
 
-  html[data-store-coverflow-capable] [data-store-coverflow-group] .store-coverflow-rail__fill {
-    transform: scaleX(var(--store-coverflow-position-ratio));
+  .store-coverflow-view {
     transition: none;
   }
 
@@ -4082,7 +4150,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     display: grid;
   }
 
-  html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-coverflow-status {
+  html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] .store-coverflow-plaque {
     display: none;
   }
 
@@ -7156,12 +7224,14 @@ html[data-store-coverflow-capable]
   }
 }
 
-html[data-store-coverflow-capable]
-  [data-store-coverflow-mode='preview']
-  [data-store-coverflow-position='active']
-  .store-item-card__listen {
-  display: flex;
-  justify-content: center;
+/* The plaque carries the front cover's Listen; reduced motion drops the plaque and keeps the card's own. */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-store-coverflow-capable]
+    [data-store-coverflow-mode='preview']
+    [data-store-coverflow-position='active']
+    .store-item-card__listen {
+    display: none;
+  }
 }
 
 /* Public button family: outlined buttons take the section tone declared once on a surface. */

@@ -47,9 +47,6 @@ function restoreIslandServerMarkup(liveRoot: ParentNode, cloneRoot: ParentNode) 
 export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
   root.querySelectorAll<HTMLElement>('[data-store-coverflow-group]').forEach((groupElement) => {
     groupElement.dataset.storeCoverflowMode = 'catalog';
-    groupElement
-      .querySelector<HTMLElement>('[data-store-coverflow-disclosure-rail]')
-      ?.style.removeProperty('--store-coverflow-position-ratio');
     groupElement.removeAttribute('data-store-coverflow-ready');
     groupElement.removeAttribute('data-store-coverflow-reveal');
     groupElement.removeAttribute('data-store-coverflow-transitioning');
@@ -74,6 +71,16 @@ export function sanitizeStoreCoverflowSnapshot(root: ParentNode) {
     if (status) {
       status.textContent = '';
       status.hidden = true;
+    }
+    const listen = groupElement.querySelector<HTMLButtonElement>('[data-store-coverflow-listen]');
+    if (listen) {
+      for (const { name } of [...listen.attributes]) {
+        if (name.startsWith('data-music-') && name !== 'data-music-streaming-service-embedded-player-trigger') {
+          listen.removeAttribute(name);
+        }
+      }
+      listen.hidden = true;
+      listen.disabled = false;
     }
   });
   root.querySelectorAll<HTMLElement>('[data-store-coverflow-card]').forEach((cardElement) => {

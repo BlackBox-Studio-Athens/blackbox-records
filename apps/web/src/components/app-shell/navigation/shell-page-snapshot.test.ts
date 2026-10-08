@@ -342,7 +342,6 @@ describe('shell page snapshots', () => {
 
   it('restores the server-authored Coverflow state before caching a document snapshot', () => {
     const removed = new Set<string>();
-    const styleProperties = new Map([['--store-coverflow-position-ratio', String(34 / 53)]]);
     const group = {
       dataset: {
         storeCoverflowMode: 'preview',
@@ -355,7 +354,7 @@ describe('shell page snapshots', () => {
         if (selector === '[data-store-coverflow-controls]') return controls;
         if (selector === '[data-store-coverflow-toggle]') return toggle;
         if (selector === '[data-store-coverflow-status]') return status;
-        if (selector === '[data-store-coverflow-disclosure-rail]') return disclosureRail;
+        if (selector === '[data-store-coverflow-listen]') return listen;
         return null;
       },
       querySelectorAll(selector: string) {
@@ -363,10 +362,19 @@ describe('shell page snapshots', () => {
         return [];
       },
     };
-    const disclosureRail = {
-      style: {
-        removeProperty: (name: string) => styleProperties.delete(name),
+    const listenAttributes = new Map([
+      ['data-music-streaming-service-embedded-player-trigger', ''],
+      ['data-music-listen-source-id', 'release-34'],
+      ['data-music-streaming-service-embedded-player-bandcamp-embed-url', 'https://bandcamp.com/EmbeddedPlayer/'],
+      ['class', 'store-coverflow-listen'],
+    ]);
+    const listen = {
+      get attributes() {
+        return [...listenAttributes.keys()].map((name) => ({ name }));
       },
+      disabled: true,
+      hidden: false,
+      removeAttribute: (name: string) => listenAttributes.delete(name),
     };
     const card = {
       dataset: { storeCoverflowInitialPosition: 'active', storeCoverflowPosition: 'right-near' },
@@ -465,7 +473,8 @@ describe('shell page snapshots', () => {
       storeCoverflowRemainingCount: '52',
       storeCoverflowTotal: '53',
     });
-    expect(styleProperties.has('--store-coverflow-position-ratio')).toBe(false);
+    expect([...listenAttributes.keys()]).toEqual(['data-music-streaming-service-embedded-player-trigger', 'class']);
+    expect(listen).toMatchObject({ disabled: false, hidden: true });
     expect(removed.has('data-store-coverflow-position')).toBe(true);
     expect(controls.hidden).toBe(false);
     expect(nativeButton.disabled).toBe(true);

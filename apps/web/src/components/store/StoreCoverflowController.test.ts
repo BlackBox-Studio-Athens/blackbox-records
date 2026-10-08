@@ -11,6 +11,7 @@ import {
   getStoreCoverflowWheelDelta,
   readStoreCoverflowDom,
   reduceStoreCoverflowState,
+  syncStoreCoverflowListen,
   type StoreCoverflowDom,
 } from './StoreCoverflowController';
 
@@ -118,6 +119,50 @@ class FakeElement {
   }
 }
 
+// A Listen trigger with real attribute iteration, for the plaque copy and the card triggers it copies.
+class FakeTrigger {
+  disabled = false;
+  hidden = false;
+  readonly label = { textContent: 'Listen' };
+  private readonly attributeValues = new Map<string, string>();
+
+  constructor(attributes: Record<string, string> = {}) {
+    Object.entries(attributes).forEach(([name, value]) => this.attributeValues.set(name, value));
+  }
+
+  get attributes() {
+    return [...this.attributeValues].map(([name, value]) => ({ name, value }));
+  }
+
+  getAttribute(name: string) {
+    return this.attributeValues.get(name) ?? null;
+  }
+
+  hasAttribute(name: string) {
+    return this.attributeValues.has(name);
+  }
+
+  querySelector(selector: string) {
+    return selector === '[data-music-listen-label]' ? this.label : null;
+  }
+
+  removeAttribute(name: string) {
+    this.attributeValues.delete(name);
+  }
+
+  setAttribute(name: string, value: string) {
+    this.attributeValues.set(name, value);
+  }
+}
+
+const cardTrigger = (releaseId: string) =>
+  new FakeTrigger({
+    class: 'music-listen-trigger',
+    'data-music-listen-source-id': releaseId,
+    'data-music-streaming-service-embedded-player-release-id': releaseId,
+    'data-music-streaming-service-embedded-player-trigger': '',
+  });
+
 function createHarness(cardCount = 8, pendingDisclosure = false, reducedMotion = false) {
   let currentReducedMotion = reducedMotion;
   const motionPreferenceListeners = new Set<() => void>();
@@ -163,7 +208,8 @@ function createHarness(cardCount = 8, pendingDisclosure = false, reducedMotion =
   const stage = new FakeElement();
   const controls = new FakeElement();
   const currentValue = new FakeElement();
-  const disclosureRail = new FakeElement();
+  const listen = new FakeTrigger({ 'data-music-streaming-service-embedded-player-trigger': '' });
+  listen.hidden = true;
   const nextButton = new FakeElement();
   const previousButton = new FakeElement();
   const remainingValue = new FakeElement();
@@ -178,6 +224,10 @@ function createHarness(cardCount = 8, pendingDisclosure = false, reducedMotion =
     const card = new FakeElement();
     card.addClosestSelector('[data-store-coverflow-card]');
     card.setAttribute('aria-label', `Record ${index + 1} — Artist`);
+    // Odd records have no listening data, so their card renders no Listen trigger.
+    const trigger = index % 2 === 0 ? cardTrigger(`release-${index + 1}`) : null;
+    card.querySelector.mockImplementation(((selector: string) =>
+      selector === '[data-music-streaming-service-embedded-player-trigger]' ? trigger : null) as unknown as () => null);
     return card;
   });
   previousButton.addClosestSelector('[data-store-coverflow-previous]');
@@ -194,9 +244,9 @@ function createHarness(cardCount = 8, pendingDisclosure = false, reducedMotion =
         cards,
         controls,
         currentValue,
-        disclosureRail,
         element,
         lastActiveIndex: 0,
+        listen,
         nextButton,
         positionedCards: new Set(cards.filter((card) => card.dataset.storeCoverflowPosition)),
         previousButton,
@@ -219,9 +269,9 @@ function createHarness(cardCount = 8, pendingDisclosure = false, reducedMotion =
     computedStyleReads,
     controller,
     controls,
-    disclosureRail,
     element,
     images,
+    listen,
     nextButton,
     previousButton,
     previewButton,
@@ -629,13 +679,25 @@ describe('Store Coverflow controller', () => {
     controller.cleanup();
   });
 
-  it('keeps the rail ratio off the group so a step restyles only the rail', () => {
-    const { controller, disclosureRail, element, nextButton, previewButton } = createHarness();
+  it('points the plaque Listen at the front cover and hides it without one or outside Coverflow', async () => {
+    const { controller, element, listen, nextButton, previewButton, toggleButton } = createHarness();
     element.dispatch('click', previewButton);
-    element.dispatch('click', nextButton);
+    await settlePositionAnimations();
 
-    expect(disclosureRail.style.getPropertyValue('--store-coverflow-position-ratio')).toBe(String(2 / 8));
-    expect(element.style.getPropertyValue('--store-coverflow-position-ratio')).toBe('');
+    expect(listen.hidden).toBe(false);
+    expect(listen.getAttribute('data-music-listen-source-id')).toBe('release-1');
+
+    element.dispatch('click', nextButton);
+    expect(listen.hidden).toBe(true);
+    expect(listen.hasAttribute('data-music-listen-source-id')).toBe(false);
+    expect(listen.hasAttribute('data-music-streaming-service-embedded-player-trigger')).toBe(true);
+
+    element.dispatch('click', nextButton);
+    expect(listen.getAttribute('data-music-listen-source-id')).toBe('release-3');
+
+    element.dispatch('click', toggleButton);
+    expect(listen.hidden).toBe(true);
+    expect(listen.hasAttribute('data-music-listen-source-id')).toBe(false);
     controller.cleanup();
   });
 
@@ -679,5 +741,32 @@ describe('Store Coverflow controller', () => {
     expect(stage.listenerCount('wheel')).toBe(0);
     controller.cleanup();
     expect(stage.listenerCount('wheel')).toBe(0);
+  });
+});
+
+describe('syncStoreCoverflowListen', () => {
+  it('copies the shell session state of the front cover trigger and drops the previous cover data', () => {
+    const listen = new FakeTrigger({
+      class: 'store-coverflow-listen',
+      'data-music-listen-source-id': 'old-release',
+      'data-music-streaming-service-embedded-player-tidal-embed-url': 'https://embed.tidal.com/old',
+      'data-music-streaming-service-embedded-player-trigger': '',
+    });
+    const source = cardTrigger('release-7');
+    source.setAttribute('data-music-listen-session', 'active');
+    source.setAttribute('disabled', '');
+    source.label.textContent = 'In player';
+
+    syncStoreCoverflowListen(listen as unknown as HTMLButtonElement, source as unknown as HTMLElement);
+
+    expect(Object.fromEntries(listen.attributes.map(({ name, value }) => [name, value]))).toEqual({
+      class: 'store-coverflow-listen',
+      'data-music-listen-session': 'active',
+      'data-music-listen-source-id': 'release-7',
+      'data-music-streaming-service-embedded-player-release-id': 'release-7',
+      'data-music-streaming-service-embedded-player-trigger': '',
+    });
+    expect(listen).toMatchObject({ disabled: true, hidden: false });
+    expect(listen.label.textContent).toBe('In player');
   });
 });

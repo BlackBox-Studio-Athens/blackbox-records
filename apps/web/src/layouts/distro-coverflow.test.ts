@@ -45,14 +45,17 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(pageSource).not.toContain('getStoreCoverflowPosition');
     expect(controls).toMatch(/>\s*Grid\s*<\/button>[\s\S]*>\s*Coverflow\s*<\/button>/);
     expect(controls).not.toContain('data-store-coverflow-controls hidden');
-    for (const button of controls.match(/<button\b[^>]*>/g) ?? []) expect(button).toMatch(/\bdisabled\b/);
+    // Server controls wait disabled for the controller; the plaque Listen stays hidden until a front cover has one.
+    for (const button of controls.match(/<button\b[^>]*>/g) ?? [])
+      expect(button).toMatch(button.includes('data-store-coverflow-listen') ? /\bhidden\b/ : /\bdisabled\b/);
     for (const hook of [
       'data-store-coverflow-current-value',
       'data-store-coverflow-remaining-value',
       'data-store-coverflow-summary',
-      'data-store-coverflow-disclosure-rail',
+      'data-store-coverflow-listen',
     ])
       expect(controls).toContain(hook);
+    expect(controls).not.toContain('store-coverflow-rail');
     expect(cardSource).not.toContain('primaryAvailability?.availability.label');
     expect(cardSource).toContain('href={storeItem.storePath}');
   });
@@ -97,7 +100,8 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(cssSource).not.toContain('store-catalog-reveal');
     expect(cssSource).not.toContain('animation: store-coverflow-preview-rail-in');
     expect(cssSource).not.toContain('animation: store-coverflow-disclosure-fill');
-    expect(cssSource).toContain('transform: scaleX(var(--store-coverflow-position-ratio))');
+    expect(cssSource).not.toContain('store-coverflow-rail');
+    expect(cssSource).not.toContain('--store-coverflow-position-ratio');
     expect(cssSource).not.toMatch(
       /\[data-store-coverflow-card\]:where\(\[data-store-coverflow-position\]\)\s*\{[^}]*transition: transform/,
     );
@@ -127,11 +131,11 @@ describe('Distro Coverflow progressive enhancement', () => {
     expect(reducedMotionCss).not.toMatch(/\.store-coverflow-controls[^{}]*\{[^}]*display:\s*none/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?position: static/);
     expect(cssSource).toMatch(/prefers-reduced-motion: reduce[\s\S]*?\.store-item-card__content[\s\S]*?display: grid/);
+    expect(reducedMotionCss).toMatch(/\.store-coverflow-view\s*\{\s*transition: none/);
+    // The flat fallback drops the plaque, so each card keeps its own Listen there.
+    expect(reducedMotionCss).toMatch(/\.store-coverflow-plaque\s*\{\s*display: none/);
     expect(cssSource).toMatch(
-      /prefers-reduced-motion: reduce[\s\S]*?store-coverflow-rail__fill[\s\S]*?animation: none/,
-    );
-    expect(cssSource).toMatch(
-      /prefers-reduced-motion: reduce[\s\S]*?store-coverflow-rail__fill[\s\S]*?transition: none/,
+      /prefers-reduced-motion: no-preference[\s\S]*?\[data-store-coverflow-position='active'\]\s*\.store-item-card__listen\s*\{\s*display: none/,
     );
     expect(cssSource).toMatch(
       /prefers-reduced-motion: reduce[\s\S]*?data-store-coverflow-position[\s\S]*?store-item-card__image[\s\S]*?transform: none/,

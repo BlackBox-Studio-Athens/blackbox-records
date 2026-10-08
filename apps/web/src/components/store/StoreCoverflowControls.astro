@@ -1,6 +1,5 @@
 ---
-import { Check } from 'lucide-react';
-
+import MusicEqualizer from '@/components/music/MusicEqualizer';
 import { buttonVariants } from '@/components/ui/button';
 import './store-chrome.css';
 
@@ -9,34 +8,44 @@ interface Props {
   total: number;
 }
 const { catalogId, total } = Astro.props;
-const viewToggle = buttonVariants({ variant: 'chip', size: 'sm' });
-const stepButton = buttonVariants({ variant: 'outline', size: 'sm' });
+const stepButton = buttonVariants({ variant: 'outline', size: 'lg' });
 ---
 
 <div class="store-coverflow-controls" data-store-coverflow-controls>
   <div class="store-coverflow-actions" role="group" aria-label="Catalogue view">
-    <button
-      type="button"
-      class={viewToggle}
-      aria-controls={catalogId}
-      aria-pressed="true"
-      data-store-coverflow-toggle
-      disabled
-    >
-      <Check className="hidden size-3 group-aria-pressed:inline-block" aria-hidden="true" />
-      Grid
-    </button>
-    <button
-      type="button"
-      class={viewToggle}
-      aria-controls={catalogId}
-      aria-pressed="false"
-      data-store-coverflow-preview
-      disabled
-    >
-      <Check className="hidden size-3 group-aria-pressed:inline-block" aria-hidden="true" />
-      Coverflow
-    </button>
+    <div class="store-coverflow-view-switch">
+      <button
+        type="button"
+        class="store-coverflow-view"
+        aria-controls={catalogId}
+        aria-pressed="true"
+        data-store-coverflow-toggle
+        disabled
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <rect width="7" height="7" />
+          <rect x="9" width="7" height="7" />
+          <rect y="9" width="7" height="7" />
+          <rect x="9" y="9" width="7" height="7" />
+        </svg>
+        Grid
+      </button>
+      <button
+        type="button"
+        class="store-coverflow-view"
+        aria-controls={catalogId}
+        aria-pressed="false"
+        data-store-coverflow-preview
+        disabled
+      >
+        <svg width="28" height="16" viewBox="0 0 28 16" fill="currentColor" aria-hidden="true">
+          <path d="M0 3 7 5v6l-7 2z" opacity="0.5" />
+          <rect x="9" y="1" width="10" height="14" />
+          <path d="M28 3 21 5v6l7 2z" opacity="0.5" />
+        </svg>
+        Coverflow
+      </button>
+    </div>
     <button type="button" class={stepButton} aria-controls={catalogId} data-store-coverflow-previous disabled>
       Previous
     </button>
@@ -63,18 +72,27 @@ const stepButton = buttonVariants({ variant: 'outline', size: 'sm' });
         </dd>
       </div>
     </dl>
-    <div class="store-coverflow-rail" aria-hidden="true">
-      <span class="store-coverflow-rail__track"></span>
-      <span class="store-coverflow-rail__fill" data-store-coverflow-disclosure-rail></span>
-    </div>
     <p class="store-coverflow-summary" data-store-coverflow-summary data-store-coverflow-initial-label=""></p>
   </div>
 </div>
-<p
-  class="store-coverflow-status"
-  role="status"
-  aria-live="polite"
-  aria-atomic="true"
-  data-store-coverflow-status
-  hidden
-></p>
+{/* The plaque names the front cover; its Listen end takes that cover's player data while Coverflow shows. */}
+<div class="store-coverflow-plaque">
+  <button
+    type="button"
+    class="music-listen-trigger music-listen-trigger--compact store-coverflow-listen"
+    data-store-coverflow-listen
+    data-music-streaming-service-embedded-player-trigger
+    hidden
+  >
+    <MusicEqualizer />
+    <span data-music-listen-label>Listen</span>
+  </button>
+  <p
+    class="store-coverflow-status"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true"
+    data-store-coverflow-status
+    hidden
+  ></p>
+</div>
