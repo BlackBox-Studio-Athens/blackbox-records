@@ -20,10 +20,7 @@ const { principal, remainder } = selectReleaseMerchandisingEntries(
 ---
 
 <SiteLayout pageTitle="Releases" pageDescription="Releases and label catalog.">
-  <header class="layout-container releases-page-intro">
-    <p class="releases-page-intro__eyebrow">Catalog</p>
-    <h1 class="releases-page-intro__title internal-page-hero__title">Releases</h1>
-  </header>
+  <h1 class="sr-only">Releases</h1>
   {releaseCatalogEntries.length > 0 && (
     <div id="releases-merchandising" class="layout-container releases-page-showcase-container">
       <div

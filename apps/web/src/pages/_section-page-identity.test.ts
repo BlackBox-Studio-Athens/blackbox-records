@@ -28,20 +28,17 @@ describe('section page identity', () => {
     expect(internalPageHero).toContain('{resolvedSectionLabel}');
   });
 
-  it('keeps custom headers distinct and on the shared title class', () => {
-    expect(releasesPage).toMatch(
-      /<p class="releases-page-intro__eyebrow">Catalog<\/p>[\s\S]*?<h1 class="releases-page-intro__title internal-page-hero__title"[^>]*>\s*Releases\s*<\/h1>/,
-    );
+  it('keeps Releases accessible without an intro and Services on the shared title class', () => {
+    expect(releasesPage).toContain('<h1 class="sr-only">Releases</h1>');
+    expect(releasesPage).not.toContain('releases-page-intro');
     expect(servicesPage).toMatch(
       /<p class="services-page-intro__eyebrow">What We Do<\/p>[\s\S]*?<h1 class="services-page-intro__title internal-page-hero__title">\s*\{servicesContent\.hero\.title\}\s*<\/h1>/,
     );
   });
 
   it('prevents custom title rules from owning shared typography', () => {
-    for (const selector of ['.releases-page-intro__title', '.services-page-intro__title']) {
-      expect(cssRule(selector)).not.toMatch(
-        /(?:font-family|font-size|line-height|letter-spacing|text-wrap|overflow-wrap)\s*:/,
-      );
-    }
+    expect(cssRule('.services-page-intro__title')).not.toMatch(
+      /(?:font-family|font-size|line-height|letter-spacing|text-wrap|overflow-wrap)\s*:/,
+    );
   });
 });

@@ -1997,37 +1997,6 @@ body {
     gap: 1.25rem;
   }
 
-  .releases-page-intro {
-    padding-top: clamp(2.25rem, 5vw, 4.5rem);
-    padding-bottom: clamp(1.25rem, 3vw, 2rem);
-  }
-
-  .releases-page-intro__eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin: 0;
-    color: rgba(245, 245, 245, 0.82);
-    font-family: var(--font-mono);
-    font-size: 0.72rem;
-    letter-spacing: 0.22em;
-    line-height: 1;
-    text-transform: uppercase;
-  }
-
-  .releases-page-intro__eyebrow::after {
-    height: 1px;
-    flex: 1;
-    background: #2b2b2b;
-    content: '';
-  }
-
-  .releases-page-intro__title {
-    margin: 0.65rem 0 0;
-    color: var(--foreground);
-    text-transform: uppercase;
-  }
-
   .releases-page-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

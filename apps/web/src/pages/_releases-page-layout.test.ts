@@ -23,13 +23,15 @@ describe('Releases page layout', () => {
     }
   });
 
-  it('renders one compact route-local catalog identity', () => {
+  it('retains an accessible page heading without a visible catalog introduction', () => {
     const page = readFileSync(releasesPagePath, 'utf8');
+    const css = readFileSync(globalCssPath, 'utf8');
 
     expect(page).not.toContain('InternalPageHero');
-    expect(page).toMatch(/<header class="layout-container releases-page-intro">/);
-    expect(page).toMatch(/<p class="releases-page-intro__eyebrow">Catalog<\/p>/);
-    expect(page).toMatch(/<h1 class="releases-page-intro__title internal-page-hero__title">\s*Releases\s*<\/h1>/s);
+    expect(page).toContain('<h1 class="sr-only">Releases</h1>');
+    expect(page.match(/<h1\b/g)).toHaveLength(1);
+    expect(page).not.toContain('releases-page-intro');
+    expect(css).not.toContain('.releases-page-intro');
   });
 
   it('renders the whole catalog once through shared cards with one availability connector', () => {
@@ -66,7 +68,7 @@ describe('Releases page layout', () => {
     const css = readFileSync(globalCssPath, 'utf8');
 
     expect(page).toContain('class="layout-container releases-page-showcase-container"');
-    expect(css).not.toMatch(/\.releases-page-(?:intro|showcase-container)[^{]*{[^}]*(?:max-width|padding-inline)\s*:/s);
+    expect(css).not.toMatch(/\.releases-page-showcase-container[^{]*{[^}]*(?:max-width|padding-inline)\s*:/s);
     expect(css).toMatch(
       /@media \(min-width: 64rem\)[\s\S]*?\.releases-page-layout\s*{[^}]*grid-template-columns:\s*repeat\(12, minmax\(0, 1fr\)\)/,
     );
