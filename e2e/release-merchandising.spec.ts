@@ -11,7 +11,8 @@ test('release backdrop dismissal restores mouse-wheel scrolling', async ({ page 
   await page.mouse.wheel(0, 200);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   for (let round = 0; round < 2; round++) {
-    await page.locator('[data-release-id="anarchotribal"] .release-card-image-shell').click();
+    // A native edition's artwork opens the Store edition; the title keeps the release overlay.
+    await page.locator('[data-release-id="anarchotribal"] .release-card-title-link').click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.locator('.app-shell-content-overlay__backdrop').click({ position: { x: 8, y: 450 } });
     await expect(page.getByRole('dialog')).toBeHidden();
@@ -156,9 +157,9 @@ for (const [label, releaseDate, digitalStatus] of [
     await expect(physical).toHaveCSS('border-top-style', 'dashed');
     await expect(announced.locator('[data-release-shipping]')).toHaveText('Expected November 2026');
     const details = announced.locator('[data-release-purchase]');
-    await expect(details).toHaveText('View vinyl details');
+    await expect(details).toHaveText('Vinyl edition');
     await expect(details).toHaveClass('release-detail-link');
-    await expect(details).toHaveCSS('text-decoration-line', 'underline');
+    await expect(details).toHaveCSS('text-transform', 'uppercase');
     await expect(page.locator('[data-release-id]')).toHaveCount(3);
     await expect(page.getByRole('heading', { name: 'Our Releases', exact: true })).toBeVisible();
     await expect(announced.locator('.preorder-action, .purchase-action')).toHaveCount(0);
@@ -192,7 +193,7 @@ for (const [label, releaseDate, digitalStatus] of [
     await failedRead;
     // Without an offer there is no physical badge; the digital badge stays.
     await expect(announced.locator('[data-release-badges]')).toHaveText(digitalStatus);
-    await expect(announced.locator('[data-release-purchase]')).toHaveText('View vinyl details');
+    await expect(announced.locator('[data-release-purchase]')).toHaveText('Vinyl edition');
     expect(await sentinelIntact(page)).toBe(true);
 
     failed = false;
@@ -460,9 +461,7 @@ test('Releases changes buying actions while retaining placement on a fresh offer
   await page.reload();
   await expect(page.locator('[data-release-role="lead"]')).toHaveAttribute('data-release-id', 'disintegration');
   await expect(page.locator('[data-release-id]')).toHaveCount(3);
-  await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
-    'View vinyl details',
-  );
+  await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText('Vinyl edition');
   await expect(page.locator('.purchase-action, .preorder-action')).toHaveCount(0);
 });
 
@@ -519,11 +518,25 @@ test('Releases keeps native destinations distinct from inert copy and status', a
   await page.mouse.move(0, 0);
   await image.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
   const restingArtwork = await image.evaluate((element) => getComputedStyle(element).transform);
-  for (const action of [purchase, listen]) {
-    await action.hover();
-    await image.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
+  await listen.hover();
+  await image.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
+  await expect(image).toHaveCSS('transform', restingArtwork);
+  // The artwork and the edition action share one destination and one engaged state; Listen stays independent.
+  // The record only shows on desktop layouts.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const record = lead.locator('.release-vinyl-peek');
+  await expect(record).toHaveCSS('transform', 'none');
+  await expect(artwork).toHaveAttribute('href', (await purchase.getAttribute('href'))!);
+  const restingAction = await purchase.evaluate((element) => getComputedStyle(element).backgroundColor);
+  for (const target of [purchase, artwork]) {
+    await target.hover();
+    await expect(record).not.toHaveCSS('transform', 'none');
+    await expect(purchase).not.toHaveCSS('background-color', restingAction);
     await expect(image).toHaveCSS('transform', restingArtwork);
+    await page.mouse.move(0, 0);
+    await expect(record).toHaveCSS('transform', 'none');
   }
+  await page.setViewportSize({ width: 390, height: 900 });
   await expect(artwork).toHaveAccessibleName(/disintegration/i);
   await expect(artwork).toHaveAttribute('tabindex', '-1');
   await expect(title).toHaveAccessibleName(/disintegration/i);
@@ -535,14 +548,12 @@ test('Releases keeps native destinations distinct from inert copy and status', a
     await page.keyboard.press('Tab');
   }
 
-  for (const link of [artwork, title]) {
-    await link.click();
-    await expect(page).toHaveURL(/\/releases\/disintegration\/$/);
-    await expect(page.getByRole('dialog').locator('[data-app-shell-overlay-kind="releases"]')).toBeVisible();
-    expect(await sentinelIntact(page)).toBe(true);
-    await page.goBack();
-    await expect(lead).toBeVisible();
-  }
+  await title.click();
+  await expect(page).toHaveURL(/\/releases\/disintegration\/$/);
+  await expect(page.getByRole('dialog').locator('[data-app-shell-overlay-kind="releases"]')).toBeVisible();
+  expect(await sentinelIntact(page)).toBe(true);
+  await page.goBack();
+  await expect(lead).toBeVisible();
   await artist.click();
   await expect(page).toHaveURL(/\/artists\/afterwise\/$/);
   await expect(page.getByRole('dialog').locator('[data-app-shell-overlay-kind="artists"]')).toBeVisible();
@@ -614,7 +625,7 @@ for (const result of ['unavailable', 'failed'] as const) {
     await page.goBack();
     await expect.poll(() => Boolean(respond)).toBe(true);
     await expect(page.locator('[data-release-id="disintegration"] [data-release-purchase]')).toHaveText(
-      'View vinyl details',
+      'Vinyl edition',
     );
     await expect(page.locator('.purchase-action, .preorder-action')).toHaveCount(0);
     expect(

@@ -5183,38 +5183,217 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   font-size: 0.6875rem;
 }
 
-/* A non-buyable edition's details action is navigation, not a box: underlined text with a trailing arrow. */
+/* A non-buyable edition's action is a mono label held in brackets that close in while it is engaged. The brackets
+   stay out of the accessible name. */
 .release-detail-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
   min-height: 2.75rem;
   color: var(--foreground);
-  font-family: var(--font-sans);
-  font-size: 0.875rem;
-  font-weight: 500;
-  text-decoration-line: underline;
-  text-decoration-color: color-mix(in srgb, var(--foreground) 40%, transparent);
-  text-underline-offset: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.release-detail-link::before,
+.release-detail-link::after {
+  color: var(--muted-foreground);
+  transition:
+    margin 0.3s cubic-bezier(0.2, 0.7, 0.2, 1),
+    color 0.3s;
+}
+
+.release-detail-link::before {
+  content: '[';
+  content: '[' / '';
+  margin-right: 0.7rem;
 }
 
 .release-detail-link::after {
-  content: '';
-  width: 1rem;
-  height: 1rem;
-  flex-shrink: 0;
-  background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m12 5 7 7-7 7'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='m12 5 7 7-7 7'/%3E%3C/svg%3E");
+  content: ']';
+  content: ']' / '';
+  margin-left: 0.7rem;
 }
 
-.release-detail-link:hover {
-  text-decoration-color: var(--foreground);
+.release-detail-link:is(:hover, :focus-visible)::before {
+  margin-right: 0.2rem;
+  color: var(--foreground);
+}
+
+.release-detail-link:is(:hover, :focus-visible)::after {
+  margin-left: 0.2rem;
+  color: var(--foreground);
 }
 
 .release-detail-link:focus-visible {
   outline: 2px solid var(--foreground);
-  outline-offset: 2px;
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .release-detail-link::before,
+  .release-detail-link::after {
+    transition: none;
+  }
+}
+
+/* A Releases card with a native edition links its artwork and its edition action to that edition. Engaging either one
+   (pointer on the artwork, pointer or keyboard focus on the action) gives both the same feedback: the action's own
+   hover look and, for vinyl, the record sliding out of its sleeve. This rule is the only place that condition is
+   written. */
+[data-release-edition-link]:has(:is([data-release-artwork], [data-release-purchase]):is(:hover, :focus-visible)) {
+  .release-detail-link::before {
+    margin-right: 0.2rem;
+    color: var(--foreground);
+  }
+
+  .release-detail-link::after {
+    margin-left: 0.2rem;
+    color: var(--foreground);
+  }
+
+  .purchase-action:not(:disabled, [aria-disabled='true'], [aria-busy='true'], [hidden], .preorder-action) {
+    border-color: var(--foreground);
+    background-color: var(--foreground);
+    box-shadow: inset 0 -2px 0 color-mix(in oklch, var(--primary-foreground) 16%, transparent);
+  }
+
+  .preorder-action:not(:disabled, [aria-disabled='true']) {
+    border-color: var(--preorder-accent);
+    background-color: var(--preorder-accent);
+    color: var(--foreground);
+  }
+
+  .release-vinyl-peek {
+    transform: translateX(24%);
+  }
+
+  .release-vinyl-peek__record {
+    transform: rotate(55deg);
+  }
+
+  &.releases-latest-feature .release-vinyl-peek {
+    transform: translateY(24%);
+  }
+}
+
+/* The record waits behind the cover: below the lead cover, which has empty space under it, and beside the others,
+   whose copy sits underneath. Only hover-capable desktop layouts without reduced motion show it, so other devices never
+   fetch the photo. */
+.release-vinyl-peek {
+  display: none;
+}
+
+@media (hover: hover) and (min-width: 64rem) and (prefers-reduced-motion: no-preference) {
+  .release-card-image-shell:has(> .release-vinyl-peek) {
+    position: relative;
+    isolation: isolate;
+    overflow: visible;
+
+    > a {
+      overflow: hidden;
+    }
+  }
+
+  .release-vinyl-peek {
+    --release-vinyl-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    display: block;
+    position: absolute;
+    z-index: -1;
+    inset: 1.5%;
+    border-radius: 50%;
+    filter: drop-shadow(0 12px 20px rgb(0 0 0 / 0.6));
+    pointer-events: none;
+    transition: transform 0.8s var(--release-vinyl-ease);
+  }
+
+  /* Light stays put while the record turns: a lit bevel on the outer edge, a soft key light from the upper left and
+     two highlights across the grooves. */
+  .release-vinyl-peek::before,
+  .release-vinyl-peek::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    border-radius: 50%;
+  }
+
+  .release-vinyl-peek::before {
+    background:
+      radial-gradient(
+        circle,
+        transparent 0 98.2%,
+        rgb(255 255 255 / 0.28) 99.1%,
+        rgb(255 255 255 / 0.06) 99.7%,
+        transparent 100%
+      ),
+      linear-gradient(135deg, rgb(255 255 255 / 0.07), transparent 45%, rgb(0 0 0 / 0.25));
+    mask: radial-gradient(circle, transparent 0 35%, #000 36%);
+  }
+
+  .release-vinyl-peek::after {
+    background: conic-gradient(
+      from 120deg,
+      transparent 0deg,
+      rgb(255 255 255 / 0.16) 14deg,
+      rgb(255 255 255 / 0.04) 30deg,
+      transparent 48deg 180deg,
+      rgb(255 255 255 / 0.12) 194deg,
+      rgb(255 255 255 / 0.03) 210deg,
+      transparent 228deg
+    );
+    mix-blend-mode: screen;
+    mask: radial-gradient(circle, transparent 0 35%, #000 36% 99%, transparent 100%);
+  }
+
+  /* The photo and label load when the card is first approached and stay through the slide back. */
+  .release-vinyl-peek__record,
+  .release-vinyl-peek__record::before {
+    transition:
+      transform 0.8s var(--release-vinyl-ease),
+      background-image 0s 0.8s;
+    transition-behavior: allow-discrete;
+  }
+
+  .release-vinyl-peek__record {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: center / 100% no-repeat;
+  }
+
+  .release-vinyl-peek__record::before,
+  .release-vinyl-peek__record::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+  }
+
+  .release-vinyl-peek__record::before {
+    inset: 32.4%;
+    background: center / cover no-repeat;
+    box-shadow:
+      inset 0 0 0 1px rgb(0 0 0 / 0.35),
+      inset 0 0 18px rgb(0 0 0 / 0.35);
+  }
+
+  .release-vinyl-peek__record::after {
+    inset: 48.7%;
+    background: #050505;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.12);
+  }
+
+  [data-release-edition-link]:is(:hover, :focus-within) .release-vinyl-peek__record {
+    background-image: var(--release-vinyl-record);
+    transition-delay: 0s;
+  }
+
+  [data-release-edition-link]:is(:hover, :focus-within) .release-vinyl-peek__record::before {
+    background-image: var(--release-vinyl-label);
+    transition-delay: 0s;
+  }
 }
 
 /* Ready ordinary Buy controls share restrained feedback across Releases and Store. */

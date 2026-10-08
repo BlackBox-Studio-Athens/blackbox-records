@@ -104,7 +104,7 @@ describe('Releases physical merchandising', () => {
     const result = selectReleaseMerchandisingEntries(entries, []);
     expect(result.principal.map((entry) => entry.id)).toEqual(['lotus', 'disintegration']);
     expect(result.remainder).toHaveLength(2);
-    expect(result.states.get('lotus')).toMatchObject({ state: 'unknown', action: 'View vinyl details', shipping: '' });
+    expect(result.states.get('lotus')).toMatchObject({ state: 'unknown', action: 'Vinyl edition', shipping: '' });
     expect(result.states.get('anarchotribal')?.badges).toEqual(['Digital out now', 'Vinyl Coming Soon']);
     // A native edition has no physical badge until its offer is read.
     expect(result.states.get('lotus')?.badges).toEqual(['Out 16 October 2026']);
@@ -123,13 +123,13 @@ describe('Releases physical merchandising', () => {
       expect(releasePresentation(entry, undefined, today)).toMatchObject({
         state: 'unknown',
         badges: digitalBadges,
-        action: 'View vinyl details',
+        action: 'Vinyl edition',
         shipping: '',
       });
       expect(releasePresentation(entry, offer('coming_soon', '2026-11'), today)).toMatchObject({
         state: 'coming_soon',
         badges: [...digitalBadges, 'Vinyl Coming Soon'],
-        action: 'View vinyl details',
+        action: 'Vinyl edition',
         shipping: 'Expected November 2026',
       });
       expect(releasePresentation(entry, offer('repressing', '2027-01'), today)).toMatchObject({
@@ -224,15 +224,15 @@ describe('Releases physical merchandising', () => {
       badges: ['Digital out now', 'Pre-order'],
     });
     const soldOut = releasePresentation(entry, { ...records[1]!, availabilityState: 'sold_out' }, today);
-    expect(soldOut).toMatchObject({ state: 'sold_out', action: 'View vinyl details', shipping: '' });
+    expect(soldOut).toMatchObject({ state: 'sold_out', action: 'Vinyl edition', shipping: '' });
     expect(soldOut).not.toHaveProperty('preorder');
     expect(releasePresentation(entry, records[0], today)).toMatchObject({
       state: 'unknown',
-      action: 'View vinyl details',
+      action: 'Vinyl edition',
     });
     expect(releasePresentation(entry, { ...records[1]!, presentationState: 'unavailable' }, today)).toMatchObject({
       state: 'unknown',
-      action: 'View vinyl details',
+      action: 'Vinyl edition',
     });
   });
   it.each([

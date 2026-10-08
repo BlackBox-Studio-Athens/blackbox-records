@@ -85,7 +85,7 @@ describe('ReleaseStoreLink', () => {
   it('switches a matching ready stocked pre-order after one authoritative listing read', async () => {
     read.mockResolvedValue([ready]);
     const result = await hydrate();
-    expect(result.initial).toContain('class="release-detail-link">View vinyl details</a>');
+    expect(result.initial).toContain('class="release-detail-link">Vinyl edition</a>');
     expect(result.initial).not.toContain('data-availability-state');
     expect(result.initial).toContain('>Out 16 October 2026</span>');
     expect(result.rendered).toContain('preorder-action');
@@ -136,7 +136,7 @@ describe('ReleaseStoreLink', () => {
     async (_name, records, badge, state) => {
       read.mockResolvedValue(records);
       const result = await hydrate();
-      expect(result.rendered).toContain('class="release-detail-link">View vinyl details</a>');
+      expect(result.rendered).toContain('class="release-detail-link">Vinyl edition</a>');
       if (badge)
         expect(result.rendered).toContain(
           `class="store-item-card__release-status" data-availability-state="${state}">${badge}</span>`,

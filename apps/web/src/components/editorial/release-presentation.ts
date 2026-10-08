@@ -20,7 +20,7 @@ export type ReleasePresentation = { badges: ReleaseBadge[] } & (
   | { state: 'available'; action: `Buy ${string}`; shipping: '' }
   | {
       state: 'announced' | 'editorial' | 'coming_soon' | 'repressing' | 'sold_out' | 'unknown';
-      action: 'View vinyl details' | 'View edition';
+      action: `${(typeof MEDIUM)[keyof typeof MEDIUM]} edition` | 'View edition';
       shipping: string;
     }
 );
@@ -46,7 +46,7 @@ export function neutralReleasePresentation(
       : [];
   if (entry.edition.kind === 'none')
     return { state: 'editorial', badges: digitalBadges, action: 'View edition', shipping: '' };
-  const action = entry.edition.format === 'vinyl' ? 'View vinyl details' : 'View edition';
+  const action = `${MEDIUM[entry.edition.format]} edition` as const;
   // An announced edition has no Store Item and no offer to read.
   if (entry.edition.kind === 'announced')
     return {
@@ -104,7 +104,7 @@ export function releasePresentation(
   };
 }
 
-// The non-buyable edition action is a details text link; Buy and Pre-order keep their buttons.
+// The non-buyable edition action is a bracketed text link; Buy and Pre-order keep their buttons.
 export const RELEASE_DETAIL_LINK_CLASS = 'release-detail-link';
 
 // The zero-stock state a presentation's physical badge (its last badge) carries, for the shared tone.

@@ -308,7 +308,7 @@ describe('shell page snapshots', () => {
       expect(live.badges.children[0]?.textContent).toBe(
         actionName === 'Pre-order vinyl' ? 'Pre-order' : 'Vinyl available',
       );
-      expect(fragmentHtml(snapshot?.mainContent)).toContain('View vinyl details');
+      expect(fragmentHtml(snapshot?.mainContent)).toContain('Vinyl edition');
       // Before the offer is read again the card carries only its digital badge.
       expect(fragmentHtml(snapshot?.mainContent)).toContain('Digital out now');
       expect(fragmentHtml(snapshot?.mainContent)).not.toMatch(
