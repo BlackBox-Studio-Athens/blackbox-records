@@ -36,8 +36,10 @@ const routeDocuments = {
 const eagerGraphBudgetBytes = 102 * 1024;
 // User-approved 3 KiB Home allowance for the current preorder and inquiry release, plus 1 KiB approved on
 // 7 October 2026 for the swipe-row dots island (795 Brotli bytes; openspec/changes/add-home-swipe-rows), plus 1 KiB
-// on 8 October 2026 when Home sat 6 bytes under and the Store card Buy flick added 79 (add-store-card-buy).
-const homeEagerGraphBudgetBytes = 105 * 1024;
+// on 8 October 2026 when Home sat 6 bytes under and the Store card Buy flick added 79 (add-store-card-buy), plus 1 KiB
+// on 9 October 2026 for the cart and Menu history entries and scroll restoration (54 bytes over;
+// openspec/changes/improve-mobile-readiness).
+const homeEagerGraphBudgetBytes = 106 * 1024;
 // Store item pages only; the recorded decision sits where the item routes are chosen below.
 const storeItemEagerGraphBudgetBytes = 104 * 1024;
 const dormantPortalNames = ['ArtistsRosterFilters', 'ServicesInquiryForm', 'StoreCartButton', 'StoreImageGallery'];
