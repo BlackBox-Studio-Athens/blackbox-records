@@ -2924,6 +2924,17 @@ body {
     pointer-events: none;
   }
 
+  /* A session is either the open modal or the floating player, so the page end and focused controls scroll clear of
+     the floating player (two rows on phones, about 7rem). */
+  html[data-music-player-session] {
+    --music-player-mini-reserve: calc(7rem + 0.75rem + max(0.75rem, env(safe-area-inset-bottom)));
+    scroll-padding-bottom: var(--music-player-mini-reserve);
+  }
+
+  html[data-music-player-session] body {
+    padding-bottom: var(--music-player-mini-reserve);
+  }
+
   .music-streaming-service-embedded-player-mini-player-copy {
     display: grid;
     gap: 0.35rem;
@@ -4505,6 +4516,10 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
     white-space: nowrap;
     display: block;
     text-overflow: ellipsis;
+  }
+
+  html[data-music-player-session] {
+    --music-player-mini-reserve: calc(4rem + 0.75rem + max(0.75rem, env(safe-area-inset-bottom)));
   }
 }
 
