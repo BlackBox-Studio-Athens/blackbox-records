@@ -15,9 +15,22 @@ const catalog = vi.hoisted(() => ({
 }));
 
 vi.mock('astro:assets', () => ({
-  getImage: vi.fn(async ({ src, width, format }: { src: string | { src: string }; width: number; format: string }) => ({
-    src: `${typeof src === 'string' ? src : src.src}?width=${width}&format=${format}`,
-  })),
+  getImage: vi.fn(
+    async ({
+      src,
+      width,
+      widths,
+      format,
+    }: {
+      src: string | { src: string };
+      width: number;
+      widths?: number[];
+      format: string;
+    }) => {
+      const url = (w: number) => `${typeof src === 'string' ? src : src.src}?width=${w}&format=${format}`;
+      return { src: url(width), srcSet: { attribute: (widths ?? []).map((w) => `${url(w)} ${w}w`).join(', ') } };
+    },
+  ),
 }));
 vi.mock('@/lib/catalog-data', () => ({
   listStoreItems: async () => [
@@ -131,12 +144,19 @@ describe('published pre-order showcase response', () => {
     catalog.photo.width = 3000;
     expect(await (await GET()).json()).toEqual([
       expect.objectContaining({
-        coverUrl: '/accepted-cover.webp?width=1200&format=webp',
+        coverUrl: '/accepted-cover.webp?width=720&format=webp',
+        coverSrcSet: '/accepted-cover.webp?width=360&format=webp 360w, /accepted-cover.webp?width=720&format=webp 720w',
         artistPhotoUrl: '/accepted-artist.webp?width=1800&format=webp',
+        artistPhotoSrcSet: expect.stringMatching(/ 800w, .* 1200w, .* 1800w$/),
       }),
     ]);
-    expect(getImage).toHaveBeenCalledWith({ src: catalog.cover, width: 1200, format: 'webp' });
-    expect(getImage).toHaveBeenCalledWith({ src: catalog.photo, width: 1800, format: 'webp' });
+    expect(getImage).toHaveBeenCalledWith({ src: catalog.cover, widths: [360, 720], width: 720, format: 'webp' });
+    expect(getImage).toHaveBeenCalledWith({
+      src: catalog.photo,
+      widths: [800, 1200, 1800],
+      width: 1800,
+      format: 'webp',
+    });
 
     catalog.cover.width = catalog.cover.height = 600;
     catalog.photo.width = 960;

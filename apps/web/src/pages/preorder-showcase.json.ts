@@ -10,6 +10,11 @@ import afterwiseVideoPoster from './_assets/video-posters/afterwise-equilibrium.
 import afterwiseBackgroundVideoUrl from './_assets/video-posters/afterwise-equilibrium-loop.mp4?url';
 import afterwiseBackgroundVideoDesktopUrl from './_assets/video-posters/afterwise-equilibrium-loop-desktop.mp4?url';
 
+// Covers fill at most a 21.25rem slot and share the Store card widths (one cached transform per cover); band photos
+// span the viewport.
+const coverWidths = [360, 720];
+const photoWidths = [800, 1200, 1800];
+
 // ponytail: reviewed exact-ID backdrops; prepare a small loop and poster before adding another.
 const preparedClips = new Map([
   [
@@ -45,13 +50,15 @@ export async function GET() {
           const [cover, photo, clipMedia] = await Promise.all([
             getImage({
               src: release.data.cover_image,
-              width: largestImageWidth(release.data.cover_image, [1200]),
+              widths: coverWidths,
+              width: largestImageWidth(release.data.cover_image, coverWidths),
               format: 'webp',
             }),
             artist
               ? getImage({
                   src: artist.data.image,
-                  width: largestImageWidth(artist.data.image, [1800]),
+                  widths: photoWidths,
+                  width: largestImageWidth(artist.data.image, photoWidths),
                   format: 'webp',
                 })
               : null,
@@ -73,7 +80,9 @@ export async function GET() {
             item.slug,
             {
               coverUrl: cover.src,
+              coverSrcSet: cover.srcSet?.attribute || undefined,
               artistPhotoUrl: photo?.src ?? null,
+              artistPhotoSrcSet: photo?.srcSet?.attribute || undefined,
               clipPosterUrls,
               clipBackgroundVideoUrls,
               clipBackgroundVideoDesktopUrls,

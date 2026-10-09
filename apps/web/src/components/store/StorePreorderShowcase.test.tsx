@@ -234,6 +234,8 @@ describe('StorePreorderShowcase reads', () => {
     { ...clip, artistPath: '//external.example/artist/' },
     { ...clip, artistPath: '/\\external.example/artist/' },
     { ...clip, coverUrl: '//external.example/cover.webp' },
+    { ...clip, coverSrcSet: '/clip-360.webp 360w, //external.example/cover.webp 720w' },
+    { ...clip, artistPhotoSrcSet: 'javascript:alert(1) 800w' },
     { ...clip, firstClipId: 'not-a-video-id' },
     { ...clip, clips: [{ id: '01234567890', title: 'Video', posterUrl: '//external.example/poster.webp' }] },
     {
@@ -388,6 +390,21 @@ describe('StorePreorderShowcase presentation', () => {
     expect(html).toContain('To be confirmed');
     expect(html).toContain('Pre-order &amp; delivery information');
     expect(html).not.toContain('Release date');
+  });
+
+  it('offers responsive cover and band-photo candidates sized to their slots', async () => {
+    const coverSrcSet =
+      'https://images.blackboxrecordsathens.com/cdn-cgi/image/width=360,format=webp/https://blackbox-records-web.pages.dev/media/content/a 360w, /clip-720.webp 720w';
+    stubReads(
+      [ready(photo.slug)],
+      [{ ...photo, coverSrcSet, artistPhotoSrcSet: '/band-800.webp 800w, /band-1800.webp 1800w' }],
+    );
+    rendered.items = await loadStorePreorderShowcase(props.candidatesUrl);
+    const html = renderToStaticMarkup(render());
+    expect(html).toContain(
+      `srcSet="${coverSrcSet}" sizes="(max-width: 50rem) 13.75rem, (max-width: 62.5rem) 17.5rem, 21.25rem"`,
+    );
+    expect(html).toContain('srcSet="/band-800.webp 800w, /band-1800.webp 1800w" sizes="100vw"');
   });
 
   it('presents the no-video release identity and delegates Listen to the shell', async () => {

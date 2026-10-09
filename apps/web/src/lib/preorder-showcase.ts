@@ -21,7 +21,9 @@ export function buildPreorderShowcaseCandidates(
     string,
     {
       coverUrl: string;
+      coverSrcSet?: string | undefined;
       artistPhotoUrl: string | null;
+      artistPhotoSrcSet?: string | undefined;
       clipPosterUrls?: ReadonlyMap<string, string>;
       clipBackgroundVideoUrls?: ReadonlyMap<string, string>;
       clipBackgroundVideoDesktopUrls?: ReadonlyMap<string, string>;
@@ -52,6 +54,7 @@ export function buildPreorderShowcaseCandidates(
         storePath: item.storePath,
         releaseDate: item.releaseDate?.toISOString().slice(0, 10) ?? null,
         coverUrl: media.coverUrl,
+        ...(media.coverSrcSet ? { coverSrcSet: media.coverSrcSet } : {}),
         firstClipId: release.data.clips?.[0]?.youtube_video_id ?? null,
         clips: (release.data.clips ?? []).map((clip) => ({
           id: clip.youtube_video_id,
@@ -63,6 +66,7 @@ export function buildPreorderShowcaseCandidates(
             : {}),
         })),
         artistPhotoUrl: media.artistPhotoUrl,
+        ...(media.artistPhotoUrl && media.artistPhotoSrcSet ? { artistPhotoSrcSet: media.artistPhotoSrcSet } : {}),
         summary: item.summary?.split(/(?<=[.!?])\s/)[0] ?? null,
         trackCount: trackCount || null,
         recording: release.data.credits?.find((credit) => /^recorded and mixed at$/i.test(credit.role))?.name ?? null,

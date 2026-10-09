@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { z as Zod } from 'zod';
+import type { StorePreorderShowcaseCandidate } from './preorder-showcase-schema';
 import type { PublicApiComponents } from '@blackbox/api-client/public';
 import { DIGITAL_RELEASE_BADGE } from '@blackbox/content-model';
 
@@ -10,64 +10,7 @@ import { getPublicBackendBaseUrl } from '@/platform/lib/backend/public-backend-c
 import { createProjectRelativeUrl } from '@/platform/config/site';
 import { preorderBadges, shipEstimateText, type ShipEstimate } from '@/platform/lib/preorder-estimate';
 
-function createShowcaseSchemas(z: typeof Zod) {
-  const localPath = z
-    .string()
-    .startsWith('/')
-    .refine((value) => !value.startsWith('//') && !value.startsWith('/\\'));
-  const imageUrl = z.string().refine((value) => {
-    if (value.startsWith('/') && !value.startsWith('//') && !value.startsWith('/\\')) return true;
-    return URL.canParse(value) && new URL(value).protocol === 'https:';
-  });
-  const candidateSchema = z.object({
-    slug: z.string().min(1),
-    title: z.string().min(1),
-    artist: z.string().min(1),
-    artistPath: localPath.nullable().optional(),
-    option: z.string().min(1),
-    storePath: localPath,
-    releaseDate: z.iso.date().nullable(),
-    coverUrl: imageUrl,
-    firstClipId: z
-      .string()
-      .regex(/^[A-Za-z0-9_-]{11}$/)
-      .nullable(),
-    clips: z
-      .array(
-        z.object({
-          id: z.string().regex(/^[A-Za-z0-9_-]{11}$/),
-          title: z.string().min(1),
-          posterUrl: imageUrl.nullable(),
-          backgroundVideoUrl: imageUrl.nullable().optional(),
-          backgroundVideoDesktopUrl: imageUrl.nullable().optional(),
-        }),
-      )
-      .optional(),
-    artistPhotoUrl: imageUrl.nullable(),
-    summary: z.string().nullable().optional(),
-    trackCount: z.number().int().positive().nullable().optional(),
-    recording: z.string().nullable().optional(),
-    listen: z
-      .object({
-        releaseId: z.string().min(1),
-        bandcampEmbedUrl: z.string().url().startsWith('https://bandcamp.com/EmbeddedPlayer/').nullable(),
-        tidalEmbedUrl: z.string().url().startsWith('https://embed.tidal.com/').nullable(),
-      })
-      .nullable()
-      .optional(),
-  });
-  const estimateSchema = z.union([
-    z.object({
-      kind: z.literal('month'),
-      month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
-      part: z.enum(['early', 'mid', 'late']).nullable(),
-    }),
-    z.object({ kind: z.literal('date'), date: z.iso.date() }),
-  ]);
-  return { candidateSchema, estimateSchema };
-}
-
-export type StorePreorderShowcaseCandidate = Zod.infer<ReturnType<typeof createShowcaseSchemas>['candidateSchema']>;
+export type { StorePreorderShowcaseCandidate };
 type ListingRecord = PublicApiComponents['schemas']['PublicStoreListingPrice'];
 type ShowcaseItem = StorePreorderShowcaseCandidate & { displayPrice: string; shipEstimate: ShipEstimate | null };
 
@@ -89,14 +32,17 @@ export async function loadStorePreorderShowcase(candidatesUrl: string, signal?: 
       );
       if (stocked.length === 0 || signal?.aborted) return [];
 
-      const { z } = await import('zod');
-      const { candidateSchema, estimateSchema } = createShowcaseSchemas(z);
-      const candidatesResponse = await fetch(candidatesUrl, {
-        headers: { accept: 'application/json' },
-        signal: signal ?? null,
-      });
+      // Only a buyable pre-order loads the validators and candidates (no Zod or Pages read on an empty Home); the two
+      // then load together.
+      const [{ candidatesSchema, nonEmpty, shipEstimateSchema }, candidatesResponse] = await Promise.all([
+        import('./preorder-showcase-schema'),
+        fetch(candidatesUrl, {
+          headers: { accept: 'application/json' },
+          signal: signal ?? null,
+        }),
+      ]);
       if (!candidatesResponse.ok) throw new Error('Could not read pre-order candidates.');
-      const candidates = z.array(candidateSchema).parse(await candidatesResponse.json());
+      const candidates = candidatesSchema.parse(await candidatesResponse.json());
       if (signal?.aborted) return [];
 
       return candidates.flatMap((candidate) => {
@@ -105,8 +51,8 @@ export async function loadStorePreorderShowcase(candidatesUrl: string, signal?: 
           ? [
               {
                 ...candidate,
-                displayPrice: z.string().min(1).parse(record.displayPrice),
-                shipEstimate: estimateSchema.nullable().parse(record.preorder.shipEstimate),
+                displayPrice: nonEmpty.parse(record.displayPrice),
+                shipEstimate: shipEstimateSchema.parse(record.preorder.shipEstimate),
               },
             ]
           : [];
@@ -357,6 +303,9 @@ function PreorderChapter({
   const cover = (
     <img
       src={item.coverUrl}
+      srcSet={item.coverSrcSet}
+      // The still-art slot (global.css): 13.75rem on phones, 17.5rem on tablets, 21.25rem above.
+      sizes={item.coverSrcSet && '(max-width: 50rem) 13.75rem, (max-width: 62.5rem) 17.5rem, 21.25rem'}
       alt={item.title + ' cover'}
       className="home-preorders__sleeve"
       width={340}
@@ -583,6 +532,8 @@ function PreorderChapter({
             {item.artistPhotoUrl && (
               <img
                 src={item.artistPhotoUrl}
+                srcSet={item.artistPhotoSrcSet}
+                sizes={item.artistPhotoSrcSet && '100vw'}
                 alt={item.artist}
                 className="home-preorders__band-photo"
                 loading="lazy"
