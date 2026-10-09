@@ -64,7 +64,7 @@ describe('Catalog description typography', () => {
     )?.[1];
     const storeItemSummaryClass = /storeItem\.summary && \(?\s*<Prose\s+class="([^"]+)"/s.exec(storeItemDetail)?.[1];
 
-    expect(releaseDetailSummaryClass).toBe('max-w-2xl text-sm leading-relaxed text-muted-foreground');
+    expect(releaseDetailSummaryClass).toBe('max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-sm');
     expect(storeItemDetail).toContain('rich={storeItem.summaryRich}');
     expect(releaseDetailSummaryClass).not.toContain('font-mono');
     expect(storeItemSummaryClass || '').not.toContain('font-mono');

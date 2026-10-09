@@ -3694,7 +3694,11 @@ body.is-app-shell-overlay-open {
     letter-spacing: 0.025em;
   }
 
-  .artist-detail-prose p,
+  .artist-detail-prose p {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
   .artist-detail-upcoming__text,
   .release-card-summary-text,
   .artist-detail-empty-state__copy {
