@@ -1,5 +1,5 @@
 import type { OrderMonetarySnapshot } from '../../../domain/commerce';
-import { resolveTaxCollectionMode } from '../../../domain/commerce';
+import { resolveTaxCollectionMode, isAcceptedDeliveryCategory } from '../../../domain/commerce';
 import type { CheckoutOrderRecord } from '../../../domain/commerce/repositories/spi';
 import type { FinalizedCheckoutSessionLineItem } from '../checkout/spi';
 import type { CheckoutReconciliation } from '../checkout';
@@ -20,6 +20,7 @@ export function reconcileMonetarySnapshot(
   const noTax = mode === 'NO_TAX_COLLECTED';
   if (
     !mode ||
+    !isAcceptedDeliveryCategory(order.monetaryPolicyReference, order.acceptedParcelTier) ||
     !order.monetaryPolicyReference ||
     !money ||
     session.orderId !== order.id ||

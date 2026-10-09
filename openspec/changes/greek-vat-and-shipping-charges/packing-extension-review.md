@@ -1,5 +1,7 @@
 # Packing assignment review, 9 October 2026
 
+**Historical review, superseded later on 9 October:** final release authority applies the shared existing assumed profile to every validated PRD variant and charges one order fee: €3 for 1–4 validated cart units, €6 for 5–8 or €10 for 9 or more. Actual parcel selection/count is manual; the old nineteen-unit single-parcel ceiling does not cap new agreements. Stock/cart/configuration guards and historical agreements remain. Measurements stay Unknown; new release/hosted proof is pending. The researched two/six-unit multiple-parcel algorithm is discarded as the desired implementation. Old named-candidate findings are history, not new approval gates.
+
 The closed PRD migration's current reviewed 99-row manifest is the catalogue source for this offline review: `.codex-artifacts/catalog-migration/prd-account-manifest-v2-20261009-current.json`, reviewed hash `32c957fe114321a6ff2381a5c952a161625218a329b7e5fb69d16bfba89d7a2a`. This is reuse of accepted migration evidence, not a fresh hosted read. The current runtime packing source still assigns only Disintegration Black Vinyl LP and Barren Point.
 
 ## Findings

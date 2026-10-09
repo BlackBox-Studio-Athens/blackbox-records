@@ -14,6 +14,7 @@ import {
   parseStoreItemSlug,
   parseVariantId,
   resolveTaxCollectionMode,
+  isAcceptedDeliveryCategory,
   type AcceptedMonetaryPolicy,
   type CartQuantity,
   type StoreItemSlug,
@@ -246,7 +247,12 @@ export async function startCheckout(
 
   const createdAt = options.now ?? new Date();
   const delivery = quoteDelivery(validatedLines, options.packingPolicy ?? createPackingPolicy());
-  if (!delivery || !options.monetaryPolicyReference || !resolveTaxCollectionMode(options.monetaryPolicyReference))
+  if (
+    !delivery ||
+    !options.monetaryPolicyReference ||
+    !resolveTaxCollectionMode(options.monetaryPolicyReference) ||
+    !isAcceptedDeliveryCategory(options.monetaryPolicyReference, delivery.tier)
+  )
     throw new CheckoutUnavailableError();
   if (
     !Number.isSafeInteger(validatedLines.reduce((sum, line) => sum + (line.lineAmountMinor ?? 0), delivery.amountMinor))
@@ -470,7 +476,7 @@ function createHostedCheckoutRequest(
     typeof acceptedDeliveryAmountMinor !== 'number' ||
     !Number.isSafeInteger(acceptedDeliveryAmountMinor) ||
     acceptedDeliveryAmountMinor <= 0 ||
-    (hold.acceptedParcelTier !== 'small' && hold.acceptedParcelTier !== 'medium') ||
+    !isAcceptedDeliveryCategory(hold.monetaryPolicyReference, hold.acceptedParcelTier) ||
     !hold.monetaryPolicyReference?.trim()
   ) {
     throw new CheckoutRetryableError();

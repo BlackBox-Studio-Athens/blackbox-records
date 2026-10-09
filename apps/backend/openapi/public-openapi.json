@@ -61,7 +61,8 @@
                 "type": "string",
                 "enum": [
                   "small",
-                  "medium"
+                  "medium",
+                  "manual"
                 ]
               },
               "amountMinor": {
@@ -205,22 +206,28 @@
                   "NO_TAX_COLLECTED"
                 ]
               },
-              "deliveryCharges": {
-                "type": "object",
-                "properties": {
-                  "small": {
-                    "type": "integer",
-                    "exclusiveMinimum": 0
+              "deliveryQuantityBands": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "maxUnits": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "exclusiveMinimum": 0
+                    },
+                    "amountMinor": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0
+                    }
                   },
-                  "medium": {
-                    "type": "integer",
-                    "exclusiveMinimum": 0
-                  }
-                },
-                "required": [
-                  "small",
-                  "medium"
-                ]
+                  "required": [
+                    "maxUnits",
+                    "amountMinor"
+                  ]
+                }
               },
               "currencyCode": {
                 "type": "string",
@@ -231,7 +238,7 @@
             },
             "required": [
               "vatDisclosure",
-              "deliveryCharges",
+              "deliveryQuantityBands",
               "currencyCode"
             ]
           },

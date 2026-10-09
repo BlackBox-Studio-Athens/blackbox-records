@@ -61,7 +61,7 @@ describe('PreorderCartNotice', () => {
       />,
     );
     expect(markup).toContain('LOTUS is expected to ship around November 2026.');
-    expect(markup).toContain('Your order ships in one parcel when the pre-order arrives.');
+    expect(markup).toContain('Your order ships together when the pre-order arrives.');
     expect(markup).not.toContain('in-stock items included');
     expect(markup).not.toContain('waits and travels');
   });
@@ -79,7 +79,7 @@ describe('PreorderCartNotice', () => {
     expect(markup).toContain('Ships together');
     expect(markup).toContain('Around mid November 2026');
     expect(markup).toContain('Charged in full');
-    expect(markup).toContain('One parcel to your locker');
+    expect(markup).toContain('Together to your locker');
     expect(markup).toContain(
       'The in-stock item waits for LOTUS and travels with it. Want it sooner? Check it out as a separate order.',
     );
@@ -132,7 +132,7 @@ describe('PreorderCartNotice', () => {
     expect(markup).toContain('Today');
     expect(markup).toContain('Charged in full');
     expect(markup).toContain(arrival);
-    expect(markup).toContain('One parcel to your BOX NOW locker');
+    expect(markup).toContain('Together to your BOX NOW locker');
     expect(markup).toContain(
       `Your whole order, in-stock items included, waits and travels with ${estimates.length === 1 ? 'it' : 'them'}. If the estimate changes we email you.`,
     );

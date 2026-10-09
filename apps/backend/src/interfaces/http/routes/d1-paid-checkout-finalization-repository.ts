@@ -36,7 +36,7 @@ type D1Value = null | number | string;
 
 type CheckoutOrderRow = {
   acceptedDeliveryAmountMinor: number | null;
-  acceptedParcelTier: 'small' | 'medium' | null;
+  acceptedParcelTier: 'small' | 'medium' | 'manual' | null;
   monetaryPolicyReference: string | null;
   merchandiseGrossMinor: number | null;
   deliveryGrossMinor: number | null;

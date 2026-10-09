@@ -13,6 +13,7 @@ import {
 } from '../../application/commerce/checkout';
 import {
   createCartQuantity,
+  isAcceptedDeliveryCategory,
   parseCheckoutSessionId,
   parseStripePriceId,
   resolveTaxCollectionMode,
@@ -40,7 +41,7 @@ export class StripeCheckoutGateway implements CheckoutGateway {
       !taxCollectionMode ||
       !Number.isSafeInteger(policy.acceptedDeliveryAmountMinor) ||
       policy.acceptedDeliveryAmountMinor <= 0 ||
-      !['small', 'medium'].includes(policy.acceptedParcelTier) ||
+      !isAcceptedDeliveryCategory(policy.monetaryPolicyReference, policy.acceptedParcelTier) ||
       !policy.monetaryPolicyReference.trim()
     ) {
       throw new CheckoutConfigurationError('Checkout monetary policy is not configured.');
@@ -70,7 +71,10 @@ export class StripeCheckoutGateway implements CheckoutGateway {
           shipping_options: [
             {
               shipping_rate_data: {
-                display_name: `BOX NOW ${policy.acceptedParcelTier === 'small' ? 'Small' : 'Medium'} locker delivery`,
+                display_name:
+                  policy.acceptedParcelTier === 'manual'
+                    ? 'BOX NOW locker delivery'
+                    : `BOX NOW ${policy.acceptedParcelTier === 'small' ? 'Small' : 'Medium'} locker delivery`,
                 type: 'fixed_amount',
                 fixed_amount: { amount: policy.acceptedDeliveryAmountMinor, currency: 'eur' },
                 tax_behavior: 'inclusive',

@@ -18,7 +18,7 @@ import {
   createPackingPolicy,
   quoteDelivery,
   currentMonetaryPolicyReference,
-  deliveryCharges,
+  deliveryQuantityBands,
   taxCollectionDisclosure,
   type StartCheckoutCommand,
 } from '../../../application/commerce/checkout';
@@ -54,7 +54,7 @@ export async function readPublicStoreCapabilities(bindings: AppBindings, logger?
     pricing: {
       vatDisclosure: taxCollectionDisclosure(mode),
       taxCollectionMode: mode,
-      deliveryCharges,
+      deliveryQuantityBands: [...deliveryQuantityBands],
       currencyCode: 'EUR' as const,
     },
   };

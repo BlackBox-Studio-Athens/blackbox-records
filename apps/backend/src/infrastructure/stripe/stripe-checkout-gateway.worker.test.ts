@@ -1,7 +1,13 @@
 import Stripe from 'stripe';
 import { describe, expect, it, vi } from 'vitest';
 
-import { CheckoutConfigurationError, CheckoutCreationError } from '../../application/commerce/checkout';
+import {
+  CheckoutConfigurationError,
+  CheckoutCreationError,
+  createPackingPolicy,
+  quoteDelivery,
+} from '../../application/commerce/checkout';
+import { quantityBandPolicyReferences } from '../../domain/commerce';
 import type { AppBindings } from '../../platform/env';
 import {
   createStripeCheckoutGateway,
@@ -35,6 +41,62 @@ describe('createStripeClientOptions', () => {
 });
 
 describe('StripeCheckoutGateway', () => {
+  it.each([
+    [4, 300],
+    [5, 600],
+    [8, 600],
+    [9, 1000],
+    [20, 1000],
+  ])('sends the exact quantity quote for %i units as one generic Stripe shipping option', async (units, amount) => {
+    const create = vi
+      .fn()
+      .mockResolvedValue({ id: 'cs_test_manual', url: 'https://checkout.stripe.test/manual', expires_at: 1800000000 });
+    const gateway = new StripeCheckoutGateway({ checkout: { sessions: { create } } } as never, 'pmc_test');
+    const quantities = units === 20 ? [9, 8, 3] : [units!];
+    const lineItems = quantities.map((quantity, index) => ({
+      displayName: `Item ${index}`,
+      optionLabel: null,
+      unitAmountMinor: 2500,
+      lineAmountMinor: 2500 * quantity,
+      quantity: cartQuantity(quantity),
+      storeItemSlug: storeItemSlug(`item-${index}`),
+      stripePriceId: stripePriceId(`price_${index}`),
+      variantId: variantId(`variant_${index}`),
+    }));
+    for (const target of ['local', 'uat', 'prd'] as const) {
+      const quote = quoteDelivery(lineItems, createPackingPolicy(target, true))!;
+      await gateway.createHostedCheckoutSession({
+        cancelUrl: 'https://example.com/cancel',
+        successUrl: 'https://example.com/return',
+        checkoutExpiresAt: new Date('2026-10-09T12:00:00Z'),
+        orderId: `order_manual_${target}`,
+        lineItems,
+        monetaryPolicy: {
+          acceptedDeliveryAmountMinor: quote.amountMinor,
+          acceptedParcelTier: quote.tier,
+          monetaryPolicyReference: quantityBandPolicyReferences[target],
+        },
+      });
+      const params = create.mock.lastCall![0];
+      expect(params.shipping_options).toEqual([
+        {
+          shipping_rate_data: {
+            display_name: 'BOX NOW locker delivery',
+            type: 'fixed_amount',
+            fixed_amount: { amount, currency: 'eur' },
+            tax_behavior: 'inclusive',
+            tax_code: 'txcd_92010001',
+          },
+        },
+      ]);
+      expect(params).toMatchObject({
+        automatic_tax: { enabled: false },
+        payment_method_configuration: 'pmc_test',
+        shipping_address_collection: { allowed_countries: ['GR'] },
+        metadata: { parcelTier: 'manual', monetaryPolicyReference: quantityBandPolicyReferences[target] },
+      });
+    }
+  });
   it('explicitly expands shipping tax entries on Session reads', async () => {
     const retrieve = vi.fn().mockResolvedValue({ id: 'cs_test_expanded' });
     const gateway = new StripeCheckoutGateway({ checkout: { sessions: { retrieve } } } as never, 'pmc_test');

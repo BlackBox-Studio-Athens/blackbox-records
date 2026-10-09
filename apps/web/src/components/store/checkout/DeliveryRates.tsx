@@ -1,4 +1,4 @@
-import { deliveryCharges, priceDisclosure } from '@blackbox/api-client/public';
+import { deliveryQuantityBands, priceDisclosure } from '@blackbox/api-client/public';
 
 export default function DeliveryRates() {
   const format = (amount: number) =>
@@ -7,10 +7,11 @@ export default function DeliveryRates() {
     <div className="space-y-2">
       <p>{priceDisclosure}</p>
       <p>
-        BOX NOW Small: <span className="font-display">{format(deliveryCharges.small)}</span>. BOX NOW Medium:{' '}
-        <span className="font-display">{format(deliveryCharges.medium)}</span>.
+        BOX NOW 1–4 items: <span className="font-display">{format(deliveryQuantityBands[0]!.amountMinor)}</span>. 5–8
+        items: <span className="font-display">{format(deliveryQuantityBands[1]!.amountMinor)}</span>. 9+ items:{' '}
+        <span className="font-display">{format(deliveryQuantityBands[2]!.amountMinor)}</span>.
       </p>
-      <p>One delivery charge per eligible order. Your complete cart determines the parcel size.</p>
+      <p>One delivery charge per order, based on the total number of items.</p>
     </div>
   );
 }

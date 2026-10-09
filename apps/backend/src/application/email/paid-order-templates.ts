@@ -466,7 +466,9 @@ function monetaryRows(order: PaidOrderEmailInput): Array<[string, string]> {
   return [
     ['Merchandise', format(order.merchandiseGrossMinor)],
     [
-      `BOX NOW ${order.acceptedParcelTier === 'small' ? 'Small' : 'Medium'} locker delivery`,
+      order.acceptedParcelTier === 'manual'
+        ? 'BOX NOW locker delivery'
+        : `BOX NOW ${order.acceptedParcelTier === 'small' ? 'Small' : 'Medium'} locker delivery`,
       format(order.deliveryGrossMinor),
     ],
     [

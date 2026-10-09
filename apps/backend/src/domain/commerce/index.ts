@@ -15,7 +15,7 @@ export {
 export type { CheckoutSessionId, PaymentIntentId, StoreItemSlug, StripePriceId, VariantId } from './ids';
 export type { CartQuantity, OnlineStockQuantity, StockChangeDelta, StockQuantity, StockStateValue } from './quantities';
 export type { AcceptedMonetaryPolicy, OrderMonetarySnapshot, OrderMonetaryFields } from './monetary';
-export { resolveTaxCollectionMode } from './monetary';
+export { resolveTaxCollectionMode, quantityBandPolicyReferences, isAcceptedDeliveryCategory } from './monetary';
 export type { TaxCollectionMode } from './monetary';
 export {
   classifyStoreStockAvailability,

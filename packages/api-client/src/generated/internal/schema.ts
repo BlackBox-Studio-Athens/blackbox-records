@@ -502,7 +502,7 @@ export type components = {
         InternalCheckoutOrder: {
             acceptedDeliveryAmountMinor: number | null;
             /** @enum {string|null} */
-            acceptedParcelTier: "small" | "medium" | null;
+            acceptedParcelTier: "small" | "medium" | "manual" | null;
             awaitingStock: boolean;
             /** Format: date-time */
             checkoutExpiresAt: string;

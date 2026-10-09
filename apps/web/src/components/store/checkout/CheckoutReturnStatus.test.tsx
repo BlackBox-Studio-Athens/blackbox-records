@@ -279,24 +279,24 @@ describe('CheckoutReturnStatus', () => {
       estimate: 'month',
       shipEstimate: { kind: 'month', month: '2026-10', part: null },
       fulfillment:
-        'Your whole order is sent in one parcel when the pre-order arrives, expected around October 2026. We email you if that changes.',
+        'Your whole order is sent together when the pre-order arrives, expected around October 2026. We email you if that changes.',
     },
     {
       estimate: 'month part',
       shipEstimate: { kind: 'month', month: '2026-10', part: 'mid' },
       fulfillment:
-        'Your whole order is sent in one parcel when the pre-order arrives, expected around mid October 2026. We email you if that changes.',
+        'Your whole order is sent together when the pre-order arrives, expected around mid October 2026. We email you if that changes.',
     },
     {
       estimate: 'exact date',
       shipEstimate: { kind: 'date', date: '2026-10-20' },
       fulfillment:
-        'Your whole order is sent in one parcel when the pre-order arrives, expected on 20 October 2026. We email you if that changes.',
+        'Your whole order is sent together when the pre-order arrives, expected on 20 October 2026. We email you if that changes.',
     },
     {
       estimate: 'withheld',
       shipEstimate: null,
-      fulfillment: 'Your whole order is sent in one parcel when the pre-order arrives. We email you if that changes.',
+      fulfillment: 'Your whole order is sent together when the pre-order arrives. We email you if that changes.',
     },
   ] satisfies {
     estimate: string;

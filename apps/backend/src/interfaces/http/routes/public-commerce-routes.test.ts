@@ -105,11 +105,11 @@ describe('public commerce routes', () => {
       },
     ];
     const quote = {
-      tier: 'small',
-      amountMinor: 250,
+      tier: 'manual',
+      amountMinor: 300,
       currencyCode: 'EUR',
       merchandiseGrossMinor: 2480,
-      totalAmountMinor: 2730,
+      totalAmountMinor: 2780,
     };
     mockQuoteDelivery.mockResolvedValue(quote);
     const response = await app.request(

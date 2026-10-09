@@ -1,3 +1,5 @@
+import { deliveryQuantityBands } from '@blackbox/api-client/public';
+
 type ParcelTier = 'small' | 'medium';
 
 export type ItemPackingProfile = {
@@ -28,9 +30,10 @@ export type PackingPolicy = {
   packages: readonly PackagePackingProfile[];
   charges: Record<ParcelTier, number>;
   allowSynthetic: boolean;
+  quantityBased?: boolean;
 };
 
-export type DeliveryQuote = { tier: ParcelTier; amountMinor: number; currencyCode: 'EUR' };
+export type DeliveryQuote = { tier: ParcelTier | 'manual'; amountMinor: number; currencyCode: 'EUR' };
 
 const positiveInteger = (value: number) => Number.isSafeInteger(value) && value > 0;
 const footprintFits = (length: number, width: number, availableLength: number, availableWidth: number) =>
@@ -41,6 +44,15 @@ export function quoteDelivery(
   policy: PackingPolicy,
 ): DeliveryQuote | null {
   if (!lines.length) return null;
+  if (policy.quantityBased) {
+    let units = 0;
+    for (const line of lines) {
+      units += line.quantity;
+      if (!positiveInteger(line.quantity) || !positiveInteger(units)) return null;
+    }
+    const band = deliveryQuantityBands.find((candidate) => candidate.maxUnits === null || units <= candidate.maxUnits);
+    return band ? { tier: 'manual', amountMinor: band.amountMinor, currencyCode: 'EUR' } : null;
+  }
   const quantities = new Map<string, number>();
   for (const line of lines) {
     const quantity = (quantities.get(line.variantId) ?? 0) + line.quantity;

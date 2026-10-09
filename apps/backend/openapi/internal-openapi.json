@@ -585,6 +585,7 @@
             "enum": [
               "small",
               "medium",
+              "manual",
               null
             ]
           },

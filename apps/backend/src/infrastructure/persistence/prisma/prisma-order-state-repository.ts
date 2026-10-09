@@ -74,7 +74,9 @@ function mapCheckoutOrder(record: {
     amountTotalMinor: record.amountTotalMinor,
     acceptedDeliveryAmountMinor: record.acceptedDeliveryAmountMinor ?? null,
     acceptedParcelTier:
-      record.acceptedParcelTier === 'small' || record.acceptedParcelTier === 'medium'
+      record.acceptedParcelTier === 'small' ||
+      record.acceptedParcelTier === 'medium' ||
+      record.acceptedParcelTier === 'manual'
         ? record.acceptedParcelTier
         : null,
     monetaryPolicyReference: record.monetaryPolicyReference ?? null,

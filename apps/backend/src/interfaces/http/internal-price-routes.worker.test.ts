@@ -368,7 +368,7 @@ it.each(
       });
       expect(
         await shopper.quoteDelivery([{ storeItemSlug: item.storeItemSlug, variantId: item.variantId, quantity: 1 }]),
-      ).toMatchObject({ amountMinor: 250, currencyCode: 'EUR' });
+      ).toMatchObject({ tier: 'manual', amountMinor: 300, currencyCode: 'EUR' });
       await db.storeItemOption.update({
         where: { variantId: item.variantId },
         data: { catalogAvailability: 'withheld' },

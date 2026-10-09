@@ -240,7 +240,7 @@ function createCheckoutReturnNextStepsView(preorder: CheckoutState['preorder']):
         icon: 'fulfillment',
         label: 'Fulfillment',
         value: preorder
-          ? `Your whole order is sent in one parcel when the pre-order arrives${estimate ? `, expected ${shipEstimateText(estimate)}` : ''}. We email you if that changes.`
+          ? `Your whole order is sent together when the pre-order arrives${estimate ? `, expected ${shipEstimateText(estimate)}` : ''}. We email you if that changes.`
           : 'BlackBox will prepare the shipment manually.',
       },
       {

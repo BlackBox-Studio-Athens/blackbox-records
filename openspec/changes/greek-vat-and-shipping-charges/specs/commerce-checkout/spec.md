@@ -2,15 +2,15 @@
 
 ### Requirement: Consumer prices disclose VAT and delivery
 
-The storefront MUST present existing consumer item prices as final VAT-inclusive EUR amounts under the selected taxable VAT Treatment and make delivery terms accessible from Store and checkout. It MUST NOT add VAT on top of the advertised gross price. The final payable amount, including delivery and applicable VAT, MUST be visible before the payment commitment.
+The storefront MUST preserve advertised gross EUR item prices and disclose the accepted collection mode and Delivery Charge before payment. Current NO_TAX_COLLECTED agreements MUST NOT claim included VAT, exemption or a 0% rate. Historical inclusive agreements retain their treatment; VAT MUST NOT be added twice. Store and checkout MUST link to current delivery terms and show the final payable amount before commitment.
 
 #### Scenario: Fixed-price cart is reviewed
 
 - **WHEN** a shopper views a priced Store Item, cart or checkout summary
 - **THEN** VAT wording agrees with the approved seller treatment
-- **AND** listing/detail wording clearly says VAT is included and shipping is calculated in the cart, with both rates accessible in delivery terms
-- **AND** the summary distinguishes merchandise subtotal, the applicable €2.50 Small or €3.50 Medium BOX NOW Delivery Charge, and the gross total
-- **AND** both rates are available in delivery terms, while the cart's validated tier/charge comes from the shared current policy and appears before leaving BlackBox for hosted Checkout
+- **AND** listing/detail wording is price-neutral for current no-collection agreements, with collection disclosure and shipping calculated in the cart
+- **AND** the summary distinguishes merchandise subtotal, one aggregate BOX NOW Delivery Charge and gross total
+- **AND** the shared policy discloses €3 for 1–4 validated cart units, €6 for 5–8 and €10 for 9 or more before hosted Checkout; actual manual parcel count does not alter this fee
 - **AND** any included VAT breakdown is informational rather than added again.
 
 #### Scenario: Amount is not final yet

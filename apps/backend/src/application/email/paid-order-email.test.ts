@@ -31,6 +31,26 @@ const productionConfig = readEmailRuntimeConfig({
 });
 
 describe('paid-order email notifications', () => {
+  it('shows the accepted manual shipping charge without assigning a physical parcel size', async () => {
+    const { provider, sendEmail } = createProvider();
+    await sendPaidOrderEmailNotifications({
+      config: sandboxConfig,
+      provider,
+      logger: createLogger(),
+      order: {
+        ...paidOrder(),
+        taxCollectionMode: 'NO_TAX_COLLECTED',
+        amountTotalMinor: 3480,
+        merchandiseGrossMinor: 2480,
+        deliveryGrossMinor: 1000,
+        totalVatMinor: 0,
+        acceptedParcelTier: 'manual',
+      },
+    });
+    expect(sentMessage(sendEmail, 1).text).toContain('BOX NOW locker delivery: €10.00');
+    expect(sentMessage(sendEmail, 0).text).toContain('Delivery: €10.00');
+    expect(sentMessage(sendEmail, 0).text).toContain('Total paid: €34.80');
+  });
   it('describes zero collection without included VAT or a fiscal exemption', async () => {
     const { provider, sendEmail } = createProvider();
     await sendPaidOrderEmailNotifications({

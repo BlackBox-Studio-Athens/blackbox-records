@@ -432,7 +432,7 @@ export function StoreSearchToolbar({ resultsId }: { resultsId: string }) {
           <dd>Every item states when we expect to ship. If that changes, we email you.</dd>
         </div>
         <div>
-          <dt>One parcel</dt>
+          <dt>Ships together</dt>
           <dd>Your whole order is sent together by BOX NOW when the pre-order arrives.</dd>
         </div>
       </dl>

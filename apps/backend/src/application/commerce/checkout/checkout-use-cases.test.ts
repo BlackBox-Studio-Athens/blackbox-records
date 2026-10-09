@@ -24,7 +24,7 @@ import type { CheckoutGateway } from './spi';
 
 function startCheckout(...args: Parameters<typeof startCheckoutWithPolicy>) {
   args[9] = {
-    packingPolicy: createPackingPolicy('local'),
+    packingPolicy: { ...createPackingPolicy('local'), quantityBased: false },
     monetaryPolicyReference: 'synthetic-local-inclusive-v1',
     ...args[9],
   };
@@ -619,47 +619,93 @@ describe('checkout use cases', () => {
   });
 
   it.each([
-    [8, 'small', 250],
-    [9, 'medium', 350],
-  ] as const)('retains the assumed PRD quote and policy for %i LPs', async (quantity, tier, amountMinor) => {
-    await stock.save(storeItem.variantId, { onlineQuantity: quantity, quantity });
-    const packingPolicy = createPackingPolicy('prd');
-    const lines = [
-      { storeItemSlug: storeItem.storeItemSlug, variantId: storeItem.variantId, quantity: cartQuantity(quantity) },
-    ];
-    expect(quoteDelivery(lines, packingPolicy)).toEqual({ tier, amountMinor, currencyCode: 'EUR' });
-    expect(hostedMonetaryPolicyReference).toBe('owner-assumed-vinyl-packing-no-tax-collected-prd-2026-10-09-v1');
+    ['disintegration-black-vinyl-lp', 4, 'manual', 300],
+    ['disintegration-black-vinyl-lp', 5, 'manual', 600],
+    ['atopia-atopia-cd', 8, 'manual', 600],
+    ['example-cassette', 9, 'manual', 1000],
+  ] as const)(
+    'retains the assumed PRD quote and policy for %s, quantity %i',
+    async (slug, quantity, tier, amountMinor) => {
+      const selectedItem = {
+        ...storeItem,
+        storeItemSlug: storeItemSlug(slug),
+        variantId: toVariantId(`variant_${slug}_standard`),
+      };
+      storeItems = new InMemoryStoreItemOptionRepository([selectedItem]);
+      itemAvailability.records.set(selectedItem.variantId, {
+        ...itemAvailability.records.get(storeItem.variantId)!,
+        variantId: selectedItem.variantId,
+      });
+      productProjections.projections.set(
+        selectedItem.variantId,
+        productProjections.projections.get(storeItem.variantId)!,
+      );
+      catalogReconciler.prices.set(selectedItem.variantId, createCatalogPrice({ storeItem: selectedItem }));
+      await stock.save(selectedItem.variantId, { onlineQuantity: quantity, quantity });
+      const packingPolicy = createPackingPolicy('prd');
+      const lines = [
+        {
+          storeItemSlug: selectedItem.storeItemSlug,
+          variantId: selectedItem.variantId,
+          quantity: cartQuantity(quantity),
+        },
+      ];
+      expect(quoteDelivery(lines, packingPolicy)).toEqual({ tier, amountMinor, currencyCode: 'EUR' });
+      expect(hostedMonetaryPolicyReference).toBe('quantity-band-shipping-no-tax-collected-prd-2026-10-09-v1');
 
-    await startCheckout(
-      storeItems,
-      itemAvailability,
-      stock,
-      catalogReconciler,
-      productProjections,
-      checkoutGateway,
-      orders,
-      {
-        cancelUrl: 'https://blackbox-records-web.pages.dev/store/checkout/',
-        successUrl: 'https://blackbox-records-web.pages.dev/store/checkout/return/',
-        lines,
-      },
-      undefined,
-      { packingPolicy, monetaryPolicyReference: hostedMonetaryPolicyReference, productEnvironment: 'PRD' },
-    );
+      await startCheckout(
+        storeItems,
+        itemAvailability,
+        stock,
+        catalogReconciler,
+        productProjections,
+        checkoutGateway,
+        orders,
+        {
+          cancelUrl: 'https://blackbox-records-web.pages.dev/store/checkout/',
+          successUrl: 'https://blackbox-records-web.pages.dev/store/checkout/return/',
+          lines,
+        },
+        undefined,
+        { packingPolicy, monetaryPolicyReference: hostedMonetaryPolicyReference, productEnvironment: 'PRD' },
+      );
 
-    const monetaryPolicy = {
-      acceptedDeliveryAmountMinor: amountMinor,
-      acceptedParcelTier: tier,
-      monetaryPolicyReference: hostedMonetaryPolicyReference,
-    };
-    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith(
-      expect.objectContaining({ monetaryPolicy }),
-    );
-    expect(await orders.findByCheckoutSessionId('cs_test_123')).toMatchObject(monetaryPolicy);
-  });
+      const monetaryPolicy = {
+        acceptedDeliveryAmountMinor: amountMinor,
+        acceptedParcelTier: tier,
+        monetaryPolicyReference: hostedMonetaryPolicyReference,
+      };
+      expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith(
+        expect.objectContaining({ monetaryPolicy }),
+      );
+      expect(await orders.findByCheckoutSessionId('cs_test_123')).toMatchObject(monetaryPolicy);
+    },
+  );
 
   it.each([
-    ['unassigned packing', { ...createPackingPolicy('prd'), items: new Map() }, hostedMonetaryPolicyReference],
+    [
+      'unassigned legacy packing',
+      { ...createPackingPolicy('prd'), quantityBased: false, items: new Map() },
+      'owner-assumed-universal-packing-no-tax-collected-prd-2026-10-09-v1',
+    ],
+    [
+      'oversized item',
+      {
+        ...createPackingPolicy('prd'),
+        quantityBased: false,
+        items: { get: () => ({ ...createPackingPolicy('prd').items.get(storeItem.variantId)!, widthMm: 700 }) },
+      },
+      'owner-assumed-universal-packing-no-tax-collected-prd-2026-10-09-v1',
+    ],
+    [
+      'overweight item',
+      {
+        ...createPackingPolicy('prd'),
+        quantityBased: false,
+        items: { get: () => ({ ...createPackingPolicy('prd').items.get(storeItem.variantId)!, weightGrams: 5000 }) },
+      },
+      'owner-assumed-universal-packing-no-tax-collected-prd-2026-10-09-v1',
+    ],
     ['missing reference', createPackingPolicy('prd'), null],
     ['blank reference', createPackingPolicy('prd'), ' '],
     ['unknown reference', createPackingPolicy('prd'), 'invented-no-tax-collected'],
@@ -689,6 +735,56 @@ describe('checkout use cases', () => {
       expect(checkoutGateway.createHostedCheckoutSession).not.toHaveBeenCalled();
     },
   );
+
+  it('accepts a mixed 20-unit cart including duplicate lines at the flat 9+ fee', async () => {
+    const variants = ['vinyl', 'cd', 'cassette'].map((format) => ({
+      ...storeItem,
+      storeItemSlug: storeItemSlug(`mixed-${format}`),
+      variantId: toVariantId(`variant_mixed_${format}`),
+    }));
+    const quantities = [9, 8, 3];
+    storeItems = new InMemoryStoreItemOptionRepository(variants);
+    for (const [index, item] of variants.entries()) {
+      itemAvailability.records.set(item.variantId, {
+        ...itemAvailability.records.get(storeItem.variantId)!,
+        variantId: item.variantId,
+      });
+      productProjections.projections.set(item.variantId, productProjections.projections.get(storeItem.variantId)!);
+      catalogReconciler.prices.set(item.variantId, createCatalogPrice({ storeItem: item }));
+      await stock.save(item.variantId, { onlineQuantity: quantities[index]!, quantity: quantities[index]! });
+    }
+    const lines = variants.map((item, index) => ({
+      storeItemSlug: item.storeItemSlug,
+      variantId: item.variantId,
+      quantity: cartQuantity(quantities[index]!),
+    }));
+    const first = lines.shift()!;
+    lines.push({ ...first, quantity: cartQuantity(4) }, { ...first, quantity: cartQuantity(5) });
+    const packingPolicy = createPackingPolicy('prd');
+    expect(quoteDelivery(lines, packingPolicy)).toEqual({ tier: 'manual', amountMinor: 1000, currencyCode: 'EUR' });
+    await startCheckout(
+      storeItems,
+      itemAvailability,
+      stock,
+      catalogReconciler,
+      productProjections,
+      checkoutGateway,
+      orders,
+      { cancelUrl: 'https://example.com/cancel', successUrl: 'https://example.com/return', lines },
+      undefined,
+      { packingPolicy, monetaryPolicyReference: hostedMonetaryPolicyReference, productEnvironment: 'PRD' },
+    );
+    expect(checkoutGateway.createHostedCheckoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        monetaryPolicy: {
+          acceptedDeliveryAmountMinor: 1000,
+          acceptedParcelTier: 'manual',
+          monetaryPolicyReference: hostedMonetaryPolicyReference,
+        },
+        lineItems: expect.arrayContaining([expect.objectContaining({ variantId: first.variantId, quantity: 9 })]),
+      }),
+    );
+  });
 
   it('reads backend-known checkout eligibility for one store item', async () => {
     await expect(
@@ -1835,58 +1931,67 @@ describe('checkout use cases', () => {
     expect(checkoutGateway.readCheckoutSession).toHaveBeenCalledTimes(1);
   });
 
-  it('resumes an ambiguous sessionless attempt with its accepted policy after the current policy changes', async () => {
-    const provider = vi.fn(checkoutGateway.createHostedCheckoutSession);
-    provider.mockRejectedValueOnce(new CheckoutCreationError(false));
-    checkoutGateway.createHostedCheckoutSession = provider;
-    const command = {
-      cancelUrl: 'https://example.com/checkout',
-      successUrl: 'https://example.com/return',
-      idempotencyKey: 'checkout-old-policy-retry',
-      storeItemSlug: storeItem.storeItemSlug,
-      variantId: storeItem.variantId,
-    };
-    const now = new Date('2026-09-09T10:04:00.000Z');
-    await expect(
-      startCheckout(
-        storeItems,
-        itemAvailability,
-        stock,
-        catalogReconciler,
-        productProjections,
-        checkoutGateway,
-        orders,
-        command,
-        undefined,
-        { now, monetaryPolicyReference: 'synthetic-local-inclusive-v1' },
-      ),
-    ).rejects.toBeInstanceOf(CheckoutCreationError);
-    const firstRequest = provider.mock.calls[0]![0];
-    await expect(
-      startCheckout(
-        storeItems,
-        itemAvailability,
-        stock,
-        catalogReconciler,
-        productProjections,
-        checkoutGateway,
-        orders,
-        command,
-        undefined,
-        {
-          now: new Date(now.getTime() + 31_000),
-          monetaryPolicyReference: 'synthetic-local-no-tax-collected-2026-10-09-v1',
-        },
-      ),
-    ).resolves.toMatchObject({ checkoutSessionId: 'cs_test_123' });
-    expect(provider).toHaveBeenCalledTimes(2);
-    expect(provider.mock.calls[1]![0]).toEqual(firstRequest);
-    expect(firstRequest.monetaryPolicy?.monetaryPolicyReference).toBe('synthetic-local-inclusive-v1');
-    expect(orders.createPendingHoldCalls).toBe(1);
-    expect(await orders.findByCheckoutSessionId('cs_test_123')).toMatchObject({
-      monetaryPolicyReference: 'synthetic-local-inclusive-v1',
-    });
-  });
+  it.each([
+    ['synthetic-local-inclusive-v1', 'synthetic-local-no-tax-collected-2026-10-09-v1'],
+    ['owner-assumed-vinyl-packing-no-tax-collected-prd-2026-10-09-v1', hostedMonetaryPolicyReference],
+    ['owner-assumed-universal-packing-no-tax-collected-prd-2026-10-09-v1', hostedMonetaryPolicyReference],
+    ['synthetic-uat-no-tax-collected-2026-10-09-v1', 'quantity-band-shipping-no-tax-collected-uat-2026-10-09-v1'],
+  ])(
+    'resumes an ambiguous sessionless attempt retaining %s after switching to %s',
+    async (acceptedReference, currentReference) => {
+      const provider = vi.fn(checkoutGateway.createHostedCheckoutSession);
+      provider.mockRejectedValueOnce(new CheckoutCreationError(false));
+      checkoutGateway.createHostedCheckoutSession = provider;
+      const command = {
+        cancelUrl: 'https://example.com/checkout',
+        successUrl: 'https://example.com/return',
+        idempotencyKey: 'checkout-old-policy-retry',
+        storeItemSlug: storeItem.storeItemSlug,
+        variantId: storeItem.variantId,
+      };
+      const now = new Date('2026-09-09T10:04:00.000Z');
+      await expect(
+        startCheckout(
+          storeItems,
+          itemAvailability,
+          stock,
+          catalogReconciler,
+          productProjections,
+          checkoutGateway,
+          orders,
+          command,
+          undefined,
+          { now, monetaryPolicyReference: acceptedReference },
+        ),
+      ).rejects.toBeInstanceOf(CheckoutCreationError);
+      const firstRequest = provider.mock.calls[0]![0];
+      await expect(
+        startCheckout(
+          storeItems,
+          itemAvailability,
+          stock,
+          catalogReconciler,
+          productProjections,
+          checkoutGateway,
+          orders,
+          command,
+          undefined,
+          {
+            now: new Date(now.getTime() + 31_000),
+            monetaryPolicyReference: currentReference,
+            packingPolicy: createPackingPolicy('prd'),
+          },
+        ),
+      ).resolves.toMatchObject({ checkoutSessionId: 'cs_test_123' });
+      expect(provider).toHaveBeenCalledTimes(2);
+      expect(provider.mock.calls[1]![0]).toEqual(firstRequest);
+      expect(firstRequest.monetaryPolicy?.monetaryPolicyReference).toBe(acceptedReference);
+      expect(orders.createPendingHoldCalls).toBe(1);
+      expect(await orders.findByCheckoutSessionId('cs_test_123')).toMatchObject({
+        monetaryPolicyReference: acceptedReference,
+      });
+    },
+  );
 
   it('keeps a concurrent keyed provider request behind the claim lease', async () => {
     let releaseProvider!: () => void;

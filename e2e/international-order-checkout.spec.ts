@@ -42,7 +42,15 @@ async function prepareCheckout(page: Page, lines = checkoutLines) {
   await page.route('**/api/store/capabilities', (route) =>
     route.fulfill({
       json: {
-        pricing: { vatDisclosure: 'VAT included', deliveryCharges: { small: 250, medium: 350 }, currencyCode: 'EUR' },
+        pricing: {
+          vatDisclosure: 'VAT included',
+          deliveryQuantityBands: [
+            { maxUnits: 4, amountMinor: 300 },
+            { maxUnits: 8, amountMinor: 600 },
+            { maxUnits: null, amountMinor: 1000 },
+          ],
+          currencyCode: 'EUR',
+        },
         nativeCheckout: { enabled: true, unavailableReason: null },
       },
     }),

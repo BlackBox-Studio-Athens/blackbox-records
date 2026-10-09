@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { quoteDelivery, type PackingPolicy } from './packing';
-import { createPackingPolicy } from './packing-policy';
+import { createPackingPolicy, currentMonetaryPolicyReference, hostedMonetaryPolicyReference } from './packing-policy';
 
 const reference = { measurementReference: 'synthetic-design-example-2026-09-11', synthetic: true };
 const record = { ...reference, lengthMm: 315, widthMm: 315, thicknessMm: 8, weightGrams: 220 };
@@ -49,12 +49,13 @@ describe('protected flat-stack Delivery Charge', () => {
         expect(configured.allowSynthetic).toBe(target === 'local' || (target === 'uat' && testMode));
         const variantId = 'variant_new_runtime_item';
         const quote = quoteDelivery([{ variantId, quantity: 1 }], configured);
-        expect(quote?.amountMinor ?? null).toBe(target === 'local' || (target === 'uat' && testMode) ? 250 : null);
+        expect(configured.items.get(variantId)?.synthetic === true).toBe(configured.allowSynthetic);
+        expect(quote?.amountMinor ?? null).toBe(target !== 'uat' || testMode ? 300 : null);
       }
     }
   });
-  it('uses explicitly assumed PRD LP profiles at the Small and Medium boundary', () => {
-    const configured = createPackingPolicy('prd');
+  it('preserves both previously supported PRD LPs at the Small and Medium boundary', () => {
+    const configured = { ...createPackingPolicy('prd'), quantityBased: false };
     const disintegration = { variantId: 'variant_disintegration-black-vinyl-lp_standard', quantity: 7 };
     const barrenPoint = { variantId: 'variant_barren-point_standard', quantity: 1 };
     expect(quoteDelivery([disintegration, barrenPoint], configured)).toEqual({
@@ -76,14 +77,30 @@ describe('protected flat-stack Delivery Charge', () => {
     expect(quoteDelivery([disintegration, barrenPoint], createPackingPolicy('uat', false))).toBeNull();
   });
 
-  it('rejects an unassigned PRD variant alone or mixed with an assigned LP', () => {
+  it.each([
+    'variant_atopia-atopia-cd_standard',
+    'variant_example-cassette_standard',
+    'variant_example-box-set_standard',
+    'variant_new_runtime_item',
+  ])('uses the same owner-assumed PRD profile for %s and mixed carts', (variantId) => {
     const configured = createPackingPolicy('prd');
-    const disintegration = { variantId: 'variant_disintegration-black-vinyl-lp_standard', quantity: 1 };
-    for (const variantId of ['variant_new_runtime_item', 'variant_atopia-atopia-cd_standard']) {
-      const unassigned = { variantId, quantity: 1 };
-      expect(quoteDelivery([unassigned], configured)).toBeNull();
-      expect(quoteDelivery([disintegration, unassigned], configured)).toBeNull();
-    }
+    const disintegration = { variantId: 'variant_disintegration-black-vinyl-lp_standard', quantity: 7 };
+    const item = { variantId, quantity: 1 };
+    expect(configured.items.get(variantId)).toBe(configured.items.get(disintegration.variantId));
+    expect(configured.items.get(variantId)?.synthetic).not.toBe(true);
+    expect(quoteDelivery([item], configured)?.amountMinor).toBe(300);
+    expect(quoteDelivery([disintegration, item], configured)?.amountMinor).toBe(600);
+    expect(quoteDelivery([disintegration, { ...item, quantity: 2 }], configured)?.amountMinor).toBe(1000);
+    expect(quoteDelivery([item, disintegration], configured)).toEqual(
+      quoteDelivery([disintegration, item], configured),
+    );
+  });
+
+  it('versions each environment separately for quantity tariffs', () => {
+    expect(currentMonetaryPolicyReference('prd')).toBe(hostedMonetaryPolicyReference);
+    expect(hostedMonetaryPolicyReference).toBe('quantity-band-shipping-no-tax-collected-prd-2026-10-09-v1');
+    expect(currentMonetaryPolicyReference('local')).toBe('quantity-band-shipping-no-tax-collected-local-2026-10-09-v1');
+    expect(currentMonetaryPolicyReference('uat')).toBe('quantity-band-shipping-no-tax-collected-uat-2026-10-09-v1');
   });
 
   it.each([
@@ -95,6 +112,44 @@ describe('protected flat-stack Delivery Charge', () => {
     expect(quoteDelivery(records(quantity as number), policy)).toEqual(
       tier ? { tier, amountMinor, currencyCode: 'EUR' } : null,
     );
+    expect(quoteDelivery(records(quantity as number), { ...createPackingPolicy('prd'), quantityBased: false })).toEqual(
+      tier ? { tier, amountMinor, currencyCode: 'EUR' } : null,
+    );
+  });
+
+  it.each([
+    [4, 300],
+    [5, 600],
+    [8, 600],
+    [9, 1000],
+    [20, 1000],
+    [1_000_000, 1000],
+  ])('quotes %i product units with manual dispatch', (quantity, amountMinor) => {
+    for (const configured of [
+      createPackingPolicy('local'),
+      createPackingPolicy('uat', true),
+      createPackingPolicy('prd'),
+    ]) {
+      expect(quoteDelivery(records(quantity!), configured)).toEqual({
+        tier: 'manual',
+        amountMinor,
+        currencyCode: 'EUR',
+      });
+    }
+  });
+
+  it('counts mixed and duplicate lines safely without deriving disc or parcel counts', () => {
+    const configured = createPackingPolicy('prd');
+    const lines = [...records(2), { variantId: 'cd', quantity: 3 }, ...records(3)];
+    expect(quoteDelivery(lines, configured)?.amountMinor).toBe(600);
+    expect(quoteDelivery(lines.toReversed(), configured)).toEqual(quoteDelivery(lines, configured));
+    expect(quoteDelivery([...lines, { variantId: 'box-set', quantity: 1 }], configured)?.amountMinor).toBe(1000);
+    for (const quantity of [0, -1, 0.5, Infinity, NaN, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(quoteDelivery(records(quantity), configured)).toBeNull();
+    }
+    expect(
+      quoteDelivery([...records(Number.MAX_SAFE_INTEGER), { variantId: 'cd', quantity: 1 }], configured),
+    ).toBeNull();
   });
 
   it('aggregates repeated variants and is independent of order, including mixed CDs', () => {

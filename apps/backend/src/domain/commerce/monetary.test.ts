@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { resolveTaxCollectionMode } from './monetary';
+import { resolveTaxCollectionMode, isAcceptedDeliveryCategory, quantityBandPolicyReferences } from './monetary';
 
 describe('sale-time tax collection policies', () => {
   it.each([
@@ -12,10 +12,22 @@ describe('sale-time tax collection policies', () => {
   });
   it.each([
     'synthetic-local-no-tax-collected-2026-10-09-v1',
+    ...Object.values(quantityBandPolicyReferences),
     'synthetic-uat-no-tax-collected-2026-10-09-v1',
     'owner-assumed-vinyl-packing-no-tax-collected-prd-2026-10-09-v1',
+    'owner-assumed-universal-packing-no-tax-collected-prd-2026-10-09-v1',
   ])('recognizes explicit no-collection agreement %s', (reference) => {
     expect(resolveTaxCollectionMode(reference)).toBe('NO_TAX_COLLECTED');
+  });
+  it('keeps manual classification specific to the new explicit policy references', () => {
+    for (const reference of Object.values(quantityBandPolicyReferences)) {
+      expect(isAcceptedDeliveryCategory(reference, 'manual')).toBe(true);
+      expect(isAcceptedDeliveryCategory(reference, 'small')).toBe(false);
+      expect(isAcceptedDeliveryCategory(reference, null)).toBe(false);
+    }
+    expect(isAcceptedDeliveryCategory('synthetic-local-inclusive-v1', 'small')).toBe(true);
+    expect(isAcceptedDeliveryCategory('synthetic-local-inclusive-v1', 'manual')).toBe(false);
+    expect(isAcceptedDeliveryCategory('invented', 'manual')).toBe(false);
   });
   it.each([
     null,

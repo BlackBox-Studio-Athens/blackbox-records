@@ -313,7 +313,9 @@ export class D1CheckoutStockHoldRepository implements CheckoutStockHoldRepositor
     return {
       acceptedDeliveryAmountMinor: row.acceptedDeliveryAmountMinor,
       acceptedParcelTier:
-        row.acceptedParcelTier === 'small' || row.acceptedParcelTier === 'medium' ? row.acceptedParcelTier : null,
+        row.acceptedParcelTier === 'small' || row.acceptedParcelTier === 'medium' || row.acceptedParcelTier === 'manual'
+          ? row.acceptedParcelTier
+          : null,
       checkoutCancelUrl: row.checkoutCancelUrl,
       checkoutExpiresAt: new Date(row.checkoutExpiresAt),
       checkoutSessionId: row.checkoutSessionId ? parseCheckoutSessionId(row.checkoutSessionId) : null,

@@ -15,6 +15,7 @@ export { quoteDelivery } from './packing';
 export {
   createPackingPolicy,
   deliveryCharges,
+  deliveryQuantityBands,
   priceDisclosure,
   taxCollectionDisclosure,
   hostedMonetaryPolicyReference,

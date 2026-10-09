@@ -7,11 +7,60 @@ import {
   parseStoreItemSlug,
   parseStripePriceId,
   parseVariantId,
+  quantityBandPolicyReferences,
 } from '../../domain/commerce';
 import { D1CheckoutStockHoldRepository } from './d1-checkout-stock-hold-repository';
 import { createPrismaClient, PrismaOrderStateRepository } from './prisma';
 
 describe('D1CheckoutStockHoldRepository', () => {
+  it('preserves manual delivery and its accepted amount in D1 retries and Prisma order reads', async () => {
+    const variantId = parseVariantId(`variant_manual_hold_${crypto.randomUUID()}`);
+    await seedStock(variantId, 3);
+    const repository = new D1CheckoutStockHoldRepository(env.COMMERCE_DB);
+    const requestIdentity = {
+      keyDigest: crypto.randomUUID().replaceAll('-', '').repeat(2),
+      productEnvironment: 'LOCAL',
+      requestFingerprint: crypto.randomUUID().replaceAll('-', '').repeat(2),
+    };
+    const monetaryPolicy = {
+      acceptedDeliveryAmountMinor: 300,
+      acceptedParcelTier: 'manual' as const,
+      monetaryPolicyReference: quantityBandPolicyReferences.local,
+    };
+    const result = await repository.createPendingHold({
+      orderId: crypto.randomUUID(),
+      createdAt: new Date('2026-10-09T10:00:00Z'),
+      checkoutExpiresAt: new Date('2026-10-09T10:31:00Z'),
+      requestIdentity,
+      monetaryPolicy,
+      lines: [
+        {
+          displayName: 'Manual dispatch item',
+          lineAmountMinor: 2500,
+          optionLabel: null,
+          quantity: createCartQuantity(1),
+          storeItemSlug: parseStoreItemSlug('manual-dispatch'),
+          stripePriceId: parseStripePriceId('price_manual'),
+          unitAmountMinor: 2500,
+          variantId,
+        },
+      ],
+    });
+    expect(result.kind).toBe('created');
+    if (result.kind !== 'created') throw new Error('Expected a checkout hold');
+    expect(result.hold).toMatchObject(monetaryPolicy);
+    expect(await repository.findByRequestIdentity(requestIdentity)).toMatchObject(monetaryPolicy);
+    const prisma = createPrismaClient({ COMMERCE_DB: env.COMMERCE_DB });
+    try {
+      const orders = new PrismaOrderStateRepository(prisma);
+      expect(await orders.findById(result.hold.id)).toMatchObject(monetaryPolicy);
+      expect((await orders.listRecent({ limit: 100 })).find((order) => order.id === result.hold.id)).toMatchObject(
+        monetaryPolicy,
+      );
+    } finally {
+      await prisma.$disconnect();
+    }
+  });
   it.each([null, { kind: 'month', month: '2026-11', part: 'late' }, { kind: 'date', date: '2026-11-20' }] as const)(
     'persists and rereads the immutable pre-order snapshot (%j)',
     async (shipEstimate) => {

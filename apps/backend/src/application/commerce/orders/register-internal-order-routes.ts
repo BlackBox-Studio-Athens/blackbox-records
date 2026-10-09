@@ -122,7 +122,7 @@ const checkoutOrderSchema = z
     monetaryPolicyReference: z.string().nullable(),
     taxCollectionMode: z.enum(['STRIPE_AUTOMATIC_TAX', 'NO_TAX_COLLECTED']).nullable().optional(),
     acceptedDeliveryAmountMinor: z.number().int().positive().nullable(),
-    acceptedParcelTier: z.enum(['small', 'medium']).nullable(),
+    acceptedParcelTier: z.enum(['small', 'medium', 'manual']).nullable(),
     needsReviewReason: z.string().nullable(),
     needsReviewAt: z.string().datetime().nullable(),
     notPaidAt: z.string().datetime().nullable(),

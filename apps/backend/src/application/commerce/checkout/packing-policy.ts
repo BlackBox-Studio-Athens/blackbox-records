@@ -1,19 +1,22 @@
 import type { ItemPackingProfile, PackagePackingProfile, PackingPolicy } from './packing';
 import { deliveryCharges } from '@blackbox/api-client/public';
+import { quantityBandPolicyReferences } from '../../../domain/commerce';
 
-export { deliveryCharges, priceDisclosure, taxCollectionDisclosure } from '@blackbox/api-client/public';
+export {
+  deliveryCharges,
+  deliveryQuantityBands,
+  priceDisclosure,
+  taxCollectionDisclosure,
+} from '@blackbox/api-client/public';
 
-export const hostedMonetaryPolicyReference = 'owner-assumed-vinyl-packing-no-tax-collected-prd-2026-10-09-v1';
+export const hostedMonetaryPolicyReference = quantityBandPolicyReferences.prd;
 
 export function currentMonetaryPolicyReference(target: 'local' | 'uat' | 'prd'): string {
-  return target === 'prd'
-    ? hostedMonetaryPolicyReference
-    : target === 'uat'
-      ? 'synthetic-uat-no-tax-collected-2026-10-09-v1'
-      : 'synthetic-local-no-tax-collected-2026-10-09-v1';
+  return quantityBandPolicyReferences[target];
 }
 
-// Owner-authorized assumptions for the explicitly assigned LP editions; real measurements remain unknown.
+// The owner authorizes this same assumed parcel for every product, regardless of format.
+// Reuse the original dimensions and provenance; real measurements remain unknown.
 const assumedReference = { measurementReference: 'owner-assumed-vinyl-parcel-2026-10-08' };
 const assumedItemProfile: ItemPackingProfile = {
   ...assumedReference,
@@ -48,10 +51,6 @@ const assumedPackages: PackagePackingProfile[] = [
     maxGrossWeightGrams: 5000,
   },
 ];
-const assumedItems = new Map<string, ItemPackingProfile>([
-  ['variant_disintegration-black-vinyl-lp_standard', assumedItemProfile],
-  ['variant_barren-point_standard', assumedItemProfile],
-]);
 const syntheticReference = { measurementReference: 'synthetic-test-2026-09-11', synthetic: true };
 const syntheticItemProfile = { ...assumedItemProfile, ...syntheticReference };
 const syntheticPackages = assumedPackages.map((pack) => ({ ...pack, ...syntheticReference }));
@@ -60,11 +59,12 @@ export function createPackingPolicy(target: 'local' | 'uat' | 'prd' = 'prd', str
   const allowSynthetic = target === 'local' || (target === 'uat' && stripeTestMode);
   return {
     allowSynthetic,
+    quantityBased: target === 'prd' || allowSynthetic,
     charges: deliveryCharges,
     items: allowSynthetic
       ? { get: () => syntheticItemProfile }
       : target === 'prd'
-        ? assumedItems
+        ? { get: () => assumedItemProfile }
         : new Map<string, ItemPackingProfile>(),
     packages: allowSynthetic ? syntheticPackages : target === 'prd' ? assumedPackages : [],
   };

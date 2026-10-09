@@ -84,7 +84,7 @@ for (const [date, badge, released] of [
     await expect(cards.locator('visible=true')).toHaveCount(1);
     await expect(page.getByRole('status').filter({ hasText: /^1 item$/ })).toBeVisible();
     const notes = page.locator('.store-preorder-notes');
-    await expect(notes.locator('dt')).toHaveText(['You pay today', 'We wait for the copies', 'One parcel']);
+    await expect(notes.locator('dt')).toHaveText(['You pay today', 'We wait for the copies', 'Ships together']);
     await expect(notes.locator('dd')).toHaveText([
       'Charged in full at order, like any other purchase.',
       'Every item states when we expect to ship. If that changes, we email you.',

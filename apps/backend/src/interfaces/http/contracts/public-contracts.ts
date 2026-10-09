@@ -149,7 +149,9 @@ const storeCapabilitiesSchema = z
       .object({
         vatDisclosure: z.string(),
         taxCollectionMode: z.enum(['STRIPE_AUTOMATIC_TAX', 'NO_TAX_COLLECTED']).optional(),
-        deliveryCharges: z.object({ small: z.number().int().positive(), medium: z.number().int().positive() }),
+        deliveryQuantityBands: z.array(
+          z.object({ maxUnits: z.number().int().positive().nullable(), amountMinor: z.number().int().positive() }),
+        ),
         currencyCode: z.literal('EUR'),
       })
       .optional(),
@@ -241,7 +243,7 @@ export const postDeliveryQuoteRoute = createRoute({
             .object({
               quote: z
                 .object({
-                  tier: z.enum(['small', 'medium']),
+                  tier: z.enum(['small', 'medium', 'manual']),
                   amountMinor: z.number().int().positive(),
                   currencyCode: z.literal('EUR'),
                   merchandiseGrossMinor: z.number().int().positive().nullable(),

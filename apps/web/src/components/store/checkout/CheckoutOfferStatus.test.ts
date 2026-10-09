@@ -505,11 +505,11 @@ describe('CheckoutOfferStatus helpers', () => {
       expect(markup).toContain('class="preorder-rail"');
       expect(markup).toContain('Charged in full');
       expect(markup).toContain(expected);
-      expect(markup).toContain('One parcel to your BOX NOW locker');
+      expect(markup).toContain('Together to your BOX NOW locker');
       expect(markup).toContain(
         lines.some((line) => !line.preorder)
           ? 'Your whole order, in-stock items included, waits and travels with'
-          : 'Your order ships in one parcel when',
+          : 'Your order ships together when',
       );
       expect(markup.indexOf('class="preorder-notice"')).toBeLessThan(markup.indexOf('data-delivery-summary'));
       expect(markup).toContain('Calculating delivery and current prices');

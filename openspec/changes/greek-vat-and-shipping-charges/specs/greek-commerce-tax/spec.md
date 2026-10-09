@@ -61,15 +61,23 @@ The system MUST use Stripe Tax as its single calculation path for accepted autom
 
 ### Requirement: Paid monetary facts reconcile and remain immutable
 
-The system MUST verify and retain an Order Monetary Snapshot containing merchandise gross, Delivery Charge gross and accepted Small/Medium tier, line and delivery VAT, total VAT, currency and the applied treatment, using authoritative finalized payment facts. For the accepted inclusive no-discount model, gross order total MUST equal merchandise gross plus delivery gross; VAT MUST be included once.
+The system MUST retain verified merchandise gross, aggregate Delivery Charge gross, accepted shipping classification, actual collected tax/rates, currency and immutable policy with saved line quantities. New quantity-band agreements MUST use `manual`; legacy Small/Medium/null meanings remain unchanged. Gross total MUST equal merchandise plus delivery gross. No-collection zero/null facts establish no fiscal net. Original order/hold terms MUST remain immutable.
 
-#### Scenario: No tax was collected by the provider
+#### Scenario: No tax was collected under a legacy parcel policy
 
 - **GIVEN** an immutable no-collection policy, €24.80 merchandise and €2.50 delivery
 - **WHEN** complete paid provider facts show automatic tax explicitly false, no applied line/shipping tax rates and exactly zero collected line/shipping/total tax
 - **THEN** €27.30 gross and zero collected tax with null applied rates are atomically retained and normal stock/outbox settlement occurs once
 - **AND** missing values, nonzero/negative tax, applied rates or inconsistent identity/currency/quantities/amounts cause durable review
 - **AND** zero collection is not used to calculate a fictional fiscal net amount, legal exemption, tax credit or seller liability.
+
+#### Scenario: A quantity-band order exceeds the old parcel ceiling
+
+- **GIVEN** a new immutable quantity-band no-collection agreement for twenty validated cart units with €496 merchandise and €10 aggregate delivery
+- **WHEN** complete paid provider facts show €506 total, automatic tax explicitly false, zero collected tax and no applied rates
+- **THEN** reconciliation retains `manual`, the original €10 fee and policy with saved quantities, and settles stock/outbox once
+- **AND** protected paid-order readback and confirmation preserve the manual classification without calling it Small, Medium or unknown
+- **AND** later tariff changes or replay cannot reprice the order or derive extra parcel fees.
 
 #### Scenario: Inclusive sale with Small postage is finalized
 

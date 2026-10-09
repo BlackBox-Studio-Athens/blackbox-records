@@ -3,6 +3,7 @@ import type { CheckoutOrderRecord } from '../../../domain/commerce/repositories/
 import type { CheckoutReconciliation } from '../checkout';
 import type { FinalizedCheckoutSessionLineItem } from '../checkout/spi';
 import { reconcileMonetarySnapshot } from './reconcile-monetary-snapshot';
+import { quantityBandPolicyReferences } from '../../../domain/commerce';
 
 function fixture(reference = 'synthetic-uat-no-tax-collected-2026-10-09-v1') {
   const order = {
@@ -49,6 +50,20 @@ function fixture(reference = 'synthetic-uat-no-tax-collected-2026-10-09-v1') {
 }
 
 describe('explicit no-collection monetary reconciliation', () => {
+  it.each([300, 600, 1000])('reconciles accepted manual delivery of %i cents in every environment', (amount) => {
+    for (const reference of Object.values(quantityBandPolicyReferences)) {
+      const { order, source, lines } = fixture(reference);
+      order.acceptedParcelTier = 'manual';
+      order.acceptedDeliveryAmountMinor = amount;
+      Object.assign(source.monetary!, { parcelTier: 'manual', deliveryGrossMinor: amount });
+      source.amountTotalMinor = 2480 + amount;
+      expect(reconcileMonetarySnapshot(order, source, lines)?.deliveryGrossMinor).toBe(amount);
+      source.monetary!.parcelTier = 'medium';
+      expect(reconcileMonetarySnapshot(order, source, lines)).toBeNull();
+      order.acceptedParcelTier = 'medium';
+      expect(reconcileMonetarySnapshot(order, source, lines)).toBeNull();
+    }
+  });
   it('records exact gross amounts and actual zero collection without a tax rate', () => {
     const { order, source, lines } = fixture();
     expect(reconcileMonetarySnapshot(order, source, lines)).toEqual({

@@ -383,7 +383,11 @@ test('the checkout pay control fills in place when the shipping quote arrives', 
         pricing: {
           vatDisclosure: 'No VAT is calculated or collected at checkout.',
           taxCollectionMode: 'NO_TAX_COLLECTED',
-          deliveryCharges: { small: 450, medium: 650 },
+          deliveryQuantityBands: [
+            { maxUnits: 4, amountMinor: 450 },
+            { maxUnits: 8, amountMinor: 650 },
+            { maxUnits: null, amountMinor: 1050 },
+          ],
           currencyCode: 'EUR',
         },
         nativeCheckout: { enabled: true, unavailableReason: null },
@@ -456,7 +460,15 @@ test('mounted checkout follows drawer quantity changes before payment', async ({
   await page.route('**/api/store/capabilities', (route) =>
     route.fulfill({
       json: {
-        pricing: { vatDisclosure: 'VAT included', deliveryCharges: { small: 250, medium: 350 }, currencyCode: 'EUR' },
+        pricing: {
+          vatDisclosure: 'VAT included',
+          deliveryQuantityBands: [
+            { maxUnits: 4, amountMinor: 300 },
+            { maxUnits: 8, amountMinor: 600 },
+            { maxUnits: null, amountMinor: 1000 },
+          ],
+          currencyCode: 'EUR',
+        },
         nativeCheckout: { enabled: true, unavailableReason: null },
       },
     }),
@@ -614,7 +626,15 @@ for (const width of [440, 390]) {
     await page.route('**/api/store/capabilities', (route) =>
       route.fulfill({
         json: {
-          pricing: { vatDisclosure: 'VAT included', deliveryCharges: { small: 250, medium: 350 }, currencyCode: 'EUR' },
+          pricing: {
+            vatDisclosure: 'VAT included',
+            deliveryQuantityBands: [
+              { maxUnits: 4, amountMinor: 300 },
+              { maxUnits: 8, amountMinor: 600 },
+              { maxUnits: null, amountMinor: 1000 },
+            ],
+            currencyCode: 'EUR',
+          },
           nativeCheckout: { enabled: true, unavailableReason: null },
         },
       }),
@@ -685,7 +705,7 @@ for (const width of [440, 390]) {
       .last()
       .getByRole('button', { name: 'Remove', exact: true })
       .click();
-    await expect(notice).toContainText('Your order ships in one parcel when the pre-order arrives.');
+    await expect(notice).toContainText('Your order ships together when the pre-order arrives.');
     await expect(notice).not.toContainText('in-stock');
     await drawer.getByRole('button', { name: 'Undo', exact: true }).click();
     await expect(notice).toContainText('The in-stock item waits');
@@ -758,7 +778,7 @@ test('paid pre-order return fixture keeps its rail and keyboard action usable at
   await expect(rail.getByRole('listitem')).toHaveCount(3);
   await expect(
     rail.getByText(
-      'Your whole order is sent in one parcel when the pre-order arrives, expected around mid November 2026. We email you if that changes.',
+      'Your whole order is sent together when the pre-order arrives, expected around mid November 2026. We email you if that changes.',
       { exact: true },
     ),
   ).toBeVisible();

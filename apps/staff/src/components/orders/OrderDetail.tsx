@@ -352,7 +352,7 @@ export default function OrderDetail({ order }: { order: InternalOrder }) {
           <Fact label="Checkout expires">{formatOrderTime(order.checkoutExpiresAt)}</Fact>
           <Fact label="Monetary policy">{order.monetaryPolicyReference ?? 'Unknown'}</Fact>
           <Fact label="Accepted delivery">{money(order.acceptedDeliveryAmountMinor)}</Fact>
-          <Fact label="Accepted parcel tier">{order.acceptedParcelTier ?? 'Unknown'}</Fact>
+          <Fact label="Accepted delivery category">{order.acceptedParcelTier ?? 'Unknown'}</Fact>
           {order.shippingLocker && (
             <Fact label="Historical locker">
               {order.shippingLocker.locker_name_or_label} · {order.shippingLocker.locker_id} ·{' '}

@@ -69,7 +69,7 @@ export type CreateCheckoutStockHoldResult =
 
 export type CheckoutRetryAttempt = {
   acceptedDeliveryAmountMinor: number | null;
-  acceptedParcelTier: 'small' | 'medium' | null;
+  acceptedParcelTier: 'small' | 'medium' | 'manual' | null;
   checkoutCancelUrl: string | null;
   checkoutExpiresAt: Date;
   checkoutSessionId: CheckoutSessionId | null;

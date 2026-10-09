@@ -334,7 +334,7 @@ export type components = {
                 /** @enum {string} */
                 taxCollectionMode?: "STRIPE_AUTOMATIC_TAX" | "NO_TAX_COLLECTED";
                 /** @enum {string} */
-                tier: "small" | "medium";
+                tier: "small" | "medium" | "manual";
                 totalAmountMinor: number | null;
             } | null;
         };
@@ -503,10 +503,10 @@ export type components = {
             pricing?: {
                 /** @enum {string} */
                 currencyCode: "EUR";
-                deliveryCharges: {
-                    medium: number;
-                    small: number;
-                };
+                deliveryQuantityBands: {
+                    amountMinor: number;
+                    maxUnits: number | null;
+                }[];
                 /** @enum {string} */
                 taxCollectionMode?: "STRIPE_AUTOMATIC_TAX" | "NO_TAX_COLLECTED";
                 vatDisclosure: string;
