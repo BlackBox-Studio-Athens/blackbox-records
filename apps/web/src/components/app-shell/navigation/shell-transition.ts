@@ -219,16 +219,19 @@ export function triggerShellPageEnterTransition(options: ShellPageTransitionOpti
   ];
 }
 
+// `top` is the offset a history entry saved when it was left; new navigations start at the top.
 export async function scrollShellViewportToTop(options: {
   getMainElement: () => HTMLElement | null;
   sourceElement?: HTMLElement | null | undefined;
+  top?: number | undefined;
 }) {
+  const top = options.top || 0;
   const forceScrollTop = () => {
-    scrollWithLenis(null, 0, { immediate: true });
-    window.scrollTo(0, 0);
-    window.scrollTo({ top: 0, behavior: 'auto' });
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
+    scrollWithLenis(null, top, { immediate: true });
+    window.scrollTo(0, top);
+    window.scrollTo({ top, behavior: 'auto' });
+    document.documentElement.scrollTop = top;
+    document.body.scrollTop = top;
   };
 
   options.sourceElement?.blur();

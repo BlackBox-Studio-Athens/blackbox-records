@@ -421,3 +421,25 @@ test('Back closes the phone Menu and the cart drawer without navigating the page
   await page.goBack();
   await expect(page).toHaveURL(/\/releases\/$/);
 });
+
+test('Back returns a shell section to the offset it was left at; new navigation starts at the top', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'Leaves through the phone Menu.');
+  await page.goto('releases/');
+  await waitForShell(page);
+  await page.evaluate(() => window.scrollTo(0, 900));
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
+  const leftAt = await page.evaluate(() => window.scrollY);
+
+  await page.locator('[data-app-shell-mobile-navigation-trigger]').click();
+  await page.getByRole('navigation', { name: 'Mobile' }).getByRole('link', { name: 'Store' }).click();
+  await expect(page).toHaveURL(/\/store\/$/);
+  await expect(page.locator(main)).toBeFocused();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/releases\/$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(leftAt);
+});

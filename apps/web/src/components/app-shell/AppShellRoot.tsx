@@ -303,7 +303,13 @@ export default function AppShellRoot({
     pushShellSheetHistoryEntry('cart');
   }
 
+  // Back to a section entry restores this offset (openShellSectionHref, restoreCachedShellPage and a fresh load).
+  function saveScrollPosition() {
+    window.history.replaceState({ ...window.history.state, scrollY: window.scrollY }, '');
+  }
+
   function pushShellSheetHistoryEntry(kind: ShellSheetKind) {
+    saveScrollPosition();
     if (pushHistoryEntry(window.history, window.location.href, SHELL_SHEET_HISTORY_KEY, kind)) {
       shellSheetHistoryHrefRef.current = window.location.href;
     }
@@ -691,6 +697,7 @@ export default function AppShellRoot({
       sourceElement?: HTMLElement | null;
     },
   ) {
+    if (options?.historyMode === 'push') saveScrollPosition();
     return openShellSectionNavigation({
       activeAbortControllerRef: shellPageAbortControllerRef,
       applyShellPageSnapshot,
@@ -711,6 +718,7 @@ export default function AppShellRoot({
         scrollShellViewportToTop({
           getMainElement: getCurrentMainElement,
           sourceElement: scrollOptions?.sourceElement,
+          top: options?.source === 'history' ? window.history.state?.scrollY : 0,
         }),
       setIsRouteLoading,
       shellPageLoader,
@@ -730,7 +738,8 @@ export default function AppShellRoot({
       getCachedSnapshot: shellPageLoader.getCachedSnapshot,
       onSectionActivationStart: startShellSectionActivation,
       pathname,
-      scrollShellViewportToTop: () => scrollShellViewportToTop({ getMainElement: getCurrentMainElement }),
+      scrollShellViewportToTop: () =>
+        scrollShellViewportToTop({ getMainElement: getCurrentMainElement, top: window.history.state?.scrollY }),
       shellSectionTransition,
       source: options?.source,
       stopRouteLoadingSoon,
@@ -812,6 +821,10 @@ export default function AppShellRoot({
       if (!shellPageLoader.hasCachedSnapshot(renderedPagePathnameRef.current)) cacheDocumentSnapshot();
     });
     markCurrentHistoryEntryForShellSection(window.location.pathname);
+    // A document reached through Back or reload returns to the offset its entry saved on pagehide.
+    const savedScrollY = window.history.state?.scrollY;
+    if (savedScrollY) void waitForEagerImages(getCurrentMainElement()).then(() => window.scrollTo(0, savedScrollY));
+    window.addEventListener('pagehide', saveScrollPosition);
 
     const disconnectShellDocumentListeners = connectShellDocumentEventRouting({
       closeMobileNavigation,
@@ -860,6 +873,7 @@ export default function AppShellRoot({
     });
 
     return () => {
+      window.removeEventListener('pagehide', saveScrollPosition);
       cancelIdleSnapshot();
       disconnectShellDocumentListeners();
       clearRouteLoadingTimer();
