@@ -3517,7 +3517,7 @@ body {
     @apply mt-5;
   }
 
-  .news-markdown-content h2 {
+  .news-markdown-content :is(h1, h2) {
     margin-top: 2.5rem;
     color: var(--foreground);
     font-family: var(--font-display-brand);
@@ -3528,7 +3528,7 @@ body {
     text-wrap: balance;
   }
 
-  .news-markdown-content h3 {
+  .news-markdown-content :is(h3, h4, h5, h6) {
     margin-top: 2rem;
     color: var(--foreground);
     font-family: var(--font-display-brand);
@@ -3545,6 +3545,15 @@ body {
 
   .news-markdown-content ul {
     @apply grid list-disc gap-2 pl-5;
+  }
+
+  .news-markdown-content ol {
+    @apply grid list-decimal gap-2 pl-5;
+  }
+
+  .news-markdown-content blockquote {
+    border-left: 2px solid currentColor;
+    padding-left: 1em;
   }
 }
 

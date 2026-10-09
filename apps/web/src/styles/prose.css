@@ -26,6 +26,21 @@
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
+.editorial-prose :where(h1, h2, h3, h4, h5, h6) {
+  color: var(--foreground);
+  font-family: var(--font-display-brand);
+  font-size: 1.35em;
+  line-height: 1.05;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.editorial-prose :where(h3, h4, h5, h6) {
+  font-size: 1.15em;
+}
+.editorial-prose > * + :where(h1, h2, h3, h4, h5, h6) {
+  margin-top: 1.5em;
+}
 .prose-link-card {
   position: relative;
 }

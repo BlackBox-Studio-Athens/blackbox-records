@@ -111,7 +111,7 @@ const hasSecondaryArtistBodySection = hasUpcomingReleaseCallout || (!hasArtistBo
       <h1 class="artist-detail-title">{artistName}</h1>
 
       {hasArtistBody ? (
-        <div class="artist-detail-prose artist-detail-prose--story">
+        <div class="artist-detail-prose artist-detail-prose--story editorial-prose">
           <EditorialContent entry={artist} />
         </div>
       ) : (
