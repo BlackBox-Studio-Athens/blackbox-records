@@ -48,7 +48,6 @@ export type ShellDocumentEventRoutingOptions = {
   closePlayerModal: () => void;
   closePlayerModalWithHistoryBack: () => void;
   closeShellSheets: () => void;
-  collapseOverlayHistoryToBackground: () => void;
   currentHref: () => string;
   currentOrigin: () => string;
   currentPathname: () => string;
@@ -62,7 +61,6 @@ export type ShellDocumentEventRoutingOptions = {
   hasOverlayState: () => boolean;
   isPlayerModalOpen: () => boolean;
   markActivePlayerSessionAsInteracted: (embedUrl: string) => void;
-  navigateDocumentTo: (href: string) => void;
   openOverlayHref: (
     href: string,
     options: { backgroundHref: string; pushHistory?: true; replaceHistory?: false },
@@ -112,7 +110,6 @@ export function connectShellDocumentEventRouting({
   closePlayerModal,
   closePlayerModalWithHistoryBack,
   closeShellSheets,
-  collapseOverlayHistoryToBackground,
   currentHref,
   currentOrigin,
   currentPathname,
@@ -126,7 +123,6 @@ export function connectShellDocumentEventRouting({
   hasOverlayState,
   isPlayerModalOpen,
   markActivePlayerSessionAsInteracted,
-  navigateDocumentTo,
   openOverlayHref,
   openPlayerModal,
   reopenPlayerModal,
@@ -218,14 +214,11 @@ export function connectShellDocumentEventRouting({
     return routeAnchorClick({
       anchorElement,
       closeMobileNavigation,
-      collapseOverlayHistoryToBackground,
       currentHref: currentHref(),
       currentOrigin: currentOrigin(),
       getOverlayBackgroundHref,
-      hasOverlayState,
       isNavigableOverlayAnchor,
       isNavigableShellSectionAnchor,
-      navigateDocumentTo,
       openOverlayHref,
       openShellSectionHref,
       preventDefault: () => event.preventDefault(),

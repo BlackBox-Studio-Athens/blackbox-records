@@ -5,14 +5,11 @@ type MaybePromise<T> = T | Promise<T>;
 type ShellAnchorClickNavigationOptions = {
   anchorElement: HTMLAnchorElement;
   closeMobileNavigation: () => void;
-  collapseOverlayHistoryToBackground: () => void;
   currentHref: string;
   currentOrigin: string;
   getOverlayBackgroundHref: () => string | null | undefined;
-  hasOverlayState: () => boolean;
   isNavigableOverlayAnchor: (anchorElement: HTMLAnchorElement) => boolean;
   isNavigableShellSectionAnchor: (anchorElement: HTMLAnchorElement) => boolean;
-  navigateDocumentTo: (href: string) => void;
   openOverlayHref: (href: string, options: { backgroundHref: string; pushHistory: true }) => MaybePromise<boolean>;
   openShellSectionHref: (
     href: string,
@@ -31,19 +28,16 @@ type ShellAnchorClickNavigationOptions = {
   setOverlayTriggerElement: (anchorElement: HTMLAnchorElement) => void;
 };
 
-export type ShellAnchorClickNavigationResult = 'document-navigation' | 'ignored' | 'overlay' | 'shell-section';
+export type ShellAnchorClickNavigationResult = 'ignored' | 'overlay' | 'shell-section';
 
 export function routeShellAnchorClickNavigation({
   anchorElement,
   closeMobileNavigation,
-  collapseOverlayHistoryToBackground,
   currentHref,
   currentOrigin,
   getOverlayBackgroundHref,
-  hasOverlayState,
   isNavigableOverlayAnchor,
   isNavigableShellSectionAnchor,
-  navigateDocumentTo,
   openOverlayHref,
   openShellSectionHref,
   preventDefault,
@@ -85,12 +79,7 @@ export function routeShellAnchorClickNavigation({
     return 'overlay';
   }
 
-  if (hasOverlayState() && !anchorElement.hasAttribute('data-astro-reload')) {
-    preventDefault();
-    collapseOverlayHistoryToBackground();
-    navigateDocumentTo(resolvedUrl.toString());
-    return 'document-navigation';
-  }
-
+  // Other links, including ones inside an open overlay, navigate natively: the overlay keeps its own history entry,
+  // so Back returns to the detail.
   return 'ignored';
 }

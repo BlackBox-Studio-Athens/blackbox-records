@@ -2,10 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { routeShellAnchorClickNavigation } from './shell-anchor-click-navigation';
 
-function createAnchor({ isMobile = false, reload = false } = {}) {
+function createAnchor({ isMobile = false } = {}) {
   return {
     closest: vi.fn((selector: string) => (selector === '[data-app-shell-mobile-navigation]' && isMobile ? {} : null)),
-    hasAttribute: vi.fn((name: string) => name === 'data-astro-reload' && reload),
   } as unknown as HTMLAnchorElement;
 }
 
@@ -13,14 +12,11 @@ function createOptions(overrides: Partial<Parameters<typeof routeShellAnchorClic
   return {
     anchorElement: createAnchor(),
     closeMobileNavigation: vi.fn(),
-    collapseOverlayHistoryToBackground: vi.fn(),
     currentHref: 'https://example.test/blackbox-records/releases/',
     currentOrigin: 'https://example.test',
     getOverlayBackgroundHref: vi.fn(() => null),
-    hasOverlayState: vi.fn(() => false),
     isNavigableOverlayAnchor: vi.fn(() => false),
     isNavigableShellSectionAnchor: vi.fn(() => false),
-    navigateDocumentTo: vi.fn(),
     openOverlayHref: vi.fn(),
     openShellSectionHref: vi.fn(),
     preventDefault: vi.fn(),
@@ -107,29 +103,14 @@ describe('shell anchor click navigation', () => {
     );
   });
 
-  it('collapses overlay history before document navigation from an overlay', () => {
+  it('lets other links navigate natively, so an open overlay keeps its history entry for Back', () => {
     const options = createOptions({
-      hasOverlayState: vi.fn(() => true),
-      resolveInternalUrl: vi.fn(() => new URL('https://example.test/blackbox-records/services/')),
-    });
-
-    expect(routeShellAnchorClickNavigation(options)).toBe('document-navigation');
-
-    expect(options.preventDefault).toHaveBeenCalledTimes(1);
-    expect(options.collapseOverlayHistoryToBackground).toHaveBeenCalledTimes(1);
-    expect(options.navigateDocumentTo).toHaveBeenCalledWith('https://example.test/blackbox-records/services/');
-  });
-
-  it('allows data-astro-reload anchors to navigate normally from an overlay', () => {
-    const options = createOptions({
-      anchorElement: createAnchor({ reload: true }),
-      hasOverlayState: vi.fn(() => true),
+      resolveInternalUrl: vi.fn(() => new URL('https://example.test/blackbox-records/store/disintegration-lp/')),
     });
 
     expect(routeShellAnchorClickNavigation(options)).toBe('ignored');
 
     expect(options.preventDefault).not.toHaveBeenCalled();
-    expect(options.collapseOverlayHistoryToBackground).not.toHaveBeenCalled();
-    expect(options.navigateDocumentTo).not.toHaveBeenCalled();
+    expect(options.openShellSectionHref).not.toHaveBeenCalled();
   });
 });
