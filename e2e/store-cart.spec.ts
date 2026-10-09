@@ -810,3 +810,35 @@ test('paid pre-order return fixture keeps its rail and keyboard action usable at
     fullPage: true,
   });
 });
+
+test('a landscape phone cart keeps the first line and the actions in view', async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  const lines = ['disintegration-black-vinyl-lp', 'anarchotribal-vinyl'].map((slug) => ({
+    availabilityLabel: 'In stock',
+    image: null,
+    imageAlt: null,
+    optionLabel: 'Black Vinyl LP',
+    priceAmountMinor: 2800,
+    priceCurrencyCode: 'EUR',
+    priceDisplay: '€28.00',
+    priceKind: 'fixed',
+    storeItemSlug: slug,
+    subtitle: 'Afterwise',
+    title: slug,
+    variantId: `${slug}_standard`,
+    quantity: 1,
+  }));
+  await page.addInitScript((cartLines) => {
+    localStorage.setItem('blackbox.storeCart.v2', JSON.stringify({ lines: cartLines }));
+  }, lines);
+  await page.goto('store/');
+  await waitForShell(page);
+  await page.locator('[data-store-cart-trigger]').first().click();
+  const drawer = page.getByRole('dialog', { name: 'Cart' });
+  await expect(drawer).toHaveAccessibleDescription(/Cart state stays browser-only/);
+  const items = drawer.locator('[data-store-cart-line-item]');
+  // Measured a 205px line window at 844x390 (was 59px): the first line whole and the second starting.
+  await expect(items.first()).toBeInViewport({ ratio: 1 });
+  await expect(items.nth(1)).toBeInViewport();
+  await expectCartActionsVisible(drawer);
+});

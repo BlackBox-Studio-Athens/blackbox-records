@@ -6433,6 +6433,38 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   background: transparent;
 }
 
+/* Short viewports (landscape phones): the fixed header and actions shrink so the cart lines keep a usable window.
+   The note stays the dialog's accessible description, only visually hidden. */
+@media (max-height: 30rem) {
+  .store-cart-drawer__header {
+    padding: 10px 24px 6px;
+  }
+
+  .store-cart-drawer__close {
+    top: 0;
+  }
+
+  .store-cart-drawer__description {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .store-cart-drawer__actions {
+    flex-direction: row;
+    padding: 8px 24px 12px;
+  }
+
+  .store-cart-drawer__checkout,
+  .store-cart-drawer__continue {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
 /* Top edge of a panel that records a pre-order (return page). */
 .preorder-edge {
   border-top: 2px solid var(--preorder-accent);

@@ -101,6 +101,12 @@ describe('Store layout on phones', () => {
     expect(ruleBody('.store-browse-pane > .store-format-links', phone)).toMatch(/margin-bottom:\s*0/);
   });
 
+  it('keeps the cart lines a window on short viewports', () => {
+    const short = '@media (max-height: 30rem)';
+    expect(ruleBody('.store-cart-drawer__actions', short)).toMatch(/flex-direction:\s*row/);
+    expect(ruleBody('.store-cart-drawer__description', short)).toMatch(/clip-path:\s*inset\(50%\)/);
+  });
+
   it('sizes the phone item artwork by the viewport height', () => {
     expect(ruleBody('.store-item-artwork', '@media (width < 48rem)')).toMatch(/max-width:\s*min\(26rem, 36svh\)/);
   });
