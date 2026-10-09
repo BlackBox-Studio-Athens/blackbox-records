@@ -536,6 +536,7 @@ body {
     letter-spacing: 0.035em;
     text-transform: uppercase;
     text-wrap: balance;
+    overflow-wrap: anywhere;
   }
 
   .brand-card-title {
@@ -545,6 +546,7 @@ body {
     letter-spacing: 0.035em;
     text-transform: uppercase;
     text-wrap: balance;
+    overflow-wrap: anywhere;
   }
 
   .brand-cart-line-title {
@@ -554,6 +556,7 @@ body {
     letter-spacing: 0.03em;
     text-transform: uppercase;
     text-wrap: balance;
+    overflow-wrap: anywhere;
   }
 
   .internal-page-hero__title {
@@ -562,6 +565,7 @@ body {
     line-height: 0.98;
     letter-spacing: 0.035em;
     text-wrap: balance;
+    overflow-wrap: anywhere;
   }
 
   .release-detail-page-title {
@@ -570,6 +574,7 @@ body {
     line-height: 0.98;
     letter-spacing: 0.035em;
     text-wrap: balance;
+    overflow-wrap: anywhere;
   }
 
   .surface-card {
@@ -1560,6 +1565,7 @@ body {
     letter-spacing: 0.015em;
     text-transform: none;
     text-wrap: balance;
+    overflow-wrap: anywhere;
   }
 
   .artist-detail-actions {
