@@ -12,6 +12,7 @@ import Footer from '@/components/Footer.astro';
 import Header from '@/components/Header.astro';
 import {
   createAbsoluteSiteUrl,
+  createCanonicalUrl,
   createProjectRelativeUrl,
   siteBrandAssets,
   siteConfig,
@@ -58,7 +59,7 @@ const [labelSettings, socialItems] = await Promise.all([getLabelSettings(), getS
 
 const metadataTitle = pageTitle || siteConfig.title;
 const metadataDescription = pageDescription || pageSummary || siteConfig.description;
-const metadataUrl = Astro.url.toString();
+const metadataUrl = createCanonicalUrl(Astro.url, Astro.site);
 const metadataImageRaw = ogImage || coverImage || image || siteConfig.socialImage;
 // Link unfurls fetch og:image and twitter:image in full, so a Content Image becomes a 1200 px JPEG instead of the
 // original upload (1-4.6 MB). Its URL already carries the base path, so it resolves against the site origin only.

@@ -44,4 +44,10 @@ describe('SiteLayout document head', () => {
     );
     expect(source).toContain('<link rel="manifest" href={createProjectRelativeUrl(siteBrandAssets.webManifest)} />');
   });
+
+  it('derives canonical and og:url from the configured site and path, not the request URL', () => {
+    expect(source).toContain('const metadataUrl = createCanonicalUrl(Astro.url, Astro.site);');
+    expect(source).not.toContain('Astro.url.toString()');
+    expect(source).toContain('<link rel="canonical" href={redirectUrl || metadataUrl} />');
+  });
 });

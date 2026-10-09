@@ -9,7 +9,7 @@ vi.mock('astro:config/client', () => ({
   site: 'https://blackbox-studio-athens.github.io',
 }));
 
-import { siteBrandAssets, siteThemeColor } from '../platform/config/site';
+import { createCanonicalUrl, siteBrandAssets, siteThemeColor } from '../platform/config/site';
 
 const publicDirectory = fileURLToPath(new URL('../../public/', import.meta.url));
 const sourceDirectory = fileURLToPath(new URL('../', import.meta.url));
@@ -131,5 +131,17 @@ describe('home-screen icons and web app manifest', () => {
       siteBrandAssets.appIconMaskable512,
     ]);
     expect(manifest.icons.at(-1).purpose).toBe('maskable');
+  });
+});
+
+describe('canonical URL', () => {
+  it('keeps the configured site and path and drops the query and serving host', () => {
+    const site = new URL('https://blackboxrecordsathens.com');
+    expect(createCanonicalUrl(new URL('https://blackbox-records-web.pages.dev/store/?fbclid=abc#top'), site)).toBe(
+      'https://blackboxrecordsathens.com/store/',
+    );
+    expect(createCanonicalUrl(new URL('http://127.0.0.1:4321/blackbox-records/news/?utm_source=ig'))).toBe(
+      'http://127.0.0.1:4321/blackbox-records/news/',
+    );
   });
 });

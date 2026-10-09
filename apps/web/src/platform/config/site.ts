@@ -23,6 +23,11 @@ export const siteBrandAssets = {
 
 export const siteThemeColor = '#0d0d0d';
 
+/** Canonical and og:url: the configured site origin plus the path, without the query or the serving host. */
+export function createCanonicalUrl(url: URL, site?: URL) {
+  return new URL(url.pathname, site ?? url).toString();
+}
+
 function normalizePath(path = '/') {
   return path.startsWith('/') ? path : `/${path}`;
 }
