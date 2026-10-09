@@ -3082,20 +3082,11 @@ body {
     text-shadow: 0 0 20px rgba(0, 0, 0, 0.38);
   }
 
-  .homepage-hero-section__store-line {
-    margin: 1.5rem 0 0;
-    color: #d0d0d0;
-    font-size: 1rem;
-    line-height: 1.55;
-    white-space: nowrap;
-    text-shadow: 0 0 20px rgba(0, 0, 0, 0.38);
-  }
-
   .homepage-hero-section__actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
-    margin-top: 1rem;
+    margin-top: 1.5rem;
   }
 
   motto-word-cycle {
@@ -3547,8 +3538,8 @@ body.is-app-shell-overlay-open {
     letter-spacing: 0.03em;
   }
 
-  /* The hero block sits centred vertically and spans the gutter, so the motto, store line and buttons share the
-     logo's left edge. */
+  /* The hero block sits centred vertically and spans the gutter, so the motto and buttons share the logo's
+     left edge. */
   .homepage-hero-section__content-block {
     justify-content: center;
     align-items: stretch;
@@ -3560,11 +3551,6 @@ body.is-app-shell-overlay-open {
     max-width: min(21rem, 90vw);
     font-size: clamp(2.1rem, 11.5vw, 2.75rem);
     line-height: 1;
-  }
-
-  /* Scales down with the viewport so the line never wraps, down to 280px phones. */
-  .homepage-hero-section__store-line {
-    font-size: min(0.9375rem, 4.4vw);
   }
 
   /* The buttons share one row and wrap to full-width rows when they cannot fit. */
