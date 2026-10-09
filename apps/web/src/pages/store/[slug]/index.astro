@@ -109,6 +109,8 @@ const hasInfo = storeItem.summary || hasBody || releaseDate || credits.length > 
   mainClass="store-item-page"
   pageTitle={`${storeItem.title} | Store`}
   pageDescription={storeItem.summary || `${storeItem.title} available through the BlackBox native storefront.`}
+  image={storeItem.image}
+  imageAlt={storeItem.imageAlt || storeItem.title}
 >
   <section class="layout-container pt-6 pb-6" data-tone="store">
     <a
