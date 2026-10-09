@@ -135,6 +135,8 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
     <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconSvg)} type="image/svg+xml" sizes="any" />
     <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconPng96)} type="image/png" sizes="96x96" />
     <link rel="icon" href={createProjectRelativeUrl(siteBrandAssets.faviconIco)} sizes="any" />
+    <link rel="apple-touch-icon" href={createProjectRelativeUrl(siteBrandAssets.appleTouchIcon)} />
+    <link rel="manifest" href={createProjectRelativeUrl(siteBrandAssets.webManifest)} />
     {redirectUrl && <meta content={`0; url=${redirectUrl}`} http-equiv="refresh" />}
 
     <meta property="og:site_name" content={siteConfig.title} />

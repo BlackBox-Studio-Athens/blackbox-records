@@ -13,6 +13,12 @@ export const siteBrandAssets = {
   faviconSvg: '/favicon.svg',
   faviconPng96: '/favicon-96x96.png',
   faviconIco: '/favicon.ico',
+  // Opaque #0d0d0d squares rendered from favicon.svg; the manifest lists the 192/512 and maskable icons.
+  appleTouchIcon: '/apple-touch-icon.png',
+  appIcon192: '/favicon-192x192.png',
+  appIcon512: '/favicon-512x512.png',
+  appIconMaskable512: '/favicon-maskable-512x512.png',
+  webManifest: '/manifest.webmanifest',
 } as const;
 
 export const siteThemeColor = '#0d0d0d';

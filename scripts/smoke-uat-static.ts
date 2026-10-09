@@ -459,6 +459,8 @@ async function checkPublicAssets(
   };
   const checks: UatStaticSmokeCheck[] = [];
   checks.push(await checkBinaryAsset(options, '/favicon.svg', 'image/'));
+  checks.push(await checkBinaryAsset(options, '/apple-touch-icon.png', 'image/'));
+  checks.push(await checkBinaryAsset(options, '/manifest.webmanifest', 'application/'));
   checks.push(await checkNotFoundDocument(options));
   checks.push(await checkBinaryAsset(options, findPublicMediaPath(await read('/'), options.siteUrl), 'image/'));
   for (const section of ['artist', 'release', 'storeItem', 'news'] as const) {

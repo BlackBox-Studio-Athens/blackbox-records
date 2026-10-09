@@ -39,5 +39,9 @@ describe('SiteLayout document head', () => {
   it('matches browser chrome to the dark site and links home-screen icons and the manifest', () => {
     expect(source).toContain('<meta name="theme-color" content={siteThemeColor} />');
     expect(source).toContain('<meta name="color-scheme" content="dark" />');
+    expect(source).toContain(
+      '<link rel="apple-touch-icon" href={createProjectRelativeUrl(siteBrandAssets.appleTouchIcon)} />',
+    );
+    expect(source).toContain('<link rel="manifest" href={createProjectRelativeUrl(siteBrandAssets.webManifest)} />');
   });
 });

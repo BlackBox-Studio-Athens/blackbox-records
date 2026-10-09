@@ -84,12 +84,28 @@ test('all favicon names bypass the renderer and preserve binary asset bytes', as
   const { env, forwarded } = captureEnv();
   const bytes = new Uint8Array([137, 80, 78, 71, 255, 0, 128]);
   env.ASSETS.fetch = async () => new Response(bytes, { headers: { 'Content-Type': 'image/png' } });
-  for (const path of ['/favicon-96x96.png', '/favicon.svg', '/favicon.ico', '/_astro/logo.hash.png']) {
+  for (const path of [
+    '/favicon-96x96.png',
+    '/favicon.svg',
+    '/favicon.ico',
+    '/favicon-maskable-512x512.png',
+    '/apple-touch-icon.png',
+    '/apple-touch-icon-precomposed.png',
+    '/manifest.webmanifest',
+    '/_astro/logo.hash.png',
+  ]) {
     const response = await gateway.fetch(new Request(`https://site.invalid${path}`), env);
     assert.deepEqual(new Uint8Array(await response.arrayBuffer()), bytes);
   }
   assert.equal(forwarded.length, 0);
-  assert.deepEqual(publicGatewayRoutes.exclude, ['/assets/*', '/_astro/*', '/favicon*', '/robots.txt']);
+  assert.deepEqual(publicGatewayRoutes.exclude, [
+    '/assets/*',
+    '/_astro/*',
+    '/favicon*',
+    '/apple-touch-icon*',
+    '/manifest.webmanifest',
+    '/robots.txt',
+  ]);
 });
 
 test('cold and warm browser request traces spend one gateway and at most one renderer call per document', async () => {

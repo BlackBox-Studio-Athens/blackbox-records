@@ -3,7 +3,7 @@ const publicRoutePatterns = [];
 export const publicGatewayRoutes = {
   version: 1,
   include: ['/*'],
-  exclude: ['/assets/*', '/_astro/*', '/favicon*', '/robots.txt'],
+  exclude: ['/assets/*', '/_astro/*', '/favicon*', '/apple-touch-icon*', '/manifest.webmanifest', '/robots.txt'],
 };
 
 export function createPublicGateway(patterns) {
@@ -28,7 +28,10 @@ export function createPublicGateway(patterns) {
       const path = new URL(request.url).pathname;
       if (!['GET', 'HEAD'].includes(request.method)) return new Response('Method not allowed', { status: 405 });
       if (/^\/(?:api|_emdash|__publication|content|stock)(?:\/|$)/.test(path)) return notFound();
-      if (/^\/(?:assets|_astro)\//.test(path) || /^\/(?:favicon[^/]*|robots\.txt)$/.test(path))
+      if (
+        /^\/(?:assets|_astro)\//.test(path) ||
+        /^\/(?:favicon[^/]*|apple-touch-icon[^/]*|manifest\.webmanifest|robots\.txt)$/.test(path)
+      )
         return env.ASSETS.fetch(request);
       if (
         !routes.some((pattern) => pattern.test(path)) &&
