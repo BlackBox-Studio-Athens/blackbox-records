@@ -1,4 +1,4 @@
-import type { Page } from 'playwright/test';
+import type { Locator, Page } from 'playwright/test';
 
 import { expect, expectNoHorizontalOverflow, test, waitForIsland, waitForShell } from './fixtures';
 
@@ -83,6 +83,15 @@ async function openCheckout(page: Page) {
   return page.locator('[data-checkout-offer-status]');
 }
 
+/** From Deliver to Greece, Tab passes the newsletter opt-in and its privacy link before it reaches Pay. */
+async function tabThroughNewsletterOptIn(page: Page, review: Locator) {
+  await page.keyboard.press('Tab');
+  await expect(review.getByRole('checkbox')).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(review.getByRole('link', { name: 'Privacy information', exact: true })).toBeFocused();
+  await page.keyboard.press('Tab');
+}
+
 for (const width of [1280, 390]) {
   test(`checkout international card preserves delivery and payment at ${width}px${width < 768 ? ' @phone' : ''}`, async ({
     page,
@@ -141,7 +150,7 @@ for (const width of [1280, 390]) {
     const correction = notice.getByRole('button', { name: 'Deliver to Greece', exact: true });
     await expect(correction).toBeFocused();
     expect((await correction.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await page.keyboard.press('Tab');
+    await tabThroughNewsletterOptIn(page, review);
     await expect(pay).toBeFocused();
     expect(await review.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     await expectNoHorizontalOverflow(page);
@@ -224,13 +233,12 @@ test('the international card does not bypass a missing authoritative quote', asy
 });
 
 test('the checkout card and payment remain reachable with a 200 percent layout zoom', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 860 });
+  // A 1280x860 window at 200 percent browser zoom lays out 640x430 CSS px. CSS zoom on body would keep the desktop
+  // media queries and push the desktop header past the edge, which no browser zoom shows.
+  await page.setViewportSize({ width: 640, height: 430 });
   await prepareCheckout(page);
   await page.route('**/cdn-cgi/trace', (route) => route.fulfill({ contentType: 'text/plain', body: 'loc=US\n' }));
   const review = await openCheckout(page);
-  await page.evaluate(() => {
-    document.body.style.zoom = '2';
-  });
   const email = review.getByRole('link', { name: 'Email us to order', exact: true });
   const pay = review.getByRole('button', { name: 'Continue to Payment', exact: true });
   await expect(email).toBeVisible();
@@ -241,7 +249,7 @@ test('the checkout card and payment remain reachable with a 200 percent layout z
   await expect(email).toBeFocused();
   await page.keyboard.press('Tab');
   await expect(review.getByRole('button', { name: 'Deliver to Greece', exact: true })).toBeFocused();
-  await page.keyboard.press('Tab');
+  await tabThroughNewsletterOptIn(page, review);
   await expect(pay).toBeFocused();
   await pay.scrollIntoViewIfNeeded();
   await expect(pay).toBeInViewport({ ratio: 1 });

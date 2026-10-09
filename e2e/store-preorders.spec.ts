@@ -166,7 +166,8 @@ test('phone hash entry waits for listing data and combines pre-orders with forma
   await page.getByRole('button', { name: 'Clear filters', exact: true }).click();
   await expect(toggle).toHaveAttribute('aria-pressed', 'false');
   await expect(page.locator('.store-preorder-notes')).toBeHidden();
-  await expect(search).toBeFocused();
+  // Clear filters moves focus to the live result count, as in store-formats.spec.ts.
+  await expect(page.locator('[data-store-search-summary]')).toBeFocused();
   await expect(search).toHaveValue('');
   await expect(page.getByRole('button', { name: /^Artists/ })).toHaveText('Artists');
   await expect(page.locator('input[name="store-artist"]:checked')).toHaveCount(0);

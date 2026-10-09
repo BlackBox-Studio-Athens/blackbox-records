@@ -3,7 +3,7 @@ import { expect, expectNoHorizontalOverflow, test, waitForIsland } from './fixtu
 test('withdrawal review, edit, explicit confirmation and durable receipt work without a buyer account', async ({
   page,
 }) => {
-  let sent: Record<string, unknown> | null = null;
+  let sent: Record<string, string> | null = null;
   await page.route('**/api/store/withdrawals', async (route) => {
     sent = route.request().postDataJSON();
     const body = sent!;

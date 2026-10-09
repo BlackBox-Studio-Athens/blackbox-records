@@ -159,8 +159,12 @@ test('unavailable and missing-session returns retain their recovery states', asy
     };
   });
   await page.goto(`store/checkout/return/?session_id=${paidState.checkoutSessionId}`);
-  await expect(page.getByRole('heading', { name: 'We Could Not Confirm Payment', exact: true })).toBeVisible();
-  await expect(page.getByText('Fixture status unavailable', { exact: true })).toBeVisible();
+  // A failed read is not a Worker answer: the page keeps checking (2, 5 and 10 s retries), then offers Refresh status.
+  await expect(page.getByRole('heading', { name: 'Could Not Check Payment', exact: true })).toBeVisible({
+    timeout: 45_000,
+  });
+  await expect(page.getByText('Connection problem. Check your network and try again.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Refresh status', exact: true })).toBeVisible();
   await expect(page.locator('[data-checkout-preorder-confirmed]')).toHaveCount(0);
   await page.goto('store/checkout/return/?redirect_status=succeeded');
   await expect(page.getByRole('heading', { name: 'Return Link Incomplete', exact: true })).toBeVisible();
