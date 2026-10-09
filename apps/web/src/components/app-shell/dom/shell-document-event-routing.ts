@@ -43,7 +43,7 @@ type ShellDocumentEventRoutingDependencies = {
 
 export type ShellDocumentEventRoutingOptions = {
   closeMobileNavigation: () => void;
-  closeOverlayState: (options: { restoreFocus: false }) => void;
+  closeOverlayState: (options: { restoreFocus: boolean }) => void;
   closeOverlayWithHistoryBack: () => void;
   closePlayerModal: () => void;
   closePlayerModalWithHistoryBack: () => void;
@@ -277,6 +277,7 @@ export function connectShellDocumentEventRouting({
       closeShellSheets,
       currentHref: currentHref(),
       currentPathname: currentPathname(),
+      getOverlayBackgroundHref,
       hasCachedShellPage,
       historyState: getHistoryState(),
       isPlayerModalOpen: isPlayerModalOpen(),

@@ -351,6 +351,7 @@ describe('shell document event routing', () => {
         playerModalHistoryHref: options.playerModalHistoryHrefRef,
         reopenPlayerModal: options.reopenPlayerModal,
         closeShellSheets: options.closeShellSheets,
+        getOverlayBackgroundHref: options.getOverlayBackgroundHref,
         reopenShellSheet: options.reopenShellSheet,
         shellSheetHistoryHref: options.shellSheetHistoryHrefRef,
       }),

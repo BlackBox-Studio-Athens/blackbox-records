@@ -16,11 +16,12 @@ type ShellPopStateHistoryState = {
 };
 
 type ShellPopStateNavigationOptions = {
-  closeOverlayState: (options: { restoreFocus: false }) => void;
+  closeOverlayState: (options: { restoreFocus: boolean }) => void;
   closePlayerModal: () => void;
   closeShellSheets: () => void;
   currentHref: string;
   currentPathname: string;
+  getOverlayBackgroundHref: () => string | null | undefined;
   hasCachedShellPage: (pathname: string) => boolean;
   historyState: unknown;
   isPlayerModalOpen: boolean;
@@ -71,6 +72,7 @@ export function routeShellPopStateNavigation({
   closeShellSheets,
   currentHref,
   currentPathname,
+  getOverlayBackgroundHref,
   hasCachedShellPage,
   historyState,
   isPlayerModalOpen,
@@ -107,6 +109,18 @@ export function routeShellPopStateNavigation({
   const nextShellSectionRoute = parseShellSectionRoute(currentPathname);
   const nextNormalizedPathname = normalizeAppPathname(currentPathname);
   const shellHistoryState = readShellPopStateHistoryState(historyState);
+  const overlayBackgroundHref = getOverlayBackgroundHref();
+
+  // Back to the open overlay's own background page only closes the overlay: the list keeps its scroll position and
+  // focus returns to the card that opened it.
+  if (
+    overlayBackgroundHref &&
+    !shellHistoryState.isOverlayHistory &&
+    normalizeAppPathname(new URL(overlayBackgroundHref).pathname) === nextNormalizedPathname
+  ) {
+    closeOverlayState({ restoreFocus: true });
+    return 'closed-overlay';
+  }
 
   if (shellHistoryState.isOverlayHistory && nextOverlayRoute) {
     void openOverlayHref(currentHref, {

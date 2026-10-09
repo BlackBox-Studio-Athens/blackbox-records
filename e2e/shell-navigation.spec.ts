@@ -152,6 +152,29 @@ test('detail link opens an overlay that closes back to the list; a direct load r
   await expect(page.locator(main).getByRole('heading', { level: 1 })).toBeVisible();
 });
 
+test('closing a detail overlay by Close or Back keeps the list in place and returns focus to its card', async ({
+  page,
+}) => {
+  await page.goto('releases/');
+  await waitForShell(page);
+  const card = page.locator('a.release-card-title-link[href*="/releases/"]').last();
+  await card.scrollIntoViewIfNeeded();
+  const listScrollY = await page.evaluate(() => window.scrollY);
+  expect(listScrollY).toBeGreaterThan(0);
+  const overlay = page.getByRole('dialog');
+
+  for (const dismissal of ['Close', 'Back']) {
+    await card.click();
+    await expect(overlay).toBeVisible();
+    if (dismissal === 'Back') await page.goBack();
+    else await page.getByRole('button', { name: 'Close detail view' }).click();
+    await expect(overlay).toBeHidden();
+    await expect(page).toHaveURL(/\/releases\/$/);
+    await expect(card).toBeFocused();
+    expect(await page.evaluate(() => window.scrollY)).toBe(listScrollY);
+  }
+});
+
 test('detail-link intent warms the overlay panel so the overlay opens in the click task', async ({
   page,
   isMobile,

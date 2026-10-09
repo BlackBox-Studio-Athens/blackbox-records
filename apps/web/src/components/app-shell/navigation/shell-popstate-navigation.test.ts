@@ -14,6 +14,7 @@ function createOptions(overrides: Partial<Parameters<typeof routeShellPopStateNa
     closeShellSheets: vi.fn(),
     currentHref: 'https://example.test/blackbox-records/releases/disintegration/',
     currentPathname: '/blackbox-records/releases/disintegration/',
+    getOverlayBackgroundHref: vi.fn((): string | null => null),
     hasCachedShellPage: vi.fn(() => false),
     historyState: {},
     isPlayerModalOpen: false,
@@ -203,6 +204,32 @@ describe('shell popstate navigation', () => {
     expect(options.closePlayerModal).not.toHaveBeenCalled();
     expect(options.reopenPlayerModal).not.toHaveBeenCalled();
     expect(options.playerModalHistoryHref.current).toBeNull();
+  });
+
+  it('only closes an open overlay when Back returns to its background page, keeping scroll and restoring focus', () => {
+    const options = createOptions({
+      currentHref: releasesHref,
+      currentPathname: '/blackbox-records/releases/',
+      getOverlayBackgroundHref: vi.fn(() => releasesHref),
+      historyState: { __appShellSection: true, pathname: '/releases/' },
+    });
+
+    expect(routeShellPopStateNavigation(options)).toBe('closed-overlay');
+
+    expect(options.closeOverlayState).toHaveBeenCalledWith({ restoreFocus: true });
+    expect(options.openShellSectionHref).not.toHaveBeenCalled();
+    expect(options.openOverlayHref).not.toHaveBeenCalled();
+  });
+
+  it('still routes when Back from an open overlay jumps to another page', () => {
+    const options = createOptions({
+      currentHref: 'https://example.test/blackbox-records/artists/',
+      currentPathname: '/blackbox-records/artists/',
+      getOverlayBackgroundHref: vi.fn(() => releasesHref),
+    });
+
+    expect(routeShellPopStateNavigation(options)).toBe('shell-section');
+    expect(options.closeOverlayState).not.toHaveBeenCalled();
   });
 
   it('closes the cart drawer or Menu when Back steps off its entry, without routing the unchanged page', () => {
