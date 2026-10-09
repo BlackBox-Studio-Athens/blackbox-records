@@ -7151,6 +7151,8 @@ html[data-store-coverflow-capable]
     /* A pane taller than the viewport keeps its end reachable without scrolling the results to their end. */
     max-height: calc(100dvh - var(--header-height) - 2rem);
     overflow-y: auto;
+    /* Overlay scrollbars (Firefox on Windows 11) reserve no gutter and would cover the format counts. */
+    padding-inline-end: 0.75rem;
   }
 
   .store-artists-trigger {
