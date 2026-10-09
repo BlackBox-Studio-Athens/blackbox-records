@@ -106,7 +106,7 @@ body[data-workspace='content'] {
 .staff-shell :is(input, textarea, select) {
   font-size: 16px;
 }
-.staff-shell :is(button, [role='tab']) {
+.staff-shell :is(button:not([role='checkbox']), [role='tab']) {
   min-height: 44px;
 }
 .staff-shell :is(a, button, input, textarea, select):focus-visible {

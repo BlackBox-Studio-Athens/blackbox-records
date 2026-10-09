@@ -272,14 +272,19 @@ export async function readStaffWorkspace(
         );
   for (const page of pages.filter(() => !overview && !review)) {
     for (const item of page.items) {
-      if (page.section !== 'releases' && (item.liveRevisionId || !item.draftRevisionId)) continue;
+      // Ordered links list their saved order, so Move up/down works from the draft, not the live order.
+      const draftOrder =
+        ['navigation', 'socials'].includes(page.section) &&
+        !!item.draftRevisionId &&
+        item.draftRevisionId !== item.liveRevisionId;
+      if (page.section !== 'releases' && !draftOrder && (item.liveRevisionId || !item.draftRevisionId)) continue;
       const revisionId = item.draftRevisionId ?? item.liveRevisionId;
       if (!revisionId) continue;
       const revision = await deps.runtime.handleRevisionGet(revisionId);
       if (!revision.success || revision.data.item.entryId !== item.id || revision.data.item.collection !== page.section)
         throw new Error('Saved content is unavailable.');
       const data = await readRevisionContent(deps.runtime, revision.data.item);
-      item.data = item.liveRevisionId ? { ...item.data, artist: data.artist } : data;
+      item.data = item.liveRevisionId && !draftOrder ? { ...item.data, artist: data.artist } : data;
     }
   }
   const artistNames = new Map(

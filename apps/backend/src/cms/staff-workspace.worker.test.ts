@@ -63,6 +63,32 @@ test.each(['', '&q=SIDUS'])(
     expect(result.data.items[0].artistTitle).toBe('Sidus');
   },
 );
+test('published navigation lists its saved draft order', async () => {
+  await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
+  const item = {
+    id: 'news',
+    slug: 'news',
+    data: { title: 'News', order: 6 },
+    draftRevisionId: 'draft',
+    liveRevisionId: 'live',
+  };
+  const runtime = {
+    handleContentList: vi.fn(async () => ({ success: true, data: { items: [item] } })),
+    handleRevisionGet: vi.fn(async () => ({
+      success: true,
+      data: { item: { collection: 'navigation', entryId: 'news', data: { title: 'News', order: 5 } } },
+    })),
+  } as unknown as EmDashRuntime;
+  const response = await readStaffWorkspace(new Request('https://staff.invalid/?collection=navigation'), {
+    runtime,
+    db: env.TEST_CMS_DB,
+    commerce: env.COMMERCE_DB,
+    bucket: env.TEST_SNAPSHOTS,
+    environment: 'local',
+  });
+  const result = (await response.json()) as { data: { items: { data: { order: number } }[] } };
+  expect(result.data.items[0].data.order).toBe(5);
+});
 test('catalog forwards native filters, ordering and opaque cursors without truncating editorial entries', async () => {
   await env.TEST_SNAPSHOTS.delete(currentPublicationKey('local'));
   const entries = Array.from({ length: 251 }, (_, index) => ({
@@ -404,6 +430,10 @@ test('workspace reuse follows fresh pointers, isolates targets, and never hides 
   const runtime = {
     handleContentList: vi.fn(async () => ({ success: true, data: { items: [item] } })),
     handleContentGet: vi.fn(async () => ({ success: true, data: { _rev: 'version', item } })),
+    handleRevisionGet: vi.fn(async () => ({
+      success: true,
+      data: { item: { collection: 'socials', entryId: item.id, data: item.data } },
+    })),
   } as unknown as EmDashRuntime;
   const snapshotCache: StaffSnapshotCache = {};
   const deps = {
