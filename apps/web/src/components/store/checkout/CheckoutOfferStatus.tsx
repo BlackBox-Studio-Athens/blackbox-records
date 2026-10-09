@@ -186,6 +186,16 @@ export default function CheckoutOfferStatus({
     };
   }, []);
 
+  // Back from Stripe can restore this page from the back/forward cache mid-redirect; Pay must work again.
+  // The stored idempotency key makes a second press resume the same Worker checkout attempt.
+  useEffect(() => {
+    function resetRestoredCheckout(event: PageTransitionEvent) {
+      if (event.persisted) setIsStartingCheckout(false);
+    }
+    window.addEventListener('pageshow', resetRestoredCheckout);
+    return () => window.removeEventListener('pageshow', resetRestoredCheckout);
+  }, []);
+
   async function handleStartCheckout() {
     if (!delivery.quote || delivery.loading) return;
     const checkoutApi = api ?? createPublicCheckoutApi();

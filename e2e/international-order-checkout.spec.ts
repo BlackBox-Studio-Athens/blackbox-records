@@ -254,3 +254,29 @@ test('empty checkout does not mount the international card or allow payment', as
   await expect(review.getByRole('complementary', { name: 'Ordering from outside Greece' })).toHaveCount(0);
   await expect(review.getByRole('button', { name: 'Continue to Payment', exact: true })).toHaveCount(0);
 });
+
+// Phones swipe Back from Stripe; the back/forward cache then restores the page mid-redirect. Playwright's Chromium
+// disables that cache, so the restore is the pageshow event it fires; the second press reuses the attempt key.
+test('Pay works again after Back restores checkout from the back/forward cache', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await prepareCheckout(page);
+  const idempotencyKeys: string[] = [];
+  await page.route('**/api/checkout/sessions', (route) => {
+    idempotencyKeys.push(route.request().headers()['idempotency-key'] ?? '');
+    return route.fulfill({ json: { checkoutUrl: 'https://checkout.stripe.test/pay' } });
+  });
+  // A 204 response cancels the navigation, leaving the page as it was when Stripe opened.
+  await page.route('https://checkout.stripe.test/**', (route) => route.fulfill({ status: 204 }));
+  const review = await openCheckout(page);
+  const pay = review.locator('.checkout-review__pay');
+  await expect(pay).toBeEnabled();
+  await pay.click();
+  await expect(pay).toBeDisabled();
+  await expect(review).toContainText('Opening Stripe Checkout');
+
+  await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })));
+  await expect(review.getByRole('button', { name: 'Continue to Payment', exact: true })).toBeEnabled();
+  await pay.click();
+  await expect.poll(() => idempotencyKeys.length).toBe(2);
+  expect(idempotencyKeys[1]).toBe(idempotencyKeys[0]);
+});
