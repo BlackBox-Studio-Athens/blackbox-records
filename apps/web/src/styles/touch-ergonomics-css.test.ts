@@ -100,4 +100,8 @@ describe('Store layout on phones', () => {
     expect(ruleBody('.store-browse-layout', phone)).toMatch(/gap:\s*0\.75rem/);
     expect(ruleBody('.store-browse-pane > .store-format-links', phone)).toMatch(/margin-bottom:\s*0/);
   });
+
+  it('sizes the phone item artwork by the viewport height', () => {
+    expect(ruleBody('.store-item-artwork', '@media (width < 48rem)')).toMatch(/max-width:\s*min\(26rem, 36svh\)/);
+  });
 });

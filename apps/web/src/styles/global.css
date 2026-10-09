@@ -7505,6 +7505,19 @@ html[data-store-coverflow-capable]
   justify-self: center;
 }
 
+/* Phones keep identity, artwork, then price and Add To Cart; the artwork follows the viewport height so the
+   purchase action sits higher, and gallery thumbnails stay at a 56px touch size. */
+@media (width < 48rem) {
+  .store-item-artwork {
+    max-width: min(26rem, 36svh);
+  }
+
+  .store-image-gallery__thumbnail {
+    width: 56px;
+    height: 56px;
+  }
+}
+
 .store-item-page [data-store-purchase-group] > span {
   font-size: 1.5rem;
   font-variant-numeric: tabular-nums;
