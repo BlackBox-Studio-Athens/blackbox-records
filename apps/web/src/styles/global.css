@@ -4345,6 +4345,14 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
       calc(100dvh - max(env(safe-area-inset-top), 0.75rem) - max(env(safe-area-inset-bottom), 0.75rem) - 7.6rem)
     );
   }
+
+  /* The album embed (cover and transport, no tracklist) ends at its width plus about 7.3rem; the frame fills below. */
+  .music-streaming-service-embedded-player-modal-card[data-music-streaming-service-embedded-player-embed-layout='bandcamp-album'] {
+    --music-player-frame-height: min(
+      calc(100vw - 1.7rem + 7.3rem),
+      calc(100dvh - max(env(safe-area-inset-top), 0.75rem) - max(env(safe-area-inset-bottom), 0.75rem) - 7.6rem)
+    );
+  }
 }
 
 @media (min-width: 40rem) {

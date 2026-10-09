@@ -15,6 +15,14 @@ describe('player geometry on phones', () => {
     );
   });
 
+  it('caps the phone album frame at the embed height', () => {
+    const phoneBlock = css.slice(css.indexOf('@media (max-width: 40rem)'));
+    const albumRule = phoneBlock.slice(
+      phoneBlock.indexOf(`${card}[data-music-streaming-service-embedded-player-embed-layout='bandcamp-album']`),
+    );
+    expect(albumRule).toMatch(/^[^}]*--music-player-frame-height:\s*min\(\s*calc\(100vw - 1\.7rem \+ 7\.3rem\)/);
+  });
+
   it('fits the embed to short viewports beside the header', () => {
     const shortBlock = css.slice(css.indexOf('@media (max-height: 30rem)'));
     expect(shortBlock).toMatch(/grid-template-columns:\s*minmax\(0, 18rem\) auto/);
