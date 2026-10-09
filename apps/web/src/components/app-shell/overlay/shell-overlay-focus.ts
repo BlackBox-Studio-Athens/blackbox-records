@@ -10,7 +10,8 @@ type OverlayScrollContainer = HTMLElement;
 
 export function restoreConnectedOverlayTriggerFocus(triggerElement: FocusableElement | null) {
   if (triggerElement?.isConnected) {
-    triggerElement.focus();
+    // The list stays where it was; the background just left inert, so focusing must not scroll it.
+    triggerElement.focus({ preventScroll: true });
   }
 }
 

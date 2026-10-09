@@ -7,7 +7,7 @@ type ConnectedFocusableElement = Pick<HTMLElement, 'focus' | 'isConnected'>;
 
 export function restoreConnectedPlayerTriggerFocus(triggerElement: ConnectedFocusableElement | null) {
   if (triggerElement?.isConnected) {
-    triggerElement.focus();
+    triggerElement.focus({ preventScroll: true });
   }
 }
 

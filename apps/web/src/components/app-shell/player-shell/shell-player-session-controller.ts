@@ -232,7 +232,9 @@ export function createShellPlayerSessionController({
     updatePlayerUiFromSession(null);
 
     if (restoreFocus) {
-      restoreConnectedPlayerTriggerFocus(activePlayerTriggerElementRef.current);
+      // After the closing commit lifts the background inert, so the trigger can take focus.
+      const triggerElement = activePlayerTriggerElementRef.current;
+      getScheduler().requestAnimationFrame(() => restoreConnectedPlayerTriggerFocus(triggerElement));
     }
   }
 

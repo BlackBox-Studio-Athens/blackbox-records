@@ -24,3 +24,15 @@ export function syncShellBodyStateClasses({
     bodyClassList.remove('is-shell-modal-open');
   };
 }
+
+// The player modal and the detail overlay are custom aria-modal dialogs, so the page behind them leaves the focus and
+// accessibility order while either is open. The Radix sheets (cart, Menu) contain focus themselves.
+const SHELL_BACKGROUND_SELECTOR = 'body > :is(.accessibility-skip-to-content-link, header, main, footer)';
+
+export function inertShellBackground(root: Pick<ParentNode, 'querySelectorAll'>) {
+  const elements = Array.from(root.querySelectorAll<HTMLElement>(SHELL_BACKGROUND_SELECTOR));
+  for (const element of elements) element.inert = true;
+  return () => {
+    for (const element of elements) element.inert = false;
+  };
+}

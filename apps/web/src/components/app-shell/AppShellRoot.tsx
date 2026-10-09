@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import {
   readPlayerProvidersFromElement,
@@ -59,7 +59,7 @@ import {
   scheduleDelayedRouteLoadingStart,
   scheduleRouteLoadingStop,
 } from './navigation/route-loading-indicator';
-import { syncShellBodyStateClasses } from './dom/shell-body-state';
+import { inertShellBackground, syncShellBodyStateClasses } from './dom/shell-body-state';
 import { restoreCachedShellPageSnapshot } from './navigation/shell-cached-page-restoration';
 import { connectShellDocumentEventRouting } from './dom/shell-document-event-routing';
 import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './dom/shell-hero-scroll-progress';
@@ -459,6 +459,10 @@ export default function AppShellRoot({
       releaseLock?.();
     };
   }, [isPlayerModalOpen, overlayState, isStoreCartDrawerOpen, isMobileNavigationOpen]);
+
+  // A layout effect lifts inert in the closing commit, before the scheduled focus return to the trigger.
+  const isShellDialogOpen = isPlayerModalOpen || overlayState !== null;
+  useLayoutEffect(() => (isShellDialogOpen ? inertShellBackground(document) : undefined), [isShellDialogOpen]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

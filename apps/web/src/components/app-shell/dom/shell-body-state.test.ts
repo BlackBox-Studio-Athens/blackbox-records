@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { OVERLAY_OPEN_BODY_CLASS, PLAYER_MODAL_OPEN_BODY_CLASS, syncShellBodyStateClasses } from './shell-body-state';
+import {
+  inertShellBackground,
+  OVERLAY_OPEN_BODY_CLASS,
+  PLAYER_MODAL_OPEN_BODY_CLASS,
+  syncShellBodyStateClasses,
+} from './shell-body-state';
 
 describe('syncShellBodyStateClasses', () => {
   it.each([{ isCartOpen: true }, { isMenuOpen: true }])('locks native background scrolling for %o', (state) => {
@@ -40,5 +45,21 @@ describe('syncShellBodyStateClasses', () => {
 
     expect(bodyClassList.remove).toHaveBeenCalledWith(PLAYER_MODAL_OPEN_BODY_CLASS);
     expect(bodyClassList.remove).toHaveBeenCalledWith(OVERLAY_OPEN_BODY_CLASS);
+  });
+});
+
+describe('inertShellBackground', () => {
+  it('makes the skip link, header, main and footer inert until cleanup', () => {
+    const elements = [{ inert: false }, { inert: false }];
+    const root = { querySelectorAll: vi.fn(() => elements) };
+
+    const restore = inertShellBackground(root as unknown as ParentNode);
+
+    expect(root.querySelectorAll).toHaveBeenCalledWith(
+      'body > :is(.accessibility-skip-to-content-link, header, main, footer)',
+    );
+    expect(elements.every((element) => element.inert)).toBe(true);
+    restore();
+    expect(elements.some((element) => element.inert)).toBe(false);
   });
 });
