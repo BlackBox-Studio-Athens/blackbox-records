@@ -56,6 +56,8 @@ describe('ShellOverlayPanel', () => {
     expect(html).toContain('aria-busy="false"');
     expect(html).toContain('>release</span>');
     expect(html).toContain('<article>Disintegration</article>');
+    // Named by the kind until the loaded detail supplies its title.
+    expect(html).toContain('aria-label="release detail"');
   });
 
   it('renders a loading state without stale overlay html', () => {

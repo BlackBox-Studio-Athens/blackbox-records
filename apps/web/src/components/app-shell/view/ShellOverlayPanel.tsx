@@ -65,6 +65,25 @@ export default function ShellOverlayPanel({
     onReadyRef.current();
   }, [overlayState?.href, overlayState?.html, overlayState?.isLoading]);
 
+  // The detail names the dialog and the document while it is open; the background title returns on close.
+  const [overlayTitle, setOverlayTitle] = React.useState<{ html: string; title: string } | null>(null);
+  const overlayHtml = overlayState?.html;
+  React.useEffect(() => {
+    const title = overlayHtml
+      ? scrollContainerRef.current?.querySelector<HTMLElement>('[data-app-shell-overlay-title]')?.dataset
+          .appShellOverlayTitle
+      : undefined;
+    if (!overlayHtml || !title) return;
+    setOverlayTitle({ html: overlayHtml, title });
+    const backgroundTitle = document.title;
+    const reviewMarker = backgroundTitle.startsWith('[UAT] ') ? '[UAT] ' : '';
+    const detailTitle = `${reviewMarker}${title} | ${backgroundTitle.slice(reviewMarker.length).split(' | ').pop()}`;
+    document.title = detailTitle;
+    return () => {
+      if (document.title === detailTitle) document.title = backgroundTitle;
+    };
+  }, [overlayHtml, scrollContainerRef]);
+
   React.useEffect(() => {
     const scrollRoot = scrollContainerRef.current;
     if (overlayState && scrollRoot && !unlockScrollRef.current) {
@@ -125,6 +144,11 @@ export default function ShellOverlayPanel({
         className="app-shell-content-overlay__panel"
         role="dialog"
         aria-modal="true"
+        aria-label={
+          overlayTitle && overlayTitle.html === renderedOverlayState.html
+            ? overlayTitle.title
+            : `${OVERLAY_KIND_LABELS[renderedOverlayState.route.kind]} detail`
+        }
         aria-busy={renderedOverlayState.isLoading ? 'true' : 'false'}
       >
         <div className="app-shell-content-overlay__header">

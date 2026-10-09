@@ -21,6 +21,7 @@ if (!artist) return new Response('Not found', { status: 404 });
   data-app-shell-overlay-fragment
   data-app-shell-overlay-kind="artists"
   data-app-shell-overlay-slug={artist.data.slug}
+  data-app-shell-overlay-title={artist.data.title || 'Artist'}
 >
   <ArtistDetailContent artist={artist} showRouteNavigation={false} />
 </div>

@@ -17,6 +17,11 @@ const item = Astro.props.item ?? (await getEntry('news', Astro.params.slug ?? ''
 if (!item) return new Response('Not found', { status: 404 });
 ---
 
-<div data-app-shell-overlay-fragment data-app-shell-overlay-kind="news" data-app-shell-overlay-slug={item.id}>
+<div
+  data-app-shell-overlay-fragment
+  data-app-shell-overlay-kind="news"
+  data-app-shell-overlay-slug={item.id}
+  data-app-shell-overlay-title={item.data.title}
+>
   <NewsDetailContent item={item} imagePriority={false} />
 </div>

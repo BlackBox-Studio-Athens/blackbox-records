@@ -21,6 +21,7 @@ if (!release) return new Response('Not found', { status: 404 });
   data-app-shell-overlay-fragment
   data-app-shell-overlay-kind="releases"
   data-app-shell-overlay-slug={getReleaseDetailSlug(release)}
+  data-app-shell-overlay-title={release.data.title}
 >
   <ReleaseDetailContent release={release} showRouteNavigation={false} />
 </div>

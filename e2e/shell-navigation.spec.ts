@@ -241,6 +241,62 @@ test('mobile navigation sheet drives shell navigation without horizontal overflo
   expect(await sentinelIntact(page)).toBe(true);
 });
 
+test('the detail overlay and player modal make the page behind them inert and name themselves', async ({
+  page,
+  isMobile,
+  browserName,
+}) => {
+  test.skip(!isMobile, 'Phone-width screen-reader and switch access.');
+  await page.route(/^https:\/\/(bandcamp\.com|embed\.tidal\.com)\//, (route) =>
+    route.fulfill({ contentType: 'text/html', body: '<button>Player fixture</button>' }),
+  );
+  await page.goto('releases/');
+  await waitForShell(page);
+  const background = page.locator('body > :is(.accessibility-skip-to-content-link, header, main, footer)');
+  const inertCount = () =>
+    background.evaluateAll((elements) => elements.filter((element) => (element as HTMLElement).inert).length);
+  await expect(background).toHaveCount(4);
+  const listTitle = await page.title();
+
+  // The skip link is the first Tab stop and paints above the fixed header. iOS Safari's Tab reaches only form controls
+  // and buttons unless Full Keyboard Access is on, so WebKit focuses it directly.
+  const skipLink = page.getByRole('link', { name: 'Skip to content' });
+  if (browserName === 'webkit') await skipLink.focus();
+  else await page.keyboard.press('Tab');
+  await expect(skipLink).toBeFocused();
+  expect(
+    await skipLink.evaluate((link) => {
+      const box = link.getBoundingClientRect();
+      return link.contains(document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2));
+    }),
+  ).toBe(true);
+
+  const card = page.locator('a.release-card-title-link[href*="/releases/"]').first();
+  await card.tap();
+  const overlay = page.getByRole('dialog');
+  await expect(overlay.locator('[data-app-shell-overlay-title]')).toBeVisible();
+  const detailTitle = (await overlay
+    .locator('[data-app-shell-overlay-title]')
+    .getAttribute('data-app-shell-overlay-title'))!;
+  await expect(overlay).toHaveAccessibleName(detailTitle);
+  await expect.poll(() => page.title()).toContain(`${detailTitle} | `);
+  await expect.poll(inertCount).toBe(4);
+  await page.getByRole('button', { name: 'Close detail view' }).tap();
+  await expect(overlay).toBeHidden();
+  await expect.poll(inertCount).toBe(0);
+  await expect(card).toBeFocused();
+  await expect(page).toHaveTitle(listTitle);
+
+  const listen = page.locator('[data-music-streaming-service-embedded-player-trigger]').first();
+  await listen.tap();
+  await expect(page.getByRole('dialog', { name: 'Music player' })).toBeVisible();
+  await expect.poll(inertCount).toBe(4);
+  await page.getByRole('button', { name: 'Close player' }).tap();
+  await expect(page.getByRole('dialog', { name: 'Music player' })).toBeHidden();
+  await expect.poll(inertCount).toBe(0);
+  await expect(listen).toBeFocused();
+});
+
 test('Escape closes the Menu and returns focus to its button', async ({ page, isMobile }) => {
   test.skip(!isMobile, 'The Menu opens only below the desktop breakpoint.');
   await page.goto('./');
