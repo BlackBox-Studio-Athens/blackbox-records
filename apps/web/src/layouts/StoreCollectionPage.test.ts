@@ -134,6 +134,8 @@ describe('Store collection category surfaces', () => {
   it('uses compact Grid image slots and switches sizes only for explicit Coverflow', () => {
     expect(storeItemCardSource).toContain('(min-width: 1280px) calc((100vw - 356px) / 4)');
     expect(storeItemCardSource.match(/data-store-grid-sizes={sizes}/g)).toHaveLength(2);
+    // Two shared widths bound Images Free transformations per source (docs/cloudflare-free-tier.md).
+    expect(storeItemCardSource).toContain('const widths = [360, 720];');
     expect(source('../components/store/StoreCoverflowController.ts')).toContain('(min-width: 40rem) 16rem, 56vw');
     expect(storeCollectionSource).toContain('createStoreDistroGroupHeadingId');
   });

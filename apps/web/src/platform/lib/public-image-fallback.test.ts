@@ -16,19 +16,32 @@ const image = () => new ImageElement() as unknown as HTMLImageElement;
 beforeEach(() => vi.stubGlobal('HTMLImageElement', ImageElement));
 afterEach(() => vi.unstubAllGlobals());
 
-it('restores the failed current candidate and clears img/picture srcsets without retrying Images', () => {
+it('falls back from a failed candidate to the shared src transform, then to the original, without retrying', () => {
   const element = image();
-  element.src = transformed.replace('width=640', 'width=1200');
+  const shared = transformed.replace('width=640', 'width=1200');
+  element.src = shared;
   Object.defineProperty(element, 'currentSrc', { configurable: true, value: transformed });
   const candidate = { removeAttribute: vi.fn() };
   vi.mocked(element.closest).mockReturnValue({ querySelectorAll: () => [candidate] } as unknown as Element);
   restorePublicImageOriginal(element);
-  expect(element.src).toBe(original);
+  expect(element.src).toBe(shared);
   expect(element.removeAttribute).toHaveBeenCalledExactlyOnceWith('srcset');
   expect(candidate.removeAttribute).toHaveBeenCalledExactlyOnceWith('srcset');
+  Object.defineProperty(element, 'currentSrc', { configurable: true, value: shared });
+  restorePublicImageOriginal(element);
+  expect(element.src).toBe(original);
+  expect(element.removeAttribute).toHaveBeenCalledTimes(2);
   Object.defineProperty(element, 'currentSrc', { value: original });
   restorePublicImageOriginal(element);
-  expect(element.removeAttribute).toHaveBeenCalledTimes(1);
+  expect(element.removeAttribute).toHaveBeenCalledTimes(2);
+});
+
+it('restores the original when the src transform belongs to another source', () => {
+  const element = image();
+  element.src = transformed.replace('a'.repeat(64), 'b'.repeat(64));
+  Object.defineProperty(element, 'currentSrc', { value: transformed });
+  restorePublicImageOriginal(element);
+  expect(element.src).toBe(original);
 });
 
 it('ignores static, private, unrelated and unapproved source URLs', () => {

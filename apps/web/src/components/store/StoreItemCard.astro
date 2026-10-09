@@ -26,7 +26,8 @@ const option = primaryAvailability?.optionLabel || entry.distro?.format || entry
 const cartSeed = await createPricedCartSeedForStorePage(storeItem, primaryAvailability, storeItem.image.src);
 const sizes =
   '(min-width: 1440px) 16.9375rem, (min-width: 1280px) calc((100vw - 356px) / 4), (min-width: 1024px) calc((100vw - 336px) / 3), (min-width: 640px) calc((100vw - 80px) / 3), (min-width: 360px) calc((100vw - 48px) / 2), calc(100vw - 32px)';
-const widths = [240, 360, 480, 640, 720];
+// Two widths keep Images transformations per source low and let phones, coverflow and HiDPI desktops share one cached 720w.
+const widths = [360, 720];
 ---
 
 <div
