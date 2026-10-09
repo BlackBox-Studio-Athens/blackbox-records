@@ -66,6 +66,7 @@ import { connectHomepageHeroScrollProgress, HOMEPAGE_HERO_SELECTOR } from './dom
 import { openShellOverlayNavigation, type ShellOverlayState } from './overlay/shell-overlay-navigation';
 import {
   findStoreCartFocusReturnTarget,
+  resolveStoreCartOpener,
   scheduleOverlayContentFocus,
   scheduleOverlayTriggerFocusRestore,
 } from './overlay/shell-overlay-focus';
@@ -172,6 +173,7 @@ export default function AppShellRoot({
 
   const overlayStateRef = useRef<OverlayState | null>(null);
   const storeCartOpenerRef = useRef<HTMLElement | null>(null);
+  const lastClickTargetRef = useRef<EventTarget | null>(null);
   const overlayCacheRef = useRef(new Map<string, string>());
   const overlayInFlightRequestsRef = useRef(new Map<string, Promise<string>>());
   const overlayAbortControllerRef = useRef<AbortController | null>(null);
@@ -296,9 +298,12 @@ export default function AppShellRoot({
 
   // Remember what opened the drawer (Add to cart or the header control) so closing can return there.
   function openStoreCartDrawer() {
-    const activeElement = document.activeElement;
-    storeCartOpenerRef.current =
-      activeElement instanceof HTMLElement && activeElement !== document.body ? activeElement : null;
+    storeCartOpenerRef.current = resolveStoreCartOpener(
+      lastClickTargetRef.current,
+      document.activeElement,
+      document.body,
+    );
+    lastClickTargetRef.current = null;
     setIsStoreCartDrawerOpen(true);
     pushShellSheetHistoryEntry('cart');
   }
@@ -856,6 +861,9 @@ export default function AppShellRoot({
       prefetchOverlayHref,
       prefetchShellSectionHref,
       readPlayerProvidersFromElement,
+      rememberClickTarget: (target) => {
+        lastClickTargetRef.current = target;
+      },
       reopenPlayerModal,
       reopenShellSheet: (kind) => (kind === 'menu' ? setIsMobileNavigationOpen : setIsStoreCartDrawerOpen)(true),
       restoreCachedShellPage,
@@ -873,6 +881,8 @@ export default function AppShellRoot({
       },
       windowTarget: window,
     });
+    // Astro drops the island's ssr attribute before React's effects run; this marks the listeners as attached.
+    document.documentElement.dataset.appShellReady = '';
 
     return () => {
       window.removeEventListener('pagehide', saveScrollPosition);

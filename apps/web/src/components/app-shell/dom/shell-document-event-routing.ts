@@ -66,6 +66,8 @@ export type ShellDocumentEventRoutingOptions = {
     options: { backgroundHref: string; pushHistory?: true; replaceHistory?: false },
   ) => MaybePromise<boolean>;
   openPlayerModal: (triggerElement: HTMLElement, playerElement: HTMLElement) => void;
+  // Capture-phase click target; the cart drawer returns focus to the tapped control (iOS does not focus it).
+  rememberClickTarget: (target: EventTarget | null) => void;
   reopenPlayerModal: () => void;
   reopenShellSheet: Parameters<typeof routeShellPopStateNavigation>[0]['reopenShellSheet'];
   openShellSectionHref: (
@@ -132,6 +134,7 @@ export function connectShellDocumentEventRouting({
   prefetchOverlayHref,
   prefetchShellSectionHref,
   readPlayerProvidersFromElement,
+  rememberClickTarget,
   restoreCachedShellPage,
   scheduler,
   scrollToTargetId,
@@ -151,6 +154,7 @@ export function connectShellDocumentEventRouting({
     dependencies.schedulePlayerIframeBlurInteractionCheck ?? schedulePlayerIframeBlurInteractionCheck;
 
   function handleDocumentClick(event: MouseEvent): ShellDocumentEventRoutingResult {
+    rememberClickTarget(event.target);
     if (event.defaultPrevented || isModifiedEvent(event)) return 'ignored';
 
     const clickIntent = resolveClickIntent(event.target, {

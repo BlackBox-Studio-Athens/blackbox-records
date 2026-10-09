@@ -54,3 +54,11 @@ export function findStoreCartFocusReturnTarget(root: FocusTargetRoot, opener?: F
     root.querySelector<HTMLElement>('main[data-app-shell-main]')
   );
 }
+
+// iOS Safari does not focus a tapped button, so the tapped cart control (Buy, Add To Cart, the header control) is the
+// opener; otherwise the focused element (keyboard, scripted opens).
+export function resolveStoreCartOpener(clickTarget: EventTarget | null, activeElement: Element | null, body: Element) {
+  return ((clickTarget as Element | null)?.closest?.(
+    '[data-store-card-buy], [data-store-item-add-to-cart], [data-store-cart-trigger]',
+  ) ?? (activeElement === body ? null : activeElement)) as HTMLElement | null;
+}

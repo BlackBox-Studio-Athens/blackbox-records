@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   findStoreCartFocusReturnTarget,
+  resolveStoreCartOpener,
   restoreConnectedOverlayTriggerFocus,
   scheduleOverlayContentFocus,
   scheduleOverlayTriggerFocusRestore,
@@ -134,5 +135,28 @@ describe('findStoreCartFocusReturnTarget', () => {
     const main = { id: 'main' };
 
     expect(findStoreCartFocusReturnTarget(createRoot({ 'main[data-app-shell-main]': main }))).toBe(main);
+  });
+});
+
+describe('resolveStoreCartOpener', () => {
+  const body = { id: 'body' } as unknown as Element;
+  const focused = { id: 'focused' } as unknown as Element;
+
+  it('prefers the tapped cart control, which iOS Safari leaves unfocused', () => {
+    const buy = { id: 'buy' };
+    const closest = vi.fn(() => buy);
+
+    expect(resolveStoreCartOpener({ closest } as unknown as EventTarget, body, body)).toBe(buy);
+    expect(closest).toHaveBeenCalledWith(
+      '[data-store-card-buy], [data-store-item-add-to-cart], [data-store-cart-trigger]',
+    );
+  });
+
+  it('falls back to the focused element, never the body', () => {
+    const unrelated = { closest: () => null } as unknown as EventTarget;
+
+    expect(resolveStoreCartOpener(unrelated, focused, body)).toBe(focused);
+    expect(resolveStoreCartOpener(null, focused, body)).toBe(focused);
+    expect(resolveStoreCartOpener(null, body, body)).toBeNull();
   });
 });

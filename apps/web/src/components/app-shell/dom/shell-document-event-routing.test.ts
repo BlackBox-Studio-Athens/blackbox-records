@@ -82,6 +82,7 @@ function createOptions(overrides: Partial<ShellDocumentEventRoutingOptions> = {}
     prefetchOverlayHref: vi.fn(),
     prefetchShellSectionHref: vi.fn(),
     readPlayerProvidersFromElement: vi.fn(() => []),
+    rememberClickTarget: vi.fn(),
     reopenPlayerModal: vi.fn(),
     reopenShellSheet: vi.fn(),
     restoreCachedShellPage: vi.fn(async () => true),
@@ -136,6 +137,18 @@ describe('shell document event routing', () => {
       }
     },
   );
+
+  it('remembers every click target, including clicks a control already handled', () => {
+    const options = createOptions();
+    connectShellDocumentEventRouting(options);
+    const target = { id: 'buy' } as unknown as EventTarget;
+    const event = createMouseEvent(target);
+    Object.assign(event, { defaultPrevented: true });
+
+    options.documentHandlers.click?.(event);
+
+    expect(options.rememberClickTarget).toHaveBeenCalledWith(target);
+  });
 
   it('toggles mobile navigation clicks', () => {
     const options = createOptions({

@@ -73,9 +73,12 @@ export async function waitForIsland(page: Page, component: string): Promise<void
   );
 }
 
-/** Waits until the persistent shell island has hydrated (scripts/measure-runtime-performance.ts). */
+/**
+ * Waits until the persistent shell has attached its document listeners. The island losing its ssr attribute is too
+ * early: React runs the effects that connect click routing after that, so a key press in between is lost.
+ */
 export async function waitForShell(page: Page): Promise<void> {
-  await waitForIsland(page, 'AppShellRoot');
+  await page.waitForSelector('html[data-app-shell-ready]', { state: 'attached' });
 }
 
 /** Marks the current document so a later check can prove no full reload happened. */
