@@ -131,7 +131,7 @@ const UAT_STATIC_SMOKE_SCENARIOS: Record<UatStaticSmokeScenarioName, UatStaticSm
     name: 'checkout_shell',
   },
   public_routes: {
-    description: 'Verify the public routes, sitemap, and robots output.',
+    description: 'Verify the public routes at desktop and phone widths, sitemap, and robots output.',
     name: 'public_routes',
   },
   image_transform: {
@@ -741,6 +741,8 @@ async function checkPublicRoutes(
     });
   }
 
+  routeChecks.push(...(await checkPhoneRoutes(page, options, paths)));
+
   const merchPath = '/store/merch/';
   const merchUrl = createRouteUrl(options.siteUrl, merchPath);
   const merchProbe = await probeSmokeRoute(page, merchUrl, options.timeoutMs);
@@ -789,6 +791,77 @@ async function checkPublicRoutes(
   routeChecks.push(await checkTextAsset(options, '/robots.txt', ['User-agent:', 'Sitemap:']));
 
   return routeChecks;
+}
+
+/** The section pages and one Store item, with real catalog content and transforms, as a phone renders them. */
+export function phoneSmokeRoutes(paths: RepresentativePaths): readonly string[] {
+  return ['/', '/releases/', '/artists/', '/news/', '/store/', paths.storeItem, '/services/', '/about/'];
+}
+
+/**
+ * Loads each phone route once in a 390x844 touch context and fails on sideways scrolling or a viewport meta that
+ * blocks zoom. Free-tier cost: 8 more documents per run, about 16 Worker and 8 Durable Object requests on top of
+ * the desktop pass (docs/cloudflare-free-tier.md, "Public delivery request budget").
+ */
+async function checkPhoneRoutes(
+  desktopPage: Page,
+  options: UatStaticSmokeOptions,
+  paths: RepresentativePaths,
+): Promise<UatStaticSmokeCheck[]> {
+  const browser = desktopPage.context().browser();
+  if (!browser) throw new Error('The phone pass needs the smoke browser.');
+  const context = await browser.newContext({
+    hasTouch: true,
+    isMobile: true,
+    locale: 'en-US',
+    viewport: { height: 844, width: 390 },
+  });
+  const checks: UatStaticSmokeCheck[] = [];
+  try {
+    const page = await context.newPage();
+    page.setDefaultTimeout(options.timeoutMs);
+    for (const routePath of phoneSmokeRoutes(paths)) {
+      const diagnostics = attachSmokePageDiagnostics(page);
+      const url = createRouteUrl(options.siteUrl, routePath);
+      const probe = await probeSmokeRoute(page, url, options.timeoutMs);
+      const issues = [...probe.issues];
+      if (!probe.status || probe.status >= 400) {
+        issues.push(`Expected ${routePath} at 390px to return HTTP 200; received ${probe.status ?? 'no response'}.`);
+      }
+      const layout = await page
+        .evaluate(() => ({
+          // clientWidth, not innerWidth: with isMobile the layout viewport widens to fit overflowing content.
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          viewportMeta: document.querySelector('meta[name="viewport"]')?.getAttribute('content') ?? null,
+        }))
+        .catch(() => null);
+      if (!layout) issues.push(`Could not read the ${routePath} layout at 390px.`);
+      else {
+        if (layout.overflow > 0) issues.push(`${routePath} scrolls ${layout.overflow}px sideways at 390px.`);
+        if (!/^width=device-width, initial-scale=1(\.0)?$/.test(layout.viewportMeta ?? '')) {
+          issues.push(`${routePath} has viewport meta ${JSON.stringify(layout.viewportMeta)}.`);
+        }
+      }
+      diagnostics.dispose();
+      issues.push(
+        ...diagnostics.consoleErrors.map((error) => `Console error at 390px: ${error}`),
+        ...diagnostics.pageErrors.map((error) => `Page error at 390px: ${error}`),
+      );
+      checks.push({
+        bodyTextSnippet: null,
+        contentType: null,
+        issues,
+        kind: 'page',
+        path: `${routePath} (390px)`,
+        status: probe.status,
+        title: probe.title,
+        url,
+      });
+    }
+  } finally {
+    await context.close();
+  }
+  return checks;
 }
 
 async function checkTextAsset(
