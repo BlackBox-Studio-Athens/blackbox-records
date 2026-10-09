@@ -8155,9 +8155,15 @@ html[data-store-coverflow-capable]
   position: relative;
 }
 
+/* A text control, not a status badge: its visible label is its accessible name. */
 .checkout-summary__editor summary {
   cursor: pointer;
   list-style: none;
+  color: var(--foreground);
+  font: 500 0.875rem/1.2 var(--font-sans);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  white-space: nowrap;
 }
 
 .checkout-summary__editor summary::-webkit-details-marker {

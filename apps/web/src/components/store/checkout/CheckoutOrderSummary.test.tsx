@@ -70,6 +70,13 @@ describe('CheckoutOrderSummary', () => {
     expect(markup).not.toContain('preorder-badge');
   });
 
+  it('names the quantity editor by its visible label', () => {
+    const markup = renderToStaticMarkup(<CheckoutOrderSummary {...summaryInput} />);
+
+    expect(markup).toContain(`<summary>${CHECKOUT_ORDER_SUMMARY_COPY.editQuantities}</summary>`);
+    expect(markup).not.toContain('aria-label="Edit cart quantities"');
+  });
+
   it('uses Veneer only for checkout line item names', () => {
     const markup = renderToStaticMarkup(<CheckoutOrderSummary {...summaryInput} />);
 

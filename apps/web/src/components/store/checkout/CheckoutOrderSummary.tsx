@@ -14,7 +14,6 @@ import {
   type CartLine,
 } from '@/components/store/cart/store-cart';
 import { CHECKOUT_CART_UPDATED_EVENT } from '@/components/store/cart/store-cart-events';
-import { cn } from '@/components/ui/utils';
 import { preorderChipText } from '@/platform/lib/preorder-estimate';
 
 export type CheckoutOrderSummaryInput = {
@@ -33,7 +32,7 @@ export type CheckoutOrderSummaryInput = {
   variantId?: string | undefined;
 };
 
-export const CHECKOUT_ORDER_SUMMARY_COPY = { title: 'Order Summary' } as const;
+export const CHECKOUT_ORDER_SUMMARY_COPY = { title: 'Order Summary', editQuantities: 'Edit quantities' } as const;
 
 export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
   const [cartLines, setCartLines] = useState<CartLine[]>([]);
@@ -88,12 +87,7 @@ export default function CheckoutOrderSummary(props: CheckoutOrderSummaryInput) {
         <div className="checkout-review__panel-heading">
           <h2 className="checkout-summary__heading">{CHECKOUT_ORDER_SUMMARY_COPY.title}</h2>
           <details className="checkout-summary__editor">
-            <summary
-              className={cn('checkout-review__badge', !props.canBuy && 'text-muted-foreground')}
-              aria-label="Edit cart quantities"
-            >
-              {props.availabilityLabel}
-            </summary>
+            <summary>{CHECKOUT_ORDER_SUMMARY_COPY.editQuantities}</summary>
             <div className="checkout-summary__quantities">
               {lines.length ? (
                 lines.map((line) => (
