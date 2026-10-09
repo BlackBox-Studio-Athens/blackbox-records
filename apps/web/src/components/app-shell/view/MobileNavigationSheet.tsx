@@ -51,7 +51,7 @@ export default function MobileNavigationSheet({
           document.querySelector<HTMLElement>(destination)?.focus({ preventScroll: true });
         }}
         side="right"
-        className="top-[var(--header-height)] bottom-auto h-[calc(100dvh-var(--header-height))] w-[min(92vw,320px)] overflow-y-auto border-l border-border/80 bg-background/95 pt-6"
+        className="top-[var(--header-height)] bottom-auto z-[1100] h-[calc(100dvh-var(--header-height))] w-[min(92vw,320px)] overflow-y-auto border-l border-border/80 bg-background/95 pt-6"
       >
         <div className="flex h-full flex-col gap-6">
           <SheetHeader>
