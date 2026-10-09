@@ -80,12 +80,45 @@ jobs:
       - name: Run the whole end-to-end suite
         env:
           BLACKBOX_E2E_PREVIEW: '1'
-        run: pnpm test:e2e --shard=${{ matrix.shard }}/4
+        # webkit-mobile runs in e2e-webkit, which installs WebKit and its system libraries.
+        run: pnpm test:e2e --shard=${{ matrix.shard }}/4 '--project=chromium-*' '--project=firefox-*'
       - name: Upload end-to-end evidence
         if: ${{ failure() }}
         uses: actions/upload-artifact@v7.0.1
         with:
           name: e2e-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.shard }}
+          path: .codex-artifacts/e2e
+          if-no-files-found: ignore
+          retention-days: 7
+  # The iOS Safari engine on the phone paths (webkit-mobile in playwright.config.ts), beside the shards. Not yet a
+  # promotion gate: scripts/release-candidate.mjs requires e2e (1) to e2e (4) only.
+  e2e-webkit:
+    concurrency:
+      group: ci-${{ github.ref }}-e2e-webkit
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - *checkout
+      - *pnpm
+      - *node
+      - *install
+      - name: Install WebKit and its system libraries
+        uses: ./.github/actions/playwright-browsers
+        timeout-minutes: 8
+        with:
+          browsers: webkit
+      - name: Build Local production fixture for end-to-end tests
+        run: pnpm build:web
+      - name: Run the WebKit phone project
+        env:
+          BLACKBOX_E2E_PREVIEW: '1'
+        run: pnpm test:e2e --project=webkit-mobile
+      - name: Upload WebKit end-to-end evidence
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: e2e-${{ github.run_id }}-${{ github.run_attempt }}-webkit
           path: .codex-artifacts/e2e
           if-no-files-found: ignore
           retention-days: 7

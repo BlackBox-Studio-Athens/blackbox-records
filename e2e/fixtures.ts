@@ -30,6 +30,10 @@ const devServerHotReloadSocket =
 // Firefox logs a font download that a resize or navigation cancelled (NS_BINDING_ABORTED, 0x804B0002) as an error;
 // a missing or broken font reports another status and still fails.
 const firefoxCancelledFont = /downloadable font: download failed .*status=2152398850 /;
+// WebKit reports a same-origin fetch that a navigation cancelled as an access-control failure; a cross-origin
+// (real CORS) failure names another host and still fails.
+const webkitCancelledLocalFetch =
+  /^Fetch API cannot load http:\/\/(127\.0\.0\.1|localhost):\d+\/\S* due to access control checks\./;
 
 export const test = base.extend({
   page: async ({ page }, use) => {
@@ -55,9 +59,13 @@ export const test = base.extend({
     const diagnostics = attachSmokePageDiagnostics(page);
     await use(page);
     diagnostics.dispose();
-    expect(diagnostics.pageErrors, 'page errors').toEqual([]);
+    const pageErrors = diagnostics.pageErrors.filter((message) => !webkitCancelledLocalFetch.test(message));
+    expect(pageErrors, 'page errors').toEqual([]);
     const consoleErrors = diagnostics.consoleErrors.filter(
-      (message) => !devServerHotReloadSocket.test(message) && !firefoxCancelledFont.test(message),
+      (message) =>
+        !devServerHotReloadSocket.test(message) &&
+        !firefoxCancelledFont.test(message) &&
+        !webkitCancelledLocalFetch.test(message),
     );
     expect(consoleErrors, 'console errors').toEqual([]);
   },

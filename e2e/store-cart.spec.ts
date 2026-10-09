@@ -23,6 +23,23 @@ async function swipeUp(cdp: CDPSession, x: number, y: number, distance: number) 
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 }
 
+// WebKit has no scroll anchoring: cards above a far Buy leave their 520px placeholder height as they render and push it
+// away, so the jump repeats until two polls (cards render in between) land the button at the same place.
+async function scrollIntoSettledView(locator: Locator) {
+  let previousTop = NaN;
+  await expect
+    .poll(async () => {
+      const top = await locator.evaluate((element) => {
+        element.scrollIntoView({ block: 'center' });
+        return element.getBoundingClientRect().top;
+      });
+      const settled = Math.abs(top - previousTop) < 1;
+      previousTop = top;
+      return settled;
+    })
+    .toBe(true);
+}
+
 async function expectCartActionsVisible(drawer: Locator, hasCheckout = true) {
   const close = drawer.getByRole('button', { name: 'Close cart', exact: true });
   await expect(close).toBeInViewport({ ratio: 1 });
@@ -109,6 +126,9 @@ for (const viewport of [
     const box = (await scroller.boundingBox())!;
     const cdp = browserName === 'chromium' ? await page.context().newCDPSession(page) : null;
     if (cdp) await swipeUp(cdp, box.x + box.width / 2, box.y + box.height / 2, Math.min(200, box.height / 2));
+    // Mobile WebKit takes neither wheel input nor synthetic touch scrolling; it scrolls the drawer directly, so the
+    // gesture's routing to the drawer stays unverified there.
+    else if (browserName === 'webkit') await scroller.evaluate((element) => element.scrollBy(0, 500));
     else {
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
       await page.mouse.wheel(0, 500);
@@ -149,6 +169,7 @@ for (const viewport of [
     await expect(drawer).toBeHidden();
     await expect(trigger).toBeFocused();
     if (cdp) await swipeUp(cdp, viewport.width / 2, viewport.height / 2, 200);
+    else if (browserName === 'webkit') await page.evaluate(() => window.scrollBy(0, 500));
     else {
       await page.mouse.move(viewport.width / 2, viewport.height / 2);
       await page.mouse.wheel(0, 500);
@@ -268,14 +289,16 @@ test('Buy on a Store card reopens a three-item cart after every dismissal and pr
   await expect(drawer).toBeHidden();
   await expect(buy).toBeFocused();
   const secondBuy = page.locator(`[data-store-card-buy][data-store-item-slug="${secondSlug}"]`);
-  await secondBuy.click();
+  await scrollIntoSettledView(secondBuy);
+  await press(secondBuy, hasTouch);
   await expect(drawer.locator('[data-store-cart-line-item]')).toHaveCount(2);
   await expectCartActionsVisible(drawer);
   await drawer.getByRole('button', { name: 'Continue Shopping' }).click();
   await expect(drawer).toBeHidden();
   await expect(secondBuy).toBeFocused();
   const thirdBuy = page.locator(`[data-store-card-buy][data-store-item-slug="${thirdSlug}"]`);
-  await thirdBuy.click();
+  await scrollIntoSettledView(thirdBuy);
+  await press(thirdBuy, hasTouch);
   await expect(drawer.locator('[data-store-cart-line-item]')).toHaveCount(3);
   let quantity = 1;
   let opener = thirdBuy;
@@ -295,8 +318,13 @@ test('Buy on a Store card reopens a three-item cart after every dismissal and pr
     await expect(opener).toBeFocused();
     expect(await originalIframe!.evaluate((element) => element.isConnected)).toBe(true);
     const previousScroll = await page.evaluate(() => window.scrollY);
-    await page.mouse.move(150, 250);
-    await page.mouse.wheel(0, previousScroll > 0 ? -300 : 300);
+    const scrollDelta = previousScroll > 0 ? -300 : 300;
+    // Mobile WebKit has no mouse wheel; a script scroll still proves the lock is released.
+    if (browserName === 'webkit') await page.evaluate((delta) => window.scrollBy(0, delta), scrollDelta);
+    else {
+      await page.mouse.move(150, 250);
+      await page.mouse.wheel(0, scrollDelta);
+    }
     await expect.poll(() => page.evaluate(() => window.scrollY)).not.toBe(previousScroll);
     await expect(buy).toHaveText('Buy', { timeout: 6000 });
     await buy.evaluate((element) => element.scrollIntoView({ block: 'center' }));
@@ -537,6 +565,8 @@ test('the header cart control appears only with items or in the store', async ({
   await page.goto('.');
   await waitForShell(page);
   await expect(page.locator('[data-store-cart-trigger]')).toHaveCount(0);
+  // Leaving while Home still imports its lazy islands makes WebKit log the cancelled import as a React error.
+  await page.waitForLoadState('networkidle');
 
   await page.goto('store/');
   await waitForShell(page);
@@ -748,7 +778,10 @@ for (const width of [440, 390]) {
   });
 }
 
-test('paid pre-order return fixture keeps its rail and keyboard action usable at 390px', async ({ page }, testInfo) => {
+test('paid pre-order return fixture keeps its rail and keyboard action usable at 390px', async ({
+  page,
+  browserName,
+}, testInfo) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const consoleIssues: string[] = [];
   page.on('console', (message) => {
@@ -800,12 +833,15 @@ test('paid pre-order return fixture keeps its rail and keyboard action usable at
   }
 
   const shopping = screen.getByRole('link', { name: /continue shopping/i });
-  await shopping.press('Shift+Tab');
-  await page.keyboard.press('Tab');
-  await expect(shopping).toBeFocused();
-  await expect(shopping).toBeInViewport({ ratio: 1 });
-  expect(await shopping.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
-  expect(await shopping.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe('solid');
+  // iOS Safari's Tab skips links unless Full Keyboard Access is on, so the keyboard ring is checked elsewhere.
+  if (browserName !== 'webkit') {
+    await shopping.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expect(shopping).toBeFocused();
+    await expect(shopping).toBeInViewport({ ratio: 1 });
+    expect(await shopping.evaluate((element) => element.matches(':focus-visible'))).toBe(true);
+    expect(await shopping.evaluate((element) => getComputedStyle(element).outlineStyle)).toBe('solid');
+  }
   expect(consoleIssues).toEqual([]);
   await page.screenshot({
     path: `.codex-artifacts/preorders/paid-return-390fixture-${testInfo.project.name}.png`,

@@ -316,7 +316,7 @@ test('Escape closes the Menu and returns focus to its button', async ({ page, is
   await expect(menuButton).toHaveAttribute('aria-expanded', 'false');
 });
 
-test('a warmed Menu opens in the tap task', async ({ page, isMobile }) => {
+test('a warmed Menu opens in the tap task', async ({ page, isMobile, browserName }) => {
   test.skip(!isMobile, 'The Menu opens only below the desktop breakpoint.');
   const menuWarmed = watchSurfaceWarmup(page, 'MobileNavigationSheet');
   await page.goto('about/');
@@ -334,10 +334,13 @@ test('a warmed Menu opens in the tap task', async ({ page, isMobile }) => {
   // Coarse pointers use native scrolling; the shell owns the viewport lock before the sheet mounts.
   await expect(page.locator('body')).toHaveClass(/\bis-shell-scroll-locked\b/);
   await expect(page.locator('html')).not.toHaveClass(/\blenis\b/);
-  const scrollY = await page.evaluate(() => window.scrollY);
-  await page.mouse.wheel(0, 500);
-  await page.waitForTimeout(150);
-  expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+  // Mobile WebKit has no wheel input; the lock class above is its check.
+  if (browserName !== 'webkit') {
+    const scrollY = await page.evaluate(() => window.scrollY);
+    await page.mouse.wheel(0, 500);
+    await page.waitForTimeout(150);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
+  }
   await page.keyboard.press('Escape');
   await expect(page.locator('body')).not.toHaveClass(/\bis-shell-scroll-locked\b/);
 });
@@ -489,7 +492,8 @@ test('Back returns a shell section to the offset it was left at; new navigation 
   test.skip(!isMobile, 'Leaves through the phone Menu.');
   await page.goto('releases/');
   await waitForShell(page);
-  await page.evaluate(() => window.scrollTo(0, 900));
+  // Instant: WebKit honours the root's smooth scrolling, and a mid-animation offset is not where the page was left.
+  await page.evaluate(() => window.scrollTo({ top: 900, behavior: 'instant' }));
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0);
   const leftAt = await page.evaluate(() => window.scrollY);
 
