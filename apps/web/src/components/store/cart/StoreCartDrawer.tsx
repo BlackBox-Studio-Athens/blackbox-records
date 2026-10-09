@@ -263,7 +263,7 @@ export function StoreCartDrawerPanel({
                           <div>
                             <p className="store-cart-drawer__price">{getCartLineTotalDisplay(line)}</p>
                             {line.quantity > 1 && (
-                              <p className="text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                              <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                                 <span className="font-display">{line.priceDisplay}</span> each
                               </p>
                             )}

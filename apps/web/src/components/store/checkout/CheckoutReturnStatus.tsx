@@ -170,7 +170,7 @@ function CheckoutReturnPendingStatus() {
   return (
     <section className="mx-auto max-w-4xl space-y-5" data-checkout-return-status data-checkout-return-pending>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{view.kicker}</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{view.kicker}</p>
         <CheckoutReturnBadge view={view} />
       </div>
       <LoadingStateBlock
@@ -270,7 +270,7 @@ export function CheckoutSuccessScreen({
   return (
     <section className="mx-auto max-w-5xl space-y-6" data-checkout-return-status data-checkout-success-screen>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{view.kicker}</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{view.kicker}</p>
         <CheckoutReturnBadge view={view} />
       </div>
 
@@ -333,7 +333,7 @@ function CheckoutSuccessNextSteps({ view }: { view: CheckoutReturnStatusView }) 
               )}
             </div>
             <div className="min-w-0 border-b border-border/55 pb-6 last:border-b-0">
-              <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{item.label}</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{item.label}</p>
               <p className="mt-2 text-sm leading-6 text-foreground">{item.value}</p>
             </div>
           </li>
@@ -369,7 +369,7 @@ export function CheckoutReturnStatusScreen({
   return (
     <section className="mx-auto max-w-4xl space-y-5" data-checkout-return-status>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{view.kicker}</p>
+        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">{view.kicker}</p>
         <CheckoutReturnBadge view={view} />
       </div>
 
@@ -420,7 +420,7 @@ function CheckoutReturnBadge({ view }: { view: CheckoutReturnStatusView }) {
   return (
     <span
       className={cn(
-        'inline-flex border px-2 py-1 text-[10px] uppercase tracking-[0.18em]',
+        'inline-flex border px-2 py-1 text-xs uppercase tracking-[0.18em]',
         view.tone === 'success' && 'border-emerald-300/40 bg-emerald-300/10 text-emerald-100',
         view.tone === 'attention' && 'border-foreground/25 bg-background/70 text-foreground',
         view.tone === 'error' && 'border-amber-300/45 bg-amber-300/10 text-amber-100',
@@ -437,7 +437,7 @@ function CheckoutShippingLockerRecap({ view }: { view: CheckoutReturnStatusView 
 
   return (
     <div className="mb-5 grid gap-2 border border-border/70 bg-background/55 p-4" data-checkout-return-locker-recap>
-      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Shipping</p>
+      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Shipping</p>
       <p className="text-sm font-medium leading-6 text-foreground">{view.shippingLocker.label}</p>
       <p className="text-xs leading-5 text-muted-foreground">{view.shippingLocker.detail}</p>
     </div>

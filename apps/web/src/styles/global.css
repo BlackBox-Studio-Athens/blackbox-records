@@ -598,7 +598,7 @@ body {
   }
 
   .services-page-intro__eyebrow {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     letter-spacing: 0.22em;
     text-transform: uppercase;
     color: var(--muted-foreground);
@@ -1044,7 +1044,7 @@ body {
     align-items: center;
     justify-content: space-between;
     gap: 0.7rem;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.06em;
     line-height: 1.3;
   }
@@ -1174,7 +1174,7 @@ body {
   .store-coverflow-summary {
     color: var(--muted-foreground);
     font-family: var(--font-mono);
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     letter-spacing: 0.12em;
     line-height: 1.45;
     text-transform: uppercase;
@@ -1415,7 +1415,7 @@ body {
 
   .artist-release-stat__label {
     color: #a9a9a9;
-    font-size: 0.54rem;
+    font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.28em;
     text-transform: uppercase;
@@ -1443,7 +1443,7 @@ body {
 
   .artist-latest-teaser__label {
     color: #a7a7a7;
-    font-size: 0.58rem;
+    font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.22em;
     text-transform: uppercase;
@@ -1465,7 +1465,7 @@ body {
 
   .artist-latest-teaser__meta {
     color: #949494;
-    font-size: 0.64rem;
+    font-size: 0.75rem;
     line-height: 1.3;
     letter-spacing: 0.22em;
     text-transform: uppercase;
@@ -1522,7 +1522,7 @@ body {
 
   .artist-detail-section-label {
     color: #a7a7a7;
-    font-size: 0.64rem;
+    font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.24em;
     text-transform: uppercase;
@@ -1536,7 +1536,7 @@ body {
 
   .artist-detail-kicker {
     color: #bdbdbd;
-    font-size: 0.64rem;
+    font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.22em;
     text-transform: uppercase;
@@ -2167,7 +2167,7 @@ body {
     padding: 0.38rem 0.5rem 0.32rem;
     color: rgba(245, 245, 245, 0.92);
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 600;
     letter-spacing: 0.15em;
     line-height: 1;
@@ -2179,7 +2179,7 @@ body {
   .releases-latest-feature__upcoming-formats {
     margin: 0;
     color: var(--muted-foreground);
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     letter-spacing: 0.12em;
     line-height: 1.2;
     text-transform: uppercase;
@@ -2595,7 +2595,7 @@ body {
   .release-card-year-text {
     display: block;
     color: var(--muted-foreground);
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.18em;
     text-transform: uppercase;
@@ -2606,7 +2606,7 @@ body {
     display: block;
     min-width: 7rem;
     text-align: center;
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.16em;
     white-space: nowrap;
@@ -2815,7 +2815,7 @@ body {
   }
 
   .app-shell-content-overlay__eyebrow {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
     line-height: 1;
     letter-spacing: 0.24em;
     text-transform: uppercase;
@@ -3707,13 +3707,11 @@ body.is-app-shell-overlay-open {
   }
 
   .site-footer-heading {
-    font-size: 0.68rem;
     letter-spacing: 0.24em;
   }
 
   .site-footer-meta {
     gap: 0.55rem;
-    font-size: 0.6rem;
     letter-spacing: 0.05em;
   }
 
@@ -4199,7 +4197,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 
   .site-footer-meta {
     gap: 1rem;
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     letter-spacing: 0.08em;
   }
 
@@ -5364,7 +5362,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   border: 1px solid color-mix(in srgb, var(--muted-foreground) 55%, transparent);
   padding: 0.2rem 0.35rem;
   color: var(--foreground);
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -5438,7 +5436,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 .availability-alert__label {
   color: var(--muted-foreground);
   font-family: var(--font-sans);
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
@@ -5561,7 +5559,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   border: 1px solid var(--preorder-accent);
   padding: 0.2rem 0.35rem;
   color: var(--preorder-accent-active);
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   line-height: 1.2;
 }
 
@@ -5587,7 +5585,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 .preorder-badge {
   display: inline-flex;
   align-items: center;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
 }
 
 /* A non-buyable edition's action is a mono label held in brackets that close in while it is engaged. The brackets
@@ -6124,7 +6122,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 .store-cart-drawer__description {
   margin: 10px 0 0;
   color: var(--muted-foreground);
-  font: 500 0.6rem/1.3 var(--font-sans);
+  font: 500 0.8125rem/1.4 var(--font-sans);
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -6185,7 +6183,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 .store-cart-drawer__metadata {
   margin: 0;
   color: var(--muted-foreground);
-  font: 500 0.62rem/1.3 var(--font-sans);
+  font: 500 0.8125rem/1.35 var(--font-sans);
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
@@ -6241,7 +6239,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   padding: 0.2rem 0.35rem;
   background: transparent;
   color: var(--foreground);
-  font: 400 0.625rem/1.2 var(--font-sans);
+  font: 400 0.75rem/1.2 var(--font-sans);
   letter-spacing: normal;
   text-transform: none;
   white-space: normal;
@@ -6289,7 +6287,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 
 .store-cart-drawer__summary .preorder-notice h3 {
   color: var(--foreground);
-  font: 500 0.72rem/1.3 var(--font-sans);
+  font: 500 0.75rem/1.3 var(--font-sans);
   letter-spacing: 0.22em;
 }
 
@@ -6304,7 +6302,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   gap: 0.45rem;
   border-top: 2px solid var(--foreground);
   padding-top: 0.55rem;
-  font: 500 0.625rem/1.35 var(--font-sans);
+  font: 500 0.75rem/1.35 var(--font-sans);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -6867,7 +6865,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 .home-preorders__clips-label {
   margin: 0;
   color: var(--muted-foreground);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   line-height: 1.5;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -6936,7 +6934,7 @@ button.home-preorders__clip {
 
 .home-preorders__facts dt {
   color: var(--muted-foreground);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   line-height: 1.5;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -7606,7 +7604,7 @@ html[data-store-coverflow-capable]
     flex-basis: 100%;
     padding-block: 0;
     color: var(--muted-foreground);
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 500;
     letter-spacing: 0.22em;
     text-transform: uppercase;
@@ -7850,7 +7848,7 @@ html[data-store-coverflow-capable]
   padding: 0.3rem 0.5rem;
   background: transparent;
   color: var(--foreground);
-  font: 500 0.625rem/1.2 var(--font-sans);
+  font: 500 0.75rem/1.2 var(--font-sans);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -7867,7 +7865,7 @@ html[data-store-coverflow-capable]
 
 .checkout-review__panel .preorder-notice h3 {
   color: var(--foreground);
-  font: 500 0.72rem/1.3 var(--font-sans);
+  font: 500 0.75rem/1.3 var(--font-sans);
   letter-spacing: 0.22em;
 }
 
@@ -7881,7 +7879,7 @@ html[data-store-coverflow-capable]
   gap: 0.45rem;
   border-top: 2px solid var(--foreground);
   padding-top: 0.55rem;
-  font: 500 0.625rem/1.35 var(--font-sans);
+  font: 500 0.75rem/1.35 var(--font-sans);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -8011,7 +8009,7 @@ html[data-store-coverflow-capable]
 .checkout-summary__heading {
   margin: 0;
   color: var(--muted-foreground);
-  font: 500 0.72rem/1.3 var(--font-sans);
+  font: 500 0.75rem/1.3 var(--font-sans);
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
@@ -8068,7 +8066,7 @@ html[data-store-coverflow-capable]
 .checkout-summary__metadata {
   margin: 0;
   color: var(--muted-foreground);
-  font: 500 0.62rem/1.3 var(--font-sans);
+  font: 500 0.8125rem/1.35 var(--font-sans);
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
@@ -8087,7 +8085,7 @@ html[data-store-coverflow-capable]
   padding: 2px 5px;
   color: var(--foreground);
   background: transparent;
-  font: 400 0.625rem/1.2 var(--font-sans);
+  font: 400 0.75rem/1.2 var(--font-sans);
   letter-spacing: 0;
   white-space: normal;
   text-transform: none;
@@ -8205,7 +8203,7 @@ html[data-store-coverflow-capable]
 
 .checkout-return__label {
   margin: 0;
-  font: 500 0.72rem/1.3 var(--font-sans);
+  font: 500 0.75rem/1.3 var(--font-sans);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--muted-foreground);
@@ -8214,7 +8212,7 @@ html[data-store-coverflow-capable]
 .checkout-return__paid {
   border: 1px solid var(--border);
   padding: 0.3rem 0.5rem;
-  font: 500 0.625rem/1.2 var(--font-sans);
+  font: 500 0.75rem/1.2 var(--font-sans);
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -8267,7 +8265,7 @@ html[data-store-coverflow-capable]
 
 .checkout-return__facts dt {
   min-width: 0;
-  font: 500 0.68rem/1.3 var(--font-sans);
+  font: 500 0.75rem/1.3 var(--font-sans);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--muted-foreground);
@@ -8342,7 +8340,7 @@ html[data-store-coverflow-capable]
   background-color: color-mix(in oklch, var(--foreground) 8%, transparent);
   color: var(--foreground);
   font-family: var(--font-mono);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   line-height: 1.4;

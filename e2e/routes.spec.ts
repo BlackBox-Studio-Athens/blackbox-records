@@ -24,6 +24,24 @@ for (const [route, expectedText] of publicSmokeRoutes(localRepresentativePaths))
             .map((control) => control.getAttribute('aria-label') ?? control.getAttribute('name') ?? control.className),
         );
       expect(smallControls).toEqual([]);
+
+      // Phone label and meta text keeps a 12px floor; desktop sizes are unchanged.
+      const smallText = await page.locator('main[data-app-shell-main], footer').evaluateAll((roots) =>
+        roots.flatMap((root) => {
+          const found: string[] = [];
+          const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+          for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            const parent = node.parentElement;
+            const text = node.textContent?.trim();
+            if (!parent || !text || parent.closest('svg')) continue;
+            if (!parent.checkVisibility({ visibilityProperty: true, opacityProperty: true })) continue;
+            const size = Number.parseFloat(getComputedStyle(parent).fontSize);
+            if (size < 12) found.push(`${size}px ${parent.className || parent.tagName}: ${text.slice(0, 40)}`);
+          }
+          return found;
+        }),
+      );
+      expect(smallText).toEqual([]);
     }
   });
 }
