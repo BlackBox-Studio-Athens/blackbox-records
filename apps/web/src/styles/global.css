@@ -4700,7 +4700,14 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   background: var(--secondary);
   padding-inline: 0.75rem;
   color: var(--foreground);
-  font-size: 0.875rem;
+  /* 16px on phones: iOS Safari zooms the page into smaller text fields. */
+  font-size: 1rem;
+}
+
+@media (min-width: 48rem) {
+  .store-artists-find {
+    font-size: 0.875rem;
+  }
 }
 
 .store-artists-find::placeholder {
@@ -4770,14 +4777,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   align-items: center;
   gap: 0.625rem;
   min-height: 2.75rem;
-  /* 16px on phones: iOS Safari zooms the page into smaller text fields. */
-  font-size: 1rem;
-}
-
-@media (min-width: 48rem) {
-  .store-artists-find {
-    font-size: 0.875rem;
-  }
+  font-size: 0.875rem;
   overflow-wrap: anywhere;
   cursor: pointer;
 }
