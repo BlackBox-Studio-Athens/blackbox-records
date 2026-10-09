@@ -90,3 +90,14 @@ describe('touch ergonomics', () => {
     expect(ruleBody(`${scope} .store-item-card__image-frame`, media)).toMatch(/flex:\s*none/);
   });
 });
+
+describe('Store layout on phones', () => {
+  const phone = '@media (max-width: 63.99rem)';
+
+  it('drops the empty browse pane space above the first Store card row', () => {
+    expect(ruleBody('.store-browse-top', phone)).toMatch(/display:\s*none/);
+    expect(ruleBody('.store-browse-content', phone)).toMatch(/padding-block:\s*0/);
+    expect(ruleBody('.store-browse-layout', phone)).toMatch(/gap:\s*0\.75rem/);
+    expect(ruleBody('.store-browse-pane > .store-format-links', phone)).toMatch(/margin-bottom:\s*0/);
+  });
+});

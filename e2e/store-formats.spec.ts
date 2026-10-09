@@ -778,3 +778,17 @@ test('Coverflow steps settle on CSS positions and a first typo query waits for t
   await expect(root.locator('[data-distro-search-item]:visible h2', { hasText: title }).first()).toBeVisible();
   await expect(page.locator('.store-empty-results')).toBeHidden();
 });
+
+test('phone Store shows the first card artwork in the first viewport @phone', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('store/');
+  await waitForShell(page);
+  await expect(page.getByRole('navigation', { name: 'Browse Distro formats' })).toBeVisible();
+  await expect(page.locator('.store-browse-top')).toBeHidden();
+  const top = await page
+    .locator('.store-item-card--listing')
+    .first()
+    .evaluate((card) => card.getBoundingClientRect().top);
+  // Measured 665 (was 761): the first row's artwork fits above the fold.
+  expect(top).toBeLessThan(844 - 150);
+});

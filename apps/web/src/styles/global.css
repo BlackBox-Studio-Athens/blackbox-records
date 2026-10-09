@@ -4886,6 +4886,26 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   text-decoration: underline;
 }
 
+/* Below the sticky desktop pane the Top link points at the visible page top and the artist host is empty,
+   so neither takes room above the first card row. The host stays rendered: it holds the Artists sheet. */
+@media (max-width: 63.99rem) {
+  .store-purchase-note {
+    padding-block: 0.5rem;
+  }
+
+  .store-browse-layout {
+    gap: 0.75rem;
+  }
+
+  .store-browse-content {
+    padding-block: 0;
+  }
+
+  .store-browse-top {
+    display: none;
+  }
+}
+
 .store-artists legend,
 .store-format-links h2 {
   font-size: 1rem;
@@ -7617,6 +7637,10 @@ html[data-store-coverflow-capable]
     flex-wrap: wrap;
     gap: 0.5rem;
     border-top: 0;
+  }
+
+  .store-browse-pane > .store-format-links {
+    margin-bottom: 0;
   }
 
   .store-format-links h2 {
