@@ -10,7 +10,7 @@ export function getStaticPaths() {
 }
 
 const information = Astro.props.information ?? getPurchaseInformation();
-if (!information || Astro.params.page) return new Response('Not found', { status: 404 });
+if (!information || Astro.params.page) return new Response(null, { status: 404 }); // null body: Astro renders the 404 page
 ---
 
 <SiteLayout

@@ -3,6 +3,9 @@ import '@/styles/fonts.css';
 import interFontUrl from '@/assets/fonts/ui/inter-latin.woff2?url';
 import bebasNeueFontUrl from '@/assets/fonts/ui/bebas-neue-latin.woff2?url';
 import { createProjectRelativeUrl } from '@/platform/config/site';
+
+// Hosted builds emit 404.html; the Pages gateway serves it for unknown document paths without a renderer call.
+export const prerender = true;
 ---
 
 <!doctype html>

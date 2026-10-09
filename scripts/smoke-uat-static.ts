@@ -459,6 +459,7 @@ async function checkPublicAssets(
   };
   const checks: UatStaticSmokeCheck[] = [];
   checks.push(await checkBinaryAsset(options, '/favicon.svg', 'image/'));
+  checks.push(await checkNotFoundDocument(options));
   checks.push(await checkBinaryAsset(options, findPublicMediaPath(await read('/'), options.siteUrl), 'image/'));
   for (const section of ['artist', 'release', 'storeItem', 'news'] as const) {
     const mediaPath = await findSectionMediaPath(section, candidates[section], read, options.siteUrl);
@@ -830,6 +831,28 @@ async function checkTextAsset(
     kind: 'text-asset',
     path: routePath,
     status: response?.status ?? null,
+    title: null,
+    url,
+  };
+}
+
+async function checkNotFoundDocument(options: UatStaticSmokeOptions): Promise<UatStaticSmokeCheck> {
+  const path = '/smoke-missing-page/';
+  const url = createRouteUrl(options.siteUrl, path);
+  const response = await fetchSmokeResponse(url, options.timeoutMs, { Accept: 'text/html' });
+  const contentType = response.headers.get('content-type');
+  const body = await response.text();
+  const issues: string[] = [];
+  if (response.status !== 404) issues.push(`Expected ${path} to return HTTP 404; received ${response.status}.`);
+  if (!contentType?.startsWith('text/html') || !body.includes('name="viewport"'))
+    issues.push(`Expected ${path} to return the HTML 404 page; received ${contentType ?? 'unknown'}.`);
+  return {
+    bodyTextSnippet: null,
+    contentType,
+    issues,
+    kind: 'page',
+    path,
+    status: response.status,
     title: null,
     url,
   };

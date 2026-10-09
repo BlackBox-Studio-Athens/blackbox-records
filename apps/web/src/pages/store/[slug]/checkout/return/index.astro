@@ -14,7 +14,7 @@ interface Props {
 }
 
 const entry = Astro.props.entry ?? (await getStorePageEntryBySlug(Astro.params.slug ?? ''));
-if (!entry) return new Response('Not found', { status: 404 });
+if (!entry) return new Response(null, { status: 404 }); // null body: Astro renders the 404 page
 const { storeItem } = entry;
 const cartReturnPath = createProjectRelativeUrl('/store/checkout/return/');
 ---

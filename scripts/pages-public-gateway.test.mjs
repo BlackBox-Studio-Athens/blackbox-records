@@ -113,3 +113,48 @@ test('cold and warm browser request traces spend one gateway and at most one ren
     assert.equal(forwarded.length - before, 1);
   }
 });
+
+test('unknown document paths get the static 404 page with one asset read and no renderer call', async () => {
+  const { env, forwarded } = captureEnv();
+  const assetReads = [];
+  env.ASSETS.fetch = async (request) => {
+    assetReads.push(new URL(request.url).pathname);
+    return new Response('<!doctype html><title>404</title>', {
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    });
+  };
+  const html = { Accept: 'text/html,application/xhtml+xml,*/*;q=0.8' };
+  const page = await gateway.fetch(new Request('https://site.invalid/artistz/?fbclid=1', { headers: html }), env);
+  assert.equal(page.status, 404);
+  assert.equal(page.headers.get('Content-Type'), 'text/html; charset=utf-8');
+  assert.equal(page.headers.get('Cache-Control'), 'no-store');
+  assert.equal(await page.text(), '<!doctype html><title>404</title>');
+  const head = await gateway.fetch(new Request('https://site.invalid/old/', { method: 'HEAD', headers: html }), env);
+  assert.equal(head.status, 404);
+  assert.equal(head.body, null);
+  assert.deepEqual(assetReads, ['/404', '/404']);
+
+  for (const [path, headers] of [
+    ['/wp-login.php', { Accept: '*/*' }],
+    ['/api/store/items', html],
+    ['/_emdash/admin', html],
+  ]) {
+    const response = await gateway.fetch(new Request(`https://site.invalid${path}`, { headers }), env);
+    assert.equal(response.status, 404);
+    assert.equal(await response.text(), 'Not found');
+  }
+  assert.equal(assetReads.length, 2);
+  assert.equal(forwarded.length, 0);
+});
+
+test('a missing 404 asset falls back to the plain-text 404', async () => {
+  const { env } = captureEnv();
+  env.ASSETS.fetch = async () => new Response('', { status: 404 });
+  const response = await gateway.fetch(
+    new Request('https://site.invalid/missing/', { headers: { Accept: 'text/html' } }),
+    env,
+  );
+  assert.equal(response.status, 404);
+  assert.equal(response.headers.get('Cache-Control'), 'no-store');
+  assert.equal(await response.text(), 'Not found');
+});

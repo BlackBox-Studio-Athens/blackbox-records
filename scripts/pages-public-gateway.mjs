@@ -9,6 +9,20 @@ export const publicGatewayRoutes = {
 export function createPublicGateway(patterns) {
   const routes = patterns.map((pattern) => new RegExp(pattern));
   const notFound = () => new Response('Not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+  // Documents get the prerendered 404.html: one Pages asset read, no renderer call. Other requests stay plain text.
+  const notFoundDocument = async (request, env) => {
+    if (!request.headers.get('Accept')?.includes('text/html')) return notFound();
+    const page = await env.ASSETS.fetch(new Request(new URL('/404', request.url)));
+    const type = page.headers.get('Content-Type') ?? '';
+    if (!type.startsWith('text/html')) {
+      await page.body?.cancel();
+      return notFound();
+    }
+    return new Response(request.method === 'HEAD' ? null : page.body, {
+      status: 404,
+      headers: { 'Content-Type': type, 'Cache-Control': 'no-store' },
+    });
+  };
   return {
     async fetch(request, env) {
       const path = new URL(request.url).pathname;
@@ -22,7 +36,7 @@ export function createPublicGateway(patterns) {
         !/^\/media\/content\/(?:[a-f0-9]{64}\/)?[a-f0-9]{64}$/.test(path) &&
         !['/release.json', '/content-version.json'].includes(path)
       )
-        return notFound();
+        return notFoundDocument(request, env);
       const headers = new Headers({ Accept: request.headers.get('Accept') ?? '*/*' });
       const etag = request.headers.get('If-None-Match');
       if (etag !== null) headers.set('If-None-Match', etag);

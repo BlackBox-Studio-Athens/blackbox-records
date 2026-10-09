@@ -13,7 +13,7 @@ interface Props {
 }
 
 const artist = Astro.props.artist ?? (await getEntry('artists', Astro.params.slug ?? ''));
-if (!artist) return new Response('Not found', { status: 404 });
+if (!artist) return new Response(null, { status: 404 }); // null body: Astro renders the 404 page
 const artistName = artist.data.title || 'Artist';
 ---
 
