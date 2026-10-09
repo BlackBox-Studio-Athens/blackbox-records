@@ -500,6 +500,55 @@ describe('CheckoutReturnStatus', () => {
     }
   });
 
+  it('keeps Checking through early read failures, then offers Refresh rather than Retry Checkout', async () => {
+    vi.useFakeTimers();
+    const api = { readCheckoutState: vi.fn().mockRejectedValue(new Error('Connection problem.')) };
+    const onState = vi.fn();
+    const connection = connectCheckoutReturnStatus(api, 'cs_test_123', onState);
+    try {
+      await vi.advanceTimersByTimeAsync(16999);
+      expect(api.readCheckoutState).toHaveBeenCalledTimes(3);
+      expect(onState).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(api.readCheckoutState).toHaveBeenCalledTimes(4);
+      const view = createCheckoutReturnStatusView(onState.mock.lastCall![0]);
+      expect(view.supportOnly).toBe(true);
+      const html = renderToStaticMarkup(
+        <CheckoutReturnStatusScreen checkoutPath="/checkout/" storePath="/store/" view={view} />,
+      );
+      expect(html).toContain('Refresh status');
+      expect(html).not.toContain(CHECKOUT_RETURN_ACTION_COPY.retryCheckout);
+
+      api.readCheckoutState.mockResolvedValueOnce({ ...checkoutState, paymentStatus: 'paid', orderStatus: 'paid' });
+      connection.refresh();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(createCheckoutReturnStatusView(onState.mock.lastCall![0]).isFinal).toBe(true);
+    } finally {
+      connection.stop();
+      vi.useRealTimers();
+    }
+  });
+
+  it('recovers silently when a retry after an early failure succeeds', async () => {
+    vi.useFakeTimers();
+    const api = {
+      readCheckoutState: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Connection problem.'))
+        .mockResolvedValueOnce({ ...checkoutState, paymentStatus: 'paid', orderStatus: 'paid' }),
+    };
+    const onState = vi.fn();
+    const connection = connectCheckoutReturnStatus(api, 'cs_test_123', onState);
+    try {
+      await vi.advanceTimersByTimeAsync(2000);
+      expect(onState).toHaveBeenCalledTimes(1);
+      expect(createCheckoutReturnStatusView(onState.mock.lastCall![0]).isFinal).toBe(true);
+    } finally {
+      connection.stop();
+      vi.useRealTimers();
+    }
+  });
+
   it.each(['budget', 'error', 'review', 'unmount'] as const)(
     'stops refresh on %s and preserves payment facts',
     async (ending) => {

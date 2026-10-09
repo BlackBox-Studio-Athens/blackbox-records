@@ -93,16 +93,18 @@ export function createCheckoutReturnStatusView(state: CheckoutReturnLoadState): 
     };
   }
 
+  // A failed read is not a Worker answer: the payment may have gone through, so offer Refresh, never Retry Checkout.
   if (state.kind === 'error') {
     return {
-      badgeLabel: 'Needs Retry',
+      badgeLabel: 'Not Checked',
       detail: state.message,
       isFinal: false,
       kicker: 'Status Unavailable',
-      nextStep: 'If you saw a payment complete in Stripe, contact the label before trying again.',
+      nextStep: 'Refresh the status once you are back online. If Stripe showed a completed payment, do not pay again.',
       nextSteps: null,
       shippingLocker,
-      title: 'We Could Not Confirm Payment',
+      supportOnly: true,
+      title: 'Could Not Check Payment',
       tone: 'error',
     };
   }

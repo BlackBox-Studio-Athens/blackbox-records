@@ -67,8 +67,16 @@ export default function CheckoutReturnStatus({
     const checkoutSessionId = readCheckoutSessionIdFromSearch(window.location.search);
     const connection = connectCheckoutReturnStatus(checkoutApi, checkoutSessionId, setLoadState);
     refreshStatus.current = connection.refresh;
+    // Phones return from Stripe or a bank app with a waking connection: read again once it is back.
+    const wake = () => {
+      if (document.visibilityState === 'visible') connection.refresh();
+    };
+    window.addEventListener('online', wake);
+    document.addEventListener('visibilitychange', wake);
     return () => {
       refreshStatus.current = null;
+      window.removeEventListener('online', wake);
+      document.removeEventListener('visibilitychange', wake);
       connection.stop();
     };
   }, [api]);
@@ -105,6 +113,8 @@ export default function CheckoutReturnStatus({
   );
 }
 
+export const RETURN_STATUS_RETRY_DELAYS_MS = [2000, 5000, 10000];
+
 export function connectCheckoutReturnStatus(
   api: Pick<PublicCheckoutApi, 'readCheckoutState'>,
   sessionId: string | null,
@@ -113,6 +123,7 @@ export function connectCheckoutReturnStatus(
   let active = true;
   let inFlight = false;
   let refreshes = 0;
+  let failures = 0;
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let lastState: CheckoutReturnLoadState = { kind: 'loading' };
@@ -124,6 +135,11 @@ export function connectCheckoutReturnStatus(
     const result = await loadCheckoutReturnState(api, sessionId);
     inFlight = false;
     if (!active) return;
+    // Before any Worker answer a failed read is treated as a connection blip: keep Checking and retry.
+    if (result.kind === 'error' && lastState.kind === 'loading' && failures < RETURN_STATUS_RETRY_DELAYS_MS.length) {
+      timer = setTimeout(() => void refresh(), RETURN_STATUS_RETRY_DELAYS_MS[failures++]);
+      return;
+    }
     if (result.kind === 'error') stopped = true;
     lastState = result.kind === 'error' && lastState.kind === 'ready' ? lastState : result;
     if (lastState.kind === 'ready') lastState = { ...lastState, refreshStopped: stopped || refreshes >= 12 };
@@ -139,7 +155,7 @@ export function connectCheckoutReturnStatus(
   void refresh();
   return {
     refresh: () => {
-      void refresh();
+      if (!createCheckoutReturnStatusView(lastState).isFinal) void refresh();
     },
     stop: () => {
       active = false;
