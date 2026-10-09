@@ -64,6 +64,8 @@ export type ServicesInquiryFormValues = {
 export type ServicesInquirySubmissionStatus = 'idle' | 'submitting' | 'field-error' | 'provider-error' | 'submitted';
 
 export type ServicesInquiryFormState = {
+  /** Controls that failed native validation; absent means a Worker field error, which marks every required control. */
+  invalidFields?: readonly string[];
   status: ServicesInquirySubmissionStatus;
   values: ServicesInquiryFormValues;
 };
@@ -75,6 +77,7 @@ type ServicesInquiryFormAction =
       value: string;
     }
   | { service: ServicesInquiryService; type: 'select-service' }
+  | { field: string; type: 'invalid' }
   | { status: ServicesInquirySubmissionStatus; type: 'status' }
   | { type: 'reset' };
 
@@ -98,6 +101,14 @@ export function reduceServicesInquiryFormState(
 ): ServicesInquiryFormState {
   if (action.type === 'reset') return createInitialServicesInquiryFormState();
   if (action.type === 'status') return { ...state, status: action.status };
+  if (action.type === 'invalid') {
+    const invalidFields = state.status === 'field-error' ? (state.invalidFields ?? []) : [];
+    return {
+      ...state,
+      invalidFields: invalidFields.includes(action.field) ? invalidFields : [...invalidFields, action.field],
+      status: 'field-error',
+    };
+  }
 
   const status = state.status === 'field-error' || state.status === 'provider-error' ? 'idle' : state.status;
 
@@ -110,6 +121,10 @@ export function reduceServicesInquiryFormState(
   }
 
   return { status, values: { ...state.values, [action.field]: action.value } };
+}
+
+export function isServicesInquiryFieldInvalid(state: ServicesInquiryFormState, field: string) {
+  return state.status === 'field-error' && (!state.invalidFields || state.invalidFields.includes(field));
 }
 
 type ServicesInquirySubmissionOptions = {
@@ -230,8 +245,13 @@ export default function ServicesInquiryForm({
   const nameInputRef = useRef<HTMLInputElement>(null);
   const successRef = useRef<HTMLElement>(null);
   const isSubmitting = state.status === 'submitting';
-  const hasFieldError = state.status === 'field-error';
-  const fieldErrorDescriptionId = hasFieldError ? 'services-inquiry-field-error' : undefined;
+  const fieldError = (field: string) => {
+    const invalid = isServicesInquiryFieldInvalid(state, field);
+    return {
+      'aria-describedby': invalid ? 'services-inquiry-field-error' : undefined,
+      'aria-invalid': invalid || undefined,
+    };
+  };
   const { bandOrProject, email: contactEmail, message, name, service, serviceDetails } = state.values;
   const detailPrompt = SERVICES_INQUIRY_DETAIL_PROMPTS[service];
 
@@ -278,7 +298,7 @@ export default function ServicesInquiryForm({
     <form
       aria-busy={isSubmitting || undefined}
       className="services-inquiry-form"
-      onInvalid={() => dispatch({ status: 'field-error', type: 'status' })}
+      onInvalid={(event) => dispatch({ field: (event.target as HTMLInputElement).name, type: 'invalid' })}
       onSubmit={(event) => {
         event.preventDefault();
         void submitServicesInquiryForm({
@@ -293,8 +313,7 @@ export default function ServicesInquiryForm({
         <label className="services-inquiry-form__field">
           <span className="services-inquiry-form__label">Name</span>
           <Input
-            aria-describedby={fieldErrorDescriptionId}
-            aria-invalid={hasFieldError || undefined}
+            {...fieldError('name')}
             autoComplete="name"
             className="services-inquiry-form__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] text-base md:text-[0.95rem]"
             disabled={isSubmitting}
@@ -309,8 +328,7 @@ export default function ServicesInquiryForm({
         <label className="services-inquiry-form__field">
           <span className="services-inquiry-form__label">Email</span>
           <Input
-            aria-describedby={fieldErrorDescriptionId}
-            aria-invalid={hasFieldError || undefined}
+            {...fieldError('email')}
             autoComplete="email"
             className="services-inquiry-form__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] text-base md:text-[0.95rem]"
             disabled={isSubmitting}
@@ -338,8 +356,7 @@ export default function ServicesInquiryForm({
             Service
           </label>
           <select
-            aria-describedby={fieldErrorDescriptionId}
-            aria-invalid={hasFieldError || undefined}
+            {...fieldError('service')}
             className="services-inquiry-form__select h-11 w-full rounded-none border border-[#2b2b2b] bg-[#111111] px-3 text-base md:text-[0.95rem] text-foreground outline-none"
             disabled={isSubmitting}
             id="services-inquiry-service"
@@ -383,8 +400,7 @@ export default function ServicesInquiryForm({
       <label className="services-inquiry-form__field">
         <span className="services-inquiry-form__label">Message</span>
         <Textarea
-          aria-describedby={fieldErrorDescriptionId}
-          aria-invalid={hasFieldError || undefined}
+          {...fieldError('message')}
           className="services-inquiry-form__textarea rounded-none border-[#2b2b2b] bg-[#111111] text-base md:text-[0.95rem]"
           disabled={isSubmitting}
           maxLength={2000}

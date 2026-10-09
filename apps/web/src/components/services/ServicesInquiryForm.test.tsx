@@ -11,6 +11,7 @@ import ServicesInquiryForm, {
   ServicesInquirySuccess,
   classifyServicesInquirySubmissionError,
   createInitialServicesInquiryFormState,
+  isServicesInquiryFieldInvalid,
   reduceServicesInquiryFormState,
   selectServicesInquiryService,
   submitServicesInquiryForm,
@@ -59,9 +60,33 @@ describe('ServicesInquiryForm', () => {
     expect(providerErrorHtml).toContain('role="alert"');
     expect(providerErrorHtml).not.toContain('services-inquiry-field-error');
     expect(providerErrorHtml).toContain('We couldn&#x27;t submit your inquiry right now.');
-    expect(componentSource.match(/aria-invalid=\{hasFieldError \|\| undefined\}/g)).toHaveLength(4);
-    expect(componentSource.match(/aria-describedby=\{fieldErrorDescriptionId\}/g)).toHaveLength(4);
-    expect(componentSource).toContain("onInvalid={() => dispatch({ status: 'field-error', type: 'status' })}");
+    expect(componentSource.match(/\{\.\.\.fieldError\('(name|email|service|message)'\)\}/g)).toHaveLength(4);
+    expect(componentSource).toContain(
+      "onInvalid={(event) => dispatch({ field: (event.target as HTMLInputElement).name, type: 'invalid' })}",
+    );
+  });
+
+  it('marks only the controls that failed native validation, and every required control after a Worker field error', () => {
+    const initial = createInitialServicesInquiryFormState();
+    // Return in Name submits the form; only the still-empty Email and Message fire invalid.
+    const afterReturn = reduceServicesInquiryFormState(
+      reduceServicesInquiryFormState(initial, { field: 'email', type: 'invalid' }),
+      { field: 'message', type: 'invalid' },
+    );
+    expect(afterReturn.status).toBe('field-error');
+    expect(
+      ['name', 'email', 'service', 'message'].filter((field) => isServicesInquiryFieldInvalid(afterReturn, field)),
+    ).toEqual(['email', 'message']);
+
+    const edited = reduceServicesInquiryFormState(afterReturn, { field: 'email', type: 'change', value: 'a@b.co' });
+    expect(isServicesInquiryFieldInvalid(edited, 'message')).toBe(false);
+    const retried = reduceServicesInquiryFormState(edited, { field: 'message', type: 'invalid' });
+    expect(retried.invalidFields).toEqual(['message']);
+
+    const workerError = reduceServicesInquiryFormState(initial, { status: 'field-error', type: 'status' });
+    expect(
+      ['name', 'email', 'service', 'message'].every((field) => isServicesInquiryFieldInvalid(workerError, field)),
+    ).toBe(true);
   });
 
   it('keeps submitting feedback polite and protects the pending action', () => {
