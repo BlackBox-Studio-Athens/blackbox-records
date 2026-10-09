@@ -4523,6 +4523,55 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   }
 }
 
+/* Short viewports (landscape phones): the header sits beside the embed and the frame fits the height. Bandcamp's
+   cover-and-transport layout is its width plus about 7.3rem tall, so its width follows the available height. */
+@media (max-height: 30rem) {
+  .music-streaming-service-embedded-player-modal-overlay {
+    align-items: center;
+    justify-content: center;
+    padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right))
+      max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+  }
+
+  .music-streaming-service-embedded-player-modal-card[data-music-streaming-service-embedded-player-embed-layout] {
+    --music-player-frame-height: calc(
+      100dvh - max(0.75rem, env(safe-area-inset-top)) - max(0.75rem, env(safe-area-inset-bottom)) - 1.7rem - 4px
+    );
+    --music-player-frame-width: min(26rem, calc(100vw - 22rem));
+    grid-template-columns: minmax(0, 18rem) auto;
+    grid-template-rows: auto;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: 100%;
+    border: 1px solid #2b2b2b;
+    border-radius: 0.6rem;
+    overflow-y: auto;
+  }
+
+  .music-streaming-service-embedded-player-modal-card[data-music-streaming-service-embedded-player-active-provider='bandcamp'] {
+    --music-player-frame-width: min(21.875rem, calc(var(--music-player-frame-height) - 7.3rem));
+  }
+
+  .music-streaming-service-embedded-player-modal-header {
+    position: static;
+    align-content: start;
+    padding: 1rem;
+    border-bottom: 0;
+    background: transparent;
+    backdrop-filter: none;
+  }
+
+  .music-streaming-service-embedded-player-modal-frame {
+    margin: 0;
+    height: auto;
+    padding: 0.85rem;
+    border: 0;
+    border-left: 1px solid rgba(245, 245, 245, 0.08);
+    border-radius: 0;
+  }
+}
+
 @media (min-width: 64rem) {
   /* Lead and supporting share the first row; each top-aligns, so neither stretches the other's copy. */
   .releases-page-layout {
