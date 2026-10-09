@@ -1,0 +1,14 @@
+# Tasks
+
+- [x] A. Forms: 16px phone inputs, keyboard hints, Services validation, Notify me announcement (browser confirmation of the Store routes pending a fresh Local server).
+- [x] B. Shell history: cart/menu history entry, overlay close scroll and focus, Back/Forward scroll restoration, overlay document-link history (Home eager budget raised to 106 KiB in 00caddf6; build:web green).
+- [x] C. Player: reserved space under the mini player, Menu sheet stacking, short-viewport (landscape) modal layout, phone album embed height (CSS only; real-device landscape and safe-area check pending).
+- [x] D. Accessibility: inert page behind modal and overlay, skip link and loading bar above the header, root scroll padding, named overlay dialog with document title, cart quantity announcements (store-cart.spec clean rerun pending; Buy/Listen names deferred).
+- [x] E. Checkout resilience: pageshow reset, offer-read retry and 10 s timeout, return-page retry with backoff, connection error copy (3 pre-existing Tab-order e2e failures in international-order-checkout.spec.ts left for the e2e pass).
+- [x] F. Touch: coverflow tap suppression bounded to the swipe, 24 hover rules gated by (hover: hover) with a contract test, 44px halos on item links, cart Remove, card artist link and artist profile links, phone coverflow price clipping (desktop content-visibility clipping routed to K).
+- [x] G. Head and hosting: HTML 404 from the gateway (prerendered 404.html confirmed in the Local renderer build; Pages binding proven by the UAT smoke on deploy), theme-color and color-scheme, apple-touch-icon, minimal-ui manifest, item og:image, canonical from site + pathname (viewport-fit=cover deferred: header and footer lack safe-area padding).
+- [x] H. Performance: Buy icon assets instead of data URIs (Store HTML 1.28 MB -> 0.70 MB), two-width card ladder and staged image fallback, classic inline listing-price prefetch, showcase srcsets, zod/mini for the showcase (hero sizes refuted; bounded R2 derivative recorded as a backend follow-up).
+- [x] J. Typography: 12px floor for labels and meta, 13px cart/checkout detail, 16px phone body copy, editorial prose wiring, long-word wrapping, routes-spec 12px guard (Greek titles assessed only).
+- [x] K. Store layout: Store first viewport on phones, compact item artwork, "Edit quantities" visible label, landscape cart drawer, desktop coverflow price/Buy visible (sticky purchase bar proposal recorded for owner approval).
+- [x] I. e2e: non-vacuous overflow helper, @phone tagging and widened chromium-mobile, webkit-mobile project with a CI job, touch taps, phone route sweep, UAT smoke phone pass, checkout Tab steps; follow-up fixes: release artist link target, Safari cart focus return, shell ready marker (final gates pending).
+- [x] Delta specs, validation.md with evidence, `pnpm validate`, `pnpm build:web`, strict OpenSpec validation.
