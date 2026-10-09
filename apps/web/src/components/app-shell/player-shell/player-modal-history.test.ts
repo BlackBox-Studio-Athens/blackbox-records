@@ -2,8 +2,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   closePlayerModalWithHistoryBack,
+  closeWithHistoryBack,
   isPlayerModalHistoryState,
+  pushHistoryEntry,
   pushPlayerModalHistoryEntry,
+  SHELL_SHEET_HISTORY_KEY,
 } from './player-modal-history';
 
 const releasesHref = 'https://example.test/blackbox-records/releases/';
@@ -66,5 +69,23 @@ describe('player modal history', () => {
 
     expect(history.back).not.toHaveBeenCalled();
     expect(closePlayerModal).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives a sheet its own same-URL entry named by its kind, and closes it through Back', () => {
+    const history = createHistoryTarget({ __appShellSection: true, pathname: '/releases/', scrollY: 640 });
+    const closeSheet = vi.fn();
+
+    expect(pushHistoryEntry(history, releasesHref, SHELL_SHEET_HISTORY_KEY, 'cart')).toBe(true);
+    expect(history.pushState).toHaveBeenCalledWith(
+      { __appShellSection: true, __appShellSheet: 'cart', pathname: '/releases/', scrollY: 640 },
+      '',
+      releasesHref,
+    );
+    expect(pushHistoryEntry(history, releasesHref, SHELL_SHEET_HISTORY_KEY, 'menu')).toBe(false);
+    expect(isPlayerModalHistoryState(history.state)).toBe(false);
+
+    closeWithHistoryBack(history, SHELL_SHEET_HISTORY_KEY, closeSheet);
+    expect(history.back).toHaveBeenCalledTimes(1);
+    expect(closeSheet).not.toHaveBeenCalled();
   });
 });

@@ -62,6 +62,7 @@ function createOptions(overrides: Partial<ShellDocumentEventRoutingOptions> = {}
     closeOverlayWithHistoryBack: vi.fn(),
     closePlayerModal: vi.fn(),
     closePlayerModalWithHistoryBack: vi.fn(),
+    closeShellSheets: vi.fn(),
     collapseOverlayHistoryToBackground: vi.fn(),
     currentHref: vi.fn(() => 'https://example.test/blackbox-records/releases/'),
     currentOrigin: vi.fn(() => 'https://example.test'),
@@ -84,14 +85,16 @@ function createOptions(overrides: Partial<ShellDocumentEventRoutingOptions> = {}
     prefetchShellSectionHref: vi.fn(),
     readPlayerProvidersFromElement: vi.fn(() => []),
     reopenPlayerModal: vi.fn(),
+    reopenShellSheet: vi.fn(),
     restoreCachedShellPage: vi.fn(async () => true),
     scheduler: {
       setTimeout: vi.fn(),
     },
     scrollToTargetId: vi.fn(() => false),
-    setMobileNavigationOpen: vi.fn(),
     setOverlayTriggerElement: vi.fn(),
+    shellSheetHistoryHrefRef: { current: null },
     stopPlayerSession: vi.fn(),
+    toggleMobileNavigation: vi.fn(),
     warmProviderOrigins: vi.fn(),
     windowTarget: targets.windowTarget,
     documentHandlers: targets.documentHandlers,
@@ -148,12 +151,7 @@ describe('shell document event routing', () => {
     options.documentHandlers.click?.(event);
 
     expect(event.preventDefault).toHaveBeenCalledTimes(1);
-    expect(options.setMobileNavigationOpen).toHaveBeenCalledWith(expect.any(Function));
-    const toggle = (options.setMobileNavigationOpen as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as (
-      currentState: boolean,
-    ) => boolean;
-    expect(toggle(false)).toBe(true);
-    expect(toggle(true)).toBe(false);
+    expect(options.toggleMobileNavigation).toHaveBeenCalledTimes(1);
   });
 
   it('routes mini-player open and stop controls to player lifecycle callbacks', () => {
@@ -352,6 +350,9 @@ describe('shell document event routing', () => {
         isPlayerModalOpen: true,
         playerModalHistoryHref: options.playerModalHistoryHrefRef,
         reopenPlayerModal: options.reopenPlayerModal,
+        closeShellSheets: options.closeShellSheets,
+        reopenShellSheet: options.reopenShellSheet,
+        shellSheetHistoryHref: options.shellSheetHistoryHrefRef,
       }),
     );
   });

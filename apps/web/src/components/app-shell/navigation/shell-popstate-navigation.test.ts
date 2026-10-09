@@ -9,9 +9,9 @@ import { routeShellPopStateNavigation } from './shell-popstate-navigation';
 
 function createOptions(overrides: Partial<Parameters<typeof routeShellPopStateNavigation>[0]> = {}) {
   return {
-    closeMobileNavigation: vi.fn(),
     closeOverlayState: vi.fn(),
     closePlayerModal: vi.fn(),
+    closeShellSheets: vi.fn(),
     currentHref: 'https://example.test/blackbox-records/releases/disintegration/',
     currentPathname: '/blackbox-records/releases/disintegration/',
     hasCachedShellPage: vi.fn(() => false),
@@ -21,7 +21,9 @@ function createOptions(overrides: Partial<Parameters<typeof routeShellPopStateNa
     openShellSectionHref: vi.fn(),
     playerModalHistoryHref: { current: null as string | null },
     reopenPlayerModal: vi.fn(),
+    reopenShellSheet: vi.fn(),
     restoreCachedShellPage: vi.fn(),
+    shellSheetHistoryHref: { current: null as string | null },
     ...overrides,
   };
 }
@@ -39,7 +41,6 @@ describe('shell popstate navigation', () => {
 
     expect(routeShellPopStateNavigation(options)).toBe('overlay');
 
-    expect(options.closeMobileNavigation).toHaveBeenCalledTimes(1);
     expect(options.openOverlayHref).toHaveBeenCalledWith(
       'https://example.test/blackbox-records/releases/disintegration/',
       {
@@ -202,5 +203,47 @@ describe('shell popstate navigation', () => {
     expect(options.closePlayerModal).not.toHaveBeenCalled();
     expect(options.reopenPlayerModal).not.toHaveBeenCalled();
     expect(options.playerModalHistoryHref.current).toBeNull();
+  });
+
+  it('closes the cart drawer or Menu when Back steps off its entry, without routing the unchanged page', () => {
+    const options = createOptions({
+      currentHref: releasesHref,
+      currentPathname: '/blackbox-records/releases/',
+      historyState: { __appShellSection: true, pathname: '/releases/' },
+      shellSheetHistoryHref: { current: releasesHref },
+    });
+
+    expect(routeShellPopStateNavigation(options)).toBe('shell-sheet');
+
+    expect(options.closeShellSheets).toHaveBeenCalledTimes(1);
+    expect(options.shellSheetHistoryHref.current).toBeNull();
+    expect(options.openShellSectionHref).not.toHaveBeenCalled();
+  });
+
+  it('closes a sheet and still routes when history jumps past its entry to another page', () => {
+    const options = createOptions({
+      currentHref: 'https://example.test/blackbox-records/artists/',
+      currentPathname: '/blackbox-records/artists/',
+      shellSheetHistoryHref: { current: releasesHref },
+    });
+
+    expect(routeShellPopStateNavigation(options)).toBe('shell-section');
+
+    expect(options.closeShellSheets).toHaveBeenCalledTimes(1);
+    expect(options.openShellSectionHref).toHaveBeenCalledTimes(1);
+  });
+
+  it('reopens the sheet its entry names when Forward returns to it', () => {
+    const options = createOptions({
+      currentHref: releasesHref,
+      currentPathname: '/blackbox-records/releases/',
+      historyState: { __appShellSheet: 'cart', __appShellSection: true, pathname: '/releases/' },
+    });
+
+    expect(routeShellPopStateNavigation(options)).toBe('shell-sheet');
+
+    expect(options.reopenShellSheet).toHaveBeenCalledWith('cart');
+    expect(options.shellSheetHistoryHref.current).toBe(releasesHref);
+    expect(options.openShellSectionHref).not.toHaveBeenCalled();
   });
 });

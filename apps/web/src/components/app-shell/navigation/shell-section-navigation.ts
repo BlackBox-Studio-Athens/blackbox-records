@@ -1,5 +1,6 @@
 import { normalizeAppPathname, parseShellSectionRoute, type ShellSectionRoute } from '@/components/app-shell/routing';
 
+import { readHistoryEntryMarker, SHELL_SHEET_HISTORY_KEY } from '../player-shell/player-modal-history';
 import {
   markCurrentHistoryEntryForShellSection,
   SHELL_SECTION_LABELS,
@@ -205,6 +206,12 @@ export async function openShellSectionNavigation({
   }
 }
 
+// A section opened from the phone Menu takes over the Menu's history entry instead of stacking on it.
 function pushBrowserShellSectionHistoryState(pathname: string, href: string) {
-  window.history.pushState({ __appShellSection: true, pathname } satisfies ShellSectionHistoryState, '', href);
+  const history = window.history;
+  history[readHistoryEntryMarker(history.state, SHELL_SHEET_HISTORY_KEY) ? 'replaceState' : 'pushState'](
+    { __appShellSection: true, pathname } satisfies ShellSectionHistoryState,
+    '',
+    href,
+  );
 }

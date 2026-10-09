@@ -69,7 +69,14 @@ import {
   scheduleOverlayContentFocus,
   scheduleOverlayTriggerFocusRestore,
 } from './overlay/shell-overlay-focus';
-import { isPlayerModalHistoryState } from './player-shell/player-modal-history';
+import {
+  closeWithHistoryBack,
+  isPlayerModalHistoryState,
+  pushHistoryEntry,
+  readHistoryEntryMarker,
+  SHELL_SHEET_HISTORY_KEY,
+  type ShellSheetKind,
+} from './player-shell/player-modal-history';
 import { createShellPlayerSessionController } from './player-shell/shell-player-session-controller';
 import { syncShellRenderedNavigationState } from './navigation/shell-rendered-navigation-state';
 import { MOBILE_NAVIGATION_TRIGGER_SELECTOR } from './navigation/shell-document-click-intent';
@@ -189,6 +196,12 @@ export default function AppShellRoot({
   const playerModalHistoryHrefRef = useRef<string | null>(
     typeof window !== 'undefined' && isPlayerModalHistoryState(window.history.state) ? window.location.href : null,
   );
+  // The open cart drawer or Menu owns one entry the same way, seeded likewise after a reload.
+  const shellSheetHistoryHrefRef = useRef<string | null>(
+    typeof window !== 'undefined' && readHistoryEntryMarker(window.history.state, SHELL_SHEET_HISTORY_KEY)
+      ? window.location.href
+      : null,
+  );
   const iframeCacheByEmbedUrlRef = useRef(new Map<string, HTMLIFrameElement>());
   const providerSelectionByReleaseIdRef = useRef(new Map<string, PlayerProviderId>());
   const warmedOriginsRef = useRef(new Set<string>());
@@ -261,6 +274,10 @@ export default function AppShellRoot({
   // The document listeners connect once; they and the player controller read the modal state through this ref.
   const isPlayerModalOpenRef = useRef(isPlayerModalOpen);
   isPlayerModalOpenRef.current = isPlayerModalOpen;
+  const isStoreCartDrawerOpenRef = useRef(isStoreCartDrawerOpen);
+  isStoreCartDrawerOpenRef.current = isStoreCartDrawerOpen;
+  const isMobileNavigationOpenRef = useRef(isMobileNavigationOpen);
+  isMobileNavigationOpenRef.current = isMobileNavigationOpen;
 
   async function applyStoreCartState(nextState: StoreCartState) {
     const { applyStoreCartStateAndPersist, getStoreCartBrowserStorage } =
@@ -283,6 +300,38 @@ export default function AppShellRoot({
     storeCartOpenerRef.current =
       activeElement instanceof HTMLElement && activeElement !== document.body ? activeElement : null;
     setIsStoreCartDrawerOpen(true);
+    pushShellSheetHistoryEntry('cart');
+  }
+
+  function pushShellSheetHistoryEntry(kind: ShellSheetKind) {
+    if (pushHistoryEntry(window.history, window.location.href, SHELL_SHEET_HISTORY_KEY, kind)) {
+      shellSheetHistoryHrefRef.current = window.location.href;
+    }
+  }
+
+  // On a sheet's own entry, close through Back so no dead entry stays behind; popstate then closes.
+  function closeShellSheetWithHistoryBack(close: () => void) {
+    closeWithHistoryBack(window.history, SHELL_SHEET_HISTORY_KEY, close);
+  }
+
+  function toggleMobileNavigation() {
+    if (isMobileNavigationOpenRef.current) {
+      closeShellSheetWithHistoryBack(closeMobileNavigation);
+      return;
+    }
+    setIsMobileNavigationOpen(true);
+    pushShellSheetHistoryEntry('menu');
+  }
+
+  // A Menu link's section navigation replaces the Menu entry, so the entry is no longer the shell's to step off.
+  function closeMobileNavigation() {
+    shellSheetHistoryHrefRef.current = null;
+    setIsMobileNavigationOpen(false);
+  }
+
+  function closeShellSheets() {
+    setIsMobileNavigationOpen(false);
+    if (isStoreCartDrawerOpenRef.current) closeStoreCartDrawer();
   }
 
   function closeStoreCartDrawer() {
@@ -765,11 +814,12 @@ export default function AppShellRoot({
     markCurrentHistoryEntryForShellSection(window.location.pathname);
 
     const disconnectShellDocumentListeners = connectShellDocumentEventRouting({
-      closeMobileNavigation: () => setIsMobileNavigationOpen(false),
+      closeMobileNavigation,
       closeOverlayState,
       closeOverlayWithHistoryBack,
       closePlayerModal,
       closePlayerModalWithHistoryBack,
+      closeShellSheets,
       collapseOverlayHistoryToBackground,
       currentHref: () => window.location.href,
       currentOrigin: () => window.location.origin,
@@ -792,14 +842,16 @@ export default function AppShellRoot({
       prefetchShellSectionHref,
       readPlayerProvidersFromElement,
       reopenPlayerModal,
+      reopenShellSheet: (kind) => (kind === 'menu' ? setIsMobileNavigationOpen : setIsStoreCartDrawerOpen)(true),
       restoreCachedShellPage,
       scheduler: window,
       scrollToTargetId,
-      setMobileNavigationOpen: setIsMobileNavigationOpen,
       setOverlayTriggerElement: (element) => {
         overlayTriggerElementRef.current = element;
       },
+      shellSheetHistoryHrefRef,
       stopPlayerSession,
+      toggleMobileNavigation,
       warmProviderOrigins: (providers) => {
         warmShellSurface(shellPlayerSurface);
         warmProviderOrigins(providers);
@@ -849,8 +901,8 @@ export default function AppShellRoot({
         <MobileNavigationSheet
           activeShellPathname={activeShellPathname}
           navigation={navigation}
-          onNavigate={() => setIsMobileNavigationOpen(false)}
-          onOpenChange={setIsMobileNavigationOpen}
+          onNavigate={closeMobileNavigation}
+          onOpenChange={() => closeShellSheetWithHistoryBack(closeMobileNavigation)}
           open={isMobileNavigationOpen}
           siteTitle={siteTitle}
         />
@@ -872,7 +924,7 @@ export default function AppShellRoot({
           checkoutAmountDisplay={storeCartTotalDisplay}
           open={isStoreCartDrawerOpen}
           resolveHref={createProjectRelativeUrl}
-          onContinueShopping={closeStoreCartDrawer}
+          onContinueShopping={() => closeShellSheetWithHistoryBack(closeStoreCartDrawer)}
           onDecrementItem={async (variantId) => {
             const { decrementCartLineQuantityByVariant } = await import('@/components/store/cart/store-cart');
             await applyStoreCartState(decrementCartLineQuantityByVariant(variantId, storeCartState));
@@ -881,7 +933,7 @@ export default function AppShellRoot({
             const { incrementCartLineQuantityByVariant } = await import('@/components/store/cart/store-cart');
             await applyStoreCartState(incrementCartLineQuantityByVariant(variantId, storeCartState));
           }}
-          onOpenChange={(open) => (open ? setIsStoreCartDrawerOpen(true) : closeStoreCartDrawer())}
+          onOpenChange={() => closeShellSheetWithHistoryBack(closeStoreCartDrawer)}
           onRemoveItem={async (variantId) => {
             const { removeCartLineByVariant } = await import('@/components/store/cart/store-cart');
             await applyStoreCartState(removeCartLineByVariant(variantId, storeCartState));

@@ -1,6 +1,11 @@
 import { normalizeAppPathname, parseOverlayRoute, parseShellSectionRoute } from '@/components/app-shell/routing';
 
-import { isPlayerModalHistoryState } from '../player-shell/player-modal-history';
+import {
+  isPlayerModalHistoryState,
+  readHistoryEntryMarker,
+  SHELL_SHEET_HISTORY_KEY,
+  type ShellSheetKind,
+} from '../player-shell/player-modal-history';
 import type { ShellNavigationSource } from './shell-navigation';
 
 type MaybePromise<T> = T | Promise<T>;
@@ -11,9 +16,9 @@ type ShellPopStateHistoryState = {
 };
 
 type ShellPopStateNavigationOptions = {
-  closeMobileNavigation: () => void;
   closeOverlayState: (options: { restoreFocus: false }) => void;
   closePlayerModal: () => void;
+  closeShellSheets: () => void;
   currentHref: string;
   currentPathname: string;
   hasCachedShellPage: (pathname: string) => boolean;
@@ -26,19 +31,44 @@ type ShellPopStateNavigationOptions = {
   ) => MaybePromise<boolean>;
   playerModalHistoryHref: { current: string | null };
   reopenPlayerModal: () => void;
+  reopenShellSheet: (kind: ShellSheetKind) => void;
   restoreCachedShellPage: (
     pathname: string,
     options: { source: Extract<ShellNavigationSource, 'history'> },
   ) => MaybePromise<boolean>;
+  shellSheetHistoryHref: { current: string | null };
 };
 
 export type ShellPopStateNavigationResult =
-  'cached-shell-page' | 'closed-overlay' | 'overlay' | 'player-modal' | 'shell-section';
+  'cached-shell-page' | 'closed-overlay' | 'overlay' | 'player-modal' | 'shell-section' | 'shell-sheet';
+
+// A surface entry shares its page's URL: stepping off or back onto it only toggles the surface, because routing the
+// same URL again would scroll the page to the top or re-apply its snapshot. `entryHref` holds the href of the entry
+// the shell is on, or null. Returns true when the popstate is fully handled.
+function toggleSurfaceHistoryEntry(
+  entryHref: { current: string | null },
+  isEntry: boolean,
+  currentHref: string,
+  close: () => void,
+  reopen: () => void,
+) {
+  const previousEntryHref = entryHref.current;
+  entryHref.current = isEntry ? currentHref : null;
+  if (previousEntryHref !== null && !isEntry) {
+    close();
+    return currentHref === previousEntryHref;
+  }
+  if (previousEntryHref === null && isEntry) {
+    reopen();
+    return true;
+  }
+  return false;
+}
 
 export function routeShellPopStateNavigation({
-  closeMobileNavigation,
   closeOverlayState,
   closePlayerModal,
+  closeShellSheets,
   currentHref,
   currentPathname,
   hasCachedShellPage,
@@ -48,21 +78,29 @@ export function routeShellPopStateNavigation({
   openShellSectionHref,
   playerModalHistoryHref,
   reopenPlayerModal,
+  reopenShellSheet,
   restoreCachedShellPage,
+  shellSheetHistoryHref,
 }: ShellPopStateNavigationOptions): ShellPopStateNavigationResult {
-  closeMobileNavigation();
-
-  // The open player's entry shares its page's URL: stepping off or back onto it only toggles the player,
-  // because routing the same URL again would scroll the page to the top or re-apply its snapshot.
-  const playerEntryHref = playerModalHistoryHref.current;
-  const isPlayerEntry = isPlayerModalHistoryState(historyState);
-  playerModalHistoryHref.current = isPlayerEntry ? currentHref : null;
-  if (playerEntryHref !== null && !isPlayerEntry) {
-    if (isPlayerModalOpen) closePlayerModal();
-    if (currentHref === playerEntryHref) return 'player-modal';
-  } else if (playerEntryHref === null && isPlayerEntry) {
-    if (!isPlayerModalOpen) reopenPlayerModal();
+  if (
+    toggleSurfaceHistoryEntry(
+      playerModalHistoryHref,
+      isPlayerModalHistoryState(historyState),
+      currentHref,
+      () => isPlayerModalOpen && closePlayerModal(),
+      () => isPlayerModalOpen || reopenPlayerModal(),
+    )
+  ) {
     return 'player-modal';
+  }
+
+  const sheetKind = readHistoryEntryMarker(historyState, SHELL_SHEET_HISTORY_KEY) as ShellSheetKind;
+  if (
+    toggleSurfaceHistoryEntry(shellSheetHistoryHref, Boolean(sheetKind), currentHref, closeShellSheets, () =>
+      reopenShellSheet(sheetKind),
+    )
+  ) {
+    return 'shell-sheet';
   }
 
   const nextOverlayRoute = parseOverlayRoute(currentPathname);

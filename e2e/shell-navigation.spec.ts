@@ -360,3 +360,41 @@ test('a second click on a link whose page is still loading stays in the shell', 
   await expect(page.locator(main).getByRole('heading', { level: 1 })).toBeVisible();
   expect(await sentinelIntact(page)).toBe(true);
 });
+
+test('Back closes the phone Menu and the cart drawer without navigating the page beneath', async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, 'The Menu opens only below the desktop breakpoint.');
+  await page.goto('releases/');
+  await waitForShell(page);
+  const menuButton = page.locator('[data-app-shell-mobile-navigation-trigger]');
+  const mobileNav = page.getByRole('navigation', { name: 'Mobile' });
+  await menuButton.click();
+  await mobileNav.getByRole('link', { name: 'Store' }).click();
+  await expect(page).toHaveURL(/\/store\/$/);
+  await expect(page.locator(main)).toBeFocused();
+
+  await menuButton.click();
+  await expect(mobileNav).toBeVisible();
+  await page.goBack();
+  await expect(mobileNav).toBeHidden();
+  await expect(page).toHaveURL(/\/store\/$/);
+  await expect(page.getByRole('searchbox', { name: 'Search Store' })).toBeVisible();
+
+  // Dismissing it in place (Escape, Close or the backdrop) consumes the Menu's entry, so no Back press does nothing.
+  await menuButton.click();
+  await expect(mobileNav).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(mobileNav).toBeHidden();
+
+  const drawer = page.getByRole('dialog', { name: 'Cart' });
+  await page.locator('[data-store-cart-trigger]').first().click();
+  await expect(drawer).toBeVisible();
+  await page.goBack();
+  await expect(drawer).toBeHidden();
+  await expect(page).toHaveURL(/\/store\/$/);
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/releases\/$/);
+});

@@ -47,6 +47,7 @@ export type ShellDocumentEventRoutingOptions = {
   closeOverlayWithHistoryBack: () => void;
   closePlayerModal: () => void;
   closePlayerModalWithHistoryBack: () => void;
+  closeShellSheets: () => void;
   collapseOverlayHistoryToBackground: () => void;
   currentHref: () => string;
   currentOrigin: () => string;
@@ -68,6 +69,7 @@ export type ShellDocumentEventRoutingOptions = {
   ) => MaybePromise<boolean>;
   openPlayerModal: (triggerElement: HTMLElement, playerElement: HTMLElement) => void;
   reopenPlayerModal: () => void;
+  reopenShellSheet: Parameters<typeof routeShellPopStateNavigation>[0]['reopenShellSheet'];
   openShellSectionHref: (
     href: string,
     options:
@@ -88,9 +90,10 @@ export type ShellDocumentEventRoutingOptions = {
   ) => MaybePromise<boolean>;
   scheduler: Pick<Window, 'setTimeout'>;
   scrollToTargetId: (targetId: string, triggerElement: HTMLElement) => boolean;
-  setMobileNavigationOpen: (updater: (currentState: boolean) => boolean) => void;
+  shellSheetHistoryHrefRef: { current: string | null };
   setOverlayTriggerElement: (element: HTMLAnchorElement) => void;
   stopPlayerSession: (options?: { restoreFocus?: boolean }) => void;
+  toggleMobileNavigation: () => void;
   warmProviderOrigins: (providers: PlayerProvider[]) => void;
   windowTarget: ShellDocumentListenerTargets['windowTarget'];
 };
@@ -108,6 +111,7 @@ export function connectShellDocumentEventRouting({
   closeOverlayWithHistoryBack,
   closePlayerModal,
   closePlayerModalWithHistoryBack,
+  closeShellSheets,
   collapseOverlayHistoryToBackground,
   currentHref,
   currentOrigin,
@@ -126,6 +130,7 @@ export function connectShellDocumentEventRouting({
   openOverlayHref,
   openPlayerModal,
   reopenPlayerModal,
+  reopenShellSheet,
   openShellSectionHref,
   playerModalHistoryHrefRef,
   prefetchOverlayHref,
@@ -134,9 +139,10 @@ export function connectShellDocumentEventRouting({
   restoreCachedShellPage,
   scheduler,
   scrollToTargetId,
-  setMobileNavigationOpen,
   setOverlayTriggerElement,
+  shellSheetHistoryHrefRef,
   stopPlayerSession,
+  toggleMobileNavigation,
   warmProviderOrigins,
   windowTarget,
 }: ShellDocumentEventRoutingOptions) {
@@ -157,7 +163,7 @@ export function connectShellDocumentEventRouting({
 
     if (clickIntent.kind === 'mobile-navigation-trigger') {
       event.preventDefault();
-      setMobileNavigationOpen((currentState) => !currentState);
+      toggleMobileNavigation();
       return clickIntent.kind;
     }
 
@@ -266,9 +272,9 @@ export function connectShellDocumentEventRouting({
 
   function handlePopState(): ShellPopStateNavigationResult {
     return routePopState({
-      closeMobileNavigation,
       closeOverlayState,
       closePlayerModal,
+      closeShellSheets,
       currentHref: currentHref(),
       currentPathname: currentPathname(),
       hasCachedShellPage,
@@ -278,7 +284,9 @@ export function connectShellDocumentEventRouting({
       openShellSectionHref,
       playerModalHistoryHref: playerModalHistoryHrefRef,
       reopenPlayerModal,
+      reopenShellSheet,
       restoreCachedShellPage,
+      shellSheetHistoryHref: shellSheetHistoryHrefRef,
     });
   }
 
