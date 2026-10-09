@@ -6,7 +6,7 @@ Visitors can find News on Home but cannot return to its listing from the main me
 
 ## What Changes
 
-- Show the existing News navigation entry last in the desktop header and phone Menu, after Who we are.
+- Show the existing News navigation entry in the desktop header and phone Menu after Services, keeping Who we are last.
 - Keep the shared link appearance, current-page state, keyboard focus and same-document routing.
 - Update the retained navigation JSON and publish only the matching Local CMS entry.
 - Cover News navigation, article overlays, player continuity and the 320, 390, 1024 and 1440 px layouts.
@@ -20,7 +20,7 @@ None.
 
 ### Modified Capabilities
 
-- `app-shell-and-player`: News is the final main-menu section on desktop and mobile, using the existing listing and shell navigation.
+- `app-shell-and-player`: News is the main-menu section before Who we are on desktop and mobile, using the existing listing and shell navigation.
 
 ## Impact
 

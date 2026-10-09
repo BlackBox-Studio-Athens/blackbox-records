@@ -10,7 +10,7 @@ import {
 
 const main = 'main[data-app-shell-main]';
 
-test('News is the final section and preserves the player through navigation and article overlays', async ({
+test('News sits before Who we are and preserves the player through navigation and article overlays', async ({
   page,
   isMobile,
 }) => {
@@ -34,7 +34,7 @@ test('News is the final section and preserves the player through navigation and 
   if (isMobile) await menu.click();
   const navigation = page.getByRole('navigation', { name: isMobile ? 'Mobile' : 'Primary' });
   const news = navigation.getByRole('link', { name: 'News', exact: true });
-  await expect(navigation.getByRole('link').last()).toHaveText('News');
+  await expect(navigation.getByRole('link').last()).toHaveText('Who we are');
   await news.focus();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/blackbox-records\/news\/$/);
@@ -63,7 +63,7 @@ test('News is the final section and preserves the player through navigation and 
   expect(await originalIframe!.evaluate((element) => element.isConnected)).toBe(true);
 });
 
-test('News remains last and the main navigation fits phone and desktop widths', async ({ page }) => {
+test('News precedes Who we are and the main navigation fits phone and desktop widths', async ({ page }) => {
   for (const width of [320, 390, 1024, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('news/');
@@ -77,10 +77,10 @@ test('News remains last and the main navigation fits phone and desktop widths', 
       'Releases',
       'Store',
       'Services',
-      'Who we are',
       'News',
+      'Who we are',
     ]);
-    await expect(links.last()).toHaveAttribute('aria-current', 'page');
+    await expect(links.nth(-2)).toHaveAttribute('aria-current', 'page');
     await expect
       .poll(async () => {
         const box = await navigation.boundingBox();

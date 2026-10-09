@@ -12,3 +12,8 @@
 ## 3. Completion evidence
 
 - [x] 3.1 Run the shell-navigation and player-continuity specs, `pnpm agent:check`, strict OpenSpec validation and `pnpm validate`; record source-bound evidence and the separate UAT/PRD Content Publication requirement.
+
+## 4. Who we are last
+
+- [x] 4.1 Move News to `order: 5` and Who we are to `order: 6` in the retained navigation, guidance, delta spec and shell-navigation checks; verify the shell-navigation e2e passes.
+- [ ] 4.2 Maintainer publishes the reordered News and Who we are navigation entries in each CMS (Local, UAT, PRD), with News `show_in_header: true`.

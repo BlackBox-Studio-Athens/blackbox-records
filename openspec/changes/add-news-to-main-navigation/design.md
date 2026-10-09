@@ -6,7 +6,7 @@
 
 ## Decisions
 
-- Change the existing News entry to `show_in_header: true` and `order: 6`. Existing sections use orders 1–5; no other entry needs reordering. Keep `show_in_footer: false`.
+- Change the existing News entry to `show_in_header: true` and `order: 5`, and move Who we are to `order: 6` so it stays the last section, as about pages conventionally are. Keep `show_in_footer: false`; the footer order is unchanged because News is absent there.
 - Reuse the existing navigation and shell components instead of adding a hardcoded News link. This preserves editorial ownership and shared accessibility behavior.
 - Update both the retained JSON fixture and the Local CMS entry. Existing Local storage retains its accepted snapshot across restarts, so changing a fixture alone does not update that website. Review and publish only the saved News navigation revision.
 - Extend the existing shell-navigation browser suite for listing access, News overlays and connected-player continuity. Check the existing styles at all four approved widths.
