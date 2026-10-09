@@ -7378,6 +7378,12 @@ html[data-store-coverflow-capable]
   }
 }
 
+/* The front card's price and Buy row hang below its cover box, where the listing card's content-visibility paint
+   containment would clip them at every width; positioned cards (six at most) opt out. */
+html[data-store-coverflow-capable] [data-store-coverflow-mode='preview'] [data-store-coverflow-position] {
+  content-visibility: visible;
+}
+
 /* As on wider screens, the phone front cover keeps its full size and the stage grows to show the price row under it;
    a squeezed cover left the price clipped by the shell. The reduced-motion grid sizes itself. */
 @media (width < 40rem) and (prefers-reduced-motion: no-preference) {

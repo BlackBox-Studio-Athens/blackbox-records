@@ -792,3 +792,42 @@ test('phone Store shows the first card artwork in the first viewport @phone', as
   // Measured 665 (was 761): the first row's artwork fits above the fold.
   expect(top).toBeLessThan(844 - 150);
 });
+
+for (const width of [1280, 1440]) {
+  test(`desktop Coverflow front card paints its price and Buy row at ${width}px`, async ({ page, hasTouch }) => {
+    test.skip(hasTouch, 'Desktop Coverflow runs in the desktop projects.');
+    await page.setViewportSize({ width, height: 900 });
+    const html = await (await page.request.get('store/')).text();
+    const slugs = [...new Set([...html.matchAll(/data-store-item-slug="([^"]+)"/g)].map((match) => match[1]!))];
+    await page.route(/\/api\/store\/listing-prices(?:\?.*)?$/, (route) =>
+      route.fulfill({
+        json: slugs.map((storeItemSlug) => ({
+          storeItemSlug,
+          presentationState: 'ready',
+          availabilityState: 'stocked',
+          displayPrice: '€28.00',
+          preorder: null,
+        })),
+      }),
+    );
+    await page.goto('store/');
+    await waitForShell(page);
+    await page.getByRole('button', { name: 'Coverflow', exact: true }).click();
+    const group = page.locator('[data-store-coverflow-group]');
+    await expect(group).toHaveAttribute('data-store-coverflow-mode', 'preview');
+    await expect(page.locator('[data-store-coverflow-transitioning]')).toHaveCount(0);
+    const active = group.locator('[data-store-coverflow-position="active"]');
+    const price = active.locator('.store-item-card__price');
+    await expect(price).toContainText('€28.00');
+    await price.scrollIntoViewIfNeeded();
+    await expect(active.locator('[data-store-card-buy]')).toBeVisible();
+    // Paint containment on the listing card would clip the row below the cover box; hit testing follows that clip.
+    expect(
+      await price.evaluate((element) => {
+        const box = element.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.left + 4, box.top + box.height / 2);
+        return Boolean(hit && element.contains(hit));
+      }),
+    ).toBe(true);
+  });
+}

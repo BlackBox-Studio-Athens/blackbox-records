@@ -101,6 +101,11 @@ describe('Store layout on phones', () => {
     expect(ruleBody('.store-browse-pane > .store-format-links', phone)).toMatch(/margin-bottom:\s*0/);
   });
 
+  it('lets every positioned Coverflow card paint its price and Buy row at every width', () => {
+    const scope = "html[data-store-coverflow-capable] [data-store-coverflow-mode='preview']";
+    expect(ruleBody(`${scope} [data-store-coverflow-position]`, null)).toMatch(/content-visibility:\s*visible/);
+  });
+
   it('keeps the cart lines a window on short viewports', () => {
     const short = '@media (max-height: 30rem)';
     expect(ruleBody('.store-cart-drawer__actions', short)).toMatch(/flex-direction:\s*row/);
