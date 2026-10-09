@@ -2,7 +2,7 @@
 import '@/styles/fonts.css';
 import interFontUrl from '@/assets/fonts/ui/inter-latin.woff2?url';
 import bebasNeueFontUrl from '@/assets/fonts/ui/bebas-neue-latin.woff2?url';
-import { createProjectRelativeUrl } from '@/platform/config/site';
+import { createProjectRelativeUrl, siteThemeColor } from '@/platform/config/site';
 
 // Hosted builds emit 404.html; the Pages gateway serves it for unknown document paths without a renderer call.
 export const prerender = true;
@@ -13,6 +13,8 @@ export const prerender = true;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content={siteThemeColor} />
+    <meta name="color-scheme" content="dark" />
     <title>404 | Blackbox Records</title>
     <link rel="icon" href="data:," />
     <link rel="preload" href={interFontUrl} as="font" type="font/woff2" crossorigin="anonymous" />

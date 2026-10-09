@@ -15,6 +15,8 @@ export const siteBrandAssets = {
   faviconIco: '/favicon.ico',
 } as const;
 
+export const siteThemeColor = '#0d0d0d';
+
 function normalizePath(path = '/') {
   return path.startsWith('/') ? path : `/${path}`;
 }

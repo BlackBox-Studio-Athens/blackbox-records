@@ -10,7 +10,13 @@ import { getImage } from 'astro:assets';
 import AppShell from '@/layouts/AppShell.astro';
 import Footer from '@/components/Footer.astro';
 import Header from '@/components/Header.astro';
-import { createAbsoluteSiteUrl, createProjectRelativeUrl, siteBrandAssets, siteConfig } from '@/platform/config/site';
+import {
+  createAbsoluteSiteUrl,
+  createProjectRelativeUrl,
+  siteBrandAssets,
+  siteConfig,
+  siteThemeColor,
+} from '@/platform/config/site';
 import { getLabelSettings, getSocialItems } from '@/lib/site-data';
 import { getPurchaseInformation, inlinesPurchaseInformation } from '@/platform/lib/purchase-information';
 
@@ -121,6 +127,8 @@ const resolvedMainClass = ['page-main-content-region', 'pt-[var(--header-height)
       />
     )}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content={siteThemeColor} />
+    <meta name="color-scheme" content="dark" />
     <title>{htmlTitle}</title>
     <meta name="description" content={metadataDescription} />
     {robots && <meta name="robots" content={robots} />}
