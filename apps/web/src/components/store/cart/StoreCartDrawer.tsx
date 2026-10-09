@@ -134,6 +134,13 @@ export function StoreCartDrawerPanel({
   const [undoCycle, setUndoCycle] = React.useState(0);
   const [isUndoFocused, setIsUndoFocused] = React.useState(false);
   const [focusVariantId, setFocusVariantId] = React.useState<string | null>(null);
+  // A quantity step is announced once the cart state holds the new quantity.
+  const [quantityChange, setQuantityChange] = React.useState<{ variantId: string; from: number } | null>(null);
+  const changedLine = quantityChange && view.lines.find((line) => line.variantId === quantityChange.variantId);
+  const quantityMessage =
+    changedLine && changedLine.quantity !== quantityChange.from
+      ? `${changedLine.title}: quantity ${changedLine.quantity}, ${getCartLineTotalDisplay(changedLine)}`
+      : '';
   // Removal reaches cart state asynchronously; hide the line at once so Undo alone holds its place.
   const visibleLines = removed ? view.lines.filter((line) => line.variantId !== removed.line.variantId) : view.lines;
   const hasLines = visibleLines.length > 0;
@@ -155,6 +162,7 @@ export function StoreCartDrawerPanel({
   }, [focusVariantId, view.lines]);
 
   function removeLine(line: CartLine, index: number) {
+    setQuantityChange(null);
     setRemoved({ index, line });
     setUndoCycle((cycle) => cycle + 1);
     onRemoveItem(line.variantId);
@@ -195,7 +203,7 @@ export function StoreCartDrawerPanel({
   return (
     <div ref={panelRef} className="store-cart-drawer__panel">
       <p className="sr-only" aria-live="polite">
-        {removed ? `${STORE_CART_DRAWER_COPY.removed} ${removed.line.title}` : ''}
+        {removed ? `${STORE_CART_DRAWER_COPY.removed} ${removed.line.title}` : quantityMessage}
       </p>
       {renderHeader && (
         <SheetHeader className="store-cart-drawer__header">
@@ -260,14 +268,20 @@ export function StoreCartDrawerPanel({
                               </p>
                             )}
                           </div>
-                          <div className="store-cart-drawer__quantity" aria-label={`Quantity for ${line.title}`}>
+                          <div
+                            className="store-cart-drawer__quantity"
+                            role="group"
+                            aria-label={`Quantity for ${line.title}`}
+                          >
                             <Button
                               type="button"
                               variant="outline"
                               size="icon"
-                              onClick={() =>
-                                line.quantity <= 1 ? removeLine(line, index) : onDecrementItem(line.variantId)
-                              }
+                              onClick={() => {
+                                if (line.quantity <= 1) return removeLine(line, index);
+                                setQuantityChange({ variantId: line.variantId, from: line.quantity });
+                                onDecrementItem(line.variantId);
+                              }}
                               aria-label={`Decrease quantity for ${line.title}`}
                             >
                               <Minus aria-hidden="true" strokeWidth={1.75} />
@@ -277,7 +291,10 @@ export function StoreCartDrawerPanel({
                               type="button"
                               variant="outline"
                               size="icon"
-                              onClick={() => onIncrementItem(line.variantId)}
+                              onClick={() => {
+                                setQuantityChange({ variantId: line.variantId, from: line.quantity });
+                                onIncrementItem(line.variantId);
+                              }}
                               aria-label={`Increase quantity for ${line.title}`}
                               disabled={line.priceKind === 'pay_what_you_want'}
                               aria-describedby={

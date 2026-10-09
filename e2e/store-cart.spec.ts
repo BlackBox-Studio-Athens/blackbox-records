@@ -696,10 +696,13 @@ for (const width of [440, 390]) {
     expect((await drawer.boundingBox())!.width).toBeCloseTo(width, 0);
     expect(await drawer.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
 
+    const announcement = drawer.locator('p[aria-live="polite"]');
     await drawer.getByRole('button', { name: 'Increase quantity for Caregivers', exact: true }).click();
     await expect(summary).toContainText('€68.00');
+    await expect(announcement).toHaveText(/^Caregivers: quantity 2, €\d/);
     await drawer.getByRole('button', { name: 'Decrease quantity for Caregivers', exact: true }).click();
     await expect(summary).toContainText('€48.00');
+    await expect(announcement).toHaveText(/^Caregivers: quantity 1, €\d/);
     await drawer
       .locator('[data-store-cart-line-item]')
       .last()
