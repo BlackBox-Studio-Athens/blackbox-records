@@ -72,6 +72,12 @@ for (const width of [1440, 390]) {
     await expect(email).toHaveAttribute('aria-invalid', 'true');
     await expect(consent).toHaveAttribute('aria-invalid', 'true');
     expect(requests).toHaveLength(0);
+    // A consent-only error moves focus to the checkbox so its described error is announced.
+    await email.fill('listener@example.com');
+    await form.getByRole('button', { name: 'Send', exact: true }).click();
+    await expect(consent).toBeFocused();
+    await expect(consent).toHaveAttribute('aria-describedby', /consent-error/);
+    expect(requests).toHaveLength(0);
 
     await email.press('Escape');
     await expect(form).toHaveCount(0);

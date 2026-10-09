@@ -64,6 +64,7 @@ export default function AvailabilityAlertForm({
   const [errors, setErrors] = React.useState<AvailabilityAlertErrors>(initial?.errors ?? {});
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const emailRef = React.useRef<HTMLInputElement>(null);
+  const consentRef = React.useRef<HTMLInputElement>(null);
   const doneRef = React.useRef<HTMLParagraphElement>(null);
   const returnFocus = React.useRef(false);
 
@@ -88,7 +89,8 @@ export default function AvailabilityAlertForm({
     const nextErrors = availabilityAlertErrors(email, consent);
     setErrors(nextErrors);
     if (nextErrors.email || nextErrors.consent) {
-      if (nextErrors.email) emailRef.current?.focus();
+      // Focus reads the first invalid control's error through its aria-describedby.
+      (nextErrors.email ? emailRef : consentRef).current?.focus();
       return;
     }
     setStep('sending');
@@ -171,6 +173,7 @@ export default function AvailabilityAlertForm({
       )}
       <label className="availability-alert__consent">
         <input
+          ref={consentRef}
           type="checkbox"
           name="consent"
           checked={consent}
