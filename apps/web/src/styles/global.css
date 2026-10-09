@@ -3553,11 +3553,6 @@ body.is-app-shell-overlay-open {
     line-height: 1;
   }
 
-  /* The buttons share one row and wrap to full-width rows when they cannot fit. */
-  .homepage-hero-section__actions > a {
-    flex: 1 1 auto;
-  }
-
   .homepage-hero-section__scroll-indicator {
     bottom: max(0.35rem, env(safe-area-inset-bottom, 0px));
   }

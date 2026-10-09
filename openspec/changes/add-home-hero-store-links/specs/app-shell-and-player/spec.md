@@ -24,7 +24,7 @@ The homepage hero SHALL show, under the motto, a Browse the Store link to `/stor
 - **WHEN** Home is displayed at 390 px or narrower, down to 280 px
 - **THEN** the motto and links share the logo's left edge
 - **AND** nothing overflows horizontally
-- **AND** the links keep 44 px targets, sharing one row when they fit and wrapping to full-width rows when they do not
+- **AND** the links keep 44 px targets, at their desktop width, sharing one row when they fit and wrapping when they do not
 
 #### Scenario: Visitor sees the hero without a Scroll label
 
