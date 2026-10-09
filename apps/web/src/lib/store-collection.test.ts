@@ -86,7 +86,7 @@ import {
   getStoreDistroFormatGroup,
   listStoreCollectionEntries,
   selectStoreCollectionEntries,
-  sortStoreDistroCollectionEntries,
+  sortStoreCollectionEntriesByArtist,
   type StoreCollectionEntry,
 } from './store-collection';
 
@@ -268,7 +268,7 @@ describe('store collection entries', () => {
       entry('alpha-tie-a', 'ALPHA', 'A title', 'Other'),
     ];
     const original = [...entries];
-    const sorted = sortStoreDistroCollectionEntries(entries);
+    const sorted = sortStoreCollectionEntriesByArtist(entries);
     expect(sorted.map(({ storeItem }) => storeItem.slug)).toEqual([
       'alpha-tie-a',
       'alpha-tie-b',
@@ -279,7 +279,7 @@ describe('store collection entries', () => {
     ]);
     expect(entries).toEqual(original);
     expect(new Set(sorted).size).toBe(entries.length);
-    expect(() => sortStoreDistroCollectionEntries([...entries, entries[0]!])).toThrow('more than once');
+    expect(() => sortStoreCollectionEntriesByArtist([...entries, entries[0]!])).toThrow('more than once');
   });
 
   it.each([

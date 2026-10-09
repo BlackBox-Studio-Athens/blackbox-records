@@ -6,7 +6,7 @@ import {
   createStoreDistroGroupHeadingId,
   getStoreDistroFormatGroup,
   groupStoreDistroCollectionEntries,
-  sortStoreDistroCollectionEntries,
+  sortStoreCollectionEntriesByArtist,
   type StoreCollectionEntry,
 } from '@/lib/store-collection';
 import StoreBrowsePane from './StoreBrowsePane.astro';
@@ -16,7 +16,7 @@ interface Props {
   entries: StoreCollectionEntry[];
 }
 const { entries: sourceEntries } = Astro.props;
-const entries = sortStoreDistroCollectionEntries(sourceEntries);
+const entries = sortStoreCollectionEntriesByArtist(sourceEntries);
 const content = await getDistroPageContent();
 const groups = groupStoreDistroCollectionEntries(entries);
 const enrolled = entries.length > 6;

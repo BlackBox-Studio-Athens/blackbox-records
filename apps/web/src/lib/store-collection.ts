@@ -63,8 +63,8 @@ export function selectStoreCollectionEntries(
   return selectedEntries;
 }
 
-export function sortStoreDistroCollectionEntries(entries: readonly StoreCollectionEntry[]): StoreCollectionEntry[] {
-  assertStoreCollectionInvariants(entries, 'distro');
+export function sortStoreCollectionEntriesByArtist(entries: readonly StoreCollectionEntry[]): StoreCollectionEntry[] {
+  assertStoreCollectionInvariants(entries, 'all');
   const credit = (value: string) => value.normalize('NFC').trim().replace(/\s+/gu, ' ');
 
   return [...entries].sort(
