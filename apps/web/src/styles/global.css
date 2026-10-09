@@ -720,9 +720,14 @@ body {
     transition: color 0.2s ease;
   }
 
-  .services-inline-link:hover,
   .services-inline-link:focus-visible {
     color: var(--services-accent-active);
+  }
+
+  @media (hover: hover) {
+    .services-inline-link:hover {
+      color: var(--services-accent-active);
+    }
   }
 
   .services-demos {
@@ -916,13 +921,21 @@ body {
     @apply h-full overflow-hidden;
   }
 
-  .catalog-tile-card:hover,
-  .group:hover .catalog-tile-card,
   .group:focus-within .catalog-tile-card {
     background-color: #161616;
     border-color: #3a3a3a;
     box-shadow: none;
     transform: none;
+  }
+
+  @media (hover: hover) {
+    .catalog-tile-card:hover,
+    .group:hover .catalog-tile-card {
+      background-color: #161616;
+      border-color: #3a3a3a;
+      box-shadow: none;
+      transform: none;
+    }
   }
 
   .home-news-section,
@@ -1060,12 +1073,19 @@ body {
     box-shadow: none;
   }
 
-  .catalog-tile-card--featured-roster:hover,
-  .group:hover .catalog-tile-card--featured-roster,
   .group:focus-within .catalog-tile-card--featured-roster {
     background-color: #161616;
     border-color: #3a3a3a;
     box-shadow: none;
+  }
+
+  @media (hover: hover) {
+    .catalog-tile-card--featured-roster:hover,
+    .group:hover .catalog-tile-card--featured-roster {
+      background-color: #161616;
+      border-color: #3a3a3a;
+      box-shadow: none;
+    }
   }
 
   .home-featured-roster-card__content {
@@ -1649,9 +1669,14 @@ body {
     text-decoration: none;
   }
 
-  .artist-profile-link:hover,
   .artist-profile-link:focus-visible {
     color: var(--foreground);
+  }
+
+  @media (hover: hover) {
+    .artist-profile-link:hover {
+      color: var(--foreground);
+    }
   }
 
   .artist-profile-link__icon {
@@ -1699,9 +1724,14 @@ body {
     text-wrap: balance;
   }
 
-  .artist-latest-release-panel__title:hover,
   .artist-latest-release-panel__title:focus-visible {
     color: #f1d9dc;
+  }
+
+  @media (hover: hover) {
+    .artist-latest-release-panel__title:hover {
+      color: #f1d9dc;
+    }
   }
 
   .artist-latest-release-panel__meta,
@@ -1812,9 +1842,14 @@ body {
     text-decoration: none;
   }
 
-  .artist-previous-release:hover,
   .artist-previous-release:focus-visible {
     color: #f1d9dc;
+  }
+
+  @media (hover: hover) {
+    .artist-previous-release:hover {
+      color: #f1d9dc;
+    }
   }
 
   .artist-previous-release__artwork {
@@ -1927,10 +1962,16 @@ body {
     border-top: 1px solid #242424;
   }
 
-  .artist-detail-route-link:hover,
   .artist-detail-route-link:focus-visible {
     background: rgba(245, 245, 245, 0.035);
     color: var(--foreground);
+  }
+
+  @media (hover: hover) {
+    .artist-detail-route-link:hover {
+      background: rgba(245, 245, 245, 0.035);
+      color: var(--foreground);
+    }
   }
 
   .artist-detail-route-link__arrow {
@@ -2138,11 +2179,16 @@ body {
     text-transform: uppercase;
   }
 
-  .releases-latest-feature__artwork-link:hover .releases-latest-feature__artwork,
   .releases-latest-feature__artwork-link:focus-visible .releases-latest-feature__artwork,
-  .releases-latest-feature__upcoming-artwork-link:hover .releases-latest-feature__upcoming-artwork,
   .releases-latest-feature__upcoming-artwork-link:focus-visible .releases-latest-feature__upcoming-artwork {
     transform: scale(1.048);
+  }
+
+  @media (hover: hover) {
+    .releases-latest-feature__artwork-link:hover .releases-latest-feature__artwork,
+    .releases-latest-feature__upcoming-artwork-link:hover .releases-latest-feature__upcoming-artwork {
+      transform: scale(1.048);
+    }
   }
 
   .releases-latest-feature__title {
@@ -2162,10 +2208,16 @@ body {
     margin: 0;
   }
 
-  .releases-latest-feature__title:hover,
   .releases-latest-feature__title:focus-visible {
     color: rgba(245, 245, 245, 0.84);
     text-decoration: none;
+  }
+
+  @media (hover: hover) {
+    .releases-latest-feature__title:hover {
+      color: rgba(245, 245, 245, 0.84);
+      text-decoration: none;
+    }
   }
 
   .releases-latest-feature__summary {
@@ -2231,10 +2283,16 @@ body {
     text-transform: uppercase;
   }
 
-  .releases-latest-feature__upcoming-title:hover,
   .releases-latest-feature__upcoming-title:focus-visible {
     color: rgba(245, 245, 245, 0.84);
     text-decoration: none;
+  }
+
+  @media (hover: hover) {
+    .releases-latest-feature__upcoming-title:hover {
+      color: rgba(245, 245, 245, 0.84);
+      text-decoration: none;
+    }
   }
 
   .releases-latest-feature__upcoming-meta {
@@ -2309,15 +2367,24 @@ body {
     transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .release-card-link:hover .release-card-image-frame--framed,
   .release-card-link:focus-within .release-card-image-frame--framed {
     border-color: rgba(245, 245, 245, 0.98);
     box-shadow: 0 0 0 1px rgba(245, 245, 245, 0.08);
   }
 
-  .release-card-link:hover .release-card-artwork--framed,
   .release-card-link:focus-within .release-card-artwork--framed {
     transform: scale(1.048);
+  }
+
+  @media (hover: hover) {
+    .release-card-link:hover .release-card-image-frame--framed {
+      border-color: rgba(245, 245, 245, 0.98);
+      box-shadow: 0 0 0 1px rgba(245, 245, 245, 0.08);
+    }
+
+    .release-card-link:hover .release-card-artwork--framed {
+      transform: scale(1.048);
+    }
   }
 
   .release-card-copy--framed {
@@ -2342,10 +2409,18 @@ body {
     transition: color 150ms ease;
   }
 
-  .release-card-artist-link:is(:hover, :focus-visible),
-  .releases-artist-link:is(:hover, :focus-visible),
-  .store-item-card__artist-link:is(:hover, :focus-visible) {
+  .release-card-artist-link:focus-visible,
+  .releases-artist-link:focus-visible,
+  .store-item-card__artist-link:focus-visible {
     color: var(--foreground);
+  }
+
+  @media (hover: hover) {
+    .release-card-artist-link:hover,
+    .releases-artist-link:hover,
+    .store-item-card__artist-link:hover {
+      color: var(--foreground);
+    }
   }
 
   .release-card-meta-row {
@@ -2829,11 +2904,16 @@ body {
     opacity: 0.94;
   }
 
-  .music-streaming-service-embedded-player-provider-button[data-state='inactive']:hover
-    .music-streaming-service-embedded-player-provider-button-logo,
   .music-streaming-service-embedded-player-provider-button[data-state='inactive']:focus-visible
     .music-streaming-service-embedded-player-provider-button-logo {
     opacity: 0.95;
+  }
+
+  @media (hover: hover) {
+    .music-streaming-service-embedded-player-provider-button[data-state='inactive']:hover
+      .music-streaming-service-embedded-player-provider-button-logo {
+      opacity: 0.95;
+    }
   }
 
   .music-streaming-service-embedded-player-modal-frame {
@@ -3957,10 +4037,20 @@ html[data-store-coverflow-capable]
 
 html[data-store-coverflow-capable]
   [data-store-coverflow-mode='preview']
-  [data-store-coverflow-position]:is(:hover, :focus-visible)
+  [data-store-coverflow-position]:focus-visible
   .store-item-card__surface {
   border-color: #4a4a4a;
   background-color: #161616;
+}
+
+@media (hover: hover) {
+  html[data-store-coverflow-capable]
+    [data-store-coverflow-mode='preview']
+    [data-store-coverflow-position]:hover
+    .store-item-card__surface {
+    border-color: #4a4a4a;
+    background-color: #161616;
+  }
 }
 
 html[data-store-coverflow-capable]
@@ -3972,9 +4062,18 @@ html[data-store-coverflow-capable]
 
 html[data-store-coverflow-capable]
   [data-store-coverflow-mode='preview']
-  [data-store-coverflow-position]:is(:hover, :focus-visible)
+  [data-store-coverflow-position]:focus-visible
   .store-item-card__image {
   transform: scale(1.03);
+}
+
+@media (hover: hover) {
+  html[data-store-coverflow-capable]
+    [data-store-coverflow-mode='preview']
+    [data-store-coverflow-position]:hover
+    .store-item-card__image {
+    transform: scale(1.03);
+  }
 }
 
 html[data-store-coverflow-capable]
@@ -4192,13 +4291,9 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 
   html[data-store-coverflow-capable]
     [data-store-coverflow-mode='preview']
-    html[data-store-coverflow-capable]
-    [data-store-coverflow-mode='preview']
     [data-store-coverflow-position]
     .store-item-card__image,
   html[data-store-coverflow-capable]
-    [data-store-coverflow-mode='preview']
-    html[data-store-coverflow-capable]
     [data-store-coverflow-mode='preview']
     [data-store-coverflow-position]:is(:hover, :focus-visible)
     .store-item-card__image {
@@ -4789,8 +4884,10 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   color: var(--muted-foreground);
 }
 
-.store-artists-find:hover {
-  border-color: var(--control-edge-hover);
+@media (hover: hover) {
+  .store-artists-find:hover {
+    border-color: var(--control-edge-hover);
+  }
 }
 
 /* Inset, because the scrolling pane clips an outside ring. */
@@ -5508,14 +5605,26 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   margin-left: 0.7rem;
 }
 
-.release-detail-link:is(:hover, :focus-visible)::before {
+.release-detail-link:focus-visible::before {
   margin-right: 0.2rem;
   color: var(--foreground);
 }
 
-.release-detail-link:is(:hover, :focus-visible)::after {
+.release-detail-link:focus-visible::after {
   margin-left: 0.2rem;
   color: var(--foreground);
+}
+
+@media (hover: hover) {
+  .release-detail-link:hover::before {
+    margin-right: 0.2rem;
+    color: var(--foreground);
+  }
+
+  .release-detail-link:hover::after {
+    margin-left: 0.2rem;
+    color: var(--foreground);
+  }
 }
 
 .release-detail-link:focus-visible {
@@ -6663,12 +6772,22 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   pointer-events: none;
 }
 
-.home-preorders__artist-link:is(:hover, :focus-visible)::after {
+.home-preorders__artist-link:focus-visible::after {
   opacity: 1;
 }
 
-.home-preorders__terms:is(:hover, :focus-visible) {
+.home-preorders__terms:focus-visible {
   color: var(--foreground);
+}
+
+@media (hover: hover) {
+  .home-preorders__artist-link:hover::after {
+    opacity: 1;
+  }
+
+  .home-preorders__terms:hover {
+    color: var(--foreground);
+  }
 }
 
 .home-preorders__sleeve {
@@ -7412,10 +7531,16 @@ html[data-store-coverflow-capable]
   text-transform: uppercase;
 }
 
-.store-format-links a:hover,
 .store-format-links a:focus-visible {
   color: var(--store-accent-active);
   background: var(--store-accent-surface);
+}
+
+@media (hover: hover) {
+  .store-format-links a:hover {
+    color: var(--store-accent-active);
+    background: var(--store-accent-surface);
+  }
 }
 
 .store-browse-pane > .store-format-links {
@@ -7459,11 +7584,18 @@ html[data-store-coverflow-capable]
     opacity: 0.7;
   }
 
-  .store-format-links a:hover,
   .store-format-links a:focus-visible {
     border-color: var(--control-edge-hover);
     background: var(--secondary);
     color: var(--foreground);
+  }
+
+  @media (hover: hover) {
+    .store-format-links a:hover {
+      border-color: var(--control-edge-hover);
+      background: var(--secondary);
+      color: var(--foreground);
+    }
   }
 
   .store-format-links a[aria-current='true'] {
