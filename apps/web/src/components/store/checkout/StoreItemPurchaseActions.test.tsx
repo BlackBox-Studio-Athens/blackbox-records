@@ -457,7 +457,7 @@ describe('StoreItemPurchaseActions', () => {
     );
   });
 
-  it('shows no status after a failed Worker read', async () => {
+  it('marks a failed Worker read as unreadable rather than unavailable', async () => {
     const api = createApi({
       readStoreOffer: vi.fn(async () => {
         throw new Error('Worker unavailable');
@@ -468,6 +468,7 @@ describe('StoreItemPurchaseActions', () => {
       cartItem: null,
       label: null,
       statusTone: 'neutral',
+      unreadable: true,
     });
   });
 

@@ -64,6 +64,9 @@ export class PublicCheckoutApiError extends Error {
   }
 }
 
+// A stalled phone connection fails the offer read instead of leaving the shopper on a spinner.
+const STORE_OFFER_READ_TIMEOUT_MS = 10_000;
+
 const storeOfferReads = new Map<string, Promise<PublicStoreOffer>>();
 
 export function createPublicCheckoutApi(
@@ -101,7 +104,12 @@ export function createPublicCheckoutApi(
       const existing = storeOfferReads.get(key);
       if (existing) return existing;
       const pending = readPublicCheckoutResponse(
-        () => readStoreOfferRequest({ storeItemSlug }),
+        () =>
+          readStoreOfferRequest(
+            { storeItemSlug },
+            // Safari before 16 lacks AbortSignal.timeout; those reads stay unbounded rather than failing.
+            'timeout' in AbortSignal ? { signal: AbortSignal.timeout(STORE_OFFER_READ_TIMEOUT_MS) } : undefined,
+          ),
         'Could not load the store offer.',
       ).finally(() => storeOfferReads.delete(key));
       storeOfferReads.set(key, pending);

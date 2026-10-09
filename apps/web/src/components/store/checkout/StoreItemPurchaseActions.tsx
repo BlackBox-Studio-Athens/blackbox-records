@@ -36,12 +36,14 @@ type StoreItemPurchaseActionsProps = {
 
 type StoreItemPurchaseActionState = {
   cartItem: CartLineItemSnapshot | null;
-  /** null renders no status: an unavailable, unknown or unreadable offer shows the price only. */
+  /** null renders no status: an unavailable or unknown offer shows the price only. */
   label: string | null;
   lowStockLabel?: string;
   statusTone: StoreItemPurchaseStatusTone;
   availabilityState?: string;
   expectedMonth?: string;
+  /** The Worker offer could not be read (network, timeout); the slot offers Try again instead of a status. */
+  unreadable?: true;
 };
 
 type StoreItemPurchaseStatusTone = 'neutral' | 'sold-out' | 'incoming';
@@ -56,6 +58,8 @@ export const STORE_ITEM_PURCHASE_ACTION_COPY = {
     'The album is out. We send the vinyl when the copies arrive. If the estimate changes we email you.',
   releasedPreorderHint: 'The music is out. We send your copy when it arrives. If the estimate changes we email you.',
   checking: 'Checking availability',
+  unreadable: 'Could not check availability.',
+  tryAgain: 'Try Again',
 } as const;
 
 // The purchase control confirms in place: it reads Added for this long after a successful add.
@@ -127,7 +131,7 @@ export async function loadStoreItemPurchaseActionState(
       ...(lowStockLabel ? { lowStockLabel } : {}),
     };
   } catch {
-    return { cartItem: null, label: null, statusTone: 'neutral' };
+    return { cartItem: null, label: null, statusTone: 'neutral', unreadable: true };
   }
 }
 
@@ -158,6 +162,16 @@ export default function StoreItemPurchaseActions({
   const [isChecking, setIsChecking] = React.useState(Boolean(cartSeed));
   const [addedCount, setAddedCount] = React.useState(0);
   const [isAddedVisible, setIsAddedVisible] = React.useState(false);
+  const [readAttempt, setReadAttempt] = React.useState(0);
+
+  // An unreadable offer is read again when the shopper presses Try again or the phone reconnects.
+  const isUnreadable = Boolean(purchaseState.unreadable);
+  React.useEffect(() => {
+    if (!isUnreadable) return;
+    const retry = () => setReadAttempt((attempt) => attempt + 1);
+    window.addEventListener('online', retry);
+    return () => window.removeEventListener('online', retry);
+  }, [isUnreadable]);
 
   React.useEffect(() => {
     if (addedCount === 0) return;
@@ -201,7 +215,7 @@ export default function StoreItemPurchaseActions({
         if (isActive) setPurchaseState(nextState);
       } catch {
         if (isActive) {
-          setPurchaseState({ cartItem: null, label: null, statusTone: 'neutral' });
+          setPurchaseState({ cartItem: null, label: null, statusTone: 'neutral', unreadable: true });
         }
       } finally {
         if (isActive) setIsChecking(false);
@@ -213,7 +227,7 @@ export default function StoreItemPurchaseActions({
     return () => {
       isActive = false;
     };
-  }, [api, cartItem, cartSeed]);
+  }, [api, cartItem, cartSeed, readAttempt]);
 
   const activeCartItem = purchaseState.cartItem;
   const released = preorderBadges({ releaseDate, shipEstimate: null, today: new Date() })[0] === DIGITAL_RELEASE_BADGE;
@@ -239,6 +253,25 @@ export default function StoreItemPurchaseActions({
       >
         <LoadingButtonContent label={STORE_ITEM_PURCHASE_ACTION_COPY.checking} />
       </Button>
+    );
+  }
+
+  if (!activeCartItem && isUnreadable) {
+    return (
+      <div className={cn(purchaseActionLayoutClasses, 'grid gap-2')} data-store-item-purchase-unreadable>
+        <p role="status" className="text-sm leading-relaxed text-muted-foreground">
+          {STORE_ITEM_PURCHASE_ACTION_COPY.unreadable}
+        </p>
+        <Button
+          type="button"
+          size="lg"
+          variant="outline"
+          className="w-full"
+          onClick={() => setReadAttempt((attempt) => attempt + 1)}
+        >
+          {STORE_ITEM_PURCHASE_ACTION_COPY.tryAgain}
+        </Button>
+      </div>
     );
   }
 
