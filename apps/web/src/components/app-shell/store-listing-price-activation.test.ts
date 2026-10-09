@@ -26,6 +26,8 @@ describe('Store listing-price activation', () => {
     ];
     const fetch = vi.fn(async () => ({ ok: true, json: async () => records }));
     const source = readFileSync(new URL('../../layouts/StoreListingPricePrefetch.astro', import.meta.url), 'utf8');
+    // A module script would wait until the whole Store document is parsed.
+    expect(source).not.toContain('type="module"');
     const script = source.slice(source.indexOf('>') + 1, source.lastIndexOf('</script>'));
     const run = () =>
       runInNewContext(script, {

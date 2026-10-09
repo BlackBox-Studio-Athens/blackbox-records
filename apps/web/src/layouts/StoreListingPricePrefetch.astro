@@ -6,7 +6,8 @@ const collectionPathname = Astro.props.pathname;
 const backendBaseUrl = (import.meta.env.PUBLIC_BACKEND_BASE_URL ?? '').trim().replace(/\/+$/, '');
 ---
 
-<script is:inline type="module" define:vars={{ backendBaseUrl, collectionPathname }}>
+<script is:inline define:vars={{ backendBaseUrl, collectionPathname }}>
+  // Classic, not a module: the read starts while the parser reaches it instead of after the whole document.
   // Private previews resolve their read gateway at runtime; the shell prepares those reads.
   if (
     !document.querySelector('meta[name="blackbox-preview"]') &&
