@@ -592,3 +592,26 @@ describe('CheckoutOfferStatus helpers', () => {
     expect(InternationalOrderNotice).not.toHaveBeenCalled();
   });
 });
+
+describe('public checkout API network errors', () => {
+  it.each([new TypeError('Failed to fetch'), new DOMException('signal timed out', 'TimeoutError')])(
+    'maps %s to one plain connection message',
+    async (failure) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => {
+          throw failure;
+        }),
+      );
+      try {
+        const { createPublicCheckoutApi, PUBLIC_CHECKOUT_CONNECTION_MESSAGE } = await import('./public-checkout-api');
+        await expect(createPublicCheckoutApi('https://worker.test').readStoreOffer('record')).rejects.toMatchObject({
+          message: PUBLIC_CHECKOUT_CONNECTION_MESSAGE,
+          status: 0,
+        });
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    },
+  );
+});

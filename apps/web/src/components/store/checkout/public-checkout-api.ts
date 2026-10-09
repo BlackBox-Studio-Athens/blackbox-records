@@ -64,6 +64,7 @@ export class PublicCheckoutApiError extends Error {
   }
 }
 
+export const PUBLIC_CHECKOUT_CONNECTION_MESSAGE = 'Connection problem. Check your network and try again.';
 // A stalled phone connection fails the offer read instead of leaving the shopper on a spinner.
 const STORE_OFFER_READ_TIMEOUT_MS = 10_000;
 
@@ -186,6 +187,11 @@ function normalizePublicCheckoutApiError(error: unknown, fallbackMessage: string
       extractBackendErrorMessage(error.data, fallbackMessage),
       error.data,
     );
+  }
+
+  // fetch rejects with engine-specific text ('Failed to fetch', 'Load failed'); shoppers get one plain message.
+  if (error instanceof TypeError || (error instanceof Error && /^(AbortError|TimeoutError)$/.test(error.name))) {
+    return new PublicCheckoutApiError(0, PUBLIC_CHECKOUT_CONNECTION_MESSAGE, error);
   }
 
   if (error instanceof Error) {
