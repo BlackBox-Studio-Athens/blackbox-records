@@ -247,32 +247,9 @@ export default function CheckoutOfferStatus({
       <CardContent className="checkout-review__panel-content">
         <div className="checkout-review__panel-heading">
           <h2 className="checkout-review__panel-title">Review and Pay</h2>
-          {canShowPayment ? (
-            <details className="checkout-review__newsletter checkout-summary__editor">
-              <summary className={badgeClassName} aria-label={`${badgeLabel}. Email updates (optional)`}>
-                {badgeLabel}
-              </summary>
-              <div className="checkout-summary__quantities">
-                <label className="flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    className="mt-1 size-4 shrink-0 accent-foreground"
-                    checked={isNewsletterOptedIn}
-                    disabled={isStartingCheckout}
-                    onChange={(event) => setIsNewsletterOptedIn(event.currentTarget.checked)}
-                  />
-                  <span>
-                    Email me BlackBox Records release, distro, and event updates. You can unsubscribe anytime.
-                  </span>
-                </label>
-                <PrivacyLink />
-              </div>
-            </details>
-          ) : (
-            <Badge variant="outline" className={badgeClassName}>
-              {badgeLabel}
-            </Badge>
-          )}
+          <Badge variant="outline" className={badgeClassName}>
+            {badgeLabel}
+          </Badge>
         </div>
 
         <PreorderCartNotice
@@ -300,6 +277,22 @@ export default function CheckoutOfferStatus({
 
           {canShowPayment ? (
             <>
+              <div className="checkout-review__newsletter">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 size-4 shrink-0 accent-foreground"
+                    checked={isNewsletterOptedIn}
+                    disabled={isStartingCheckout}
+                    onChange={(event) => setIsNewsletterOptedIn(event.currentTarget.checked)}
+                  />
+                  <span>
+                    Email me BlackBox Records release, distro, and event updates. You can unsubscribe anytime.
+                  </span>
+                </label>
+                <PrivacyLink />
+              </div>
+
               {showReviewSiteMarker && (
                 <p className="text-xs font-semibold leading-relaxed text-foreground" data-review-site-checkout-warning>
                   Test checkout. No real payment will be taken.

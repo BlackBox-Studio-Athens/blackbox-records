@@ -168,7 +168,6 @@ for (const width of [1280, 390]) {
 
     // A missing provider URL leaves the existing error/retry state in place; no provider is contacted.
     await page.route('**/api/checkout/sessions', (route) => route.fulfill({ json: { checkoutUrl: '' } }));
-    await review.locator('.checkout-review__newsletter summary').click();
     await review.getByRole('checkbox').check();
     const checkoutRequest = page.waitForRequest('**/api/checkout/sessions');
     await pay.click();

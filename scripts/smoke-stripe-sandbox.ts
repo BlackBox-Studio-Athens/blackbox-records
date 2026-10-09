@@ -1299,7 +1299,6 @@ async function runScenarioWithBrowser(input: {
         name: /continue to payment/i,
       });
 
-      await page.getByLabel(/Email updates \(optional\)/i).click();
       await newsletterOptIn.waitFor({ state: 'visible', timeout: input.options.timeoutMs });
       await checkoutButton.waitFor({ state: 'visible', timeout: input.options.timeoutMs });
       await newsletterOptIn.check({ timeout: input.options.fieldActionTimeoutMs });

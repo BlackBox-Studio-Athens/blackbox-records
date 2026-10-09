@@ -7732,16 +7732,11 @@ html[data-store-coverflow-capable]
 }
 
 .checkout-review__newsletter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
   font: 400 0.75rem/1.7 var(--font-sans);
   color: var(--muted-foreground);
-}
-
-.checkout-review__newsletter summary {
-  cursor: pointer;
-}
-
-.checkout-review__newsletter[open] > label {
-  padding-top: 12px;
 }
 
 .checkout-summary__content {
@@ -7922,7 +7917,6 @@ html[data-store-coverflow-capable]
 @media (pointer: coarse) {
   .checkout-review__continue,
   .checkout-review__support a,
-  .checkout-review__newsletter summary,
   .checkout-summary__editor summary {
     min-height: 44px;
     display: inline-flex;
