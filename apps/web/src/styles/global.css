@@ -1669,6 +1669,12 @@ body {
     text-decoration: none;
   }
 
+  @media (pointer: coarse) {
+    .artist-profile-link {
+      min-height: 2.75rem;
+    }
+  }
+
   .artist-profile-link:focus-visible {
     color: var(--foreground);
   }
@@ -2420,6 +2426,19 @@ body {
     .releases-artist-link:hover,
     .store-item-card__artist-link:hover {
       color: var(--foreground);
+    }
+  }
+
+  /* The artist line is 17px tall over the whole-card link; a 45px halo keeps near-misses on the artist. */
+  @media (pointer: coarse) {
+    .store-item-card__artist-link {
+      position: relative;
+    }
+
+    .store-item-card__artist-link::before {
+      content: '';
+      position: absolute;
+      inset: -14px -4px;
     }
   }
 
@@ -6238,6 +6257,17 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   padding: 0;
   color: var(--foreground);
   font: 400 0.75rem/1.5 var(--font-sans);
+}
+
+/* A real 44px touch row; the primitive's halo stays horizontal so it never reaches the quantity buttons above. */
+@media (pointer: coarse) {
+  .store-cart-drawer__remove {
+    min-height: 44px;
+  }
+
+  .store-cart-drawer__remove::before {
+    inset-block: 0;
+  }
 }
 
 .store-cart-drawer__summary {

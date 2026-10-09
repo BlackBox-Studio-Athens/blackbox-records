@@ -32,6 +32,17 @@ function rules() {
   return found;
 }
 
+/** A rule under the given block prelude, or at the top level when media is null. */
+function ruleBody(selector: string, media: string | null) {
+  const rule = rules().find(
+    (candidate) =>
+      candidate.prelude.replace(/\s+/g, ' ') === selector &&
+      (media === null ? candidate.ancestors.length === 0 : candidate.ancestors.some((parent) => parent === media)),
+  );
+  if (!rule) throw new Error(`No ${selector} rule under ${media}`);
+  return rule.body;
+}
+
 // Hover that may stay ungated besides reduced-motion resets: a finite equalizer run that also answers :active, and the
 // edition-link block that shares one written condition between hover and keyboard focus.
 const ungatedHoverAllowed = [
@@ -58,5 +69,15 @@ describe('touch ergonomics', () => {
       expect(rule, selector).toBeDefined();
       expect(rule!.ancestors.some((parent) => parent.includes('hover'))).toBe(false);
     }
+  });
+
+  it('gives secondary touch targets a 44px coarse-pointer area', () => {
+    expect(ruleBody('.store-cart-drawer__remove', '@media (pointer: coarse)')).toMatch(/min-height:\s*44px/);
+    expect(ruleBody('.store-cart-drawer__remove::before', '@media (pointer: coarse)')).toMatch(/inset-block:\s*0/);
+    expect(ruleBody('.artist-profile-link', '@media (pointer: coarse)')).toMatch(/min-height:\s*2\.75rem/);
+    expect(ruleBody('.store-item-card__artist-link', '@media (pointer: coarse)')).toMatch(/position:\s*relative/);
+    expect(ruleBody('.store-item-card__artist-link::before', '@media (pointer: coarse)')).toMatch(
+      /inset:\s*-14px -4px/,
+    );
   });
 });
