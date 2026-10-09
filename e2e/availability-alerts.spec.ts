@@ -63,6 +63,8 @@ for (const width of [1440, 390]) {
     await expect(email).toBeFocused();
     await expect(consent).not.toBeChecked();
     expect((await email.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    // 16px on phones so iOS Safari does not zoom the page into the field; desktop keeps 0.95rem.
+    await expect(email).toHaveCSS('font-size', width === 390 ? '16px' : '15.2px');
 
     await form.getByRole('button', { name: 'Send', exact: true }).click();
     await expect(form.getByText('Enter a valid email.', { exact: true })).toBeVisible();

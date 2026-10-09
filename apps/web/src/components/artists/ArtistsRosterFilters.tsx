@@ -91,7 +91,7 @@ function ArtistsRosterFilters({ pageKey }: ArtistRosterFiltersProps) {
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           placeholder="Search artists"
-          className="artists-roster-filters-panel__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] pr-3 pl-10 text-[0.95rem]"
+          className="artists-roster-filters-panel__input h-11 rounded-none border-[#2b2b2b] bg-[#111111] pr-3 pl-10 text-base md:text-[0.95rem]"
           aria-label="Search artists"
         />
       </div>
