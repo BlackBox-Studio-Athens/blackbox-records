@@ -94,6 +94,8 @@ describe('Store collection category surfaces', () => {
       /\shidden\s*>\s*<StoreBuyIcon formatGroup=\{getStoreDistroFormatGroup\(entry\)\} \/>\s*<span data-store-card-buy-label>Buy<\/span>\s*<\/button>/,
     );
     expect(storeBuyIconSource).toMatch(/<span className="store-buy-icon" aria-hidden="true">/);
+    // Every layer is one shared file URL, never a data: URI repeated on each card.
+    expect(storeBuyIconSource.match(/\.svg\?url&no-inline';/g)).toHaveLength(10);
   });
 
   it('links a Release item artist above the card link', () => {

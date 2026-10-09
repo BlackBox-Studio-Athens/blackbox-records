@@ -1,14 +1,14 @@
 import type { DistroGroupName } from '@blackbox/content-model';
-import cassetteBase from './buy-icons/cassette-base.svg?url';
-import cassetteSpinLeft from './buy-icons/cassette-spin-left.svg?url';
-import cassetteSpinRight from './buy-icons/cassette-spin-right.svg?url';
-import cassetteTop from './buy-icons/cassette-top.svg?url';
-import cdBase from './buy-icons/cd-base.svg?url';
-import cdSpin from './buy-icons/cd-spin.svg?url';
-import cdTop from './buy-icons/cd-top.svg?url';
-import vinylBase from './buy-icons/vinyl-base.svg?url';
-import vinylSpin from './buy-icons/vinyl-spin.svg?url';
-import vinylTop from './buy-icons/vinyl-top.svg?url';
+import cassetteBase from './buy-icons/cassette-base.svg?url&no-inline';
+import cassetteSpinLeft from './buy-icons/cassette-spin-left.svg?url&no-inline';
+import cassetteSpinRight from './buy-icons/cassette-spin-right.svg?url&no-inline';
+import cassetteTop from './buy-icons/cassette-top.svg?url&no-inline';
+import cdBase from './buy-icons/cd-base.svg?url&no-inline';
+import cdSpin from './buy-icons/cd-spin.svg?url&no-inline';
+import cdTop from './buy-icons/cd-top.svg?url&no-inline';
+import vinylBase from './buy-icons/vinyl-base.svg?url&no-inline';
+import vinylSpin from './buy-icons/vinyl-spin.svg?url&no-inline';
+import vinylTop from './buy-icons/vinyl-top.svg?url&no-inline';
 
 type BuyIconLayers = { base: string; spins: { src: string; origin: string }[]; top: string };
 
