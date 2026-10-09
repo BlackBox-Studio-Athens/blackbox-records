@@ -317,6 +317,8 @@ body {
 
   html {
     @apply min-h-full scroll-smooth;
+    /* Focused and anchored content scrolls clear of the fixed header. */
+    scroll-padding-top: calc(var(--header-height) + 0.5rem);
   }
 
   body {
@@ -343,7 +345,7 @@ body {
   }
 
   .accessibility-skip-to-content-link:focus-visible {
-    @apply not-sr-only fixed left-4 top-4 z-[120] rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground;
+    @apply not-sr-only fixed left-4 top-4 z-[1001] rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground;
   }
 
   .accessibility-visually-hidden-text {
@@ -1081,7 +1083,7 @@ body {
     line-height: 0.98;
     text-transform: uppercase;
     text-wrap: balance;
-    scroll-margin-top: calc(var(--header-height) + 4.75rem);
+    scroll-margin-top: 4.25rem;
   }
 
   .distro-group-section__copy {
@@ -2536,7 +2538,8 @@ body {
   .app-shell-route-loading-indicator {
     position: fixed;
     inset: 0 0 auto;
-    z-index: 130;
+    /* Above the fixed header (1000), below the sheets and dialogs (1100+). */
+    z-index: 1001;
     height: 4px;
     pointer-events: none;
     opacity: 0;
@@ -5066,7 +5069,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 .store-result-count {
   font-size: 0.875rem;
   color: var(--muted-foreground);
-  scroll-margin-top: calc(var(--header-height) + 1rem);
+  scroll-margin-top: 0.5rem;
 }
 
 .store-category-description {
@@ -6363,7 +6366,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
   --home-preorders-gutter: clamp(1.5rem, 6vw, 5.5rem);
   position: relative;
   z-index: 1;
-  scroll-margin-top: calc(var(--header-height) + 2rem);
+  scroll-margin-top: 1.5rem;
   background: var(--background);
 }
 
@@ -6409,7 +6412,7 @@ html[data-store-coverflow-capable] [data-store-coverflow-mode='catalog'] [data-s
 .home-preorders__chapter {
   position: relative;
   min-width: 0;
-  scroll-margin-top: 5rem;
+  scroll-margin-top: -0.5rem;
   border-top: 1px solid var(--control-edge);
   background: var(--secondary);
 }

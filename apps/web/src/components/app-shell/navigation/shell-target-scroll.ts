@@ -1,4 +1,4 @@
-import { scrollWithLenis } from '../lenis-scroll';
+import { readRootScrollPaddingTop, scrollWithLenis } from '../lenis-scroll';
 
 export function scrollShellTargetIntoView({
   documentRoot = document,
@@ -30,7 +30,8 @@ export function scrollShellTargetIntoView({
       typeof getComputedStyle === 'function'
         ? Number.parseFloat(getComputedStyle(targetElement).scrollMarginTop) || 0
         : 0;
-    const nextScrollTop = window.scrollY + targetElement.getBoundingClientRect().top - scrollMarginTop;
+    const nextScrollTop =
+      window.scrollY + targetElement.getBoundingClientRect().top - scrollMarginTop - readRootScrollPaddingTop();
     scrollWithLenis(null, Math.max(nextScrollTop, 0));
   }
 

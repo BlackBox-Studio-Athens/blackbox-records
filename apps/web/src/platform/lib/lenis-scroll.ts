@@ -19,6 +19,13 @@ export function acquireLenisModalLock(_modalRoot: HTMLElement) {
   };
 }
 
+// Native anchor and focus scrolling add the root scroll padding (clear of the fixed header) to scroll-margin-top.
+export function readRootScrollPaddingTop() {
+  return typeof getComputedStyle === 'function' && typeof document !== 'undefined'
+    ? Number.parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0
+    : 0;
+}
+
 export function scrollElementWithLenis(
   target: HTMLElement,
   options: { block?: 'center' | 'end' | 'start'; immediate?: boolean } = {},
@@ -27,7 +34,8 @@ export function scrollElementWithLenis(
   const targetRect = target.getBoundingClientRect();
   const rootRect = root?.getBoundingClientRect();
   const scrollMargin = typeof getComputedStyle === 'function' ? getComputedStyle(target) : null;
-  const marginTop = Number.parseFloat(scrollMargin?.scrollMarginTop ?? '') || 0;
+  const marginTop =
+    (Number.parseFloat(scrollMargin?.scrollMarginTop ?? '') || 0) + (root ? 0 : readRootScrollPaddingTop());
   const marginBottom = Number.parseFloat(scrollMargin?.scrollMarginBottom ?? '') || 0;
   const viewportHeight = root?.clientHeight ?? window.innerHeight;
   const visibleHeight = targetRect.height + marginTop + marginBottom;

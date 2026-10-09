@@ -39,7 +39,7 @@ export default function PurchaseDocument({
         </ul>
       </nav>
       {kind === 'terms' && (
-        <section id="support" className="scroll-mt-28 space-y-3">
+        <section id="support" className="scroll-mt-6 space-y-3">
           <h2 className="font-display text-3xl">Seller and purchase help</h2>
           <p>{information.seller.name}</p>
           <p className="whitespace-pre-line">{information.seller.address}</p>
@@ -55,7 +55,7 @@ export default function PurchaseDocument({
         </section>
       )}
       {Object.entries(information[kind]).map(([id, section]) => (
-        <section id={id.replaceAll('_', '-')} key={id} className="scroll-mt-28 space-y-3">
+        <section id={id.replaceAll('_', '-')} key={id} className="scroll-mt-6 space-y-3">
           <h2 className="font-display text-3xl">{headings[id]}</h2>
           {section.paragraphs.map((paragraph, index) => (
             <Prose key={index} value={paragraph} />
